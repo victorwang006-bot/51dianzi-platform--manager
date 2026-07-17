@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── 51电子网品牌设计系统 ─────────────────────────────────────────────────── */
+@theme inline {
+  /* 品牌蓝色系 */
+  --color-brand-50: oklch(97% 0.01 240);
+  --color-brand-100: oklch(93% 0.03 240);
+  --color-brand-200: oklch(86% 0.06 240);
+  --color-brand-300: oklch(75% 0.10 240);
+  --color-brand-400: oklch(62% 0.14 240);
+  --color-brand-500: oklch(50% 0.17 240);
+  --color-brand-600: oklch(43% 0.18 240);   /* #185FA5 主色 */
+  --color-brand-700: oklch(36% 0.16 240);
+  --color-brand-800: oklch(28% 0.13 240);
+  --color-brand-900: oklch(20% 0.09 240);
+
+  /* 语义颜色 */
+  --color-background: oklch(97.5% 0.005 240);   /* #f5f6fa */
+  --color-foreground: oklch(15% 0.01 240);       /* #1a1a1a */
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(15% 0.01 240);
+  --color-popover: oklch(100% 0 0);
+  --color-popover-foreground: oklch(15% 0.01 240);
+  --color-primary: oklch(43% 0.18 240);          /* #185FA5 */
+  --color-primary-foreground: oklch(100% 0 0);
+  --color-secondary: oklch(93% 0.03 240);
+  --color-secondary-foreground: oklch(43% 0.18 240);
+  --color-muted: oklch(95% 0.01 240);
+  --color-muted-foreground: oklch(55% 0.04 240); /* #8a94a6 */
+  --color-accent: oklch(93% 0.03 240);
+  --color-accent-foreground: oklch(43% 0.18 240);
+  --color-destructive: oklch(55% 0.22 25);
+  --color-destructive-foreground: oklch(100% 0 0);
+  --color-border: oklch(90% 0.02 240);           /* #e3e8ef */
+  --color-input: oklch(90% 0.02 240);
+  --color-ring: oklch(43% 0.18 240);
+
+  /* 状态颜色 */
+  --color-success: oklch(60% 0.18 145);
+  --color-success-bg: oklch(95% 0.05 145);
+  --color-warning: oklch(70% 0.18 70);
+  --color-warning-bg: oklch(97% 0.04 70);
+  --color-danger: oklch(55% 0.22 25);
+  --color-danger-bg: oklch(97% 0.04 25);
+  --color-info: oklch(62% 0.14 240);
+  --color-info-bg: oklch(95% 0.03 240);
+
+  /* 侧边栏 */
+  --color-sidebar: oklch(100% 0 0);
+  --color-sidebar-foreground: oklch(15% 0.01 240);
+  --color-sidebar-primary: oklch(43% 0.18 240);
+  --color-sidebar-primary-foreground: oklch(100% 0 0);
+  --color-sidebar-accent: oklch(95% 0.02 240);
+  --color-sidebar-accent-foreground: oklch(43% 0.18 240);
+  --color-sidebar-border: oklch(92% 0.01 240);
+  --color-sidebar-ring: oklch(43% 0.18 240);
+
+  /* 圆角 */
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+}
+
+/* ─── 基础样式 ───────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+      "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground;
+  }
+}
+
+/* ─── 容器 ───────────────────────────────────────────────────────────────────── */
+.container {
+  @apply mx-auto px-4;
+  max-width: 1440px;
+}
+
+/* ─── Flex 修复 ──────────────────────────────────────────────────────────────── */
+.flex {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ─── 按钮交互 ───────────────────────────────────────────────────────────────── */
+button:active {
+  transform: scale(0.97);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ─── 滚动条美化 ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(80% 0.02 240);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(65% 0.05 240);
+}
+
+/* ─── 状态徽章 ───────────────────────────────────────────────────────────────── */
+.badge-success {
+  @apply bg-green-50 text-green-700 border border-green-200;
+}
+.badge-warning {
+  @apply bg-amber-50 text-amber-700 border border-amber-200;
+}
+.badge-danger {
+  @apply bg-red-50 text-red-700 border border-red-200;
+}
+.badge-info {
+  @apply bg-blue-50 text-blue-700 border border-blue-200;
+}
+.badge-gray {
+  @apply bg-gray-50 text-gray-600 border border-gray-200;
+}
+
+/* ─── 表格样式 ───────────────────────────────────────────────────────────────── */
+.admin-table {
+  @apply w-full text-sm;
+}
+.admin-table thead tr {
+  @apply bg-gray-50 border-b border-border;
+}
+.admin-table thead th {
+  @apply px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap;
+}
+.admin-table tbody tr {
+  @apply border-b border-border hover:bg-gray-50 transition-colors;
+}
+.admin-table tbody td {
+  @apply px-4 py-3 text-sm;
+}
+
+/* ─── 卡片样式 ───────────────────────────────────────────────────────────────── */
+.stat-card {
+  @apply bg-white rounded-xl border border-border p-5 hover:shadow-md transition-shadow;
+}
+
+/* ─── 侧边栏（与前台51电子网原型一致）───────────────────────────── */
+/* 菜单项：13px、#666，hover #f5f5f5；激活态 #185FA5 文字 + #e8f0fe 背景 */
+.sidebar-menu-item {
+  font-size: 13px;
+  color: #666666;
+  border-radius: 6px;
+}
+.sidebar-menu-item:hover {
+  background-color: #f5f5f5;
+  color: #666666;
+}
+.sidebar-item-active,
+.sidebar-item-active:hover {
+  background-color: #e8f0fe;
+  color: #185fa5;
+  font-weight: 500;
+}
+.sidebar-item-active svg {
+  color: #185fa5;
+}
+/* 分组小标题：11px、浅灰 #bbb、字距 .4px */
+.sidebar-group-label {
+  font-size: 11px;
+  color: #bbbbbb;
+  letter-spacing: 0.4px;
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `alerts` MODIFY COLUMN `alertType` enum('stuck_order','refund_abnormal','license_expiry','settlement_failed','risk_merchant','system_error','order_stuck','task_failed') NOT NULL;

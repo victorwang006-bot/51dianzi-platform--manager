@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1784202256378,
+      "tag": "0000_ambitious_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1784202411234,
+      "tag": "0001_true_ted_forrester",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1784203385591,
+      "tag": "0002_zippy_old_lace",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1784203815110,
+      "tag": "0003_cute_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1784268593062,
+      "tag": "0004_tiresome_alex_wilder",
+      "breakpoints": true
+    }
+  ]
+}
