@@ -28,6 +28,42 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ─── 物料数据库 ────────────────────────────────────────────────────────────
+export const materials = mysqlTable("materials", {
+  id: int("id").autoincrement().primaryKey(),
+  /** 物料编号，如 MAT20260001 */
+  materialNo: varchar("materialNo", { length: 32 }).notNull().unique(),
+  /** 元器件型号，如 STM32F103C8T6 */
+  partNumber: varchar("partNumber", { length: 128 }).notNull(),
+  /** 物料名称 */
+  name: varchar("name", { length: 256 }).notNull(),
+  /** 品牌/制造商 */
+  brand: varchar("brand", { length: 128 }),
+  /** 分类，如 微控制器/存储器/电阻/电容 */
+  category: varchar("category", { length: 64 }),
+  /** 封装，如 LQFP48 / SOP8 / 0402 */
+  package: varchar("package", { length: 64 }),
+  /** 参数描述 */
+  description: text("description"),
+  /** 参考单价（元） */
+  referencePrice: varchar("referencePrice", { length: 32 }),
+  /** 库存单位，如 片/颗/只/个 */
+  unit: varchar("unit", { length: 16 }).default("个"),
+  /** 无铅/RoHS 状态 */
+  rohs: mysqlEnum("rohs", ["compliant", "non_compliant", "unknown"]).default("unknown").notNull(),
+  /** 生命周期状态 */
+  lifecycle: mysqlEnum("lifecycle", ["active", "nrnd", "eol", "obsolete"]).default("active").notNull(),
+  /** 数据手册链接 */
+  datasheetUrl: varchar("datasheetUrl", { length: 512 }),
+  /** 状态：启用/停用 */
+  status: mysqlEnum("status", ["enabled", "disabled"]).default("enabled").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Material = typeof materials.$inferSelect;
+export type InsertMaterial = typeof materials.$inferInsert;
+
 // 管理员角色枚举
 export const adminRoleEnum = mysqlEnum("adminRole", [
   "super_admin",   // 超级管理员

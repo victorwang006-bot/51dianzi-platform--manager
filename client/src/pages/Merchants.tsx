@@ -29,7 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { Search, ShieldAlert } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -65,18 +65,11 @@ export default function Merchants() {
     { id: detailId ?? 0 },
     { enabled: detailId !== null },
   );
-  const analyzeMutation = trpc.risk.analyzeMerchant.useMutation({
-    onSuccess: res => {
-      toast.success(`风控分析完成：${res.analysis.riskLevel === "low" ? "低风险" : res.analysis.riskLevel === "medium" ? "中风险" : res.analysis.riskLevel === "high" ? "高风险" : "极高风险"}`);
-    },
-    onError: err => toast.error(`分析失败：${err.message}`),
-  });
 
   const reviewMutation = trpc.merchant.review.useMutation({
     onSuccess: () => {
       toast.success("操作成功");
       utils.merchant.list.invalidate();
-      utils.dashboard.stats.invalidate();
       setReviewTarget(null);
       setReviewNote("");
     },
@@ -190,19 +183,9 @@ export default function Merchants() {
                                 </>
                               )}
                               {m.status === "approved" && (
-                                <>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "suspend" })}>
-                                    暂停
-                                  </Button>
-                                  <Button
-                                    size="sm" variant="outline" className="h-7 text-xs"
-                                    disabled={analyzeMutation.isPending}
-                                    onClick={() => analyzeMutation.mutate({ merchantId: m.id })}
-                                  >
-                                    <ShieldAlert className="h-3 w-3 mr-1" />
-                                    风控分析
-                                  </Button>
-                                </>
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "suspend" })}>
+                                  暂停
+                                </Button>
                               )}
                               {m.status === "suspended" && (
                                 <>

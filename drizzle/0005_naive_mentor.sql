@@ -1,0 +1,20 @@
+CREATE TABLE `materials` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`materialNo` varchar(32) NOT NULL,
+	`partNumber` varchar(128) NOT NULL,
+	`name` varchar(256) NOT NULL,
+	`brand` varchar(128),
+	`category` varchar(64),
+	`package` varchar(64),
+	`description` text,
+	`referencePrice` varchar(32),
+	`unit` varchar(16) DEFAULT '个',
+	`rohs` enum('compliant','non_compliant','unknown') NOT NULL DEFAULT 'unknown',
+	`lifecycle` enum('active','nrnd','eol','obsolete') NOT NULL DEFAULT 'active',
+	`datasheetUrl` varchar(512),
+	`status` enum('enabled','disabled') NOT NULL DEFAULT 'enabled',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `materials_id` PRIMARY KEY(`id`),
+	CONSTRAINT `materials_materialNo_unique` UNIQUE(`materialNo`)
+);

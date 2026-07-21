@@ -25,17 +25,11 @@ import {
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Bell,
-  FileSearch,
-  LayoutDashboard,
+  Database,
   LogOut,
-  Package,
   PanelLeft,
-  Receipt,
   ShieldAlert,
-  ShoppingCart,
   Store,
-  Undo2,
   UserCog,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -43,37 +37,20 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
-const LOGO_FULL = "/manus-storage/logo-full-transparent_c7c792b8.png";
-const LOGO_ICON = "/manus-storage/logo-icon-transparent_1a44ee9c.png";
+const LOGO_FULL = "/manus-storage/logo-51-new_072e24d5.webp";
+const LOGO_ICON = "/manus-storage/logo-51-new_072e24d5.webp";
 
 const menuGroups = [
   {
-    label: "总览",
-    items: [
-      { icon: LayoutDashboard, label: "数据看板", path: "/" },
-      { icon: Bell, label: "任务与告警", path: "/alerts" },
-    ],
-  },
-  {
     label: "业务管理",
     items: [
+      { icon: Database, label: "物料数据库", path: "/" },
       { icon: Store, label: "商户管理", path: "/merchants" },
-      { icon: Package, label: "商品与库存", path: "/products" },
-      { icon: ShoppingCart, label: "订单中心", path: "/orders" },
-      { icon: Undo2, label: "售后退款", path: "/refunds" },
-    ],
-  },
-  {
-    label: "财务与风控",
-    items: [
-      { icon: Receipt, label: "财务账本", path: "/finance" },
-      { icon: ShieldAlert, label: "智能风控", path: "/risk" },
     ],
   },
   {
     label: "系统",
     items: [
-      { icon: FileSearch, label: "审计中心", path: "/audit" },
       { icon: UserCog, label: "权限管理", path: "/admins" },
     ],
   },
