@@ -416,6 +416,7 @@ export default function Materials() {
                   <TableHead>品牌</TableHead>
                   <TableHead>分类 / 封装</TableHead>
                   <TableHead>规格参数</TableHead>
+                  <TableHead>规格书</TableHead>
                   <TableHead>更新时间</TableHead>
                   <TableHead>操作</TableHead>
                 </TableRow>
@@ -425,20 +426,7 @@ export default function Materials() {
                   <TableRow key={m.id}>
                     <TableCell className="font-mono text-xs">{m.materialNo}</TableCell>
                     <TableCell>
-                      <div className="font-medium flex items-center gap-1.5">
-                        {m.partNumber}
-                        {m.datasheetUrl && (
-                          <a
-                            href={m.datasheetUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary hover:opacity-70"
-                            title="查看数据手册"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
+                      <div className="font-medium">{m.partNumber}</div>
                       <div className="text-xs text-muted-foreground">{m.name}</div>
                     </TableCell>
                     <TableCell>{m.brand ?? "-"}</TableCell>
@@ -451,6 +439,22 @@ export default function Materials() {
                     </TableCell>
                     <TableCell>
                       <SpecsPreview specs={(m as any).specs} />
+                    </TableCell>
+                    <TableCell>
+                      {m.datasheetUrl ? (
+                        <a
+                          href={m.datasheetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline hover:opacity-80 font-medium"
+                          title={m.datasheetUrl}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                          查看
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDateTime(m.updatedAt)}</TableCell>
                     <TableCell>
