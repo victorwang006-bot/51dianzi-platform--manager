@@ -71,6 +71,29 @@ type MaterialForm = {
   datasheetUrl: string;
 };
 
+/** 将 specs JSON 渲染为紧凑的键值标签列表 */
+function SpecsPreview({ specs }: { specs?: Record<string, string> | null }) {
+  if (!specs || Object.keys(specs).length === 0) {
+    return <span className="text-xs text-muted-foreground">-</span>;
+  }
+  // 优先展示核心参数，最多显示 4 项
+  const priority = ["CPU内核", "最大主频", "Flash容量", "RAM容量", "工作电压", "工作温度", "CPU位数"];
+  const entries = [
+    ...priority.filter(k => specs[k]).map(k => [k, specs[k]] as [string, string]),
+    ...Object.entries(specs).filter(([k]) => !priority.includes(k)),
+  ].slice(0, 4);
+  return (
+    <div className="flex flex-col gap-0.5">
+      {entries.map(([k, v]) => (
+        <span key={k} className="text-xs">
+          <span className="text-muted-foreground">{k}：</span>
+          <span className="font-mono">{v}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const emptyForm: MaterialForm = {
   partNumber: "",
   name: "",
@@ -391,12 +414,8 @@ export default function Materials() {
                   <TableHead>物料编号</TableHead>
                   <TableHead>型号 / 名称</TableHead>
                   <TableHead>品牌</TableHead>
-                  <TableHead>分类</TableHead>
-                  <TableHead>封装</TableHead>
-                  <TableHead>参考单价</TableHead>
-                  <TableHead>RoHS</TableHead>
-                  <TableHead>生命周期</TableHead>
-                  <TableHead>状态</TableHead>
+                  <TableHead>分类 / 封装</TableHead>
+                  <TableHead>规格参数</TableHead>
                   <TableHead>更新时间</TableHead>
                   <TableHead>操作</TableHead>
                 </TableRow>
@@ -423,19 +442,15 @@ export default function Materials() {
                       <div className="text-xs text-muted-foreground">{m.name}</div>
                     </TableCell>
                     <TableCell>{m.brand ?? "-"}</TableCell>
-                    <TableCell>{m.category ?? "-"}</TableCell>
-                    <TableCell className="font-mono text-xs">{m.package ?? "-"}</TableCell>
                     <TableCell>
-                      {m.referencePrice ? `¥${m.referencePrice}${m.unit ? ` / ${m.unit}` : ""}` : "-"}
+                      <div className="flex flex-col gap-0.5">
+                        {m.category && <span className="text-xs text-foreground">{m.category}</span>}
+                        {m.package && <span className="font-mono text-xs text-muted-foreground">{m.package}</span>}
+                        {!m.category && !m.package && <span className="text-xs text-muted-foreground">-</span>}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge label={(rohsMap[m.rohs] ?? rohsMap.unknown).label} style={(rohsMap[m.rohs] ?? rohsMap.unknown).style} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge label={(lifecycleMap[m.lifecycle] ?? lifecycleMap.active).label} style={(lifecycleMap[m.lifecycle] ?? lifecycleMap.active).style} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge label={(statusMap[m.status] ?? statusMap.enabled).label} style={(statusMap[m.status] ?? statusMap.enabled).style} />
+                      <SpecsPreview specs={(m as any).specs} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDateTime(m.updatedAt)}</TableCell>
                     <TableCell>

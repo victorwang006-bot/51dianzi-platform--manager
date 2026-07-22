@@ -36,9 +36,10 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
+import { Logo } from "./Logo";
 
-const LOGO_FULL = "/manus-storage/logo-51-new_072e24d5.webp";
-const LOGO_ICON = "/manus-storage/logo-51-new_072e24d5.webp";
+
+
 
 const menuGroups = [
   {
@@ -51,7 +52,7 @@ const menuGroups = [
   {
     label: "系统",
     items: [
-      { icon: UserCog, label: "权限管理", path: "/admins" },
+      { icon: UserCog, label: "用户管理", path: "/admins" },
     ],
   },
 ];
@@ -87,7 +88,7 @@ export default function DashboardLayout({
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
-            <img src={LOGO_FULL} alt="51电子网" className="h-20 w-auto" />
+            <Logo className="h-20 w-auto object-contain" />
             <h1 className="text-2xl font-semibold tracking-tight text-center">
               后台管理系统
             </h1>
@@ -111,7 +112,7 @@ export default function DashboardLayout({
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-6 p-8 max-w-md w-full text-center">
-          <img src={LOGO_FULL} alt="51电子网" className="h-16 w-auto" />
+          <Logo className="h-16 w-auto object-contain" />
           <ShieldAlert className="h-12 w-12 text-amber-500" />
           <h1 className="text-xl font-semibold">暂无访问权限</h1>
           <p className="text-sm text-muted-foreground">
@@ -205,11 +206,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img
-                    src={LOGO_ICON}
-                    alt="51"
-                    className="h-11 w-auto shrink-0 object-contain"
-                  />
+                  <Logo className="h-14 w-auto shrink-0 object-contain" />
                   <div className="flex flex-col min-w-0 gap-0.5">
                     <span className="font-bold tracking-tight truncate text-base text-primary leading-none">
                       51电子网
@@ -302,7 +299,7 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <img src={LOGO_ICON} alt="51" className="h-8 w-auto object-contain" />
+                <Logo className="h-10 w-auto object-contain" />
                 <span className="tracking-tight text-foreground font-medium">
                   {activeMenuItem?.label ?? "菜单"}
                 </span>

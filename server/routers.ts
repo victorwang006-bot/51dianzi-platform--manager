@@ -26,6 +26,7 @@ const materialInput = z.object({
   category: z.string().optional(),
   package: z.string().optional(),
   description: z.string().optional(),
+  specs: z.record(z.string(), z.string()).optional(),
   referencePrice: z.string().optional(),
   unit: z.string().optional(),
   rohs: z.enum(["compliant", "non_compliant", "unknown"]).optional(),
@@ -46,6 +47,20 @@ export const appRouter = router({
 
   // ─── 物料数据库 ──────────────────────────────────────────────────────────
   material: router({
+    // ── 公开 API（前台调用，无需登录）──────────────────────────────────────
+    /** 型号模糊搜索：前台商户上传商品时输入型号触发，返回匹配的候选列表 */
+    lookup: publicProcedure
+      .input(z.object({ keyword: z.string().min(1).max(64) }))
+      .query(async ({ input }) => {
+        return db.lookupMaterials(input.keyword);
+      }),
+    /** 获取指定型号的完整参数：前台搜索结果页展示参数时调用 */
+    getSpecs: publicProcedure
+      .input(z.object({ partNumber: z.string().min(1).max(128) }))
+      .query(async ({ input }) => {
+        return db.getMaterialSpecsByPartNumber(input.partNumber);
+      }),
+    // ── 后台管理 API（需要管理员权限）──────────────────────────────────────
     list: adminProcedure
       .input(pageInput.extend({
         search: z.string().optional(),
@@ -146,6 +161,41 @@ export const appRouter = router({
   admin: router({
     list: adminProcedure.input(pageInput).query(async ({ input }) => {
       return db.getAdminUsers(input);
+    }),
+  }),
+
+  adminUser: router({
+    list: adminProcedure.input(pageInput).query(async ({ input }) => {
+      return db.getAdminUsers(input);
+    }),
+    create: adminProcedure.input(z.object({
+      username: z.string().min(2).max(64),
+      displayName: z.string().max(128).optional().nullable(),
+      email: z.string().email().optional().nullable(),
+      phone: z.string().max(20).optional().nullable(),
+      adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]),
+    })).mutation(async ({ input }) => {
+      return db.createAdminUser(input);
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      displayName: z.string().max(128).optional().nullable(),
+      email: z.string().email().optional().nullable(),
+      phone: z.string().max(20).optional().nullable(),
+      adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]).optional(),
+      status: z.enum(["active", "disabled", "locked"]).optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...rest } = input;
+      return db.updateAdminUser(id, rest);
+    }),
+    toggleStatus: adminProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(["active", "disabled"]),
+    })).mutation(async ({ input }) => {
+      return db.toggleAdminUserStatus(input.id, input.status);
+    }),
+    remove: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteAdminUser(input.id);
     }),
   }),
 });

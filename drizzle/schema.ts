@@ -45,6 +45,8 @@ export const materials = mysqlTable("materials", {
   package: varchar("package", { length: 64 }),
   /** 参数描述 */
   description: text("description"),
+  /** 结构化参数（JSON键值对），如 {"CPU内核":"ARM Cortex-M3","主频":"72MHz","Flash":"64KB"} */
+  specs: json("specs").$type<Record<string, string>>(),
   /** 参考单价（元） */
   referencePrice: varchar("referencePrice", { length: 32 }),
   /** 库存单位，如 片/颗/只/个 */

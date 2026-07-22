@@ -87,7 +87,7 @@ describe("material CRUD", () => {
     expect(created.success).toBe(true);
     expect(created.material).not.toBeNull();
     const id = created.material!.id;
-    expect(created.material!.materialNo).toMatch(/^MAT\d{8}$/);
+    expect(created.material!.materialNo).toMatch(/^51E-[A-Z]{3}-\d{5}$/);
 
     try {
       // 更新
