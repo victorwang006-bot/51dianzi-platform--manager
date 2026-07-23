@@ -142,6 +142,7 @@ export async function lookupMaterials(keyword: string) {
       brand: materials.brand,
       category: materials.category,
       package: materials.package,
+      coverImageUrl: materials.coverImageUrl,
     })
     .from(materials)
     .where(
@@ -176,6 +177,10 @@ export async function getMaterialSpecsByPartNumber(partNumber: string) {
       description: materials.description,
       specs: materials.specs,
       datasheetUrl: materials.datasheetUrl,
+      datasheetFileKey: materials.datasheetFileKey,
+      datasheetFileName: materials.datasheetFileName,
+      coverImageUrl: materials.coverImageUrl,
+      images: materials.images,
       lifecycle: materials.lifecycle,
       rohs: materials.rohs,
     })
@@ -188,6 +193,72 @@ export async function getMaterialSpecsByPartNumber(partNumber: string) {
     )
     .limit(1);
   return result[0] ?? null;
+}
+
+/**
+ * 前台综合搜索（公开 API）：按关键词 + 分类/品牌 + 参数值筛选，分页返回
+ * 返回参数、封面图、图集与 PDF 规格书 URL，供前台搜索结果页与详情页直接调用
+ */
+export async function searchMaterialsPublic(params: {
+  keyword?: string;
+  category?: string;
+  brand?: string;
+  /** 参数筛选：如 { "CPU内核": "ARM Cortex-M0+" }，基于 specs JSON 匹配 */
+  specFilters?: Record<string, string>;
+  page?: number;
+  pageSize?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  const { keyword, category, brand, specFilters, page = 1, pageSize = 20 } = params;
+  const conditions = [eq(materials.status, "enabled")];
+  if (keyword) {
+    conditions.push(
+      or(
+        like(materials.partNumber, `%${keyword}%`),
+        like(materials.name, `%${keyword}%`),
+        like(materials.brand, `%${keyword}%`),
+        like(materials.description, `%${keyword}%`),
+      )!,
+    );
+  }
+  if (category) conditions.push(eq(materials.category, category));
+  if (brand) conditions.push(eq(materials.brand, brand));
+  if (specFilters) {
+    for (const [key, value] of Object.entries(specFilters)) {
+      // JSON_EXTRACT 按键取值后模糊匹配，键名通过 JSON_QUOTE 防注入
+      conditions.push(
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${materials.specs}, CONCAT('$.', JSON_QUOTE(${key})))) LIKE ${`%${value}%`}`,
+      );
+    }
+  }
+  const where = and(...conditions);
+  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(materials).where(where);
+  const data = await db
+    .select({
+      id: materials.id,
+      materialNo: materials.materialNo,
+      partNumber: materials.partNumber,
+      name: materials.name,
+      brand: materials.brand,
+      category: materials.category,
+      package: materials.package,
+      description: materials.description,
+      specs: materials.specs,
+      coverImageUrl: materials.coverImageUrl,
+      images: materials.images,
+      datasheetUrl: materials.datasheetUrl,
+      datasheetFileKey: materials.datasheetFileKey,
+      datasheetFileName: materials.datasheetFileName,
+      lifecycle: materials.lifecycle,
+      rohs: materials.rohs,
+    })
+    .from(materials)
+    .where(where)
+    .orderBy(materials.partNumber)
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+  return { data, total: Number(count) };
 }
 
 /**

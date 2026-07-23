@@ -1,19 +1,35 @@
 /**
- * 51电子网 LOGO 组件
- * 图片已上传至 Manus 静态存储，URL 硬编码在此文件中，不依赖外部资源，不会丢失。
- * 如需更换 LOGO，仅修改此文件中的 LOGO_URL 即可全局生效。
+ * 51电子网 LOGO 组件（已代码化）
+ * LOGO 以内嵌 SVG 矢量路径实现，不依赖任何外部图片资源，永不破碎、任意缩放不失真。
+ * 颜色通过 CSS `color`（currentColor）控制，默认品牌蓝 #185FA5；
+ * 如需白色 LOGO，传入 className="text-white ..." 即可。
+ * 如需更换 LOGO 形状，仅修改此文件中的 <path d="..."> 即可全局生效。
  */
 
-const LOGO_URL = "/manus-storage/logo-51_f9722eb3.webp";
-
 interface LogoProps {
-  /** 图片高度，Tailwind class，默认 h-10 */
+  /** 尺寸与颜色的 Tailwind class，默认 h-10 品牌蓝 */
   className?: string;
+  /** 无障碍标签 */
   alt?: string;
 }
 
-export function Logo({ className = "h-10 w-auto object-contain", alt = "51电子网" }: LogoProps) {
-  return <img src={LOGO_URL} alt={alt} className={className} />;
+export function Logo({ className = "h-10 w-auto", alt = "51电子网" }: LogoProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="5820 6690 8740 7000"
+      role="img"
+      aria-label={alt}
+      className={className}
+      style={{ color: "var(--logo-color, #185FA5)" }}
+    >
+      <g transform="translate(0,20480) scale(1,-1)" fill="currentColor">
+        <path d="M9855 13680 c-153 -21 -247 -75 -443 -258 -64 -59 -171 -157 -237 -217 -66 -60 -149 -137 -185 -171 -36 -33 -121 -112 -189 -175 -163 -148 -400 -367 -476 -438 -33 -31 -109 -101 -170 -157 -60 -55 -288 -264 -505 -464 -217 -200 -418 -384 -445 -409 -120 -110 -322 -298 -347 -326 -80 -85 -51 -231 57 -292 l40 -23 655 0 c828 0 755 -16 1046 233 98 85 289 249 423 364 l245 210 59 -14 c514 -119 988 -544 1182 -1058 257 -684 22 -1540 -535 -1947 -899 -655 -2075 -359 -2585 652 -80 157 -121 286 -174 550 -21 99 -92 181 -188 216 -49 17 -793 20 -875 3 -230 -48 -310 -182 -268 -449 172 -1114 927 -2065 1964 -2474 1024 -405 2263 -189 3054 532 602 549 899 1072 1021 1799 212 1264 -377 2532 -1471 3164 l-99 57 168 143 c92 79 227 193 298 254 72 61 208 178 303 259 195 166 212 187 212 264 0 85 -48 149 -128 172 -44 12 -1314 12 -1407 0z" />
+        <path d="M13600 13680 l-765 -5 -50 -28 c-55 -31 -160 -131 -662 -627 -394 -391 -388 -383 -388 -535 0 -121 28 -189 108 -260 98 -89 79 -87 762 -88 l600 -2 5 -2405 5 -2405 24 -65 c236 -653 1169 -604 1306 68 26 125 22 6181 -4 6237 -16 36 -81 105 -99 105 -4 0 -23 4 -42 8 -19 4 -379 5 -800 2z" />
+      </g>
+    </svg>
+  );
 }
 
-export { LOGO_URL };
+/** @deprecated LOGO 已代码化为内嵌 SVG，此 URL 仅为兼容保留（favicon 等场景） */
+export const LOGO_URL = "/manus-storage/logo-51-transparent_c7f0d7c5.png";

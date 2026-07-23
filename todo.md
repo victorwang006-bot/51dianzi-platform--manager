@@ -155,3 +155,67 @@
 - [x] 物料表格「规格参数」列后新增「规格书」列（点击「查看」在新标签页打开 datasheetUrl）
 - [x] 删除「型号/名称」列中原有的 ExternalLink 外链图标（避免与规格书列重复）
 - [x] 9/9 单元测试全部通过
+
+## 本轮：在新沙箱部署后台管理系统（用户确认 A 方案，2026-07-23）
+
+- [x] 克隆 51dianzi-platform--manager 仓库最新代码（1eb389f）
+- [x] 清理项目中的前台业务代码，用后台管理系统代码覆盖项目目录（保留 .project-config.json，不使用 template.json 初始化）
+- [x] 执行 pnpm install 安装后台项目依赖
+- [x] 审查后台 drizzle schema 与迁移链，执行数据库迁移（15 张后台业务表已创建，前台遗留 30 张表重命名归档）
+- [x] 运行后台种子脚本（seed-db.mjs、seed-materials.mjs）填充演示数据与数据字典
+- [x] TypeScript 检查与 Vitest 全量测试通过（tsc 0 errors，Vitest 9/9）
+- [x] 重启开发服务器并验证全部后台页面路由可正常访问（/、/merchants、/admins 均可访问；未登录展示登录引导属正常权限控制）
+- [x] 保存稳定检查点并交付（检查点 411e7ada 部署完成 + Excel 导入；检查点 4558fbaa 移除商品链接后最终稳定版本）
+
+## 用户新增需求（2026-07-23）
+
+- [x] 解析用户上传的 Excel 文件（Test_modified(1).xlsx），将其数据导入 materials 数据字典表（新增 106 条，跳过重复 1 条，共 118 条）
+- [x] 修复源 Excel 中的规格列错位问题：按值模式重新归位所有 107 条记录的 specs 字段，随机抽样 8 条核验字段（CPU内核/主频/位数/容量/ADC/振荡器/电压/温度）全部归位正确
+- [x] 验证物料数据库页面正确展示导入的数据（数据库共 118 条；公开 API material.lookup / material.getSpecs 返回正确数据；material.list 未登录返回 UNAUTHORIZED，管理员权限保护正常）
+- [x] 管理员登录态下核验物料页 UI 展示导入数据（已用临时签发的管理员会话在浏览器验证：/ 表格 118 条分 6 页正常展示，/merchants 6 条、/admins 7 条均正常渲染）
+
+## 用户反馈（2026-07-23 第二轮）
+
+- [x] 移除所有物料 specs 中的"商品链接"字段（107/107 条已清除，复核 0 条残留；导入脚本源头 import-excel-materials.mjs 与 reimport-specs.py 也已同步删除该字段写入逻辑）
+- [x] 验证物料页规格参数列不再出现商品链接（API 抽查 STM32U575ZGT6 与登录态页面刷新均确认无商品链接），保存检查点交付
+
+## 用户反馈（2026-07-23 第三轮）：LOGO 破碎修复
+
+- [x] 处理用户新上传的 "51" 图标（去除白色背景转透明+裁剪留白），上传至静态存储 /manus-storage/logo-51-transparent_c7f0d7c5.png
+- [x] 更新 Logo 组件引用新 URL，修复侧边栏 LOGO 破碎问题并放大显示尺寸（侧边栏 h-14→h-16，移动端顶栏 h-10→h-12）
+- [x] 验证侧边栏/登录页 LOGO 正常显示（截图确认新 51 图标清晰显示、无破碎），保存检查点 cee031ae 交付
+
+## 用户需求（2026-07-23 第四轮）：数据库模块存储元器件参数 + PDF 规格书 + 图片
+
+- [x] 扩展 materials 表结构：图片（coverImageUrl + images JSON 图集）、PDF 规格书（datasheetFileKey/FileName/FileSize）字段，迁移 0007 已应用
+- [x] 实现服务端文件上传接口（material.uploadDatasheet：PDF≤20MB 魔数校验；material.uploadImage：PNG/JPG/WebP/GIF≤5MB，经 storagePut 存入 S3）
+- [x] 后台管理 UI：物料编辑对话框支持上传/替换/删除 PDF 规格书、封面图与图集（最多 9 张）、规格参数键值对编辑器（增删改）
+- [x] 物料列表展示图片缩略图列与规格书链接（平台 PDF 与外链区分显示）
+- [x] 提供前台公开搜索/调用 API（material.search：关键词/分类/品牌/specFilters 参数筛选 + 分页，返回参数+图片+PDF；material.getSpecs 返回完整详情）
+- [x] Vitest 覆盖新增接口（material.files.test.ts 8 用例：上传权限/文件校验/公开搜索/参数筛选），17/17 全部通过，tsc 0 errors
+
+## 用户需求（2026-07-23 第五轮）：API 文档 + LOGO 代码化
+
+- [ ] LOGO 代码化：将用户上传的 51 图标转为内嵌 SVG，Logo 组件不再依赖外部图片 URL
+- [ ] 验证侧边栏/登录页/移动端顶栏 LOGO 显示正常
+- [ ] 整理前台公开数据接口 API 文档（material.search / material.lookup / material.getSpecs：地址、参数、返回示例、curl/JS 调用示例）
+- [ ] 保存检查点并交付
+
+## 用户需求（2026-07-23 第六轮）：部署到阿里云 ECS + 数据库迁移
+
+- [ ] 验证用户提供的阿里云 AccessKey 可用性（截图密钥 LTAI5t91...）
+- [ ] 查询账号下各地域 ECS 实例情况，确认使用现有实例或新建
+- [ ] 准备 ECS 实例（安全组开放 22/80/443）与 SSH 访问
+- [ ] ECS 安装 Node.js 22 + pnpm + MySQL 8 + Nginx + PM2
+- [ ] 从 Manus TiDB 导出全部数据并导入阿里云 MySQL（16 张表结构+数据）
+- [ ] 构建部署后台应用（环境变量、PM2 守护、Nginx 反代）
+- [ ] 处理 Manus OAuth 登录在自部署环境的适配问题
+- [ ] 线上验证全部页面与 API，交付部署结果与 AccessKey 轮换安全建议
+
+## 用户需求（2026-07-23 第七轮）：先推送代码到 GitHub
+
+- [ ] 删除 template.json（如存在）
+- [ ] 检查 server/routers/ 目录文件完整性
+- [ ] 检查 client/src/pages/ 页面文件完整性
+- [ ] clone 现有仓库 victorwang006-bot/51dianzi-platform--manager，在已有历史上追加 commit 推送（禁止 force push）
+- [ ] 报告推送的文件数量

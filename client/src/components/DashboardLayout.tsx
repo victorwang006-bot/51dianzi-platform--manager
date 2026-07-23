@@ -206,7 +206,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Logo className="h-14 w-auto shrink-0 object-contain" />
+                  <Logo className="h-16 w-auto shrink-0 object-contain" />
                   <div className="flex flex-col min-w-0 gap-0.5">
                     <span className="font-bold tracking-tight truncate text-base text-primary leading-none">
                       51电子网
@@ -299,7 +299,7 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <Logo className="h-10 w-auto object-contain" />
+                <Logo className="h-12 w-auto object-contain" />
                 <span className="tracking-tight text-foreground font-medium">
                   {activeMenuItem?.label ?? "菜单"}
                 </span>

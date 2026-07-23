@@ -57,6 +57,16 @@ export const materials = mysqlTable("materials", {
   lifecycle: mysqlEnum("lifecycle", ["active", "nrnd", "eol", "obsolete"]).default("active").notNull(),
   /** 数据手册链接 */
   datasheetUrl: varchar("datasheetUrl", { length: 512 }),
+  /** PDF 规格书（平台存储）：S3 key */
+  datasheetFileKey: varchar("datasheetFileKey", { length: 512 }),
+  /** PDF 规格书文件名（原始文件名，用于展示与下载） */
+  datasheetFileName: varchar("datasheetFileName", { length: 256 }),
+  /** PDF 规格书文件大小（字节） */
+  datasheetFileSize: int("datasheetFileSize"),
+  /** 封面图 URL（/manus-storage/...，用于列表缩略图与前台展示） */
+  coverImageUrl: varchar("coverImageUrl", { length: 512 }),
+  /** 产品图集（JSON 数组，每项含 url/key/name），前台详情页轮播调用 */
+  images: json("images").$type<{ url: string; key: string; name?: string }[]>(),
   /** 状态：启用/停用 */
   status: mysqlEnum("status", ["enabled", "disabled"]).default("enabled").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
