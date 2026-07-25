@@ -6,7 +6,6 @@ import {
   agreementStatusMap,
   formatDateTime,
 } from "@/components/admin/shared";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -71,7 +70,7 @@ export default function MerchantDetail() {
   const utils = trpc.useUtils();
   const [reviewDialog, setReviewDialog] = useState<{
     open: boolean;
-    action: "approve" | "reject" | "supplement" | "suspend" | "reactivate" | null;
+    action: "approve" | "supplement" | "suspend" | "reactivate" | null;
   }>({ open: false, action: null });
   const [note, setNote] = useState("");
 
@@ -88,7 +87,6 @@ export default function MerchantDetail() {
 
   const actionLabels: Record<string, string> = {
     approve: "审核通过",
-    reject: "审核拒绝",
     supplement: "要求补件",
     suspend: "暂停商户",
     reactivate: "恢复商户",
@@ -148,14 +146,6 @@ export default function MerchantDetail() {
                 <Button size="sm" variant="outline" onClick={() => openReview("supplement")}>
                   补件
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => openReview("reject")}
-                >
-                  拒绝
-                </Button>
               </>
             )}
             {merchant.status === "approved" && (
@@ -175,11 +165,6 @@ export default function MerchantDetail() {
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <StatusBadge {...(merchantStatusMap[merchant.status] ?? { label: merchant.status, style: "gray" as const })} />
         <StatusBadge {...(agreementStatusMap[merchant.agreementStatus] ?? { label: merchant.agreementStatus, style: "gray" as const })} />
-        {merchant.commissionRate && (
-          <Badge variant="outline" className="text-xs font-normal">
-            佣金费率 {(Number(merchant.commissionRate) * 100).toFixed(2)}%
-          </Badge>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -232,15 +217,23 @@ export default function MerchantDetail() {
             </CardContent>
           </Card>
 
-          {/* 营业执照 */}
+          {/* 入驻资料：营业执照 + 签署协议（前台商家提交） */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <FileImage className="h-4 w-4 text-primary" />
-                营业执照
+                入驻资料
               </CardTitle>
+              {merchant.source === "portal" && (
+                <p className="text-xs text-[#8a94a6]">
+                  由前台商家提交
+                  {merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}
+                </p>
+              )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-5">
+              <div>
+                <p className="text-xs text-[#8a94a6] mb-2">营业执照图片</p>
               {merchant.licenseImageUrl ? (
                 <a href={merchant.licenseImageUrl} target="_blank" rel="noreferrer">
                   <img
@@ -255,6 +248,26 @@ export default function MerchantDetail() {
                   <p className="text-sm">商户尚未上传营业执照图片</p>
                 </div>
               )}
+              </div>
+              <div>
+                <p className="text-xs text-[#8a94a6] mb-2">签署协议文件</p>
+                {merchant.agreementFileUrl ? (
+                  <a
+                    href={merchant.agreementFileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-primary hover:bg-accent transition-colors"
+                  >
+                    <FileText className="h-4 w-4" />
+                    查看已签署协议
+                  </a>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-[#b3bcc9] border border-dashed border-border rounded-lg">
+                    <FileText className="h-6 w-6 mb-1" />
+                    <p className="text-sm">商户尚未上传签署协议</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 

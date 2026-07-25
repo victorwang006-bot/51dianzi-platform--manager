@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminUsers,
@@ -6,6 +6,9 @@ import {
   InsertUser,
   materials,
   merchants,
+  messages,
+  messageThreads,
+  passwordResetCodes,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -366,6 +369,46 @@ export async function deleteMaterial(id: number) {
   await db.delete(materials).where(eq(materials.id, id));
 }
 
+/** 按制造商型号精确匹配物料（大小写不敏感），供图片上传接口按文件名回写 */
+export async function getMaterialByPartNumber(partNumber: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select({
+      id: materials.id,
+      partNumber: materials.partNumber,
+      coverImageUrl: materials.coverImageUrl,
+      images: materials.images,
+    })
+    .from(materials)
+    .where(sql`UPPER(${materials.partNumber}) = UPPER(${partNumber.trim()})`)
+    .limit(1);
+  return result[0] ?? null;
+}
+
+/**
+ * 向物料图集追加一张图片并按需设置封面
+ * - images 按 URL 去重，最多保留 9 张（超出时丢弃最旧的）
+ * - asCover=true 时设为封面；asCover=false 时仅当封面为空才设
+ */
+export async function appendMaterialImage(
+  id: number,
+  image: { url: string; name?: string; asCover: boolean },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB_NOT_AVAILABLE");
+  const existing = await getMaterialById(id);
+  if (!existing) throw new Error("MATERIAL_NOT_FOUND");
+  const list = Array.isArray(existing.images) ? [...existing.images] : [];
+  if (!list.some(item => item.url === image.url)) {
+    list.push({ url: image.url, key: image.url, name: image.name });
+  }
+  while (list.length > 9) list.shift();
+  const coverImageUrl = image.asCover || !existing.coverImageUrl ? image.url : existing.coverImageUrl;
+  await db.update(materials).set({ images: list, coverImageUrl }).where(eq(materials.id, id));
+  return { coverImageUrl, imageCount: list.length };
+}
+
 // ─── 商户 ─────────────────────────────────────────────────────────────────────
 
 export async function getMerchants(params: { status?: string; search?: string; page?: number; pageSize?: number }) {
@@ -394,6 +437,81 @@ export async function updateMerchantStatus(id: number, status: string, reviewNot
   await db.update(merchants).set({ status: status as any, reviewNote, reviewedBy, reviewedAt: new Date() }).where(eq(merchants.id, id));
 }
 
+/** 前台商家提交的入驻资料字段 */
+export interface PortalMerchantSubmission {
+  companyName: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  businessLicense: string;
+  licenseImageUrl?: string | null;
+  licenseExpiry?: Date | null;
+  agreementFileUrl?: string | null;
+  agreementSigned?: boolean;
+  registeredCapital?: string | null;
+  registeredAddress?: string | null;
+  businessScope?: string | null;
+  establishedDate?: Date | null;
+  legalPersonName?: string | null;
+  legalPersonIdNo?: string | null;
+  legalPersonPhone?: string | null;
+}
+
+/**
+ * 前台商家提交入驻资料：按营业执照号幂等 upsert。
+ * 已存在 → 更新资料并将状态重置为 pending 重新进入审核（除非已 approved，approved 时仅更新资料）；
+ * 不存在 → 创建新商户记录，生成商户编号，status=pending。
+ */
+export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+
+  const now = new Date();
+  const baseFields = {
+    companyName: input.companyName,
+    contactName: input.contactName,
+    contactPhone: input.contactPhone,
+    contactEmail: input.contactEmail,
+    licenseImageUrl: input.licenseImageUrl ?? null,
+    licenseExpiry: input.licenseExpiry ?? null,
+    agreementFileUrl: input.agreementFileUrl ?? null,
+    agreementStatus: (input.agreementSigned ? "signed" : "unsigned") as "signed" | "unsigned",
+    registeredCapital: input.registeredCapital ?? null,
+    registeredAddress: input.registeredAddress ?? null,
+    businessScope: input.businessScope ?? null,
+    establishedDate: input.establishedDate ?? null,
+    legalPersonName: input.legalPersonName ?? null,
+    legalPersonIdNo: input.legalPersonIdNo ?? null,
+    legalPersonPhone: input.legalPersonPhone ?? null,
+    submittedAt: now,
+    source: "portal",
+  };
+
+  const existing = await db
+    .select()
+    .from(merchants)
+    .where(eq(merchants.businessLicense, input.businessLicense))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const m = existing[0];
+    // 已入驻商户资料变更仅更新资料；其余状态重置为 pending 重新审核
+    const nextStatus = m.status === "approved" ? m.status : ("pending" as const);
+    await db.update(merchants).set({ ...baseFields, status: nextStatus }).where(eq(merchants.id, m.id));
+    return { merchantId: m.id, merchantNo: m.merchantNo, created: false, status: nextStatus };
+  }
+
+  const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
+  const result = await db.insert(merchants).values({
+    merchantNo,
+    businessLicense: input.businessLicense,
+    status: "pending",
+    ...baseFields,
+  });
+  const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+  return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
+}
+
 // ─── 管理员 ───────────────────────────────────────────────────────────────────
 
 export async function getAdminUsers(params: { page?: number; pageSize?: number } = {}) {
@@ -405,12 +523,108 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
   return { data, total: Number(count) };
 }
 
+/** 按用户名查询后台账号（账号密码登录用，包含 passwordHash） */
+export async function getAdminUserByUsername(username: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(adminUsers).where(eq(adminUsers.username, username)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** 按 ID 查询后台账号 */
+export async function getAdminUserById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(adminUsers).where(eq(adminUsers.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** 按绑定手机号查询后台账号列表（找回用户名用） */
+export async function getAdminUsersByPhone(phone: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(adminUsers).where(eq(adminUsers.phone, phone));
+}
+
+/** 按绑定邮箱查询后台账号列表（找回用户名用） */
+export async function getAdminUsersByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(adminUsers).where(eq(adminUsers.email, email));
+}
+
+/** 设置账号密码哈希 */
+export async function setAdminUserPassword(id: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, id));
+}
+
+/** 记录登录时间 */
+export async function touchAdminUserLogin(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, id));
+}
+
+// ─── 找回密码验证码 ─────────────────────────────────────────────────────────
+
+/** 创建验证码记录（同时作废该账号旧的未使用验证码） */
+export async function createPasswordResetCode(input: {
+  adminUserId: number;
+  channel: "sms" | "email";
+  target: string;
+  codeHash: string;
+  expiresAt: Date;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(passwordResetCodes)
+    .set({ usedAt: new Date() })
+    .where(and(eq(passwordResetCodes.adminUserId, input.adminUserId), isNull(passwordResetCodes.usedAt)));
+  await db.insert(passwordResetCodes).values(input);
+}
+
+/** 查询账号最近一条有效（未使用未过期）验证码 */
+export async function getActivePasswordResetCode(adminUserId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(passwordResetCodes)
+    .where(and(eq(passwordResetCodes.adminUserId, adminUserId), isNull(passwordResetCodes.usedAt)))
+    .orderBy(desc(passwordResetCodes.createdAt))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return null;
+  if (row.expiresAt.getTime() < Date.now()) return null;
+  return row;
+}
+
+/** 累加验证失败次数 */
+export async function incrementResetCodeAttempts(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(passwordResetCodes)
+    .set({ attempts: sql`${passwordResetCodes.attempts} + 1` })
+    .where(eq(passwordResetCodes.id, id));
+}
+
+/** 标记验证码已使用 */
+export async function markResetCodeUsed(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(passwordResetCodes).set({ usedAt: new Date() }).where(eq(passwordResetCodes.id, id));
+}
 export async function createAdminUser(input: {
   username: string;
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
   adminRole: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  passwordHash?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -421,6 +635,7 @@ export async function createAdminUser(input: {
     email: input.email ?? null,
     phone: input.phone ?? null,
     adminRole: input.adminRole,
+    passwordHash: input.passwordHash ?? null,
     status: "active",
   });
   return result;
@@ -456,4 +671,194 @@ export async function deleteAdminUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(adminUsers).where(eq(adminUsers.id, id));
+}
+
+// ─── 消息中心（前后台互通）─────────────────────────────────────────────────────
+
+function genThreadNo() {
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  return `MT${ymd}${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+/** 前台提交"联系我们"留言：新建会话或在已有会话追加消息 */
+export async function createPortalMessage(input: {
+  threadNo?: string | null;
+  subject?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  portalUserId?: string | null;
+  content: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  let thread: typeof messageThreads.$inferSelect | undefined;
+  if (input.threadNo) {
+    const rows = await db.select().from(messageThreads)
+      .where(eq(messageThreads.threadNo, input.threadNo)).limit(1);
+    thread = rows[0];
+  }
+
+  const preview = input.content.slice(0, 200);
+  if (!thread) {
+    const threadNo = genThreadNo();
+    await db.insert(messageThreads).values({
+      threadNo,
+      subject: input.subject ?? preview.slice(0, 100),
+      contactName: input.contactName ?? null,
+      contactPhone: input.contactPhone ?? null,
+      contactEmail: input.contactEmail ?? null,
+      portalUserId: input.portalUserId ?? null,
+      adminUnreadCount: 1,
+      lastMessagePreview: preview,
+      lastMessageAt: new Date(),
+    });
+    const rows = await db.select().from(messageThreads)
+      .where(eq(messageThreads.threadNo, threadNo)).limit(1);
+    thread = rows[0];
+  } else {
+    await db.update(messageThreads).set({
+      status: "open",
+      adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
+      lastMessagePreview: preview,
+      lastMessageAt: new Date(),
+      ...(input.contactName ? { contactName: input.contactName } : {}),
+      ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+      ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+    }).where(eq(messageThreads.id, thread.id));
+  }
+
+  await db.insert(messages).values({
+    threadId: thread!.id,
+    senderType: "portal",
+    senderName: input.contactName ?? null,
+    content: input.content,
+  });
+
+  return { threadNo: thread!.threadNo, threadId: thread!.id };
+}
+
+/** 前台拉取会话消息（并清零前台未读数） */
+export async function getPortalThreadMessages(threadNo: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(messageThreads)
+    .where(eq(messageThreads.threadNo, threadNo)).limit(1);
+  const thread = rows[0];
+  if (!thread) return null;
+  const list = await db.select().from(messages)
+    .where(eq(messages.threadId, thread.id)).orderBy(messages.createdAt);
+  if (thread.portalUnreadCount > 0) {
+    await db.update(messageThreads).set({ portalUnreadCount: 0 })
+      .where(eq(messageThreads.id, thread.id));
+  }
+  return {
+    threadNo: thread.threadNo,
+    subject: thread.subject,
+    status: thread.status,
+    messages: list.map(m => ({
+      id: m.id,
+      senderType: m.senderType,
+      senderName: m.senderType === "admin" ? (m.senderName ?? "平台客服") : m.senderName,
+      content: m.content,
+      createdAt: m.createdAt,
+    })),
+  };
+}
+
+/** 后台：会话列表（支持状态筛选与关键词搜索） */
+export async function getMessageThreads(input: {
+  page: number;
+  pageSize: number;
+  status?: "open" | "closed";
+  keyword?: string;
+}) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const conds = [];
+  if (input.status) conds.push(eq(messageThreads.status, input.status));
+  if (input.keyword) {
+    const kw = `%${input.keyword}%`;
+    conds.push(or(
+      like(messageThreads.subject, kw),
+      like(messageThreads.contactName, kw),
+      like(messageThreads.contactPhone, kw),
+      like(messageThreads.contactEmail, kw),
+      like(messageThreads.threadNo, kw),
+    ));
+  }
+  const where = conds.length ? and(...conds) : undefined;
+  const items = await db.select().from(messageThreads)
+    .where(where)
+    .orderBy(desc(messageThreads.lastMessageAt))
+    .limit(input.pageSize)
+    .offset((input.page - 1) * input.pageSize);
+  const totalRows = await db.select({ count: sql<number>`count(*)` })
+    .from(messageThreads).where(where);
+  return { items, total: Number(totalRows[0]?.count ?? 0) };
+}
+
+/** 后台：会话详情与消息列表（并清零后台未读数） */
+export async function getMessageThreadDetail(threadId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(messageThreads)
+    .where(eq(messageThreads.id, threadId)).limit(1);
+  const thread = rows[0];
+  if (!thread) return null;
+  const list = await db.select().from(messages)
+    .where(eq(messages.threadId, threadId)).orderBy(messages.createdAt);
+  if (thread.adminUnreadCount > 0) {
+    await db.update(messageThreads).set({ adminUnreadCount: 0 })
+      .where(eq(messageThreads.id, threadId));
+  }
+  return { thread, messages: list };
+}
+
+/** 后台：回复会话 */
+export async function replyMessageThread(input: {
+  threadId: number;
+  content: string;
+  adminId: number;
+  adminName: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(messageThreads)
+    .where(eq(messageThreads.id, input.threadId)).limit(1);
+  if (!rows[0]) throw new Error("会话不存在");
+  await db.insert(messages).values({
+    threadId: input.threadId,
+    senderType: "admin",
+    senderAdminId: input.adminId,
+    senderName: input.adminName,
+    content: input.content,
+  });
+  await db.update(messageThreads).set({
+    status: "open",
+    portalUnreadCount: sql`${messageThreads.portalUnreadCount} + 1`,
+    adminUnreadCount: 0,
+    lastMessagePreview: input.content.slice(0, 200),
+    lastMessageAt: new Date(),
+  }).where(eq(messageThreads.id, input.threadId));
+  return { success: true };
+}
+
+/** 后台：关闭/重开会话 */
+export async function setMessageThreadStatus(threadId: number, status: "open" | "closed") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(messageThreads).set({ status }).where(eq(messageThreads.id, threadId));
+  return { success: true };
+}
+
+/** 后台：全部未读消息总数（侧边栏角标） */
+export async function getAdminUnreadTotal() {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ total: sql<number>`COALESCE(SUM(${messageThreads.adminUnreadCount}), 0)` })
+    .from(messageThreads).where(eq(messageThreads.status, "open"));
+  return Number(rows[0]?.total ?? 0);
 }

@@ -65,6 +65,7 @@ type FormState = {
   email: string;
   phone: string;
   adminRole: AdminRole;
+  password: string;
 };
 
 const emptyForm: FormState = {
@@ -73,6 +74,7 @@ const emptyForm: FormState = {
   email: "",
   phone: "",
   adminRole: "operation",
+  password: "",
 };
 
 export default function Admins() {
@@ -135,6 +137,7 @@ export default function Admins() {
       email: a.email ?? "",
       phone: a.phone ?? "",
       adminRole: a.adminRole as AdminRole,
+      password: "",
     });
     setDialogOpen(true);
   }
@@ -142,6 +145,14 @@ export default function Admins() {
   function handleSubmit() {
     if (!form.username.trim()) {
       toast.error("用户名不能为空");
+      return;
+    }
+    if (editingId === null && form.password.length < 8) {
+      toast.error("初始密码至少 8 位");
+      return;
+    }
+    if (editingId !== null && form.password && form.password.length < 8) {
+      toast.error("重置密码至少 8 位");
       return;
     }
     const payload = {
@@ -152,9 +163,13 @@ export default function Admins() {
       adminRole: form.adminRole,
     };
     if (editingId !== null) {
-      updateMutation.mutate({ id: editingId, ...payload });
+      updateMutation.mutate({
+        id: editingId,
+        ...payload,
+        ...(form.password ? { password: form.password } : {}),
+      });
     } else {
-      createMutation.mutate(payload);
+      createMutation.mutate({ ...payload, password: form.password });
     }
   }
 
@@ -322,6 +337,21 @@ export default function Admins() {
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                {editingId !== null ? "重置密码" : <>初始密码 <span className="text-destructive">*</span></>}
+              </Label>
+              <Input
+                type="password"
+                placeholder={editingId !== null ? "留空则不修改密码" : "登录密码（至少 8 位）"}
+                value={form.password}
+                autoComplete="new-password"
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              />
+              {editingId !== null && (
+                <p className="text-xs text-muted-foreground">填写后将重置该账号的登录密码</p>
+              )}
             </div>
           </div>
           <DialogFooter>

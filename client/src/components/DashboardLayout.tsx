@@ -22,7 +22,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Database,
@@ -32,11 +31,13 @@ import {
   Store,
   UserCog,
 } from "lucide-react";
+import { MessageSquare } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
-import { Button } from "./ui/button";
 import { Logo } from "./Logo";
+import Login from "@/pages/Login";
 
 
 
@@ -47,6 +48,7 @@ const menuGroups = [
     items: [
       { icon: Database, label: "物料数据库", path: "/" },
       { icon: Store, label: "商户管理", path: "/merchants" },
+      { icon: MessageSquare, label: "消息", path: "/messages" },
     ],
   },
   {
@@ -63,6 +65,16 @@ const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 240;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
+
+const adminRoleLabels: Record<string, string> = {
+  super_admin: "超级管理员",
+  operation: "平台运营",
+  merchant_mgr: "商户管理",
+  customer_svc: "客服/售后",
+  risk_control: "风控审核",
+  finance: "财务结算",
+  auditor: "审计人员",
+};
 
 export default function DashboardLayout({
   children,
@@ -84,35 +96,14 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <Logo className="h-20 w-auto object-contain" />
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              后台管理系统
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              需要管理员身份登录后才能访问后台系统，请点击下方按钮登录。
-            </p>
-          </div>
-          <Button
-            onClick={() => startLogin()}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            登录
-          </Button>
-        </div>
-      </div>
-    );
+    return <Login />;
   }
 
   if (user.role !== "admin") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-6 p-8 max-w-md w-full text-center">
-          <Logo className="h-16 w-auto object-contain" />
+          <Logo className="h-12 w-auto object-contain" />
           <ShieldAlert className="h-12 w-12 text-amber-500" />
           <h1 className="text-xl font-semibold">暂无访问权限</h1>
           <p className="text-sm text-muted-foreground">
@@ -156,6 +147,11 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = allMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  // 消息未读总数（侧边栏角标，30 秒轮询）
+  const { data: unreadData } = trpc.message.unreadCount.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
+  const unreadTotal = unreadData?.total ?? 0;
 
   useEffect(() => {
     if (isCollapsed) {
@@ -206,7 +202,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Logo className="h-16 w-auto shrink-0 object-contain" />
+                  <Logo className="h-9 w-auto shrink-0 object-contain" />
                   <div className="flex flex-col min-w-0 gap-0.5">
                     <span className="font-bold tracking-tight truncate text-base text-primary leading-none">
                       51电子网
@@ -230,6 +226,7 @@ function DashboardLayoutContent({
                   <SidebarMenu className="px-2">
                     {group.items.map(item => {
                       const isActive = location === item.path;
+                      const showUnread = item.path === "/messages" && unreadTotal > 0;
                       return (
                         <SidebarMenuItem key={item.path}>
                           <SidebarMenuButton
@@ -242,6 +239,11 @@ function DashboardLayoutContent({
                               className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
                             />
                             <span>{item.label}</span>
+                            {showUnread && (
+                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
+                                {unreadTotal > 99 ? "99+" : unreadTotal}
+                              </span>
+                            )}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       );
@@ -266,7 +268,7 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      超级管理员
+                      {adminRoleLabels[(user as { adminRole?: string })?.adminRole ?? ""] ?? "管理员"}
                     </p>
                   </div>
                 </button>
@@ -299,7 +301,7 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <Logo className="h-12 w-auto object-contain" />
+                <Logo className="h-8 w-auto object-contain" />
                 <span className="tracking-tight text-foreground font-medium">
                   {activeMenuItem?.label ?? "菜单"}
                 </span>

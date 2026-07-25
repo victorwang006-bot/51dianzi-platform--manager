@@ -39,10 +39,13 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    // HTTPS：SameSite=None + Secure（Manus 预览 iframe 跨站场景需要）
+    // HTTP（如生产 IP 直连）：SameSite=None 无 Secure 会被浏览器拒绝，改用 Lax
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

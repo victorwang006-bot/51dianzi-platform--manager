@@ -65,7 +65,7 @@ describe("material 查询", () => {
     const brands = await caller.material.brands();
     expect(categories.length).toBeGreaterThan(0);
     expect(brands.length).toBeGreaterThan(0);
-    expect(categories).toContain("微控制器");
+    expect(categories).toContain("单片机(MCU/MPU/SOC)");
   });
 });
 

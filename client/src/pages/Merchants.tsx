@@ -34,14 +34,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
-type ReviewAction = "approve" | "reject" | "supplement" | "suspend" | "terminate" | "reactivate";
+type ReviewAction = "approve" | "supplement" | "suspend" | "reactivate";
 
 const actionLabels: Record<ReviewAction, string> = {
   approve: "审核通过",
-  reject: "审核拒绝",
   supplement: "要求补件",
   suspend: "暂停商户",
-  terminate: "清退商户",
   reactivate: "恢复商户",
 };
 
@@ -111,7 +109,6 @@ export default function Merchants() {
               <SelectItem value="supplement">待补件</SelectItem>
               <SelectItem value="approved">已入驻</SelectItem>
               <SelectItem value="suspended">已暂停</SelectItem>
-              <SelectItem value="terminated">已清退</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -177,9 +174,6 @@ export default function Merchants() {
                                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "supplement" })}>
                                     补件
                                   </Button>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "reject" })}>
-                                    拒绝
-                                  </Button>
                                 </>
                               )}
                               {m.status === "approved" && (
@@ -188,14 +182,9 @@ export default function Merchants() {
                                 </Button>
                               )}
                               {m.status === "suspended" && (
-                                <>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "reactivate" })}>
-                                    恢复
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "terminate" })}>
-                                    清退
-                                  </Button>
-                                </>
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "reactivate" })}>
+                                  恢复
+                                </Button>
                               )}
                             </div>
                           </td>
@@ -257,7 +246,6 @@ export default function Merchants() {
                 <div><p className="text-xs text-muted-foreground">邮箱</p><p>{detail.contactEmail ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">营业执照号</p><p className="font-mono">{detail.businessLicense ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">资质到期日</p><p>{detail.licenseExpiry ? formatDateTime(detail.licenseExpiry).split(" ")[0] : "-"}</p></div>
-                <div><p className="text-xs text-muted-foreground">佣金费率</p><p>{detail.commissionRate ? `${(parseFloat(detail.commissionRate) * 100).toFixed(2)}%` : "-"}</p></div>
               </div>
               <div className="border-t pt-3">
                 <p className="text-xs text-muted-foreground mb-2">结算账户</p>

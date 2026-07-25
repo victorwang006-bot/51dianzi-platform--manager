@@ -94,6 +94,8 @@ export const adminUsers = mysqlTable("admin_users", {
   displayName: varchar("displayName", { length: 128 }),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
+  /** bcrypt 密码哈希；为空表示该账号尚未设置密码，无法登录 */
+  passwordHash: varchar("passwordHash", { length: 128 }),
   adminRole: mysqlEnum("adminRole", [
     "super_admin", "operation", "merchant_mgr", "customer_svc",
     "risk_control", "finance", "auditor",
@@ -106,6 +108,29 @@ export const adminUsers = mysqlTable("admin_users", {
 });
 
 export type AdminUser = typeof adminUsers.$inferSelect;
+
+/**
+ * 找回密码验证码表。
+ * 验证码经 bcrypt 哈希存储；channel 标识发送渠道（绑定手机 sms / 绑定邮箱 email）。
+ */
+export const passwordResetCodes = mysqlTable("password_reset_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  channel: mysqlEnum("channel", ["sms", "email"]).notNull(),
+  /** 发送目标（脱敏前的完整手机号/邮箱，用于审计） */
+  target: varchar("target", { length: 320 }).notNull(),
+  /** 验证码哈希（bcrypt） */
+  codeHash: varchar("codeHash", { length: 128 }).notNull(),
+  /** 过期时间 */
+  expiresAt: timestamp("expiresAt").notNull(),
+  /** 已使用时间（一次性） */
+  usedAt: timestamp("usedAt"),
+  /** 校验失败次数（防暴力破解，≥5 作废） */
+  attempts: int("attempts").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetCode = typeof passwordResetCodes.$inferSelect;
 
 // ─── 商户管理 ─────────────────────────────────────────────────────────────────
 
@@ -132,6 +157,12 @@ export const merchants = mysqlTable("merchants", {
   agreementStatus: mysqlEnum("agreementStatus", [
     "unsigned", "signed", "expired",
   ]).default("unsigned").notNull(),
+  /** 前台商家签署的协议文件 URL（PDF/图片） */
+  agreementFileUrl: varchar("agreementFileUrl", { length: 512 }),
+  /** 前台商家最近一次提交入驻资料的时间 */
+  submittedAt: timestamp("submittedAt"),
+  /** 资料来源：portal=前台商家提交，admin=后台录入 */
+  source: varchar("source", { length: 32 }).default("admin"),
   settlementAccount: varchar("settlementAccount", { length: 64 }),
   settlementBank: varchar("settlementBank", { length: 128 }),
   settlementAccountName: varchar("settlementAccountName", { length: 128 }),
@@ -385,3 +416,58 @@ export const riskAnalyses = mysqlTable("risk_analyses", {
 });
 
 export type RiskAnalysis = typeof riskAnalyses.$inferSelect;
+
+// ─── 消息中心（前后台互通）─────────────────────────────────────────────────────
+
+/**
+ * 消息会话：前台用户通过"联系我们"发起，后台运营跟进回复。
+ * 一个会话对应前台一个用户/访客的一次沟通主题。
+ */
+export const messageThreads = mysqlTable("message_threads", {
+  id: int("id").autoincrement().primaryKey(),
+  /** 会话编号，前台凭此拉取回复，如 MT20260725XXXX */
+  threadNo: varchar("threadNo", { length: 32 }).notNull().unique(),
+  /** 留言主题 */
+  subject: varchar("subject", { length: 256 }),
+  /** 前台联系人姓名 */
+  contactName: varchar("contactName", { length: 128 }),
+  /** 联系电话 */
+  contactPhone: varchar("contactPhone", { length: 32 }),
+  /** 联系邮箱 */
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  /** 关联的前台用户 ID（前台系统的用户标识，可选） */
+  portalUserId: varchar("portalUserId", { length: 64 }),
+  /** 关联商户 ID（若留言来自已入驻商户，可选） */
+  merchantId: int("merchantId"),
+  /** 会话状态：open=进行中 closed=已关闭 */
+  status: mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
+  /** 后台未读消息数（前台新消息时 +1，后台查看后清零） */
+  adminUnreadCount: int("adminUnreadCount").default(0).notNull(),
+  /** 前台未读消息数（后台回复时 +1，前台拉取后清零） */
+  portalUnreadCount: int("portalUnreadCount").default(0).notNull(),
+  /** 最后一条消息摘要（列表展示用） */
+  lastMessagePreview: varchar("lastMessagePreview", { length: 256 }),
+  /** 最后一条消息时间（列表排序用） */
+  lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MessageThread = typeof messageThreads.$inferSelect;
+
+/** 消息记录：会话内的每条消息 */
+export const messages = mysqlTable("messages", {
+  id: int("id").autoincrement().primaryKey(),
+  threadId: int("threadId").notNull(),
+  /** 发送方：portal=前台用户 admin=后台运营 */
+  senderType: mysqlEnum("senderType", ["portal", "admin"]).notNull(),
+  /** 后台发送人（admin_users.id，仅 senderType=admin 时有值） */
+  senderAdminId: int("senderAdminId"),
+  /** 后台发送人显示名（冗余存储，避免联表） */
+  senderName: varchar("senderName", { length: 128 }),
+  /** 消息内容 */
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;

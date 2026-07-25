@@ -1,11 +1,22 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import {
+  getResetChannels,
+  hashPassword,
+  loginWithPassword,
+  recoverUsernameWithCode,
+  requestPasswordReset,
+  requestUsernameRecovery,
+  resetPasswordWithCode,
+  verifyPassword,
+} from "./adminAuth";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { storagePut } from "./storage";
+import { saveLocalFile } from "./localUpload";
 
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
@@ -17,6 +28,25 @@ const IMAGE_MIME_MAP: Record<string, string> = {
   "image/gif": "gif",
 };
 
+/** 图片魔数校验：核对文件头是否与声明的 mimeType 匹配，拒绝伪装图片的垃圾数据 */
+function isValidImageBuffer(buffer: Buffer, mimeType: string): boolean {
+  if (buffer.length < 12) return false;
+  switch (mimeType) {
+    case "image/png":
+      return buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    case "image/jpeg":
+      return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    case "image/webp":
+      return buffer.subarray(0, 4).toString("latin1") === "RIFF" && buffer.subarray(8, 12).toString("latin1") === "WEBP";
+    case "image/gif": {
+      const head = buffer.subarray(0, 6).toString("latin1");
+      return head === "GIF87a" || head === "GIF89a";
+    }
+    default:
+      return false;
+  }
+}
+
 // 管理员权限中间件：要求 role 为 admin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -24,6 +54,18 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+// 前台对接鉴权：请求头 x-portal-key 必须与 PORTAL_API_KEY 一致
+function assertPortalKey(req: { headers: Record<string, unknown> }) {
+  const expected = process.env.PORTAL_API_KEY;
+  if (!expected) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "PORTAL_API_KEY 未配置，前台对接接口不可用" });
+  }
+  const provided = req.headers["x-portal-key"];
+  if (typeof provided !== "string" || provided !== expected) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "无效的对接密钥" });
+  }
+}
 
 const pageInput = z.object({
   page: z.number().min(1).default(1),
@@ -57,12 +99,92 @@ const materialInput = z.object({
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => {
+      if (!opts.ctx.user) return null;
+      // 附带账号密码登录会话的后台角色（Manus OAuth 会话则为 super_admin 兼容显示）
+      return {
+        ...opts.ctx.user,
+        adminRole: opts.ctx.adminAccount?.adminRole ?? ("super_admin" as const),
+        username: opts.ctx.adminAccount?.username ?? null,
+      };
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    /** 账号密码登录（admin_users 表账号） */
+    login: publicProcedure
+      .input(z.object({
+        username: z.string().min(1, "请输入用户名").max(64),
+        password: z.string().min(1, "请输入密码").max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const account = await loginWithPassword(ctx.req, ctx.res, input.username, input.password);
+        return { success: true, account } as const;
+      }),
+    /** 当前登录账号修改自己的密码（仅账号密码登录会话可用） */
+    changePassword: protectedProcedure
+      .input(z.object({
+        oldPassword: z.string().min(1),
+        newPassword: z.string().min(8, "新密码至少 8 位").max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const account = ctx.adminAccount;
+        if (!account || !account.passwordHash) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持修改密码" });
+        }
+        const ok = await verifyPassword(input.oldPassword, account.passwordHash);
+        if (!ok) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "原密码错误" });
+        }
+        await db.setAdminUserPassword(account.id, await hashPassword(input.newPassword));
+        return { success: true } as const;
+      }),
+    /** 找回密码：查询账号可用的验证渠道（脱敏手机号/邮箱） */
+    resetChannels: publicProcedure
+      .input(z.object({ username: z.string().min(1).max(64) }))
+      .query(async ({ input }) => {
+        return getResetChannels(input.username);
+      }),
+    /** 找回密码：发送验证码到绑定的手机/邮箱 */
+    requestReset: publicProcedure
+      .input(z.object({
+        username: z.string().min(1).max(64),
+        channel: z.enum(["sms", "email"]),
+      }))
+      .mutation(async ({ input }) => {
+        return requestPasswordReset(input.username, input.channel);
+      }),
+    /** 找回密码：校验验证码并设置新密码 */
+    resetPassword: publicProcedure
+      .input(z.object({
+        username: z.string().min(1).max(64),
+        code: z.string().length(6, "请输入 6 位验证码"),
+        newPassword: z.string().min(8, "新密码至少 8 位").max(128),
+      }))
+      .mutation(async ({ input }) => {
+        return resetPasswordWithCode(input.username, input.code, input.newPassword);
+      }),
+    /** 找回用户名：向绑定的手机号/邮箱发送验证码 */
+    requestUsernameRecovery: publicProcedure
+      .input(z.object({
+        channel: z.enum(["sms", "email"]),
+        target: z.string().min(4).max(320),
+      }))
+      .mutation(async ({ input }) => {
+        return requestUsernameRecovery(input.channel, input.target);
+      }),
+    /** 找回用户名：校验验证码并返回绑定的用户名 */
+    recoverUsername: publicProcedure
+      .input(z.object({
+        channel: z.enum(["sms", "email"]),
+        target: z.string().min(4).max(320),
+        code: z.string().length(6, "请输入 6 位验证码"),
+      }))
+      .mutation(async ({ input }) => {
+        return recoverUsernameWithCode(input.channel, input.target, input.code);
+      }),
   }),
 
   // ─── 物料数据库 ──────────────────────────────────────────────────────────
@@ -220,21 +342,194 @@ export const appRouter = router({
     review: adminProcedure
       .input(z.object({
         id: z.number(),
-        action: z.enum(["approve", "reject", "supplement", "suspend", "terminate", "reactivate"]),
+        action: z.enum(["approve", "supplement", "suspend", "reactivate"]),
         note: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const statusMap: Record<string, string> = {
           approve: "approved",
-          reject: "terminated",
           supplement: "supplement",
           suspend: "suspended",
-          terminate: "terminated",
           reactivate: "approved",
         };
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
+  }),
+
+  // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
+  portal: router({
+    /**
+     * 前台商家提交入驻资料。鉴权：请求头 x-portal-key 必须等于 PORTAL_API_KEY 环境变量。
+     * 文件类字段（营业执照图、协议文件）传前台已上传好的可访问 URL。
+     */
+    submitMerchant: publicProcedure
+      .input(z.object({
+        companyName: z.string().min(2).max(256),
+        contactName: z.string().min(1).max(64),
+        contactPhone: z.string().min(5).max(20),
+        contactEmail: z.string().email().max(320),
+        businessLicense: z.string().min(5).max(64),
+        licenseImageUrl: z.string().url().max(512).optional().nullable(),
+        licenseExpiry: z.coerce.date().optional().nullable(),
+        agreementFileUrl: z.string().url().max(512).optional().nullable(),
+        agreementSigned: z.boolean().optional().default(false),
+        registeredCapital: z.string().max(64).optional().nullable(),
+        registeredAddress: z.string().max(512).optional().nullable(),
+        businessScope: z.string().max(4000).optional().nullable(),
+        establishedDate: z.coerce.date().optional().nullable(),
+        legalPersonName: z.string().max(64).optional().nullable(),
+        legalPersonIdNo: z.string().max(32).optional().nullable(),
+        legalPersonPhone: z.string().max(20).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const { agreementSigned, ...rest } = input;
+        const result = await db.upsertPortalMerchant({ ...rest, agreementSigned });
+        return result;
+      }),
+
+    /**
+     * 前台"联系我们"提交留言。鉴权：x-portal-key。
+     * 首次提交不传 threadNo（返回新会话编号）；追加留言时带上 threadNo。
+     */
+    submitMessage: publicProcedure
+      .input(z.object({
+        threadNo: z.string().max(32).optional().nullable(),
+        subject: z.string().max(256).optional().nullable(),
+        contactName: z.string().max(128).optional().nullable(),
+        contactPhone: z.string().max(32).optional().nullable(),
+        contactEmail: z.string().email().max(320).optional().nullable(),
+        portalUserId: z.string().max(64).optional().nullable(),
+        content: z.string().min(1, "留言内容不能为空").max(5000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.createPortalMessage(input);
+      }),
+
+    /**
+     * 前台按会话编号拉取全部消息（含后台回复），拉取后前台未读数清零。鉴权：x-portal-key。
+     */
+    getMessages: publicProcedure
+      .input(z.object({ threadNo: z.string().min(1).max(32) }))
+      .query(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const result = await db.getPortalThreadMessages(input.threadNo);
+        if (!result) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在" });
+        }
+        return result;
+      }),
+    /**
+     * 上传物料图片并按型号回写 materials 表。鉴权：x-portal-key。
+     * 用途：外部任务批量导入物料图片（文件名=型号场景）。
+     * 行为：按 partNumber 大小写不敏感精确匹配物料 → 图片存本地磁盘（Nginx/Express 静态服务）→
+     *       追加到 images 图集（按 URL 去重，最多 9 张）；asCover=true 或封面为空时设为封面。
+     */
+    uploadMaterialImage: publicProcedure
+      .input(z.object({
+        /** 制造商型号，如 STM32F103C8T6（大小写不敏感） */
+        partNumber: z.string().min(1).max(128),
+        /** 原始文件名（仅记录用） */
+        fileName: z.string().min(1).max(256),
+        /** image/png | image/jpeg | image/webp | image/gif */
+        mimeType: z.string(),
+        /** base64 编码图片内容（不含 data: 前缀），≤5MB */
+        base64: z.string().min(1),
+        /** 是否设为封面图（默认 true；false 时仅当封面为空才设） */
+        asCover: z.boolean().optional().default(true),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const ext = IMAGE_MIME_MAP[input.mimeType];
+        if (!ext) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "仅支持 PNG/JPG/WebP/GIF 图片" });
+        }
+        const buffer = Buffer.from(input.base64, "base64");
+        if (buffer.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "文件内容为空" });
+        if (buffer.length > MAX_IMAGE_SIZE) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "图片不能超过 5MB" });
+        }
+        if (!isValidImageBuffer(buffer, input.mimeType)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "文件内容不是有效的图片（文件头校验失败）" });
+        }
+        const material = await db.getMaterialByPartNumber(input.partNumber);
+        if (!material) {
+          throw new TRPCError({ code: "NOT_FOUND", message: `型号 ${input.partNumber} 不存在` });
+        }
+        const { url } = saveLocalFile("material-images", ext, buffer);
+        const result = await db.appendMaterialImage(material.id, {
+          url,
+          name: input.fileName,
+          asCover: input.asCover,
+        });
+        return {
+          partNumber: material.partNumber,
+          url,
+          coverImageUrl: result.coverImageUrl,
+          imageCount: result.imageCount,
+        };
+      }),
+  }),
+
+  // ─── 消息中心（后台管理）──────────────────────────────────────────────────
+  message: router({
+    /** 会话列表 */
+    threads: adminProcedure
+      .input(pageInput.extend({
+        status: z.enum(["open", "closed"]).optional(),
+        keyword: z.string().max(128).optional(),
+      }))
+      .query(async ({ input }) => {
+        return db.getMessageThreads({
+          page: input.page,
+          pageSize: input.pageSize,
+          status: input.status,
+          keyword: input.keyword,
+        });
+      }),
+
+    /** 会话详情（打开后后台未读清零） */
+    detail: adminProcedure
+      .input(z.object({ threadId: z.number() }))
+      .query(async ({ input }) => {
+        const result = await db.getMessageThreadDetail(input.threadId);
+        if (!result) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在" });
+        }
+        return result;
+      }),
+
+    /** 回复会话 */
+    reply: adminProcedure
+      .input(z.object({
+        threadId: z.number(),
+        content: z.string().min(1, "回复内容不能为空").max(5000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return db.replyMessageThread({
+          threadId: input.threadId,
+          content: input.content,
+          adminId: ctx.user.id,
+          adminName: ctx.user.name ?? "平台客服",
+        });
+      }),
+
+    /** 关闭/重开会话 */
+    setStatus: adminProcedure
+      .input(z.object({
+        threadId: z.number(),
+        status: z.enum(["open", "closed"]),
+      }))
+      .mutation(async ({ input }) => {
+        return db.setMessageThreadStatus(input.threadId, input.status);
+      }),
+
+    /** 未读总数（侧边栏角标轮询） */
+    unreadCount: adminProcedure.query(async () => {
+      return { total: await db.getAdminUnreadTotal() };
+    }),
   }),
 
   // ─── 管理员管理 ──────────────────────────────────────────────────────────
@@ -254,8 +549,14 @@ export const appRouter = router({
       email: z.string().email().optional().nullable(),
       phone: z.string().max(20).optional().nullable(),
       adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]),
+      password: z.string().min(8, "初始密码至少 8 位").max(128),
     })).mutation(async ({ input }) => {
-      return db.createAdminUser(input);
+      const existing = await db.getAdminUserByUsername(input.username);
+      if (existing) {
+        throw new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
+      }
+      const { password, ...rest } = input;
+      return db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
     }),
     update: adminProcedure.input(z.object({
       id: z.number(),
@@ -264,9 +565,15 @@ export const appRouter = router({
       phone: z.string().max(20).optional().nullable(),
       adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]).optional(),
       status: z.enum(["active", "disabled", "locked"]).optional(),
+      /** 传入则重置该账号的登录密码 */
+      password: z.string().min(8, "密码至少 8 位").max(128).optional(),
     })).mutation(async ({ input }) => {
-      const { id, ...rest } = input;
-      return db.updateAdminUser(id, rest);
+      const { id, password, ...rest } = input;
+      await db.updateAdminUser(id, rest);
+      if (password) {
+        await db.setAdminUserPassword(id, await hashPassword(password));
+      }
+      return { success: true };
     }),
     toggleStatus: adminProcedure.input(z.object({
       id: z.number(),

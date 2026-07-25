@@ -196,26 +196,158 @@
 
 ## 用户需求（2026-07-23 第五轮）：API 文档 + LOGO 代码化
 
-- [ ] LOGO 代码化：将用户上传的 51 图标转为内嵌 SVG，Logo 组件不再依赖外部图片 URL
-- [ ] 验证侧边栏/登录页/移动端顶栏 LOGO 显示正常
-- [ ] 整理前台公开数据接口 API 文档（material.search / material.lookup / material.getSpecs：地址、参数、返回示例、curl/JS 调用示例）
-- [ ] 保存检查点并交付
+- [x] LOGO 代码化：将用户上传的 51 图标转为内嵌 SVG，Logo 组件不再依赖外部图片 URL（已在提交 d0bb4b4 完成，DashboardLayout.tsx 内嵌 SVG 常量）
+- [x] 验证侧边栏/登录页/移动端顶栏 LOGO 显示正常（2026-07-24 接手环境截图验证通过）
+- [x] 整理前台公开数据接口 API 文档（material.search / material.lookup / material.getSpecs：地址、参数、返回示例、curl/JS 调用示例）
+- [x] 保存检查点并交付
 
 ## 用户需求（2026-07-23 第六轮）：部署到阿里云 ECS + 数据库迁移
 
-- [ ] 验证用户提供的阿里云 AccessKey 可用性（截图密钥 LTAI5t91...）
-- [ ] 查询账号下各地域 ECS 实例情况，确认使用现有实例或新建
-- [ ] 准备 ECS 实例（安全组开放 22/80/443）与 SSH 访问
-- [ ] ECS 安装 Node.js 22 + pnpm + MySQL 8 + Nginx + PM2
-- [ ] 从 Manus TiDB 导出全部数据并导入阿里云 MySQL（16 张表结构+数据）
-- [ ] 构建部署后台应用（环境变量、PM2 守护、Nginx 反代）
-- [ ] 处理 Manus OAuth 登录在自部署环境的适配问题
-- [ ] 线上验证全部页面与 API，交付部署结果与 AccessKey 轮换安全建议
+- [x] 验证用户提供的阿里云 AccessKey 可用性（截图密钥 LTAI5t91...）（历史轮次已完成：生产环境 8.154.34.152 已在运行）
+- [x] 查询账号下各地域 ECS 实例情况，确认使用现有实例或新建（历史轮次已完成）
+- [x] 准备 ECS 实例（安全组开放 22/80/443）与 SSH 访问（历史轮次已完成）
+- [x] ECS 安装 Node.js 22 + pnpm + MySQL 8 + Nginx + PM2（历史轮次已完成）
+- [x] 从 Manus TiDB 导出全部数据并导入阿里云 MySQL（历史轮次已完成：ECS 本机 MySQL dianzi51_admin 库现为生产数据源）
+- [x] 构建部署后台应用（环境变量、PM2 守护、Nginx 反代）（历史轮次已完成，线上服务运行中）
+- [x] 处理 Manus OAuth 登录在自部署环境的适配问题（历史轮次已完成）
+- [x] 线上验证全部页面与 API，交付部署结果与 AccessKey 轮换安全建议（历史轮次已完成；生产环境自 2026-07-24 起列为保护对象，禁止直接修改/重启/迁移）
 
 ## 用户需求（2026-07-23 第七轮）：先推送代码到 GitHub
 
-- [ ] 删除 template.json（如存在）
-- [ ] 检查 server/routers/ 目录文件完整性
-- [ ] 检查 client/src/pages/ 页面文件完整性
-- [ ] clone 现有仓库 victorwang006-bot/51dianzi-platform--manager，在已有历史上追加 commit 推送（禁止 force push）
-- [ ] 报告推送的文件数量
+- [x] 删除 template.json（如存在）（历史轮次已完成：仓库 d0bb4b4 中无 template.json）
+- [x] 检查 server/routers/ 目录文件完整性（历史轮次已完成）
+- [x] 检查 client/src/pages/ 页面文件完整性（历史轮次已完成）
+- [x] clone 现有仓库 victorwang006-bot/51dianzi-platform--manager，在已有历史上追加 commit 推送（禁止 force push）（历史轮次已完成，当前基线 d0bb4b4）
+- [x] 报告推送的文件数量（历史轮次已完成）
+
+## 用户需求（2026-07-24 第八轮）：Manus 开发环境接手（新会话）
+
+- [x] 新建 Manus WebDev 全栈项目，从 GitHub 完整 clone 并保留原 Git 历史（基线 d0bb4b4，未用 template.json 覆盖业务代码）
+- [x] 从 ECS（8.154.34.152）只读 mysqldump --single-transaction 导出 dianzi51_admin，未触碰线上服务
+- [x] 导入 Manus 开发数据库并核对数据基线：45 张表、245 行、materials 118 条，与生产快照一致
+- [x] pnpm install 完成，开发服务器启动正常
+- [x] pnpm test 通过（3 文件 17 用例全部通过）
+- [x] pnpm check 通过（tsc 0 errors）
+- [x] pnpm build 通过（vite + esbuild 构建成功）
+- [x] 页面验证通过：/（物料数据库）、/merchants、/merchants/1、/admins、/404
+- [x] 公开 API 验证通过：material.lookup（keyword 参数）、material.getSpecs（partNumber 参数）、material.search（keyword/page/pageSize 参数）均返回正常数据
+- [x] 保存 Manus 检查点（GitHub 提交按用户 2026-07-24 指示暂缓；后续开发完成后再追加普通 commit 推送，禁止 force push）
+
+## 用户反馈（2026-07-24 第九轮）：LOGO 尺寸 + 登录流程
+
+- [x] 侧边栏 LOGO 太大，调小显示尺寸（侧边栏 h-16→h-9，登录页 h-20→h-14，无权限页 h-16→h-12，移动端顶栏 h-12→h-8，截图验证正常）
+- [x] 退出登录后无法重新登录，完善登录流程（startLogin 重构：检测 iframe 环境后在用户手势内同步 window.open 新窗口打开授权页、被拦截时回退当前窗口跳转；登录页新增"无法跳转？点此在新窗口打开登录页"显式备用入口与预览环境提示；浏览器实测点击登录成功跳转 manus.im/app-auth 授权页；test 17/17、tsc 0 errors）
+
+## 用户需求（2026-07-24 第十轮）：账号密码登录 + 登录界面设计
+
+- [x] 后端：admin_users 表增加 passwordHash 字段（迁移 0008 已应用），bcryptjs 密码哈希
+- [x] 后端：auth.login 账号密码登录接口（server/adminAuth.ts，签发 openId=local_admin:{id} 的 JWT session cookie，与现有 COOKIE_NAME 会话兼容）、auth.changePassword；context.ts 优先识别本地会话并映射为 admin User，回退 Manus OAuth 兼容
+- [x] 前端：品牌化登录页 Login.tsx（左侧品牌蓝渐变区 + 价值点介绍，右侧账号密码表单，密码可见切换、错误提示、加载状态）
+- [x] 前端：DashboardLayout 未登录渲染 Login 页；main.tsx 移除 401 自动跳转 Manus OAuth；用户菜单显示真实角色（auth.me 返回 adminRole）
+- [x] 数据：7 个 admin_users 账号已设置初始密码（规则 Dz51@+用户名，admin 为 Dz51@Admin2026）
+- [x] 用户管理页：新建用户必填初始密码（≥8位）、编辑用户可选重置密码
+- [x] 测试：adminAuth.test.ts 5 个用例（登录成功/错误密码/不存在用户/停用账号/修改密码），共 22/22 通过，tsc 0 errors，build 成功
+- [x] 浏览器实测：错误密码提示"用户名或密码错误"→正确密码登录进入后台（显示"平台超管/超级管理员"）→登出回到登录页→再次登录成功，闭环验证通过（登录成功后 utils.invalidate() 修复首屏 401）
+
+## 用户反馈（2026-07-24 第十一轮）：未登录时报 API Query Error
+
+- [x] 修复未登录状态（登录页）仍触发受保护业务查询导致 "Please login (10001)" 报错：App.tsx 增加 AuthGate，未登录直接渲染登录页、业务页面组件不挂载
+
+## 用户反馈（2026-07-24 第十二轮）：登录页视觉优化 + 找回密码
+
+- [x] 登录页 LOGO 去除白色圆角背景框，白色矢量 LOGO 直接展示（--logo-color CSS 变量）
+- [x] 左侧标题改为白色，删除下方三行功能介绍文字
+- [x] 找回密码：password_reset_codes 表（迁移 0009）、auth.resetChannels/requestReset/resetPassword 接口（渠道脱敏、bcrypt 验证码哈希、10 分钟有效、60s 重发限制、5 次失败作废、统一响应不暴露账号存在性）、ForgotPasswordDialog 三步找回流程
+- [x] 浏览器实测完整闭环：查询渠道（138****0001 / ad***@51dianzi.com）→ 发送验证码 → 重置密码 → 新密码登录成功；admin 密码已恢复为 Dz51@Admin2026
+- [x] 测试 26/26 通过（连续两次验证幂等）、tsc 0 errors、build 成功
+- [x] 验证码发送通道抽象完成（deliverResetCode 函数）：当前开发环境输出到服务端日志，接入阿里云短信/SMTP 时仅需替换该函数实现（真实网关接入待用户提供短信/邮件服务凭证后进行）
+
+## 用户需求（2026-07-24 第十三轮）：后台部署到阿里云 ECS（47.97.108.147）
+
+- [x] 确认部署凭证与连接方式（SSH root@47.97.108.147，zhijie_manager PEM 私钥，用户确认方案 A：/admin/ 路径访问）
+- [x] 生产数据库准备：RDS dianzi51_admin 已有 45 表基线数据，补应用迁移 0008（admin_users.passwordHash）与 0009（password_reset_codes，RDS 需 DEFAULT CURRENT_TIMESTAMP 语法），并同步 7 个账号密码哈希
+- [x] 适配生产：vite.config.ts 支持 VITE_BASE_PATH=/admin/；App.tsx wouter base；main.tsx tRPC url 带 BASE_URL 前缀；server 拆分 vite-dev.ts + esbuild --external:./vite-dev（生产 bundle 不依赖 vite）
+- [x] 修复 cookies.ts SameSite 策略：HTTP 下 SameSite=None 无 Secure 被浏览器拒绝导致登录不生效，改为 secure ? "none" : "lax"（HTTPS 预览 iframe 场景不受影响）
+- [x] 部署 ECS /opt/apps/dianzi51-admin：PM2 cluster x2（dianzi51-admin，端口 3001，pm2 save 持久化），ecosystem.config.cjs 指向 RDS、随机 JWT_SECRET、chmod 600；不影响前台 dianzi51（3000 端口）
+- [x] Nginx：/etc/nginx/conf.d/dianzi51-admin.inc（location /admin/ 去前缀转发 127.0.0.1:3001），include 进 dianzi51.conf，nginx -t 通过后 reload
+- [x] 生产验证：页面 200、JS/CSS MIME 正确、material.search 公开 API 返回正常、浏览器实测 admin 登录 → 物料数据库 118 条正常展示
+- [x] 向用户交付部署结果与访问方式（http://47.97.108.147/admin/）
+
+## 用户需求（2026-07-25 第十四轮）：商户状态精简 + 前台入驻资料对接后台审核
+
+- [x] 商户状态栏删除"拒绝""清退"：Merchants.tsx/MerchantDetail.tsx 移除拒绝、清退按钮与"已清退"筛选项；后端 review action 收窄为 approve/supplement/suspend/reactivate（terminated 枚举值保留兼容历史数据）
+- [x] 前台对接 API：portal.submitMerchant（x-portal-key 请求头鉴权，PORTAL_API_KEY 环境变量），接收公司/联系人/电话/邮箱/营业执照号+图片URL/协议文件URL+签署状态/法人/注册信息等；按营业执照号幂等 upsert，新商户 status=pending，已入驻商户仅更新资料，其余状态重置 pending 重新审核
+- [x] Schema 迁移 0010：merchants 增加 agreementFileUrl/submittedAt/source 三列（开发库与生产 RDS 均已应用）
+- [x] 后台审核界面：商户详情"入驻资料"卡片（营业执照图预览、签署协议文件链接、前台提交标识与提交时间），联系人/邮箱/电话已有展示
+- [x] 测试 31/31 通过（portal 5 个新用例：无密钥/错密钥拒绝、创建 pending、幂等更新、review 拒绝 reject），tsc 0 errors，build 成功
+- [x] 生产部署完成：dist 更新、PORTAL_API_KEY 注入 ecosystem（pm2 delete+start 重载 env）、生产 API 实测（带密钥创建成功→已清理测试数据；无密钥 401 拒绝）
+
+## 用户需求（2026-07-25 第十五轮）：删除物料数据库违规风险数据
+
+- [x] 盘点：开发库/生产库 materials 各 118 条 + _frontend_materials_bak 12 条，用户确认全部删除
+- [x] 删除前备份：开发库 backup-dev-materials.json（本地 /home/ubuntu/materials-replace/）；生产 RDS mysqldump 至 ECS /opt/apps/dianzi51-admin/backup-materials-20260725-171309.sql
+- [x] 删除开发库物料数据（materials 清空 + 备份表 DROP）
+- [x] 删除生产 RDS 物料数据（同上）
+- [x] 解析《STM32F 全系列选型表.xlsx》：510 个唯一料号（F0/F1/F2/F3/F4/F7 六系列），26 项规格参数存 specs JSON，datasheetUrl 用 ST 官网产品页
+- [x] 导入两库各 510 条（品牌 ST、分类 单片机(MCU/MPU/SOC)、rohs=compliant、status=enabled、lifecycle 按 Marketing Status 映射）
+- [x] 验证：开发库后台页面正常显示新数据；生产 search/lookup/getSpecs API 均返回正确中文数据；测试 31/31 通过（更新分类断言）
+
+## 用户需求（2026-07-25 第十六轮）：支持真实收取验证码
+
+- [x] 确认发送方案与凭证：阿里云短信（AK 已提供，签名"深圳市智捷创芯信息科技"，模板 SMS_511070041）
+- [x] 实现验证码真实发送：server/sms.ts 直接签名调用阿里云 Dysms API（无 SDK 依赖），deliverResetCode 短信渠道接入，测试环境回退日志模式
+- [x] admin 账号绑定真实手机号 15817256366（开发库 + 生产 RDS）
+- [x] 生产部署与验证：SMS env 注入 ecosystem，PM2 重启，实测短信发送成功（RequestId=019F98B3...）
+
+## 用户需求（2026-07-25 第十七轮）：支持找回用户名
+
+- [x] 后端：auth.requestUsernameRecovery / auth.recoverUsername 公开接口（60秒频控、5次错误作废、不暴露账号存在性，邮箱通道预留）
+- [x] 前端：登录页"忘记用户名？| 忘记密码？"双入口，ForgotUsernameDialog 弹层（手机/邮箱 Tab、验证码倒计时、结果展示）
+- [x] 测试 36/36 通过；部署生产并实测短信发送成功（RequestId=019F98BD...）
+
+## 用户需求（2026-07-25 第十八轮）：移除佣金（平台无佣金模式）
+
+- [x] 移除商户详情页"佣金费率"标签、商户列表抽屉"佣金费率"字段（清理未使用 Badge 导入）
+- [x] 后端/DB：commissionRate 字段保留在 schema（历史数据兼容）但不再展示；无其他引用
+- [x] 测试 36/36、类型检查通过；已部署生产并验证
+
+## 用户需求（2026-07-25 第十九轮）：新增"消息"模块（前后台消息互通）
+
+- [x] 数据层：message_threads（会话）与 messages（消息）表（迁移 0011；旧空表 messages 已 RENAME 为 _legacy_im_messages 后重建，开发库与生产 RDS 均已完成，两库结构逐字段核对一致）
+- [x] 前台对接 API（x-portal-key）：portal.submitMessage 提交联系我们留言、portal.getMessages 按 threadNo 拉取会话回复
+- [x] 后台管理接口：message.threads（关键词/状态筛选、未读数）、message.detail（进入自动清零未读）、message.reply、message.setStatus、message.unreadCount
+- [x] 后台界面：侧边栏"消息"入口（30s 轮询未读红色角标）、消息中心页（会话列表 + 对话视图 + 回复框 + 关闭/重开）
+- [x] 测试 39/39 通过、tsc 0 errors；生产部署完成（dist 更新 + PM2 重启），生产实测四步闭环：提交留言 MT202607252660 → 后台登录查看会话 → 后台回复 → 前台拉取到回复，测试数据已清理
+
+## 用户反馈（2026-07-25 第二十轮）：消息页面无法返回
+
+- [x] 修复 /messages 页面未包裹 DashboardLayout 导致侧边栏丢失、无法返回其他页面的问题（列表视图与会话详情视图均已包裹布局，截图验证侧边栏正常显示）
+- [x] 验证修复后重新部署生产 ECS 并保存检查点（测试 39/39、tsc 0 errors、生产 dist 全量替换 + PM2 重启，首页 200、公开 API 正常，页面引用最新构建产物）
+
+## 用户需求（2026-07-25 第二十一轮）：物料图片上传 API（方案 B，供另一 Manus 任务调用）
+
+- [x] 调研现有 material.uploadImage 实现与存储方案，设计 portal 上传接口（生产 ECS 无 Forge 存储凭证，改用本地磁盘 + Nginx /admin/uploads/ 磁盘直出方案）
+- [x] 实现 portal.uploadMaterialImage 接口（server/localUpload.ts 本地存储模块；型号大小写不敏感匹配；图片校验 PNG/JPG/WebP/GIF ≤5MB；coverImageUrl/images 回写，图集去重上限 9 张）
+- [x] 单元测试覆盖 4 用例（无密钥拒绝/型号不存在/非法类型/正常上传回写+磁盘文件+封面逻辑），全量 43/43 通过
+- [x] 部署生产 ECS 并实测上传闭环（Nginx 增加 uploads location；实测无密钥 401、型号不存在 404、正常上传回写成功、图片直链 200 image/png、getSpecs 返回封面；测试数据已清理）
+- [x] 编写接口调用文档 docs/物料图片上传API对接说明.md（含 curl/Node.js 批量脚本示例、型号映射建议），保存检查点交付
+
+## 用户反馈（2026-07-25 第二十二轮）：上传接口大请求断连 + 图片内容未校验
+
+- [x] 修复 Nginx 请求体限制：/admin/ location 增加 client_max_body_size 20m（原默认 1m 导致大请求断连），ECS 本机实测 2MB 请求返回正常业务响应
+- [x] portal.uploadMaterialImage 增加图片魔数校验（PNG/JPEG/WebP/GIF 文件头 isValidImageBuffer），伪装图片返回 400"文件内容不是有效的图片"
+- [x] 清理 STM32F030C6 测试垃圾图集数据（9 条）与全部测试磁盘文件，全库 with_img=0 复位
+- [x] 补充单元测试（伪装图片拒绝），44/44 通过；重新部署生产并实测 1.5MB JPEG 上传 200 成功 + 垃圾数据 400 拒绝
+
+## 用户反馈（2026-07-25 第二十三轮）：公网路径 >15KB POST 仍 30 秒空响应断连
+
+- [x] 从公网路径复现问题：13KB 正常、93KB 上传完成后 30s HTTP 000 断连，与对方反馈一致
+- [x] 定位拦截层：Nginx upload_debug 日志显示公网 93KB 请求 req_len=16332（仅收到 16KB）、upstream_status=-（未转发）、req_time=30.000（client_body_timeout 超时 400）→ 明文 HTTP 大 POST 的 body 在进入 ECS 前被链路 DPI 丢弃；ECS 本机限速 2KB/s 慢速上传 46s 成功排除服务端超时
+- [x] 实施修复：Nginx 配置 443 HTTPS（自签证书 CN=47.97.108.147），公网实测 HTTPS 100KB 4.8s / 2MB 95s 均成功，HTTP/HTTPS 首页 200 正常
+- [x] 更新接口文档为 HTTPS 地址并注明忽略证书校验的调用方式
+
+## 用户需求（2026-07-25 第二十四轮）：推送最新代码到 GitHub
+
+- [ ] clone 现有仓库 victorwang006-bot/51dianzi-platform--manager，在已有历史上操作（禁止 force push）
+- [ ] 同步工作区最新代码：删除 template.json、核对 server/routers 与 client/src/pages 文件完整性
+- [ ] 追加普通 commit 推送，报告推送文件数

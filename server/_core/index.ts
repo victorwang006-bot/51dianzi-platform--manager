@@ -7,7 +7,8 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./vite";
+import { getUploadRoot } from "../localUpload";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,6 +37,8 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  // 本地上传文件静态服务（物料图片等；生产也可由 Nginx /admin/uploads/ 直接提供）
+  app.use("/uploads", express.static(getUploadRoot(), { maxAge: "7d" }));
   // tRPC API
   app.use(
     "/api/trpc",
@@ -46,6 +49,8 @@ async function startServer() {
   );
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
+    // 动态导入：避免 esbuild 生产 bundle 内联 vite 依赖（生产环境未安装 vite）
+    const { setupVite } = await import("./vite-dev");
     await setupVite(app, server);
   } else {
     serveStatic(app);
