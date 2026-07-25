@@ -348,6 +348,18 @@
 
 ## 用户需求（2026-07-25 第二十四轮）：推送最新代码到 GitHub
 
-- [ ] clone 现有仓库 victorwang006-bot/51dianzi-platform--manager，在已有历史上操作（禁止 force push）
-- [ ] 同步工作区最新代码：删除 template.json、核对 server/routers 与 client/src/pages 文件完整性
+- [x] clone 现有仓库 victorwang006-bot/51dianzi-platform--manager（基线 d0bb4b4），在已有历史上追加（未 force push）
+- [x] 同步工作区最新代码：删除 template.json；server 目录与 pages 目录 diff 核对一致无遗漏（无 server/routers/ 子目录，路由在 routers.ts 单文件）
+- [x] 普通 commit 4f71035 推送成功：44 个文件变更（+12158/-179），仓库总文件数 172；凭证文件已清理
+
+## 图片批量上传核验（2026-07-25 第二十五轮）
+
+- [x] 核验对方任务上传结果：510 条物料中 100 条有封面图和图集（与对方 100 张一致），全量 100 条直链核验 200 OK，抽样图片为高清芯片实拍图（1254x1254，带 51电子网水印）
+- [x] STM32F030C6 因对方上传两次，图集含 2 张（封面为第二张），属正常追加逻辑非异常；磁盘 101 个文件与之对应，无孤立垃圾
+- [ ] 域名备案跟进提醒（4 天后）：计划任务创建被系统限制（需项目先发布），待处理
+
+## 用户需求（2026-07-26 第二十六轮）：再次推送最新代码到 GitHub
+
+- [ ] clone 现有仓库，在已有历史上追加（禁止 force push）
+- [ ] 删除 template.json、核对 server 与 client/src/pages 文件完整性
 - [ ] 追加普通 commit 推送，报告推送文件数
