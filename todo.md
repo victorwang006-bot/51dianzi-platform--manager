@@ -372,4 +372,4 @@
 - [x] pnpm install / pnpm test（44/44）/ pnpm check（0 errors）/ pnpm build 全部通过
 - [x] 页面验证：/、/merchants、/merchants/1、/admins、/404 正常；公开 API material.lookup / getSpecs / search 返回正常
 - [x] 清理验证过程产生的测试数据，保存 Manus 检查点
-- [ ] 追加普通 commit 推送 GitHub（禁止 force push）
+- [x] 追加普通 commit 推送 GitHub（禁止 force push）：0ea33ee 普通追加推送成功，c032300..0ea33ee
