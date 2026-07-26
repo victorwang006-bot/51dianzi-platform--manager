@@ -359,7 +359,17 @@
 - [ ] 域名备案跟进提醒（4 天后）：计划任务创建被系统限制（需项目先发布），待处理
 
 ## 用户需求（2026-07-26 第二十六轮）：再次推送最新代码到 GitHub
-
 - [ ] clone 现有仓库，在已有历史上追加（禁止 force push）
 - [ ] 删除 template.json、核对 server 与 client/src/pages 文件完整性
 - [ ] 追加普通 commit 推送，报告推送文件数
+
+## 用户需求（2026-07-26 第二十七轮）：新会话接手，Manus 环境重新初始化
+- [x] 新建 Manus WebDev 全栈项目，从 GitHub 完整 clone 并保留原 Git 历史（HEAD c032300，含基线 d0bb4b4，未用 template.json 覆盖业务代码）
+- [x] 从 ECS（8.154.34.152）只读 mysqldump 导出后发现其为旧基线（45 表/245 行/materials 118，缺迁移 0008-0011），用户确认方案 B：改从生产 RDS 导出
+- [x] 从生产 RDS（rm-bp1m856i4zowwc264，经 47.97.108.147 只读导出）导入 Manus 开发库：47 张表、627 行、materials 510 条，schema 完整
+- [x] 注入生产同款环境变量（SMS_ACCESS_KEY_ID/SECRET/SIGN_NAME/TEMPLATE_CODE、PORTAL_API_KEY）
+- [x] 修复开发库 password_reset_codes.expiresAt 列缺陷（被建成 ON UPDATE CURRENT_TIMESTAMP 导致验证码立即失效；生产 RDS 同列存在同样隐患，待用户授权维护窗口修复）
+- [x] pnpm install / pnpm test（44/44）/ pnpm check（0 errors）/ pnpm build 全部通过
+- [x] 页面验证：/、/merchants、/merchants/1、/admins、/404 正常；公开 API material.lookup / getSpecs / search 返回正常
+- [x] 清理验证过程产生的测试数据，保存 Manus 检查点
+- [ ] 追加普通 commit 推送 GitHub（禁止 force push）
