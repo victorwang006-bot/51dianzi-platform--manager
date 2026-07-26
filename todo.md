@@ -359,9 +359,9 @@
 - [ ] 域名备案跟进提醒（4 天后）：计划任务创建被系统限制（需项目先发布），待处理
 
 ## 用户需求（2026-07-26 第二十六轮）：再次推送最新代码到 GitHub
-- [ ] clone 现有仓库，在已有历史上追加（禁止 force push）
-- [ ] 删除 template.json、核对 server 与 client/src/pages 文件完整性
-- [ ] 追加普通 commit 推送，报告推送文件数
+- [x] clone 现有仓库，在已有历史上追加（禁止 force push）——已在第二十七轮环境初始化中等效完成
+- [x] 删除 template.json、核对 server 与 client/src/pages 文件完整性——工作区与 GitHub c032300 diff 为空，文件完整
+- [x] 追加普通 commit 推送，报告推送文件数——本轮推送 0ea33ee、fbb77a8（todo.md 记录更新，无业务代码变更）
 
 ## 用户需求（2026-07-26 第二十七轮）：新会话接手，Manus 环境重新初始化
 - [x] 新建 Manus WebDev 全栈项目，从 GitHub 完整 clone 并保留原 Git 历史（HEAD c032300，含基线 d0bb4b4，未用 template.json 覆盖业务代码）
