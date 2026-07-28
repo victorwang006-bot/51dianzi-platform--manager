@@ -43,6 +43,20 @@ const actionLabels: Record<ReviewAction, string> = {
   reactivate: "恢复商户",
 };
 
+type CrmStatus = "none" | "pending" | "enabled" | "disabled";
+
+const crmStatusMap: Record<CrmStatus, { label: string; style: "success" | "warning" | "danger" | "info" | "gray" }> = {
+  none: { label: "未申请", style: "gray" },
+  pending: { label: "待开通", style: "warning" },
+  enabled: { label: "已开通", style: "success" },
+  disabled: { label: "已停用", style: "danger" },
+};
+
+const crmActionLabels: Record<string, string> = {
+  enabled: "开通 CRM",
+  disabled: "停用 CRM",
+};
+
 export default function Merchants() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<string>("all");
@@ -50,6 +64,8 @@ export default function Merchants() {
   const [searchInput, setSearchInput] = useState("");
   const [reviewTarget, setReviewTarget] = useState<{ id: number; name: string; action: ReviewAction } | null>(null);
   const [reviewNote, setReviewNote] = useState("");
+  const [crmTarget, setCrmTarget] = useState<{ id: number; name: string; nextStatus: "enabled" | "disabled" } | null>(null);
+  const [crmNote, setCrmNote] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
@@ -70,6 +86,16 @@ export default function Merchants() {
       utils.merchant.list.invalidate();
       setReviewTarget(null);
       setReviewNote("");
+    },
+    onError: err => toast.error(`操作失败：${err.message}`),
+  });
+
+  const crmMutation = trpc.merchant.setCrmStatus.useMutation({
+    onSuccess: (_d, vars) => {
+      toast.success(vars.crmStatus === "enabled" ? "CRM 已开通" : "CRM 已停用");
+      utils.merchant.list.invalidate();
+      setCrmTarget(null);
+      setCrmNote("");
     },
     onError: err => toast.error(`操作失败：${err.message}`),
   });
@@ -133,6 +159,7 @@ export default function Merchants() {
                       <th>公司名称</th>
                       <th>联系人</th>
                       <th>状态</th>
+                      <th>CRM</th>
                       <th>协议</th>
                       <th>资质到期</th>
                       <th>入驻时间</th>
@@ -143,6 +170,8 @@ export default function Merchants() {
                     {data.data.map(m => {
                       const st = merchantStatusMap[m.status] ?? { label: m.status, style: "gray" as const };
                       const ag = agreementStatusMap[m.agreementStatus] ?? { label: m.agreementStatus, style: "gray" as const };
+                      const crmStatus = ((m as { crmStatus?: CrmStatus }).crmStatus ?? "none") as CrmStatus;
+                      const crm = crmStatusMap[crmStatus] ?? crmStatusMap.none;
                       const licenseExpiringSoon = m.licenseExpiry && new Date(m.licenseExpiry).getTime() - Date.now() < 30 * 86400_000;
                       return (
                         <tr key={m.id}>
@@ -159,6 +188,7 @@ export default function Merchants() {
                             </div>
                           </td>
                           <td><StatusBadge label={st.label} style={st.style} /></td>
+                          <td><StatusBadge label={crm.label} style={crm.style} /></td>
                           <td><StatusBadge label={ag.label} style={ag.style} /></td>
                           <td className={`text-xs ${licenseExpiringSoon ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
                             {m.licenseExpiry ? formatDateTime(m.licenseExpiry).split(" ")[0] : "-"}
@@ -184,6 +214,16 @@ export default function Merchants() {
                               {m.status === "suspended" && (
                                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "reactivate" })}>
                                   恢复
+                                </Button>
+                              )}
+                              {(crmStatus === "pending" || crmStatus === "disabled" || crmStatus === "none") && (
+                                <Button size="sm" variant={crmStatus === "pending" ? "default" : "outline"} className={`h-7 text-xs ${crmStatus === "pending" ? "bg-violet-600 hover:bg-violet-700" : ""}`} onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "enabled" })}>
+                                  开通CRM
+                                </Button>
+                              )}
+                              {crmStatus === "enabled" && (
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "disabled" })}>
+                                  停用CRM
                                 </Button>
                               )}
                             </div>
@@ -225,6 +265,36 @@ export default function Merchants() {
               }}
             >
               确认{reviewTarget ? actionLabels[reviewTarget.action] : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CRM 开通/停用对话框 */}
+      <Dialog open={crmTarget !== null} onOpenChange={open => !open && setCrmTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}</DialogTitle>
+            <DialogDescription>
+              目标商户：{crmTarget?.name}。{crmTarget?.nextStatus === "enabled" ? "开通后该商户可使用 CRM 功能。" : "停用后该商户将无法使用 CRM 功能。"}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="备注（选填，如开通/停用原因）"
+            value={crmNote}
+            onChange={e => setCrmNote(e.target.value)}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCrmTarget(null)}>取消</Button>
+            <Button
+              disabled={crmMutation.isPending}
+              onClick={() => {
+                if (!crmTarget) return;
+                crmMutation.mutate({ id: crmTarget.id, crmStatus: crmTarget.nextStatus, note: crmNote.trim() || undefined });
+              }}
+            >
+              确认{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}
             </Button>
           </DialogFooter>
         </DialogContent>

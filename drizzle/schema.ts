@@ -170,6 +170,14 @@ export const merchants = mysqlTable("merchants", {
   reviewNote: text("reviewNote"),
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
+  /** CRM 开通状态：none=未申请 pending=待开通 enabled=已开通 disabled=已停用 */
+  crmStatus: mysqlEnum("crmStatus", ["none", "pending", "enabled", "disabled"]).default("none").notNull(),
+  /** CRM 申请时间（前台提交企业开通申请时写入） */
+  crmAppliedAt: timestamp("crmAppliedAt"),
+  /** CRM 开通时间（后台开通时写入） */
+  crmEnabledAt: timestamp("crmEnabledAt"),
+  /** CRM 备注（开通/停用原因等） */
+  crmNote: text("crmNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -439,6 +447,10 @@ export const messageThreads = mysqlTable("message_threads", {
   portalUserId: varchar("portalUserId", { length: 64 }),
   /** 关联商户 ID（若留言来自已入驻商户，可选） */
   merchantId: int("merchantId"),
+  /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
+  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "crm_apply"]).default("general").notNull(),
+  /** 客户公司资料快照（前台提交时附带，JSON：companyName/creditCode/companyType/legalPerson/companyRole/regAddress/certLevel 等） */
+  companyProfile: json("companyProfile"),
   /** 会话状态：open=进行中 closed=已关闭 */
   status: mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
   /** 后台未读消息数（前台新消息时 +1，后台查看后清零） */

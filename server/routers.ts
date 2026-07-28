@@ -355,6 +355,20 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
+    /** 设置商户 CRM 开通状态（开通/停用/重置） */
+    setCrmStatus: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        crmStatus: z.enum(["none", "pending", "enabled", "disabled"]),
+        note: z.string().max(1000).optional().nullable(),
+      }))
+      .mutation(async ({ input }) => {
+        return db.setMerchantCrmStatus({
+          merchantId: input.id,
+          crmStatus: input.crmStatus,
+          note: input.note,
+        });
+      }),
   }),
 
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
@@ -401,11 +415,46 @@ export const appRouter = router({
         contactPhone: z.string().max(32).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
+        /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
+        threadType: z.enum(["general", "inquiry", "service", "crm_apply"]).optional().nullable(),
+        /** 客户公司资料快照（已提交公司资料的用户，前台附带传入，后台会话详情展示） */
+        companyProfile: z.object({
+          companyName: z.string().max(256).optional().nullable(),
+          creditCode: z.string().max(64).optional().nullable(),
+          companyType: z.string().max(128).optional().nullable(),
+          legalPerson: z.string().max(64).optional().nullable(),
+          companyRole: z.string().max(64).optional().nullable(),
+          regAddress: z.string().max(512).optional().nullable(),
+          certLevel: z.string().max(32).optional().nullable(),
+        }).optional().nullable(),
         content: z.string().min(1, "留言内容不能为空").max(5000),
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
         return db.createPortalMessage(input);
+      }),
+
+    /**
+     * 前台企业开通 CRM 申请。鉴权：x-portal-key。
+     * 按统一社会信用代码幂等：直接创建/更新商户记录（crmStatus=pending），落后台商户管理页面。
+     */
+    submitCrmApplication: publicProcedure
+      .input(z.object({
+        companyName: z.string().min(2).max(256),
+        creditCode: z.string().min(5).max(64),
+        contactName: z.string().max(64).optional().nullable(),
+        contactPhone: z.string().max(20).optional().nullable(),
+        contactEmail: z.string().email().max(320).optional().nullable(),
+        legalPersonName: z.string().max(64).optional().nullable(),
+        registeredAddress: z.string().max(512).optional().nullable(),
+        businessScope: z.string().max(4000).optional().nullable(),
+        licenseImageUrl: z.string().url().max(512).optional().nullable(),
+        portalUserId: z.string().max(64).optional().nullable(),
+        note: z.string().max(1000).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.submitCrmApplication(input);
       }),
 
     /**
@@ -493,6 +542,7 @@ export const appRouter = router({
     threads: adminProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
+        threadType: z.enum(["general", "inquiry", "service", "crm_apply"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {
@@ -500,6 +550,7 @@ export const appRouter = router({
           page: input.page,
           pageSize: input.pageSize,
           status: input.status,
+          threadType: input.threadType,
           keyword: input.keyword,
         });
       }),

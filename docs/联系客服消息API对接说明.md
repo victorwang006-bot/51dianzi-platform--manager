@@ -2,19 +2,20 @@
 
 > 交付对象：51电子网前台（dianzi51）开发
 > 出具方：51电子网后台管理系统（dianzi51-admin）
-> 日期：2026-07-28
+> 日期：2026-07-28（本次更新：submitMessage 新增 threadType / companyProfile 参数；新增企业开通 CRM 申请接口 portal.submitCrmApplication）
 
 ## 一、功能概述
 
 前台客户点击"联系客服"按钮后，可向平台客服发送消息；消息实时进入后台管理系统的"消息"页面，由客服人员查看并回复；前台再通过拉取接口获取客服回复，形成完整的双向对话。整条链路基于**会话编号（threadNo）**维系：客户首次发送消息时后台创建会话并返回 threadNo，前台将其保存在浏览器 localStorage（或绑定到登录用户），后续追加消息、拉取回复、查询未读均凭此编号。
 
-涉及三个公开接口，均已在后台实现并通过单元测试与端到端验证：
+涉及四个公开接口，均已在后台实现并通过单元测试与端到端验证：
 
 | 接口 | 方法 | 用途 |
 |---|---|---|
 | `portal.submitMessage` | POST | 提交留言（首次创建会话 / 带 threadNo 追加消息） |
 | `portal.getMessages` | GET | 按会话编号拉取全部消息（含客服回复），拉取后前台未读清零 |
 | `portal.getUnread` | GET | 查询会话未读回复数（不清零），供"联系客服"按钮红点角标轮询 |
+| `portal.submitCrmApplication` | POST | 企业开通 CRM 申请（按统一社会信用代码幂等落入后台商户管理） |
 
 ## 二、接口地址与鉴权
 
@@ -43,6 +44,20 @@
 | contactPhone | string | 否 | 联系电话 |
 | contactEmail | string | 否 | 联系邮箱（需为合法邮箱格式） |
 | portalUserId | string | 否 | 前台用户 ID（登录用户建议传入，便于后台关联客户） |
+| threadType | string | 否 | 会话类型，仅新会话生效：`inquiry`=快速询价、`service`=在线客服、`crm_apply`=企业开通、`general`=普通留言（默认）。后台消息列表与详情按此显示彩色类型标签并支持筛选 |
+| companyProfile | object | 否 | 客户公司资料快照（已提交公司资料的用户建议附带）。后台会话详情"客户信息"卡片将展示。字段见下表 |
+
+`companyProfile` 对象字段（均为可选 string）：
+
+| 字段 | 说明 |
+|---|---|
+| companyName | 企业名称 |
+| creditCode | 统一社会信用代码 |
+| companyType | 企业类型（如"有限责任公司"） |
+| legalPerson | 法定代表人 |
+| companyRole | 企业角色（如"采购商"/"供应商"） |
+| regAddress | 注册地址 |
+| certLevel | 认证等级（如 certified），详情页以徽标展示 |
 
 成功返回：
 
@@ -50,12 +65,12 @@
 {"result":{"data":{"json":{"threadNo":"MT202607281344","threadId":120006}}}}
 ```
 
-curl 示例（首次发送）：
+curl 示例（首次发送，快速询价场景，附带公司资料）：
 
 ```bash
 curl -k -X POST "https://47.97.108.147/admin/api/trpc/portal.submitMessage" \
   -H "content-type: application/json" -H "x-portal-key: $PORTAL_KEY" \
-  -d '{"json":{"subject":"咨询供货","contactName":"张三","contactPhone":"13800000000","portalUserId":"30001","content":"您好，请问 STM32F103C8 有现货吗？"}}'
+  -d '{"json":{"subject":"快速询价 - STM32F103C8T6","threadType":"inquiry","contactName":"张三","contactPhone":"13800000000","portalUserId":"30001","content":"【快速询价】料号：STM32F103C8T6 品牌：ST 数量：10000","companyProfile":{"companyName":"深圳市某某电子有限公司","creditCode":"91440300XXXXXXXXXX","companyType":"有限责任公司","legalPerson":"张三","companyRole":"采购商","regAddress":"深圳市福田区XX路X号","certLevel":"certified"}}}'
 ```
 
 追加消息（同一会话继续对话）时带上 threadNo：
@@ -113,6 +128,50 @@ curl -k -G "https://47.97.108.147/admin/api/trpc/portal.getMessages" \
 
 本接口**只读不清零**，专用于"联系客服"按钮的红点角标轮询（建议 30–60 秒一次）。`unreadCount` 为客服回复后客户尚未拉取的消息条数；客户打开对话窗口调用 `getMessages` 后自动归零。
 
+### 3.4 企业开通 CRM 申请 portal.submitCrmApplication
+
+`POST {BASE}/portal.submitCrmApplication`
+
+前台"企业开通"表单提交后调用本接口，申请将**直接落入后台"商户管理"页面**（CRM 状态显示为"待开通"），由运营人员审核并开通。以**统一社会信用代码（creditCode）幂等**：同一信用代码重复提交不会创建重复商户，只会更新联系信息并刷新申请时间；已开通（enabled）的商户重复申请不会被降级。
+
+请求体（JSON，业务参数放在 `json` 字段内）：
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| companyName | string | 是 | 企业名称，2–256 字 |
+| creditCode | string | 是 | 统一社会信用代码，5–64 字，幂等键 |
+| contactName | string | 否 | 联系人姓名 |
+| contactPhone | string | 否 | 联系电话 |
+| contactEmail | string | 否 | 联系邮箱（需为合法邮箱格式） |
+| legalPersonName | string | 否 | 法定代表人 |
+| registeredAddress | string | 否 | 注册地址 |
+| businessScope | string | 否 | 经营范围 |
+| licenseImageUrl | string | 否 | 营业执照图片 URL（需为合法 URL） |
+| portalUserId | string | 否 | 前台用户 ID |
+| note | string | 否 | 申请备注（后台以 CRM 备注展示） |
+
+成功返回：
+
+```json
+{"result":{"data":{"json":{"merchantId":123,"merchantNo":"M2026071234","created":true,"crmStatus":"pending"}}}}
+```
+
+| 返回字段 | 说明 |
+|---|---|
+| merchantId / merchantNo | 后台商户 ID / 商户编号 |
+| created | `true`=新建商户；`false`=信用代码已存在，更新原商户 |
+| crmStatus | 申请后的 CRM 状态：`pending`=待开通；若商户已是 `enabled` 则保持不变 |
+
+curl 示例：
+
+```bash
+curl -k -X POST "https://47.97.108.147/admin/api/trpc/portal.submitCrmApplication" \
+  -H "content-type: application/json" -H "x-portal-key: $PORTAL_KEY" \
+  -d '{"json":{"companyName":"深圳市某某电子有限公司","creditCode":"91440300XXXXXXXXXX","contactName":"张三","contactPhone":"13800000000","contactEmail":"zhangsan@example.com","legalPersonName":"张三","registeredAddress":"深圳市福田区XX路X号","note":"希望开通CRM进行供应链管理"}}'
+```
+
+建议：前台提交企业开通申请时，可同时调用 `portal.submitMessage`（`threadType: "crm_apply"`，内容为申请摘要）创建一条"企业开通"会话，便于客服在消息中心跟进沟通；两者相互独立，仅调用 submitCrmApplication 也可完成落库。
+
 ## 四、错误码
 
 | HTTP 状态 | code | 场景 | 处理建议 |
@@ -133,4 +192,4 @@ curl -k -G "https://47.97.108.147/admin/api/trpc/portal.getMessages" \
 
 ## 六、验证记录
 
-本链路已于 2026-07-28 在 Manus 开发环境完成验证：单元测试 46/46 通过（含本链路 5 个用例：无 key 拒绝、提交→列表→回复→拉取闭环、NOT_FOUND、未读角标不清零/拉取清零、getUnread 鉴权）；HTTP 端到端验证提交留言、未读查询、消息拉取均正常；后台"消息"页面正确展示会话、未读角标与回复功能。
+本链路已于 2026-07-28 在 Manus 开发环境完成验证：单元测试 51/51 通过（含消息链路 5 个用例与本次新增 threadType/companyProfile/CRM 申请 5 个用例）；HTTP 端到端验证提交留言、未读查询、消息拉取均正常；后台"消息"页面正确展示会话类型标签、客户信息卡片（联系方式 + 公司资料）、未读角标与回复功能；"商户管理"页面正确展示 CRM 状态列并支持开通/停用操作。

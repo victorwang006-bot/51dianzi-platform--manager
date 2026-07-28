@@ -512,6 +512,96 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
   return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
 }
 
+/** 前台企业开通 CRM 申请入参 */
+export interface CrmApplicationInput {
+  companyName: string;
+  creditCode: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  legalPersonName?: string | null;
+  registeredAddress?: string | null;
+  businessScope?: string | null;
+  licenseImageUrl?: string | null;
+  portalUserId?: string | null;
+  note?: string | null;
+}
+
+/**
+ * 前台企业开通 CRM 申请：按统一社会信用代码（businessLicense）幂等 upsert 商户记录。
+ * 已存在商户 → 补充资料并将 crmStatus 置为 pending（已开通 enabled 的不降级）；
+ * 不存在 → 创建新商户记录（source=portal，status=pending，crmStatus=pending）。
+ */
+export async function submitCrmApplication(input: CrmApplicationInput) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+
+  const now = new Date();
+  const existing = await db
+    .select()
+    .from(merchants)
+    .where(eq(merchants.businessLicense, input.creditCode))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const m = existing[0];
+    const nextCrmStatus = m.crmStatus === "enabled" ? m.crmStatus : ("pending" as const);
+    await db.update(merchants).set({
+      ...(input.contactName ? { contactName: input.contactName } : {}),
+      ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+      ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+      ...(input.legalPersonName ? { legalPersonName: input.legalPersonName } : {}),
+      ...(input.registeredAddress ? { registeredAddress: input.registeredAddress } : {}),
+      ...(input.businessScope ? { businessScope: input.businessScope } : {}),
+      ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+      crmStatus: nextCrmStatus,
+      crmAppliedAt: now,
+      ...(input.note ? { crmNote: input.note } : {}),
+    }).where(eq(merchants.id, m.id));
+    return { merchantId: m.id, merchantNo: m.merchantNo, created: false, crmStatus: nextCrmStatus };
+  }
+
+  const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
+  const result = await db.insert(merchants).values({
+    merchantNo,
+    companyName: input.companyName,
+    businessLicense: input.creditCode,
+    contactName: input.contactName ?? null,
+    contactPhone: input.contactPhone ?? null,
+    contactEmail: input.contactEmail ?? null,
+    legalPersonName: input.legalPersonName ?? null,
+    registeredAddress: input.registeredAddress ?? null,
+    businessScope: input.businessScope ?? null,
+    licenseImageUrl: input.licenseImageUrl ?? null,
+    status: "pending",
+    source: "portal",
+    submittedAt: now,
+    crmStatus: "pending",
+    crmAppliedAt: now,
+    crmNote: input.note ?? null,
+  });
+  const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+  return { merchantId: insertId, merchantNo, created: true, crmStatus: "pending" as const };
+}
+
+/** 后台：设置商户 CRM 开通状态 */
+export async function setMerchantCrmStatus(input: {
+  merchantId: number;
+  crmStatus: "none" | "pending" | "enabled" | "disabled";
+  note?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(merchants).where(eq(merchants.id, input.merchantId)).limit(1);
+  if (!rows[0]) throw new Error("商户不存在");
+  await db.update(merchants).set({
+    crmStatus: input.crmStatus,
+    ...(input.crmStatus === "enabled" ? { crmEnabledAt: new Date() } : {}),
+    ...(input.note !== undefined ? { crmNote: input.note } : {}),
+  }).where(eq(merchants.id, input.merchantId));
+  return { success: true };
+}
+
 // ─── 管理员 ───────────────────────────────────────────────────────────────────
 
 export async function getAdminUsers(params: { page?: number; pageSize?: number } = {}) {
@@ -681,6 +771,18 @@ function genThreadNo() {
   return `MT${ymd}${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+/** 客户公司资料快照（前台提交时附带） */
+export interface CompanyProfileSnapshot {
+  companyName?: string | null;
+  creditCode?: string | null;
+  companyType?: string | null;
+  legalPerson?: string | null;
+  companyRole?: string | null;
+  regAddress?: string | null;
+  certLevel?: string | null;
+  [key: string]: unknown;
+}
+
 /** 前台提交"联系我们"留言：新建会话或在已有会话追加消息 */
 export async function createPortalMessage(input: {
   threadNo?: string | null;
@@ -689,6 +791,8 @@ export async function createPortalMessage(input: {
   contactPhone?: string | null;
   contactEmail?: string | null;
   portalUserId?: string | null;
+  threadType?: "general" | "inquiry" | "service" | "crm_apply" | null;
+  companyProfile?: CompanyProfileSnapshot | null;
   content: string;
 }) {
   const db = await getDb();
@@ -711,6 +815,8 @@ export async function createPortalMessage(input: {
       contactPhone: input.contactPhone ?? null,
       contactEmail: input.contactEmail ?? null,
       portalUserId: input.portalUserId ?? null,
+      threadType: input.threadType ?? "general",
+      companyProfile: input.companyProfile ?? null,
       adminUnreadCount: 1,
       lastMessagePreview: preview,
       lastMessageAt: new Date(),
@@ -727,6 +833,7 @@ export async function createPortalMessage(input: {
       ...(input.contactName ? { contactName: input.contactName } : {}),
       ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
       ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+      ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
     }).where(eq(messageThreads.id, thread.id));
   }
 
@@ -773,12 +880,14 @@ export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
+  threadType?: "general" | "inquiry" | "service" | "crm_apply";
   keyword?: string;
 }) {
   const db = await getDb();
   if (!db) return { items: [], total: 0 };
   const conds = [];
   if (input.status) conds.push(eq(messageThreads.status, input.status));
+  if (input.threadType) conds.push(eq(messageThreads.threadType, input.threadType));
   if (input.keyword) {
     const kw = `%${input.keyword}%`;
     conds.push(or(

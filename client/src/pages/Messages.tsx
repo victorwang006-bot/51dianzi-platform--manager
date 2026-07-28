@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, CheckCircle2, Mail, MessageSquare, Phone, RotateCcw, Search, Send, User,
+  ArrowLeft, Building2, CheckCircle2, Mail, MessageSquare, Phone, RotateCcw, Search, Send, User,
 } from "lucide-react";
 
 function formatTime(value: string | Date) {
@@ -21,19 +21,48 @@ function formatTime(value: string | Date) {
   });
 }
 
+const THREAD_TYPE_META: Record<string, { label: string; className: string }> = {
+  inquiry: { label: "快速询价", className: "bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent" },
+  service: { label: "在线客服", className: "bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent" },
+  crm_apply: { label: "企业开通", className: "bg-violet-100 text-violet-800 hover:bg-violet-100 border-transparent" },
+  general: { label: "留言", className: "bg-slate-100 text-slate-700 hover:bg-slate-100 border-transparent" },
+};
+
+function ThreadTypeBadge({ type }: { type?: string | null }) {
+  const meta = THREAD_TYPE_META[type ?? "general"] ?? THREAD_TYPE_META.general;
+  return <Badge className={meta.className}>{meta.label}</Badge>;
+}
+
+/** 公司资料快照（前台已提交公司资料的用户，会话中附带） */
+interface CompanyProfileSnapshot {
+  companyName?: string | null;
+  creditCode?: string | null;
+  companyType?: string | null;
+  legalPerson?: string | null;
+  companyRole?: string | null;
+  regAddress?: string | null;
+  certLevel?: string | null;
+}
+
 /** 会话列表 + 对话视图（选中会话后进入对话） */
 export default function Messages() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "general" | "inquiry" | "service" | "crm_apply">("all");
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
+  const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
+    // 支持 /messages?thread=4 直达会话详情
+    const t = new URLSearchParams(window.location.search).get("thread");
+    return t && /^\d+$/.test(t) ? Number(t) : null;
+  });
   const pageSize = 20;
 
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.message.threads.useQuery({
     page, pageSize,
     status: statusFilter === "all" ? undefined : statusFilter,
+    threadType: typeFilter === "all" ? undefined : typeFilter,
     keyword: keyword || undefined,
   }, { refetchInterval: 30000 });
 
@@ -79,7 +108,19 @@ export default function Messages() {
             <Search className="h-4 w-4 mr-1" /> 搜索
           </Button>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Select value={typeFilter} onValueChange={v => { setTypeFilter(v as typeof typeFilter); setPage(1); }}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部类型</SelectItem>
+              <SelectItem value="inquiry">快速询价</SelectItem>
+              <SelectItem value="service">在线客服</SelectItem>
+              <SelectItem value="crm_apply">企业开通</SelectItem>
+              <SelectItem value="general">普通留言</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={v => { setStatusFilter(v as typeof statusFilter); setPage(1); }}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -119,6 +160,7 @@ export default function Messages() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
+                    <ThreadTypeBadge type={(thread as { threadType?: string }).threadType} />
                     <span className="font-medium truncate">
                       {thread.subject || "（无主题）"}
                     </span>
@@ -189,6 +231,8 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
   });
 
   const thread = data?.thread;
+  const companyProfile = (thread as { companyProfile?: CompanyProfileSnapshot | null } | undefined)?.companyProfile ?? null;
+  const hasCompanyProfile = !!companyProfile && Object.values(companyProfile).some(v => v != null && v !== "");
 
   return (
     <div className="space-y-4">
@@ -207,12 +251,12 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-xl font-semibold">{thread.subject || "（无主题）"}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold">{thread.subject || "（无主题）"}</h1>
+                <ThreadTypeBadge type={(thread as { threadType?: string }).threadType} />
+              </div>
               <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
                 <span>{thread.threadNo}</span>
-                {thread.contactName && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{thread.contactName}</span>}
-                {thread.contactPhone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{thread.contactPhone}</span>}
-                {thread.contactEmail && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{thread.contactEmail}</span>}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -234,6 +278,83 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
                 </Button>
               )}
             </div>
+          </div>
+
+          {/* 客户信息卡片：联系方式 + 公司资料 */}
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <User className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">客户信息</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground shrink-0">联系人</span>
+                <span className="font-medium">{thread.contactName || "—"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground shrink-0">电话</span>
+                {thread.contactPhone ? (
+                  <a href={`tel:${thread.contactPhone}`} className="font-medium text-primary hover:underline">{thread.contactPhone}</a>
+                ) : <span>—</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground shrink-0">邮箱</span>
+                {thread.contactEmail ? (
+                  <a href={`mailto:${thread.contactEmail}`} className="font-medium text-primary hover:underline truncate">{thread.contactEmail}</a>
+                ) : <span>—</span>}
+              </div>
+            </div>
+            {hasCompanyProfile && (
+              <>
+                <div className="flex items-center gap-2 mt-4 mb-3 pt-3 border-t">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">公司资料</span>
+                  {companyProfile?.certLevel && (
+                    <Badge variant="secondary">{companyProfile.certLevel}</Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                  {companyProfile?.companyName && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground shrink-0">企业名称</span>
+                      <span className="font-medium truncate">{companyProfile.companyName}</span>
+                    </div>
+                  )}
+                  {companyProfile?.creditCode && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground shrink-0">统一社会信用代码</span>
+                      <span className="font-medium truncate">{companyProfile.creditCode}</span>
+                    </div>
+                  )}
+                  {companyProfile?.companyType && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground shrink-0">企业类型</span>
+                      <span className="font-medium">{companyProfile.companyType}</span>
+                    </div>
+                  )}
+                  {companyProfile?.legalPerson && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground shrink-0">法定代表人</span>
+                      <span className="font-medium">{companyProfile.legalPerson}</span>
+                    </div>
+                  )}
+                  {companyProfile?.companyRole && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground shrink-0">企业角色</span>
+                      <span className="font-medium">{companyProfile.companyRole}</span>
+                    </div>
+                  )}
+                  {companyProfile?.regAddress && (
+                    <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-3">
+                      <span className="text-muted-foreground shrink-0">注册地址</span>
+                      <span className="font-medium truncate">{companyProfile.regAddress}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="rounded-lg border bg-card p-4 space-y-4 max-h-[52vh] overflow-y-auto">

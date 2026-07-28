@@ -394,3 +394,21 @@
 - [x] 单元测试覆盖 portal 消息接口（46/46 通过，新增未读角标 2 个用例）
 - [x] 编写前台对接 API 文档（docs/联系客服消息API对接说明.md）
 - [x] 保存检查点并追加普通 commit 推送 GitHub（检查点 b476b600；GitHub 普通 commit dfc390b，无 force push）
+
+## 用户反馈（2026-07-28 第三十轮）：前台联系客服发消息后后台不显示
+- [x] 排查消息实际落库位置（生产 RDS vs Manus 开发库）与前台调用链——结论：消息链路正常，前台消息落在生产 RDS（3 会话 6 消息），用户查看的是相互隔离的 Manus 开发环境所以为空
+- [x] 修复问题或说明环境差异，验证后台消息页面正常显示——已将生产消息数据只读同步到开发库，开发环境消息页面正常显示 3 条会话与未读角标
+
+## 第三十一轮（2026-07-28）：会话详情客户信息增强 + 企业开通CRM落商户管理
+- [x] 会话详情页展示完整客户联系方式（快速询价、在线客服等所有会话类型）——详情页"客户信息"卡片：联系人/电话(tel:)/邮箱(mailto:)，列表与详情均带类型标签（快速询价/在线客服/企业开通/留言），列表支持类型筛选，支持 ?thread= 直达
+- [x] 客户已提交公司资料时，会话详情带出公司资料卡片——message_threads 新增 companyProfile JSON（迁移 0012），portal.submitMessage 支持 threadType/companyProfile，详情页展示企业名称/信用代码/企业类型/法定代表人/企业角色/注册地址/认证等级徽标
+- [x] 企业开通CRM申请落到商户管理页面，支持管理商户是否开通CRM——merchants 新增 crmStatus/crmAppliedAt/crmEnabledAt/crmNote（迁移 0012），新增 portal.submitCrmApplication（按信用代码幂等）与 merchant.setCrmStatus，商户管理页新增 CRM 状态列/筛选/开通停用操作
+- [x] 单元测试覆盖新增接口，页面验证——新增 crmAndProfile.test.ts 5 用例，51/51 通过；tsc 0 errors；build 通过；截图验证消息列表/详情客户信息卡片/商户 CRM 列
+- [x] 更新前台对接文档 docs/联系客服消息API对接说明.md（threadType/companyProfile 参数 + submitCrmApplication 接口）
+- [x] 保存检查点并追加普通 commit 推送 GitHub
+
+### 第三十一轮调研结论（勿删，实施依据）
+- 前台生产库为 RDS `rm-bp1m856i4zowwc264...:3306/dianzi51`（47.97.108.147 部署），公司资料在 `companies` 表（userId 唯一键，字段：companyName/creditCode/companyType/legalPerson/companyRole/bankInfo/regAddress/licenseUrl/certLevel）
+- message_threads.portalUserId 即前台 users.id（如 390005=王先生 15817256366），但后台库无法直接联前台库 → 方案：扩展 portal.submitMessage 允许前台附带公司资料快照（companyProfile JSON），同时后台新增 threadType 字段区分会话类型（inquiry/service/crm_apply/general）
+- 企业开通申请消息（threadId=5）内容为纯文本公司资料，后台 merchants 表已有完整公司字段但无 CRM 开通字段 → 方案：merchants 表新增 crmStatus（none/pending/enabled/disabled）与 crmAppliedAt/crmEnabledAt；portal 新增 submitCrmApplication 接口直接创建/更新商户记录（status=pending, source=portal, crmStatus=pending），商户管理页新增 CRM 开通列与操作
+- 兼容存量：现有"企业开通申请"消息保留在消息中心；新申请走 submitCrmApplication 落商户管理
