@@ -875,17 +875,19 @@ export async function getPortalThreadMessages(threadNo: string) {
   };
 }
 
-/** 后台：会话列表（支持状态筛选与关键词搜索） */
+/** 后台：会话列表（支持状态筛选与关键词搜索；企业开通申请不属于消息，始终排除 crm_apply） */
 export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "general" | "inquiry" | "service" | "crm_apply";
+  threadType?: "general" | "inquiry" | "service";
   keyword?: string;
 }) {
   const db = await getDb();
   if (!db) return { items: [], total: 0 };
   const conds = [];
+  // 企业开通申请直接落商户管理，不在消息中心展示
+  conds.push(sql`${messageThreads.threadType} <> 'crm_apply'`);
   if (input.status) conds.push(eq(messageThreads.status, input.status));
   if (input.threadType) conds.push(eq(messageThreads.threadType, input.threadType));
   if (input.keyword) {
@@ -963,12 +965,13 @@ export async function setMessageThreadStatus(threadId: number, status: "open" | 
   return { success: true };
 }
 
-/** 后台：全部未读消息总数（侧边栏角标） */
+/** 后台：全部未读消息总数（侧边栏角标，排除 crm_apply） */
 export async function getAdminUnreadTotal() {
   const db = await getDb();
   if (!db) return 0;
   const rows = await db.select({ total: sql<number>`COALESCE(SUM(${messageThreads.adminUnreadCount}), 0)` })
-    .from(messageThreads).where(eq(messageThreads.status, "open"));
+    .from(messageThreads)
+    .where(and(eq(messageThreads.status, "open"), sql`${messageThreads.threadType} <> 'crm_apply'`));
   return Number(rows[0]?.total ?? 0);
 }
 

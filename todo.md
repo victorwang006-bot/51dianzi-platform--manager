@@ -407,6 +407,13 @@
 - [x] 更新前台对接文档 docs/联系客服消息API对接说明.md（threadType/companyProfile 参数 + submitCrmApplication 接口）
 - [x] 保存检查点并追加普通 commit 推送 GitHub
 
+## 用户反馈（2026-07-28 第三十二轮）：商户入驻/企业开通信息不体现在消息中
+- [x] 消息中心列表与筛选排除企业开通（crm_apply）类会话，移除"企业开通"筛选项与类型标签展示
+- [x] 后端 message.threads 查询默认排除 crm_apply 类型会话（未读角标 unreadCount 同样排除）
+- [x] 清理开发库中的企业开通演示会话（threadId=5 及其消息已删除）
+- [x] 更新前台对接文档说明（企业开通仅走 submitCrmApplication，请勿再为企业开通创建会话）
+- [x] 测试/tsc/build 通过（51/51），页面截图验证消息中心仅显示在线客服与快速询价，保存检查点并推送 GitHub
+
 ### 第三十一轮调研结论（勿删，实施依据）
 - 前台生产库为 RDS `rm-bp1m856i4zowwc264...:3306/dianzi51`（47.97.108.147 部署），公司资料在 `companies` 表（userId 唯一键，字段：companyName/creditCode/companyType/legalPerson/companyRole/bankInfo/regAddress/licenseUrl/certLevel）
 - message_threads.portalUserId 即前台 users.id（如 390005=王先生 15817256366），但后台库无法直接联前台库 → 方案：扩展 portal.submitMessage 允许前台附带公司资料快照（companyProfile JSON），同时后台新增 threadType 字段区分会话类型（inquiry/service/crm_apply/general）

@@ -24,7 +24,6 @@ function formatTime(value: string | Date) {
 const THREAD_TYPE_META: Record<string, { label: string; className: string }> = {
   inquiry: { label: "快速询价", className: "bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent" },
   service: { label: "在线客服", className: "bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent" },
-  crm_apply: { label: "企业开通", className: "bg-violet-100 text-violet-800 hover:bg-violet-100 border-transparent" },
   general: { label: "留言", className: "bg-slate-100 text-slate-700 hover:bg-slate-100 border-transparent" },
 };
 
@@ -48,7 +47,7 @@ interface CompanyProfileSnapshot {
 export default function Messages() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "general" | "inquiry" | "service" | "crm_apply">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "general" | "inquiry" | "service">("all");
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
@@ -117,7 +116,6 @@ export default function Messages() {
               <SelectItem value="all">全部类型</SelectItem>
               <SelectItem value="inquiry">快速询价</SelectItem>
               <SelectItem value="service">在线客服</SelectItem>
-              <SelectItem value="crm_apply">企业开通</SelectItem>
               <SelectItem value="general">普通留言</SelectItem>
             </SelectContent>
           </Select>

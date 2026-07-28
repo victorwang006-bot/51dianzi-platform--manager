@@ -542,7 +542,7 @@ export const appRouter = router({
     threads: adminProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
-        threadType: z.enum(["general", "inquiry", "service", "crm_apply"]).optional(),
+        threadType: z.enum(["general", "inquiry", "service"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {

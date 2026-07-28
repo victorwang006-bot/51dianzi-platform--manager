@@ -44,7 +44,7 @@
 | contactPhone | string | 否 | 联系电话 |
 | contactEmail | string | 否 | 联系邮箱（需为合法邮箱格式） |
 | portalUserId | string | 否 | 前台用户 ID（登录用户建议传入，便于后台关联客户） |
-| threadType | string | 否 | 会话类型，仅新会话生效：`inquiry`=快速询价、`service`=在线客服、`crm_apply`=企业开通、`general`=普通留言（默认）。后台消息列表与详情按此显示彩色类型标签并支持筛选 |
+| threadType | string | 否 | 会话类型，仅新会话生效：`inquiry`=快速询价、`service`=在线客服、`general`=普通留言（默认）。后台消息列表与详情按此显示彩色类型标签并支持筛选。注意：**企业开通申请不要创建会话**（`crm_apply` 类型会话不会在后台消息中心展示），请直接调用 `portal.submitCrmApplication` |
 | companyProfile | object | 否 | 客户公司资料快照（已提交公司资料的用户建议附带）。后台会话详情"客户信息"卡片将展示。字段见下表 |
 
 `companyProfile` 对象字段（均为可选 string）：
@@ -170,7 +170,7 @@ curl -k -X POST "https://47.97.108.147/admin/api/trpc/portal.submitCrmApplicatio
   -d '{"json":{"companyName":"深圳市某某电子有限公司","creditCode":"91440300XXXXXXXXXX","contactName":"张三","contactPhone":"13800000000","contactEmail":"zhangsan@example.com","legalPersonName":"张三","registeredAddress":"深圳市福田区XX路X号","note":"希望开通CRM进行供应链管理"}}'
 ```
 
-建议：前台提交企业开通申请时，可同时调用 `portal.submitMessage`（`threadType: "crm_apply"`，内容为申请摘要）创建一条"企业开通"会话，便于客服在消息中心跟进沟通；两者相互独立，仅调用 submitCrmApplication 也可完成落库。
+注意：企业开通申请**只需调用本接口**，申请信息直接落入后台"商户管理"页面，由运营人员跟进；请勿再为企业开通申请调用 `portal.submitMessage` 创建会话（后台消息中心不展示企业开通类会话）。
 
 ## 四、错误码
 
