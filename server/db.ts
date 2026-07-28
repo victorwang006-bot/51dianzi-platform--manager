@@ -862,3 +862,21 @@ export async function getAdminUnreadTotal() {
     .from(messageThreads).where(eq(messageThreads.status, "open"));
   return Number(rows[0]?.total ?? 0);
 }
+
+/** 前台：查询会话未读回复数（不清零，供前台"联系客服"按钮角标轮询） */
+export async function getPortalThreadUnread(threadNo: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select({
+    portalUnreadCount: messageThreads.portalUnreadCount,
+    status: messageThreads.status,
+    lastMessageAt: messageThreads.lastMessageAt,
+  }).from(messageThreads).where(eq(messageThreads.threadNo, threadNo)).limit(1);
+  if (!rows[0]) return null;
+  return {
+    threadNo,
+    unreadCount: rows[0].portalUnreadCount,
+    status: rows[0].status,
+    lastMessageAt: rows[0].lastMessageAt,
+  };
+}

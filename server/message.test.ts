@@ -128,4 +128,45 @@ describe("消息互通（前台联系我们 ↔ 后台消息中心）", () => {
     await expect(portal.getMessages({ threadNo: "MT00000000XXXX" }))
       .rejects.toMatchObject({ code: "NOT_FOUND" });
   });
+
+  it("前台未读角标：getUnread 不清零，getMessages 拉取后清零", async () => {
+    const portal = appRouter.createCaller(portalCtx()).portal;
+    const admin = appRouter.createCaller(adminCtx());
+
+    // 前台提交留言并由后台回复两条 → 前台未读数应为 2
+    const submitted = await portal.submitMessage({
+      subject: `${TEST_PREFIX}-角标`,
+      contactName: "角标测试",
+      content: "请问有 GD32 的替代料吗？",
+    });
+    const list = await admin.message.threads({ page: 1, pageSize: 50, keyword: `${TEST_PREFIX}-角标` });
+    const thread = list.items.find(t => t.threadNo === submitted.threadNo)!;
+    await admin.message.reply({ threadId: thread.id, content: "有的，GD32F103 系列可替代。" });
+    await admin.message.reply({ threadId: thread.id, content: "需要的话我发规格书给您。" });
+
+    // getUnread 查询未读数（不清零）
+    const unread1 = await portal.getUnread({ threadNo: submitted.threadNo });
+    expect(unread1.unreadCount).toBe(2);
+    expect(unread1.status).toBe("open");
+
+    // 再查一次仍为 2（确认不清零）
+    const unread2 = await portal.getUnread({ threadNo: submitted.threadNo });
+    expect(unread2.unreadCount).toBe(2);
+
+    // getMessages 拉取后未读清零
+    await portal.getMessages({ threadNo: submitted.threadNo });
+    const unread3 = await portal.getUnread({ threadNo: submitted.threadNo });
+    expect(unread3.unreadCount).toBe(0);
+
+    await cleanupTestThreads();
+  });
+
+  it("getUnread：不存在会话返回 NOT_FOUND，无 key 被拒绝", async () => {
+    const portal = appRouter.createCaller(portalCtx()).portal;
+    await expect(portal.getUnread({ threadNo: "MT00000000XXXX" }))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
+    const noKey = appRouter.createCaller(portalCtx(false)).portal;
+    await expect(noKey.getUnread({ threadNo: "MT00000000XXXX" }))
+      .rejects.toMatchObject({ name: "TRPCError" });
+  });
 });

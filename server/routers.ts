@@ -421,6 +421,20 @@ export const appRouter = router({
         }
         return result;
       }),
+
+    /**
+     * 前台查询会话未读回复数（不清零），供"联系客服"按钮红点角标轮询。鉴权：x-portal-key。
+     */
+    getUnread: publicProcedure
+      .input(z.object({ threadNo: z.string().min(1).max(32) }))
+      .query(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const result = await db.getPortalThreadUnread(input.threadNo);
+        if (!result) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在" });
+        }
+        return result;
+      }),
     /**
      * 上传物料图片并按型号回写 materials 表。鉴权：x-portal-key。
      * 用途：外部任务批量导入物料图片（文件名=型号场景）。

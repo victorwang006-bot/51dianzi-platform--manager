@@ -373,3 +373,24 @@
 - [x] 页面验证：/、/merchants、/merchants/1、/admins、/404 正常；公开 API material.lookup / getSpecs / search 返回正常
 - [x] 清理验证过程产生的测试数据，保存 Manus 检查点
 - [x] 追加普通 commit 推送 GitHub（禁止 force push）：0ea33ee 普通追加推送成功，c032300..0ea33ee
+
+## 用户需求（2026-07-26 第二十八轮）：消息中心拆分子项
+**状态：用户要求暂停（2026-07-27），代码零改动，待恢复**
+- [x] 梳理现有消息模块（message_threads/messages）与前台快速询价数据来源
+  - 调研结论：前台 dianzi51 无"联系客服"/"快速询价"入口、无官方客服账号；"聊一聊"为用户间一对一 IM（conversations/messages/conversation_user_settings 表，生产仅 2 会话 4 消息）
+  - 后台已有 message_threads/messages（x-portal-key 对接），portal.submitMessage / portal.getMessages 已可用
+  - 设计方案（待用户确认后实施）：message_threads 加 type 字段（system/inquiry）+ 询价结构化字段；侧边栏拆两个子项；新增 portal.submitInquiry 公开 API；交付 API 对接文档供前台接入
+- [ ] （暂停）后端：询价消息数据模型与 API
+- [ ] （暂停）后端：询价消息数据模型与 API
+- [ ] （暂停）前端：消息菜单下新增系统消息、询价消息两个子项
+- [ ] （暂停）单元测试覆盖新增接口，页面验证两个子页面
+- [ ] （暂停）保存检查点并追加普通 commit 推送 GitHub
+
+## 用户需求（2026-07-28 第二十九轮）：前台"联系客服"→ 后台"消息"链路
+范围：仅联系客服消息链路（不含快速询价拆分）
+- [x] 梳理后台现有 portal API（submitMessage/getMessages）与消息中心实现，确定缺口
+- [x] 实现/完善 portal 公开 API：新增 portal.getUnread（前台未读角标查询，不清零）；submitMessage/getMessages 已有
+- [x] 验证后台"消息"页面查看与回复流程（截图确认列表/未读角标/详情回复正常，E2E 测试数据已清理）
+- [x] 单元测试覆盖 portal 消息接口（46/46 通过，新增未读角标 2 个用例）
+- [x] 编写前台对接 API 文档（docs/联系客服消息API对接说明.md）
+- [ ] 保存检查点并追加普通 commit 推送 GitHub
