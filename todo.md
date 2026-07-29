@@ -414,6 +414,17 @@
 - [x] 更新前台对接文档说明（企业开通仅走 submitCrmApplication，请勿再为企业开通创建会话）
 - [x] 测试/tsc/build 通过（51/51），页面截图验证消息中心仅显示在线客服与快速询价，保存检查点并推送 GitHub
 
+## 用户需求（2026-07-28 第三十三轮）：商户 CRM 操作重构（通过/发信/拒绝、暂停）
+- [x] 后端：merchant.setCrmStatus 支持 rejected（拒绝）状态，schema crmStatus 枚举扩展 rejected 并迁移（0013，另加 crmThreadNo 列）
+- [x] 后端：新增 merchant.sendMessage 发信接口——给指定商户创建/复用客服会话并发送后台消息，前台"联系客服"可收到（portalUnreadCount+1，红点角标由现有 portal.getUnread 支持）
+- [x] 后端：新增 portal.getCrmAccess 公开接口——前台按信用代码校验 CRM 权限（enabled 可进入；disabled 返回"您的CRM权限已经被暂停，请联系客服"）
+- [x] 前端商户页：未开通/待开通/已拒绝/已暂停商户操作区改为「通过」「发信」「拒绝」三按钮（替换原"通过/补件/开通CRM"组合）
+- [x] 前端商户页：已开通商户操作区仅显示「暂停」按钮
+- [x] 前端商户页：发信对话框（输入消息内容，发送到客户前台联系客服会话）
+- [x] 单元测试覆盖新增接口（crmActions.test.ts 5 用例，56/56 通过），tsc/build 通过，页面截图验证
+- [x] 更新前台对接文档（3.5 getCrmAccess 接口 + 3.6 发信红点说明）
+- [ ] 保存检查点并追加普通 commit 推送 GitHub
+
 ### 第三十一轮调研结论（勿删，实施依据）
 - 前台生产库为 RDS `rm-bp1m856i4zowwc264...:3306/dianzi51`（47.97.108.147 部署），公司资料在 `companies` 表（userId 唯一键，字段：companyName/creditCode/companyType/legalPerson/companyRole/bankInfo/regAddress/licenseUrl/certLevel）
 - message_threads.portalUserId 即前台 users.id（如 390005=王先生 15817256366），但后台库无法直接联前台库 → 方案：扩展 portal.submitMessage 允许前台附带公司资料快照（companyProfile JSON），同时后台新增 threadType 字段区分会话类型（inquiry/service/crm_apply/general）

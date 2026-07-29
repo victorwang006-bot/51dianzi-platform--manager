@@ -170,14 +170,16 @@ export const merchants = mysqlTable("merchants", {
   reviewNote: text("reviewNote"),
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
-  /** CRM 开通状态：none=未申请 pending=待开通 enabled=已开通 disabled=已停用 */
-  crmStatus: mysqlEnum("crmStatus", ["none", "pending", "enabled", "disabled"]).default("none").notNull(),
+  /** CRM 开通状态：none=未申请 pending=待开通 enabled=已开通 disabled=已暂停 rejected=已拒绝 */
+  crmStatus: mysqlEnum("crmStatus", ["none", "pending", "enabled", "disabled", "rejected"]).default("none").notNull(),
   /** CRM 申请时间（前台提交企业开通申请时写入） */
   crmAppliedAt: timestamp("crmAppliedAt"),
   /** CRM 开通时间（后台开通时写入） */
   crmEnabledAt: timestamp("crmEnabledAt"),
   /** CRM 备注（开通/停用原因等） */
   crmNote: text("crmNote"),
+  /** 后台"发信"关联的客服会话编号（首次发信创建 service 会话后记录并复用） */
+  crmThreadNo: varchar("crmThreadNo", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

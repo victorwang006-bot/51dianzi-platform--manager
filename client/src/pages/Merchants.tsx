@@ -43,18 +43,20 @@ const actionLabels: Record<ReviewAction, string> = {
   reactivate: "恢复商户",
 };
 
-type CrmStatus = "none" | "pending" | "enabled" | "disabled";
+type CrmStatus = "none" | "pending" | "enabled" | "disabled" | "rejected";
 
 const crmStatusMap: Record<CrmStatus, { label: string; style: "success" | "warning" | "danger" | "info" | "gray" }> = {
   none: { label: "未申请", style: "gray" },
   pending: { label: "待开通", style: "warning" },
   enabled: { label: "已开通", style: "success" },
-  disabled: { label: "已停用", style: "danger" },
+  disabled: { label: "已暂停", style: "danger" },
+  rejected: { label: "已拒绝", style: "gray" },
 };
 
 const crmActionLabels: Record<string, string> = {
-  enabled: "开通 CRM",
-  disabled: "停用 CRM",
+  enabled: "通过（开通 CRM）",
+  disabled: "暂停 CRM",
+  rejected: "拒绝申请",
 };
 
 export default function Merchants() {
@@ -64,8 +66,10 @@ export default function Merchants() {
   const [searchInput, setSearchInput] = useState("");
   const [reviewTarget, setReviewTarget] = useState<{ id: number; name: string; action: ReviewAction } | null>(null);
   const [reviewNote, setReviewNote] = useState("");
-  const [crmTarget, setCrmTarget] = useState<{ id: number; name: string; nextStatus: "enabled" | "disabled" } | null>(null);
+  const [crmTarget, setCrmTarget] = useState<{ id: number; name: string; nextStatus: "enabled" | "disabled" | "rejected" } | null>(null);
   const [crmNote, setCrmNote] = useState("");
+  const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
+  const [msgContent, setMsgContent] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
@@ -92,12 +96,25 @@ export default function Merchants() {
 
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
     onSuccess: (_d, vars) => {
-      toast.success(vars.crmStatus === "enabled" ? "CRM 已开通" : "CRM 已停用");
+      toast.success(
+        vars.crmStatus === "enabled" ? "已通过，CRM 已开通"
+          : vars.crmStatus === "rejected" ? "已拒绝该申请"
+          : "CRM 已暂停",
+      );
       utils.merchant.list.invalidate();
       setCrmTarget(null);
       setCrmNote("");
     },
     onError: err => toast.error(`操作失败：${err.message}`),
+  });
+
+  const sendMsgMutation = trpc.merchant.sendMessage.useMutation({
+    onSuccess: () => {
+      toast.success("消息已发送，客户前台联系客服将显示红点提醒");
+      setMsgTarget(null);
+      setMsgContent("");
+    },
+    onError: err => toast.error(`发送失败：${err.message}`),
   });
 
   const doSearch = () => {
@@ -196,35 +213,24 @@ export default function Merchants() {
                           <td className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</td>
                           <td>
                             <div className="flex items-center gap-1 flex-wrap">
-                              {(m.status === "pending" || m.status === "supplement") && (
-                                <>
-                                  <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "approve" })}>
-                                    通过
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "supplement" })}>
-                                    补件
-                                  </Button>
-                                </>
-                              )}
-                              {m.status === "approved" && (
-                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "suspend" })}>
+                              {crmStatus === "enabled" ? (
+                                /* 已开通客户：只有「暂停」 */
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "disabled" })}>
                                   暂停
                                 </Button>
-                              )}
-                              {m.status === "suspended" && (
-                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewTarget({ id: m.id, name: m.companyName, action: "reactivate" })}>
-                                  恢复
-                                </Button>
-                              )}
-                              {(crmStatus === "pending" || crmStatus === "disabled" || crmStatus === "none") && (
-                                <Button size="sm" variant={crmStatus === "pending" ? "default" : "outline"} className={`h-7 text-xs ${crmStatus === "pending" ? "bg-violet-600 hover:bg-violet-700" : ""}`} onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "enabled" })}>
-                                  开通CRM
-                                </Button>
-                              )}
-                              {crmStatus === "enabled" && (
-                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "disabled" })}>
-                                  停用CRM
-                                </Button>
+                              ) : (
+                                /* 未开通 / 待开通 / 已暂停 / 已拒绝：通过 / 发信 / 拒绝 */
+                                <>
+                                  <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "enabled" })}>
+                                    通过
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setMsgTarget({ id: m.id, name: m.companyName })}>
+                                    发信
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "rejected" })}>
+                                    拒绝
+                                  </Button>
+                                </>
                               )}
                             </div>
                           </td>
@@ -270,17 +276,20 @@ export default function Merchants() {
         </DialogContent>
       </Dialog>
 
-      {/* CRM 开通/停用对话框 */}
+      {/* CRM 通过/拒绝/暂停对话框 */}
       <Dialog open={crmTarget !== null} onOpenChange={open => !open && setCrmTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}</DialogTitle>
             <DialogDescription>
-              目标商户：{crmTarget?.name}。{crmTarget?.nextStatus === "enabled" ? "开通后该商户可使用 CRM 功能。" : "停用后该商户将无法使用 CRM 功能。"}
+              目标商户：{crmTarget?.name}。
+              {crmTarget?.nextStatus === "enabled" && "通过后该商户即可进入并使用 CRM 系统。"}
+              {crmTarget?.nextStatus === "disabled" && "暂停后该商户将无法进入 CRM 页面，前台会提示：您的CRM权限已经被暂停，请联系客服。"}
+              {crmTarget?.nextStatus === "rejected" && "拒绝后该商户的 CRM 开通申请将被驳回，可通过「发信」告知客户原因。"}
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="备注（选填，如开通/停用原因）"
+            placeholder="备注（选填，如通过/拒绝/暂停原因）"
             value={crmNote}
             onChange={e => setCrmNote(e.target.value)}
             rows={3}
@@ -289,12 +298,43 @@ export default function Merchants() {
             <Button variant="outline" onClick={() => setCrmTarget(null)}>取消</Button>
             <Button
               disabled={crmMutation.isPending}
+              variant={crmTarget?.nextStatus === "enabled" ? "default" : "destructive"}
               onClick={() => {
                 if (!crmTarget) return;
                 crmMutation.mutate({ id: crmTarget.id, crmStatus: crmTarget.nextStatus, note: crmNote.trim() || undefined });
               }}
             >
               确认{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 发信对话框：发送消息到客户前台"联系客服" */}
+      <Dialog open={msgTarget !== null} onOpenChange={open => { if (!open) { setMsgTarget(null); setMsgContent(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>发信给客户</DialogTitle>
+            <DialogDescription>
+              目标商户：{msgTarget?.name}。消息将推送到客户前台"联系客服"，客户端将显示红色信息提示图标。
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="请输入要发送给客户的消息内容，例如：您的CRM开通申请材料不完整，请补充营业执照扫描件…"
+            value={msgContent}
+            onChange={e => setMsgContent(e.target.value)}
+            rows={5}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setMsgTarget(null); setMsgContent(""); }}>取消</Button>
+            <Button
+              disabled={sendMsgMutation.isPending || !msgContent.trim()}
+              onClick={() => {
+                if (!msgTarget) return;
+                sendMsgMutation.mutate({ id: msgTarget.id, content: msgContent.trim() });
+              }}
+            >
+              发送
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,0 +1,2 @@
+ALTER TABLE `merchants` MODIFY COLUMN `crmStatus` enum('none','pending','enabled','disabled','rejected') NOT NULL DEFAULT 'none';--> statement-breakpoint
+ALTER TABLE `merchants` ADD `crmThreadNo` varchar(32);

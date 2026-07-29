@@ -584,10 +584,10 @@ export async function submitCrmApplication(input: CrmApplicationInput) {
   return { merchantId: insertId, merchantNo, created: true, crmStatus: "pending" as const };
 }
 
-/** 后台：设置商户 CRM 开通状态 */
+/** 后台：设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
 export async function setMerchantCrmStatus(input: {
   merchantId: number;
-  crmStatus: "none" | "pending" | "enabled" | "disabled";
+  crmStatus: "none" | "pending" | "enabled" | "disabled" | "rejected";
   note?: string | null;
 }) {
   const db = await getDb();
@@ -600,6 +600,103 @@ export async function setMerchantCrmStatus(input: {
     ...(input.note !== undefined ? { crmNote: input.note } : {}),
   }).where(eq(merchants.id, input.merchantId));
   return { success: true };
+}
+
+/**
+ * 后台：给商户"发信"。首次发信为该商户创建 service 客服会话（记录 crmThreadNo），
+ * 后续复用同一会话追加消息；消息计入前台未读数（portalUnreadCount+1），
+ * 前台"联系客服"按钮通过 portal.getUnread 轮询显示红点。
+ */
+export async function sendMerchantMessage(input: {
+  merchantId: number;
+  content: string;
+  adminId: number;
+  adminName: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(merchants).where(eq(merchants.id, input.merchantId)).limit(1);
+  const merchant = rows[0];
+  if (!merchant) throw new Error("商户不存在");
+
+  // 复用已关联的会话
+  let thread: typeof messageThreads.$inferSelect | undefined;
+  if (merchant.crmThreadNo) {
+    const tr = await db.select().from(messageThreads)
+      .where(eq(messageThreads.threadNo, merchant.crmThreadNo)).limit(1);
+    thread = tr[0];
+  }
+
+  const preview = input.content.slice(0, 200);
+  if (!thread) {
+    const threadNo = genThreadNo();
+    await db.insert(messageThreads).values({
+      threadNo,
+      subject: `平台通知 - ${merchant.companyName}`,
+      contactName: merchant.contactName ?? null,
+      contactPhone: merchant.contactPhone ?? null,
+      contactEmail: merchant.contactEmail ?? null,
+      threadType: "service",
+      status: "open",
+      adminUnreadCount: 0,
+      portalUnreadCount: 0,
+      lastMessagePreview: preview,
+      lastMessageAt: new Date(),
+    });
+    const tr = await db.select().from(messageThreads)
+      .where(eq(messageThreads.threadNo, threadNo)).limit(1);
+    thread = tr[0];
+    await db.update(merchants).set({ crmThreadNo: threadNo }).where(eq(merchants.id, merchant.id));
+  }
+
+  await db.insert(messages).values({
+    threadId: thread!.id,
+    senderType: "admin",
+    senderAdminId: input.adminId,
+    senderName: input.adminName,
+    content: input.content,
+  });
+  await db.update(messageThreads).set({
+    status: "open",
+    portalUnreadCount: sql`${messageThreads.portalUnreadCount} + 1`,
+    lastMessagePreview: preview,
+    lastMessageAt: new Date(),
+  }).where(eq(messageThreads.id, thread!.id));
+
+  return { success: true, threadNo: thread!.threadNo, threadId: thread!.id };
+}
+
+/**
+ * 前台：按统一社会信用代码校验 CRM 访问权限。
+ * enabled → allowed=true；disabled → 提示"您的CRM权限已经被暂停，请联系客服"；
+ * 其余状态（none/pending/rejected/未找到商户）→ 未开通提示。
+ */
+export async function getCrmAccessByCreditCode(creditCode: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(merchants)
+    .where(eq(merchants.businessLicense, creditCode)).limit(1);
+  const merchant = rows[0];
+  if (!merchant) {
+    return { allowed: false, crmStatus: "none" as const, message: "您尚未开通CRM，请先提交企业开通申请" };
+  }
+  const crmStatus = merchant.crmStatus;
+  if (crmStatus === "enabled") {
+    return { allowed: true, crmStatus, message: null, merchantNo: merchant.merchantNo, crmThreadNo: merchant.crmThreadNo ?? null };
+  }
+  const messageMap: Record<string, string> = {
+    disabled: "您的CRM权限已经被暂停，请联系客服",
+    pending: "您的CRM开通申请正在审核中，请耐心等待",
+    rejected: "您的CRM开通申请未通过，如有疑问请联系客服",
+    none: "您尚未开通CRM，请先提交企业开通申请",
+  };
+  return {
+    allowed: false,
+    crmStatus,
+    message: messageMap[crmStatus] ?? messageMap.none,
+    merchantNo: merchant.merchantNo,
+    crmThreadNo: merchant.crmThreadNo ?? null,
+  };
 }
 
 // ─── 管理员 ───────────────────────────────────────────────────────────────────

@@ -355,11 +355,11 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
-    /** 设置商户 CRM 开通状态（开通/停用/重置） */
+    /** 设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
     setCrmStatus: adminProcedure
       .input(z.object({
         id: z.number(),
-        crmStatus: z.enum(["none", "pending", "enabled", "disabled"]),
+        crmStatus: z.enum(["none", "pending", "enabled", "disabled", "rejected"]),
         note: z.string().max(1000).optional().nullable(),
       }))
       .mutation(async ({ input }) => {
@@ -367,6 +367,23 @@ export const appRouter = router({
           merchantId: input.id,
           crmStatus: input.crmStatus,
           note: input.note,
+        });
+      }),
+    /**
+     * 给商户"发信"：发送平台消息到该商户关联的前台客服会话（首次自动建会话并复用）。
+     * 前台"联系客服"按钮通过 portal.getUnread 轮询该会话显示红点提醒。
+     */
+    sendMessage: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        content: z.string().min(1, "消息内容不能为空").max(5000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return db.sendMerchantMessage({
+          merchantId: input.id,
+          content: input.content,
+          adminId: ctx.user.id,
+          adminName: ctx.user.name ?? "平台客服",
         });
       }),
   }),
@@ -483,6 +500,19 @@ export const appRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在" });
         }
         return result;
+      }),
+
+    /**
+     * 前台校验企业 CRM 访问权限。鉴权：x-portal-key。
+     * 入参：统一社会信用代码。返回 allowed / crmStatus / message：
+     * enabled → allowed=true；disabled → "您的CRM权限已经被暂停，请联系客服"；
+     * pending/rejected/none → 对应提示文案。附带 crmThreadNo（后台发信会话编号，用于前台联系客服红点轮询）。
+     */
+    getCrmAccess: publicProcedure
+      .input(z.object({ creditCode: z.string().min(5).max(64) }))
+      .query(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.getCrmAccessByCreditCode(input.creditCode);
       }),
     /**
      * 上传物料图片并按型号回写 materials 表。鉴权：x-portal-key。

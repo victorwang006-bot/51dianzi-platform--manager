@@ -172,6 +172,51 @@ curl -k -X POST "https://47.97.108.147/admin/api/trpc/portal.submitCrmApplicatio
 
 注意：企业开通申请**只需调用本接口**，申请信息直接落入后台"商户管理"页面，由运营人员跟进；请勿再为企业开通申请调用 `portal.submitMessage` 创建会话（后台消息中心不展示企业开通类会话）。
 
+### 3.5 校验 CRM 访问权限 portal.getCrmAccess
+
+`GET {BASE}/portal.getCrmAccess?input={"json":{"creditCode":"统一社会信用代码"}}`
+
+用户点击进入 CRM 页面前调用本接口校验权限。后台运营对 CRM 申请有三种处理：**通过**（enabled）、**拒绝**（rejected）、以及对已开通客户的**暂停**（disabled）。前台按返回的 `allowed` 与 `message` 处理：
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| creditCode | string | 是 | 企业统一社会信用代码（与申请时一致） |
+
+成功返回：
+
+```json
+{"result":{"data":{"json":{"allowed":false,"crmStatus":"disabled","message":"您的CRM权限已经被暂停，请联系客服","merchantNo":"M2026071234","crmThreadNo":"MT202607291234"}}}}
+```
+
+| 返回字段 | 说明 |
+|---|---|
+| allowed | `true`=允许进入 CRM；`false`=禁止进入，弹出 `message` 提示 |
+| crmStatus | `enabled`=已开通 / `pending`=待审核 / `rejected`=已拒绝 / `disabled`=已暂停 / `none`=未申请 |
+| message | 禁止进入时的提示文案（allowed=true 时为 null）。已暂停时固定为"您的CRM权限已经被暂停，请联系客服" |
+| merchantNo | 商户编号（未找到商户时无此字段） |
+| crmThreadNo | 后台"发信"使用的客服会话编号，非空时前台应将其纳入"联系客服"红点轮询（见下） |
+
+**前台必须实现**：
+1. 用户点击 CRM 入口时调用本接口；`allowed=false` 时阻止进入并弹出 `message`（如"您的CRM权限已经被暂停，请联系客服"）。
+2. 已进入 CRM 的页面也建议定期（如每 5 分钟或页面刷新时）复查，防止暂停后继续使用。
+
+curl 示例：
+
+```bash
+curl -k -G "https://47.97.108.147/admin/api/trpc/portal.getCrmAccess" \
+  -H "x-portal-key: $PORTAL_KEY" \
+  --data-urlencode 'input={"json":{"creditCode":"91440300XXXXXXXXXX"}}'
+```
+
+### 3.6 后台"发信"与联系客服红点提醒
+
+后台运营在"商户管理"页对未开通/待开通客户可点击**发信**，消息会落入该商户关联的客服会话（`threadType=service`，首次发信自动创建，之后复用同一会话，会话编号即 `getCrmAccess` 返回的 `crmThreadNo`）。
+
+前台对接要求：
+1. **红点提示**：前台"联系客服"按钮旁需设计红色信息提示图标。轮询 `portal.getUnread`（传 `crmThreadNo` 或本地保存的 threadNo），`unreadCount > 0` 时显示红点。
+2. **会话合并**：若用户本地已有联系客服会话 threadNo，且 `getCrmAccess` 返回了不同的 `crmThreadNo`，两个会话的未读数都应轮询，红点显示任一会话有未读即可；打开客服窗口时可分别调用 `getMessages` 拉取。
+3. **回复**：客户在联系客服窗口回复时调用 `submitMessage` 并带上对应 `threadNo`，消息将回到后台同一会话。
+
 ## 四、错误码
 
 | HTTP 状态 | code | 场景 | 处理建议 |
@@ -189,7 +234,10 @@ curl -k -X POST "https://47.97.108.147/admin/api/trpc/portal.submitCrmApplicatio
 4. **收取**：打开对话窗口时调用 `getMessages` 渲染历史消息并清未读；窗口打开期间可 10–15 秒轮询刷新。
 5. **角标**：窗口关闭状态下按 30–60 秒轮询 `getUnread`，`unreadCount > 0` 时按钮显示红点。
 6. **安全**：`x-portal-key` 只存于前台服务端环境变量，浏览器请求一律经前台服务端转发。
+7. **CRM 权限**：CRM 入口统一走 `getCrmAccess` 校验；被暂停用户点击 CRM 页面时提示"您的CRM权限已经被暂停，请联系客服"。
 
 ## 六、验证记录
 
 本链路已于 2026-07-28 在 Manus 开发环境完成验证：单元测试 51/51 通过（含消息链路 5 个用例与本次新增 threadType/companyProfile/CRM 申请 5 个用例）；HTTP 端到端验证提交留言、未读查询、消息拉取均正常；后台"消息"页面正确展示会话类型标签、客户信息卡片（联系方式 + 公司资料）、未读角标与回复功能；"商户管理"页面正确展示 CRM 状态列并支持开通/停用操作。
+
+2026-07-29 更新（第三十三轮）：商户 CRM 操作重构完成——未开通/待开通/已拒绝/已暂停商户操作为"通过 / 发信 / 拒绝"，已开通商户仅保留"暂停"；新增 `portal.getCrmAccess` 权限校验接口与后台"发信"→前台联系客服红点链路；单元测试 56/56 通过（新增 crmActions.test.ts 5 个用例，覆盖申请→发信→未读红点→拒绝→通过→暂停全流程）。
