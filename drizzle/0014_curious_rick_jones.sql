@@ -1,0 +1,1 @@
+ALTER TABLE `merchants` ADD `salesOwner` varchar(64);

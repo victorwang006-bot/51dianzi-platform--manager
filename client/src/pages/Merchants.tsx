@@ -175,6 +175,7 @@ export default function Merchants() {
                       <th>商户编号</th>
                       <th>公司名称</th>
                       <th>联系人</th>
+                      <th>销售负责人</th>
                       <th>状态</th>
                       <th>CRM</th>
                       <th>协议</th>
@@ -204,6 +205,7 @@ export default function Merchants() {
                               <p className="text-muted-foreground">{m.contactPhone ?? ""}</p>
                             </div>
                           </td>
+                          <td className="text-xs">{(m as { salesOwner?: string | null }).salesOwner ?? "-"}</td>
                           <td><StatusBadge label={st.label} style={st.style} /></td>
                           <td><StatusBadge label={crm.label} style={crm.style} /></td>
                           <td><StatusBadge label={ag.label} style={ag.style} /></td>

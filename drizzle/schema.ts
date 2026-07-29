@@ -180,6 +180,8 @@ export const merchants = mysqlTable("merchants", {
   crmNote: text("crmNote"),
   /** 后台"发信"关联的客服会话编号（首次发信创建 service 会话后记录并复用） */
   crmThreadNo: varchar("crmThreadNo", { length: 32 }),
+  /** 销售负责人（前台 submitMerchant 可传入，后台商户列表展示） */
+  salesOwner: varchar("salesOwner", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

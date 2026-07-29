@@ -455,6 +455,7 @@ export interface PortalMerchantSubmission {
   legalPersonName?: string | null;
   legalPersonIdNo?: string | null;
   legalPersonPhone?: string | null;
+  salesOwner?: string | null;
 }
 
 /**
@@ -483,6 +484,7 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
     legalPersonName: input.legalPersonName ?? null,
     legalPersonIdNo: input.legalPersonIdNo ?? null,
     legalPersonPhone: input.legalPersonPhone ?? null,
+    ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner ?? null } : {}),
     submittedAt: now,
     source: "portal",
   };

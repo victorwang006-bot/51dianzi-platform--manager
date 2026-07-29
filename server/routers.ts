@@ -412,6 +412,8 @@ export const appRouter = router({
         legalPersonName: z.string().max(64).optional().nullable(),
         legalPersonIdNo: z.string().max(32).optional().nullable(),
         legalPersonPhone: z.string().max(20).optional().nullable(),
+        /** 销售负责人（可选），写入商户 salesOwner 列，后台商户列表展示 */
+        salesOwner: z.string().max(64).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);

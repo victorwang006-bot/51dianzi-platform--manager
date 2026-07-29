@@ -423,6 +423,14 @@
 - [x] 前端商户页：发信对话框（输入消息内容，发送到客户前台联系客服会话）
 - [x] 单元测试覆盖新增接口（crmActions.test.ts 5 用例，56/56 通过），tsc/build 通过，页面截图验证
 - [x] 更新前台对接文档（3.5 getCrmAccess 接口 + 3.6 发信红点说明）
+- [x] 保存检查点（5e77b324）并追加普通 commit 推送 GitHub（2452649 → 6f13123，无 force push）
+
+## 用户需求（2026-07-29 第三十四轮）：商户销售负责人（salesOwner）
+- [x] merchants 表新增 salesOwner 列（varchar(64) 可空），生成迁移 0014 并应用到开发库
+- [x] portal.submitMerchant 接口新增可选参数 salesOwner，写入该列（新建与更新均支持）
+- [x] 商户管理列表在"联系人"与"状态"之间新增"销售负责人"列
+- [x] 单元测试覆盖 salesOwner 写入，tsc/build 通过，页面截图验证
+- [x] 更新前台对接文档（新增 docs/商户入驻API对接说明-销售负责人.md）
 - [ ] 保存检查点并追加普通 commit 推送 GitHub
 
 ### 第三十一轮调研结论（勿删，实施依据）

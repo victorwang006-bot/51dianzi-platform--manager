@@ -85,6 +85,29 @@ describe("portal.submitMerchant", () => {
     expect(merchant?.contactName).toBe("王更新");
     expect(merchant?.contactPhone).toBe("13711113333");
   });
+
+  it("可选参数 salesOwner 写入商户销售负责人列，重复提交可更新", async () => {
+    const caller = appRouter.createCaller(createPortalContext(PORTAL_KEY));
+    const license = `91330100SALES${Date.now().toString().slice(-6)}`;
+    const created = await caller.portal.submitMerchant({
+      ...submission,
+      businessLicense: license,
+      salesOwner: "赵销售",
+    });
+    expect(created.created).toBe(true);
+    let merchant = await db.getMerchantById(created.merchantId);
+    expect(merchant?.salesOwner).toBe("赵销售");
+
+    // 不传 salesOwner 时保留原值
+    await caller.portal.submitMerchant({ ...submission, businessLicense: license });
+    merchant = await db.getMerchantById(created.merchantId);
+    expect(merchant?.salesOwner).toBe("赵销售");
+
+    // 再次提交可更新销售负责人
+    await caller.portal.submitMerchant({ ...submission, businessLicense: license, salesOwner: "钱销售" });
+    merchant = await db.getMerchantById(created.merchantId);
+    expect(merchant?.salesOwner).toBe("钱销售");
+  });
 });
 
 describe("merchant.review 状态精简", () => {
