@@ -431,10 +431,34 @@
 - [x] 商户管理列表在"联系人"与"状态"之间新增"销售负责人"列
 - [x] 单元测试覆盖 salesOwner 写入，tsc/build 通过，页面截图验证
 - [x] 更新前台对接文档（新增 docs/商户入驻API对接说明-销售负责人.md）
-- [ ] 保存检查点并追加普通 commit 推送 GitHub
+- [x] 保存检查点并追加普通 commit 推送 GitHub（6f13123 → db646ab）
+
+## 用户需求（2026-07-29 第三十五轮）：上传阿里云（生产部署第32-34轮更新）
+- [x] 读取 ECS 服务器信息，确认生产环境部署方式与当前版本（/opt/apps/dianzi51-admin，pm2 x2，tar 包部署）
+- [x] 生产 RDS 执行迁移 0012/0013/0014（8 列全部到位，crmStatus 枚举含 rejected；timestamp 列需 NULL DEFAULT NULL）
+- [x] ECS 上传最新构建（dist+drizzle 打包 scp，备份 dist.bak.r35.*）并 pm2 restart（进程 16/17 online）
+- [x] 验证生产后台：/admin 页面 200，getCrmAccess 接口正常返回，submitMerchant 带 salesOwner 写入验证成功（测试数据已清理）
+
+## 用户反馈（2026-07-30 第三十六轮）：前台物料详情页 PINOUT 引脚图缺失
+- [x] 排查生产 pinout_images 表数据与前台展示链路，定位 PINOUT 图缺失原因（数据完好；生产 dist/index.js 为旧构建不含 pinout 逻辑，且源码 adminDb.ts 缺 warmupAdminDb 导出导致重建失败）
+- [x] 修复问题并验证生产页面 PINOUT 图恢复（补回 warmupAdminDb、重建 server bundle 并重启；同时修复同 prefix10 多型号错配问题改为精确匹配优先；生产页面验证 C8/C6/CB/407VG 引脚图均正确，51电子水印保留）
 
 ### 第三十一轮调研结论（勿删，实施依据）
 - 前台生产库为 RDS `rm-bp1m856i4zowwc264...:3306/dianzi51`（47.97.108.147 部署），公司资料在 `companies` 表（userId 唯一键，字段：companyName/creditCode/companyType/legalPerson/companyRole/bankInfo/regAddress/licenseUrl/certLevel）
 - message_threads.portalUserId 即前台 users.id（如 390005=王先生 15817256366），但后台库无法直接联前台库 → 方案：扩展 portal.submitMessage 允许前台附带公司资料快照（companyProfile JSON），同时后台新增 threadType 字段区分会话类型（inquiry/service/crm_apply/general）
 - 企业开通申请消息（threadId=5）内容为纯文本公司资料，后台 merchants 表已有完整公司字段但无 CRM 开通字段 → 方案：merchants 表新增 crmStatus（none/pending/enabled/disabled）与 crmAppliedAt/crmEnabledAt；portal 新增 submitCrmApplication 接口直接创建/更新商户记录（status=pending, source=portal, crmStatus=pending），商户管理页新增 CRM 开通列与操作
 - 兼容存量：现有"企业开通申请"消息保留在消息中心；新申请走 submitCrmApplication 落商户管理
+- [x] 修复问题并验证生产页面 PINOUT 图恢复（补回 warmupAdminDb、重建 server bundle 并重启；同时修复同 prefix10 多型号错配问题改为精确匹配优先；生产页面验证 C8/C6/CB/407VG 引脚图均正确，51电子水印保留）
+
+## 用户反馈（2026-07-30 第三十七轮）：参数档案应显示完整型号 + 前缀搜索显示多条
+- [x] 排查生产库 materials 型号存储与参数档案搜索/展示逻辑（materials 存基础型号，丝印图 URL 文件名含完整型号）
+- [x] 档案条目标题显示完整型号（displayPartNumber 优先取 coverImageUrl 文件名中的完整型号，如 STM32F103C4T6）
+- [x] 前缀搜索命中多个完整型号时列出多条档案（接口验证 STM32F103C4/STM32F103C 场景返回正确）
+- [x] 重建部署生产前台（esbuild server bundle + pm2 restart）并接口回归抽查无副作用
+
+## 用户反馈（2026-07-30 第三十八轮）：生产后台 /admin/ 空白页修复
+- [x] 根因定位：第35轮部署包的后台前端构建 base 为 "/"（本地 sandbox 构建无 /admin/ base），资源 /assets/、trpc url 与路由 basename 均指向根路径被前台接管，页面空白
+- [x] 修复 index.html 资源引用 /assets/ → /admin/assets/（备份 index.html.bak.r38）
+- [x] 修复 JS 内 trpc url 与 wouter basename "/" → "/admin/"（备份 index-PNb4roPA.js.bak.r38）
+- [x] 重启 dianzi51-admin 进程，浏览器验证登录页正常渲染，auth.me 接口 200 正常
+- [x] 固化构建配置：vite.config 已支持 VITE_BASE_PATH；新增 docs/生产部署构建说明.md 固化正确构建/自检/部署/验证流程
