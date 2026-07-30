@@ -511,4 +511,9 @@
 
 ## 第45轮：ResizeObserver 报错仍被上报的彻底修复（2026-07-30）
 - [x] 定位错误上报链路（debug-collector 注入 head 早于 main.tsx），改在 index.html head 顶部内联 capture 阶段拦截脚本，访问页面后日志 0 新增
-- [ ] 验证 /merchants 页面不再上报，部署生产并交付
+- [x] 验证 /merchants 页面不再上报，部署生产并交付（开发环境访问后日志 0 新增；GitHub 7d22263，生产页面含拦截脚本，pm2 6 进程 online）
+
+## 第46轮：已入驻商户不显示审核按钮（2026-07-30）
+- [x] 已入驻（CRM 已开通）商户详情页隐藏"通过/补件"审核按钮（crmStatus==='enabled' 时不渲染，开发环境截图验证，测试 67/67）
+- [x] 排查该商户数据状态（生产库仅 30004 一条 crmStatus=enabled 且 status=pending，前端已按 crmStatus 隐藏按钮，状态数据保留不改动）
+- [ ] 验证、部署生产并交付

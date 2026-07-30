@@ -138,7 +138,9 @@ export default function MerchantDetail() {
         description={`商户编号 ${merchant.merchantNo} · 入驻时间 ${formatDateTime(merchant.createdAt)}`}
         actions={
           <div className="flex flex-wrap gap-2">
-            {(merchant.status === "pending" || merchant.status === "supplement") && (
+            {/* 已入驻（CRM 已开通）的商户不再显示审核操作按钮 */}
+            {merchant.crmStatus !== "enabled" &&
+              (merchant.status === "pending" || merchant.status === "supplement") && (
               <>
                 <Button size="sm" onClick={() => openReview("approve")}>
                   通过
