@@ -3,6 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <script>
+      // 最早期拦截 ResizeObserver loop 良性告警（浏览器在元素尺寸于同一帧内连续
+      // 变化时触发，常见于 Radix UI / 表格组件，不影响功能）。内联于 head 顶部并
+      // 使用 capture 阶段，确保早于 debug-collector 等错误监控注册，避免误报。
+      window.addEventListener(
+        "error",
+        function (e) {
+          if (
+            e.message === "ResizeObserver loop completed with undelivered notifications." ||
+            e.message === "ResizeObserver loop limit exceeded"
+          ) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        },
+        true
+      );
+    </script>
     <title>51电子网 - 后台管理系统</title>
     <meta name="description" content="51电子网电商平台后台管理系统" />
   </head>

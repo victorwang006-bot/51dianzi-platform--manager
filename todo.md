@@ -502,9 +502,13 @@
 ## 第44轮：商户详情页卡片折叠设计（2026-07-30）
 - [x] 商户详情页各卡片改为点击标题折叠/展开（Collapsible），默认物料管理展开、其余折叠
 - [x] 验证开发环境交互与布局正常（物料管理置顶展开，工商信息/联系人/结算账户/审核备注折叠，tsc 与测试通过）
-- [ ] 保存检查点推送 GitHub，部署生产并验证
+- [x] 保存检查点推送 GitHub，部署生产并验证（GitHub c56e622，pm2 6 进程 online，商户 30004 折叠交互实测通过）
 
 ## 第42轮：修复商户详情页 ResizeObserver 报错（2026-07-30）
 
-- [ ] 定位 /merchants/:id 页面 "ResizeObserver loop completed with undelivered notifications" 报错原因并修复
-- [ ] 验证页面正常、测试通过并交付
+- [x] 定位 /merchants/:id 页面 "ResizeObserver loop completed with undelivered notifications" 报错原因并修复（第42轮已在 main.tsx 全局拦截该良性告警）
+- [x] 验证页面正常、测试通过并交付（第42轮已部署生产验证）
+
+## 第45轮：ResizeObserver 报错仍被上报的彻底修复（2026-07-30）
+- [x] 定位错误上报链路（debug-collector 注入 head 早于 main.tsx），改在 index.html head 顶部内联 capture 阶段拦截脚本，访问页面后日志 0 新增
+- [ ] 验证 /merchants 页面不再上报，部署生产并交付
