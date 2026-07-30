@@ -582,18 +582,25 @@ export default function Materials() {
   const [searchInput, setSearchInput] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [lifecycle, setLifecycle] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogInitial, setDialogInitial] = useState<MaterialForm>(emptyForm);
   const [dialogKey, setDialogKey] = useState(0);
 
+  // 闭合状态：刚打开页面时不展示物料列表，用户搜索/筛选/点击"显示全部"后才展开
+  const hasQueried = showAll || search !== "" || category !== "all" || lifecycle !== "all";
+
   const utils = trpc.useUtils();
-  const { data, isLoading, isError, error, refetch } = trpc.material.list.useQuery({
-    page,
-    pageSize: 20,
-    search: search || undefined,
-    category: category === "all" ? undefined : category,
-    lifecycle: lifecycle === "all" ? undefined : lifecycle,
-  });
+  const { data, isLoading, isError, error, refetch } = trpc.material.list.useQuery(
+    {
+      page,
+      pageSize: 20,
+      search: search || undefined,
+      category: category === "all" ? undefined : category,
+      lifecycle: lifecycle === "all" ? undefined : lifecycle,
+    },
+    { enabled: hasQueried },
+  );
   const { data: categories } = trpc.material.categories.useQuery();
 
   const toggleMutation = trpc.material.toggleStatus.useMutation({
@@ -613,6 +620,10 @@ export default function Materials() {
 
   const doSearch = () => {
     setSearch(searchInput);
+    if (searchInput.trim() === "") {
+      // 空关键词点击搜索视为主动查看全部
+      setShowAll(true);
+    }
     setPage(1);
   };
 
@@ -696,7 +707,20 @@ export default function Materials() {
 
       {/* 列表 */}
       <div className="bg-white rounded-xl border border-border overflow-hidden">
-        {isLoading ? (
+        {!hasQueried ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-foreground">输入型号 / 名称 / 物料编号 / 品牌进行搜索</p>
+              <p className="text-xs text-muted-foreground">或选择分类、生命周期筛选查看物料数据</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => { setShowAll(true); setPage(1); }}>
+              显示全部物料
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="p-6 space-y-3">
             {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10" />)}
           </div>

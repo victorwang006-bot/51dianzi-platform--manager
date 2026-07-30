@@ -476,4 +476,10 @@
 - [x] 新增"客户物料管理"：拉取商户在前台发布的芯片物料列表（跨库 JOIN dianzi51.inventories+companies，侧边栏新入口 /merchant-materials，支持型号/品牌/企业名搜索与状态筛选、分页）
 - [x] 后台可下架物料；下架后物料回到前台商户"待发布"（status=draft, publishedAt=NULL），修改后可重新发布；带确认对话框，仅生产环境可用（开发环境显示提示）
 - [x] 单元测试（platformMaterial.test.ts 7 用例，共 64/64 通过）+ tsc 通过 + 截图验证
+- [x] 保存检查点推送 GitHub，部署生产并验证（GitHub 51adf04，ECS pm2 restart，接口 200，浏览器验证 464 条物料列表正常展示，下架→draft+NULL 验证通过）
+## 用户需求（2026-07-30 第四十一轮）：物料管理整合进商户管理
+- [x] 移除侧边栏独立"客户物料管理"入口与 /merchant-materials 路由（删除页面文件与菜单项）
+- [x] 后端 platformMaterial.list 支持按商户（企业）过滤（复用 creditCode 参数，businessLicense=creditCode 关联）
+- [x] 商户详情页：已通过 CRM 的商户新增"物料管理"模块（MerchantMaterialPanel：列表+搜索+状态筛选+下架）
+- [x] 单元测试 + tsc + 截图验证（65/65 通过，crmStatus=enabled 商户详情页面板正常渲染）
 - [ ] 保存检查点推送 GitHub，部署生产并验证

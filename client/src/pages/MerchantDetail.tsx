@@ -35,6 +35,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
+import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 
 function InfoItem({
   label,
@@ -292,6 +293,11 @@ export default function MerchantDetail() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* 物料管理：已通过 CRM 的商户展示其前台发布的物料 */}
+          {merchant.crmStatus === "enabled" && merchant.businessLicense && (
+            <MerchantMaterialPanel creditCode={merchant.businessLicense} />
           )}
         </div>
 

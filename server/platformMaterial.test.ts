@@ -85,6 +85,15 @@ describe("platformMaterial 客户物料管理", () => {
     expect(result.items).toEqual([]);
   });
 
+  it("list 支持按商户信用代码（creditCode）过滤——商户详情页物料管理场景", async () => {
+    vi.mocked(db.listMerchantInventories).mockResolvedValue({ available: true, items: [], total: 0 });
+    const caller = appRouter.createCaller(createAdminContext());
+    await caller.platformMaterial.list({ creditCode: "91440300MA5EXAMPLE1", status: "all", page: 1, pageSize: 10 });
+    expect(db.listMerchantInventories).toHaveBeenCalledWith(
+      expect.objectContaining({ creditCode: "91440300MA5EXAMPLE1", status: "all", pageSize: 10 }),
+    );
+  });
+
   it("list 开发环境（前台库不可用）返回 available:false", async () => {
     vi.mocked(db.listMerchantInventories).mockResolvedValue({ available: false, items: [], total: 0 });
     const caller = appRouter.createCaller(createAdminContext());
