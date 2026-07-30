@@ -10,6 +10,7 @@ import Admins from "./pages/Admins";
 import Login from "./pages/Login";
 import Materials from "./pages/Materials";
 import MerchantDetail from "./pages/MerchantDetail";
+import MerchantMaterials from "./pages/MerchantMaterials";
 import Merchants from "./pages/Merchants";
 import Messages from "./pages/Messages";
 
@@ -35,6 +36,7 @@ function Router() {
           <Route path={"/"} component={Materials} />
           <Route path={"/merchants"} component={Merchants} />
           <Route path={"/merchants/:id"} component={MerchantDetail} />
+          <Route path={"/merchant-materials"} component={MerchantMaterials} />
           <Route path={"/messages"} component={Messages} />
           <Route path={"/admins"} component={Admins} />
           <Route path={"/404"} component={NotFound} />

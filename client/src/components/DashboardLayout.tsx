@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
+  Boxes,
   Database,
   LogOut,
   PanelLeft,
@@ -48,6 +49,7 @@ const menuGroups = [
     items: [
       { icon: Database, label: "物料数据库", path: "/" },
       { icon: Store, label: "商户管理", path: "/merchants" },
+      { icon: Boxes, label: "客户物料管理", path: "/merchant-materials" },
       { icon: MessageSquare, label: "消息", path: "/messages" },
     ],
   },

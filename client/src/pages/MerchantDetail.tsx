@@ -31,7 +31,6 @@ import {
   ScrollText,
   ShieldCheck,
   User,
-  UserRound,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -205,6 +204,27 @@ export default function MerchantDetail() {
                   icon={ShieldCheck}
                 />
                 <InfoItem label="注册地址" value={merchant.registeredAddress} />
+                <InfoItem label="法人姓名" value={merchant.legalPersonName} icon={User} />
+                <InfoItem label="法人身份证号" value={merchant.legalPersonIdNo} icon={FileText} />
+                <InfoItem label="法人联系电话" value={merchant.legalPersonPhone} icon={Phone} />
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-[#8a94a6] flex items-center gap-1">
+                    <FileImage className="h-3.5 w-3.5" />
+                    营业执照
+                  </span>
+                  {merchant.licenseImageUrl ? (
+                    <a
+                      href={merchant.licenseImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <FileImage className="h-4 w-4" /> 点击查看营业执照
+                    </a>
+                  ) : (
+                    <span className="text-sm text-foreground">—</span>
+                  )}
+                </div>
               </div>
               <div className="mt-4 pt-4 border-t border-border">
                 <span className="text-xs text-[#8a94a6] flex items-center gap-1 mb-1">
@@ -214,41 +234,24 @@ export default function MerchantDetail() {
                   {merchant.businessScope || "—"}
                 </p>
               </div>
+              {merchant.source === "portal" && (
+                <p className="text-xs text-[#8a94a6] mt-3">
+                  工商信息由前台商家提交
+                  {merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}
+                </p>
+              )}
             </CardContent>
           </Card>
 
-          {/* 入驻资料：营业执照 + 签署协议（前台商家提交） */}
+          {/* 入驻资料：签署协议（前台商家提交） */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <FileImage className="h-4 w-4 text-primary" />
                 入驻资料
               </CardTitle>
-              {merchant.source === "portal" && (
-                <p className="text-xs text-[#8a94a6]">
-                  由前台商家提交
-                  {merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}
-                </p>
-              )}
             </CardHeader>
             <CardContent className="space-y-5">
-              <div>
-                <p className="text-xs text-[#8a94a6] mb-2">营业执照图片</p>
-              {merchant.licenseImageUrl ? (
-                <a href={merchant.licenseImageUrl} target="_blank" rel="noreferrer">
-                  <img
-                    src={merchant.licenseImageUrl}
-                    alt="营业执照"
-                    className="max-h-80 rounded-lg border border-border hover:shadow-md transition-shadow"
-                  />
-                </a>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10 text-[#b3bcc9] border border-dashed border-border rounded-lg">
-                  <FileImage className="h-8 w-8 mb-2" />
-                  <p className="text-sm">商户尚未上传营业执照图片</p>
-                </div>
-              )}
-              </div>
               <div>
                 <p className="text-xs text-[#8a94a6] mb-2">签署协议文件</p>
                 {merchant.agreementFileUrl ? (
@@ -293,21 +296,6 @@ export default function MerchantDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* 法人信息 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <UserRound className="h-4 w-4 text-primary" />
-                法人信息
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <InfoItem label="法人姓名" value={merchant.legalPersonName} icon={User} />
-              <InfoItem label="法人身份证号" value={merchant.legalPersonIdNo} icon={FileText} />
-              <InfoItem label="法人联系电话" value={merchant.legalPersonPhone} icon={Phone} />
-            </CardContent>
-          </Card>
-
           {/* 联系人信息 */}
           <Card>
             <CardHeader className="pb-3">

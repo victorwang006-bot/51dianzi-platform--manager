@@ -629,6 +629,28 @@ export const appRouter = router({
     }),
   }),
 
+  // ─── 客户物料管理（前台发布物料，跨库） ──────────────────────────────────
+  platformMaterial: router({
+    /** 列表：查询商户在前台发布的物料，支持信用代码筛选与关键词搜索 */
+    list: adminProcedure
+      .input(z.object({
+        creditCode: z.string().max(64).optional(),
+        keyword: z.string().max(128).optional(),
+        status: z.enum(["published", "draft", "offshelf", "all"]).optional(),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(20),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.listMerchantInventories(input ?? {});
+      }),
+    /** 下架：将前台已发布物料置为待发布（draft），用户可编辑后重新发布 */
+    offshelf: adminProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        return db.offshelfPlatformInventory(input.id);
+      }),
+  }),
+
   // ─── 管理员管理 ──────────────────────────────────────────────────────────
   admin: router({
     list: adminProcedure.input(pageInput).query(async ({ input }) => {

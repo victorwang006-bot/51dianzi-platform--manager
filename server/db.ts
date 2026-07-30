@@ -1091,3 +1091,93 @@ export async function getPortalThreadUnread(threadNo: string) {
     lastMessageAt: rows[0].lastMessageAt,
   };
 }
+
+// ─── 客户物料管理（跨库查询前台 dianzi51 库）────────────────────────────────────
+// 生产环境后台库(dianzi51_admin)与前台库(dianzi51)在同一 RDS 实例、同一账号，
+// 可直接以 `dianzi51.表名` 跨库访问。开发环境（Manus TiDB）无该库，查询失败时
+// 返回 available:false 供前端展示"生产环境可用"提示。
+
+const PLATFORM_DB = process.env.PLATFORM_DB_NAME || "dianzi51";
+
+export type PlatformInventoryRow = {
+  id: number;
+  userId: number;
+  partNumber: string;
+  brand: string;
+  category: string;
+  pkg: string | null;
+  qtyOnSale: number;
+  priceEx: string | null;
+  priceIncl: string | null;
+  status: "draft" | "published" | "offshelf";
+  publishedAt: Date | null;
+  createdAt: Date;
+  companyName: string | null;
+  creditCode: string | null;
+};
+
+/** 后台：查询商户在前台发布的物料（JOIN companies 获取企业名/信用代码） */
+export async function listMerchantInventories(params: {
+  creditCode?: string;
+  keyword?: string; // 型号/品牌/企业名 模糊搜索
+  status?: "published" | "draft" | "offshelf" | "all";
+  page?: number;
+  pageSize?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { available: false, items: [] as PlatformInventoryRow[], total: 0 };
+  const { creditCode, keyword, status = "published", page = 1, pageSize = 20 } = params;
+  const offset = (page - 1) * pageSize;
+  const conds = [sql`1=1`];
+  if (status !== "all") conds.push(sql`i.status = ${status}`);
+  if (creditCode) conds.push(sql`c.creditCode = ${creditCode}`);
+  if (keyword) {
+    const kw = `%${keyword}%`;
+    conds.push(sql`(i.partNumber LIKE ${kw} OR i.brand LIKE ${kw} OR c.companyName LIKE ${kw})`);
+  }
+  const whereSql = sql.join(conds, sql` AND `);
+  try {
+    const countRows = (await db.execute(sql`
+      SELECT COUNT(*) AS cnt
+      FROM ${sql.raw(PLATFORM_DB)}.inventories i
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = i.userId
+      WHERE ${whereSql}
+    `)) as unknown as [{ cnt: number }[], unknown];
+    const total = Number((countRows[0]?.[0] as { cnt?: number } | undefined)?.cnt ?? 0);
+    const rows = (await db.execute(sql`
+      SELECT i.id, i.userId, i.partNumber, i.brand, i.category, i.pkg,
+             i.qtyOnSale, i.priceEx, i.priceIncl, i.status, i.publishedAt, i.createdAt,
+             c.companyName, c.creditCode
+      FROM ${sql.raw(PLATFORM_DB)}.inventories i
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = i.userId
+      WHERE ${whereSql}
+      ORDER BY i.publishedAt DESC, i.id DESC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `)) as unknown as [PlatformInventoryRow[], unknown];
+    return { available: true, items: rows[0] ?? [], total };
+  } catch (error) {
+    console.warn("[Database] 跨库查询前台物料失败（开发环境无 dianzi51 库属正常）:", (error as Error).message);
+    return { available: false, items: [] as PlatformInventoryRow[], total: 0 };
+  }
+}
+
+/** 后台：下架前台物料（回到前台"待发布"状态，用户可编辑后重新发布） */
+export async function offshelfPlatformInventory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    const result = (await db.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.inventories
+      SET status = 'draft', publishedAt = NULL
+      WHERE id = ${id} AND status = 'published'
+    `)) as unknown as [{ affectedRows?: number }, unknown];
+    const affected = Number(result[0]?.affectedRows ?? 0);
+    if (affected === 0) throw new Error("物料不存在或已不是发布状态");
+    return { success: true };
+  } catch (error) {
+    const msg = (error as Error).message || "";
+    if (msg.includes("不存在") || msg.includes("已不是")) throw error;
+    console.error("[Database] 下架前台物料失败:", msg);
+    throw new Error("下架失败：无法访问前台数据库（此功能仅在生产环境可用）");
+  }
+}
