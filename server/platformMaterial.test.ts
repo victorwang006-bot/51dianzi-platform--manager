@@ -102,18 +102,33 @@ describe("platformMaterial 客户物料管理", () => {
     expect(result.total).toBe(0);
   });
 
-  it("offshelf 调用下架并返回成功", async () => {
+  it("offshelf 携带下架原因调用下架并返回成功", async () => {
     vi.mocked(db.offshelfPlatformInventory).mockResolvedValue({ success: true });
     const caller = appRouter.createCaller(createAdminContext());
-    const result = await caller.platformMaterial.offshelf({ id: 150464 });
-    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(150464);
+    const result = await caller.platformMaterial.offshelf({ id: 150464, reason: "图片与型号不符，请更换实拍图" });
+    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(150464, "图片与型号不符，请更换实拍图");
     expect(result.success).toBe(true);
+  });
+
+  it("offshelf 缺少下架原因被拒绝", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    await expect(caller.platformMaterial.offshelf({ id: 1, reason: "" })).rejects.toThrow();
+    await expect(caller.platformMaterial.offshelf({ id: 1, reason: "   " })).rejects.toThrow();
+    expect(db.offshelfPlatformInventory).not.toHaveBeenCalled();
+  });
+
+  it("offshelf 下架原因超过255字被拒绝", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    await expect(
+      caller.platformMaterial.offshelf({ id: 1, reason: "长".repeat(256) }),
+    ).rejects.toThrow();
+    expect(db.offshelfPlatformInventory).not.toHaveBeenCalled();
   });
 
   it("offshelf 对非发布状态物料抛出错误", async () => {
     vi.mocked(db.offshelfPlatformInventory).mockRejectedValue(new Error("物料不存在或已不是发布状态"));
     const caller = appRouter.createCaller(createAdminContext());
-    await expect(caller.platformMaterial.offshelf({ id: 999999 })).rejects.toThrow("物料不存在或已不是发布状态");
+    await expect(caller.platformMaterial.offshelf({ id: 999999, reason: "测试原因" })).rejects.toThrow("物料不存在或已不是发布状态");
   });
 
   it("非管理员访问 list 被拒绝", async () => {
@@ -124,7 +139,7 @@ describe("platformMaterial 客户物料管理", () => {
 
   it("非管理员访问 offshelf 被拒绝", async () => {
     const caller = appRouter.createCaller(createUserContext());
-    await expect(caller.platformMaterial.offshelf({ id: 1 })).rejects.toThrow();
+    await expect(caller.platformMaterial.offshelf({ id: 1, reason: "测试" })).rejects.toThrow();
     expect(db.offshelfPlatformInventory).not.toHaveBeenCalled();
   });
 });

@@ -1114,6 +1114,11 @@ export type PlatformInventoryRow = {
   createdAt: Date;
   companyName: string | null;
   creditCode: string | null;
+  userName: string | null;
+  userPhone: string | null;
+  photos: { key?: string; url?: string; name?: string }[] | string | null;
+  offshelfBy: "user" | "admin" | null;
+  offshelfReason: string | null;
 };
 
 /** 后台：查询商户在前台发布的物料（JOIN companies 获取企业名/信用代码） */
@@ -1147,9 +1152,12 @@ export async function listMerchantInventories(params: {
     const rows = (await db.execute(sql`
       SELECT i.id, i.userId, i.partNumber, i.brand, i.category, i.pkg,
              i.qtyOnSale, i.priceEx, i.priceIncl, i.status, i.publishedAt, i.createdAt,
-             c.companyName, c.creditCode
+             i.photos, i.offshelfBy, i.offshelfReason,
+             c.companyName, c.creditCode,
+             u.name AS userName, u.phone AS userPhone
       FROM ${sql.raw(PLATFORM_DB)}.inventories i
       LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = i.userId
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
       WHERE ${whereSql}
       ORDER BY i.publishedAt DESC, i.id DESC
       LIMIT ${pageSize} OFFSET ${offset}
@@ -1161,14 +1169,19 @@ export async function listMerchantInventories(params: {
   }
 }
 
-/** 后台：下架前台物料（回到前台"待发布"状态，用户可编辑后重新发布） */
-export async function offshelfPlatformInventory(id: number) {
+/**
+ * 后台：下架前台物料（回到前台"待发布"状态，用户依据下架原因修改后可重新发布）。
+ * 按与前台的约定：status 置回 'draft'（非 offshelf），并写入 offshelfBy='admin' 与必填的 offshelfReason，
+ * 前台"待发布清单"会对 offshelfBy=admin 的条目显示"平台下架：原因"红色标记。
+ */
+export async function offshelfPlatformInventory(id: number, reason: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   try {
     const result = (await db.execute(sql`
       UPDATE ${sql.raw(PLATFORM_DB)}.inventories
-      SET status = 'draft', publishedAt = NULL
+      SET status = 'draft', publishedAt = NULL,
+          offshelfBy = 'admin', offshelfReason = ${reason}
       WHERE id = ${id} AND status = 'published'
     `)) as unknown as [{ affectedRows?: number }, unknown];
     const affected = Number(result[0]?.affectedRows ?? 0);

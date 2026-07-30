@@ -489,6 +489,14 @@
 - [x] 定位 /merchants/:id 页面 "ResizeObserver loop completed with undelivered notifications" 报错并处理（浏览器良性告警，main.tsx 全局拦截避免误报）
 - [x] 将"查看已签署协议"整合进"企业工商信息"卡片，移除独立"入驻资料"卡片
 - [x] tsc + 测试 + 截图验证（65/65 通过，330006 详情页布局正确）
+- [x] 保存检查点推送 GitHub，部署生产并验证（GitHub 053de9b，pm2 2 实例 online，商户 30004 详情页协议已并入工商信息卡片）
+
+## 第43轮：按技术支持方案改造物料下架（2026-07-30）
+
+- [x] 下架 SQL 增加 offshelfBy='admin' 与 offshelfReason（必填 ≤255 字），仅对 status='published' 生效
+- [x] 前端下架对话框增加必填"下架原因"输入框
+- [x] 列表补充方案要求字段：分类、封装、实拍图、发布人电话；支持查看 draft/offshelf 状态与下架原因（平台下架红色标记）
+- [x] 更新单元测试覆盖新逻辑（67/67 通过）
 - [ ] 保存检查点推送 GitHub，部署生产并验证
 
 ## 第42轮：修复商户详情页 ResizeObserver 报错（2026-07-30）

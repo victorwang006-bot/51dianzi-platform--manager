@@ -643,11 +643,14 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.listMerchantInventories(input ?? {});
       }),
-    /** 下架：将前台已发布物料置为待发布（draft），用户可编辑后重新发布 */
+    /** 下架：置回待发布（draft）并记录 offshelfBy='admin' 与必填下架原因，前台向用户展示 */
     offshelf: adminProcedure
-      .input(z.object({ id: z.number().int().positive() }))
+      .input(z.object({
+        id: z.number().int().positive(),
+        reason: z.string().trim().min(1, "请填写下架原因").max(255, "下架原因不能超过255字"),
+      }))
       .mutation(async ({ input }) => {
-        return db.offshelfPlatformInventory(input.id);
+        return db.offshelfPlatformInventory(input.id, input.reason);
       }),
   }),
 
