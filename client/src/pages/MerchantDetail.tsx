@@ -226,6 +226,24 @@ export default function MerchantDetail() {
                     <span className="text-sm text-foreground">—</span>
                   )}
                 </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-[#8a94a6] flex items-center gap-1">
+                    <FileText className="h-3.5 w-3.5" />
+                    签署协议文件
+                  </span>
+                  {merchant.agreementFileUrl ? (
+                    <a
+                      href={merchant.agreementFileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <FileText className="h-4 w-4" /> 查看已签署协议
+                    </a>
+                  ) : (
+                    <span className="text-sm text-foreground">商户尚未上传签署协议</span>
+                  )}
+                </div>
               </div>
               <div className="mt-4 pt-4 border-t border-border">
                 <span className="text-xs text-[#8a94a6] flex items-center gap-1 mb-1">
@@ -241,37 +259,6 @@ export default function MerchantDetail() {
                   {merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}
                 </p>
               )}
-            </CardContent>
-          </Card>
-
-          {/* 入驻资料：签署协议（前台商家提交） */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileImage className="h-4 w-4 text-primary" />
-                入驻资料
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div>
-                <p className="text-xs text-[#8a94a6] mb-2">签署协议文件</p>
-                {merchant.agreementFileUrl ? (
-                  <a
-                    href={merchant.agreementFileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-primary hover:bg-accent transition-colors"
-                  >
-                    <FileText className="h-4 w-4" />
-                    查看已签署协议
-                  </a>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6 text-[#b3bcc9] border border-dashed border-border rounded-lg">
-                    <FileText className="h-6 w-6 mb-1" />
-                    <p className="text-sm">商户尚未上传签署协议</p>
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
 

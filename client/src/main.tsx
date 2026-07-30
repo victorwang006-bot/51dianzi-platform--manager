@@ -6,6 +6,19 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
+
+// ResizeObserver loop 错误是浏览器的良性告警（元素尺寸在同一帧内连续变化时触发，
+// 常见于 Radix UI / 图表组件），不影响功能。在此拦截避免被错误监控误报。
+window.addEventListener("error", e => {
+  if (
+    e.message === "ResizeObserver loop completed with undelivered notifications." ||
+    e.message === "ResizeObserver loop limit exceeded"
+  ) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+});
+
 const queryClient = new QueryClient();
 // 账号密码登录模式：未授权错误不再自动跳转 Manus OAuth，
 // 由 DashboardLayout 渲染本站登录页（client/src/pages/Login.tsx）。

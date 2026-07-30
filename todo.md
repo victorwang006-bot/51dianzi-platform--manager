@@ -482,4 +482,16 @@
 - [x] 后端 platformMaterial.list 支持按商户（企业）过滤（复用 creditCode 参数，businessLicense=creditCode 关联）
 - [x] 商户详情页：已通过 CRM 的商户新增"物料管理"模块（MerchantMaterialPanel：列表+搜索+状态筛选+下架）
 - [x] 单元测试 + tsc + 截图验证（65/65 通过，crmStatus=enabled 商户详情页面板正常渲染）
+- [x] 保存检查点推送 GitHub，部署生产并验证（GitHub 69e5d26，pm2 重启成功，creditCode 过滤接口返回 464 条，商户 30004 详情页面板正常渲染）
+
+## 第42轮：ResizeObserver 修复 + 协议整合进工商信息（2026-07-30）
+
+- [x] 定位 /merchants/:id 页面 "ResizeObserver loop completed with undelivered notifications" 报错并处理（浏览器良性告警，main.tsx 全局拦截避免误报）
+- [x] 将"查看已签署协议"整合进"企业工商信息"卡片，移除独立"入驻资料"卡片
+- [x] tsc + 测试 + 截图验证（65/65 通过，330006 详情页布局正确）
 - [ ] 保存检查点推送 GitHub，部署生产并验证
+
+## 第42轮：修复商户详情页 ResizeObserver 报错（2026-07-30）
+
+- [ ] 定位 /merchants/:id 页面 "ResizeObserver loop completed with undelivered notifications" 报错原因并修复
+- [ ] 验证页面正常、测试通过并交付
