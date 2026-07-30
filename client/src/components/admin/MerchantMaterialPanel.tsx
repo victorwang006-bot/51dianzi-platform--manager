@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import CollapsibleCard from "@/components/admin/CollapsibleCard";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -111,17 +111,13 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Boxes className="h-4 w-4 text-primary" />
-            物料管理
-          </CardTitle>
-          <CardDescription>
-            该商户在前台发布的芯片物料，共 {total} 条{keyword ? `（关键词：${keyword}）` : ""}；下架后物料回到前台“待发布”列表，商户修改后可重新发布
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <CollapsibleCard
+        title="物料管理"
+        icon={Boxes}
+        defaultOpen
+        description={`该商户在前台发布的芯片物料，共 ${total} 条${keyword ? `（关键词：${keyword}）` : ""}；下架后物料回到前台“待发布”列表，商户修改后可重新发布`}
+        contentClassName="space-y-4"
+      >
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[180px] max-w-md">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -263,8 +259,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       <AlertDialog open={!!offshelfTarget} onOpenChange={open => { if (!open) { setOffshelfTarget(null); setOffshelfReason(""); } }}>
         <AlertDialogContent>

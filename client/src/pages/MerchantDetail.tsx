@@ -7,7 +7,6 @@ import {
   formatDateTime,
 } from "@/components/admin/shared";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +35,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
+import CollapsibleCard from "@/components/admin/CollapsibleCard";
 
 function InfoItem({
   label,
@@ -169,15 +169,13 @@ export default function MerchantDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* 物料管理：已通过 CRM 的商户展示其前台发布的物料（默认展开） */}
+          {merchant.crmStatus === "enabled" && merchant.businessLicense && (
+            <MerchantMaterialPanel creditCode={merchant.businessLicense} />
+          )}
+
           {/* 企业工商信息 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                企业工商信息
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <CollapsibleCard title="企业工商信息" icon={Building2}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                 <InfoItem label="企业名称" value={merchant.companyName} icon={Building2} />
                 <InfoItem
@@ -259,65 +257,35 @@ export default function MerchantDetail() {
                   {merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}
                 </p>
               )}
-            </CardContent>
-          </Card>
+          </CollapsibleCard>
 
           {/* 审核记录 */}
           {merchant.reviewNote && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  最近审核备注
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <CollapsibleCard title="最近审核备注" icon={FileText}>
                 <p className="text-sm text-foreground">{merchant.reviewNote}</p>
                 {merchant.reviewedAt && (
                   <p className="text-xs text-[#8a94a6] mt-2">
                     审核时间：{formatDateTime(merchant.reviewedAt)}
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* 物料管理：已通过 CRM 的商户展示其前台发布的物料 */}
-          {merchant.crmStatus === "enabled" && merchant.businessLicense && (
-            <MerchantMaterialPanel creditCode={merchant.businessLicense} />
+            </CollapsibleCard>
           )}
         </div>
 
         <div className="space-y-6">
           {/* 联系人信息 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" />
-                联系人信息
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CollapsibleCard title="联系人信息" icon={User} contentClassName="space-y-4">
               <InfoItem label="联系人" value={merchant.contactName} icon={User} />
               <InfoItem label="联系电话" value={merchant.contactPhone} icon={Phone} />
               <InfoItem label="联系邮箱" value={merchant.contactEmail} icon={Mail} />
-            </CardContent>
-          </Card>
+          </CollapsibleCard>
 
           {/* 结算账户 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-primary" />
-                结算账户
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CollapsibleCard title="结算账户" icon={CreditCard} contentClassName="space-y-4">
               <InfoItem label="开户名" value={merchant.settlementAccountName} />
               <InfoItem label="开户银行" value={merchant.settlementBank} icon={Landmark} />
               <InfoItem label="银行账号" value={merchant.settlementAccount} icon={CreditCard} />
-            </CardContent>
-          </Card>
+          </CollapsibleCard>
         </div>
       </div>
 
