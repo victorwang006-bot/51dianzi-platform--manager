@@ -38,6 +38,11 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
 import Login from "@/pages/Login";
+import {
+  hasAdminPermission,
+  type AdminPermission,
+  type AdminRole,
+} from "@shared/adminPermissions";
 
 
 
@@ -46,15 +51,15 @@ const menuGroups = [
   {
     label: "业务管理",
     items: [
-      { icon: Database, label: "物料数据库", path: "/" },
-      { icon: Store, label: "商户管理", path: "/merchants" },
-      { icon: MessageSquare, label: "消息", path: "/messages" },
+      { icon: Database, label: "物料数据库", path: "/", permission: "materials.read" as AdminPermission },
+      { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission },
+      { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission },
     ],
   },
   {
     label: "系统",
     items: [
-      { icon: UserCog, label: "用户管理", path: "/admins" },
+      { icon: UserCog, label: "后台用户管理", path: "/admins", permission: "admins.manage" as AdminPermission },
     ],
   },
 ];
@@ -147,9 +152,12 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = allMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ?? "super_admin") as AdminRole;
+  const canReadMessages = hasAdminPermission(adminRole, "messages.read");
   // 消息未读总数（侧边栏角标，30 秒轮询）
   const { data: unreadData } = trpc.message.unreadCount.useQuery(undefined, {
-    refetchInterval: 30000,
+    enabled: canReadMessages,
+    refetchInterval: canReadMessages ? 30000 : false,
   });
   const unreadTotal = unreadData?.total ?? 0;
 
@@ -224,7 +232,7 @@ function DashboardLayoutContent({
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-2">
-                    {group.items.map(item => {
+                    {group.items.filter(item => hasAdminPermission(adminRole, item.permission)).map(item => {
                       const isActive = location === item.path;
                       const showUnread = item.path === "/messages" && unreadTotal > 0;
                       return (

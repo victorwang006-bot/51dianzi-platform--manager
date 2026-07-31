@@ -157,12 +157,12 @@ export const adminRoleMap: Record<string, string> = {
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between mb-6">
-      <div>
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
         {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
@@ -199,11 +199,11 @@ export function Pagination({ page, pageSize, total, onPageChange }: {
 
 export function EmptyState({ message = "暂无数据" }: { message?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-muted-foreground">
       <svg className="h-12 w-12 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
       </svg>
-      <p className="text-sm">{message}</p>
+      <p className="max-w-full break-words text-sm leading-relaxed">{message}</p>
     </div>
   );
 }

@@ -817,7 +817,7 @@ export async function createAdminUser(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(adminUsers).values({
+  await db.insert(adminUsers).values({
     userId: 0,
     username: input.username,
     displayName: input.displayName ?? null,
@@ -827,7 +827,9 @@ export async function createAdminUser(input: {
     passwordHash: input.passwordHash ?? null,
     status: "active",
   });
-  return result;
+  const created = await getAdminUserByUsername(input.username);
+  if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
+  return created;
 }
 
 export async function updateAdminUser(id: number, input: {

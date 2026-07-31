@@ -671,21 +671,21 @@ export default function Materials() {
       />
 
       {/* 筛选栏 */}
-      <div className="bg-white rounded-xl border border-border p-4 mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-white p-4 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:min-w-[260px] sm:flex-1">
           <Input
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && doSearch()}
             placeholder="搜索型号 / 名称 / 物料编号 / 品牌"
-            className="max-w-sm"
+            className="min-w-0 flex-1 sm:max-w-sm"
           />
           <Button variant="outline" onClick={doSearch}>
             <Search className="h-4 w-4 mr-1" /> 搜索
           </Button>
         </div>
         <Select value={category} onValueChange={v => { setCategory(v); setPage(1); }}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="全部分类" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="全部分类" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部分类</SelectItem>
             {(categories ?? []).map(c => (
@@ -694,7 +694,7 @@ export default function Materials() {
           </SelectContent>
         </Select>
         <Select value={lifecycle} onValueChange={v => { setLifecycle(v); setPage(1); }}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="全部生命周期" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="全部生命周期" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部生命周期</SelectItem>
             <SelectItem value="active">量产</SelectItem>

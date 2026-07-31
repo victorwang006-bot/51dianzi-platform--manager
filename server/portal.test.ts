@@ -1,7 +1,9 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import * as db from "./db";
 import type { TrpcContext } from "./_core/context";
+import { eq } from "drizzle-orm";
+import { merchants } from "../drizzle/schema";
 
 const PORTAL_KEY = "test-portal-key-12345";
 
@@ -20,6 +22,7 @@ function createPortalContext(portalKey?: string): TrpcContext {
 }
 
 const uniqueLicense = `91330100TEST${Date.now().toString().slice(-6)}`;
+const createdMerchantIds = new Set<number>();
 
 const submission = {
   companyName: "测试对接电子有限公司",
@@ -37,6 +40,14 @@ const submission = {
 
 beforeAll(() => {
   process.env.PORTAL_API_KEY = PORTAL_KEY;
+});
+
+afterAll(async () => {
+  const conn = await db.getDb();
+  if (!conn) return;
+  for (const id of createdMerchantIds) {
+    await conn.delete(merchants).where(eq(merchants.id, id));
+  }
 });
 
 describe("portal.submitMerchant", () => {
@@ -57,6 +68,7 @@ describe("portal.submitMerchant", () => {
   it("正确密钥可提交入驻资料并创建 pending 商户", async () => {
     const caller = appRouter.createCaller(createPortalContext(PORTAL_KEY));
     const result = await caller.portal.submitMerchant(submission);
+    createdMerchantIds.add(result.merchantId);
     expect(result.created).toBe(true);
     expect(result.status).toBe("pending");
     expect(result.merchantNo).toMatch(/^M\d+/);
@@ -94,6 +106,7 @@ describe("portal.submitMerchant", () => {
       businessLicense: license,
       salesOwner: "赵销售",
     });
+    createdMerchantIds.add(created.merchantId);
     expect(created.created).toBe(true);
     let merchant = await db.getMerchantById(created.merchantId);
     expect(merchant?.salesOwner).toBe("赵销售");

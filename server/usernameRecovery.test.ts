@@ -1,10 +1,12 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   hashPassword,
   recoverUsernameWithCode,
   requestUsernameRecovery,
 } from "./adminAuth";
 import * as db from "./db";
+import { eq } from "drizzle-orm";
+import { passwordResetCodes } from "../drizzle/schema";
 
 const TEST_USERNAME = "vitest_recover_user";
 const TEST_PHONE = "13977778888";
@@ -20,10 +22,9 @@ beforeAll(async () => {
     await db.createAdminUser({
       username: TEST_USERNAME,
       displayName: "找回用户名测试账号",
-      role: "customer_service",
+      adminRole: "customer_svc",
       phone: TEST_PHONE,
       email: "vitest_recover@51dianzi.com",
-      status: "active",
       passwordHash: await hashPassword("Vitest@12345"),
     });
     const created = await db.getAdminUserByUsername(TEST_USERNAME);
@@ -32,6 +33,16 @@ beforeAll(async () => {
   // 作废旧验证码，保证测试幂等（避免 60 秒频控）
   const active = await db.getActivePasswordResetCode(accountId);
   if (active) await db.markResetCodeUsed(active.id);
+});
+
+afterAll(async () => {
+  const account = await db.getAdminUserByUsername(TEST_USERNAME);
+  if (!account) return;
+  const conn = await db.getDb();
+  if (conn) {
+    await conn.delete(passwordResetCodes).where(eq(passwordResetCodes.adminUserId, account.id));
+  }
+  await db.deleteAdminUser(account.id);
 });
 
 describe("找回用户名", () => {

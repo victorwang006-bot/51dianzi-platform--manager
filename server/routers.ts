@@ -1,4 +1,9 @@
 import { COOKIE_NAME } from "@shared/const";
+import {
+  hasAdminPermission,
+  type AdminPermission,
+  type AdminRole,
+} from "@shared/adminPermissions";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -54,6 +59,24 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+/** 本地账号按 adminRole 校验；Manus OAuth 管理员兼容为 super_admin。 */
+const adminPermissionProcedure = (permission: AdminPermission) =>
+  adminProcedure.use(({ ctx, next }) => {
+    const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+    if (!hasAdminPermission(role, permission)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权执行此操作" });
+    }
+    return next({ ctx });
+  });
+
+const materialReadProcedure = adminPermissionProcedure("materials.read");
+const materialWriteProcedure = adminPermissionProcedure("materials.write");
+const merchantReadProcedure = adminPermissionProcedure("merchants.read");
+const merchantWriteProcedure = adminPermissionProcedure("merchants.write");
+const messageReadProcedure = adminPermissionProcedure("messages.read");
+const messageWriteProcedure = adminPermissionProcedure("messages.write");
+const adminManageProcedure = adminPermissionProcedure("admins.manage");
 
 // 前台对接鉴权：请求头 x-portal-key 必须与 PORTAL_API_KEY 一致
 function assertPortalKey(req: { headers: Record<string, unknown> }) {
@@ -216,7 +239,7 @@ export const appRouter = router({
         return db.searchMaterialsPublic(input);
       }),
     // ── 后台管理 API（需要管理员权限）──────────────────────────────────────
-    list: adminProcedure
+    list: materialReadProcedure
       .input(pageInput.extend({
         search: z.string().optional(),
         category: z.string().optional(),
@@ -227,22 +250,22 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.getMaterials(input);
       }),
-    detail: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    detail: materialReadProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
       const material = await db.getMaterialById(input.id);
       if (!material) throw new TRPCError({ code: "NOT_FOUND", message: "物料不存在" });
       return material;
     }),
-    categories: adminProcedure.query(async () => {
+    categories: materialReadProcedure.query(async () => {
       return db.getMaterialCategories();
     }),
-    brands: adminProcedure.query(async () => {
+    brands: materialReadProcedure.query(async () => {
       return db.getMaterialBrands();
     }),
-    create: adminProcedure.input(materialInput).mutation(async ({ input }) => {
+    create: materialWriteProcedure.input(materialInput).mutation(async ({ input }) => {
       const material = await db.createMaterial(input);
       return { success: true, material };
     }),
-    update: adminProcedure
+    update: materialWriteProcedure
       .input(materialInput.partial().extend({ id: z.number() }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
@@ -256,7 +279,7 @@ export const appRouter = router({
         }
         return { success: true };
       }),
-    toggleStatus: adminProcedure
+    toggleStatus: materialWriteProcedure
       .input(z.object({ id: z.number(), status: z.enum(["enabled", "disabled"]) }))
       .mutation(async ({ input }) => {
         try {
@@ -269,7 +292,7 @@ export const appRouter = router({
         }
         return { success: true };
       }),
-    remove: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    remove: materialWriteProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       try {
         await db.deleteMaterial(input.id);
       } catch (e) {
@@ -281,7 +304,7 @@ export const appRouter = router({
       return { success: true };
     }),
     /** 上传 PDF 规格书：base64 → S3，返回 key/url/文件名/大小（不直接写库，由 create/update 保存） */
-    uploadDatasheet: adminProcedure
+    uploadDatasheet: materialWriteProcedure
       .input(z.object({
         fileName: z.string().min(1).max(256),
         /** base64 编码的文件内容（不含 data: 前缀） */
@@ -306,7 +329,7 @@ export const appRouter = router({
         return { key, url, fileName: input.fileName, fileSize: buffer.length };
       }),
     /** 上传产品图片：base64 → S3，返回 key/url（不直接写库，由 create/update 保存） */
-    uploadImage: adminProcedure
+    uploadImage: materialWriteProcedure
       .input(z.object({
         fileName: z.string().min(1).max(256),
         mimeType: z.string(),
@@ -331,15 +354,15 @@ export const appRouter = router({
 
   // ─── 商户管理 ────────────────────────────────────────────────────────────
   merchant: router({
-    list: adminProcedure
+    list: merchantReadProcedure
       .input(pageInput.extend({ status: z.string().optional(), search: z.string().optional() }))
       .query(async ({ input }) => {
         return db.getMerchants(input);
       }),
-    detail: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
       return db.getMerchantById(input.id);
     }),
-    review: adminProcedure
+    review: merchantWriteProcedure
       .input(z.object({
         id: z.number(),
         action: z.enum(["approve", "supplement", "suspend", "reactivate"]),
@@ -356,7 +379,7 @@ export const appRouter = router({
         return { success: true };
       }),
     /** 设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
-    setCrmStatus: adminProcedure
+    setCrmStatus: merchantWriteProcedure
       .input(z.object({
         id: z.number(),
         crmStatus: z.enum(["none", "pending", "enabled", "disabled", "rejected"]),
@@ -373,7 +396,7 @@ export const appRouter = router({
      * 给商户"发信"：发送平台消息到该商户关联的前台客服会话（首次自动建会话并复用）。
      * 前台"联系客服"按钮通过 portal.getUnread 轮询该会话显示红点提醒。
      */
-    sendMessage: adminProcedure
+    sendMessage: messageWriteProcedure
       .input(z.object({
         id: z.number(),
         content: z.string().min(1, "消息内容不能为空").max(5000),
@@ -571,7 +594,7 @@ export const appRouter = router({
   // ─── 消息中心（后台管理）──────────────────────────────────────────────────
   message: router({
     /** 会话列表 */
-    threads: adminProcedure
+    threads: messageReadProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
         threadType: z.enum(["general", "inquiry", "service"]).optional(),
@@ -588,7 +611,7 @@ export const appRouter = router({
       }),
 
     /** 会话详情（打开后后台未读清零） */
-    detail: adminProcedure
+    detail: messageReadProcedure
       .input(z.object({ threadId: z.number() }))
       .query(async ({ input }) => {
         const result = await db.getMessageThreadDetail(input.threadId);
@@ -599,7 +622,7 @@ export const appRouter = router({
       }),
 
     /** 回复会话 */
-    reply: adminProcedure
+    reply: messageWriteProcedure
       .input(z.object({
         threadId: z.number(),
         content: z.string().min(1, "回复内容不能为空").max(5000),
@@ -614,7 +637,7 @@ export const appRouter = router({
       }),
 
     /** 关闭/重开会话 */
-    setStatus: adminProcedure
+    setStatus: messageWriteProcedure
       .input(z.object({
         threadId: z.number(),
         status: z.enum(["open", "closed"]),
@@ -624,7 +647,7 @@ export const appRouter = router({
       }),
 
     /** 未读总数（侧边栏角标轮询） */
-    unreadCount: adminProcedure.query(async () => {
+    unreadCount: messageReadProcedure.query(async () => {
       return { total: await db.getAdminUnreadTotal() };
     }),
   }),
@@ -632,7 +655,7 @@ export const appRouter = router({
   // ─── 客户物料管理（前台发布物料，跨库） ──────────────────────────────────
   platformMaterial: router({
     /** 列表：查询商户在前台发布的物料，支持信用代码筛选与关键词搜索 */
-    list: adminProcedure
+    list: merchantReadProcedure
       .input(z.object({
         creditCode: z.string().max(64).optional(),
         keyword: z.string().max(128).optional(),
@@ -644,7 +667,7 @@ export const appRouter = router({
         return db.listMerchantInventories(input ?? {});
       }),
     /** 下架：置回待发布（draft）并记录 offshelfBy='admin' 与必填下架原因，前台向用户展示 */
-    offshelf: adminProcedure
+    offshelf: merchantWriteProcedure
       .input(z.object({
         id: z.number().int().positive(),
         reason: z.string().trim().min(1, "请填写下架原因").max(255, "下架原因不能超过255字"),
@@ -656,16 +679,16 @@ export const appRouter = router({
 
   // ─── 管理员管理 ──────────────────────────────────────────────────────────
   admin: router({
-    list: adminProcedure.input(pageInput).query(async ({ input }) => {
+    list: adminManageProcedure.input(pageInput).query(async ({ input }) => {
       return db.getAdminUsers(input);
     }),
   }),
 
   adminUser: router({
-    list: adminProcedure.input(pageInput).query(async ({ input }) => {
+    list: adminManageProcedure.input(pageInput).query(async ({ input }) => {
       return db.getAdminUsers(input);
     }),
-    create: adminProcedure.input(z.object({
+    create: adminManageProcedure.input(z.object({
       username: z.string().min(2).max(64),
       displayName: z.string().max(128).optional().nullable(),
       email: z.string().email().optional().nullable(),
@@ -680,7 +703,7 @@ export const appRouter = router({
       const { password, ...rest } = input;
       return db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
     }),
-    update: adminProcedure.input(z.object({
+    update: adminManageProcedure.input(z.object({
       id: z.number(),
       displayName: z.string().max(128).optional().nullable(),
       email: z.string().email().optional().nullable(),
@@ -697,13 +720,13 @@ export const appRouter = router({
       }
       return { success: true };
     }),
-    toggleStatus: adminProcedure.input(z.object({
+    toggleStatus: adminManageProcedure.input(z.object({
       id: z.number(),
       status: z.enum(["active", "disabled"]),
     })).mutation(async ({ input }) => {
       return db.toggleAdminUserStatus(input.id, input.status);
     }),
-    remove: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       return db.deleteAdminUser(input.id);
     }),
   }),

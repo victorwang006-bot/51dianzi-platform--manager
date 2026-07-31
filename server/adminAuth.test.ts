@@ -1,9 +1,11 @@
-import { describe, expect, it, beforeAll } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Request, Response } from "express";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { hashPassword, maskEmail, maskPhone } from "./adminAuth";
 import * as db from "./db";
+import { eq } from "drizzle-orm";
+import { passwordResetCodes } from "../drizzle/schema";
 
 /** 构造最小可用的 tRPC 调用上下文 */
 function createCtx(): { ctx: TrpcContext; cookies: Record<string, unknown> } {
@@ -50,6 +52,16 @@ beforeAll(async () => {
     phone: "13912345678",
     email: "vitest@51dianzi.com",
   });
+});
+
+afterAll(async () => {
+  const account = await db.getAdminUserByUsername(TEST_USERNAME);
+  if (!account) return;
+  const conn = await db.getDb();
+  if (conn) {
+    await conn.delete(passwordResetCodes).where(eq(passwordResetCodes.adminUserId, account.id));
+  }
+  await db.deleteAdminUser(account.id);
 });
 
 describe("账号密码登录", () => {
