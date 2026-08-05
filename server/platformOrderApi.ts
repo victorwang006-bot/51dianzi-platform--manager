@@ -82,25 +82,17 @@ function getConfig() {
 }
 
 async function callPlatformOrder<T>(
-  procedure: "list" | "detail" | "transition",
+  procedure: "list" | "detail",
   input: Record<string, unknown>,
-  method: "query" | "mutation",
 ): Promise<T> {
   const { baseUrl, key } = getConfig();
   const headers = { "content-type": "application/json", "x-portal-key": key };
   const body = JSON.stringify({ "0": { json: input } });
   const url = `${baseUrl}/api/trpc/internalOrder.${procedure}`;
-  const response = method === "query"
-    ? await fetch(`${url}?batch=1&input=${encodeURIComponent(body)}`, {
-        headers,
-        signal: AbortSignal.timeout(10_000),
-      })
-    : await fetch(`${url}?batch=1`, {
-        method: "POST",
-        headers,
-        body,
-        signal: AbortSignal.timeout(10_000),
-      });
+  const response = await fetch(`${url}?batch=1&input=${encodeURIComponent(body)}`, {
+    headers,
+    signal: AbortSignal.timeout(10_000),
+  });
   const payload = await response.json().catch(() => null) as BatchResponse<T> | null;
   const first = payload?.[0];
   if (!response.ok || first?.error) {
@@ -113,20 +105,9 @@ async function callPlatformOrder<T>(
 }
 
 export function listPlatformOrders(input: PlatformOrderListInput) {
-  return callPlatformOrder<{ rows: PlatformOrderListRow[]; total: number }>("list", input, "query");
+  return callPlatformOrder<{ rows: PlatformOrderListRow[]; total: number }>("list", input);
 }
 
 export function getPlatformOrderDetail(orderId: number) {
-  return callPlatformOrder<PlatformOrderDetail>("detail", { orderId }, "query");
-}
-
-export function transitionPlatformOrder(input: {
-  orderId: number;
-  action: "markPaid" | "cancel" | "ship" | "complete";
-  operator: string;
-  reason?: string;
-  expressCo?: string;
-  expressNo?: string;
-}) {
-  return callPlatformOrder<{ ok: true }>("transition", input, "mutation");
+  return callPlatformOrder<PlatformOrderDetail>("detail", { orderId });
 }

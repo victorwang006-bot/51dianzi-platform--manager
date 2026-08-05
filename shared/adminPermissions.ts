@@ -18,7 +18,6 @@ export const ADMIN_PERMISSIONS = [
   "messages.read",
   "messages.write",
   "orders.read",
-  "orders.write",
   "admins.manage",
 ] as const;
 
@@ -34,7 +33,6 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "messages.read",
     "messages.write",
     "orders.read",
-    "orders.write",
   ],
   merchant_mgr: ["merchants.read", "merchants.write", "orders.read"],
   customer_svc: ["merchants.read", "messages.read", "messages.write", "orders.read"],

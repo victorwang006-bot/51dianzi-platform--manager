@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { ArrowLeft, Loader2, RefreshCw, Search, ShoppingCart } from "lucide-react";
-import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { hasAdminPermission, type AdminRole } from "@shared/adminPermissions";
 
 const statusMeta = {
   pending: { label: "待付款", className: "bg-amber-100 text-amber-800" },
@@ -59,7 +56,7 @@ function OrderList() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">商城订单</h1>
-            <p className="mt-1 text-sm text-muted-foreground">直接读取商城唯一订单事实源，兼容历史 DZ 订单与新父子订单。</p>
+            <p className="mt-1 text-sm text-muted-foreground">只读访问商城唯一订单事实源，不复制、不双写订单数据。</p>
           </div>
           <Button variant="outline" onClick={() => query.refetch()} disabled={query.isFetching}>
             <RefreshCw className={`mr-2 h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />刷新
@@ -73,7 +70,7 @@ function OrderList() {
                 value={draftKeyword}
                 onChange={event => setDraftKeyword(event.target.value)}
                 onKeyDown={event => event.key === "Enter" && submitSearch()}
-                placeholder="订单号、父订单号、买家、供应商、收货人或手机号"
+                placeholder="订单号、买家、供应商、收货人或手机号"
               />
               <Button onClick={submitSearch}><Search className="mr-2 h-4 w-4" />搜索</Button>
             </div>
@@ -107,7 +104,7 @@ function OrderList() {
                   <TableHeader><TableRow>
                     <TableHead>订单</TableHead><TableHead>买家</TableHead><TableHead>供应商</TableHead>
                     <TableHead>状态</TableHead><TableHead className="text-right">金额</TableHead>
-                    <TableHead>下单时间</TableHead><TableHead className="text-right">操作</TableHead>
+                    <TableHead>下单时间</TableHead><TableHead className="text-right">详情</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {query.data.rows.map(order => (
@@ -147,20 +144,7 @@ function OrderList() {
 }
 
 function OrderDetail({ orderId }: { orderId: number }) {
-  const { user } = useAuth();
-  const utils = trpc.useUtils();
-  const [reason, setReason] = useState("");
-  const [expressCo, setExpressCo] = useState("");
-  const [expressNo, setExpressNo] = useState("");
   const query = trpc.order.detail.useQuery({ orderId }, { retry: 1 });
-  const canWrite = hasAdminPermission((user?.adminRole ?? "super_admin") as AdminRole, "orders.write");
-  const transition = trpc.order.transition.useMutation({
-    onSuccess: async () => {
-      toast.success("订单状态已更新");
-      await Promise.all([utils.order.detail.invalidate({ orderId }), utils.order.list.invalidate()]);
-    },
-    onError: error => toast.error(error.message),
-  });
   const data = query.data;
 
   if (query.isLoading) return <DashboardLayout><div className="flex min-h-[70vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin" /></div></DashboardLayout>;
@@ -169,11 +153,6 @@ function OrderDetail({ orderId }: { orderId: number }) {
   );
 
   const order = data.order;
-  const act = (action: "markPaid" | "cancel" | "ship" | "complete") => {
-    if (action === "cancel" && !window.confirm("确认取消该订单并回补库存？")) return;
-    transition.mutate({ orderId, action, reason: reason || undefined, expressCo: expressCo || undefined, expressNo: expressNo || undefined });
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6 p-4 sm:p-6">
@@ -190,14 +169,6 @@ function OrderDetail({ orderId }: { orderId: number }) {
           <Card><CardHeader><CardTitle className="text-base">收货与物流</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>{order.receiver} · {order.receiverPhone}</p><p className="text-muted-foreground">{order.receiverAddress}</p><p>{order.expressCo && order.expressNo ? `${order.expressCo} · ${order.expressNo}` : "尚未发货"}</p></CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">备注</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>{order.note || "无买家备注"}</p>{order.statusNote && <p className="text-muted-foreground">状态说明：{order.statusNote}</p>}</CardContent></Card>
         </div>
-
-        {canWrite && ["pending", "paid", "shipped"].includes(order.status) && (
-          <Card><CardHeader><CardTitle className="text-base">履约操作</CardTitle></CardHeader><CardContent className="space-y-3">
-            {order.status === "pending" && <div className="flex flex-col gap-2 sm:flex-row"><Input value={reason} onChange={e => setReason(e.target.value)} placeholder="取消原因（取消时填写）" /><Button disabled={transition.isPending} onClick={() => act("markPaid")}>确认收款</Button><Button disabled={transition.isPending} variant="destructive" onClick={() => act("cancel")}>取消订单</Button></div>}
-            {order.status === "paid" && <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"><Input value={expressCo} onChange={e => setExpressCo(e.target.value)} placeholder="快递公司" /><Input value={expressNo} onChange={e => setExpressNo(e.target.value)} placeholder="运单号" /><Button disabled={transition.isPending || !expressCo.trim() || !expressNo.trim()} onClick={() => act("ship")}>登记发货</Button></div>}
-            {order.status === "shipped" && <Button disabled={transition.isPending} onClick={() => act("complete")}>确认订单完成</Button>}
-          </CardContent></Card>
-        )}
 
         {data.siblings.length > 1 && <Card><CardHeader><CardTitle className="text-base">同一父订单的子订单</CardTitle></CardHeader><CardContent className="grid gap-2 md:grid-cols-2">{data.siblings.map(item => <Link key={item.id} href={`/orders/${item.id}`}><div className={`rounded-lg border p-3 transition-colors hover:bg-muted ${item.id === orderId ? "border-primary bg-primary/5" : ""}`}><div className="flex items-center justify-between gap-2"><span className="font-mono text-sm">{item.orderNo}</span><OrderStatus status={item.status} /></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>{item.sellerName}</span><span>{money(item.totalAmount)}</span></div></div></Link>)}</CardContent></Card>}
 

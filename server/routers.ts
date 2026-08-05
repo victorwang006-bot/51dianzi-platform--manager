@@ -26,7 +26,6 @@ import { saveLocalFile } from "./localUpload";
 import {
   getPlatformOrderDetail,
   listPlatformOrders,
-  transitionPlatformOrder,
 } from "./platformOrderApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
 // 允许的上传类型与大小限制
@@ -83,7 +82,6 @@ const merchantWriteProcedure = adminPermissionProcedure("merchants.write");
 const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
 const orderReadProcedure = adminPermissionProcedure("orders.read");
-const orderWriteProcedure = adminPermissionProcedure("orders.write");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
   const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
@@ -268,18 +266,6 @@ export const appRouter = router({
     detail: orderReadProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
       .query(({ input }) => getPlatformOrderDetail(input.orderId)),
-    transition: orderWriteProcedure
-      .input(z.object({
-        orderId: z.number().int().positive(),
-        action: z.enum(["markPaid", "cancel", "ship", "complete"]),
-        reason: z.string().trim().max(200).optional(),
-        expressCo: z.string().trim().max(64).optional(),
-        expressNo: z.string().trim().max(100).optional(),
-      }))
-      .mutation(({ ctx, input }) => transitionPlatformOrder({
-        ...input,
-        operator: ctx.adminAccount?.username ?? ctx.user.name ?? "admin",
-      })),
   }),
 
   // ─── 物料数据库 ──────────────────────────────────────────────────────────
