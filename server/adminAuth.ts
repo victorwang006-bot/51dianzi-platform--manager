@@ -13,6 +13,14 @@ import { isSmsConfigured, sendSmsCode } from "./sms";
  */
 export const LOCAL_ADMIN_OPEN_ID_PREFIX = "local_admin:";
 
+/**
+ * 本地后台账号的会话命名空间。
+ *
+ * 本地账号登录不应依赖 Manus OAuth 的 VITE_APP_ID；生产环境未启用 OAuth 时，
+ * 空 appId 会导致刚签发的 JWT 在下一次 auth.me 请求中被 verifySession 拒绝。
+ */
+export const LOCAL_ADMIN_SESSION_APP_ID = "51dianzi-admin";
+
 export const BCRYPT_ROUNDS = 10;
 
 export async function hashPassword(plain: string): Promise<string> {
@@ -21,6 +29,21 @@ export async function hashPassword(plain: string): Promise<string> {
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
+}
+
+export async function createLocalAdminSessionToken(account: {
+  id: number;
+  username: string;
+  displayName?: string | null;
+}): Promise<string> {
+  return sdk.signSession(
+    {
+      openId: `${LOCAL_ADMIN_OPEN_ID_PREFIX}${account.id}`,
+      appId: LOCAL_ADMIN_SESSION_APP_ID,
+      name: account.displayName || account.username,
+    },
+    { expiresInMs: ONE_YEAR_MS }
+  );
 }
 
 /** 账号密码校验并签发会话 cookie；返回账号信息（不含密码哈希） */
@@ -45,11 +68,7 @@ export async function loginWithPassword(
       message: account.status === "locked" ? "账号已被锁定，请联系超级管理员" : "账号已被停用，请联系超级管理员",
     });
   }
-  const openId = `${LOCAL_ADMIN_OPEN_ID_PREFIX}${account.id}`;
-  const sessionToken = await sdk.createSessionToken(openId, {
-    name: account.displayName || account.username,
-    expiresInMs: ONE_YEAR_MS,
-  });
+  const sessionToken = await createLocalAdminSessionToken(account);
   const cookieOptions = getSessionCookieOptions(req);
   res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
   await db.touchAdminUserLogin(account.id);

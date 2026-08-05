@@ -17,6 +17,8 @@ export const ADMIN_PERMISSIONS = [
   "merchants.write",
   "messages.read",
   "messages.write",
+  "orders.read",
+  "orders.write",
   "admins.manage",
 ] as const;
 
@@ -31,12 +33,14 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "merchants.write",
     "messages.read",
     "messages.write",
+    "orders.read",
+    "orders.write",
   ],
-  merchant_mgr: ["merchants.read", "merchants.write"],
-  customer_svc: ["merchants.read", "messages.read", "messages.write"],
-  risk_control: ["merchants.read", "merchants.write"],
-  finance: ["merchants.read"],
-  auditor: ["materials.read", "merchants.read", "messages.read"],
+  merchant_mgr: ["merchants.read", "merchants.write", "orders.read"],
+  customer_svc: ["merchants.read", "messages.read", "messages.write", "orders.read"],
+  risk_control: ["merchants.read", "merchants.write", "orders.read"],
+  finance: ["merchants.read", "orders.read"],
+  auditor: ["materials.read", "merchants.read", "messages.read", "orders.read"],
 };
 
 export function isAdminRole(value: unknown): value is AdminRole {

@@ -38,7 +38,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (createdMaterialId) await db.deleteMaterial(createdMaterialId).catch(() => {});
+  if (createdMaterialId) await db.deleteMaterialFixture(createdMaterialId).catch(() => {});
   for (const f of savedFiles) {
     try { fs.unlinkSync(f); } catch { /* ignore */ }
   }

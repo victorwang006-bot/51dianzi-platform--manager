@@ -2,8 +2,11 @@ import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminUsers,
+  auditLogs,
+  crmOwnerRebindLogs,
   InsertMaterial,
   InsertUser,
+  materialNumberSequences,
   materials,
   merchants,
   messages,
@@ -12,6 +15,18 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import {
+  formatMaterialNo,
+  PLATFORM_MATERIAL_SEQUENCE_KEY,
+} from "./materialCode";
+import {
+  assertMerchantCrmStatusTransition,
+  crmStatusAction,
+  decideMerchantCrmGrant,
+  isEquivalentEnabledBinding,
+  normalizeCrmPortalUserId,
+  type MerchantCrmStatus,
+} from "./crmGrantPolicy";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -26,6 +41,58 @@ export async function getDb() {
   }
   return _db;
 }
+
+/** 兼容 TiDB 返回对象与 MariaDB 返回 JSON 字符串的差异。 */
+function decodeJsonValue<T>(value: unknown, fallback: T | null = null): T | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") return value as T;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeMaterialJson<T extends object>(row: T): T {
+  const normalized = { ...row } as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(normalized, "specs")) {
+    normalized.specs = decodeJsonValue<Record<string, string>>(normalized.specs);
+  }
+  if (Object.prototype.hasOwnProperty.call(normalized, "images")) {
+    normalized.images = decodeJsonValue<{ url: string; key: string; name?: string }[]>(normalized.images);
+  }
+  return normalized as T;
+}
+
+function normalizeMessageThreadJson<T extends object>(row: T): T {
+  const normalized = { ...row } as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(normalized, "companyProfile")) {
+    normalized.companyProfile = decodeJsonValue<Record<string, string | null>>(normalized.companyProfile);
+  }
+  return normalized as T;
+}
+
+function normalizeCreditCode(value: string) {
+  return value.replace(/\s+/g, "").toUpperCase();
+}
+
+function normalizePortalUserId(value?: string | null) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+export type MaterialAuditActor = {
+  operatorId?: number | null;
+  operatorName?: string | null;
+  operatorRole?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
+
+type MaterialMutationAudit = MaterialAuditActor & {
+  action?: string;
+  note?: string | null;
+};
 
 // ─── 用户 ─────────────────────────────────────────────────────────────────────
 
@@ -84,6 +151,12 @@ export async function getMaterials(params: {
         like(materials.name, `%${search}%`),
         like(materials.materialNo, `%${search}%`),
         like(materials.brand, `%${search}%`),
+        sql`EXISTS (
+          SELECT 1
+          FROM material_code_aliases AS material_alias
+          WHERE material_alias.materialId = ${materials.id}
+            AND material_alias.aliasCode LIKE ${`%${search}%`}
+        )`,
       ),
     );
   }
@@ -100,14 +173,14 @@ export async function getMaterials(params: {
     .orderBy(desc(materials.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  return { data, total: Number(count) };
+  return { data: data.map(normalizeMaterialJson), total: Number(count) };
 }
 
 export async function getMaterialById(id: number) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.select().from(materials).where(eq(materials.id, id)).limit(1);
-  return result[0] ?? null;
+  return result[0] ? normalizeMaterialJson(result[0]) : null;
 }
 
 export async function getMaterialCategories() {
@@ -140,6 +213,7 @@ export async function lookupMaterials(keyword: string) {
   const rows = await db
     .select({
       id: materials.id,
+      materialNo: materials.materialNo,
       partNumber: materials.partNumber,
       name: materials.name,
       brand: materials.brand,
@@ -152,9 +226,16 @@ export async function lookupMaterials(keyword: string) {
       and(
         eq(materials.status, "enabled"),
         or(
+          like(materials.materialNo, `%${keyword}%`),
           like(materials.partNumber, `%${keyword}%`),
           like(materials.name, `%${keyword}%`),
           like(materials.brand, `%${keyword}%`),
+          sql`EXISTS (
+            SELECT 1
+            FROM material_code_aliases AS material_alias
+            WHERE material_alias.materialId = ${materials.id}
+              AND material_alias.aliasCode LIKE ${`%${keyword}%`}
+          )`,
         ),
       ),
     )
@@ -165,13 +246,14 @@ export async function lookupMaterials(keyword: string) {
 
 /**
  * 获取指定型号的完整参数（公开 API，供前台搜索结果页展示参数）
- * 精确匹配 partNumber，返回 specs JSON 及基础信息
+ * 按制造商型号、正式平台码或历史旧码精确匹配，返回统一主档。
  */
 export async function getMaterialSpecsByPartNumber(partNumber: string) {
   const db = await getDb();
   if (!db) return null;
   const result = await db
     .select({
+      materialNo: materials.materialNo,
       partNumber: materials.partNumber,
       name: materials.name,
       brand: materials.brand,
@@ -191,11 +273,20 @@ export async function getMaterialSpecsByPartNumber(partNumber: string) {
     .where(
       and(
         eq(materials.status, "enabled"),
-        eq(materials.partNumber, partNumber),
+        or(
+          sql`UPPER(${materials.partNumber}) = UPPER(${partNumber.trim()})`,
+          sql`UPPER(${materials.materialNo}) = UPPER(${partNumber.trim()})`,
+          sql`EXISTS (
+            SELECT 1
+            FROM material_code_aliases AS material_alias
+            WHERE material_alias.materialId = ${materials.id}
+              AND UPPER(material_alias.aliasCode) = UPPER(${partNumber.trim()})
+          )`,
+        ),
       ),
     )
     .limit(1);
-  return result[0] ?? null;
+  return result[0] ? normalizeMaterialJson(result[0]) : null;
 }
 
 /**
@@ -218,10 +309,17 @@ export async function searchMaterialsPublic(params: {
   if (keyword) {
     conditions.push(
       or(
+        like(materials.materialNo, `%${keyword}%`),
         like(materials.partNumber, `%${keyword}%`),
         like(materials.name, `%${keyword}%`),
         like(materials.brand, `%${keyword}%`),
         like(materials.description, `%${keyword}%`),
+        sql`EXISTS (
+          SELECT 1
+          FROM material_code_aliases AS material_alias
+          WHERE material_alias.materialId = ${materials.id}
+            AND material_alias.aliasCode LIKE ${`%${keyword}%`}
+        )`,
       )!,
     );
   }
@@ -261,107 +359,110 @@ export async function searchMaterialsPublic(params: {
     .orderBy(materials.partNumber)
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  return { data, total: Number(count) };
+  return { data: data.map(normalizeMaterialJson), total: Number(count) };
 }
 
-/**
- * 物料编号规则：51E-{分类码}-{4位序列号}
- *
- * 分类码（3位大写字母）对照表：
- *   MCU  微控制器/单片机
- *   MEM  存储器（Flash/RAM/EEPROM）
- *   AMP  放大器/运算放大器
- *   WLS  无线模组（WiFi/BT/Zigbee）
- *   CAP  电容（MLCC/电解/钽）
- *   DIS  分立器件（MOSFET/BJT/二极管）
- *   PWR  电源管理（LDO/DCDC/PMU）
- *   CLK  时钟与定时器
- *   IFC  接口芯片（UART/SPI/I2C/RS232）
- *   LOG  逻辑芯片（门电路/移位寄存器）
- *   SEN  传感器
- *   CON  连接器/接插件
- *   IND  电感/磁性元件
- *   RES  电阻
- *   OTH  其他/未分类
- *
- * 序列号在同一分类码下全局递增，不随年份重置，删除后不复用。
- * 示例：51E-MCU-00001（第1颗微控制器）、51E-MEM-00003（第3颗存储器）
- *
- * 容量：每个分类码最多 99999 条，15 个分类码合计上限约 150 万条。
- */
-const CATEGORY_CODE_MAP: Record<string, string> = {
-  微控制器: "MCU",
-  单片机: "MCU",
-  存储器: "MEM",
-  存储芯片: "MEM",
-  Flash: "MEM",
-  放大器: "AMP",
-  运算放大器: "AMP",
-  无线模组: "WLS",
-  无线模块: "WLS",
-  电容: "CAP",
-  分立器件: "DIS",
-  功率器件: "DIS",
-  电源管理: "PWR",
-  时钟与定时: "CLK",
-  接口芯片: "IFC",
-  逻辑芯片: "LOG",
-  传感器: "SEN",
-  连接器: "CON",
-  接插件: "CON",
-  电感: "IND",
-  电阻: "RES",
-};
-
-function getCategoryCode(category?: string | null): string {
-  if (!category) return "OTH";
-  return CATEGORY_CODE_MAP[category.trim()] ?? "OTH";
-}
-
-async function generateMaterialNo(category?: string | null): Promise<string> {
-  const db = await getDb();
-  const catCode = getCategoryCode(category);
-  const prefix = `51E-${catCode}-`;
-  if (!db) return `${prefix}00001`;
-  // 基于同分类码最大序列号顺延，避免删除记录后编号复用
-  const [row] = await db
-    .select({ maxNo: sql<string | null>`MAX(materialNo)` })
-    .from(materials)
-    .where(like(materials.materialNo, `${prefix}%`));
-  const maxNo = row?.maxNo;
-  const nextSeq = maxNo ? parseInt(maxNo.slice(-5), 10) + 1 : 1;
-  return `${prefix}${String(nextSeq).padStart(5, "0")}`;
-}
-
-export async function createMaterial(data: Omit<InsertMaterial, "materialNo">) {
+export async function createMaterial(
+  data: Omit<InsertMaterial, "materialNo">,
+  actor: MaterialAuditActor = {},
+) {
   const db = await getDb();
   if (!db) throw new Error("数据库不可用");
-  // 冲突重试：并发创建时编号可能撞车，最多重试 3 次
-  let lastError: unknown = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const materialNo = await generateMaterialNo(data.category);
-    try {
-      await db.insert(materials).values({ ...data, materialNo });
-      const result = await db.select().from(materials).where(eq(materials.materialNo, materialNo)).limit(1);
-      return result[0] ?? null;
-    } catch (error: unknown) {
-      lastError = error;
-      const code = (error as { code?: string })?.code;
-      if (code !== "ER_DUP_ENTRY") throw error;
+  return db.transaction(async tx => {
+    // 新库自动从 1 起步；生产迁移会把 nextValue 初始化为历史物料数 + 1。
+    await tx
+      .insert(materialNumberSequences)
+      .values({ sequenceKey: PLATFORM_MATERIAL_SEQUENCE_KEY, nextValue: 1 })
+      .onDuplicateKeyUpdate({ set: { sequenceKey: PLATFORM_MATERIAL_SEQUENCE_KEY } });
+
+    const [sequenceRow] = await tx
+      .select({ nextValue: materialNumberSequences.nextValue })
+      .from(materialNumberSequences)
+      .where(eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY))
+      .for("update");
+    if (!sequenceRow) throw new Error("MATERIAL_SEQUENCE_NOT_INITIALIZED");
+
+    const materialNo = formatMaterialNo(sequenceRow.nextValue);
+    await tx
+      .update(materialNumberSequences)
+      .set({ nextValue: sequenceRow.nextValue + 1 })
+      .where(eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY));
+
+    await tx.insert(materials).values({ ...data, materialNo });
+    const result = await tx.select().from(materials).where(eq(materials.materialNo, materialNo)).limit(1);
+    const material = result[0] ?? null;
+    if (material) {
+      await tx.insert(auditLogs).values({
+        operatorId: actor.operatorId ?? null,
+        operatorName: actor.operatorName ?? "system",
+        operatorRole: actor.operatorRole ?? "system",
+        action: "material.create",
+        module: "materials",
+        targetType: "material",
+        targetId: String(material.id),
+        beforeValue: null,
+        afterValue: material,
+        ipAddress: actor.ipAddress ?? null,
+        userAgent: actor.userAgent ?? null,
+        result: "success",
+        note: "平台物料码由全局序列自动分配，分配后不可修改或复用",
+      });
     }
-  }
-  throw lastError ?? new Error("物料编号生成失败");
+    return material;
+  });
 }
 
-export async function updateMaterial(id: number, data: Partial<InsertMaterial>) {
+export async function updateMaterial(
+  id: number,
+  data: Partial<InsertMaterial>,
+  audit: MaterialMutationAudit = {},
+) {
   const db = await getDb();
   if (!db) return;
-  const existing = await getMaterialById(id);
-  if (!existing) throw new Error("MATERIAL_NOT_FOUND");
-  await db.update(materials).set(data).where(eq(materials.id, id));
+  return db.transaction(async tx => {
+    const [existing] = await tx.select().from(materials).where(eq(materials.id, id)).limit(1);
+    if (!existing) throw new Error("MATERIAL_NOT_FOUND");
+    if (Object.prototype.hasOwnProperty.call(data, "materialNo")) {
+      throw new Error("MATERIAL_CODE_IMMUTABLE");
+    }
+    await tx.update(materials).set(data).where(eq(materials.id, id));
+    const [updated] = await tx.select().from(materials).where(eq(materials.id, id)).limit(1);
+    await tx.insert(auditLogs).values({
+      operatorId: audit.operatorId ?? null,
+      operatorName: audit.operatorName ?? "system",
+      operatorRole: audit.operatorRole ?? "system",
+      action: audit.action ?? "material.update",
+      module: "materials",
+      targetType: "material",
+      targetId: String(id),
+      beforeValue: existing,
+      afterValue: updated ?? null,
+      ipAddress: audit.ipAddress ?? null,
+      userAgent: audit.userAgent ?? null,
+      result: "success",
+      note: audit.note ?? null,
+    });
+    return updated;
+  });
 }
 
-export async function deleteMaterial(id: number) {
+/** 对外“移除”只能软归档；主档行和平台码永久保留，避免历史业务引用失效。 */
+export async function archiveMaterial(id: number, actor: MaterialAuditActor = {}) {
+  return updateMaterial(id, { status: "disabled" }, {
+    ...actor,
+    action: "material.archive",
+    note: "物料已停用归档；平台物料码永久保留且不可复用",
+  });
+}
+
+/** 生产代码无条件禁止物理删除物料主档。 */
+export async function deleteMaterial(_id: number): Promise<never> {
+  throw new Error("MATERIAL_PHYSICAL_DELETE_FORBIDDEN");
+}
+
+/** 仅供 Vitest 隔离数据库清理夹具，部署进程无法调用。 */
+export async function deleteMaterialFixture(id: number) {
+  if (process.env.VITEST !== "true") throw new Error("MATERIAL_FIXTURE_PURGE_FORBIDDEN");
   const db = await getDb();
   if (!db) return;
   const existing = await getMaterialById(id);
@@ -383,7 +484,7 @@ export async function getMaterialByPartNumber(partNumber: string) {
     .from(materials)
     .where(sql`UPPER(${materials.partNumber}) = UPPER(${partNumber.trim()})`)
     .limit(1);
-  return result[0] ?? null;
+  return result[0] ? normalizeMaterialJson(result[0]) : null;
 }
 
 /**
@@ -534,74 +635,414 @@ export interface CrmApplicationInput {
  * 已存在商户 → 补充资料并将 crmStatus 置为 pending（已开通 enabled 的不降级）；
  * 不存在 → 创建新商户记录（source=portal，status=pending，crmStatus=pending）。
  */
-export async function submitCrmApplication(input: CrmApplicationInput) {
+export async function submitCrmApplication(input: CrmApplicationInput, retryAttempt = 0) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
 
-  const now = new Date();
-  const existing = await db
-    .select()
-    .from(merchants)
-    .where(eq(merchants.businessLicense, input.creditCode))
-    .limit(1);
-
-  if (existing.length > 0) {
-    const m = existing[0];
-    const nextCrmStatus = m.crmStatus === "enabled" ? m.crmStatus : ("pending" as const);
-    await db.update(merchants).set({
-      ...(input.contactName ? { contactName: input.contactName } : {}),
-      ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
-      ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
-      ...(input.legalPersonName ? { legalPersonName: input.legalPersonName } : {}),
-      ...(input.registeredAddress ? { registeredAddress: input.registeredAddress } : {}),
-      ...(input.businessScope ? { businessScope: input.businessScope } : {}),
-      ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
-      crmStatus: nextCrmStatus,
-      crmAppliedAt: now,
-      ...(input.note ? { crmNote: input.note } : {}),
-    }).where(eq(merchants.id, m.id));
-    return { merchantId: m.id, merchantNo: m.merchantNo, created: false, crmStatus: nextCrmStatus };
+  const creditCode = normalizeCreditCode(input.creditCode);
+  const portalUserId = normalizePortalUserId(input.portalUserId);
+  if (!portalUserId) {
+    return {
+      accepted: false,
+      created: false,
+      code: "CRM_ACCOUNT_REQUIRED" as const,
+      crmStatus: "none" as const,
+      message: "请先登录前台账号后再提交企业开通申请",
+    };
   }
 
-  const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
-  const result = await db.insert(merchants).values({
-    merchantNo,
-    companyName: input.companyName,
-    businessLicense: input.creditCode,
-    contactName: input.contactName ?? null,
-    contactPhone: input.contactPhone ?? null,
-    contactEmail: input.contactEmail ?? null,
-    legalPersonName: input.legalPersonName ?? null,
-    registeredAddress: input.registeredAddress ?? null,
-    businessScope: input.businessScope ?? null,
-    licenseImageUrl: input.licenseImageUrl ?? null,
-    status: "pending",
-    source: "portal",
-    submittedAt: now,
-    crmStatus: "pending",
-    crmAppliedAt: now,
-    crmNote: input.note ?? null,
-  });
-  const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
-  return { merchantId: insertId, merchantNo, created: true, crmStatus: "pending" as const };
+  const now = new Date();
+  try {
+    return await db.transaction(async tx => {
+      const existing = await tx
+        .select()
+        .from(merchants)
+        .where(eq(merchants.businessLicense, creditCode))
+        .limit(1)
+        .for("update");
+
+      if (existing.length > 0) {
+        const merchant = existing[0];
+        const owner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
+
+        if (!owner) {
+          if (merchant.crmStatus !== "none") {
+            return {
+              accepted: false,
+              created: false,
+              code: "CRM_BINDING_REQUIRED" as const,
+              crmStatus: merchant.crmStatus,
+              message: "该企业需要平台核验绑定关系，请联系客服",
+            };
+          }
+
+          const claimResult = await tx.update(merchants).set({
+            crmOwnerPortalUserId: portalUserId,
+            crmStatus: "pending",
+            crmAppliedAt: now,
+            ...(input.note ? { crmNote: input.note } : {}),
+          }).where(and(
+            eq(merchants.id, merchant.id),
+            isNull(merchants.crmOwnerPortalUserId),
+            eq(merchants.crmStatus, "none"),
+          ));
+          const affectedRows = (claimResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
+          if (affectedRows !== 1) {
+            return {
+              accepted: false,
+              created: false,
+              code: "CRM_COMPANY_APPLICATION_PENDING" as const,
+              crmStatus: "pending" as const,
+              message: "该企业的 CRM 开通申请正在审核中",
+            };
+          }
+          return {
+            accepted: true,
+            created: false,
+            code: "CRM_APPLICATION_ACCEPTED" as const,
+            crmStatus: "pending" as const,
+            merchantId: merchant.id,
+            merchantNo: merchant.merchantNo,
+          };
+        }
+
+        if (owner !== portalUserId) {
+          const code = merchant.crmStatus === "pending"
+            ? "CRM_COMPANY_APPLICATION_PENDING"
+            : merchant.crmStatus === "enabled"
+              ? "CRM_COMPANY_ALREADY_ENABLED"
+              : "CRM_COMPANY_ALREADY_BOUND";
+          return {
+            accepted: false,
+            created: false,
+            code,
+            crmStatus: merchant.crmStatus,
+            message: merchant.crmStatus === "pending"
+              ? "该企业的 CRM 开通申请正在审核中"
+              : "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
+          };
+        }
+
+        if (merchant.crmStatus === "rejected" || merchant.crmStatus === "none") {
+          await tx.update(merchants).set({
+            ...(input.contactName ? { contactName: input.contactName } : {}),
+            ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+            ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+            ...(input.legalPersonName ? { legalPersonName: input.legalPersonName } : {}),
+            ...(input.registeredAddress ? { registeredAddress: input.registeredAddress } : {}),
+            ...(input.businessScope ? { businessScope: input.businessScope } : {}),
+            ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+            crmStatus: "pending",
+            crmAppliedAt: now,
+            ...(input.note ? { crmNote: input.note } : {}),
+          }).where(eq(merchants.id, merchant.id));
+          return {
+            accepted: true,
+            created: false,
+            code: merchant.crmStatus === "rejected"
+              ? "CRM_APPLICATION_REAPPLIED" as const
+              : "CRM_APPLICATION_ACCEPTED" as const,
+            crmStatus: "pending" as const,
+            merchantId: merchant.id,
+            merchantNo: merchant.merchantNo,
+          };
+        }
+
+        return {
+          accepted: false,
+          created: false,
+          code: merchant.crmStatus === "enabled"
+            ? "CRM_ALREADY_ENABLED" as const
+            : merchant.crmStatus === "pending"
+              ? "CRM_APPLICATION_PENDING" as const
+              : "CRM_ACCESS_DISABLED" as const,
+          crmStatus: merchant.crmStatus,
+          merchantId: merchant.id,
+          merchantNo: merchant.merchantNo,
+        };
+      }
+
+      const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
+      const result = await tx.insert(merchants).values({
+        merchantNo,
+        companyName: input.companyName,
+        businessLicense: creditCode,
+        crmOwnerPortalUserId: portalUserId,
+        contactName: input.contactName ?? null,
+        contactPhone: input.contactPhone ?? null,
+        contactEmail: input.contactEmail ?? null,
+        legalPersonName: input.legalPersonName ?? null,
+        registeredAddress: input.registeredAddress ?? null,
+        businessScope: input.businessScope ?? null,
+        licenseImageUrl: input.licenseImageUrl ?? null,
+        status: "pending",
+        source: "portal",
+        submittedAt: now,
+        crmStatus: "pending",
+        crmAppliedAt: now,
+        crmNote: input.note ?? null,
+      });
+      const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+      return {
+        accepted: true,
+        created: true,
+        code: "CRM_APPLICATION_ACCEPTED" as const,
+        crmStatus: "pending" as const,
+        merchantId: insertId,
+        merchantNo,
+      };
+    });
+  } catch (error) {
+    const mysqlError = error as {
+      errno?: number;
+      code?: string;
+      sqlState?: string;
+      cause?: { errno?: number; code?: string; sqlState?: string };
+    };
+    const retryableConflict = mysqlError.errno === 1213
+      || mysqlError.code === "ER_LOCK_DEADLOCK"
+      || mysqlError.sqlState === "40001"
+      || mysqlError.cause?.errno === 1213
+      || mysqlError.cause?.code === "ER_LOCK_DEADLOCK"
+      || mysqlError.cause?.sqlState === "40001";
+    if (retryableConflict && retryAttempt < 2) {
+      await new Promise(resolve => setTimeout(resolve, 15 * (retryAttempt + 1)));
+      return submitCrmApplication({ ...input, creditCode, portalUserId }, retryAttempt + 1);
+    }
+    const duplicate = mysqlError.errno === 1062
+      || mysqlError.code === "ER_DUP_ENTRY"
+      || mysqlError.cause?.errno === 1062
+      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    if (!duplicate) throw error;
+
+    const rows = await db.select().from(merchants)
+      .where(eq(merchants.businessLicense, creditCode)).limit(1);
+    const merchant = rows[0];
+    if (!merchant) throw error;
+    const sameOwner = normalizePortalUserId(merchant.crmOwnerPortalUserId) === portalUserId;
+    return sameOwner
+      ? {
+          accepted: false,
+          created: false,
+          code: "CRM_APPLICATION_PENDING" as const,
+          crmStatus: merchant.crmStatus,
+          merchantId: merchant.id,
+          merchantNo: merchant.merchantNo,
+        }
+      : {
+          accepted: false,
+          created: false,
+          code: "CRM_COMPANY_APPLICATION_PENDING" as const,
+          crmStatus: merchant.crmStatus,
+          message: "该企业的 CRM 开通申请正在审核中",
+        };
+  }
 }
 
 /** 后台：设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
 export async function setMerchantCrmStatus(input: {
   merchantId: number;
-  crmStatus: "none" | "pending" | "enabled" | "disabled" | "rejected";
+  crmStatus: MerchantCrmStatus;
+  portalUserId?: string | null;
   note?: string | null;
+  actor?: MaterialAuditActor;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const rows = await db.select().from(merchants).where(eq(merchants.id, input.merchantId)).limit(1);
-  if (!rows[0]) throw new Error("商户不存在");
-  await db.update(merchants).set({
-    crmStatus: input.crmStatus,
-    ...(input.crmStatus === "enabled" ? { crmEnabledAt: new Date() } : {}),
-    ...(input.note !== undefined ? { crmNote: input.note } : {}),
-  }).where(eq(merchants.id, input.merchantId));
-  return { success: true };
+  const normalizedNote = input.note?.trim() || null;
+  if ((input.crmStatus === "disabled" || input.crmStatus === "rejected") && !normalizedNote) {
+    throw new Error(input.crmStatus === "disabled" ? "暂停 CRM 必须填写原因" : "拒绝 CRM 申请必须填写原因");
+  }
+
+  return db.transaction(async tx => {
+    const rows = await tx.select().from(merchants)
+      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
+    const merchant = rows[0];
+    if (!merchant) throw new Error("商户不存在");
+
+    const fromStatus = merchant.crmStatus as MerchantCrmStatus;
+    assertMerchantCrmStatusTransition(fromStatus, input.crmStatus);
+    const decision = decideMerchantCrmGrant(merchant, input);
+    const ownerToKeep = decision.kind === "enable"
+      ? decision.ownerToBind
+      : decision.existingOwner;
+    const ownerCondition = decision.kind === "enable"
+      ? decision.expectedExistingOwner
+        ? eq(merchants.crmOwnerPortalUserId, decision.expectedExistingOwner)
+        : isNull(merchants.crmOwnerPortalUserId)
+      : ownerToKeep
+        ? eq(merchants.crmOwnerPortalUserId, ownerToKeep)
+        : isNull(merchants.crmOwnerPortalUserId);
+
+    const updateResult = await tx.update(merchants).set({
+      ...(decision.kind === "enable" ? { crmOwnerPortalUserId: ownerToKeep } : {}),
+      crmStatus: input.crmStatus,
+      ...(input.crmStatus === "enabled" ? { crmEnabledAt: merchant.crmEnabledAt ?? new Date() } : {}),
+      ...(input.note !== undefined ? { crmNote: normalizedNote } : {}),
+    }).where(and(
+      eq(merchants.id, input.merchantId),
+      eq(merchants.crmStatus, fromStatus),
+      ownerCondition,
+    ));
+    const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
+
+    if (affectedRows !== 1) {
+      const latestRows = await tx.select().from(merchants)
+        .where(eq(merchants.id, input.merchantId)).limit(1);
+      if (
+        input.crmStatus !== "enabled"
+        || !isEquivalentEnabledBinding(latestRows[0], ownerToKeep ?? "")
+      ) {
+        throw new Error("商户 CRM 状态已变化，请刷新页面后重试");
+      }
+    }
+
+    const latestRows = await tx.select().from(merchants)
+      .where(eq(merchants.id, input.merchantId)).limit(1);
+    const latest = latestRows[0];
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: `merchant.crm.${crmStatusAction(fromStatus, input.crmStatus)}`,
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: {
+        crmStatus: fromStatus,
+        crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId),
+        crmNote: merchant.crmNote,
+      },
+      afterValue: {
+        crmStatus: latest?.crmStatus ?? input.crmStatus,
+        crmOwnerPortalUserId: normalizeCrmPortalUserId(latest?.crmOwnerPortalUserId) ?? ownerToKeep,
+        crmNote: latest?.crmNote ?? normalizedNote,
+      },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note: normalizedNote,
+    });
+
+    return { success: true, crmOwnerPortalUserId: ownerToKeep };
+  });
+}
+
+/** 后台专用：CRM 超级管理员换绑。普通开通/恢复接口永远不能修改既有 owner。 */
+export async function rebindMerchantCrmOwner(input: {
+  merchantId: number;
+  expectedPortalUserId: string;
+  newPortalUserId: string;
+  reason: string;
+  requestId: string;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const expectedOwner = normalizeCrmPortalUserId(input.expectedPortalUserId);
+  const newOwner = normalizeCrmPortalUserId(input.newPortalUserId);
+  const reason = input.reason.trim();
+  const requestId = input.requestId.trim();
+  if (!expectedOwner) throw new Error("当前超级管理员用户 ID 不能为空");
+  if (!newOwner) throw new Error("新超级管理员用户 ID 不能为空");
+  if (reason.length < 2) throw new Error("换绑原因至少需要 2 个字符");
+  if (!requestId) throw new Error("换绑请求号不能为空");
+
+  return db.transaction(async tx => {
+    const existingRequest = (
+      await tx.select().from(crmOwnerRebindLogs)
+        .where(eq(crmOwnerRebindLogs.requestId, requestId)).limit(1)
+    )[0];
+    if (existingRequest) {
+      if (
+        existingRequest.merchantId !== input.merchantId
+        || existingRequest.expectedOwnerPortalUserId !== expectedOwner
+        || existingRequest.nextOwnerPortalUserId !== newOwner
+      ) {
+        throw new Error("换绑请求号已用于其他操作");
+      }
+      return {
+        success: true,
+        idempotent: true,
+        requestId,
+        merchantId: input.merchantId,
+        previousPortalUserId: expectedOwner,
+        crmOwnerPortalUserId: newOwner,
+      };
+    }
+
+    const rows = await tx.select().from(merchants)
+      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
+    const merchant = rows[0];
+    if (!merchant) throw new Error("商户不存在");
+    if (merchant.crmStatus !== "enabled" && merchant.crmStatus !== "disabled") {
+      throw new Error("只有已开通或已暂停的 CRM 企业可以换绑超级管理员");
+    }
+    const oldOwner = normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId);
+    if (!oldOwner) throw new Error("当前企业尚未绑定超级管理员，请先完成开通绑定");
+    if (oldOwner !== expectedOwner) {
+      throw new Error("当前超级管理员绑定已变化，请刷新页面后重试");
+    }
+    if (oldOwner === newOwner) throw new Error("新超级管理员不能与当前绑定账号相同");
+
+    const updateResult = await tx.update(merchants).set({
+      crmOwnerPortalUserId: newOwner,
+      crmNote: reason,
+    }).where(and(
+      eq(merchants.id, input.merchantId),
+      eq(merchants.crmOwnerPortalUserId, expectedOwner),
+      eq(merchants.crmStatus, merchant.crmStatus),
+    ));
+    const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
+    if (affectedRows !== 1) {
+      throw new Error("商户 CRM 绑定状态已变化，请刷新页面后重试");
+    }
+
+    await tx.insert(crmOwnerRebindLogs).values({
+      requestId,
+      merchantId: input.merchantId,
+      expectedOwnerPortalUserId: expectedOwner,
+      nextOwnerPortalUserId: newOwner,
+      reason,
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+    });
+
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.crm.rebind",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: {
+        crmStatus: merchant.crmStatus,
+        crmOwnerPortalUserId: oldOwner,
+      },
+      afterValue: {
+        crmStatus: merchant.crmStatus,
+        crmOwnerPortalUserId: newOwner,
+      },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note: reason,
+    });
+
+    return {
+      success: true,
+      idempotent: false,
+      requestId,
+      merchantId: merchant.id,
+      crmStatus: merchant.crmStatus,
+      previousPortalUserId: oldOwner,
+      crmOwnerPortalUserId: newOwner,
+    };
+  });
 }
 
 /**
@@ -673,18 +1114,69 @@ export async function sendMerchantMessage(input: {
  * enabled → allowed=true；disabled → 提示"您的CRM权限已经被暂停，请联系客服"；
  * 其余状态（none/pending/rejected/未找到商户）→ 未开通提示。
  */
-export async function getCrmAccessByCreditCode(creditCode: string) {
+export async function getCrmAccessByCreditCode(
+  creditCodeInput: string,
+  portalUserIdInput?: string | null,
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const portalUserId = normalizePortalUserId(portalUserIdInput);
+  if (!portalUserId) {
+    return {
+      allowed: false,
+      code: "CRM_ACCOUNT_REQUIRED" as const,
+      crmStatus: "none" as const,
+      message: "请先登录前台账号后再访问 CRM",
+    };
+  }
+
+  const creditCode = normalizeCreditCode(creditCodeInput);
   const rows = await db.select().from(merchants)
     .where(eq(merchants.businessLicense, creditCode)).limit(1);
   const merchant = rows[0];
   if (!merchant) {
-    return { allowed: false, crmStatus: "none" as const, message: "您尚未开通CRM，请先提交企业开通申请" };
+    return {
+      allowed: false,
+      code: "CRM_NOT_ENABLED" as const,
+      crmStatus: "none" as const,
+      message: "您尚未开通CRM，请先提交企业开通申请",
+    };
   }
+
+  const owner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
+  if (!owner) {
+    return {
+      allowed: false,
+      code: "CRM_BINDING_REQUIRED" as const,
+      crmStatus: merchant.crmStatus,
+      message: "该企业需要平台核验绑定关系，请联系客服",
+    };
+  }
+  if (owner !== portalUserId) {
+    return {
+      allowed: false,
+      code: merchant.crmStatus === "pending"
+        ? "CRM_COMPANY_APPLICATION_PENDING" as const
+        : merchant.crmStatus === "enabled"
+          ? "CRM_COMPANY_ALREADY_ENABLED" as const
+          : "CRM_COMPANY_ALREADY_BOUND" as const,
+      crmStatus: merchant.crmStatus,
+      message: merchant.crmStatus === "pending"
+        ? "该企业的 CRM 开通申请正在审核中"
+        : "该企业已绑定其他前台账号",
+    };
+  }
+
   const crmStatus = merchant.crmStatus;
   if (crmStatus === "enabled") {
-    return { allowed: true, crmStatus, message: null, merchantNo: merchant.merchantNo, crmThreadNo: merchant.crmThreadNo ?? null };
+    return {
+      allowed: true,
+      code: "CRM_ACCESS_GRANTED" as const,
+      crmStatus,
+      message: null,
+      merchantNo: merchant.merchantNo,
+      crmThreadNo: merchant.crmThreadNo ?? null,
+    };
   }
   const messageMap: Record<string, string> = {
     disabled: "您的CRM权限已经被暂停，请联系客服",
@@ -694,10 +1186,47 @@ export async function getCrmAccessByCreditCode(creditCode: string) {
   };
   return {
     allowed: false,
+    code: crmStatus === "pending"
+      ? "CRM_APPLICATION_PENDING" as const
+      : crmStatus === "rejected"
+        ? "CRM_APPLICATION_REJECTED" as const
+        : crmStatus === "disabled"
+          ? "CRM_ACCESS_DISABLED" as const
+          : "CRM_NOT_ENABLED" as const,
     crmStatus,
     message: messageMap[crmStatus] ?? messageMap.none,
     merchantNo: merchant.merchantNo,
     crmThreadNo: merchant.crmThreadNo ?? null,
+  };
+}
+
+/** 服务端对账：返回统一社会信用代码对应的权威 CRM owner；仅由 portal-key 路由暴露。 */
+export async function getCrmBindingByCreditCode(creditCodeInput: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const creditCode = normalizeCreditCode(creditCodeInput);
+  const rows = await db.select({
+    merchantId: merchants.id,
+    merchantNo: merchants.merchantNo,
+    companyName: merchants.companyName,
+    creditCode: merchants.businessLicense,
+    crmStatus: merchants.crmStatus,
+    crmOwnerPortalUserId: merchants.crmOwnerPortalUserId,
+  }).from(merchants).where(eq(merchants.businessLicense, creditCode)).limit(1);
+  const merchant = rows[0];
+  if (!merchant) {
+    return {
+      found: false as const,
+      creditCode,
+      crmStatus: "none" as const,
+      crmOwnerPortalUserId: null,
+    };
+  }
+  return {
+    found: true as const,
+    ...merchant,
+    creditCode,
+    crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId),
   };
 }
 
@@ -1009,7 +1538,10 @@ export async function getMessageThreads(input: {
     .offset((input.page - 1) * input.pageSize);
   const totalRows = await db.select({ count: sql<number>`count(*)` })
     .from(messageThreads).where(where);
-  return { items, total: Number(totalRows[0]?.count ?? 0) };
+  return {
+    items: items.map(normalizeMessageThreadJson),
+    total: Number(totalRows[0]?.count ?? 0),
+  };
 }
 
 /** 后台：会话详情与消息列表（并清零后台未读数） */
@@ -1018,7 +1550,7 @@ export async function getMessageThreadDetail(threadId: number) {
   if (!db) return null;
   const rows = await db.select().from(messageThreads)
     .where(eq(messageThreads.id, threadId)).limit(1);
-  const thread = rows[0];
+  const thread = rows[0] ? normalizeMessageThreadJson(rows[0]) : null;
   if (!thread) return null;
   const list = await db.select().from(messages)
     .where(eq(messages.threadId, threadId)).orderBy(messages.createdAt);

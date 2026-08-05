@@ -151,6 +151,7 @@ describe("企业开通 CRM 申请落商户管理（第三十一轮）", () => {
     const applied = await portal.submitCrmApplication({
       companyName: "测试电子有限公司",
       creditCode: TEST_CREDIT_CODE,
+      portalUserId: "crm-profile-test-user",
       contactName: "王先生",
       contactPhone: "15817256366",
       legalPersonName: "王先生",
@@ -169,7 +170,10 @@ describe("企业开通 CRM 申请落商户管理（第三十一轮）", () => {
 
     // 3. 管理员开通 CRM
     const enabled = await admin.merchant.setCrmStatus({
-      id: merchant!.id, crmStatus: "enabled", note: "资料齐全，同意开通",
+      id: merchant!.id,
+      crmStatus: "enabled",
+      portalUserId: "crm-profile-test-user",
+      note: "资料齐全，同意开通",
     });
     expect(enabled.success).toBe(true);
 
@@ -181,6 +185,7 @@ describe("企业开通 CRM 申请落商户管理（第三十一轮）", () => {
     const reapplied = await portal.submitCrmApplication({
       companyName: "测试电子有限公司",
       creditCode: TEST_CREDIT_CODE,
+      portalUserId: "crm-profile-test-user",
       contactPhone: "15817256366",
     });
     expect(reapplied.created).toBe(false);

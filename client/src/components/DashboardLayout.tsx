@@ -29,6 +29,7 @@ import {
   PanelLeft,
   ShieldAlert,
   Store,
+  ShoppingCart,
   UserCog,
 } from "lucide-react";
 import { MessageSquare } from "lucide-react";
@@ -54,6 +55,7 @@ const menuGroups = [
       { icon: Database, label: "物料数据库", path: "/", permission: "materials.read" as AdminPermission },
       { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission },
       { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission },
+      { icon: ShoppingCart, label: "商城订单", path: "/orders", permission: "orders.read" as AdminPermission },
     ],
   },
   {

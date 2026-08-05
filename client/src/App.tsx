@@ -13,6 +13,7 @@ import Materials from "./pages/Materials";
 import MerchantDetail from "./pages/MerchantDetail";
 import Merchants from "./pages/Merchants";
 import Messages from "./pages/Messages";
+import Orders from "./pages/Orders";
 import { ShieldAlert } from "lucide-react";
 import {
   hasAdminPermission,
@@ -102,6 +103,9 @@ const MessagesRoute = () => (
 const AdminsRoute = () => (
   <PermissionGate permission="admins.manage"><Admins /></PermissionGate>
 );
+const OrdersRoute = () => (
+  <PermissionGate permission="orders.read"><Orders /></PermissionGate>
+);
 
 /** 部署 base 路径（如 /admin），本地开发为空字符串 */
 const ROUTER_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -117,6 +121,8 @@ function AppRoutes() {
         <Route path={"/merchants"} component={MerchantsRoute} />
         <Route path={"/merchants/:id"} component={MerchantDetailRoute} />
         <Route path={"/messages"} component={MessagesRoute} />
+        <Route path={"/orders"} component={OrdersRoute} />
+        <Route path={"/orders/:id"} component={OrdersRoute} />
         <Route path={"/admins"} component={AdminsRoute} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

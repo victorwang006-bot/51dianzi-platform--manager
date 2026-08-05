@@ -41,6 +41,7 @@ function adminCtx(): TrpcContext {
 
 const TEST_CREDIT_CODE = "91TEST33R000000001";
 const TEST_COMPANY = "【测试】R33CRM操作电子有限公司";
+const TEST_PORTAL_USER_ID = "crm-actions-test-user";
 
 async function cleanup() {
   const conn = await db.getDb();
@@ -75,12 +76,16 @@ describe("商户 CRM 操作重构（第三十三轮）", () => {
     const submitted = await portal.submitCrmApplication({
       companyName: TEST_COMPANY,
       creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
       contactName: "测试联系人",
       contactPhone: "13800001111",
     });
     expect(submitted.crmStatus).toBe("pending");
 
-    const access = await portal.getCrmAccess({ creditCode: TEST_CREDIT_CODE });
+    const access = await portal.getCrmAccess({
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
     expect(access.allowed).toBe(false);
     expect(access.crmStatus).toBe("pending");
     expect(access.message).toContain("审核中");
@@ -108,7 +113,10 @@ describe("商户 CRM 操作重构（第三十三轮）", () => {
     expect(unread2.unreadCount).toBe(2);
 
     // getCrmAccess 返回 crmThreadNo 供前台轮询
-    const access = await portal.getCrmAccess({ creditCode: TEST_CREDIT_CODE });
+    const access = await portal.getCrmAccess({
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
     expect(access.crmThreadNo).toBe(first.threadNo);
 
     // 前台拉取消息后未读清零
@@ -125,7 +133,10 @@ describe("商户 CRM 操作重构（第三十三轮）", () => {
     const m = (await conn!.select().from(merchants)
       .where(eq(merchants.businessLicense, TEST_CREDIT_CODE)))[0];
     await admin.merchant.setCrmStatus({ id: m.id, crmStatus: "rejected", note: "材料不齐" });
-    const access = await portal.getCrmAccess({ creditCode: TEST_CREDIT_CODE });
+    const access = await portal.getCrmAccess({
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
     expect(access.allowed).toBe(false);
     expect(access.crmStatus).toBe("rejected");
     expect(access.message).toContain("未通过");
@@ -138,13 +149,23 @@ describe("商户 CRM 操作重构（第三十三轮）", () => {
     const m = (await conn!.select().from(merchants)
       .where(eq(merchants.businessLicense, TEST_CREDIT_CODE)))[0];
 
-    await admin.merchant.setCrmStatus({ id: m.id, crmStatus: "enabled" });
-    const enabled = await portal.getCrmAccess({ creditCode: TEST_CREDIT_CODE });
+    await admin.merchant.setCrmStatus({
+      id: m.id,
+      crmStatus: "enabled",
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
+    const enabled = await portal.getCrmAccess({
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
     expect(enabled.allowed).toBe(true);
     expect(enabled.message).toBeNull();
 
     await admin.merchant.setCrmStatus({ id: m.id, crmStatus: "disabled", note: "违规暂停" });
-    const disabled = await portal.getCrmAccess({ creditCode: TEST_CREDIT_CODE });
+    const disabled = await portal.getCrmAccess({
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
     expect(disabled.allowed).toBe(false);
     expect(disabled.crmStatus).toBe("disabled");
     expect(disabled.message).toBe("您的CRM权限已经被暂停，请联系客服");
@@ -152,11 +173,17 @@ describe("商户 CRM 操作重构（第三十三轮）", () => {
 
   it("未知信用代码 → 未开通提示；无 portal key → 拒绝访问", async () => {
     const portal = appRouter.createCaller(portalCtx()).portal;
-    const access = await portal.getCrmAccess({ creditCode: "91UNKNOWN00000000X" });
+    const access = await portal.getCrmAccess({
+      creditCode: "91UNKNOWN00000000X",
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
     expect(access.allowed).toBe(false);
     expect(access.crmStatus).toBe("none");
 
     const noKey = appRouter.createCaller(portalCtx(false)).portal;
-    await expect(noKey.getCrmAccess({ creditCode: TEST_CREDIT_CODE })).rejects.toThrow();
+    await expect(noKey.getCrmAccess({
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    })).rejects.toThrow();
   });
 });

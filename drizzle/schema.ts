@@ -1,6 +1,7 @@
 import {
   bigint,
   decimal,
+  index,
   int,
   mysqlEnum,
   mysqlTable,
@@ -31,7 +32,7 @@ export type InsertUser = typeof users.$inferInsert;
 // ─── 物料数据库 ────────────────────────────────────────────────────────────
 export const materials = mysqlTable("materials", {
   id: int("id").autoincrement().primaryKey(),
-  /** 物料编号，如 MAT20260001 */
+  /** 平台物料编码，固定格式 51E-NNNNNNNN，例如 51E-00010983 */
   materialNo: varchar("materialNo", { length: 32 }).notNull().unique(),
   /** 元器件型号，如 STM32F103C8T6 */
   partNumber: varchar("partNumber", { length: 128 }).notNull(),
@@ -75,6 +76,31 @@ export const materials = mysqlTable("materials", {
 
 export type Material = typeof materials.$inferSelect;
 export type InsertMaterial = typeof materials.$inferInsert;
+
+/**
+ * 平台物料码全局序列。nextValue 表示下一次可分配的数值；
+ * 发号时必须在事务内锁定对应行，编码不得使用 MAX(materialNo) 推算。
+ */
+export const materialNumberSequences = mysqlTable("material_number_sequences", {
+  sequenceKey: varchar("sequenceKey", { length: 64 }).primaryKey(),
+  nextValue: bigint("nextValue", { mode: "number" }).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** 历史物料号、合并码和外部码别名；旧码永久保留并可回查正式平台码。 */
+export const materialCodeAliases = mysqlTable("material_code_aliases", {
+  id: int("id").autoincrement().primaryKey(),
+  materialId: int("materialId").notNull(),
+  aliasCode: varchar("aliasCode", { length: 64 }).notNull().unique(),
+  aliasType: mysqlEnum("aliasType", ["legacy", "merged", "external"]).notNull(),
+  source: varchar("source", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  materialIdIdx: index("material_code_aliases_materialId_idx").on(table.materialId),
+}));
+
+export type MaterialNumberSequence = typeof materialNumberSequences.$inferSelect;
+export type MaterialCodeAlias = typeof materialCodeAliases.$inferSelect;
 
 // 管理员角色枚举
 export const adminRoleEnum = mysqlEnum("adminRole", [
@@ -141,7 +167,7 @@ export const merchants = mysqlTable("merchants", {
   contactName: varchar("contactName", { length: 64 }),
   contactPhone: varchar("contactPhone", { length: 20 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
-  businessLicense: varchar("businessLicense", { length: 64 }),
+  businessLicense: varchar("businessLicense", { length: 64 }).unique(),
   licenseExpiry: timestamp("licenseExpiry"),
   licenseImageUrl: varchar("licenseImageUrl", { length: 512 }),
   registeredCapital: varchar("registeredCapital", { length: 64 }),
@@ -172,6 +198,8 @@ export const merchants = mysqlTable("merchants", {
   reviewedAt: timestamp("reviewedAt"),
   /** CRM 开通状态：none=未申请 pending=待开通 enabled=已开通 disabled=已暂停 rejected=已拒绝 */
   crmStatus: mysqlEnum("crmStatus", ["none", "pending", "enabled", "disabled", "rejected"]).default("none").notNull(),
+  /** 绑定的前台账号 ID；同一统一社会信用代码只能归属一个前台账号 */
+  crmOwnerPortalUserId: varchar("crmOwnerPortalUserId", { length: 64 }),
   /** CRM 申请时间（前台提交企业开通申请时写入） */
   crmAppliedAt: timestamp("crmAppliedAt"),
   /** CRM 开通时间（后台开通时写入） */
@@ -383,6 +411,25 @@ export const auditLogs = mysqlTable("audit_logs", {
 });
 
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+export const crmOwnerRebindLogs = mysqlTable("crm_owner_rebind_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  requestId: varchar("requestId", { length: 128 }).notNull().unique(),
+  merchantId: int("merchantId").notNull(),
+  expectedOwnerPortalUserId: varchar("expectedOwnerPortalUserId", { length: 64 }).notNull(),
+  nextOwnerPortalUserId: varchar("nextOwnerPortalUserId", { length: 64 }).notNull(),
+  reason: text("reason").notNull(),
+  operatorId: int("operatorId"),
+  operatorName: varchar("operatorName", { length: 64 }),
+  operatorRole: varchar("operatorRole", { length: 32 }),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  merchantIdx: index("crm_owner_rebind_logs_merchant_idx").on(table.merchantId),
+}));
+
+export type CrmOwnerRebindLog = typeof crmOwnerRebindLogs.$inferSelect;
 
 // ─── 告警与任务 ───────────────────────────────────────────────────────────────
 

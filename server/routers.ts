@@ -16,13 +16,19 @@ import {
   resetPasswordWithCode,
   verifyPassword,
 } from "./adminAuth";
+import type { TrpcContext } from "./_core/context";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { storagePut } from "./storage";
 import { saveLocalFile } from "./localUpload";
-
+import {
+  getPlatformOrderDetail,
+  listPlatformOrders,
+  transitionPlatformOrder,
+} from "./platformOrderApi";
+import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -76,7 +82,28 @@ const merchantReadProcedure = adminPermissionProcedure("merchants.read");
 const merchantWriteProcedure = adminPermissionProcedure("merchants.write");
 const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
+const orderReadProcedure = adminPermissionProcedure("orders.read");
+const orderWriteProcedure = adminPermissionProcedure("orders.write");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
+const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
+  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  if (role !== "super_admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以执行 CRM 超级管理员换绑" });
+  }
+  return next({ ctx });
+});
+
+function auditActorFromContext(ctx: TrpcContext) {
+  const forwarded = ctx.req.headers["x-forwarded-for"];
+  const forwardedIp = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]?.trim();
+  return {
+    operatorId: ctx.user?.id ?? null,
+    operatorName: ctx.user?.name ?? ctx.adminAccount?.username ?? "system",
+    operatorRole: ctx.adminAccount?.adminRole ?? "super_admin",
+    ipAddress: forwardedIp || ctx.req.ip || null,
+    userAgent: ctx.req.headers["user-agent"] ?? null,
+  };
+}
 
 // 前台对接鉴权：请求头 x-portal-key 必须与 PORTAL_API_KEY 一致
 function assertPortalKey(req: { headers: Record<string, unknown> }) {
@@ -94,6 +121,22 @@ const pageInput = z.object({
   page: z.number().min(1).default(1),
   pageSize: z.number().min(1).max(100).default(20),
 });
+
+function getMaterialAuditActor(ctx: TrpcContext): db.MaterialAuditActor {
+  const forwardedFor = ctx.req.headers["x-forwarded-for"];
+  const userAgent = ctx.req.headers["user-agent"];
+  return {
+    operatorId: ctx.adminAccount?.id ?? ctx.user?.id ?? null,
+    operatorName: ctx.adminAccount?.username ?? ctx.user?.name ?? "admin",
+    operatorRole: ctx.adminAccount?.adminRole ?? "super_admin",
+    ipAddress:
+      (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor?.split(",")[0]?.trim())
+      ?? ctx.req.ip
+      ?? ctx.req.socket?.remoteAddress
+      ?? null,
+    userAgent: Array.isArray(userAgent) ? userAgent[0] : userAgent ?? null,
+  };
+}
 
 const materialInput = z.object({
   partNumber: z.string().min(1, "型号不能为空"),
@@ -210,6 +253,35 @@ export const appRouter = router({
       }),
   }),
 
+  // ─── 商城真实订单（后台仅做代理，不读取/写入本地 SO 订单表）──────────────
+  order: router({
+    list: orderReadProcedure
+      .input(pageInput.extend({
+        keyword: z.string().trim().max(100).optional(),
+        status: z.enum(["pending", "paid", "shipped", "done", "refund", "cancel"]).optional(),
+        buyerId: z.number().int().positive().optional(),
+        sellerId: z.number().int().positive().optional(),
+        createdFrom: z.number().int().nonnegative().optional(),
+        createdTo: z.number().int().nonnegative().optional(),
+      }))
+      .query(({ input }) => listPlatformOrders(input)),
+    detail: orderReadProcedure
+      .input(z.object({ orderId: z.number().int().positive() }))
+      .query(({ input }) => getPlatformOrderDetail(input.orderId)),
+    transition: orderWriteProcedure
+      .input(z.object({
+        orderId: z.number().int().positive(),
+        action: z.enum(["markPaid", "cancel", "ship", "complete"]),
+        reason: z.string().trim().max(200).optional(),
+        expressCo: z.string().trim().max(64).optional(),
+        expressNo: z.string().trim().max(100).optional(),
+      }))
+      .mutation(({ ctx, input }) => transitionPlatformOrder({
+        ...input,
+        operator: ctx.adminAccount?.username ?? ctx.user.name ?? "admin",
+      })),
+  }),
+
   // ─── 物料数据库 ──────────────────────────────────────────────────────────
   material: router({
     // ── 公开 API（前台调用，无需登录）──────────────────────────────────────
@@ -261,16 +333,20 @@ export const appRouter = router({
     brands: materialReadProcedure.query(async () => {
       return db.getMaterialBrands();
     }),
-    create: materialWriteProcedure.input(materialInput).mutation(async ({ input }) => {
-      const material = await db.createMaterial(input);
+    create: materialWriteProcedure.input(materialInput).mutation(async ({ ctx, input }) => {
+      const material = await db.createMaterial(input, getMaterialAuditActor(ctx));
       return { success: true, material };
     }),
     update: materialWriteProcedure
       .input(materialInput.partial().extend({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const { id, ...data } = input;
         try {
-          await db.updateMaterial(id, data);
+          await db.updateMaterial(id, data, {
+            ...getMaterialAuditActor(ctx),
+            action: "material.update",
+            note: "物料业务属性更新；平台物料码保持不变",
+          });
         } catch (e) {
           if (e instanceof Error && e.message === "MATERIAL_NOT_FOUND") {
             throw new TRPCError({ code: "NOT_FOUND", message: "物料不存在" });
@@ -281,9 +357,15 @@ export const appRouter = router({
       }),
     toggleStatus: materialWriteProcedure
       .input(z.object({ id: z.number(), status: z.enum(["enabled", "disabled"]) }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         try {
-          await db.updateMaterial(input.id, { status: input.status });
+          await db.updateMaterial(input.id, { status: input.status }, {
+            ...getMaterialAuditActor(ctx),
+            action: input.status === "disabled" ? "material.disable" : "material.enable",
+            note: input.status === "disabled"
+              ? "物料已停用；平台物料码永久保留"
+              : "物料已重新启用；沿用原平台物料码",
+          });
         } catch (e) {
           if (e instanceof Error && e.message === "MATERIAL_NOT_FOUND") {
             throw new TRPCError({ code: "NOT_FOUND", message: "物料不存在" });
@@ -292,16 +374,17 @@ export const appRouter = router({
         }
         return { success: true };
       }),
-    remove: materialWriteProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    /** 向后兼容旧客户端的 remove 调用，但只执行软归档，绝不物理删除主档。 */
+    remove: materialWriteProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
       try {
-        await db.deleteMaterial(input.id);
+        await db.archiveMaterial(input.id, getMaterialAuditActor(ctx));
       } catch (e) {
         if (e instanceof Error && e.message === "MATERIAL_NOT_FOUND") {
           throw new TRPCError({ code: "NOT_FOUND", message: "物料不存在" });
         }
         throw e;
       }
-      return { success: true };
+      return { success: true, archived: true };
     }),
     /** 上传 PDF 规格书：base64 → S3，返回 key/url/文件名/大小（不直接写库，由 create/update 保存） */
     uploadDatasheet: materialWriteProcedure
@@ -383,13 +466,51 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         crmStatus: z.enum(["none", "pending", "enabled", "disabled", "rejected"]),
+        portalUserId: z.string().trim().min(1, "前台用户 ID 不能为空").max(64).optional().nullable(),
         note: z.string().max(1000).optional().nullable(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         return db.setMerchantCrmStatus({
           merchantId: input.id,
           crmStatus: input.crmStatus,
+          portalUserId: input.portalUserId,
           note: input.note,
+          actor: auditActorFromContext(ctx),
+        });
+      }),
+    /** 专用换绑：只变更 CRM 超级管理员绑定，不改变企业、CRM 状态或既有业务数据。 */
+    rebindCrmOwner: crmRebindProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        expectedPortalUserId: z.string().trim().min(1, "当前超级管理员用户 ID 不能为空").max(64),
+        newPortalUserId: z.string().trim().min(1, "新超级管理员用户 ID 不能为空").max(64),
+        reason: z.string().trim().min(2, "换绑原因至少需要 2 个字符").max(1000),
+        requestId: z.string().trim().min(8, "换绑请求号无效").max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantById(input.id);
+        if (!merchant) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
+        }
+        if (!merchant.businessLicense?.trim()) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "商户未登记统一社会信用代码，无法校验换绑目标",
+          });
+        }
+        const creditCode = merchant.businessLicense.trim();
+        await validatePlatformCrmRebindTarget({
+          creditCode,
+          expectedPortalUserId: input.expectedPortalUserId,
+          newPortalUserId: input.newPortalUserId,
+        });
+        return db.rebindMerchantCrmOwner({
+          merchantId: input.id,
+          expectedPortalUserId: input.expectedPortalUserId,
+          newPortalUserId: input.newPortalUserId,
+          reason: input.reason,
+          requestId: input.requestId,
+          actor: auditActorFromContext(ctx),
         });
       }),
     /**
@@ -534,10 +655,23 @@ export const appRouter = router({
      * pending/rejected/none → 对应提示文案。附带 crmThreadNo（后台发信会话编号，用于前台联系客服红点轮询）。
      */
     getCrmAccess: publicProcedure
+      .input(z.object({
+        creditCode: z.string().min(5).max(64),
+        portalUserId: z.string().max(64).optional().nullable(),
+      }))
+      .query(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.getCrmAccessByCreditCode(input.creditCode, input.portalUserId);
+      }),
+    /**
+     * 前台服务端对账 CRM 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
+     * 不直接暴露给浏览器。
+     */
+    getCrmBinding: publicProcedure
       .input(z.object({ creditCode: z.string().min(5).max(64) }))
       .query(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
-        return db.getCrmAccessByCreditCode(input.creditCode);
+        return db.getCrmBindingByCreditCode(input.creditCode);
       }),
     /**
      * 上传物料图片并按型号回写 materials 表。鉴权：x-portal-key。

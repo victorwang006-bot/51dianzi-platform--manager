@@ -52,8 +52,18 @@ describe("后台角色权限矩阵", () => {
     expect(hasAdminPermission("auditor", "materials.read")).toBe(true);
     expect(hasAdminPermission("auditor", "merchants.read")).toBe(true);
     expect(hasAdminPermission("auditor", "messages.read")).toBe(true);
+    expect(hasAdminPermission("auditor", "orders.read")).toBe(true);
+    expect(hasAdminPermission("auditor", "orders.write")).toBe(false);
     expect(hasAdminPermission("auditor", "materials.write")).toBe(false);
     expect(hasAdminPermission("auditor", "admins.manage")).toBe(false);
+  });
+
+  it("仅超级管理员和平台运营拥有订单履约写权限", () => {
+    expect(hasAdminPermission("super_admin", "orders.write")).toBe(true);
+    expect(hasAdminPermission("operation", "orders.write")).toBe(true);
+    expect(hasAdminPermission("merchant_mgr", "orders.write")).toBe(false);
+    expect(hasAdminPermission("customer_svc", "orders.write")).toBe(false);
+    expect(hasAdminPermission("finance", "orders.write")).toBe(false);
   });
 
   it("普通运营角色不能调用后台用户管理接口", async () => {

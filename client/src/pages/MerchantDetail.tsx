@@ -172,7 +172,7 @@ export default function MerchantDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* 物料管理：已通过 CRM 的商户展示其前台发布的物料（默认展开） */}
-          {merchant.crmStatus === "enabled" && merchant.businessLicense && (
+          {merchant.crmStatus === "enabled" && merchant.crmOwnerPortalUserId && merchant.businessLicense && (
             <MerchantMaterialPanel creditCode={merchant.businessLicense} />
           )}
 

@@ -14,6 +14,9 @@ build/
 .env.test.local
 .env.production.local
 
+# Production-only process configuration (kept on ECS, never committed)
+ecosystem.config.cjs
+
 # IDE and editor files
 .vscode/
 .idea/

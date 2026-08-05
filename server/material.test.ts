@@ -19,6 +19,7 @@ function createContext(role: "admin" | "user"): TrpcContext {
   };
   return {
     user,
+    adminAccount: null,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
   };
@@ -54,7 +55,7 @@ describe("material 查询", () => {
   });
 
   afterAll(async () => {
-    if (fixtureId !== null) await caller.material.remove({ id: fixtureId });
+    if (fixtureId !== null) await db.deleteMaterialFixture(fixtureId);
   });
 
   it("管理员可分页查询物料列表", async () => {
@@ -90,7 +91,7 @@ describe("material 查询", () => {
 });
 
 describe("material CRUD", () => {
-  it("可创建、更新、启停、删除物料", async () => {
+  it("可创建、更新、启停和软归档物料，平台码始终保留", async () => {
     const caller = appRouter.createCaller(createContext("admin"));
 
     // 创建
@@ -107,7 +108,8 @@ describe("material CRUD", () => {
     expect(created.success).toBe(true);
     expect(created.material).not.toBeNull();
     const id = created.material!.id;
-    expect(created.material!.materialNo).toMatch(/^51E-[A-Z]{3}-\d{5}$/);
+    const materialNo = created.material!.materialNo;
+    expect(materialNo).toMatch(/^51E-\d{8}$/);
 
     try {
       // 更新
@@ -120,9 +122,17 @@ describe("material CRUD", () => {
       await caller.material.toggleStatus({ id, status: "disabled" });
       const afterDisable = await caller.material.detail({ id });
       expect(afterDisable?.status).toBe("disabled");
+
+      // 旧客户端的 remove 兼容入口只能软归档，主档和平台码继续存在
+      await caller.material.toggleStatus({ id, status: "enabled" });
+      const archived = await caller.material.remove({ id });
+      expect(archived).toEqual({ success: true, archived: true });
+      const afterArchive = await caller.material.detail({ id });
+      expect(afterArchive?.status).toBe("disabled");
+      expect(afterArchive?.materialNo).toBe(materialNo);
     } finally {
-      // 删除（清理测试数据）
-      await caller.material.remove({ id });
+      // 仅隔离测试环境允许物理清理夹具
+      await db.deleteMaterialFixture(id);
       const afterDelete = await db.getMaterialById(id);
       expect(afterDelete).toBeNull();
     }

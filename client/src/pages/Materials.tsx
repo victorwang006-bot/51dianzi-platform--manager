@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { ExternalLink, FileText, ImagePlus, Loader2, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { ExternalLink, FileText, ImagePlus, Loader2, Pencil, Plus, Search, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -610,14 +610,6 @@ export default function Materials() {
     },
     onError: err => toast.error(`操作失败：${err.message}`),
   });
-  const removeMutation = trpc.material.remove.useMutation({
-    onSuccess: () => {
-      toast.success("物料已删除");
-      utils.material.invalidate();
-    },
-    onError: err => toast.error(`删除失败：${err.message}`),
-  });
-
   const doSearch = () => {
     setSearch(searchInput);
     if (searchInput.trim() === "") {
@@ -818,18 +810,6 @@ export default function Materials() {
                           onClick={() => toggleMutation.mutate({ id: m.id, status: m.status === "enabled" ? "disabled" : "enabled" })}
                         >
                           {m.status === "enabled" ? "停用" : "启用"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            if (window.confirm(`确认删除物料 ${m.partNumber}（${m.materialNo}）？此操作不可恢复。`)) {
-                              removeMutation.mutate({ id: m.id });
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>

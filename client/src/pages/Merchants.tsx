@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Search } from "lucide-react";
 import { useState } from "react";
@@ -66,12 +67,29 @@ export default function Merchants() {
   const [searchInput, setSearchInput] = useState("");
   const [reviewTarget, setReviewTarget] = useState<{ id: number; name: string; action: ReviewAction } | null>(null);
   const [reviewNote, setReviewNote] = useState("");
-  const [crmTarget, setCrmTarget] = useState<{ id: number; name: string; nextStatus: "enabled" | "disabled" | "rejected" } | null>(null);
+  const [crmTarget, setCrmTarget] = useState<{
+    id: number;
+    name: string;
+    nextStatus: "enabled" | "disabled" | "rejected";
+    currentStatus: CrmStatus;
+    currentOwner: string;
+  } | null>(null);
+  const [crmPortalUserId, setCrmPortalUserId] = useState("");
   const [crmNote, setCrmNote] = useState("");
+  const [rebindTarget, setRebindTarget] = useState<{
+    id: number;
+    name: string;
+    currentOwner: string;
+    requestId: string;
+  } | null>(null);
+  const [rebindPortalUserId, setRebindPortalUserId] = useState("");
+  const [rebindReason, setRebindReason] = useState("");
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
 
+  const { user } = useAuth();
+  const isSuperAdmin = (user?.adminRole ?? "super_admin") === "super_admin";
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.merchant.list.useQuery({
     page,
@@ -97,15 +115,28 @@ export default function Merchants() {
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
     onSuccess: (_d, vars) => {
       toast.success(
-        vars.crmStatus === "enabled" ? "已通过，CRM 已开通"
+        vars.crmStatus === "enabled" && crmTarget?.currentStatus === "disabled" ? "CRM 已恢复"
+          : vars.crmStatus === "enabled" ? "已绑定前台用户并开通 CRM"
           : vars.crmStatus === "rejected" ? "已拒绝该申请"
           : "CRM 已暂停",
       );
       utils.merchant.list.invalidate();
       setCrmTarget(null);
+      setCrmPortalUserId("");
       setCrmNote("");
     },
     onError: err => toast.error(`操作失败：${err.message}`),
+  });
+
+  const rebindMutation = trpc.merchant.rebindCrmOwner.useMutation({
+    onSuccess: data => {
+      toast.success(data.idempotent ? "该换绑请求已处理" : "CRM 超级管理员已换绑");
+      utils.merchant.list.invalidate();
+      setRebindTarget(null);
+      setRebindPortalUserId("");
+      setRebindReason("");
+    },
+    onError: err => toast.error(`换绑失败：${err.message}`),
   });
 
   const sendMsgMutation = trpc.merchant.sendMessage.useMutation({
@@ -189,7 +220,11 @@ export default function Merchants() {
                       const st = merchantStatusMap[m.status] ?? { label: m.status, style: "gray" as const };
                       const ag = agreementStatusMap[m.agreementStatus] ?? { label: m.agreementStatus, style: "gray" as const };
                       const crmStatus = ((m as { crmStatus?: CrmStatus }).crmStatus ?? "none") as CrmStatus;
-                      const crm = crmStatusMap[crmStatus] ?? crmStatusMap.none;
+                      const crmOwnerPortalUserId = ((m as { crmOwnerPortalUserId?: string | null }).crmOwnerPortalUserId ?? "").trim();
+                      const crmActuallyEnabled = crmStatus === "enabled" && Boolean(crmOwnerPortalUserId);
+                      const crm = crmStatus === "enabled" && !crmActuallyEnabled
+                        ? { label: "待绑定账号", style: "warning" as const }
+                        : (crmStatusMap[crmStatus] ?? crmStatusMap.none);
                       const licenseExpiringSoon = m.licenseExpiry && new Date(m.licenseExpiry).getTime() - Date.now() < 30 * 86400_000;
                       return (
                         <tr key={m.id}>
@@ -207,7 +242,14 @@ export default function Merchants() {
                           </td>
                           <td className="text-xs">{(m as { salesOwner?: string | null }).salesOwner ?? "-"}</td>
                           <td><StatusBadge label={st.label} style={st.style} /></td>
-                          <td><StatusBadge label={crm.label} style={crm.style} /></td>
+                          <td>
+                            <StatusBadge label={crm.label} style={crm.style} />
+                            {crmOwnerPortalUserId ? (
+                              <p className="mt-1 text-[11px] text-muted-foreground font-mono">用户 {crmOwnerPortalUserId}</p>
+                            ) : crmStatus === "enabled" ? (
+                              <p className="mt-1 text-[11px] text-amber-700">尚未绑定前台用户</p>
+                            ) : null}
+                          </td>
                           <td><StatusBadge label={ag.label} style={ag.style} /></td>
                           <td className={`text-xs ${licenseExpiringSoon ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
                             {m.licenseExpiry ? formatDateTime(m.licenseExpiry).split(" ")[0] : "-"}
@@ -215,21 +257,30 @@ export default function Merchants() {
                           <td className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</td>
                           <td>
                             <div className="flex items-center gap-1 flex-wrap">
-                              {crmStatus === "enabled" ? (
+                              {crmActuallyEnabled ? (
                                 /* 已开通客户：只有「暂停」 */
-                                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "disabled" })}>
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => {
+                                  setCrmPortalUserId(crmOwnerPortalUserId);
+                                  setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "disabled", currentStatus: crmStatus, currentOwner: crmOwnerPortalUserId });
+                                }}>
                                   暂停
                                 </Button>
                               ) : (
                                 /* 未开通 / 待开通 / 已暂停 / 已拒绝：通过 / 发信 / 拒绝 */
                                 <>
-                                  <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "enabled" })}>
-                                    通过
+                                  <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => {
+                                    setCrmPortalUserId(crmOwnerPortalUserId);
+                                    setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "enabled", currentStatus: crmStatus, currentOwner: crmOwnerPortalUserId });
+                                  }}>
+                                    {crmStatus === "enabled" ? "绑定账号" : "通过"}
                                   </Button>
                                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setMsgTarget({ id: m.id, name: m.companyName })}>
                                     发信
                                   </Button>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "rejected" })}>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => {
+                                    setCrmPortalUserId(crmOwnerPortalUserId);
+                                    setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "rejected", currentStatus: crmStatus, currentOwner: crmOwnerPortalUserId });
+                                  }}>
                                     拒绝
                                   </Button>
                                 </>
@@ -279,17 +330,40 @@ export default function Merchants() {
       </Dialog>
 
       {/* CRM 通过/拒绝/暂停对话框 */}
-      <Dialog open={crmTarget !== null} onOpenChange={open => !open && setCrmTarget(null)}>
+      <Dialog open={crmTarget !== null} onOpenChange={open => {
+        if (!open) {
+          setCrmTarget(null);
+          setCrmPortalUserId("");
+          setCrmNote("");
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}</DialogTitle>
             <DialogDescription>
               目标商户：{crmTarget?.name}。
-              {crmTarget?.nextStatus === "enabled" && "通过后该商户即可进入并使用 CRM 系统。"}
+              {crmTarget?.nextStatus === "enabled" && "通过后仅绑定的前台账号可以进入并使用 CRM 系统。"}
               {crmTarget?.nextStatus === "disabled" && "暂停后该商户将无法进入 CRM 页面，前台会提示：您的CRM权限已经被暂停，请联系客服。"}
               {crmTarget?.nextStatus === "rejected" && "拒绝后该商户的 CRM 开通申请将被驳回，可通过「发信」告知客户原因。"}
             </DialogDescription>
           </DialogHeader>
+          {crmTarget?.nextStatus === "enabled" && (
+            <div className="space-y-2">
+              <label htmlFor="crm-portal-user-id" className="text-sm font-medium">前台用户 ID</label>
+              <Input
+                id="crm-portal-user-id"
+                value={crmPortalUserId}
+                onChange={e => setCrmPortalUserId(e.target.value)}
+                placeholder="请输入要开通 CRM 的前台用户 ID"
+                disabled={Boolean(crmTarget.currentOwner)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {crmTarget.currentOwner
+                  ? "该商户已有绑定账号；开通操作不会更换绑定。如需换绑，请先核验企业授权关系。"
+                  : "一个商户只能绑定一个前台账号，请与用户提交申请时的账号核对后再确认。"}
+              </p>
+            </div>
+          )}
           <Textarea
             placeholder="备注（选填，如通过/拒绝/暂停原因）"
             value={crmNote}
@@ -299,11 +373,16 @@ export default function Merchants() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCrmTarget(null)}>取消</Button>
             <Button
-              disabled={crmMutation.isPending}
+              disabled={crmMutation.isPending || (crmTarget?.nextStatus === "enabled" && !crmPortalUserId.trim())}
               variant={crmTarget?.nextStatus === "enabled" ? "default" : "destructive"}
               onClick={() => {
                 if (!crmTarget) return;
-                crmMutation.mutate({ id: crmTarget.id, crmStatus: crmTarget.nextStatus, note: crmNote.trim() || undefined });
+                crmMutation.mutate({
+                  id: crmTarget.id,
+                  crmStatus: crmTarget.nextStatus,
+                  portalUserId: crmTarget.nextStatus === "enabled" ? crmPortalUserId.trim() : undefined,
+                  note: crmNote.trim() || undefined,
+                });
               }}
             >
               确认{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}
