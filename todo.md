@@ -78,4 +78,4 @@
 - [x] 执行后台 CRM 字段、迁移、发布、权限与授权策略相关回归、TypeScript、`/admin/` 构建、自检和 12 文件发布白名单（37 项回归通过）
 - [x] 使用专用原子脚本单次重试并成功发布后台 CRM 字段能力，完成双实例、Nginx、迁移账本、目标列、9 条商户行数与冻结前台验收（release `20260806T010223Z-admin-crm-bank-fields-v2`）
 - [x] 清理首次失败的未激活后台候选 release、上传归档、失败备份与本地发布包，保留当前活动 release 和必要回滚基线
-- [ ] 后台生产验收完成后普通追加提交并推送正式 GitHub main，禁止 force push
+- [x] 后台生产验收完成后普通追加提交并推送正式 GitHub main，禁止 force push（业务提交 `19bc04a41f3c2920d63e048b3ef996ea759a5d95`）
