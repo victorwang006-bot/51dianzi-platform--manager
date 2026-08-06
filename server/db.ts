@@ -619,11 +619,16 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
 export interface CrmApplicationInput {
   companyName: string;
   creditCode: string;
+  companyType: string;
+  companyRole: string;
   contactName?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
-  legalPersonName?: string | null;
-  registeredAddress?: string | null;
+  legalPersonName: string;
+  registeredAddress: string;
+  settlementAccountName: string;
+  settlementAccount: string;
+  settlementBank: string;
   businessScope?: string | null;
   licenseImageUrl?: string | null;
   portalUserId?: string | null;
@@ -652,6 +657,21 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
   }
 
   const now = new Date();
+  const profileFields = {
+    companyName: input.companyName,
+    companyType: input.companyType,
+    companyRole: input.companyRole,
+    legalPersonName: input.legalPersonName,
+    registeredAddress: input.registeredAddress,
+    settlementAccountName: input.settlementAccountName,
+    settlementAccount: input.settlementAccount,
+    settlementBank: input.settlementBank,
+    ...(input.contactName ? { contactName: input.contactName } : {}),
+    ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+    ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+    ...(input.businessScope ? { businessScope: input.businessScope } : {}),
+    ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+  };
   try {
     return await db.transaction(async tx => {
       const existing = await tx
@@ -677,6 +697,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
           }
 
           const claimResult = await tx.update(merchants).set({
+            ...profileFields,
             crmOwnerPortalUserId: portalUserId,
             crmStatus: "pending",
             crmAppliedAt: now,
@@ -725,13 +746,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
 
         if (merchant.crmStatus === "rejected" || merchant.crmStatus === "none") {
           await tx.update(merchants).set({
-            ...(input.contactName ? { contactName: input.contactName } : {}),
-            ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
-            ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
-            ...(input.legalPersonName ? { legalPersonName: input.legalPersonName } : {}),
-            ...(input.registeredAddress ? { registeredAddress: input.registeredAddress } : {}),
-            ...(input.businessScope ? { businessScope: input.businessScope } : {}),
-            ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+            ...profileFields,
             crmStatus: "pending",
             crmAppliedAt: now,
             ...(input.note ? { crmNote: input.note } : {}),
@@ -747,6 +762,8 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
             merchantNo: merchant.merchantNo,
           };
         }
+
+        await tx.update(merchants).set(profileFields).where(eq(merchants.id, merchant.id));
 
         return {
           accepted: false,
@@ -765,16 +782,9 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
       const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
       const result = await tx.insert(merchants).values({
         merchantNo,
-        companyName: input.companyName,
+        ...profileFields,
         businessLicense: creditCode,
         crmOwnerPortalUserId: portalUserId,
-        contactName: input.contactName ?? null,
-        contactPhone: input.contactPhone ?? null,
-        contactEmail: input.contactEmail ?? null,
-        legalPersonName: input.legalPersonName ?? null,
-        registeredAddress: input.registeredAddress ?? null,
-        businessScope: input.businessScope ?? null,
-        licenseImageUrl: input.licenseImageUrl ?? null,
         status: "pending",
         source: "portal",
         submittedAt: now,

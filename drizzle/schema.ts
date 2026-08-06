@@ -164,6 +164,10 @@ export const merchants = mysqlTable("merchants", {
   id: int("id").autoincrement().primaryKey(),
   merchantNo: varchar("merchantNo", { length: 32 }).notNull().unique(),
   companyName: varchar("companyName", { length: 256 }).notNull(),
+  /** 前台企业类型 */
+  companyType: varchar("companyType", { length: 128 }),
+  /** 前台企业角色：供应商/采购方等 */
+  companyRole: varchar("companyRole", { length: 64 }),
   contactName: varchar("contactName", { length: 64 }),
   contactPhone: varchar("contactPhone", { length: 20 }),
   contactEmail: varchar("contactEmail", { length: 320 }),

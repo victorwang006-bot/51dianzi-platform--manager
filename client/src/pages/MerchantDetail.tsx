@@ -185,6 +185,8 @@ export default function MerchantDetail() {
                   value={merchant.businessLicense}
                   icon={FileText}
                 />
+                <InfoItem label="企业类型" value={merchant.companyType} icon={Building2} />
+                <InfoItem label="企业角色" value={merchant.companyRole} icon={ShieldCheck} />
                 <InfoItem label="注册资本" value={merchant.registeredCapital} icon={Landmark} />
                 <InfoItem
                   label="成立日期"
@@ -284,9 +286,9 @@ export default function MerchantDetail() {
 
           {/* 结算账户 */}
           <CollapsibleCard title="结算账户" icon={CreditCard} contentClassName="space-y-4">
-              <InfoItem label="开户名" value={merchant.settlementAccountName} />
-              <InfoItem label="开户银行" value={merchant.settlementBank} icon={Landmark} />
-              <InfoItem label="银行账号" value={merchant.settlementAccount} icon={CreditCard} />
+              <InfoItem label="账户名称" value={merchant.settlementAccountName} />
+              <InfoItem label="账户号码" value={merchant.settlementAccount} icon={CreditCard} />
+              <InfoItem label="开户行" value={merchant.settlementBank} icon={Landmark} />
           </CollapsibleCard>
         </div>
       </div>
