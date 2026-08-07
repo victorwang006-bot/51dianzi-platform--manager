@@ -7,6 +7,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
   boolean,
   json,
@@ -76,6 +77,68 @@ export const materials = mysqlTable("materials", {
 
 export type Material = typeof materials.$inferSelect;
 export type InsertMaterial = typeof materials.$inferInsert;
+
+/**
+ * 外部目录导入批次。原始 Excel 先导入非活动批次，完成完整性与性能门禁后
+ * 才能由活动指针原子切换；任何失败均不修改人工维护的 materials 表。
+ */
+export const externalCatalogBatches = mysqlTable("external_catalog_batches", {
+  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  sourceFileName: varchar("sourceFileName", { length: 255 }).notNull(),
+  sourceSha256: varchar("sourceSha256", { length: 64 }).notNull().unique(),
+  dataSha256: varchar("dataSha256", { length: 64 }).notNull(),
+  expectedRows: int("expectedRows", { unsigned: true }).notNull(),
+  importedRows: int("importedRows", { unsigned: true }).default(0).notNull(),
+  validPriceRows: int("validPriceRows", { unsigned: true }).default(0).notNull(),
+  uniquePartKeys: int("uniquePartKeys", { unsigned: true }).default(0).notNull(),
+  status: mysqlEnum("status", ["importing", "ready", "active", "failed", "archived"])
+    .default("importing")
+    .notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  activatedAt: timestamp("activatedAt"),
+}, table => ({
+  statusIdx: index("external_catalog_batches_status_idx").on(table.status),
+}));
+
+/**
+ * 外部目录明细。所有 *_raw 字段原样保留；*_key 只用于匹配，绝不回写或
+ * 替换用户输入。价格是来源文件的“最大数量档含税单价”，不是订单成交价。
+ */
+export const externalCatalogEntries = mysqlTable("external_catalog_entries", {
+  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  batchId: bigint("batchId", { mode: "number", unsigned: true }).notNull(),
+  rowNo: int("rowNo", { unsigned: true }).notNull(),
+  sourceSequenceRaw: varchar("sourceSequenceRaw", { length: 64 }),
+  partNumberRaw: varchar("partNumberRaw", { length: 128 }).notNull(),
+  partNumberKey: varchar("partNumberKey", { length: 128 }).notNull(),
+  partNumberCompactKey: varchar("partNumberCompactKey", { length: 128 }).notNull(),
+  priceRaw: varchar("priceRaw", { length: 32 }).notNull(),
+  priceValue: decimal("priceValue", { precision: 20, scale: 6 }),
+  quantityThresholdRaw: varchar("quantityThresholdRaw", { length: 32 }).notNull(),
+  quantityThresholdValue: bigint("quantityThresholdValue", { mode: "number", unsigned: true }).notNull(),
+  productNameRaw: varchar("productNameRaw", { length: 256 }),
+  brandRaw: varchar("brandRaw", { length: 128 }),
+  categoryRaw: varchar("categoryRaw", { length: 64 }),
+  packageRaw: varchar("packageRaw", { length: 64 }),
+  parametersRaw: text("parametersRaw"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  batchRowIdx: uniqueIndex("external_catalog_entries_batch_row_idx").on(table.batchId, table.rowNo),
+  batchPartIdx: index("external_catalog_entries_batch_part_idx").on(table.batchId, table.partNumberKey),
+  batchCompactIdx: index("external_catalog_entries_batch_compact_idx").on(table.batchId, table.partNumberCompactKey),
+}));
+
+/** 单行活动批次指针；id 固定为 1。 */
+export const externalCatalogState = mysqlTable("external_catalog_state", {
+  id: int("id", { unsigned: true }).primaryKey(),
+  activeBatchId: bigint("activeBatchId", { mode: "number", unsigned: true }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ExternalCatalogBatch = typeof externalCatalogBatches.$inferSelect;
+export type ExternalCatalogEntry = typeof externalCatalogEntries.$inferSelect;
 
 /**
  * 平台物料码全局序列。nextValue 表示下一次可分配的数值；
