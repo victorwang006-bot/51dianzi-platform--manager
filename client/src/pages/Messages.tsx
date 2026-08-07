@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import {
+  parseBomInquiryMessage,
+  type BomInquiryMessage,
+} from "@/lib/bomInquiryMessage";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Building2, CheckCircle2, Mail, MessageSquare, Phone, RotateCcw, Search, Send, User,
+  ArrowLeft, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, User,
 } from "lucide-react";
 
 function formatTime(value: string | Date) {
@@ -30,6 +34,69 @@ const THREAD_TYPE_META: Record<string, { label: string; className: string }> = {
 function ThreadTypeBadge({ type }: { type?: string | null }) {
   const meta = THREAD_TYPE_META[type ?? "general"] ?? THREAD_TYPE_META.general;
   return <Badge className={meta.className}>{meta.label}</Badge>;
+}
+
+function BomInquiryTable({ message }: { message: BomInquiryMessage }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-amber-200 bg-background text-foreground">
+      <div className="flex items-center justify-between gap-3 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+        <span>{message.title}</span>
+        <Badge className="border-transparent bg-amber-100 text-amber-800 hover:bg-amber-100">
+          待采购报价
+        </Badge>
+      </div>
+      <div className="max-h-[420px] overflow-auto">
+        <table className="w-full min-w-[940px] border-collapse text-xs">
+          <thead className="sticky top-0 bg-slate-50 text-slate-600">
+            <tr>
+              <th className="px-2 py-2 text-left font-medium">序号</th>
+              <th className="px-2 py-2 text-left font-medium">Excel行</th>
+              <th className="px-2 py-2 text-left font-medium">料号</th>
+              <th className="px-2 py-2 text-left font-medium">品牌</th>
+              <th className="px-2 py-2 text-left font-medium">封装</th>
+              <th className="px-2 py-2 text-right font-medium">数量</th>
+              <th className="px-2 py-2 text-left font-medium">AI参考价</th>
+              <th className="px-2 py-2 text-left font-medium">位号</th>
+              <th className="px-2 py-2 text-left font-medium">备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            {message.rows.map((row, index) => (
+              <tr key={`${row.excelRow}-${row.partNumber}-${index}`} className="border-t">
+                <td className="px-2 py-2 text-muted-foreground">{row.sequence}</td>
+                <td className="px-2 py-2 text-muted-foreground">{row.excelRow}</td>
+                <td className="max-w-52 break-all px-2 py-2 font-semibold text-primary">{row.partNumber}</td>
+                <td className="px-2 py-2">{row.brand}</td>
+                <td className="px-2 py-2">{row.pkg}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{row.quantity}</td>
+                <td className="whitespace-nowrap px-2 py-2 font-semibold text-amber-700">{row.aiPrice}</td>
+                <td className="px-2 py-2">{row.reference}</td>
+                <td className="max-w-56 break-words px-2 py-2">{row.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {message.fileUrl && message.fileName ? (
+        <div className="flex flex-wrap items-center gap-2 border-t px-3 py-2">
+          <a
+            href={message.fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 no-underline hover:bg-amber-100">
+            <Download className="h-3.5 w-3.5" />
+            下载询价Excel
+          </a>
+          <span className="text-[11px] text-muted-foreground">{message.fileName}</span>
+        </div>
+      ) : null}
+      {message.disclaimer ? (
+        <div className="border-t border-dashed px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          {message.disclaimer}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 /** 公司资料快照（前台已提交公司资料的用户，会话中附带） */
@@ -356,21 +423,28 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
           </div>
 
           <div className="rounded-lg border bg-card p-4 space-y-4 max-h-[52vh] overflow-y-auto">
-            {data.messages.map(m => (
-              <div key={m.id} className={`flex ${m.senderType === "admin" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[70%] rounded-lg px-3 py-2 text-sm ${
-                  m.senderType === "admin"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
-                }`}>
-                  <div className={`text-xs mb-1 ${m.senderType === "admin" ? "text-primary-foreground/75" : "text-muted-foreground"}`}>
-                    {m.senderType === "admin" ? `${m.senderName ?? "平台客服"}（后台）` : (m.senderName || "前台用户")}
-                    <span className="ml-2">{formatTime(m.createdAt)}</span>
+            {data.messages.map(m => {
+              const bomMessage = m.senderType === "portal"
+                ? parseBomInquiryMessage(m.content)
+                : null;
+              return (
+                <div key={m.id} className={`flex ${m.senderType === "admin" ? "justify-end" : "justify-start"}`}>
+                  <div className={`${bomMessage ? "max-w-[96%]" : "max-w-[70%]"} rounded-lg px-3 py-2 text-sm ${
+                    m.senderType === "admin"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}>
+                    <div className={`text-xs mb-1 ${m.senderType === "admin" ? "text-primary-foreground/75" : "text-muted-foreground"}`}>
+                      {m.senderType === "admin" ? `${m.senderName ?? "平台客服"}（后台）` : (m.senderName || "前台用户")}
+                      <span className="ml-2">{formatTime(m.createdAt)}</span>
+                    </div>
+                    {bomMessage
+                      ? <BomInquiryTable message={bomMessage} />
+                      : <div className="whitespace-pre-wrap break-words">{m.content}</div>}
                   </div>
-                  <div className="whitespace-pre-wrap break-words">{m.content}</div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {thread.status === "open" ? (
