@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { basename, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createInterface } from "node:readline";
+import { createGunzip } from "node:zlib";
 import mysql from "mysql2/promise";
 
 const LOCK_NAME = "dianzi51_external_catalog_import_v1";
