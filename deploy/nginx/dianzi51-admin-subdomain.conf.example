@@ -1,0 +1,111 @@
+# 阶段 D：后台子域灰度
+# 启用前必须完成：
+# 1. admin.51dianzi.com A 记录指向生产 ECS；
+# 2. 独立证书已安装到下列 ssl_certificate 路径；
+# 3. 根路径构建制品已原子切换至 /opt/apps/dianzi51-admin-subdomain。
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name admin.51dianzi.com;
+
+    access_log /var/log/nginx/dianzi51-admin-subdomain-access.log;
+    error_log /var/log/nginx/dianzi51-admin-subdomain-error.log warn;
+
+    return 301 https://admin.51dianzi.com$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name admin.51dianzi.com;
+
+    ssl_certificate /etc/nginx/ssl/admin.51dianzi.com.pem;
+    ssl_certificate_key /etc/nginx/ssl/admin.51dianzi.com.key;
+
+    access_log /var/log/nginx/dianzi51-admin-subdomain-access.log;
+    error_log /var/log/nginx/dianzi51-admin-subdomain-error.log warn;
+
+    client_max_body_size 55m;
+    root /opt/apps/dianzi51-admin-subdomain/dist/public;
+
+    # 灰度后台不可被搜索引擎收录。暂不设置 HSTS，便于独立撤回子域。
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "same-origin" always;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/json
+        application/javascript
+        application/xml
+        image/svg+xml;
+
+    # 后台本地上传文件继续复用现有持久目录，不复制或迁移业务数据。
+    location ^~ /uploads/ {
+        alias /opt/apps/dianzi51-admin/uploads/;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    # Vite 哈希资源缺失时必须返回 404，禁止误回退为 HTML 200。
+    location ^~ /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    # 后台 tRPC、登录与上传 API 复用现有 3001 业务进程。
+    location = /api {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+
+    location = /robots.txt {
+        default_type text/plain;
+        return 200 "User-agent: *\nDisallow: /\n";
+    }
+
+    # HTML 禁止缓存，避免切换 release 后引用旧哈希资源。
+    location = /index.html {
+        try_files /index.html =404;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    # 后台浏览器深链接回退至当前子域 release 的 index.html。
+    location / {
+        try_files $uri /index.html;
+    }
+}

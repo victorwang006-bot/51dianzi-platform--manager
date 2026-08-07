@@ -8,6 +8,8 @@
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:./vite-dev",
     "build:admin": "VITE_BASE_PATH=/admin/ pnpm build",
     "verify:admin-build": "bash scripts/verify-admin-build.sh",
+    "build:subdomain": "VITE_BASE_PATH=/ pnpm build",
+    "verify:subdomain-build": "bash scripts/verify-subdomain-build.sh",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
