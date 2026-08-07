@@ -5,6 +5,9 @@ const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
   scripts: Record<string, string>;
 };
 const buildVerifier = readFileSync("scripts/verify-subdomain-build.sh", "utf8");
+const legacyBuildVerifier = readFileSync("scripts/verify-admin-build.sh", "utf8");
+const htmlTemplate = readFileSync("client/index.html", "utf8");
+const clientEntry = readFileSync("client/src/main.tsx", "utf8");
 const legacyNginx = readFileSync(
   "deploy/nginx/dianzi51-admin.inc.example",
   "utf8",
@@ -33,6 +36,15 @@ describe("阶段 D 后台子域构建契约", () => {
     expect(buildVerifier).toContain('admin_base_refs != 0');
     expect(buildVerifier).toContain('root_base_refs < 1');
     expect(buildVerifier).toContain('admin_api_refs != 0');
+  });
+
+  it("分析脚本仅在配置完整时加载，双制品门禁拒绝 Vite 占位符", () => {
+    expect(htmlTemplate).not.toContain("%VITE_ANALYTICS_ENDPOINT%");
+    expect(htmlTemplate).not.toContain("%VITE_ANALYTICS_WEBSITE_ID%");
+    expect(clientEntry).toContain("analyticsEndpoint && analyticsWebsiteId");
+    expect(clientEntry).toContain("document.head.appendChild(analyticsScript)");
+    expect(buildVerifier).toContain("unresolved_vite_placeholders");
+    expect(legacyBuildVerifier).toContain("unresolved_vite_placeholders");
   });
 });
 

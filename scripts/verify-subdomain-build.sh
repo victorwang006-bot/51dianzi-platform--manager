@@ -28,6 +28,8 @@ admin_base_refs=$(grep -o '"/admin/"\.replace' "$entry_bundle" | wc -l | tr -d '
 root_base_refs=$(grep -o '="/"\.replace' "$entry_bundle" | wc -l | tr -d ' ' || true)
 api_refs=$(grep -o '/api/trpc' "$entry_bundle" | wc -l | tr -d ' ' || true)
 admin_api_refs=$(grep -o '/admin/api/trpc' "$entry_bundle" | wc -l | tr -d ' ' || true)
+unresolved_vite_placeholders=$(grep -RohE '%VITE_[A-Z0-9_]+%' dist/public \
+  --include='*.html' --include='*.js' | wc -l | tr -d ' ' || true)
 
 printf 'index_root_assets=%s\n' "$asset_refs"
 printf 'index_admin_assets=%s\n' "$admin_asset_refs"
@@ -35,6 +37,7 @@ printf 'bundle_root_base_refs=%s\n' "$root_base_refs"
 printf 'bundle_admin_base_refs=%s\n' "$admin_base_refs"
 printf 'bundle_api_refs=%s\n' "$api_refs"
 printf 'bundle_admin_api_refs=%s\n' "$admin_api_refs"
+printf 'unresolved_vite_placeholders=%s\n' "$unresolved_vite_placeholders"
 printf 'entry_bundle=%s\n' "$entry_bundle"
 
 if (( asset_refs < 2 )); then
@@ -59,6 +62,10 @@ if (( api_refs < 1 )); then
 fi
 if (( admin_api_refs != 0 )); then
   echo "失败：前端包仍包含 /admin/api/trpc 请求路径" >&2
+  exit 1
+fi
+if (( unresolved_vite_placeholders != 0 )); then
+  echo "失败：生产制品仍包含未替换的 %VITE_*% 占位符" >&2
   exit 1
 fi
 

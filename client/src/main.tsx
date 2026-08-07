@@ -19,6 +19,18 @@ window.addEventListener("error", e => {
   }
 });
 
+// 分析服务是可选能力。只有 endpoint 与 website ID 同时配置时才加载，
+// 避免 Vite HTML 占位符在未配置的生产环境中原样输出并产生 400 请求。
+const analyticsEndpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT?.trim();
+const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID?.trim();
+if (analyticsEndpoint && analyticsWebsiteId) {
+  const analyticsScript = document.createElement("script");
+  analyticsScript.defer = true;
+  analyticsScript.src = `${analyticsEndpoint.replace(/\/+$/, "")}/umami`;
+  analyticsScript.dataset.websiteId = analyticsWebsiteId;
+  document.head.appendChild(analyticsScript);
+}
+
 const queryClient = new QueryClient();
 // 账号密码登录模式：未授权错误不再自动跳转 Manus OAuth，
 // 由 DashboardLayout 渲染本站登录页（client/src/pages/Login.tsx）。
