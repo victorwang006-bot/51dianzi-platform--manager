@@ -559,6 +559,8 @@ export const appRouter = router({
     submitMessage: publicProcedure
       .input(z.object({
         threadNo: z.string().max(32).optional().nullable(),
+        /** 前台可靠重试幂等键；旧调用可不传。 */
+        clientMessageId: z.string().uuid().max(64).optional().nullable(),
         subject: z.string().max(256).optional().nullable(),
         contactName: z.string().max(128).optional().nullable(),
         contactPhone: z.string().max(32).optional().nullable(),

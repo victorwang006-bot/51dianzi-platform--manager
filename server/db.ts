@@ -1423,9 +1423,10 @@ export interface CompanyProfileSnapshot {
   [key: string]: unknown;
 }
 
-/** 前台提交"联系我们"留言：新建会话或在已有会话追加消息 */
+/** 前台提交"联系我们"留言：新建会话或在已有会话追加消息。 */
 export async function createPortalMessage(input: {
   threadNo?: string | null;
+  clientMessageId?: string | null;
   subject?: string | null;
   contactName?: string | null;
   contactPhone?: string | null;
@@ -1438,53 +1439,148 @@ export async function createPortalMessage(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  let thread: typeof messageThreads.$inferSelect | undefined;
-  if (input.threadNo) {
-    const rows = await db.select().from(messageThreads)
-      .where(eq(messageThreads.threadNo, input.threadNo)).limit(1);
-    thread = rows[0];
-  }
+  const validateExisting = (existing: {
+    messageId: number;
+    threadId: number;
+    threadNo: string;
+    content: string;
+    portalUserId: string | null;
+  }) => {
+    if (existing.content !== input.content) {
+      throw new Error("消息幂等键与原留言内容不一致");
+    }
+    if (
+      input.portalUserId
+      && existing.portalUserId
+      && existing.portalUserId !== input.portalUserId
+    ) {
+      throw new Error("消息幂等键与原留言用户不一致");
+    }
+    return {
+      threadNo: existing.threadNo,
+      threadId: existing.threadId,
+      messageId: existing.messageId,
+      deduplicated: true,
+    };
+  };
 
-  const preview = input.content.slice(0, 200);
-  if (!thread) {
-    const threadNo = genThreadNo();
-    await db.insert(messageThreads).values({
-      threadNo,
-      subject: input.subject ?? preview.slice(0, 100),
-      contactName: input.contactName ?? null,
-      contactPhone: input.contactPhone ?? null,
-      contactEmail: input.contactEmail ?? null,
-      portalUserId: input.portalUserId ?? null,
-      threadType: input.threadType ?? "general",
-      companyProfile: input.companyProfile ?? null,
-      adminUnreadCount: 1,
-      lastMessagePreview: preview,
-      lastMessageAt: new Date(),
+  const findExisting = async () => {
+    if (!input.clientMessageId) return undefined;
+    const rows = await db
+      .select({
+        messageId: messages.id,
+        threadId: messages.threadId,
+        threadNo: messageThreads.threadNo,
+        content: messages.content,
+        portalUserId: messageThreads.portalUserId,
+      })
+      .from(messages)
+      .innerJoin(messageThreads, eq(messageThreads.id, messages.threadId))
+      .where(eq(messages.clientMessageId, input.clientMessageId))
+      .limit(1);
+    return rows[0];
+  };
+
+  const existingBeforeTransaction = await findExisting();
+  if (existingBeforeTransaction) return validateExisting(existingBeforeTransaction);
+
+  try {
+    return await db.transaction(async tx => {
+      if (input.clientMessageId) {
+        const existingRows = await tx
+          .select({
+            messageId: messages.id,
+            threadId: messages.threadId,
+            threadNo: messageThreads.threadNo,
+            content: messages.content,
+            portalUserId: messageThreads.portalUserId,
+          })
+          .from(messages)
+          .innerJoin(messageThreads, eq(messageThreads.id, messages.threadId))
+          .where(eq(messages.clientMessageId, input.clientMessageId))
+          .limit(1);
+        if (existingRows[0]) return validateExisting(existingRows[0]);
+      }
+
+      let thread: { id: number; threadNo: string } | undefined;
+      if (input.threadNo) {
+        const rows = await tx
+          .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+          .from(messageThreads)
+          .where(eq(messageThreads.threadNo, input.threadNo))
+          .limit(1);
+        thread = rows[0];
+      }
+
+      const preview = input.content.slice(0, 200);
+      if (!thread) {
+        const threadNo = genThreadNo();
+        await tx.insert(messageThreads).values({
+          threadNo,
+          subject: input.subject ?? preview.slice(0, 100),
+          contactName: input.contactName ?? null,
+          contactPhone: input.contactPhone ?? null,
+          contactEmail: input.contactEmail ?? null,
+          portalUserId: input.portalUserId ?? null,
+          threadType: input.threadType ?? "general",
+          companyProfile: input.companyProfile ?? null,
+          adminUnreadCount: 1,
+          lastMessagePreview: preview,
+          lastMessageAt: new Date(),
+        });
+        const rows = await tx
+          .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+          .from(messageThreads)
+          .where(eq(messageThreads.threadNo, threadNo))
+          .limit(1);
+        thread = rows[0];
+      } else {
+        await tx.update(messageThreads).set({
+          status: "open",
+          adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
+          lastMessagePreview: preview,
+          lastMessageAt: new Date(),
+          ...(input.contactName ? { contactName: input.contactName } : {}),
+          ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+          ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+          ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
+        }).where(eq(messageThreads.id, thread.id));
+      }
+      if (!thread) throw new Error("消息会话创建失败");
+
+      await tx.insert(messages).values({
+        threadId: thread.id,
+        clientMessageId: input.clientMessageId ?? null,
+        senderType: "portal",
+        senderName: input.contactName ?? null,
+        content: input.content,
+      });
+      const messageIdResult = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
+      const messageIdRows = (messageIdResult as unknown as [Array<{ id: number }>, unknown])[0];
+      const messageId = Number(messageIdRows[0]?.id);
+      return {
+        threadNo: thread.threadNo,
+        threadId: thread.id,
+        messageId,
+        deduplicated: false,
+      };
     });
-    const rows = await db.select().from(messageThreads)
-      .where(eq(messageThreads.threadNo, threadNo)).limit(1);
-    thread = rows[0];
-  } else {
-    await db.update(messageThreads).set({
-      status: "open",
-      adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
-      lastMessagePreview: preview,
-      lastMessageAt: new Date(),
-      ...(input.contactName ? { contactName: input.contactName } : {}),
-      ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
-      ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
-      ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
-    }).where(eq(messageThreads.id, thread.id));
+  } catch (error) {
+    const mysqlError = error as {
+      errno?: number;
+      code?: string;
+      cause?: { errno?: number; code?: string };
+    };
+    const duplicate = mysqlError.errno === 1062
+      || mysqlError.code === "ER_DUP_ENTRY"
+      || mysqlError.cause?.errno === 1062
+      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    if (!duplicate || !input.clientMessageId) throw error;
+
+    const existingAfterConflict = await findExisting();
+    if (!existingAfterConflict) throw error;
+    return validateExisting(existingAfterConflict);
   }
-
-  await db.insert(messages).values({
-    threadId: thread!.id,
-    senderType: "portal",
-    senderName: input.contactName ?? null,
-    content: input.content,
-  });
-
-  return { threadNo: thread!.threadNo, threadId: thread!.id };
 }
 
 /** 前台拉取会话消息（并清零前台未读数） */

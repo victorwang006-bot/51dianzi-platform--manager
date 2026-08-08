@@ -2,6 +2,7 @@ import {
   bigint,
   decimal,
   index,
+  uniqueIndex,
   int,
   mysqlEnum,
   mysqlTable,
@@ -523,18 +524,27 @@ export const messageThreads = mysqlTable("message_threads", {
 export type MessageThread = typeof messageThreads.$inferSelect;
 
 /** 消息记录：会话内的每条消息 */
-export const messages = mysqlTable("messages", {
-  id: int("id").autoincrement().primaryKey(),
-  threadId: int("threadId").notNull(),
-  /** 发送方：portal=前台用户 admin=后台运营 */
-  senderType: mysqlEnum("senderType", ["portal", "admin"]).notNull(),
-  /** 后台发送人（admin_users.id，仅 senderType=admin 时有值） */
-  senderAdminId: int("senderAdminId"),
-  /** 后台发送人显示名（冗余存储，避免联表） */
-  senderName: varchar("senderName", { length: 128 }),
-  /** 消息内容 */
-  content: text("content").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const messages = mysqlTable(
+  "messages",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    threadId: int("threadId").notNull(),
+    /** 前台生成的幂等键；旧消息与后台回复保持为空。 */
+    clientMessageId: varchar("clientMessageId", { length: 64 }),
+    /** 发送方：portal=前台用户 admin=后台运营 */
+    senderType: mysqlEnum("senderType", ["portal", "admin"]).notNull(),
+    /** 后台发送人（admin_users.id，仅 senderType=admin 时有值） */
+    senderAdminId: int("senderAdminId"),
+    /** 后台发送人显示名（冗余存储，避免联表） */
+    senderName: varchar("senderName", { length: 128 }),
+    /** 消息内容 */
+    content: text("content").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    clientMessageUnique: uniqueIndex("messages_client_message_unique").on(table.clientMessageId),
+    threadCreatedIdx: index("messages_thread_created_idx").on(table.threadId, table.createdAt),
+  }),
+);
 
 export type Message = typeof messages.$inferSelect;
