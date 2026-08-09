@@ -1,4 +1,9 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS, decodeOAuthState } from "@shared/const";
+import {
+  AXIOS_TIMEOUT_MS,
+  COOKIE_NAME,
+  ONE_YEAR_MS,
+  decodeOAuthState,
+} from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -6,6 +11,7 @@ import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
+import { getAuthErrorReason, warnAuthRateLimited } from "./authLog";
 import { ENV } from "./env";
 import type {
   ExchangeTokenRequest,
@@ -200,7 +206,6 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
       return null;
     }
 
@@ -216,7 +221,10 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
-        console.warn("[Auth] Session payload missing required fields");
+        warnAuthRateLimited(
+          "session-payload-invalid",
+          "[Auth] Session payload missing required fields"
+        );
         return null;
       }
 
@@ -226,7 +234,12 @@ class SDKServer {
         name,
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+      const reason = getAuthErrorReason(error);
+      warnAuthRateLimited(
+        `session-verification-failed:${reason}`,
+        "[Auth] Session verification failed",
+        { reason }
+      );
       return null;
     }
   }
@@ -255,14 +268,20 @@ class SDKServer {
     } as GetUserInfoWithJwtResponse;
   }
 
-  async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
-    // 1. Prefer the session cookie (regular OAuth login).
-    const cookies = this.parseCookies(req.headers.cookie);
-    let sessionToken = cookies.get(COOKIE_NAME);
+  async authenticateRequest(
+    req: Request,
+    preverified?: { token: string; session: SessionPayload }
+  ): Promise<AuthenticatedUser> {
+    // 1. Prefer a session that the request context already verified.
+    let sessionToken = preverified?.token;
+    let session: SessionPayload | null = preverified?.session ?? null;
 
-    // 2. Fallback to the Authorization header (Preview auto-login via
-    //    sessionStorage), used when the browser blocks iframe cookies such as
-    //    Safari ITP, private browsing, or iOS/Android WebView.
+    // 2. Otherwise resolve the regular OAuth cookie, then the Authorization
+    //    header used when a browser blocks iframe cookies.
+    if (!sessionToken) {
+      const cookies = this.parseCookies(req.headers.cookie);
+      sessionToken = cookies.get(COOKIE_NAME);
+    }
     if (!sessionToken) {
       const authHeader = req.headers.authorization;
       if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
@@ -270,7 +289,9 @@ class SDKServer {
       }
     }
 
-    const session = await this.verifySession(sessionToken);
+    if (!session) {
+      session = await this.verifySession(sessionToken);
+    }
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");
