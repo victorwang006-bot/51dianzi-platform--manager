@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
-import { ArrowLeft, Loader2, RefreshCw, Search, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Building2, CalendarDays, CircleDollarSign, Loader2, RefreshCw, Search, ShoppingCart, Users } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,10 @@ function OrderList() {
     status: status === "all" ? undefined : status,
   }), [keyword, page, status]);
   const query = trpc.order.list.useQuery(input, { retry: 1 });
+  const statsQuery = trpc.order.stats.useQuery(undefined, { retry: 1 });
+  const stats = statsQuery.data;
   const pageCount = Math.max(1, Math.ceil((query.data?.total ?? 0) / 20));
+  const isRefreshing = query.isFetching || statsQuery.isFetching;
 
   const submitSearch = () => {
     setPage(1);
@@ -55,13 +58,26 @@ function OrderList() {
       <div className="space-y-6 p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">商城订单</h1>
-            <p className="mt-1 text-sm text-muted-foreground">只读访问商城唯一订单事实源，不复制、不双写订单数据。</p>
+            <h1 className="text-2xl font-semibold tracking-tight">订单管理</h1>
+            <p className="mt-1 text-sm text-muted-foreground">统一汇总平台用户订单，统计、列表与详情均来自商城唯一订单事实源。</p>
           </div>
-          <Button variant="outline" onClick={() => query.refetch()} disabled={query.isFetching}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />刷新
+          <Button variant="outline" onClick={() => void Promise.all([query.refetch(), statsQuery.refetch()])} disabled={isRefreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />刷新
           </Button>
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单总数</p><p className="mt-2 text-2xl font-semibold">{stats?.totalOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">今日 {stats?.todayOrders ?? "—"} 单</p></div><div className="rounded-full bg-blue-50 p-3 text-blue-600"><ShoppingCart className="h-5 w-5" /></div></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单总额</p><p className="mt-2 text-2xl font-semibold">{stats ? money(stats.grossAmount) : "—"}</p><p className="mt-1 text-xs text-muted-foreground">含全部订单状态</p></div><div className="rounded-full bg-emerald-50 p-3 text-emerald-600"><CircleDollarSign className="h-5 w-5" /></div></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">近7日订单</p><p className="mt-2 text-2xl font-semibold">{stats?.sevenDayOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">最近7×24小时</p></div><div className="rounded-full bg-violet-50 p-3 text-violet-600"><CalendarDays className="h-5 w-5" /></div></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">交易用户</p><p className="mt-2 text-2xl font-semibold">{stats?.buyerCount ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">供应商 {stats?.sellerCount ?? "—"} 家</p></div><div className="rounded-full bg-amber-50 p-3 text-amber-600"><Users className="h-5 w-5" /></div></CardContent></Card>
+        </div>
+
+        <Card><CardContent className="flex flex-wrap items-center gap-2 p-4">
+          <span className="mr-2 text-sm font-medium">订单状态统计</span>
+          {Object.entries(statusMeta).map(([value, meta]) => <button key={value} type="button" className={`rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary ${status === value ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus(value as keyof typeof statusMeta); setPage(1); }}>{meta.label} <span className="font-semibold">{stats?.statusCounts[value as keyof typeof statusMeta] ?? "—"}</span></button>)}
+          {statsQuery.error && <span className="text-sm text-destructive">统计暂不可用：{statsQuery.error.message}</span>}
+        </CardContent></Card>
 
         <Card>
           <CardContent className="flex flex-col gap-3 pt-6 md:flex-row">
@@ -110,7 +126,7 @@ function OrderList() {
                     {query.data.rows.map(order => (
                       <TableRow key={order.id} className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
                         <TableCell>
-                          <div className="font-mono text-sm font-medium">{order.orderNo}</div>
+                          <Link href={`/orders/${order.id}`} onClick={event => event.stopPropagation()} className="font-mono text-sm font-semibold text-primary hover:underline">{order.orderNo}</Link>
                           <div className="mt-1 text-xs text-muted-foreground">
                             {order.batchNo ? `父单 ${order.batchNo} · 子单 ${String(order.batchSeq).padStart(2, "0")}` : "历史 DZ 订单"}
                           </div>
@@ -120,7 +136,7 @@ function OrderList() {
                         <TableCell><OrderStatus status={order.status} /></TableCell>
                         <TableCell className="text-right font-medium">{money(order.totalAmount)}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{dateTime(order.createdAt)}</TableCell>
-                        <TableCell className="text-right"><Button size="sm" variant="ghost">查看</Button></TableCell>
+                        <TableCell className="text-right"><Button size="sm" variant="ghost" onClick={event => { event.stopPropagation(); navigate(`/orders/${order.id}`); }}>查看详情</Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -149,7 +165,7 @@ function OrderDetail({ orderId }: { orderId: number }) {
 
   if (query.isLoading) return <DashboardLayout><div className="flex min-h-[70vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin" /></div></DashboardLayout>;
   if (query.error || !data) return (
-    <DashboardLayout><div className="p-6"><Link href="/orders"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />返回订单</Button></Link><Card className="mt-4"><CardContent className="p-10 text-center text-destructive">{query.error?.message || "订单不存在"}</CardContent></Card></div></DashboardLayout>
+    <DashboardLayout><div className="p-6"><Link href="/orders"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />返回订单管理</Button></Link><Card className="mt-4"><CardContent className="p-10 text-center text-destructive">{query.error?.message || "订单不存在"}</CardContent></Card></div></DashboardLayout>
   );
 
   const order = data.order;
@@ -157,7 +173,7 @@ function OrderDetail({ orderId }: { orderId: number }) {
     <DashboardLayout>
       <div className="space-y-6 p-4 sm:p-6">
         <div>
-          <Link href="/orders"><Button variant="ghost" className="-ml-3"><ArrowLeft className="mr-2 h-4 w-4" />返回订单列表</Button></Link>
+          <Link href="/orders"><Button variant="ghost" className="-ml-3"><ArrowLeft className="mr-2 h-4 w-4" />返回订单管理</Button></Link>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div><div className="flex flex-wrap items-center gap-2"><h1 className="font-mono text-xl font-semibold">{order.orderNo}</h1><OrderStatus status={order.status} /></div><p className="mt-1 text-sm text-muted-foreground">{order.batchNo ? `父订单 ${order.batchNo} · 第 ${String(order.batchSeq).padStart(2, "0")} 张子订单` : "历史 DZ 订单（无父批次）"}</p></div>
             <div className="text-left sm:text-right"><div className="text-2xl font-semibold">{money(order.totalAmount)}</div><div className="text-xs text-muted-foreground">{dateTime(order.createdAt)}</div></div>
@@ -165,7 +181,7 @@ function OrderDetail({ orderId }: { orderId: number }) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card><CardHeader><CardTitle className="text-base">交易信息</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>买家：{order.buyerName || order.buyerUsername || `用户 ${order.buyerId}`}</p><p>供应商：{order.sellerName}</p><p>支付方式：{payMethodLabels[order.payMethod]}</p><p>未税 {money(order.amountEx)} · 税额 {money(order.taxAmount)} · 运费 {money(order.shippingFee)}</p></CardContent></Card>
+          <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Building2 className="h-4 w-4" />交易信息</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>买家：{order.buyerName || order.buyerUsername || `用户 ${order.buyerId}`} <span className="text-muted-foreground">（用户ID {order.buyerId}）</span></p><p>供应商：{order.sellerName} <span className="text-muted-foreground">（用户ID {order.sellerId}）</span></p><p>支付方式：{payMethodLabels[order.payMethod]}</p><p>未税 {money(order.amountEx)} · 税额 {money(order.taxAmount)} · 运费 {money(order.shippingFee)}</p></CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">收货与物流</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>{order.receiver} · {order.receiverPhone}</p><p className="text-muted-foreground">{order.receiverAddress}</p><p>{order.expressCo && order.expressNo ? `${order.expressCo} · ${order.expressNo}` : "尚未发货"}</p></CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">备注</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>{order.note || "无买家备注"}</p>{order.statusNote && <p className="text-muted-foreground">状态说明：{order.statusNote}</p>}</CardContent></Card>
         </div>

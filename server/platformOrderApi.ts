@@ -11,6 +11,17 @@ export type PlatformOrderListInput = {
   createdTo?: number;
 };
 
+export type PlatformOrderStats = {
+  totalOrders: number;
+  grossAmount: string;
+  buyerCount: number;
+  sellerCount: number;
+  todayOrders: number;
+  sevenDayOrders: number;
+  statusCounts: Record<PlatformOrderStatus, number>;
+  statusAmounts: Record<PlatformOrderStatus, string>;
+};
+
 export type PlatformOrderListRow = {
   id: number;
   orderNo: string;
@@ -82,7 +93,7 @@ function getConfig() {
 }
 
 async function callPlatformOrder<T>(
-  procedure: "list" | "detail",
+  procedure: "stats" | "list" | "detail",
   input: Record<string, unknown>,
 ): Promise<T> {
   const { baseUrl, key } = getConfig();
@@ -102,6 +113,10 @@ async function callPlatformOrder<T>(
   const data = first?.result?.data;
   if (!data) throw new Error("商城订单服务返回空响应");
   return ((typeof data === "object" && data !== null && "json" in data) ? data.json : data) as T;
+}
+
+export function getPlatformOrderStats() {
+  return callPlatformOrder<PlatformOrderStats>("stats", {});
 }
 
 export function listPlatformOrders(input: PlatformOrderListInput) {

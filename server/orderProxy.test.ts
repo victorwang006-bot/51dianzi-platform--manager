@@ -57,6 +57,27 @@ describe("商城真实订单后台代理", () => {
     vi.restoreAllMocks();
   });
 
+  it("商户管理角色可通过服务端代理读取统一订单统计，浏览器上下文不接触服务密钥", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(trpcResponse({
+      totalOrders: 19,
+      grossAmount: "74229.03",
+      buyerCount: 5,
+      sellerCount: 3,
+      todayOrders: 0,
+      sevenDayOrders: 19,
+      statusCounts: { pending: 3, paid: 4, shipped: 1, done: 0, refund: 1, cancel: 10 },
+      statusAmounts: { pending: "51.11", paid: "57306.99", shipped: "376.60", done: "0", refund: "19.29", cancel: "16475.04" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await appRouter.createCaller(createContext("merchant_mgr")).order.stats();
+    expect(result).toMatchObject({ totalOrders: 19, grossAmount: "74229.03", buyerCount: 5, statusCounts: { paid: 4, cancel: 10 } });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/api/trpc/internalOrder.stats");
+    expect((init.headers as Record<string, string>)["x-portal-key"]).toBe("server-only-test-key");
+    expect(createContext("merchant_mgr").req.headers["x-portal-key"]).toBeUndefined();
+  });
+
   it("审计角色可通过服务端代理读取历史 DZ 订单，浏览器上下文不接触服务密钥", async () => {
     const fetchMock = vi.fn().mockResolvedValue(trpcResponse({
       total: 1,

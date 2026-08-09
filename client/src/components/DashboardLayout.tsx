@@ -52,21 +52,23 @@ const menuGroups = [
   {
     label: "业务管理",
     items: [
-      { icon: Database, label: "物料数据库", path: "/", permission: "materials.read" as AdminPermission },
-      { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission },
-      { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission },
-      { icon: ShoppingCart, label: "商城订单", path: "/orders", permission: "orders.read" as AdminPermission },
+      { icon: Database, label: "物料数据库", path: "/", permission: "materials.read" as AdminPermission, nested: false },
+      { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission, nested: false },
+      { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: true },
+      { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
     ],
   },
   {
     label: "系统",
     items: [
-      { icon: UserCog, label: "后台用户管理", path: "/admins", permission: "admins.manage" as AdminPermission },
+      { icon: UserCog, label: "后台用户管理", path: "/admins", permission: "admins.manage" as AdminPermission, nested: false },
     ],
   },
 ];
 
 const allMenuItems = menuGroups.flatMap(g => g.items);
+const isMenuPathActive = (location: string, path: string) =>
+  location === path || (path !== "/" && location.startsWith(`${path}/`));
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 240;
@@ -152,7 +154,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = allMenuItems.find(item => item.path === location);
+  const activeMenuItem = allMenuItems.find(item => isMenuPathActive(location, item.path));
   const isMobile = useIsMobile();
   const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ?? "super_admin") as AdminRole;
   const canReadMessages = hasAdminPermission(adminRole, "messages.read");
@@ -235,7 +237,7 @@ function DashboardLayoutContent({
                 <SidebarGroupContent>
                   <SidebarMenu className="px-2">
                     {group.items.filter(item => hasAdminPermission(adminRole, item.permission)).map(item => {
-                      const isActive = location === item.path;
+                      const isActive = isMenuPathActive(location, item.path);
                       const showUnread = item.path === "/messages" && unreadTotal > 0;
                       return (
                         <SidebarMenuItem key={item.path}>
@@ -243,7 +245,7 @@ function DashboardLayoutContent({
                             isActive={isActive}
                             onClick={() => setLocation(item.path)}
                             tooltip={item.label}
-                            className={`h-9 transition-all sidebar-menu-item ${isActive ? "sidebar-item-active" : "font-normal"}`}
+                            className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
                           >
                             <item.icon
                               className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}

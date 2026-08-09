@@ -25,6 +25,7 @@ import { storagePut } from "./storage";
 import { saveLocalFile } from "./localUpload";
 import {
   getPlatformOrderDetail,
+  getPlatformOrderStats,
   listPlatformOrders,
 } from "./platformOrderApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
@@ -253,6 +254,7 @@ export const appRouter = router({
 
   // ─── 商城真实订单（后台仅做代理，不读取/写入本地 SO 订单表）──────────────
   order: router({
+    stats: orderReadProcedure.query(() => getPlatformOrderStats()),
     list: orderReadProcedure
       .input(pageInput.extend({
         keyword: z.string().trim().max(100).optional(),
