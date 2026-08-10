@@ -14,7 +14,7 @@ const DB_SOURCE = readFileSync(
 describe("ERP 重复企业提示文案", () => {
   it("已开通企业使用用户指定的新提示", () => {
     expect(CRM_COMPANY_ALREADY_ENABLED_MESSAGE).toBe(
-      "该公司已经开通ERP，请联系CEM管理员。",
+      "该公司已经开通ERP,请联系管理员",
     );
     expect(
       getCrmCompanyConflictMessage("enabled", "不应返回的旧提示"),

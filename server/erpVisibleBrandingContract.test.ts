@@ -21,7 +21,7 @@ describe("后台 ERP 用户可见品牌与 CRM 内部兼容契约", () => {
   it("所有前台可见审核状态和重复企业提示统一使用 ERP", () => {
     const db = read("server/db.ts");
 
-    expect(db).toContain('"该公司已经开通ERP，请联系CEM管理员。"');
+    expect(db).toContain('"该公司已经开通ERP,请联系管理员"');
     expect(db).toContain('"该企业的 ERP 开通申请正在审核中"');
     expect(db).toContain('disabled: "您的ERP权限已经被暂停，请联系客服"');
     expect(db).toContain('pending: "您的ERP开通申请正在审核中，请耐心等待"');
