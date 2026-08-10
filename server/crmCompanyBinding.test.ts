@@ -147,7 +147,7 @@ describe("CRM 企业唯一绑定与重复申请保护", () => {
     });
     expect(otherRepeat).toMatchObject({
       code: "CRM_COMPANY_ALREADY_ENABLED",
-      message: "该公司已经开通CRM，请联系CRM管理员。",
+      message: "该公司已经开通CRM，请联系CEM管理员。",
     });
     expect(otherRepeat).not.toHaveProperty("merchantId");
     expect(otherRepeat).not.toHaveProperty("merchantNo");
@@ -166,7 +166,7 @@ describe("CRM 企业唯一绑定与重复申请保护", () => {
     expect(otherAccess).toMatchObject({
       allowed: false,
       code: "CRM_COMPANY_ALREADY_ENABLED",
-      message: "该公司已经开通CRM，请联系CRM管理员。",
+      message: "该公司已经开通CRM，请联系CEM管理员。",
     });
     expect(otherAccess).not.toHaveProperty("merchantNo");
     expect(otherAccess).not.toHaveProperty("crmThreadNo");

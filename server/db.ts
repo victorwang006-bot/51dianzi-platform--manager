@@ -81,7 +81,7 @@ function normalizePortalUserId(value?: string | null) {
   return normalized ? normalized : null;
 }
 
-export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通CRM，请联系CRM管理员。";
+export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通CRM，请联系CEM管理员。";
 
 export function getCrmCompanyConflictMessage(
   crmStatus: string,
