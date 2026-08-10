@@ -25,14 +25,14 @@ function formatTime(value: string | Date) {
   });
 }
 
-const THREAD_TYPE_META: Record<string, { label: string; className: string }> = {
+const THREAD_TYPE_META = {
   inquiry: { label: "快速询价", className: "bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent" },
   service: { label: "在线客服", className: "bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent" },
-  general: { label: "留言", className: "bg-slate-100 text-slate-700 hover:bg-slate-100 border-transparent" },
-};
+} as const;
 
 function ThreadTypeBadge({ type }: { type?: string | null }) {
-  const meta = THREAD_TYPE_META[type ?? "general"] ?? THREAD_TYPE_META.general;
+  const normalizedType = type === "inquiry" ? "inquiry" : "service";
+  const meta = THREAD_TYPE_META[normalizedType];
   return <Badge className={meta.className}>{meta.label}</Badge>;
 }
 
@@ -114,7 +114,7 @@ interface CompanyProfileSnapshot {
 export default function Messages() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "general" | "inquiry" | "service">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service">("all");
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
@@ -155,7 +155,7 @@ export default function Messages() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">消息中心</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          前台用户通过"联系我们"提交的留言，在此查看并回复
+          统一查看并回复前台快速询价与在线客服会话
         </p>
       </div>
 
@@ -183,7 +183,6 @@ export default function Messages() {
               <SelectItem value="all">全部类型</SelectItem>
               <SelectItem value="inquiry">快速询价</SelectItem>
               <SelectItem value="service">在线客服</SelectItem>
-              <SelectItem value="general">普通留言</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={v => { setStatusFilter(v as typeof statusFilter); setPage(1); }}>
@@ -208,7 +207,7 @@ export default function Messages() {
           <div className="py-16 text-center text-muted-foreground">
             <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p>暂无消息</p>
-            <p className="text-xs mt-1">前台用户通过"联系我们"提交留言后会显示在这里</p>
+            <p className="text-xs mt-1">前台快速询价或在线客服会话将在这里显示</p>
           </div>
         ) : (
           <div className="divide-y">

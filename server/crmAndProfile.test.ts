@@ -127,18 +127,18 @@ describe("会话类型与公司资料展示（第三十一轮）", () => {
     expect(detail!.thread.companyProfile ?? null).toBeNull();
   });
 
-  it("未指定 threadType 时默认 general（兼容存量前台调用）", async () => {
+  it("未指定 threadType 的旧版调用自动归入在线客服", async () => {
     const portal = appRouter.createCaller(portalCtx()).portal;
     const admin = appRouter.createCaller(adminCtx());
 
     const submitted = await portal.submitMessage({
-      subject: `${TEST_PREFIX}-普通留言`,
-      content: "普通留言内容",
+      subject: `${TEST_PREFIX}-旧版未分类消息`,
+      content: "旧版兼容消息内容",
     });
-    const list = await admin.message.threads({ page: 1, pageSize: 50, keyword: `${TEST_PREFIX}-普通留言` });
+    const list = await admin.message.threads({ page: 1, pageSize: 50, keyword: `${TEST_PREFIX}-旧版未分类消息` });
     const item = list.items.find(t => t.threadNo === submitted.threadNo);
     expect(item).toBeTruthy();
-    expect(item!.threadType).toBe("general");
+    expect(item!.threadType).toBe("service");
   });
 });
 

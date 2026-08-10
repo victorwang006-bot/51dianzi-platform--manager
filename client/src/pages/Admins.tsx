@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -80,7 +80,7 @@ const emptyForm: FormState = {
 export default function Admins() {
   const [page, setPage] = useState(1);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
+  const { data, isLoading, isFetching, refetch } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -181,10 +181,21 @@ export default function Admins() {
         title="用户管理"
         description="管理后台系统用户，支持角色权限分配、手机号与邮箱绑定"
         actions={
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            新建用户
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? "animate-spin" : ""}`} />
+              刷新
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1" />
+              新建用户
+            </Button>
+          </div>
         }
       />
 

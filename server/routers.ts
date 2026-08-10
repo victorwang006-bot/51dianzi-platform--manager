@@ -568,7 +568,7 @@ export const appRouter = router({
         contactPhone: z.string().max(32).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
-        /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
+        /** 会话类型：general=旧版兼容值（服务端归类） inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
         threadType: z.enum(["general", "inquiry", "service", "crm_apply"]).optional().nullable(),
         /** 客户公司资料快照（已提交公司资料的用户，前台附带传入，后台会话详情展示） */
         companyProfile: z.object({
@@ -726,7 +726,7 @@ export const appRouter = router({
     threads: messageReadProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
-        threadType: z.enum(["general", "inquiry", "service"]).optional(),
+        threadType: z.enum(["inquiry", "service"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {

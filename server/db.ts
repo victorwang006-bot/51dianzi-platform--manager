@@ -1436,7 +1436,37 @@ export interface CompanyProfileSnapshot {
   [key: string]: unknown;
 }
 
-/** 前台提交"联系我们"留言：新建会话或在已有会话追加消息。 */
+type PortalMessageThreadType = "general" | "inquiry" | "service" | "crm_apply";
+type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
+
+/**
+ * 消息中心只展示快速询价与在线客服。历史 general 是旧调用漏传类型的兼容值：
+ * 询价主题归 inquiry、企业开通申请归 crm_apply，其余归在线客服。
+ */
+export function resolvePortalMessageThreadType(input: {
+  threadType?: PortalMessageThreadType | null;
+  subject?: string | null;
+}): EffectiveMessageThreadType {
+  if (input.threadType && input.threadType !== "general") return input.threadType;
+  const subject = input.subject?.trim() ?? "";
+  if (subject.includes("企业开通申请")) return "crm_apply";
+  if (subject.includes("询价")) return "inquiry";
+  return "service";
+}
+
+function effectiveMessageThreadTypeSql() {
+  return sql<EffectiveMessageThreadType>`CASE
+    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'crm_apply')
+      THEN ${messageThreads.threadType}
+    WHEN ${messageThreads.subject} LIKE '%企业开通申请%'
+      THEN 'crm_apply'
+    WHEN ${messageThreads.subject} LIKE '%询价%'
+      THEN 'inquiry'
+    ELSE 'service'
+  END`;
+}
+
+/** 前台提交消息：新建会话或在已有会话追加消息。 */
 export async function createPortalMessage(input: {
   threadNo?: string | null;
   clientMessageId?: string | null;
@@ -1535,7 +1565,7 @@ export async function createPortalMessage(input: {
           contactPhone: input.contactPhone ?? null,
           contactEmail: input.contactEmail ?? null,
           portalUserId: input.portalUserId ?? null,
-          threadType: input.threadType ?? "general",
+          threadType: resolvePortalMessageThreadType(input),
           companyProfile: input.companyProfile ?? null,
           adminUnreadCount: 1,
           lastMessagePreview: preview,
@@ -1557,6 +1587,7 @@ export async function createPortalMessage(input: {
           ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
           ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
           ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
+          ...(input.threadType ? { threadType: resolvePortalMessageThreadType(input) } : {}),
         }).where(eq(messageThreads.id, thread.id));
       }
       if (!thread) throw new Error("消息会话创建失败");
@@ -1629,16 +1660,17 @@ export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "general" | "inquiry" | "service";
+  threadType?: "inquiry" | "service";
   keyword?: string;
 }) {
   const db = await getDb();
   if (!db) return { items: [], total: 0 };
   const conds = [];
-  // 企业开通申请直接落商户管理，不在消息中心展示
-  conds.push(sql`${messageThreads.threadType} <> 'crm_apply'`);
+  const effectiveThreadType = effectiveMessageThreadTypeSql();
+  // 企业开通申请直接落商户管理，不在消息中心展示；旧 general 记录按主题归类。
+  conds.push(sql`${effectiveThreadType} <> 'crm_apply'`);
   if (input.status) conds.push(eq(messageThreads.status, input.status));
-  if (input.threadType) conds.push(eq(messageThreads.threadType, input.threadType));
+  if (input.threadType) conds.push(sql`${effectiveThreadType} = ${input.threadType}`);
   if (input.keyword) {
     const kw = `%${input.keyword}%`;
     conds.push(or(
@@ -1658,7 +1690,10 @@ export async function getMessageThreads(input: {
   const totalRows = await db.select({ count: sql<number>`count(*)` })
     .from(messageThreads).where(where);
   return {
-    items: items.map(normalizeMessageThreadJson),
+    items: items.map(row => ({
+      ...normalizeMessageThreadJson(row),
+      threadType: resolvePortalMessageThreadType(row),
+    })),
     total: Number(totalRows[0]?.count ?? 0),
   };
 }
@@ -1669,7 +1704,10 @@ export async function getMessageThreadDetail(threadId: number) {
   if (!db) return null;
   const rows = await db.select().from(messageThreads)
     .where(eq(messageThreads.id, threadId)).limit(1);
-  const thread = rows[0] ? normalizeMessageThreadJson(rows[0]) : null;
+  const normalizedThread = rows[0] ? normalizeMessageThreadJson(rows[0]) : null;
+  const thread = normalizedThread
+    ? { ...normalizedThread, threadType: resolvePortalMessageThreadType(normalizedThread) }
+    : null;
   if (!thread) return null;
   const list = await db.select().from(messages)
     .where(eq(messages.threadId, threadId)).orderBy(messages.createdAt);
@@ -1721,9 +1759,10 @@ export async function setMessageThreadStatus(threadId: number, status: "open" | 
 export async function getAdminUnreadTotal() {
   const db = await getDb();
   if (!db) return 0;
+  const effectiveThreadType = effectiveMessageThreadTypeSql();
   const rows = await db.select({ total: sql<number>`COALESCE(SUM(${messageThreads.adminUnreadCount}), 0)` })
     .from(messageThreads)
-    .where(and(eq(messageThreads.status, "open"), sql`${messageThreads.threadType} <> 'crm_apply'`));
+    .where(and(eq(messageThreads.status, "open"), sql`${effectiveThreadType} <> 'crm_apply'`));
   return Number(rows[0]?.total ?? 0);
 }
 
