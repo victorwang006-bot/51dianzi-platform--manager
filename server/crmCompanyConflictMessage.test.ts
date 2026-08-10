@@ -11,10 +11,10 @@ const DB_SOURCE = readFileSync(
   "utf8",
 );
 
-describe("CRM 重复企业提示文案", () => {
+describe("ERP 重复企业提示文案", () => {
   it("已开通企业使用用户指定的新提示", () => {
     expect(CRM_COMPANY_ALREADY_ENABLED_MESSAGE).toBe(
-      "该公司已经开通CRM，请联系CEM管理员。",
+      "该公司已经开通ERP，请联系CEM管理员。",
     );
     expect(
       getCrmCompanyConflictMessage("enabled", "不应返回的旧提示"),
@@ -24,7 +24,7 @@ describe("CRM 重复企业提示文案", () => {
   it("审核中和其他绑定状态保持原有语义", () => {
     expect(
       getCrmCompanyConflictMessage("pending", "不应返回的兜底提示"),
-    ).toBe("该企业的 CRM 开通申请正在审核中");
+    ).toBe("该企业的 ERP 开通申请正在审核中");
     expect(
       getCrmCompanyConflictMessage(
         "rejected",
@@ -36,7 +36,7 @@ describe("CRM 重复企业提示文案", () => {
     ).toBe("该企业已绑定其他前台账号");
   });
 
-  it("提交申请与CRM状态查询都使用同一文案函数", () => {
+  it("提交申请与ERP状态查询都使用同一文案函数", () => {
     expect(
       DB_SOURCE.match(/message:\s*getCrmCompanyConflictMessage\(/g),
     ).toHaveLength(2);

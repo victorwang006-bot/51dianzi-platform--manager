@@ -87,7 +87,7 @@ const adminManageProcedure = adminPermissionProcedure("admins.manage");
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
   const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
   if (role !== "super_admin") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以执行 CRM 超级管理员换绑" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以执行 ERP 超级管理员换绑" });
   }
   return next({ ctx });
 });
@@ -449,7 +449,7 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
-    /** 设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
+    /** 设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
     setCrmStatus: merchantWriteProcedure
       .input(z.object({
         id: z.number(),
@@ -466,7 +466,7 @@ export const appRouter = router({
           actor: auditActorFromContext(ctx),
         });
       }),
-    /** 专用换绑：只变更 CRM 超级管理员绑定，不改变企业、CRM 状态或既有业务数据。 */
+    /** 专用换绑：只变更 ERP 超级管理员绑定，不改变企业、ERP 状态或既有业务数据。 */
     rebindCrmOwner: crmRebindProcedure
       .input(z.object({
         id: z.number().int().positive(),
@@ -588,7 +588,7 @@ export const appRouter = router({
       }),
 
     /**
-     * 前台企业开通 CRM 申请。鉴权：x-portal-key。
+     * 前台企业开通 ERP 申请。鉴权：x-portal-key。
      * 按统一社会信用代码幂等：直接创建/更新商户记录（crmStatus=pending），落后台商户管理页面。
      */
     submitCrmApplication: publicProcedure
@@ -644,9 +644,9 @@ export const appRouter = router({
       }),
 
     /**
-     * 前台校验企业 CRM 访问权限。鉴权：x-portal-key。
+     * 前台校验企业 ERP 访问权限。鉴权：x-portal-key。
      * 入参：统一社会信用代码。返回 allowed / crmStatus / message：
-     * enabled → allowed=true；disabled → "您的CRM权限已经被暂停，请联系客服"；
+     * enabled → allowed=true；disabled → "您的ERP权限已经被暂停，请联系客服"；
      * pending/rejected/none → 对应提示文案。附带 crmThreadNo（后台发信会话编号，用于前台联系客服红点轮询）。
      */
     getCrmAccess: publicProcedure
@@ -659,7 +659,7 @@ export const appRouter = router({
         return db.getCrmAccessByCreditCode(input.creditCode, input.portalUserId);
       }),
     /**
-     * 前台服务端对账 CRM 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
+     * 前台服务端对账 ERP 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
      * 不直接暴露给浏览器。
      */
     getCrmBinding: publicProcedure

@@ -81,13 +81,13 @@ function normalizePortalUserId(value?: string | null) {
   return normalized ? normalized : null;
 }
 
-export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通CRM，请联系CEM管理员。";
+export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通ERP，请联系CEM管理员。";
 
 export function getCrmCompanyConflictMessage(
   crmStatus: string,
   fallbackMessage: string,
 ) {
-  if (crmStatus === "pending") return "该企业的 CRM 开通申请正在审核中";
+  if (crmStatus === "pending") return "该企业的 ERP 开通申请正在审核中";
   if (crmStatus === "enabled") return CRM_COMPANY_ALREADY_ENABLED_MESSAGE;
   return fallbackMessage;
 }
@@ -626,7 +626,7 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
   return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
 }
 
-/** 前台企业开通 CRM 申请入参 */
+/** 前台企业开通 ERP 申请入参 */
 export interface CrmApplicationInput {
   companyName: string;
   creditCode: string;
@@ -647,7 +647,7 @@ export interface CrmApplicationInput {
 }
 
 /**
- * 前台企业开通 CRM 申请：按统一社会信用代码（businessLicense）幂等 upsert 商户记录。
+ * 前台企业开通 ERP 申请：按统一社会信用代码（businessLicense）幂等 upsert 商户记录。
  * 已存在商户 → 补充资料并将 crmStatus 置为 pending（已开通 enabled 的不降级）；
  * 不存在 → 创建新商户记录（source=portal，status=pending，crmStatus=pending）。
  */
@@ -725,7 +725,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
               created: false,
               code: "CRM_COMPANY_APPLICATION_PENDING" as const,
               crmStatus: "pending" as const,
-              message: "该企业的 CRM 开通申请正在审核中",
+              message: "该企业的 ERP 开通申请正在审核中",
             };
           }
           return {
@@ -856,12 +856,12 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
           created: false,
           code: "CRM_COMPANY_APPLICATION_PENDING" as const,
           crmStatus: merchant.crmStatus,
-          message: "该企业的 CRM 开通申请正在审核中",
+          message: "该企业的 ERP 开通申请正在审核中",
         };
   }
 }
 
-/** 后台：设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
+/** 后台：设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
 export async function setMerchantCrmStatus(input: {
   merchantId: number;
   crmStatus: MerchantCrmStatus;
@@ -873,7 +873,7 @@ export async function setMerchantCrmStatus(input: {
   if (!db) throw new Error("Database not available");
   const normalizedNote = input.note?.trim() || null;
   if ((input.crmStatus === "disabled" || input.crmStatus === "rejected") && !normalizedNote) {
-    throw new Error(input.crmStatus === "disabled" ? "暂停 CRM 必须填写原因" : "拒绝 CRM 申请必须填写原因");
+    throw new Error(input.crmStatus === "disabled" ? "暂停 ERP 必须填写原因" : "拒绝 ERP 申请必须填写原因");
   }
 
   return db.transaction(async tx => {
@@ -915,7 +915,7 @@ export async function setMerchantCrmStatus(input: {
         input.crmStatus !== "enabled"
         || !isEquivalentEnabledBinding(latestRows[0], ownerToKeep ?? "")
       ) {
-        throw new Error("商户 CRM 状态已变化，请刷新页面后重试");
+        throw new Error("商户 ERP 状态已变化，请刷新页面后重试");
       }
     }
 
@@ -950,7 +950,7 @@ export async function setMerchantCrmStatus(input: {
   });
 }
 
-/** 后台专用：CRM 超级管理员换绑。普通开通/恢复接口永远不能修改既有 owner。 */
+/** 后台专用：ERP 超级管理员换绑。普通开通/恢复接口永远不能修改既有 owner。 */
 export async function rebindMerchantCrmOwner(input: {
   merchantId: number;
   expectedPortalUserId: string;
@@ -998,7 +998,7 @@ export async function rebindMerchantCrmOwner(input: {
     const merchant = rows[0];
     if (!merchant) throw new Error("商户不存在");
     if (merchant.crmStatus !== "enabled" && merchant.crmStatus !== "disabled") {
-      throw new Error("只有已开通或已暂停的 CRM 企业可以换绑超级管理员");
+      throw new Error("只有已开通或已暂停的 ERP 企业可以换绑超级管理员");
     }
     const oldOwner = normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId);
     if (!oldOwner) throw new Error("当前企业尚未绑定超级管理员，请先完成开通绑定");
@@ -1017,7 +1017,7 @@ export async function rebindMerchantCrmOwner(input: {
     ));
     const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
     if (affectedRows !== 1) {
-      throw new Error("商户 CRM 绑定状态已变化，请刷新页面后重试");
+      throw new Error("商户 ERP 绑定状态已变化，请刷新页面后重试");
     }
 
     await tx.insert(crmOwnerRebindLogs).values({
@@ -1132,8 +1132,8 @@ export async function sendMerchantMessage(input: {
 }
 
 /**
- * 前台：按统一社会信用代码校验 CRM 访问权限。
- * enabled → allowed=true；disabled → 提示"您的CRM权限已经被暂停，请联系客服"；
+ * 前台：按统一社会信用代码校验 ERP 访问权限。
+ * enabled → allowed=true；disabled → 提示"您的ERP权限已经被暂停，请联系客服"；
  * 其余状态（none/pending/rejected/未找到商户）→ 未开通提示。
  */
 export async function getCrmAccessByCreditCode(
@@ -1148,7 +1148,7 @@ export async function getCrmAccessByCreditCode(
       allowed: false,
       code: "CRM_ACCOUNT_REQUIRED" as const,
       crmStatus: "none" as const,
-      message: "请先登录前台账号后再访问 CRM",
+      message: "请先登录前台账号后再访问 ERP",
     };
   }
 
@@ -1161,7 +1161,7 @@ export async function getCrmAccessByCreditCode(
       allowed: false,
       code: "CRM_NOT_ENABLED" as const,
       crmStatus: "none" as const,
-      message: "您尚未开通CRM，请先提交企业开通申请",
+      message: "您尚未开通ERP，请先提交企业开通申请",
     };
   }
 
@@ -1202,10 +1202,10 @@ export async function getCrmAccessByCreditCode(
     };
   }
   const messageMap: Record<string, string> = {
-    disabled: "您的CRM权限已经被暂停，请联系客服",
-    pending: "您的CRM开通申请正在审核中，请耐心等待",
-    rejected: "您的CRM开通申请未通过，如有疑问请联系客服",
-    none: "您尚未开通CRM，请先提交企业开通申请",
+    disabled: "您的ERP权限已经被暂停，请联系客服",
+    pending: "您的ERP开通申请正在审核中，请耐心等待",
+    rejected: "您的ERP开通申请未通过，如有疑问请联系客服",
+    none: "您尚未开通ERP，请先提交企业开通申请",
   };
   return {
     allowed: false,
@@ -1223,7 +1223,7 @@ export async function getCrmAccessByCreditCode(
   };
 }
 
-/** 服务端对账：返回统一社会信用代码对应的权威 CRM owner；仅由 portal-key 路由暴露。 */
+/** 服务端对账：返回统一社会信用代码对应的权威 ERP owner；仅由 portal-key 路由暴露。 */
 export async function getCrmBindingByCreditCode(creditCodeInput: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

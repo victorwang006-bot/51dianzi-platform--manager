@@ -55,8 +55,8 @@ const crmStatusMap: Record<CrmStatus, { label: string; style: "success" | "warni
 };
 
 const crmActionLabels: Record<string, string> = {
-  enabled: "通过（开通 CRM）",
-  disabled: "暂停 CRM",
+  enabled: "通过（开通 ERP）",
+  disabled: "暂停 ERP",
   rejected: "拒绝申请",
 };
 
@@ -115,10 +115,10 @@ export default function Merchants() {
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
     onSuccess: (_d, vars) => {
       toast.success(
-        vars.crmStatus === "enabled" && crmTarget?.currentStatus === "disabled" ? "CRM 已恢复"
-          : vars.crmStatus === "enabled" ? "已绑定前台用户并开通 CRM"
+        vars.crmStatus === "enabled" && crmTarget?.currentStatus === "disabled" ? "ERP 已恢复"
+          : vars.crmStatus === "enabled" ? "已绑定前台用户并开通 ERP"
           : vars.crmStatus === "rejected" ? "已拒绝该申请"
-          : "CRM 已暂停",
+          : "ERP 已暂停",
       );
       utils.merchant.list.invalidate();
       setCrmTarget(null);
@@ -130,7 +130,7 @@ export default function Merchants() {
 
   const rebindMutation = trpc.merchant.rebindCrmOwner.useMutation({
     onSuccess: data => {
-      toast.success(data.idempotent ? "该换绑请求已处理" : "CRM 超级管理员已换绑");
+      toast.success(data.idempotent ? "该换绑请求已处理" : "ERP 超级管理员已换绑");
       utils.merchant.list.invalidate();
       setRebindTarget(null);
       setRebindPortalUserId("");
@@ -208,7 +208,7 @@ export default function Merchants() {
                       <th>联系人</th>
                       <th>销售负责人</th>
                       <th>状态</th>
-                      <th>CRM</th>
+                      <th>ERP</th>
                       <th>协议</th>
                       <th>资质到期</th>
                       <th>入驻时间</th>
@@ -329,7 +329,7 @@ export default function Merchants() {
         </DialogContent>
       </Dialog>
 
-      {/* CRM 通过/拒绝/暂停对话框 */}
+      {/* ERP 通过/拒绝/暂停对话框 */}
       <Dialog open={crmTarget !== null} onOpenChange={open => {
         if (!open) {
           setCrmTarget(null);
@@ -342,9 +342,9 @@ export default function Merchants() {
             <DialogTitle>{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}</DialogTitle>
             <DialogDescription>
               目标商户：{crmTarget?.name}。
-              {crmTarget?.nextStatus === "enabled" && "通过后仅绑定的前台账号可以进入并使用 CRM 系统。"}
-              {crmTarget?.nextStatus === "disabled" && "暂停后该商户将无法进入 CRM 页面，前台会提示：您的CRM权限已经被暂停，请联系客服。"}
-              {crmTarget?.nextStatus === "rejected" && "拒绝后该商户的 CRM 开通申请将被驳回，可通过「发信」告知客户原因。"}
+              {crmTarget?.nextStatus === "enabled" && "通过后仅绑定的前台账号可以进入并使用 ERP 系统。"}
+              {crmTarget?.nextStatus === "disabled" && "暂停后该商户将无法进入 ERP 页面，前台会提示：您的ERP权限已经被暂停，请联系客服。"}
+              {crmTarget?.nextStatus === "rejected" && "拒绝后该商户的 ERP 开通申请将被驳回，可通过「发信」告知客户原因。"}
             </DialogDescription>
           </DialogHeader>
           {crmTarget?.nextStatus === "enabled" && (
@@ -354,7 +354,7 @@ export default function Merchants() {
                 id="crm-portal-user-id"
                 value={crmPortalUserId}
                 onChange={e => setCrmPortalUserId(e.target.value)}
-                placeholder="请输入要开通 CRM 的前台用户 ID"
+                placeholder="请输入要开通 ERP 的前台用户 ID"
                 disabled={Boolean(crmTarget.currentOwner)}
               />
               <p className="text-xs text-muted-foreground">
@@ -401,7 +401,7 @@ export default function Merchants() {
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="请输入要发送给客户的消息内容，例如：您的CRM开通申请材料不完整，请补充营业执照扫描件…"
+            placeholder="请输入要发送给客户的消息内容，例如：您的ERP开通申请材料不完整，请补充营业执照扫描件…"
             value={msgContent}
             onChange={e => setMsgContent(e.target.value)}
             rows={5}

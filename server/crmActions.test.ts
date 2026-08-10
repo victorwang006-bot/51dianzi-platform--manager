@@ -67,11 +67,11 @@ async function cleanup() {
   await conn.delete(merchants).where(eq(merchants.businessLicense, TEST_CREDIT_CODE));
 }
 
-describe("商户 CRM 操作重构（第三十三轮）", () => {
+describe("商户 ERP 操作重构（第三十三轮）", () => {
   beforeAll(async () => { await cleanup(); });
   afterAll(async () => { await cleanup(); });
 
-  it("提交 CRM 申请 → getCrmAccess 返回 pending 审核中提示", async () => {
+  it("提交 ERP 申请 → getCrmAccess 返回 pending 审核中提示", async () => {
     const portal = appRouter.createCaller(portalCtx()).portal;
     const submitted = await portal.submitCrmApplication({
       companyName: TEST_COMPANY,
@@ -168,7 +168,7 @@ describe("商户 CRM 操作重构（第三十三轮）", () => {
     });
     expect(disabled.allowed).toBe(false);
     expect(disabled.crmStatus).toBe("disabled");
-    expect(disabled.message).toBe("您的CRM权限已经被暂停，请联系客服");
+    expect(disabled.message).toBe("您的ERP权限已经被暂停，请联系客服");
   });
 
   it("未知信用代码 → 未开通提示；无 portal key → 拒绝访问", async () => {

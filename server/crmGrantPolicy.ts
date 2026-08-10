@@ -14,7 +14,7 @@ export function assertMerchantCrmStatusTransition(
 ) {
   if (fromStatus === toStatus) return;
   if (!CRM_STATUS_TRANSITIONS[fromStatus].includes(toStatus)) {
-    throw new Error(`CRM 状态不能从 ${fromStatus} 直接变更为 ${toStatus}`);
+    throw new Error(`ERP 状态不能从 ${fromStatus} 直接变更为 ${toStatus}`);
   }
 }
 
@@ -67,7 +67,7 @@ export function decideMerchantCrmGrant(
 
   const requestedOwner = normalizeCrmPortalUserId(input.portalUserId);
   if (!existingOwner && !requestedOwner) {
-    throw new Error("开通 CRM 前必须填写前台用户 ID");
+    throw new Error("开通 ERP 前必须填写前台用户 ID");
   }
   if (existingOwner && requestedOwner && existingOwner !== requestedOwner) {
     throw new Error("该商户已绑定其他前台账号，不能通过开通操作直接换绑");
