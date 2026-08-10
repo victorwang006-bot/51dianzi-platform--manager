@@ -81,6 +81,17 @@ function normalizePortalUserId(value?: string | null) {
   return normalized ? normalized : null;
 }
 
+export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通CRM，请联系CRM管理员。";
+
+export function getCrmCompanyConflictMessage(
+  crmStatus: string,
+  fallbackMessage: string,
+) {
+  if (crmStatus === "pending") return "该企业的 CRM 开通申请正在审核中";
+  if (crmStatus === "enabled") return CRM_COMPANY_ALREADY_ENABLED_MESSAGE;
+  return fallbackMessage;
+}
+
 export type MaterialAuditActor = {
   operatorId?: number | null;
   operatorName?: string | null;
@@ -738,9 +749,10 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
             created: false,
             code,
             crmStatus: merchant.crmStatus,
-            message: merchant.crmStatus === "pending"
-              ? "该企业的 CRM 开通申请正在审核中"
-              : "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
+            message: getCrmCompanyConflictMessage(
+              merchant.crmStatus,
+              "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
+            ),
           };
         }
 
@@ -1171,9 +1183,10 @@ export async function getCrmAccessByCreditCode(
           ? "CRM_COMPANY_ALREADY_ENABLED" as const
           : "CRM_COMPANY_ALREADY_BOUND" as const,
       crmStatus: merchant.crmStatus,
-      message: merchant.crmStatus === "pending"
-        ? "该企业的 CRM 开通申请正在审核中"
-        : "该企业已绑定其他前台账号",
+      message: getCrmCompanyConflictMessage(
+        merchant.crmStatus,
+        "该企业已绑定其他前台账号",
+      ),
     };
   }
 
