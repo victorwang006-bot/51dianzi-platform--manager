@@ -1,13 +1,10 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity,
-  Building2,
-  CalendarPlus,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   RefreshCw,
   Search,
-  UserRound,
-  Users,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +30,10 @@ export default function PortalUsers() {
   const [page, setPage] = useState(1);
   const [draftKeyword, setDraftKeyword] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+  const tableRegionRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
   const input = useMemo(() => ({
     page,
     pageSize: PAGE_SIZE,
@@ -43,15 +44,75 @@ export default function PortalUsers() {
   const stats = statsQuery.data;
   const pageCount = Math.max(1, Math.ceil((query.data?.total ?? 0) / PAGE_SIZE));
   const isRefreshing = query.isFetching || statsQuery.isFetching;
+  const summaryItems = [
+    { label: "注册用户", value: stats?.totalUsers ?? "—" },
+    { label: "普通用户", value: stats?.ordinaryUsers ?? "—" },
+    { label: "ERP用户", value: stats?.erpUsers ?? "—" },
+    { label: "今日注册", value: stats?.todayRegistered ?? "—" },
+    { label: "近7日活跃", value: stats?.sevenDayActive ?? "—" },
+  ];
+
+  const getTableScrollElement = () =>
+    tableRegionRef.current?.querySelector<HTMLElement>('[data-slot="table-container"]') ?? null;
+
+  useLayoutEffect(() => {
+    const tableScrollElement = getTableScrollElement();
+    const topScrollElement = topScrollRef.current;
+    if (!tableScrollElement || !topScrollElement) {
+      setTableScrollWidth(0);
+      setHasHorizontalOverflow(false);
+      return;
+    }
+
+    let syncing = false;
+    const measure = () => {
+      const nextWidth = tableScrollElement.scrollWidth;
+      setTableScrollWidth(nextWidth);
+      setHasHorizontalOverflow(nextWidth > tableScrollElement.clientWidth + 1);
+      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
+    };
+    const syncTopScroll = () => {
+      if (syncing) return;
+      syncing = true;
+      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
+      syncing = false;
+    };
+    const syncTableScroll = () => {
+      if (syncing) return;
+      syncing = true;
+      tableScrollElement.scrollLeft = topScrollElement.scrollLeft;
+      syncing = false;
+    };
+
+    tableScrollElement.addEventListener("scroll", syncTopScroll, { passive: true });
+    topScrollElement.addEventListener("scroll", syncTableScroll, { passive: true });
+    window.addEventListener("resize", measure);
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(measure);
+    resizeObserver?.observe(tableScrollElement);
+    measure();
+
+    return () => {
+      tableScrollElement.removeEventListener("scroll", syncTopScroll);
+      topScrollElement.removeEventListener("scroll", syncTableScroll);
+      window.removeEventListener("resize", measure);
+      resizeObserver?.disconnect();
+    };
+  }, [query.data?.rows.length]);
 
   const submitSearch = () => {
     setPage(1);
     setKeyword(draftKeyword.trim());
   };
 
+  const scrollTableBy = (distance: number) => {
+    getTableScrollElement()?.scrollBy({ left: distance, behavior: "smooth" });
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-4 p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">用户管理</h1>
@@ -61,6 +122,7 @@ export default function PortalUsers() {
           </div>
           <Button
             variant="outline"
+            size="sm"
             onClick={() => void Promise.all([query.refetch(), statsQuery.refetch()])}
             disabled={isRefreshing}
           >
@@ -69,45 +131,24 @@ export default function PortalUsers() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <Card>
-            <CardContent className="flex items-center justify-between p-5">
-              <div><p className="text-sm text-muted-foreground">注册用户</p><p className="mt-2 text-2xl font-semibold">{stats?.totalUsers ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">前台真实注册账号</p></div>
-              <div className="rounded-full bg-blue-50 p-3 text-blue-600"><Users className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center justify-between p-5">
-              <div><p className="text-sm text-muted-foreground">普通用户</p><p className="mt-2 text-2xl font-semibold">{stats?.ordinaryUsers ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">尚未开通ERP</p></div>
-              <div className="rounded-full bg-slate-100 p-3 text-slate-600"><UserRound className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center justify-between p-5">
-              <div><p className="text-sm text-muted-foreground">ERP用户</p><p className="mt-2 text-2xl font-semibold">{stats?.erpUsers ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">后台已开通并绑定</p></div>
-              <div className="rounded-full bg-emerald-50 p-3 text-emerald-600"><Building2 className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center justify-between p-5">
-              <div><p className="text-sm text-muted-foreground">今日注册</p><p className="mt-2 text-2xl font-semibold">{stats?.todayRegistered ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">自然日新增账号</p></div>
-              <div className="rounded-full bg-violet-50 p-3 text-violet-600"><CalendarPlus className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center justify-between p-5">
-              <div><p className="text-sm text-muted-foreground">近7日活跃</p><p className="mt-2 text-2xl font-semibold">{stats?.sevenDayActive ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">最近7×24小时登录</p></div>
-              <div className="rounded-full bg-amber-50 p-3 text-amber-600"><Activity className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>
+        <div
+          aria-label="用户统计摘要"
+          className="flex flex-wrap items-center gap-x-7 gap-y-2 border-y py-2 text-sm"
+        >
+          {summaryItems.map(item => (
+            <div key={item.label} className="flex items-baseline gap-2 whitespace-nowrap">
+              <span className="text-muted-foreground">{item.label}</span>
+              <strong className="text-base font-semibold text-foreground">{item.value}</strong>
+            </div>
+          ))}
         </div>
 
         {statsQuery.error && (
-          <Card><CardContent className="p-4 text-sm text-destructive">用户统计暂不可用：{statsQuery.error.message}</CardContent></Card>
+          <Card><CardContent className="p-3 text-sm text-destructive">用户统计暂不可用：{statsQuery.error.message}</CardContent></Card>
         )}
 
         <Card>
-          <CardContent className="flex flex-col gap-3 pt-6 md:flex-row">
+          <CardContent className="p-3">
             <div className="flex flex-1 gap-2">
               <Input
                 value={draftKeyword}
@@ -133,8 +174,43 @@ export default function PortalUsers() {
             ) : !query.data?.rows.length ? (
               <div className="p-12 text-center text-sm text-muted-foreground">没有符合条件的前台注册用户</div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div ref={tableRegionRef} className="portal-user-table">
+                <div
+                  className={`${hasHorizontalOverflow ? "flex" : "hidden"} items-center gap-2 border-b bg-muted/25 px-3 py-2`}
+                  aria-hidden={!hasHorizontalOverflow}
+                >
+                    <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">左右拖动查看全部字段</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      aria-label="向左移动用户表格"
+                      onClick={() => scrollTableBy(-360)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div
+                      ref={topScrollRef}
+                      className="portal-user-top-scroll h-[16px] min-w-0 flex-1 overflow-x-auto"
+                      role="region"
+                      aria-label="用户表格横向滚动"
+                      tabIndex={0}
+                    >
+                      <div style={{ width: Math.max(tableScrollWidth, 1), height: 1 }} />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      aria-label="向右移动用户表格"
+                      onClick={() => scrollTableBy(360)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                <Table className="min-w-[1320px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>用户</TableHead>
@@ -187,6 +263,36 @@ export default function PortalUsers() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .portal-user-table [data-slot="table-container"] {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .portal-user-table [data-slot="table-container"]::-webkit-scrollbar {
+          display: none;
+        }
+        .portal-user-top-scroll {
+          scrollbar-color: #6f8fa8 #dce7ef;
+          scrollbar-width: auto;
+        }
+        .portal-user-top-scroll::-webkit-scrollbar {
+          height: 14px;
+        }
+        .portal-user-top-scroll::-webkit-scrollbar-track {
+          border-radius: 999px;
+          background: #dce7ef;
+        }
+        .portal-user-top-scroll::-webkit-scrollbar-thumb {
+          min-width: 72px;
+          border: 2px solid #dce7ef;
+          border-radius: 999px;
+          background: #6f8fa8;
+        }
+        .portal-user-top-scroll::-webkit-scrollbar-thumb:hover {
+          background: #476f8f;
+        }
+      `}</style>
     </DashboardLayout>
   );
 }

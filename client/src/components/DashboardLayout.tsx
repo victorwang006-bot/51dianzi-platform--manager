@@ -57,7 +57,7 @@ const menuGroups = [
       { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission, nested: false },
       { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false },
       { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
-      { icon: Users, label: "用户管理", path: "/portal-users", permission: "messages.read" as AdminPermission, nested: true },
+      { icon: Users, label: "用户管理", path: "/portal-users", permission: "messages.read" as AdminPermission, nested: false },
     ],
   },
   {
