@@ -30,8 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Search } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -87,6 +87,10 @@ export default function Merchants() {
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+  const merchantTableScrollRef = useRef<HTMLDivElement>(null);
+  const merchantTopScrollRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
   const isSuperAdmin = (user?.adminRole ?? "super_admin") === "super_admin";
@@ -153,6 +157,56 @@ export default function Merchants() {
     setPage(1);
   };
 
+  useLayoutEffect(() => {
+    const tableScrollElement = merchantTableScrollRef.current;
+    const topScrollElement = merchantTopScrollRef.current;
+    if (!tableScrollElement || !topScrollElement) {
+      setTableScrollWidth(0);
+      setHasHorizontalOverflow(false);
+      return;
+    }
+
+    let syncing = false;
+    const measure = () => {
+      const nextWidth = tableScrollElement.scrollWidth;
+      setTableScrollWidth(nextWidth);
+      setHasHorizontalOverflow(nextWidth > tableScrollElement.clientWidth + 1);
+      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
+    };
+    const syncTopScroll = () => {
+      if (syncing) return;
+      syncing = true;
+      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
+      syncing = false;
+    };
+    const syncTableScroll = () => {
+      if (syncing) return;
+      syncing = true;
+      tableScrollElement.scrollLeft = topScrollElement.scrollLeft;
+      syncing = false;
+    };
+
+    tableScrollElement.addEventListener("scroll", syncTopScroll, { passive: true });
+    topScrollElement.addEventListener("scroll", syncTableScroll, { passive: true });
+    window.addEventListener("resize", measure);
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(measure);
+    resizeObserver?.observe(tableScrollElement);
+    measure();
+
+    return () => {
+      tableScrollElement.removeEventListener("scroll", syncTopScroll);
+      topScrollElement.removeEventListener("scroll", syncTableScroll);
+      window.removeEventListener("resize", measure);
+      resizeObserver?.disconnect();
+    };
+  }, [data?.data.length]);
+
+  const scrollMerchantTableBy = (distance: number) => {
+    merchantTableScrollRef.current?.scrollBy({ left: distance, behavior: "smooth" });
+  };
+
   return (
     <DashboardLayout>
       <PageHeader title="商户管理" description="商户入驻审核、资质管理、协议状态与结算账户配置" />
@@ -199,8 +253,44 @@ export default function Merchants() {
             <EmptyState message="暂无商户数据" />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="admin-table">
+              <div className="merchant-table-region">
+                <div
+                  className={`${hasHorizontalOverflow ? "flex" : "hidden"} items-center gap-2 border-b bg-muted/25 px-3 py-2`}
+                  aria-hidden={!hasHorizontalOverflow}
+                >
+                  <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">左右拖动查看全部商户字段</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    aria-label="向左移动商户表格"
+                    onClick={() => scrollMerchantTableBy(-360)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div
+                    ref={merchantTopScrollRef}
+                    className="merchant-top-scroll h-[16px] min-w-0 flex-1 overflow-x-auto"
+                    role="region"
+                    aria-label="商户表格横向滚动"
+                    tabIndex={0}
+                  >
+                    <div style={{ width: Math.max(tableScrollWidth, 1), height: 1 }} />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    aria-label="向右移动商户表格"
+                    onClick={() => scrollMerchantTableBy(360)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div ref={merchantTableScrollRef} className="merchant-table-scroll overflow-x-auto">
+                  <table className="admin-table">
                   <thead>
                     <tr>
                       <th>商户编号</th>
@@ -291,7 +381,8 @@ export default function Merchants() {
                       );
                     })}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
               <Pagination page={page} pageSize={20} total={data.total} onPageChange={setPage} />
             </>
@@ -458,6 +549,36 @@ export default function Merchants() {
           )}
         </DialogContent>
       </Dialog>
+
+      <style>{`
+        .merchant-table-scroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .merchant-table-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .merchant-top-scroll {
+          scrollbar-color: #6f8fa8 #dce7ef;
+          scrollbar-width: auto;
+        }
+        .merchant-top-scroll::-webkit-scrollbar {
+          height: 14px;
+        }
+        .merchant-top-scroll::-webkit-scrollbar-track {
+          border-radius: 999px;
+          background: #dce7ef;
+        }
+        .merchant-top-scroll::-webkit-scrollbar-thumb {
+          min-width: 72px;
+          border: 2px solid #dce7ef;
+          border-radius: 999px;
+          background: #6f8fa8;
+        }
+        .merchant-top-scroll::-webkit-scrollbar-thumb:hover {
+          background: #476f8f;
+        }
+      `}</style>
     </DashboardLayout>
   );
 }
