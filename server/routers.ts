@@ -28,6 +28,7 @@ import {
   getPlatformOrderStats,
   listPlatformOrders,
 } from "./platformOrderApi";
+import { getPlatformUserStats, listPlatformUsers } from "./platformUserApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
@@ -249,6 +250,38 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         return recoverUsernameWithCode(input.channel, input.target, input.code);
+      }),
+  }),
+
+  // ─── 前台注册用户（主站用户表为唯一事实源，后台仅做代理）──────────────────
+  frontendUser: router({
+    stats: messageReadProcedure.query(async () => {
+      const [platformStats, erpUserIds] = await Promise.all([
+        getPlatformUserStats(),
+        db.getEnabledErpPortalUserIds(),
+      ]);
+      const erpUsers = erpUserIds.length;
+      return {
+        ...platformStats,
+        erpUsers,
+        ordinaryUsers: Math.max(platformStats.totalUsers - erpUsers, 0),
+      };
+    }),
+    list: messageReadProcedure
+      .input(pageInput.extend({ keyword: z.string().trim().max(100).optional() }))
+      .query(async ({ input }) => {
+        const [result, erpUserIds] = await Promise.all([
+          listPlatformUsers(input),
+          db.getEnabledErpPortalUserIds(),
+        ]);
+        const erpSet = new Set(erpUserIds);
+        return {
+          ...result,
+          rows: result.rows.map(user => ({
+            ...user,
+            userType: erpSet.has(String(user.id)) ? "erp" as const : "ordinary" as const,
+          })),
+        };
       }),
   }),
 

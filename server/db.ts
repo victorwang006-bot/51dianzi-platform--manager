@@ -523,6 +523,23 @@ export async function appendMaterialImage(
 
 // ─── 商户 ─────────────────────────────────────────────────────────────────────
 
+/** 权威ERP用户集合：仅统计已开通且已绑定前台账号的不同用户ID。 */
+export async function getEnabledErpPortalUserIds() {
+  const db = await getDb();
+  if (!db) return [] as string[];
+  const rows = await db
+    .selectDistinct({ portalUserId: merchants.crmOwnerPortalUserId })
+    .from(merchants)
+    .where(and(
+      eq(merchants.crmStatus, "enabled"),
+      sql`${merchants.crmOwnerPortalUserId} IS NOT NULL`,
+      sql`TRIM(${merchants.crmOwnerPortalUserId}) <> ''`,
+    ));
+  return rows
+    .map(row => row.portalUserId?.trim() ?? "")
+    .filter((value): value is string => value.length > 0);
+}
+
 export async function getMerchants(params: { status?: string; search?: string; page?: number; pageSize?: number }) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
