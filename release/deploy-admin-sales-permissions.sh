@@ -123,9 +123,11 @@ sha() { sha256sum "$1" | awk '{print $1}'; }
 
 rollback() {
   status="${1:-1}"
+  failed_line="${2:-unknown}"
+  failed_command="${3:-unknown}"
   trap - ERR
   set +e
-  log "failure status=$status; restoring both admin links"
+  log "failure status=$status line=$failed_line command=$failed_command; restoring both admin links"
   if [[ "$service_switched" == '1' && -d "$old_service" ]]; then
     rm -f "$next_service"
     ln -s "$old_service" "$next_service"
@@ -144,7 +146,7 @@ rollback() {
   rm -f "$remote_archive"
   exit "$status"
 }
-trap 'rollback "$?"' ERR
+trap 'rollback "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
 [[ "$(hostname)" == 'iZbp19cboe4cce8vc6sqz7Z' ]]
 [[ -L "$service_link" && -L "$static_link" ]]
@@ -174,6 +176,9 @@ tar -xzf "$remote_archive" -C "$release_root"
 mv "$release_root/service" "$service_release"
 mv "$release_root/subdomain" "$static_release"
 rm -f "$remote_archive"
+# /opt/releases 下的新目录必须允许 nginx 用户穿越；敏感 ecosystem 文件随后单独收紧为 0600。
+chmod 0755 "$release_root" "$service_release" "$static_release"
+chmod -R a+rX "$service_release/dist" "$static_release/dist"
 cp -p "$old_service/ecosystem.config.cjs" "$service_release/ecosystem.config.cjs"
 chmod 0600 "$service_release/ecosystem.config.cjs"
 if [[ -L "$old_service/uploads" ]]; then
@@ -187,12 +192,14 @@ if command -v corepack >/dev/null 2>&1; then pnpm_command=(corepack pnpm); else 
 NODE_ENV=production "${pnpm_command[@]}" install --prod --frozen-lockfile
 node scripts/apply-sales-permissions-schema.mjs --from-ecosystem-config "$service_release/ecosystem.config.cjs"
 
+log 'validating service and static release artifacts'
 [[ -f "$service_release/dist/index.js" ]]
 [[ -f "$service_release/dist/public/index.html" ]]
 [[ -f "$static_release/dist/public/index.html" ]]
 grep -Eq 'src="/admin/assets/index-[^"]+\.js"' "$service_release/dist/public/index.html"
 grep -Eq 'src="/assets/index-[^"]+\.js"' "$static_release/dist/public/index.html"
 runuser -u nginx -- test -r "$static_release/dist/public/index.html"
+runuser -u nginx -- test -r "$service_release/dist/public/index.html"
 nginx -t
 
 rm -f "$next_service" "$next_static"
