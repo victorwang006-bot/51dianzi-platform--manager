@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDatabaseBeijingDateTime } from "@/lib/beijingTime";
 import { trpc } from "@/lib/trpc";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowDownToLine, Boxes, CloudOff, ImageIcon, Loader2, Search } from "lucide-react";
@@ -47,10 +48,7 @@ function formatPrice(v: string | null) {
 }
 
 function formatTime(v: Date | string | null) {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("zh-CN", { hour12: false });
+  return formatDatabaseBeijingDateTime(v, "—", true);
 }
 
 function parsePhotos(photos: unknown): { url?: string; name?: string }[] {

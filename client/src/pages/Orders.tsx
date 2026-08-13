@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDatabaseBeijingDateTime } from "@/lib/beijingTime";
 import { trpc } from "@/lib/trpc";
 
 const statusMeta = {
@@ -23,7 +24,7 @@ const payMethodLabels = { corp: "对公转账", alipay: "支付宝", wechat: "�
 const money = (value: string | number | null | undefined) =>
   `¥${Number(value ?? 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const dateTime = (value: Date | string | null | undefined) =>
-  value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
+  formatDatabaseBeijingDateTime(value, "—", true);
 
 function OrderStatus({ status }: { status: keyof typeof statusMeta }) {
   const meta = statusMeta[status];

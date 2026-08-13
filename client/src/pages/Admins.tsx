@@ -4,6 +4,7 @@ import {
   Pagination,
   StatusBadge,
   formatDateTime,
+  formatInstantDateTime,
 } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -274,7 +275,7 @@ export default function Admins() {
                             style={a.status === "active" ? "success" : a.status === "locked" ? "warning" : "gray"}
                           />
                         </td>
-                        <td className="text-xs text-muted-foreground">{formatDateTime(a.lastLoginAt)}</td>
+                        <td className="text-xs text-muted-foreground">{formatInstantDateTime(a.lastLoginAt)}</td>
                         <td className="text-xs text-muted-foreground">{formatDateTime(a.createdAt)}</td>
                         <td>
                           <div className="flex items-center gap-1.5">

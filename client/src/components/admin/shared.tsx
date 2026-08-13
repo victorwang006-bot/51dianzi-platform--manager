@@ -1,4 +1,8 @@
 import { Button } from "@/components/ui/button";
+import {
+  formatBeijingDateTime,
+  formatDatabaseBeijingDateTime,
+} from "@/lib/beijingTime";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
 
@@ -218,7 +222,9 @@ export function formatMoney(value: string | number | null | undefined): string {
 }
 
 export function formatDateTime(value: Date | string | null | undefined): string {
-  if (!value) return "-";
-  const d = typeof value === "string" ? new Date(value) : value;
-  return d.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return formatDatabaseBeijingDateTime(value);
+}
+
+export function formatInstantDateTime(value: Date | string | null | undefined): string {
+  return formatBeijingDateTime(value);
 }

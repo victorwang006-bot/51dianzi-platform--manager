@@ -19,12 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDatabaseBeijingDateTime } from "@/lib/beijingTime";
 import { trpc } from "@/lib/trpc";
 
 const PAGE_SIZE = 20;
 
 const dateTime = (value: Date | string | null | undefined) =>
-  value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
+  formatDatabaseBeijingDateTime(value, "—", true);
 
 export default function PortalUsers() {
   const [page, setPage] = useState(1);

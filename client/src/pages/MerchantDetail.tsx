@@ -5,6 +5,7 @@ import {
   merchantStatusMap,
   agreementStatusMap,
   formatDateTime,
+  formatInstantDateTime,
 } from "@/components/admin/shared";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { formatBeijingDate } from "@/lib/beijingTime";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -192,7 +194,7 @@ export default function MerchantDetail() {
                   label="成立日期"
                   value={
                     merchant.establishedDate
-                      ? new Date(merchant.establishedDate).toLocaleDateString("zh-CN")
+                      ? formatBeijingDate(merchant.establishedDate)
                       : null
                   }
                   icon={CalendarDays}
@@ -201,7 +203,7 @@ export default function MerchantDetail() {
                   label="营业执照到期"
                   value={
                     merchant.licenseExpiry
-                      ? new Date(merchant.licenseExpiry).toLocaleDateString("zh-CN")
+                      ? formatBeijingDate(merchant.licenseExpiry)
                       : null
                   }
                   icon={ShieldCheck}
@@ -258,7 +260,7 @@ export default function MerchantDetail() {
               {merchant.source === "portal" && (
                 <p className="text-xs text-[#8a94a6] mt-3">
                   工商信息由前台商家提交
-                  {merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}
+                  {merchant.submittedAt ? ` · 提交时间 ${formatInstantDateTime(merchant.submittedAt)}` : ""}
                 </p>
               )}
           </CollapsibleCard>
@@ -269,7 +271,7 @@ export default function MerchantDetail() {
                 <p className="text-sm text-foreground">{merchant.reviewNote}</p>
                 {merchant.reviewedAt && (
                   <p className="text-xs text-[#8a94a6] mt-2">
-                    审核时间：{formatDateTime(merchant.reviewedAt)}
+                    审核时间：{formatInstantDateTime(merchant.reviewedAt)}
                   </p>
                 )}
             </CollapsibleCard>
