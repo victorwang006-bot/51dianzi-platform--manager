@@ -49,14 +49,14 @@ describe("后台商城订单严格只读契约", () => {
     expect(ordersPageSource).not.toContain("确认订单完成");
   });
 
-  it("订单管理位于商户管理下且订单详情路由保持高亮", () => {
+  it("订单管理与商户管理同级且订单详情路由保持高亮", () => {
     const merchantIndex = dashboardSource.indexOf('label: "商户管理"');
     const orderIndex = dashboardSource.indexOf('label: "订单管理"');
     const messageIndex = dashboardSource.indexOf('label: "消息中心"');
     expect(merchantIndex).toBeGreaterThan(-1);
     expect(orderIndex).toBeGreaterThan(merchantIndex);
     expect(orderIndex).toBeLessThan(messageIndex);
-    expect(dashboardSource.slice(orderIndex, orderIndex + 180)).toContain('nested: true');
+    expect(dashboardSource.slice(orderIndex, orderIndex + 180)).toContain('nested: false');
     expect(dashboardSource).not.toContain('label: "商城订单"');
     expect(dashboardSource).toContain('location.startsWith(`${path}/`)');
   });

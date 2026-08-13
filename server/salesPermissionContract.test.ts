@@ -12,6 +12,7 @@ const routers = read("server/routers.ts");
 const db = read("server/db.ts");
 const adminsPage = read("client/src/pages/Admins.tsx");
 const dashboard = read("client/src/components/DashboardLayout.tsx");
+const ordersPage = read("client/src/pages/Orders.tsx");
 const orderProxy = read("server/platformOrderApi.ts");
 
 describe("后台双角色与销售权限实施契约", () => {
@@ -64,11 +65,19 @@ describe("后台双角色与销售权限实施契约", () => {
     expect(routers).toContain("salesStaffCodes: z.array");
   });
 
-  it("普通用户菜单仅由商户与订单权限可见，订单保持商户管理子项", () => {
+  it("普通用户菜单仅显示商户与订单，且订单管理与商户管理为同级入口", () => {
     expect(dashboard).toContain('label: "商户管理", path: "/merchants", permission: "merchants.read"');
-    expect(dashboard).toContain('label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: true');
+    expect(dashboard).toContain('label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false');
     expect(permissions).not.toContain('merchant_mgr: ["materials.read"');
     expect(permissions).not.toContain('merchant_mgr: ["messages.read"');
+  });
+
+  it("订单顶部统计区域采用两列移动端、四列桌面端的紧凑卡片", () => {
+    expect(ordersPage).toContain('grid grid-cols-2 gap-2.5 xl:grid-cols-4');
+    expect(ordersPage.match(/min-h-\[88px\]/g)).toHaveLength(4);
+    expect(ordersPage).toContain('rounded-lg bg-blue-50 p-2');
+    expect(ordersPage).toContain('rounded-full border px-2.5 py-1 text-xs');
+    expect(ordersPage).not.toContain('flex items-center justify-between p-5');
   });
 
   it("商户与订单范围均由服务端根据账号范围计算", () => {

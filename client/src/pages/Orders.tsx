@@ -55,7 +55,7 @@ function OrderList() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-4 p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">订单管理</h1>
@@ -66,21 +66,21 @@ function OrderList() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单总数</p><p className="mt-2 text-2xl font-semibold">{stats?.totalOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">今日 {stats?.todayOrders ?? "—"} 单</p></div><div className="rounded-full bg-blue-50 p-3 text-blue-600"><ShoppingCart className="h-5 w-5" /></div></CardContent></Card>
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单总额</p><p className="mt-2 text-2xl font-semibold">{stats ? money(stats.grossAmount) : "—"}</p><p className="mt-1 text-xs text-muted-foreground">含全部订单状态</p></div><div className="rounded-full bg-emerald-50 p-3 text-emerald-600"><CircleDollarSign className="h-5 w-5" /></div></CardContent></Card>
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">近7日订单</p><p className="mt-2 text-2xl font-semibold">{stats?.sevenDayOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">最近7×24小时</p></div><div className="rounded-full bg-violet-50 p-3 text-violet-600"><CalendarDays className="h-5 w-5" /></div></CardContent></Card>
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">交易用户</p><p className="mt-2 text-2xl font-semibold">{stats?.buyerCount ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">供应商 {stats?.sellerCount ?? "—"} 家</p></div><div className="rounded-full bg-amber-50 p-3 text-amber-600"><Users className="h-5 w-5" /></div></CardContent></Card>
+        <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+          <Card><CardContent className="flex min-h-[88px] items-center justify-between gap-2 p-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">订单总数</p><div className="mt-1 flex flex-wrap items-baseline gap-x-2"><p className="text-xl font-semibold tabular-nums">{stats?.totalOrders ?? "—"}</p><span className="text-[11px] text-muted-foreground">今日 {stats?.todayOrders ?? "—"}</span></div></div><div className="shrink-0 rounded-lg bg-blue-50 p-2 text-blue-600"><ShoppingCart className="h-4 w-4" /></div></CardContent></Card>
+          <Card><CardContent className="flex min-h-[88px] items-center justify-between gap-2 p-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">订单总额</p><p className="mt-1 break-all text-lg font-semibold tracking-tight tabular-nums sm:text-xl">{stats ? money(stats.grossAmount) : "—"}</p></div><div className="shrink-0 rounded-lg bg-emerald-50 p-2 text-emerald-600"><CircleDollarSign className="h-4 w-4" /></div></CardContent></Card>
+          <Card><CardContent className="flex min-h-[88px] items-center justify-between gap-2 p-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">近7日订单</p><p className="mt-1 text-xl font-semibold tabular-nums">{stats?.sevenDayOrders ?? "—"}</p></div><div className="shrink-0 rounded-lg bg-violet-50 p-2 text-violet-600"><CalendarDays className="h-4 w-4" /></div></CardContent></Card>
+          <Card><CardContent className="flex min-h-[88px] items-center justify-between gap-2 p-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">交易用户</p><div className="mt-1 flex flex-wrap items-baseline gap-x-2"><p className="text-xl font-semibold tabular-nums">{stats?.buyerCount ?? "—"}</p><span className="text-[11px] text-muted-foreground">供应商 {stats?.sellerCount ?? "—"}</span></div></div><div className="shrink-0 rounded-lg bg-amber-50 p-2 text-amber-600"><Users className="h-4 w-4" /></div></CardContent></Card>
         </div>
 
-        <Card><CardContent className="flex flex-wrap items-center gap-2 p-4">
+        <Card><CardContent className="flex flex-wrap items-center gap-2 p-3">
           <span className="mr-2 text-sm font-medium">订单状态统计</span>
-          {Object.entries(statusMeta).map(([value, meta]) => <button key={value} type="button" className={`rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary ${status === value ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus(value as keyof typeof statusMeta); setPage(1); }}>{meta.label} <span className="font-semibold">{stats?.statusCounts[value as keyof typeof statusMeta] ?? "—"}</span></button>)}
+          {Object.entries(statusMeta).map(([value, meta]) => <button key={value} type="button" className={`rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-primary ${status === value ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus(value as keyof typeof statusMeta); setPage(1); }}>{meta.label} <span className="font-semibold">{stats?.statusCounts[value as keyof typeof statusMeta] ?? "—"}</span></button>)}
           {statsQuery.error && <span className="text-sm text-destructive">统计暂不可用：{statsQuery.error.message}</span>}
         </CardContent></Card>
 
         <Card>
-          <CardContent className="flex flex-col gap-3 pt-6 md:flex-row">
+          <CardContent className="flex flex-col gap-2 p-3 md:flex-row">
             <div className="flex flex-1 gap-2">
               <Input
                 value={draftKeyword}
