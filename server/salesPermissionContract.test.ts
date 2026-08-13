@@ -65,6 +65,15 @@ describe("后台双角色与销售权限实施契约", () => {
     expect(routers).toContain("salesStaffCodes: z.array");
   });
 
+  it("用户列表保留销售权限列并以单行摘要展示多人范围", () => {
+    expect(adminsPage).toContain("<th>销售权限</th>");
+    expect(adminsPage).toContain("`${salesScopeNames[0]}等${salesScopeNames.length}人`");
+    expect(adminsPage).toContain('title={fullSalesScope}');
+    expect(adminsPage).toContain('aria-label={`销售权限：${fullSalesScope}`}');
+    expect(adminsPage).toContain('max-w-[170px] whitespace-nowrap text-xs');
+    expect(adminsPage).toContain("全部销售范围");
+  });
+
   it("普通用户业务菜单仅显示同级商户与订单，系统菜单提供个人信息", () => {
     expect(dashboard).toContain('label: "商户管理", path: "/merchants", permission: "merchants.read"');
     expect(dashboard).toContain('label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false');

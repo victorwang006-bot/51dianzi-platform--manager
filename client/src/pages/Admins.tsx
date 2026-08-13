@@ -240,15 +240,28 @@ export default function Admins() {
                             style={a.adminRole === "super_admin" ? "danger" : "info"}
                           />
                         </td>
-                        <td className="text-xs max-w-[220px]">
+                        <td className="max-w-[170px] whitespace-nowrap text-xs">
                           {a.adminRole === "super_admin" ? (
-                            <span className="text-primary font-medium">全部销售范围</span>
+                            <span className="font-medium text-primary">全部销售范围</span>
                           ) : a.salesStaffCodes.length > 0 ? (
-                            <span>
-                              {a.salesStaffCodes.map(code =>
+                            (() => {
+                              const salesScopeNames = a.salesStaffCodes.map(code =>
                                 salesStaff.find(staff => staff.staffCode === code)?.displayName ?? code,
-                              ).join("、")}
-                            </span>
+                              );
+                              const fullSalesScope = salesScopeNames.join("、");
+                              const summary = salesScopeNames.length === 1
+                                ? salesScopeNames[0]
+                                : `${salesScopeNames[0]}等${salesScopeNames.length}人`;
+                              return (
+                                <span
+                                  className="inline-block max-w-[150px] truncate align-middle"
+                                  title={fullSalesScope}
+                                  aria-label={`销售权限：${fullSalesScope}`}
+                                >
+                                  {summary}
+                                </span>
+                              );
+                            })()
                           ) : (
                             <span className="text-destructive">未配置</span>
                           )}
