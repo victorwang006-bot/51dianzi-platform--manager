@@ -92,6 +92,17 @@ function PermissionGate({
 const MaterialsRoute = () => (
   <PermissionGate permission="materials.read"><Materials /></PermissionGate>
 );
+
+function HomeRoute() {
+  const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
+  const isOrdinaryUser = user?.adminRole !== undefined && user.adminRole !== "super_admin";
+  useEffect(() => {
+    if (!loading && isOrdinaryUser) setLocation("/merchants", { replace: true });
+  }, [isOrdinaryUser, loading, setLocation]);
+  if (loading || isOrdinaryUser) return <DashboardLayoutSkeleton />;
+  return <MaterialsRoute />;
+}
 const MerchantsRoute = () => (
   <PermissionGate permission="merchants.read"><Merchants /></PermissionGate>
 );
@@ -121,7 +132,7 @@ function AppRoutes() {
   return (
     <AuthGate>
       <Switch>
-        <Route path={"/"} component={MaterialsRoute} />
+        <Route path={"/"} component={HomeRoute} />
         <Route path={"/merchants"} component={MerchantsRoute} />
         <Route path={"/merchants/:id"} component={MerchantDetailRoute} />
         <Route path={"/messages"} component={MessagesRoute} />

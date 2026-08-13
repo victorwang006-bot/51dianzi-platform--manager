@@ -364,9 +364,11 @@ export default function Merchants() {
                                   }}>
                                     {crmStatus === "enabled" ? "绑定账号" : "通过"}
                                   </Button>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setMsgTarget({ id: m.id, name: m.companyName })}>
-                                    发信
-                                  </Button>
+                                  {isSuperAdmin && (
+                                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setMsgTarget({ id: m.id, name: m.companyName })}>
+                                      发信
+                                    </Button>
+                                  )}
                                   <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => {
                                     setCrmPortalUserId(crmOwnerPortalUserId);
                                     setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "rejected", currentStatus: crmStatus, currentOwner: crmOwnerPortalUserId });
@@ -482,8 +484,8 @@ export default function Merchants() {
         </DialogContent>
       </Dialog>
 
-      {/* 发信对话框：发送消息到客户前台"联系客服" */}
-      <Dialog open={msgTarget !== null} onOpenChange={open => { if (!open) { setMsgTarget(null); setMsgContent(""); } }}>
+      {/* 发信对话框仅超级管理员可见；服务端仍保留消息权限校验。 */}
+      <Dialog open={isSuperAdmin && msgTarget !== null} onOpenChange={open => { if (!open) { setMsgTarget(null); setMsgContent(""); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>发信给客户</DialogTitle>

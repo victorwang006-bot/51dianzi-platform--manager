@@ -55,7 +55,7 @@ const menuGroups = [
     items: [
       { icon: Database, label: "物料数据库", path: "/", permission: "materials.read" as AdminPermission, nested: false },
       { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission, nested: false },
-      { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false },
+      { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: true },
       { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
       { icon: Users, label: "用户管理", path: "/portal-users", permission: "messages.read" as AdminPermission, nested: false },
     ],
@@ -79,12 +79,7 @@ const MAX_WIDTH = 400;
 
 const adminRoleLabels: Record<string, string> = {
   super_admin: "超级管理员",
-  operation: "平台运营",
-  merchant_mgr: "商户管理",
-  customer_svc: "客服/售后",
-  risk_control: "风控审核",
-  finance: "财务结算",
-  auditor: "审计人员",
+  merchant_mgr: "普通用户",
 };
 
 export default function DashboardLayout({
@@ -158,7 +153,8 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = allMenuItems.find(item => isMenuPathActive(location, item.path));
   const isMobile = useIsMobile();
-  const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ?? "super_admin") as AdminRole;
+  const rawAdminRole = (user as { adminRole?: string } | null)?.adminRole;
+  const adminRole: AdminRole = rawAdminRole && rawAdminRole !== "super_admin" ? "merchant_mgr" : "super_admin";
   const canReadMessages = hasAdminPermission(adminRole, "messages.read");
   // 消息未读总数（侧边栏角标，30 秒轮询）
   const { data: unreadData } = trpc.message.unreadCount.useQuery(undefined, {

@@ -1,5 +1,17 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
+
+vi.mock("./db", async importOriginal => {
+  const actual = await importOriginal<typeof import("./db")>();
+  return {
+    ...actual,
+    getAdminUserByUsername: vi.fn(),
+    createAdminUser: vi.fn(),
+    updateAdminUser: vi.fn(),
+    setAdminUserPassword: vi.fn(),
+  };
+});
+
 import * as db from "./db";
 import { appRouter } from "./routers";
 
@@ -37,58 +49,75 @@ function createSuperAdminContext(): TrpcContext {
   };
 }
 
-describe("后台用户管理", () => {
+describe("后台双角色与销售权限用户管理", () => {
   const caller = appRouter.createCaller(createSuperAdminContext());
-  const username = `vitest-admin-${Date.now()}`;
-  let createdId: number | null = null;
 
-  afterAll(async () => {
-    if (createdId !== null) {
-      const existing = await db.getAdminUserByUsername(username);
-      if (existing) await caller.adminUser.remove({ id: createdId });
-    }
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(db.getAdminUserByUsername).mockResolvedValue(null);
+    vi.mocked(db.createAdminUser).mockResolvedValue({ id: 9200 } as never);
+    vi.mocked(db.updateAdminUser).mockResolvedValue(undefined);
+    vi.mocked(db.setAdminUserPassword).mockResolvedValue(undefined);
   });
 
-  it("超级管理员可新增、编辑并禁用后台用户", async () => {
-    const created = await caller.adminUser.create({
-      username,
-      displayName: "待编辑管理员",
-      email: `${username}@example.com`,
-      phone: "13900001111",
-      adminRole: "operation",
+  it("普通用户至少选择一名销售权限", async () => {
+    await expect(caller.adminUser.create({
+      username: "ordinary-none",
+      displayName: "普通用户",
+      adminRole: "merchant_mgr",
+      salesStaffCodes: [],
+      password: "InitialPass123!",
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(db.createAdminUser).not.toHaveBeenCalled();
+  });
+
+  it("单负责人和多负责人都可保存，分别对应普通销售和主管范围", async () => {
+    await caller.adminUser.create({
+      username: "ordinary-victor",
+      displayName: "Victor账号",
+      adminRole: "merchant_mgr",
+      salesStaffCodes: ["victor"],
       password: "InitialPass123!",
     });
-    createdId = created.id;
+    expect(db.createAdminUser).toHaveBeenLastCalledWith(expect.objectContaining({
+      adminRole: "merchant_mgr",
+      salesStaffCodes: ["victor"],
+    }));
 
-    let account = await db.getAdminUserByUsername(username);
-    expect(account).toMatchObject({
-      id: createdId,
-      displayName: "待编辑管理员",
-      adminRole: "operation",
-      status: "active",
+    await caller.adminUser.create({
+      username: "manager-victor-ocean",
+      displayName: "销售主管",
+      adminRole: "merchant_mgr",
+      salesStaffCodes: ["victor", "ocean"],
+      password: "InitialPass123!",
     });
-    expect(account?.passwordHash).toBeTruthy();
+    expect(db.createAdminUser).toHaveBeenLastCalledWith(expect.objectContaining({
+      salesStaffCodes: ["victor", "ocean"],
+    }));
+  });
 
-    await caller.adminUser.update({
-      id: createdId,
-      displayName: "已编辑管理员",
-      adminRole: "customer_svc",
+  it("超级管理员不需要销售权限并拥有全部范围", async () => {
+    await caller.adminUser.create({
+      username: "another-super",
+      displayName: "第二超级管理员",
+      adminRole: "super_admin",
+      salesStaffCodes: [],
+      password: "InitialPass123!",
     });
-    account = await db.getAdminUserByUsername(username);
-    expect(account).toMatchObject({
-      displayName: "已编辑管理员",
-      adminRole: "customer_svc",
-    });
+    expect(db.createAdminUser).toHaveBeenCalledWith(expect.objectContaining({
+      adminRole: "super_admin",
+      salesStaffCodes: [],
+    }));
+  });
 
-    await caller.adminUser.toggleStatus({ id: createdId, status: "disabled" });
-    account = await db.getAdminUserByUsername(username);
-    expect(account?.status).toBe("disabled");
-
-    const list = await caller.adminUser.list({ page: 1, pageSize: 100 });
-    expect(list.data.some(item => item.id === createdId)).toBe(true);
-
-    await caller.adminUser.remove({ id: createdId });
-    expect(await db.getAdminUserByUsername(username)).toBeNull();
-    createdId = null;
+  it("禁止当前登录超级管理员把自己降级或停用", async () => {
+    await expect(caller.adminUser.update({
+      id: 9100,
+      adminRole: "merchant_mgr",
+      salesStaffCodes: ["victor"],
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.adminUser.update({ id: 9100, status: "disabled" }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(db.updateAdminUser).not.toHaveBeenCalled();
   });
 });

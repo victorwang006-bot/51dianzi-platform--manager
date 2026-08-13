@@ -70,6 +70,7 @@ describe("platformMaterial 客户物料管理", () => {
 
     expect(db.listMerchantInventories).toHaveBeenCalledWith(
       expect.objectContaining({ keyword: "STM32", status: "published", page: 1, pageSize: 20 }),
+      undefined,
     );
     expect(result.available).toBe(true);
     expect(result.total).toBe(1);
@@ -91,6 +92,7 @@ describe("platformMaterial 客户物料管理", () => {
     await caller.platformMaterial.list({ creditCode: "91440300MA5EXAMPLE1", status: "all", page: 1, pageSize: 10 });
     expect(db.listMerchantInventories).toHaveBeenCalledWith(
       expect.objectContaining({ creditCode: "91440300MA5EXAMPLE1", status: "all", pageSize: 10 }),
+      undefined,
     );
   });
 
@@ -106,7 +108,7 @@ describe("platformMaterial 客户物料管理", () => {
     vi.mocked(db.offshelfPlatformInventory).mockResolvedValue({ success: true });
     const caller = appRouter.createCaller(createAdminContext());
     const result = await caller.platformMaterial.offshelf({ id: 150464, reason: "图片与型号不符，请更换实拍图" });
-    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(150464, "图片与型号不符，请更换实拍图");
+    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(150464, "图片与型号不符，请更换实拍图", undefined);
     expect(result.success).toBe(true);
   });
 

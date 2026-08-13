@@ -1,7 +1,8 @@
-import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminUsers,
+  adminUserSalesScopes,
   auditLogs,
   crmOwnerRebindLogs,
   InsertMaterial,
@@ -12,6 +13,7 @@ import {
   messages,
   messageThreads,
   passwordResetCodes,
+  salesStaff,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -540,24 +542,65 @@ export async function getEnabledErpPortalUserIds() {
     .filter((value): value is string => value.length > 0);
 }
 
-export async function getMerchants(params: { status?: string; search?: string; page?: number; pageSize?: number }) {
+export async function getMerchants(
+  params: { status?: string; search?: string; page?: number; pageSize?: number },
+  salesStaffCodes?: string[],
+) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return { data: [], total: 0 };
   const { status, search, page = 1, pageSize = 20 } = params;
   const conditions = [];
   if (status) conditions.push(eq(merchants.status, status as any));
   if (search) conditions.push(or(like(merchants.companyName, `%${search}%`), like(merchants.merchantNo, `%${search}%`)));
+  if (salesStaffCodes !== undefined) conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(merchants).where(where);
   const data = await db.select().from(merchants).where(where).orderBy(desc(merchants.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
   return { data, total: Number(count) };
 }
 
-export async function getMerchantById(id: number) {
+export async function getMerchantById(id: number, salesStaffCodes?: string[]) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(merchants).where(eq(merchants.id, id)).limit(1);
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return null;
+  const conditions = [eq(merchants.id, id)];
+  if (salesStaffCodes !== undefined) conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
+  const result = await db.select().from(merchants).where(and(...conditions)).limit(1);
   return result[0] ?? null;
+}
+
+/** 当前销售范围内商户绑定的前台主账号，用于主站订单按买方或卖方企业过滤。 */
+export async function getScopedMerchantCreditCodes(salesStaffCodes: string[]) {
+  const db = await getDb();
+  if (!db || salesStaffCodes.length === 0) return [] as string[];
+  const rows = await db
+    .selectDistinct({ creditCode: merchants.businessLicense })
+    .from(merchants)
+    .where(and(
+      inArray(merchants.salesOwnerCode, salesStaffCodes),
+      sql`${merchants.businessLicense} IS NOT NULL`,
+      sql`TRIM(${merchants.businessLicense}) <> ''`,
+    ));
+  return rows
+    .map(row => row.creditCode?.trim() ?? "")
+    .filter((value): value is string => value.length > 0);
+}
+
+export async function getScopedMerchantPortalUserIds(salesStaffCodes: string[]) {
+  const db = await getDb();
+  if (!db || salesStaffCodes.length === 0) return [] as string[];
+  const rows = await db
+    .selectDistinct({ portalUserId: merchants.crmOwnerPortalUserId })
+    .from(merchants)
+    .where(and(
+      inArray(merchants.salesOwnerCode, salesStaffCodes),
+      sql`${merchants.crmOwnerPortalUserId} IS NOT NULL`,
+      sql`TRIM(${merchants.crmOwnerPortalUserId}) <> ''`,
+    ));
+  return rows
+    .map(row => row.portalUserId?.trim() ?? "")
+    .filter((value): value is string => value.length > 0);
 }
 
 export async function updateMerchantStatus(id: number, status: string, reviewNote?: string, reviewedBy?: number) {
@@ -585,6 +628,7 @@ export interface PortalMerchantSubmission {
   legalPersonIdNo?: string | null;
   legalPersonPhone?: string | null;
   salesOwner?: string | null;
+  salesOwnerCode?: string | null;
 }
 
 /**
@@ -614,6 +658,7 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
     legalPersonIdNo: input.legalPersonIdNo ?? null,
     legalPersonPhone: input.legalPersonPhone ?? null,
     ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner ?? null } : {}),
+    ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode ?? null } : {}),
     submittedAt: now,
     source: "portal",
   };
@@ -660,6 +705,8 @@ export interface CrmApplicationInput {
   businessScope?: string | null;
   licenseImageUrl?: string | null;
   portalUserId?: string | null;
+  salesOwner?: string | null;
+  salesOwnerCode?: string | null;
   note?: string | null;
 }
 
@@ -699,6 +746,8 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
     ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
     ...(input.businessScope ? { businessScope: input.businessScope } : {}),
     ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+    ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner ?? null } : {}),
+    ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode ?? null } : {}),
   };
   try {
     return await db.transaction(async tx => {
@@ -1270,7 +1319,101 @@ export async function getCrmBindingByCreditCode(creditCodeInput: string) {
   };
 }
 
-// ─── 管理员 ───────────────────────────────────────────────────────────────────
+// ─── 管理员与销售权限 ──────────────────────────────────────────────────────────
+
+export async function listSalesStaff(options: { activeOnly?: boolean } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const activeOnly = options.activeOnly ?? true;
+  return db
+    .select()
+    .from(salesStaff)
+    .where(activeOnly ? eq(salesStaff.status, "active") : undefined)
+    .orderBy(asc(salesStaff.sortOrder), asc(salesStaff.id));
+}
+
+export async function getSalesStaffByCode(staffCode: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db
+    .select()
+    .from(salesStaff)
+    .where(eq(salesStaff.staffCode, staffCode.trim().toLowerCase()))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function normalizeActiveSalesStaffCodes(staffCodes: string[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = Array.from(new Set(staffCodes.map(code => code.trim().toLowerCase()).filter(Boolean)));
+  if (normalized.length === 0) return [];
+  const rows = await db
+    .select({ staffCode: salesStaff.staffCode })
+    .from(salesStaff)
+    .where(and(inArray(salesStaff.staffCode, normalized), eq(salesStaff.status, "active")));
+  const valid = new Set(rows.map(row => row.staffCode));
+  const invalid = normalized.filter(code => !valid.has(code));
+  if (invalid.length > 0) throw new Error("INVALID_SALES_STAFF_CODE");
+  return normalized;
+}
+
+export async function createSalesStaff(input: {
+  staffCode: string;
+  displayName: string;
+  sortOrder?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const staffCode = input.staffCode.trim().toLowerCase();
+  await db.insert(salesStaff).values({
+    staffCode,
+    displayName: input.displayName.trim(),
+    sortOrder: input.sortOrder ?? 0,
+    status: "active",
+  });
+  return getSalesStaffByCode(staffCode);
+}
+
+export async function updateSalesStaff(id: number, input: {
+  displayName?: string;
+  status?: "active" | "inactive";
+  sortOrder?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const set: Record<string, unknown> = {};
+  if (input.displayName !== undefined) set.displayName = input.displayName.trim();
+  if (input.status !== undefined) set.status = input.status;
+  if (input.sortOrder !== undefined) set.sortOrder = input.sortOrder;
+  if (Object.keys(set).length > 0) {
+    await db.update(salesStaff).set(set).where(eq(salesStaff.id, id));
+  }
+}
+
+export async function getAdminUserSalesScopeCodes(adminUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ staffCode: adminUserSalesScopes.staffCode })
+    .from(adminUserSalesScopes)
+    .where(eq(adminUserSalesScopes.adminUserId, adminUserId))
+    .orderBy(asc(adminUserSalesScopes.id));
+  return rows.map(row => row.staffCode);
+}
+
+async function replaceAdminUserSalesScopes(
+  executor: any,
+  adminUserId: number,
+  staffCodes: string[],
+) {
+  await executor.delete(adminUserSalesScopes).where(eq(adminUserSalesScopes.adminUserId, adminUserId));
+  if (staffCodes.length > 0) {
+    await executor.insert(adminUserSalesScopes).values(
+      staffCodes.map(staffCode => ({ adminUserId, staffCode })),
+    );
+  }
+}
 
 export async function getAdminUsers(params: { page?: number; pageSize?: number } = {}) {
   const db = await getDb();
@@ -1278,7 +1421,24 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
   const { page = 1, pageSize = 20 } = params;
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(adminUsers);
   const data = await db.select().from(adminUsers).orderBy(desc(adminUsers.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
-  return { data, total: Number(count) };
+  const userIds = data.map(user => user.id);
+  const scopeRows = userIds.length > 0
+    ? await db
+      .select({ adminUserId: adminUserSalesScopes.adminUserId, staffCode: adminUserSalesScopes.staffCode })
+      .from(adminUserSalesScopes)
+      .where(inArray(adminUserSalesScopes.adminUserId, userIds))
+      .orderBy(asc(adminUserSalesScopes.id))
+    : [];
+  const scopeMap = new Map<number, string[]>();
+  for (const row of scopeRows) {
+    const values = scopeMap.get(row.adminUserId) ?? [];
+    values.push(row.staffCode);
+    scopeMap.set(row.adminUserId, values);
+  }
+  return {
+    data: data.map(user => ({ ...user, salesStaffCodes: scopeMap.get(user.id) ?? [] })),
+    total: Number(count),
+  };
 }
 
 /** 按用户名查询后台账号（账号密码登录用，包含 passwordHash） */
@@ -1381,44 +1541,74 @@ export async function createAdminUser(input: {
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
-  adminRole: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  adminRole: "super_admin" | "merchant_mgr";
+  salesStaffCodes: string[];
   passwordHash?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(adminUsers).values({
-    userId: 0,
-    username: input.username,
-    displayName: input.displayName ?? null,
-    email: input.email ?? null,
-    phone: input.phone ?? null,
-    adminRole: input.adminRole,
-    passwordHash: input.passwordHash ?? null,
-    status: "active",
+  const scopeCodes = input.adminRole === "super_admin"
+    ? []
+    : await normalizeActiveSalesStaffCodes(input.salesStaffCodes);
+  if (input.adminRole === "merchant_mgr" && scopeCodes.length === 0) {
+    throw new Error("SALES_SCOPE_REQUIRED");
+  }
+  await db.transaction(async tx => {
+    await tx.insert(adminUsers).values({
+      userId: 0,
+      username: input.username,
+      displayName: input.displayName ?? null,
+      email: input.email ?? null,
+      phone: input.phone ?? null,
+      adminRole: input.adminRole,
+      passwordHash: input.passwordHash ?? null,
+      status: "active",
+    });
+    const [created] = await tx.select({ id: adminUsers.id }).from(adminUsers)
+      .where(eq(adminUsers.username, input.username)).limit(1);
+    if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
+    await replaceAdminUserSalesScopes(tx, created.id, scopeCodes);
   });
   const created = await getAdminUserByUsername(input.username);
   if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
-  return created;
+  return { ...created, salesStaffCodes: scopeCodes };
 }
 
 export async function updateAdminUser(id: number, input: {
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
-  adminRole?: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  adminRole?: "super_admin" | "merchant_mgr";
+  salesStaffCodes?: string[];
   status?: "active" | "disabled" | "locked";
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const existing = await getAdminUserById(id);
+  if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
+  const nextRole = input.adminRole ?? (existing.adminRole === "super_admin" ? "super_admin" : "merchant_mgr");
+  const currentScopes = await getAdminUserSalesScopeCodes(id);
+  const nextScopes = nextRole === "super_admin"
+    ? []
+    : await normalizeActiveSalesStaffCodes(input.salesStaffCodes ?? currentScopes);
+  if (nextRole === "merchant_mgr" && nextScopes.length === 0) {
+    throw new Error("SALES_SCOPE_REQUIRED");
+  }
+
   const set: Record<string, unknown> = {};
   if (input.displayName !== undefined) set.displayName = input.displayName;
   if (input.email !== undefined) set.email = input.email;
   if (input.phone !== undefined) set.phone = input.phone;
   if (input.adminRole !== undefined) set.adminRole = input.adminRole;
   if (input.status !== undefined) set.status = input.status;
-  if (Object.keys(set).length > 0) {
-    await db.update(adminUsers).set(set).where(eq(adminUsers.id, id));
-  }
+  await db.transaction(async tx => {
+    if (Object.keys(set).length > 0) {
+      await tx.update(adminUsers).set(set).where(eq(adminUsers.id, id));
+    }
+    if (input.salesStaffCodes !== undefined || input.adminRole !== undefined) {
+      await replaceAdminUserSalesScopes(tx, id, nextScopes);
+    }
+  });
 }
 
 export async function toggleAdminUserStatus(id: number, status: "active" | "disabled") {
@@ -1430,7 +1620,10 @@ export async function toggleAdminUserStatus(id: number, status: "active" | "disa
 export async function deleteAdminUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(adminUsers).where(eq(adminUsers.id, id));
+  await db.transaction(async tx => {
+    await tx.delete(adminUserSalesScopes).where(eq(adminUserSalesScopes.adminUserId, id));
+    await tx.delete(adminUsers).where(eq(adminUsers.id, id));
+  });
 }
 
 // ─── 消息中心（前后台互通）─────────────────────────────────────────────────────
@@ -1837,12 +2030,16 @@ export async function listMerchantInventories(params: {
   status?: "published" | "draft" | "offshelf" | "all";
   page?: number;
   pageSize?: number;
-}) {
+}, allowedCreditCodes?: string[]) {
   const db = await getDb();
   if (!db) return { available: false, items: [] as PlatformInventoryRow[], total: 0 };
   const { creditCode, keyword, status = "published", page = 1, pageSize = 20 } = params;
   const offset = (page - 1) * pageSize;
   const conds = [sql`1=1`];
+  if (allowedCreditCodes !== undefined) {
+    if (allowedCreditCodes.length === 0) conds.push(sql`1=0`);
+    else conds.push(sql`c.creditCode IN (${sql.join(allowedCreditCodes.map(code => sql`${code}`), sql`, `)})`);
+  }
   if (status !== "all") conds.push(sql`i.status = ${status}`);
   if (creditCode) conds.push(sql`c.creditCode = ${creditCode}`);
   if (keyword) {
@@ -1883,15 +2080,21 @@ export async function listMerchantInventories(params: {
  * 按与前台的约定：status 置回 'draft'（非 offshelf），并写入 offshelfBy='admin' 与必填的 offshelfReason，
  * 前台"待发布清单"会对 offshelfBy=admin 的条目显示"平台下架：原因"红色标记。
  */
-export async function offshelfPlatformInventory(id: number, reason: string) {
+export async function offshelfPlatformInventory(id: number, reason: string, allowedCreditCodes?: string[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const scopeSql = allowedCreditCodes === undefined
+    ? sql``
+    : allowedCreditCodes.length === 0
+      ? sql`AND 1=0`
+      : sql`AND c.creditCode IN (${sql.join(allowedCreditCodes.map(code => sql`${code}`), sql`, `)})`;
   try {
     const result = (await db.execute(sql`
-      UPDATE ${sql.raw(PLATFORM_DB)}.inventories
-      SET status = 'draft', publishedAt = NULL,
-          offshelfBy = 'admin', offshelfReason = ${reason}
-      WHERE id = ${id} AND status = 'published'
+      UPDATE ${sql.raw(PLATFORM_DB)}.inventories i
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = i.userId
+      SET i.status = 'draft', i.publishedAt = NULL,
+          i.offshelfBy = 'admin', i.offshelfReason = ${reason}
+      WHERE i.id = ${id} AND i.status = 'published' ${scopeSql}
     `)) as unknown as [{ affectedRows?: number }, unknown];
     const affected = Number(result[0]?.affectedRows ?? 0);
     if (affected === 0) throw new Error("物料不存在或已不是发布状态");

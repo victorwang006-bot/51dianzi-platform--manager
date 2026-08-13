@@ -41,20 +41,22 @@ function createContext(adminRole: AdminRole): TrpcContext {
   };
 }
 
-describe("后台角色权限矩阵", () => {
+describe("后台双角色权限矩阵", () => {
   it("超级管理员拥有全部权限", () => {
     for (const permission of ADMIN_PERMISSIONS) {
       expect(hasAdminPermission("super_admin", permission)).toBe(true);
     }
   });
 
-  it("审计角色仅拥有业务模块只读权限", () => {
-    expect(hasAdminPermission("auditor", "materials.read")).toBe(true);
-    expect(hasAdminPermission("auditor", "merchants.read")).toBe(true);
-    expect(hasAdminPermission("auditor", "messages.read")).toBe(true);
-    expect(hasAdminPermission("auditor", "orders.read")).toBe(true);
-    expect(hasAdminPermission("auditor", "materials.write")).toBe(false);
-    expect(hasAdminPermission("auditor", "admins.manage")).toBe(false);
+  it("普通用户仅拥有商户读写和订单读取权限", () => {
+    expect(hasAdminPermission("merchant_mgr", "merchants.read")).toBe(true);
+    expect(hasAdminPermission("merchant_mgr", "merchants.write")).toBe(true);
+    expect(hasAdminPermission("merchant_mgr", "orders.read")).toBe(true);
+    expect(hasAdminPermission("merchant_mgr", "materials.read")).toBe(false);
+    expect(hasAdminPermission("merchant_mgr", "materials.write")).toBe(false);
+    expect(hasAdminPermission("merchant_mgr", "messages.read")).toBe(false);
+    expect(hasAdminPermission("merchant_mgr", "messages.write")).toBe(false);
+    expect(hasAdminPermission("merchant_mgr", "admins.manage")).toBe(false);
   });
 
   it("订单模块仅暴露读取权限", () => {
@@ -62,17 +64,16 @@ describe("后台角色权限矩阵", () => {
     expect(ADMIN_PERMISSIONS).not.toContain("orders.write");
   });
 
-  it("普通运营角色不能调用后台用户管理接口", async () => {
-    const caller = appRouter.createCaller(createContext("operation"));
-    await expect(caller.adminUser.list({ page: 1, pageSize: 20 })).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
+  it("普通用户不能调用后台用户管理、前台用户管理或消息管理接口", async () => {
+    const caller = appRouter.createCaller(createContext("merchant_mgr"));
+    await expect(caller.adminUser.list({ page: 1, pageSize: 20 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.frontendUser.stats()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.message.unreadCount()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("审计角色不能修改物料状态", async () => {
-    const caller = appRouter.createCaller(createContext("auditor"));
-    await expect(
-      caller.material.toggleStatus({ id: 1, status: "disabled" })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  it("普通用户不能修改物料状态", async () => {
+    const caller = appRouter.createCaller(createContext("merchant_mgr"));
+    await expect(caller.material.toggleStatus({ id: 1, status: "disabled" }))
+      .rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

@@ -115,14 +115,17 @@ async function callPlatformOrder<T>(
   return ((typeof data === "object" && data !== null && "json" in data) ? data.json : data) as T;
 }
 
-export function getPlatformOrderStats() {
-  return callPlatformOrder<PlatformOrderStats>("stats", {});
+export function getPlatformOrderStats(visibleCompanyCreditCodes?: string[]) {
+  return callPlatformOrder<PlatformOrderStats>("stats", { visibleCompanyCreditCodes });
 }
 
-export function listPlatformOrders(input: PlatformOrderListInput) {
-  return callPlatformOrder<{ rows: PlatformOrderListRow[]; total: number }>("list", input);
+export function listPlatformOrders(input: PlatformOrderListInput, visibleCompanyCreditCodes?: string[]) {
+  return callPlatformOrder<{ rows: PlatformOrderListRow[]; total: number }>("list", {
+    ...input,
+    visibleCompanyCreditCodes,
+  });
 }
 
-export function getPlatformOrderDetail(orderId: number) {
-  return callPlatformOrder<PlatformOrderDetail>("detail", { orderId });
+export function getPlatformOrderDetail(orderId: number, visibleCompanyCreditCodes?: string[]) {
+  return callPlatformOrder<PlatformOrderDetail>("detail", { orderId, visibleCompanyCreditCodes });
 }

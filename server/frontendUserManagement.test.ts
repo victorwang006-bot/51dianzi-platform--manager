@@ -64,7 +64,7 @@ describe("后台前台用户管理", () => {
   it("统计使用前台总用户并用后台已开通绑定计算ERP与普通用户", async () => {
     mocks.getPlatformUserStats.mockResolvedValue({ totalUsers: 20, todayRegistered: 0, sevenDayActive: 7 });
     mocks.getEnabledErpPortalUserIds.mockResolvedValue(["2", "6", "9", "18"]);
-    const caller = appRouter.createCaller(createContext("auditor"));
+    const caller = appRouter.createCaller(createContext("super_admin"));
     await expect(caller.frontendUser.stats()).resolves.toEqual({
       totalUsers: 20,
       todayRegistered: 0,
@@ -83,7 +83,7 @@ describe("后台前台用户管理", () => {
       ],
     });
     mocks.getEnabledErpPortalUserIds.mockResolvedValue(["18"]);
-    const caller = appRouter.createCaller(createContext("auditor"));
+    const caller = appRouter.createCaller(createContext("super_admin"));
     const result = await caller.frontendUser.list({ page: 1, pageSize: 20, keyword: "用户" });
     expect(result.rows.map(row => [row.id, row.userType])).toEqual([[18, "erp"], [19, "ordinary"]]);
     expect(mocks.listPlatformUsers).toHaveBeenCalledWith({ page: 1, pageSize: 20, keyword: "用户" });

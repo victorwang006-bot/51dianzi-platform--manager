@@ -15,6 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,37 +34,20 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-type AdminRole =
-  | "super_admin"
-  | "operation"
-  | "merchant_mgr"
-  | "customer_svc"
-  | "risk_control"
-  | "finance"
-  | "auditor";
+type AdminRole = "super_admin" | "merchant_mgr";
 
 const roleOptions: { value: AdminRole; label: string; duties: string }[] = [
-  { value: "super_admin", label: "超级管理员", duties: "全部权限，管理管理员账号与角色分配" },
-  { value: "operation", label: "平台运营", duties: "数据看板、商品治理、订单处置、告警处理" },
-  { value: "merchant_mgr", label: "商户管理", duties: "商户入驻审核、资质管理、协议与结算账户配置" },
-  { value: "customer_svc", label: "客服/售后", duties: "订单查询、退款申请审核、异常标注" },
-  { value: "risk_control", label: "风控审核", duties: "智能风控分析、风险处置、可疑行为审查" },
-  { value: "finance", label: "财务结算", duties: "支付流水查询、结算单生成与打款、对账" },
-  { value: "auditor", label: "审计人员", duties: "操作日志与敏感数据访问记录查阅（只读）" },
+  { value: "super_admin", label: "超级管理员", duties: "全部菜单、全部商户、全部订单和账号管理权限" },
+  { value: "merchant_mgr", label: "普通用户", duties: "仅商户管理、订单中心，并按销售权限限制数据范围" },
 ];
 
-const roleStyleMap: Record<AdminRole, "danger" | "info" | "warning" | "success" | "gray"> = {
+const roleStyleMap: Record<AdminRole, "danger" | "info"> = {
   super_admin: "danger",
-  operation: "info",
   merchant_mgr: "info",
-  customer_svc: "info",
-  risk_control: "warning",
-  finance: "success",
-  auditor: "gray",
 };
 
 type FormState = {
@@ -65,6 +56,7 @@ type FormState = {
   email: string;
   phone: string;
   adminRole: AdminRole;
+  salesStaffCodes: string[];
   password: string;
 };
 
@@ -73,7 +65,8 @@ const emptyForm: FormState = {
   displayName: "",
   email: "",
   phone: "",
-  adminRole: "operation",
+  adminRole: "merchant_mgr",
+  salesStaffCodes: [],
   password: "",
 };
 
@@ -81,11 +74,15 @@ export default function Admins() {
   const [page, setPage] = useState(1);
   const utils = trpc.useUtils();
   const { data, isLoading, isFetching, refetch } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
+  const { data: salesStaff = [], isFetching: isStaffFetching, refetch: refetchStaff } =
+    trpc.salesStaff.list.useQuery({ includeInactive: true });
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [staffDialogOpen, setStaffDialogOpen] = useState(false);
+  const [staffForm, setStaffForm] = useState({ staffCode: "", displayName: "" });
 
   const createMutation = trpc.adminUser.create.useMutation({
     onSuccess: () => {
@@ -123,6 +120,25 @@ export default function Admins() {
     onError: (e) => toast.error(`删除失败：${e.message}`),
   });
 
+  const createStaffMutation = trpc.salesStaff.create.useMutation({
+    onSuccess: () => {
+      utils.salesStaff.list.invalidate();
+      setStaffDialogOpen(false);
+      setStaffForm({ staffCode: "", displayName: "" });
+      toast.success("销售人员已添加");
+    },
+    onError: e => toast.error(`添加失败：${e.message}`),
+  });
+
+  const updateStaffMutation = trpc.salesStaff.update.useMutation({
+    onSuccess: () => {
+      utils.salesStaff.list.invalidate();
+      utils.adminUser.list.invalidate();
+      toast.success("销售人员状态已更新");
+    },
+    onError: e => toast.error(`更新失败：${e.message}`),
+  });
+
   function openCreate() {
     setEditingId(null);
     setForm(emptyForm);
@@ -136,7 +152,8 @@ export default function Admins() {
       displayName: a.displayName ?? "",
       email: a.email ?? "",
       phone: a.phone ?? "",
-      adminRole: a.adminRole as AdminRole,
+      adminRole: a.adminRole === "super_admin" ? "super_admin" : "merchant_mgr",
+      salesStaffCodes: a.salesStaffCodes ?? [],
       password: "",
     });
     setDialogOpen(true);
@@ -155,12 +172,17 @@ export default function Admins() {
       toast.error("重置密码至少 8 位");
       return;
     }
+    if (form.adminRole === "merchant_mgr" && form.salesStaffCodes.length === 0) {
+      toast.error("普通用户至少选择一名销售权限");
+      return;
+    }
     const payload = {
       username: form.username.trim(),
       displayName: form.displayName.trim() || null,
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
       adminRole: form.adminRole,
+      salesStaffCodes: form.adminRole === "super_admin" ? [] : form.salesStaffCodes,
     };
     if (editingId !== null) {
       updateMutation.mutate({
@@ -179,7 +201,7 @@ export default function Admins() {
     <DashboardLayout>
       <PageHeader
         title="用户管理"
-        description="管理后台系统用户，支持角色权限分配、手机号与邮箱绑定"
+        description="后台仅分超级管理员与普通用户；普通用户按销售权限查看负责商户和关联订单"
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -220,6 +242,7 @@ export default function Admins() {
                       <th>用户名</th>
                       <th>显示名称</th>
                       <th>角色权限</th>
+                      <th>销售权限</th>
                       <th>手机号</th>
                       <th>邮箱</th>
                       <th>状态</th>
@@ -235,9 +258,22 @@ export default function Admins() {
                         <td>{a.displayName ?? <span className="text-muted-foreground">-</span>}</td>
                         <td>
                           <StatusBadge
-                            label={roleOptions.find(r => r.value === a.adminRole)?.label ?? a.adminRole}
-                            style={roleStyleMap[a.adminRole as AdminRole] ?? "info"}
+                            label={a.adminRole === "super_admin" ? "超级管理员" : "普通用户"}
+                            style={a.adminRole === "super_admin" ? "danger" : "info"}
                           />
+                        </td>
+                        <td className="text-xs max-w-[220px]">
+                          {a.adminRole === "super_admin" ? (
+                            <span className="text-primary font-medium">全部销售范围</span>
+                          ) : a.salesStaffCodes.length > 0 ? (
+                            <span>
+                              {a.salesStaffCodes.map(code =>
+                                salesStaff.find(staff => staff.staffCode === code)?.displayName ?? code,
+                              ).join("、")}
+                            </span>
+                          ) : (
+                            <span className="text-destructive">未配置</span>
+                          )}
                         </td>
                         <td className="text-xs">{a.phone ?? <span className="text-muted-foreground">-</span>}</td>
                         <td className="text-xs">{a.email ?? <span className="text-muted-foreground">-</span>}</td>
@@ -286,6 +322,92 @@ export default function Admins() {
         </CardContent>
       </Card>
 
+      {/* 销售人员主数据：未来入职员工可在此新增，无需修改代码 */}
+      <Card className="mt-4">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base">销售人员</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">前台负责人下拉与后台销售权限均从此列表动态读取</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => void refetchStaff()} disabled={isStaffFetching}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${isStaffFetching ? "animate-spin" : ""}`} />刷新
+            </Button>
+            <Button size="sm" onClick={() => setStaffDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />新增员工
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {salesStaff.map(staff => (
+              <div key={staff.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{staff.displayName}</div>
+                  <div className="font-mono text-[11px] text-muted-foreground">{staff.staffCode}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge label={staff.status === "active" ? "启用" : "停用"} style={staff.status === "active" ? "success" : "gray"} />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={updateStaffMutation.isPending}
+                    onClick={() => updateStaffMutation.mutate({
+                      id: staff.id,
+                      status: staff.status === "active" ? "inactive" : "active",
+                    })}
+                  >
+                    {staff.status === "active" ? "停用" : "启用"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>新增销售人员</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>员工代码 <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="如：alice（创建后不可修改）"
+                value={staffForm.staffCode}
+                onChange={event => setStaffForm(current => ({ ...current, staffCode: event.target.value.toLowerCase() }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>显示名称 <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="员工姓名或英文名"
+                value={staffForm.displayName}
+                onChange={event => setStaffForm(current => ({ ...current, displayName: event.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStaffDialogOpen(false)} disabled={createStaffMutation.isPending}>取消</Button>
+            <Button
+              disabled={createStaffMutation.isPending}
+              onClick={() => {
+                if (!staffForm.staffCode.trim() || !staffForm.displayName.trim()) {
+                  toast.error("请填写员工代码和显示名称");
+                  return;
+                }
+                createStaffMutation.mutate({
+                  staffCode: staffForm.staffCode.trim().toLowerCase(),
+                  displayName: staffForm.displayName.trim(),
+                });
+              }}
+            >
+              {createStaffMutation.isPending ? "添加中..." : "添加员工"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* 新建/编辑用户弹窗 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
@@ -317,7 +439,11 @@ export default function Admins() {
               <Label>角色权限 <span className="text-destructive">*</span></Label>
               <Select
                 value={form.adminRole}
-                onValueChange={v => setForm(f => ({ ...f, adminRole: v as AdminRole }))}
+                onValueChange={v => setForm(f => ({
+                  ...f,
+                  adminRole: v as AdminRole,
+                  salesStaffCodes: v === "super_admin" ? [] : f.salesStaffCodes,
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -331,6 +457,51 @@ export default function Admins() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>销售权限 {form.adminRole === "merchant_mgr" && <span className="text-destructive">*</span>}</Label>
+              {form.adminRole === "super_admin" ? (
+                <Button type="button" variant="outline" className="w-full justify-between" disabled>
+                  全部销售范围
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between font-normal">
+                      <span className="truncate">
+                        {form.salesStaffCodes.length === 0
+                          ? "请选择销售负责人"
+                          : form.salesStaffCodes.map(code =>
+                            salesStaff.find(staff => staff.staffCode === code)?.displayName ?? code,
+                          ).join("、")}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
+                    <DropdownMenuLabel>选择1名为普通销售，选择多名为主管范围</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {salesStaff.filter(staff => staff.status === "active").map(staff => (
+                      <DropdownMenuCheckboxItem
+                        key={staff.staffCode}
+                        checked={form.salesStaffCodes.includes(staff.staffCode)}
+                        onSelect={event => event.preventDefault()}
+                        onCheckedChange={checked => setForm(current => ({
+                          ...current,
+                          salesStaffCodes: checked
+                            ? Array.from(new Set([...current.salesStaffCodes, staff.staffCode]))
+                            : current.salesStaffCodes.filter(code => code !== staff.staffCode),
+                        }))}
+                      >
+                        {staff.displayName}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <p className="text-xs text-muted-foreground">
+                普通用户只可查看所选销售负责的商户，以及买方或卖方属于该范围的订单。
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>手机号</Label>

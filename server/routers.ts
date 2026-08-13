@@ -70,7 +70,9 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 /** 本地账号按 adminRole 校验；Manus OAuth 管理员兼容为 super_admin。 */
 const adminPermissionProcedure = (permission: AdminPermission) =>
   adminProcedure.use(({ ctx, next }) => {
-    const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+    const role: AdminRole = ctx.adminAccount
+      ? (ctx.adminAccount.adminRole === "super_admin" ? "super_admin" : "merchant_mgr")
+      : "super_admin";
     if (!hasAdminPermission(role, permission)) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权执行此操作" });
     }
@@ -86,7 +88,9 @@ const messageWriteProcedure = adminPermissionProcedure("messages.write");
 const orderReadProcedure = adminPermissionProcedure("orders.read");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
-  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  const role: AdminRole = ctx.adminAccount
+    ? (ctx.adminAccount.adminRole === "super_admin" ? "super_admin" : "merchant_mgr")
+    : "super_admin";
   if (role !== "super_admin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以执行 ERP 超级管理员换绑" });
   }
@@ -121,6 +125,48 @@ const pageInput = z.object({
   page: z.number().min(1).default(1),
   pageSize: z.number().min(1).max(100).default(20),
 });
+
+async function resolvePortalSalesOwner(
+  staffCode: string | null | undefined,
+  legacyName?: string | null,
+): Promise<{ salesOwner?: string | null; salesOwnerCode?: string | null }> {
+  if (staffCode === undefined && legacyName === undefined) return {};
+  if (staffCode === null || (staffCode !== undefined && staffCode.trim() === "")) {
+    return { salesOwner: null, salesOwnerCode: null };
+  }
+  let staff = staffCode === undefined
+    ? null
+    : await db.getSalesStaffByCode(staffCode.trim().toLowerCase());
+  if (!staff && legacyName) {
+    const activeStaff = await db.listSalesStaff();
+    staff = activeStaff.find(item => item.displayName.toLowerCase() === legacyName.trim().toLowerCase()) ?? null;
+  }
+  if (!staff || staff.status !== "active") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "请选择有效的销售负责人" });
+  }
+  return { salesOwner: staff.displayName, salesOwnerCode: staff.staffCode };
+}
+
+/** undefined 表示超级管理员全量范围；空数组表示普通用户尚未配置任何销售范围。 */
+async function getAdminSalesStaffCodes(ctx: TrpcContext): Promise<string[] | undefined> {
+  if (!ctx.adminAccount || ctx.adminAccount.adminRole === "super_admin") return undefined;
+  return db.getAdminUserSalesScopeCodes(ctx.adminAccount.id);
+}
+
+async function requireVisibleMerchant(ctx: TrpcContext, merchantId: number) {
+  const salesStaffCodes = await getAdminSalesStaffCodes(ctx);
+  const merchant = await db.getMerchantById(merchantId, salesStaffCodes);
+  if (!merchant) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
+  }
+  return merchant;
+}
+
+async function getVisibleMerchantCreditCodes(ctx: TrpcContext): Promise<string[] | undefined> {
+  const salesStaffCodes = await getAdminSalesStaffCodes(ctx);
+  if (salesStaffCodes === undefined) return undefined;
+  return db.getScopedMerchantCreditCodes(salesStaffCodes);
+}
 
 function getMaterialAuditActor(ctx: TrpcContext): db.MaterialAuditActor {
   const forwardedFor = ctx.req.headers["x-forwarded-for"];
@@ -287,7 +333,8 @@ export const appRouter = router({
 
   // ─── 商城真实订单（后台仅做代理，不读取/写入本地 SO 订单表）──────────────
   order: router({
-    stats: orderReadProcedure.query(() => getPlatformOrderStats()),
+    stats: orderReadProcedure.query(async ({ ctx }) =>
+      getPlatformOrderStats(await getVisibleMerchantCreditCodes(ctx))),
     list: orderReadProcedure
       .input(pageInput.extend({
         keyword: z.string().trim().max(100).optional(),
@@ -297,10 +344,12 @@ export const appRouter = router({
         createdFrom: z.number().int().nonnegative().optional(),
         createdTo: z.number().int().nonnegative().optional(),
       }))
-      .query(({ input }) => listPlatformOrders(input)),
+      .query(async ({ ctx, input }) =>
+        listPlatformOrders(input, await getVisibleMerchantCreditCodes(ctx))),
     detail: orderReadProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
-      .query(({ input }) => getPlatformOrderDetail(input.orderId)),
+      .query(async ({ ctx, input }) =>
+        getPlatformOrderDetail(input.orderId, await getVisibleMerchantCreditCodes(ctx))),
   }),
 
   // ─── 物料数据库 ──────────────────────────────────────────────────────────
@@ -460,11 +509,11 @@ export const appRouter = router({
   merchant: router({
     list: merchantReadProcedure
       .input(pageInput.extend({ status: z.string().optional(), search: z.string().optional() }))
-      .query(async ({ input }) => {
-        return db.getMerchants(input);
+      .query(async ({ ctx, input }) => {
+        return db.getMerchants(input, await getAdminSalesStaffCodes(ctx));
       }),
-    detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-      return db.getMerchantById(input.id);
+    detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+      return requireVisibleMerchant(ctx, input.id);
     }),
     review: merchantWriteProcedure
       .input(z.object({
@@ -473,6 +522,7 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        await requireVisibleMerchant(ctx, input.id);
         const statusMap: Record<string, string> = {
           approve: "approved",
           supplement: "supplement",
@@ -491,6 +541,7 @@ export const appRouter = router({
         note: z.string().max(1000).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
+        await requireVisibleMerchant(ctx, input.id);
         return db.setMerchantCrmStatus({
           merchantId: input.id,
           crmStatus: input.crmStatus,
@@ -555,6 +606,13 @@ export const appRouter = router({
 
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
   portal: router({
+    /** 前台销售负责人下拉：只返回启用人员，不暴露后台账号。 */
+    listSalesStaff: publicProcedure.query(async ({ ctx }) => {
+      assertPortalKey(ctx.req);
+      const staff = await db.listSalesStaff();
+      return staff.map(item => ({ staffCode: item.staffCode, displayName: item.displayName }));
+    }),
+
     /**
      * 前台商家提交入驻资料。鉴权：请求头 x-portal-key 必须等于 PORTAL_API_KEY 环境变量。
      * 文件类字段（营业执照图、协议文件）传前台已上传好的可访问 URL。
@@ -577,13 +635,15 @@ export const appRouter = router({
         legalPersonName: z.string().max(64).optional().nullable(),
         legalPersonIdNo: z.string().max(32).optional().nullable(),
         legalPersonPhone: z.string().max(20).optional().nullable(),
-        /** 销售负责人（可选），写入商户 salesOwner 列，后台商户列表展示 */
+        /** 旧客户端姓名字段仅用于兼容；新客户端提交稳定代码。 */
         salesOwner: z.string().max(64).optional().nullable(),
+        salesOwnerCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
-        const { agreementSigned, ...rest } = input;
-        const result = await db.upsertPortalMerchant({ ...rest, agreementSigned });
+        const owner = await resolvePortalSalesOwner(input.salesOwnerCode, input.salesOwner);
+        const { agreementSigned, salesOwner, salesOwnerCode, ...rest } = input;
+        const result = await db.upsertPortalMerchant({ ...rest, ...owner, agreementSigned });
         return result;
       }),
 
@@ -641,11 +701,14 @@ export const appRouter = router({
         businessScope: z.string().max(4000).optional().nullable(),
         licenseImageUrl: z.string().url().max(512).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
+        salesOwnerCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/).optional().nullable(),
         note: z.string().max(1000).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
-        return db.submitCrmApplication(input);
+        const owner = await resolvePortalSalesOwner(input.salesOwnerCode);
+        const { salesOwnerCode, ...rest } = input;
+        return db.submitCrmApplication({ ...rest, ...owner });
       }),
 
     /**
@@ -825,8 +888,8 @@ export const appRouter = router({
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(100).default(20),
       }).optional())
-      .query(async ({ input }) => {
-        return db.listMerchantInventories(input ?? {});
+      .query(async ({ ctx, input }) => {
+        return db.listMerchantInventories(input ?? {}, await getVisibleMerchantCreditCodes(ctx));
       }),
     /** 下架：置回待发布（draft）并记录 offshelfBy='admin' 与必填下架原因，前台向用户展示 */
     offshelf: merchantWriteProcedure
@@ -834,8 +897,8 @@ export const appRouter = router({
         id: z.number().int().positive(),
         reason: z.string().trim().min(1, "请填写下架原因").max(255, "下架原因不能超过255字"),
       }))
-      .mutation(async ({ input }) => {
-        return db.offshelfPlatformInventory(input.id, input.reason);
+      .mutation(async ({ ctx, input }) => {
+        return db.offshelfPlatformInventory(input.id, input.reason, await getVisibleMerchantCreditCodes(ctx));
       }),
   }),
 
@@ -843,6 +906,27 @@ export const appRouter = router({
   admin: router({
     list: adminManageProcedure.input(pageInput).query(async ({ input }) => {
       return db.getAdminUsers(input);
+    }),
+  }),
+
+  salesStaff: router({
+    list: adminManageProcedure
+      .input(z.object({ includeInactive: z.boolean().optional().default(true) }).optional())
+      .query(async ({ input }) => db.listSalesStaff({ activeOnly: !(input?.includeInactive ?? true) })),
+    create: adminManageProcedure.input(z.object({
+      staffCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{2,64}$/, "员工代码只能包含小写字母、数字、下划线或连字符"),
+      displayName: z.string().trim().min(1).max(128),
+      sortOrder: z.number().int().min(0).max(9999).optional(),
+    })).mutation(async ({ input }) => db.createSalesStaff(input)),
+    update: adminManageProcedure.input(z.object({
+      id: z.number().int().positive(),
+      displayName: z.string().trim().min(1).max(128).optional(),
+      status: z.enum(["active", "inactive"]).optional(),
+      sortOrder: z.number().int().min(0).max(9999).optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...changes } = input;
+      await db.updateSalesStaff(id, changes);
+      return { success: true };
     }),
   }),
 
@@ -855,28 +939,53 @@ export const appRouter = router({
       displayName: z.string().max(128).optional().nullable(),
       email: z.string().email().optional().nullable(),
       phone: z.string().max(20).optional().nullable(),
-      adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]),
+      adminRole: z.enum(["super_admin", "merchant_mgr"]),
+      salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).default([]),
       password: z.string().min(8, "初始密码至少 8 位").max(128),
     })).mutation(async ({ input }) => {
       const existing = await db.getAdminUserByUsername(input.username);
       if (existing) {
         throw new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
       }
+      if (input.adminRole === "merchant_mgr" && input.salesStaffCodes.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户至少选择一名销售权限" });
+      }
       const { password, ...rest } = input;
-      return db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
+      try {
+        return await db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
+      } catch (error) {
+        if (error instanceof Error && error.message === "INVALID_SALES_STAFF_CODE") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "销售权限包含无效或已停用员工" });
+        }
+        throw error;
+      }
     }),
     update: adminManageProcedure.input(z.object({
       id: z.number(),
       displayName: z.string().max(128).optional().nullable(),
       email: z.string().email().optional().nullable(),
       phone: z.string().max(20).optional().nullable(),
-      adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]).optional(),
+      adminRole: z.enum(["super_admin", "merchant_mgr"]).optional(),
+      salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).optional(),
       status: z.enum(["active", "disabled", "locked"]).optional(),
       /** 传入则重置该账号的登录密码 */
       password: z.string().min(8, "密码至少 8 位").max(128).optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ ctx, input }) => {
+      if (ctx.adminAccount?.id === input.id && (input.adminRole === "merchant_mgr" || input.status === "disabled")) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "不能降低或停用当前登录的超级管理员账号" });
+      }
+      if (input.adminRole === "merchant_mgr" && input.salesStaffCodes?.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户至少选择一名销售权限" });
+      }
       const { id, password, ...rest } = input;
-      await db.updateAdminUser(id, rest);
+      try {
+        await db.updateAdminUser(id, rest);
+      } catch (error) {
+        if (error instanceof Error && ["INVALID_SALES_STAFF_CODE", "SALES_SCOPE_REQUIRED"].includes(error.message)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户必须选择有效且启用的销售权限" });
+        }
+        throw error;
+      }
       if (password) {
         await db.setAdminUserPassword(id, await hashPassword(password));
       }
@@ -885,10 +994,16 @@ export const appRouter = router({
     toggleStatus: adminManageProcedure.input(z.object({
       id: z.number(),
       status: z.enum(["active", "disabled"]),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ ctx, input }) => {
+      if (ctx.adminAccount?.id === input.id && input.status === "disabled") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "不能停用当前登录的超级管理员账号" });
+      }
       return db.toggleAdminUserStatus(input.id, input.status);
     }),
-    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      if (ctx.adminAccount?.id === input.id) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "不能删除当前登录的超级管理员账号" });
+      }
       return db.deleteAdminUser(input.id);
     }),
   }),

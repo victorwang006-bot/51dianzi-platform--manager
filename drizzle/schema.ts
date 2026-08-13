@@ -136,6 +136,34 @@ export const adminUsers = mysqlTable("admin_users", {
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 
+/** 销售人员主数据；新增、改名和停用均由超级管理员维护。 */
+export const salesStaff = mysqlTable("sales_staff", {
+  id: int("id").autoincrement().primaryKey(),
+  staffCode: varchar("staffCode", { length: 64 }).notNull().unique(),
+  displayName: varchar("displayName", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => ({
+  statusSortIdx: index("sales_staff_status_sort_idx").on(table.status, table.sortOrder),
+}));
+
+export type SalesStaff = typeof salesStaff.$inferSelect;
+
+/** 后台账号可查看的一名或多名销售负责人范围；超级管理员无需写入。 */
+export const adminUserSalesScopes = mysqlTable("admin_user_sales_scopes", {
+  id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  staffCode: varchar("staffCode", { length: 64 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  adminStaffUnique: uniqueIndex("admin_user_sales_scopes_admin_staff_unique").on(table.adminUserId, table.staffCode),
+  staffAdminIdx: index("admin_user_sales_scopes_staff_admin_idx").on(table.staffCode, table.adminUserId),
+}));
+
+export type AdminUserSalesScope = typeof adminUserSalesScopes.$inferSelect;
+
 /**
  * 找回密码验证码表。
  * 验证码经 bcrypt 哈希存储；channel 标识发送渠道（绑定手机 sms / 绑定邮箱 email）。
@@ -213,11 +241,15 @@ export const merchants = mysqlTable("merchants", {
   crmNote: text("crmNote"),
   /** 后台"发信"关联的客服会话编号（首次发信创建 service 会话后记录并复用） */
   crmThreadNo: varchar("crmThreadNo", { length: 32 }),
-  /** 销售负责人（前台 submitMerchant 可传入，后台商户列表展示） */
+  /** 销售负责人规范姓名快照，用于展示和历史兼容。 */
   salesOwner: varchar("salesOwner", { length: 64 }),
+  /** 销售负责人稳定代码，用于后台账号行级数据权限。 */
+  salesOwnerCode: varchar("salesOwnerCode", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, table => ({
+  salesOwnerCodeIdx: index("merchants_sales_owner_code_idx").on(table.salesOwnerCode),
+}));
 
 export type Merchant = typeof merchants.$inferSelect;
 
