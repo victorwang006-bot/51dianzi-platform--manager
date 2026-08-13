@@ -220,6 +220,53 @@ export const appRouter = router({
         username: opts.ctx.adminAccount?.username ?? null,
       };
     }),
+    /** 当前本地后台账号的个人资料；密码哈希永不返回。 */
+    profile: adminProcedure.query(async ({ ctx }) => {
+      const account = ctx.adminAccount;
+      if (!account) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持编辑个人信息" });
+      }
+      return {
+        username: account.username,
+        displayName: account.displayName ?? "",
+        phone: account.phone ?? "",
+        email: account.email ?? "",
+        adminRole: account.adminRole === "super_admin" ? "super_admin" as const : "merchant_mgr" as const,
+      };
+    }),
+    /** 本人修改显示名称、手机号和邮箱；直接更新后台用户管理使用的同一记录。 */
+    updateProfile: adminProcedure
+      .input(z.object({
+        displayName: z.string().trim().min(1, "请输入用户名称").max(128),
+        phone: z.string().trim().max(32).refine(
+          value => value === "" || /^\+?\d{7,20}$/.test(value),
+          "请输入有效手机号",
+        ),
+        email: z.string().trim().max(255).refine(
+          value => value === "" || z.string().email().safeParse(value).success,
+          "请输入有效邮箱",
+        ),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const account = ctx.adminAccount;
+        if (!account) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持编辑个人信息" });
+        }
+        await db.updateAdminUser(account.id, {
+          displayName: input.displayName,
+          phone: input.phone || null,
+          email: input.email ? input.email.toLowerCase() : null,
+        });
+        const updated = await db.getAdminUserById(account.id);
+        if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "后台用户不存在" });
+        return {
+          username: updated.username,
+          displayName: updated.displayName ?? "",
+          phone: updated.phone ?? "",
+          email: updated.email ?? "",
+          adminRole: updated.adminRole === "super_admin" ? "super_admin" as const : "merchant_mgr" as const,
+        };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -249,6 +296,9 @@ export const appRouter = router({
         const ok = await verifyPassword(input.oldPassword, account.passwordHash);
         if (!ok) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "原密码错误" });
+        }
+        if (input.oldPassword === input.newPassword) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "新密码不能与当前密码相同" });
         }
         await db.setAdminUserPassword(account.id, await hashPassword(input.newPassword));
         return { success: true } as const;

@@ -10,6 +10,7 @@ export const ADMIN_PERMISSIONS = [
   "messages.read",
   "messages.write",
   "orders.read",
+  "profile.manage",
   "admins.manage",
 ] as const;
 
@@ -17,8 +18,8 @@ export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
 
 const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   super_admin: ADMIN_PERMISSIONS,
-  /** 普通用户只管理自己销售范围内的商户，并查看关联订单。 */
-  merchant_mgr: ["merchants.read", "merchants.write", "orders.read"],
+  /** 普通用户管理自己销售范围内的商户、查看关联订单，并维护本人资料。 */
+  merchant_mgr: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
 };
 
 export function isAdminRole(value: unknown): value is AdminRole {

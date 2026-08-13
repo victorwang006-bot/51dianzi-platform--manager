@@ -48,10 +48,11 @@ describe("后台双角色权限矩阵", () => {
     }
   });
 
-  it("普通用户仅拥有商户读写和订单读取权限", () => {
+  it("普通用户仅拥有商户、订单和本人资料权限", () => {
     expect(hasAdminPermission("merchant_mgr", "merchants.read")).toBe(true);
     expect(hasAdminPermission("merchant_mgr", "merchants.write")).toBe(true);
     expect(hasAdminPermission("merchant_mgr", "orders.read")).toBe(true);
+    expect(hasAdminPermission("merchant_mgr", "profile.manage")).toBe(true);
     expect(hasAdminPermission("merchant_mgr", "materials.read")).toBe(false);
     expect(hasAdminPermission("merchant_mgr", "materials.write")).toBe(false);
     expect(hasAdminPermission("merchant_mgr", "messages.read")).toBe(false);

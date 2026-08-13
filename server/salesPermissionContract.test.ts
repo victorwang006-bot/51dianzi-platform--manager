@@ -40,7 +40,7 @@ describe("后台双角色与销售权限实施契约", () => {
   it("公开角色只保留超级管理员和普通用户", () => {
     expect(permissions).toContain('export const ADMIN_ROLES = ["super_admin", "merchant_mgr"] as const');
     expect(permissions).toContain('export type AdminRole = (typeof ADMIN_ROLES)[number]');
-    expect(permissions).toContain('merchant_mgr: ["merchants.read", "merchants.write", "orders.read"]');
+    expect(permissions).toContain('merchant_mgr: ["merchants.read", "merchants.write", "orders.read", "profile.manage"]');
     for (const legacyRole of ["operation", "customer_svc", "risk_control", "finance", "auditor"]) {
       expect(permissions).not.toContain(`${legacyRole}: [`);
     }
@@ -65,9 +65,10 @@ describe("后台双角色与销售权限实施契约", () => {
     expect(routers).toContain("salesStaffCodes: z.array");
   });
 
-  it("普通用户菜单仅显示商户与订单，且订单管理与商户管理为同级入口", () => {
+  it("普通用户业务菜单仅显示同级商户与订单，系统菜单提供个人信息", () => {
     expect(dashboard).toContain('label: "商户管理", path: "/merchants", permission: "merchants.read"');
     expect(dashboard).toContain('label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false');
+    expect(dashboard).toContain('label: "个人信息", path: "/profile", permission: "profile.manage" as AdminPermission, nested: false');
     expect(permissions).not.toContain('merchant_mgr: ["materials.read"');
     expect(permissions).not.toContain('merchant_mgr: ["messages.read"');
   });
