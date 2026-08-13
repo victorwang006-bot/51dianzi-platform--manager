@@ -62,6 +62,12 @@ mkdir -p "$stage/service" "$stage/subdomain/dist"
   cp -a dist/public "$stage/subdomain/dist/public"
 )
 cp "$SOURCE_ROOT/package.json" "$SOURCE_ROOT/pnpm-lock.yaml" "$stage/service/"
+if [[ -f "$SOURCE_ROOT/pnpm-workspace.yaml" ]]; then
+  cp "$SOURCE_ROOT/pnpm-workspace.yaml" "$stage/service/"
+fi
+if [[ -d "$SOURCE_ROOT/patches" ]]; then
+  cp -a "$SOURCE_ROOT/patches" "$stage/service/patches"
+fi
 mkdir -p "$stage/service/scripts"
 cp "$SOURCE_ROOT/scripts/apply-sales-permissions-schema.mjs" "$stage/service/scripts/"
 chmod -R a+rX "$stage"
