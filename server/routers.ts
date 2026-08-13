@@ -909,25 +909,11 @@ export const appRouter = router({
     }),
   }),
 
+  /** 销售身份只读列表；新增、修改、停用和删除统一由后台用户生命周期驱动。 */
   salesStaff: router({
     list: adminManageProcedure
       .input(z.object({ includeInactive: z.boolean().optional().default(true) }).optional())
       .query(async ({ input }) => db.listSalesStaff({ activeOnly: !(input?.includeInactive ?? true) })),
-    create: adminManageProcedure.input(z.object({
-      staffCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{2,64}$/, "员工代码只能包含小写字母、数字、下划线或连字符"),
-      displayName: z.string().trim().min(1).max(128),
-      sortOrder: z.number().int().min(0).max(9999).optional(),
-    })).mutation(async ({ input }) => db.createSalesStaff(input)),
-    update: adminManageProcedure.input(z.object({
-      id: z.number().int().positive(),
-      displayName: z.string().trim().min(1).max(128).optional(),
-      status: z.enum(["active", "inactive"]).optional(),
-      sortOrder: z.number().int().min(0).max(9999).optional(),
-    })).mutation(async ({ input }) => {
-      const { id, ...changes } = input;
-      await db.updateSalesStaff(id, changes);
-      return { success: true };
-    }),
   }),
 
   adminUser: router({
@@ -946,9 +932,6 @@ export const appRouter = router({
       const existing = await db.getAdminUserByUsername(input.username);
       if (existing) {
         throw new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
-      }
-      if (input.adminRole === "merchant_mgr" && input.salesStaffCodes.length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户至少选择一名销售权限" });
       }
       const { password, ...rest } = input;
       try {
@@ -974,15 +957,12 @@ export const appRouter = router({
       if (ctx.adminAccount?.id === input.id && (input.adminRole === "merchant_mgr" || input.status === "disabled")) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "不能降低或停用当前登录的超级管理员账号" });
       }
-      if (input.adminRole === "merchant_mgr" && input.salesStaffCodes?.length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户至少选择一名销售权限" });
-      }
       const { id, password, ...rest } = input;
       try {
         await db.updateAdminUser(id, rest);
       } catch (error) {
         if (error instanceof Error && ["INVALID_SALES_STAFF_CODE", "SALES_SCOPE_REQUIRED"].includes(error.message)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户必须选择有效且启用的销售权限" });
+          throw new TRPCError({ code: "BAD_REQUEST", message: "销售权限包含无效或已停用的普通用户" });
         }
         throw error;
       }

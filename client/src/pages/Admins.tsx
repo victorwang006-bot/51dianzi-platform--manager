@@ -74,19 +74,17 @@ export default function Admins() {
   const [page, setPage] = useState(1);
   const utils = trpc.useUtils();
   const { data, isLoading, isFetching, refetch } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
-  const { data: salesStaff = [], isFetching: isStaffFetching, refetch: refetchStaff } =
-    trpc.salesStaff.list.useQuery({ includeInactive: true });
+  const { data: salesStaff = [] } = trpc.salesStaff.list.useQuery({ includeInactive: true });
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [staffDialogOpen, setStaffDialogOpen] = useState(false);
-  const [staffForm, setStaffForm] = useState({ staffCode: "", displayName: "" });
 
   const createMutation = trpc.adminUser.create.useMutation({
     onSuccess: () => {
       utils.adminUser.list.invalidate();
+      utils.salesStaff.list.invalidate();
       setDialogOpen(false);
       setForm(emptyForm);
       toast.success("用户创建成功");
@@ -97,6 +95,7 @@ export default function Admins() {
   const updateMutation = trpc.adminUser.update.useMutation({
     onSuccess: () => {
       utils.adminUser.list.invalidate();
+      utils.salesStaff.list.invalidate();
       setDialogOpen(false);
       setEditingId(null);
       toast.success("用户信息已更新");
@@ -107,6 +106,7 @@ export default function Admins() {
   const toggleMutation = trpc.adminUser.toggleStatus.useMutation({
     onSuccess: () => {
       utils.adminUser.list.invalidate();
+      utils.salesStaff.list.invalidate();
       toast.success("状态已更新");
     },
     onError: (e) => toast.error(`操作失败：${e.message}`),
@@ -115,28 +115,10 @@ export default function Admins() {
   const removeMutation = trpc.adminUser.remove.useMutation({
     onSuccess: () => {
       utils.adminUser.list.invalidate();
+      utils.salesStaff.list.invalidate();
       toast.success("用户已删除");
     },
     onError: (e) => toast.error(`删除失败：${e.message}`),
-  });
-
-  const createStaffMutation = trpc.salesStaff.create.useMutation({
-    onSuccess: () => {
-      utils.salesStaff.list.invalidate();
-      setStaffDialogOpen(false);
-      setStaffForm({ staffCode: "", displayName: "" });
-      toast.success("销售人员已添加");
-    },
-    onError: e => toast.error(`添加失败：${e.message}`),
-  });
-
-  const updateStaffMutation = trpc.salesStaff.update.useMutation({
-    onSuccess: () => {
-      utils.salesStaff.list.invalidate();
-      utils.adminUser.list.invalidate();
-      toast.success("销售人员状态已更新");
-    },
-    onError: e => toast.error(`更新失败：${e.message}`),
   });
 
   function openCreate() {
@@ -153,7 +135,7 @@ export default function Admins() {
       email: a.email ?? "",
       phone: a.phone ?? "",
       adminRole: a.adminRole === "super_admin" ? "super_admin" : "merchant_mgr",
-      salesStaffCodes: a.salesStaffCodes ?? [],
+      salesStaffCodes: (a.salesStaffCodes ?? []).filter(code => code !== a.ownSalesStaffCode),
       password: "",
     });
     setDialogOpen(true);
@@ -170,10 +152,6 @@ export default function Admins() {
     }
     if (editingId !== null && form.password && form.password.length < 8) {
       toast.error("重置密码至少 8 位");
-      return;
-    }
-    if (form.adminRole === "merchant_mgr" && form.salesStaffCodes.length === 0) {
-      toast.error("普通用户至少选择一名销售权限");
       return;
     }
     const payload = {
@@ -201,7 +179,7 @@ export default function Admins() {
     <DashboardLayout>
       <PageHeader
         title="用户管理"
-        description="后台仅分超级管理员与普通用户；普通用户按销售权限查看负责商户和关联订单"
+        description="普通用户创建后自动生成销售身份并默认绑定本人；可追加其他普通用户形成主管范围"
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -322,92 +300,6 @@ export default function Admins() {
         </CardContent>
       </Card>
 
-      {/* 销售人员主数据：未来入职员工可在此新增，无需修改代码 */}
-      <Card className="mt-4">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">销售人员</CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">前台负责人下拉与后台销售权限均从此列表动态读取</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void refetchStaff()} disabled={isStaffFetching}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${isStaffFetching ? "animate-spin" : ""}`} />刷新
-            </Button>
-            <Button size="sm" onClick={() => setStaffDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />新增员工
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {salesStaff.map(staff => (
-              <div key={staff.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{staff.displayName}</div>
-                  <div className="font-mono text-[11px] text-muted-foreground">{staff.staffCode}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge label={staff.status === "active" ? "启用" : "停用"} style={staff.status === "active" ? "success" : "gray"} />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={updateStaffMutation.isPending}
-                    onClick={() => updateStaffMutation.mutate({
-                      id: staff.id,
-                      status: staff.status === "active" ? "inactive" : "active",
-                    })}
-                  >
-                    {staff.status === "active" ? "停用" : "启用"}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>新增销售人员</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>员工代码 <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="如：alice（创建后不可修改）"
-                value={staffForm.staffCode}
-                onChange={event => setStaffForm(current => ({ ...current, staffCode: event.target.value.toLowerCase() }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>显示名称 <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="员工姓名或英文名"
-                value={staffForm.displayName}
-                onChange={event => setStaffForm(current => ({ ...current, displayName: event.target.value }))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStaffDialogOpen(false)} disabled={createStaffMutation.isPending}>取消</Button>
-            <Button
-              disabled={createStaffMutation.isPending}
-              onClick={() => {
-                if (!staffForm.staffCode.trim() || !staffForm.displayName.trim()) {
-                  toast.error("请填写员工代码和显示名称");
-                  return;
-                }
-                createStaffMutation.mutate({
-                  staffCode: staffForm.staffCode.trim().toLowerCase(),
-                  displayName: staffForm.displayName.trim(),
-                });
-              }}
-            >
-              {createStaffMutation.isPending ? "添加中..." : "添加员工"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* 新建/编辑用户弹窗 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
@@ -459,7 +351,7 @@ export default function Admins() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>销售权限 {form.adminRole === "merchant_mgr" && <span className="text-destructive">*</span>}</Label>
+              <Label>销售权限</Label>
               {form.adminRole === "super_admin" ? (
                 <Button type="button" variant="outline" className="w-full justify-between" disabled>
                   全部销售范围
@@ -470,7 +362,7 @@ export default function Admins() {
                     <Button type="button" variant="outline" className="w-full justify-between font-normal">
                       <span className="truncate">
                         {form.salesStaffCodes.length === 0
-                          ? "请选择销售负责人"
+                          ? "默认仅本人；可追加其他普通用户"
                           : form.salesStaffCodes.map(code =>
                             salesStaff.find(staff => staff.staffCode === code)?.displayName ?? code,
                           ).join("、")}
@@ -479,9 +371,13 @@ export default function Admins() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
-                    <DropdownMenuLabel>选择1名为普通销售，选择多名为主管范围</DropdownMenuLabel>
+                    <DropdownMenuLabel>新用户自动绑定本人；勾选其他用户可形成主管范围</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {salesStaff.filter(staff => staff.status === "active").map(staff => (
+                    {salesStaff.filter(staff =>
+                      staff.status === "active"
+                      && staff.adminUserId !== null
+                      && staff.staffCode !== data?.data.find(user => user.id === editingId)?.ownSalesStaffCode,
+                    ).map(staff => (
                       <DropdownMenuCheckboxItem
                         key={staff.staffCode}
                         checked={form.salesStaffCodes.includes(staff.staffCode)}
@@ -500,7 +396,7 @@ export default function Admins() {
                 </DropdownMenu>
               )}
               <p className="text-xs text-muted-foreground">
-                普通用户只可查看所选销售负责的商户，以及买方或卖方属于该范围的订单。
+                普通用户创建后自动生成销售身份并默认绑定本人；追加其他普通用户后，可查看这些销售范围的商户与关联订单。
               </p>
             </div>
             <div className="space-y-1.5">

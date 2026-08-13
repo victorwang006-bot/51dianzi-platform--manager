@@ -18,6 +18,8 @@ describe("后台双角色与销售权限实施契约", () => {
   it("数据库同时保留员工主数据、账号多负责人范围和商户稳定负责人代码", () => {
     expect(schema).toContain('export const salesStaff = mysqlTable("sales_staff"');
     expect(schema).toContain('export const adminUserSalesScopes = mysqlTable("admin_user_sales_scopes"');
+    expect(schema).toContain('adminUserId: int("adminUserId")');
+    expect(schema).toContain('sales_staff_admin_user_unique');
     expect(schema).toContain('salesOwnerCode: varchar("salesOwnerCode"');
     expect(schema).toContain('merchants_sales_owner_code_idx');
   });
@@ -29,6 +31,8 @@ describe("后台双角色与销售权限实施契约", () => {
     expect(migration).toContain("CREATE TABLE IF NOT EXISTS sales_staff");
     expect(migration).toContain("CREATE TABLE IF NOT EXISTS admin_user_sales_scopes");
     expect(migration).toContain("UPDATE admin_users SET adminRole='merchant_mgr' WHERE adminRole<>'super_admin'");
+    expect(migration).toContain("sales_staff.adminUserId added");
+    expect(migration).toContain("INSERT IGNORE INTO admin_user_sales_scopes");
     expect(migration).not.toMatch(/DROP\s+(TABLE|COLUMN|INDEX)/i);
   });
 
@@ -41,14 +45,21 @@ describe("后台双角色与销售权限实施契约", () => {
     }
   });
 
-  it("新建和修改用户在角色权限后提供销售权限多选", () => {
+  it("新建和修改用户是唯一销售身份入口，普通用户默认本人且可追加主管范围", () => {
     const roleLabelIndex = adminsPage.indexOf("<Label>角色权限");
     const salesLabelIndex = adminsPage.indexOf("<Label>销售权限");
     expect(roleLabelIndex).toBeGreaterThanOrEqual(0);
     expect(salesLabelIndex).toBeGreaterThan(roleLabelIndex);
-    expect(adminsPage).toContain("选择1名为普通销售，选择多名为主管范围");
+    expect(adminsPage).toContain("默认仅本人；可追加其他普通用户");
+    expect(adminsPage).toContain("普通用户创建后自动生成销售身份并默认绑定本人");
     expect(adminsPage).toContain("trpc.salesStaff.list.useQuery");
-    expect(adminsPage).toContain("新增员工");
+    expect(adminsPage).not.toContain("新增员工");
+    expect(adminsPage).not.toContain("trpc.salesStaff.create");
+    expect(adminsPage).not.toContain("trpc.salesStaff.update");
+    expect(routers).not.toContain("db.createSalesStaff");
+    expect(routers).not.toContain("db.updateSalesStaff");
+    expect(db).toContain("syncAdminUserSalesIdentity");
+    expect(db).toContain("ownSalesStaffCode");
     expect(routers).toContain('adminRole: z.enum(["super_admin", "merchant_mgr"])');
     expect(routers).toContain("salesStaffCodes: z.array");
   });

@@ -60,18 +60,22 @@ describe("后台双角色与销售权限用户管理", () => {
     vi.mocked(db.setAdminUserPassword).mockResolvedValue(undefined);
   });
 
-  it("普通用户至少选择一名销售权限", async () => {
-    await expect(caller.adminUser.create({
-      username: "ordinary-none",
+  it("普通用户不选择追加范围也可创建，数据库层自动生成并绑定本人销售身份", async () => {
+    await caller.adminUser.create({
+      username: "ordinary-self",
       displayName: "普通用户",
       adminRole: "merchant_mgr",
       salesStaffCodes: [],
       password: "InitialPass123!",
-    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(db.createAdminUser).not.toHaveBeenCalled();
+    });
+    expect(db.createAdminUser).toHaveBeenCalledWith(expect.objectContaining({
+      username: "ordinary-self",
+      adminRole: "merchant_mgr",
+      salesStaffCodes: [],
+    }));
   });
 
-  it("单负责人和多负责人都可保存，分别对应普通销售和主管范围", async () => {
+  it("可追加一名或多名其他普通用户，形成扩展销售范围或主管范围", async () => {
     await caller.adminUser.create({
       username: "ordinary-victor",
       displayName: "Victor账号",

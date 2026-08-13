@@ -136,9 +136,10 @@ export const adminUsers = mysqlTable("admin_users", {
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 
-/** 销售人员主数据；新增、改名和停用均由超级管理员维护。 */
+/** 销售身份由普通后台用户统一创建和维护；历史预置身份允许暂未关联账号。 */
 export const salesStaff = mysqlTable("sales_staff", {
   id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId"),
   staffCode: varchar("staffCode", { length: 64 }).notNull().unique(),
   displayName: varchar("displayName", { length: 128 }).notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
@@ -146,6 +147,7 @@ export const salesStaff = mysqlTable("sales_staff", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => ({
+  adminUserUnique: uniqueIndex("sales_staff_admin_user_unique").on(table.adminUserId),
   statusSortIdx: index("sales_staff_status_sort_idx").on(table.status, table.sortOrder),
 }));
 

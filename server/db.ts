@@ -1343,61 +1343,108 @@ export async function getSalesStaffByCode(staffCode: string) {
   return row ?? null;
 }
 
+async function normalizeSalesStaffCodes(
+  executor: any,
+  staffCodes: string[],
+  options: { activeOnly?: boolean; strict?: boolean } = {},
+) {
+  const normalized = Array.from(new Set(staffCodes.map(code => code.trim().toLowerCase()).filter(Boolean)));
+  if (normalized.length === 0) return [];
+  const activeOnly = options.activeOnly ?? true;
+  const rows = await executor
+    .select({ staffCode: salesStaff.staffCode })
+    .from(salesStaff)
+    .where(activeOnly
+      ? and(inArray(salesStaff.staffCode, normalized), eq(salesStaff.status, "active"))
+      : inArray(salesStaff.staffCode, normalized));
+  const valid = new Set(rows.map((row: { staffCode: string }) => row.staffCode));
+  const invalid = normalized.filter(code => !valid.has(code));
+  if ((options.strict ?? true) && invalid.length > 0) throw new Error("INVALID_SALES_STAFF_CODE");
+  return normalized.filter(code => valid.has(code));
+}
+
 export async function normalizeActiveSalesStaffCodes(staffCodes: string[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const normalized = Array.from(new Set(staffCodes.map(code => code.trim().toLowerCase()).filter(Boolean)));
-  if (normalized.length === 0) return [];
-  const rows = await db
-    .select({ staffCode: salesStaff.staffCode })
+  return normalizeSalesStaffCodes(db, staffCodes, { activeOnly: true });
+}
+
+function salesIdentityCode(username: string, adminUserId: number) {
+  const normalized = username.trim().toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  return normalized.length >= 2 ? normalized : `user-${adminUserId}`;
+}
+
+async function syncAdminUserSalesIdentity(
+  executor: any,
+  user: {
+    id: number;
+    username: string;
+    displayName?: string | null;
+    adminRole: string;
+    status: string;
+  },
+) {
+  const [linked] = await executor
+    .select()
     .from(salesStaff)
-    .where(and(inArray(salesStaff.staffCode, normalized), eq(salesStaff.status, "active")));
-  const valid = new Set(rows.map(row => row.staffCode));
-  const invalid = normalized.filter(code => !valid.has(code));
-  if (invalid.length > 0) throw new Error("INVALID_SALES_STAFF_CODE");
-  return normalized;
-}
+    .where(eq(salesStaff.adminUserId, user.id))
+    .limit(1);
+  const shouldBeActive = user.adminRole !== "super_admin" && user.status === "active";
+  const nextStatus = shouldBeActive ? "active" : "inactive";
+  const displayName = user.displayName?.trim() || user.username;
 
-export async function createSalesStaff(input: {
-  staffCode: string;
-  displayName: string;
-  sortOrder?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const staffCode = input.staffCode.trim().toLowerCase();
-  await db.insert(salesStaff).values({
-    staffCode,
-    displayName: input.displayName.trim(),
-    sortOrder: input.sortOrder ?? 0,
-    status: "active",
-  });
-  return getSalesStaffByCode(staffCode);
-}
-
-export async function updateSalesStaff(id: number, input: {
-  displayName?: string;
-  status?: "active" | "inactive";
-  sortOrder?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const set: Record<string, unknown> = {};
-  if (input.displayName !== undefined) set.displayName = input.displayName.trim();
-  if (input.status !== undefined) set.status = input.status;
-  if (input.sortOrder !== undefined) set.sortOrder = input.sortOrder;
-  if (Object.keys(set).length > 0) {
-    await db.update(salesStaff).set(set).where(eq(salesStaff.id, id));
+  if (linked) {
+    await executor.update(salesStaff).set({ displayName, status: nextStatus }).where(eq(salesStaff.id, linked.id));
+    return user.adminRole === "super_admin" ? null : linked.staffCode;
   }
+  if (user.adminRole === "super_admin") return null;
+
+  let staffCode = salesIdentityCode(user.username, user.id);
+  const [sameCode] = await executor
+    .select()
+    .from(salesStaff)
+    .where(eq(salesStaff.staffCode, staffCode))
+    .limit(1);
+  if (sameCode?.adminUserId && sameCode.adminUserId !== user.id) {
+    staffCode = `user-${user.id}`;
+  } else if (sameCode) {
+    await executor.update(salesStaff).set({
+      adminUserId: user.id,
+      displayName,
+      status: nextStatus,
+    }).where(eq(salesStaff.id, sameCode.id));
+    return staffCode;
+  }
+
+  await executor.insert(salesStaff).values({
+    adminUserId: user.id,
+    staffCode,
+    displayName,
+    status: nextStatus,
+    sortOrder: 1000 + user.id,
+  });
+  return staffCode;
 }
 
-export async function getAdminUserSalesScopeCodes(adminUserId: number) {
+export async function getAdminUserSalesScopeCodes(
+  adminUserId: number,
+  options: { includeInactive?: boolean } = {},
+) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
     .select({ staffCode: adminUserSalesScopes.staffCode })
     .from(adminUserSalesScopes)
-    .where(eq(adminUserSalesScopes.adminUserId, adminUserId))
+    .innerJoin(salesStaff, eq(salesStaff.staffCode, adminUserSalesScopes.staffCode))
+    .where(options.includeInactive
+      ? eq(adminUserSalesScopes.adminUserId, adminUserId)
+      : and(
+        eq(adminUserSalesScopes.adminUserId, adminUserId),
+        eq(salesStaff.status, "active"),
+      ))
     .orderBy(asc(adminUserSalesScopes.id));
   return rows.map(row => row.staffCode);
 }
@@ -1429,14 +1476,28 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
       .where(inArray(adminUserSalesScopes.adminUserId, userIds))
       .orderBy(asc(adminUserSalesScopes.id))
     : [];
+  const identityRows = userIds.length > 0
+    ? await db
+      .select({ adminUserId: salesStaff.adminUserId, staffCode: salesStaff.staffCode })
+      .from(salesStaff)
+      .where(inArray(salesStaff.adminUserId, userIds))
+    : [];
   const scopeMap = new Map<number, string[]>();
   for (const row of scopeRows) {
     const values = scopeMap.get(row.adminUserId) ?? [];
     values.push(row.staffCode);
     scopeMap.set(row.adminUserId, values);
   }
+  const identityMap = new Map<number, string>();
+  for (const row of identityRows) {
+    if (row.adminUserId !== null) identityMap.set(row.adminUserId, row.staffCode);
+  }
   return {
-    data: data.map(user => ({ ...user, salesStaffCodes: scopeMap.get(user.id) ?? [] })),
+    data: data.map(user => ({
+      ...user,
+      salesStaffCodes: scopeMap.get(user.id) ?? [],
+      ownSalesStaffCode: identityMap.get(user.id) ?? null,
+    })),
     total: Number(count),
   };
 }
@@ -1547,12 +1608,8 @@ export async function createAdminUser(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const scopeCodes = input.adminRole === "super_admin"
-    ? []
-    : await normalizeActiveSalesStaffCodes(input.salesStaffCodes);
-  if (input.adminRole === "merchant_mgr" && scopeCodes.length === 0) {
-    throw new Error("SALES_SCOPE_REQUIRED");
-  }
+  let scopeCodes: string[] = [];
+  let ownSalesStaffCode: string | null = null;
   await db.transaction(async tx => {
     await tx.insert(adminUsers).values({
       userId: 0,
@@ -1564,14 +1621,24 @@ export async function createAdminUser(input: {
       passwordHash: input.passwordHash ?? null,
       status: "active",
     });
-    const [created] = await tx.select({ id: adminUsers.id }).from(adminUsers)
+    const [created] = await tx.select().from(adminUsers)
       .where(eq(adminUsers.username, input.username)).limit(1);
     if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
+
+    ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, created);
+    if (input.adminRole === "merchant_mgr") {
+      const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes, {
+        activeOnly: true,
+        strict: true,
+      });
+      scopeCodes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean))) as string[];
+      if (scopeCodes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
+    }
     await replaceAdminUserSalesScopes(tx, created.id, scopeCodes);
   });
   const created = await getAdminUserByUsername(input.username);
   if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
-  return { ...created, salesStaffCodes: scopeCodes };
+  return { ...created, salesStaffCodes: scopeCodes, ownSalesStaffCode };
 }
 
 export async function updateAdminUser(id: number, input: {
@@ -1587,34 +1654,48 @@ export async function updateAdminUser(id: number, input: {
   const existing = await getAdminUserById(id);
   if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
   const nextRole = input.adminRole ?? (existing.adminRole === "super_admin" ? "super_admin" : "merchant_mgr");
-  const currentScopes = await getAdminUserSalesScopeCodes(id);
-  const nextScopes = nextRole === "super_admin"
-    ? []
-    : await normalizeActiveSalesStaffCodes(input.salesStaffCodes ?? currentScopes);
-  if (nextRole === "merchant_mgr" && nextScopes.length === 0) {
-    throw new Error("SALES_SCOPE_REQUIRED");
-  }
-
+  const nextStatus = input.status ?? existing.status;
+  const currentScopes = await getAdminUserSalesScopeCodes(id, { includeInactive: true });
   const set: Record<string, unknown> = {};
   if (input.displayName !== undefined) set.displayName = input.displayName;
   if (input.email !== undefined) set.email = input.email;
   if (input.phone !== undefined) set.phone = input.phone;
   if (input.adminRole !== undefined) set.adminRole = input.adminRole;
   if (input.status !== undefined) set.status = input.status;
+
   await db.transaction(async tx => {
     if (Object.keys(set).length > 0) {
       await tx.update(adminUsers).set(set).where(eq(adminUsers.id, id));
     }
-    if (input.salesStaffCodes !== undefined || input.adminRole !== undefined) {
-      await replaceAdminUserSalesScopes(tx, id, nextScopes);
+    const ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, {
+      id,
+      username: existing.username,
+      displayName: input.displayName !== undefined ? input.displayName : existing.displayName,
+      adminRole: nextRole,
+      status: nextStatus,
+    });
+    let nextScopes: string[] = [];
+    if (nextRole === "merchant_mgr") {
+      const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? currentScopes, {
+        activeOnly: nextStatus === "active",
+        strict: input.salesStaffCodes !== undefined,
+      });
+      nextScopes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean))) as string[];
+      if (nextScopes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
     }
+    await replaceAdminUserSalesScopes(tx, id, nextScopes);
   });
 }
 
 export async function toggleAdminUserStatus(id: number, status: "active" | "disabled") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(adminUsers).set({ status }).where(eq(adminUsers.id, id));
+  await db.transaction(async tx => {
+    const [existing] = await tx.select().from(adminUsers).where(eq(adminUsers.id, id)).limit(1);
+    if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
+    await tx.update(adminUsers).set({ status }).where(eq(adminUsers.id, id));
+    await syncAdminUserSalesIdentity(tx, { ...existing, status });
+  });
 }
 
 export async function deleteAdminUser(id: number) {
@@ -1622,6 +1703,7 @@ export async function deleteAdminUser(id: number) {
   if (!db) throw new Error("Database not available");
   await db.transaction(async tx => {
     await tx.delete(adminUserSalesScopes).where(eq(adminUserSalesScopes.adminUserId, id));
+    await tx.update(salesStaff).set({ adminUserId: null, status: "inactive" }).where(eq(salesStaff.adminUserId, id));
     await tx.delete(adminUsers).where(eq(adminUsers.id, id));
   });
 }
