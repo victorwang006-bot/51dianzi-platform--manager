@@ -14,6 +14,7 @@ const adminsPage = read("client/src/pages/Admins.tsx");
 const dashboard = read("client/src/components/DashboardLayout.tsx");
 const ordersPage = read("client/src/pages/Orders.tsx");
 const orderProxy = read("server/platformOrderApi.ts");
+const releaseScript = read("release/deploy-admin-sales-permissions.sh");
 
 describe("后台双角色与销售权限实施契约", () => {
   it("数据库同时保留员工主数据、账号多负责人范围和商户稳定负责人代码", () => {
@@ -63,6 +64,14 @@ describe("后台双角色与销售权限实施契约", () => {
     expect(db).toContain("ownSalesStaffCode");
     expect(routers).toContain('adminRole: z.enum(["super_admin", "merchant_mgr"])');
     expect(routers).toContain("salesStaffCodes: z.array");
+  });
+
+  it("发布门禁按稳定销售身份代码校验而非可变显示名称", () => {
+    for (const code of ["victor", "ocean", "bella", "doomi", "mark", "jean"]) {
+      expect(releaseScript).toContain(`"${code}"`);
+    }
+    expect(releaseScript).toContain("rows.map(row => row.staffCode)");
+    expect(releaseScript).not.toContain("for name in Victor Ocean Bella Doomi Mark Jean");
   });
 
   it("用户列表保留销售权限列并以单行摘要展示多人范围", () => {

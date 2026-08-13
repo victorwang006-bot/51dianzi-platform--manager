@@ -230,7 +230,15 @@ staff_status="$(curl -sS --max-time 20 -o "$backup_root/sales-staff.json" -w '%{
   -H "x-portal-key: $portal_key" \
   'http://127.0.0.1:3001/api/trpc/portal.listSalesStaff?input=%7B%22json%22%3Anull%7D')"
 [[ "$staff_status" == '200' ]]
-for name in Victor Ocean Bella Doomi Mark Jean; do grep -Fq "$name" "$backup_root/sales-staff.json"; done
+node - "$backup_root/sales-staff.json" <<'NODE'
+const fs = require("fs");
+const payload = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const rows = payload?.result?.data?.json ?? payload?.result?.data ?? [];
+const codes = new Set(rows.map(row => row.staffCode));
+for (const code of ["victor", "ocean", "bella", "doomi", "mark", "jean"]) {
+  if (!codes.has(code)) throw new Error(`missing required sales staff code: ${code}`);
+}
+NODE
 
 cat >>"$backup_root/deployment-summary.txt" <<EOF
 new_service=$service_release
