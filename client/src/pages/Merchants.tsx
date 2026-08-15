@@ -30,8 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Search } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -55,8 +55,8 @@ const crmStatusMap: Record<CrmStatus, { label: string; style: "success" | "warni
 };
 
 const crmActionLabels: Record<string, string> = {
-  enabled: "通过（开通 CRM）",
-  disabled: "暂停 CRM",
+  enabled: "通过（开通 ERP）",
+  disabled: "暂停 ERP",
   rejected: "拒绝申请",
 };
 
@@ -87,6 +87,10 @@ export default function Merchants() {
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+  const merchantTableScrollRef = useRef<HTMLDivElement>(null);
+  const merchantTopScrollRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
   const isSuperAdmin = (user?.adminRole ?? "super_admin") === "super_admin";
@@ -115,10 +119,10 @@ export default function Merchants() {
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
     onSuccess: (_d, vars) => {
       toast.success(
-        vars.crmStatus === "enabled" && crmTarget?.currentStatus === "disabled" ? "CRM 已恢复"
-          : vars.crmStatus === "enabled" ? "已绑定前台用户并开通 CRM"
+        vars.crmStatus === "enabled" && crmTarget?.currentStatus === "disabled" ? "ERP 已恢复"
+          : vars.crmStatus === "enabled" ? "已绑定前台用户并开通 ERP"
           : vars.crmStatus === "rejected" ? "已拒绝该申请"
-          : "CRM 已暂停",
+          : "ERP 已暂停",
       );
       utils.merchant.list.invalidate();
       setCrmTarget(null);
@@ -130,7 +134,7 @@ export default function Merchants() {
 
   const rebindMutation = trpc.merchant.rebindCrmOwner.useMutation({
     onSuccess: data => {
-      toast.success(data.idempotent ? "该换绑请求已处理" : "CRM 超级管理员已换绑");
+      toast.success(data.idempotent ? "该换绑请求已处理" : "ERP 超级管理员已换绑");
       utils.merchant.list.invalidate();
       setRebindTarget(null);
       setRebindPortalUserId("");
@@ -151,6 +155,56 @@ export default function Merchants() {
   const doSearch = () => {
     setSearch(searchInput);
     setPage(1);
+  };
+
+  useLayoutEffect(() => {
+    const tableScrollElement = merchantTableScrollRef.current;
+    const topScrollElement = merchantTopScrollRef.current;
+    if (!tableScrollElement || !topScrollElement) {
+      setTableScrollWidth(0);
+      setHasHorizontalOverflow(false);
+      return;
+    }
+
+    let syncing = false;
+    const measure = () => {
+      const nextWidth = tableScrollElement.scrollWidth;
+      setTableScrollWidth(nextWidth);
+      setHasHorizontalOverflow(nextWidth > tableScrollElement.clientWidth + 1);
+      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
+    };
+    const syncTopScroll = () => {
+      if (syncing) return;
+      syncing = true;
+      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
+      syncing = false;
+    };
+    const syncTableScroll = () => {
+      if (syncing) return;
+      syncing = true;
+      tableScrollElement.scrollLeft = topScrollElement.scrollLeft;
+      syncing = false;
+    };
+
+    tableScrollElement.addEventListener("scroll", syncTopScroll, { passive: true });
+    topScrollElement.addEventListener("scroll", syncTableScroll, { passive: true });
+    window.addEventListener("resize", measure);
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(measure);
+    resizeObserver?.observe(tableScrollElement);
+    measure();
+
+    return () => {
+      tableScrollElement.removeEventListener("scroll", syncTopScroll);
+      topScrollElement.removeEventListener("scroll", syncTableScroll);
+      window.removeEventListener("resize", measure);
+      resizeObserver?.disconnect();
+    };
+  }, [data?.data.length]);
+
+  const scrollMerchantTableBy = (distance: number) => {
+    merchantTableScrollRef.current?.scrollBy({ left: distance, behavior: "smooth" });
   };
 
   return (
@@ -199,8 +253,44 @@ export default function Merchants() {
             <EmptyState message="暂无商户数据" />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="admin-table">
+              <div className="merchant-table-region">
+                <div
+                  className={`${hasHorizontalOverflow ? "flex" : "hidden"} items-center gap-2 border-b bg-muted/25 px-3 py-2`}
+                  aria-hidden={!hasHorizontalOverflow}
+                >
+                  <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">左右拖动查看全部商户字段</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    aria-label="向左移动商户表格"
+                    onClick={() => scrollMerchantTableBy(-360)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div
+                    ref={merchantTopScrollRef}
+                    className="merchant-top-scroll h-[16px] min-w-0 flex-1 overflow-x-auto"
+                    role="region"
+                    aria-label="商户表格横向滚动"
+                    tabIndex={0}
+                  >
+                    <div style={{ width: Math.max(tableScrollWidth, 1), height: 1 }} />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    aria-label="向右移动商户表格"
+                    onClick={() => scrollMerchantTableBy(360)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div ref={merchantTableScrollRef} className="merchant-table-scroll overflow-x-auto">
+                  <table className="admin-table">
                   <thead>
                     <tr>
                       <th>商户编号</th>
@@ -208,7 +298,7 @@ export default function Merchants() {
                       <th>联系人</th>
                       <th>销售负责人</th>
                       <th>状态</th>
-                      <th>CRM</th>
+                      <th>ERP</th>
                       <th>协议</th>
                       <th>资质到期</th>
                       <th>入驻时间</th>
@@ -291,7 +381,8 @@ export default function Merchants() {
                       );
                     })}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
               <Pagination page={page} pageSize={20} total={data.total} onPageChange={setPage} />
             </>
@@ -329,7 +420,7 @@ export default function Merchants() {
         </DialogContent>
       </Dialog>
 
-      {/* CRM 通过/拒绝/暂停对话框 */}
+      {/* ERP 通过/拒绝/暂停对话框 */}
       <Dialog open={crmTarget !== null} onOpenChange={open => {
         if (!open) {
           setCrmTarget(null);
@@ -342,9 +433,9 @@ export default function Merchants() {
             <DialogTitle>{crmTarget ? crmActionLabels[crmTarget.nextStatus] : ""}</DialogTitle>
             <DialogDescription>
               目标商户：{crmTarget?.name}。
-              {crmTarget?.nextStatus === "enabled" && "通过后仅绑定的前台账号可以进入并使用 CRM 系统。"}
-              {crmTarget?.nextStatus === "disabled" && "暂停后该商户将无法进入 CRM 页面，前台会提示：您的CRM权限已经被暂停，请联系客服。"}
-              {crmTarget?.nextStatus === "rejected" && "拒绝后该商户的 CRM 开通申请将被驳回，可通过「发信」告知客户原因。"}
+              {crmTarget?.nextStatus === "enabled" && "通过后仅绑定的前台账号可以进入并使用 ERP 系统。"}
+              {crmTarget?.nextStatus === "disabled" && "暂停后该商户将无法进入 ERP 页面，前台会提示：您的ERP权限已经被暂停，请联系客服。"}
+              {crmTarget?.nextStatus === "rejected" && "拒绝后该商户的 ERP 开通申请将被驳回，可通过「发信」告知客户原因。"}
             </DialogDescription>
           </DialogHeader>
           {crmTarget?.nextStatus === "enabled" && (
@@ -354,7 +445,7 @@ export default function Merchants() {
                 id="crm-portal-user-id"
                 value={crmPortalUserId}
                 onChange={e => setCrmPortalUserId(e.target.value)}
-                placeholder="请输入要开通 CRM 的前台用户 ID"
+                placeholder="请输入要开通 ERP 的前台用户 ID"
                 disabled={Boolean(crmTarget.currentOwner)}
               />
               <p className="text-xs text-muted-foreground">
@@ -401,7 +492,7 @@ export default function Merchants() {
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="请输入要发送给客户的消息内容，例如：您的CRM开通申请材料不完整，请补充营业执照扫描件…"
+            placeholder="请输入要发送给客户的消息内容，例如：您的ERP开通申请材料不完整，请补充营业执照扫描件…"
             value={msgContent}
             onChange={e => setMsgContent(e.target.value)}
             rows={5}
@@ -458,6 +549,36 @@ export default function Merchants() {
           )}
         </DialogContent>
       </Dialog>
+
+      <style>{`
+        .merchant-table-scroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .merchant-table-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .merchant-top-scroll {
+          scrollbar-color: #6f8fa8 #dce7ef;
+          scrollbar-width: auto;
+        }
+        .merchant-top-scroll::-webkit-scrollbar {
+          height: 14px;
+        }
+        .merchant-top-scroll::-webkit-scrollbar-track {
+          border-radius: 999px;
+          background: #dce7ef;
+        }
+        .merchant-top-scroll::-webkit-scrollbar-thumb {
+          min-width: 72px;
+          border: 2px solid #dce7ef;
+          border-radius: 999px;
+          background: #6f8fa8;
+        }
+        .merchant-top-scroll::-webkit-scrollbar-thumb:hover {
+          background: #476f8f;
+        }
+      `}</style>
     </DashboardLayout>
   );
 }

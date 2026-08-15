@@ -25,8 +25,10 @@ import { storagePut } from "./storage";
 import { saveLocalFile } from "./localUpload";
 import {
   getPlatformOrderDetail,
+  getPlatformOrderStats,
   listPlatformOrders,
 } from "./platformOrderApi";
+import { getPlatformUserStats, listPlatformUsers } from "./platformUserApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
@@ -86,7 +88,7 @@ const adminManageProcedure = adminPermissionProcedure("admins.manage");
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
   const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
   if (role !== "super_admin") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以执行 CRM 超级管理员换绑" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以执行 ERP 超级管理员换绑" });
   }
   return next({ ctx });
 });
@@ -113,6 +115,70 @@ function assertPortalKey(req: { headers: Record<string, unknown> }) {
   if (typeof provided !== "string" || provided !== expected) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "无效的对接密钥" });
   }
+}
+
+/**
+ * 解析前台提交的销售负责人，输出待写入商户的 salesOwner / salesOwnerCode。
+ *
+ * 三种语义：
+ *   - 两者均 undefined → 返回 {}，不改动现有归属（如前台本次未提交该字段）
+ *   - staffCode 为 null/空串 → 显式清空归属
+ *   - 否则必须命中后台启用名单，未命中直接报错
+ *
+ * 不允许将未校验的自由文本写入商户资料，否则后台拿到的姓名可能对不上任何真实销售。
+ */
+async function resolvePortalSalesOwner(
+  staffCode?: string | null,
+  legacyName?: string | null,
+): Promise<{ salesOwner?: string | null; salesOwnerCode?: string | null }> {
+  if (staffCode === undefined && legacyName === undefined) return {};
+  if (staffCode === null || staffCode === "") {
+    return { salesOwner: null, salesOwnerCode: null };
+  }
+
+  let staff = staffCode ? await db.getSalesStaffByCode(staffCode) : null;
+  // 旧客户端兼容：仅传了姓名时按展示名不区分大小写匹配
+  if (!staff && legacyName) {
+    const target = legacyName.trim().toLowerCase();
+    if (target) {
+      const all = await db.listSalesStaff({ activeOnly: false });
+      staff = all.find(item => item.displayName.trim().toLowerCase() === target) ?? null;
+    }
+  }
+  if (!staff || staff.status !== "active") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "请选择有效的销售负责人" });
+  }
+  return { salesOwner: staff.displayName, salesOwnerCode: staff.staffCode };
+}
+
+/**
+ * 取当前会话的销售可见范围。
+ *
+ * ⚠️ 返回 undefined 表示「不限制」（超级管理员），返回空数组表示「什么都看不到」。
+ * 调用方必须将本函数结果原样传给 db 层，不得用 `?? []` 或 `|| undefined` 改写，
+ * 否则会把两种截然相反的语义折叠成同一种，造成越权或误屏蔽。
+ */
+async function getAdminSalesStaffCodes(ctx: TrpcContext): Promise<string[] | undefined> {
+  const account = ctx.adminAccount;
+  // 非账号密码会话（Manus OAuth）按超级管理员兼容处理
+  if (!account) return undefined;
+  if (account.adminRole === "super_admin") return undefined;
+  return db.getAdminUserSalesScopeCodes(account.id);
+}
+
+/**
+ * 将 db 层销售范围相关错误映射为可读的 tRPC 错误。
+ * 非目标错误原样抛出，避免屏蔽真正的故障。
+ */
+function mapSalesScopeError(error: unknown): unknown {
+  const message = error instanceof Error ? error.message : "";
+  if (message === "INVALID_SALES_STAFF_CODE") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "销售权限包含无效或已停用员工" });
+  }
+  if (message === "SALES_SCOPE_REQUIRED") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "请至少为该账号分配一个销售范围" });
+  }
+  return error;
 }
 
 const pageInput = z.object({
@@ -187,6 +253,54 @@ export const appRouter = router({
         const account = await loginWithPassword(ctx.req, ctx.res, input.username, input.password);
         return { success: true, account } as const;
       }),
+    /** 读取当前登录账号的个人信息（个人信息页使用） */
+    profile: adminProcedure.query(async ({ ctx }) => {
+      const account = ctx.adminAccount;
+      if (!account) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持编辑个人信息" });
+      }
+      return {
+        username: account.username,
+        displayName: account.displayName ?? "",
+        phone: account.phone ?? "",
+        email: account.email ?? "",
+        adminRole: account.adminRole === "super_admin" ? ("super_admin" as const) : ("merchant_mgr" as const),
+      };
+    }),
+    /** 本人修改显示名称、手机号和邮箱；直接更新后台用户管理使用的同一记录。 */
+    updateProfile: adminProcedure
+      .input(z.object({
+        displayName: z.string().trim().min(1, "请输入用户名称").max(128),
+        phone: z.string().trim().max(32).refine(
+          value => value === "" || /^\+?\d{7,20}$/.test(value),
+          "请输入有效手机号",
+        ),
+        email: z.string().trim().max(255).refine(
+          value => value === "" || z.string().email().safeParse(value).success,
+          "请输入有效邮箱",
+        ),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const account = ctx.adminAccount;
+        if (!account) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持编辑个人信息" });
+        }
+        await db.updateAdminUser(account.id, {
+          displayName: input.displayName,
+          // 空串视为「清空绑定」，存 null 而非空字符串，避免找回密码时匹配到空值
+          phone: input.phone || null,
+          email: input.email ? input.email.toLowerCase() : null,
+        });
+        const updated = await db.getAdminUserById(account.id);
+        if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "后台用户不存在" });
+        return {
+          username: updated.username,
+          displayName: updated.displayName ?? "",
+          phone: updated.phone ?? "",
+          email: updated.email ?? "",
+          adminRole: updated.adminRole === "super_admin" ? ("super_admin" as const) : ("merchant_mgr" as const),
+        };
+      }),
     /** 当前登录账号修改自己的密码（仅账号密码登录会话可用） */
     changePassword: protectedProcedure
       .input(z.object({
@@ -201,6 +315,11 @@ export const appRouter = router({
         const ok = await verifyPassword(input.oldPassword, account.passwordHash);
         if (!ok) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "原密码错误" });
+        }
+        // 新旧相同必须显式拒绝：否则用户以为已改密，实际密码未变，
+        // 若其正因怀疑泄露而改密，会错认为风险已解除。
+        if (input.oldPassword === input.newPassword) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "新密码不能与当前密码相同" });
         }
         await db.setAdminUserPassword(account.id, await hashPassword(input.newPassword));
         return { success: true } as const;
@@ -251,8 +370,41 @@ export const appRouter = router({
       }),
   }),
 
+  // ─── 前台注册用户（主站用户表为唯一事实源，后台仅做代理）──────────────────
+  frontendUser: router({
+    stats: messageReadProcedure.query(async () => {
+      const [platformStats, erpUserIds] = await Promise.all([
+        getPlatformUserStats(),
+        db.getEnabledErpPortalUserIds(),
+      ]);
+      const erpUsers = erpUserIds.length;
+      return {
+        ...platformStats,
+        erpUsers,
+        ordinaryUsers: Math.max(platformStats.totalUsers - erpUsers, 0),
+      };
+    }),
+    list: messageReadProcedure
+      .input(pageInput.extend({ keyword: z.string().trim().max(100).optional() }))
+      .query(async ({ input }) => {
+        const [result, erpUserIds] = await Promise.all([
+          listPlatformUsers(input),
+          db.getEnabledErpPortalUserIds(),
+        ]);
+        const erpSet = new Set(erpUserIds);
+        return {
+          ...result,
+          rows: result.rows.map(user => ({
+            ...user,
+            userType: erpSet.has(String(user.id)) ? "erp" as const : "ordinary" as const,
+          })),
+        };
+      }),
+  }),
+
   // ─── 商城真实订单（后台仅做代理，不读取/写入本地 SO 订单表）──────────────
   order: router({
+    stats: orderReadProcedure.query(() => getPlatformOrderStats()),
     list: orderReadProcedure
       .input(pageInput.extend({
         keyword: z.string().trim().max(100).optional(),
@@ -425,11 +577,12 @@ export const appRouter = router({
   merchant: router({
     list: merchantReadProcedure
       .input(pageInput.extend({ status: z.string().optional(), search: z.string().optional() }))
-      .query(async ({ input }) => {
-        return db.getMerchants(input);
+      .query(async ({ ctx, input }) => {
+        // 非超级管理员仅可见自己销售范围内的商户（三态语义，勿改写）
+        return db.getMerchants(input, await getAdminSalesStaffCodes(ctx));
       }),
-    detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-      return db.getMerchantById(input.id);
+    detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+      return db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
     }),
     review: merchantWriteProcedure
       .input(z.object({
@@ -447,7 +600,7 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
-    /** 设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
+    /** 设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
     setCrmStatus: merchantWriteProcedure
       .input(z.object({
         id: z.number(),
@@ -464,7 +617,7 @@ export const appRouter = router({
           actor: auditActorFromContext(ctx),
         });
       }),
-    /** 专用换绑：只变更 CRM 超级管理员绑定，不改变企业、CRM 状态或既有业务数据。 */
+    /** 专用换绑：只变更 ERP 超级管理员绑定，不改变企业、ERP 状态或既有业务数据。 */
     rebindCrmOwner: crmRebindProcedure
       .input(z.object({
         id: z.number().int().positive(),
@@ -521,6 +674,16 @@ export const appRouter = router({
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
   portal: router({
     /**
+     * 前台「销售负责人」下拉的数据源。鉴权：x-portal-key。
+     * 仅对外输出工号与展示名，不泄露 adminUserId / status / sortOrder 等内部字段。
+     */
+    listSalesStaff: publicProcedure.query(async ({ ctx }) => {
+      assertPortalKey(ctx.req);
+      const staff = await db.listSalesStaff();
+      return staff.map(item => ({ staffCode: item.staffCode, displayName: item.displayName }));
+    }),
+
+    /**
      * 前台商家提交入驻资料。鉴权：请求头 x-portal-key 必须等于 PORTAL_API_KEY 环境变量。
      * 文件类字段（营业执照图、协议文件）传前台已上传好的可访问 URL。
      */
@@ -542,13 +705,18 @@ export const appRouter = router({
         legalPersonName: z.string().max(64).optional().nullable(),
         legalPersonIdNo: z.string().max(32).optional().nullable(),
         legalPersonPhone: z.string().max(20).optional().nullable(),
-        /** 销售负责人（可选），写入商户 salesOwner 列，后台商户列表展示 */
+        /**
+         * 销售负责人。旧客户端仅传姓名（salesOwner），仅用于兼容；
+         * 新客户端提交稳定工号（salesOwnerCode），两者均经后台名单校验。
+         */
         salesOwner: z.string().max(64).optional().nullable(),
+        salesOwnerCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
-        const { agreementSigned, ...rest } = input;
-        const result = await db.upsertPortalMerchant({ ...rest, agreementSigned });
+        const owner = await resolvePortalSalesOwner(input.salesOwnerCode, input.salesOwner);
+        const { agreementSigned, salesOwner: _legacyOwner, salesOwnerCode: _ownerCode, ...rest } = input;
+        const result = await db.upsertPortalMerchant({ ...rest, ...owner, agreementSigned });
         return result;
       }),
 
@@ -559,12 +727,14 @@ export const appRouter = router({
     submitMessage: publicProcedure
       .input(z.object({
         threadNo: z.string().max(32).optional().nullable(),
+        /** 前台可靠重试幂等键；旧调用可不传。 */
+        clientMessageId: z.string().uuid().max(64).optional().nullable(),
         subject: z.string().max(256).optional().nullable(),
         contactName: z.string().max(128).optional().nullable(),
         contactPhone: z.string().max(32).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
-        /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
+        /** 会话类型：general=旧版兼容值（服务端归类） inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
         threadType: z.enum(["general", "inquiry", "service", "crm_apply"]).optional().nullable(),
         /** 客户公司资料快照（已提交公司资料的用户，前台附带传入，后台会话详情展示） */
         companyProfile: z.object({
@@ -584,7 +754,7 @@ export const appRouter = router({
       }),
 
     /**
-     * 前台企业开通 CRM 申请。鉴权：x-portal-key。
+     * 前台企业开通 ERP 申请。鉴权：x-portal-key。
      * 按统一社会信用代码幂等：直接创建/更新商户记录（crmStatus=pending），落后台商户管理页面。
      */
     submitCrmApplication: publicProcedure
@@ -640,9 +810,9 @@ export const appRouter = router({
       }),
 
     /**
-     * 前台校验企业 CRM 访问权限。鉴权：x-portal-key。
+     * 前台校验企业 ERP 访问权限。鉴权：x-portal-key。
      * 入参：统一社会信用代码。返回 allowed / crmStatus / message：
-     * enabled → allowed=true；disabled → "您的CRM权限已经被暂停，请联系客服"；
+     * enabled → allowed=true；disabled → "您的ERP权限已经被暂停，请联系客服"；
      * pending/rejected/none → 对应提示文案。附带 crmThreadNo（后台发信会话编号，用于前台联系客服红点轮询）。
      */
     getCrmAccess: publicProcedure
@@ -655,7 +825,7 @@ export const appRouter = router({
         return db.getCrmAccessByCreditCode(input.creditCode, input.portalUserId);
       }),
     /**
-     * 前台服务端对账 CRM 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
+     * 前台服务端对账 ERP 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
      * 不直接暴露给浏览器。
      */
     getCrmBinding: publicProcedure
@@ -722,7 +892,7 @@ export const appRouter = router({
     threads: messageReadProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
-        threadType: z.enum(["general", "inquiry", "service"]).optional(),
+        threadType: z.enum(["inquiry", "service"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {
@@ -809,6 +979,22 @@ export const appRouter = router({
     }),
   }),
 
+  /**
+   * 销售身份（只读）。
+   *
+   * 有意不提供 create/update/delete：销售身份完全由后台用户生命周期驱动，
+   * 否则会出现「销售身份存在但对应后台用户已停用/已删除」的幽灵记录，
+   * 其名下商户将成为无人可见的孤岛。
+   */
+  salesStaff: router({
+    list: adminManageProcedure
+      .input(z.object({ includeInactive: z.boolean().optional() }).optional())
+      .query(async ({ input }) => {
+        const includeInactive = input?.includeInactive ?? true;
+        return db.listSalesStaff({ activeOnly: !includeInactive });
+      }),
+  }),
+
   adminUser: router({
     list: adminManageProcedure.input(pageInput).query(async ({ input }) => {
       return db.getAdminUsers(input);
@@ -819,6 +1005,8 @@ export const appRouter = router({
       email: z.string().email().optional().nullable(),
       phone: z.string().max(20).optional().nullable(),
       adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]),
+      /** 追加的销售可见范围工号（本人工号由后端自动并入） */
+      salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).optional().default([]),
       password: z.string().min(8, "初始密码至少 8 位").max(128),
     })).mutation(async ({ input }) => {
       const existing = await db.getAdminUserByUsername(input.username);
@@ -826,7 +1014,11 @@ export const appRouter = router({
         throw new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
       }
       const { password, ...rest } = input;
-      return db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
+      try {
+        return await db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
+      } catch (error) {
+        throw mapSalesScopeError(error);
+      }
     }),
     update: adminManageProcedure.input(z.object({
       id: z.number(),
@@ -834,12 +1026,26 @@ export const appRouter = router({
       email: z.string().email().optional().nullable(),
       phone: z.string().max(20).optional().nullable(),
       adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]).optional(),
+      salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).optional(),
       status: z.enum(["active", "disabled", "locked"]).optional(),
       /** 传入则重置该账号的登录密码 */
       password: z.string().min(8, "密码至少 8 位").max(128).optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ ctx, input }) => {
       const { id, password, ...rest } = input;
-      await db.updateAdminUser(id, rest);
+      // 自我保护：超级管理员不得将自己降级或停用，否则当场失去后台管理权限且无法自行恢复
+      if (ctx.adminAccount?.id === id) {
+        if (rest.adminRole !== undefined && rest.adminRole !== "super_admin" && ctx.adminAccount.adminRole === "super_admin") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "不能降低自己的管理员角色" });
+        }
+        if (rest.status !== undefined && rest.status !== "active") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "不能停用当前登录的账号" });
+        }
+      }
+      try {
+        await db.updateAdminUser(id, rest);
+      } catch (error) {
+        throw mapSalesScopeError(error);
+      }
       if (password) {
         await db.setAdminUserPassword(id, await hashPassword(password));
       }

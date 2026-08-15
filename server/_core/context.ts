@@ -33,14 +33,17 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
   let adminAccount: AdminUser | null = null;
+  let sessionToken: string | null = null;
+  let verifiedSession: Awaited<ReturnType<typeof sdk.verifySession>> = null;
+  let shouldTryOAuth = false;
 
   // 1) 优先识别本地账号密码登录会话（openId 前缀 local_admin:）
   try {
-    const token = extractSessionToken(opts.req);
-    if (token) {
-      const session = await sdk.verifySession(token);
-      if (session) {
-        const localId = parseLocalAdminId(session.openId);
+    sessionToken = extractSessionToken(opts.req);
+    if (sessionToken) {
+      verifiedSession = await sdk.verifySession(sessionToken);
+      if (verifiedSession) {
+        const localId = parseLocalAdminId(verifiedSession.openId);
         if (localId !== null) {
           const account = await db.getAdminUserById(localId);
           if (account && account.status === "active") {
@@ -48,7 +51,7 @@ export async function createContext(
             // 将本地账号映射为兼容的 User 形状，业务代码 ctx.user.role === "admin" 依旧成立
             user = {
               id: account.id,
-              openId: session.openId,
+              openId: verifiedSession.openId,
               name: account.displayName || account.username,
               email: account.email,
               loginMethod: "password",
@@ -58,18 +61,25 @@ export async function createContext(
               lastSignedIn: account.lastLoginAt ?? account.createdAt,
             } satisfies User;
           }
+        } else {
+          shouldTryOAuth = true;
         }
       }
     }
   } catch {
     adminAccount = null;
     user = null;
+    verifiedSession = null;
+    shouldTryOAuth = false;
   }
 
-  // 2) 回退到 Manus OAuth 会话（保留兼容）
-  if (!user) {
+  // 2) 仅对已成功验签的非本地会话回退到 Manus OAuth。
+  if (!user && shouldTryOAuth && sessionToken && verifiedSession) {
     try {
-      user = await sdk.authenticateRequest(opts.req);
+      user = await sdk.authenticateRequest(opts.req, {
+        token: sessionToken,
+        session: verifiedSession,
+      });
     } catch {
       // Authentication is optional for public procedures.
       user = null;

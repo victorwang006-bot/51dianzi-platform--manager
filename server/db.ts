@@ -1,7 +1,8 @@
-import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminUsers,
+  adminUserSalesScopes,
   auditLogs,
   crmOwnerRebindLogs,
   InsertMaterial,
@@ -12,6 +13,7 @@ import {
   messages,
   messageThreads,
   passwordResetCodes,
+  salesStaff,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -79,6 +81,17 @@ function normalizeCreditCode(value: string) {
 function normalizePortalUserId(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通ERP,请联系管理员";
+
+export function getCrmCompanyConflictMessage(
+  crmStatus: string,
+  fallbackMessage: string,
+) {
+  if (crmStatus === "pending") return "该企业的 ERP 开通申请正在审核中";
+  if (crmStatus === "enabled") return CRM_COMPANY_ALREADY_ENABLED_MESSAGE;
+  return fallbackMessage;
 }
 
 export type MaterialAuditActor = {
@@ -512,23 +525,58 @@ export async function appendMaterialImage(
 
 // ─── 商户 ─────────────────────────────────────────────────────────────────────
 
-export async function getMerchants(params: { status?: string; search?: string; page?: number; pageSize?: number }) {
+/** 权威ERP用户集合：仅统计已开通且已绑定前台账号的不同用户ID。 */
+export async function getEnabledErpPortalUserIds() {
+  const db = await getDb();
+  if (!db) return [] as string[];
+  const rows = await db
+    .selectDistinct({ portalUserId: merchants.crmOwnerPortalUserId })
+    .from(merchants)
+    .where(and(
+      eq(merchants.crmStatus, "enabled"),
+      sql`${merchants.crmOwnerPortalUserId} IS NOT NULL`,
+      sql`TRIM(${merchants.crmOwnerPortalUserId}) <> ''`,
+    ));
+  return rows
+    .map(row => row.portalUserId?.trim() ?? "")
+    .filter((value): value is string => value.length > 0);
+}
+
+/**
+ * 商户分页列表，支持销售数据范围隔离。
+ *
+ * ⚠️ `salesStaffCodes` 三态语义不可简化：
+ *   - `undefined` → 超级管理员，不过滤
+ *   - `[]`        → 无任何范围，直接返回空结果（不查库）
+ *   - `[...]`     → 仅返回 salesOwnerCode 在范围内的商户
+ * 若将 undefined 与 [] 混同处理，无范围的普通用户将看到全部商户，权限完全反转。
+ */
+export async function getMerchants(
+  params: { status?: string; search?: string; page?: number; pageSize?: number },
+  salesStaffCodes?: string[],
+) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return { data: [], total: 0 };
   const { status, search, page = 1, pageSize = 20 } = params;
   const conditions = [];
   if (status) conditions.push(eq(merchants.status, status as any));
   if (search) conditions.push(or(like(merchants.companyName, `%${search}%`), like(merchants.merchantNo, `%${search}%`)));
+  if (salesStaffCodes !== undefined) conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(merchants).where(where);
   const data = await db.select().from(merchants).where(where).orderBy(desc(merchants.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
   return { data, total: Number(count) };
 }
 
-export async function getMerchantById(id: number) {
+/** 按 ID 取商户；三态语义同 getMerchants，越出范围时返回 null（而非泄露数据） */
+export async function getMerchantById(id: number, salesStaffCodes?: string[]) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(merchants).where(eq(merchants.id, id)).limit(1);
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return null;
+  const conditions = [eq(merchants.id, id)];
+  if (salesStaffCodes !== undefined) conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
+  const result = await db.select().from(merchants).where(and(...conditions)).limit(1);
   return result[0] ?? null;
 }
 
@@ -615,7 +663,7 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
   return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
 }
 
-/** 前台企业开通 CRM 申请入参 */
+/** 前台企业开通 ERP 申请入参 */
 export interface CrmApplicationInput {
   companyName: string;
   creditCode: string;
@@ -636,7 +684,7 @@ export interface CrmApplicationInput {
 }
 
 /**
- * 前台企业开通 CRM 申请：按统一社会信用代码（businessLicense）幂等 upsert 商户记录。
+ * 前台企业开通 ERP 申请：按统一社会信用代码（businessLicense）幂等 upsert 商户记录。
  * 已存在商户 → 补充资料并将 crmStatus 置为 pending（已开通 enabled 的不降级）；
  * 不存在 → 创建新商户记录（source=portal，status=pending，crmStatus=pending）。
  */
@@ -714,7 +762,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
               created: false,
               code: "CRM_COMPANY_APPLICATION_PENDING" as const,
               crmStatus: "pending" as const,
-              message: "该企业的 CRM 开通申请正在审核中",
+              message: "该企业的 ERP 开通申请正在审核中",
             };
           }
           return {
@@ -738,9 +786,10 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
             created: false,
             code,
             crmStatus: merchant.crmStatus,
-            message: merchant.crmStatus === "pending"
-              ? "该企业的 CRM 开通申请正在审核中"
-              : "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
+            message: getCrmCompanyConflictMessage(
+              merchant.crmStatus,
+              "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
+            ),
           };
         }
 
@@ -844,12 +893,12 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
           created: false,
           code: "CRM_COMPANY_APPLICATION_PENDING" as const,
           crmStatus: merchant.crmStatus,
-          message: "该企业的 CRM 开通申请正在审核中",
+          message: "该企业的 ERP 开通申请正在审核中",
         };
   }
 }
 
-/** 后台：设置商户 CRM 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
+/** 后台：设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
 export async function setMerchantCrmStatus(input: {
   merchantId: number;
   crmStatus: MerchantCrmStatus;
@@ -861,7 +910,7 @@ export async function setMerchantCrmStatus(input: {
   if (!db) throw new Error("Database not available");
   const normalizedNote = input.note?.trim() || null;
   if ((input.crmStatus === "disabled" || input.crmStatus === "rejected") && !normalizedNote) {
-    throw new Error(input.crmStatus === "disabled" ? "暂停 CRM 必须填写原因" : "拒绝 CRM 申请必须填写原因");
+    throw new Error(input.crmStatus === "disabled" ? "暂停 ERP 必须填写原因" : "拒绝 ERP 申请必须填写原因");
   }
 
   return db.transaction(async tx => {
@@ -903,7 +952,7 @@ export async function setMerchantCrmStatus(input: {
         input.crmStatus !== "enabled"
         || !isEquivalentEnabledBinding(latestRows[0], ownerToKeep ?? "")
       ) {
-        throw new Error("商户 CRM 状态已变化，请刷新页面后重试");
+        throw new Error("商户 ERP 状态已变化，请刷新页面后重试");
       }
     }
 
@@ -938,7 +987,7 @@ export async function setMerchantCrmStatus(input: {
   });
 }
 
-/** 后台专用：CRM 超级管理员换绑。普通开通/恢复接口永远不能修改既有 owner。 */
+/** 后台专用：ERP 超级管理员换绑。普通开通/恢复接口永远不能修改既有 owner。 */
 export async function rebindMerchantCrmOwner(input: {
   merchantId: number;
   expectedPortalUserId: string;
@@ -986,7 +1035,7 @@ export async function rebindMerchantCrmOwner(input: {
     const merchant = rows[0];
     if (!merchant) throw new Error("商户不存在");
     if (merchant.crmStatus !== "enabled" && merchant.crmStatus !== "disabled") {
-      throw new Error("只有已开通或已暂停的 CRM 企业可以换绑超级管理员");
+      throw new Error("只有已开通或已暂停的 ERP 企业可以换绑超级管理员");
     }
     const oldOwner = normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId);
     if (!oldOwner) throw new Error("当前企业尚未绑定超级管理员，请先完成开通绑定");
@@ -1005,7 +1054,7 @@ export async function rebindMerchantCrmOwner(input: {
     ));
     const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
     if (affectedRows !== 1) {
-      throw new Error("商户 CRM 绑定状态已变化，请刷新页面后重试");
+      throw new Error("商户 ERP 绑定状态已变化，请刷新页面后重试");
     }
 
     await tx.insert(crmOwnerRebindLogs).values({
@@ -1120,8 +1169,8 @@ export async function sendMerchantMessage(input: {
 }
 
 /**
- * 前台：按统一社会信用代码校验 CRM 访问权限。
- * enabled → allowed=true；disabled → 提示"您的CRM权限已经被暂停，请联系客服"；
+ * 前台：按统一社会信用代码校验 ERP 访问权限。
+ * enabled → allowed=true；disabled → 提示"您的ERP权限已经被暂停，请联系客服"；
  * 其余状态（none/pending/rejected/未找到商户）→ 未开通提示。
  */
 export async function getCrmAccessByCreditCode(
@@ -1136,7 +1185,7 @@ export async function getCrmAccessByCreditCode(
       allowed: false,
       code: "CRM_ACCOUNT_REQUIRED" as const,
       crmStatus: "none" as const,
-      message: "请先登录前台账号后再访问 CRM",
+      message: "请先登录前台账号后再访问 ERP",
     };
   }
 
@@ -1149,7 +1198,7 @@ export async function getCrmAccessByCreditCode(
       allowed: false,
       code: "CRM_NOT_ENABLED" as const,
       crmStatus: "none" as const,
-      message: "您尚未开通CRM，请先提交企业开通申请",
+      message: "您尚未开通ERP，请先提交企业开通申请",
     };
   }
 
@@ -1171,9 +1220,10 @@ export async function getCrmAccessByCreditCode(
           ? "CRM_COMPANY_ALREADY_ENABLED" as const
           : "CRM_COMPANY_ALREADY_BOUND" as const,
       crmStatus: merchant.crmStatus,
-      message: merchant.crmStatus === "pending"
-        ? "该企业的 CRM 开通申请正在审核中"
-        : "该企业已绑定其他前台账号",
+      message: getCrmCompanyConflictMessage(
+        merchant.crmStatus,
+        "该企业已绑定其他前台账号",
+      ),
     };
   }
 
@@ -1189,10 +1239,10 @@ export async function getCrmAccessByCreditCode(
     };
   }
   const messageMap: Record<string, string> = {
-    disabled: "您的CRM权限已经被暂停，请联系客服",
-    pending: "您的CRM开通申请正在审核中，请耐心等待",
-    rejected: "您的CRM开通申请未通过，如有疑问请联系客服",
-    none: "您尚未开通CRM，请先提交企业开通申请",
+    disabled: "您的ERP权限已经被暂停，请联系客服",
+    pending: "您的ERP开通申请正在审核中，请耐心等待",
+    rejected: "您的ERP开通申请未通过，如有疑问请联系客服",
+    none: "您尚未开通ERP，请先提交企业开通申请",
   };
   return {
     allowed: false,
@@ -1210,7 +1260,7 @@ export async function getCrmAccessByCreditCode(
   };
 }
 
-/** 服务端对账：返回统一社会信用代码对应的权威 CRM owner；仅由 portal-key 路由暴露。 */
+/** 服务端对账：返回统一社会信用代码对应的权威 ERP owner；仅由 portal-key 路由暴露。 */
 export async function getCrmBindingByCreditCode(creditCodeInput: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1242,13 +1292,266 @@ export async function getCrmBindingByCreditCode(creditCodeInput: string) {
 
 // ─── 管理员 ───────────────────────────────────────────────────────────────────
 
+/** 可传入事务对象或 db 实例，便于在事务内复用同一套销售身份逻辑 */
+type DbHandle = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+type DbExecutor = DbHandle | Parameters<Parameters<DbHandle["transaction"]>[0]>[0];
+
+/**
+ * 销售身份列表（前台「销售负责人」下拉与后台只读列表均取此）。
+ * 默认仅返回 active；排序 sortOrder ASC, id ASC。
+ */
+export async function listSalesStaff(options: { activeOnly?: boolean } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const activeOnly = options.activeOnly ?? true;
+  return db
+    .select()
+    .from(salesStaff)
+    .where(activeOnly ? eq(salesStaff.status, "active") : undefined)
+    .orderBy(asc(salesStaff.sortOrder), asc(salesStaff.id));
+}
+
+/** 按工号查销售身份（查询前统一 trim + 小写） */
+export async function getSalesStaffByCode(staffCode: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db
+    .select()
+    .from(salesStaff)
+    .where(eq(salesStaff.staffCode, staffCode.trim().toLowerCase()))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * 校验并规范化一组销售工号。
+ *
+ * @param options.activeOnly 仅接受启用中的工号，默认 true
+ * @param options.strict 默认 true；为 true 时只要存在无效工号就抛错。
+ *   调用方应在「用户显式提交了工号列表」时用 strict，
+ *   而在「沿用现有范围」时用宽松模式——否则现有范围里一旦含有
+ *   后来被停用的工号，用户连改个手机号都会保存失败。
+ */
+export async function normalizeSalesStaffCodes(
+  executor: DbExecutor,
+  staffCodes: string[],
+  options: { activeOnly?: boolean; strict?: boolean } = {},
+) {
+  const normalized = Array.from(
+    new Set(staffCodes.map(code => code.trim().toLowerCase()).filter(Boolean)),
+  );
+  if (normalized.length === 0) return [];
+  const activeOnly = options.activeOnly ?? true;
+  const rows = await executor
+    .select({ staffCode: salesStaff.staffCode })
+    .from(salesStaff)
+    .where(
+      activeOnly
+        ? and(inArray(salesStaff.staffCode, normalized), eq(salesStaff.status, "active"))
+        : inArray(salesStaff.staffCode, normalized),
+    );
+  const valid = new Set(rows.map(row => row.staffCode));
+  const invalid = normalized.filter(code => !valid.has(code));
+  if ((options.strict ?? true) && invalid.length > 0) {
+    throw new Error("INVALID_SALES_STAFF_CODE");
+  }
+  return normalized.filter(code => valid.has(code));
+}
+
+/**
+ * 由用户名派生稳定工号：小写化、非 [a-z0-9_-] 换成 "-"、去首尾 "-"、截断 64。
+ * 规范化后不足 2 位（如纯中文用户名）则回退为 user-{id}，保证工号始终可用。
+ */
+export function salesIdentityCode(username: string, adminUserId: number) {
+  const normalized = username
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  return normalized.length >= 2 ? normalized : `user-${adminUserId}`;
+}
+
+/**
+ * 同步后台用户对应的销售身份，返回其自身工号（超级管理员返回 null）。
+ *
+ * 销售身份表不开放独立的增删接口，全部由本函数驱动，以避免出现
+ * 「销售身份存在但对应后台用户已停用」的幽灵记录。
+ *
+ * 工号冲突处理（不可简化为直接 insert，否则重名用户会撞唯一索引导致建号失败）：
+ *   1. 工号已被他人占用 → 降级为 user-{id}
+ *   2. 工号已存在但未绑定任何人 → 认领它
+ *   3. 工号不存在 → 新建
+ */
+export async function syncAdminUserSalesIdentity(
+  executor: DbExecutor,
+  user: {
+    id: number;
+    username: string;
+    displayName?: string | null;
+    adminRole: string;
+    status: string;
+  },
+): Promise<string | null> {
+  const [linked] = await executor
+    .select()
+    .from(salesStaff)
+    .where(eq(salesStaff.adminUserId, user.id))
+    .limit(1);
+
+  const shouldBeActive = user.adminRole !== "super_admin" && user.status === "active";
+  const nextStatus: "active" | "inactive" = shouldBeActive ? "active" : "inactive";
+  const displayName = user.displayName?.trim() || user.username;
+
+  if (linked) {
+    await executor
+      .update(salesStaff)
+      .set({ displayName, status: nextStatus })
+      .where(eq(salesStaff.id, linked.id));
+    return user.adminRole === "super_admin" ? null : linked.staffCode;
+  }
+
+  // 超级管理员不作为销售身份（不出现在前台销售负责人下拉中）
+  if (user.adminRole === "super_admin") return null;
+
+  let staffCode = salesIdentityCode(user.username, user.id);
+  const [sameCode] = await executor
+    .select()
+    .from(salesStaff)
+    .where(eq(salesStaff.staffCode, staffCode))
+    .limit(1);
+
+  if (sameCode?.adminUserId && sameCode.adminUserId !== user.id) {
+    staffCode = `user-${user.id}`;
+  } else if (sameCode) {
+    await executor
+      .update(salesStaff)
+      .set({ adminUserId: user.id, displayName, status: nextStatus })
+      .where(eq(salesStaff.id, sameCode.id));
+    return staffCode;
+  }
+
+  await executor.insert(salesStaff).values({
+    adminUserId: user.id,
+    staffCode,
+    displayName,
+    status: nextStatus,
+    // 自动创建的身份排在手工维护的销售之后
+    sortOrder: 1000 + user.id,
+  });
+  return staffCode;
+}
+
+/**
+ * 读取后台用户的销售可见范围工号。
+ * 默认只返回启用中的工号；`includeInactive` 用于编辑回显（需连已停用的一并展示）。
+ */
+export async function getAdminUserSalesScopeCodes(
+  adminUserId: number,
+  options: { includeInactive?: boolean } = {},
+) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ staffCode: adminUserSalesScopes.staffCode })
+    .from(adminUserSalesScopes)
+    .innerJoin(salesStaff, eq(salesStaff.staffCode, adminUserSalesScopes.staffCode))
+    .where(
+      options.includeInactive
+        ? eq(adminUserSalesScopes.adminUserId, adminUserId)
+        : and(
+            eq(adminUserSalesScopes.adminUserId, adminUserId),
+            eq(salesStaff.status, "active"),
+          ),
+    )
+    .orderBy(asc(adminUserSalesScopes.id));
+  return rows.map(row => row.staffCode);
+}
+
+/** 整体替换某后台用户的销售范围（先全删再批插） */
+export async function replaceAdminUserSalesScopes(
+  executor: DbExecutor,
+  adminUserId: number,
+  staffCodes: string[],
+) {
+  await executor
+    .delete(adminUserSalesScopes)
+    .where(eq(adminUserSalesScopes.adminUserId, adminUserId));
+  if (staffCodes.length > 0) {
+    await executor
+      .insert(adminUserSalesScopes)
+      .values(staffCodes.map(staffCode => ({ adminUserId, staffCode })));
+  }
+}
+
+/**
+ * 根据销售范围取可见商户的统一社会信用代码集合。
+ * 空范围 → 返回空数组（意为「一个都看不到」，而不是「不限制」）。
+ */
+export async function getScopedMerchantCreditCodes(salesStaffCodes: string[]) {
+  const db = await getDb();
+  if (!db || salesStaffCodes.length === 0) return [];
+  const rows = await db
+    .selectDistinct({ creditCode: merchants.businessLicense })
+    .from(merchants)
+    .where(
+      and(
+        inArray(merchants.salesOwnerCode, salesStaffCodes),
+        sql`${merchants.businessLicense} IS NOT NULL`,
+        sql`TRIM(${merchants.businessLicense}) <> ''`,
+      ),
+    );
+  return rows.map(row => row.creditCode?.trim() ?? "").filter(value => value.length > 0);
+}
+
+/**
+ * 后台用户分页列表，每行附带销售范围与自身工号。
+ * scope / identity 均按页批量查询并在内存归集，避免 N+1。
+ */
 export async function getAdminUsers(params: { page?: number; pageSize?: number } = {}) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
   const { page = 1, pageSize = 20 } = params;
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(adminUsers);
   const data = await db.select().from(adminUsers).orderBy(desc(adminUsers.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
-  return { data, total: Number(count) };
+
+  const userIds = data.map(user => user.id);
+  const scopeRows = userIds.length > 0
+    ? await db
+        .select({
+          adminUserId: adminUserSalesScopes.adminUserId,
+          staffCode: adminUserSalesScopes.staffCode,
+        })
+        .from(adminUserSalesScopes)
+        .where(inArray(adminUserSalesScopes.adminUserId, userIds))
+        .orderBy(asc(adminUserSalesScopes.id))
+    : [];
+  const identityRows = userIds.length > 0
+    ? await db
+        .select({ adminUserId: salesStaff.adminUserId, staffCode: salesStaff.staffCode })
+        .from(salesStaff)
+        .where(inArray(salesStaff.adminUserId, userIds))
+    : [];
+
+  const scopeMap = new Map<number, string[]>();
+  for (const row of scopeRows) {
+    const values = scopeMap.get(row.adminUserId) ?? [];
+    values.push(row.staffCode);
+    scopeMap.set(row.adminUserId, values);
+  }
+  const identityMap = new Map<number, string>();
+  for (const row of identityRows) {
+    if (row.adminUserId !== null) identityMap.set(row.adminUserId, row.staffCode);
+  }
+
+  return {
+    data: data.map(user => ({
+      ...user,
+      salesStaffCodes: scopeMap.get(user.id) ?? [],
+      ownSalesStaffCode: identityMap.get(user.id) ?? null,
+    })),
+    total: Number(count),
+  };
 }
 
 /** 按用户名查询后台账号（账号密码登录用，包含 passwordHash） */
@@ -1346,49 +1649,123 @@ export async function markResetCodeUsed(id: number) {
   if (!db) return;
   await db.update(passwordResetCodes).set({ usedAt: new Date() }).where(eq(passwordResetCodes.id, id));
 }
+/**
+ * 创建后台用户，并在同一事务内同步销售身份与销售可见范围。
+ *
+ * merchant_mgr 必须至少拥有一个范围（至少含本人），否则抛 SALES_SCOPE_REQUIRED——
+ * 零范围的用户登录后什么都看不到，会误以为系统故障。
+ */
 export async function createAdminUser(input: {
   username: string;
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
   adminRole: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  salesStaffCodes?: string[];
   passwordHash?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(adminUsers).values({
-    userId: 0,
-    username: input.username,
-    displayName: input.displayName ?? null,
-    email: input.email ?? null,
-    phone: input.phone ?? null,
-    adminRole: input.adminRole,
-    passwordHash: input.passwordHash ?? null,
-    status: "active",
+
+  let scopeCodes: string[] = [];
+  let ownSalesStaffCode: string | null = null;
+
+  await db.transaction(async tx => {
+    await tx.insert(adminUsers).values({
+      userId: 0,
+      username: input.username,
+      displayName: input.displayName ?? null,
+      email: input.email ?? null,
+      phone: input.phone ?? null,
+      adminRole: input.adminRole,
+      passwordHash: input.passwordHash ?? null,
+      status: "active",
+    });
+    const [created] = await tx
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.username, input.username))
+      .limit(1);
+    if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
+
+    ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, created);
+
+    if (input.adminRole === "merchant_mgr") {
+      const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? [], {
+        activeOnly: true,
+        strict: true,
+      });
+      scopeCodes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]));
+      if (scopeCodes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
+    }
+
+    await replaceAdminUserSalesScopes(tx, created.id, scopeCodes);
   });
+
   const created = await getAdminUserByUsername(input.username);
   if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
-  return created;
+  return { ...created, salesStaffCodes: scopeCodes, ownSalesStaffCode };
 }
 
+/**
+ * 更新后台用户，并在同一事务内重算销售身份与可见范围。
+ *
+ * 两处宽严尺度必须保留：
+ * - `strict: input.salesStaffCodes !== undefined`：仅当调用方显式传入工号列表时严格校验；
+ *   否则沿用现有范围且宽松，避免「只想改手机号却因历史范围含停用工号而失败」。
+ * - `activeOnly: nextStatus === "active"`：停用用户时放宽，停用操作不应被范围校验阻断。
+ */
 export async function updateAdminUser(id: number, input: {
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
   adminRole?: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  salesStaffCodes?: string[];
   status?: "active" | "disabled" | "locked";
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  const existing = await getAdminUserById(id);
+  if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
+
+  const nextRole = input.adminRole ?? (existing.adminRole === "super_admin" ? "super_admin" : "merchant_mgr");
+  const nextStatus = input.status ?? existing.status;
+  // 回显用：包含已停用工号，避免未传 salesStaffCodes 时错误清空历史范围
+  const currentScopes = await getAdminUserSalesScopeCodes(id, { includeInactive: true });
+
   const set: Record<string, unknown> = {};
   if (input.displayName !== undefined) set.displayName = input.displayName;
   if (input.email !== undefined) set.email = input.email;
   if (input.phone !== undefined) set.phone = input.phone;
   if (input.adminRole !== undefined) set.adminRole = input.adminRole;
   if (input.status !== undefined) set.status = input.status;
-  if (Object.keys(set).length > 0) {
-    await db.update(adminUsers).set(set).where(eq(adminUsers.id, id));
-  }
+
+  await db.transaction(async tx => {
+    if (Object.keys(set).length > 0) {
+      await tx.update(adminUsers).set(set).where(eq(adminUsers.id, id));
+    }
+
+    const ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, {
+      id,
+      username: existing.username,
+      displayName: input.displayName !== undefined ? input.displayName : existing.displayName,
+      adminRole: nextRole,
+      status: nextStatus,
+    });
+
+    let nextScopes: string[] = [];
+    if (nextRole === "merchant_mgr") {
+      const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? currentScopes, {
+        activeOnly: nextStatus === "active",
+        strict: input.salesStaffCodes !== undefined,
+      });
+      nextScopes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]));
+      if (nextScopes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
+    }
+
+    await replaceAdminUserSalesScopes(tx, id, nextScopes);
+  });
 }
 
 export async function toggleAdminUserStatus(id: number, status: "active" | "disabled") {
@@ -1423,9 +1800,40 @@ export interface CompanyProfileSnapshot {
   [key: string]: unknown;
 }
 
-/** 前台提交"联系我们"留言：新建会话或在已有会话追加消息 */
+type PortalMessageThreadType = "general" | "inquiry" | "service" | "crm_apply";
+type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
+
+/**
+ * 消息中心只展示快速询价与在线客服。历史 general 是旧调用漏传类型的兼容值：
+ * 询价主题归 inquiry、企业开通申请归 crm_apply，其余归在线客服。
+ */
+export function resolvePortalMessageThreadType(input: {
+  threadType?: PortalMessageThreadType | null;
+  subject?: string | null;
+}): EffectiveMessageThreadType {
+  if (input.threadType && input.threadType !== "general") return input.threadType;
+  const subject = input.subject?.trim() ?? "";
+  if (subject.includes("企业开通申请")) return "crm_apply";
+  if (subject.includes("询价")) return "inquiry";
+  return "service";
+}
+
+function effectiveMessageThreadTypeSql() {
+  return sql<EffectiveMessageThreadType>`CASE
+    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'crm_apply')
+      THEN ${messageThreads.threadType}
+    WHEN ${messageThreads.subject} LIKE '%企业开通申请%'
+      THEN 'crm_apply'
+    WHEN ${messageThreads.subject} LIKE '%询价%'
+      THEN 'inquiry'
+    ELSE 'service'
+  END`;
+}
+
+/** 前台提交消息：新建会话或在已有会话追加消息。 */
 export async function createPortalMessage(input: {
   threadNo?: string | null;
+  clientMessageId?: string | null;
   subject?: string | null;
   contactName?: string | null;
   contactPhone?: string | null;
@@ -1438,53 +1846,149 @@ export async function createPortalMessage(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  let thread: typeof messageThreads.$inferSelect | undefined;
-  if (input.threadNo) {
-    const rows = await db.select().from(messageThreads)
-      .where(eq(messageThreads.threadNo, input.threadNo)).limit(1);
-    thread = rows[0];
-  }
+  const validateExisting = (existing: {
+    messageId: number;
+    threadId: number;
+    threadNo: string;
+    content: string;
+    portalUserId: string | null;
+  }) => {
+    if (existing.content !== input.content) {
+      throw new Error("消息幂等键与原留言内容不一致");
+    }
+    if (
+      input.portalUserId
+      && existing.portalUserId
+      && existing.portalUserId !== input.portalUserId
+    ) {
+      throw new Error("消息幂等键与原留言用户不一致");
+    }
+    return {
+      threadNo: existing.threadNo,
+      threadId: existing.threadId,
+      messageId: existing.messageId,
+      deduplicated: true,
+    };
+  };
 
-  const preview = input.content.slice(0, 200);
-  if (!thread) {
-    const threadNo = genThreadNo();
-    await db.insert(messageThreads).values({
-      threadNo,
-      subject: input.subject ?? preview.slice(0, 100),
-      contactName: input.contactName ?? null,
-      contactPhone: input.contactPhone ?? null,
-      contactEmail: input.contactEmail ?? null,
-      portalUserId: input.portalUserId ?? null,
-      threadType: input.threadType ?? "general",
-      companyProfile: input.companyProfile ?? null,
-      adminUnreadCount: 1,
-      lastMessagePreview: preview,
-      lastMessageAt: new Date(),
+  const findExisting = async () => {
+    if (!input.clientMessageId) return undefined;
+    const rows = await db
+      .select({
+        messageId: messages.id,
+        threadId: messages.threadId,
+        threadNo: messageThreads.threadNo,
+        content: messages.content,
+        portalUserId: messageThreads.portalUserId,
+      })
+      .from(messages)
+      .innerJoin(messageThreads, eq(messageThreads.id, messages.threadId))
+      .where(eq(messages.clientMessageId, input.clientMessageId))
+      .limit(1);
+    return rows[0];
+  };
+
+  const existingBeforeTransaction = await findExisting();
+  if (existingBeforeTransaction) return validateExisting(existingBeforeTransaction);
+
+  try {
+    return await db.transaction(async tx => {
+      if (input.clientMessageId) {
+        const existingRows = await tx
+          .select({
+            messageId: messages.id,
+            threadId: messages.threadId,
+            threadNo: messageThreads.threadNo,
+            content: messages.content,
+            portalUserId: messageThreads.portalUserId,
+          })
+          .from(messages)
+          .innerJoin(messageThreads, eq(messageThreads.id, messages.threadId))
+          .where(eq(messages.clientMessageId, input.clientMessageId))
+          .limit(1);
+        if (existingRows[0]) return validateExisting(existingRows[0]);
+      }
+
+      let thread: { id: number; threadNo: string } | undefined;
+      if (input.threadNo) {
+        const rows = await tx
+          .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+          .from(messageThreads)
+          .where(eq(messageThreads.threadNo, input.threadNo))
+          .limit(1);
+        thread = rows[0];
+      }
+
+      const preview = input.content.slice(0, 200);
+      if (!thread) {
+        const threadNo = genThreadNo();
+        await tx.insert(messageThreads).values({
+          threadNo,
+          subject: input.subject ?? preview.slice(0, 100),
+          contactName: input.contactName ?? null,
+          contactPhone: input.contactPhone ?? null,
+          contactEmail: input.contactEmail ?? null,
+          portalUserId: input.portalUserId ?? null,
+          threadType: resolvePortalMessageThreadType(input),
+          companyProfile: input.companyProfile ?? null,
+          adminUnreadCount: 1,
+          lastMessagePreview: preview,
+          lastMessageAt: new Date(),
+        });
+        const rows = await tx
+          .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+          .from(messageThreads)
+          .where(eq(messageThreads.threadNo, threadNo))
+          .limit(1);
+        thread = rows[0];
+      } else {
+        await tx.update(messageThreads).set({
+          status: "open",
+          adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
+          lastMessagePreview: preview,
+          lastMessageAt: new Date(),
+          ...(input.contactName ? { contactName: input.contactName } : {}),
+          ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+          ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+          ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
+          ...(input.threadType ? { threadType: resolvePortalMessageThreadType(input) } : {}),
+        }).where(eq(messageThreads.id, thread.id));
+      }
+      if (!thread) throw new Error("消息会话创建失败");
+
+      await tx.insert(messages).values({
+        threadId: thread.id,
+        clientMessageId: input.clientMessageId ?? null,
+        senderType: "portal",
+        senderName: input.contactName ?? null,
+        content: input.content,
+      });
+      const messageIdResult = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
+      const messageIdRows = (messageIdResult as unknown as [Array<{ id: number }>, unknown])[0];
+      const messageId = Number(messageIdRows[0]?.id);
+      return {
+        threadNo: thread.threadNo,
+        threadId: thread.id,
+        messageId,
+        deduplicated: false,
+      };
     });
-    const rows = await db.select().from(messageThreads)
-      .where(eq(messageThreads.threadNo, threadNo)).limit(1);
-    thread = rows[0];
-  } else {
-    await db.update(messageThreads).set({
-      status: "open",
-      adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
-      lastMessagePreview: preview,
-      lastMessageAt: new Date(),
-      ...(input.contactName ? { contactName: input.contactName } : {}),
-      ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
-      ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
-      ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
-    }).where(eq(messageThreads.id, thread.id));
+  } catch (error) {
+    const mysqlError = error as {
+      errno?: number;
+      code?: string;
+      cause?: { errno?: number; code?: string };
+    };
+    const duplicate = mysqlError.errno === 1062
+      || mysqlError.code === "ER_DUP_ENTRY"
+      || mysqlError.cause?.errno === 1062
+      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    if (!duplicate || !input.clientMessageId) throw error;
+
+    const existingAfterConflict = await findExisting();
+    if (!existingAfterConflict) throw error;
+    return validateExisting(existingAfterConflict);
   }
-
-  await db.insert(messages).values({
-    threadId: thread!.id,
-    senderType: "portal",
-    senderName: input.contactName ?? null,
-    content: input.content,
-  });
-
-  return { threadNo: thread!.threadNo, threadId: thread!.id };
 }
 
 /** 前台拉取会话消息（并清零前台未读数） */
@@ -1520,16 +2024,17 @@ export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "general" | "inquiry" | "service";
+  threadType?: "inquiry" | "service";
   keyword?: string;
 }) {
   const db = await getDb();
   if (!db) return { items: [], total: 0 };
   const conds = [];
-  // 企业开通申请直接落商户管理，不在消息中心展示
-  conds.push(sql`${messageThreads.threadType} <> 'crm_apply'`);
+  const effectiveThreadType = effectiveMessageThreadTypeSql();
+  // 企业开通申请直接落商户管理，不在消息中心展示；旧 general 记录按主题归类。
+  conds.push(sql`${effectiveThreadType} <> 'crm_apply'`);
   if (input.status) conds.push(eq(messageThreads.status, input.status));
-  if (input.threadType) conds.push(eq(messageThreads.threadType, input.threadType));
+  if (input.threadType) conds.push(sql`${effectiveThreadType} = ${input.threadType}`);
   if (input.keyword) {
     const kw = `%${input.keyword}%`;
     conds.push(or(
@@ -1549,7 +2054,10 @@ export async function getMessageThreads(input: {
   const totalRows = await db.select({ count: sql<number>`count(*)` })
     .from(messageThreads).where(where);
   return {
-    items: items.map(normalizeMessageThreadJson),
+    items: items.map(row => ({
+      ...normalizeMessageThreadJson(row),
+      threadType: resolvePortalMessageThreadType(row),
+    })),
     total: Number(totalRows[0]?.count ?? 0),
   };
 }
@@ -1560,7 +2068,10 @@ export async function getMessageThreadDetail(threadId: number) {
   if (!db) return null;
   const rows = await db.select().from(messageThreads)
     .where(eq(messageThreads.id, threadId)).limit(1);
-  const thread = rows[0] ? normalizeMessageThreadJson(rows[0]) : null;
+  const normalizedThread = rows[0] ? normalizeMessageThreadJson(rows[0]) : null;
+  const thread = normalizedThread
+    ? { ...normalizedThread, threadType: resolvePortalMessageThreadType(normalizedThread) }
+    : null;
   if (!thread) return null;
   const list = await db.select().from(messages)
     .where(eq(messages.threadId, threadId)).orderBy(messages.createdAt);
@@ -1612,9 +2123,10 @@ export async function setMessageThreadStatus(threadId: number, status: "open" | 
 export async function getAdminUnreadTotal() {
   const db = await getDb();
   if (!db) return 0;
+  const effectiveThreadType = effectiveMessageThreadTypeSql();
   const rows = await db.select({ total: sql<number>`COALESCE(SUM(${messageThreads.adminUnreadCount}), 0)` })
     .from(messageThreads)
-    .where(and(eq(messageThreads.status, "open"), sql`${messageThreads.threadType} <> 'crm_apply'`));
+    .where(and(eq(messageThreads.status, "open"), sql`${effectiveThreadType} <> 'crm_apply'`));
   return Number(rows[0]?.total ?? 0);
 }
 

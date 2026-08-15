@@ -45,7 +45,7 @@ async function merchantByCode(creditCode: string) {
   return rows[0] ?? null;
 }
 
-describe("CRM 企业唯一绑定与重复申请保护", () => {
+describe("ERP 企业唯一绑定与重复申请保护", () => {
   beforeEach(cleanup);
   afterAll(cleanup);
 
@@ -106,6 +106,7 @@ describe("CRM 企业唯一绑定与重复申请保护", () => {
       created: false,
       code: "CRM_COMPANY_APPLICATION_PENDING",
       crmStatus: "pending",
+      message: "该企业的 ERP 开通申请正在审核中",
     });
     expect(duplicate).not.toHaveProperty("merchantId");
     expect(duplicate).not.toHaveProperty("merchantNo");
@@ -144,7 +145,10 @@ describe("CRM 企业唯一绑定与重复申请保护", () => {
       creditCode: CODES.enabled,
       portalUserId: "other-owner",
     });
-    expect(otherRepeat.code).toBe("CRM_COMPANY_ALREADY_ENABLED");
+    expect(otherRepeat).toMatchObject({
+      code: "CRM_COMPANY_ALREADY_ENABLED",
+      message: "该公司已经开通ERP,请联系管理员",
+    });
     expect(otherRepeat).not.toHaveProperty("merchantId");
     expect(otherRepeat).not.toHaveProperty("merchantNo");
 
@@ -162,6 +166,7 @@ describe("CRM 企业唯一绑定与重复申请保护", () => {
     expect(otherAccess).toMatchObject({
       allowed: false,
       code: "CRM_COMPANY_ALREADY_ENABLED",
+      message: "该公司已经开通ERP,请联系管理员",
     });
     expect(otherAccess).not.toHaveProperty("merchantNo");
     expect(otherAccess).not.toHaveProperty("crmThreadNo");
@@ -183,7 +188,10 @@ describe("CRM 企业唯一绑定与重复申请保护", () => {
       creditCode: CODES.rejected,
       portalUserId: "other-owner",
     });
-    expect(other.code).toBe("CRM_COMPANY_ALREADY_BOUND");
+    expect(other).toMatchObject({
+      code: "CRM_COMPANY_ALREADY_BOUND",
+      message: "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
+    });
 
     const reapplied = await portal.submitCrmApplication({
       companyName: "重新申请企业",

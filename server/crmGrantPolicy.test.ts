@@ -6,7 +6,7 @@ import {
   isEquivalentEnabledBinding,
 } from "./crmGrantPolicy";
 
-describe("后台商户 CRM 唯一用户绑定策略", () => {
+describe("后台商户 ERP 唯一用户绑定策略", () => {
   it("存量 owner 为空时必须填写前台用户 ID", () => {
     expect(() => decideMerchantCrmGrant(
       { crmStatus: "enabled", crmOwnerPortalUserId: null },
@@ -74,7 +74,7 @@ describe("后台商户 CRM 唯一用户绑定策略", () => {
     ["disabled", "enabled"],
     ["rejected", "pending"],
     ["rejected", "enabled"],
-  ] as const)("允许 CRM 状态从 %s 迁移到 %s", (fromStatus, toStatus) => {
+  ] as const)("允许 ERP 状态从 %s 迁移到 %s", (fromStatus, toStatus) => {
     expect(() => assertMerchantCrmStatusTransition(fromStatus, toStatus)).not.toThrow();
   });
 
@@ -87,7 +87,7 @@ describe("后台商户 CRM 唯一用户绑定策略", () => {
     ["disabled", "pending"],
     ["disabled", "rejected"],
     ["rejected", "disabled"],
-  ] as const)("拒绝 CRM 状态从 %s 非法跳转到 %s", (fromStatus, toStatus) => {
+  ] as const)("拒绝 ERP 状态从 %s 非法跳转到 %s", (fromStatus, toStatus) => {
     expect(() => assertMerchantCrmStatusTransition(fromStatus, toStatus)).toThrow("不能从");
   });
 

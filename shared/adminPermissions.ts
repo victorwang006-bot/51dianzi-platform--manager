@@ -1,3 +1,11 @@
+/**
+ * 后台角色枚举。
+ *
+ * 生产库实际仅使用两档：super_admin（1 个）与 merchant_mgr（5 个）；
+ * 其余五个角色为历史遗留、零使用。此处有意保留它们：
+ * 删除枚举属于语义变更而非功能还原，且会打破现有权限体系测试；
+ * 而 hasAdminPermission 对未定义角色返回 false，保留也不会造成误授权。
+ */
 export const ADMIN_ROLES = [
   "super_admin",
   "operation",
@@ -18,6 +26,8 @@ export const ADMIN_PERMISSIONS = [
   "messages.read",
   "messages.write",
   "orders.read",
+  /** 维护本人个人信息与登录密码（「个人信息」菜单的准入依据） */
+  "profile.manage",
   "admins.manage",
 ] as const;
 
@@ -33,12 +43,14 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "messages.read",
     "messages.write",
     "orders.read",
+    "profile.manage",
   ],
-  merchant_mgr: ["merchants.read", "merchants.write", "orders.read"],
-  customer_svc: ["merchants.read", "messages.read", "messages.write", "orders.read"],
-  risk_control: ["merchants.read", "merchants.write", "orders.read"],
-  finance: ["merchants.read", "orders.read"],
-  auditor: ["materials.read", "merchants.read", "messages.read", "orders.read"],
+  // 普通用户：仅商户管理、订单中心，并按销售权限限制可见数据范围
+  merchant_mgr: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
+  customer_svc: ["merchants.read", "messages.read", "messages.write", "orders.read", "profile.manage"],
+  risk_control: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
+  finance: ["merchants.read", "orders.read", "profile.manage"],
+  auditor: ["materials.read", "merchants.read", "messages.read", "orders.read", "profile.manage"],
 };
 
 export function isAdminRole(value: unknown): value is AdminRole {

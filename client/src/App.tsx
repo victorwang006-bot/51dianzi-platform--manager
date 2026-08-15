@@ -14,6 +14,8 @@ import MerchantDetail from "./pages/MerchantDetail";
 import Merchants from "./pages/Merchants";
 import Messages from "./pages/Messages";
 import Orders from "./pages/Orders";
+import PortalUsers from "./pages/PortalUsers";
+import Profile from "./pages/Profile";
 import { ShieldAlert } from "lucide-react";
 import {
   hasAdminPermission,
@@ -100,11 +102,17 @@ const MerchantDetailRoute = () => (
 const MessagesRoute = () => (
   <PermissionGate permission="messages.read"><Messages /></PermissionGate>
 );
+const PortalUsersRoute = () => (
+  <PermissionGate permission="messages.read"><PortalUsers /></PermissionGate>
+);
 const AdminsRoute = () => (
   <PermissionGate permission="admins.manage"><Admins /></PermissionGate>
 );
 const OrdersRoute = () => (
   <PermissionGate permission="orders.read"><Orders /></PermissionGate>
+);
+const ProfileRoute = () => (
+  <PermissionGate permission="profile.manage"><Profile /></PermissionGate>
 );
 
 /** 部署 base 路径（如 /admin），本地开发为空字符串 */
@@ -121,9 +129,11 @@ function AppRoutes() {
         <Route path={"/merchants"} component={MerchantsRoute} />
         <Route path={"/merchants/:id"} component={MerchantDetailRoute} />
         <Route path={"/messages"} component={MessagesRoute} />
+        <Route path={"/portal-users"} component={PortalUsersRoute} />
         <Route path={"/orders"} component={OrdersRoute} />
         <Route path={"/orders/:id"} component={OrdersRoute} />
         <Route path={"/admins"} component={AdminsRoute} />
+        <Route path={"/profile"} component={ProfileRoute} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -39,15 +39,40 @@ type AdminRole =
   | "finance"
   | "auditor";
 
+/**
+ * 可选角色（与生产保持一致）。
+ *
+ * 只保留 super_admin 与 merchant_mgr 两项，原因：
+ * shared/adminPermissions.ts 的权限表仅为这两个角色定义了权限集，
+ * 其余历史角色（operation / customer_svc / risk_control / finance / auditor）
+ * 若可被选中，建出的账号登录后将不具备任何权限（空壳账号），
+ * 反而造成误解。生产库实测也只存在这两种角色在用。
+ *
+ * 注意：AdminRole 类型仍保留全部 7 个取值，以便存量数据（若有）
+ * 在列表里仍能正常显示角色名，而不会因查不到映射而显示为原始枚举值。
+ */
 const roleOptions: { value: AdminRole; label: string; duties: string }[] = [
-  { value: "super_admin", label: "超级管理员", duties: "全部权限，管理管理员账号与角色分配" },
-  { value: "operation", label: "平台运营", duties: "数据看板、商品治理、订单处置、告警处理" },
-  { value: "merchant_mgr", label: "商户管理", duties: "商户入驻审核、资质管理、协议与结算账户配置" },
-  { value: "customer_svc", label: "客服/售后", duties: "订单查询、退款申请审核、异常标注" },
-  { value: "risk_control", label: "风控审核", duties: "智能风控分析、风险处置、可疑行为审查" },
-  { value: "finance", label: "财务结算", duties: "支付流水查询、结算单生成与打款、对账" },
-  { value: "auditor", label: "审计人员", duties: "操作日志与敏感数据访问记录查阅（只读）" },
+  { value: "super_admin", label: "超级管理员", duties: "全部菜单、全部商户、全部订单和账号管理权限" },
+  { value: "merchant_mgr", label: "普通用户", duties: "仅商户管理、订单中心，并按销售权限限制数据范围" },
 ];
+
+/** 历史角色显示名（不在下拉中提供，仅用于存量数据展示） */
+const legacyRoleLabels: Partial<Record<AdminRole, string>> = {
+  operation: "平台运营",
+  customer_svc: "客服/售后",
+  risk_control: "风控审核",
+  finance: "财务结算",
+  auditor: "审计人员",
+};
+
+/** 角色显示名解析：优先可选项，其次历史角色，最后降级为原始值 */
+function resolveRoleLabel(role: AdminRole | string): string {
+  return (
+    roleOptions.find(r => r.value === role)?.label
+    ?? legacyRoleLabels[role as AdminRole]
+    ?? role
+  );
+}
 
 const roleStyleMap: Record<AdminRole, "danger" | "info" | "warning" | "success" | "gray"> = {
   super_admin: "danger",
@@ -59,12 +84,36 @@ const roleStyleMap: Record<AdminRole, "danger" | "info" | "warning" | "success" 
   auditor: "gray",
 };
 
+/**
+ * 展示销售可见范围。
+ * 仅包含本人时显示「仅本人」；含他人时列出工号，超过 3 个折叠。
+ */
+function renderSalesScope(codes: string[], ownCode: string | null) {
+  if (codes.length === 0) return <span className="text-muted-foreground">-</span>;
+  const others = ownCode ? codes.filter(c => c !== ownCode) : codes;
+  if (others.length === 0) return <span className="text-muted-foreground">仅本人</span>;
+  const shown = others.slice(0, 3).join("、");
+  const rest = others.length - 3;
+  const full = codes.join("、");
+  return (
+    <span
+      className="inline-block max-w-[150px] truncate align-middle"
+      title={full}
+      aria-label={`销售权限：${full}`}
+    >
+      本人 + {shown}{rest > 0 ? ` 等 ${others.length} 人` : ""}
+    </span>
+  );
+}
+
 type FormState = {
   username: string;
   displayName: string;
   email: string;
   phone: string;
   adminRole: AdminRole;
+  /** 追加的销售可见范围工号（本人工号由后端自动并入） */
+  salesStaffCodes: string[];
   password: string;
 };
 
@@ -73,23 +122,33 @@ const emptyForm: FormState = {
   displayName: "",
   email: "",
   phone: "",
-  adminRole: "operation",
+  adminRole: "merchant_mgr",
+  salesStaffCodes: [],
   password: "",
 };
 
 export default function Admins() {
   const [page, setPage] = useState(1);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
+  const { data, isLoading, isFetching, refetch } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
 
+  // 销售身份名单（含已停用）：历史范围里可能含已停用工号，不拉全量会导致回填时显示不出来
+  const { data: salesStaff = [] } = trpc.salesStaff.list.useQuery({ includeInactive: true });
+
+  // 建/改/停用/删除后台用户都会连带变更销售身份，因此两个缓存必须同时失效
+  const invalidateAll = () => {
+    utils.adminUser.list.invalidate();
+    utils.salesStaff.list.invalidate();
+  };
+
   const createMutation = trpc.adminUser.create.useMutation({
     onSuccess: () => {
-      utils.adminUser.list.invalidate();
+      invalidateAll();
       setDialogOpen(false);
       setForm(emptyForm);
       toast.success("用户创建成功");
@@ -99,7 +158,7 @@ export default function Admins() {
 
   const updateMutation = trpc.adminUser.update.useMutation({
     onSuccess: () => {
-      utils.adminUser.list.invalidate();
+      invalidateAll();
       setDialogOpen(false);
       setEditingId(null);
       toast.success("用户信息已更新");
@@ -109,7 +168,7 @@ export default function Admins() {
 
   const toggleMutation = trpc.adminUser.toggleStatus.useMutation({
     onSuccess: () => {
-      utils.adminUser.list.invalidate();
+      invalidateAll();
       toast.success("状态已更新");
     },
     onError: (e) => toast.error(`操作失败：${e.message}`),
@@ -117,7 +176,7 @@ export default function Admins() {
 
   const removeMutation = trpc.adminUser.remove.useMutation({
     onSuccess: () => {
-      utils.adminUser.list.invalidate();
+      invalidateAll();
       toast.success("用户已删除");
     },
     onError: (e) => toast.error(`删除失败：${e.message}`),
@@ -137,6 +196,7 @@ export default function Admins() {
       email: a.email ?? "",
       phone: a.phone ?? "",
       adminRole: a.adminRole as AdminRole,
+      salesStaffCodes: a.salesStaffCodes ?? [],
       password: "",
     });
     setDialogOpen(true);
@@ -161,6 +221,8 @@ export default function Admins() {
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
       adminRole: form.adminRole,
+      // 超级管理员无需销售范围（本来就看得到全部数据）
+      salesStaffCodes: form.adminRole === "super_admin" ? [] : form.salesStaffCodes,
     };
     if (editingId !== null) {
       updateMutation.mutate({
@@ -179,12 +241,23 @@ export default function Admins() {
     <DashboardLayout>
       <PageHeader
         title="用户管理"
-        description="管理后台系统用户，支持角色权限分配、手机号与邮箱绑定"
+        description="普通用户创建后自动生成销售身份并默认绑定本人；可追加其他普通用户形成主管范围"
         actions={
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            新建用户
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? "animate-spin" : ""}`} />
+              刷新
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1" />
+              新建用户
+            </Button>
+          </div>
         }
       />
 
@@ -209,6 +282,7 @@ export default function Admins() {
                       <th>用户名</th>
                       <th>显示名称</th>
                       <th>角色权限</th>
+                      <th>销售权限</th>
                       <th>手机号</th>
                       <th>邮箱</th>
                       <th>状态</th>
@@ -224,9 +298,14 @@ export default function Admins() {
                         <td>{a.displayName ?? <span className="text-muted-foreground">-</span>}</td>
                         <td>
                           <StatusBadge
-                            label={roleOptions.find(r => r.value === a.adminRole)?.label ?? a.adminRole}
+                            label={resolveRoleLabel(a.adminRole)}
                             style={roleStyleMap[a.adminRole as AdminRole] ?? "info"}
                           />
+                        </td>
+                        <td className="max-w-[170px] whitespace-nowrap text-xs">
+                          {a.adminRole === "super_admin"
+                            ? <span className="text-muted-foreground">全部销售范围</span>
+                            : renderSalesScope(a.salesStaffCodes ?? [], a.ownSalesStaffCode ?? null)}
                         </td>
                         <td className="text-xs">{a.phone ?? <span className="text-muted-foreground">-</span>}</td>
                         <td className="text-xs">{a.email ?? <span className="text-muted-foreground">-</span>}</td>
@@ -306,7 +385,12 @@ export default function Admins() {
               <Label>角色权限 <span className="text-destructive">*</span></Label>
               <Select
                 value={form.adminRole}
-                onValueChange={v => setForm(f => ({ ...f, adminRole: v as AdminRole }))}
+                onValueChange={v => setForm(f => ({
+                  ...f,
+                  adminRole: v as AdminRole,
+                  // 切到超级管理员时清空已选范围，避免提交无意义的销售权限
+                  salesStaffCodes: v === "super_admin" ? [] : f.salesStaffCodes,
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -321,6 +405,49 @@ export default function Admins() {
                 </SelectContent>
               </Select>
             </div>
+            {form.adminRole !== "super_admin" && (
+              <div className="space-y-1.5">
+                <Label>销售权限</Label>
+                <p className="text-xs text-muted-foreground">
+                  默认仅本人；可追加其他普通用户
+                </p>
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {salesStaff.length === 0 ? (
+                    <p className="px-1 py-2 text-xs text-muted-foreground">暂无可分配的销售员工</p>
+                  ) : (
+                    salesStaff.map(s => {
+                      const checked = form.salesStaffCodes.includes(s.staffCode);
+                      return (
+                        <label
+                          key={s.staffCode}
+                          className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-xs hover:bg-accent/50"
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5"
+                            checked={checked}
+                            onChange={() => setForm(f => ({
+                              ...f,
+                              salesStaffCodes: checked
+                                ? f.salesStaffCodes.filter(c => c !== s.staffCode)
+                                : [...f.salesStaffCodes, s.staffCode],
+                            }))}
+                          />
+                          <span className="font-medium">{s.displayName}</span>
+                          <span className="font-mono text-muted-foreground">{s.staffCode}</span>
+                          {s.status !== "active" && (
+                            <span className="text-muted-foreground">（已停用）</span>
+                          )}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  新用户自动绑定本人；勾选其他用户可形成主管范围
+                </p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>手机号</Label>
               <Input

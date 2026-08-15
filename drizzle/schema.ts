@@ -2,6 +2,7 @@ import {
   bigint,
   decimal,
   index,
+  uniqueIndex,
   int,
   mysqlEnum,
   mysqlTable,
@@ -158,6 +159,70 @@ export const passwordResetCodes = mysqlTable("password_reset_codes", {
 
 export type PasswordResetCode = typeof passwordResetCodes.$inferSelect;
 
+// ─── 销售身份与数据范围 ─────────────────────────────────────
+
+/**
+ * 销售身份（销售负责人）。
+ *
+ * 前台企业资料的「销售负责人」下拉即取自本表（仅 active）。
+ *
+ * 生命周期约定：本表**只读**，不提供独立的新增/删除接口，全部由后台
+ * 用户的创建/修改/停用自动驱动（见 syncAdminUserSalesIdentity）。否则会出现
+ * 「销售身份存在但对应后台用户已停用」的幽灵记录，其名下商户将无人可见。
+ *
+ * adminUserId 可为空：允许存在未开后台账号的纯销售身份（历史数据中确存在），
+ * 因此关联查询切勿使用 INNER JOIN，否则这类销售会从下拉中消失。
+ */
+export const salesStaff = mysqlTable("sales_staff", {
+  id: int("id").autoincrement().primaryKey(),
+  /** 关联的后台用户（可空：未开后台账号的纯销售身份），唯一 */
+  adminUserId: int("adminUserId"),
+  /** 稳定工号：小写字母/数字/下划线/连字符，前台提交以此为准（姓名仅兼容） */
+  staffCode: varchar("staffCode", { length: 64 }).notNull(),
+  /** 展示名（姓名） */
+  displayName: varchar("displayName", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  /** 下拉排序，升序；同值时按 id 升序 */
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => ({
+  /**
+   * 工号全局唯一。缺失会导致两人共用同一工号，
+   * 商户归属同时指向两人，销售范围隔离直接失效。
+   * 显式命名以与生产库索引名保持一致（不用 .unique() 自动命名）。
+   */
+  staffCodeUnique: uniqueIndex("sales_staff_staff_code_unique").on(table.staffCode),
+  /** 一个后台用户只能有一个销售身份；否则同一人会在下拉中重复出现、商户归属也会分叉 */
+  adminUserUnique: uniqueIndex("sales_staff_admin_user_unique").on(table.adminUserId),
+  statusSortIdx: index("sales_staff_status_sort_idx").on(table.status, table.sortOrder),
+}));
+
+export type SalesStaff = typeof salesStaff.$inferSelect;
+
+/**
+ * 后台用户的销售可见范围。
+ *
+ * 一个普通后台用户默认只能看到自己名下（自动绑定本人）的商户与订单；
+ * 追加其他普通用户的工号后即形成「主管范围」，可见这些销售名下的数据。
+ * 超级管理员不受范围限制（见 getAdminSalesStaffCodes 返回 undefined 的含义）。
+ *
+ * ⚠️ 本表是后台数据权限隔离的唯一依据。若相关过滤逻辑被简化或绕过，
+ * 任意后台用户将可看到全部商户与订单，属于严重越权。
+ */
+export const adminUserSalesScopes = mysqlTable("admin_user_sales_scopes", {
+  id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  staffCode: varchar("staffCode", { length: 64 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  /** 同一 (用户, 工号) 不得重复授权，否则范围查询会产生重复行 */
+  adminStaffUnique: uniqueIndex("admin_user_sales_scopes_admin_staff_unique").on(table.adminUserId, table.staffCode),
+  staffAdminIdx: index("admin_user_sales_scopes_staff_admin_idx").on(table.staffCode, table.adminUserId),
+}));
+
+export type AdminUserSalesScope = typeof adminUserSalesScopes.$inferSelect;
+
 // ─── 商户管理 ─────────────────────────────────────────────────────────────────
 
 export const merchants = mysqlTable("merchants", {
@@ -212,8 +277,14 @@ export const merchants = mysqlTable("merchants", {
   crmNote: text("crmNote"),
   /** 后台"发信"关联的客服会话编号（首次发信创建 service 会话后记录并复用） */
   crmThreadNo: varchar("crmThreadNo", { length: 32 }),
-  /** 销售负责人（前台 submitMerchant 可传入，后台商户列表展示） */
+  /** 销售负责人姓名（展示用；旧客户端仅传姓名，保留作兼容） */
   salesOwner: varchar("salesOwner", { length: 64 }),
+  /**
+   * 销售负责人工号（sales_staff.staffCode）。
+   * 这是归属关系的**唯一可靠依据**：姓名可重名、可改名，不能用作关联键。
+   * 后台数据范围过滤（哪些商户对谁可见）即基于本字段匹配。
+   */
+  salesOwnerCode: varchar("salesOwnerCode", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -534,6 +605,12 @@ export const messages = mysqlTable("messages", {
   senderName: varchar("senderName", { length: 128 }),
   /** 消息内容 */
   content: text("content").notNull(),
+  /**
+   * 客户端幂等键：由发送方生成并在重试时复用，生产库带唯一索引（varchar(64) UNIQUE）。
+   * 支撑「发送失败点击重试」不产生重复消息，是防重复入库的最后一道保险。
+   * 注：该列在生产库长期存在，但此前从未在任何版本的源码 schema 中声明。
+   */
+  clientMessageId: varchar("clientMessageId", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
