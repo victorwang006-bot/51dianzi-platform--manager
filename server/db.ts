@@ -22,6 +22,10 @@ import {
   PLATFORM_MATERIAL_SEQUENCE_KEY,
 } from "./materialCode";
 import {
+  expandShortPartNumber,
+  isPackageSuffixExpansion,
+} from "../shared/partNumberFallback";
+import {
   assertMerchantCrmStatusTransition,
   crmStatusAction,
   decideMerchantCrmGrant,
@@ -483,21 +487,46 @@ export async function deleteMaterialFixture(id: number) {
   await db.delete(materials).where(eq(materials.id, id));
 }
 
-/** 按制造商型号精确匹配物料（大小写不敏感），供图片上传接口按文件名回写 */
+/**
+ * 按制造商型号精确匹配物料（大小写不敏感），供图片上传接口按文件名回写。
+ *
+ * 精确匹配失败时会回退尝试「库内短号」写法，详见 shared/partNumberFallback.ts。
+ * 背景：2026-08 将 464 条 ST 物料的 partNumber 由短号补全为完整型号，
+ * 而图片上传 API 文档长期记载「库内型号不含封装后缀」，运营脚本按短号上传。
+ * 若无回退，补全后全部上传都会报「型号不存在」，图片链路中断。
+ */
 export async function getMaterialByPartNumber(partNumber: string) {
   const db = await getDb();
   if (!db) return null;
+  const columns = {
+    id: materials.id,
+    partNumber: materials.partNumber,
+    coverImageUrl: materials.coverImageUrl,
+    images: materials.images,
+  };
   const result = await db
-    .select({
-      id: materials.id,
-      partNumber: materials.partNumber,
-      coverImageUrl: materials.coverImageUrl,
-      images: materials.images,
-    })
+    .select(columns)
     .from(materials)
     .where(sql`UPPER(${materials.partNumber}) = UPPER(${partNumber.trim()})`)
     .limit(1);
-  return result[0] ? normalizeMaterialJson(result[0]) : null;
+  if (result[0]) return normalizeMaterialJson(result[0]);
+
+  const candidates = expandShortPartNumber(partNumber);
+  if (candidates.length === 0) return null;
+
+  /**
+   * 安全约束：必须【唯一命中】才采用。
+   * 命中多条时宁可返回 null 让运营收到「型号不存在」去人工确认，
+   * 也绝不猜测——否则可能把图片挂到另一颗真实存在的料上，造成错图。
+   */
+  const fallback = await db
+    .select(columns)
+    .from(materials)
+    .where(inArray(sql`UPPER(${materials.partNumber})`, candidates))
+    .limit(2);
+  if (fallback.length !== 1) return null;
+  if (!isPackageSuffixExpansion(partNumber, fallback[0].partNumber)) return null;
+  return normalizeMaterialJson(fallback[0]);
 }
 
 /**
