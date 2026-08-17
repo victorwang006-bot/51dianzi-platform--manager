@@ -31,5 +31,16 @@ export function Logo({ className = "h-10 w-auto", alt = "51电子网" }: LogoPro
   );
 }
 
-/** @deprecated LOGO 已代码化为内嵌 SVG，此 URL 仅为兼容保留（favicon 等场景） */
-export const LOGO_URL = "/manus-storage/logo-51-transparent_c7f0d7c5.png";
+/*
+ * 已删除旧的 LOGO_URL 导出。
+ *
+ * 删除原因：
+ * 1. 无任何代码引用它，属于死代码
+ * 2. 它指向旧 Manus 环境的存储路径，迁移到阿里云 ECS 后
+ *    该路径已不可用，引用必然 404
+ * 3. 其注释声称用于「favicon 等场景」，实际从未被 index.html 使用，
+ *    容易误导后续开发者以为 favicon 已配置
+ *
+ * favicon 现由 client/public/ 下的图标文件与 client/index.html 中的
+ * <link rel="icon"> 声明提供；页面内 LOGO 仍用上方的内嵌 SVG 组件。
+ */

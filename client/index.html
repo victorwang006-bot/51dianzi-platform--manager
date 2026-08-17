@@ -23,6 +23,21 @@
     </script>
     <title>51电子网 - 后台管理系统</title>
     <meta name="description" content="51电子网电商平台后台管理系统" />
+    <!--
+      浏览器标签页图标。图标文件位于 client/public/，
+      由 Vite 原样复制到产物根目录，因此必须用根绝对路径引用：
+      后台存在 /messages、/merchants 等多级路由，
+      相对路径会被解析到错误位置而 404。
+
+      图标与前台（dianzi51-platform）使用同一套文件，
+      同为「51」品牌标志，便于用户在多标签页中识别本平台。
+    -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>
