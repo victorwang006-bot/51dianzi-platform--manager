@@ -1,4 +1,18 @@
-export type PlatformOrderStatus = "pending" | "paid" | "shipped" | "done" | "refund" | "cancel";
+/**
+ * 商城订单状态，必须与前台 `ORDER_STATUSES` 保持全集一致。
+ *
+ * `refunded`（退款完成终态）与 `refund`（退款申请中）是两个状态：
+ * 前台 schema 已说明两者合并会让订单停在 refund 后没有出口。
+ * 后台曾漏掉 refunded，导致平台第一笔退款完成后订单管理页整页白屏。
+ */
+export type PlatformOrderStatus =
+  | "pending"
+  | "paid"
+  | "shipped"
+  | "done"
+  | "refund"
+  | "cancel"
+  | "refunded";
 
 export type PlatformOrderListInput = {
   page: number;
@@ -18,8 +32,13 @@ export type PlatformOrderStats = {
   sellerCount: number;
   todayOrders: number;
   sevenDayOrders: number;
-  statusCounts: Record<PlatformOrderStatus, number>;
-  statusAmounts: Record<PlatformOrderStatus, string>;
+  /*
+   * 用 Partial：商城只返回存在订单的状态键，不会把零订单状态补齐。
+   * 声明为完整 Record 会让调用方误以为每个键都在，
+   * 直接取值参与运算就会得到 NaN（而且 tsc 不报错）。
+   */
+  statusCounts: Partial<Record<PlatformOrderStatus, number>>;
+  statusAmounts: Partial<Record<PlatformOrderStatus, string>>;
 };
 
 export type PlatformOrderListRow = {

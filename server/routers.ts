@@ -408,7 +408,8 @@ export const appRouter = router({
     list: orderReadProcedure
       .input(pageInput.extend({
         keyword: z.string().trim().max(100).optional(),
-        status: z.enum(["pending", "paid", "shipped", "done", "refund", "cancel"]).optional(),
+        /* 必须与前台 ORDER_STATUSES 全集一致：漏值会让该状态无法被筛选 */
+        status: z.enum(["pending", "paid", "shipped", "done", "refund", "cancel", "refunded"]).optional(),
         buyerId: z.number().int().positive().optional(),
         sellerId: z.number().int().positive().optional(),
         createdFrom: z.number().int().nonnegative().optional(),

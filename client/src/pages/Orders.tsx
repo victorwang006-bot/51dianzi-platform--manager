@@ -11,6 +11,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
 
+/**
+ * 订单状态展示配置。
+ *
+ * 必须与前台 `ORDER_STATUSES` 保持全集一致。
+ * 后台是独立仓库、独立部署，枚举不会自动同步，
+ * 漏一个值就会让整个订单管理页白屏（参见 orderStatusCoverage 契约测试）。
+ */
 const statusMeta = {
   pending: { label: "待付款", className: "bg-amber-100 text-amber-800" },
   paid: { label: "待发货", className: "bg-blue-100 text-blue-800" },
@@ -18,7 +25,17 @@ const statusMeta = {
   done: { label: "已完成", className: "bg-emerald-100 text-emerald-800" },
   refund: { label: "退款/售后", className: "bg-rose-100 text-rose-800" },
   cancel: { label: "已取消", className: "bg-slate-100 text-slate-700" },
+  /*
+   * 退款完成终态。与 refund（退款申请中）必须区分：
+   * 前台 schema 已说明两者合并会导致订单无出口、财务无法对账。
+   * 本次白屏就是因为后台漏了这个值，
+   * 平台第一笔退款走完后订单页即不可用。
+   */
+  refunded: { label: "已退款", className: "bg-rose-50 text-rose-600" },
 } as const;
+
+/** 未知状态的降级样式：宁可显示一个陌生标签，也不能让整页打不开 */
+const UNKNOWN_STATUS_CLASS = "bg-slate-100 text-slate-700";
 
 const payMethodLabels = { corp: "对公转账", alipay: "支付宝", wechat: "微信支付" } as const;
 const money = (value: string | number | null | undefined) =>
@@ -27,8 +44,21 @@ const money = (value: string | number | null | undefined) =>
 const dateTime = (value: Date | string | null | undefined) =>
   value ? formatBeijingDateTimeWithSeconds(value) || "—" : "—";
 
-function OrderStatus({ status }: { status: keyof typeof statusMeta }) {
-  const meta = statusMeta[status];
+function OrderStatus({ status }: { status: string }) {
+  /*
+   * 必须对未知状态兜底。
+   *
+   * 前台与后台是两个仓库、各自部署，订单状态枚举天然会漂移。
+   * 原实现直接读 meta.className，一旦前台新增状态（本次是 refunded），
+   * meta 为 undefined 就抛 TypeError，整个订单管理页白屏。
+   *
+   * 只补枚举不够：下次前台再加状态仍会在同一处崩溃。
+   * 显示一个不认识的状态名，与整页不可用，严重程度完全不在一个量级。
+   */
+  const meta = statusMeta[status as keyof typeof statusMeta];
+  if (!meta) {
+    return <Badge className={UNKNOWN_STATUS_CLASS}>{status || "未知状态"}</Badge>;
+  }
   return <Badge className={meta.className}>{meta.label}</Badge>;
 }
 
