@@ -775,10 +775,23 @@ export const appRouter = router({
         licenseImageUrl: z.string().url().max(512).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
         note: z.string().max(1000).optional().nullable(),
+        /**
+         * 销售负责人。与 portal.submitMerchant 保持一致的双字段语义：
+         * 新客户端传稳定工号（salesOwnerCode），旧客户端仅传姓名作兼容。
+         *
+         * 历史缺陷（2026-08-17 修复）：本接口原先没有这两个字段，
+         * 前台只能把销售姓名塞进 note 文本，工号完全丢失，
+         * 导致 merchants.salesOwnerCode 为空、销售在后台看不到名下客户。
+         */
+        salesOwner: z.string().max(64).optional().nullable(),
+        salesOwnerCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
-        return db.submitCrmApplication(input);
+        // 必须走统一校验，不得将未校验的自由文本当作归属写入商户。
+        const owner = await resolvePortalSalesOwner(input.salesOwnerCode, input.salesOwner);
+        const { salesOwner: _legacyOwner, salesOwnerCode: _ownerCode, ...rest } = input;
+        return db.submitCrmApplication({ ...rest, ...owner });
       }),
 
     /**

@@ -710,6 +710,16 @@ export interface CrmApplicationInput {
   licenseImageUrl?: string | null;
   portalUserId?: string | null;
   note?: string | null;
+  /**
+   * 销售负责人姓名（展示用）与工号（归属唯一依据）。
+   *
+   * 必须由调用方先经 `resolvePortalSalesOwner()` 校验，本层不再修正。
+   * 两者均为 undefined 时不改动现有归属；为 null 时显式清空。
+   * 注意：历史上本接口缺失这两个字段，导致前台 ERP 开通时选的销售
+   * 无法写入 merchants.salesOwnerCode，销售在自己后台看不到名下客户。
+   */
+  salesOwner?: string | null;
+  salesOwnerCode?: string | null;
 }
 
 /**
@@ -748,6 +758,12 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
     ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
     ...(input.businessScope ? { businessScope: input.businessScope } : {}),
     ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+    /**
+     * 销售归属。用 `!== undefined` 而非真值判定，
+     * 否则无法表达「显式清空归属」（null）与「本次不改动」（undefined）的差别。
+     */
+    ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner } : {}),
+    ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode } : {}),
   };
   try {
     return await db.transaction(async tx => {
