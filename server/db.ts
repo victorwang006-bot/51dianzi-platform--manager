@@ -21,6 +21,7 @@ import {
   formatMaterialNo,
   PLATFORM_MATERIAL_SEQUENCE_KEY,
 } from "./materialCode";
+import { getBeijingDateParts } from "../shared/beijingTime";
 import {
   expandShortPartNumber,
   isPackageSuffixExpansion,
@@ -554,6 +555,21 @@ export async function appendMaterialImage(
 
 // ─── 商户 ─────────────────────────────────────────────────────────────────────
 
+/**
+ * 生成商户编号 `M` + 年月 + 时间戳后 6 位。
+ *
+ * 年月必须取北京时间：若用 `now.getFullYear()` 等本地时区方法，
+ * 一旦服务器时区被误改或应用迁移到非 UTC+8 环境，
+ * 跨月边界生成的编号会落到错误月份，影响按编号归档与对账。
+ */
+function genMerchantNo(now: Date): string {
+  const parts = getBeijingDateParts(now);
+  const ym = parts
+    ? `${parts.year}${String(parts.month).padStart(2, "0")}`
+    : "000000";
+  return `M${ym}${String(Date.now()).slice(-6)}`;
+}
+
 /** 权威ERP用户集合：仅统计已开通且已绑定前台账号的不同用户ID。 */
 export async function getEnabledErpPortalUserIds() {
   const db = await getDb();
@@ -681,7 +697,7 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
     return { merchantId: m.id, merchantNo: m.merchantNo, created: false, status: nextStatus };
   }
 
-  const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
+  const merchantNo = genMerchantNo(now);
   const result = await db.insert(merchants).values({
     merchantNo,
     businessLicense: input.businessLicense,
@@ -873,7 +889,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
         };
       }
 
-      const merchantNo = `M${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(Date.now()).slice(-6)}`;
+      const merchantNo = genMerchantNo(now);
       const result = await tx.insert(merchants).values({
         merchantNo,
         ...profileFields,
@@ -1827,9 +1843,18 @@ export async function deleteAdminUser(id: number) {
 
 // ─── 消息中心（前后台互通）─────────────────────────────────────────────────────
 
+/**
+ * 会话编号的日期部分必须取北京时间。
+ *
+ * 若用 `d.getFullYear()` 等本地时区方法，一旦服务器时区被误改或
+ * 应用迁移到非 UTC+8 环境，编号中的日期会与业务当天错位，
+ * 导致运营按编号检索当日会话时遗漏记录。
+ */
 function genThreadNo() {
-  const d = new Date();
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const parts = getBeijingDateParts(new Date());
+  const ymd = parts
+    ? `${parts.year}${String(parts.month).padStart(2, "0")}${String(parts.day).padStart(2, "0")}`
+    : "00000000";
   return `MT${ymd}${Math.floor(1000 + Math.random() * 9000)}`;
 }
 

@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowDownToLine, Boxes, CloudOff, ImageIcon, Loader2, Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   published: { label: "已发布", className: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" },
@@ -46,11 +47,10 @@ function formatPrice(v: string | null) {
   return `¥${n.toFixed(4).replace(/\.?0+$/, "")}`;
 }
 
+// 物料发布时间固定北京时间，避免运营与商户核对上架时点时产生分歧。
 function formatTime(v: Date | string | null) {
   if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("zh-CN", { hour12: false });
+  return formatBeijingDateTimeWithSeconds(v) || "—";
 }
 
 function parsePhotos(photos: unknown): { url?: string; name?: string }[] {

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
 
 const statusMeta = {
   pending: { label: "待付款", className: "bg-amber-100 text-amber-800" },
@@ -22,8 +23,9 @@ const statusMeta = {
 const payMethodLabels = { corp: "对公转账", alipay: "支付宝", wechat: "微信支付" } as const;
 const money = (value: string | number | null | undefined) =>
   `¥${Number(value ?? 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// 订单时间固定北京时间：需与微信/支付宝账单、财务对账口径一致。
 const dateTime = (value: Date | string | null | undefined) =>
-  value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
+  value ? formatBeijingDateTimeWithSeconds(value) || "—" : "—";
 
 function OrderStatus({ status }: { status: keyof typeof statusMeta }) {
   const meta = statusMeta[status];

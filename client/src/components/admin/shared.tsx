@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { formatBeijingDateTime } from "@shared/beijingTime";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
 
@@ -217,8 +218,16 @@ export function formatMoney(value: string | number | null | undefined): string {
   return `¥${num.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// ─── 日期时间格式化 ───────────────────────────────────────────────────────────
+
+/**
+ * 后台通用日期时间展示，固定为北京时间。
+ *
+ * 不得回退到不带 timeZone 的 `toLocaleString("zh-CN")`：
+ * 那种写法按访问者电脑的时区渲染，运营在境外或时区设置异常的机器上
+ * 会看到错误时间，与客户对单时会产生争议。
+ */
 export function formatDateTime(value: Date | string | null | undefined): string {
   if (!value) return "-";
-  const d = typeof value === "string" ? new Date(value) : value;
-  return d.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return formatBeijingDateTime(value) || "-";
 }

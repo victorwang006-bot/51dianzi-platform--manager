@@ -20,11 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
 
 const PAGE_SIZE = 20;
 
+// 注册与登录时间固定北京时间，便于排查异常登录时点。
 const dateTime = (value: Date | string | null | undefined) =>
-  value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
+  value ? formatBeijingDateTimeWithSeconds(value) || "—" : "—";
 
 export default function PortalUsers() {
   const [page, setPage] = useState(1);

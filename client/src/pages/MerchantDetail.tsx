@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 import CollapsibleCard from "@/components/admin/CollapsibleCard";
+import { formatBeijingDate } from "@shared/beijingTime";
 
 function InfoItem({
   label,
@@ -192,7 +193,7 @@ export default function MerchantDetail() {
                   label="成立日期"
                   value={
                     merchant.establishedDate
-                      ? new Date(merchant.establishedDate).toLocaleDateString("zh-CN")
+                      ? formatBeijingDate(merchant.establishedDate)
                       : null
                   }
                   icon={CalendarDays}
@@ -201,7 +202,7 @@ export default function MerchantDetail() {
                   label="营业执照到期"
                   value={
                     merchant.licenseExpiry
-                      ? new Date(merchant.licenseExpiry).toLocaleDateString("zh-CN")
+                      ? formatBeijingDate(merchant.licenseExpiry)
                       : null
                   }
                   icon={ShieldCheck}

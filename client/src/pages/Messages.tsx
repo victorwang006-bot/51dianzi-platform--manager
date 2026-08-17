@@ -17,12 +17,12 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, User,
 } from "lucide-react";
+import { formatBeijingDateTime } from "@shared/beijingTime";
 
+// 消息时间必须固定北京时间：客服与客户需要共同的时间基准，
+// 若按访问者电脑的时区渲染，会出现回复时间与提问时间对不上的情形。
 function formatTime(value: string | Date) {
-  return new Date(value).toLocaleString("zh-CN", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
-  });
+  return formatBeijingDateTime(value);
 }
 
 const THREAD_TYPE_META = {
