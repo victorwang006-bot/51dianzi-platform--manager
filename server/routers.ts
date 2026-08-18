@@ -404,7 +404,17 @@ export const appRouter = router({
 
   // ─── 商城真实订单（后台仅做代理，不读取/写入本地 SO 订单表）──────────────
   order: router({
-    stats: orderReadProcedure.query(() => getPlatformOrderStats()),
+    /*
+     * 三个接口均需传入 getAdminSalesStaffCodes(ctx)。
+     *
+     * 改动前它们未传任何范围，而商户管理已做隔离，形成越权：
+     * 任何能进订单页的后台账号都能看到全平台订单
+     * （含他人客户的采购明细、收货人与手机号）。
+     * 详情同样必须传，否则遍历 orderId 即可绕过列表过滤。
+     * 返回值三态语义请见 getAdminSalesStaffCodes 注释，切勿折叠。
+     */
+    stats: orderReadProcedure.query(async ({ ctx }) =>
+      getPlatformOrderStats(await getAdminSalesStaffCodes(ctx))),
     list: orderReadProcedure
       .input(pageInput.extend({
         keyword: z.string().trim().max(100).optional(),
@@ -415,10 +425,12 @@ export const appRouter = router({
         createdFrom: z.number().int().nonnegative().optional(),
         createdTo: z.number().int().nonnegative().optional(),
       }))
-      .query(({ input }) => listPlatformOrders(input)),
+      .query(async ({ ctx, input }) =>
+        listPlatformOrders(input, await getAdminSalesStaffCodes(ctx))),
     detail: orderReadProcedure
       .input(z.object({ orderId: z.number().int().positive() }))
-      .query(({ input }) => getPlatformOrderDetail(input.orderId)),
+      .query(async ({ ctx, input }) =>
+        getPlatformOrderDetail(input.orderId, await getAdminSalesStaffCodes(ctx))),
   }),
 
   // ─── 物料数据库 ──────────────────────────────────────────────────────────

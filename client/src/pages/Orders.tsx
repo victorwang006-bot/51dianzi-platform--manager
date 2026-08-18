@@ -163,7 +163,27 @@ function OrderList() {
                             {order.batchNo ? `父单 ${order.batchNo} · 子单 ${String(order.batchSeq).padStart(2, "0")}` : "历史 DZ 订单"}
                           </div>
                         </TableCell>
-                        <TableCell>{order.buyerName || order.buyerUsername || `用户 ${order.buyerId}`}</TableCell>
+                        {/*
+                          * 买家列：主行展示工商名称，副行展示联系人与归属销售。
+                          * 沿用订单列已有的「主行 + mt-1 text-xs 副行」结构，行高不变，不影响表格布局。
+                          * 个人买家或未提交企业资料时 buyerCompanyName 为 null，
+                          * 回退到联系人名，避免出现空单元格让运营无法识别买家。
+                          */}
+                        <TableCell>
+                          <div className="font-medium">
+                            {order.buyerCompanyName
+                              || order.buyerName
+                              || order.buyerUsername
+                              || `用户 ${order.buyerId}`}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {/* 公司名已占主行时，副行才重复展示联系人，否则会两行同字 */}
+                            {order.buyerCompanyName
+                              ? (order.buyerName || order.buyerUsername || `用户 ${order.buyerId}`)
+                              : "未填企业资料"}
+                            {order.buyerSalesOwner ? ` · 销售 ${order.buyerSalesOwner}` : ""}
+                          </div>
+                        </TableCell>
                         <TableCell>{order.sellerName}</TableCell>
                         <TableCell><OrderStatus status={order.status} /></TableCell>
                         <TableCell className="text-right font-medium">{money(order.totalAmount)}</TableCell>
@@ -213,7 +233,7 @@ function OrderDetail({ orderId }: { orderId: number }) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Building2 className="h-4 w-4" />交易信息</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>买家：{order.buyerName || order.buyerUsername || `用户 ${order.buyerId}`} <span className="text-muted-foreground">（用户ID {order.buyerId}）</span></p><p>供应商：{order.sellerName} <span className="text-muted-foreground">（用户ID {order.sellerId}）</span></p><p>支付方式：{payMethodLabels[order.payMethod]}</p><p>未税 {money(order.amountEx)} · 税额 {money(order.taxAmount)} · 运费 {money(order.shippingFee)}</p></CardContent></Card>
+          <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Building2 className="h-4 w-4" />交易信息</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>买家：{order.buyerCompanyName || order.buyerName || order.buyerUsername || `用户 ${order.buyerId}`} <span className="text-muted-foreground">（用户ID {order.buyerId}）</span></p>{order.buyerCompanyName ? <p className="text-muted-foreground">联系人：{order.buyerName || order.buyerUsername || "—"}</p> : null}{order.buyerSalesOwner ? <p className="text-muted-foreground">归属销售：{order.buyerSalesOwner}</p> : null}<p>供应商：{order.sellerName} <span className="text-muted-foreground">（用户ID {order.sellerId}）</span></p><p>支付方式：{payMethodLabels[order.payMethod]}</p><p>未税 {money(order.amountEx)} · 税额 {money(order.taxAmount)} · 运费 {money(order.shippingFee)}</p></CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">收货与物流</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>{order.receiver} · {order.receiverPhone}</p><p className="text-muted-foreground">{order.receiverAddress}</p><p>{order.expressCo && order.expressNo ? `${order.expressCo} · ${order.expressNo}` : "尚未发货"}</p></CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">备注</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p>{order.note || "无买家备注"}</p>{order.statusNote && <p className="text-muted-foreground">状态说明：{order.statusNote}</p>}</CardContent></Card>
         </div>
