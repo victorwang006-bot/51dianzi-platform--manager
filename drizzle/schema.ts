@@ -1,5 +1,6 @@
 import {
   bigint,
+  customType,
   decimal,
   index,
   uniqueIndex,
@@ -7,11 +8,60 @@ import {
   mysqlEnum,
   mysqlTable,
   text,
-  timestamp,
   varchar,
   boolean,
   json,
 } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
+
+/**
+ * 按**北京时间**口径读写的时间列，替代 drizzle 自带的 timestamp。
+ *
+ * 必须与前台 `drizzle/schema.ts` 的实现**保持完全一致**：
+ * 两个应用读写同一个 MySQL 库，若口径不同，会出现
+ * 「同一行数据在前台与后台相差 8 小时」这种比原问题更难排查的故障。
+ *
+ * 原因：drizzle-orm 0.44.6 的 timestamp 列硬编码按 UTC 处理
+ * （`mapFromDriverValue` 加 `+0000`，`mapToDriverValue` 用 `toISOString()`），
+ * 而库内 DATETIME 存的是北京时间字面值。
+ * 给连接串加 timezone 参数**无法纠正**（已实测），
+ * 因为映射在 ORM 层完成，不经过 mysql2 的时区设置。
+ * 完整排查记录见前台 schema 的详细注释。
+ */
+const beijingTime = customType<{ data: Date; driverData: string }>({
+  dataType: () => "timestamp",
+  fromDriver(value) {
+    // mysql2 可能已返回 Date 对象，需原样放行以免二次偏移
+    const raw = value as unknown;
+    if (raw instanceof Date) return raw;
+    return new Date(String(raw).replace(" ", "T") + "+08:00");
+  },
+  toDriver(value) {
+    if (!(value instanceof Date)) return value;
+    // sv-SE 区域的格式恰为 `YYYY-MM-DD HH:mm:ss`，与 MySQL 字面值一致
+    return new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    })
+      .format(value)
+      .replace("T", " ");
+  },
+});
+
+/** 等价于原 `timestamp(name)`，仅换时区口径（保留名字以免逐处改写） */
+const timestamp = beijingTime;
+
+/**
+ * 等价于原 `.defaultNow()`：由数据库 `DEFAULT CURRENT_TIMESTAMP` 生成值。
+ * customType 不支持链式 `.defaultNow()`，故改用等价的 SQL 默认值。
+ */
+const DEFAULT_NOW = sql`CURRENT_TIMESTAMP`;
 
 // ─── 用户与权限 ──────────────────────────────────────────────────────────────
 
@@ -22,9 +72,9 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+  lastSignedIn: timestamp("lastSignedIn").default(DEFAULT_NOW).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -71,8 +121,8 @@ export const materials = mysqlTable("materials", {
   images: json("images").$type<{ url: string; key: string; name?: string }[]>(),
   /** 状态：启用/停用 */
   status: mysqlEnum("status", ["enabled", "disabled"]).default("enabled").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type Material = typeof materials.$inferSelect;
@@ -85,7 +135,7 @@ export type InsertMaterial = typeof materials.$inferInsert;
 export const materialNumberSequences = mysqlTable("material_number_sequences", {
   sequenceKey: varchar("sequenceKey", { length: 64 }).primaryKey(),
   nextValue: bigint("nextValue", { mode: "number" }).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 /** 历史物料号、合并码和外部码别名；旧码永久保留并可回查正式平台码。 */
@@ -95,7 +145,7 @@ export const materialCodeAliases = mysqlTable("material_code_aliases", {
   aliasCode: varchar("aliasCode", { length: 64 }).notNull().unique(),
   aliasType: mysqlEnum("aliasType", ["legacy", "merged", "external"]).notNull(),
   source: varchar("source", { length: 128 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 }, table => ({
   materialIdIdx: index("material_code_aliases_materialId_idx").on(table.materialId),
 }));
@@ -130,8 +180,8 @@ export const adminUsers = mysqlTable("admin_users", {
   status: mysqlEnum("status", ["active", "disabled", "locked"]).default("active").notNull(),
   mfaEnabled: boolean("mfaEnabled").default(false),
   lastLoginAt: timestamp("lastLoginAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type AdminUser = typeof adminUsers.$inferSelect;
@@ -154,7 +204,7 @@ export const passwordResetCodes = mysqlTable("password_reset_codes", {
   usedAt: timestamp("usedAt"),
   /** 校验失败次数（防暴力破解，≥5 作废） */
   attempts: int("attempts").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 });
 
 export type PasswordResetCode = typeof passwordResetCodes.$inferSelect;
@@ -184,8 +234,8 @@ export const salesStaff = mysqlTable("sales_staff", {
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
   /** 下拉排序，升序；同值时按 id 升序 */
   sortOrder: int("sortOrder").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 }, table => ({
   /**
    * 工号全局唯一。缺失会导致两人共用同一工号，
@@ -214,7 +264,7 @@ export const adminUserSalesScopes = mysqlTable("admin_user_sales_scopes", {
   id: int("id").autoincrement().primaryKey(),
   adminUserId: int("adminUserId").notNull(),
   staffCode: varchar("staffCode", { length: 64 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 }, table => ({
   /** 同一 (用户, 工号) 不得重复授权，否则范围查询会产生重复行 */
   adminStaffUnique: uniqueIndex("admin_user_sales_scopes_admin_staff_unique").on(table.adminUserId, table.staffCode),
@@ -285,8 +335,8 @@ export const merchants = mysqlTable("merchants", {
    * 后台数据范围过滤（哪些商户对谁可见）即基于本字段匹配。
    */
   salesOwnerCode: varchar("salesOwnerCode", { length: 64 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type Merchant = typeof merchants.$inferSelect;
@@ -300,7 +350,7 @@ export const categories = mysqlTable("categories", {
   level: int("level").default(1),
   sortOrder: int("sortOrder").default(0),
   status: mysqlEnum("status", ["active", "disabled"]).default("active").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 });
 
 export const products = mysqlTable("products", {
@@ -325,8 +375,8 @@ export const products = mysqlTable("products", {
   reviewNote: text("reviewNote"),
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type Product = typeof products.$inferSelect;
@@ -344,7 +394,7 @@ export const inventoryLogs = mysqlTable("inventory_logs", {
   relatedOrderNo: varchar("relatedOrderNo", { length: 64 }),
   note: text("note"),
   operatorId: int("operatorId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 });
 
 // ─── 订单管理 ─────────────────────────────────────────────────────────────────
@@ -374,8 +424,8 @@ export const orders = mysqlTable("orders", {
   shippedAt: timestamp("shippedAt"),
   completedAt: timestamp("completedAt"),
   cancelledAt: timestamp("cancelledAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type Order = typeof orders.$inferSelect;
@@ -389,7 +439,7 @@ export const orderStatusLogs = mysqlTable("order_status_logs", {
   operatorId: int("operatorId"),
   operatorName: varchar("operatorName", { length: 64 }),
   note: text("note"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 });
 
 // ─── 退款管理 ─────────────────────────────────────────────────────────────────
@@ -412,8 +462,8 @@ export const refunds = mysqlTable("refunds", {
   reviewedAt: timestamp("reviewedAt"),
   executedAt: timestamp("executedAt"),
   failReason: text("failReason"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type Refund = typeof refunds.$inferSelect;
@@ -437,8 +487,8 @@ export const paymentFlows = mysqlTable("payment_flows", {
     "pending", "success", "failed", "cancelled",
   ]).default("pending").notNull(),
   note: text("note"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type PaymentFlow = typeof paymentFlows.$inferSelect;
@@ -459,8 +509,8 @@ export const settlementBills = mysqlTable("settlement_bills", {
   paidAt: timestamp("paidAt"),
   failReason: text("failReason"),
   createdBy: int("createdBy"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type SettlementBill = typeof settlementBills.$inferSelect;
@@ -482,7 +532,7 @@ export const auditLogs = mysqlTable("audit_logs", {
   userAgent: text("userAgent"),
   result: mysqlEnum("result", ["success", "failed", "blocked"]).default("success"),
   note: text("note"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 });
 
 export type AuditLog = typeof auditLogs.$inferSelect;
@@ -499,7 +549,7 @@ export const crmOwnerRebindLogs = mysqlTable("crm_owner_rebind_logs", {
   operatorRole: varchar("operatorRole", { length: 32 }),
   ipAddress: varchar("ipAddress", { length: 64 }),
   userAgent: text("userAgent"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 }, table => ({
   merchantIdx: index("crm_owner_rebind_logs_merchant_idx").on(table.merchantId),
 }));
@@ -525,8 +575,8 @@ export const alerts = mysqlTable("alerts", {
   resolvedBy: int("resolvedBy"),
   resolvedAt: timestamp("resolvedAt"),
   notificationSent: boolean("notificationSent").default(false),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type Alert = typeof alerts.$inferSelect;
@@ -545,8 +595,8 @@ export const riskAnalyses = mysqlTable("risk_analyses", {
   status: mysqlEnum("status", ["pending", "reviewed", "actioned", "dismissed"]).default("pending").notNull(),
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type RiskAnalysis = typeof riskAnalyses.$inferSelect;
@@ -586,9 +636,9 @@ export const messageThreads = mysqlTable("message_threads", {
   /** 最后一条消息摘要（列表展示用） */
   lastMessagePreview: varchar("lastMessagePreview", { length: 256 }),
   /** 最后一条消息时间（列表排序用） */
-  lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastMessageAt: timestamp("lastMessageAt").default(DEFAULT_NOW).notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 });
 
 export type MessageThread = typeof messageThreads.$inferSelect;
@@ -611,7 +661,7 @@ export const messages = mysqlTable("messages", {
    * 注：该列在生产库长期存在，但此前从未在任何版本的源码 schema 中声明。
    */
   clientMessageId: varchar("clientMessageId", { length: 64 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 });
 
 export type Message = typeof messages.$inferSelect;
