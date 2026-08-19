@@ -167,6 +167,38 @@ async function getAdminSalesStaffCodes(ctx: TrpcContext): Promise<string[] | und
 }
 
 /**
+ * 写操作前校验商户是否在当前账号的销售可见范围内。
+ *
+ * 为何必需：商户列表与详情虽已按范围过滤（看不到别人的），
+ * 但写接口原先直接按 id 执行，知道 id 就能审核 / 开通 ERP / 发消息
+ * 到别人名下的商户。前端看不见不等于接口拦得住。
+ *
+ * 返回已查到的商户，供调用方复用，避免重复查库。
+ *
+ * 无销售归属（salesOwnerCode 为空）的商户：
+ * SQL 的 IN 列表永不匹配 NULL，因此这类商户对所有销售均不可见，
+ * 仅超级管理员（范围为 undefined = 不限）可见可审。
+ * 这是有意为之：前台开通 ERP 时销售负责人为选填（可选「暂不选择」），
+ * 未选择属正常场景，这类商户统一由 admin 审核。
+ */
+async function assertMerchantInSalesScope(ctx: TrpcContext, merchantId: number) {
+  const codes = await getAdminSalesStaffCodes(ctx);
+  // undefined = 不限（超级管理员），直接取商户不做范围限定
+  const merchant = await db.getMerchantById(merchantId, codes);
+  if (!merchant) {
+    /*
+     * 统一返回 NOT_FOUND 而非 FORBIDDEN：
+     * 若区分「不存在」与「无权限」，会泄露其他销售名下商户的存在与 id 范围。
+     */
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "商户不存在或不在您负责的范围内",
+    });
+  }
+  return merchant;
+}
+
+/**
  * 将 db 层销售范围相关错误映射为可读的 tRPC 错误。
  * 非目标错误原样抛出，避免屏蔽真正的故障。
  */
@@ -604,6 +636,11 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        /*
+         * 先校验归属：销售只能审自己跟进的商家，
+         * 主管可审范围内全部，超级管理员不限（含无归属商家）。
+         */
+        await assertMerchantInSalesScope(ctx, input.id);
         const statusMap: Record<string, string> = {
           approve: "approved",
           supplement: "supplement",
@@ -622,6 +659,8 @@ export const appRouter = router({
         note: z.string().max(1000).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // ERP 开通/拒绝/暂停同属商户写操作，需同样的归属校验
+        await assertMerchantInSalesScope(ctx, input.id);
         return db.setMerchantCrmStatus({
           merchantId: input.id,
           crmStatus: input.crmStatus,
@@ -640,10 +679,13 @@ export const appRouter = router({
         requestId: z.string().trim().min(8, "换绑请求号无效").max(128),
       }))
       .mutation(async ({ ctx, input }) => {
-        const merchant = await db.getMerchantById(input.id);
-        if (!merchant) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
-        }
+        /*
+         * 本接口已限超级管理员（crmRebindProcedure），
+         * 仍走统一的归属校验以保持商户写操作口径一致：
+         * 超级管理员范围为 undefined，行为与原来的无限制查询完全相同，
+         * 不会收窄现有权限。
+         */
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
         if (!merchant.businessLicense?.trim()) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
@@ -675,6 +717,11 @@ export const appRouter = router({
         content: z.string().min(1, "消息内容不能为空").max(5000),
       }))
       .mutation(async ({ ctx, input }) => {
+        /*
+         * 发信是以平台客服身份向商户发消息，
+         * 销售给别人的客户发消息属于业务风险，同样需归属校验。
+         */
+        await assertMerchantInSalesScope(ctx, input.id);
         return db.sendMerchantMessage({
           merchantId: input.id,
           content: input.content,
