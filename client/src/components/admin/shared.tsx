@@ -102,7 +102,6 @@ export const alertTypeMap: Record<string, { label: string; style: BadgeStyle }> 
   stuck_order: { label: "卡单超时", style: "warning" },
   order_stuck: { label: "卡单超时", style: "warning" },
   refund_abnormal: { label: "退款异常", style: "danger" },
-  license_expiry: { label: "资质到期", style: "warning" },
   settlement_failed: { label: "结算失败", style: "danger" },
   risk_merchant: { label: "风险商户", style: "danger" },
   system_error: { label: "系统错误", style: "gray" },

@@ -198,15 +198,6 @@ export default function MerchantDetail() {
                   }
                   icon={CalendarDays}
                 />
-                <InfoItem
-                  label="营业执照到期"
-                  value={
-                    merchant.licenseExpiry
-                      ? formatBeijingDate(merchant.licenseExpiry)
-                      : null
-                  }
-                  icon={ShieldCheck}
-                />
                 <InfoItem label="注册地址" value={merchant.registeredAddress} />
                 <InfoItem label="法人姓名" value={merchant.legalPersonName} icon={User} />
                 <InfoItem label="法人身份证号" value={merchant.legalPersonIdNo} icon={FileText} />

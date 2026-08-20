@@ -300,7 +300,6 @@ export default function Merchants() {
                       <th>状态</th>
                       <th>ERP</th>
                       <th>协议</th>
-                      <th>资质到期</th>
                       <th>入驻时间</th>
                       <th>操作</th>
                     </tr>
@@ -315,7 +314,6 @@ export default function Merchants() {
                       const crm = crmStatus === "enabled" && !crmActuallyEnabled
                         ? { label: "待绑定账号", style: "warning" as const }
                         : (crmStatusMap[crmStatus] ?? crmStatusMap.none);
-                      const licenseExpiringSoon = m.licenseExpiry && new Date(m.licenseExpiry).getTime() - Date.now() < 30 * 86400_000;
                       return (
                         <tr key={m.id}>
                           <td className="font-mono text-xs">{m.merchantNo}</td>
@@ -341,9 +339,6 @@ export default function Merchants() {
                             ) : null}
                           </td>
                           <td><StatusBadge label={ag.label} style={ag.style} /></td>
-                          <td className={`text-xs ${licenseExpiringSoon ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                            {m.licenseExpiry ? formatDateTime(m.licenseExpiry).split(" ")[0] : "-"}
-                          </td>
                           <td className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</td>
                           <td>
                             <div className="flex items-center gap-1 flex-wrap">
@@ -527,7 +522,6 @@ export default function Merchants() {
                 <div><p className="text-xs text-muted-foreground">联系电话</p><p>{detail.contactPhone ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">邮箱</p><p>{detail.contactEmail ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">营业执照号</p><p className="font-mono">{detail.businessLicense ?? "-"}</p></div>
-                <div><p className="text-xs text-muted-foreground">资质到期日</p><p>{detail.licenseExpiry ? formatDateTime(detail.licenseExpiry).split(" ")[0] : "-"}</p></div>
               </div>
               <div className="border-t pt-3">
                 <p className="text-xs text-muted-foreground mb-2">结算账户</p>
