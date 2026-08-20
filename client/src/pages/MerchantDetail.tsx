@@ -2,20 +2,11 @@ import DashboardLayout from "@/components/DashboardLayout";
 import {
   PageHeader,
   StatusBadge,
-  merchantStatusMap,
   agreementStatusMap,
   formatDateTime,
 } from "@/components/admin/shared";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -31,8 +22,6 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 import CollapsibleCard from "@/components/admin/CollapsibleCard";
@@ -67,34 +56,6 @@ export default function MerchantDetail() {
     { id },
     { enabled: Number.isFinite(id) && id > 0 }
   );
-
-  const utils = trpc.useUtils();
-  const [reviewDialog, setReviewDialog] = useState<{
-    open: boolean;
-    action: "approve" | "supplement" | "suspend" | "reactivate" | null;
-  }>({ open: false, action: null });
-  const [note, setNote] = useState("");
-
-  const reviewMutation = trpc.merchant.review.useMutation({
-    onSuccess: () => {
-      toast.success("操作成功");
-      utils.merchant.detail.invalidate({ id });
-      utils.merchant.list.invalidate();
-      setReviewDialog({ open: false, action: null });
-      setNote("");
-    },
-    onError: e => toast.error(e.message || "操作失败"),
-  });
-
-  const actionLabels: Record<string, string> = {
-    approve: "审核通过",
-    supplement: "要求补件",
-    suspend: "暂停商户",
-    reactivate: "恢复商户",
-  };
-
-  const openReview = (action: typeof reviewDialog.action) =>
-    setReviewDialog({ open: true, action });
 
   if (isLoading) {
     return (
@@ -137,36 +98,8 @@ export default function MerchantDetail() {
       <PageHeader
         title={merchant.companyName}
         description={`商户编号 ${merchant.merchantNo} · 入驻时间 ${formatDateTime(merchant.createdAt)}`}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            {/* 已入驻（CRM 已开通）的商户不再显示审核操作按钮 */}
-            {merchant.crmStatus !== "enabled" &&
-              (merchant.status === "pending" || merchant.status === "supplement") && (
-              <>
-                <Button size="sm" onClick={() => openReview("approve")}>
-                  通过
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => openReview("supplement")}>
-                  补件
-                </Button>
-              </>
-            )}
-            {merchant.status === "approved" && (
-              <Button size="sm" variant="outline" onClick={() => openReview("suspend")}>
-                暂停
-              </Button>
-            )}
-            {merchant.status === "suspended" && (
-              <Button size="sm" onClick={() => openReview("reactivate")}>
-                恢复
-              </Button>
-            )}
-          </div>
-        }
       />
-
       <div className="flex flex-wrap items-center gap-2 mb-6">
-        <StatusBadge {...(merchantStatusMap[merchant.status] ?? { label: merchant.status, style: "gray" as const })} />
         <StatusBadge {...(agreementStatusMap[merchant.agreementStatus] ?? { label: merchant.agreementStatus, style: "gray" as const })} />
       </div>
 
@@ -285,42 +218,6 @@ export default function MerchantDetail() {
         </div>
       </div>
 
-      {/* 审核操作对话框 */}
-      <Dialog
-        open={reviewDialog.open}
-        onOpenChange={open => !open && setReviewDialog({ open: false, action: null })}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {reviewDialog.action ? actionLabels[reviewDialog.action] : ""} · {merchant.companyName}
-            </DialogTitle>
-          </DialogHeader>
-          <Textarea
-            placeholder="请填写操作备注（选填）"
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            rows={3}
-          />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setReviewDialog({ open: false, action: null })}
-            >
-              取消
-            </Button>
-            <Button
-              disabled={reviewMutation.isPending}
-              onClick={() =>
-                reviewDialog.action &&
-                reviewMutation.mutate({ id, action: reviewDialog.action, note: note || undefined })
-              }
-            >
-              确认
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 }

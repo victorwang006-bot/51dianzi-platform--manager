@@ -39,10 +39,9 @@ describe("后台商户管理顶部横向滚动契约", () => {
     expect(page).not.toContain('<div className="overflow-x-auto">');
   });
 
-  it("保留商户筛选、ERP操作、发信、详情和分页功能", () => {
+  it("保留商户搜索、ERP操作、发信、详情和分页功能", () => {
     for (const text of [
       "搜索公司名称 / 商户编号",
-      "全部状态",
       "通过（开通 ERP）",
       "暂停 ERP",
       "发信给客户",
@@ -51,8 +50,31 @@ describe("后台商户管理顶部横向滚动契约", () => {
     ]) {
       expect(page).toContain(text);
     }
-    expect(page).toContain("trpc.merchant.review.useMutation");
     expect(page).toContain("trpc.merchant.setCrmStatus.useMutation");
     expect(page).toContain("trpc.merchant.sendMessage.useMutation");
+  });
+
+  /*
+   * 入驻审核（merchants.status）已于 2026-08-20 下线。
+   *
+   * 下线依据：该字段在服务端仅用于列表筛选（server/db.ts:608），
+   * 无任何业务逻辑读取；ERP 权限判定（getCrmAccessByCreditCode）
+   * 只看 crmStatus。线上 29 家商户中 23 家停在「待审核」，
+   * 但 ERP 均已开通且正常经营 —— 说明该状态不构成任何准入约束，
+   * 摆在界面上反而让人误以为这些商户未通过审核、不能用。
+   *
+   * 本用例锁定下线结果。若日后需重启入驻审核，应先明确它与
+   * ERP 开通的先后关系及真实约束力，再同步修改本用例，
+   * 不要直接删除断言了事。
+   *
+   * 服务端 merchant.review 接口、merchants.status 字段与筛选入参均保留，
+   * 本次仅下线界面展示。
+   */
+  it("入驻审核已下线：不再展示状态列、状态筛选与审核入口", () => {
+    expect(page).not.toContain("merchantStatusMap");
+    expect(page).not.toContain("trpc.merchant.review.useMutation");
+    expect(page).not.toContain("全部状态");
+    expect(page).not.toContain('<SelectItem value="pending">待审核</SelectItem>');
+    expect(page).not.toContain("<th>状态</th>");
   });
 });

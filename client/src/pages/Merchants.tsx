@@ -5,7 +5,6 @@ import {
   StatusBadge,
   agreementStatusMap,
   formatDateTime,
-  merchantStatusMap,
 } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -19,13 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -34,15 +26,6 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
-
-type ReviewAction = "approve" | "supplement" | "suspend" | "reactivate";
-
-const actionLabels: Record<ReviewAction, string> = {
-  approve: "审核通过",
-  supplement: "要求补件",
-  suspend: "暂停商户",
-  reactivate: "恢复商户",
-};
 
 type CrmStatus = "none" | "pending" | "enabled" | "disabled" | "rejected";
 
@@ -62,11 +45,8 @@ const crmActionLabels: Record<string, string> = {
 
 export default function Merchants() {
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [reviewTarget, setReviewTarget] = useState<{ id: number; name: string; action: ReviewAction } | null>(null);
-  const [reviewNote, setReviewNote] = useState("");
   const [crmTarget, setCrmTarget] = useState<{
     id: number;
     name: string;
@@ -98,23 +78,12 @@ export default function Merchants() {
   const { data, isLoading } = trpc.merchant.list.useQuery({
     page,
     pageSize: 20,
-    status: status === "all" ? undefined : status,
     search: search || undefined,
   });
   const { data: detail } = trpc.merchant.detail.useQuery(
     { id: detailId ?? 0 },
     { enabled: detailId !== null },
   );
-
-  const reviewMutation = trpc.merchant.review.useMutation({
-    onSuccess: () => {
-      toast.success("操作成功");
-      utils.merchant.list.invalidate();
-      setReviewTarget(null);
-      setReviewNote("");
-    },
-    onError: err => toast.error(`操作失败：${err.message}`),
-  });
 
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
     onSuccess: (_d, vars) => {
@@ -209,7 +178,7 @@ export default function Merchants() {
 
   return (
     <DashboardLayout>
-      <PageHeader title="商户管理" description="商户入驻审核、资质管理、协议状态与结算账户配置" />
+      <PageHeader title="商户管理" description="ERP 开通审核、账号绑定、协议状态与结算账户配置" />
 
       {/* 筛选栏 */}
       <Card className="mb-4">
@@ -227,18 +196,6 @@ export default function Merchants() {
               搜索
             </Button>
           </div>
-          <Select value={status} onValueChange={v => { setStatus(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="全部状态" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="pending">待审核</SelectItem>
-              <SelectItem value="supplement">待补件</SelectItem>
-              <SelectItem value="approved">已入驻</SelectItem>
-              <SelectItem value="suspended">已暂停</SelectItem>
-            </SelectContent>
-          </Select>
         </CardContent>
       </Card>
 
@@ -297,7 +254,6 @@ export default function Merchants() {
                       <th>公司名称</th>
                       <th>联系人</th>
                       <th>销售负责人</th>
-                      <th>状态</th>
                       <th>ERP</th>
                       <th>协议</th>
                       <th>入驻时间</th>
@@ -306,7 +262,6 @@ export default function Merchants() {
                   </thead>
                   <tbody>
                     {data.data.map(m => {
-                      const st = merchantStatusMap[m.status] ?? { label: m.status, style: "gray" as const };
                       const ag = agreementStatusMap[m.agreementStatus] ?? { label: m.agreementStatus, style: "gray" as const };
                       const crmStatus = ((m as { crmStatus?: CrmStatus }).crmStatus ?? "none") as CrmStatus;
                       const crmOwnerPortalUserId = ((m as { crmOwnerPortalUserId?: string | null }).crmOwnerPortalUserId ?? "").trim();
@@ -329,7 +284,6 @@ export default function Merchants() {
                             </div>
                           </td>
                           <td className="text-xs">{(m as { salesOwner?: string | null }).salesOwner ?? "-"}</td>
-                          <td><StatusBadge label={st.label} style={st.style} /></td>
                           <td>
                             <StatusBadge label={crm.label} style={crm.style} />
                             {crmOwnerPortalUserId ? (
@@ -384,36 +338,6 @@ export default function Merchants() {
           )}
         </CardContent>
       </Card>
-
-      {/* 审核对话框 */}
-      <Dialog open={reviewTarget !== null} onOpenChange={open => !open && setReviewTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{reviewTarget ? actionLabels[reviewTarget.action] : ""}</DialogTitle>
-            <DialogDescription>
-              目标商户：{reviewTarget?.name}。此操作将被记录到审计日志。
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            placeholder="请填写操作理由 / 备注（必填）"
-            value={reviewNote}
-            onChange={e => setReviewNote(e.target.value)}
-            rows={3}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewTarget(null)}>取消</Button>
-            <Button
-              disabled={reviewMutation.isPending || !reviewNote.trim()}
-              onClick={() => {
-                if (!reviewTarget) return;
-                reviewMutation.mutate({ id: reviewTarget.id, action: reviewTarget.action, note: reviewNote.trim() });
-              }}
-            >
-              确认{reviewTarget ? actionLabels[reviewTarget.action] : ""}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* ERP 通过/拒绝/暂停对话框 */}
       <Dialog open={crmTarget !== null} onOpenChange={open => {
