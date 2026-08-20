@@ -665,3 +665,86 @@ export const messages = mysqlTable("messages", {
 });
 
 export type Message = typeof messages.$inferSelect;
+
+// ─── 异常日志 ────────────────────────────────────────────────────────────────
+
+/**
+ * 异常日志：记录服务器错误、攻击探测、认证异常与慢请求。
+ *
+ * 与既有两张表的分工：
+ * - `audit_logs` 记录「后台管理员做了什么」（有 operator，主动操作）
+ * - `alerts`     记录「需要人工处置的业务告警」（有 status 流转）
+ * - 本表         记录「系统发生了什么异常」（被动采集，只读不处置）
+ *
+ * 数据来源为前台与后台两个应用的运行时采集，通过 x-portal-key 通道上报。
+ * 设计上刻意不做「已处理/未处理」状态流转：异常日志是排障与取证材料，
+ * 逐条标记处置状态会带来与实际运维习惯不符的维护负担。
+ */
+export const exceptionLogs = mysqlTable("exception_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  /**
+   * 异常大类：
+   * - server_error  服务器错误（HTTP 5xx、未捕获异常）
+   * - attack_probe  攻击探测（敏感路径扫描、漏洞利用尝试）
+   * - auth_failure  认证异常（登录失败、越权访问、密钥错误）
+   * - rate_limit    触发限流（高频请求被拒）
+   * - slow_request  慢请求（超过阈值的接口）
+   * - integration   外部服务故障（短信、OCR、支付、对象存储等）
+   */
+  category: mysqlEnum("category", [
+    "server_error",
+    "attack_probe",
+    "auth_failure",
+    "rate_limit",
+    "slow_request",
+    "integration",
+  ]).notNull(),
+  /** 严重程度：critical=需立即处理 warning=需关注 info=仅记录 */
+  severity: mysqlEnum("severity", ["critical", "warning", "info"])
+    .default("warning")
+    .notNull(),
+  /** 来源应用：portal=前台 admin=后台 */
+  source: mysqlEnum("source", ["portal", "admin"]).notNull(),
+  /** 一句话摘要，列表页直接展示，须为中文且可被非技术人员理解 */
+  summary: varchar("summary", { length: 256 }).notNull(),
+  /**
+   * 指纹：同类异常的归并键（如 `server_error:company.submitCrmApplication:500`）。
+   * 相同指纹在聚合视图中合并计数，避免同一故障刷屏。
+   */
+  fingerprint: varchar("fingerprint", { length: 128 }).notNull(),
+  /** HTTP 方法 */
+  method: varchar("method", { length: 8 }),
+  /** 请求路径（已去除查询串中的敏感参数） */
+  path: varchar("path", { length: 512 }),
+  /** HTTP 状态码 */
+  statusCode: int("statusCode"),
+  /** 客户端 IP（经 x-forwarded-for 还原的真实来源） */
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  /** IP 归属地描述，如「美国 达拉斯 / SoloRDP」，由采集端异步补充 */
+  ipOrigin: varchar("ipOrigin", { length: 128 }),
+  /** User-Agent 原文 */
+  userAgent: text("userAgent"),
+  /** 关联的前台用户 ID（若为已登录用户触发） */
+  userId: int("userId"),
+  /** 关联的前台用户名，冗余存储便于检索 */
+  userName: varchar("userName", { length: 128 }),
+  /** 耗时（毫秒），慢请求场景使用 */
+  durationMs: int("durationMs"),
+  /** 结构化详情：错误堆栈、命中的规则、上下文参数等 */
+  detail: json("detail"),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+}, (table) => ({
+  /** 列表页默认按时间倒序翻页 */
+  createdIdx: index("exception_logs_created_idx").on(table.createdAt),
+  /** 按类别 + 时间筛选 */
+  categoryCreatedIdx: index("exception_logs_category_created_idx").on(
+    table.category,
+    table.createdAt,
+  ),
+  /** 按 IP 追溯某个攻击源的完整行为 */
+  ipIdx: index("exception_logs_ip_idx").on(table.ipAddress),
+  /** 指纹聚合统计 */
+  fingerprintIdx: index("exception_logs_fingerprint_idx").on(table.fingerprint),
+}));
+
+export type ExceptionLog = typeof exceptionLogs.$inferSelect;

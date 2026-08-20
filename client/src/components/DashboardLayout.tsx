@@ -65,6 +65,7 @@ const menuGroups = [
     label: "系统",
     items: [
       { icon: UserCog, label: "后台用户管理", path: "/admins", permission: "admins.manage" as AdminPermission, nested: false },
+      { icon: ShieldAlert, label: "异常日志", path: "/exception-logs", permission: "logs.read" as AdminPermission, nested: false },
       { icon: User, label: "个人信息", path: "/profile", permission: "profile.manage" as AdminPermission, nested: false },
     ],
   },

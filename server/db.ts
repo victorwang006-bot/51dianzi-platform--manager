@@ -1,10 +1,11 @@
-import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminUsers,
   adminUserSalesScopes,
   auditLogs,
   crmOwnerRebindLogs,
+  exceptionLogs,
   InsertMaterial,
   InsertUser,
   materialNumberSequences,
@@ -26,6 +27,11 @@ import {
   expandShortPartNumber,
   isPackageSuffixExpansion,
 } from "../shared/partNumberFallback";
+import {
+  LOG_RETENTION_DAYS,
+  type ExceptionCategory,
+  type ExceptionSeverity,
+} from "../shared/exceptionRules";
 import {
   assertMerchantCrmStatusTransition,
   crmStatusAction,
@@ -2319,4 +2325,225 @@ export async function offshelfPlatformInventory(id: number, reason: string) {
     console.error("[Database] 下架前台物料失败:", msg);
     throw new Error("下架失败：无法访问前台数据库（此功能仅在生产环境可用）");
   }
+}
+
+// ─── 异常日志 ────────────────────────────────────────────────────────────────
+
+export type ExceptionLogInput = {
+  category: ExceptionCategory;
+  severity?: ExceptionSeverity;
+  source: "portal" | "admin";
+  summary: string;
+  fingerprint: string;
+  method?: string | null;
+  path?: string | null;
+  statusCode?: number | null;
+  ipAddress?: string | null;
+  ipOrigin?: string | null;
+  userAgent?: string | null;
+  userId?: number | null;
+  userName?: string | null;
+  durationMs?: number | null;
+  detail?: unknown;
+};
+
+/**
+ * 写入一条异常日志。
+ *
+ * 刻意吞掉所有异常：日志写入失败绝不能影响主业务流程。
+ * 若数据库不可用或表尚未建好，静默跳过并在控制台留痕即可。
+ */
+export async function writeExceptionLog(input: ExceptionLogInput): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.insert(exceptionLogs).values({
+      category: input.category,
+      severity: input.severity ?? "warning",
+      source: input.source,
+      summary: input.summary.slice(0, 256),
+      fingerprint: input.fingerprint.slice(0, 128),
+      method: input.method?.slice(0, 8) ?? null,
+      path: input.path?.slice(0, 512) ?? null,
+      statusCode: input.statusCode ?? null,
+      ipAddress: input.ipAddress?.slice(0, 64) ?? null,
+      ipOrigin: input.ipOrigin?.slice(0, 128) ?? null,
+      userAgent: input.userAgent ?? null,
+      userId: input.userId ?? null,
+      userName: input.userName?.slice(0, 128) ?? null,
+      durationMs: input.durationMs ?? null,
+      detail: (input.detail ?? null) as never,
+    });
+  } catch (error) {
+    console.warn("[ExceptionLog] 写入失败（已忽略，不影响主流程）:", (error as Error).message);
+  }
+}
+
+/** 批量写入，供前台按批上报使用。 */
+export async function writeExceptionLogs(inputs: ExceptionLogInput[]): Promise<number> {
+  if (inputs.length === 0) return 0;
+  try {
+    const db = await getDb();
+    if (!db) return 0;
+    await db.insert(exceptionLogs).values(
+      inputs.map(input => ({
+        category: input.category,
+        severity: input.severity ?? "warning",
+        source: input.source,
+        summary: input.summary.slice(0, 256),
+        fingerprint: input.fingerprint.slice(0, 128),
+        method: input.method?.slice(0, 8) ?? null,
+        path: input.path?.slice(0, 512) ?? null,
+        statusCode: input.statusCode ?? null,
+        ipAddress: input.ipAddress?.slice(0, 64) ?? null,
+        ipOrigin: input.ipOrigin?.slice(0, 128) ?? null,
+        userAgent: input.userAgent ?? null,
+        userId: input.userId ?? null,
+        userName: input.userName?.slice(0, 128) ?? null,
+        durationMs: input.durationMs ?? null,
+        detail: (input.detail ?? null) as never,
+      })),
+    );
+    return inputs.length;
+  } catch (error) {
+    console.warn("[ExceptionLog] 批量写入失败（已忽略）:", (error as Error).message);
+    return 0;
+  }
+}
+
+/** 分页查询异常日志。 */
+export async function listExceptionLogs(params: {
+  category?: ExceptionCategory;
+  severity?: ExceptionSeverity;
+  source?: "portal" | "admin";
+  /** 按 IP 精确追溯某个来源的全部行为 */
+  ipAddress?: string;
+  /** 关键词：匹配摘要或路径 */
+  search?: string;
+  /** 起始时间（含） */
+  from?: Date;
+  /** 结束时间（不含） */
+  to?: Date;
+  page?: number;
+  pageSize?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  const { category, severity, source, ipAddress, search, from, to } = params;
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(200, Math.max(1, params.pageSize ?? 50));
+
+  const conditions = [];
+  if (category) conditions.push(eq(exceptionLogs.category, category));
+  if (severity) conditions.push(eq(exceptionLogs.severity, severity));
+  if (source) conditions.push(eq(exceptionLogs.source, source));
+  if (ipAddress) conditions.push(eq(exceptionLogs.ipAddress, ipAddress));
+  if (from) conditions.push(gte(exceptionLogs.createdAt, from));
+  if (to) conditions.push(lt(exceptionLogs.createdAt, to));
+  if (search) {
+    conditions.push(
+      or(
+        like(exceptionLogs.summary, `%${search}%`),
+        like(exceptionLogs.path, `%${search}%`),
+        like(exceptionLogs.ipAddress, `%${search}%`),
+      )!,
+    );
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(exceptionLogs)
+    .where(where);
+  const rows = await db
+    .select()
+    .from(exceptionLogs)
+    .where(where)
+    .orderBy(desc(exceptionLogs.createdAt), desc(exceptionLogs.id))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  return {
+    data: rows.map(row => ({
+      ...row,
+      detail: decodeJsonValue<Record<string, unknown>>(row.detail),
+    })),
+    total: Number(count),
+  };
+}
+
+/**
+ * 概览统计：近 24 小时与近 7 天的分类计数，以及最活跃的异常来源 IP。
+ * 用于页面顶部的态势卡片，让管理员一眼看出「现在有没有事」。
+ */
+export async function getExceptionLogStats() {
+  const db = await getDb();
+  if (!db) {
+    return { last24h: [], topIps: [], total: 0 };
+  }
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const byCategory = await db
+    .select({
+      category: exceptionLogs.category,
+      severity: exceptionLogs.severity,
+      count: sql<number>`count(*)`,
+    })
+    .from(exceptionLogs)
+    .where(gte(exceptionLogs.createdAt, since24h))
+    .groupBy(exceptionLogs.category, exceptionLogs.severity);
+
+  const topIps = await db
+    .select({
+      ipAddress: exceptionLogs.ipAddress,
+      ipOrigin: exceptionLogs.ipOrigin,
+      count: sql<number>`count(*)`,
+    })
+    .from(exceptionLogs)
+    .where(
+      and(
+        gte(exceptionLogs.createdAt, since7d),
+        eq(exceptionLogs.category, "attack_probe"),
+      ),
+    )
+    .groupBy(exceptionLogs.ipAddress, exceptionLogs.ipOrigin)
+    .orderBy(desc(sql`count(*)`))
+    .limit(10);
+
+  const [{ count: total }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(exceptionLogs);
+
+  return {
+    last24h: byCategory.map(r => ({
+      category: r.category,
+      severity: r.severity,
+      count: Number(r.count),
+    })),
+    topIps: topIps
+      .filter(r => r.ipAddress)
+      .map(r => ({
+        ipAddress: r.ipAddress as string,
+        ipOrigin: r.ipOrigin,
+        count: Number(r.count),
+      })),
+    total: Number(total),
+  };
+}
+
+/**
+ * 清理超过保留期的日志。
+ * 返回删除条数，供定时任务记录。
+ */
+export async function purgeExpiredExceptionLogs(
+  retentionDays: number = LOG_RETENTION_DAYS,
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+  const result = (await db.execute(
+    sql`DELETE FROM exception_logs WHERE createdAt < ${cutoff}`,
+  )) as unknown as [{ affectedRows?: number }, unknown];
+  return Number(result[0]?.affectedRows ?? 0);
 }

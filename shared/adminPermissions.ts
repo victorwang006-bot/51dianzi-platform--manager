@@ -29,6 +29,12 @@ export const ADMIN_PERMISSIONS = [
   /** 维护本人个人信息与登录密码（「个人信息」菜单的准入依据） */
   "profile.manage",
   "admins.manage",
+  /**
+   * 查看异常日志（服务器错误、攻击探测、认证异常）。
+   * 仅授予 super_admin：日志含访客 IP、UserAgent、错误堆栈等敏感信息，
+   * 按最小权限原则不下放给销售角色（merchant_mgr）。
+   */
+  "logs.read",
 ] as const;
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];

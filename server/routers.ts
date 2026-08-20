@@ -85,6 +85,7 @@ const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
 const orderReadProcedure = adminPermissionProcedure("orders.read");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
+const logsReadProcedure = adminPermissionProcedure("logs.read");
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
   const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
   if (role !== "super_admin") {
@@ -734,6 +735,51 @@ export const appRouter = router({
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
   portal: router({
     /**
+     * 前台上报异常日志。鉴权：x-portal-key。
+     *
+     * 设计为批量接口并且**永不抛错**：日志上报属于旁路能力，
+     * 若因参数问题让前台收到异常，反而会污染前台的错误处理链路，
+     * 甚至递归触发新的异常上报。故失败时静默返回 accepted:0。
+     */
+    reportException: publicProcedure
+      .input(
+        z.object({
+          logs: z
+            .array(
+              z.object({
+                category: z.enum([
+                  "server_error",
+                  "attack_probe",
+                  "auth_failure",
+                  "rate_limit",
+                  "slow_request",
+                  "integration",
+                ]),
+                severity: z.enum(["critical", "warning", "info"]).optional(),
+                summary: z.string().max(256),
+                fingerprint: z.string().max(128),
+                method: z.string().max(8).optional().nullable(),
+                path: z.string().max(512).optional().nullable(),
+                statusCode: z.number().int().optional().nullable(),
+                ipAddress: z.string().max(64).optional().nullable(),
+                userAgent: z.string().max(2048).optional().nullable(),
+                userId: z.number().int().optional().nullable(),
+                userName: z.string().max(128).optional().nullable(),
+                durationMs: z.number().int().optional().nullable(),
+                detail: z.unknown().optional(),
+              }),
+            )
+            .max(50),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const accepted = await db.writeExceptionLogs(
+          input.logs.map(log => ({ ...log, source: "portal" as const })),
+        );
+        return { accepted };
+      }),
+    /**
      * 前台「销售负责人」下拉的数据源。鉴权：x-portal-key。
      * 仅对外输出工号与展示名，不泄露 adminUserId / status / sortOrder 等内部字段。
      */
@@ -1132,6 +1178,46 @@ export const appRouter = router({
     }),
     remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       return db.deleteAdminUser(input.id);
+    }),
+  }),
+
+  // ─── 异常日志 ────────────────────────────────────────────
+  exceptionLogs: router({
+    /** 分页查询异常日志。仅 super_admin（logs.read）可访问。 */
+    list: logsReadProcedure
+      .input(
+        z.object({
+          category: z
+            .enum([
+              "server_error",
+              "attack_probe",
+              "auth_failure",
+              "rate_limit",
+              "slow_request",
+              "integration",
+            ])
+            .optional(),
+          severity: z.enum(["critical", "warning", "info"]).optional(),
+          source: z.enum(["portal", "admin"]).optional(),
+          ipAddress: z.string().max(64).optional(),
+          search: z.string().max(128).optional(),
+          /** 最近 N 小时；与 from/to 二选一，优先级更高 */
+          withinHours: z.number().int().min(1).max(24 * 30).optional(),
+          page: z.number().int().min(1).optional(),
+          pageSize: z.number().int().min(1).max(200).optional(),
+        }),
+      )
+      .query(async ({ input }) => {
+        const { withinHours, ...rest } = input;
+        const from = withinHours
+          ? new Date(Date.now() - withinHours * 60 * 60 * 1000)
+          : undefined;
+        return db.listExceptionLogs({ ...rest, from });
+      }),
+
+    /** 页面顶部态势卡片：近 24 小时分类计数与高频攻击源 IP。 */
+    stats: logsReadProcedure.query(async () => {
+      return db.getExceptionLogStats();
     }),
   }),
 });

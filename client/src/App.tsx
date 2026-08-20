@@ -8,6 +8,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Admins from "./pages/Admins";
+import ExceptionLogs from "./pages/ExceptionLogs";
 import Login from "./pages/Login";
 import Materials from "./pages/Materials";
 import MerchantDetail from "./pages/MerchantDetail";
@@ -114,6 +115,9 @@ const OrdersRoute = () => (
 const ProfileRoute = () => (
   <PermissionGate permission="profile.manage"><Profile /></PermissionGate>
 );
+const ExceptionLogsRoute = () => (
+  <PermissionGate permission="logs.read"><ExceptionLogs /></PermissionGate>
+);
 
 /** 部署 base 路径（如 /admin），本地开发为空字符串 */
 const ROUTER_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -133,6 +137,7 @@ function AppRoutes() {
         <Route path={"/orders"} component={OrdersRoute} />
         <Route path={"/orders/:id"} component={OrdersRoute} />
         <Route path={"/admins"} component={AdminsRoute} />
+        <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

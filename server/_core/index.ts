@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./vite";
 import { getUploadRoot } from "../localUpload";
+import { startExceptionLogCleanup } from "../exceptionLogCleanup";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,6 +38,7 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  startExceptionLogCleanup();
   // 本地上传文件静态服务（物料图片等；生产也可由 Nginx /admin/uploads/ 直接提供）
   app.use("/uploads", express.static(getUploadRoot(), { maxAge: "7d" }));
   // tRPC API
