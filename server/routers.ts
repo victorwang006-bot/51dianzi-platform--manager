@@ -22,7 +22,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { storagePut } from "./storage";
-import { saveLocalFile } from "./localUpload";
+import { removeLocalFile, saveLocalFile } from "./localUpload";
 import {
   getPlatformOrderDetail,
   getPlatformOrderStats,
@@ -694,17 +694,24 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "图片内容与文件格式不一致" });
         }
         const extension = IMAGE_MIME_MAP[input.mimeType];
-        const { key, url } = await storagePut(
-          `company-wall/${wall.companyId}/${Date.now()}.${extension}`,
-          buffer,
-          input.mimeType,
-        );
+        let stored: ReturnType<typeof saveLocalFile>;
+        try {
+          stored = saveLocalFile(`company-wall/${wall.companyId}`, extension, buffer);
+        } catch (error) {
+          console.error("[company-wall] 本地图片写入失败", {
+            merchantId: input.id,
+            companyId: wall.companyId,
+            error,
+          });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "图片上传失败，请稍后重试" });
+        }
+
         try {
           const created = await db.createMerchantCompanyWallPhoto({
             merchantId: input.id,
             creditCode: merchant.businessLicense,
-            objectKey: key,
-            url: companyWallStorageUrl(url),
+            objectKey: stored.key,
+            url: companyWallStorageUrl(stored.url),
             name: input.fileName,
             mimeType: input.mimeType,
             category: input.category,
@@ -713,10 +720,28 @@ export const appRouter = router({
           });
           return { success: true as const, ...created };
         } catch (error) {
+          try {
+            removeLocalFile(stored.filePath);
+          } catch (cleanupError) {
+            console.error("[company-wall] 数据库失败后的图片清理失败", {
+              merchantId: input.id,
+              filePath: stored.filePath,
+              cleanupError,
+            });
+          }
           const message = error instanceof Error ? error.message : "";
-          if (message === "COMPANY_PHOTO_LIMIT_REACHED") throw new TRPCError({ code: "CONFLICT", message: "照片数量已达到 9 张，请刷新后重试" });
-          if (message === "PLATFORM_COMPANY_NOT_FOUND") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台企业资料不存在" });
-          throw error;
+          if (message === "COMPANY_PHOTO_LIMIT_REACHED") {
+            throw new TRPCError({ code: "CONFLICT", message: "公司信息墙最多上传 9 张图片" });
+          }
+          if (message === "PLATFORM_COMPANY_NOT_FOUND") {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户尚未关联企业资料，暂不能上传图片" });
+          }
+          console.error("[company-wall] 图片记录写入失败", {
+            merchantId: input.id,
+            companyId: wall.companyId,
+            error,
+          });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "图片上传失败，请稍后重试" });
         }
       }),
     /** 修改说明、分类、排序与公开状态；仍需商户销售范围权限。 */

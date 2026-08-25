@@ -25,6 +25,21 @@ type WallPhoto = {
   sortOrder: number;
 };
 
+const SAFE_COMPANY_WALL_ERRORS = [
+  "仅支持 JPG、PNG 和 WebP 图片",
+  "单张照片不能超过 8MB",
+  "公司信息墙最多上传 9 张图片",
+  "您无权管理该公司的信息墙",
+  "该商户尚未关联企业资料，暂不能上传图片",
+  "商户不存在或不在您负责的范围内",
+  "图片内容与文件格式不一致",
+] as const;
+
+function companyWallErrorMessage(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  return SAFE_COMPANY_WALL_ERRORS.find(item => message.includes(item)) ?? fallback;
+}
+
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -58,14 +73,14 @@ function PhotoEditor({
       await utils.merchant.companyWall.invalidate({ id: merchantId });
       toast.success("照片展示信息已更新");
     },
-    onError: error => toast.error("更新失败", { description: error.message }),
+    onError: error => toast.error("更新失败", { description: companyWallErrorMessage(error, "图片信息保存失败，请稍后重试") }),
   });
   const deleteMutation = trpc.merchant.deleteCompanyWallPhoto.useMutation({
     onSuccess: async () => {
       await utils.merchant.companyWall.invalidate({ id: merchantId });
       toast.success("照片已从信息墙移除");
     },
-    onError: error => toast.error("删除失败", { description: error.message }),
+    onError: error => toast.error("删除失败", { description: companyWallErrorMessage(error, "图片删除失败，请稍后重试") }),
   });
 
   useEffect(() => {
@@ -152,14 +167,14 @@ export default function MerchantCompanyWallPanel({ merchantId }: { merchantId: n
       setCaption("");
       toast.success("公司照片已上传", { description: "企业公开主页已同步更新" });
     },
-    onError: error => toast.error("上传失败", { description: error.message }),
+    onError: error => toast.error("上传失败", { description: companyWallErrorMessage(error, "图片上传失败，请稍后重试") }),
   });
   const reorderMutation = trpc.merchant.reorderCompanyWallPhotos.useMutation({
     onSuccess: async () => {
       await utils.merchant.companyWall.invalidate({ id: merchantId });
       toast.success("照片顺序已更新");
     },
-    onError: error => toast.error("排序失败", { description: error.message }),
+    onError: error => toast.error("排序失败", { description: companyWallErrorMessage(error, "图片排序失败，请稍后重试") }),
   });
 
   const photos = (wallQuery.data?.photos ?? []) as WallPhoto[];

@@ -8,6 +8,7 @@ const routers = read("server/routers.ts");
 const database = read("server/db.ts");
 const detailPage = read("client/src/pages/MerchantDetail.tsx");
 const wallPanel = read("client/src/components/admin/MerchantCompanyWallPanel.tsx");
+const localUpload = read("server/localUpload.ts");
 
 function merchantRouterBlock() {
   const start = routers.indexOf("  merchant: router({");
@@ -66,6 +67,29 @@ describe("前后台共用公司信息墙数据", () => {
     expect(database).toContain("SET deletedAt = NOW()");
     expect(routers).toContain('status: z.enum(["approved", "rejected"])');
     expect(database).not.toContain("DELETE FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos");
+  });
+});
+
+describe("ECS 本地持久化上传与中文错误", () => {
+  it("公司照片使用本地持久化目录，不再调用 Forge 存储", () => {
+    const upload = procedureBody("uploadCompanyWallPhoto");
+    expect(upload).toContain("saveLocalFile(`company-wall/${wall.companyId}`");
+    expect(upload).not.toContain("storagePut(");
+    expect(localUpload).toContain("process.env.UPLOAD_DIR");
+    expect(localUpload).toContain("fs.renameSync(tempPath, filePath)");
+  });
+
+  it("数据库写入失败必须补偿删除本地文件", () => {
+    const upload = procedureBody("uploadCompanyWallPhoto");
+    expect(upload).toContain("removeLocalFile(stored.filePath)");
+    expect(upload).toContain("数据库失败后的图片清理失败");
+  });
+
+  it("页面只展示通用中文错误，不透传服务端技术异常", () => {
+    expect(wallPanel).toContain("companyWallErrorMessage");
+    expect(wallPanel).toContain("图片上传失败，请稍后重试");
+    expect(wallPanel).not.toContain('description: error.message');
+    expect(routers).not.toContain("Storage config missing");
   });
 });
 
