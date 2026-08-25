@@ -2427,6 +2427,257 @@ export async function offshelfPlatformInventory(id: number, reason: string) {
   }
 }
 
+// ─── 企业公司信息墙（跨库读写前台 dianzi51 库）──────────────────────────────
+
+export type PlatformCompanyWallPhoto = {
+  id: number;
+  url: string;
+  objectKey: string;
+  name: string | null;
+  mimeType: string;
+  category: "storefront" | "office" | "warehouse" | "production" | "team" | "other";
+  caption: string | null;
+  status: "pending" | "approved" | "rejected";
+  sortOrder: number;
+  createdAt: Date;
+};
+
+export async function getMerchantCompanyWall(creditCode: string) {
+  const db = await getDb();
+  if (!db) return { available: false as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
+  const normalized = normalizeCreditCode(creditCode);
+  try {
+    const companiesRows = (await db.execute(sql`
+      SELECT id, userId
+      FROM ${sql.raw(PLATFORM_DB)}.companies
+      WHERE creditCode = ${normalized}
+      LIMIT 1
+    `)) as unknown as [{ id: number; userId: number }[], unknown];
+    const company = companiesRows[0]?.[0];
+    if (!company) return { available: true as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
+    const photoRows = (await db.execute(sql`
+      SELECT id, url, objectKey, name, mimeType, category, caption, status, sortOrder, createdAt
+      FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
+      WHERE companyId = ${company.id} AND deletedAt IS NULL
+      ORDER BY sortOrder ASC, createdAt ASC
+      LIMIT 9
+    `)) as unknown as [PlatformCompanyWallPhoto[], unknown];
+    return {
+      available: true as const,
+      companyId: Number(company.id),
+      portalUserId: Number(company.userId),
+      photos: photoRows[0] ?? [],
+    };
+  } catch (error) {
+    console.warn("[Database] 跨库查询公司信息墙失败:", (error as Error).message);
+    return { available: false as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
+  }
+}
+
+export async function createMerchantCompanyWallPhoto(input: {
+  merchantId: number;
+  creditCode: string;
+  objectKey: string;
+  url: string;
+  name: string;
+  mimeType: string;
+  category: PlatformCompanyWallPhoto["category"];
+  caption?: string | null;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = normalizeCreditCode(input.creditCode);
+  return db.transaction(async tx => {
+    const companyRows = (await tx.execute(sql`
+      SELECT id, userId
+      FROM ${sql.raw(PLATFORM_DB)}.companies
+      WHERE creditCode = ${normalized}
+      LIMIT 1
+      FOR UPDATE
+    `)) as unknown as [{ id: number; userId: number }[], unknown];
+    const company = companyRows[0]?.[0];
+    if (!company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+    const prefix = `company-wall/${company.id}/`;
+    if (!input.objectKey.startsWith(prefix)) throw new Error("COMPANY_PHOTO_KEY_INVALID");
+    const countRows = (await tx.execute(sql`
+      SELECT COUNT(*) AS count
+      FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
+      WHERE companyId = ${company.id} AND deletedAt IS NULL
+      FOR UPDATE
+    `)) as unknown as [{ count: number }[], unknown];
+    if (Number(countRows[0]?.[0]?.count ?? 0) >= 9) throw new Error("COMPANY_PHOTO_LIMIT_REACHED");
+    const inserted = (await tx.execute(sql`
+      INSERT INTO ${sql.raw(PLATFORM_DB)}.company_profile_photos
+        (companyId, uploaderUserId, objectKey, url, name, mimeType, category, caption,
+         status, sortOrder, reviewedAt, createdAt, updatedAt)
+      VALUES
+        (${company.id}, ${company.userId}, ${input.objectKey}, ${input.url}, ${input.name},
+         ${input.mimeType}, ${input.category}, ${input.caption?.trim() || null}, 'approved',
+         ${Number(countRows[0]?.[0]?.count ?? 0)}, NOW(), NOW(), NOW())
+    `)) as unknown as [{ insertId?: number }, unknown];
+    const photoId = Number(inserted[0]?.insertId ?? 0);
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.company_wall.upload",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      afterValue: { photoId, companyId: Number(company.id), category: input.category, caption: input.caption || null },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: "后台代企业上传公司信息墙照片",
+    });
+    return { id: photoId, companyId: Number(company.id) };
+  });
+}
+
+export async function updateMerchantCompanyWallPhoto(input: {
+  merchantId: number;
+  creditCode: string;
+  photoId: number;
+  category: PlatformCompanyWallPhoto["category"];
+  caption?: string | null;
+  sortOrder: number;
+  status: "approved" | "rejected";
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = normalizeCreditCode(input.creditCode);
+  return db.transaction(async tx => {
+    const rows = (await tx.execute(sql`
+      SELECT p.id, p.category, p.caption, p.sortOrder, p.status, p.companyId
+      FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos p
+      INNER JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.id = p.companyId
+      WHERE p.id = ${input.photoId} AND c.creditCode = ${normalized} AND p.deletedAt IS NULL
+      LIMIT 1
+      FOR UPDATE
+    `)) as unknown as [{ id: number; category: string; caption: string | null; sortOrder: number; status: string; companyId: number }[], unknown];
+    const before = rows[0]?.[0];
+    if (!before) throw new Error("COMPANY_PHOTO_NOT_FOUND");
+    await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.company_profile_photos
+      SET category = ${input.category}, caption = ${input.caption?.trim() || null},
+          sortOrder = ${input.sortOrder}, status = ${input.status},
+          reviewedAt = NOW(), updatedAt = NOW()
+      WHERE id = ${input.photoId} AND companyId = ${before.companyId}
+    `);
+    const after = { category: input.category, caption: input.caption?.trim() || null, sortOrder: input.sortOrder, status: input.status };
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.company_wall.update",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: before,
+      afterValue: after,
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: "后台更新公司信息墙照片展示信息",
+    });
+    return { success: true };
+  });
+}
+
+export async function deleteMerchantCompanyWallPhoto(input: {
+  merchantId: number;
+  creditCode: string;
+  photoId: number;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = normalizeCreditCode(input.creditCode);
+  return db.transaction(async tx => {
+    const rows = (await tx.execute(sql`
+      SELECT p.id, p.url, p.category, p.caption, p.companyId
+      FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos p
+      INNER JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.id = p.companyId
+      WHERE p.id = ${input.photoId} AND c.creditCode = ${normalized} AND p.deletedAt IS NULL
+      LIMIT 1
+      FOR UPDATE
+    `)) as unknown as [{ id: number; url: string; category: string; caption: string | null; companyId: number }[], unknown];
+    const before = rows[0]?.[0];
+    if (!before) throw new Error("COMPANY_PHOTO_NOT_FOUND");
+    await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.company_profile_photos
+      SET deletedAt = NOW(), updatedAt = NOW()
+      WHERE id = ${input.photoId} AND companyId = ${before.companyId}
+    `);
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.company_wall.delete",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: before,
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: "后台从公司信息墙移除照片（软删除）",
+    });
+    return { success: true };
+  });
+}
+
+export async function reorderMerchantCompanyWallPhotos(input: {
+  merchantId: number;
+  creditCode: string;
+  photoIds: number[];
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = normalizeCreditCode(input.creditCode);
+  return db.transaction(async tx => {
+    const rows = (await tx.execute(sql`
+      SELECT p.id, p.sortOrder, p.companyId
+      FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos p
+      INNER JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.id = p.companyId
+      WHERE c.creditCode = ${normalized} AND p.deletedAt IS NULL
+      ORDER BY p.sortOrder ASC, p.createdAt ASC
+      FOR UPDATE
+    `)) as unknown as [{ id: number; sortOrder: number; companyId: number }[], unknown];
+    const current = rows[0] ?? [];
+    if (current.length !== input.photoIds.length) throw new Error("COMPANY_PHOTO_ORDER_STALE");
+    const currentIds = new Set(current.map(row => Number(row.id)));
+    if (new Set(input.photoIds).size !== input.photoIds.length || input.photoIds.some(id => !currentIds.has(id))) {
+      throw new Error("COMPANY_PHOTO_ORDER_INVALID");
+    }
+    const companyId = current[0]?.companyId;
+    if (!companyId) throw new Error("COMPANY_PHOTO_NOT_FOUND");
+    for (let sortOrder = 0; sortOrder < input.photoIds.length; sortOrder += 1) {
+      const photoId = input.photoIds[sortOrder];
+      await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.company_profile_photos
+        SET sortOrder = ${sortOrder}, updatedAt = NOW()
+        WHERE id = ${photoId} AND companyId = ${companyId}
+      `);
+    }
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.company_wall.reorder",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: current.map(row => ({ id: Number(row.id), sortOrder: Number(row.sortOrder) })),
+      afterValue: input.photoIds.map((id, sortOrder) => ({ id, sortOrder })),
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: "后台调整公司信息墙照片顺序",
+    });
+    return { success: true };
+  });
+}
+
 // ─── 异常日志 ────────────────────────────────────────────────────────────────
 
 export type ExceptionLogInput = {

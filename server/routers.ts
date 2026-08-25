@@ -59,6 +59,23 @@ function isValidImageBuffer(buffer: Buffer, mimeType: string): boolean {
   }
 }
 
+const COMPANY_WALL_MIME_SCHEMA = z.enum(["image/jpeg", "image/png", "image/webp"]);
+const COMPANY_WALL_CATEGORY_SCHEMA = z.enum(["storefront", "office", "warehouse", "production", "team", "other"]);
+const COMPANY_WALL_MAX_BYTES = 8 * 1024 * 1024;
+
+function companyWallStorageUrl(relativeUrl: string) {
+  if (/^https?:\/\//i.test(relativeUrl)) return relativeUrl;
+  const configured = process.env.ADMIN_PUBLIC_ORIGIN?.trim() || "https://admin.51dianzi.com";
+  let origin: URL;
+  try {
+    origin = new URL(configured);
+  } catch {
+    origin = new URL("https://admin.51dianzi.com");
+  }
+  if (!/^https?:$/.test(origin.protocol)) origin = new URL("https://admin.51dianzi.com");
+  return new URL(relativeUrl.replace(/^\/+/, ""), `${origin.origin}/`).toString();
+}
+
 // 管理员权限中间件：要求 role 为 admin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -637,6 +654,149 @@ export const appRouter = router({
     detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
       return db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
     }),
+    /** 当前销售范围内商户的公司信息墙；超管不受范围限制。 */
+    companyWall: merchantReadProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (!merchant.businessLicense?.trim()) {
+          return { available: true as const, companyId: null, photos: [] };
+        }
+        return db.getMerchantCompanyWall(merchant.businessLicense);
+      }),
+    /** 负责销售或超级管理员代企业上传公司信息墙照片。 */
+    uploadCompanyWallPhoto: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        fileName: z.string().trim().min(1).max(255),
+        mimeType: COMPANY_WALL_MIME_SCHEMA,
+        base64: z.string().min(1),
+        category: COMPANY_WALL_CATEGORY_SCHEMA.default("other"),
+        caption: z.string().trim().max(120).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (!merchant.businessLicense?.trim()) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户未登记统一社会信用代码，无法关联前台企业" });
+        }
+        const wall = await db.getMerchantCompanyWall(merchant.businessLicense);
+        if (!wall.available || !wall.companyId) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台企业资料尚未建立，暂不能管理信息墙" });
+        }
+        if (wall.photos.length >= 9) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "公司信息墙最多上传 9 张照片" });
+        }
+        const buffer = Buffer.from(input.base64, "base64");
+        if (!buffer.length || buffer.length > COMPANY_WALL_MAX_BYTES) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "单张照片不能超过 8MB" });
+        }
+        if (!isValidImageBuffer(buffer, input.mimeType)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "图片内容与文件格式不一致" });
+        }
+        const extension = IMAGE_MIME_MAP[input.mimeType];
+        const { key, url } = await storagePut(
+          `company-wall/${wall.companyId}/${Date.now()}.${extension}`,
+          buffer,
+          input.mimeType,
+        );
+        try {
+          const created = await db.createMerchantCompanyWallPhoto({
+            merchantId: input.id,
+            creditCode: merchant.businessLicense,
+            objectKey: key,
+            url: companyWallStorageUrl(url),
+            name: input.fileName,
+            mimeType: input.mimeType,
+            category: input.category,
+            caption: input.caption,
+            actor: auditActorFromContext(ctx),
+          });
+          return { success: true as const, ...created };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "COMPANY_PHOTO_LIMIT_REACHED") throw new TRPCError({ code: "CONFLICT", message: "照片数量已达到 9 张，请刷新后重试" });
+          if (message === "PLATFORM_COMPANY_NOT_FOUND") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台企业资料不存在" });
+          throw error;
+        }
+      }),
+    /** 修改说明、分类、排序与公开状态；仍需商户销售范围权限。 */
+    updateCompanyWallPhoto: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        photoId: z.number().int().positive(),
+        category: COMPANY_WALL_CATEGORY_SCHEMA,
+        caption: z.string().trim().max(120).optional().nullable(),
+        sortOrder: z.number().int().min(0).max(99),
+        status: z.enum(["approved", "rejected"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (!merchant.businessLicense?.trim()) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户缺少统一社会信用代码" });
+        try {
+          return await db.updateMerchantCompanyWallPhoto({
+            merchantId: input.id,
+            creditCode: merchant.businessLicense,
+            photoId: input.photoId,
+            category: input.category,
+            caption: input.caption,
+            sortOrder: input.sortOrder,
+            status: input.status,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          if (error instanceof Error && error.message === "COMPANY_PHOTO_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "照片不存在或不属于该商户" });
+          }
+          throw error;
+        }
+      }),
+    /** 软删除公司信息墙照片，保留操作审计。 */
+    deleteCompanyWallPhoto: merchantWriteProcedure
+      .input(z.object({ id: z.number().int().positive(), photoId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (!merchant.businessLicense?.trim()) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户缺少统一社会信用代码" });
+        try {
+          return await db.deleteMerchantCompanyWallPhoto({
+            merchantId: input.id,
+            creditCode: merchant.businessLicense,
+            photoId: input.photoId,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          if (error instanceof Error && error.message === "COMPANY_PHOTO_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "照片不存在或不属于该商户" });
+          }
+          throw error;
+        }
+      }),
+    /** 以完整照片 ID 顺序原子更新排序，避免两位销售同时编辑造成错位。 */
+    reorderCompanyWallPhotos: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        photoIds: z.array(z.number().int().positive()).min(1).max(9).refine(ids => new Set(ids).size === ids.length, "照片 ID 不能重复"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (!merchant.businessLicense?.trim()) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户缺少统一社会信用代码" });
+        try {
+          return await db.reorderMerchantCompanyWallPhotos({
+            merchantId: input.id,
+            creditCode: merchant.businessLicense,
+            photoIds: input.photoIds,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "COMPANY_PHOTO_ORDER_STALE") {
+            throw new TRPCError({ code: "CONFLICT", message: "照片列表已变化，请刷新后重新排序" });
+          }
+          if (message === "COMPANY_PHOTO_ORDER_INVALID" || message === "COMPANY_PHOTO_NOT_FOUND") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "照片排序数据无效" });
+          }
+          throw error;
+        }
+      }),
     review: merchantWriteProcedure
       .input(z.object({
         id: z.number(),
