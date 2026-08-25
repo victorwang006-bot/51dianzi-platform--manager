@@ -40,6 +40,10 @@ function companyWallErrorMessage(error: unknown, fallback: string): string {
   return SAFE_COMPANY_WALL_ERRORS.find(item => message.includes(item)) ?? fallback;
 }
 
+function photoDisplayUrl(url: string, id: number): string {
+  return `${url}${url.includes("?") ? "&" : "?"}photo=${id}`;
+}
+
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -102,7 +106,7 @@ function PhotoEditor({
   return (
     <article className="overflow-hidden rounded-lg border bg-white">
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img src={photo.url} alt={caption || photo.name || "公司照片"} className="h-full w-full object-cover" />
+        <img src={photoDisplayUrl(photo.url, photo.id)} alt={caption || photo.name || "公司照片"} className="h-full w-full object-cover" />
         <span className={`absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-medium ${
           photo.status === "approved" ? "bg-emerald-600 text-white" : "bg-slate-800 text-white"
         }`}>

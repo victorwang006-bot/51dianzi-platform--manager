@@ -51,7 +51,13 @@ export function saveLocalFile(subDir: string, ext: string, buffer: Buffer): Loca
   const root = getUploadRoot();
   const dir = path.resolve(root, safeSubDir);
   assertInsideUploadRoot(dir);
-  fs.mkdirSync(dir, { recursive: true, mode: 0o750 });
+  // /uploads/ 是公开静态目录：每一级子目录都必须允许 Nginx 遍历。
+  let currentDir = root;
+  for (const segment of safeSubDir.split("/")) {
+    currentDir = path.join(currentDir, segment);
+    fs.mkdirSync(currentDir, { recursive: true, mode: 0o755 });
+    fs.chmodSync(currentDir, 0o755);
+  }
 
   const token = crypto.randomUUID().replace(/-/g, "");
   const name = `${Date.now()}-${token.slice(0, 16)}.${safeExt}`;
@@ -60,13 +66,22 @@ export function saveLocalFile(subDir: string, ext: string, buffer: Buffer): Loca
   const tempPath = path.join(dir, `.${name}.${token.slice(16, 24)}.tmp`);
 
   try {
-    fs.writeFileSync(tempPath, buffer, { flag: "wx", mode: 0o640 });
+    fs.writeFileSync(tempPath, buffer, { flag: "wx", mode: 0o600 });
     fs.renameSync(tempPath, filePath);
+    // 图片 URL 面向公网展示，文件需允许 Nginx 工作进程读取。
+    fs.chmodSync(filePath, 0o644);
+    const fileStat = fs.statSync(filePath);
+    const directoryStat = fs.statSync(dir);
+    if (!fileStat.isFile() || fileStat.size !== buffer.length || (fileStat.mode & 0o004) === 0 || (directoryStat.mode & 0o001) === 0) {
+      throw new Error("LOCAL_UPLOAD_NOT_PUBLICLY_READABLE");
+    }
   } catch (error) {
-    try {
-      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-    } catch {
-      // 保留原始写入异常；临时文件可由定期清理任务移除。
+    for (const target of [tempPath, filePath]) {
+      try {
+        if (fs.existsSync(target)) fs.unlinkSync(target);
+      } catch {
+        // 保留原始写入异常；残留文件可由定期清理任务移除。
+      }
     }
     throw error;
   }

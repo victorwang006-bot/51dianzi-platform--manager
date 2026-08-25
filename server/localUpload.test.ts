@@ -26,6 +26,8 @@ describe("ECS 本地持久化上传", () => {
     expect(stored.url).toBe(`/uploads/${stored.key}`);
     expect(fs.readFileSync(stored.filePath)).toEqual(Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
     expect(path.resolve(stored.filePath).startsWith(`${getUploadRoot()}${path.sep}`)).toBe(true);
+    expect(fs.statSync(stored.filePath).mode & 0o777).toBe(0o644);
+    expect(fs.statSync(path.dirname(stored.filePath)).mode & 0o777).toBe(0o755);
     expect(fs.readdirSync(path.dirname(stored.filePath)).some(name => name.endsWith(".tmp"))).toBe(false);
   });
 

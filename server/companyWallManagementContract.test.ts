@@ -105,5 +105,6 @@ describe("商户详情信息墙 UI", () => {
     expect(wallPanel).toContain("reorderCompanyWallPhotos");
     expect(wallPanel).toContain("deleteCompanyWallPhoto");
     expect(wallPanel).toContain("前台展示");
+    expect(wallPanel).toContain("photoDisplayUrl(photo.url, photo.id)");
   });
 });
