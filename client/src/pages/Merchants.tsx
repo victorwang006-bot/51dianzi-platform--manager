@@ -20,6 +20,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -84,6 +91,21 @@ export default function Merchants() {
     { id: detailId ?? 0 },
     { enabled: detailId !== null },
   );
+  const { data: salesStaff = [] } = trpc.salesStaff.list.useQuery(
+    { includeInactive: false },
+    { enabled: isSuperAdmin },
+  );
+
+  const salesOwnerMutation = trpc.merchant.setSalesOwner.useMutation({
+    onSuccess: result => {
+      toast.success(result.salesOwner ? `销售负责人已更新为 ${result.salesOwner}` : "已清空销售负责人");
+      utils.merchant.list.invalidate();
+    },
+    onError: error => {
+      toast.error(`销售负责人更新失败：${error.message}`);
+      utils.merchant.list.invalidate();
+    },
+  });
 
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
     onSuccess: (_d, vars) => {
@@ -265,6 +287,10 @@ export default function Merchants() {
                       const ag = agreementStatusMap[m.agreementStatus] ?? { label: m.agreementStatus, style: "gray" as const };
                       const crmStatus = ((m as { crmStatus?: CrmStatus }).crmStatus ?? "none") as CrmStatus;
                       const crmOwnerPortalUserId = ((m as { crmOwnerPortalUserId?: string | null }).crmOwnerPortalUserId ?? "").trim();
+                      const salesOwner = ((m as { salesOwner?: string | null }).salesOwner ?? "").trim();
+                      const salesOwnerCode = ((m as { salesOwnerCode?: string | null }).salesOwnerCode ?? "").trim().toLowerCase();
+                      const currentSalesIsActive = salesStaff.some(staff => staff.staffCode === salesOwnerCode);
+                      const ownerUpdating = salesOwnerMutation.isPending && salesOwnerMutation.variables?.id === m.id;
                       const crmActuallyEnabled = crmStatus === "enabled" && Boolean(crmOwnerPortalUserId);
                       const crm = crmStatus === "enabled" && !crmActuallyEnabled
                         ? { label: "待绑定账号", style: "warning" as const }
@@ -283,7 +309,43 @@ export default function Merchants() {
                               <p className="text-muted-foreground">{m.contactPhone ?? ""}</p>
                             </div>
                           </td>
-                          <td className="text-xs">{(m as { salesOwner?: string | null }).salesOwner ?? "-"}</td>
+                          <td className="min-w-[180px] text-xs">
+                            {isSuperAdmin ? (
+                              <Select
+                                value={salesOwnerCode || "unassigned"}
+                                disabled={ownerUpdating}
+                                onValueChange={value => {
+                                  const nextCode = value === "unassigned" ? null : value;
+                                  if (nextCode === (salesOwnerCode || null)) return;
+                                  salesOwnerMutation.mutate({
+                                    id: m.id,
+                                    expectedSalesOwnerCode: salesOwnerCode || null,
+                                    salesOwnerCode: nextCode,
+                                  });
+                                }}
+                              >
+                                <SelectTrigger className="h-8 w-[168px] text-xs" aria-label={`设置 ${m.companyName} 的销售负责人`}>
+                                  <SelectValue placeholder="选择销售负责人" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unassigned">未分配</SelectItem>
+                                  {salesOwnerCode && !currentSalesIsActive && (
+                                    <SelectItem value={salesOwnerCode} disabled>
+                                      {salesOwner || salesOwnerCode}（已停用）
+                                    </SelectItem>
+                                  )}
+                                  {salesStaff.map(staff => (
+                                    <SelectItem key={staff.staffCode} value={staff.staffCode}>
+                                      {staff.displayName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              salesOwner || "-"
+                            )}
+                            {ownerUpdating && <p className="mt-1 text-[11px] text-muted-foreground">同步中…</p>}
+                          </td>
                           <td>
                             <StatusBadge label={crm.label} style={crm.style} />
                             {crmOwnerPortalUserId ? (

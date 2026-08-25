@@ -93,6 +93,13 @@ const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+const salesOwnerAssignProcedure = adminProcedure.use(({ ctx, next }) => {
+  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  if (role !== "super_admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "只有超级管理员可以分配销售负责人" });
+  }
+  return next({ ctx });
+});
 
 function auditActorFromContext(ctx: TrpcContext) {
   const forwarded = ctx.req.headers["x-forwarded-for"];
@@ -651,6 +658,36 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
+    /** 分配、变更或清空销售负责人；提交当前工号用于防止多人同时覆盖。 */
+    setSalesOwner: salesOwnerAssignProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        expectedSalesOwnerCode: z.string().trim().toLowerCase().max(64).nullable(),
+        salesOwnerCode: z.string().trim().toLowerCase().max(64).nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await db.setMerchantSalesOwner({
+            merchantId: input.id,
+            expectedSalesOwnerCode: input.expectedSalesOwnerCode,
+            salesOwnerCode: input.salesOwnerCode,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "MERCHANT_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
+          }
+          if (message === "SALES_OWNER_CHANGED") {
+            throw new TRPCError({ code: "CONFLICT", message: "销售负责人已被其他管理员修改，请刷新后重试" });
+          }
+          if (message === "INVALID_SALES_STAFF_CODE") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "请选择仍在职且启用的销售负责人" });
+          }
+          throw error;
+        }
+      }),
+
     /** 设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
     setCrmStatus: merchantWriteProcedure
       .input(z.object({

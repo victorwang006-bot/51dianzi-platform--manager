@@ -631,6 +631,106 @@ export async function getMerchantById(id: number, salesStaffCodes?: string[]) {
   return result[0] ?? null;
 }
 
+/**
+ * 超级管理员分配或更换商户销售负责人。
+ * 商户后台与前台企业资料位于同一 RDS，必须在同一事务内同步，任一侧失败整体回滚。
+ */
+export async function setMerchantSalesOwner(input: {
+  merchantId: number;
+  expectedSalesOwnerCode: string | null;
+  salesOwnerCode: string | null;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("数据库不可用");
+  const expectedCode = input.expectedSalesOwnerCode?.trim().toLowerCase() || null;
+  const requestedCode = input.salesOwnerCode?.trim().toLowerCase() || null;
+
+  return db.transaction(async tx => {
+    const [merchant] = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, input.merchantId))
+      .limit(1)
+      .for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+
+    const currentCode = merchant.salesOwnerCode?.trim().toLowerCase() || null;
+    if (currentCode !== expectedCode) throw new Error("SALES_OWNER_CHANGED");
+
+    let nextCode: string | null = null;
+    let nextName: string | null = null;
+    if (requestedCode) {
+      const [staff] = await tx
+        .select()
+        .from(salesStaff)
+        .where(and(eq(salesStaff.staffCode, requestedCode), eq(salesStaff.status, "active")))
+        .limit(1);
+      if (!staff) throw new Error("INVALID_SALES_STAFF_CODE");
+      nextCode = staff.staffCode;
+      nextName = staff.displayName;
+    }
+
+    if (currentCode === nextCode && (merchant.salesOwner?.trim() || null) === nextName) {
+      return {
+        success: true as const,
+        idempotent: true as const,
+        merchantId: merchant.id,
+        salesOwner: nextName,
+        salesOwnerCode: nextCode,
+        platformRowsUpdated: 0,
+      };
+    }
+
+    await tx
+      .update(merchants)
+      .set({ salesOwner: nextName, salesOwnerCode: nextCode })
+      .where(eq(merchants.id, merchant.id));
+
+    let platformRowsUpdated = 0;
+    const creditCode = merchant.businessLicense?.trim();
+    if (creditCode) {
+      const result = (await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies
+        SET salesOwner = ${nextName}, salesOwnerCode = ${nextCode}
+        WHERE UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(creditCode)}
+      `)) as unknown as [{ affectedRows?: number }, unknown];
+      platformRowsUpdated = Number(result[0]?.affectedRows ?? 0);
+    }
+
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.sales-owner.assign",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(merchant.id),
+      beforeValue: {
+        salesOwner: merchant.salesOwner,
+        salesOwnerCode: currentCode,
+      },
+      afterValue: {
+        salesOwner: nextName,
+        salesOwnerCode: nextCode,
+        platformRowsUpdated,
+      },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+    });
+
+    return {
+      success: true as const,
+      idempotent: false as const,
+      merchantId: merchant.id,
+      salesOwner: nextName,
+      salesOwnerCode: nextCode,
+      platformRowsUpdated,
+    };
+  });
+}
+
 export async function updateMerchantStatus(id: number, status: string, reviewNote?: string, reviewedBy?: number) {
   const db = await getDb();
   if (!db) return;
