@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createCompanyPhotoThumbnail } from "@/lib/companyPhotoImage";
 import { trpc } from "@/lib/trpc";
 import { ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Images, Save, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ type Category = typeof CATEGORY_OPTIONS[number]["value"];
 type WallPhoto = {
   id: number;
   url: string;
+  thumbnailUrl: string | null;
   name: string | null;
   category: Category;
   caption: string | null;
@@ -106,7 +108,18 @@ function PhotoEditor({
   return (
     <article className="overflow-hidden rounded-lg border bg-white">
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img src={photoDisplayUrl(photo.url, photo.id)} alt={caption || photo.name || "公司照片"} className="h-full w-full object-cover" />
+        <img
+          src={photoDisplayUrl(photo.thumbnailUrl || photo.url, photo.id)}
+          alt={caption || photo.name || "公司照片"}
+          loading="lazy"
+          decoding="async"
+          onError={event => {
+            const originalUrl = photoDisplayUrl(photo.url, photo.id);
+            if (event.currentTarget.src !== originalUrl) event.currentTarget.src = originalUrl;
+            else event.currentTarget.onerror = null;
+          }}
+          className="h-full w-full object-cover"
+        />
         <span className={`absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-medium ${
           photo.status === "approved" ? "bg-emerald-600 text-white" : "bg-slate-800 text-white"
         }`}>
@@ -199,11 +212,16 @@ export default function MerchantCompanyWallPanel({ merchantId }: { merchantId: n
       return;
     }
     try {
+      const [base64, thumbnail] = await Promise.all([
+        toBase64(file),
+        createCompanyPhotoThumbnail(file),
+      ]);
       await uploadMutation.mutateAsync({
         id: merchantId,
         fileName: file.name,
         mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
-        base64: await toBase64(file),
+        base64,
+        thumbnailBase64: thumbnail.base64,
         category,
         caption: caption.trim() || undefined,
       });

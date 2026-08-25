@@ -2433,6 +2433,8 @@ export type PlatformCompanyWallPhoto = {
   id: number;
   url: string;
   objectKey: string;
+  thumbnailUrl: string | null;
+  thumbnailObjectKey: string | null;
   name: string | null;
   mimeType: string;
   category: "storefront" | "office" | "warehouse" | "production" | "team" | "other";
@@ -2456,7 +2458,7 @@ export async function getMerchantCompanyWall(creditCode: string) {
     const company = companiesRows[0]?.[0];
     if (!company) return { available: true as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
     const photoRows = (await db.execute(sql`
-      SELECT id, url, objectKey, name, mimeType, category, caption, status, sortOrder, createdAt
+      SELECT id, url, objectKey, thumbnailUrl, thumbnailObjectKey, name, mimeType, category, caption, status, sortOrder, createdAt
       FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
       WHERE companyId = ${company.id} AND deletedAt IS NULL
       ORDER BY sortOrder ASC, createdAt ASC
@@ -2479,6 +2481,8 @@ export async function createMerchantCompanyWallPhoto(input: {
   creditCode: string;
   objectKey: string;
   url: string;
+  thumbnailObjectKey: string;
+  thumbnailUrl: string;
   name: string;
   mimeType: string;
   category: PlatformCompanyWallPhoto["category"];
@@ -2500,6 +2504,7 @@ export async function createMerchantCompanyWallPhoto(input: {
     if (!company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
     const prefix = `company-wall/${company.id}/`;
     if (!input.objectKey.startsWith(prefix)) throw new Error("COMPANY_PHOTO_KEY_INVALID");
+    if (!input.thumbnailObjectKey.startsWith(`${prefix}thumbs/`)) throw new Error("COMPANY_PHOTO_THUMBNAIL_KEY_INVALID");
     const countRows = (await tx.execute(sql`
       SELECT COUNT(*) AS count
       FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
@@ -2509,10 +2514,10 @@ export async function createMerchantCompanyWallPhoto(input: {
     if (Number(countRows[0]?.[0]?.count ?? 0) >= 9) throw new Error("COMPANY_PHOTO_LIMIT_REACHED");
     const inserted = (await tx.execute(sql`
       INSERT INTO ${sql.raw(PLATFORM_DB)}.company_profile_photos
-        (companyId, uploaderUserId, objectKey, url, name, mimeType, category, caption,
+        (companyId, uploaderUserId, objectKey, url, thumbnailObjectKey, thumbnailUrl, name, mimeType, category, caption,
          status, sortOrder, reviewedAt, createdAt, updatedAt)
       VALUES
-        (${company.id}, ${company.userId}, ${input.objectKey}, ${input.url}, ${input.name},
+        (${company.id}, ${company.userId}, ${input.objectKey}, ${input.url}, ${input.thumbnailObjectKey}, ${input.thumbnailUrl}, ${input.name},
          ${input.mimeType}, ${input.category}, ${input.caption?.trim() || null}, 'approved',
          ${Number(countRows[0]?.[0]?.count ?? 0)}, NOW(), NOW(), NOW())
     `)) as unknown as [{ insertId?: number }, unknown];

@@ -62,6 +62,7 @@ function isValidImageBuffer(buffer: Buffer, mimeType: string): boolean {
 const COMPANY_WALL_MIME_SCHEMA = z.enum(["image/jpeg", "image/png", "image/webp"]);
 const COMPANY_WALL_CATEGORY_SCHEMA = z.enum(["storefront", "office", "warehouse", "production", "team", "other"]);
 const COMPANY_WALL_MAX_BYTES = 8 * 1024 * 1024;
+const COMPANY_WALL_THUMBNAIL_MAX_BYTES = 1024 * 1024;
 
 function companyWallStorageUrl(relativeUrl: string) {
   if (/^https?:\/\//i.test(relativeUrl)) return relativeUrl;
@@ -671,6 +672,7 @@ export const appRouter = router({
         fileName: z.string().trim().min(1).max(255),
         mimeType: COMPANY_WALL_MIME_SCHEMA,
         base64: z.string().min(1),
+        thumbnailBase64: z.string().min(1),
         category: COMPANY_WALL_CATEGORY_SCHEMA.default("other"),
         caption: z.string().trim().max(120).optional(),
       }))
@@ -693,11 +695,24 @@ export const appRouter = router({
         if (!isValidImageBuffer(buffer, input.mimeType)) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "图片内容与文件格式不一致" });
         }
+        const thumbnailBuffer = Buffer.from(input.thumbnailBase64, "base64");
+        if (!thumbnailBuffer.length || thumbnailBuffer.length > COMPANY_WALL_THUMBNAIL_MAX_BYTES) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "图片缩略图生成失败，请重新选择图片" });
+        }
+        if (!isValidImageBuffer(thumbnailBuffer, "image/webp")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "图片缩略图格式无效，请重新选择图片" });
+        }
         const extension = IMAGE_MIME_MAP[input.mimeType];
-        let stored: ReturnType<typeof saveLocalFile>;
+        let stored: ReturnType<typeof saveLocalFile> | null = null;
+        let thumbnailStored: ReturnType<typeof saveLocalFile> | null = null;
         try {
           stored = saveLocalFile(`company-wall/${wall.companyId}`, extension, buffer);
+          thumbnailStored = saveLocalFile(`company-wall/${wall.companyId}/thumbs`, "webp", thumbnailBuffer);
         } catch (error) {
+          for (const saved of [stored, thumbnailStored]) {
+            if (!saved) continue;
+            try { removeLocalFile(saved.filePath); } catch { /* 日志由上传失败统一记录。 */ }
+          }
           console.error("[company-wall] 本地图片写入失败", {
             merchantId: input.id,
             companyId: wall.companyId,
@@ -712,6 +727,8 @@ export const appRouter = router({
             creditCode: merchant.businessLicense,
             objectKey: stored.key,
             url: companyWallStorageUrl(stored.url),
+            thumbnailObjectKey: thumbnailStored.key,
+            thumbnailUrl: companyWallStorageUrl(thumbnailStored.url),
             name: input.fileName,
             mimeType: input.mimeType,
             category: input.category,
@@ -720,14 +737,16 @@ export const appRouter = router({
           });
           return { success: true as const, ...created };
         } catch (error) {
-          try {
-            removeLocalFile(stored.filePath);
-          } catch (cleanupError) {
-            console.error("[company-wall] 数据库失败后的图片清理失败", {
-              merchantId: input.id,
-              filePath: stored.filePath,
-              cleanupError,
-            });
+          for (const saved of [stored, thumbnailStored]) {
+            try {
+              removeLocalFile(saved.filePath);
+            } catch (cleanupError) {
+              console.error("[company-wall] 数据库失败后的图片清理失败", {
+                merchantId: input.id,
+                filePath: saved.filePath,
+                cleanupError,
+              });
+            }
           }
           const message = error instanceof Error ? error.message : "";
           if (message === "COMPANY_PHOTO_LIMIT_REACHED") {

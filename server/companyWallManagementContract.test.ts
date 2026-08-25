@@ -79,10 +79,16 @@ describe("ECS 本地持久化上传与中文错误", () => {
     expect(localUpload).toContain("fs.renameSync(tempPath, filePath)");
   });
 
-  it("数据库写入失败必须补偿删除本地文件", () => {
+  it("上传同时保存 WebP 缩略图，数据库失败必须补偿删除原图和缩略图", () => {
     const upload = procedureBody("uploadCompanyWallPhoto");
-    expect(upload).toContain("removeLocalFile(stored.filePath)");
+    expect(upload).toContain("thumbnailBase64");
+    expect(upload).toContain('isValidImageBuffer(thumbnailBuffer, "image/webp")');
+    expect(upload).toContain('saveLocalFile(`company-wall/${wall.companyId}/thumbs`, "webp"');
+    expect(upload).toContain("for (const saved of [stored, thumbnailStored])");
+    expect(upload).toContain("removeLocalFile(saved.filePath)");
     expect(upload).toContain("数据库失败后的图片清理失败");
+    expect(database).toContain("thumbnailObjectKey");
+    expect(database).toContain("thumbnailUrl");
   });
 
   it("页面只展示通用中文错误，不透传服务端技术异常", () => {
@@ -105,6 +111,9 @@ describe("商户详情信息墙 UI", () => {
     expect(wallPanel).toContain("reorderCompanyWallPhotos");
     expect(wallPanel).toContain("deleteCompanyWallPhoto");
     expect(wallPanel).toContain("前台展示");
-    expect(wallPanel).toContain("photoDisplayUrl(photo.url, photo.id)");
+    expect(wallPanel).toContain("createCompanyPhotoThumbnail");
+    expect(wallPanel).toContain("photo.thumbnailUrl || photo.url");
+    expect(wallPanel).toContain('loading="lazy"');
+    expect(wallPanel).toContain("event.currentTarget.src = originalUrl");
   });
 });
