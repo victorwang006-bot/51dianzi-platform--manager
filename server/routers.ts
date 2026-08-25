@@ -77,6 +77,19 @@ function companyWallStorageUrl(relativeUrl: string) {
   return new URL(relativeUrl.replace(/^\/+/, ""), `${origin.origin}/`).toString();
 }
 
+function companyWallThumbnailUrl(relativeUrl: string) {
+  const path = relativeUrl.replace(/^\/+/, "").replace(/^uploads\/company-wall\//, "");
+  const configured = process.env.PLATFORM_PUBLIC_ORIGIN?.trim() || "https://51dianzi.com";
+  let origin: URL;
+  try {
+    origin = new URL(configured);
+  } catch {
+    origin = new URL("https://51dianzi.com");
+  }
+  if (!/^https?:$/.test(origin.protocol)) origin = new URL("https://51dianzi.com");
+  return new URL(`company-uploads/${path}`, `${origin.origin}/`).toString();
+}
+
 // 管理员权限中间件：要求 role 为 admin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -728,7 +741,7 @@ export const appRouter = router({
             objectKey: stored.key,
             url: companyWallStorageUrl(stored.url),
             thumbnailObjectKey: thumbnailStored.key,
-            thumbnailUrl: companyWallStorageUrl(thumbnailStored.url),
+            thumbnailUrl: companyWallThumbnailUrl(thumbnailStored.url),
             name: input.fileName,
             mimeType: input.mimeType,
             category: input.category,

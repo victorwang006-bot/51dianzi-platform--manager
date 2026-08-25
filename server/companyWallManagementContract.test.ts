@@ -89,6 +89,9 @@ describe("ECS 本地持久化上传与中文错误", () => {
     expect(upload).toContain("数据库失败后的图片清理失败");
     expect(database).toContain("thumbnailObjectKey");
     expect(database).toContain("thumbnailUrl");
+    expect(routers).toContain("companyWallThumbnailUrl");
+    expect(routers).toContain('"https://51dianzi.com"');
+    expect(routers).toContain("company-uploads/${path}");
   });
 
   it("页面只展示通用中文错误，不透传服务端技术异常", () => {
