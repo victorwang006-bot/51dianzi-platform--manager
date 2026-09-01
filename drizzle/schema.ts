@@ -187,6 +187,52 @@ export const adminUsers = mysqlTable("admin_users", {
 export type AdminUser = typeof adminUsers.$inferSelect;
 
 /**
+ * 后台用户级模块权限。
+ *
+ * 超级管理员不写入本表，始终由代码授予全部权限；普通用户写入本表后，
+ * 服务端优先按本表授权，未写入时回退到角色默认权限，保证旧账号平滑升级。
+ */
+export const adminUserPermissions = mysqlTable(
+  "admin_user_permissions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    adminUserId: int("adminUserId").notNull(),
+    permission: varchar("permission", { length: 64 }).notNull(),
+    createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+    updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+  },
+  table => ({
+    adminPermissionUnique: uniqueIndex("admin_user_permissions_admin_permission_unique").on(
+      table.adminUserId,
+      table.permission,
+    ),
+    adminUserIdx: index("admin_user_permissions_admin_user_idx").on(table.adminUserId),
+  }),
+);
+export type AdminUserPermission = typeof adminUserPermissions.$inferSelect;
+
+/** 后台用户权限变更审计：权限属于高敏感配置，必须保留操作轨迹。 */
+export const adminUserPermissionAudits = mysqlTable(
+  "admin_user_permission_audits",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    adminUserId: int("adminUserId").notNull(),
+    operatorAdminUserId: int("operatorAdminUserId"),
+    operatorName: varchar("operatorName", { length: 128 }),
+    beforePermissions: json("beforePermissions").$type<string[]>(),
+    afterPermissions: json("afterPermissions").$type<string[]>(),
+    ipAddress: varchar("ipAddress", { length: 64 }),
+    userAgent: varchar("userAgent", { length: 255 }),
+    createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  },
+  table => ({
+    adminUserIdx: index("admin_user_permission_audits_admin_user_idx").on(table.adminUserId),
+    createdAtIdx: index("admin_user_permission_audits_created_at_idx").on(table.createdAt),
+  }),
+);
+export type AdminUserPermissionAudit = typeof adminUserPermissionAudits.$inferSelect;
+
+/**
  * 找回密码验证码表。
  * 验证码经 bcrypt 哈希存储；channel 标识发送渠道（绑定手机 sms / 绑定邮箱 email）。
  */

@@ -1,4 +1,4 @@
-import type { AdminRole } from "@shared/adminPermissions";
+import type { AdminPermission, AdminRole } from "@shared/adminPermissions";
 
 export type LoginAccount = {
   id: number;
@@ -6,6 +6,7 @@ export type LoginAccount = {
   displayName: string | null;
   email: string | null;
   adminRole: AdminRole;
+  permissions?: AdminPermission[];
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt: Date | null;
@@ -27,6 +28,7 @@ export function buildAdminAuthUser(account: LoginAccount) {
     updatedAt: account.updatedAt,
     lastSignedIn: account.lastLoginAt ?? account.createdAt,
     adminRole: account.adminRole,
+    permissions: account.permissions,
     username: account.username,
   };
 }

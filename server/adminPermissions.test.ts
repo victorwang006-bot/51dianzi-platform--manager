@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   ADMIN_PERMISSIONS,
   hasAdminPermission,
+  normalizeAssignedAdminPermissions,
+  resolveAdminPermissions,
   type AdminRole,
 } from "../shared/adminPermissions";
 import type { TrpcContext } from "./_core/context";
 import { appRouter } from "./routers";
 
-function createContext(adminRole: AdminRole): TrpcContext {
+function createContext(adminRole: AdminRole, permissions: string[] = []): TrpcContext {
   const now = new Date();
   return {
     user: {
@@ -36,6 +38,7 @@ function createContext(adminRole: AdminRole): TrpcContext {
       createdAt: now,
       updatedAt: now,
     },
+    adminPermissions: permissions,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: {} as TrpcContext["res"],
   };
@@ -57,9 +60,32 @@ describe("后台角色权限矩阵", () => {
     expect(hasAdminPermission("auditor", "admins.manage")).toBe(false);
   });
 
-  it("订单模块仅暴露读取权限", () => {
+  it("订单模块仅暴露读取权限，用户管理独立授权", () => {
     expect(ADMIN_PERMISSIONS).toContain("orders.read");
     expect(ADMIN_PERMISSIONS).not.toContain("orders.write");
+    expect(ADMIN_PERMISSIONS).toContain("portalUsers.read");
+  });
+
+  it("普通用户优先使用数据库中的用户级模块权限", () => {
+    expect(hasAdminPermission("merchant_mgr", "materials.read", ["materials.read"])).toBe(true);
+    expect(hasAdminPermission("merchant_mgr", "merchants.read", ["materials.read"])).toBe(false);
+    expect(resolveAdminPermissions("merchant_mgr", [])).toContain("merchants.read");
+    expect(resolveAdminPermissions("super_admin", [])).toEqual(ADMIN_PERMISSIONS);
+  });
+
+  it("可分配权限不包含系统管理权限，写权限自动补齐读权限", () => {
+    const normalized = normalizeAssignedAdminPermissions([
+      "materials.write",
+      "admins.manage",
+      "logs.read",
+      "orders.read",
+    ]);
+    expect(normalized).toContain("materials.read");
+    expect(normalized).toContain("materials.write");
+    expect(normalized).toContain("orders.read");
+    expect(normalized).toContain("profile.manage");
+    expect(normalized).not.toContain("admins.manage");
+    expect(normalized).not.toContain("logs.read");
   });
 
   it("普通运营角色不能调用后台用户管理接口", async () => {

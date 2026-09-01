@@ -11,6 +11,8 @@ export type TrpcContext = {
   user: User | null;
   /** 账号密码登录的后台账号（admin_users 表）；未使用本地登录时为 null */
   adminAccount: AdminUser | null;
+  /** 当前后台账号的用户级模块权限；无记录时由角色默认权限回退 */
+  adminPermissions?: string[];
 };
 
 function extractSessionToken(
@@ -33,6 +35,7 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
   let adminAccount: AdminUser | null = null;
+  let adminPermissions: string[] = [];
   let sessionToken: string | null = null;
   let verifiedSession: Awaited<ReturnType<typeof sdk.verifySession>> = null;
   let shouldTryOAuth = false;
@@ -48,6 +51,7 @@ export async function createContext(
           const account = await db.getAdminUserById(localId);
           if (account && account.status === "active") {
             adminAccount = account;
+            adminPermissions = await db.getAdminUserPermissions(account.id);
             // 将本地账号映射为兼容的 User 形状，业务代码 ctx.user.role === "admin" 依旧成立
             user = {
               id: account.id,
@@ -68,6 +72,7 @@ export async function createContext(
     }
   } catch {
     adminAccount = null;
+    adminPermissions = [];
     user = null;
     verifiedSession = null;
     shouldTryOAuth = false;
@@ -91,5 +96,6 @@ export async function createContext(
     res: opts.res,
     user,
     adminAccount,
+    adminPermissions,
   };
 }

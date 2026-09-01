@@ -1,6 +1,10 @@
 import { COOKIE_NAME } from "@shared/const";
 import {
+  ASSIGNABLE_ADMIN_PERMISSIONS,
   hasAdminPermission,
+  isAssignableAdminPermission,
+  normalizeAssignedAdminPermissions,
+  resolveAdminPermissions,
   type AdminPermission,
   type AdminRole,
 } from "@shared/adminPermissions";
@@ -102,7 +106,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 const adminPermissionProcedure = (permission: AdminPermission) =>
   adminProcedure.use(({ ctx, next }) => {
     const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
-    if (!hasAdminPermission(role, permission)) {
+    if (!hasAdminPermission(role, permission, ctx.adminPermissions)) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权执行此操作" });
     }
     return next({ ctx });
@@ -112,6 +116,7 @@ const materialReadProcedure = adminPermissionProcedure("materials.read");
 const materialWriteProcedure = adminPermissionProcedure("materials.write");
 const merchantReadProcedure = adminPermissionProcedure("merchants.read");
 const merchantWriteProcedure = adminPermissionProcedure("merchants.write");
+const portalUserReadProcedure = adminPermissionProcedure("portalUsers.read");
 const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
 const orderReadProcedure = adminPermissionProcedure("orders.read");
@@ -131,6 +136,29 @@ const salesOwnerAssignProcedure = adminProcedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+const adminPermissionInput = z
+  .array(z.string().trim().max(64))
+  .max(ASSIGNABLE_ADMIN_PERMISSIONS.length)
+  .refine(values => values.every(isAssignableAdminPermission), "包含不可分配的模块权限")
+  .transform(values => normalizeAssignedAdminPermissions(values));
+
+function assertHasBusinessPermission(role: AdminRole, permissions?: AdminPermission[]) {
+  if (role === "super_admin" || permissions === undefined) return;
+  if (permissions.length === 0 || (permissions.length === 1 && permissions[0] === "profile.manage")) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "普通用户至少需要一个业务模块权限" });
+  }
+}
+
+function permissionAuditFromContext(ctx: TrpcContext) {
+  const actor = auditActorFromContext(ctx);
+  return {
+    operatorAdminUserId: ctx.adminAccount?.id ?? null,
+    operatorName: actor.operatorName,
+    ipAddress: actor.ipAddress,
+    userAgent: actor.userAgent,
+  };
+}
 
 function auditActorFromContext(ctx: TrpcContext) {
   const forwarded = ctx.req.headers["x-forwarded-for"];
@@ -307,6 +335,10 @@ export const appRouter = router({
         ...opts.ctx.user,
         adminRole: opts.ctx.adminAccount?.adminRole ?? ("super_admin" as const),
         username: opts.ctx.adminAccount?.username ?? null,
+        permissions: resolveAdminPermissions(
+          opts.ctx.adminAccount?.adminRole ?? "super_admin",
+          opts.ctx.adminPermissions,
+        ),
       };
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -322,7 +354,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const account = await loginWithPassword(ctx.req, ctx.res, input.username, input.password);
-        return { success: true, account } as const;
+        const permissions = await db.getAdminUserPermissions(account.id);
+        return {
+          success: true,
+          account: {
+            ...account,
+            permissions: resolveAdminPermissions(account.adminRole, permissions),
+          },
+        } as const;
       }),
     /** 读取当前登录账号的个人信息（个人信息页使用） */
     profile: adminProcedure.query(async ({ ctx }) => {
@@ -443,7 +482,7 @@ export const appRouter = router({
 
   // ─── 前台注册用户（主站用户表为唯一事实源，后台仅做代理）──────────────────
   frontendUser: router({
-    stats: messageReadProcedure.query(async () => {
+    stats: portalUserReadProcedure.query(async () => {
       const [platformStats, erpUserIds] = await Promise.all([
         getPlatformUserStats(),
         db.getEnabledErpPortalUserIds(),
@@ -455,7 +494,7 @@ export const appRouter = router({
         ordinaryUsers: Math.max(platformStats.totalUsers - erpUsers, 0),
       };
     }),
-    list: messageReadProcedure
+    list: portalUserReadProcedure
       .input(pageInput.extend({ keyword: z.string().trim().max(100).optional() }))
       .query(async ({ input }) => {
         const [result, erpUserIds] = await Promise.all([
@@ -1380,15 +1419,22 @@ export const appRouter = router({
       adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]),
       /** 追加的销售可见范围工号（本人工号由后端自动并入） */
       salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).optional().default([]),
+      /** 普通用户的模块权限；超级管理员忽略该字段并由代码授予全部权限 */
+      permissions: adminPermissionInput.optional(),
       password: z.string().min(8, "初始密码至少 8 位").max(128),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ ctx, input }) => {
       const existing = await db.getAdminUserByUsername(input.username);
       if (existing) {
         throw new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
       }
       const { password, ...rest } = input;
+      assertHasBusinessPermission(rest.adminRole, rest.permissions);
       try {
-        return await db.createAdminUser({ ...rest, passwordHash: await hashPassword(password) });
+        return await db.createAdminUser({
+          ...rest,
+          permissionAudit: permissionAuditFromContext(ctx),
+          passwordHash: await hashPassword(password),
+        });
       } catch (error) {
         throw mapSalesScopeError(error);
       }
@@ -1400,11 +1446,17 @@ export const appRouter = router({
       phone: z.string().max(20).optional().nullable(),
       adminRole: z.enum(["super_admin", "operation", "merchant_mgr", "customer_svc", "risk_control", "finance", "auditor"]).optional(),
       salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).optional(),
+      permissions: adminPermissionInput.optional(),
       status: z.enum(["active", "disabled", "locked"]).optional(),
       /** 传入则重置该账号的登录密码 */
       password: z.string().min(8, "密码至少 8 位").max(128).optional(),
     })).mutation(async ({ ctx, input }) => {
       const { id, password, ...rest } = input;
+      if (rest.permissions !== undefined) {
+        const target = await db.getAdminUserById(id);
+        if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "后台用户不存在" });
+        assertHasBusinessPermission(rest.adminRole ?? target.adminRole, rest.permissions);
+      }
       // 自我保护：超级管理员不得将自己降级或停用，否则当场失去后台管理权限且无法自行恢复
       if (ctx.adminAccount?.id === id) {
         if (rest.adminRole !== undefined && rest.adminRole !== "super_admin" && ctx.adminAccount.adminRole === "super_admin") {
@@ -1415,7 +1467,10 @@ export const appRouter = router({
         }
       }
       try {
-        await db.updateAdminUser(id, rest);
+        await db.updateAdminUser(id, {
+          ...rest,
+          permissionAudit: permissionAuditFromContext(ctx),
+        });
       } catch (error) {
         throw mapSalesScopeError(error);
       }

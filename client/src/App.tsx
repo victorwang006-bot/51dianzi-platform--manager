@@ -74,7 +74,8 @@ function PermissionGate({
 }) {
   const { user } = useAuth();
   const role = (user?.adminRole ?? "super_admin") as AdminRole;
-  if (hasAdminPermission(role, permission)) return <>{children}</>;
+  const permissions = (user as { permissions?: string[] } | null)?.permissions;
+  if (hasAdminPermission(role, permission, permissions)) return <>{children}</>;
 
   return (
     <DashboardLayout>
@@ -104,7 +105,7 @@ const MessagesRoute = () => (
   <PermissionGate permission="messages.read"><Messages /></PermissionGate>
 );
 const PortalUsersRoute = () => (
-  <PermissionGate permission="messages.read"><PortalUsers /></PermissionGate>
+  <PermissionGate permission="portalUsers.read"><PortalUsers /></PermissionGate>
 );
 const AdminsRoute = () => (
   <PermissionGate permission="admins.manage"><Admins /></PermissionGate>

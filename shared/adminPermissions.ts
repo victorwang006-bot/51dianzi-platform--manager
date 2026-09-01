@@ -23,6 +23,7 @@ export const ADMIN_PERMISSIONS = [
   "materials.write",
   "merchants.read",
   "merchants.write",
+  "portalUsers.read",
   "messages.read",
   "messages.write",
   "orders.read",
@@ -39,6 +40,37 @@ export const ADMIN_PERMISSIONS = [
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
 
+/** 超级管理员可分配给普通用户的业务模块权限；系统权限不可下放。 */
+export const ASSIGNABLE_ADMIN_PERMISSIONS = [
+  "materials.read",
+  "materials.write",
+  "merchants.read",
+  "merchants.write",
+  "portalUsers.read",
+  "messages.read",
+  "messages.write",
+  "orders.read",
+] as const satisfies readonly AdminPermission[];
+
+export type AssignableAdminPermission = (typeof ASSIGNABLE_ADMIN_PERMISSIONS)[number];
+
+export function isAssignableAdminPermission(value: unknown): value is AssignableAdminPermission {
+  return typeof value === "string"
+    && (ASSIGNABLE_ADMIN_PERMISSIONS as readonly string[]).includes(value);
+}
+
+/** 写权限自动补齐对应读权限；个人信息权限对所有普通后台用户固定保留。 */
+export function normalizeAssignedAdminPermissions(
+  values: readonly string[],
+): AdminPermission[] {
+  const next = new Set<AdminPermission>(values.filter(isAssignableAdminPermission));
+  if (next.has("materials.write")) next.add("materials.read");
+  if (next.has("merchants.write")) next.add("merchants.read");
+  if (next.has("messages.write")) next.add("messages.read");
+  next.add("profile.manage");
+  return Array.from(next);
+}
+
 const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   super_admin: ADMIN_PERMISSIONS,
   operation: [
@@ -46,6 +78,7 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "materials.write",
     "merchants.read",
     "merchants.write",
+    "portalUsers.read",
     "messages.read",
     "messages.write",
     "orders.read",
@@ -53,20 +86,60 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   ],
   // 普通用户：仅商户管理、订单中心，并按销售权限限制可见数据范围
   merchant_mgr: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
-  customer_svc: ["merchants.read", "messages.read", "messages.write", "orders.read", "profile.manage"],
+  customer_svc: [
+    "merchants.read",
+    "portalUsers.read",
+    "messages.read",
+    "messages.write",
+    "orders.read",
+    "profile.manage",
+  ],
   risk_control: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
   finance: ["merchants.read", "orders.read", "profile.manage"],
-  auditor: ["materials.read", "merchants.read", "messages.read", "orders.read", "profile.manage"],
+  auditor: [
+    "materials.read",
+    "merchants.read",
+    "portalUsers.read",
+    "messages.read",
+    "orders.read",
+    "profile.manage",
+  ],
 };
 
 export function isAdminRole(value: unknown): value is AdminRole {
   return typeof value === "string" && (ADMIN_ROLES as readonly string[]).includes(value);
 }
 
+export function getAdminRolePermissions(role: AdminRole | string | null | undefined): readonly AdminPermission[] {
+  if (!isAdminRole(role)) return [];
+  return ROLE_PERMISSIONS[role];
+}
+
+export function isAdminPermission(value: unknown): value is AdminPermission {
+  return typeof value === "string" && (ADMIN_PERMISSIONS as readonly string[]).includes(value);
+}
+
+/**
+ * 解析用户最终权限。
+ *
+ * 超级管理员始终拥有全部权限；普通后台用户优先使用数据库中的用户级授权，
+ * 无授权记录时回退到角色默认权限，保证旧账号升级后不会突然失去访问能力。
+ */
+export function resolveAdminPermissions(
+  role: AdminRole | string | null | undefined,
+  userPermissions?: readonly string[] | null,
+): readonly AdminPermission[] {
+  if (role === "super_admin") return ADMIN_PERMISSIONS;
+  if (userPermissions && userPermissions.length > 0) {
+    return userPermissions.filter(isAdminPermission);
+  }
+  return getAdminRolePermissions(role);
+}
+
 export function hasAdminPermission(
   role: AdminRole | string | null | undefined,
-  permission: AdminPermission
+  permission: AdminPermission,
+  userPermissions?: readonly string[] | null,
 ): boolean {
-  if (!isAdminRole(role)) return false;
-  return ROLE_PERMISSIONS[role].includes(permission);
+  return resolveAdminPermissions(role, userPermissions).includes(permission);
 }

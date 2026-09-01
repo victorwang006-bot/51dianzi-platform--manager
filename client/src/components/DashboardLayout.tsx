@@ -58,7 +58,7 @@ const menuGroups = [
       { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission, nested: false },
       { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false },
       { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
-      { icon: Users, label: "用户管理", path: "/portal-users", permission: "messages.read" as AdminPermission, nested: false },
+      { icon: Users, label: "用户管理", path: "/portal-users", permission: "portalUsers.read" as AdminPermission, nested: false },
     ],
   },
   {
@@ -162,7 +162,8 @@ function DashboardLayoutContent({
   const activeMenuItem = allMenuItems.find(item => isMenuPathActive(location, item.path));
   const isMobile = useIsMobile();
   const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ?? "super_admin") as AdminRole;
-  const canReadMessages = hasAdminPermission(adminRole, "messages.read");
+  const adminPermissions = (user as { permissions?: string[] } | null)?.permissions;
+  const canReadMessages = hasAdminPermission(adminRole, "messages.read", adminPermissions);
   // 消息未读总数（侧边栏角标，30 秒轮询）
   const { data: unreadData } = trpc.message.unreadCount.useQuery(undefined, {
     enabled: canReadMessages,
@@ -241,7 +242,7 @@ function DashboardLayoutContent({
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-2">
-                    {group.items.filter(item => hasAdminPermission(adminRole, item.permission)).map(item => {
+                    {group.items.filter(item => hasAdminPermission(adminRole, item.permission, adminPermissions)).map(item => {
                       const isActive = isMenuPathActive(location, item.path);
                       const showUnread = item.path === "/messages" && unreadTotal > 0;
                       return (

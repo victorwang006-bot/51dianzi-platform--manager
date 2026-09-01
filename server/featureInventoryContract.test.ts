@@ -211,6 +211,41 @@ describe("管理端功能清单闸门", () => {
       const admins = read("client/src/pages/Admins.tsx");
       expect(admins).toMatch(/salesStaffCodes:\s*v === "super_admin" \? \[\]/);
     });
+
+    it("编辑弹窗必须固定头尾并仅滚动表单内容，避免保存按钮被顶出视口", () => {
+      const admins = read("client/src/pages/Admins.tsx");
+      expect(admins).toContain("max-h-[88vh]");
+      expect(admins).toContain("flex-col");
+      expect(admins).toContain("overflow-hidden");
+      expect(admins).toContain("min-h-0 flex-1");
+      expect(admins).toContain("overflow-y-auto");
+      expect(admins).toContain("DialogFooter className=\"shrink-0 border-t");
+    });
+
+    it("必须提供五个业务模块权限勾选并提交用户级授权", () => {
+      const admins = read("client/src/pages/Admins.tsx");
+      for (const label of ["数据物料库", "商户管理", "用户管理", "消息中心", "订单管理"]) {
+        expect(admins).toContain(label);
+      }
+      expect(admins).toContain("modulePermissionGroups");
+      expect(admins).toContain("normalizeModulePermissions");
+      expect(admins).toContain("permissions: form.adminRole === \"super_admin\" ? [] : normalizedPermissions");
+    });
+
+    it("服务端必须持久化用户级模块权限并记录审计", () => {
+      const schema = read("drizzle/schema.ts");
+      const migration = read("drizzle/0019_admin_user_module_permissions.sql");
+      const database = read("server/db.ts");
+      const routers = read("server/routers.ts");
+      expect(schema).toContain("admin_user_permissions");
+      expect(schema).toContain("admin_user_permission_audits");
+      expect(migration).toContain("CREATE TABLE `admin_user_permissions`");
+      expect(migration).toContain("CREATE TABLE `admin_user_permission_audits`");
+      expect(database).toContain("replaceAdminUserPermissions");
+      expect(database).toContain("insertAdminUserPermissionAudit");
+      expect(routers).toContain("adminPermissionInput");
+      expect(routers).toContain("permissionAuditFromContext");
+    });
   });
 
   describe("BOM 询价单消息渲染（曾为孤儿文件，源码全网仅剩产物）", () => {

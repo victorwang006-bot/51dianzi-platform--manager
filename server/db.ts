@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  adminUserPermissionAudits,
+  adminUserPermissions,
   adminUsers,
   adminUserSalesScopes,
   auditLogs,
@@ -18,6 +20,7 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { normalizeAssignedAdminPermissions } from "../shared/adminPermissions";
 import {
   formatMaterialNo,
   PLATFORM_MATERIAL_SEQUENCE_KEY,
@@ -1699,6 +1702,16 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
         .from(salesStaff)
         .where(inArray(salesStaff.adminUserId, userIds))
     : [];
+  const permissionRows = userIds.length > 0
+    ? await db
+        .select({
+          adminUserId: adminUserPermissions.adminUserId,
+          permission: adminUserPermissions.permission,
+        })
+        .from(adminUserPermissions)
+        .where(inArray(adminUserPermissions.adminUserId, userIds))
+        .orderBy(asc(adminUserPermissions.id))
+    : [];
 
   const scopeMap = new Map<number, string[]>();
   for (const row of scopeRows) {
@@ -1710,12 +1723,19 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
   for (const row of identityRows) {
     if (row.adminUserId !== null) identityMap.set(row.adminUserId, row.staffCode);
   }
+  const permissionMap = new Map<number, string[]>();
+  for (const row of permissionRows) {
+    const values = permissionMap.get(row.adminUserId) ?? [];
+    values.push(row.permission);
+    permissionMap.set(row.adminUserId, values);
+  }
 
   return {
     data: data.map(user => ({
       ...user,
       salesStaffCodes: scopeMap.get(user.id) ?? [],
       ownSalesStaffCode: identityMap.get(user.id) ?? null,
+      permissions: permissionMap.get(user.id) ?? [],
     })),
     total: Number(count),
   };
@@ -1735,6 +1755,76 @@ export async function getAdminUserById(id: number) {
   if (!db) return null;
   const rows = await db.select().from(adminUsers).where(eq(adminUsers.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+/** 查询后台用户已显式授予的模块权限。 */
+export async function getAdminUserPermissions(adminUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ permission: adminUserPermissions.permission })
+    .from(adminUserPermissions)
+    .where(eq(adminUserPermissions.adminUserId, adminUserId))
+    .orderBy(asc(adminUserPermissions.id));
+  return rows.map(row => row.permission);
+}
+
+/** 批量查询后台用户显式授权，供会话上下文和列表避免 N+1。 */
+export async function getAdminUserPermissionsByIds(adminUserIds: number[]) {
+  const db = await getDb();
+  if (!db || adminUserIds.length === 0) return new Map<number, string[]>();
+  const rows = await db
+    .select({
+      adminUserId: adminUserPermissions.adminUserId,
+      permission: adminUserPermissions.permission,
+    })
+    .from(adminUserPermissions)
+    .where(inArray(adminUserPermissions.adminUserId, Array.from(new Set(adminUserIds))))
+    .orderBy(asc(adminUserPermissions.id));
+  const map = new Map<number, string[]>();
+  for (const row of rows) {
+    const values = map.get(row.adminUserId) ?? [];
+    values.push(row.permission);
+    map.set(row.adminUserId, values);
+  }
+  return map;
+}
+
+/** 在事务内替换用户级模块权限；超级管理员应传空数组，表示由代码授予全部权限。 */
+async function replaceAdminUserPermissions(
+  tx: DbExecutor,
+  adminUserId: number,
+  permissions: string[],
+) {
+  await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUserId));
+  if (permissions.length === 0) return;
+  await tx.insert(adminUserPermissions).values(
+    permissions.map(permission => ({ adminUserId, permission })),
+  );
+}
+
+/** 记录权限变更审计；审计失败不应阻断业务事务回滚，因此由调用方在同一事务中写入。 */
+async function insertAdminUserPermissionAudit(
+  tx: DbExecutor,
+  input: {
+    adminUserId: number;
+    operatorAdminUserId?: number | null;
+    operatorName?: string | null;
+    beforePermissions: string[];
+    afterPermissions: string[];
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  },
+) {
+  await tx.insert(adminUserPermissionAudits).values({
+    adminUserId: input.adminUserId,
+    operatorAdminUserId: input.operatorAdminUserId ?? null,
+    operatorName: input.operatorName ?? null,
+    beforePermissions: input.beforePermissions,
+    afterPermissions: input.afterPermissions,
+    ipAddress: input.ipAddress ?? null,
+    userAgent: input.userAgent ?? null,
+  });
 }
 
 /** 按绑定手机号查询后台账号列表（找回用户名用） */
@@ -1829,6 +1919,13 @@ export async function createAdminUser(input: {
   phone?: string | null;
   adminRole: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
   salesStaffCodes?: string[];
+  permissions?: string[];
+  permissionAudit?: {
+    operatorAdminUserId?: number | null;
+    operatorName?: string | null;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  };
   passwordHash?: string | null;
 }) {
   const db = await getDb();
@@ -1867,11 +1964,24 @@ export async function createAdminUser(input: {
     }
 
     await replaceAdminUserSalesScopes(tx, created.id, scopeCodes);
+
+    const nextPermissions = input.adminRole === "super_admin"
+      ? []
+      : normalizeAssignedAdminPermissions(input.permissions ?? []);
+    await replaceAdminUserPermissions(tx, created.id, nextPermissions);
+    if (input.permissions !== undefined) {
+      await insertAdminUserPermissionAudit(tx, {
+        adminUserId: created.id,
+        ...input.permissionAudit,
+        beforePermissions: [],
+        afterPermissions: nextPermissions,
+      });
+    }
   });
 
   const created = await getAdminUserByUsername(input.username);
   if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
-  return { ...created, salesStaffCodes: scopeCodes, ownSalesStaffCode };
+  return { ...created, salesStaffCodes: scopeCodes, ownSalesStaffCode, permissions: input.permissions ?? [] };
 }
 
 /**
@@ -1888,6 +1998,13 @@ export async function updateAdminUser(id: number, input: {
   phone?: string | null;
   adminRole?: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
   salesStaffCodes?: string[];
+  permissions?: string[];
+  permissionAudit?: {
+    operatorAdminUserId?: number | null;
+    operatorName?: string | null;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  };
   status?: "active" | "disabled" | "locked";
 }) {
   const db = await getDb();
@@ -1932,6 +2049,27 @@ export async function updateAdminUser(id: number, input: {
     }
 
     await replaceAdminUserSalesScopes(tx, id, nextScopes);
+
+    if (input.permissions !== undefined || nextRole === "super_admin") {
+      const beforePermissions = await tx
+        .select({ permission: adminUserPermissions.permission })
+        .from(adminUserPermissions)
+        .where(eq(adminUserPermissions.adminUserId, id))
+        .orderBy(asc(adminUserPermissions.id));
+      const before = beforePermissions.map(row => row.permission);
+      const nextPermissions = nextRole === "super_admin"
+        ? []
+        : normalizeAssignedAdminPermissions(input.permissions ?? before);
+      await replaceAdminUserPermissions(tx, id, nextPermissions);
+      if (input.permissions !== undefined || nextRole !== existing.adminRole) {
+        await insertAdminUserPermissionAudit(tx, {
+          adminUserId: id,
+          ...input.permissionAudit,
+          beforePermissions: before,
+          afterPermissions: nextPermissions,
+        });
+      }
+    }
   });
 }
 
@@ -1944,6 +2082,7 @@ export async function toggleAdminUserStatus(id: number, status: "active" | "disa
 export async function deleteAdminUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  await db.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, id));
   await db.delete(adminUsers).where(eq(adminUsers.id, id));
 }
 

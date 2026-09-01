@@ -9,20 +9,20 @@ const page = read("../client/src/pages/PortalUsers.tsx");
 const router = read("./routers.ts");
 
 describe("后台前台用户管理界面契约", () => {
-  it("用户管理与消息中心同级并使用同一读取权限", () => {
+  it("用户管理与消息中心同级，但使用独立的用户管理读取权限", () => {
     const messageIndex = layout.indexOf('label: "消息中心"');
     const userIndex = layout.indexOf('label: "用户管理"');
     expect(messageIndex).toBeGreaterThan(-1);
     expect(userIndex).toBeGreaterThan(messageIndex);
-    expect(layout).toContain('path: "/portal-users", permission: "messages.read" as AdminPermission, nested: false');
+    expect(layout).toContain('path: "/portal-users", permission: "portalUsers.read" as AdminPermission, nested: false');
   });
 
-  it("应用路由和服务端接口均使用消息读取权限", () => {
-    expect(app).toContain('<PermissionGate permission="messages.read"><PortalUsers /></PermissionGate>');
+  it("应用路由和服务端接口均使用独立的用户管理读取权限", () => {
+    expect(app).toContain('<PermissionGate permission="portalUsers.read"><PortalUsers /></PermissionGate>');
     expect(app).toContain('<Route path={"/portal-users"} component={PortalUsersRoute} />');
     expect(router).toContain("frontendUser: router({");
-    expect(router).toContain("stats: messageReadProcedure.query");
-    expect(router).toContain("list: messageReadProcedure");
+    expect(router).toContain("stats: portalUserReadProcedure.query");
+    expect(router).toContain("list: portalUserReadProcedure");
   });
 
   it("页面以紧凑摘要展示五项统计并保留搜索、刷新和用户标签", () => {
