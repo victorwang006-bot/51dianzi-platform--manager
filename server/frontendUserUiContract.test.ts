@@ -39,6 +39,18 @@ describe("后台前台用户管理界面契约", () => {
     expect(page).toContain('user.userType === "erp"');
   });
 
+  it("将账户技术值转换为中文注册渠道", () => {
+    expect(page).toContain("<TableHead>注册渠道</TableHead>");
+    expect(page).toContain('["local", "password"].includes(normalized)');
+    expect(page).toContain('return "网站注册"');
+    expect(page).toContain('"wechat_miniprogram"');
+    expect(page).toContain('return "微信小程序"');
+    expect(page).toContain('return "微信渠道"');
+    expect(page).toContain("registrationChannel(user.loginMethod)");
+    expect(page).not.toContain("<TableHead>登录方式</TableHead>");
+    expect(page).not.toContain('{user.loginMethod || "—"}');
+  });
+
   it("顶部横向滚动栏与真实表格双向同步并提供左右移动按钮", () => {
     expect(page).toContain("portal-user-top-scroll");
     expect(page).toContain('data-slot="table-container"');

@@ -28,6 +28,18 @@ const PAGE_SIZE = 20;
 const dateTime = (value: Date | string | null | undefined) =>
   value ? formatBeijingDateTimeWithSeconds(value) || "—" : "—";
 
+const registrationChannel = (value: string | null | undefined) => {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return "未知";
+  if (["local", "password"].includes(normalized)) return "网站注册";
+  if (["wechat_miniprogram", "wechat_mini_program", "miniprogram"].includes(normalized)) {
+    return "微信小程序";
+  }
+  if (["wechat", "wechat_oauth", "wechat_web"].includes(normalized)) return "微信渠道";
+  if (["oauth", "manus"].includes(normalized)) return "第三方登录";
+  return "其他渠道";
+};
+
 export default function PortalUsers() {
   const [page, setPage] = useState(1);
   const [draftKeyword, setDraftKeyword] = useState("");
@@ -219,7 +231,7 @@ export default function PortalUsers() {
                       <TableHead>联系方式</TableHead>
                       <TableHead>企业</TableHead>
                       <TableHead>用户类型</TableHead>
-                      <TableHead>登录方式</TableHead>
+                      <TableHead>注册渠道</TableHead>
                       <TableHead>注册时间</TableHead>
                       <TableHead>最近登录</TableHead>
                     </TableRow>
@@ -244,7 +256,7 @@ export default function PortalUsers() {
                             ? <Badge className="bg-emerald-100 text-emerald-800">ERP用户</Badge>
                             : <Badge variant="secondary">普通用户</Badge>}
                         </TableCell>
-                        <TableCell>{user.loginMethod || "—"}</TableCell>
+                        <TableCell>{registrationChannel(user.loginMethod)}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{dateTime(user.createdAt)}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{dateTime(user.lastSignedIn)}</TableCell>
                       </TableRow>
