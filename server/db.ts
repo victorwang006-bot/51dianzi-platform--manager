@@ -85,6 +85,9 @@ function normalizeMessageThreadJson<T extends object>(row: T): T {
   if (Object.prototype.hasOwnProperty.call(normalized, "companyProfile")) {
     normalized.companyProfile = decodeJsonValue<Record<string, string | null>>(normalized.companyProfile);
   }
+  if (Object.prototype.hasOwnProperty.call(normalized, "complaintContext")) {
+    normalized.complaintContext = decodeJsonValue<Record<string, unknown>>(normalized.complaintContext);
+  }
   return normalized as T;
 }
 
@@ -2115,6 +2118,17 @@ export interface CompanyProfileSnapshot {
   [key: string]: unknown;
 }
 
+export interface ComplaintContextSnapshot {
+  reportId: number;
+  reason: string;
+  detail?: string | null;
+  conversationId: number;
+  createdAt: string;
+  reporter: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
+  reported: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
+  [key: string]: unknown;
+}
+
 type PortalMessageThreadType = "general" | "inquiry" | "service" | "crm_apply" | "complaint";
 type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
 
@@ -2156,6 +2170,7 @@ export async function createPortalMessage(input: {
   portalUserId?: string | null;
   threadType?: "general" | "inquiry" | "service" | "crm_apply" | "complaint" | null;
   companyProfile?: CompanyProfileSnapshot | null;
+  complaintContext?: ComplaintContextSnapshot | null;
   content: string;
 }) {
   const db = await getDb();
@@ -2246,6 +2261,7 @@ export async function createPortalMessage(input: {
           portalUserId: input.portalUserId ?? null,
           threadType: resolvePortalMessageThreadType(input),
           companyProfile: input.companyProfile ?? null,
+          complaintContext: input.complaintContext ?? null,
           adminUnreadCount: 1,
           lastMessagePreview: preview,
           lastMessageAt: new Date(),
@@ -2266,6 +2282,7 @@ export async function createPortalMessage(input: {
           ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
           ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
           ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
+          ...(input.complaintContext ? { complaintContext: input.complaintContext } : {}),
           ...(input.threadType ? { threadType: resolvePortalMessageThreadType(input) } : {}),
         }).where(eq(messageThreads.id, thread.id));
       }
@@ -2304,6 +2321,50 @@ export async function createPortalMessage(input: {
     if (!existingAfterConflict) throw error;
     return validateExisting(existingAfterConflict);
   }
+}
+
+/** 小程序举报投诉：在管理后台创建独立消息线程。 */
+export async function createPortalComplaint(input: {
+  reportId: number;
+  reason: "fraud" | "harassment" | "false_inventory" | "illegal" | "other";
+  detail?: string | null;
+  conversationId: number;
+  reporter: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
+  reported: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
+}) {
+  const reasonLabel = {
+    fraud: "涉嫌欺诈",
+    harassment: "骚扰信息",
+    false_inventory: "虚假库存",
+    illegal: "违法违规",
+    other: "其他问题",
+  }[input.reason];
+  const content = [
+    `举报类型：${reasonLabel}`,
+    `举报人：${input.reporter.name}`,
+    `被举报人：${input.reported.name}`,
+    `关联聊一聊会话：${input.conversationId}`,
+    input.detail ? `补充说明：${input.detail}` : "补充说明：无",
+  ].join("\n");
+  const complaintContext: ComplaintContextSnapshot = {
+    reportId: input.reportId,
+    reason: input.reason,
+    detail: input.detail ?? null,
+    conversationId: input.conversationId,
+    createdAt: new Date().toISOString(),
+    reporter: input.reporter,
+    reported: input.reported,
+  };
+  return createPortalMessage({
+    clientMessageId: `chat-report:${input.reportId}`,
+    subject: `举报投诉 - ${reasonLabel} - ${input.reported.name}`.slice(0, 256),
+    contactName: input.reporter.name,
+    contactPhone: input.reporter.phone ?? null,
+    portalUserId: String(input.reporter.userId),
+    threadType: "complaint",
+    complaintContext,
+    content,
+  });
 }
 
 /** 前台拉取会话消息（并清零前台未读数） */
@@ -2377,25 +2438,6 @@ export async function getMessageThreads(input: {
   };
 }
 
-type ComplaintMessageDetail = {
-  id: number;
-  reason: string;
-  detail: string | null;
-  status: string;
-  conversationId: number;
-  createdAt: Date;
-  reporterUserId: number;
-  reporterName: string | null;
-  reporterPhone: string | null;
-  reporterWechatId: string | null;
-  reporterCompanyName: string | null;
-  reportedUserId: number;
-  reportedName: string | null;
-  reportedPhone: string | null;
-  reportedWechatId: string | null;
-  reportedCompanyName: string | null;
-};
-
 /** 后台：会话详情与消息列表（并清零后台未读数） */
 export async function getMessageThreadDetail(threadId: number) {
   const db = await getDb();
@@ -2414,37 +2456,7 @@ export async function getMessageThreadDetail(threadId: number) {
       .where(eq(messageThreads.id, threadId));
   }
 
-  let complaint: ComplaintMessageDetail | null = null;
-  if (thread.threadType === "complaint") {
-    const complaintResult = await db.execute(sql`
-      SELECT report.id, report.reason, report.detail, report.status,
-             report.conversationId, report.createdAt,
-             reporter.id AS reporterUserId,
-             COALESCE(reporterCompany.companyName, reporter.name, reporter.username) AS reporterName,
-             reporter.phone AS reporterPhone, reporter.wechatId AS reporterWechatId,
-             reporterCompany.companyName AS reporterCompanyName,
-             reported.id AS reportedUserId,
-             COALESCE(reportedCompany.companyName, reported.name, reported.username) AS reportedName,
-             reported.phone AS reportedPhone, reported.wechatId AS reportedWechatId,
-             reportedCompany.companyName AS reportedCompanyName
-        FROM chat_user_reports report
-        INNER JOIN users reporter ON reporter.id = report.reporterUserId
-        INNER JOIN users reported ON reported.id = report.reportedUserId
-        LEFT JOIN companies reporterCompany ON reporterCompany.userId = reporter.id
-        LEFT JOIN companies reportedCompany ON reportedCompany.userId = reported.id
-       WHERE report.messageThreadId = ${threadId}
-       LIMIT 1
-    `);
-    const complaintRows = (complaintResult as unknown as [Array<ComplaintMessageDetail>, unknown])[0];
-    complaint = complaintRows[0] ?? null;
-    if (complaint?.status === "pending") {
-      await db.execute(sql`
-        UPDATE chat_user_reports SET status = 'reviewed' WHERE id = ${complaint.id}
-      `);
-      complaint = { ...complaint, status: "reviewed" };
-    }
-  }
-  return { thread, messages: list, complaint };
+  return { thread, messages: list };
 }
 
 /** 后台：回复会话 */
@@ -2484,11 +2496,6 @@ export async function setMessageThreadStatus(threadId: number, status: "open" | 
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(messageThreads).set({ status }).where(eq(messageThreads.id, threadId));
-  await db.execute(sql`
-    UPDATE chat_user_reports
-       SET status = ${status === "closed" ? "closed" : "reviewed"}
-     WHERE messageThreadId = ${threadId}
-  `);
   return { success: true };
 }
 

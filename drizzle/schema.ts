@@ -673,6 +673,8 @@ export const messageThreads = mysqlTable("message_threads", {
   threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "crm_apply", "complaint"]).default("general").notNull(),
   /** 客户公司资料快照（前台提交时附带，JSON：companyName/creditCode/companyType/legalPerson/companyRole/regAddress/certLevel 等） */
   companyProfile: json("companyProfile"),
+  /** 举报投诉结构化上下文；仅 threadType=complaint 时写入。 */
+  complaintContext: json("complaintContext"),
   /** 会话状态：open=进行中 closed=已关闭 */
   status: mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
   /** 后台未读消息数（前台新消息时 +1，后台查看后清零） */

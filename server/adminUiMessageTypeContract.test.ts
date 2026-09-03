@@ -12,6 +12,9 @@ const adminsSource = read("../client/src/pages/Admins.tsx");
 const messagesSource = read("../client/src/pages/Messages.tsx");
 const dbSource = read("./db.ts");
 const routerSource = read("./routers.ts");
+const schemaSource = read("../drizzle/schema.ts");
+const deploySource = read("../deploy/deploy-admin.sh");
+const migrationSource = read("../scripts/apply-complaint-message-schema.mjs");
 
 describe("后台导航与用户管理交互", () => {
   it("订单管理与商户管理同级展示", () => {
@@ -58,8 +61,14 @@ describe("消息中心有效分类", () => {
     expect(messagesSource).toContain("被举报人");
     expect(messagesSource).toContain("标记已处理");
     expect(messagesSource).toContain("举报投诉不向用户直接回复");
-    expect(dbSource).toContain("report.messageThreadId");
+    expect(dbSource).toContain("createPortalComplaint");
+    expect(dbSource).toContain("complaintContext");
     expect(dbSource).toContain("举报投诉不支持直接回复，请处理后关闭");
-    expect(dbSource).toContain("UPDATE chat_user_reports");
+    expect(routerSource).toContain("submitComplaint: publicProcedure");
+    expect(routerSource).toContain("assertPortalKey(ctx.req)");
+    expect(schemaSource).toContain('complaintContext: json("complaintContext")');
+    expect(migrationSource).toContain("complaintMessageType");
+    expect(migrationSource).toContain("complaintContextColumn");
+    expect(deploySource).toContain("apply-complaint-message-schema.mjs");
   });
 });

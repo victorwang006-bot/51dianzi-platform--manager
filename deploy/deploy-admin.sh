@@ -68,6 +68,11 @@ rm -rf "$REL/uploads"
 ln -sfn "$SHARED_UPLOADS" "$REL/uploads"
 echo "uploads -> $SHARED_UPLOADS"
 
+echo "=== 4b. 执行举报投诉消息幂等迁移 ==="
+test -f "$REL/scripts/apply-complaint-message-schema.mjs" || { echo "FAIL: 缺少举报投诉迁移脚本"; exit 1; }
+node "$REL/scripts/apply-complaint-message-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
 echo "=== 5. 原子切换软链 ==="
 # 子域形态下两个软链指向同一 release：
 # LINK 供 PM2 进程与 /uploads/ alias 使用，SUBLINK 供 Nginx 静态根使用

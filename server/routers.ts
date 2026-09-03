@@ -1133,8 +1133,8 @@ export const appRouter = router({
         contactPhone: z.string().max(32).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
-        /** 会话类型：general=旧版兼容值（服务端归类） inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
-        threadType: z.enum(["general", "inquiry", "service", "crm_apply"]).optional().nullable(),
+        /** 会话类型：general=旧版兼容值 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 complaint=举报投诉 */
+        threadType: z.enum(["general", "inquiry", "service", "crm_apply", "complaint"]).optional().nullable(),
         /** 客户公司资料快照（已提交公司资料的用户，前台附带传入，后台会话详情展示） */
         companyProfile: z.object({
           companyName: z.string().max(256).optional().nullable(),
@@ -1150,6 +1150,33 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
         return db.createPortalMessage(input);
+      }),
+
+    /** 小程序“聊一聊”举报投诉；仅内部PORTAL密钥可调用。 */
+    submitComplaint: publicProcedure
+      .input(z.object({
+        reportId: z.number().int().positive(),
+        reason: z.enum(["fraud", "harassment", "false_inventory", "illegal", "other"]),
+        detail: z.string().trim().max(300).optional().nullable(),
+        conversationId: z.number().int().positive(),
+        reporter: z.object({
+          userId: z.number().int().positive(),
+          name: z.string().min(1).max(128),
+          phone: z.string().max(32).optional().nullable(),
+          wechatId: z.string().max(20).optional().nullable(),
+          companyName: z.string().max(256).optional().nullable(),
+        }),
+        reported: z.object({
+          userId: z.number().int().positive(),
+          name: z.string().min(1).max(128),
+          phone: z.string().max(32).optional().nullable(),
+          wechatId: z.string().max(20).optional().nullable(),
+          companyName: z.string().max(256).optional().nullable(),
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.createPortalComplaint(input);
       }),
 
     /**

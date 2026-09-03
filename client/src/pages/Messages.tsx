@@ -120,22 +120,25 @@ interface CompanyProfileSnapshot {
 }
 
 interface ComplaintDetail {
-  id: number;
+  reportId: number;
   reason: string;
   detail?: string | null;
-  status: string;
   conversationId: number;
   createdAt: string | Date;
-  reporterUserId: number;
-  reporterName?: string | null;
-  reporterPhone?: string | null;
-  reporterWechatId?: string | null;
-  reporterCompanyName?: string | null;
-  reportedUserId: number;
-  reportedName?: string | null;
-  reportedPhone?: string | null;
-  reportedWechatId?: string | null;
-  reportedCompanyName?: string | null;
+  reporter: {
+    userId: number;
+    name: string;
+    phone?: string | null;
+    wechatId?: string | null;
+    companyName?: string | null;
+  };
+  reported: {
+    userId: number;
+    name: string;
+    phone?: string | null;
+    wechatId?: string | null;
+    companyName?: string | null;
+  };
 }
 
 /** 会话列表 + 对话视图（选中会话后进入对话） */
@@ -334,7 +337,7 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
   const thread = data?.thread;
   const threadType = (thread as { threadType?: string } | undefined)?.threadType;
   const isComplaint = threadType === "complaint";
-  const complaint = (data as { complaint?: ComplaintDetail | null } | undefined)?.complaint ?? null;
+  const complaint = (thread as { complaintContext?: ComplaintDetail | null } | undefined)?.complaintContext ?? null;
   const companyProfile = (thread as { companyProfile?: CompanyProfileSnapshot | null } | undefined)?.companyProfile ?? null;
   const hasCompanyProfile = !!companyProfile && Object.values(companyProfile).some(v => v != null && v !== "");
 
@@ -473,22 +476,22 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
                     {COMPLAINT_REASON_LABELS[complaint.reason] || complaint.reason}
                   </Badge>
                 </div>
-                <span className="text-xs text-muted-foreground">举报编号 RC{String(complaint.id).padStart(10, "0")}</span>
+                <span className="text-xs text-muted-foreground">举报编号 RC{String(complaint.reportId).padStart(10, "0")}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div className="rounded-md border bg-background p-3 space-y-1.5">
                   <p className="font-medium">举报人</p>
-                  <p>{complaint.reporterName || `用户#${complaint.reporterUserId}`}</p>
-                  <p className="text-muted-foreground">用户ID：{complaint.reporterUserId}</p>
-                  {complaint.reporterPhone ? <p>手机：{complaint.reporterPhone}</p> : null}
-                  {complaint.reporterWechatId ? <p>微信：{complaint.reporterWechatId}</p> : null}
+                  <p>{complaint.reporter.name || `用户#${complaint.reporter.userId}`}</p>
+                  <p className="text-muted-foreground">用户ID：{complaint.reporter.userId}</p>
+                  {complaint.reporter.phone ? <p>手机：{complaint.reporter.phone}</p> : null}
+                  {complaint.reporter.wechatId ? <p>微信：{complaint.reporter.wechatId}</p> : null}
                 </div>
                 <div className="rounded-md border bg-background p-3 space-y-1.5">
                   <p className="font-medium text-red-700">被举报人</p>
-                  <p>{complaint.reportedName || `用户#${complaint.reportedUserId}`}</p>
-                  <p className="text-muted-foreground">用户ID：{complaint.reportedUserId}</p>
-                  {complaint.reportedPhone ? <p>手机：{complaint.reportedPhone}</p> : null}
-                  {complaint.reportedWechatId ? <p>微信：{complaint.reportedWechatId}</p> : null}
+                  <p>{complaint.reported.name || `用户#${complaint.reported.userId}`}</p>
+                  <p className="text-muted-foreground">用户ID：{complaint.reported.userId}</p>
+                  {complaint.reported.phone ? <p>手机：{complaint.reported.phone}</p> : null}
+                  {complaint.reported.wechatId ? <p>微信：{complaint.reported.wechatId}</p> : null}
                 </div>
               </div>
               <div className="mt-3 rounded-md border bg-background p-3 text-sm">
