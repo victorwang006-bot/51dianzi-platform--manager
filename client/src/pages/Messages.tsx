@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, User,
+  ArrowLeft, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, ShieldAlert, User,
 } from "lucide-react";
 import { formatBeijingDateTime } from "@shared/beijingTime";
 
@@ -28,10 +28,19 @@ function formatTime(value: string | Date) {
 const THREAD_TYPE_META = {
   inquiry: { label: "快速询价", className: "bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent" },
   service: { label: "在线客服", className: "bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent" },
+  complaint: { label: "举报投诉", className: "bg-red-100 text-red-800 hover:bg-red-100 border-transparent" },
 } as const;
 
+const COMPLAINT_REASON_LABELS: Record<string, string> = {
+  fraud: "涉嫌欺诈",
+  harassment: "骚扰信息",
+  false_inventory: "虚假库存",
+  illegal: "违法违规",
+  other: "其他问题",
+};
+
 function ThreadTypeBadge({ type }: { type?: string | null }) {
-  const normalizedType = type === "inquiry" ? "inquiry" : "service";
+  const normalizedType = type === "inquiry" ? "inquiry" : type === "complaint" ? "complaint" : "service";
   const meta = THREAD_TYPE_META[normalizedType];
   return <Badge className={meta.className}>{meta.label}</Badge>;
 }
@@ -110,11 +119,30 @@ interface CompanyProfileSnapshot {
   certLevel?: string | null;
 }
 
+interface ComplaintDetail {
+  id: number;
+  reason: string;
+  detail?: string | null;
+  status: string;
+  conversationId: number;
+  createdAt: string | Date;
+  reporterUserId: number;
+  reporterName?: string | null;
+  reporterPhone?: string | null;
+  reporterWechatId?: string | null;
+  reporterCompanyName?: string | null;
+  reportedUserId: number;
+  reportedName?: string | null;
+  reportedPhone?: string | null;
+  reportedWechatId?: string | null;
+  reportedCompanyName?: string | null;
+}
+
 /** 会话列表 + 对话视图（选中会话后进入对话） */
 export default function Messages() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service" | "complaint">("all");
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
@@ -155,7 +183,7 @@ export default function Messages() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">消息中心</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          统一查看并回复前台快速询价与在线客服会话
+          统一查看并处理前台快速询价、在线客服与举报投诉
         </p>
       </div>
 
@@ -183,6 +211,7 @@ export default function Messages() {
               <SelectItem value="all">全部类型</SelectItem>
               <SelectItem value="inquiry">快速询价</SelectItem>
               <SelectItem value="service">在线客服</SelectItem>
+              <SelectItem value="complaint">举报投诉</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={v => { setStatusFilter(v as typeof statusFilter); setPage(1); }}>
@@ -207,7 +236,7 @@ export default function Messages() {
           <div className="py-16 text-center text-muted-foreground">
             <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p>暂无消息</p>
-            <p className="text-xs mt-1">前台快速询价或在线客服会话将在这里显示</p>
+            <p className="text-xs mt-1">前台快速询价、在线客服或举报投诉将在这里显示</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -218,8 +247,14 @@ export default function Messages() {
                 className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors flex items-start gap-3"
               >
                 <div className="mt-1 shrink-0">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary" />
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center ${
+                    (thread as { threadType?: string }).threadType === "complaint"
+                      ? "bg-red-50"
+                      : "bg-primary/10"
+                  }`}>
+                    {(thread as { threadType?: string }).threadType === "complaint"
+                      ? <ShieldAlert className="h-4 w-4 text-red-600" />
+                      : <User className="h-4 w-4 text-primary" />}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -289,12 +324,17 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
   const statusMutation = trpc.message.setStatus.useMutation({
     onSuccess: (_d, vars) => {
       utils.message.detail.invalidate({ threadId });
-      toast.success(vars.status === "closed" ? "会话已关闭" : "会话已重新打开");
+      toast.success(vars.status === "closed"
+        ? (isComplaint ? "举报投诉已处理" : "会话已关闭")
+        : (isComplaint ? "举报投诉已重新打开" : "会话已重新打开"));
     },
     onError: err => toast.error(err.message || "操作失败"),
   });
 
   const thread = data?.thread;
+  const threadType = (thread as { threadType?: string } | undefined)?.threadType;
+  const isComplaint = threadType === "complaint";
+  const complaint = (data as { complaint?: ComplaintDetail | null } | undefined)?.complaint ?? null;
   const companyProfile = (thread as { companyProfile?: CompanyProfileSnapshot | null } | undefined)?.companyProfile ?? null;
   const hasCompanyProfile = !!companyProfile && Object.values(companyProfile).some(v => v != null && v !== "");
 
@@ -330,7 +370,7 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
                   onClick={() => statusMutation.mutate({ threadId, status: "closed" })}
                   disabled={statusMutation.isPending}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> 关闭会话
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> {isComplaint ? "标记已处理" : "关闭会话"}
                 </Button>
               ) : (
                 <Button
@@ -347,8 +387,10 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
           {/* 客户信息卡片：联系方式 + 公司资料 */}
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 mb-3">
-              <User className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">客户信息</span>
+              {isComplaint
+                ? <ShieldAlert className="h-4 w-4 text-red-600" />
+                : <User className="h-4 w-4 text-primary" />}
+              <span className="text-sm font-medium">{isComplaint ? "举报人信息" : "客户信息"}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
               <div className="flex items-center gap-2">
@@ -421,6 +463,42 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
             )}
           </div>
 
+          {isComplaint && complaint ? (
+            <div className="rounded-lg border border-red-200 bg-red-50/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-red-600" />
+                  <span className="text-sm font-medium">举报投诉详情</span>
+                  <Badge className="border-transparent bg-red-100 text-red-800 hover:bg-red-100">
+                    {COMPLAINT_REASON_LABELS[complaint.reason] || complaint.reason}
+                  </Badge>
+                </div>
+                <span className="text-xs text-muted-foreground">举报编号 RC{String(complaint.id).padStart(10, "0")}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="rounded-md border bg-background p-3 space-y-1.5">
+                  <p className="font-medium">举报人</p>
+                  <p>{complaint.reporterName || `用户#${complaint.reporterUserId}`}</p>
+                  <p className="text-muted-foreground">用户ID：{complaint.reporterUserId}</p>
+                  {complaint.reporterPhone ? <p>手机：{complaint.reporterPhone}</p> : null}
+                  {complaint.reporterWechatId ? <p>微信：{complaint.reporterWechatId}</p> : null}
+                </div>
+                <div className="rounded-md border bg-background p-3 space-y-1.5">
+                  <p className="font-medium text-red-700">被举报人</p>
+                  <p>{complaint.reportedName || `用户#${complaint.reportedUserId}`}</p>
+                  <p className="text-muted-foreground">用户ID：{complaint.reportedUserId}</p>
+                  {complaint.reportedPhone ? <p>手机：{complaint.reportedPhone}</p> : null}
+                  {complaint.reportedWechatId ? <p>微信：{complaint.reportedWechatId}</p> : null}
+                </div>
+              </div>
+              <div className="mt-3 rounded-md border bg-background p-3 text-sm">
+                <p><span className="text-muted-foreground">关联聊一聊会话：</span>{complaint.conversationId}</p>
+                <p><span className="text-muted-foreground">提交时间：</span>{formatTime(complaint.createdAt)}</p>
+                <p className="mt-1 whitespace-pre-wrap"><span className="text-muted-foreground">补充说明：</span>{complaint.detail || "无"}</p>
+              </div>
+            </div>
+          ) : null}
+
           <div className="rounded-lg border bg-card p-4 space-y-4 max-h-[52vh] overflow-y-auto">
             {data.messages.map(m => {
               const bomMessage = m.senderType === "portal"
@@ -446,7 +524,13 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
             })}
           </div>
 
-          {thread.status === "open" ? (
+          {isComplaint ? (
+            <p className="text-sm text-muted-foreground text-center py-2">
+              {thread.status === "open"
+                ? "举报投诉不向用户直接回复，核实处理后请点击“标记已处理”。"
+                : "该举报投诉已处理；如需继续跟进，可重新打开。"}
+            </p>
+          ) : thread.status === "open" ? (
             <div className="rounded-lg border bg-card p-3 space-y-2">
               <Textarea
                 placeholder="输入回复内容...（前台用户可在其会话中看到回复）"

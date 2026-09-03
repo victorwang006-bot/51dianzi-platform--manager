@@ -669,8 +669,8 @@ export const messageThreads = mysqlTable("message_threads", {
   portalUserId: varchar("portalUserId", { length: 64 }),
   /** 关联商户 ID（若留言来自已入驻商户，可选） */
   merchantId: int("merchantId"),
-  /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 */
-  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "crm_apply"]).default("general").notNull(),
+  /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 complaint=举报投诉 */
+  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "crm_apply", "complaint"]).default("general").notNull(),
   /** 客户公司资料快照（前台提交时附带，JSON：companyName/creditCode/companyType/legalPerson/companyRole/regAddress/certLevel 等） */
   companyProfile: json("companyProfile"),
   /** 会话状态：open=进行中 closed=已关闭 */

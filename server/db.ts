@@ -2115,11 +2115,11 @@ export interface CompanyProfileSnapshot {
   [key: string]: unknown;
 }
 
-type PortalMessageThreadType = "general" | "inquiry" | "service" | "crm_apply";
+type PortalMessageThreadType = "general" | "inquiry" | "service" | "crm_apply" | "complaint";
 type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
 
 /**
- * 消息中心只展示快速询价与在线客服。历史 general 是旧调用漏传类型的兼容值：
+ * 消息中心展示快速询价、在线客服和举报投诉。历史 general 是旧调用漏传类型的兼容值：
  * 询价主题归 inquiry、企业开通申请归 crm_apply，其余归在线客服。
  */
 export function resolvePortalMessageThreadType(input: {
@@ -2135,7 +2135,7 @@ export function resolvePortalMessageThreadType(input: {
 
 function effectiveMessageThreadTypeSql() {
   return sql<EffectiveMessageThreadType>`CASE
-    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'crm_apply')
+    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'crm_apply', 'complaint')
       THEN ${messageThreads.threadType}
     WHEN ${messageThreads.subject} LIKE '%企业开通申请%'
       THEN 'crm_apply'
@@ -2154,7 +2154,7 @@ export async function createPortalMessage(input: {
   contactPhone?: string | null;
   contactEmail?: string | null;
   portalUserId?: string | null;
-  threadType?: "general" | "inquiry" | "service" | "crm_apply" | null;
+  threadType?: "general" | "inquiry" | "service" | "crm_apply" | "complaint" | null;
   companyProfile?: CompanyProfileSnapshot | null;
   content: string;
 }) {
@@ -2339,7 +2339,7 @@ export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "inquiry" | "service";
+  threadType?: "inquiry" | "service" | "complaint";
   keyword?: string;
 }) {
   const db = await getDb();
@@ -2377,6 +2377,25 @@ export async function getMessageThreads(input: {
   };
 }
 
+type ComplaintMessageDetail = {
+  id: number;
+  reason: string;
+  detail: string | null;
+  status: string;
+  conversationId: number;
+  createdAt: Date;
+  reporterUserId: number;
+  reporterName: string | null;
+  reporterPhone: string | null;
+  reporterWechatId: string | null;
+  reporterCompanyName: string | null;
+  reportedUserId: number;
+  reportedName: string | null;
+  reportedPhone: string | null;
+  reportedWechatId: string | null;
+  reportedCompanyName: string | null;
+};
+
 /** 后台：会话详情与消息列表（并清零后台未读数） */
 export async function getMessageThreadDetail(threadId: number) {
   const db = await getDb();
@@ -2394,7 +2413,38 @@ export async function getMessageThreadDetail(threadId: number) {
     await db.update(messageThreads).set({ adminUnreadCount: 0 })
       .where(eq(messageThreads.id, threadId));
   }
-  return { thread, messages: list };
+
+  let complaint: ComplaintMessageDetail | null = null;
+  if (thread.threadType === "complaint") {
+    const complaintResult = await db.execute(sql`
+      SELECT report.id, report.reason, report.detail, report.status,
+             report.conversationId, report.createdAt,
+             reporter.id AS reporterUserId,
+             COALESCE(reporterCompany.companyName, reporter.name, reporter.username) AS reporterName,
+             reporter.phone AS reporterPhone, reporter.wechatId AS reporterWechatId,
+             reporterCompany.companyName AS reporterCompanyName,
+             reported.id AS reportedUserId,
+             COALESCE(reportedCompany.companyName, reported.name, reported.username) AS reportedName,
+             reported.phone AS reportedPhone, reported.wechatId AS reportedWechatId,
+             reportedCompany.companyName AS reportedCompanyName
+        FROM chat_user_reports report
+        INNER JOIN users reporter ON reporter.id = report.reporterUserId
+        INNER JOIN users reported ON reported.id = report.reportedUserId
+        LEFT JOIN companies reporterCompany ON reporterCompany.userId = reporter.id
+        LEFT JOIN companies reportedCompany ON reportedCompany.userId = reported.id
+       WHERE report.messageThreadId = ${threadId}
+       LIMIT 1
+    `);
+    const complaintRows = (complaintResult as unknown as [Array<ComplaintMessageDetail>, unknown])[0];
+    complaint = complaintRows[0] ?? null;
+    if (complaint?.status === "pending") {
+      await db.execute(sql`
+        UPDATE chat_user_reports SET status = 'reviewed' WHERE id = ${complaint.id}
+      `);
+      complaint = { ...complaint, status: "reviewed" };
+    }
+  }
+  return { thread, messages: list, complaint };
 }
 
 /** 后台：回复会话 */
@@ -2409,6 +2459,9 @@ export async function replyMessageThread(input: {
   const rows = await db.select().from(messageThreads)
     .where(eq(messageThreads.id, input.threadId)).limit(1);
   if (!rows[0]) throw new Error("会话不存在");
+  if (resolvePortalMessageThreadType(rows[0]) === "complaint") {
+    throw new Error("举报投诉不支持直接回复，请处理后关闭");
+  }
   await db.insert(messages).values({
     threadId: input.threadId,
     senderType: "admin",
@@ -2431,6 +2484,11 @@ export async function setMessageThreadStatus(threadId: number, status: "open" | 
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(messageThreads).set({ status }).where(eq(messageThreads.id, threadId));
+  await db.execute(sql`
+    UPDATE chat_user_reports
+       SET status = ${status === "closed" ? "closed" : "reviewed"}
+     WHERE messageThreadId = ${threadId}
+  `);
   return { success: true };
 }
 

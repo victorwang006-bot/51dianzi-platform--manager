@@ -1304,7 +1304,7 @@ export const appRouter = router({
     threads: messageReadProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
-        threadType: z.enum(["inquiry", "service"]).optional(),
+        threadType: z.enum(["inquiry", "service", "complaint"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {
