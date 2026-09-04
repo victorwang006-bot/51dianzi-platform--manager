@@ -59,6 +59,7 @@ describe("评价管理窗口", () => {
     expect(page).toContain("平台已隐藏");
     expect(page).toContain("后台不可修改评价原文");
     expect(page).toContain("if (query.data && page > pageCount) setPage(pageCount)");
+    expect(read("deploy/deploy-admin.sh")).toContain('chmod 755 "$REL"');
   });
 
   it("跨库查询保留原文、图片、回复和所有删除审核字段", () => {

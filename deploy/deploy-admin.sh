@@ -28,6 +28,9 @@ echo "prev_release=$PREV"
 echo "=== 2. 解包到 $REL ==="
 mkdir -p "$REL"
 tar -xzf "$PKG" -C "$REL"
+# 打包端若使用 mktemp 暂存目录，tar 可能携带根目录 0700 权限；Nginx 因无法穿越
+# release 根目录会把本应存在的静态文件返回为 404。解包后统一恢复可穿越权限。
+chmod 755 "$REL"
 test -f "$REL/dist/index.js" || { echo "FAIL: 缺少 dist/index.js"; exit 1; }
 test -f "$REL/dist/public/index.html" || { echo "FAIL: 缺少 dist/public/index.html"; exit 1; }
 # pnpm 对依赖打了补丁（wouter），patches/ 与 pnpm-workspace.yaml 缺失会让
