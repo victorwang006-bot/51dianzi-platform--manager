@@ -2654,11 +2654,11 @@ export async function getMerchantCompanyWall(creditCode: string) {
   const normalized = normalizeCreditCode(creditCode);
   try {
     const companiesRows = (await db.execute(sql`
-      SELECT id, userId
+      SELECT id, userId, avatarPhotoId
       FROM ${sql.raw(PLATFORM_DB)}.companies
       WHERE creditCode = ${normalized}
       LIMIT 1
-    `)) as unknown as [{ id: number; userId: number }[], unknown];
+    `)) as unknown as [{ id: number; userId: number; avatarPhotoId: number | null }[], unknown];
     const company = companiesRows[0]?.[0];
     if (!company) return { available: true as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
     const photoRows = (await db.execute(sql`
@@ -2672,6 +2672,7 @@ export async function getMerchantCompanyWall(creditCode: string) {
       available: true as const,
       companyId: Number(company.id),
       portalUserId: Number(company.userId),
+      avatarPhotoId: company.avatarPhotoId === null ? null : Number(company.avatarPhotoId),
       photos: photoRows[0] ?? [],
     };
   } catch (error) {
@@ -2774,6 +2775,13 @@ export async function updateMerchantCompanyWallPhoto(input: {
           reviewedAt = NOW(), updatedAt = NOW()
       WHERE id = ${input.photoId} AND companyId = ${before.companyId}
     `);
+    if (input.status !== "approved") {
+      await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies
+        SET avatarPhotoId = NULL, avatarUpdatedBy = NULL, avatarUpdatedAt = NOW()
+        WHERE id = ${before.companyId} AND avatarPhotoId = ${input.photoId}
+      `);
+    }
     const after = { category: input.category, caption: input.caption?.trim() || null, sortOrder: input.sortOrder, status: input.status };
     await tx.insert(auditLogs).values({
       operatorId: input.actor?.operatorId ?? null,
@@ -2813,6 +2821,11 @@ export async function deleteMerchantCompanyWallPhoto(input: {
     `)) as unknown as [{ id: number; url: string; category: string; caption: string | null; companyId: number }[], unknown];
     const before = rows[0]?.[0];
     if (!before) throw new Error("COMPANY_PHOTO_NOT_FOUND");
+    await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.companies
+      SET avatarPhotoId = NULL, avatarUpdatedBy = NULL, avatarUpdatedAt = NOW()
+      WHERE id = ${before.companyId} AND avatarPhotoId = ${input.photoId}
+    `);
     await tx.execute(sql`
       UPDATE ${sql.raw(PLATFORM_DB)}.company_profile_photos
       SET deletedAt = NOW(), updatedAt = NOW()

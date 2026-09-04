@@ -61,12 +61,14 @@ function toBase64(file: File): Promise<string> {
 function PhotoEditor({
   merchantId,
   photo,
+  isAvatar,
   index,
   total,
   onMove,
 }: {
   merchantId: number;
   photo: WallPhoto;
+  isAvatar: boolean;
   index: number;
   total: number;
   onMove: (from: number, to: number) => void;
@@ -95,6 +97,9 @@ function PhotoEditor({
   }, [photo.category, photo.caption]);
 
   const save = (status: "approved" | "rejected" = photo.status === "approved" ? "approved" : "rejected") => {
+    if (isAvatar && status !== "approved" && !window.confirm("隐藏该照片将同时移除公司头像，是否继续？")) {
+      return;
+    }
     updateMutation.mutate({
       id: merchantId,
       photoId: photo.id,
@@ -123,7 +128,7 @@ function PhotoEditor({
         <span className={`absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-medium ${
           photo.status === "approved" ? "bg-emerald-600 text-white" : "bg-slate-800 text-white"
         }`}>
-          {photo.status === "approved" ? "前台展示" : "已隐藏"}
+          {isAvatar ? "当前头像" : photo.status === "approved" ? "前台展示" : "已隐藏"}
         </span>
       </div>
       <div className="space-y-2 p-3">
@@ -162,7 +167,10 @@ function PhotoEditor({
             variant="ghost"
             className="h-8 w-8 text-destructive hover:text-destructive"
             disabled={deleteMutation.isPending}
-            onClick={() => deleteMutation.mutate({ id: merchantId, photoId: photo.id })}
+            onClick={() => {
+              if (isAvatar && !window.confirm("删除该照片将同时移除公司头像，是否继续？")) return;
+              deleteMutation.mutate({ id: merchantId, photoId: photo.id });
+            }}
             aria-label="删除照片">
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -278,7 +286,15 @@ export default function MerchantCompanyWallPanel({ merchantId }: { merchantId: n
           ) : photos.length > 0 ? (
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               {photos.map((photo, index) => (
-                <PhotoEditor key={photo.id} merchantId={merchantId} photo={photo} index={index} total={photos.length} onMove={onMove} />
+                <PhotoEditor
+                  key={photo.id}
+                  merchantId={merchantId}
+                  photo={photo}
+                  isAvatar={photo.id === wallQuery.data?.avatarPhotoId}
+                  index={index}
+                  total={photos.length}
+                  onMove={onMove}
+                />
               ))}
             </div>
           ) : (
