@@ -59,6 +59,7 @@ const menuGroups = [
       { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission, nested: false },
       { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false },
       { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
+      { icon: MessagesSquare, label: "评价管理", path: "/reviews", permission: "logs.read" as AdminPermission, nested: false },
       { icon: Users, label: "用户管理", path: "/portal-users", permission: "portalUsers.read" as AdminPermission, nested: false },
     ],
   },
@@ -66,7 +67,6 @@ const menuGroups = [
     label: "系统",
     items: [
       { icon: UserCog, label: "后台用户管理", path: "/admins", permission: "admins.manage" as AdminPermission, nested: false },
-      { icon: MessagesSquare, label: "评价管理", path: "/reviews", permission: "logs.read" as AdminPermission, nested: false },
       { icon: ShieldAlert, label: "异常日志", path: "/exception-logs", permission: "logs.read" as AdminPermission, nested: false },
       { icon: User, label: "个人信息", path: "/profile", permission: "profile.manage" as AdminPermission, nested: false },
     ],

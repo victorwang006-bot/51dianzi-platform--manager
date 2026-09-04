@@ -54,6 +54,10 @@ describe("评价管理窗口", () => {
     expect(app).toContain('permission="logs.read"');
     expect(layout).toContain('label: "评价管理"');
     expect(layout).toContain('path: "/reviews"');
+    const businessGroup = layout.slice(layout.indexOf('label: "业务管理"'), layout.indexOf('label: "系统"'));
+    const systemGroup = layout.slice(layout.indexOf('label: "系统"'));
+    expect(businessGroup).toContain('label: "评价管理"');
+    expect(systemGroup).not.toContain('label: "评价管理"');
     expect(page).toContain("全部记录");
     expect(page).toContain("用户已删除");
     expect(page).toContain("平台已隐藏");
