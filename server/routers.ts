@@ -1517,6 +1517,47 @@ export const appRouter = router({
     }),
   }),
 
+  // ─── 公开评价管理 ─────────────────────────────────────────────────────────
+  reviewManagement: router({
+    /** 评价含实名企业、图片、回复及删除记录，仅超级管理员可查看。 */
+    list: logsReadProcedure
+      .input(z.object({
+        status: z.enum(["published", "user_deleted", "platform_hidden", "all"]).default("all"),
+        keyword: z.string().trim().max(128).optional(),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(30),
+      }))
+      .query(async ({ input }) => db.listPlatformPublicReviews(input)),
+    stats: logsReadProcedure.query(async () => db.getPlatformPublicReviewStats()),
+    hide: logsReadProcedure
+      .input(z.object({
+        reviewId: z.number().int().positive(),
+        reason: z.string().trim().min(2, "请填写至少2个字的隐藏原因").max(255),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await db.hidePlatformPublicReview({ ...input, actor: auditActorFromContext(ctx) });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "REVIEW_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "评价不存在" });
+          if (message === "REVIEW_NOT_PUBLISHED") throw new TRPCError({ code: "CONFLICT", message: "该评价已不再公开" });
+          throw error;
+        }
+      }),
+    restore: logsReadProcedure
+      .input(z.object({ reviewId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await db.restorePlatformPublicReview({ ...input, actor: auditActorFromContext(ctx) });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "REVIEW_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "评价不存在" });
+          if (message === "REVIEW_NOT_PLATFORM_HIDDEN") throw new TRPCError({ code: "CONFLICT", message: "仅平台隐藏的评价可以恢复" });
+          throw error;
+        }
+      }),
+  }),
+
   // ─── 异常日志 ────────────────────────────────────────────
   exceptionLogs: router({
     /** 分页查询异常日志。仅 super_admin（logs.read）可访问。 */

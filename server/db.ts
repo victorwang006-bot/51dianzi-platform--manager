@@ -2900,6 +2900,221 @@ export async function reorderMerchantCompanyWallPhotos(input: {
   });
 }
 
+// ─── 公开评价管理（跨库读写前台 dianzi51 库）────────────────────────────────
+
+export type PlatformPublicReviewStatus = "published" | "user_deleted" | "platform_hidden";
+
+export type PlatformPublicReviewRow = {
+  id: number;
+  revision: number;
+  raterUserId: number;
+  ratedUserId: number;
+  raterCompanyName: string;
+  ratedCompanyName: string | null;
+  content: string;
+  replyContent: string | null;
+  repliedAt: Date | null;
+  followUpContent: string | null;
+  followedUpAt: Date | null;
+  status: PlatformPublicReviewStatus;
+  deletedByUserId: number | null;
+  deletedAt: Date | null;
+  hiddenReason: string | null;
+  hiddenByAdminId: number | null;
+  hiddenByAdminName: string | null;
+  hiddenAt: Date | null;
+  restoredByAdminId: number | null;
+  restoredByAdminName: string | null;
+  restoredAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  images: Array<{ id: number; url: string }>;
+};
+
+export async function listPlatformPublicReviews(params: {
+  status?: PlatformPublicReviewStatus | "all";
+  keyword?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { available: false as const, items: [] as PlatformPublicReviewRow[], total: 0 };
+  const { status = "all", keyword, page = 1, pageSize = 30 } = params;
+  const offset = (page - 1) * pageSize;
+  const conditions = [sql`1=1`];
+  if (status !== "all") conditions.push(sql`r.status = ${status}`);
+  if (keyword?.trim()) {
+    const pattern = `%${keyword.trim()}%`;
+    conditions.push(sql`(
+      r.raterCompanyName LIKE ${pattern}
+      OR rated.companyName LIKE ${pattern}
+      OR r.content LIKE ${pattern}
+      OR r.replyContent LIKE ${pattern}
+      OR r.followUpContent LIKE ${pattern}
+    )`);
+  }
+  const whereSql = sql.join(conditions, sql` AND `);
+  try {
+    const countResult = (await db.execute(sql`
+      SELECT COUNT(*) AS total
+        FROM ${sql.raw(PLATFORM_DB)}.public_company_reviews r
+        LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies rated ON rated.userId = r.ratedUserId
+       WHERE ${whereSql}
+    `)) as unknown as [{ total: number }[], unknown];
+    const total = Number(countResult[0]?.[0]?.total ?? 0);
+    const rowResult = (await db.execute(sql`
+      SELECT r.id, r.revision, r.raterUserId, r.ratedUserId, r.raterCompanyName,
+             rated.companyName AS ratedCompanyName,
+             r.content, r.replyContent, r.repliedAt, r.followUpContent, r.followedUpAt,
+             r.status, r.deletedByUserId, r.deletedAt,
+             r.hiddenReason, r.hiddenByAdminId, r.hiddenByAdminName, r.hiddenAt,
+             r.restoredByAdminId, r.restoredByAdminName, r.restoredAt,
+             r.createdAt, r.updatedAt
+        FROM ${sql.raw(PLATFORM_DB)}.public_company_reviews r
+        LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies rated ON rated.userId = r.ratedUserId
+       WHERE ${whereSql}
+       ORDER BY r.createdAt DESC, r.id DESC
+       LIMIT ${pageSize} OFFSET ${offset}
+    `)) as unknown as [Omit<PlatformPublicReviewRow, "images">[], unknown];
+    const rows = rowResult[0] ?? [];
+    const imagesByReview = new Map<number, Array<{ id: number; url: string }>>();
+    if (rows.length > 0) {
+      const ids = rows.map(row => Number(row.id));
+      const imageResult = (await db.execute(sql`
+        SELECT id, reviewId, url
+          FROM ${sql.raw(PLATFORM_DB)}.public_company_review_images
+         WHERE reviewId IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
+         ORDER BY reviewId ASC, sortOrder ASC, id ASC
+      `)) as unknown as [{ id: number; reviewId: number; url: string }[], unknown];
+      for (const image of imageResult[0] ?? []) {
+        const reviewId = Number(image.reviewId);
+        const list = imagesByReview.get(reviewId) ?? [];
+        list.push({ id: Number(image.id), url: image.url });
+        imagesByReview.set(reviewId, list);
+      }
+    }
+    return {
+      available: true as const,
+      items: rows.map(row => ({ ...row, id: Number(row.id), revision: Number(row.revision), images: imagesByReview.get(Number(row.id)) ?? [] })),
+      total,
+    };
+  } catch (error) {
+    console.warn("[Database] 跨库查询公开评价失败:", (error as Error).message);
+    return { available: false as const, items: [] as PlatformPublicReviewRow[], total: 0 };
+  }
+}
+
+export async function getPlatformPublicReviewStats() {
+  const db = await getDb();
+  if (!db) return { available: false as const, total: 0, published: 0, userDeleted: 0, platformHidden: 0 };
+  try {
+    const result = (await db.execute(sql`
+      SELECT COUNT(*) AS total,
+             SUM(status = 'published') AS published,
+             SUM(status = 'user_deleted') AS userDeleted,
+             SUM(status = 'platform_hidden') AS platformHidden
+        FROM ${sql.raw(PLATFORM_DB)}.public_company_reviews
+    `)) as unknown as [{ total: number; published: number; userDeleted: number; platformHidden: number }[], unknown];
+    const row = result[0]?.[0];
+    return {
+      available: true as const,
+      total: Number(row?.total ?? 0),
+      published: Number(row?.published ?? 0),
+      userDeleted: Number(row?.userDeleted ?? 0),
+      platformHidden: Number(row?.platformHidden ?? 0),
+    };
+  } catch (error) {
+    console.warn("[Database] 跨库统计公开评价失败:", (error as Error).message);
+    return { available: false as const, total: 0, published: 0, userDeleted: 0, platformHidden: 0 };
+  }
+}
+
+export async function hidePlatformPublicReview(input: {
+  reviewId: number;
+  reason: string;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.transaction(async tx => {
+    const result = (await tx.execute(sql`
+      SELECT id, status, raterUserId, ratedUserId, raterCompanyName, content
+        FROM ${sql.raw(PLATFORM_DB)}.public_company_reviews
+       WHERE id = ${input.reviewId}
+       LIMIT 1
+       FOR UPDATE
+    `)) as unknown as [{ id: number; status: PlatformPublicReviewStatus; raterUserId: number; ratedUserId: number; raterCompanyName: string; content: string }[], unknown];
+    const before = result[0]?.[0];
+    if (!before) throw new Error("REVIEW_NOT_FOUND");
+    if (before.status !== "published") throw new Error("REVIEW_NOT_PUBLISHED");
+    const reason = input.reason.trim();
+    await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.public_company_reviews
+         SET status = 'platform_hidden', hiddenReason = ${reason},
+             hiddenByAdminId = ${input.actor?.operatorId ?? null},
+             hiddenByAdminName = ${input.actor?.operatorName ?? "system"}, hiddenAt = NOW()
+       WHERE id = ${input.reviewId} AND status = 'published'
+    `);
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "review.platform_hide",
+      module: "reviews",
+      targetType: "public_company_review",
+      targetId: String(input.reviewId),
+      beforeValue: before,
+      afterValue: { status: "platform_hidden", reason },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: "平台隐藏公开评价",
+    });
+    return { success: true as const };
+  });
+}
+
+export async function restorePlatformPublicReview(input: {
+  reviewId: number;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.transaction(async tx => {
+    const result = (await tx.execute(sql`
+      SELECT id, status, hiddenReason, hiddenByAdminId, hiddenByAdminName, hiddenAt
+        FROM ${sql.raw(PLATFORM_DB)}.public_company_reviews
+       WHERE id = ${input.reviewId}
+       LIMIT 1
+       FOR UPDATE
+    `)) as unknown as [{ id: number; status: PlatformPublicReviewStatus; hiddenReason: string | null; hiddenByAdminId: number | null; hiddenByAdminName: string | null; hiddenAt: Date | null }[], unknown];
+    const before = result[0]?.[0];
+    if (!before) throw new Error("REVIEW_NOT_FOUND");
+    if (before.status !== "platform_hidden") throw new Error("REVIEW_NOT_PLATFORM_HIDDEN");
+    await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.public_company_reviews
+         SET status = 'published',
+             restoredByAdminId = ${input.actor?.operatorId ?? null},
+             restoredByAdminName = ${input.actor?.operatorName ?? "system"}, restoredAt = NOW()
+       WHERE id = ${input.reviewId} AND status = 'platform_hidden'
+    `);
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "review.platform_restore",
+      module: "reviews",
+      targetType: "public_company_review",
+      targetId: String(input.reviewId),
+      beforeValue: before,
+      afterValue: { status: "published" },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: "平台恢复公开评价",
+    });
+    return { success: true as const };
+  });
+}
+
 // ─── 异常日志 ────────────────────────────────────────────────────────────────
 
 export type ExceptionLogInput = {
