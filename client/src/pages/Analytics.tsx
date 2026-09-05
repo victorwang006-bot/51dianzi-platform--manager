@@ -17,7 +17,6 @@ import { trpc } from "@/lib/trpc";
 
 type RangeDays = 7 | 30 | 90;
 const number = new Intl.NumberFormat("zh-CN");
-const percent = new Intl.NumberFormat("zh-CN", { style: "percent", maximumFractionDigits: 1 });
 
 const sourceLabels: Record<string, string> = {
   direct: "直接访问",
@@ -130,18 +129,22 @@ export default function Analytics() {
           <Card className="border-red-200 bg-red-50 p-8 text-center text-sm text-red-600">加载失败：{query.error.message}</Card>
         ) : summary ? (
           <>
+            <Card className="border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 shadow-none">
+              <span className="font-medium">数据口径：</span>
+              访问、访客和活跃用户从 {data.firstEventAt || "统计功能上线时"} 开始累计；
+              注册总数、今日新增和近{days}天新增来自完整用户表，可追溯历史注册。
+            </Card>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
               <Metric label="页面浏览量 PV" value={number.format(summary.pageViews)} hint={`近${days}天页面打开次数`} icon={Eye} />
               <Metric label="访客数 UV" value={number.format(summary.visitors)} hint="同一浏览器去重" icon={Users} />
               <Metric label="访问会话" value={number.format(summary.sessions)} hint="浏览会话去重" icon={Activity} />
-              <Metric label="游客访客" value={number.format(summary.guestVisitors)} hint="访问时未登录" icon={Users} />
-              <Metric label="登录用户" value={number.format(summary.loggedInUsers)} hint="访问过商城的注册用户" icon={UserCheck} />
+              <Metric label="未登录访客" value={number.format(summary.guestVisitors)} hint="至少一次未登录访问" icon={Users} />
+              <Metric label="登录用户" value={number.format(summary.loggedInUsers)} hint="采集期内访问商城的账号" icon={UserCheck} />
               <Metric label="注册用户总数" value={number.format(summary.totalUsers)} hint="商城全部注册账号" icon={Users} />
-              <Metric label="今日新增注册" value={number.format(summary.todayRegistered)} hint="按北京时间统计" icon={UserCheck} />
-              <Metric label={`${days}天新增注册`} value={number.format(summary.rangeRegistered)} hint="埋点上线后口径" icon={UserCheck} />
-              <Metric label="7日活跃用户" value={number.format(summary.sevenDayActive)} hint="近7日访问商城" icon={Activity} />
-              <Metric label="30日活跃用户" value={number.format(summary.thirtyDayActive)} hint="近30日访问商城" icon={Activity} />
-              <Metric label="注册转化参考" value={percent.format(summary.registrationConversion)} hint={`${days}天新增注册 ÷ 游客UV`} icon={Activity} />
+              <Metric label="今日新增注册" value={number.format(summary.todayRegistered)} hint="完整用户表·北京时间" icon={UserCheck} />
+              <Metric label={`${days}天新增注册`} value={number.format(summary.rangeRegistered)} hint="完整用户表" icon={UserCheck} />
+              <Metric label="7日活跃用户" value={number.format(summary.sevenDayActive)} hint="采集开始后的近7日访问" icon={Activity} />
+              <Metric label="30日活跃用户" value={number.format(summary.thirtyDayActive)} hint="采集开始后的近30日访问" icon={Activity} />
             </div>
 
             <Card className="p-4 shadow-none">

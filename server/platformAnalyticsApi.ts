@@ -14,7 +14,6 @@ export type PlatformAnalyticsOverview = {
     rangeRegistered: number;
     sevenDayActive: number;
     thirtyDayActive: number;
-    registrationConversion: number;
   };
   daily: Array<{
     date: string;
