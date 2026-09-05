@@ -37,17 +37,19 @@ describe("独立后台运营数据合同", () => {
 
   it("后台页面覆盖核心运营指标与三档时间范围", () => {
     for (const label of [
-      "页面浏览量 PV", "访客数 UV", "未登录访客", "登录用户", "注册用户总数",
-      "今日新增注册", "7日活跃用户", "30日活跃用户",
-      "访问趋势", "热门页面", "访问来源", "设备分布",
+      "网站", "小程序", "用户", "页面浏览量 PV", "访客数 UV", "未登录访客",
+      "打开次数", "使用设备", "注册用户总数", "今日新增注册",
+      "7日登录账号", "30日登录账号", "网站访问趋势", "小程序打开趋势",
+      "热门页面", "访问来源", "设备分布",
     ]) {
       expect(page).toContain(label);
     }
     expect(page).toContain("[7, 30, 90]");
-    expect(page).toContain("访问、访客和活跃用户从");
-    expect(page).toContain("来自完整用户表，可追溯历史注册");
-    expect(page).toContain('hint="完整用户表"');
+    expect(page).toContain('type DataSection = "web" | "miniapp" | "users"');
+    expect(page).toContain("可追溯历史");
+    expect(page).toContain("1.12.15开发版开始累计");
+    expect(page).not.toContain("7日活跃用户");
     expect(page).not.toContain("注册转化参考");
-    expect(page).toContain("不追溯历史访问");
+    expect(page).toContain("不包含此前历史");
   });
 });

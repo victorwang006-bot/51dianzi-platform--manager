@@ -12,8 +12,8 @@ export type PlatformAnalyticsOverview = {
     totalUsers: number;
     todayRegistered: number;
     rangeRegistered: number;
-    sevenDayActive: number;
-    thirtyDayActive: number;
+    sevenDayLoginUsers: number;
+    thirtyDayLoginUsers: number;
   };
   daily: Array<{
     date: string;
@@ -28,6 +28,21 @@ export type PlatformAnalyticsOverview = {
   devices: Array<{ deviceType: string; visitors: number }>;
   firstEventAt: string;
   lastEventAt: string;
+  miniProgram: {
+    opens: number;
+    visitors: number;
+    sessions: number;
+    loggedInUsers: number;
+    daily: Array<{
+      date: string;
+      opens: number;
+      visitors: number;
+      sessions: number;
+      loggedInUsers: number;
+    }>;
+    firstEventAt: string;
+    lastEventAt: string;
+  };
 };
 
 type BatchResponse<T> = Array<{

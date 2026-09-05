@@ -26,7 +26,7 @@ describe("后台前台用户管理界面契约", () => {
   });
 
   it("页面以紧凑摘要展示五项统计并保留搜索、刷新和用户标签", () => {
-    for (const text of ["注册用户", "普通用户", "ERP用户", "今日注册", "近7日活跃"]) {
+    for (const text of ["注册用户", "普通用户", "ERP用户", "今日注册", "近7日登录"]) {
       expect(page).toContain(text);
     }
     expect(page).toContain('aria-label="用户统计摘要"');

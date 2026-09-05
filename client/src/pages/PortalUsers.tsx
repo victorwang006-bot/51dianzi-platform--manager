@@ -63,7 +63,7 @@ export default function PortalUsers() {
     { label: "普通用户", value: stats?.ordinaryUsers ?? "—" },
     { label: "ERP用户", value: stats?.erpUsers ?? "—" },
     { label: "今日注册", value: stats?.todayRegistered ?? "—" },
-    { label: "近7日活跃", value: stats?.sevenDayActive ?? "—" },
+    { label: "近7日登录", value: stats?.sevenDayActive ?? "—" },
   ];
 
   const getTableScrollElement = () =>
