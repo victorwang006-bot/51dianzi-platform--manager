@@ -124,6 +124,10 @@ const modulePermissionGroups: { module: string; options: ModulePermissionOption[
     module: "订单管理",
     options: [{ label: "查看", value: "orders.read" }],
   },
+  {
+    module: "运营数据",
+    options: [{ label: "查看", value: "analytics.read" }],
+  },
 ];
 
 const defaultNormalPermissions = getAdminRolePermissions("merchant_mgr")

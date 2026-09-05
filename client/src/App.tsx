@@ -18,6 +18,7 @@ import Orders from "./pages/Orders";
 import PortalUsers from "./pages/PortalUsers";
 import Profile from "./pages/Profile";
 import Reviews from "./pages/Reviews";
+import Analytics from "./pages/Analytics";
 import { ShieldAlert } from "lucide-react";
 import {
   hasAdminPermission,
@@ -123,6 +124,9 @@ const ExceptionLogsRoute = () => (
 const ReviewsRoute = () => (
   <PermissionGate permission="logs.read"><Reviews /></PermissionGate>
 );
+const AnalyticsRoute = () => (
+  <PermissionGate permission="analytics.read"><Analytics /></PermissionGate>
+);
 
 /** 部署 base 路径（如 /admin），本地开发为空字符串 */
 const ROUTER_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -144,6 +148,7 @@ function AppRoutes() {
         <Route path={"/admins"} component={AdminsRoute} />
         <Route path={"/reviews"} component={ReviewsRoute} />
         <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
+        <Route path={"/analytics"} component={AnalyticsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

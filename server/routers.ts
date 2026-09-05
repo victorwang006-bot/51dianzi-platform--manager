@@ -33,6 +33,7 @@ import {
   listPlatformOrders,
 } from "./platformOrderApi";
 import { getPlatformUserStats, listPlatformUsers } from "./platformUserApi";
+import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
@@ -120,6 +121,7 @@ const portalUserReadProcedure = adminPermissionProcedure("portalUsers.read");
 const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
 const orderReadProcedure = adminPermissionProcedure("orders.read");
+const analyticsReadProcedure = adminPermissionProcedure("analytics.read");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
 const logsReadProcedure = adminPermissionProcedure("logs.read");
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
@@ -510,6 +512,13 @@ export const appRouter = router({
           })),
         };
       }),
+  }),
+
+  // ─── 商城运营数据（仅后台登录账号可见，后台服务端经内部密钥读取）────────
+  analytics: router({
+    overview: analyticsReadProcedure
+      .input(z.object({ days: z.union([z.literal(7), z.literal(30), z.literal(90)]) }))
+      .query(({ input }) => getPlatformAnalyticsOverview(input.days)),
   }),
 
   // ─── 商城真实订单（后台仅做代理，不读取/写入本地 SO 订单表）──────────────

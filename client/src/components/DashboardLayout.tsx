@@ -25,6 +25,7 @@ import {
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Database,
+  BarChart3,
   LogOut,
   PanelLeft,
   MessagesSquare,
@@ -61,6 +62,7 @@ const menuGroups = [
       { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
       { icon: MessagesSquare, label: "评价管理", path: "/reviews", permission: "logs.read" as AdminPermission, nested: false },
       { icon: Users, label: "用户管理", path: "/portal-users", permission: "portalUsers.read" as AdminPermission, nested: false },
+      { icon: BarChart3, label: "运营数据", path: "/analytics", permission: "analytics.read" as AdminPermission, nested: false },
     ],
   },
   {

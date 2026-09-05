@@ -27,6 +27,7 @@ export const ADMIN_PERMISSIONS = [
   "messages.read",
   "messages.write",
   "orders.read",
+  "analytics.read",
   /** 维护本人个人信息与登录密码（「个人信息」菜单的准入依据） */
   "profile.manage",
   "admins.manage",
@@ -50,6 +51,7 @@ export const ASSIGNABLE_ADMIN_PERMISSIONS = [
   "messages.read",
   "messages.write",
   "orders.read",
+  "analytics.read",
 ] as const satisfies readonly AdminPermission[];
 
 export type AssignableAdminPermission = (typeof ASSIGNABLE_ADMIN_PERMISSIONS)[number];
@@ -82,6 +84,7 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "messages.read",
     "messages.write",
     "orders.read",
+    "analytics.read",
     "profile.manage",
   ],
   // 普通用户：仅商户管理、订单中心，并按销售权限限制可见数据范围
