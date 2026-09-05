@@ -45,6 +45,7 @@ describe("独立后台运营数据合同", () => {
       expect(page).toContain(label);
     }
     expect(page).toContain("[7, 30, 90]");
+    expect(page).toContain("refetchInterval: 60_000");
     expect(page).toContain('type DataSection = "web" | "miniapp" | "users"');
     expect(page).toContain("可追溯历史");
     expect(page).toContain("1.12.15开发版开始累计");

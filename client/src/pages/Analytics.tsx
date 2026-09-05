@@ -116,7 +116,10 @@ function Trend({ title, hint, data, firstEventAt, primaryKey, primaryName }: {
 export default function Analytics() {
   const [days, setDays] = useState<RangeDays>(30);
   const [section, setSection] = useState<DataSection>("web");
-  const query = trpc.analytics.overview.useQuery({ days }, { refetchOnWindowFocus: true });
+  const query = trpc.analytics.overview.useQuery({ days }, {
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
+  });
   const data = query.data;
   const summary = data?.summary;
   const sourceRows = useMemo(() => (data?.sources || []).map(item => ({
