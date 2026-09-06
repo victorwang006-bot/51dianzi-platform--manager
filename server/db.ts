@@ -2654,11 +2654,21 @@ export async function getMerchantCompanyWall(creditCode: string) {
   const normalized = normalizeCreditCode(creditCode);
   try {
     const companiesRows = (await db.execute(sql`
-      SELECT id, userId, avatarPhotoId
+      SELECT id, userId, homeCoverPhotoId, avatarPhotoId, avatarDisplayMode,
+             avatarCropZoom, avatarCropX, avatarCropY
       FROM ${sql.raw(PLATFORM_DB)}.companies
       WHERE creditCode = ${normalized}
       LIMIT 1
-    `)) as unknown as [{ id: number; userId: number; avatarPhotoId: number | null }[], unknown];
+    `)) as unknown as [{
+      id: number;
+      userId: number;
+      homeCoverPhotoId: number | null;
+      avatarPhotoId: number | null;
+      avatarDisplayMode: "logo" | "photo";
+      avatarCropZoom: string | number | null;
+      avatarCropX: number | null;
+      avatarCropY: number | null;
+    }[], unknown];
     const company = companiesRows[0]?.[0];
     if (!company) return { available: true as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
     const photoRows = (await db.execute(sql`
@@ -2672,13 +2682,125 @@ export async function getMerchantCompanyWall(creditCode: string) {
       available: true as const,
       companyId: Number(company.id),
       portalUserId: Number(company.userId),
+      homeCoverPhotoId: company.homeCoverPhotoId === null ? null : Number(company.homeCoverPhotoId),
       avatarPhotoId: company.avatarPhotoId === null ? null : Number(company.avatarPhotoId),
+      avatarDisplayMode: company.avatarDisplayMode === "photo" ? "photo" as const : "logo" as const,
+      avatarCrop: {
+        zoom: Number(company.avatarCropZoom ?? 1),
+        offsetX: Number(company.avatarCropX ?? 0),
+        offsetY: Number(company.avatarCropY ?? 0),
+      },
       photos: photoRows[0] ?? [],
     };
   } catch (error) {
     console.warn("[Database] 跨库查询公司信息墙失败:", (error as Error).message);
     return { available: false as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
   }
+}
+
+export async function setMerchantCompanyDisplayPhoto(input: {
+  merchantId: number;
+  creditCode: string;
+  kind: "home" | "search";
+  photoId: number | null;
+  expectedPhotoId: number | null;
+  displayMode?: "logo" | "photo";
+  crop?: { zoom: number; offsetX: number; offsetY: number };
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = normalizeCreditCode(input.creditCode);
+  return db.transaction(async tx => {
+    const companyRows = (await tx.execute(sql`
+      SELECT id, homeCoverPhotoId, avatarPhotoId, avatarDisplayMode,
+             avatarCropZoom, avatarCropX, avatarCropY
+      FROM ${sql.raw(PLATFORM_DB)}.companies
+      WHERE creditCode = ${normalized}
+      LIMIT 1
+      FOR UPDATE
+    `)) as unknown as [{
+      id: number;
+      homeCoverPhotoId: number | null;
+      avatarPhotoId: number | null;
+      avatarDisplayMode: "logo" | "photo";
+      avatarCropZoom: string | number | null;
+      avatarCropX: number | null;
+      avatarCropY: number | null;
+    }[], unknown];
+    const company = companyRows[0]?.[0];
+    if (!company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+
+    const currentPhotoId = input.kind === "home"
+      ? (company.homeCoverPhotoId === null ? null : Number(company.homeCoverPhotoId))
+      : (company.avatarPhotoId === null ? null : Number(company.avatarPhotoId));
+    if (currentPhotoId !== input.expectedPhotoId) throw new Error("COMPANY_DISPLAY_PHOTO_CHANGED");
+
+    if (input.photoId !== null) {
+      const photoRows = (await tx.execute(sql`
+        SELECT id
+        FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
+        WHERE id = ${input.photoId} AND companyId = ${company.id}
+          AND status = 'approved' AND deletedAt IS NULL
+        LIMIT 1
+      `)) as unknown as [{ id: number }[], unknown];
+      if (!photoRows[0]?.[0]) throw new Error("COMPANY_DISPLAY_PHOTO_INVALID");
+    }
+
+    const crop = input.crop ?? { zoom: 1, offsetX: 0, offsetY: 0 };
+    if (input.kind === "home") {
+      await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies
+        SET homeCoverPhotoId = ${input.photoId},
+            homeCoverUpdatedBy = ${input.actor?.operatorId ?? null}, homeCoverUpdatedAt = NOW()
+        WHERE id = ${company.id}
+      `);
+    } else {
+      await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies
+        SET avatarPhotoId = ${input.photoId},
+            avatarDisplayMode = ${input.photoId === null ? "logo" : input.displayMode ?? "photo"},
+            avatarCropZoom = ${input.photoId === null ? 1 : crop.zoom},
+            avatarCropX = ${input.photoId === null ? 0 : crop.offsetX},
+            avatarCropY = ${input.photoId === null ? 0 : crop.offsetY},
+            avatarUpdatedBy = ${input.actor?.operatorId ?? null}, avatarUpdatedAt = NOW()
+        WHERE id = ${company.id}
+      `);
+    }
+
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: input.kind === "home" ? "merchant.company_wall.home_cover" : "merchant.company_wall.search_display",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: input.kind === "home"
+        ? { photoId: currentPhotoId }
+        : {
+            photoId: currentPhotoId,
+            displayMode: company.avatarDisplayMode,
+            crop: {
+              zoom: Number(company.avatarCropZoom ?? 1),
+              offsetX: Number(company.avatarCropX ?? 0),
+              offsetY: Number(company.avatarCropY ?? 0),
+            },
+          },
+      afterValue: input.kind === "home"
+        ? { photoId: input.photoId }
+        : { photoId: input.photoId, displayMode: input.displayMode ?? "photo", crop },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      note: input.kind === "home" ? "后台设置首页公司展示主图" : "后台设置搜索展示图",
+    });
+
+    return {
+      success: true as const,
+      homeCoverPhotoId: input.kind === "home" ? input.photoId : company.homeCoverPhotoId,
+      avatarPhotoId: input.kind === "search" ? input.photoId : company.avatarPhotoId,
+    };
+  });
 }
 
 export async function createMerchantCompanyWallPhoto(input: {
@@ -2781,6 +2903,11 @@ export async function updateMerchantCompanyWallPhoto(input: {
         SET avatarPhotoId = NULL, avatarUpdatedBy = NULL, avatarUpdatedAt = NOW()
         WHERE id = ${before.companyId} AND avatarPhotoId = ${input.photoId}
       `);
+      await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies
+        SET homeCoverPhotoId = NULL, homeCoverUpdatedBy = NULL, homeCoverUpdatedAt = NOW()
+        WHERE id = ${before.companyId} AND homeCoverPhotoId = ${input.photoId}
+      `);
     }
     const after = { category: input.category, caption: input.caption?.trim() || null, sortOrder: input.sortOrder, status: input.status };
     await tx.insert(auditLogs).values({
@@ -2825,6 +2952,11 @@ export async function deleteMerchantCompanyWallPhoto(input: {
       UPDATE ${sql.raw(PLATFORM_DB)}.companies
       SET avatarPhotoId = NULL, avatarUpdatedBy = NULL, avatarUpdatedAt = NOW()
       WHERE id = ${before.companyId} AND avatarPhotoId = ${input.photoId}
+    `);
+    await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.companies
+      SET homeCoverPhotoId = NULL, homeCoverUpdatedBy = NULL, homeCoverUpdatedAt = NOW()
+      WHERE id = ${before.companyId} AND homeCoverPhotoId = ${input.photoId}
     `);
     await tx.execute(sql`
       UPDATE ${sql.raw(PLATFORM_DB)}.company_profile_photos

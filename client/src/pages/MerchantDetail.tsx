@@ -217,9 +217,12 @@ export default function MerchantDetail() {
               <InfoItem label="开户行" value={merchant.settlementBank} icon={Landmark} />
           </CollapsibleCard>
 
-          {/* 公司信息墙：超管或当前商户销售范围内账号可协助维护，服务端再次校验归属。 */}
-          <MerchantCompanyWallPanel merchantId={merchant.id} />
         </div>
+      </div>
+
+      {/* 公司照片墙：全宽展示；超管或当前商户销售范围内账号可维护，服务端再次校验归属。 */}
+      <div className="mt-6">
+        <MerchantCompanyWallPanel merchantId={merchant.id} />
       </div>
 
     </DashboardLayout>

@@ -726,6 +726,50 @@ export const appRouter = router({
         }
         return db.getMerchantCompanyWall(merchant.businessLicense);
       }),
+    /** 为销售范围内商户设置首页主图或搜索展示图；两个用途保持独立。 */
+    setCompanyWallDisplay: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        kind: z.enum(["home", "search"]),
+        photoId: z.number().int().positive().nullable(),
+        expectedPhotoId: z.number().int().positive().nullable(),
+        displayMode: z.enum(["logo", "photo"]).optional(),
+        crop: z.object({
+          zoom: z.number().min(1).max(2),
+          offsetX: z.number().int().min(-100).max(100),
+          offsetY: z.number().int().min(-100).max(100),
+        }).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (!merchant.businessLicense?.trim()) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户缺少统一社会信用代码" });
+        }
+        try {
+          return await db.setMerchantCompanyDisplayPhoto({
+            merchantId: input.id,
+            creditCode: merchant.businessLicense,
+            kind: input.kind,
+            photoId: input.photoId,
+            expectedPhotoId: input.expectedPhotoId,
+            displayMode: input.displayMode,
+            crop: input.crop,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "COMPANY_DISPLAY_PHOTO_CHANGED") {
+            throw new TRPCError({ code: "CONFLICT", message: "展示图已被其他员工修改，请刷新后重试" });
+          }
+          if (message === "COMPANY_DISPLAY_PHOTO_INVALID") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "只能选择该企业已公开的照片" });
+          }
+          if (message === "PLATFORM_COMPANY_NOT_FOUND") {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户尚未关联前台企业资料" });
+          }
+          throw error;
+        }
+      }),
     /** 负责销售或超级管理员代企业上传公司信息墙照片。 */
     uploadCompanyWallPhoto: merchantWriteProcedure
       .input(z.object({

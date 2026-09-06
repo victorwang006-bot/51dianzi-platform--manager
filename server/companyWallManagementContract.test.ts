@@ -7,7 +7,9 @@ const read = (file: string) => readFileSync(join(root, file), "utf8");
 const routers = read("server/routers.ts");
 const database = read("server/db.ts");
 const detailPage = read("client/src/pages/MerchantDetail.tsx");
-const wallPanel = read("client/src/components/admin/MerchantCompanyWallPanel.tsx");
+const wallPanel = read(
+  "client/src/components/admin/MerchantCompanyWallPanel.tsx"
+);
 const localUpload = read("server/localUpload.ts");
 
 function merchantRouterBlock() {
@@ -28,13 +30,16 @@ function procedureBody(name: string) {
 describe("后台公司信息墙销售范围权限", () => {
   for (const name of [
     "companyWall",
+    "setCompanyWallDisplay",
     "uploadCompanyWallPhoto",
     "updateCompanyWallPhoto",
     "deleteCompanyWallPhoto",
     "reorderCompanyWallPhotos",
   ]) {
     it(`${name} 必须先校验商户销售范围`, () => {
-      expect(procedureBody(name)).toContain("await assertMerchantInSalesScope(ctx, input.id)");
+      expect(procedureBody(name)).toContain(
+        "await assertMerchantInSalesScope(ctx, input.id)"
+      );
     });
   }
 
@@ -47,7 +52,9 @@ describe("后台公司信息墙销售范围权限", () => {
 describe("前后台共用公司信息墙数据", () => {
   it("后台通过信用代码映射前台 companies，并读写前台 company_profile_photos", () => {
     expect(database).toContain("${sql.raw(PLATFORM_DB)}.companies");
-    expect(database).toContain("${sql.raw(PLATFORM_DB)}.company_profile_photos");
+    expect(database).toContain(
+      "${sql.raw(PLATFORM_DB)}.company_profile_photos"
+    );
     expect(database).toContain("WHERE creditCode = ${normalized}");
   });
 
@@ -66,7 +73,9 @@ describe("前后台共用公司信息墙数据", () => {
   it("删除必须软删除，公开状态只能在 approved 与 rejected 之间切换", () => {
     expect(database).toContain("SET deletedAt = NOW()");
     expect(routers).toContain('status: z.enum(["approved", "rejected"])');
-    expect(database).not.toContain("DELETE FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos");
+    expect(database).not.toContain(
+      "DELETE FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos"
+    );
   });
 });
 
@@ -82,8 +91,12 @@ describe("ECS 本地持久化上传与中文错误", () => {
   it("上传同时保存 WebP 缩略图，数据库失败必须补偿删除原图和缩略图", () => {
     const upload = procedureBody("uploadCompanyWallPhoto");
     expect(upload).toContain("thumbnailBase64");
-    expect(upload).toContain('isValidImageBuffer(thumbnailBuffer, "image/webp")');
-    expect(upload).toContain('saveLocalFile(`company-wall/${wall.companyId}/thumbs`, "webp"');
+    expect(upload).toContain(
+      'isValidImageBuffer(thumbnailBuffer, "image/webp")'
+    );
+    expect(upload).toContain(
+      'saveLocalFile(`company-wall/${wall.companyId}/thumbs`, "webp"'
+    );
     expect(upload).toContain("for (const saved of [stored, thumbnailStored])");
     expect(upload).toContain("removeLocalFile(saved.filePath)");
     expect(upload).toContain("数据库失败后的图片清理失败");
@@ -97,7 +110,7 @@ describe("ECS 本地持久化上传与中文错误", () => {
   it("页面只展示通用中文错误，不透传服务端技术异常", () => {
     expect(wallPanel).toContain("companyWallErrorMessage");
     expect(wallPanel).toContain("图片上传失败，请稍后重试");
-    expect(wallPanel).not.toContain('description: error.message');
+    expect(wallPanel).not.toContain("description: error.message");
     expect(routers).not.toContain("Storage config missing");
   });
 });
@@ -108,15 +121,28 @@ describe("商户详情信息墙 UI", () => {
     expect(detailPage).toContain("merchantId={merchant.id}");
   });
 
-  it("支持上传、编辑、隐藏/公开、排序和删除", () => {
+  it("支持双展示图下拉、上传、编辑、隐藏/公开、排序和删除", () => {
+    expect(wallPanel).toContain("setCompanyWallDisplay");
+    expect(wallPanel).toContain('aria-label="选择首页展示图"');
+    expect(wallPanel).toContain('aria-label="选择搜索展示图"');
+    expect(wallPanel).toContain("PC及手机网页统一按4:3显示");
     expect(wallPanel).toContain("uploadCompanyWallPhoto");
     expect(wallPanel).toContain("updateCompanyWallPhoto");
     expect(wallPanel).toContain("reorderCompanyWallPhotos");
     expect(wallPanel).toContain("deleteCompanyWallPhoto");
-    expect(wallPanel).toContain("前台展示");
+    expect(wallPanel).toContain("已公开");
+    expect(wallPanel).toContain("已隐藏");
     expect(wallPanel).toContain("createCompanyPhotoThumbnail");
     expect(wallPanel).toContain("photo.thumbnailUrl || photo.url");
     expect(wallPanel).toContain('loading="lazy"');
     expect(wallPanel).toContain("event.currentTarget.src = originalUrl");
+  });
+
+  it("整个照片墙和上传区均可折叠，照片操作收纳在更多菜单", () => {
+    expect(wallPanel).toContain("WALL_OPEN_KEY");
+    expect(wallPanel).toContain("setOpen(value => !value)");
+    expect(wallPanel).toContain("setUploadOpen(value => !value)");
+    expect(wallPanel).toContain("DropdownMenu");
+    expect(wallPanel).toContain("照片更多操作");
   });
 });
