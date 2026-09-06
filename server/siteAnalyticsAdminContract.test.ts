@@ -10,6 +10,7 @@ const page = read("client/src/pages/Analytics.tsx");
 const api = read("server/platformAnalyticsApi.ts");
 const routers = read("server/routers.ts");
 const permissions = read("shared/adminPermissions.ts");
+const labels = read("client/src/lib/sitePageLabels.ts");
 
 describe("独立后台运营数据合同", () => {
   it("运营数据只注册在后台路由和左侧菜单", () => {
@@ -52,5 +53,20 @@ describe("独立后台运营数据合同", () => {
     expect(page).not.toContain("7日活跃用户");
     expect(page).not.toContain("注册转化参考");
     expect(page).toContain("不包含此前历史");
+  });
+
+  it("热门页面使用与前台一致的中文名称并保留原路径", () => {
+    expect(page).toContain('import { sitePathLabel } from "@/lib/sitePageLabels"');
+    expect(page).toContain("sitePathLabel(item.path)");
+    expect(page).toContain("{item.path}");
+    for (const [path, label] of [
+      ["/publish", "发布库存"],
+      ["/orders", "订单中心"],
+      ["/inventory", "我的库存"],
+      ["/demand-center", "需求中心"],
+      ["/forum", "51论坛"],
+    ]) {
+      expect(labels).toContain(`"${path}": "${label}"`);
+    }
   });
 });

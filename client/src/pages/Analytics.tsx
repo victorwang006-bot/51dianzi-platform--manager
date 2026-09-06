@@ -13,6 +13,7 @@ import {
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { sitePathLabel } from "@/lib/sitePageLabels";
 import { trpc } from "@/lib/trpc";
 
 type RangeDays = 7 | 30 | 90;
@@ -27,18 +28,6 @@ const sourceLabels: Record<string, string> = {
   external: "外部链接",
 };
 const deviceLabels: Record<string, string> = { mobile: "手机", desktop: "电脑", tablet: "平板" };
-
-function pathLabel(path: string) {
-  if (path === "/") return "首页";
-  if (path === "/search") return "搜索结果";
-  if (path.startsWith("/product/")) return "商品详情";
-  if (path.startsWith("/company/")) return "公司详情";
-  if (path === "/chat") return "聊一聊";
-  if (path === "/account") return "个人中心";
-  if (path === "/recommendations") return "今日推荐";
-  if (path === "/data-hub") return "数据通";
-  return path;
-}
 
 function Metric({ label, value, hint, icon: Icon }: {
   label: string;
@@ -196,7 +185,7 @@ export default function Analytics() {
                       <table className="w-full text-sm">
                         <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-4 py-2 text-left">页面</th><th className="px-4 py-2 text-right">PV</th><th className="px-4 py-2 text-right">UV</th></tr></thead>
                         <tbody>
-                          {data.topPages.map(item => <tr key={item.path} className="border-t"><td className="px-4 py-2.5"><span className="font-medium">{pathLabel(item.path)}</span><span className="ml-2 text-xs text-slate-400">{item.path}</span></td><td className="px-4 py-2.5 text-right">{number.format(item.pageViews)}</td><td className="px-4 py-2.5 text-right">{number.format(item.visitors)}</td></tr>)}
+                          {data.topPages.map(item => <tr key={item.path} className="border-t"><td className="px-4 py-2.5"><span className="font-medium">{sitePathLabel(item.path)}</span><span className="ml-2 text-xs text-slate-400">{item.path}</span></td><td className="px-4 py-2.5 text-right">{number.format(item.pageViews)}</td><td className="px-4 py-2.5 text-right">{number.format(item.visitors)}</td></tr>)}
                           {data.topPages.length === 0 ? <tr><td colSpan={3} className="px-4 py-10 text-center text-slate-400">暂无访问数据</td></tr> : null}
                         </tbody>
                       </table>
