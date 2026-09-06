@@ -32,6 +32,9 @@ describe("后台首页图与搜索图设置", () => {
     expect(database).toContain("SET avatarPhotoId = ${input.photoId}");
     expect(database).toContain("avatarDisplayMode =");
     expect(database).toContain("avatarCropZoom =");
+    expect(database).toContain("Math.round(crop.zoom * 100)");
+    expect(database).toContain("Number(company.avatarCropZoom ?? 100) / 100");
+    expect(database).not.toContain("input.photoId === null ? 1 : crop.zoom");
     expect(database).toContain("avatarCropX =");
     expect(database).toContain("avatarCropY =");
     expect(wallPanel).toContain('className="aspect-[16/9]');

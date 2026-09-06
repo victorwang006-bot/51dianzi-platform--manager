@@ -2686,7 +2686,7 @@ export async function getMerchantCompanyWall(creditCode: string) {
       avatarPhotoId: company.avatarPhotoId === null ? null : Number(company.avatarPhotoId),
       avatarDisplayMode: company.avatarDisplayMode === "photo" ? "photo" as const : "logo" as const,
       avatarCrop: {
-        zoom: Number(company.avatarCropZoom ?? 1),
+        zoom: Number(company.avatarCropZoom ?? 100) / 100,
         offsetX: Number(company.avatarCropX ?? 0),
         offsetY: Number(company.avatarCropY ?? 0),
       },
@@ -2760,7 +2760,7 @@ export async function setMerchantCompanyDisplayPhoto(input: {
         UPDATE ${sql.raw(PLATFORM_DB)}.companies
         SET avatarPhotoId = ${input.photoId},
             avatarDisplayMode = ${input.photoId === null ? "logo" : input.displayMode ?? "photo"},
-            avatarCropZoom = ${input.photoId === null ? 1 : crop.zoom},
+            avatarCropZoom = ${input.photoId === null ? 100 : Math.round(crop.zoom * 100)},
             avatarCropX = ${input.photoId === null ? 0 : crop.offsetX},
             avatarCropY = ${input.photoId === null ? 0 : crop.offsetY},
             avatarUpdatedBy = ${input.actor?.operatorId ?? null}, avatarUpdatedAt = NOW()
@@ -2782,7 +2782,7 @@ export async function setMerchantCompanyDisplayPhoto(input: {
             photoId: currentPhotoId,
             displayMode: company.avatarDisplayMode,
             crop: {
-              zoom: Number(company.avatarCropZoom ?? 1),
+              zoom: Number(company.avatarCropZoom ?? 100) / 100,
               offsetX: Number(company.avatarCropX ?? 0),
               offsetY: Number(company.avatarCropY ?? 0),
             },
