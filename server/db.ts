@@ -825,7 +825,7 @@ export interface CrmApplicationInput {
   companyName: string;
   creditCode: string;
   companyType: string;
-  companyRole: string;
+  companyRole?: string | null;
   contactName?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
@@ -875,7 +875,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
   const profileFields = {
     companyName: input.companyName,
     companyType: input.companyType,
-    companyRole: input.companyRole,
+    companyRole: input.companyRole?.trim() || null,
     legalPersonName: input.legalPersonName,
     registeredAddress: input.registeredAddress,
     settlementAccountName: input.settlementAccountName,

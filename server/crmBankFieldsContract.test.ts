@@ -6,10 +6,9 @@ describe("前后台 CRM 企业与银行字段同步契约", () => {
   const db = readFileSync("server/db.ts", "utf8");
   const schema = readFileSync("drizzle/schema.ts", "utf8");
 
-  it("portal 路由强制企业、法人、地址与银行三字段必填", () => {
+  it("portal 路由强制企业、法人、地址与银行三字段必填，企业角色选填", () => {
     for (const field of [
       "companyType",
-      "companyRole",
       "legalPersonName",
       "registeredAddress",
       "settlementAccountName",
@@ -18,6 +17,7 @@ describe("前后台 CRM 企业与银行字段同步契约", () => {
     ]) {
       expect(router).toMatch(new RegExp(`${field}: z\\.string\\(\\)\\.trim\\(\\)\\.min\\(1`));
     }
+    expect(router).toContain("companyRole: z.string().trim().max(64).optional().nullable()");
     expect(router).toContain("assertPortalKey(ctx.req)");
   });
 

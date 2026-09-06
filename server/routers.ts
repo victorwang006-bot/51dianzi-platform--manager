@@ -1241,7 +1241,7 @@ export const appRouter = router({
         companyName: z.string().min(2).max(256),
         creditCode: z.string().min(5).max(64),
         companyType: z.string().trim().min(1, "企业类型为必填项").max(128),
-        companyRole: z.string().trim().min(1, "企业角色为必填项").max(64),
+        companyRole: z.string().trim().max(64).optional().nullable(),
         contactName: z.string().max(64).optional().nullable(),
         contactPhone: z.string().max(20).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
