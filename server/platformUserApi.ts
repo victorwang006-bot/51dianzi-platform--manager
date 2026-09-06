@@ -21,12 +21,63 @@ export type PlatformUserListRow = {
   creditCode: string | null;
   createdAt: Date | string;
   lastSignedIn: Date | string;
+  loginDisabled: boolean;
+  loginDisabledAt: Date | string | null;
+  loginDisabledReason: string | null;
+  forumMutedUntil: Date | string | null;
+  forumMuteReason: string | null;
 };
 
-type BatchResponse<T> = Array<{
+export type PlatformUserOperator = {
+  id: number;
+  name: string;
+  role: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+export type PlatformUserModerationHistoryRow = {
+  id: number;
+  action: string;
+  reason: string | null;
+  operatorId?: number | string | null;
+  operatorName: string | null;
+  operatorRole?: string | null;
+  createdAt: Date | string;
+};
+
+export type PlatformUserForumMessageRow = {
+  id: number;
+  content: string;
+  createdAt: Date | string;
+  isHidden: boolean;
+  hiddenAt?: Date | string | null;
+  hiddenReason?: string | null;
+  status?: string | null;
+};
+
+/**
+ * 上游可以直接返回数组，也可以返回带 rows 的分页壳；后台 UI 对两种形式均兼容，
+ * 以便 internalUser 在不破坏既有调用方的前提下逐步统一列表形态。
+ */
+export type PlatformUserCollection<T> = T[] | { rows: T[] };
+
+type TrpcEnvelope<T> = {
   result?: { data?: { json?: T } | T };
-  error?: { json?: { message?: string }; message?: string };
-}>;
+  error?: {
+    json?: { message?: string; data?: { message?: string } };
+    message?: string;
+  };
+};
+
+type PlatformUserProcedure =
+  | "stats"
+  | "list"
+  | "setLoginDisabled"
+  | "setForumMute"
+  | "moderationHistory"
+  | "forumMessages"
+  | "hideForumMessage";
 
 function getConfig() {
   const baseUrl = process.env.PLATFORM_API_BASE?.trim()
@@ -37,33 +88,101 @@ function getConfig() {
   return { baseUrl: baseUrl.replace(/\/+$/, ""), key };
 }
 
+function firstEnvelope<T>(payload: unknown): TrpcEnvelope<T> | null {
+  if (Array.isArray(payload)) return (payload[0] as TrpcEnvelope<T> | undefined) ?? null;
+  if (payload && typeof payload === "object") return payload as TrpcEnvelope<T>;
+  return null;
+}
+
+function upstreamErrorMessage<T>(envelope: TrpcEnvelope<T> | null, status: number, key: string) {
+  const raw = envelope?.error?.json?.message
+    || envelope?.error?.json?.data?.message
+    || envelope?.error?.message
+    || `商城用户服务返回 ${status}`;
+  // 上游错误文本不应把只存在于服务端请求头中的共享密钥带回浏览器。
+  return key ? raw.split(key).join("[REDACTED]") : raw;
+}
+
 async function callPlatformUser<T>(
-  procedure: "stats" | "list",
+  procedure: PlatformUserProcedure,
   input: Record<string, unknown>,
+  method: "GET" | "POST",
 ): Promise<T> {
   const { baseUrl, key } = getConfig();
   const headers = { "content-type": "application/json", "x-portal-key": key };
   const body = JSON.stringify({ "0": { json: input } });
-  const url = `${baseUrl}/api/trpc/internalUser.${procedure}`;
-  const response = await fetch(`${url}?batch=1&input=${encodeURIComponent(body)}`, {
-    headers,
-    signal: AbortSignal.timeout(10_000),
-  });
-  const payload = await response.json().catch(() => null) as BatchResponse<T> | null;
-  const first = payload?.[0];
-  if (!response.ok || first?.error) {
-    const message = first?.error?.json?.message || first?.error?.message || `商城用户服务返回 ${response.status}`;
-    throw new Error(message);
+  const endpoint = `${baseUrl}/api/trpc/internalUser.${procedure}?batch=1`;
+  const response = await fetch(
+    method === "GET" ? `${endpoint}&input=${encodeURIComponent(body)}` : endpoint,
+    {
+      method,
+      headers,
+      ...(method === "POST" ? { body } : {}),
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+  const payload = await response.json().catch(() => null) as unknown;
+  const envelope = firstEnvelope<T>(payload);
+  if (!response.ok || envelope?.error) {
+    throw new Error(upstreamErrorMessage(envelope, response.status, key));
   }
-  const data = first?.result?.data;
-  if (!data) throw new Error("商城用户服务返回空响应");
+  const data = envelope?.result?.data;
+  if (data === undefined) throw new Error("商城用户服务返回空响应");
   return ((typeof data === "object" && data !== null && "json" in data) ? data.json : data) as T;
 }
 
+function queryPlatformUser<T>(procedure: PlatformUserProcedure, input: Record<string, unknown>) {
+  return callPlatformUser<T>(procedure, input, "GET");
+}
+
+function mutatePlatformUser<T>(procedure: PlatformUserProcedure, input: Record<string, unknown>) {
+  return callPlatformUser<T>(procedure, input, "POST");
+}
+
 export function getPlatformUserStats() {
-  return callPlatformUser<PlatformUserStats>("stats", {});
+  return queryPlatformUser<PlatformUserStats>("stats", {});
 }
 
 export function listPlatformUsers(input: PlatformUserListInput) {
-  return callPlatformUser<{ rows: PlatformUserListRow[]; total: number }>("list", input);
+  return queryPlatformUser<{ rows: PlatformUserListRow[]; total: number }>("list", input);
+}
+
+export function setPlatformUserLoginDisabled(input: {
+  userId: number;
+  disabled: boolean;
+  reason: string;
+  operator: PlatformUserOperator;
+}) {
+  return mutatePlatformUser<unknown>("setLoginDisabled", input);
+}
+
+export function setPlatformUserForumMute(input: {
+  userId: number;
+  durationHours: 3 | 6 | 24 | 72 | 168 | null;
+  reason: string;
+  operator: PlatformUserOperator;
+}) {
+  return mutatePlatformUser<unknown>("setForumMute", input);
+}
+
+export function getPlatformUserModerationHistory(input: { userId: number; limit: number }) {
+  return queryPlatformUser<PlatformUserCollection<PlatformUserModerationHistoryRow>>(
+    "moderationHistory",
+    input,
+  );
+}
+
+export function getPlatformUserForumMessages(input: { userId: number; limit: number }) {
+  return queryPlatformUser<PlatformUserCollection<PlatformUserForumMessageRow>>(
+    "forumMessages",
+    input,
+  );
+}
+
+export function hidePlatformForumMessage(input: {
+  messageId: number;
+  reason: string;
+  operator: PlatformUserOperator;
+}) {
+  return mutatePlatformUser<unknown>("hideForumMessage", input);
 }

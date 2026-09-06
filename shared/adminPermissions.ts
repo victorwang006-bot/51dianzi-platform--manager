@@ -24,6 +24,7 @@ export const ADMIN_PERMISSIONS = [
   "merchants.read",
   "merchants.write",
   "portalUsers.read",
+  "portalUsers.manage",
   "messages.read",
   "messages.write",
   "orders.read",
@@ -48,6 +49,7 @@ export const ASSIGNABLE_ADMIN_PERMISSIONS = [
   "merchants.read",
   "merchants.write",
   "portalUsers.read",
+  "portalUsers.manage",
   "messages.read",
   "messages.write",
   "orders.read",
@@ -68,6 +70,7 @@ export function normalizeAssignedAdminPermissions(
   const next = new Set<AdminPermission>(values.filter(isAssignableAdminPermission));
   if (next.has("materials.write")) next.add("materials.read");
   if (next.has("merchants.write")) next.add("merchants.read");
+  if (next.has("portalUsers.manage")) next.add("portalUsers.read");
   if (next.has("messages.write")) next.add("messages.read");
   next.add("profile.manage");
   return Array.from(next);
@@ -81,6 +84,7 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "merchants.read",
     "merchants.write",
     "portalUsers.read",
+    "portalUsers.manage",
     "messages.read",
     "messages.write",
     "orders.read",
@@ -92,12 +96,20 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   customer_svc: [
     "merchants.read",
     "portalUsers.read",
+    "portalUsers.manage",
     "messages.read",
     "messages.write",
     "orders.read",
     "profile.manage",
   ],
-  risk_control: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
+  risk_control: [
+    "merchants.read",
+    "merchants.write",
+    "portalUsers.read",
+    "portalUsers.manage",
+    "orders.read",
+    "profile.manage",
+  ],
   finance: ["merchants.read", "orders.read", "profile.manage"],
   auditor: [
     "materials.read",

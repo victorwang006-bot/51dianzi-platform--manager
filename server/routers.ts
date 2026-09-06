@@ -32,7 +32,15 @@ import {
   getPlatformOrderStats,
   listPlatformOrders,
 } from "./platformOrderApi";
-import { getPlatformUserStats, listPlatformUsers } from "./platformUserApi";
+import {
+  getPlatformUserForumMessages,
+  getPlatformUserModerationHistory,
+  getPlatformUserStats,
+  hidePlatformForumMessage,
+  listPlatformUsers,
+  setPlatformUserForumMute,
+  setPlatformUserLoginDisabled,
+} from "./platformUserApi";
 import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
 // 允许的上传类型与大小限制
@@ -118,6 +126,7 @@ const materialWriteProcedure = adminPermissionProcedure("materials.write");
 const merchantReadProcedure = adminPermissionProcedure("merchants.read");
 const merchantWriteProcedure = adminPermissionProcedure("merchants.write");
 const portalUserReadProcedure = adminPermissionProcedure("portalUsers.read");
+const portalUserManageProcedure = adminPermissionProcedure("portalUsers.manage");
 const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
 const orderReadProcedure = adminPermissionProcedure("orders.read");
@@ -171,6 +180,21 @@ function auditActorFromContext(ctx: TrpcContext) {
     operatorRole: ctx.adminAccount?.adminRole ?? "super_admin",
     ipAddress: forwardedIp || ctx.req.ip || null,
     userAgent: ctx.req.headers["user-agent"] ?? null,
+  };
+}
+
+/** internalUser 只接受由已认证后台会话生成的操作人，禁止浏览器伪造管理员身份。 */
+function platformUserOperatorFromContext(ctx: TrpcContext) {
+  const actor = auditActorFromContext(ctx);
+  if (!actor.operatorId || actor.operatorId <= 0) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "管理员身份无效，请重新登录" });
+  }
+  return {
+    id: actor.operatorId,
+    name: actor.operatorName,
+    role: actor.operatorRole,
+    ipAddress: actor.ipAddress,
+    userAgent: actor.userAgent,
   };
 }
 
@@ -512,6 +536,54 @@ export const appRouter = router({
           })),
         };
       }),
+    setLoginDisabled: portalUserManageProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        disabled: z.boolean(),
+        reason: z.string().trim().min(1, "请输入操作原因").max(500),
+      }))
+      .mutation(({ ctx, input }) => setPlatformUserLoginDisabled({
+        ...input,
+        operator: platformUserOperatorFromContext(ctx),
+      })),
+    setForumMute: portalUserManageProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        durationHours: z.union([
+          z.literal(3),
+          z.literal(6),
+          z.literal(24),
+          z.literal(72),
+          z.literal(168),
+          z.null(),
+        ]),
+        reason: z.string().trim().min(1, "请输入操作原因").max(500),
+      }))
+      .mutation(({ ctx, input }) => setPlatformUserForumMute({
+        ...input,
+        operator: platformUserOperatorFromContext(ctx),
+      })),
+    moderationHistory: portalUserManageProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        limit: z.number().int().min(1).max(100),
+      }))
+      .query(({ input }) => getPlatformUserModerationHistory(input)),
+    forumMessages: portalUserManageProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        limit: z.number().int().min(1).max(100),
+      }))
+      .query(({ input }) => getPlatformUserForumMessages(input)),
+    hideForumMessage: portalUserManageProcedure
+      .input(z.object({
+        messageId: z.number().int().positive(),
+        reason: z.string().trim().min(1, "请输入撤回原因").max(500),
+      }))
+      .mutation(({ ctx, input }) => hidePlatformForumMessage({
+        ...input,
+        operator: platformUserOperatorFromContext(ctx),
+      })),
   }),
 
   // ─── 商城运营数据（仅后台登录账号可见，后台服务端经内部密钥读取）────────

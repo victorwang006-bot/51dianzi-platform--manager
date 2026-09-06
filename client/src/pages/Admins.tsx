@@ -111,7 +111,10 @@ const modulePermissionGroups: { module: string; options: ModulePermissionOption[
   },
   {
     module: "用户管理",
-    options: [{ label: "查看", value: "portalUsers.read" }],
+    options: [
+      { label: "查看", value: "portalUsers.read" },
+      { label: "管理", value: "portalUsers.manage", requires: "portalUsers.read" },
+    ],
   },
   {
     module: "消息中心",
