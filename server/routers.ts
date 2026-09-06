@@ -43,6 +43,7 @@ import {
 } from "./platformUserApi";
 import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
+import { portalClientMessageIdSchema } from "./portalClientMessageId";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -1252,7 +1253,7 @@ export const appRouter = router({
       .input(z.object({
         threadNo: z.string().max(32).optional().nullable(),
         /** 前台可靠重试幂等键；旧调用可不传。 */
-        clientMessageId: z.string().uuid().max(64).optional().nullable(),
+        clientMessageId: portalClientMessageIdSchema,
         subject: z.string().max(256).optional().nullable(),
         contactName: z.string().max(128).optional().nullable(),
         contactPhone: z.string().max(32).optional().nullable(),
