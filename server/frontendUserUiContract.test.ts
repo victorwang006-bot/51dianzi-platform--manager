@@ -26,7 +26,7 @@ describe("后台前台用户管理界面契约", () => {
   });
 
   it("页面以紧凑摘要展示五项统计并保留搜索、刷新和用户标签", () => {
-    for (const text of ["注册用户", "普通用户", "ERP用户", "今日注册", "近7日登录"]) {
+    for (const text of ["注册用户", "普通用户", "ERP用户", "今日注册", "近7日登录用户"]) {
       expect(page).toContain(text);
     }
     expect(page).toContain('aria-label="用户统计摘要"');
@@ -37,6 +37,29 @@ describe("后台前台用户管理界面契约", () => {
     expect(page).toContain("statsQuery.refetch()");
     expect(page).toContain("用户名、姓名、手机号、邮箱或企业名称");
     expect(page).toContain('user.userType === "erp"');
+    expect(page).toContain("todayWebsiteRegistered");
+    expect(page).toContain("todayMiniProgramRegistered");
+    expect(page).toContain("erpBindingMismatch.total");
+    expect(page).toContain("isSuperAdmin && stats?.erpBindingMismatch");
+  });
+
+  it("将纯图标操作菜单放在用户名后，并删除最右操作列和重复用户名", () => {
+    expect(page).toContain('title="用户操作"');
+    expect(page).toContain('aria-label={`管理 ${target.label}`}');
+    expect(page).toContain('className="h-7 w-7 shrink-0');
+    expect(page).toContain('align="start"');
+    expect(page).not.toContain('<TableHead className="sticky right-0 bg-background text-right">操作</TableHead>');
+    expect(page).not.toContain('<MoreHorizontal className="mr-1 h-4 w-4" />操作');
+    expect(page).toContain('user.name !== user.username');
+  });
+
+  it("合并注册与登录时间列以减少横向滚动", () => {
+    expect(page).toContain("<TableHead>时间</TableHead>");
+    expect(page).not.toContain("<TableHead>注册时间</TableHead>");
+    expect(page).not.toContain("<TableHead>最近登录</TableHead>");
+    expect(page).toContain("注册</span> {dateTime(user.createdAt)}");
+    expect(page).toContain("登录</span> {dateTime(user.lastSignedIn)}");
+    expect(page).toContain('Table className="min-w-[1450px]"');
   });
 
   it("将账户技术值转换为中文注册渠道", () => {

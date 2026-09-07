@@ -35,6 +35,7 @@ import {
 import {
   getPlatformUserForumMessages,
   getPlatformUserModerationHistory,
+  getPlatformErpUserIds,
   getPlatformUserStats,
   hidePlatformForumMessage,
   listPlatformUsers,
@@ -509,33 +510,33 @@ export const appRouter = router({
 
   // ─── 前台注册用户（主站用户表为唯一事实源，后台仅做代理）──────────────────
   frontendUser: router({
-    stats: portalUserReadProcedure.query(async () => {
-      const [platformStats, erpUserIds] = await Promise.all([
-        getPlatformUserStats(),
+    stats: portalUserReadProcedure.query(async ({ ctx }) => {
+      const platformStats = await getPlatformUserStats();
+      const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+      if (role !== "super_admin") {
+        return { ...platformStats, erpBindingMismatch: null };
+      }
+      const [platformErpUserIds, erpUserIds] = await Promise.all([
+        getPlatformErpUserIds(),
         db.getEnabledErpPortalUserIds(),
       ]);
-      const erpUsers = erpUserIds.length;
+      const platformErpSet = new Set(platformErpUserIds);
+      const managerErpSet = new Set(erpUserIds);
+      const managerOnly = erpUserIds.filter(id => !platformErpSet.has(id)).length;
+      const platformOnly = platformErpUserIds.filter(id => !managerErpSet.has(id)).length;
       return {
         ...platformStats,
-        erpUsers,
-        ordinaryUsers: Math.max(platformStats.totalUsers - erpUsers, 0),
+        erpBindingMismatch: {
+          total: managerOnly + platformOnly,
+          managerOnly,
+          platformOnly,
+        },
       };
     }),
     list: portalUserReadProcedure
       .input(pageInput.extend({ keyword: z.string().trim().max(100).optional() }))
       .query(async ({ input }) => {
-        const [result, erpUserIds] = await Promise.all([
-          listPlatformUsers(input),
-          db.getEnabledErpPortalUserIds(),
-        ]);
-        const erpSet = new Set(erpUserIds);
-        return {
-          ...result,
-          rows: result.rows.map(user => ({
-            ...user,
-            userType: erpSet.has(String(user.id)) ? "erp" as const : "ordinary" as const,
-          })),
-        };
+        return listPlatformUsers(input);
       }),
     setLoginDisabled: portalUserManageProcedure
       .input(z.object({

@@ -16,22 +16,26 @@ describe("前台用户管控 UI 与路由契约", () => {
     expect((layout.match(/label: "用户管理"/g) ?? [])).toHaveLength(1);
   });
 
-  it("页面通过 auth.me permissions 进入只读模式，不以前端角色推断", () => {
+  it("管控操作仍按permissions授权，超级管理员角色只控制差异提示", () => {
     expect(page).toContain('authUser?.permissions?.includes("portalUsers.manage")');
-    expect(page).toContain(': <span className="text-xs text-muted-foreground">只读</span>');
-    expect(page).not.toContain('adminRole === "super_admin"');
+    expect(page).toContain("{canManage && (");
+    expect(page).toContain('adminRole === "super_admin"');
+    expect(router).toContain('if (role !== "super_admin")');
+    expect(router).toContain("erpBindingMismatch: null");
   });
 
-  it("表格展示账号、论坛状态和操作列，并保留响应式横向滚动", () => {
-    for (const heading of ["账号状态", "论坛状态", "操作"]) {
-      expect(page).toContain(`<TableHead${heading === "操作" ? ' className="sticky right-0 bg-background text-right"' : ""}>${heading}</TableHead>`);
+  it("表格展示账号和论坛状态，操作入口紧随用户名且保留响应式横向滚动", () => {
+    for (const heading of ["账号状态", "论坛状态"]) {
+      expect(page).toContain(`<TableHead>${heading}</TableHead>`);
     }
+    expect(page).not.toContain(">操作</TableHead>");
+    expect(page).toContain('title="用户操作"');
     expect(page).toContain("user.loginDisabledReason");
     expect(page).toContain("user.forumMutedUntil");
     expect(page).toContain("user.forumMuteReason");
     expect(page).toContain("portal-user-top-scroll");
     expect(page).toContain('scrollBy({ left: distance, behavior: "smooth" })');
-    expect(page).toContain('className="min-w-[1780px]"');
+    expect(page).toContain('className="min-w-[1450px]"');
   });
 
   it("操作菜单覆盖全部登录、禁言和记录动作", () => {

@@ -1,6 +1,11 @@
 export type PlatformUserStats = {
   totalUsers: number;
+  ordinaryUsers: number;
+  erpUsers: number;
   todayRegistered: number;
+  todayWebsiteRegistered: number;
+  todayMiniProgramRegistered: number;
+  todayOtherRegistered: number;
   sevenDayActive: number;
 };
 
@@ -26,6 +31,7 @@ export type PlatformUserListRow = {
   loginDisabledReason: string | null;
   forumMutedUntil: Date | string | null;
   forumMuteReason: string | null;
+  userType: "erp" | "ordinary";
 };
 
 export type PlatformUserOperator = {
@@ -72,6 +78,7 @@ type TrpcEnvelope<T> = {
 
 type PlatformUserProcedure =
   | "stats"
+  | "erpUserIds"
   | "list"
   | "setLoginDisabled"
   | "setForumMute"
@@ -140,11 +147,36 @@ function mutatePlatformUser<T>(procedure: PlatformUserProcedure, input: Record<s
 }
 
 export function getPlatformUserStats() {
-  return queryPlatformUser<PlatformUserStats>("stats", {});
+  return queryPlatformUser<PlatformUserStats>("stats", {}).then(stats => {
+    const required: Array<keyof PlatformUserStats> = [
+      "totalUsers", "ordinaryUsers", "erpUsers", "todayRegistered",
+      "todayWebsiteRegistered", "todayMiniProgramRegistered", "todayOtherRegistered",
+      "sevenDayActive",
+    ];
+    if (!stats || required.some(field => typeof stats[field] !== "number")) {
+      throw new Error("商城用户服务版本不兼容，请先完成主站发布");
+    }
+    return stats;
+  });
+}
+
+export function getPlatformErpUserIds() {
+  return queryPlatformUser<unknown>("erpUserIds", {}).then(value => {
+    if (!Array.isArray(value) || value.some(item => typeof item !== "string")) {
+      throw new Error("商城ERP用户接口版本不兼容，请先完成主站发布");
+    }
+    return value as string[];
+  });
 }
 
 export function listPlatformUsers(input: PlatformUserListInput) {
-  return queryPlatformUser<{ rows: PlatformUserListRow[]; total: number }>("list", input);
+  return queryPlatformUser<{ rows: PlatformUserListRow[]; total: number }>("list", input).then(result => {
+    if (!result || !Array.isArray(result.rows) || typeof result.total !== "number"
+      || result.rows.some(row => row.userType !== "erp" && row.userType !== "ordinary")) {
+      throw new Error("商城用户列表接口版本不兼容，请先完成主站发布");
+    }
+    return result;
+  });
 }
 
 export function setPlatformUserLoginDisabled(input: {

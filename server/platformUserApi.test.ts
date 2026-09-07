@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getPlatformErpUserIds,
   getPlatformUserForumMessages,
   getPlatformUserModerationHistory,
+  getPlatformUserStats,
   hidePlatformForumMessage,
   listPlatformUsers,
   setPlatformUserForumMute,
@@ -103,5 +105,30 @@ describe("internalUser 平台代理契约", () => {
     await expect(getPlatformUserModerationHistory({ userId: 1, limit: 20 }))
       .rejects.toThrow("PORTAL_API_KEY 未配置");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("统计和ERP账号ID使用独立接口，并拒绝旧版不完整响应", async () => {
+    const validStats = {
+      totalUsers: 325,
+      ordinaryUsers: 132,
+      erpUsers: 193,
+      todayRegistered: 29,
+      todayWebsiteRegistered: 16,
+      todayMiniProgramRegistered: 13,
+      todayOtherRegistered: 0,
+      sevenDayActive: 230,
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(validStats))
+      .mockResolvedValueOnce(response(["700001", "700002"]))
+      .mockResolvedValueOnce(response({ totalUsers: 327, todayRegistered: 14, sevenDayActive: 242 }))
+      .mockResolvedValueOnce(response({ rows: [{ id: 1 }], total: 1 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getPlatformUserStats()).resolves.toEqual(validStats);
+    await expect(getPlatformErpUserIds()).resolves.toEqual(["700001", "700002"]);
+    await expect(getPlatformUserStats()).rejects.toThrow("商城用户服务版本不兼容");
+    await expect(listPlatformUsers({ page: 1, pageSize: 20 })).rejects.toThrow("商城用户列表接口版本不兼容");
+    expect(fetchMock.mock.calls[1][0]).toContain("/api/trpc/internalUser.erpUserIds");
   });
 });

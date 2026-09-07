@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   History,
@@ -124,6 +125,7 @@ function actionDisplayName(action: string) {
 export default function PortalUsers() {
   const { user: authUser } = useAuth();
   const canManage = authUser?.permissions?.includes("portalUsers.manage") ?? false;
+  const isSuperAdmin = (authUser as { adminRole?: string } | null)?.adminRole === "super_admin";
   const [page, setPage] = useState(1);
   const [draftKeyword, setDraftKeyword] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -155,12 +157,17 @@ export default function PortalUsers() {
   const stats = statsQuery.data;
   const pageCount = Math.max(1, Math.ceil((query.data?.total ?? 0) / PAGE_SIZE));
   const isRefreshing = query.isFetching || statsQuery.isFetching;
+  const todayChannelParts = stats ? [
+    stats.todayWebsiteRegistered > 0 ? `网站 ${stats.todayWebsiteRegistered}` : "",
+    stats.todayMiniProgramRegistered > 0 ? `微信小程序 ${stats.todayMiniProgramRegistered}` : "",
+    stats.todayOtherRegistered > 0 ? `其他 ${stats.todayOtherRegistered}` : "",
+  ].filter(Boolean) : [];
   const summaryItems = [
     { label: "注册用户", value: stats?.totalUsers ?? "—" },
     { label: "普通用户", value: stats?.ordinaryUsers ?? "—" },
     { label: "ERP用户", value: stats?.erpUsers ?? "—" },
-    { label: "今日注册", value: stats?.todayRegistered ?? "—" },
-    { label: "近7日登录", value: stats?.sevenDayActive ?? "—" },
+    { label: "今日注册", value: stats?.todayRegistered ?? "—", detail: todayChannelParts.join(" · ") },
+    { label: "近7日登录用户", value: stats?.sevenDayActive ?? "—" },
   ];
 
   const refreshUserList = async () => {
@@ -320,9 +327,21 @@ export default function PortalUsers() {
             <div key={item.label} className="flex items-baseline gap-2 whitespace-nowrap">
               <span className="text-muted-foreground">{item.label}</span>
               <strong className="text-base font-semibold text-foreground">{item.value}</strong>
+              {item.detail && <span className="text-xs text-muted-foreground">{item.detail}</span>}
             </div>
           ))}
         </div>
+
+        {isSuperAdmin && stats?.erpBindingMismatch && stats.erpBindingMismatch.total > 0 && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              ERP权限与后台企业绑定存在 {stats.erpBindingMismatch.total} 项待核对：
+              后台有绑定但主站未开通 {stats.erpBindingMismatch.managerOnly} 项，
+              主站已开通但后台未绑定 {stats.erpBindingMismatch.platformOnly} 项。
+            </span>
+          </div>
+        )}
 
         {statsQuery.error && (
           <Card><CardContent className="p-3 text-sm text-destructive">用户统计暂不可用：{statsQuery.error.message}</CardContent></Card>
@@ -371,7 +390,7 @@ export default function PortalUsers() {
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-                <Table className="min-w-[1780px]">
+                <Table className="min-w-[1450px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>用户</TableHead>
@@ -381,9 +400,7 @@ export default function PortalUsers() {
                       <TableHead>注册渠道</TableHead>
                       <TableHead>账号状态</TableHead>
                       <TableHead>论坛状态</TableHead>
-                      <TableHead>注册时间</TableHead>
-                      <TableHead>最近登录</TableHead>
-                      <TableHead className="sticky right-0 bg-background text-right">操作</TableHead>
+                      <TableHead>时间</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -393,8 +410,42 @@ export default function PortalUsers() {
                       return (
                         <TableRow key={user.id}>
                           <TableCell>
-                            <div className="font-medium">{target.label}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">{user.username || "未设置用户名"} · ID {user.id}</div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">{user.username || target.label}</span>
+                              {canManage && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                                      aria-label={`管理 ${target.label}`}
+                                      title="用户操作"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start" className="w-52">
+                                    <DropdownMenuLabel>账号管控</DropdownMenuLabel>
+                                    <DropdownMenuItem variant={user.loginDisabled ? "default" : "destructive"} onSelect={() => openAction({ type: "login", target, disabled: !user.loginDisabled, label: user.loginDisabled ? "恢复登录" : "禁止登录" })}>
+                                      {user.loginDisabled ? "恢复登录" : "禁止登录"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel>论坛管控</DropdownMenuLabel>
+                                    {muteLabels.map(([hours, label]) => (
+                                      <DropdownMenuItem key={hours} variant="destructive" onSelect={() => openAction({ type: "mute", target, durationHours: hours, label })}>{label}</DropdownMenuItem>
+                                    ))}
+                                    <DropdownMenuItem onSelect={() => openAction({ type: "mute", target, durationHours: null, label: "解除禁言" })}>解除禁言</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={() => setRecordDialog({ type: "history", target })}><History />查看管理记录</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => setRecordDialog({ type: "messages", target })}><MessageSquareText />查看论坛发言记录</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {user.name && user.name !== user.username ? `${user.name} · ` : ""}ID {user.id}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div>{user.phone || "—"}</div>
@@ -428,33 +479,9 @@ export default function PortalUsers() {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{dateTime(user.createdAt)}</TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{dateTime(user.lastSignedIn)}</TableCell>
-                          <TableCell className="sticky right-0 bg-background text-right">
-                            {canManage ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" aria-label={`管理 ${target.label}`}>
-                                    <MoreHorizontal className="mr-1 h-4 w-4" />操作
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-52">
-                                  <DropdownMenuLabel>账号管控</DropdownMenuLabel>
-                                  <DropdownMenuItem variant={user.loginDisabled ? "default" : "destructive"} onSelect={() => openAction({ type: "login", target, disabled: !user.loginDisabled, label: user.loginDisabled ? "恢复登录" : "禁止登录" })}>
-                                    {user.loginDisabled ? "恢复登录" : "禁止登录"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuLabel>论坛管控</DropdownMenuLabel>
-                                  {muteLabels.map(([hours, label]) => (
-                                    <DropdownMenuItem key={hours} variant="destructive" onSelect={() => openAction({ type: "mute", target, durationHours: hours, label })}>{label}</DropdownMenuItem>
-                                  ))}
-                                  <DropdownMenuItem onSelect={() => openAction({ type: "mute", target, durationHours: null, label: "解除禁言" })}>解除禁言</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onSelect={() => setRecordDialog({ type: "history", target })}><History />查看管理记录</DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => setRecordDialog({ type: "messages", target })}><MessageSquareText />查看论坛发言记录</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : <span className="text-xs text-muted-foreground">只读</span>}
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            <div><span className="text-foreground/70">注册</span> {dateTime(user.createdAt)}</div>
+                            <div className="mt-1"><span className="text-foreground/70">登录</span> {dateTime(user.lastSignedIn)}</div>
                           </TableCell>
                         </TableRow>
                       );
