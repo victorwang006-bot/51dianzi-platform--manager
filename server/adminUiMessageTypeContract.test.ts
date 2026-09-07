@@ -88,6 +88,8 @@ describe("消息中心有效分类", () => {
     expect(deployReadmeSource).toContain("空库必须先按基线备份/基础建库流程恢复");
     expect(deployReadmeSource).toContain("禁止手工改软链回滚");
     expect(deploySource).toContain("rollback_on_error");
+    expect(deploySource).toContain("/api/trpc/auth.me?input=%7B%7D");
+    expect(deploySource).not.toContain("/api/trpc/health");
     expect(deploySource).toContain('[[ "$CODE" == "200" ]]');
     expect(deploySource).toContain('[[ "$ROOT" == "200" ]]');
     expect(rollbackSource).toContain("PLATFORM_REQUIRES_ONBOARDING");

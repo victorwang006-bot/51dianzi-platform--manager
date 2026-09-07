@@ -121,7 +121,7 @@ pm2 list | grep -E "dianzi51-admin" || true
 echo "=== 7. 健康检查 ==="
 PORT=$(grep -E '^PORT=' /opt/config/dianzi51-admin/runtime.env | cut -d= -f2)
 for i in 1 2 3 4 5 6; do
-  CODE=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "http://127.0.0.1:${PORT}/api/trpc/health" 2>/dev/null || echo 000)
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "http://127.0.0.1:${PORT}/api/trpc/auth.me?input=%7B%7D" 2>/dev/null || echo 000)
   ROOT=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "http://127.0.0.1:${PORT}/" 2>/dev/null || echo 000)
   echo "attempt $i: api=$CODE root=$ROOT"
   [ "$ROOT" = "200" ] && break
