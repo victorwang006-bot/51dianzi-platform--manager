@@ -59,11 +59,14 @@ describe("后台前台用户管理界面契约", () => {
     expect(page).not.toContain("<TableHead>最近登录</TableHead>");
     expect(page).toContain("注册</span> {dateTime(user.createdAt)}");
     expect(page).toContain("登录</span> {dateTime(user.lastSignedIn)}");
-    expect(page).toContain('Table className="min-w-[1450px]"');
+    expect(page).toContain('Table className="portal-user-responsive-table table-fixed"');
+    expect(page).toContain("<colgroup>");
+    expect(page).toContain('<col style={{ width: "22%" }} />');
+    expect(page).not.toContain('min-w-[1450px]');
   });
 
-  it("将账户技术值转换为中文注册渠道", () => {
-    expect(page).toContain("<TableHead>注册渠道</TableHead>");
+  it("将用户类型与中文注册渠道合并为紧凑列", () => {
+    expect(page).toContain("<TableHead>类型/渠道</TableHead>");
     expect(page).toContain('["local", "password"].includes(normalized)');
     expect(page).toContain('return "网站注册"');
     expect(page).toContain('"wechat_miniprogram"');
@@ -74,15 +77,20 @@ describe("后台前台用户管理界面契约", () => {
     expect(page).not.toContain('{user.loginMethod || "—"}');
   });
 
-  it("顶部横向滚动栏与真实表格双向同步并提供左右移动按钮", () => {
-    expect(page).toContain("portal-user-top-scroll");
-    expect(page).toContain('data-slot="table-container"');
-    expect(page).toContain("new ResizeObserver(measure)");
-    expect(page).toContain('addEventListener("scroll", syncTopScroll');
-    expect(page).toContain('addEventListener("scroll", syncTableScroll');
-    expect(page).toContain('aria-label="向左移动用户表格"');
-    expect(page).toContain('aria-label="向右移动用户表格"');
-    expect(page).toContain('scrollBy({ left: distance, behavior: "smooth" })');
-    expect(page).toContain("scrollbar-width: none");
+  it("表格使用六列固定比例布局并完全移除横向滑块", () => {
+    expect((page.match(/<col style=/g) ?? [])).toHaveLength(6);
+    expect(page).toContain("<TableHead>状态</TableHead>");
+    expect(page).not.toContain("portal-user-top-scroll");
+    expect(page).not.toContain("左右拖动查看全部字段");
+    expect(page).not.toContain("scrollTableBy");
+    expect(page).not.toContain("hasHorizontalOverflow");
+    expect(page).not.toContain("ChevronLeft");
+    expect(page).not.toContain("ChevronRight");
+    expect(page).toContain("@media (max-width: 900px)");
+    expect(page).toContain('overflow-x: visible');
+    expect(page).toContain('content: attr(data-label)');
+    for (const label of ["用户", "联系方式", "企业", "类型/渠道", "状态", "时间"]) {
+      expect(page).toContain(`data-label="${label}"`);
+    }
   });
 });

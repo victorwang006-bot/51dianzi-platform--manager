@@ -1,8 +1,6 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
   History,
   Loader2,
   MessageSquareText,
@@ -129,13 +127,9 @@ export default function PortalUsers() {
   const [page, setPage] = useState(1);
   const [draftKeyword, setDraftKeyword] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [tableScrollWidth, setTableScrollWidth] = useState(0);
-  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState("");
   const [recordDialog, setRecordDialog] = useState<RecordDialog>(null);
-  const tableRegionRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
   const input = useMemo(() => ({
     page,
@@ -207,62 +201,9 @@ export default function PortalUsers() {
   });
   const isSubmitting = loginMutation.isPending || muteMutation.isPending || hideMessageMutation.isPending;
 
-  const getTableScrollElement = () =>
-    tableRegionRef.current?.querySelector<HTMLElement>('[data-slot="table-container"]') ?? null;
-
-  useLayoutEffect(() => {
-    const tableScrollElement = getTableScrollElement();
-    const topScrollElement = topScrollRef.current;
-    if (!tableScrollElement || !topScrollElement) {
-      setTableScrollWidth(0);
-      setHasHorizontalOverflow(false);
-      return;
-    }
-
-    let syncing = false;
-    const measure = () => {
-      const nextWidth = tableScrollElement.scrollWidth;
-      setTableScrollWidth(nextWidth);
-      setHasHorizontalOverflow(nextWidth > tableScrollElement.clientWidth + 1);
-      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
-    };
-    const syncTopScroll = () => {
-      if (syncing) return;
-      syncing = true;
-      topScrollElement.scrollLeft = tableScrollElement.scrollLeft;
-      syncing = false;
-    };
-    const syncTableScroll = () => {
-      if (syncing) return;
-      syncing = true;
-      tableScrollElement.scrollLeft = topScrollElement.scrollLeft;
-      syncing = false;
-    };
-
-    tableScrollElement.addEventListener("scroll", syncTopScroll, { passive: true });
-    topScrollElement.addEventListener("scroll", syncTableScroll, { passive: true });
-    window.addEventListener("resize", measure);
-    const resizeObserver = typeof ResizeObserver === "undefined"
-      ? null
-      : new ResizeObserver(measure);
-    resizeObserver?.observe(tableScrollElement);
-    measure();
-
-    return () => {
-      tableScrollElement.removeEventListener("scroll", syncTopScroll);
-      topScrollElement.removeEventListener("scroll", syncTableScroll);
-      window.removeEventListener("resize", measure);
-      resizeObserver?.disconnect();
-    };
-  }, [query.data?.rows.length]);
-
   const submitSearch = () => {
     setPage(1);
     setKeyword(draftKeyword.trim());
-  };
-
-  const scrollTableBy = (distance: number) => {
-    getTableScrollElement()?.scrollBy({ left: distance, behavior: "smooth" });
   };
 
   const openAction = (action: PendingAction) => {
@@ -374,32 +315,23 @@ export default function PortalUsers() {
             ) : !query.data?.rows.length ? (
               <div className="p-12 text-center text-sm text-muted-foreground">没有符合条件的前台注册用户</div>
             ) : (
-              <div ref={tableRegionRef} className="portal-user-table">
-                <div
-                  className={`${hasHorizontalOverflow ? "flex" : "hidden"} items-center gap-2 border-b bg-muted/25 px-3 py-2`}
-                  aria-hidden={!hasHorizontalOverflow}
-                >
-                  <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">左右拖动查看全部字段</span>
-                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" aria-label="向左移动用户表格" onClick={() => scrollTableBy(-360)}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div ref={topScrollRef} className="portal-user-top-scroll h-[16px] min-w-0 flex-1 overflow-x-auto" role="region" aria-label="用户表格横向滚动" tabIndex={0}>
-                    <div style={{ width: Math.max(tableScrollWidth, 1), height: 1 }} />
-                  </div>
-                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" aria-label="向右移动用户表格" onClick={() => scrollTableBy(360)}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Table className="min-w-[1450px]">
+              <div className="portal-user-table min-w-0">
+                <Table className="portal-user-responsive-table table-fixed">
+                  <colgroup>
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "14%" }} />
+                  </colgroup>
                   <TableHeader>
                     <TableRow>
                       <TableHead>用户</TableHead>
                       <TableHead>联系方式</TableHead>
                       <TableHead>企业</TableHead>
-                      <TableHead>用户类型</TableHead>
-                      <TableHead>注册渠道</TableHead>
-                      <TableHead>账号状态</TableHead>
-                      <TableHead>论坛状态</TableHead>
+                      <TableHead>类型/渠道</TableHead>
+                      <TableHead>状态</TableHead>
                       <TableHead>时间</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -409,9 +341,9 @@ export default function PortalUsers() {
                       const muted = Boolean(user.forumMutedUntil && new Date(user.forumMutedUntil).getTime() > Date.now());
                       return (
                         <TableRow key={user.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium">{user.username || target.label}</span>
+                          <TableCell data-label="用户" className="min-w-0 whitespace-normal align-top">
+                            <div className="flex min-w-0 items-start gap-1">
+                              <span className="min-w-0 break-all font-medium">{user.username || target.label}</span>
                               {canManage && (
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -443,35 +375,35 @@ export default function PortalUsers() {
                                 </DropdownMenu>
                               )}
                             </div>
-                            <div className="mt-1 text-xs text-muted-foreground">
+                            <div className="mt-1 break-words text-xs text-muted-foreground">
                               {user.name && user.name !== user.username ? `${user.name} · ` : ""}ID {user.id}
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div>{user.phone || "—"}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">{user.email || "未填写邮箱"}</div>
+                          <TableCell data-label="联系方式" className="whitespace-normal align-top">
+                            <div className="break-all">{user.phone || "—"}</div>
+                            <div className="mt-1 break-all text-xs text-muted-foreground">{user.email || "未填写邮箱"}</div>
                           </TableCell>
-                          <TableCell>
-                            <div>{user.companyName || "—"}</div>
-                            {user.creditCode && <div className="mt-1 text-xs text-muted-foreground">{user.creditCode}</div>}
+                          <TableCell data-label="企业" className="whitespace-normal align-top">
+                            <div className="break-words">{user.companyName || "—"}</div>
+                            {user.creditCode && <div className="mt-1 break-all text-xs text-muted-foreground">{user.creditCode}</div>}
                           </TableCell>
-                          <TableCell>
+                          <TableCell data-label="类型/渠道" className="whitespace-normal align-top">
                             {user.userType === "erp"
                               ? <Badge className="bg-emerald-100 text-emerald-800">ERP用户</Badge>
                               : <Badge variant="secondary">普通用户</Badge>}
+                            <div className="mt-1 text-xs text-muted-foreground">{registrationChannel(user.loginMethod)}</div>
                           </TableCell>
-                          <TableCell>{registrationChannel(user.loginMethod)}</TableCell>
-                          <TableCell className="max-w-[220px] align-top">
-                            {user.loginDisabled ? <Badge variant="destructive">禁止登录</Badge> : <Badge variant="secondary">正常</Badge>}
+                          <TableCell data-label="状态" className="whitespace-normal align-top">
+                            <div className="flex flex-wrap gap-1">
+                              {user.loginDisabled ? <Badge variant="destructive">禁止登录</Badge> : <Badge variant="secondary">账号正常</Badge>}
+                              {muted ? <Badge variant="destructive">论坛禁言</Badge> : <Badge variant="secondary">论坛正常</Badge>}
+                            </div>
                             {user.loginDisabled && (
                               <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                                 <div>{dateTime(user.loginDisabledAt)}</div>
                                 <div className="break-words" title={user.loginDisabledReason ?? undefined}>{user.loginDisabledReason || "未记录原因"}</div>
                               </div>
                             )}
-                          </TableCell>
-                          <TableCell className="max-w-[240px] align-top">
-                            {muted ? <Badge variant="destructive">禁言中</Badge> : <Badge variant="secondary">正常</Badge>}
                             {user.forumMutedUntil && (
                               <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                                 <div>{muted ? "至 " : "已于 "}{dateTime(user.forumMutedUntil)}{muted ? "" : " 到期"}</div>
@@ -479,7 +411,7 @@ export default function PortalUsers() {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                          <TableCell data-label="时间" className="whitespace-normal align-top text-xs text-muted-foreground">
                             <div><span className="text-foreground/70">注册</span> {dateTime(user.createdAt)}</div>
                             <div className="mt-1"><span className="text-foreground/70">登录</span> {dateTime(user.lastSignedIn)}</div>
                           </TableCell>
@@ -605,34 +537,47 @@ export default function PortalUsers() {
       </Dialog>
 
       <style>{`
-        .portal-user-table [data-slot="table-container"] {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-        }
-        .portal-user-table [data-slot="table-container"]::-webkit-scrollbar {
-          display: none;
-        }
-        .portal-user-top-scroll {
-          scrollbar-color: #6f8fa8 #dce7ef;
-          scrollbar-width: auto;
-        }
-        .portal-user-top-scroll::-webkit-scrollbar {
-          height: 14px;
-        }
-        .portal-user-top-scroll::-webkit-scrollbar-track {
-          border-radius: 999px;
-          background: #dce7ef;
-        }
-        .portal-user-top-scroll::-webkit-scrollbar-thumb {
-          min-width: 72px;
-          border: 2px solid #dce7ef;
-          border-radius: 999px;
-          background: #6f8fa8;
-        }
-        .portal-user-top-scroll::-webkit-scrollbar-thumb:hover {
-          background: #476f8f;
+        @media (max-width: 900px) {
+          .portal-user-table [data-slot="table-container"] {
+            overflow-x: visible;
+          }
+          .portal-user-responsive-table,
+          .portal-user-responsive-table tbody {
+            display: block;
+            width: 100%;
+          }
+          .portal-user-responsive-table colgroup,
+          .portal-user-responsive-table thead {
+            display: none;
+          }
+          .portal-user-responsive-table tbody {
+            display: grid;
+            gap: 0.75rem;
+            padding: 0.75rem;
+          }
+          .portal-user-responsive-table tbody tr {
+            display: grid;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 0.625rem;
+          }
+          .portal-user-responsive-table tbody td {
+            display: grid;
+            width: auto !important;
+            min-width: 0;
+            grid-template-columns: 5.5rem minmax(0, 1fr);
+            gap: 0.75rem;
+            white-space: normal;
+          }
+          .portal-user-responsive-table tbody td::before {
+            content: attr(data-label);
+            color: var(--muted-foreground);
+            font-size: 0.75rem;
+            font-weight: 500;
+          }
         }
       `}</style>
+
     </DashboardLayout>
   );
 }

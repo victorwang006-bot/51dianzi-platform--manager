@@ -24,18 +24,18 @@ describe("前台用户管控 UI 与路由契约", () => {
     expect(router).toContain("erpBindingMismatch: null");
   });
 
-  it("表格展示账号和论坛状态，操作入口紧随用户名且保留响应式横向滚动", () => {
-    for (const heading of ["账号状态", "论坛状态"]) {
-      expect(page).toContain(`<TableHead>${heading}</TableHead>`);
-    }
+  it("表格合并展示账号和论坛状态，操作入口紧随用户名且无需横向滚动", () => {
+    expect(page).toContain("<TableHead>状态</TableHead>");
+    expect(page).toContain("账号正常");
+    expect(page).toContain("论坛正常");
     expect(page).not.toContain(">操作</TableHead>");
     expect(page).toContain('title="用户操作"');
     expect(page).toContain("user.loginDisabledReason");
     expect(page).toContain("user.forumMutedUntil");
     expect(page).toContain("user.forumMuteReason");
-    expect(page).toContain("portal-user-top-scroll");
-    expect(page).toContain('scrollBy({ left: distance, behavior: "smooth" })');
-    expect(page).toContain('className="min-w-[1450px]"');
+    expect(page).toContain('className="portal-user-responsive-table table-fixed"');
+    expect(page).not.toContain("portal-user-top-scroll");
+    expect(page).not.toContain('min-w-[1450px]');
   });
 
   it("操作菜单覆盖全部登录、禁言和记录动作", () => {
