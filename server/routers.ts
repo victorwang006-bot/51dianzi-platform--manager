@@ -1154,6 +1154,18 @@ export const appRouter = router({
 
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
   portal: router({
+    /** 只读协议能力探针；供主站发布前确认后台已完成兼容接口与数据库迁移。 */
+    capabilities: publicProcedure.query(({ ctx }) => {
+      assertPortalKey(ctx.req);
+      return {
+        onboardingMessages: {
+          version: 1,
+          threadType: "onboarding" as const,
+          authority: "admin_transaction" as const,
+        },
+      };
+    }),
+
     /**
      * 前台上报异常日志。鉴权：x-portal-key。
      *
@@ -1260,8 +1272,8 @@ export const appRouter = router({
         contactPhone: z.string().max(32).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
-        /** 会话类型：general=旧版兼容值 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 complaint=举报投诉 */
-        threadType: z.enum(["general", "inquiry", "service", "crm_apply", "complaint"]).optional().nullable(),
+        /** 会话类型：onboarding=开通消息；crm_apply=完整资料正式申请 */
+        threadType: z.enum(["general", "inquiry", "service", "onboarding", "crm_apply", "complaint"]).optional().nullable(),
         /** 客户公司资料快照（已提交公司资料的用户，前台附带传入，后台会话详情展示） */
         companyProfile: z.object({
           companyName: z.string().max(256).optional().nullable(),
@@ -1277,6 +1289,38 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
         return db.createPortalMessage(input);
+      }),
+
+    /**
+     * 首页“立即免费入驻”开通意向。ERP状态判断与消息写入在后台权威库原子完成，
+     * 返回 already_enabled 时前台不得再生成本地客服消息。
+     */
+    submitOnboardingLead: publicProcedure
+      .input(z.object({
+        clientMessageId: z.string()
+          .min(1, "消息幂等键不能为空")
+          .max(64, "消息幂等键不能超过64个字符")
+          .regex(/^onboarding-[A-Za-z0-9_-]+$/, "开通消息幂等键格式不正确"),
+        portalUserId: z.string().trim().min(1).max(64),
+        /** 企业成员使用超级管理员的ERP绑定账号核对权威状态。 */
+        crmPortalUserId: z.string().trim().min(1).max(64).optional().nullable(),
+        contactName: z.string().trim().min(1).max(128),
+        contactPhone: z.string().max(32).optional().nullable(),
+        contactEmail: z.string().email().max(320).optional().nullable(),
+        companyProfile: z.object({
+          companyName: z.string().max(256).optional().nullable(),
+          creditCode: z.string().max(64).optional().nullable(),
+          companyType: z.string().max(128).optional().nullable(),
+          legalPerson: z.string().max(64).optional().nullable(),
+          companyRole: z.string().max(64).optional().nullable(),
+          regAddress: z.string().max(512).optional().nullable(),
+          certLevel: z.string().max(32).optional().nullable(),
+        }).optional().nullable(),
+        content: z.string().min(1).max(5000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.createPortalOnboardingLead(input);
       }),
 
     /** 小程序“聊一聊”举报投诉；仅内部PORTAL密钥可调用。 */
@@ -1458,7 +1502,7 @@ export const appRouter = router({
     threads: messageReadProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
-        threadType: z.enum(["inquiry", "service", "complaint"]).optional(),
+        threadType: z.enum(["inquiry", "service", "onboarding", "complaint"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {

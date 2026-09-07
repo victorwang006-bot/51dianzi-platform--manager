@@ -669,8 +669,8 @@ export const messageThreads = mysqlTable("message_threads", {
   portalUserId: varchar("portalUserId", { length: 64 }),
   /** 关联商户 ID（若留言来自已入驻商户，可选） */
   merchantId: int("merchantId"),
-  /** 会话类型：general=普通留言 inquiry=快速询价 service=在线客服 crm_apply=企业开通申请 complaint=举报投诉 */
-  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "crm_apply", "complaint"]).default("general").notNull(),
+  /** 会话类型：onboarding=开通消息；crm_apply=已提交完整资料的正式申请，不在消息中心展示 */
+  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "onboarding", "crm_apply", "complaint"]).default("general").notNull(),
   /** 客户公司资料快照（前台提交时附带，JSON：companyName/creditCode/companyType/legalPerson/companyRole/regAddress/certLevel 等） */
   companyProfile: json("companyProfile"),
   /** 举报投诉结构化上下文；仅 threadType=complaint 时写入。 */
@@ -713,6 +713,18 @@ export const messages = mysqlTable("messages", {
 });
 
 export type Message = typeof messages.$inferSelect;
+
+/**
+ * 开通消息用户级事务锁。行本身不承载业务状态，仅用于让同一前台用户的
+ * “ERP权威检查 + 24小时去重 + 消息写入”在数据库事务内严格串行。
+ */
+export const onboardingLeadGuards = mysqlTable("onboarding_lead_guards", {
+  portalUserId: varchar("portalUserId", { length: 64 }).primaryKey(),
+  /** 仅在成功创建开通意向时更新；普通客服聊天不会改变24小时去重窗口。 */
+  lastOnboardingLeadAt: timestamp("lastOnboardingLeadAt"),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).notNull(),
+});
 
 // ─── 异常日志 ────────────────────────────────────────────────────────────────
 

@@ -15,6 +15,7 @@ import {
   merchants,
   messages,
   messageThreads,
+  onboardingLeadGuards,
   passwordResetCodes,
   salesStaff,
   users,
@@ -2129,11 +2130,11 @@ export interface ComplaintContextSnapshot {
   [key: string]: unknown;
 }
 
-type PortalMessageThreadType = "general" | "inquiry" | "service" | "crm_apply" | "complaint";
+type PortalMessageThreadType = "general" | "inquiry" | "service" | "onboarding" | "crm_apply" | "complaint";
 type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
 
 /**
- * 消息中心展示快速询价、在线客服和举报投诉。历史 general 是旧调用漏传类型的兼容值：
+ * 消息中心展示快速询价、在线客服、开通消息和举报投诉。历史 general 是旧调用漏传类型的兼容值：
  * 询价主题归 inquiry、企业开通申请归 crm_apply，其余归在线客服。
  */
 export function resolvePortalMessageThreadType(input: {
@@ -2149,7 +2150,7 @@ export function resolvePortalMessageThreadType(input: {
 
 function effectiveMessageThreadTypeSql() {
   return sql<EffectiveMessageThreadType>`CASE
-    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'crm_apply', 'complaint')
+    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'onboarding', 'crm_apply', 'complaint')
       THEN ${messageThreads.threadType}
     WHEN ${messageThreads.subject} LIKE '%企业开通申请%'
       THEN 'crm_apply'
@@ -2168,7 +2169,7 @@ export async function createPortalMessage(input: {
   contactPhone?: string | null;
   contactEmail?: string | null;
   portalUserId?: string | null;
-  threadType?: "general" | "inquiry" | "service" | "crm_apply" | "complaint" | null;
+  threadType?: "general" | "inquiry" | "service" | "onboarding" | "crm_apply" | "complaint" | null;
   companyProfile?: CompanyProfileSnapshot | null;
   complaintContext?: ComplaintContextSnapshot | null;
   content: string;
@@ -2323,6 +2324,147 @@ export async function createPortalMessage(input: {
   }
 }
 
+/**
+ * 首页“免费入驻”点击：在后台 ERP 权威库中完成“确认未开通 + 创建开通消息”。
+ *
+ * 与正式 submitCrmApplication 严格分离：这里只产生 message_threads.onboarding，
+ * 不创建或修改商户审核状态。按前台用户串行化，并在同一开通会话内 24 小时去重。
+ */
+export async function createPortalOnboardingLead(input: {
+  clientMessageId: string;
+  portalUserId: string;
+  crmPortalUserId?: string | null;
+  contactName: string;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  companyProfile?: CompanyProfileSnapshot | null;
+  content: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const portalUserId = normalizePortalUserId(input.portalUserId);
+  if (!portalUserId) throw new Error("开通消息缺少有效的前台用户 ID");
+  if (!input.clientMessageId.startsWith("onboarding-")) throw new Error("开通消息幂等键前缀不正确");
+  const crmPortalUserId = normalizePortalUserId(input.crmPortalUserId) ?? portalUserId;
+  const recentThreshold = new Date(Date.now() - 24 * 60 * 60 * 1_000);
+
+  return db.transaction(async tx => {
+    // 写入同一 guard 行会取得并持有行锁直至本事务提交/回滚；连接归还连接池后不会残留锁。
+    await tx.insert(onboardingLeadGuards).values({ portalUserId })
+      .onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
+    const guardRows = await tx
+      .select({ lastOnboardingLeadAt: onboardingLeadGuards.lastOnboardingLeadAt })
+      .from(onboardingLeadGuards)
+      .where(eq(onboardingLeadGuards.portalUserId, portalUserId))
+      .limit(1)
+      .for("update");
+    const lastOnboardingLeadAt = guardRows[0]?.lastOnboardingLeadAt;
+
+      const linkedMerchants = await tx
+        .select({ id: merchants.id, crmStatus: merchants.crmStatus })
+        .from(merchants)
+        .where(eq(merchants.crmOwnerPortalUserId, crmPortalUserId))
+        .for("update");
+      if (linkedMerchants.some(row => row.crmStatus === "enabled")) {
+        return {
+          status: "already_enabled" as const,
+          threadNo: null,
+          threadId: null,
+          messageId: null,
+        };
+      }
+
+      const existingThreads = await tx
+        .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+        .from(messageThreads)
+        .where(and(
+          eq(messageThreads.portalUserId, portalUserId),
+          eq(messageThreads.threadType, "onboarding"),
+        ))
+        .orderBy(desc(messageThreads.lastMessageAt))
+        .limit(1)
+        .for("update");
+      let thread = existingThreads[0];
+
+      if (thread && lastOnboardingLeadAt && lastOnboardingLeadAt >= recentThreshold) {
+        const latestLeadMessages = await tx
+          .select({ id: messages.id })
+          .from(messages)
+          .where(and(
+            eq(messages.threadId, thread.id),
+            eq(messages.senderType, "portal"),
+            like(messages.clientMessageId, "onboarding-%"),
+          ))
+          .orderBy(desc(messages.createdAt))
+          .limit(1);
+        if (latestLeadMessages[0]) {
+          return {
+            status: "deduplicated" as const,
+            threadNo: thread.threadNo,
+            threadId: thread.id,
+            messageId: latestLeadMessages[0].id,
+          };
+        }
+      }
+
+      const preview = input.content.slice(0, 200);
+      if (!thread) {
+        const threadNo = genThreadNo();
+        await tx.insert(messageThreads).values({
+          threadNo,
+          subject: `ERP开通意向 - ${input.contactName}`,
+          contactName: input.contactName,
+          contactPhone: input.contactPhone ?? null,
+          contactEmail: input.contactEmail ?? null,
+          portalUserId,
+          threadType: "onboarding",
+          companyProfile: input.companyProfile ?? null,
+          adminUnreadCount: 1,
+          lastMessagePreview: preview,
+          lastMessageAt: new Date(),
+        });
+        const createdThreads = await tx
+          .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+          .from(messageThreads)
+          .where(eq(messageThreads.threadNo, threadNo))
+          .limit(1);
+        thread = createdThreads[0];
+      } else {
+        await tx.update(messageThreads).set({
+          status: "open",
+          adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
+          lastMessagePreview: preview,
+          lastMessageAt: new Date(),
+          contactName: input.contactName,
+          contactPhone: input.contactPhone ?? null,
+          contactEmail: input.contactEmail ?? null,
+          companyProfile: input.companyProfile ?? null,
+        }).where(eq(messageThreads.id, thread.id));
+      }
+      if (!thread) throw new Error("开通消息会话创建失败");
+
+      await tx.insert(messages).values({
+        threadId: thread.id,
+        clientMessageId: input.clientMessageId,
+        senderType: "portal",
+        senderName: input.contactName,
+        content: input.content,
+      });
+      await tx.update(onboardingLeadGuards).set({
+        lastOnboardingLeadAt: new Date(),
+        updatedAt: new Date(),
+      }).where(eq(onboardingLeadGuards.portalUserId, portalUserId));
+      const messageIdResult = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
+      const messageIdRows = (messageIdResult as unknown as [Array<{ id: number }>, unknown])[0];
+      return {
+        status: "created" as const,
+        threadNo: thread.threadNo,
+        threadId: thread.id,
+        messageId: Number(messageIdRows[0]?.id),
+      };
+  });
+}
+
 /** 小程序举报投诉：在管理后台创建独立消息线程。 */
 export async function createPortalComplaint(input: {
   reportId: number;
@@ -2395,12 +2537,12 @@ export async function getPortalThreadMessages(threadNo: string) {
   };
 }
 
-/** 后台：会话列表（支持状态筛选与关键词搜索；企业开通申请不属于消息，始终排除 crm_apply） */
+/** 后台：会话列表（含独立开通消息；正式企业资料申请始终排除 crm_apply） */
 export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "inquiry" | "service" | "complaint";
+  threadType?: "inquiry" | "service" | "onboarding" | "complaint";
   keyword?: string;
 }) {
   const db = await getDb();

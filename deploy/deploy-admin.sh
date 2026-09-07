@@ -11,7 +11,7 @@
 #
 # uploads 是业务数据（物料图片），必须存放在 release 之外并以软链接入，
 # 否则每次切换 release 都会丢失历史上传文件。
-set -euo pipefail
+set -eEuo pipefail
 
 PKG="${1:?usage: deploy-admin.sh <tar.gz>}"
 STAMP=$(date +%Y%m%d-%H%M%S)
@@ -23,7 +23,27 @@ ECO=/opt/config/dianzi51-admin/ecosystem.config.cjs
 
 echo "=== 1. 记录当前状态（回滚用）==="
 PREV=$(readlink -f "$LINK" 2>/dev/null || echo none)
+PREV_SUB=$(readlink -f "$SUBLINK" 2>/dev/null || echo none)
+SWITCH_STARTED=0
 echo "prev_release=$PREV"
+
+rollback_on_error() {
+  code=$?
+  trap - ERR
+  set +e
+  if [[ "$SWITCH_STARTED" == "1" && -d "$PREV" ]]; then
+    echo "部署失败，正在恢复旧后台版本：$PREV" >&2
+    ln -sfn "$PREV" "${LINK}.restore.$$" && mv -Tf "${LINK}.restore.$$" "$LINK"
+    restore_sub="$PREV"
+    [[ -d "$PREV_SUB" ]] && restore_sub="$PREV_SUB"
+    ln -sfn "$restore_sub" "${SUBLINK}.restore.$$" && mv -Tf "${SUBLINK}.restore.$$" "$SUBLINK"
+    pm2 startOrReload "$ECO" --only dianzi51-admin --update-env || true
+  else
+    echo "部署在切换前失败，当前后台版本保持不变" >&2
+  fi
+  exit "$code"
+}
+trap rollback_on_error ERR
 
 echo "=== 2. 解包到 $REL ==="
 mkdir -p "$REL"
@@ -37,6 +57,7 @@ test -f "$REL/dist/public/index.html" || { echo "FAIL: 缺少 dist/public/index.
 # pnpm install 直接 ENOENT 失败。宁可在切软链前就报错，也不能半成品上线。
 test -f "$REL/package.json" || { echo "FAIL: 缺少 package.json"; exit 1; }
 test -f "$REL/pnpm-lock.yaml" || { echo "FAIL: 缺少 pnpm-lock.yaml"; exit 1; }
+test -f "$REL/scripts/rollback-admin.sh" || { echo "FAIL: 缺少受保护后台回滚脚本"; exit 1; }
 if grep -q '"patchedDependencies"\|patchedDependencies:' "$REL/package.json" "$REL/pnpm-workspace.yaml" 2>/dev/null; then
   test -d "$REL/patches" || { echo "FAIL: 声明了 patchedDependencies 但缺少 patches/ 目录"; exit 1; }
   echo "patches 目录存在：$(ls "$REL/patches" | tr '\n' ' ')"
@@ -76,9 +97,17 @@ test -f "$REL/scripts/apply-complaint-message-schema.mjs" || { echo "FAIL: 缺�
 node "$REL/scripts/apply-complaint-message-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
+echo "=== 4c. 执行开通消息类型幂等迁移 ==="
+test -f "$REL/scripts/apply-onboarding-message-schema.mjs" || { echo "FAIL: 缺少开通消息迁移脚本"; exit 1; }
+node "$REL/scripts/apply-onboarding-message-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+install -o root -g root -m 0700 "$REL/scripts/rollback-admin.sh" \
+  /opt/config/dianzi51-admin/rollback-admin.sh
+
 echo "=== 5. 原子切换软链 ==="
 # 子域形态下两个软链指向同一 release：
 # LINK 供 PM2 进程与 /uploads/ alias 使用，SUBLINK 供 Nginx 静态根使用
+SWITCH_STARTED=1
 ln -sfn "$REL" "$LINK.tmp" && mv -Tf "$LINK.tmp" "$LINK"
 ln -sfn "$REL" "$SUBLINK.tmp" && mv -Tf "$SUBLINK.tmp" "$SUBLINK"
 echo "$LINK    -> $(readlink -f $LINK)"
@@ -98,9 +127,12 @@ for i in 1 2 3 4 5 6; do
   [ "$ROOT" = "200" ] && break
   sleep 4
 done
+[[ "$CODE" == "200" ]]
+[[ "$ROOT" == "200" ]]
 
 echo "=== 8. 前台未受影响确认 ==="
 curl -s -o /dev/null -w "前台 3000: HTTP %{http_code}\n" http://127.0.0.1:3000/ || true
 
 echo "PREV_RELEASE=$PREV"
 echo "NEW_RELEASE=$REL"
+trap - ERR

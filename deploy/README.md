@@ -52,12 +52,20 @@ bash scripts/verify-subdomain-build.sh # 必须通过
 
 ```bash
 tar -czf admin-dist.tar.gz \
-  dist package.json pnpm-lock.yaml pnpm-workspace.yaml patches drizzle shared
+  dist package.json pnpm-lock.yaml pnpm-workspace.yaml patches drizzle shared scripts
 ```
 
-> **`patches/` 与 `pnpm-workspace.yaml` 必须包含。** 本项目对 `wouter@3.7.1`
+> **`patches/`、`scripts/` 与 `pnpm-workspace.yaml` 必须包含。** 本项目对 `wouter@3.7.1`
 > 打了 pnpm patch，缺失会导致服务器上 `pnpm install` 直接 ENOENT 失败。
-> `deploy-admin.sh` 已内置该校验，且校验发生在切换软链之前。
+> `scripts/` 包含生产幂等数据库迁移；缺失会使新接口与数据库结构不兼容。
+> `deploy-admin.sh` 已内置校验，且所有迁移均发生在切换软链之前。
+
+> **迁移政策：**在已建立后台基础表的**基线数据库**上，`deploy-admin.sh` 调用的
+> `scripts/apply-*-schema.mjs` 是生产升级和灾备恢复的**唯一正式增量迁移入口**。
+> 空库必须先按基线备份/基础建库流程恢复 `message_threads`、`messages` 等核心表，
+> 不得把增量迁移器误当成全量建库器。不得再为同一结构另建未登记的 Drizzle SQL 文件；
+> 幂等迁移器必须支持所有受支持的既有基线版本，并在切换前校验最终列、枚举与索引。
+> `drizzle/schema.ts` 是类型声明，不单独代表迁移已执行。
 
 ### 3. 部署
 
@@ -66,7 +74,7 @@ scp admin-dist.tar.gz deploy/deploy-admin.sh root@<server>:/tmp/
 ssh root@<server> 'bash /tmp/deploy-admin.sh /tmp/admin-dist.tar.gz'
 ```
 
-脚本会依次完成：产物完整性校验 → 依赖复用 → uploads 软链 → 原子切换 →
+脚本会依次完成：产物完整性校验 → 依赖复用 → uploads 软链 → 数据库幂等迁移 → 原子切换 →
 仅重启 admin → 健康检查 → 确认前台未受影响。
 
 ### 4. 验证
@@ -139,10 +147,10 @@ pm2 startOrReload /opt/config/dianzi51-admin/ecosystem.config.cjs \
 
 ```bash
 ls -dt /opt/apps/releases/dianzi51-admin-* | head -5   # 查看历史版本
-ln -sfn <上一版本目录> /opt/apps/dianzi51-admin.tmp
-mv -Tf /opt/apps/dianzi51-admin.tmp /opt/apps/dianzi51-admin
-ln -sfn <上一版本目录> /opt/apps/dianzi51-admin-subdomain.tmp
-mv -Tf /opt/apps/dianzi51-admin-subdomain.tmp /opt/apps/dianzi51-admin-subdomain
-pm2 restart dianzi51-admin
-bash /opt/config/dianzi51-admin/healthcheck-admin.sh
+sudo /opt/config/dianzi51-admin/rollback-admin.sh <上一版本目录>
 ```
+
+> **禁止手工改软链回滚。**受保护脚本会检查当前主站是否依赖
+> `portal.submitOnboardingLead`。若主站已启用“开通消息”，目标后台又不支持该协议，
+> 回滚会被拒绝，并明确要求**先回滚主站，再回滚后台**。切换后脚本会复跑健康检查与
+> `portal.capabilities` 能力探针；任一步失败都会自动恢复原后台版本。
