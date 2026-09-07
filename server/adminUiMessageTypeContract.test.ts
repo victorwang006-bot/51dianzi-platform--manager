@@ -83,7 +83,7 @@ describe("消息中心有效分类", () => {
     expect(onboardingMigrationSource).toContain("hasUniqueColumnIndex");
     expect(deploySource).toContain("apply-onboarding-message-schema.mjs");
     expect(deploySource).toContain("rollback-admin.sh");
-    expect(deployReadmeSource).toContain("drizzle shared scripts");
+    expect(deployReadmeSource).toContain("pnpm-lock.yaml patches drizzle shared scripts");
     expect(deployReadmeSource).toContain("唯一正式增量迁移入口");
     expect(deployReadmeSource).toContain("空库必须先按基线备份/基础建库流程恢复");
     expect(deployReadmeSource).toContain("禁止手工改软链回滚");

@@ -52,10 +52,10 @@ bash scripts/verify-subdomain-build.sh # 必须通过
 
 ```bash
 tar -czf admin-dist.tar.gz \
-  dist package.json pnpm-lock.yaml pnpm-workspace.yaml patches drizzle shared scripts
+  dist package.json pnpm-lock.yaml patches drizzle shared scripts
 ```
 
-> **`patches/`、`scripts/` 与 `pnpm-workspace.yaml` 必须包含。** 本项目对 `wouter@3.7.1`
+> **`patches/` 与 `scripts/` 必须包含。** 本项目对 `wouter@3.7.1`
 > 打了 pnpm patch，缺失会导致服务器上 `pnpm install` 直接 ENOENT 失败。
 > `scripts/` 包含生产幂等数据库迁移；缺失会使新接口与数据库结构不兼容。
 > `deploy-admin.sh` 已内置校验，且所有迁移均发生在切换软链之前。
