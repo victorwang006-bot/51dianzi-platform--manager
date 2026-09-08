@@ -251,6 +251,26 @@ function assertPortalKey(req: { headers: Record<string, unknown> }) {
   }
 }
 
+/** 企业所有者换绑的审计身份来自经 portal-key 认证的站点服务端，而非浏览器会话。 */
+function enterpriseOwnerRebindAuditActor(
+  ctx: TrpcContext,
+  expectedPortalUserId: string,
+  actorName?: string,
+): db.MaterialAuditActor {
+  const forwarded = ctx.req.headers["x-forwarded-for"];
+  const forwardedIp = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]?.trim();
+  const userAgent = ctx.req.headers["user-agent"];
+  const parsedOperatorId = Number(expectedPortalUserId);
+  return {
+    // 审计 ID 列是数值型；超出安全整数范围、0 和其他非正值不能被错误截断后写入。
+    operatorId: Number.isSafeInteger(parsedOperatorId) && parsedOperatorId > 0 ? parsedOperatorId : null,
+    operatorName: actorName || "企业所有者",
+    operatorRole: "enterprise_owner",
+    ipAddress: forwardedIp || ctx.req.ip || ctx.req.socket?.remoteAddress || null,
+    userAgent: Array.isArray(userAgent) ? userAgent[0] : userAgent ?? null,
+  };
+}
+
 /**
  * 解析前台提交的销售负责人，输出待写入商户的 salesOwner / salesOwnerCode。
  *
@@ -1507,6 +1527,83 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
         return db.getCrmAccessByCreditCode(input.creditCode, input.portalUserId);
+      }),
+    /**
+     * 企业所有者发起 ERP 负责人换绑。商户仅通过统一社会信用代码定位，绝不接受
+     * merchantId；新请求必须先核验后台当前绑定与前台目标成员，之后复用后台的
+     * CAS 账本和单向平台确认闭环。
+     */
+    rebindCrmOwnerByEnterpriseOwner: publicProcedure
+      .input(z.object({
+        creditCode: z.string().trim().toUpperCase()
+          .regex(/^[0-9A-HJ-NPQRTUWXY]{18}$/, "统一社会信用代码必须为 18 位有效字符"),
+        expectedPortalUserId: z.string().trim().max(64)
+          .regex(/^\d+$/, "当前企业所有者用户 ID 必须为数字字符串"),
+        newPortalUserId: z.string().trim().max(64)
+          .regex(/^\d+$/, "新企业所有者用户 ID 必须为数字字符串"),
+        reason: z.string().trim().min(2, "换绑原因至少需要 2 个字符").max(1000),
+        requestId: z.string().trim().min(8, "换绑请求号无效").max(64),
+        actorName: z.string().trim().max(128).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+
+        /*
+         * 同一请求号已经落账后，当前绑定已是新负责人，因此不再以“当前 owner”做
+         * 前置校验或调用 validateRebindTarget。必须逐项核对账本身份，防止已知
+         * requestId 被挪作另一企业/另一负责人请求；完成的账本只做幂等返回。
+         */
+        const existingRequest = await db.getCrmOwnerRebindLog(input.requestId);
+        if (existingRequest) {
+          const sameRequest = existingRequest.creditCode?.trim().toUpperCase() === input.creditCode
+            && existingRequest.expectedOwnerPortalUserId === input.expectedPortalUserId
+            && existingRequest.nextOwnerPortalUserId === input.newPortalUserId
+            && existingRequest.reason === input.reason;
+          if (!sameRequest) {
+            throw new TRPCError({ code: "CONFLICT", message: "换绑请求号已用于其他操作" });
+          }
+          if (existingRequest.platformSyncStatus === "completed") {
+            return { success: true as const, idempotent: true as const, requestId: existingRequest.requestId };
+          }
+          const platform = await confirmPlatformCrmOwnerRebind(existingRequest);
+          return {
+            success: true as const,
+            idempotent: true as const,
+            requestId: existingRequest.requestId,
+            platformEnterpriseId: platform.enterpriseId,
+          };
+        }
+
+        // 新请求只能按信用代码获得本企业的后台商户；绝不信任调用方的 merchantId。
+        const binding = await db.getCrmBindingByCreditCode(input.creditCode);
+        if (!binding.found) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "未找到对应企业的 ERP 绑定" });
+        }
+        if (binding.crmStatus !== "enabled" && binding.crmStatus !== "disabled") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "只有已开通或已暂停的 ERP 企业可以换绑负责人" });
+        }
+        if (binding.crmOwnerPortalUserId !== input.expectedPortalUserId) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "当前企业所有者绑定已变化，请刷新页面后重试" });
+        }
+
+        // 仅在本地绑定仍未变更前预检目标是否为同一企业的 active member。
+        await validatePlatformCrmRebindTarget({
+          creditCode: input.creditCode,
+          expectedPortalUserId: input.expectedPortalUserId,
+          newPortalUserId: input.newPortalUserId,
+        });
+        const local = await db.rebindMerchantCrmOwner({
+          merchantId: binding.merchantId,
+          expectedPortalUserId: input.expectedPortalUserId,
+          newPortalUserId: input.newPortalUserId,
+          reason: input.reason,
+          requestId: input.requestId,
+          actor: enterpriseOwnerRebindAuditActor(ctx, input.expectedPortalUserId, input.actorName),
+        });
+        const record = await db.getCrmOwnerRebindLog(local.requestId);
+        if (!record) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "换绑账本写入失败" });
+        const platform = await confirmPlatformCrmOwnerRebind(record);
+        return { ...local, success: true as const, platformEnterpriseId: platform.enterpriseId };
       }),
     /**
      * 前台服务端对账 ERP 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
