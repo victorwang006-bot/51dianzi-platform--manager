@@ -11,6 +11,13 @@ type CrmRebindValidationResult = {
   targetUserId: number;
 };
 
+type CrmRebindCompletionResult = {
+  success: true;
+  idempotent: boolean;
+  enterpriseId: number;
+  superAdminUserId: number;
+};
+
 function getConfig() {
   const baseUrl = process.env.PLATFORM_API_BASE?.trim()
     || (process.env.NODE_ENV === "production" ? "http://127.0.0.1:3000" : "");
@@ -20,6 +27,44 @@ function getConfig() {
   return { baseUrl: baseUrl.replace(/\/+$/, ""), key };
 }
 
+/**
+ * 确认前台企业角色切换。只能由后台在本地 CRM owner 已落账后调用；
+ * 平台端不会为该请求反查后台，避免形成循环调用。
+ */
+export async function completePlatformCrmRebind(input: {
+  creditCode: string;
+  expectedPortalUserId: string;
+  newPortalUserId: string;
+  reason: string;
+  requestId: string;
+}) {
+  const { baseUrl, key } = getConfig();
+  const body = JSON.stringify({ "0": { json: input } });
+  const response = await fetch(`${baseUrl}/api/trpc/internalCrm.completeRebind?batch=1`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-portal-key": key },
+    body,
+    signal: AbortSignal.timeout(10_000),
+  });
+  const payload = await response.json().catch(() => null) as BatchResponse<CrmRebindCompletionResult> | null;
+  const first = payload?.[0];
+  if (!response.ok || first?.error) {
+    const message = first?.error?.json?.message
+      || first?.error?.message
+      || `前台企业角色同步返回 ${response.status}`;
+    throw new Error(message);
+  }
+  const data = first?.result?.data;
+  const result = (typeof data === "object" && data !== null && "json" in data
+    ? data.json
+    : data) as CrmRebindCompletionResult | undefined;
+  if (!result?.success || !Number.isSafeInteger(result.enterpriseId) || !Number.isSafeInteger(result.superAdminUserId)) {
+    throw new Error("前台企业角色同步返回空响应");
+  }
+  return result;
+}
+
+/** @deprecated 新换绑流程改为先落本地权威绑定、后调用 completePlatformCrmRebind。 */
 export async function validatePlatformCrmRebindTarget(input: {
   creditCode: string;
   expectedPortalUserId: string;

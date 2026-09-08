@@ -7,6 +7,8 @@ vi.mock("./db", async importOriginal => {
     ...actual,
     listMerchantInventories: vi.fn(),
     offshelfPlatformInventory: vi.fn(),
+    getAdminUserSalesScopeCodes: vi.fn(),
+    getScopedMerchantCreditCodes: vi.fn(),
   };
 });
 
@@ -37,9 +39,31 @@ function createUserContext(): TrpcContext {
   return ctx;
 }
 
+function createScopedMerchantManagerContext(): TrpcContext {
+  const ctx = createAdminContext();
+  ctx.adminAccount = {
+    id: 77,
+    userId: 1,
+    username: "scoped-material-manager",
+    displayName: "范围物料管理员",
+    email: null,
+    phone: null,
+    passwordHash: null,
+    adminRole: "merchant_mgr",
+    status: "active",
+    mfaEnabled: false,
+    lastLoginAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  return ctx;
+}
+
 describe("platformMaterial 客户物料管理", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(db.getAdminUserSalesScopeCodes).mockResolvedValue([]);
+    vi.mocked(db.getScopedMerchantCreditCodes).mockResolvedValue([]);
   });
 
   it("list 返回前台物料列表（含企业名与信用代码）", async () => {
@@ -70,6 +94,7 @@ describe("platformMaterial 客户物料管理", () => {
 
     expect(db.listMerchantInventories).toHaveBeenCalledWith(
       expect.objectContaining({ keyword: "STM32", status: "published", page: 1, pageSize: 20 }),
+      undefined,
     );
     expect(result.available).toBe(true);
     expect(result.total).toBe(1);
@@ -91,6 +116,42 @@ describe("platformMaterial 客户物料管理", () => {
     await caller.platformMaterial.list({ creditCode: "91440300MA5EXAMPLE1", status: "all", page: 1, pageSize: 10 });
     expect(db.listMerchantInventories).toHaveBeenCalledWith(
       expect.objectContaining({ creditCode: "91440300MA5EXAMPLE1", status: "all", pageSize: 10 }),
+      undefined,
+    );
+  });
+
+  it("普通商户管理员将销售范围转换为企业信用代码并传给列表", async () => {
+    vi.mocked(db.getAdminUserSalesScopeCodes).mockResolvedValue(["sales-a"]);
+    vi.mocked(db.getScopedMerchantCreditCodes).mockResolvedValue([" 91440300MA5F7X2K9T "]);
+    vi.mocked(db.listMerchantInventories).mockResolvedValue({ available: true, items: [], total: 0 });
+
+    await appRouter.createCaller(createScopedMerchantManagerContext()).platformMaterial.list({
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(db.getAdminUserSalesScopeCodes).toHaveBeenCalledWith(77);
+    expect(db.getScopedMerchantCreditCodes).toHaveBeenCalledWith(["sales-a"]);
+    expect(db.listMerchantInventories).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, pageSize: 20 }),
+      [" 91440300MA5F7X2K9T "],
+    );
+  });
+
+  it("普通商户管理员下架时也必须携带企业信用代码范围", async () => {
+    vi.mocked(db.getAdminUserSalesScopeCodes).mockResolvedValue(["sales-a"]);
+    vi.mocked(db.getScopedMerchantCreditCodes).mockResolvedValue(["91440300MA5F7X2K9T"]);
+    vi.mocked(db.offshelfPlatformInventory).mockResolvedValue({ success: true });
+
+    await appRouter.createCaller(createScopedMerchantManagerContext()).platformMaterial.offshelf({
+      id: 150464,
+      reason: "范围内商户物料下架",
+    });
+
+    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(
+      150464,
+      "范围内商户物料下架",
+      ["91440300MA5F7X2K9T"],
     );
   });
 
@@ -106,7 +167,11 @@ describe("platformMaterial 客户物料管理", () => {
     vi.mocked(db.offshelfPlatformInventory).mockResolvedValue({ success: true });
     const caller = appRouter.createCaller(createAdminContext());
     const result = await caller.platformMaterial.offshelf({ id: 150464, reason: "图片与型号不符，请更换实拍图" });
-    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(150464, "图片与型号不符，请更换实拍图");
+    expect(db.offshelfPlatformInventory).toHaveBeenCalledWith(
+      150464,
+      "图片与型号不符，请更换实拍图",
+      undefined,
+    );
     expect(result.success).toBe(true);
   });
 

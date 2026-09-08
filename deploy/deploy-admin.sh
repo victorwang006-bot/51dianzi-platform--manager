@@ -101,6 +101,11 @@ echo "=== 4c. 执行开通消息类型幂等迁移 ==="
 test -f "$REL/scripts/apply-onboarding-message-schema.mjs" || { echo "FAIL: 缺少开通消息迁移脚本"; exit 1; }
 node "$REL/scripts/apply-onboarding-message-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
+echo "=== 4d. 执行负责人换绑平台同步账本幂等迁移 ==="
+test -f "$REL/scripts/apply-crm-owner-rebind-sync-schema.mjs" || { echo "FAIL: 缺少负责人同步迁移脚本"; exit 1; }
+node "$REL/scripts/apply-crm-owner-rebind-sync-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 install -o root -g root -m 0700 "$REL/scripts/rollback-admin.sh" \
   /opt/config/dianzi51-admin/rollback-admin.sh
 

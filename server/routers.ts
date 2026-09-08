@@ -43,7 +43,7 @@ import {
   setPlatformUserLoginDisabled,
 } from "./platformUserApi";
 import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
-import { validatePlatformCrmRebindTarget } from "./platformCrmApi";
+import { completePlatformCrmRebind, validatePlatformCrmRebindTarget } from "./platformCrmApi";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
@@ -185,6 +185,45 @@ function auditActorFromContext(ctx: TrpcContext) {
   };
 }
 
+/**
+ * 本地 CRM owner 已成功持久化后才调用平台原子切换。任何失败均保留为
+ * retryable，调用者绝不能报告成功；同一 requestId 重试只重放平台确认。
+ */
+async function confirmPlatformCrmOwnerRebind(record: {
+  requestId: string;
+  merchantId: number;
+  expectedOwnerPortalUserId: string;
+  nextOwnerPortalUserId: string;
+  creditCode: string | null;
+  reason: string;
+}) {
+  let platform;
+  try {
+    const merchant = record.creditCode ? null : await db.getMerchantById(record.merchantId);
+    const creditCode = record.creditCode?.trim() || merchant?.businessLicense?.trim() || "";
+    if (!creditCode) throw new Error("换绑账本缺少统一社会信用代码，无法确认前台企业角色");
+    platform = await completePlatformCrmRebind({
+      creditCode,
+      expectedPortalUserId: record.expectedOwnerPortalUserId,
+      newPortalUserId: record.nextOwnerPortalUserId,
+      reason: record.reason,
+      requestId: record.requestId,
+    });
+    if (!platform.success) throw new Error("前台企业角色同步未确认成功");
+    await db.completeCrmOwnerRebindPlatformSync(record.requestId);
+  } catch (error) {
+    await db.markCrmOwnerRebindPlatformSyncRetryable(record.requestId, error).catch(markError => {
+      console.error("[crmRebind] 保存平台同步失败状态失败", markError);
+    });
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `后台绑定已保存，但前台企业角色同步失败，已标记为可重试：${error instanceof Error ? error.message : "未知错误"}`,
+      cause: error,
+    });
+  }
+  return platform;
+}
+
 /** internalUser 只接受由已认证后台会话生成的操作人，禁止浏览器伪造管理员身份。 */
 function platformUserOperatorFromContext(ctx: TrpcContext) {
   const actor = auditActorFromContext(ctx);
@@ -259,6 +298,18 @@ async function getAdminSalesStaffCodes(ctx: TrpcContext): Promise<string[] | und
   if (!account) return undefined;
   if (account.adminRole === "super_admin") return undefined;
   return db.getAdminUserSalesScopeCodes(account.id);
+}
+
+/**
+ * 把当前后台账号的销售范围转换为平台企业信用代码范围。
+ *
+ * `undefined` 是超级管理员的“不限制”，空数组则是普通账号无任何可见企业，
+ * 这两个语义必须原样传到跨库库存接口，不能以空值合并。
+ */
+async function getPlatformInventoryCreditScope(ctx: TrpcContext): Promise<string[] | undefined> {
+  const salesStaffCodes = await getAdminSalesStaffCodes(ctx);
+  if (salesStaffCodes === undefined) return undefined;
+  return db.getScopedMerchantCreditCodes(salesStaffCodes);
 }
 
 /**
@@ -1097,7 +1148,7 @@ export const appRouter = router({
         expectedPortalUserId: z.string().trim().min(1, "当前超级管理员用户 ID 不能为空").max(64),
         newPortalUserId: z.string().trim().min(1, "新超级管理员用户 ID 不能为空").max(64),
         reason: z.string().trim().min(2, "换绑原因至少需要 2 个字符").max(1000),
-        requestId: z.string().trim().min(8, "换绑请求号无效").max(128),
+        requestId: z.string().trim().min(8, "换绑请求号无效").max(64),
       }))
       .mutation(async ({ ctx, input }) => {
         /*
@@ -1113,13 +1164,15 @@ export const appRouter = router({
             message: "商户未登记统一社会信用代码，无法校验换绑目标",
           });
         }
-        const creditCode = merchant.businessLicense.trim();
-        await validatePlatformCrmRebindTarget({
-          creditCode,
-          expectedPortalUserId: input.expectedPortalUserId,
-          newPortalUserId: input.newPortalUserId,
-        });
-        return db.rebindMerchantCrmOwner({
+        const existingRequest = await db.getCrmOwnerRebindLog(input.requestId);
+        if (!existingRequest) {
+          await validatePlatformCrmRebindTarget({
+            creditCode: merchant.businessLicense.trim(),
+            expectedPortalUserId: input.expectedPortalUserId,
+            newPortalUserId: input.newPortalUserId,
+          });
+        }
+        const local = await db.rebindMerchantCrmOwner({
           merchantId: input.id,
           expectedPortalUserId: input.expectedPortalUserId,
           newPortalUserId: input.newPortalUserId,
@@ -1127,6 +1180,27 @@ export const appRouter = router({
           requestId: input.requestId,
           actor: auditActorFromContext(ctx),
         });
+        const record = await db.getCrmOwnerRebindLog(local.requestId);
+        if (!record) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "换绑账本写入失败" });
+        const platform = await confirmPlatformCrmOwnerRebind(record);
+        return { ...local, success: true as const, platformEnterpriseId: platform.enterpriseId };
+      }),
+    /** 重试已保存的后台负责人换绑；只允许超级管理员且仅重放同一 requestId。 */
+    retryCrmOwnerRebind: crmRebindProcedure
+      .input(z.object({ requestId: z.string().trim().min(8, "换绑请求号无效").max(64) }))
+      .mutation(async ({ input }) => {
+        const record = await db.getCrmOwnerRebindLog(input.requestId);
+        if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "换绑请求不存在" });
+        if (record.platformSyncStatus === "completed") {
+          return { success: true as const, idempotent: true as const, requestId: record.requestId };
+        }
+        const platform = await confirmPlatformCrmOwnerRebind(record);
+        return {
+          success: true as const,
+          idempotent: false as const,
+          requestId: record.requestId,
+          platformEnterpriseId: platform.enterpriseId,
+        };
       }),
     /**
      * 给商户"发信"：发送平台消息到该商户关联的前台客服会话（首次自动建会话并复用）。
@@ -1568,17 +1642,24 @@ export const appRouter = router({
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(100).default(20),
       }).optional())
-      .query(async ({ input }) => {
-        return db.listMerchantInventories(input ?? {});
+      .query(async ({ ctx, input }) => {
+        return db.listMerchantInventories(input ?? {}, await getPlatformInventoryCreditScope(ctx));
       }),
-    /** 下架：置回待发布（draft）并记录 offshelfBy='admin' 与必填下架原因，前台向用户展示 */
+    /**
+     * 下架：置回待发布（draft）并记录 offshelfBy='admin' 与必填下架原因。
+     * 额外按销售范围对应的企业信用代码做服务端归属校验，不能只信任前端列表。
+     */
     offshelf: merchantWriteProcedure
       .input(z.object({
         id: z.number().int().positive(),
         reason: z.string().trim().min(1, "请填写下架原因").max(255, "下架原因不能超过255字"),
       }))
-      .mutation(async ({ input }) => {
-        return db.offshelfPlatformInventory(input.id, input.reason);
+      .mutation(async ({ ctx, input }) => {
+        return db.offshelfPlatformInventory(
+          input.id,
+          input.reason,
+          await getPlatformInventoryCreditScope(ctx),
+        );
       }),
   }),
 

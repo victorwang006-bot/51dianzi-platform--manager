@@ -1201,6 +1201,7 @@ export async function rebindMerchantCrmOwner(input: {
         merchantId: input.merchantId,
         previousPortalUserId: expectedOwner,
         crmOwnerPortalUserId: newOwner,
+        platformSyncStatus: existingRequest.platformSyncStatus,
       };
     }
 
@@ -1236,12 +1237,15 @@ export async function rebindMerchantCrmOwner(input: {
       merchantId: input.merchantId,
       expectedOwnerPortalUserId: expectedOwner,
       nextOwnerPortalUserId: newOwner,
+      creditCode: normalizeCreditCode(merchant.businessLicense || ""),
       reason,
       operatorId: input.actor?.operatorId ?? null,
       operatorName: input.actor?.operatorName ?? "system",
       operatorRole: input.actor?.operatorRole ?? "system",
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
+      platformSyncStatus: "pending",
+      platformSyncAttemptCount: 0,
     });
 
     await tx.insert(auditLogs).values({
@@ -1274,7 +1278,77 @@ export async function rebindMerchantCrmOwner(input: {
       crmStatus: merchant.crmStatus,
       previousPortalUserId: oldOwner,
       crmOwnerPortalUserId: newOwner,
+      platformSyncStatus: "pending" as const,
     };
+  });
+}
+
+/** 取得换绑账本；供超级管理员显式重试平台确认，绝不重新写入本地绑定。 */
+export async function getCrmOwnerRebindLog(requestId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = requestId.trim();
+  const [record] = await db
+    .select()
+    .from(crmOwnerRebindLogs)
+    .where(eq(crmOwnerRebindLogs.requestId, normalized))
+    .limit(1);
+  return record ?? null;
+}
+
+/** 平台确认成功后闭合本地换绑账本；重复确认保持幂等。 */
+export async function completeCrmOwnerRebindPlatformSync(requestId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = requestId.trim();
+  return db.transaction(async tx => {
+    const [record] = await tx
+      .select()
+      .from(crmOwnerRebindLogs)
+      .where(eq(crmOwnerRebindLogs.requestId, normalized))
+      .limit(1)
+      .for("update");
+    if (!record) throw new Error("CRM_REBIND_REQUEST_NOT_FOUND");
+    if (record.platformSyncStatus === "completed") return record;
+    await tx
+      .update(crmOwnerRebindLogs)
+      .set({
+        platformSyncStatus: "completed",
+        platformSyncError: null,
+        platformSyncAttemptCount: sql`${crmOwnerRebindLogs.platformSyncAttemptCount} + 1`,
+        platformSyncedAt: new Date(),
+      })
+      .where(eq(crmOwnerRebindLogs.id, record.id));
+    return { ...record, platformSyncStatus: "completed" as const, platformSyncError: null };
+  });
+}
+
+/** 平台确认失败必须留存可重试证据；错误截断防止第三方响应撑大账本。 */
+export async function markCrmOwnerRebindPlatformSyncRetryable(requestId: string, error: unknown) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalized = requestId.trim();
+  const message = (error instanceof Error ? error.message : "平台企业角色同步失败")
+    .replace(/\s+/g, " ")
+    .slice(0, 1000);
+  return db.transaction(async tx => {
+    const [record] = await tx
+      .select()
+      .from(crmOwnerRebindLogs)
+      .where(eq(crmOwnerRebindLogs.requestId, normalized))
+      .limit(1)
+      .for("update");
+    if (!record) throw new Error("CRM_REBIND_REQUEST_NOT_FOUND");
+    if (record.platformSyncStatus === "completed") return record;
+    await tx
+      .update(crmOwnerRebindLogs)
+      .set({
+        platformSyncStatus: "retryable",
+        platformSyncError: message,
+        platformSyncAttemptCount: sql`${crmOwnerRebindLogs.platformSyncAttemptCount} + 1`,
+      })
+      .where(eq(crmOwnerRebindLogs.id, record.id));
+    return { ...record, platformSyncStatus: "retryable" as const, platformSyncError: message };
   });
 }
 
@@ -2677,6 +2751,26 @@ export async function getPortalThreadUnread(threadNo: string) {
 
 const PLATFORM_DB = process.env.PLATFORM_DB_NAME || "dianzi51";
 
+/**
+ * 平台库存按企业信用代码做后台销售范围隔离时使用的规范化集合。
+ * `undefined` 表示超级管理员不受限；空数组表示普通后台账号没有任何可见企业。
+ */
+function normalizePlatformCreditCodes(creditCodes?: string[]) {
+  if (creditCodes === undefined) return undefined;
+  return Array.from(new Set(
+    creditCodes
+      .map(code => code.replace(/\s+/g, "").toUpperCase())
+      .filter(Boolean),
+  ));
+}
+
+function platformCreditScopeCondition(creditCodes: string[]) {
+  return sql`UPPER(REPLACE(c.creditCode, ' ', '')) IN (${sql.join(
+    creditCodes.map(code => sql`${code}`),
+    sql`, `,
+  )})`;
+}
+
 export type PlatformInventoryRow = {
   id: number;
   userId: number;
@@ -2706,14 +2800,20 @@ export async function listMerchantInventories(params: {
   status?: "published" | "draft" | "offshelf" | "all";
   page?: number;
   pageSize?: number;
-}) {
+}, allowedCreditCodes?: string[]) {
   const db = await getDb();
   if (!db) return { available: false, items: [] as PlatformInventoryRow[], total: 0 };
   const { creditCode, keyword, status = "published", page = 1, pageSize = 20 } = params;
+  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
+  // 空范围必须短路；不能因为没有 SQL IN 值而退化成全量跨库查询。
+  if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
+    return { available: true, items: [] as PlatformInventoryRow[], total: 0 };
+  }
   const offset = (page - 1) * pageSize;
   const conds = [sql`1=1`];
   if (status !== "all") conds.push(sql`i.status = ${status}`);
   if (creditCode) conds.push(sql`c.creditCode = ${creditCode}`);
+  if (normalizedAllowedCreditCodes) conds.push(platformCreditScopeCondition(normalizedAllowedCreditCodes));
   if (keyword) {
     const kw = `%${keyword}%`;
     conds.push(sql`(i.partNumber LIKE ${kw} OR i.brand LIKE ${kw} OR c.companyName LIKE ${kw})`);
@@ -2723,7 +2823,9 @@ export async function listMerchantInventories(params: {
     const countRows = (await db.execute(sql`
       SELECT COUNT(*) AS cnt
       FROM ${sql.raw(PLATFORM_DB)}.inventories i
-      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = i.userId
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+        ON c.enterpriseId = i.enterpriseId
+        OR (i.enterpriseId IS NULL AND c.userId = i.userId)
       WHERE ${whereSql}
     `)) as unknown as [{ cnt: number }[], unknown];
     const total = Number((countRows[0]?.[0] as { cnt?: number } | undefined)?.cnt ?? 0);
@@ -2734,7 +2836,9 @@ export async function listMerchantInventories(params: {
              c.companyName, c.creditCode,
              u.name AS userName, u.phone AS userPhone
       FROM ${sql.raw(PLATFORM_DB)}.inventories i
-      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = i.userId
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+        ON c.enterpriseId = i.enterpriseId
+        OR (i.enterpriseId IS NULL AND c.userId = i.userId)
       LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
       WHERE ${whereSql}
       ORDER BY i.publishedAt DESC, i.id DESC
@@ -2752,22 +2856,36 @@ export async function listMerchantInventories(params: {
  * 按与前台的约定：status 置回 'draft'（非 offshelf），并写入 offshelfBy='admin' 与必填的 offshelfReason，
  * 前台"待发布清单"会对 offshelfBy=admin 的条目显示"平台下架：原因"红色标记。
  */
-export async function offshelfPlatformInventory(id: number, reason: string) {
+export async function offshelfPlatformInventory(
+  id: number,
+  reason: string,
+  allowedCreditCodes?: string[],
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
+  if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
+    throw new Error("物料不存在或不在您负责的范围内");
+  }
   try {
+    const creditScopeSql = normalizedAllowedCreditCodes
+      ? sql` AND ${platformCreditScopeCondition(normalizedAllowedCreditCodes)}`
+      : sql``;
     const result = (await db.execute(sql`
-      UPDATE ${sql.raw(PLATFORM_DB)}.inventories
+      UPDATE ${sql.raw(PLATFORM_DB)}.inventories i
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+        ON c.enterpriseId = i.enterpriseId
+        OR (i.enterpriseId IS NULL AND c.userId = i.userId)
       SET status = 'draft', publishedAt = NULL,
           offshelfBy = 'admin', offshelfReason = ${reason}
-      WHERE id = ${id} AND status = 'published'
+      WHERE i.id = ${id} AND i.status = 'published'${creditScopeSql}
     `)) as unknown as [{ affectedRows?: number }, unknown];
     const affected = Number(result[0]?.affectedRows ?? 0);
-    if (affected === 0) throw new Error("物料不存在或已不是发布状态");
+    if (affected === 0) throw new Error("物料不存在、已不是发布状态或不在您负责的范围内");
     return { success: true };
   } catch (error) {
     const msg = (error as Error).message || "";
-    if (msg.includes("不存在") || msg.includes("已不是")) throw error;
+    if (msg.includes("不存在") || msg.includes("已不是") || msg.includes("范围内")) throw error;
     console.error("[Database] 下架前台物料失败:", msg);
     throw new Error("下架失败：无法访问前台数据库（此功能仅在生产环境可用）");
   }

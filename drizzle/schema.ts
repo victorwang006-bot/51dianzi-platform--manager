@@ -589,12 +589,19 @@ export const crmOwnerRebindLogs = mysqlTable("crm_owner_rebind_logs", {
   merchantId: int("merchantId").notNull(),
   expectedOwnerPortalUserId: varchar("expectedOwnerPortalUserId", { length: 64 }).notNull(),
   nextOwnerPortalUserId: varchar("nextOwnerPortalUserId", { length: 64 }).notNull(),
+  /** 换绑发起时的标准化信用代码，供同一 requestId 的平台确认重试使用。 */
+  creditCode: varchar("creditCode", { length: 64 }),
   reason: text("reason").notNull(),
   operatorId: int("operatorId"),
   operatorName: varchar("operatorName", { length: 64 }),
   operatorRole: varchar("operatorRole", { length: 32 }),
   ipAddress: varchar("ipAddress", { length: 64 }),
   userAgent: text("userAgent"),
+  /** 平台企业角色切换的确认状态；本地负责人绑定是该记录的前置事实。 */
+  platformSyncStatus: mysqlEnum("platformSyncStatus", ["pending", "completed", "retryable"]).default("pending").notNull(),
+  platformSyncError: varchar("platformSyncError", { length: 1000 }),
+  platformSyncAttemptCount: int("platformSyncAttemptCount").default(0).notNull(),
+  platformSyncedAt: timestamp("platformSyncedAt"),
   createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
 }, table => ({
   merchantIdx: index("crm_owner_rebind_logs_merchant_idx").on(table.merchantId),
