@@ -89,7 +89,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
 
   const offshelfMutation = trpc.platformMaterial.offshelf.useMutation({
     onSuccess: () => {
-      toast.success("已下架，该物料已回到前台\u201c待发布\u201d列表，商户将看到下架原因");
+      toast.success("已下架，该物料已进入前台\u201c已下架\u201d列表，商户将看到下架原因");
       setOffshelfTarget(null);
       setOffshelfReason("");
       utils.platformMaterial.list.invalidate();
@@ -115,7 +115,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
         title="物料管理"
         icon={Boxes}
         defaultOpen
-        description={`该商户在前台发布的芯片物料，共 ${total} 条${keyword ? `（关键词：${keyword}）` : ""}；下架后物料回到前台“待发布”列表，商户修改后可重新发布`}
+        description={`该商户在前台发布的芯片物料，共 ${total} 条${keyword ? `（关键词：${keyword}）` : ""}；下架后物料进入前台“已下架”列表，商户修改后可重新上架`}
         contentClassName="space-y-4"
       >
           <div className="flex flex-wrap items-center gap-2">
@@ -217,7 +217,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
                           <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatTime(item.publishedAt)}</TableCell>
                           <TableCell>
                             <Badge variant="secondary" className={st.className}>{st.label}</Badge>
-                            {item.status === "draft" && item.offshelfBy === "admin" && item.offshelfReason && (
+                            {item.status === "offshelf" && item.offshelfBy === "admin" && item.offshelfReason && (
                               <span className="block text-xs text-red-600 mt-1 max-w-[160px] truncate" title={item.offshelfReason}>
                                 平台下架：{item.offshelfReason}
                               </span>
@@ -269,7 +269,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
               {offshelfTarget && (
                 <>
                   即将下架 <span className="font-mono font-medium text-foreground">{offshelfTarget.partNumber}</span>。
-                  下架后该物料将从前台搜索结果中移除，回到商户的“待发布物料”列表，商户修改后可重新发布。
+                  下架后该物料将从前台搜索结果中移除，进入商户的“已下架”列表，商户修改后可重新上架。
                 </>
               )}
             </AlertDialogDescription>

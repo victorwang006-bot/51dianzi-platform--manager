@@ -1743,7 +1743,7 @@ export const appRouter = router({
         return db.listMerchantInventories(input ?? {}, await getPlatformInventoryCreditScope(ctx));
       }),
     /**
-     * 下架：置回待发布（draft）并记录 offshelfBy='admin' 与必填下架原因。
+     * 下架：进入已下架（offshelf）并记录 offshelfBy='admin' 与必填下架原因。
      * 额外按销售范围对应的企业信用代码做服务端归属校验，不能只信任前端列表。
      */
     offshelf: merchantWriteProcedure

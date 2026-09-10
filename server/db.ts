@@ -2789,7 +2789,7 @@ export type PlatformInventoryRow = {
   userName: string | null;
   userPhone: string | null;
   photos: { key?: string; url?: string; name?: string }[] | string | null;
-  offshelfBy: "user" | "admin" | null;
+  offshelfBy: "user" | "admin" | "system" | null;
   offshelfReason: string | null;
 };
 
@@ -2852,9 +2852,8 @@ export async function listMerchantInventories(params: {
 }
 
 /**
- * 后台：下架前台物料（回到前台"待发布"状态，用户依据下架原因修改后可重新发布）。
- * 按与前台的约定：status 置回 'draft'（非 offshelf），并写入 offshelfBy='admin' 与必填的 offshelfReason，
- * 前台"待发布清单"会对 offshelfBy=admin 的条目显示"平台下架：原因"红色标记。
+ * 后台：下架前台物料（进入前台“已下架”列表，用户依据原因修改后可重新上架）。
+ * status 与下架来源必须一起写入，不能把已发布过的库存混入从未发布的草稿。
  */
 export async function offshelfPlatformInventory(
   id: number,
@@ -2876,7 +2875,7 @@ export async function offshelfPlatformInventory(
       LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
         ON c.enterpriseId = i.enterpriseId
         OR (i.enterpriseId IS NULL AND c.userId = i.userId)
-      SET status = 'draft', publishedAt = NULL,
+      SET status = 'offshelf', publishedAt = NULL,
           offshelfBy = 'admin', offshelfReason = ${reason}
       WHERE i.id = ${id} AND i.status = 'published'${creditScopeSql}
     `)) as unknown as [{ affectedRows?: number }, unknown];
