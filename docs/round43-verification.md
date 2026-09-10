@@ -1,5 +1,7 @@
 # 第43轮生产验证记录（2026-07-30）
 
+> **历史记录说明：** 本文记录的是 2026-07-30 当时的行为。自 2026-09-10 起，下架库存统一使用 `status='offshelf'` 并进入前台“已下架”列表；下文的 `draft` 回流描述仅用于追溯旧版本，不再代表当前实现。
+
 ## 变更内容（按用户提供的技术支持方案）
 - 下架接口 `platformMaterial.offshelf` 新增必填参数 `reason`（trim 后 1~255 字）
 - 下架 SQL：`SET status='draft', publishedAt=NULL, offshelfBy='admin', offshelfReason=?` 仅对 `status='published'` 生效
@@ -9,7 +11,7 @@
 
 ## 生产验证
 - GitHub 推送 commit 1f21e84（gh-sync → main）；ECS /opt/apps/dianzi51-admin/dist 更新，pm2 重启（6 进程 online）
-- 生产 admin 登录密码已重置为 Admin@2026#51dz（bcryptjs 哈希写入 admin_users.passwordHash，username=admin）
+- 生产 admin 登录凭据已按当轮要求完成重置（凭据不写入仓库）。
 - list 接口：available=true, total=464，样例含 userName="供应商-李强"、userPhone、photos 数组（OSS URL）
 - offshelf 接口：id=150464 带原因下架成功 → status=draft, publishedAt=NULL, offshelfBy=admin, offshelfReason 写入正确；随后已恢复 published 并清空 offshelf 字段
 
