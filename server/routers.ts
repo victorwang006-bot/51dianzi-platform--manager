@@ -853,11 +853,21 @@ export const appRouter = router({
   // ─── 商户管理 ────────────────────────────────────────────────────────────
   merchant: router({
     list: merchantReadProcedure
-      .input(pageInput.extend({ status: z.string().optional(), search: z.string().optional() }))
+      .input(pageInput.extend({
+        status: z.string().optional(),
+        search: z.string().optional(),
+        salesOwnerCode: z.union([
+          z.literal("$unassigned"),
+          z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/),
+        ]).optional(),
+      }))
       .query(async ({ ctx, input }) => {
         // 非超级管理员仅可见自己销售范围内的商户（三态语义，勿改写）
         return db.getMerchants(input, await getAdminSalesStaffCodes(ctx));
       }),
+    salesOwnerFilterOptions: merchantReadProcedure.query(async ({ ctx }) => {
+      return db.getMerchantSalesOwnerFilterOptions(await getAdminSalesStaffCodes(ctx));
+    }),
     detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
       return db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
     }),

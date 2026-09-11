@@ -610,23 +610,85 @@ export async function getEnabledErpPortalUserIds() {
  * 若将 undefined 与 [] 混同处理，无范围的普通用户将看到全部商户，权限完全反转。
  */
 export async function getMerchants(
-  params: { status?: string; search?: string; page?: number; pageSize?: number },
+  params: {
+    status?: string;
+    search?: string;
+    salesOwnerCode?: string;
+    page?: number;
+    pageSize?: number;
+  },
   salesStaffCodes?: string[],
 ) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
   if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return { data: [], total: 0 };
   const { status, search, page = 1, pageSize = 20 } = params;
+  const salesOwnerCode = params.salesOwnerCode?.trim().toLowerCase();
   const conditions = [];
   if (status) conditions.push(eq(merchants.status, status as any));
   if (search) conditions.push(or(like(merchants.companyName, `%${search}%`), like(merchants.merchantNo, `%${search}%`)));
-  if (salesStaffCodes !== undefined) conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
+  if (salesOwnerCode === "$unassigned") {
+    // 未分配商户不属于任何销售范围，仅超级管理员可以查看。
+    if (salesStaffCodes !== undefined) return { data: [], total: 0 };
+    conditions.push(or(isNull(merchants.salesOwnerCode), eq(merchants.salesOwnerCode, "")));
+  } else if (salesOwnerCode) {
+    // 伪造范围外工号时返回空结果，不泄露该工号是否存在或是否名下有商户。
+    if (salesStaffCodes !== undefined && !salesStaffCodes.includes(salesOwnerCode)) {
+      return { data: [], total: 0 };
+    }
+    conditions.push(eq(merchants.salesOwnerCode, salesOwnerCode));
+  } else if (salesStaffCodes !== undefined) {
+    conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
+  }
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(merchants).where(where);
   const data = await db.select().from(merchants).where(where).orderBy(desc(merchants.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
   return { data, total: Number(count) };
 }
 
+/**
+ * 商户页负责人筛选选项。超级管理员看到全部销售和未分配；普通账号只看到
+ * 自己的数据范围，避免借筛选项枚举其他销售身份。
+ */
+export async function getMerchantSalesOwnerFilterOptions(salesStaffCodes?: string[]) {
+  const db = await getDb();
+  if (!db || (salesStaffCodes !== undefined && salesStaffCodes.length === 0)) {
+    return { options: [], canViewUnassigned: salesStaffCodes === undefined };
+  }
+
+  const scopeCondition = salesStaffCodes === undefined
+    ? undefined
+    : inArray(salesStaff.staffCode, salesStaffCodes);
+  const conditions = and(
+    scopeCondition,
+    or(
+      eq(salesStaff.status, "active"),
+      sql`EXISTS (SELECT 1 FROM merchants m WHERE m.salesOwnerCode = ${salesStaff.staffCode})`,
+    ),
+  );
+  const rows = await db
+    .select({
+      staffCode: salesStaff.staffCode,
+      displayName: salesStaff.displayName,
+      status: salesStaff.status,
+    })
+    .from(salesStaff)
+    .where(conditions)
+    .orderBy(
+      sql`CASE WHEN ${salesStaff.status} = 'active' THEN 0 ELSE 1 END`,
+      asc(salesStaff.sortOrder),
+      asc(salesStaff.id),
+    );
+
+  return {
+    options: rows.map(row => ({
+      staffCode: row.staffCode,
+      displayName: row.displayName,
+      active: row.status === "active",
+    })),
+    canViewUnassigned: salesStaffCodes === undefined,
+  };
+}
 /** 按 ID 取商户；三态语义同 getMerchants，越出范围时返回 null（而非泄露数据） */
 export async function getMerchantById(id: number, salesStaffCodes?: string[]) {
   const db = await getDb();

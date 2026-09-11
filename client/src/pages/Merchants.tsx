@@ -30,7 +30,7 @@ import {
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -54,6 +54,7 @@ export default function Merchants() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [salesOwnerFilter, setSalesOwnerFilter] = useState("all");
   const [crmTarget, setCrmTarget] = useState<{
     id: number;
     name: string;
@@ -86,7 +87,17 @@ export default function Merchants() {
     page,
     pageSize: 20,
     search: search || undefined,
+    salesOwnerCode: salesOwnerFilter === "all" ? undefined : salesOwnerFilter,
   });
+  const { data: salesOwnerFilterOptions } = trpc.merchant.salesOwnerFilterOptions.useQuery();
+  const duplicateSalesOwnerNames = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const staff of salesOwnerFilterOptions?.options ?? []) {
+      const name = staff.displayName.trim().toLowerCase();
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return new Set(Array.from(counts).filter(([, count]) => count > 1).map(([name]) => name));
+  }, [salesOwnerFilterOptions]);
   const { data: detail } = trpc.merchant.detail.useQuery(
     { id: detailId ?? 0 },
     { enabled: detailId !== null },
@@ -100,6 +111,7 @@ export default function Merchants() {
     onSuccess: result => {
       toast.success(result.salesOwner ? `销售负责人已更新为 ${result.salesOwner}` : "已清空销售负责人");
       utils.merchant.list.invalidate();
+      utils.merchant.salesOwnerFilterOptions.invalidate();
     },
     onError: error => {
       toast.error(`销售负责人更新失败：${error.message}`);
@@ -147,6 +159,22 @@ export default function Merchants() {
     setSearch(searchInput);
     setPage(1);
   };
+
+  const resetFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setSalesOwnerFilter("all");
+    setPage(1);
+  };
+
+  const hasFilters = Boolean(search || searchInput || salesOwnerFilter !== "all");
+
+  useEffect(() => {
+    if (!salesOwnerFilterOptions || salesOwnerFilter === "all" || salesOwnerFilter === "$unassigned") return;
+    if (salesOwnerFilterOptions.options.some(staff => staff.staffCode === salesOwnerFilter)) return;
+    setSalesOwnerFilter("all");
+    setPage(1);
+  }, [salesOwnerFilter, salesOwnerFilterOptions]);
 
   useLayoutEffect(() => {
     const tableScrollElement = merchantTableScrollRef.current;
@@ -218,6 +246,35 @@ export default function Merchants() {
               搜索
             </Button>
           </div>
+          <Select
+            value={salesOwnerFilter}
+            onValueChange={value => {
+              setSalesOwnerFilter(value);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-9 w-[180px]" aria-label="按销售负责人筛选商户">
+              <SelectValue placeholder="全部负责人" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部负责人</SelectItem>
+              {salesOwnerFilterOptions?.canViewUnassigned && (
+                <SelectItem value="$unassigned">未分配</SelectItem>
+              )}
+              {salesOwnerFilterOptions?.options.map(staff => (
+                <SelectItem key={staff.staffCode} value={staff.staffCode}>
+                  {staff.displayName}
+                  {duplicateSalesOwnerNames.has(staff.displayName.trim().toLowerCase()) ? `（${staff.staffCode}）` : ""}
+                  {staff.active ? "" : "（已停用）"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasFilters && (
+            <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
+              重置
+            </Button>
+          )}
         </CardContent>
       </Card>
 

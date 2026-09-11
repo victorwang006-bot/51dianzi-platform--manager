@@ -383,7 +383,12 @@ export const merchants = mysqlTable("merchants", {
   salesOwnerCode: varchar("salesOwnerCode", { length: 64 }),
   createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
   updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
-});
+}, table => ({
+  salesOwnerCreatedIdx: index("merchants_sales_owner_created_idx").on(
+    table.salesOwnerCode,
+    table.createdAt,
+  ),
+}));
 
 export type Merchant = typeof merchants.$inferSelect;
 
