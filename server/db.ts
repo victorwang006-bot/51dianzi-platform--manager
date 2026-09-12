@@ -2051,15 +2051,23 @@ export async function createPasswordResetCode(input: {
       .for("update");
     if (!account) throw new Error("ADMIN_USER_NOT_FOUND");
 
+    const resendIntervalMs = input.resendIntervalMs ?? 60_000;
+    const resendIntervalSeconds = Math.max(1, Math.ceil(resendIntervalMs / 1_000));
     const [active] = await tx
       .select()
       .from(passwordResetCodes)
-      .where(and(eq(passwordResetCodes.adminUserId, input.adminUserId), isNull(passwordResetCodes.usedAt)))
+      .where(and(
+        eq(passwordResetCodes.adminUserId, input.adminUserId),
+        isNull(passwordResetCodes.usedAt),
+        // Compare on the database clock. Reading a MySQL TIMESTAMP into a JS
+        // Date can shift by the connection timezone and silently bypass the
+        // resend window even though both requests hit the same database.
+        sql`${passwordResetCodes.createdAt} >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ${resendIntervalSeconds} SECOND)`,
+      ))
       .orderBy(desc(passwordResetCodes.createdAt))
       .limit(1)
       .for("update");
-    const resendIntervalMs = input.resendIntervalMs ?? 60_000;
-    if (active && Date.now() - active.createdAt.getTime() < resendIntervalMs) {
+    if (active) {
       return { created: false as const, reason: "TOO_FREQUENT" as const };
     }
 
