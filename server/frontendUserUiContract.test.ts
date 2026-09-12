@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const read = (relative: string) => fs.readFileSync(path.resolve(__dirname, relative), "utf8");
 const layout = read("../client/src/components/DashboardLayout.tsx");
 const app = read("../client/src/App.tsx");
+const routeChunks = read("../client/src/lib/adminRouteChunks.ts");
 const page = read("../client/src/pages/PortalUsers.tsx");
 const router = read("./routers.ts");
 
@@ -14,11 +15,19 @@ describe("后台前台用户管理界面契约", () => {
     const userIndex = layout.indexOf('label: "用户管理"');
     expect(messageIndex).toBeGreaterThan(-1);
     expect(userIndex).toBeGreaterThan(messageIndex);
-    expect(layout).toContain('path: "/portal-users", permission: "portalUsers.read" as AdminPermission, nested: false');
+    expect(layout).toContain('path: "/portal-users",');
+    expect(layout).toContain('permission: "portalUsers.read" as AdminPermission,');
+    expect(layout).toContain('chunk: "portalUsers" as AdminNavigationChunk,');
+    expect(layout).toContain('nested: false,');
   });
 
   it("应用路由和服务端接口均使用独立的用户管理读取权限", () => {
-    expect(app).toContain('<PermissionGate permission="portalUsers.read"><PortalUsers /></PermissionGate>');
+    expect(routeChunks).toContain('portalUsers: () => import("@/pages/PortalUsers")');
+    expect(routeChunks).toContain("export const LazyPortalUsers = lazy(pageLoaders.portalUsers)");
+    expect(app).toContain("const PortalUsersRoute = () => (");
+    expect(app).toContain('<PermissionGate permission="portalUsers.read">');
+    expect(app).toContain("<LazyPortalUsers />");
+    expect(app).not.toContain('from "./pages/PortalUsers"');
     expect(app).toContain('<Route path={"/portal-users"} component={PortalUsersRoute} />');
     expect(router).toContain("frontendUser: router({");
     expect(router).toContain("stats: portalUserReadProcedure.query");

@@ -24,13 +24,18 @@ function merchantRouterBlock(): string {
   return endRel === -1 ? rest : rest.slice(0, endRel);
 }
 
+function assertMerchantInSalesScopeBody(): string {
+  const start = routers.indexOf("async function assertMerchantInSalesScope");
+  expect(start, "未找到商户归属校验函数").toBeGreaterThan(-1);
+  const end = routers.indexOf("\n}\n\n/**", start);
+  expect(end, "未找到商户归属校验函数的结束边界").toBeGreaterThan(start);
+  return routers.slice(start, end + 2);
+}
+
 describe("归属校验函数：语义与错误码", () => {
   it("assertMerchantInSalesScope 存在且复用统一的范围来源", () => {
     expect(routers).toContain("async function assertMerchantInSalesScope");
-    const body = routers.slice(
-      routers.indexOf("async function assertMerchantInSalesScope"),
-      routers.indexOf("function mapSalesScopeError"),
-    );
+    const body = assertMerchantInSalesScopeBody();
     // 必须走 getAdminSalesStaffCodes，不得自行拼装范围
     expect(body).toContain("await getAdminSalesStaffCodes(ctx)");
     // 必须把范围传给 db 层查询，否则校验形同虚设
@@ -38,10 +43,7 @@ describe("归属校验函数：语义与错误码", () => {
   });
 
   it("越权时返回 NOT_FOUND 而非 FORBIDDEN，避免泄露他人商户的存在", () => {
-    const body = routers.slice(
-      routers.indexOf("async function assertMerchantInSalesScope"),
-      routers.indexOf("function mapSalesScopeError"),
-    );
+    const body = assertMerchantInSalesScopeBody();
     expect(body).toContain('code: "NOT_FOUND"');
     expect(body).not.toContain('code: "FORBIDDEN"');
   });
@@ -55,10 +57,7 @@ describe("归属校验函数：语义与错误码", () => {
      * 用 ?? [] 会把超管降级为看不到任何商户；
      * 用 || undefined 会把空范围提升为不限，造成越权。
      */
-    const body = routers.slice(
-      routers.indexOf("async function assertMerchantInSalesScope"),
-      routers.indexOf("function mapSalesScopeError"),
-    );
+    const body = assertMerchantInSalesScopeBody();
     expect(body).not.toMatch(/getAdminSalesStaffCodes\(ctx\)\s*\?\?\s*\[\]/);
     expect(body).not.toMatch(/getAdminSalesStaffCodes\(ctx\)\s*\|\|\s*undefined/);
   });
