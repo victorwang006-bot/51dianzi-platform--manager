@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminUserPermissionAudits,
@@ -22,6 +22,8 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { normalizeAssignedAdminPermissions } from "../shared/adminPermissions";
+import { canonicalAdminUsername, normalizeAdminUsername } from "../shared/adminUsername";
+import { toAdminUserDto } from "./adminUserDto";
 import {
   formatMaterialNo,
   PLATFORM_MATERIAL_SEQUENCE_KEY,
@@ -1871,8 +1873,10 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
   }
 
   return {
+    // Never spread a database row into a browser response: admin rows contain
+    // passwordHash and may gain additional credentials in the future.
     data: data.map(user => ({
-      ...user,
+      ...toAdminUserDto(user),
       salesStaffCodes: scopeMap.get(user.id) ?? [],
       ownSalesStaffCode: identityMap.get(user.id) ?? null,
       permissions: permissionMap.get(user.id) ?? [],
@@ -1881,11 +1885,15 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
   };
 }
 
-/** 按用户名查询后台账号（账号密码登录用，包含 passwordHash） */
+/** 按用户名查询后台账号（账号密码登录用，包含 passwordHash）。 */
 export async function getAdminUserByUsername(username: string) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(adminUsers).where(eq(adminUsers.username, username)).limit(1);
+  const rows = await db
+    .select()
+    .from(adminUsers)
+    .where(eq(adminUsers.usernameCanonical, canonicalAdminUsername(username)))
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -1981,11 +1989,18 @@ export async function getAdminUsersByEmail(email: string) {
   return db.select().from(adminUsers).where(eq(adminUsers.email, email));
 }
 
-/** 设置账号密码哈希 */
+/**
+ * Set a new password and revoke every local JWT issued before this change.
+ * The SQL increment is deliberate: parallel password changes cannot lose a
+ * revocation event by writing the same version back.
+ */
 export async function setAdminUserPassword(id: number, passwordHash: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, id));
+  await db
+    .update(adminUsers)
+    .set({ passwordHash, sessionVersion: sql`${adminUsers.sessionVersion} + 1` })
+    .where(eq(adminUsers.id, id));
 }
 
 /** 记录登录时间 */
@@ -1997,103 +2012,294 @@ export async function touchAdminUserLogin(id: number) {
 
 // ─── 找回密码验证码 ─────────────────────────────────────────────────────────
 
-/** 创建验证码记录（同时作废该账号旧的未使用验证码） */
+export const RESET_CODE_MAX_ATTEMPTS = 5;
+
+/**
+ * Create a reset code while serialising the per-account send window.  The row
+ * lock removes the check-then-insert race that otherwise lets parallel calls
+ * bypass the one-minute resend limit.
+ */
 export async function createPasswordResetCode(input: {
   adminUserId: number;
   channel: "sms" | "email";
   target: string;
   codeHash: string;
   expiresAt: Date;
-}) {
+  resendIntervalMs?: number;
+}): Promise<{ created: true } | { created: false; reason: "TOO_FREQUENT" }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db
-    .update(passwordResetCodes)
-    .set({ usedAt: new Date() })
-    .where(and(eq(passwordResetCodes.adminUserId, input.adminUserId), isNull(passwordResetCodes.usedAt)));
-  await db.insert(passwordResetCodes).values(input);
+  return db.transaction(async tx => {
+    // The parent account lock serializes even the first-code case, where no
+    // password_reset_codes row exists yet to lock.
+    const [account] = await tx
+      .select({ id: adminUsers.id })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, input.adminUserId))
+      .limit(1)
+      .for("update");
+    if (!account) throw new Error("ADMIN_USER_NOT_FOUND");
+
+    const [active] = await tx
+      .select()
+      .from(passwordResetCodes)
+      .where(and(eq(passwordResetCodes.adminUserId, input.adminUserId), isNull(passwordResetCodes.usedAt)))
+      .orderBy(desc(passwordResetCodes.createdAt))
+      .limit(1)
+      .for("update");
+    const resendIntervalMs = input.resendIntervalMs ?? 60_000;
+    if (active && Date.now() - active.createdAt.getTime() < resendIntervalMs) {
+      return { created: false as const, reason: "TOO_FREQUENT" as const };
+    }
+
+    await tx
+      .update(passwordResetCodes)
+      .set({ usedAt: new Date() })
+      .where(and(eq(passwordResetCodes.adminUserId, input.adminUserId), isNull(passwordResetCodes.usedAt)));
+    await tx.insert(passwordResetCodes).values({
+      adminUserId: input.adminUserId,
+      channel: input.channel,
+      target: input.target,
+      codeHash: input.codeHash,
+      expiresAt: input.expiresAt,
+    });
+    return { created: true as const };
+  });
 }
 
-/** 查询账号最近一条有效（未使用未过期）验证码 */
+/** 查询账号最近一条有效（未使用未过期）验证码。仅供展示/测试，不能用于消费。 */
 export async function getActivePasswordResetCode(adminUserId: number) {
   const db = await getDb();
   if (!db) return null;
   const rows = await db
     .select()
     .from(passwordResetCodes)
-    .where(and(eq(passwordResetCodes.adminUserId, adminUserId), isNull(passwordResetCodes.usedAt)))
+    .where(and(
+      eq(passwordResetCodes.adminUserId, adminUserId),
+      isNull(passwordResetCodes.usedAt),
+      gt(passwordResetCodes.expiresAt, new Date()),
+    ))
     .orderBy(desc(passwordResetCodes.createdAt))
     .limit(1);
-  const row = rows[0];
-  if (!row) return null;
-  if (row.expiresAt.getTime() < Date.now()) return null;
-  return row;
+  return rows[0] ?? null;
 }
 
-/** 累加验证失败次数 */
+/**
+ * Atomically validate and consume a reset code.  Both the attempt increment
+ * and successful consumption use conditions in addition to row locks, so a
+ * stale retry cannot increment past the cap or consume a code twice.
+ */
+export async function consumePasswordResetCode(input: {
+  adminUserId: number;
+  target?: string;
+  verifyCode: (codeHash: string) => Promise<boolean>;
+  /** Providing a hash makes a successful consume reset the password and revoke JWTs in this same transaction. */
+  newPasswordHash?: string;
+}): Promise<"CONSUMED" | "INVALID" | "ATTEMPTS_EXHAUSTED"> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.transaction(async tx => {
+    const [account] = await tx
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.id, input.adminUserId))
+      .limit(1)
+      .for("update");
+    if (!account || account.status !== "active") return "INVALID";
+
+    const codeConditions = [
+      eq(passwordResetCodes.adminUserId, input.adminUserId),
+      isNull(passwordResetCodes.usedAt),
+    ];
+    if (input.target !== undefined) codeConditions.push(eq(passwordResetCodes.target, input.target));
+    const [record] = await tx
+      .select()
+      .from(passwordResetCodes)
+      .where(and(...codeConditions))
+      .orderBy(desc(passwordResetCodes.createdAt))
+      .limit(1)
+      .for("update");
+    if (!record) return "INVALID";
+
+    const now = new Date();
+    if (record.expiresAt.getTime() <= now.getTime()) {
+      await tx
+        .update(passwordResetCodes)
+        .set({ usedAt: now })
+        .where(and(eq(passwordResetCodes.id, record.id), isNull(passwordResetCodes.usedAt)));
+      return "INVALID";
+    }
+    if (record.attempts >= RESET_CODE_MAX_ATTEMPTS) {
+      await tx
+        .update(passwordResetCodes)
+        .set({ usedAt: now })
+        .where(and(eq(passwordResetCodes.id, record.id), isNull(passwordResetCodes.usedAt)));
+      return "ATTEMPTS_EXHAUSTED";
+    }
+
+    // bcrypt is intentionally performed while the code row is locked. It is
+    // short-lived and prevents two correct submissions from both succeeding.
+    const valid = await input.verifyCode(record.codeHash);
+    if (!valid) {
+      const nextAttempts = record.attempts + 1;
+      await tx
+        .update(passwordResetCodes)
+        .set({
+          attempts: nextAttempts,
+          ...(nextAttempts >= RESET_CODE_MAX_ATTEMPTS ? { usedAt: now } : {}),
+        })
+        .where(and(
+          eq(passwordResetCodes.id, record.id),
+          isNull(passwordResetCodes.usedAt),
+          eq(passwordResetCodes.attempts, record.attempts),
+        ));
+      return nextAttempts >= RESET_CODE_MAX_ATTEMPTS ? "ATTEMPTS_EXHAUSTED" : "INVALID";
+    }
+
+    await tx
+      .update(passwordResetCodes)
+      .set({ usedAt: now })
+      .where(and(
+        eq(passwordResetCodes.id, record.id),
+        isNull(passwordResetCodes.usedAt),
+        eq(passwordResetCodes.attempts, record.attempts),
+      ));
+    if (input.newPasswordHash) {
+      await tx
+        .update(adminUsers)
+        .set({
+          passwordHash: input.newPasswordHash,
+          sessionVersion: sql`${adminUsers.sessionVersion} + 1`,
+        })
+        .where(eq(adminUsers.id, account.id));
+    }
+    return "CONSUMED";
+  });
+}
+
+/** Legacy test/support helpers retain safe conditional semantics. */
 export async function incrementResetCodeAttempts(id: number) {
   const db = await getDb();
   if (!db) return;
   await db
     .update(passwordResetCodes)
     .set({ attempts: sql`${passwordResetCodes.attempts} + 1` })
-    .where(eq(passwordResetCodes.id, id));
+    .where(and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt), sql`${passwordResetCodes.attempts} < ${RESET_CODE_MAX_ATTEMPTS}`));
 }
 
-/** 标记验证码已使用 */
 export async function markResetCodeUsed(id: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(passwordResetCodes).set({ usedAt: new Date() }).where(eq(passwordResetCodes.id, id));
+  await db
+    .update(passwordResetCodes)
+    .set({ usedAt: new Date() })
+    .where(and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt)));
 }
 /**
- * 创建后台用户，并在同一事务内同步销售身份与销售可见范围。
- *
- * merchant_mgr 必须至少拥有一个范围（至少含本人），否则抛 SALES_SCOPE_REQUIRED——
- * 零范围的用户登录后什么都看不到，会误以为系统故障。
+ * Account lifecycle mutations.  Creation, role/status changes, password
+ * resets, sales identity and sales scope all funnel through this section;
+ * callers must not update admin_users directly.
+ */
+type AdminLifecycleRole = "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+type AdminLifecycleStatus = "active" | "disabled" | "locked";
+
+type AdminPermissionAuditInput = {
+  operatorAdminUserId?: number | null;
+  operatorName?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
+
+async function lockActiveSuperAdmins(tx: DbExecutor) {
+  return tx
+    .select({ id: adminUsers.id })
+    .from(adminUsers)
+    .where(and(eq(adminUsers.adminRole, "super_admin"), eq(adminUsers.status, "active")))
+    .for("update");
+}
+
+function assertSuperAdminContinuity(
+  activeSuperAdminCount: number,
+  target: { id: number; adminRole: string; status: string },
+  nextRole: string,
+  nextStatus: string,
+  removing = false,
+) {
+  const removesActiveSuperAdmin = target.adminRole === "super_admin"
+    && target.status === "active"
+    && (removing || nextRole !== "super_admin" || nextStatus !== "active");
+  if (removesActiveSuperAdmin && activeSuperAdminCount <= 1) {
+    throw new Error("LAST_SUPER_ADMIN_FORBIDDEN");
+  }
+}
+
+async function getSalesScopesForUpdate(tx: DbExecutor, adminUserId: number) {
+  const rows = await tx
+    .select({ staffCode: adminUserSalesScopes.staffCode })
+    .from(adminUserSalesScopes)
+    .innerJoin(salesStaff, eq(salesStaff.staffCode, adminUserSalesScopes.staffCode))
+    .where(eq(adminUserSalesScopes.adminUserId, adminUserId))
+    .orderBy(asc(adminUserSalesScopes.id))
+    .for("update");
+  return rows.map(row => row.staffCode);
+}
+
+/**
+ * 创建后台用户，并在同一事务内同步销售身份、可见范围与权限。
+ * Username normalization is duplicated here (not only in the route) so CLI,
+ * tests and future callers cannot create whitespace-only/duplicate accounts.
  */
 export async function createAdminUser(input: {
   username: string;
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
-  adminRole: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  adminRole: AdminLifecycleRole;
   salesStaffCodes?: string[];
   permissions?: string[];
-  permissionAudit?: {
-    operatorAdminUserId?: number | null;
-    operatorName?: string | null;
-    ipAddress?: string | null;
-    userAgent?: string | null;
-  };
+  permissionAudit?: AdminPermissionAuditInput;
   passwordHash?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const username = normalizeAdminUsername(input.username);
+  const usernameCanonical = canonicalAdminUsername(username);
+  if (!username) throw new Error("ADMIN_USERNAME_EMPTY");
 
   let scopeCodes: string[] = [];
   let ownSalesStaffCode: string | null = null;
-
+  let createdId = 0;
   await db.transaction(async tx => {
-    await tx.insert(adminUsers).values({
+    const [existing] = await tx
+      .select({ id: adminUsers.id })
+      .from(adminUsers)
+      .where(eq(adminUsers.usernameCanonical, usernameCanonical))
+      .limit(1)
+      .for("update");
+    if (existing) throw new Error("ADMIN_USERNAME_EXISTS");
+
+    const result = await tx.insert(adminUsers).values({
       userId: 0,
-      username: input.username,
+      username,
+      usernameCanonical,
       displayName: input.displayName ?? null,
       email: input.email ?? null,
       phone: input.phone ?? null,
       adminRole: input.adminRole,
       passwordHash: input.passwordHash ?? null,
       status: "active",
+      sessionVersion: 1,
     });
+    createdId = Number((result as unknown as [{ insertId?: number }])[0]?.insertId ?? 0);
     const [created] = await tx
       .select()
       .from(adminUsers)
-      .where(eq(adminUsers.username, input.username))
-      .limit(1);
+      .where(eq(adminUsers.id, createdId))
+      .limit(1)
+      .for("update");
     if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
 
     ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, created);
-
     if (input.adminRole === "merchant_mgr") {
       const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? [], {
         activeOnly: true,
@@ -2102,7 +2308,6 @@ export async function createAdminUser(input: {
       scopeCodes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]));
       if (scopeCodes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
     }
-
     await replaceAdminUserSalesScopes(tx, created.id, scopeCodes);
 
     const nextPermissions = input.adminRole === "super_admin"
@@ -2119,53 +2324,75 @@ export async function createAdminUser(input: {
     }
   });
 
-  const created = await getAdminUserByUsername(input.username);
+  const created = await getAdminUserById(createdId);
   if (!created) throw new Error("ADMIN_USER_CREATE_FAILED");
-  return { ...created, salesStaffCodes: scopeCodes, ownSalesStaffCode, permissions: input.permissions ?? [] };
+  return {
+    ...toAdminUserDto(created),
+    salesStaffCodes: scopeCodes,
+    ownSalesStaffCode,
+    permissions: input.adminRole === "super_admin" ? [] : normalizeAssignedAdminPermissions(input.permissions ?? []),
+  };
 }
 
 /**
- * 更新后台用户，并在同一事务内重算销售身份与可见范围。
- *
- * 两处宽严尺度必须保留：
- * - `strict: input.salesStaffCodes !== undefined`：仅当调用方显式传入工号列表时严格校验；
- *   否则沿用现有范围且宽松，避免「只想改手机号却因历史范围含停用工号而失败」。
- * - `activeOnly: nextStatus === "active"`：停用用户时放宽，停用操作不应被范围校验阻断。
+ * Update an account and all lifecycle projections in one transaction.  Any
+ * credential/access/authorization change increments sessionVersion, revoking
+ * previously issued local JWTs on their next authenticated request.
  */
 export async function updateAdminUser(id: number, input: {
   displayName?: string | null;
   email?: string | null;
   phone?: string | null;
-  adminRole?: "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+  adminRole?: AdminLifecycleRole;
   salesStaffCodes?: string[];
   permissions?: string[];
-  permissionAudit?: {
-    operatorAdminUserId?: number | null;
-    operatorName?: string | null;
-    ipAddress?: string | null;
-    userAgent?: string | null;
-  };
-  status?: "active" | "disabled" | "locked";
+  permissionAudit?: AdminPermissionAuditInput;
+  status?: AdminLifecycleStatus;
+  passwordHash?: string;
+  /** Authenticated actor; supplied by externally reachable lifecycle routes. */
+  actorAdminUserId?: number | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await getAdminUserById(id);
-  if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
-
-  const nextRole = input.adminRole ?? (existing.adminRole === "super_admin" ? "super_admin" : "merchant_mgr");
-  const nextStatus = input.status ?? existing.status;
-  // 回显用：包含已停用工号，避免未传 salesStaffCodes 时错误清空历史范围
-  const currentScopes = await getAdminUserSalesScopeCodes(id, { includeInactive: true });
-
-  const set: Record<string, unknown> = {};
-  if (input.displayName !== undefined) set.displayName = input.displayName;
-  if (input.email !== undefined) set.email = input.email;
-  if (input.phone !== undefined) set.phone = input.phone;
-  if (input.adminRole !== undefined) set.adminRole = input.adminRole;
-  if (input.status !== undefined) set.status = input.status;
-
   await db.transaction(async tx => {
+    // Always lock the complete current super-admin set first, in index order.
+    // This serializes competing “remove one of two” operations without a
+    // target-row lock inversion/deadlock.
+    const activeSuperAdmins = await lockActiveSuperAdmins(tx);
+    const [existing] = await tx
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.id, id))
+      .limit(1)
+      .for("update");
+    if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
+
+    const nextRole = input.adminRole ?? existing.adminRole;
+    const nextStatus = input.status ?? existing.status;
+    if (input.actorAdminUserId === id) {
+      if (nextStatus !== "active") throw new Error("ADMIN_SELF_DISABLE_FORBIDDEN");
+      if (existing.adminRole === "super_admin" && nextRole !== "super_admin") {
+        throw new Error("ADMIN_SELF_DEMOTE_FORBIDDEN");
+      }
+    }
+    assertSuperAdminContinuity(activeSuperAdmins.length, existing, nextRole, nextStatus);
+    const currentScopes = await getSalesScopesForUpdate(tx, id);
+
+    const set: Record<string, unknown> = {};
+    if (input.displayName !== undefined) set.displayName = input.displayName;
+    if (input.email !== undefined) set.email = input.email;
+    if (input.phone !== undefined) set.phone = input.phone;
+    if (input.adminRole !== undefined) set.adminRole = input.adminRole;
+    if (input.status !== undefined) set.status = input.status;
+    if (input.passwordHash !== undefined) set.passwordHash = input.passwordHash;
+    const mustRevokeSessions = input.passwordHash !== undefined
+      // Re-enabling is an access transition too: a token issued before a
+      // disable/enable cycle must not become valid again.
+      || (input.status !== undefined && input.status !== existing.status)
+      || (input.adminRole !== undefined && input.adminRole !== existing.adminRole)
+      || input.permissions !== undefined;
+    if (mustRevokeSessions) set.sessionVersion = sql`${adminUsers.sessionVersion} + 1`;
     if (Object.keys(set).length > 0) {
       await tx.update(adminUsers).set(set).where(eq(adminUsers.id, id));
     }
@@ -2177,7 +2404,6 @@ export async function updateAdminUser(id: number, input: {
       adminRole: nextRole,
       status: nextStatus,
     });
-
     let nextScopes: string[] = [];
     if (nextRole === "merchant_mgr") {
       const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? currentScopes, {
@@ -2187,16 +2413,15 @@ export async function updateAdminUser(id: number, input: {
       nextScopes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]));
       if (nextScopes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
     }
-
     await replaceAdminUserSalesScopes(tx, id, nextScopes);
 
     if (input.permissions !== undefined || nextRole === "super_admin") {
-      const beforePermissions = await tx
+      const beforeRows = await tx
         .select({ permission: adminUserPermissions.permission })
         .from(adminUserPermissions)
         .where(eq(adminUserPermissions.adminUserId, id))
         .orderBy(asc(adminUserPermissions.id));
-      const before = beforePermissions.map(row => row.permission);
+      const before = beforeRows.map(row => row.permission);
       const nextPermissions = nextRole === "super_admin"
         ? []
         : normalizeAssignedAdminPermissions(input.permissions ?? before);
@@ -2213,17 +2438,45 @@ export async function updateAdminUser(id: number, input: {
   });
 }
 
-export async function toggleAdminUserStatus(id: number, status: "active" | "disabled") {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(adminUsers).set({ status }).where(eq(adminUsers.id, id));
+/** Status changes must use updateAdminUser so sales identity and JWT revocation stay in sync. */
+export async function toggleAdminUserStatus(
+  id: number,
+  status: "active" | "disabled",
+  actorAdminUserId?: number | null,
+) {
+  return updateAdminUser(id, { status, actorAdminUserId });
 }
 
-export async function deleteAdminUser(id: number) {
+/**
+ * Delete an account only after preserving its historical sales identity as an
+ * inactive unlinked staff record. This prevents an active “ghost” salesperson
+ * and keeps merchant ownership data interpretable.
+ */
+export async function deleteAdminUser(id: number, actorAdminUserId?: number | null) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, id));
-  await db.delete(adminUsers).where(eq(adminUsers.id, id));
+  return db.transaction(async tx => {
+    const activeSuperAdmins = await lockActiveSuperAdmins(tx);
+    const [existing] = await tx
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.id, id))
+      .limit(1)
+      .for("update");
+    if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
+    if (actorAdminUserId === id) throw new Error("ADMIN_SELF_REMOVE_FORBIDDEN");
+    assertSuperAdminContinuity(activeSuperAdmins.length, existing, existing.adminRole, existing.status, true);
+
+    await tx
+      .update(salesStaff)
+      .set({ adminUserId: null, status: "inactive" })
+      .where(eq(salesStaff.adminUserId, id));
+    await tx.delete(adminUserSalesScopes).where(eq(adminUserSalesScopes.adminUserId, id));
+    await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, id));
+    await tx.delete(passwordResetCodes).where(eq(passwordResetCodes.adminUserId, id));
+    await tx.delete(adminUsers).where(eq(adminUsers.id, id));
+    return { success: true as const };
+  });
 }
 
 // ─── 消息中心（前后台互通）─────────────────────────────────────────────────────

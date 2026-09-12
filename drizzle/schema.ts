@@ -167,7 +167,10 @@ export const adminRoleEnum = mysqlEnum("adminRole", [
 export const adminUsers = mysqlTable("admin_users", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
+  /** Display/login name, always trim-normalized by the account lifecycle service. */
   username: varchar("username", { length: 64 }).notNull().unique(),
+  /** Lower-cased trimmed username; unique independently of database collation. */
+  usernameCanonical: varchar("usernameCanonical", { length: 64 }).notNull(),
   displayName: varchar("displayName", { length: 128 }),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
@@ -178,11 +181,15 @@ export const adminUsers = mysqlTable("admin_users", {
     "risk_control", "finance", "auditor",
   ]).default("operation").notNull(),
   status: mysqlEnum("status", ["active", "disabled", "locked"]).default("active").notNull(),
+  /** Incremented on credential/access revocation; local JWTs carry this value. */
+  sessionVersion: int("sessionVersion").default(1).notNull(),
   mfaEnabled: boolean("mfaEnabled").default(false),
   lastLoginAt: timestamp("lastLoginAt"),
   createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
   updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
-});
+}, table => ({
+  usernameCanonicalUnique: uniqueIndex("admin_users_username_canonical_unique").on(table.usernameCanonical),
+}));
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 

@@ -45,6 +45,7 @@ import {
 import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { completePlatformCrmRebind, validatePlatformCrmRebindTarget } from "./platformCrmApi";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
+import { normalizeAdminUsername } from "../shared/adminUsername";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -368,7 +369,7 @@ async function assertMerchantInSalesScope(ctx: TrpcContext, merchantId: number) 
  * 将 db 层销售范围相关错误映射为可读的 tRPC 错误。
  * 非目标错误原样抛出，避免屏蔽真正的故障。
  */
-function mapSalesScopeError(error: unknown): unknown {
+function mapAdminLifecycleError(error: unknown): unknown {
   const message = error instanceof Error ? error.message : "";
   if (message === "INVALID_SALES_STAFF_CODE") {
     return new TRPCError({ code: "BAD_REQUEST", message: "销售权限包含无效或已停用员工" });
@@ -376,8 +377,32 @@ function mapSalesScopeError(error: unknown): unknown {
   if (message === "SALES_SCOPE_REQUIRED") {
     return new TRPCError({ code: "BAD_REQUEST", message: "请至少为该账号分配一个销售范围" });
   }
+  if (message === "ADMIN_USERNAME_EMPTY") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "用户名不能为空或仅包含空格" });
+  }
+  if (message === "ADMIN_USERNAME_EXISTS") {
+    return new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
+  }
+  if (message === "ADMIN_USER_NOT_FOUND") {
+    return new TRPCError({ code: "NOT_FOUND", message: "后台用户不存在" });
+  }
+  if (message === "LAST_SUPER_ADMIN_FORBIDDEN") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "至少必须保留一个启用的超级管理员" });
+  }
+  if (message === "ADMIN_SELF_DISABLE_FORBIDDEN") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "不能停用当前登录的账号" });
+  }
+  if (message === "ADMIN_SELF_DEMOTE_FORBIDDEN") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "不能降低自己的管理员角色" });
+  }
+  if (message === "ADMIN_SELF_REMOVE_FORBIDDEN") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "不能移除当前登录的账号" });
+  }
   return error;
 }
+
+// Existing callers/tests use this name; all admin mutations now use the broader mapper.
+const mapSalesScopeError = mapAdminLifecycleError;
 
 const pageInput = z.object({
   page: z.number().min(1).default(1),
@@ -530,7 +555,14 @@ export const appRouter = router({
         if (input.oldPassword === input.newPassword) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "新密码不能与当前密码相同" });
         }
-        await db.setAdminUserPassword(account.id, await hashPassword(input.newPassword));
+        try {
+          await db.updateAdminUser(account.id, {
+            passwordHash: await hashPassword(input.newPassword),
+            actorAdminUserId: account.id,
+          });
+        } catch (error) {
+          throw mapAdminLifecycleError(error);
+        }
         return { success: true } as const;
       }),
     /** 找回密码：查询账号可用的验证渠道（脱敏手机号/邮箱） */
@@ -1798,7 +1830,7 @@ export const appRouter = router({
       return db.getAdminUsers(input);
     }),
     create: adminManageProcedure.input(z.object({
-      username: z.string().min(2).max(64),
+      username: z.string().trim().min(2, "用户名至少 2 位").max(64),
       displayName: z.string().max(128).optional().nullable(),
       email: z.string().email().optional().nullable(),
       phone: z.string().max(20).optional().nullable(),
@@ -1809,20 +1841,19 @@ export const appRouter = router({
       permissions: adminPermissionInput.optional(),
       password: z.string().min(8, "初始密码至少 8 位").max(128),
     })).mutation(async ({ ctx, input }) => {
-      const existing = await db.getAdminUserByUsername(input.username);
-      if (existing) {
-        throw new TRPCError({ code: "CONFLICT", message: "用户名已存在" });
-      }
-      const { password, ...rest } = input;
+      const { password, username: rawUsername, ...rest } = input;
+      const username = normalizeAdminUsername(rawUsername);
+      if (!username) throw new TRPCError({ code: "BAD_REQUEST", message: "用户名不能为空或仅包含空格" });
       assertHasBusinessPermission(rest.adminRole, rest.permissions);
       try {
         return await db.createAdminUser({
           ...rest,
+          username,
           permissionAudit: permissionAuditFromContext(ctx),
           passwordHash: await hashPassword(password),
         });
       } catch (error) {
-        throw mapSalesScopeError(error);
+        throw mapAdminLifecycleError(error);
       }
     }),
     update: adminManageProcedure.input(z.object({
@@ -1843,36 +1874,35 @@ export const appRouter = router({
         if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "后台用户不存在" });
         assertHasBusinessPermission(rest.adminRole ?? target.adminRole, rest.permissions);
       }
-      // 自我保护：超级管理员不得将自己降级或停用，否则当场失去后台管理权限且无法自行恢复
-      if (ctx.adminAccount?.id === id) {
-        if (rest.adminRole !== undefined && rest.adminRole !== "super_admin" && ctx.adminAccount.adminRole === "super_admin") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "不能降低自己的管理员角色" });
-        }
-        if (rest.status !== undefined && rest.status !== "active") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "不能停用当前登录的账号" });
-        }
-      }
       try {
         await db.updateAdminUser(id, {
           ...rest,
+          ...(password ? { passwordHash: await hashPassword(password) } : {}),
+          actorAdminUserId: ctx.adminAccount?.id ?? null,
           permissionAudit: permissionAuditFromContext(ctx),
         });
       } catch (error) {
-        throw mapSalesScopeError(error);
-      }
-      if (password) {
-        await db.setAdminUserPassword(id, await hashPassword(password));
+        throw mapAdminLifecycleError(error);
       }
       return { success: true };
     }),
     toggleStatus: adminManageProcedure.input(z.object({
       id: z.number(),
       status: z.enum(["active", "disabled"]),
-    })).mutation(async ({ input }) => {
-      return db.toggleAdminUserStatus(input.id, input.status);
+    })).mutation(async ({ ctx, input }) => {
+      try {
+        await db.toggleAdminUserStatus(input.id, input.status, ctx.adminAccount?.id ?? null);
+      } catch (error) {
+        throw mapAdminLifecycleError(error);
+      }
+      return { success: true } as const;
     }),
-    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteAdminUser(input.id);
+    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      try {
+        return await db.deleteAdminUser(input.id, ctx.adminAccount?.id ?? null);
+      } catch (error) {
+        throw mapAdminLifecycleError(error);
+      }
     }),
   }),
 

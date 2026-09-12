@@ -6,6 +6,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
 import * as db from "./db";
 import { isSmsConfigured, sendSmsCode } from "./sms";
+import { normalizeAdminUsername } from "../shared/adminUsername";
+import { toAdminUserDto } from "./adminUserDto";
 
 /**
  * 本地账号会话的 openId 前缀。
@@ -35,12 +37,14 @@ export async function createLocalAdminSessionToken(account: {
   id: number;
   username: string;
   displayName?: string | null;
+  sessionVersion: number;
 }): Promise<string> {
   return sdk.signSession(
     {
       openId: `${LOCAL_ADMIN_OPEN_ID_PREFIX}${account.id}`,
       appId: LOCAL_ADMIN_SESSION_APP_ID,
       name: account.displayName || account.username,
+      sessionVersion: account.sessionVersion,
     },
     { expiresInMs: ONE_YEAR_MS }
   );
@@ -53,7 +57,7 @@ export async function loginWithPassword(
   username: string,
   password: string
 ) {
-  const account = await db.getAdminUserByUsername(username.trim());
+  const account = await db.getAdminUserByUsername(normalizeAdminUsername(username));
   // 统一的错误信息，避免暴露"用户是否存在"
   const invalidError = new TRPCError({
     code: "UNAUTHORIZED",
@@ -72,8 +76,7 @@ export async function loginWithPassword(
   const cookieOptions = getSessionCookieOptions(req);
   res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
   await db.touchAdminUserLogin(account.id);
-  const { passwordHash: _ph, ...safe } = account;
-  return safe;
+  return toAdminUserDto(account);
 }
 
 /** 从本地会话 openId 中解析 admin_users.id；非本地会话返回 null */
@@ -90,7 +93,7 @@ const RESET_CODE_TTL_MS = 10 * 60 * 1000;
 /** 同一账号两次发送的最小间隔（60 秒） */
 const RESET_CODE_RESEND_INTERVAL_MS = 60 * 1000;
 /** 单个验证码最大校验失败次数 */
-const RESET_CODE_MAX_ATTEMPTS = 5;
+const RESET_CODE_MAX_ATTEMPTS = 5; // document-level compatibility; enforcement is db.RESET_CODE_MAX_ATTEMPTS
 
 export function maskPhone(phone: string): string {
   if (phone.length < 7) return phone.replace(/./g, "*");
@@ -142,7 +145,7 @@ async function deliverResetCode(
  * 账号不存在时也返回空渠道列表，不暴露账号是否存在。
  */
 export async function getResetChannels(username: string) {
-  const account = await db.getAdminUserByUsername(username.trim());
+  const account = await db.getAdminUserByUsername(normalizeAdminUsername(username));
   const channels: { channel: "sms" | "email"; maskedTarget: string }[] = [];
   if (account && account.status === "active") {
     if (account.phone) channels.push({ channel: "sms", maskedTarget: maskPhone(account.phone) });
@@ -153,27 +156,25 @@ export async function getResetChannels(username: string) {
 
 /** 请求发送找回密码验证码 */
 export async function requestPasswordReset(username: string, channel: "sms" | "email") {
-  const account = await db.getAdminUserByUsername(username.trim());
+  const account = await db.getAdminUserByUsername(normalizeAdminUsername(username));
   // 统一响应，不暴露账号是否存在
   const genericResponse = { success: true, message: "如果账号存在且已绑定该渠道，验证码已发送" } as const;
   if (!account || account.status !== "active") return genericResponse;
   const target = channel === "sms" ? account.phone : account.email;
   if (!target) return genericResponse;
 
-  // 发送频率限制
-  const active = await db.getActivePasswordResetCode(account.id);
-  if (active && Date.now() - active.createdAt.getTime() < RESET_CODE_RESEND_INTERVAL_MS) {
-    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "发送过于频繁，请 1 分钟后再试" });
-  }
-
   const code = generateCode();
-  await db.createPasswordResetCode({
+  const created = await db.createPasswordResetCode({
     adminUserId: account.id,
     channel,
     target,
     codeHash: await hashPassword(code),
     expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS),
+    resendIntervalMs: RESET_CODE_RESEND_INTERVAL_MS,
   });
+  if (!created.created) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "发送过于频繁，请 1 分钟后再试" });
+  }
   await deliverResetCode(channel, target, code);
   return genericResponse;
 }
@@ -188,21 +189,19 @@ export async function resetPasswordWithCode(
     code: "UNAUTHORIZED",
     message: "验证码错误或已失效",
   });
-  const account = await db.getAdminUserByUsername(username.trim());
+  const account = await db.getAdminUserByUsername(normalizeAdminUsername(username));
   if (!account || account.status !== "active") throw invalidError;
-  const record = await db.getActivePasswordResetCode(account.id);
-  if (!record) throw invalidError;
-  if (record.attempts >= RESET_CODE_MAX_ATTEMPTS) {
-    await db.markResetCodeUsed(record.id);
+  // Hash before the transaction: bcrypt is CPU-bound and the transactional
+  // consume operation then atomically burns the code and revokes old JWTs.
+  const result = await db.consumePasswordResetCode({
+    adminUserId: account.id,
+    verifyCode: hash => verifyPassword(code, hash),
+    newPasswordHash: await hashPassword(newPassword),
+  });
+  if (result === "ATTEMPTS_EXHAUSTED") {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "验证码错误次数过多，请重新获取" });
   }
-  const ok = await verifyPassword(code, record.codeHash);
-  if (!ok) {
-    await db.incrementResetCodeAttempts(record.id);
-    throw invalidError;
-  }
-  await db.markResetCodeUsed(record.id);
-  await db.setAdminUserPassword(account.id, await hashPassword(newPassword));
+  if (result !== "CONSUMED") throw invalidError;
   return { success: true } as const;
 }
 
@@ -226,21 +225,20 @@ export async function requestUsernameRecovery(channel: "sms" | "email", target: 
   const activeAccounts = accounts.filter(a => a.status === "active");
   if (activeAccounts.length === 0) return genericResponse;
 
-  // 频率限制：以第一个账号的验证码记录做 60 秒重发限制
+  // Per-account transaction lock makes this rate limit safe under parallel requests.
   const primary = activeAccounts[0];
-  const active = await db.getActivePasswordResetCode(primary.id);
-  if (active && Date.now() - active.createdAt.getTime() < RESET_CODE_RESEND_INTERVAL_MS) {
-    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "发送过于频繁，请 1 分钟后再试" });
-  }
-
   const code = generateCode();
-  await db.createPasswordResetCode({
+  const created = await db.createPasswordResetCode({
     adminUserId: primary.id,
     channel,
     target: normalized,
     codeHash: await hashPassword(code),
     expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS),
+    resendIntervalMs: RESET_CODE_RESEND_INTERVAL_MS,
   });
+  if (!created.created) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "发送过于频繁，请 1 分钟后再试" });
+  }
   await deliverResetCode(channel, normalized, code);
   return genericResponse;
 }
@@ -266,18 +264,15 @@ export async function recoverUsernameWithCode(
   if (activeAccounts.length === 0) throw invalidError;
 
   const primary = activeAccounts[0];
-  const record = await db.getActivePasswordResetCode(primary.id);
-  if (!record || record.target !== normalized) throw invalidError;
-  if (record.attempts >= RESET_CODE_MAX_ATTEMPTS) {
-    await db.markResetCodeUsed(record.id);
+  const result = await db.consumePasswordResetCode({
+    adminUserId: primary.id,
+    target: normalized,
+    verifyCode: hash => verifyPassword(code, hash),
+  });
+  if (result === "ATTEMPTS_EXHAUSTED") {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "验证码错误次数过多，请重新获取" });
   }
-  const ok = await verifyPassword(code, record.codeHash);
-  if (!ok) {
-    await db.incrementResetCodeAttempts(record.id);
-    throw invalidError;
-  }
-  await db.markResetCodeUsed(record.id);
+  if (result !== "CONSUMED") throw invalidError;
   return {
     usernames: activeAccounts.map(a => ({ username: a.username, displayName: a.displayName })),
   };

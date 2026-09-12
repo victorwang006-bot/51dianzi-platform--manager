@@ -28,6 +28,8 @@ export type SessionPayload = {
   openId: string;
   appId: string;
   name: string;
+  /** Present only for local administrator sessions; OAuth sessions remain compatible. */
+  sessionVersion?: number;
 };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
@@ -160,7 +162,10 @@ class SDKServer {
   }
 
   private getSessionSecret() {
-    const secret = ENV.cookieSecret;
+    // ENV is initialized at import time, while tests and some process managers
+    // inject JWT_SECRET later. Prefer the live value without ever adding a
+    // fallback secret: an absent production secret still fails closed.
+    const secret = process.env.JWT_SECRET ?? ENV.cookieSecret;
     return new TextEncoder().encode(secret);
   }
 
@@ -196,6 +201,7 @@ class SDKServer {
       openId: payload.openId,
       appId: payload.appId,
       name: payload.name,
+      ...(payload.sessionVersion !== undefined ? { sessionVersion: payload.sessionVersion } : {}),
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
@@ -204,7 +210,7 @@ class SDKServer {
 
   async verifySession(
     cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
+  ): Promise<SessionPayload | null> {
     if (!cookieValue) {
       return null;
     }
@@ -214,12 +220,13 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, sessionVersion } = payload as Record<string, unknown>;
 
       if (
         !isNonEmptyString(openId) ||
         !isNonEmptyString(appId) ||
-        !isNonEmptyString(name)
+        !isNonEmptyString(name) ||
+        (sessionVersion !== undefined && (!Number.isInteger(sessionVersion) || (sessionVersion as number) < 1))
       ) {
         warnAuthRateLimited(
           "session-payload-invalid",
@@ -232,6 +239,7 @@ class SDKServer {
         openId,
         appId,
         name,
+        ...(sessionVersion !== undefined ? { sessionVersion: sessionVersion as number } : {}),
       };
     } catch (error) {
       const reason = getAuthErrorReason(error);

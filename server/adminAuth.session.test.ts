@@ -1,6 +1,6 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Request, Response } from "express";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const dbMocks = vi.hoisted(() => ({
   getAdminUserByUsername: vi.fn(),
@@ -19,6 +19,13 @@ import {
 import { sdk } from "./_core/sdk";
 
 const originalAppId = process.env.VITE_APP_ID;
+const originalJwtSecret = process.env.JWT_SECRET;
+
+beforeEach(() => {
+  // sdk deliberately reads the live secret. Set a test secret explicitly so
+  // production can still fail closed instead of gaining a fallback secret.
+  process.env.JWT_SECRET = "admin-session-test-secret";
+});
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -26,6 +33,11 @@ afterEach(() => {
     delete process.env.VITE_APP_ID;
   } else {
     process.env.VITE_APP_ID = originalAppId;
+  }
+  if (originalJwtSecret === undefined) {
+    delete process.env.JWT_SECRET;
+  } else {
+    process.env.JWT_SECRET = originalJwtSecret;
   }
 });
 
@@ -37,6 +49,7 @@ describe("local admin session", () => {
       id: 42,
       username: "operation-admin",
       displayName: "运营管理员",
+      sessionVersion: 1,
     });
 
     const session = await sdk.verifySession(token);
@@ -45,6 +58,7 @@ describe("local admin session", () => {
       openId: "local_admin:42",
       appId: LOCAL_ADMIN_SESSION_APP_ID,
       name: "运营管理员",
+      sessionVersion: 1,
     });
     expect(parseLocalAdminId(session?.openId ?? "")).toBe(42);
   });
@@ -54,12 +68,14 @@ describe("local admin session", () => {
       id: 7,
       username: "fallback-admin",
       displayName: null,
+      sessionVersion: 2,
     });
 
     await expect(sdk.verifySession(token)).resolves.toMatchObject({
       openId: "local_admin:7",
       appId: LOCAL_ADMIN_SESSION_APP_ID,
       name: "fallback-admin",
+      sessionVersion: 2,
     });
   });
 
@@ -76,6 +92,7 @@ describe("local admin session", () => {
       passwordHash: await hashPassword(password),
       adminRole: "operation" as const,
       status: "active" as const,
+      sessionVersion: 3,
       mfaEnabled: false,
       lastLoginAt: null,
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -115,6 +132,7 @@ describe("local admin session", () => {
       openId: "local_admin:23",
       appId: LOCAL_ADMIN_SESSION_APP_ID,
       name: "登录管理员",
+      sessionVersion: 3,
     });
   });
 });

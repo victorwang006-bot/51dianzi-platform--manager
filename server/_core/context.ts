@@ -3,7 +3,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { AdminUser, User } from "../../drizzle/schema";
 import { parseLocalAdminId } from "../adminAuth";
 import * as db from "../db";
-import { sdk } from "./sdk";
+import { sdk, type SessionPayload } from "./sdk";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -14,6 +14,18 @@ export type TrpcContext = {
   /** 当前后台账号的用户级模块权限；无记录时由角色默认权限回退 */
   adminPermissions?: string[];
 };
+
+/**
+ * Local sessions are stateful through `sessionVersion`; JWT signature/expiry
+ * alone is deliberately insufficient because sessions can last for one year.
+ * Kept pure for regression tests and to make the pre-migration policy explicit.
+ */
+export function isCurrentLocalAdminSession(
+  account: AdminUser | null,
+  session: Pick<SessionPayload, "sessionVersion">,
+): account is AdminUser {
+  return account?.status === "active" && session.sessionVersion === account.sessionVersion;
+}
 
 function extractSessionToken(
   req: CreateExpressContextOptions["req"]
@@ -49,7 +61,13 @@ export async function createContext(
         const localId = parseLocalAdminId(verifiedSession.openId);
         if (localId !== null) {
           const account = await db.getAdminUserById(localId);
-          if (account && account.status === "active") {
+          /*
+           * A local JWT is valid only when it carries the current revocation
+           * version. Pre-migration local sessions have no version and are
+           * intentionally rejected (security over a one-year smooth-login
+           * window); OAuth sessions retain their legacy compatibility path.
+           */
+          if (isCurrentLocalAdminSession(account, verifiedSession)) {
             adminAccount = account;
             adminPermissions = await db.getAdminUserPermissions(account.id);
             // 将本地账号映射为兼容的 User 形状，业务代码 ctx.user.role === "admin" 依旧成立
