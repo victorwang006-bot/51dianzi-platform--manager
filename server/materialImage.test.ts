@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import { appRouter } from "./routers";
@@ -25,20 +25,31 @@ const PNG_1PX_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
 const TEST_PART_NUMBER = `TEST-IMG-${Date.now()}`;
+const CONCURRENT_TEST_PART_NUMBER = `TEST-IMG-CONCURRENT-${Date.now()}`;
 let createdMaterialId: number | null = null;
+let concurrentMaterialId: number | null = null;
 const savedFiles: string[] = [];
 
 beforeAll(async () => {
-  const material = await db.createMaterial({
-    partNumber: TEST_PART_NUMBER,
-    name: "图片上传测试物料",
-    category: "微控制器",
-  } as any);
+  const [material, concurrentMaterial] = await Promise.all([
+    db.createMaterial({
+      partNumber: TEST_PART_NUMBER,
+      name: "图片上传测试物料",
+      category: "微控制器",
+    } as any),
+    db.createMaterial({
+      partNumber: CONCURRENT_TEST_PART_NUMBER,
+      name: "并发图片上传测试物料",
+      category: "微控制器",
+    } as any),
+  ]);
   createdMaterialId = material?.id ?? null;
+  concurrentMaterialId = concurrentMaterial?.id ?? null;
 });
 
 afterAll(async () => {
   if (createdMaterialId) await db.deleteMaterialFixture(createdMaterialId).catch(() => {});
+  if (concurrentMaterialId) await db.deleteMaterialFixture(concurrentMaterialId).catch(() => {});
   for (const f of savedFiles) {
     try { fs.unlinkSync(f); } catch { /* ignore */ }
   }
@@ -125,5 +136,58 @@ describe("portal.uploadMaterialImage（物料图片上传回写）", () => {
     expect(second.coverImageUrl).toBe(result.url);
     expect(second.imageCount).toBe(2);
     savedFiles.push(path.join(getUploadRoot(), second.url.replace("/uploads/", "")));
+  });
+
+  it("并发上传两张图片时保留两个 JSON 图集条目", async () => {
+    const caller = makeCaller(PORTAL_KEY);
+    const [first, second] = await Promise.all([
+      caller.portal.uploadMaterialImage({
+        partNumber: CONCURRENT_TEST_PART_NUMBER,
+        fileName: "concurrent-a.png",
+        mimeType: "image/png",
+        base64: PNG_1PX_BASE64,
+        asCover: false,
+      }),
+      caller.portal.uploadMaterialImage({
+        partNumber: CONCURRENT_TEST_PART_NUMBER,
+        fileName: "concurrent-b.png",
+        mimeType: "image/png",
+        base64: PNG_1PX_BASE64,
+        asCover: false,
+      }),
+    ]);
+
+    for (const upload of [first, second]) {
+      savedFiles.push(path.join(getUploadRoot(), upload.url.replace("/uploads/", "")));
+    }
+    const material = await db.getMaterialById(concurrentMaterialId!);
+    const urls = material?.images?.map(image => image.url) ?? [];
+    expect(urls).toEqual(expect.arrayContaining([first.url, second.url]));
+    expect(urls).toHaveLength(2);
+  });
+
+  it("图集数据库追加失败时删除刚写入的文件", async () => {
+    const caller = makeCaller(PORTAL_KEY);
+    const imageDir = path.join(getUploadRoot(), "material-images");
+    const before = fs.existsSync(imageDir) ? fs.readdirSync(imageDir).sort() : [];
+    const appendSpy = vi
+      .spyOn(db, "appendMaterialImage")
+      .mockRejectedValueOnce(new Error("injected database failure"));
+
+    try {
+      await expect(
+        caller.portal.uploadMaterialImage({
+          partNumber: TEST_PART_NUMBER,
+          fileName: "db-failure.png",
+          mimeType: "image/png",
+          base64: PNG_1PX_BASE64,
+        }),
+      ).rejects.toThrow("injected database failure");
+    } finally {
+      appendSpy.mockRestore();
+    }
+
+    const after = fs.existsSync(imageDir) ? fs.readdirSync(imageDir).sort() : [];
+    expect(after).toEqual(before);
   });
 });

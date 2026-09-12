@@ -556,16 +556,27 @@ export async function appendMaterialImage(
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB_NOT_AVAILABLE");
-  const existing = await getMaterialById(id);
-  if (!existing) throw new Error("MATERIAL_NOT_FOUND");
-  const list = Array.isArray(existing.images) ? [...existing.images] : [];
-  if (!list.some(item => item.url === image.url)) {
-    list.push({ url: image.url, key: image.url, name: image.name });
-  }
-  while (list.length > 9) list.shift();
-  const coverImageUrl = image.asCover || !existing.coverImageUrl ? image.url : existing.coverImageUrl;
-  await db.update(materials).set({ images: list, coverImageUrl }).where(eq(materials.id, id));
-  return { coverImageUrl, imageCount: list.length };
+  return db.transaction(async tx => {
+    // `images` 是 JSON 数组；事务外读后覆写会在多 PM2 实例并发上传时丢失更新。
+    // 锁住物料行，确保每次追加都以已提交的最新图集为基准。
+    const [existing] = await tx
+      .select({ images: materials.images, coverImageUrl: materials.coverImageUrl })
+      .from(materials)
+      .where(eq(materials.id, id))
+      .limit(1)
+      .for("update");
+    if (!existing) throw new Error("MATERIAL_NOT_FOUND");
+
+    const currentImages = decodeJsonValue<{ url: string; key: string; name?: string }[]>(existing.images, []);
+    const list = Array.isArray(currentImages) ? [...currentImages] : [];
+    if (!list.some(item => item.url === image.url)) {
+      list.push({ url: image.url, key: image.url, name: image.name });
+    }
+    while (list.length > 9) list.shift();
+    const coverImageUrl = image.asCover || !existing.coverImageUrl ? image.url : existing.coverImageUrl;
+    await tx.update(materials).set({ images: list, coverImageUrl }).where(eq(materials.id, id));
+    return { coverImageUrl, imageCount: list.length };
+  });
 }
 
 // ─── 商户 ─────────────────────────────────────────────────────────────────────

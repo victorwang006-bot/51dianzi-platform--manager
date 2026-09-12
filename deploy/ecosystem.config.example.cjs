@@ -20,6 +20,8 @@ module.exports = {
         DATABASE_URL: process.env.DATABASE_URL,
         JWT_SECRET: process.env.JWT_SECRET,
         PORTAL_API_KEY: process.env.PORTAL_API_KEY,
+        BUILT_IN_FORGE_API_URL: process.env.BUILT_IN_FORGE_API_URL,
+        BUILT_IN_FORGE_API_KEY: process.env.BUILT_IN_FORGE_API_KEY,
         SMS_ACCESS_KEY_ID: process.env.SMS_ACCESS_KEY_ID,
         SMS_ACCESS_KEY_SECRET: process.env.SMS_ACCESS_KEY_SECRET,
         SMS_SIGN_NAME: process.env.SMS_SIGN_NAME,

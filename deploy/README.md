@@ -96,11 +96,13 @@ cp deploy/ecosystem.config.production.cjs /opt/config/dianzi51-admin/ecosystem.c
 # 然后手工编写 runtime.env，参考 ecosystem.config.example.cjs 的变量清单
 ```
 
-> **凭据抢救的时间窗口。** `JWT_SECRET` 与 `PORTAL_API_KEY` 只存在于运行进程的
-> 环境变量中，仓库与服务器配置文件里都没有。若在排查故障时先 kill 进程，
-> 这些值将永久丢失：`JWT_SECRET` 丢失会使所有管理员登录态失效且无法复原，
-> `PORTAL_API_KEY` 丢失会切断后台与前台的对接通道。
-> **任何情况下，先跑 `extract-admin-runtime-env.sh` 再动进程。**
+> **凭据抢救的时间窗口。** `JWT_SECRET`、`PORTAL_API_KEY` 与
+> `BUILT_IN_FORGE_API_URL` / `BUILT_IN_FORGE_API_KEY` 只存在于运行进程的环境变量中，
+> 仓库与服务器配置文件里都没有。若在排查故障时先 kill 进程，这些值将永久丢失：
+> `JWT_SECRET` 丢失会使所有管理员登录态失效且无法复原，`PORTAL_API_KEY` 丢失会
+> 切断后台与前台的对接通道，而 Forge 凭据丢失会使依赖内置代理的上传链路在重启后失败。
+> **任何情况下，先跑 `extract-admin-runtime-env.sh` 再动进程。** 提取脚本只显示键名和
+> 脱敏占位符，绝不在终端打印凭据值。
 
 ## 历史故障与防护
 

@@ -1694,15 +1694,26 @@ export const appRouter = router({
         if (!material) {
           throw new TRPCError({ code: "NOT_FOUND", message: `型号 ${input.partNumber} 不存在` });
         }
-        const { url } = saveLocalFile("material-images", ext, buffer);
-        const result = await db.appendMaterialImage(material.id, {
-          url,
-          name: input.fileName,
-          asCover: input.asCover,
-        });
+        const stored = saveLocalFile("material-images", ext, buffer);
+        let result: Awaited<ReturnType<typeof db.appendMaterialImage>>;
+        try {
+          result = await db.appendMaterialImage(material.id, {
+            url: stored.url,
+            name: input.fileName,
+            asCover: input.asCover,
+          });
+        } catch (error) {
+          // 文件已落盘但图集事务未提交时，补偿删除，避免留下无法引用的孤儿文件。
+          try {
+            removeLocalFile(stored.filePath);
+          } catch (cleanupError) {
+            console.error("[Material image upload] Failed to remove orphaned file:", cleanupError);
+          }
+          throw error;
+        }
         return {
           partNumber: material.partNumber,
-          url,
+          url: stored.url,
           coverImageUrl: result.coverImageUrl,
           imageCount: result.imageCount,
         };

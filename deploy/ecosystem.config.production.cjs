@@ -41,8 +41,15 @@ function loadRuntimeEnv(file) {
 const sharedEnv = loadRuntimeEnv("/opt/config/dianzi51-admin/runtime.env");
 
 // 关键变量缺失时拒绝启动：JWT_SECRET 缺失会导致所有管理员登录态失效，
-// 静默启动比启动失败危险得多。
-for (const key of ["PORT", "DATABASE_URL", "JWT_SECRET"]) {
+// Forge 凭据缺失会令依赖内置代理的上传请求在重启后失败；静默启动比启动失败危险得多。
+// 错误只包含键名，绝不输出 runtime.env 中的值。
+for (const key of [
+  "PORT",
+  "DATABASE_URL",
+  "JWT_SECRET",
+  "BUILT_IN_FORGE_API_URL",
+  "BUILT_IN_FORGE_API_KEY",
+]) {
   if (!sharedEnv[key]) {
     throw new Error(`runtime.env 缺少必需变量 ${key}，拒绝启动`);
   }
