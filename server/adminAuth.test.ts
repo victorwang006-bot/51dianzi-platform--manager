@@ -230,6 +230,40 @@ describe("找回密码（手机/邮箱验证码）", () => {
     await db.setAdminUserPassword(account!.id, await hashPassword(TEST_PASSWORD));
   });
 
+  it("同一验证码并发提交时只有一个密码重置成功", async () => {
+    const account = await db.getAdminUserByUsername(TEST_USERNAME);
+    await clearActiveResetCodes(account!.id);
+    const { ctx } = createCtx();
+    const caller = appRouter.createCaller(ctx);
+    await caller.auth.requestReset({ username: TEST_USERNAME, channel: "sms" });
+
+    const record = await db.getActivePasswordResetCode(account!.id);
+    expect(record).not.toBeNull();
+    const knownCode = "246810";
+    const dbConn = await db.getDb();
+    await dbConn!
+      .update(passwordResetCodes)
+      .set({ codeHash: await hashPassword(knownCode) })
+      .where(eq(passwordResetCodes.id, record!.id));
+
+    const attempts = await Promise.allSettled([
+      caller.auth.resetPassword({
+        username: TEST_USERNAME,
+        code: knownCode,
+        newPassword: "ConcurrentPass@1",
+      }),
+      caller.auth.resetPassword({
+        username: TEST_USERNAME,
+        code: knownCode,
+        newPassword: "ConcurrentPass@2",
+      }),
+    ]);
+    expect(attempts.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(attempts.filter(result => result.status === "rejected")).toHaveLength(1);
+
+    await db.setAdminUserPassword(account!.id, await hashPassword(TEST_PASSWORD));
+  });
+
   it("发送频率限制：60 秒内重复发送被拒绝", async () => {
     const account = await db.getAdminUserByUsername(TEST_USERNAME);
     await clearActiveResetCodes(account!.id);
