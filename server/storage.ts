@@ -31,7 +31,7 @@ function getOssClient(config: NonNullable<ReturnType<typeof ossConfig>>) {
   if (cachedOssClient?.signature === signature) return cachedOssClient.client;
   const client = new S3Client({
     region: config.region,
-    endpoint: `https://${config.bucket}.${config.region}.aliyuncs.com`,
+    endpoint: `https://${config.region}.aliyuncs.com`,
     forcePathStyle: false,
     credentials: {
       accessKeyId: config.accessKeyId,

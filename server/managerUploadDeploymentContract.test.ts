@@ -39,6 +39,8 @@ describe("管理员上传运行时环境部署契约", () => {
     expect(storageSource).toContain('ACL: "private"');
     expect(storageSource).toContain("new GetObjectCommand");
     expect(storageSource).toContain("{ expiresIn: 15 * 60 }");
+    expect(storageSource).toContain('endpoint: `https://${config.region}.aliyuncs.com`');
+    expect(storageSource).not.toContain('endpoint: `https://${config.bucket}.${config.region}.aliyuncs.com`');
     expect(storageSource).toContain("forgeConfig() || ossConfig()");
     expect(storageProxySource).toContain('import { storageGetSignedUrl } from "../storage"');
     expect(storageProxySource).toContain("await storageGetSignedUrl(key)");
