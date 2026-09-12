@@ -111,6 +111,11 @@ echo "=== 4e. 执行商户销售负责人筛选索引幂等迁移 ==="
 test -f "$REL/scripts/apply-merchant-sales-owner-filter-schema.mjs" || { echo "FAIL: 缺少销售负责人筛选迁移脚本"; exit 1; }
 node "$REL/scripts/apply-merchant-sales-owner-filter-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
+echo "=== 4f. 执行后台账号与会话安全幂等迁移 ==="
+test -f "$REL/scripts/apply-admin-account-security-schema.mjs" || { echo "FAIL: 缺少后台账号安全迁移脚本"; exit 1; }
+node "$REL/scripts/apply-admin-account-security-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 install -o root -g root -m 0700 "$REL/scripts/rollback-admin.sh" \
   /opt/config/dianzi51-admin/rollback-admin.sh
 

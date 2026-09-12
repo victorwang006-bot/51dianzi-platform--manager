@@ -70,15 +70,26 @@ describe("administrator security boundaries", () => {
     expect(normalizeAdminUsername("   ")).toBe("");
   });
 
-  it("registers the account-security SQL in the Drizzle journal used by deployment", () => {
+  it("registers the account-security schema and runs an idempotent migration before deployment switch", () => {
     const journal = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")) as {
       entries: Array<{ idx: number; tag: string; when: number }>;
     };
+    const deploy = readFileSync("deploy/deploy-admin.sh", "utf8");
+    const runner = readFileSync("scripts/apply-admin-account-security-schema.mjs", "utf8");
     const migration = journal.entries.find(entry => entry.tag === "0021_admin_account_security");
     expect(migration).toMatchObject({ idx: 19, tag: "0021_admin_account_security" });
     expect(migration?.when).toBeGreaterThan(1785976729575);
     expect(readFileSync("drizzle/0021_admin_account_security.sql", "utf8")).toContain(
       "admin_users_username_canonical_unique",
+    );
+    expect(runner).toContain("SELECT GET_LOCK(?, 30)");
+    expect(runner).toContain("GROUP BY LOWER(TRIM(username))");
+    expect(runner).toContain("ADD COLUMN `sessionVersion` int NOT NULL DEFAULT 1");
+    expect(runner).toContain("admin_users_username_canonical_unique");
+    expect(deploy).toContain('test -f "$REL/scripts/apply-admin-account-security-schema.mjs"');
+    expect(deploy).toContain('node "$REL/scripts/apply-admin-account-security-schema.mjs"');
+    expect(deploy.indexOf("apply-admin-account-security-schema.mjs")).toBeLessThan(
+      deploy.indexOf('echo "=== 5. 原子切换软链 ==="'),
     );
   });
 
