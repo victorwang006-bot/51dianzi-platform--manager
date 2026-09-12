@@ -7,14 +7,82 @@ location = /admin {
 location ^~ /admin/uploads/ {
     alias /opt/apps/dianzi51-admin/uploads/;
     access_log off;
-    expires 7d;
-    add_header Cache-Control "public, max-age=604800";
+    add_header Cache-Control "private, no-store, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
     try_files $uri =404;
 }
 
-# 尾部斜杠会把 /admin/ 前缀从上游请求中移除：
-# /admin/api/trpc -> http://127.0.0.1:3001/api/trpc
-location ^~ /admin/ {
+# 仅带内容哈希的 Vite 文件与 release 绑定，可长期缓存；缺失时必须 404。
+location ~ "^/admin/assets/(?:.+/)?[^/]+-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$" {
+    rewrite ^/admin/(.*)$ /$1 break;
+    proxy_pass http://127.0.0.1:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+}
+# 无哈希资源保留上游静态 404 行为，但不获得 immutable 语义。
+location /admin/assets/ {
+    proxy_pass http://127.0.0.1:3001/assets/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_hide_header Cache-Control;
+    proxy_hide_header Pragma;
+    proxy_hide_header Expires;
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
+# 后台 API 可返回会话、权限与租户数据，严禁浏览器和共享代理公开缓存。
+location = /admin/api {
+    proxy_pass http://127.0.0.1:3001/api;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /admin;
+    proxy_read_timeout 120s;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "private, no-store, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
+location ^~ /admin/api/ {
+    proxy_pass http://127.0.0.1:3001/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /admin;
+    proxy_read_timeout 120s;
+    client_max_body_size 55m;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "private, no-store, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
+# HTML 永远重新校验，避免 release 切换后仍引用旧哈希资源。
+location = /admin/index.html {
+    proxy_pass http://127.0.0.1:3001/index.html;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_hide_header Cache-Control;
+    proxy_hide_header Pragma;
+    proxy_hide_header Expires;
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
+# 尾部斜杠会把 /admin/ 前缀从上游请求中移除。
+# 未被上面规则捕获的内容（包括 SPA HTML 深链接）一律不得公开缓存。
+location /admin/ {
     proxy_pass http://127.0.0.1:3001/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
@@ -24,4 +92,10 @@ location ^~ /admin/ {
     proxy_set_header X-Forwarded-Prefix /admin;
     proxy_read_timeout 120s;
     client_max_body_size 55m;
+    proxy_hide_header Cache-Control;
+    proxy_hide_header Pragma;
+    proxy_hide_header Expires;
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
 }

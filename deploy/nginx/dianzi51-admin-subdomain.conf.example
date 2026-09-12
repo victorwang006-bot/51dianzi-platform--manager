@@ -53,17 +53,27 @@ server {
     location ^~ /uploads/ {
         alias /opt/apps/dianzi51-admin/uploads/;
         access_log off;
-        expires 7d;
-        add_header Cache-Control "public, max-age=604800" always;
+        add_header Cache-Control "private, no-store, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
         add_header X-Content-Type-Options "nosniff" always;
         try_files $uri =404;
     }
 
-    # Vite 哈希资源缺失时必须返回 404，禁止误回退为 HTML 200。
-    location ^~ /assets/ {
+    # 仅内容哈希的 Vite 资源与 release 绑定，可长期缓存；缺失时必须返回 404。
+    location ~ "^/assets/(?:.+/)?[^/]+-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$" {
         try_files $uri =404;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+    # 无哈希资源不能获得 immutable 语义，且不能回退为 HTML 200。
+    location /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
         add_header X-Content-Type-Options "nosniff" always;
     }
@@ -77,6 +87,10 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 120s;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "private, no-store, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
     }
 
     location ^~ /api/ {
@@ -87,6 +101,10 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 120s;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "private, no-store, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
     }
 
     location = /robots.txt {

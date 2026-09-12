@@ -42,35 +42,105 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
-import Login from "@/pages/Login";
+import {
+  preloadAdminRoute,
+  type AdminNavigationChunk,
+} from "@/lib/adminRouteChunks";
 import {
   hasAdminPermission,
   type AdminPermission,
   type AdminRole,
 } from "@shared/adminPermissions";
 
-
-
-
 const menuGroups = [
   {
     label: "业务管理",
     items: [
-      { icon: Database, label: "物料数据库", path: "/", permission: "materials.read" as AdminPermission, nested: false },
-      { icon: Store, label: "商户管理", path: "/merchants", permission: "merchants.read" as AdminPermission, nested: false },
-      { icon: ShoppingCart, label: "订单管理", path: "/orders", permission: "orders.read" as AdminPermission, nested: false },
-      { icon: MessageSquare, label: "消息中心", path: "/messages", permission: "messages.read" as AdminPermission, nested: false },
-      { icon: MessagesSquare, label: "评价管理", path: "/reviews", permission: "logs.read" as AdminPermission, nested: false },
-      { icon: Users, label: "用户管理", path: "/portal-users", permission: "portalUsers.read" as AdminPermission, nested: false },
-      { icon: BarChart3, label: "运营数据", path: "/analytics", permission: "analytics.read" as AdminPermission, nested: false },
+      {
+        icon: Database,
+        label: "物料数据库",
+        path: "/",
+        permission: "materials.read" as AdminPermission,
+        chunk: "materials" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: Store,
+        label: "商户管理",
+        path: "/merchants",
+        permission: "merchants.read" as AdminPermission,
+        chunk: "merchants" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: ShoppingCart,
+        label: "订单管理",
+        path: "/orders",
+        permission: "orders.read" as AdminPermission,
+        chunk: "orders" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: MessageSquare,
+        label: "消息中心",
+        path: "/messages",
+        permission: "messages.read" as AdminPermission,
+        chunk: "messages" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: MessagesSquare,
+        label: "评价管理",
+        path: "/reviews",
+        permission: "logs.read" as AdminPermission,
+        chunk: "reviews" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: Users,
+        label: "用户管理",
+        path: "/portal-users",
+        permission: "portalUsers.read" as AdminPermission,
+        chunk: "portalUsers" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: BarChart3,
+        label: "运营数据",
+        path: "/analytics",
+        permission: "analytics.read" as AdminPermission,
+        chunk: "analytics" as AdminNavigationChunk,
+        nested: false,
+      },
     ],
   },
   {
     label: "系统",
     items: [
-      { icon: UserCog, label: "后台用户管理", path: "/admins", permission: "admins.manage" as AdminPermission, nested: false },
-      { icon: ShieldAlert, label: "异常日志", path: "/exception-logs", permission: "logs.read" as AdminPermission, nested: false },
-      { icon: User, label: "个人信息", path: "/profile", permission: "profile.manage" as AdminPermission, nested: false },
+      {
+        icon: UserCog,
+        label: "后台用户管理",
+        path: "/admins",
+        permission: "admins.manage" as AdminPermission,
+        chunk: "admins" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: ShieldAlert,
+        label: "异常日志",
+        path: "/exception-logs",
+        permission: "logs.read" as AdminPermission,
+        chunk: "exceptionLogs" as AdminNavigationChunk,
+        nested: false,
+      },
+      {
+        icon: User,
+        label: "个人信息",
+        path: "/profile",
+        permission: "profile.manage" as AdminPermission,
+        chunk: "profile" as AdminNavigationChunk,
+        nested: false,
+      },
     ],
   },
 ];
@@ -114,7 +184,7 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    return <Login />;
+    return <DashboardLayoutSkeleton />;
   }
 
   if (user.role !== "admin") {
@@ -125,8 +195,8 @@ export default function DashboardLayout({
           <ShieldAlert className="h-12 w-12 text-amber-500" />
           <h1 className="text-xl font-semibold">暂无访问权限</h1>
           <p className="text-sm text-muted-foreground">
-            您的账号（{user.name || user.email || "未知"}）尚未被授予后台管理权限。
-            请联系平台超级管理员为您分配角色后再试。
+            您的账号（{user.name || user.email || "未知"}
+            ）尚未被授予后台管理权限。 请联系平台超级管理员为您分配角色后再试。
           </p>
         </div>
       </div>
@@ -163,11 +233,19 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = allMenuItems.find(item => isMenuPathActive(location, item.path));
+  const activeMenuItem = allMenuItems.find(item =>
+    isMenuPathActive(location, item.path)
+  );
   const isMobile = useIsMobile();
-  const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ?? "super_admin") as AdminRole;
-  const adminPermissions = (user as { permissions?: string[] } | null)?.permissions;
-  const canReadMessages = hasAdminPermission(adminRole, "messages.read", adminPermissions);
+  const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ??
+    "super_admin") as AdminRole;
+  const adminPermissions = (user as { permissions?: string[] } | null)
+    ?.permissions;
+  const canReadMessages = hasAdminPermission(
+    adminRole,
+    "messages.read",
+    adminPermissions
+  );
   // 消息未读总数（侧边栏角标，30 秒轮询）
   const { data: unreadData } = trpc.message.unreadCount.useQuery(undefined, {
     enabled: canReadMessages,
@@ -246,30 +324,43 @@ function DashboardLayoutContent({
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-2">
-                    {group.items.filter(item => hasAdminPermission(adminRole, item.permission, adminPermissions)).map(item => {
-                      const isActive = isMenuPathActive(location, item.path);
-                      const showUnread = item.path === "/messages" && unreadTotal > 0;
-                      return (
-                        <SidebarMenuItem key={item.path}>
-                          <SidebarMenuButton
-                            isActive={isActive}
-                            onClick={() => setLocation(item.path)}
-                            tooltip={item.label}
-                            className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
-                          >
-                            <item.icon
-                              className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                            />
-                            <span>{item.label}</span>
-                            {showUnread && (
-                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
-                                {unreadTotal > 99 ? "99+" : unreadTotal}
-                              </span>
-                            )}
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
+                    {group.items
+                      .filter(item =>
+                        hasAdminPermission(
+                          adminRole,
+                          item.permission,
+                          adminPermissions
+                        )
+                      )
+                      .map(item => {
+                        const isActive = isMenuPathActive(location, item.path);
+                        const showUnread =
+                          item.path === "/messages" && unreadTotal > 0;
+                        return (
+                          <SidebarMenuItem key={item.path}>
+                            <SidebarMenuButton
+                              isActive={isActive}
+                              onClick={() => setLocation(item.path)}
+                              onPointerEnter={() =>
+                                preloadAdminRoute(item.chunk)
+                              }
+                              onFocus={() => preloadAdminRoute(item.chunk)}
+                              tooltip={item.label}
+                              className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
+                            >
+                              <item.icon
+                                className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                              />
+                              <span>{item.label}</span>
+                              {showUnread && (
+                                <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
+                                  {unreadTotal > 99 ? "99+" : unreadTotal}
+                                </span>
+                              )}
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -290,7 +381,9 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {adminRoleLabels[(user as { adminRole?: string })?.adminRole ?? ""] ?? "管理员"}
+                      {adminRoleLabels[
+                        (user as { adminRole?: string })?.adminRole ?? ""
+                      ] ?? "管理员"}
                     </p>
                   </div>
                 </button>
@@ -331,7 +424,9 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-6 bg-background min-h-screen">{children}</main>
+        <main className="flex-1 p-6 bg-background min-h-screen">
+          {children}
+        </main>
       </SidebarInset>
     </>
   );

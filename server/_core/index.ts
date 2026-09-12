@@ -11,6 +11,16 @@ import { serveStatic } from "./vite";
 import { getUploadRoot } from "../localUpload";
 import { startExceptionLogCleanup } from "../exceptionLogCleanup";
 
+const PRIVATE_NO_STORE_CACHE_CONTROL = "private, no-store, max-age=0";
+
+function setPrivateNoStoreHeaders(res: {
+  setHeader(name: string, value: string): void;
+}) {
+  res.setHeader("Cache-Control", PRIVATE_NO_STORE_CACHE_CONTROL);
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+}
+
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
@@ -36,11 +46,28 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // API responses can contain sessions, permissions, and tenant data. Never allow
+  // browser or intermediary public caches to retain them, including OAuth callbacks.
+  app.use("/api", (_req, res, next) => {
+    setPrivateNoStoreHeaders(res);
+    next();
+  });
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   startExceptionLogCleanup();
-  // 本地上传文件静态服务（物料图片等；生产也可由 Nginx /admin/uploads/ 直接提供）
-  app.use("/uploads", express.static(getUploadRoot(), { maxAge: "7d" }));
+  // Upload URLs can identify tenant resources. Do not let browsers or intermediaries
+  // retain them; a missing upload must not fall through to the SPA HTML response.
+  app.use(
+    "/uploads",
+    (_req, res, next) => {
+      setPrivateNoStoreHeaders(res);
+      next();
+    },
+    express.static(getUploadRoot(), {
+      setHeaders: setPrivateNoStoreHeaders,
+    })
+  );
+  app.use("/uploads", (_req, res) => res.sendStatus(404));
   // tRPC API
   app.use(
     "/api/trpc",

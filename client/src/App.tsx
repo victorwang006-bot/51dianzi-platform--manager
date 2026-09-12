@@ -1,39 +1,48 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Router as WouterRouter, Switch, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { DashboardLayoutSkeleton } from "./components/DashboardLayoutSkeleton";
-import DashboardLayout from "./components/DashboardLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Admins from "./pages/Admins";
-import ExceptionLogs from "./pages/ExceptionLogs";
-import Login from "./pages/Login";
-import Materials from "./pages/Materials";
-import MerchantDetail from "./pages/MerchantDetail";
-import Merchants from "./pages/Merchants";
-import Messages from "./pages/Messages";
-import Orders from "./pages/Orders";
-import PortalUsers from "./pages/PortalUsers";
-import Profile from "./pages/Profile";
-import Reviews from "./pages/Reviews";
-import Analytics from "./pages/Analytics";
-import { ShieldAlert } from "lucide-react";
+import {
+  LazyAdmins,
+  LazyAnalytics,
+  LazyExceptionLogs,
+  LazyForbidden,
+  LazyLogin,
+  LazyMaterials,
+  LazyMerchantDetail,
+  LazyMerchants,
+  LazyMessages,
+  LazyNotFound,
+  LazyOrders,
+  LazyPortalUsers,
+  LazyProfile,
+  LazyReviews,
+} from "./lib/adminRouteChunks";
 import {
   hasAdminPermission,
   type AdminPermission,
   type AdminRole,
 } from "@shared/adminPermissions";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import {
   createAdminLoginPath,
   readAdminLoginReturnPath,
 } from "./lib/adminRoutes";
 
+function RouteFallback() {
+  return <DashboardLayoutSkeleton />;
+}
+
+function LazyScreen({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
+}
+
 /**
  * 认证门卫：未登录访问受保护页面时重定向到独立 /login 路由，
- * 同时保留原目标地址；业务页面不会在未认证状态下挂载。
+ * 同时保留原目标地址；业务页面不会在未认证状态下挂载或预加载。
  */
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -45,8 +54,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     setLocation(createAdminLoginPath(location, search), { replace: true });
   }, [loading, location, setLocation, user]);
 
-  if (loading) return <DashboardLayoutSkeleton />;
-  if (!user) return <DashboardLayoutSkeleton />;
+  if (loading) return <RouteFallback />;
+  if (!user) return <RouteFallback />;
   return <>{children}</>;
 }
 
@@ -63,8 +72,12 @@ function LoginRoute() {
     }
   }, [loading, returnPath, setLocation, user]);
 
-  if (loading || user) return <DashboardLayoutSkeleton />;
-  return <Login />;
+  if (loading || user) return <RouteFallback />;
+  return (
+    <LazyScreen>
+      <LazyLogin />
+    </LazyScreen>
+  );
 }
 
 function PermissionGate({
@@ -80,52 +93,93 @@ function PermissionGate({
   if (hasAdminPermission(role, permission, permissions)) return <>{children}</>;
 
   return (
-    <DashboardLayout>
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="max-w-md text-center">
-          <ShieldAlert className="mx-auto h-12 w-12 text-amber-500" />
-          <h1 className="mt-4 text-xl font-semibold">暂无访问权限</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            当前后台角色没有访问此模块的权限，请从侧边栏选择已授权模块，或联系超级管理员调整角色。
-          </p>
-        </div>
-      </div>
-    </DashboardLayout>
+    <LazyScreen>
+      <LazyForbidden />
+    </LazyScreen>
   );
 }
 
 const MaterialsRoute = () => (
-  <PermissionGate permission="materials.read"><Materials /></PermissionGate>
+  <PermissionGate permission="materials.read">
+    <LazyScreen>
+      <LazyMaterials />
+    </LazyScreen>
+  </PermissionGate>
 );
 const MerchantsRoute = () => (
-  <PermissionGate permission="merchants.read"><Merchants /></PermissionGate>
+  <PermissionGate permission="merchants.read">
+    <LazyScreen>
+      <LazyMerchants />
+    </LazyScreen>
+  </PermissionGate>
 );
 const MerchantDetailRoute = () => (
-  <PermissionGate permission="merchants.read"><MerchantDetail /></PermissionGate>
+  <PermissionGate permission="merchants.read">
+    <LazyScreen>
+      <LazyMerchantDetail />
+    </LazyScreen>
+  </PermissionGate>
 );
 const MessagesRoute = () => (
-  <PermissionGate permission="messages.read"><Messages /></PermissionGate>
+  <PermissionGate permission="messages.read">
+    <LazyScreen>
+      <LazyMessages />
+    </LazyScreen>
+  </PermissionGate>
 );
 const PortalUsersRoute = () => (
-  <PermissionGate permission="portalUsers.read"><PortalUsers /></PermissionGate>
+  <PermissionGate permission="portalUsers.read">
+    <LazyScreen>
+      <LazyPortalUsers />
+    </LazyScreen>
+  </PermissionGate>
 );
 const AdminsRoute = () => (
-  <PermissionGate permission="admins.manage"><Admins /></PermissionGate>
+  <PermissionGate permission="admins.manage">
+    <LazyScreen>
+      <LazyAdmins />
+    </LazyScreen>
+  </PermissionGate>
 );
 const OrdersRoute = () => (
-  <PermissionGate permission="orders.read"><Orders /></PermissionGate>
+  <PermissionGate permission="orders.read">
+    <LazyScreen>
+      <LazyOrders />
+    </LazyScreen>
+  </PermissionGate>
 );
 const ProfileRoute = () => (
-  <PermissionGate permission="profile.manage"><Profile /></PermissionGate>
+  <PermissionGate permission="profile.manage">
+    <LazyScreen>
+      <LazyProfile />
+    </LazyScreen>
+  </PermissionGate>
 );
 const ExceptionLogsRoute = () => (
-  <PermissionGate permission="logs.read"><ExceptionLogs /></PermissionGate>
+  <PermissionGate permission="logs.read">
+    <LazyScreen>
+      <LazyExceptionLogs />
+    </LazyScreen>
+  </PermissionGate>
 );
 const ReviewsRoute = () => (
-  <PermissionGate permission="logs.read"><Reviews /></PermissionGate>
+  <PermissionGate permission="logs.read">
+    <LazyScreen>
+      <LazyReviews />
+    </LazyScreen>
+  </PermissionGate>
 );
 const AnalyticsRoute = () => (
-  <PermissionGate permission="analytics.read"><Analytics /></PermissionGate>
+  <PermissionGate permission="analytics.read">
+    <LazyScreen>
+      <LazyAnalytics />
+    </LazyScreen>
+  </PermissionGate>
+);
+const NotFoundRoute = () => (
+  <LazyScreen>
+    <LazyNotFound />
+  </LazyScreen>
 );
 
 /** 部署 base 路径（如 /admin），本地开发为空字符串 */
@@ -150,8 +204,8 @@ function AppRoutes() {
         <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
         <Route path={"/analytics"} component={AnalyticsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
-        <Route path={"/404"} component={NotFound} />
-        <Route component={NotFound} />
+        <Route path={"/404"} component={NotFoundRoute} />
+        <Route component={NotFoundRoute} />
       </Switch>
     </AuthGate>
   );
