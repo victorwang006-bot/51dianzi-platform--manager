@@ -801,21 +801,21 @@ function escapeLike(value: string) {
 export async function searchMerchantOwnership(input: {
   query: string;
   adminUserId: number;
+  rateLimitUserId: number;
   salesStaffCodes?: string[];
   ipAddress?: string | null;
 }) {
   const db = await getDb();
   if (!db) return { results: [] };
   return db.transaction(async tx => {
-    const lockName = `d51-ownership-query-${input.adminUserId}`;
-    const lockResult = (await tx.execute(sql`
-      SELECT GET_LOCK(${lockName}, 5) AS acquired
-    `)) as unknown as [{ acquired?: number }[], unknown];
-    if (Number(lockResult[0]?.[0]?.acquired ?? 0) !== 1) {
-      throw new Error("OWNERSHIP_QUERY_BUSY");
-    }
+    const [rateLimitUser] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, input.rateLimitUserId))
+      .limit(1)
+      .for("update");
+    if (!rateLimitUser) throw new Error("OWNERSHIP_QUERY_USER_NOT_FOUND");
 
-    try {
   const query = input.query.trim();
   const compact = query.replace(/\s+/g, "").toUpperCase();
   const now = new Date();
@@ -907,9 +907,6 @@ export async function searchMerchantOwnership(input: {
       requestToken: ownershipRequestToken(row.id, input.adminUserId, requestTokenExpiresAt),
     })),
   };
-    } finally {
-      await tx.execute(sql`SELECT RELEASE_LOCK(${lockName})`).catch(() => undefined);
-    }
   });
 }
 

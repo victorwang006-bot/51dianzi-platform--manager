@@ -956,15 +956,13 @@ export const appRouter = router({
           return await db.searchMerchantOwnership({
             query: input.query,
             adminUserId: ctx.adminAccount?.id ?? ctx.user.id,
+            rateLimitUserId: ctx.user.id,
             salesStaffCodes: await getAdminSalesStaffCodes(ctx),
             ipAddress: auditActorFromContext(ctx).ipAddress,
           });
         } catch (error) {
           if (error instanceof Error && error.message === "OWNERSHIP_QUERY_RATE_LIMITED") {
             throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "查询过于频繁，请稍后再试" });
-          }
-          if (error instanceof Error && error.message === "OWNERSHIP_QUERY_BUSY") {
-            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "查询正在处理中，请稍后再试" });
           }
           throw error;
         }
