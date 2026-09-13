@@ -46,6 +46,7 @@ import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { completePlatformCrmRebind, validatePlatformCrmRebindTarget } from "./platformCrmApi";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
 import { normalizeAdminUsername } from "../shared/adminUsername";
+import { getAdminLoginHistory } from "./adminLoginSecurity";
 import {
   ADMIN_NOTIFICATION_MODULES,
   type AdminNotificationModule,
@@ -1908,6 +1909,21 @@ export const appRouter = router({
     list: adminManageProcedure.input(pageInput).query(async ({ input }) => {
       return db.getAdminUsers(input);
     }),
+    loginHistory: adminManageProcedure
+      .input(z.object({ id: z.number().int().positive(), limit: z.number().int().min(1).max(100).default(50) }))
+      .query(({ input }) => getAdminLoginHistory(input.id, input.limit)),
+    revokeSessions: adminManageProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        reason: z.string().trim().min(2, "请填写至少2个字的操作原因").max(500),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await db.revokeAdminUserSessions(input.id, input.reason, auditActorFromContext(ctx));
+        } catch (error) {
+          throw mapAdminLifecycleError(error);
+        }
+      }),
     create: adminManageProcedure.input(z.object({
       username: z.string().trim().min(2, "用户名至少 2 位").max(64),
       displayName: z.string().max(128).optional().nullable(),

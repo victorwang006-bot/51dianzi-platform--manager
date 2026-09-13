@@ -25,12 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import {
   getAdminRolePermissions,
   type AdminPermission,
 } from "@shared/adminPermissions";
-import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { LogOut, Pencil, Plus, RefreshCw, ShieldAlert, ShieldCheck, ShieldQuestion, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -77,6 +78,21 @@ function resolveRoleLabel(role: AdminRole | string): string {
     ?? role
   );
 }
+
+function securityPresentation(risk: string | null | undefined) {
+  if (risk === "high") return { label: "高风险", style: "danger" as const, Icon: ShieldAlert };
+  if (risk === "attention") return { label: "需关注", style: "warning" as const, Icon: ShieldAlert };
+  if (risk === "normal") return { label: "正常", style: "success" as const, Icon: ShieldCheck };
+  return { label: "待建立", style: "gray" as const, Icon: ShieldQuestion };
+}
+
+function loginMethodLabel(value: string | null | undefined) {
+  if (value === "password") return "密码登录";
+  if (value === "oauth") return "第三方授权";
+  return value || "未知方式";
+}
+
+type SecurityTarget = { id: number; label: string };
 
 const roleStyleMap: Record<AdminRole, "danger" | "info" | "warning" | "success" | "gray"> = {
   super_admin: "danger",
@@ -217,6 +233,13 @@ export default function Admins() {
   const [page, setPage] = useState(1);
   const utils = trpc.useUtils();
   const { data, isLoading, isFetching, refetch } = trpc.adminUser.list.useQuery({ page, pageSize: 20 });
+  const [securityTarget, setSecurityTarget] = useState<SecurityTarget | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<SecurityTarget | null>(null);
+  const [revokeReason, setRevokeReason] = useState("");
+  const loginHistoryQuery = trpc.adminUser.loginHistory.useQuery(
+    { id: securityTarget?.id ?? 1, limit: 50 },
+    { enabled: Boolean(securityTarget), retry: 1 },
+  );
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -266,6 +289,16 @@ export default function Admins() {
       toast.success("用户已删除");
     },
     onError: (e) => toast.error(`删除失败：${e.message}`),
+  });
+
+  const revokeSessionsMutation = trpc.adminUser.revokeSessions.useMutation({
+    onSuccess: async () => {
+      toast.success("该员工的全部既有登录会话已失效");
+      setRevokeTarget(null);
+      setRevokeReason("");
+      await utils.adminUser.list.invalidate();
+    },
+    onError: (e) => toast.error(`强制退出失败：${e.message}`),
   });
 
   function openCreate() {
@@ -373,54 +406,73 @@ export default function Admins() {
             <EmptyState message="暂无用户账户，点击右上角「新建用户」添加第一个用户。" />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="admin-table">
+              <div className="admin-user-table min-w-0">
+                <table className="admin-table admin-user-responsive-table table-fixed">
+                  <colgroup>
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "23%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "13%" }} />
+                    <col style={{ width: "8%" }} />
+                  </colgroup>
                   <thead>
                     <tr>
-                      <th>用户名</th>
-                      <th>显示名称</th>
-                      <th>角色权限</th>
-                      <th>模块权限</th>
-                      <th>销售权限</th>
-                      <th>手机号</th>
-                      <th>邮箱</th>
-                      <th>状态</th>
-                      <th>最近登录</th>
-                      <th>创建时间</th>
+                      <th>账号</th>
+                      <th>权限范围</th>
+                      <th>联系方式</th>
+                      <th>状态 / 登录安全</th>
+                      <th>时间</th>
                       <th>操作</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.data.map(a => (
+                    {data.data.map(a => {
+                      const target = { id: a.id, label: a.displayName || a.username };
+                      const security = securityPresentation(a.securityRiskLevel);
+                      const SecurityIcon = security.Icon;
+                      return (
                       <tr key={a.id}>
-                        <td className="font-mono text-xs font-medium">{a.username}</td>
-                        <td>{a.displayName ?? <span className="text-muted-foreground">-</span>}</td>
-                        <td>
-                          <StatusBadge
-                            label={resolveRoleLabel(a.adminRole)}
-                            style={roleStyleMap[a.adminRole as AdminRole] ?? "info"}
-                          />
+                        <td data-label="账号" className="whitespace-normal align-top">
+                          <div className="break-all font-mono text-xs font-medium">{a.username}</div>
+                          <div className="mt-1 break-words text-sm">{a.displayName || "未填写名称"}</div>
+                          <div className="mt-1"><StatusBadge label={resolveRoleLabel(a.adminRole)} style={roleStyleMap[a.adminRole as AdminRole] ?? "info"} /></div>
                         </td>
-                        <td className="max-w-[170px] whitespace-nowrap text-xs">
-                          {renderModulePermissions(a.adminRole, a.permissions)}
+                        <td data-label="权限范围" className="whitespace-normal align-top text-xs">
+                          <div><span className="text-muted-foreground">模块：</span>{renderModulePermissions(a.adminRole, a.permissions)}</div>
+                          <div className="mt-1"><span className="text-muted-foreground">销售：</span>{a.adminRole === "super_admin" ? "全部销售范围" : renderSalesScope(a.salesStaffCodes ?? [], a.ownSalesStaffCode ?? null)}</div>
                         </td>
-                        <td className="max-w-[170px] whitespace-nowrap text-xs">
-                          {a.adminRole === "super_admin"
-                            ? <span className="text-muted-foreground">全部销售范围</span>
-                            : renderSalesScope(a.salesStaffCodes ?? [], a.ownSalesStaffCode ?? null)}
+                        <td data-label="联系方式" className="whitespace-normal align-top text-xs">
+                          <div className="break-all">{a.phone || "未填写手机号"}</div>
+                          <div className="mt-1 break-all text-muted-foreground">{a.email || "未填写邮箱"}</div>
                         </td>
-                        <td className="text-xs">{a.phone ?? <span className="text-muted-foreground">-</span>}</td>
-                        <td className="text-xs">{a.email ?? <span className="text-muted-foreground">-</span>}</td>
-                        <td>
-                          <StatusBadge
-                            label={a.status === "active" ? "启用" : a.status === "locked" ? "锁定" : "停用"}
-                            style={a.status === "active" ? "success" : a.status === "locked" ? "warning" : "gray"}
-                          />
+                        <td data-label="状态 / 登录安全" className="whitespace-normal align-top">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <StatusBadge label={a.status === "active" ? "启用" : a.status === "locked" ? "锁定" : "停用"} style={a.status === "active" ? "success" : a.status === "locked" ? "warning" : "gray"} />
+                            <StatusBadge label={security.label} style={security.style} />
+                          </div>
+                          <button
+                            type="button"
+                            className="mt-2 flex w-full items-start gap-2 rounded-md border bg-background p-2 text-left text-xs transition-colors hover:border-blue-200 hover:bg-blue-50/40"
+                            onClick={() => setSecurityTarget(target)}
+                            title="查看登录安全记录"
+                          >
+                            <SecurityIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#185FA5]" />
+                            <span className="min-w-0">
+                              <span className="block break-all text-foreground/80">{a.lastLoginIpAddress || "下次登录后记录IP"}</span>
+                              <span className="mt-0.5 block break-words text-muted-foreground">{a.lastLoginLocation || "暂无归属地"}{a.lastLoginDevice ? ` · ${a.lastLoginDevice}` : ""}</span>
+                            </span>
+                          </button>
                         </td>
-                        <td className="text-xs text-muted-foreground">{formatDateTime(a.lastLoginAt)}</td>
-                        <td className="text-xs text-muted-foreground">{formatDateTime(a.createdAt)}</td>
-                        <td>
-                          <div className="flex items-center gap-1.5">
+                        <td data-label="时间" className="whitespace-normal align-top text-xs text-muted-foreground">
+                          <div><span className="text-foreground/70">登录</span> {a.lastLoginAt ? formatDateTime(a.lastLoginAt) : "暂无登录"}</div>
+                          <div className="mt-1"><span className="text-foreground/70">创建</span> {formatDateTime(a.createdAt)}</div>
+                        </td>
+                        <td data-label="操作" className="whitespace-normal align-top">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Button size="sm" variant="outline" onClick={() => setSecurityTarget(target)} title="登录安全">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                            </Button>
                             <Button size="sm" variant="outline" onClick={() => openEdit(a)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -446,7 +498,7 @@ export default function Admins() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table>
               </div>
@@ -455,6 +507,96 @@ export default function Admins() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={Boolean(securityTarget)} onOpenChange={open => !open && setSecurityTarget(null)}>
+        <DialogContent className="flex max-h-[88vh] w-[min(94vw,900px)] max-w-none flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-600" />登录安全</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {securityTarget?.label}（ID {securityTarget?.id}）最近50条登录事件。IP归属地为网络出口的粗略位置，不代表员工实时位置。
+            </p>
+          </DialogHeader>
+          <div className="min-h-40 flex-1 overflow-y-auto pr-1">
+            {loginHistoryQuery.isLoading ? (
+              <div className="flex min-h-40 items-center justify-center"><Skeleton className="h-24 w-full" /></div>
+            ) : loginHistoryQuery.error ? (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">加载失败：{loginHistoryQuery.error.message}</div>
+            ) : !loginHistoryQuery.data?.length ? (
+              <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+                暂无登录安全记录。该员工下一次重新登录后，将开始记录准确时间、IP、归属地与设备信息。
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {loginHistoryQuery.data.map(item => {
+                  const security = securityPresentation(item.riskLevel);
+                  const SecurityIcon = security.Icon;
+                  return (
+                    <div key={item.id} className="rounded-md border p-3 text-sm">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge label={item.success ? "登录成功" : "登录失败"} style={item.success ? "success" : "danger"} />
+                          <StatusBadge label={security.label} style={security.style} />
+                          <span className="text-xs">{loginMethodLabel(item.authMethod)}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{formatDateTime(item.occurredAt)}</span>
+                      </div>
+                      <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+                        <div className="min-w-0"><span className="text-muted-foreground">网络：</span><span className="break-all">{item.ipAddress}</span> · {item.location || "未知归属地"}</div>
+                        <div className="min-w-0"><span className="text-muted-foreground">设备：</span>{item.operatingSystem} · {item.browser} · {item.deviceType}</div>
+                      </div>
+                      {item.riskReason && (
+                        <div className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                          <SecurityIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />判断说明：{item.riskReason}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="border-t pt-4">
+            <Button variant="outline" onClick={() => setSecurityTarget(null)}>关闭</Button>
+            {securityTarget && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setRevokeTarget(securityTarget);
+                  setSecurityTarget(null);
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />强制退出全部设备
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(revokeTarget)} onOpenChange={open => !open && !revokeSessionsMutation.isPending && setRevokeTarget(null)}>
+        <DialogContent className="w-[min(92vw,520px)] max-w-none">
+          <DialogHeader>
+            <DialogTitle>强制退出全部设备</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {revokeTarget?.label} 的全部既有后台会话将立即失效，员工需重新登录。此操作会写入审计日志。
+            </p>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="revoke-reason">操作原因</Label>
+            <Textarea id="revoke-reason" value={revokeReason} onChange={event => setRevokeReason(event.target.value)} maxLength={500} rows={3} placeholder="例如：发现异常登录，要求重新验证账号" />
+            <div className="text-right text-xs text-muted-foreground">{revokeReason.length}/500</div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={revokeSessionsMutation.isPending} onClick={() => setRevokeTarget(null)}>取消</Button>
+            <Button
+              variant="destructive"
+              disabled={revokeSessionsMutation.isPending || revokeReason.trim().length < 2}
+              onClick={() => revokeTarget && revokeSessionsMutation.mutate({ id: revokeTarget.id, reason: revokeReason.trim() })}
+            >
+              {revokeSessionsMutation.isPending ? "处理中..." : "确认强制退出"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 新建/编辑用户弹窗 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -638,6 +780,58 @@ export default function Admins() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <style>{`
+        .admin-user-responsive-table th,
+        .admin-user-responsive-table td {
+          min-width: 0;
+          white-space: normal;
+          vertical-align: top;
+        }
+        .admin-user-responsive-table th {
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+        .admin-user-responsive-table td {
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+        @media (max-width: 1100px) {
+          .admin-user-responsive-table,
+          .admin-user-responsive-table tbody {
+            display: block;
+            width: 100%;
+          }
+          .admin-user-responsive-table colgroup,
+          .admin-user-responsive-table thead {
+            display: none;
+          }
+          .admin-user-responsive-table tbody {
+            display: grid;
+            gap: 12px;
+            padding: 12px;
+          }
+          .admin-user-responsive-table tbody tr {
+            display: grid;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+          }
+          .admin-user-responsive-table tbody td {
+            display: grid;
+            width: auto !important;
+            min-width: 0;
+            grid-template-columns: 7rem minmax(0, 1fr);
+            gap: 12px;
+            white-space: normal;
+          }
+          .admin-user-responsive-table tbody td::before {
+            content: attr(data-label);
+            color: var(--muted-foreground);
+            font-size: 12px;
+            font-weight: 500;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 }

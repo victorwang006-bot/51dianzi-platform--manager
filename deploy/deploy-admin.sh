@@ -122,7 +122,12 @@ test -f "$REL/scripts/apply-admin-module-notification-schema.mjs" || { echo "FAI
 node "$REL/scripts/apply-admin-module-notification-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4h. 停用竞品专用物料并验证展示策略 ==="
+echo "=== 4h. 执行后台员工登录安全幂等迁移 ==="
+test -f "$REL/scripts/apply-admin-login-security-schema.mjs" || { echo "FAIL: 缺少员工登录安全迁移脚本"; exit 1; }
+node "$REL/scripts/apply-admin-login-security-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
+echo "=== 4i. 停用竞品专用物料并验证展示策略 ==="
 test -f "$REL/scripts/apply-competitor-material-policy.mjs" || { echo "FAIL: 缺少竞品物料策略脚本"; exit 1; }
 node "$REL/scripts/apply-competitor-material-policy.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env

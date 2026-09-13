@@ -13,6 +13,11 @@ const dbMocks = vi.hoisted(() => ({
   createAdminUser: vi.fn(),
 }));
 vi.mock("./db", () => dbMocks);
+const loginSecurityMocks = vi.hoisted(() => ({
+  recordAdminLoginEventSafely: vi.fn(),
+  getAdminLoginHistory: vi.fn(),
+}));
+vi.mock("./adminLoginSecurity", () => loginSecurityMocks);
 
 import {
   createLocalAdminSessionToken,
@@ -108,6 +113,12 @@ describe("administrator security boundaries", () => {
     );
 
     expect(dbMocks.getAdminUserByUsername).toHaveBeenCalledWith("Admin.User");
+    expect(loginSecurityMocks.recordAdminLoginEventSafely).toHaveBeenCalledWith(expect.objectContaining({
+      adminUserId: 42,
+      username: "Admin.User",
+      success: true,
+      authMethod: "password",
+    }));
     expect(result).not.toHaveProperty("passwordHash");
     expect(result).not.toHaveProperty("sessionVersion");
     await expect(sdk.verifySession(cookies.app_session_id)).resolves.toMatchObject({

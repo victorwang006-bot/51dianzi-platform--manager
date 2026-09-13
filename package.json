@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "cleanup:test-merchants": "node scripts/cleanup-test-merchants.cjs",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:admin-login-security": "node scripts/apply-admin-login-security-schema.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

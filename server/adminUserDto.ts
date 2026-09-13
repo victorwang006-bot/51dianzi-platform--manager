@@ -17,6 +17,13 @@ export type AdminUserDto = Pick<
   | "status"
   | "mfaEnabled"
   | "lastLoginAt"
+  | "lastLoginIpAddress"
+  | "lastLoginLocation"
+  | "lastLoginDevice"
+  | "lastLoginMethod"
+  | "securityRiskLevel"
+  | "securityRiskReason"
+  | "securityRiskAt"
   | "createdAt"
   | "updatedAt"
 >;
@@ -33,6 +40,13 @@ export function toAdminUserDto(user: AdminUser): AdminUserDto {
     status: user.status,
     mfaEnabled: user.mfaEnabled,
     lastLoginAt: user.lastLoginAt,
+    lastLoginIpAddress: user.lastLoginIpAddress,
+    lastLoginLocation: user.lastLoginLocation,
+    lastLoginDevice: user.lastLoginDevice,
+    lastLoginMethod: user.lastLoginMethod,
+    securityRiskLevel: user.securityRiskLevel,
+    securityRiskReason: user.securityRiskReason,
+    securityRiskAt: user.securityRiskAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

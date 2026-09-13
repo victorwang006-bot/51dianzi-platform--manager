@@ -184,7 +184,17 @@ export const adminUsers = mysqlTable("admin_users", {
   /** Incremented on credential/access revocation; local JWTs carry this value. */
   sessionVersion: int("sessionVersion").default(1).notNull(),
   mfaEnabled: boolean("mfaEnabled").default(false),
+  /** 最近一次成功登录；仅认证成功后更新。 */
   lastLoginAt: timestamp("lastLoginAt"),
+  lastLoginIpAddress: varchar("lastLoginIpAddress", { length: 64 }),
+  lastLoginIpHash: varchar("lastLoginIpHash", { length: 64 }),
+  lastLoginLocation: varchar("lastLoginLocation", { length: 128 }),
+  lastLoginDevice: varchar("lastLoginDevice", { length: 160 }),
+  lastLoginDeviceHash: varchar("lastLoginDeviceHash", { length: 64 }),
+  lastLoginMethod: varchar("lastLoginMethod", { length: 32 }),
+  securityRiskLevel: varchar("securityRiskLevel", { length: 16 }),
+  securityRiskReason: varchar("securityRiskReason", { length: 255 }),
+  securityRiskAt: timestamp("securityRiskAt"),
   createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
   updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 }, table => ({
@@ -192,6 +202,35 @@ export const adminUsers = mysqlTable("admin_users", {
 }));
 
 export type AdminUser = typeof adminUsers.$inferSelect;
+
+/**
+ * 后台员工登录安全事件。仅超级管理员可通过后台用户管理查看。
+ * IP 用于内部账号安全审计，明细由服务在90天后自动清理。
+ */
+export const adminLoginEvents = mysqlTable("admin_login_events", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  adminUserId: int("adminUserId"),
+  accountHash: varchar("accountHash", { length: 64 }).notNull(),
+  success: boolean("success").notNull(),
+  authMethod: varchar("authMethod", { length: 32 }).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }).notNull(),
+  ipHash: varchar("ipHash", { length: 64 }).notNull(),
+  countryCode: varchar("countryCode", { length: 8 }),
+  location: varchar("location", { length: 128 }),
+  deviceHash: varchar("deviceHash", { length: 64 }).notNull(),
+  deviceType: varchar("deviceType", { length: 24 }).notNull(),
+  browser: varchar("browser", { length: 48 }).notNull(),
+  operatingSystem: varchar("operatingSystem", { length: 48 }).notNull(),
+  riskLevel: varchar("riskLevel", { length: 16 }).notNull(),
+  riskReason: varchar("riskReason", { length: 255 }),
+  occurredAt: timestamp("occurredAt").default(DEFAULT_NOW).notNull(),
+}, table => ({
+  userOccurredIdx: index("admin_login_events_user_occurred_idx").on(table.adminUserId, table.occurredAt),
+  accountOccurredIdx: index("admin_login_events_account_occurred_idx").on(table.accountHash, table.occurredAt),
+  ipOccurredIdx: index("admin_login_events_ip_occurred_idx").on(table.ipHash, table.occurredAt),
+}));
+
+export type AdminLoginEvent = typeof adminLoginEvents.$inferSelect;
 
 /**
  * 后台用户级模块权限。

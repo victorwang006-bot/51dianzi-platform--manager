@@ -8,6 +8,7 @@ import * as db from "./db";
 import { isSmsConfigured, sendSmsCode } from "./sms";
 import { normalizeAdminUsername } from "../shared/adminUsername";
 import { toAdminUserDto } from "./adminUserDto";
+import { recordAdminLoginEventSafely } from "./adminLoginSecurity";
 
 /**
  * 本地账号会话的 openId 前缀。
@@ -57,16 +58,42 @@ export async function loginWithPassword(
   username: string,
   password: string
 ) {
-  const account = await db.getAdminUserByUsername(normalizeAdminUsername(username));
+  const normalizedUsername = normalizeAdminUsername(username);
+  const account = await db.getAdminUserByUsername(normalizedUsername);
   // 统一的错误信息，避免暴露"用户是否存在"
   const invalidError = new TRPCError({
     code: "UNAUTHORIZED",
     message: "用户名或密码错误",
   });
-  if (!account || !account.passwordHash) throw invalidError;
+  if (!account || !account.passwordHash) {
+    await recordAdminLoginEventSafely({
+      adminUserId: account?.id ?? null,
+      username: normalizedUsername,
+      success: false,
+      authMethod: "password",
+      req,
+    });
+    throw invalidError;
+  }
   const ok = await verifyPassword(password, account.passwordHash);
-  if (!ok) throw invalidError;
+  if (!ok) {
+    await recordAdminLoginEventSafely({
+      adminUserId: account.id,
+      username: normalizedUsername,
+      success: false,
+      authMethod: "password",
+      req,
+    });
+    throw invalidError;
+  }
   if (account.status !== "active") {
+    await recordAdminLoginEventSafely({
+      adminUserId: account.id,
+      username: normalizedUsername,
+      success: false,
+      authMethod: "password",
+      req,
+    });
     throw new TRPCError({
       code: "FORBIDDEN",
       message: account.status === "locked" ? "账号已被锁定，请联系超级管理员" : "账号已被停用，请联系超级管理员",
@@ -75,7 +102,13 @@ export async function loginWithPassword(
   const sessionToken = await createLocalAdminSessionToken(account);
   const cookieOptions = getSessionCookieOptions(req);
   res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-  await db.touchAdminUserLogin(account.id);
+  await recordAdminLoginEventSafely({
+    adminUserId: account.id,
+    username: normalizedUsername,
+    success: true,
+    authMethod: "password",
+    req,
+  });
   return toAdminUserDto(account);
 }
 

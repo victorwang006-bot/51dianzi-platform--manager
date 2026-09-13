@@ -2051,6 +2051,45 @@ export async function touchAdminUserLogin(id: number) {
   await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, id));
 }
 
+/** 递增会话版本使该员工的全部既有后台JWT立即失效，并保留审计记录。 */
+export async function revokeAdminUserSessions(
+  id: number,
+  reason: string,
+  actor?: MaterialAuditActor,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.transaction(async tx => {
+    const [target] = await tx
+      .select({ id: adminUsers.id, username: adminUsers.username, sessionVersion: adminUsers.sessionVersion })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, id))
+      .limit(1)
+      .for("update");
+    if (!target) throw new Error("ADMIN_USER_NOT_FOUND");
+    await tx
+      .update(adminUsers)
+      .set({ sessionVersion: sql`${adminUsers.sessionVersion} + 1` })
+      .where(eq(adminUsers.id, id));
+    await tx.insert(auditLogs).values({
+      operatorId: actor?.operatorId ?? null,
+      operatorName: actor?.operatorName ?? "system",
+      operatorRole: actor?.operatorRole ?? "system",
+      action: "admin.sessions.revoke",
+      module: "admin_users",
+      targetType: "admin_user",
+      targetId: String(id),
+      beforeValue: { username: target.username, sessionVersion: target.sessionVersion },
+      afterValue: { sessionVersion: target.sessionVersion + 1 },
+      ipAddress: actor?.ipAddress ?? null,
+      userAgent: actor?.userAgent ?? null,
+      result: "success",
+      note: reason,
+    });
+    return { success: true } as const;
+  });
+}
+
 // ─── 找回密码验证码 ─────────────────────────────────────────────────────────
 
 export const RESET_CODE_MAX_ATTEMPTS = 5;
