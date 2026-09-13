@@ -27,9 +27,10 @@ describe("商户客户归属查询与申请审批", () => {
     expect(router).toContain('min(2, "至少输入 2 个字符")');
     expect(search).toContain("OWNERSHIP_QUERY_MINUTE_LIMIT");
     expect(search).toContain("OWNERSHIP_QUERY_DAY_LIMIT");
-    expect(search).toContain("eq(users.id, input.rateLimitUserId)");
+    expect(search).toContain("eq(adminUsers.id, input.localAdminUserId)");
+    expect(search).toContain("eq(users.id, input.adminUserId)");
     expect(search).toContain('.for("update")');
-    expect(router).toContain("rateLimitUserId: ctx.user.id");
+    expect(router).toContain("localAdminUserId: ctx.adminAccount?.id");
     expect(search).toContain('createHash("sha256").update(compact).digest("hex")');
     expect(search).toContain("merchantOwnershipQueryAudits");
     expect(search).toContain("companyName: row.companyName");

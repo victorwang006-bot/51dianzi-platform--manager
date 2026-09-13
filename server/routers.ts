@@ -956,7 +956,7 @@ export const appRouter = router({
           return await db.searchMerchantOwnership({
             query: input.query,
             adminUserId: ctx.adminAccount?.id ?? ctx.user.id,
-            rateLimitUserId: ctx.user.id,
+            localAdminUserId: ctx.adminAccount?.id,
             salesStaffCodes: await getAdminSalesStaffCodes(ctx),
             ipAddress: auditActorFromContext(ctx).ipAddress,
           });

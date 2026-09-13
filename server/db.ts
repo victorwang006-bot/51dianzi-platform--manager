@@ -801,20 +801,30 @@ function escapeLike(value: string) {
 export async function searchMerchantOwnership(input: {
   query: string;
   adminUserId: number;
-  rateLimitUserId: number;
+  localAdminUserId?: number;
   salesStaffCodes?: string[];
   ipAddress?: string | null;
 }) {
   const db = await getDb();
   if (!db) return { results: [] };
   return db.transaction(async tx => {
-    const [rateLimitUser] = await tx
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, input.rateLimitUserId))
-      .limit(1)
-      .for("update");
-    if (!rateLimitUser) throw new Error("OWNERSHIP_QUERY_USER_NOT_FOUND");
+    if (input.localAdminUserId !== undefined) {
+      const [rateLimitAdmin] = await tx
+        .select({ id: adminUsers.id })
+        .from(adminUsers)
+        .where(eq(adminUsers.id, input.localAdminUserId))
+        .limit(1)
+        .for("update");
+      if (!rateLimitAdmin) throw new Error("OWNERSHIP_QUERY_USER_NOT_FOUND");
+    } else {
+      const [rateLimitUser] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, input.adminUserId))
+        .limit(1)
+        .for("update");
+      if (!rateLimitUser) throw new Error("OWNERSHIP_QUERY_USER_NOT_FOUND");
+    }
 
   const query = input.query.trim();
   const compact = query.replace(/\s+/g, "").toUpperCase();
