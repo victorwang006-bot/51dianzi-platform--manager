@@ -218,6 +218,37 @@ export const adminUserPermissions = mysqlTable(
 );
 export type AdminUserPermission = typeof adminUserPermissions.$inferSelect;
 
+/**
+ * 后台侧栏“新增”提醒游标。
+ *
+ * 每个管理员主体、每个业务模块独立记录已查看到的最大业务 ID，避免一名管理员
+ * 进入模块后替其他管理员清除提醒。使用业务 ID 而不是时间戳，规避秒级时间精度
+ * 与应用/数据库时区差异造成的漏报。
+ */
+export const adminModuleNotificationCursors = mysqlTable(
+  "admin_module_notification_cursors",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    viewerKey: varchar("viewerKey", { length: 80 }).notNull(),
+    module: varchar("module", { length: 32 }).notNull(),
+    lastSeenId: bigint("lastSeenId", { mode: "number" }).default(0).notNull(),
+    createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+    updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+  },
+  table => ({
+    viewerModuleUnique: uniqueIndex("admin_module_notification_viewer_module_unique").on(
+      table.viewerKey,
+      table.module,
+    ),
+    moduleSeenIdx: index("admin_module_notification_module_seen_idx").on(
+      table.module,
+      table.lastSeenId,
+    ),
+  }),
+);
+
+export type AdminModuleNotificationCursor = typeof adminModuleNotificationCursors.$inferSelect;
+
 /** 后台用户权限变更审计：权限属于高敏感配置，必须保留操作轨迹。 */
 export const adminUserPermissionAudits = mysqlTable(
   "admin_user_permission_audits",

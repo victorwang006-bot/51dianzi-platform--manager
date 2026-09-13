@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  adminModuleNotificationCursors,
   adminUserPermissionAudits,
   adminUserPermissions,
   adminUsers,
@@ -20,6 +21,7 @@ import {
   salesStaff,
   users,
 } from "../drizzle/schema";
+import type { AdminNotificationModule } from "../shared/adminModuleNotifications";
 import { ENV } from "./_core/env";
 import { normalizeAssignedAdminPermissions } from "../shared/adminPermissions";
 import { canonicalAdminUsername, normalizeAdminUsername } from "../shared/adminUsername";
@@ -3084,6 +3086,160 @@ export async function getPortalThreadUnread(threadNo: string) {
 // 返回 available:false 供前端展示"生产环境可用"提示。
 
 const PLATFORM_DB = process.env.PLATFORM_DB_NAME || "dianzi51";
+
+export type AdminModuleNotificationCounts = Record<AdminNotificationModule, number>;
+
+type AdminModuleNotificationStat = {
+  available: boolean;
+  maxId: number;
+  unread: number;
+};
+
+function emptyAdminModuleNotificationCounts(): AdminModuleNotificationCounts {
+  return { merchants: 0, orders: 0, reviews: 0, portalUsers: 0 };
+}
+
+function notificationSalesScopeCondition(alias: "merchant" | "order", salesStaffCodes?: string[]) {
+  if (salesStaffCodes === undefined) return sql`1 = 1`;
+  if (salesStaffCodes.length === 0) return sql`1 = 0`;
+  return alias === "merchant"
+    ? inArray(merchants.salesOwnerCode, salesStaffCodes)
+    : sql`c.salesOwnerCode IN (${sql.join(salesStaffCodes.map(code => sql`${code}`), sql`, `)})`;
+}
+
+async function getAdminModuleNotificationStat(
+  module: AdminNotificationModule,
+  lastSeenId: number | null,
+  salesStaffCodes?: string[],
+): Promise<AdminModuleNotificationStat> {
+  const db = await getDb();
+  if (!db) return { available: false, maxId: lastSeenId ?? 0, unread: 0 };
+
+  try {
+    if (module === "merchants") {
+      const scope = notificationSalesScopeCondition("merchant", salesStaffCodes);
+      const [maxRow] = await db.select({ maxId: sql<number>`COALESCE(MAX(${merchants.id}), 0)` }).from(merchants);
+      if (lastSeenId === null) return { available: true, maxId: Number(maxRow?.maxId ?? 0), unread: 0 };
+      const [countRow] = await db
+        .select({ unread: sql<number>`COUNT(*)` })
+        .from(merchants)
+        .where(and(gt(merchants.id, lastSeenId), scope));
+      return {
+        available: true,
+        maxId: Number(maxRow?.maxId ?? 0),
+        unread: Number(countRow?.unread ?? 0),
+      };
+    }
+
+    if (module === "orders") {
+      const scope = notificationSalesScopeCondition("order", salesStaffCodes);
+      const maxResult = (await db.execute(sql`
+        SELECT COALESCE(MAX(id), 0) AS maxId FROM ${sql.raw(PLATFORM_DB)}.orders
+      `)) as unknown as [{ maxId: number }[], unknown];
+      const maxId = Number(maxResult[0]?.[0]?.maxId ?? 0);
+      if (lastSeenId === null) return { available: true, maxId, unread: 0 };
+      const countResult = (await db.execute(sql`
+        SELECT COUNT(*) AS unread
+          FROM ${sql.raw(PLATFORM_DB)}.orders o
+          LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = o.buyerId
+         WHERE o.id > ${lastSeenId} AND ${scope}
+      `)) as unknown as [{ unread: number }[], unknown];
+      return { available: true, maxId, unread: Number(countResult[0]?.[0]?.unread ?? 0) };
+    }
+
+    const tableName = module === "reviews" ? "public_company_reviews" : "users";
+    const maxWhere = module === "portalUsers" ? sql`WHERE role = 'user'` : sql``;
+    const maxResult = (await db.execute(sql`
+      SELECT COALESCE(MAX(id), 0) AS maxId
+        FROM ${sql.raw(PLATFORM_DB)}.${sql.raw(tableName)}
+        ${maxWhere}
+    `)) as unknown as [{ maxId: number }[], unknown];
+    const maxId = Number(maxResult[0]?.[0]?.maxId ?? 0);
+    if (lastSeenId === null) return { available: true, maxId, unread: 0 };
+    const unreadWhere = module === "portalUsers"
+      ? sql`role = 'user' AND id > ${lastSeenId}`
+      : sql`id > ${lastSeenId}`;
+    const countResult = (await db.execute(sql`
+      SELECT COUNT(*) AS unread
+        FROM ${sql.raw(PLATFORM_DB)}.${sql.raw(tableName)}
+       WHERE ${unreadWhere}
+    `)) as unknown as [{ unread: number }[], unknown];
+    return { available: true, maxId, unread: Number(countResult[0]?.[0]?.unread ?? 0) };
+  } catch (error) {
+    console.warn(`[Database] 查询后台模块新增提醒失败 (${module}):`, (error as Error).message);
+    return { available: false, maxId: lastSeenId ?? 0, unread: 0 };
+  }
+}
+
+/**
+ * 首次读取某模块时以当前最大业务 ID 建立基线，不把上线前历史数据全部标红。
+ * 已有游标只统计当前管理员销售范围内、ID 大于游标的新增记录。
+ */
+export async function getAdminModuleNotificationSummary(input: {
+  viewerKey: string;
+  modules: AdminNotificationModule[];
+  salesStaffCodes?: string[];
+}) {
+  const db = await getDb();
+  const counts = emptyAdminModuleNotificationCounts();
+  if (!db || input.modules.length === 0) return { counts };
+
+  const rows = await db
+    .select({
+      module: adminModuleNotificationCursors.module,
+      lastSeenId: adminModuleNotificationCursors.lastSeenId,
+    })
+    .from(adminModuleNotificationCursors)
+    .where(and(
+      eq(adminModuleNotificationCursors.viewerKey, input.viewerKey),
+      inArray(adminModuleNotificationCursors.module, input.modules),
+    ));
+  const cursors = new Map(rows.map(row => [row.module, Number(row.lastSeenId)]));
+
+  const stats = await Promise.all(input.modules.map(async module => ({
+    module,
+    stat: await getAdminModuleNotificationStat(module, cursors.get(module) ?? null, input.salesStaffCodes),
+  })));
+
+  for (const { module, stat } of stats) {
+    if (!stat.available) continue;
+    const lastSeenId = cursors.get(module);
+    if (lastSeenId === undefined) {
+      await db.execute(sql`
+        INSERT INTO ${adminModuleNotificationCursors}
+          (\`viewerKey\`, \`module\`, \`lastSeenId\`)
+        VALUES (${input.viewerKey}, ${module}, ${stat.maxId})
+        ON DUPLICATE KEY UPDATE \`viewerKey\` = VALUES(\`viewerKey\`)
+      `);
+      continue;
+    }
+    counts[module] = stat.unread;
+  }
+
+  return { counts };
+}
+
+/** 进入模块即把该账号的游标推进到当前全局最大 ID；其他管理员游标不受影响。 */
+export async function markAdminModuleNotificationsSeen(input: {
+  viewerKey: string;
+  module: AdminNotificationModule;
+  salesStaffCodes?: string[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const stat = await getAdminModuleNotificationStat(input.module, null, input.salesStaffCodes);
+  if (!stat.available) return { success: false as const, module: input.module, lastSeenId: 0 };
+
+  await db.execute(sql`
+    INSERT INTO ${adminModuleNotificationCursors}
+      (\`viewerKey\`, \`module\`, \`lastSeenId\`)
+    VALUES (${input.viewerKey}, ${input.module}, ${stat.maxId})
+    ON DUPLICATE KEY UPDATE
+      \`lastSeenId\` = GREATEST(\`lastSeenId\`, VALUES(\`lastSeenId\`)),
+      \`updatedAt\` = CURRENT_TIMESTAMP
+  `);
+  return { success: true as const, module: input.module, lastSeenId: stat.maxId };
+}
 
 /**
  * 平台库存按企业信用代码做后台销售范围隔离时使用的规范化集合。

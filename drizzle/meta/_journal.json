@@ -141,6 +141,13 @@
       "when": 1789225123967,
       "tag": "0021_admin_account_security",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1789263928689,
+      "tag": "0022_admin_module_notification_cursors",
+      "breakpoints": true
     }
   ]
 }

@@ -51,8 +51,22 @@ import {
   type AdminPermission,
   type AdminRole,
 } from "@shared/adminPermissions";
+import {
+  ADMIN_NOTIFICATION_MODULE_BY_PATH,
+  type AdminNotificationModule,
+} from "@shared/adminModuleNotifications";
 
-const menuGroups = [
+type MenuItem = {
+  icon: typeof Database;
+  label: string;
+  path: string;
+  permission: AdminPermission;
+  chunk: AdminNavigationChunk;
+  nested: boolean;
+  notificationModule?: AdminNotificationModule;
+};
+
+const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
   {
     label: "业务管理",
     items: [
@@ -71,6 +85,7 @@ const menuGroups = [
         permission: "merchants.read" as AdminPermission,
         chunk: "merchants" as AdminNavigationChunk,
         nested: false,
+        notificationModule: "merchants",
       },
       {
         icon: ShoppingCart,
@@ -79,6 +94,7 @@ const menuGroups = [
         permission: "orders.read" as AdminPermission,
         chunk: "orders" as AdminNavigationChunk,
         nested: false,
+        notificationModule: "orders",
       },
       {
         icon: MessageSquare,
@@ -95,6 +111,7 @@ const menuGroups = [
         permission: "logs.read" as AdminPermission,
         chunk: "reviews" as AdminNavigationChunk,
         nested: false,
+        notificationModule: "reviews",
       },
       {
         icon: Users,
@@ -103,6 +120,7 @@ const menuGroups = [
         permission: "portalUsers.read" as AdminPermission,
         chunk: "portalUsers" as AdminNavigationChunk,
         nested: false,
+        notificationModule: "portalUsers",
       },
       {
         icon: BarChart3,
@@ -241,6 +259,7 @@ function DashboardLayoutContent({
     "super_admin") as AdminRole;
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
+  const trpcUtils = trpc.useUtils();
   const canReadMessages = hasAdminPermission(
     adminRole,
     "messages.read",
@@ -252,6 +271,59 @@ function DashboardLayoutContent({
     refetchInterval: canReadMessages ? 30000 : false,
   });
   const unreadTotal = unreadData?.total ?? 0;
+  const canReadAnyNotifiedModule = [
+    "merchants.read",
+    "orders.read",
+    "logs.read",
+    "portalUsers.read",
+  ].some(permission => hasAdminPermission(
+    adminRole,
+    permission as AdminPermission,
+    adminPermissions,
+  ));
+  const { data: moduleNotificationData } = trpc.moduleNotification.summary.useQuery(undefined, {
+    enabled: canReadAnyNotifiedModule,
+    refetchInterval: canReadAnyNotifiedModule ? 30000 : false,
+  });
+  const moduleNotificationCounts = moduleNotificationData?.counts ?? {
+    merchants: 0,
+    orders: 0,
+    reviews: 0,
+    portalUsers: 0,
+  };
+  const activeNotificationModule = Object.entries(ADMIN_NOTIFICATION_MODULE_BY_PATH)
+    .find(([path]) => isMenuPathActive(location, path))?.[1];
+  const lastMarkedModuleRef = useRef<AdminNotificationModule | null>(null);
+  const markModuleSeen = trpc.moduleNotification.markSeen.useMutation({
+    onMutate: async ({ module }) => {
+      await trpcUtils.moduleNotification.summary.cancel();
+      const previous = trpcUtils.moduleNotification.summary.getData();
+      trpcUtils.moduleNotification.summary.setData(undefined, current => current ? {
+        ...current,
+        counts: { ...current.counts, [module]: 0 },
+      } : current);
+      return { previous };
+    },
+    onError: (_error, variables, context) => {
+      if (context?.previous) {
+        trpcUtils.moduleNotification.summary.setData(undefined, context.previous);
+      }
+      if (lastMarkedModuleRef.current === variables.module) {
+        lastMarkedModuleRef.current = null;
+      }
+    },
+    onSettled: () => trpcUtils.moduleNotification.summary.invalidate(),
+  });
+
+  useEffect(() => {
+    if (!activeNotificationModule) {
+      lastMarkedModuleRef.current = null;
+      return;
+    }
+    if (lastMarkedModuleRef.current === activeNotificationModule) return;
+    lastMarkedModuleRef.current = activeNotificationModule;
+    markModuleSeen.mutate({ module: activeNotificationModule });
+  }, [activeNotificationModule]);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -334,13 +406,23 @@ function DashboardLayoutContent({
                       )
                       .map(item => {
                         const isActive = isMenuPathActive(location, item.path);
-                        const showUnread =
-                          item.path === "/messages" && unreadTotal > 0;
+                        const badgeCount = item.path === "/messages"
+                          ? unreadTotal
+                          : item.notificationModule
+                            ? moduleNotificationCounts[item.notificationModule]
+                            : 0;
+                        const showUnread = badgeCount > 0;
                         return (
                           <SidebarMenuItem key={item.path}>
                             <SidebarMenuButton
                               isActive={isActive}
-                              onClick={() => setLocation(item.path)}
+                              onClick={() => {
+                                if (item.notificationModule) {
+                                  lastMarkedModuleRef.current = item.notificationModule;
+                                  markModuleSeen.mutate({ module: item.notificationModule });
+                                }
+                                setLocation(item.path);
+                              }}
                               onPointerEnter={() =>
                                 preloadAdminRoute(item.chunk)
                               }
@@ -354,7 +436,7 @@ function DashboardLayoutContent({
                               <span>{item.label}</span>
                               {showUnread && (
                                 <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
-                                  {unreadTotal > 99 ? "99+" : unreadTotal}
+                                  {badgeCount > 99 ? "99+" : badgeCount}
                                 </span>
                               )}
                             </SidebarMenuButton>

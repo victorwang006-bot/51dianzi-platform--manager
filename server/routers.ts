@@ -46,6 +46,10 @@ import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { completePlatformCrmRebind, validatePlatformCrmRebindTarget } from "./platformCrmApi";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
 import { normalizeAdminUsername } from "../shared/adminUsername";
+import {
+  ADMIN_NOTIFICATION_MODULES,
+  type AdminNotificationModule,
+} from "../shared/adminModuleNotifications";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -319,6 +323,32 @@ async function getAdminSalesStaffCodes(ctx: TrpcContext): Promise<string[] | und
   if (!account) return undefined;
   if (account.adminRole === "super_admin") return undefined;
   return db.getAdminUserSalesScopeCodes(account.id);
+}
+
+const notificationPermissionByModule: Record<AdminNotificationModule, AdminPermission> = {
+  merchants: "merchants.read",
+  orders: "orders.read",
+  reviews: "logs.read",
+  portalUsers: "portalUsers.read",
+};
+
+function adminNotificationViewerKey(ctx: TrpcContext) {
+  if (ctx.adminAccount) return `local:${ctx.adminAccount.id}`;
+  if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "请先登录后台" });
+  return `oauth:${ctx.user.id}`;
+}
+
+function readableNotificationModules(ctx: TrpcContext): AdminNotificationModule[] {
+  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  return ADMIN_NOTIFICATION_MODULES.filter(module =>
+    hasAdminPermission(role, notificationPermissionByModule[module], ctx.adminPermissions)
+  );
+}
+
+function assertNotificationModuleReadable(ctx: TrpcContext, module: AdminNotificationModule) {
+  if (!readableNotificationModules(ctx).includes(module)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权查看该模块提醒" });
+  }
 }
 
 /**
@@ -1717,6 +1747,30 @@ export const appRouter = router({
           coverImageUrl: result.coverImageUrl,
           imageCount: result.imageCount,
         };
+      }),
+  }),
+
+  // ─── 业务模块新增提醒（每个后台账号独立游标）──────────────────────────────
+  moduleNotification: router({
+    summary: adminProcedure.query(async ({ ctx }) => {
+      const modules = readableNotificationModules(ctx);
+      const needsSalesScope = modules.includes("merchants") || modules.includes("orders");
+      return db.getAdminModuleNotificationSummary({
+        viewerKey: adminNotificationViewerKey(ctx),
+        modules,
+        ...(needsSalesScope ? { salesStaffCodes: await getAdminSalesStaffCodes(ctx) } : {}),
+      });
+    }),
+    markSeen: adminProcedure
+      .input(z.object({ module: z.enum(ADMIN_NOTIFICATION_MODULES) }))
+      .mutation(async ({ ctx, input }) => {
+        assertNotificationModuleReadable(ctx, input.module);
+        const needsSalesScope = input.module === "merchants" || input.module === "orders";
+        return db.markAdminModuleNotificationsSeen({
+          viewerKey: adminNotificationViewerKey(ctx),
+          module: input.module,
+          ...(needsSalesScope ? { salesStaffCodes: await getAdminSalesStaffCodes(ctx) } : {}),
+        });
       }),
   }),
 
