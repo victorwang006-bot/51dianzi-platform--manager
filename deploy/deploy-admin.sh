@@ -121,6 +121,11 @@ echo "=== 4g. 执行业务模块新增提醒游标幂等迁移 ==="
 test -f "$REL/scripts/apply-admin-module-notification-schema.mjs" || { echo "FAIL: 缺少模块提醒迁移脚本"; exit 1; }
 node "$REL/scripts/apply-admin-module-notification-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
+echo "=== 4h. 停用竞品专用物料并验证展示策略 ==="
+test -f "$REL/scripts/apply-competitor-material-policy.mjs" || { echo "FAIL: 缺少竞品物料策略脚本"; exit 1; }
+node "$REL/scripts/apply-competitor-material-policy.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 install -o root -g root -m 0700 "$REL/scripts/rollback-admin.sh" \
   /opt/config/dianzi51-admin/rollback-admin.sh
 

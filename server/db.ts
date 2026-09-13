@@ -40,6 +40,7 @@ import {
   type ExceptionCategory,
   type ExceptionSeverity,
 } from "../shared/exceptionRules";
+import { sanitizeCompetitorDisplayText } from "../shared/competitorDisplayPolicy";
 import {
   assertMerchantCrmStatusTransition,
   crmStatusAction,
@@ -76,6 +77,11 @@ function decodeJsonValue<T>(value: unknown, fallback: T | null = null): T | null
 
 function normalizeMaterialJson<T extends object>(row: T): T {
   const normalized = { ...row } as Record<string, unknown>;
+  for (const field of ["name", "brand", "category", "description"] as const) {
+    if (Object.prototype.hasOwnProperty.call(normalized, field)) {
+      normalized[field] = sanitizeCompetitorDisplayText(normalized[field]);
+    }
+  }
   if (Object.prototype.hasOwnProperty.call(normalized, "specs")) {
     normalized.specs = decodeJsonValue<Record<string, string>>(normalized.specs);
   }
@@ -166,6 +172,16 @@ export async function getUserByOpenId(openId: string) {
 
 // ─── 物料数据库 ───────────────────────────────────────────────────────────────
 
+const COMPETITOR_MATERIAL_TERMS = ["%立创%", "%szlcsc%", "%lcsc%", "%jlcpcb%", "%jlcsmt%", "%jlc3dp%", "%jlcmc%", "%jlceda%"];
+
+function safeMaterialMetadataCondition() {
+  return and(
+    ...[materials.name, materials.brand, materials.category, materials.description].flatMap(column =>
+      COMPETITOR_MATERIAL_TERMS.map(term => sql`LOWER(COALESCE(${column}, '')) NOT LIKE ${term}`),
+    ),
+  )!;
+}
+
 export async function getMaterials(params: {
   search?: string;
   category?: string;
@@ -178,7 +194,7 @@ export async function getMaterials(params: {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
   const { search, category, brand, lifecycle, status, page = 1, pageSize = 20 } = params;
-  const conditions = [];
+  const conditions = [safeMaterialMetadataCondition()];
   if (search) {
     conditions.push(
       or(
@@ -192,7 +208,7 @@ export async function getMaterials(params: {
           WHERE material_alias.materialId = ${materials.id}
             AND material_alias.aliasCode LIKE ${`%${search}%`}
         )`,
-      ),
+      )!,
     );
   }
   if (category) conditions.push(eq(materials.category, category));
@@ -214,7 +230,11 @@ export async function getMaterials(params: {
 export async function getMaterialById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(materials).where(eq(materials.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(materials)
+    .where(and(eq(materials.id, id), safeMaterialMetadataCondition()))
+    .limit(1);
   return result[0] ? normalizeMaterialJson(result[0]) : null;
 }
 
@@ -224,8 +244,11 @@ export async function getMaterialCategories() {
   const rows = await db
     .selectDistinct({ category: materials.category })
     .from(materials)
-    .where(sql`${materials.category} IS NOT NULL AND ${materials.category} != ''`);
-  return rows.map(r => r.category).filter(Boolean) as string[];
+    .where(and(
+      sql`${materials.category} IS NOT NULL AND ${materials.category} != ''`,
+      safeMaterialMetadataCondition(),
+    ));
+  return rows.map(r => sanitizeCompetitorDisplayText(r.category)).filter(Boolean) as string[];
 }
 
 export async function getMaterialBrands() {
@@ -234,8 +257,11 @@ export async function getMaterialBrands() {
   const rows = await db
     .selectDistinct({ brand: materials.brand })
     .from(materials)
-    .where(sql`${materials.brand} IS NOT NULL AND ${materials.brand} != ''`);
-  return rows.map(r => r.brand).filter(Boolean) as string[];
+    .where(and(
+      sql`${materials.brand} IS NOT NULL AND ${materials.brand} != ''`,
+      safeMaterialMetadataCondition(),
+    ));
+  return rows.map(r => sanitizeCompetitorDisplayText(r.brand)).filter(Boolean) as string[];
 }
 
 /**
@@ -260,6 +286,7 @@ export async function lookupMaterials(keyword: string) {
     .where(
       and(
         eq(materials.status, "enabled"),
+        safeMaterialMetadataCondition(),
         or(
           like(materials.materialNo, `%${keyword}%`),
           like(materials.partNumber, `%${keyword}%`),
@@ -308,6 +335,7 @@ export async function getMaterialSpecsByPartNumber(partNumber: string) {
     .where(
       and(
         eq(materials.status, "enabled"),
+        safeMaterialMetadataCondition(),
         or(
           sql`UPPER(${materials.partNumber}) = UPPER(${partNumber.trim()})`,
           sql`UPPER(${materials.materialNo}) = UPPER(${partNumber.trim()})`,
@@ -340,7 +368,7 @@ export async function searchMaterialsPublic(params: {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
   const { keyword, category, brand, specFilters, page = 1, pageSize = 20 } = params;
-  const conditions = [eq(materials.status, "enabled")];
+  const conditions = [eq(materials.status, "enabled"), safeMaterialMetadataCondition()];
   if (keyword) {
     conditions.push(
       or(

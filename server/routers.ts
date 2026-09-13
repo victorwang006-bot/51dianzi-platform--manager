@@ -50,6 +50,10 @@ import {
   ADMIN_NOTIFICATION_MODULES,
   type AdminNotificationModule,
 } from "../shared/adminModuleNotifications";
+import {
+  COMPETITOR_DISPLAY_VALIDATION_MESSAGE,
+  containsCompetitorDisplayName,
+} from "../shared/competitorDisplayPolicy";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -455,7 +459,7 @@ function getMaterialAuditActor(ctx: TrpcContext): db.MaterialAuditActor {
   };
 }
 
-const materialInput = z.object({
+export const materialInput = z.object({
   partNumber: z.string().min(1, "型号不能为空"),
   name: z.string().min(1, "名称不能为空"),
   brand: z.string().optional(),
@@ -477,6 +481,16 @@ const materialInput = z.object({
     key: z.string(),
     name: z.string().optional(),
   })).optional().nullable(),
+}).superRefine((value, ctx) => {
+  for (const field of ["name", "brand", "category", "description"] as const) {
+    if (containsCompetitorDisplayName(value[field])) {
+      ctx.addIssue({
+        code: "custom",
+        message: COMPETITOR_DISPLAY_VALIDATION_MESSAGE,
+        path: [field],
+      });
+    }
+  }
 });
 
 export const appRouter = router({
