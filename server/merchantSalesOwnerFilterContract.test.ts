@@ -7,6 +7,7 @@ const read = (relativePath: string) => readFileSync(join(root, relativePath), "u
 const db = read("server/db.ts");
 const router = read("server/routers.ts");
 const page = read("client/src/pages/Merchants.tsx");
+const ownerFilter = read("client/src/components/SalesOwnerFilterCombobox.tsx");
 const schema = read("drizzle/schema.ts");
 const migration = read("scripts/apply-merchant-sales-owner-filter-schema.mjs");
 const deploy = read("deploy/deploy-admin.sh");
@@ -41,13 +42,15 @@ describe("商户销售负责人筛选", () => {
     expect(router).toContain("getMerchants(input, await getAdminSalesStaffCodes(ctx))");
   });
 
-  it("页面提供单选即筛选、未分配、已停用标记和简洁重置", () => {
-    expect(page).toContain('aria-label="按销售负责人筛选商户"');
-    expect(page).toContain('<SelectItem value="all">全部负责人</SelectItem>');
-    expect(page).toContain('<SelectItem value="$unassigned">未分配</SelectItem>');
-    expect(page).toContain('staff.active ? "" : "（已停用）"');
-    expect(page).toContain("duplicateSalesOwnerNames");
-    expect(page).toContain('`（${staff.staffCode}）`');
+  it("页面提供姓名工号搜索、单选即筛选、未分配和简洁重置", () => {
+    expect(page).toContain("<SalesOwnerFilterCombobox");
+    expect(ownerFilter).toContain('aria-label="按销售负责人筛选商户"');
+    expect(ownerFilter).toContain('placeholder="搜索姓名或工号"');
+    expect(ownerFilter).toContain('value={`${staff.displayName} ${staff.staffCode}');
+    expect(ownerFilter).toContain('select("$unassigned")');
+    expect(ownerFilter).toContain('staff.active ? "启用" : "停用"');
+    expect(ownerFilter).toContain("duplicateNames");
+    expect(ownerFilter).toContain('`（${staff.staffCode}）`');
     expect(page).toContain('salesOwnerCode: salesOwnerFilter === "all" ? undefined : salesOwnerFilter');
     expect(page).toContain("setSalesOwnerFilter(value)");
     expect(page).toContain("setPage(1)");

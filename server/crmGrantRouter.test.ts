@@ -6,6 +6,7 @@ vi.mock("./db", async importOriginal => {
   return {
     ...actual,
     getMerchantById: vi.fn(),
+    getOwnedMerchantById: vi.fn(),
     setMerchantCrmStatus: vi.fn(),
     rebindMerchantCrmOwner: vi.fn(),
     getCrmOwnerRebindLog: vi.fn(),
@@ -91,6 +92,7 @@ describe("后台商户 CRM 开通与负责人换绑闭环", () => {
   const setMerchantCrmStatus = vi.mocked(db.setMerchantCrmStatus);
   const rebindMerchantCrmOwner = vi.mocked(db.rebindMerchantCrmOwner);
   const getMerchantById = vi.mocked(db.getMerchantById);
+  const getOwnedMerchantById = vi.mocked(db.getOwnedMerchantById);
   const getCrmOwnerRebindLog = vi.mocked(db.getCrmOwnerRebindLog);
   const completeCrmOwnerRebindPlatformSync = vi.mocked(db.completeCrmOwnerRebindPlatformSync);
   const markCrmOwnerRebindPlatformSyncRetryable = vi.mocked(db.markCrmOwnerRebindPlatformSyncRetryable);
@@ -103,6 +105,10 @@ describe("后台商户 CRM 开通与负责人换绑闭环", () => {
       id: 30004,
       businessLicense: creditCode,
     } as Awaited<ReturnType<typeof db.getMerchantById>>);
+    getOwnedMerchantById.mockResolvedValue({
+      id: 30004,
+      businessLicense: creditCode,
+    } as Awaited<ReturnType<typeof db.getOwnedMerchantById>>);
     getCrmOwnerRebindLog.mockResolvedValue(null);
     validatePlatformCrmRebindTarget.mockResolvedValue({
       valid: true,

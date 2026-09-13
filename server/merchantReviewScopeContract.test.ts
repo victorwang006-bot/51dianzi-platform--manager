@@ -39,7 +39,7 @@ describe("归属校验函数：语义与错误码", () => {
     // 必须走 getAdminSalesStaffCodes，不得自行拼装范围
     expect(body).toContain("await getAdminSalesStaffCodes(ctx)");
     // 必须把范围传给 db 层查询，否则校验形同虚设
-    expect(body).toMatch(/db\.getMerchantById\(merchantId,\s*codes\)/);
+    expect(body).toMatch(/db\.getOwnedMerchantById\(merchantId,\s*codes\)/);
   });
 
   it("越权时返回 NOT_FOUND 而非 FORBIDDEN，避免泄露他人商户的存在", () => {

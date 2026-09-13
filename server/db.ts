@@ -1,3 +1,4 @@
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -13,6 +14,9 @@ import {
   InsertUser,
   materialNumberSequences,
   materials,
+  merchantOwnershipQueryAudits,
+  merchantOwnershipRequests,
+  merchantSalesCollaborators,
   merchants,
   messages,
   messageThreads,
@@ -643,8 +647,23 @@ export async function getEnabledErpPortalUserIds() {
     .filter((value): value is string => value.length > 0);
 }
 
+function merchantReadScopeCondition(salesStaffCodes?: string[]) {
+  if (salesStaffCodes === undefined) return undefined;
+  if (salesStaffCodes.length === 0) return sql`1 = 0`;
+  const staffCodes = sql.join(salesStaffCodes.map(code => sql`${code}`), sql`, `);
+  return or(
+    inArray(merchants.salesOwnerCode, salesStaffCodes),
+    sql`EXISTS (
+      SELECT 1 FROM merchant_sales_collaborators collaborator
+       WHERE collaborator.merchantId = ${merchants.id}
+         AND collaborator.staffCode IN (${staffCodes})
+         AND collaborator.revokedAt IS NULL
+    )`,
+  );
+}
+
 /**
- * 商户分页列表，支持销售数据范围隔离。
+ * 商户分页列表，支持销售负责人及已批准协作者的数据范围隔离。
  *
  * ⚠️ `salesStaffCodes` 三态语义不可简化：
  *   - `undefined` → 超级管理员，不过滤
@@ -681,12 +700,18 @@ export async function getMerchants(
     }
     conditions.push(eq(merchants.salesOwnerCode, salesOwnerCode));
   } else if (salesStaffCodes !== undefined) {
-    conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
+    conditions.push(merchantReadScopeCondition(salesStaffCodes)!);
   }
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(merchants).where(where);
   const data = await db.select().from(merchants).where(where).orderBy(desc(merchants.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
-  return { data, total: Number(count) };
+  return {
+    data: data.map(row => ({
+      ...row,
+      canManage: salesStaffCodes === undefined || salesStaffCodes.includes(row.salesOwnerCode?.trim().toLowerCase() || ""),
+    })),
+    total: Number(count),
+  };
 }
 
 /**
@@ -732,8 +757,407 @@ export async function getMerchantSalesOwnerFilterOptions(salesStaffCodes?: strin
     canViewUnassigned: salesStaffCodes === undefined,
   };
 }
-/** 按 ID 取商户；三态语义同 getMerchants，越出范围时返回 null（而非泄露数据） */
+
+const OWNERSHIP_QUERY_MINUTE_LIMIT = 30;
+const OWNERSHIP_QUERY_DAY_LIMIT = 300;
+const OWNERSHIP_REQUEST_TOKEN_TTL_MS = 10 * 60_000;
+
+function ownershipRequestToken(merchantId: number, adminUserId: number, expiresAt: number) {
+  const secret = ENV.cookieSecret || (ENV.isProduction ? "" : "development-merchant-ownership");
+  if (!secret) throw new Error("JWT_SECRET 未配置，无法生成客户归属申请凭证");
+  const signature = createHmac("sha256", secret)
+    .update(`${merchantId}:${adminUserId}:${expiresAt}`)
+    .digest("hex");
+  return `${expiresAt}.${signature}`;
+}
+
+function verifyOwnershipRequestToken(token: string, merchantId: number, adminUserId: number) {
+  const [expiresText, signature, extra] = token.split(".");
+  if (extra !== undefined || !/^\d{13}$/.test(expiresText ?? "") || !/^[0-9a-f]{64}$/.test(signature ?? "")) {
+    return false;
+  }
+  const expiresAt = Number(expiresText);
+  if (!Number.isSafeInteger(expiresAt) || expiresAt < Date.now()) return false;
+  const expectedSignature = ownershipRequestToken(merchantId, adminUserId, expiresAt).split(".")[1];
+  return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"));
+}
+
+function ownershipQueryKind(query: string) {
+  const compact = query.replace(/\s+/g, "").toUpperCase();
+  if (/^M\d{6,}$/.test(compact)) return "merchant_no";
+  if (/^[0-9A-Z]{18}$/.test(compact)) return "credit_code";
+  if (/^1\d{10}$/.test(compact)) return "phone";
+  return "company_or_contact";
+}
+
+function escapeLike(value: string) {
+  return value.replace(/[!%_]/g, match => `!${match}`);
+}
+
+/**
+ * 跨销售范围客户归属查重。返回值刻意限制为公司、归属和更新时间；
+ * 不返回客户电话、邮箱、营业执照或经营资料，避免借查询枚举客户库。
+ */
+export async function searchMerchantOwnership(input: {
+  query: string;
+  adminUserId: number;
+  salesStaffCodes?: string[];
+  ipAddress?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) return { results: [] };
+  return db.transaction(async tx => {
+    const lockName = `d51-ownership-query-${input.adminUserId}`;
+    const lockResult = (await tx.execute(sql`
+      SELECT GET_LOCK(${lockName}, 5) AS acquired
+    `)) as unknown as [{ acquired?: number }[], unknown];
+    if (Number(lockResult[0]?.[0]?.acquired ?? 0) !== 1) {
+      throw new Error("OWNERSHIP_QUERY_BUSY");
+    }
+
+    try {
+  const query = input.query.trim();
+  const compact = query.replace(/\s+/g, "").toUpperCase();
+  const now = new Date();
+  const minuteAgo = new Date(now.getTime() - 60_000);
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
+  const [usage] = await tx
+    .select({
+      minuteCount: sql<number>`SUM(CASE WHEN ${merchantOwnershipQueryAudits.createdAt} >= ${minuteAgo} THEN 1 ELSE 0 END)`,
+      dayCount: sql<number>`COUNT(*)`,
+    })
+    .from(merchantOwnershipQueryAudits)
+    .where(and(
+      eq(merchantOwnershipQueryAudits.adminUserId, input.adminUserId),
+      gte(merchantOwnershipQueryAudits.createdAt, dayAgo),
+    ));
+  if (Number(usage?.minuteCount ?? 0) >= OWNERSHIP_QUERY_MINUTE_LIMIT || Number(usage?.dayCount ?? 0) >= OWNERSHIP_QUERY_DAY_LIMIT) {
+    throw new Error("OWNERSHIP_QUERY_RATE_LIMITED");
+  }
+
+  const kind = ownershipQueryKind(query);
+  const pattern = `%${escapeLike(query)}%`;
+  const compactPattern = `%${escapeLike(compact)}%`;
+  const conditions = kind === "merchant_no"
+    ? [eq(merchants.merchantNo, compact)]
+    : kind === "credit_code"
+      ? [sql`UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact}`]
+      : kind === "phone"
+        ? [eq(merchants.contactPhone, compact)]
+        : [
+            sql`${merchants.companyName} LIKE ${pattern} ESCAPE '!'`,
+            sql`${merchants.contactName} LIKE ${pattern} ESCAPE '!'`,
+            sql`${merchants.merchantNo} LIKE ${compactPattern} ESCAPE '!'`,
+          ];
+  const scopeExpression = input.salesStaffCodes === undefined
+    ? sql<number>`1`
+    : input.salesStaffCodes.length === 0
+      ? sql<number>`0`
+      : sql<number>`CASE WHEN ${merchantReadScopeCondition(input.salesStaffCodes)} THEN 1 ELSE 0 END`;
+
+  const rows = await tx
+    .select({
+      id: merchants.id,
+      companyName: merchants.companyName,
+      status: merchants.status,
+      salesOwner: merchants.salesOwner,
+      salesOwnerCode: merchants.salesOwnerCode,
+      updatedAt: merchants.updatedAt,
+      ownerEmail: adminUsers.email,
+      ownerPhone: adminUsers.phone,
+      inScope: scopeExpression,
+    })
+    .from(merchants)
+    .leftJoin(salesStaff, eq(salesStaff.staffCode, merchants.salesOwnerCode))
+    .leftJoin(adminUsers, eq(adminUsers.id, salesStaff.adminUserId))
+    .where(or(...conditions))
+    .orderBy(
+      sql`CASE
+        WHEN ${merchants.merchantNo} = ${compact} THEN 0
+        WHEN UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact} THEN 0
+        WHEN ${merchants.contactPhone} = ${compact} THEN 0
+        WHEN ${merchants.companyName} = ${query} THEN 1
+        ELSE 2
+      END`,
+      desc(merchants.updatedAt),
+    )
+    .limit(10);
+
+  await tx.insert(merchantOwnershipQueryAudits).values({
+    adminUserId: input.adminUserId,
+    queryHash: createHash("sha256").update(compact).digest("hex"),
+    queryKind: kind,
+    resultCount: rows.length,
+    ipAddress: input.ipAddress ?? null,
+  });
+
+  const requestTokenExpiresAt = Date.now() + OWNERSHIP_REQUEST_TOKEN_TTL_MS;
+
+  return {
+    results: rows.map(row => ({
+      id: row.id,
+      companyName: row.companyName,
+      status: row.status,
+      ownerName: row.salesOwner?.trim() || null,
+      ownerCode: row.salesOwnerCode?.trim().toLowerCase() || null,
+      ownerEmail: row.ownerEmail?.trim() || null,
+      ownerPhone: row.ownerPhone?.trim() || null,
+      updatedAt: row.updatedAt,
+      inScope: Number(row.inScope) === 1,
+      requestToken: ownershipRequestToken(row.id, input.adminUserId, requestTokenExpiresAt),
+    })),
+  };
+    } finally {
+      await tx.execute(sql`SELECT RELEASE_LOCK(${lockName})`).catch(() => undefined);
+    }
+  });
+}
+
+export async function createMerchantOwnershipRequest(input: {
+  merchantId: number;
+  requestType: "claim" | "collaborate" | "transfer";
+  requesterAdminUserId: number;
+  requesterName: string;
+  reason: string;
+  verificationToken: string;
+  actor?: MaterialAuditActor;
+}) {
+  if (!verifyOwnershipRequestToken(input.verificationToken, input.merchantId, input.requesterAdminUserId)) {
+    throw new Error("OWNERSHIP_LOOKUP_REQUIRED");
+  }
+  const db = await getDb();
+  if (!db) throw new Error("数据库不可用");
+  return db.transaction(async tx => {
+    const [staff] = await tx
+      .select()
+      .from(salesStaff)
+      .where(and(
+        eq(salesStaff.adminUserId, input.requesterAdminUserId),
+        eq(salesStaff.status, "active"),
+      ))
+      .limit(1);
+    if (!staff) throw new Error("REQUESTER_HAS_NO_ACTIVE_SALES_IDENTITY");
+    const [merchant] = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, input.merchantId))
+      .limit(1)
+      .for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+    const ownerCode = merchant.salesOwnerCode?.trim().toLowerCase() || null;
+    if (ownerCode === staff.staffCode) throw new Error("ALREADY_OWNER");
+    if (input.requestType === "claim" && ownerCode) throw new Error("MERCHANT_ALREADY_ASSIGNED");
+    if (input.requestType !== "claim" && !ownerCode) throw new Error("MERCHANT_UNASSIGNED");
+    if (input.requestType === "collaborate") {
+      const [existingCollaborator] = await tx
+        .select({ id: merchantSalesCollaborators.id })
+        .from(merchantSalesCollaborators)
+        .where(and(
+          eq(merchantSalesCollaborators.merchantId, merchant.id),
+          eq(merchantSalesCollaborators.staffCode, staff.staffCode),
+          isNull(merchantSalesCollaborators.revokedAt),
+        ))
+        .limit(1);
+      if (existingCollaborator) throw new Error("ALREADY_COLLABORATOR");
+    }
+    const [pending] = await tx
+      .select({ id: merchantOwnershipRequests.id })
+      .from(merchantOwnershipRequests)
+      .where(and(
+        eq(merchantOwnershipRequests.merchantId, merchant.id),
+        eq(merchantOwnershipRequests.requesterAdminUserId, input.requesterAdminUserId),
+        eq(merchantOwnershipRequests.status, "pending"),
+      ))
+      .limit(1);
+    if (pending) return { success: true as const, idempotent: true as const, requestId: pending.id };
+
+    const result = await tx.insert(merchantOwnershipRequests).values({
+      merchantId: merchant.id,
+      requestType: input.requestType,
+      requesterAdminUserId: input.requesterAdminUserId,
+      requesterStaffCode: staff.staffCode,
+      requesterName: input.requesterName,
+      expectedOwnerCode: ownerCode,
+      reason: input.reason.trim(),
+    });
+    const requestId = Number(result[0].insertId);
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? input.requesterAdminUserId,
+      operatorName: input.actor?.operatorName ?? input.requesterName,
+      operatorRole: input.actor?.operatorRole ?? null,
+      action: `merchant.ownership-request.${input.requestType}`,
+      module: "merchants",
+      targetType: "merchant_ownership_request",
+      targetId: String(requestId),
+      afterValue: { merchantId: merchant.id, expectedOwnerCode: ownerCode, requesterStaffCode: staff.staffCode },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+    });
+    return { success: true as const, idempotent: false as const, requestId };
+  });
+}
+
+export async function listMerchantOwnershipRequests(input: {
+  requesterAdminUserId?: number;
+  status?: "pending" | "approved" | "rejected" | "cancelled";
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (input.requesterAdminUserId !== undefined) {
+    conditions.push(eq(merchantOwnershipRequests.requesterAdminUserId, input.requesterAdminUserId));
+  }
+  if (input.status) conditions.push(eq(merchantOwnershipRequests.status, input.status));
+  return db
+    .select({
+      id: merchantOwnershipRequests.id,
+      merchantId: merchantOwnershipRequests.merchantId,
+      companyName: merchants.companyName,
+      requestType: merchantOwnershipRequests.requestType,
+      requesterName: merchantOwnershipRequests.requesterName,
+      requesterStaffCode: merchantOwnershipRequests.requesterStaffCode,
+      status: merchantOwnershipRequests.status,
+      reason: merchantOwnershipRequests.reason,
+      ownerName: merchants.salesOwner,
+      ownerCode: merchants.salesOwnerCode,
+      reviewNote: merchantOwnershipRequests.reviewNote,
+      createdAt: merchantOwnershipRequests.createdAt,
+      reviewedAt: merchantOwnershipRequests.reviewedAt,
+    })
+    .from(merchantOwnershipRequests)
+    .innerJoin(merchants, eq(merchants.id, merchantOwnershipRequests.merchantId))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(merchantOwnershipRequests.createdAt))
+    .limit(Math.min(input.limit ?? 50, 100));
+}
+
+export async function reviewMerchantOwnershipRequest(input: {
+  requestId: number;
+  decision: "approved" | "rejected";
+  reviewNote?: string | null;
+  reviewerAdminUserId: number;
+  reviewerName: string;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("数据库不可用");
+  return db.transaction(async tx => {
+    const [request] = await tx
+      .select()
+      .from(merchantOwnershipRequests)
+      .where(eq(merchantOwnershipRequests.id, input.requestId))
+      .limit(1)
+      .for("update");
+    if (!request) throw new Error("OWNERSHIP_REQUEST_NOT_FOUND");
+    if (request.status !== "pending") throw new Error("OWNERSHIP_REQUEST_ALREADY_REVIEWED");
+    const [merchant] = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, request.merchantId))
+      .limit(1)
+      .for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+    const currentOwnerCode = merchant.salesOwnerCode?.trim().toLowerCase() || null;
+
+    if (input.decision === "approved" && currentOwnerCode !== (request.expectedOwnerCode || null)) {
+      throw new Error("SALES_OWNER_CHANGED");
+    }
+    let platformCompanyId: number | null = null;
+    if (input.decision === "approved") {
+      if (request.requestType === "collaborate") {
+        await tx.insert(merchantSalesCollaborators).values({
+          merchantId: merchant.id,
+          staffCode: request.requesterStaffCode,
+          grantedByAdminUserId: input.reviewerAdminUserId,
+          sourceRequestId: request.id,
+          revokedAt: null,
+        }).onDuplicateKeyUpdate({
+          set: {
+            grantedByAdminUserId: input.reviewerAdminUserId,
+            sourceRequestId: request.id,
+            revokedAt: null,
+          },
+        });
+      } else {
+        const [staff] = await tx
+          .select()
+          .from(salesStaff)
+          .where(and(
+            eq(salesStaff.staffCode, request.requesterStaffCode),
+            eq(salesStaff.status, "active"),
+          ))
+          .limit(1);
+        if (!staff) throw new Error("INVALID_SALES_STAFF_CODE");
+        await tx.update(merchants).set({
+          salesOwner: staff.displayName,
+          salesOwnerCode: staff.staffCode,
+        }).where(eq(merchants.id, merchant.id));
+        const creditCode = merchant.businessLicense?.trim();
+        if (creditCode) {
+          const platformResult = (await tx.execute(sql`
+            SELECT id
+              FROM ${sql.raw(PLATFORM_DB)}.companies
+             WHERE UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(creditCode)}
+             LIMIT 2
+             FOR UPDATE
+          `)) as unknown as [{ id: number }[], unknown];
+          if (platformResult[0].length === 0) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+          if (platformResult[0].length > 1) throw new Error("PLATFORM_COMPANY_DUPLICATE");
+          platformCompanyId = Number(platformResult[0][0].id);
+          await tx.execute(sql`
+            UPDATE ${sql.raw(PLATFORM_DB)}.companies
+               SET salesOwner = ${staff.displayName}, salesOwnerCode = ${staff.staffCode}
+             WHERE id = ${platformCompanyId}
+          `);
+        }
+      }
+    }
+
+    await tx.update(merchantOwnershipRequests).set({
+      status: input.decision,
+      reviewerAdminUserId: input.reviewerAdminUserId,
+      reviewerName: input.reviewerName,
+      reviewNote: input.reviewNote?.trim() || null,
+      reviewedAt: new Date(),
+    }).where(eq(merchantOwnershipRequests.id, request.id));
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? input.reviewerAdminUserId,
+      operatorName: input.actor?.operatorName ?? input.reviewerName,
+      operatorRole: input.actor?.operatorRole ?? "super_admin",
+      action: `merchant.ownership-request.${input.decision}`,
+      module: "merchants",
+      targetType: "merchant_ownership_request",
+      targetId: String(request.id),
+      beforeValue: { status: request.status, ownerCode: currentOwnerCode },
+      afterValue: {
+        status: input.decision,
+        requestType: request.requestType,
+        requesterStaffCode: request.requesterStaffCode,
+        platformCompanyId,
+      },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note: input.reviewNote?.trim() || null,
+    });
+    return { success: true as const };
+  });
+}
+/** 按 ID 取商户；负责人和已批准协作者均可只读查看。 */
 export async function getMerchantById(id: number, salesStaffCodes?: string[]) {
+  const db = await getDb();
+  if (!db) return null;
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return null;
+  const conditions = [eq(merchants.id, id)];
+  if (salesStaffCodes !== undefined) conditions.push(merchantReadScopeCondition(salesStaffCodes)!);
+  const result = await db.select().from(merchants).where(and(...conditions)).limit(1);
+  return result[0] ?? null;
+}
+
+/** 写操作只认正式负责人范围，协作者不得审核、开通 ERP 或向客户发信。 */
+export async function getOwnedMerchantById(id: number, salesStaffCodes?: string[]) {
   const db = await getDb();
   if (!db) return null;
   if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return null;

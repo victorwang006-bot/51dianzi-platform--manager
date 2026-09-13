@@ -7,6 +7,8 @@ import {
   formatDateTime,
 } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
+import MerchantOwnershipLookup from "@/components/MerchantOwnershipLookup";
+import SalesOwnerFilterCombobox from "@/components/SalesOwnerFilterCombobox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -29,8 +31,8 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Search, ShieldCheck } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -75,6 +77,7 @@ export default function Merchants() {
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [ownershipLookupOpen, setOwnershipLookupOpen] = useState(false);
   const [tableScrollWidth, setTableScrollWidth] = useState(0);
   const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
   const merchantTableScrollRef = useRef<HTMLDivElement>(null);
@@ -90,14 +93,6 @@ export default function Merchants() {
     salesOwnerCode: salesOwnerFilter === "all" ? undefined : salesOwnerFilter,
   });
   const { data: salesOwnerFilterOptions } = trpc.merchant.salesOwnerFilterOptions.useQuery();
-  const duplicateSalesOwnerNames = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const staff of salesOwnerFilterOptions?.options ?? []) {
-      const name = staff.displayName.trim().toLowerCase();
-      counts.set(name, (counts.get(name) ?? 0) + 1);
-    }
-    return new Set(Array.from(counts).filter(([, count]) => count > 1).map(([name]) => name));
-  }, [salesOwnerFilterOptions]);
   const { data: detail } = trpc.merchant.detail.useQuery(
     { id: detailId ?? 0 },
     { enabled: detailId !== null },
@@ -246,30 +241,19 @@ export default function Merchants() {
               搜索
             </Button>
           </div>
-          <Select
+          <SalesOwnerFilterCombobox
             value={salesOwnerFilter}
-            onValueChange={value => {
+            onChange={value => {
               setSalesOwnerFilter(value);
               setPage(1);
             }}
-          >
-            <SelectTrigger className="h-9 w-[180px]" aria-label="按销售负责人筛选商户">
-              <SelectValue placeholder="全部负责人" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部负责人</SelectItem>
-              {salesOwnerFilterOptions?.canViewUnassigned && (
-                <SelectItem value="$unassigned">未分配</SelectItem>
-              )}
-              {salesOwnerFilterOptions?.options.map(staff => (
-                <SelectItem key={staff.staffCode} value={staff.staffCode}>
-                  {staff.displayName}
-                  {duplicateSalesOwnerNames.has(staff.displayName.trim().toLowerCase()) ? `（${staff.staffCode}）` : ""}
-                  {staff.active ? "" : "（已停用）"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={salesOwnerFilterOptions?.options ?? []}
+            canViewUnassigned={Boolean(salesOwnerFilterOptions?.canViewUnassigned)}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={() => setOwnershipLookupOpen(true)}>
+            <ShieldCheck className="mr-1 h-4 w-4" />
+            客户归属查询
+          </Button>
           {hasFilters && (
             <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
               重置
@@ -346,6 +330,7 @@ export default function Merchants() {
                       const crmOwnerPortalUserId = ((m as { crmOwnerPortalUserId?: string | null }).crmOwnerPortalUserId ?? "").trim();
                       const salesOwner = ((m as { salesOwner?: string | null }).salesOwner ?? "").trim();
                       const salesOwnerCode = ((m as { salesOwnerCode?: string | null }).salesOwnerCode ?? "").trim().toLowerCase();
+                      const canManage = (m as { canManage?: boolean }).canManage !== false;
                       const currentSalesIsActive = salesStaff.some(staff => staff.staffCode === salesOwnerCode);
                       const ownerUpdating = salesOwnerMutation.isPending && salesOwnerMutation.variables?.id === m.id;
                       const crmActuallyEnabled = crmStatus === "enabled" && Boolean(crmOwnerPortalUserId);
@@ -401,6 +386,7 @@ export default function Merchants() {
                             ) : (
                               salesOwner || "-"
                             )}
+                            {!canManage && <p className="mt-1 text-[11px] text-primary">协作只读</p>}
                             {ownerUpdating && <p className="mt-1 text-[11px] text-muted-foreground">同步中…</p>}
                           </td>
                           <td>
@@ -414,6 +400,9 @@ export default function Merchants() {
                           <td><StatusBadge label={ag.label} style={ag.style} /></td>
                           <td className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</td>
                           <td>
+                            {!canManage ? (
+                              <span className="text-xs text-muted-foreground">仅查看</span>
+                            ) : (
                             <div className="flex items-center gap-1 flex-wrap">
                               {crmActuallyEnabled ? (
                                 /* 已开通客户：只有「暂停」 */
@@ -444,6 +433,7 @@ export default function Merchants() {
                                 </>
                               )}
                             </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -586,6 +576,13 @@ export default function Merchants() {
           )}
         </DialogContent>
       </Dialog>
+
+      <MerchantOwnershipLookup
+        open={ownershipLookupOpen}
+        onOpenChange={setOwnershipLookupOpen}
+        isSuperAdmin={isSuperAdmin}
+        onOpenMerchant={setDetailId}
+      />
 
       <style>{`
         .merchant-table-scroll {

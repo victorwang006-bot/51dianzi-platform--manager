@@ -465,9 +465,84 @@ export const merchants = mysqlTable("merchants", {
     table.salesOwnerCode,
     table.createdAt,
   ),
+  contactPhoneIdx: index("merchants_contact_phone_idx").on(table.contactPhone),
 }));
 
 export type Merchant = typeof merchants.$inferSelect;
+
+/** 协作者仅获得商户列表与详情的只读可见权，不获得审核、ERP 或发信权限。 */
+export const merchantSalesCollaborators = mysqlTable("merchant_sales_collaborators", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  staffCode: varchar("staffCode", { length: 64 }).notNull(),
+  grantedByAdminUserId: int("grantedByAdminUserId"),
+  sourceRequestId: bigint("sourceRequestId", { mode: "number" }),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  revokedAt: timestamp("revokedAt"),
+}, table => ({
+  merchantStaffUnique: uniqueIndex("merchant_sales_collaborators_merchant_staff_unique").on(
+    table.merchantId,
+    table.staffCode,
+  ),
+  staffMerchantIdx: index("merchant_sales_collaborators_staff_merchant_idx").on(
+    table.staffCode,
+    table.merchantId,
+  ),
+}));
+
+export type MerchantSalesCollaborator = typeof merchantSalesCollaborators.$inferSelect;
+
+/** 销售发起的客户认领、协作或转交申请；审批后才改变归属或协作范围。 */
+export const merchantOwnershipRequests = mysqlTable("merchant_ownership_requests", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  requestType: mysqlEnum("requestType", ["claim", "collaborate", "transfer"]).notNull(),
+  requesterAdminUserId: int("requesterAdminUserId").notNull(),
+  requesterStaffCode: varchar("requesterStaffCode", { length: 64 }).notNull(),
+  requesterName: varchar("requesterName", { length: 128 }).notNull(),
+  expectedOwnerCode: varchar("expectedOwnerCode", { length: 64 }),
+  reason: varchar("reason", { length: 500 }).notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "cancelled"]).default("pending").notNull(),
+  reviewerAdminUserId: int("reviewerAdminUserId"),
+  reviewerName: varchar("reviewerName", { length: 128 }),
+  reviewNote: varchar("reviewNote", { length: 500 }),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+}, table => ({
+  requesterCreatedIdx: index("merchant_ownership_requests_requester_created_idx").on(
+    table.requesterAdminUserId,
+    table.createdAt,
+  ),
+  statusCreatedIdx: index("merchant_ownership_requests_status_created_idx").on(
+    table.status,
+    table.createdAt,
+  ),
+  merchantStatusIdx: index("merchant_ownership_requests_merchant_status_idx").on(
+    table.merchantId,
+    table.status,
+  ),
+}));
+
+export type MerchantOwnershipRequest = typeof merchantOwnershipRequests.$inferSelect;
+
+/** 防枚举审计：只保存查询摘要，不保存公司名、手机号或信用代码原文。 */
+export const merchantOwnershipQueryAudits = mysqlTable("merchant_ownership_query_audits", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  queryHash: varchar("queryHash", { length: 64 }).notNull(),
+  queryKind: varchar("queryKind", { length: 24 }).notNull(),
+  resultCount: int("resultCount").default(0).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+}, table => ({
+  adminCreatedIdx: index("merchant_ownership_query_audits_admin_created_idx").on(
+    table.adminUserId,
+    table.createdAt,
+  ),
+}));
+
+export type MerchantOwnershipQueryAudit = typeof merchantOwnershipQueryAudits.$inferSelect;
 
 // ─── 商品与库存 ───────────────────────────────────────────────────────────────
 

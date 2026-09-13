@@ -386,7 +386,7 @@ async function getPlatformInventoryCreditScope(ctx: TrpcContext): Promise<string
 async function assertMerchantInSalesScope(ctx: TrpcContext, merchantId: number) {
   const codes = await getAdminSalesStaffCodes(ctx);
   // undefined = 不限（超级管理员），直接取商户不做范围限定
-  const merchant = await db.getMerchantById(merchantId, codes);
+  const merchant = await db.getOwnedMerchantById(merchantId, codes);
   if (!merchant) {
     /*
      * 统一返回 NOT_FOUND 而非 FORBIDDEN：
@@ -945,6 +945,100 @@ export const appRouter = router({
     salesOwnerFilterOptions: merchantReadProcedure.query(async ({ ctx }) => {
       return db.getMerchantSalesOwnerFilterOptions(await getAdminSalesStaffCodes(ctx));
     }),
+    /**
+     * 客户开发前跨销售范围查重。仅返回公司、负责人、内部联系方式和状态，
+     * 不返回客户手机号、邮箱、营业执照等资料；查询按账号限流并写摘要审计。
+     */
+    ownershipSearch: merchantReadProcedure
+      .input(z.object({ query: z.string().trim().min(2, "至少输入 2 个字符").max(64) }))
+      .query(async ({ ctx, input }) => {
+        try {
+          return await db.searchMerchantOwnership({
+            query: input.query,
+            adminUserId: ctx.adminAccount?.id ?? ctx.user.id,
+            salesStaffCodes: await getAdminSalesStaffCodes(ctx),
+            ipAddress: auditActorFromContext(ctx).ipAddress,
+          });
+        } catch (error) {
+          if (error instanceof Error && error.message === "OWNERSHIP_QUERY_RATE_LIMITED") {
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "查询过于频繁，请稍后再试" });
+          }
+          if (error instanceof Error && error.message === "OWNERSHIP_QUERY_BUSY") {
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "查询正在处理中，请稍后再试" });
+          }
+          throw error;
+        }
+      }),
+    myOwnershipRequests: merchantReadProcedure.query(({ ctx }) =>
+      db.listMerchantOwnershipRequests({ requesterAdminUserId: ctx.adminAccount?.id ?? ctx.user.id }),
+    ),
+    pendingOwnershipRequests: salesOwnerAssignProcedure.query(() =>
+      db.listMerchantOwnershipRequests({ status: "pending", limit: 100 }),
+    ),
+    createOwnershipRequest: merchantReadProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        requestType: z.enum(["claim", "collaborate", "transfer"]),
+        reason: z.string().trim().min(5, "申请原因至少需要 5 个字符").max(500),
+        verificationToken: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await db.createMerchantOwnershipRequest({
+            ...input,
+            requesterAdminUserId: ctx.adminAccount?.id ?? ctx.user.id,
+            requesterName: ctx.adminAccount?.displayName?.trim() || ctx.user.name || ctx.adminAccount?.username || "后台员工",
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          const readable: Record<string, string> = {
+            REQUESTER_HAS_NO_ACTIVE_SALES_IDENTITY: "当前账号未关联启用中的销售身份，无法提交申请",
+            MERCHANT_NOT_FOUND: "客户记录不存在",
+            ALREADY_OWNER: "您已经是该客户负责人",
+            MERCHANT_ALREADY_ASSIGNED: "该客户已有负责人，请申请协作或转交",
+            MERCHANT_UNASSIGNED: "该客户未分配负责人，请提交认领申请",
+            ALREADY_COLLABORATOR: "您已经拥有该客户的协作查看权限",
+            OWNERSHIP_LOOKUP_REQUIRED: "查重凭证无效或已过期，请重新查询客户归属",
+          };
+          if (readable[message]) throw new TRPCError({ code: "BAD_REQUEST", message: readable[message] });
+          throw error;
+        }
+      }),
+    reviewOwnershipRequest: salesOwnerAssignProcedure
+      .input(z.object({
+        requestId: z.number().int().positive(),
+        decision: z.enum(["approved", "rejected"]),
+        reviewNote: z.string().trim().max(500).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await db.reviewMerchantOwnershipRequest({
+            ...input,
+            reviewerAdminUserId: ctx.adminAccount?.id ?? ctx.user.id,
+            reviewerName: ctx.adminAccount?.displayName?.trim() || ctx.user.name || ctx.adminAccount?.username || "超级管理员",
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "OWNERSHIP_REQUEST_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "申请不存在" });
+          }
+          if (message === "OWNERSHIP_REQUEST_ALREADY_REVIEWED") {
+            throw new TRPCError({ code: "CONFLICT", message: "该申请已经处理" });
+          }
+          if (message === "SALES_OWNER_CHANGED") {
+            throw new TRPCError({ code: "CONFLICT", message: "客户负责人已发生变化，请重新核对后处理" });
+          }
+          if (message === "PLATFORM_COMPANY_NOT_FOUND") {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "主站未找到对应企业，负责人未变更" });
+          }
+          if (message === "PLATFORM_COMPANY_DUPLICATE") {
+            throw new TRPCError({ code: "CONFLICT", message: "主站存在重复企业资料，请先处理数据异常" });
+          }
+          throw mapAdminLifecycleError(error);
+        }
+      }),
     detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
       return db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
     }),

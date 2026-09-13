@@ -38,9 +38,13 @@ describe("销售负责人原子同步", () => {
     expect(fn).toContain('action: "merchant.sales-owner.assign"');
   });
 
-  it("销售个人后台继续按 salesOwnerCode 实时过滤商户", () => {
+  it("销售个人后台按负责人或批准协作范围读取，写操作仍只按负责人过滤", () => {
     const list = section(dbSource, "export async function getMerchants", "export async function getMerchantById");
-    expect(list).toContain("inArray(merchants.salesOwnerCode, salesStaffCodes)");
+    expect(dbSource).toContain("function merchantReadScopeCondition");
+    expect(dbSource).toContain("merchant_sales_collaborators");
+    expect(list).toContain("merchantReadScopeCondition(salesStaffCodes)");
+    const owned = section(dbSource, "export async function getOwnedMerchantById", "/**\n * 超级管理员分配或更换商户销售负责人");
+    expect(owned).toContain("inArray(merchants.salesOwnerCode, salesStaffCodes)");
   });
 });
 
