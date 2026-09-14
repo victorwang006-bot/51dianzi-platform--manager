@@ -265,6 +265,16 @@ describe("管理端功能清单闸门", () => {
       expect(routers).toContain("adminPermissionInput");
       expect(routers).toContain("permissionAuditFromContext");
     });
+
+    it("重置密码不得被系统固定的个人信息权限阻断", () => {
+      const admins = read("client/src/pages/Admins.tsx");
+      const routers = read("server/routers.ts");
+      expect(admins).toContain("assignableModulePermissions");
+      expect(admins).toContain("assignableModulePermissions.has(permission)");
+      expect(routers).toContain('value === "profile.manage"');
+      expect(routers).toContain("normalizeAssignedAdminPermissions(values)");
+      expect(routers).toContain('value => isAssignableAdminPermission(value) || value === "profile.manage"');
+    });
   });
 
   describe("BOM 询价单消息渲染（曾为孤儿文件，源码全网仅剩产物）", () => {

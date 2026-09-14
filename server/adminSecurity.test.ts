@@ -11,6 +11,8 @@ const dbMocks = vi.hoisted(() => ({
   getAdminUsersByPhone: vi.fn(),
   getAdminUsers: vi.fn(),
   createAdminUser: vi.fn(),
+  getAdminUserById: vi.fn(),
+  updateAdminUser: vi.fn(),
 }));
 vi.mock("./db", () => dbMocks);
 const loginSecurityMocks = vi.hoisted(() => ({
@@ -177,6 +179,34 @@ describe("administrator security boundaries", () => {
     expect(created).not.toHaveProperty("passwordHash");
     expect(created).not.toHaveProperty("sessionVersion");
     expect(dbMocks.createAdminUser).toHaveBeenCalledWith(expect.objectContaining({ username: "safe-user" }));
+  });
+
+  it("resets an admin password when an older editor echoes the implicit profile permission", async () => {
+    const target = { ...account, id: 77, adminRole: "merchant_mgr" as const };
+    dbMocks.getAdminUserById.mockResolvedValue(target);
+    dbMocks.updateAdminUser.mockResolvedValue(undefined);
+    const superContext: TrpcContext = {
+      user: {
+        id: 1, openId: "local_admin:1", name: "root", email: null, loginMethod: "password", role: "admin",
+        createdAt: now, updatedAt: now, lastSignedIn: now,
+      },
+      adminAccount: { ...account, id: 1, adminRole: "super_admin", passwordHash: null },
+      adminPermissions: [],
+      req: { headers: {}, protocol: "https" } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    };
+
+    await appRouter.createCaller(superContext).adminUser.update({
+      id: target.id,
+      permissions: ["merchants.read", "profile.manage"],
+      password: "ResetPass@123",
+    });
+
+    expect(dbMocks.updateAdminUser).toHaveBeenCalledWith(target.id, expect.objectContaining({
+      permissions: expect.arrayContaining(["merchants.read", "profile.manage"]),
+      passwordHash: expect.stringMatching(/^\$2/),
+      actorAdminUserId: 1,
+    }));
   });
 
   it("maps a single successful concurrent reset-code consume to one success and rejects the loser", async () => {

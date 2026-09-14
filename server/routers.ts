@@ -163,8 +163,13 @@ const salesOwnerAssignProcedure = adminProcedure.use(({ ctx, next }) => {
 
 const adminPermissionInput = z
   .array(z.string().trim().max(64))
-  .max(ASSIGNABLE_ADMIN_PERMISSIONS.length)
-  .refine(values => values.every(isAssignableAdminPermission), "包含不可分配的模块权限")
+  // 旧版编辑弹窗会回传服务端自动附加的 profile.manage；兼容该固定权限，
+  // 但继续拒绝 admins.manage、logs.read 等真正不可下放的系统权限。
+  .max(ASSIGNABLE_ADMIN_PERMISSIONS.length + 1)
+  .refine(
+    values => values.every(value => isAssignableAdminPermission(value) || value === "profile.manage"),
+    "包含不可分配的模块权限",
+  )
   .transform(values => normalizeAssignedAdminPermissions(values));
 
 function assertHasBusinessPermission(role: AdminRole, permissions?: AdminPermission[]) {

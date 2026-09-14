@@ -152,8 +152,13 @@ const modulePermissionGroups: { module: string; options: ModulePermissionOption[
 const defaultNormalPermissions = getAdminRolePermissions("merchant_mgr")
   .filter(permission => permission !== "profile.manage") as AdminPermission[];
 
-function normalizeModulePermissions(permissions: AdminPermission[]) {
-  const next = new Set(permissions);
+const assignableModulePermissions = new Set<AdminPermission>(
+  modulePermissionGroups.flatMap(group => group.options.map(option => option.value)),
+);
+
+function normalizeModulePermissions(permissions: readonly AdminPermission[]) {
+  // profile.manage 等系统固定权限由服务端自动保留，不能作为可分配模块权限回传。
+  const next = new Set(permissions.filter(permission => assignableModulePermissions.has(permission)));
   for (const group of modulePermissionGroups) {
     for (const option of group.options) {
       if (option.requires && next.has(option.value)) next.add(option.requires);
