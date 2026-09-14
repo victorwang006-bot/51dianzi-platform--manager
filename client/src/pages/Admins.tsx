@@ -92,6 +92,22 @@ function loginMethodLabel(value: string | null | undefined) {
   return value || "未知方式";
 }
 
+function adminMutationErrorMessage(error: { message?: unknown }) {
+  const raw = typeof error.message === "string" && error.message
+    ? error.message
+    : "操作失败，请稍后重试";
+  try {
+    const issues = JSON.parse(raw) as Array<{ message?: unknown }>;
+    const firstMessage = Array.isArray(issues)
+      ? issues.find(issue => typeof issue?.message === "string")?.message
+      : null;
+    if (typeof firstMessage === "string" && firstMessage.trim()) return firstMessage;
+  } catch {
+    // 普通服务端错误本来就是可读中文，直接返回即可。
+  }
+  return raw;
+}
+
 type SecurityTarget = { id: number; label: string };
 
 const roleStyleMap: Record<AdminRole, "danger" | "info" | "warning" | "success" | "gray"> = {
@@ -267,7 +283,7 @@ export default function Admins() {
       setForm(emptyForm);
       toast.success("用户创建成功");
     },
-    onError: (e) => toast.error(`创建失败：${e.message}`),
+    onError: (e) => toast.error(`创建失败：${adminMutationErrorMessage(e)}`),
   });
 
   const updateMutation = trpc.adminUser.update.useMutation({
@@ -277,7 +293,7 @@ export default function Admins() {
       setEditingId(null);
       toast.success("用户信息已更新");
     },
-    onError: (e) => toast.error(`更新失败：${e.message}`),
+    onError: (e) => toast.error(`更新失败：${adminMutationErrorMessage(e)}`),
   });
 
   const toggleMutation = trpc.adminUser.toggleStatus.useMutation({

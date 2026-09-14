@@ -275,6 +275,14 @@ describe("管理端功能清单闸门", () => {
       expect(routers).toContain("normalizeAssignedAdminPermissions(values)");
       expect(routers).toContain('value => isAssignableAdminPermission(value) || value === "profile.manage"');
     });
+
+    it("用户更新校验失败时必须显示可读消息而不是原始JSON数组", () => {
+      const admins = read("client/src/pages/Admins.tsx");
+      expect(admins).toContain("function adminMutationErrorMessage");
+      expect(admins).toContain("JSON.parse(raw)");
+      expect(admins).toContain("adminMutationErrorMessage(e)");
+      expect(admins).not.toContain("`更新失败：${e.message}`");
+    });
   });
 
   describe("BOM 询价单消息渲染（曾为孤儿文件，源码全网仅剩产物）", () => {
