@@ -112,6 +112,24 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
   return { key, url: `/manus-storage/${key}` };
 }
 
+/**
+ * 为明确存放在主站阿里云 OSS 中的私有对象签名。
+ * 即使后台同时配置 Forge，也不得把该对象键交给 Forge 解析。
+ */
+export async function storageGetOssSignedUrl(
+  relKey: string,
+  expiresIn = 15 * 60,
+): Promise<string> {
+  const key = normalizeKey(relKey);
+  const oss = ossConfig();
+  if (!oss) throw new Error("ALI_OSS_* config missing");
+  return getSignedUrl(
+    getOssClient(oss),
+    new GetObjectCommand({ Bucket: oss.bucket, Key: key }),
+    { expiresIn },
+  );
+}
+
 export async function storageGetSignedUrl(relKey: string): Promise<string> {
   const key = normalizeKey(relKey);
   const forge = forgeConfig();
@@ -129,11 +147,5 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
     if (!url) throw new Error("Forge returned empty signed URL");
     return url;
   }
-  const oss = ossConfig();
-  if (!oss) throw new Error("Storage config missing: configure Forge or ALI_OSS_* credentials");
-  return getSignedUrl(
-    getOssClient(oss),
-    new GetObjectCommand({ Bucket: oss.bucket, Key: key }),
-    { expiresIn: 15 * 60 },
-  );
+  return storageGetOssSignedUrl(key);
 }

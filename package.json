@@ -18,7 +18,8 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "db:sales-staff-lifecycle": "node scripts/apply-sales-staff-lifecycle-schema.mjs",
     "db:admin-login-security": "node scripts/apply-admin-login-security-schema.mjs",
-    "db:merchant-ownership": "node scripts/apply-merchant-ownership-schema.mjs"
+    "db:merchant-ownership": "node scripts/apply-merchant-ownership-schema.mjs",
+    "db:merchant-license-access": "node scripts/apply-merchant-license-access-schema.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

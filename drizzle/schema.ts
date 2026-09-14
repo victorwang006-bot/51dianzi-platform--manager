@@ -411,6 +411,9 @@ export const merchants = mysqlTable("merchants", {
   contactEmail: varchar("contactEmail", { length: 320 }),
   businessLicense: varchar("businessLicense", { length: 64 }).unique(),
   licenseExpiry: timestamp("licenseExpiry"),
+  /** 私有营业执照对象键；客户端不得直接获得，只在授权查看时由服务端短时签名。 */
+  licenseObjectKey: varchar("licenseObjectKey", { length: 512 }),
+  /** 历史营业执照 URL，仅兼容存量；新增申请不得持久化临时签名 URL。 */
   licenseImageUrl: varchar("licenseImageUrl", { length: 512 }),
   registeredCapital: varchar("registeredCapital", { length: 64 }),
   registeredAddress: varchar("registeredAddress", { length: 512 }),

@@ -22,10 +22,11 @@ import {
 } from "./adminAuth";
 import type { TrpcContext } from "./_core/context";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
-import { storagePut } from "./storage";
+import { storageGetOssSignedUrl, storagePut } from "./storage";
 import { removeLocalFile, saveLocalFile } from "./localUpload";
 import {
   getPlatformOrderDetail,
@@ -1038,8 +1039,64 @@ export const appRouter = router({
         }
       }),
     detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
-      return db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
+      const merchant = await db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
+      return merchant ? db.toMerchantReadDto(merchant) : null;
     }),
+    /**
+     * 营业执照属于敏感资料：先复用商户只读范围校验，再从主站稳定对象键实时签发
+     * 15 分钟访问 URL。客户端永远拿不到对象键，也不会继续复用数据库中的过期 URL。
+     */
+    licenseAccess: merchantReadProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
+        if (!merchant) throw new TRPCError({ code: "NOT_FOUND", message: "未找到该商户" });
+        let source;
+        try {
+          source = await db.getMerchantLicenseSource(merchant);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "PLATFORM_COMPANY_DUPLICATE") {
+            throw new TRPCError({ code: "CONFLICT", message: "主站存在重复企业资料，暂时无法确认营业执照" });
+          }
+          if (message === "PLATFORM_COMPANY_NOT_FOUND") {
+            throw new TRPCError({ code: "CONFLICT", message: "商户与主站企业绑定不一致，请联系管理员核对" });
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "营业执照暂时无法读取，请稍后重试" });
+        }
+        if (!source) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "该商户尚未上传营业执照" });
+        }
+
+        let url: string;
+        let expiresAt: string | null = null;
+        let auditSource: "private_object" | "legacy_url";
+        if (source.objectKey) {
+          if (!source.objectKey.startsWith("licenses/")) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "营业执照存储标识异常，请联系管理员" });
+          }
+          url = await storageGetOssSignedUrl(source.objectKey, 15 * 60);
+          expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
+          auditSource = "private_object";
+        } else {
+          const legacyUrl = source.legacyUrl ?? "";
+          let parsed: URL;
+          try {
+            parsed = new URL(legacyUrl);
+          } catch {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "历史营业执照地址无效，请联系管理员" });
+          }
+          const expectedHost = `${ENV.ossBucket}.${ENV.ossRegion}.aliyuncs.com`.toLowerCase();
+          if (parsed.protocol !== "https:" || parsed.hostname.toLowerCase() !== expectedHost || parsed.search) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "历史营业执照需迁移后才能查看，请联系管理员" });
+          }
+          url = parsed.toString();
+          auditSource = "legacy_url";
+        }
+
+        await db.recordMerchantLicenseView(input.id, auditSource, auditActorFromContext(ctx));
+        return { url, expiresAt, fileName: source.fileName };
+      }),
     /** 当前销售范围内商户的公司信息墙；超管不受范围限制。 */
     companyWall: merchantReadProcedure
       .input(z.object({ id: z.number().int().positive() }))
@@ -1642,6 +1699,9 @@ export const appRouter = router({
         settlementAccount: z.string().trim().min(1, "账户号码为必填项").max(64),
         settlementBank: z.string().trim().min(1, "开户行为必填项").max(128),
         businessScope: z.string().max(4000).optional().nullable(),
+        licenseObjectKey: z.string().trim().max(512)
+          .regex(/^licenses\/[A-Za-z0-9._/-]+$/, "营业执照对象标识无效")
+          .optional().nullable(),
         licenseImageUrl: z.string().url().max(512).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
         note: z.string().max(1000).optional().nullable(),

@@ -16,6 +16,7 @@ import {
   FileImage,
   FileText,
   Landmark,
+  Loader2,
   Mail,
   Phone,
   ScrollText,
@@ -27,6 +28,7 @@ import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 import MerchantCompanyWallPanel from "@/components/admin/MerchantCompanyWallPanel";
 import CollapsibleCard from "@/components/admin/CollapsibleCard";
 import { formatBeijingDate } from "@shared/beijingTime";
+import { toast } from "sonner";
 
 function InfoItem({
   label,
@@ -57,6 +59,27 @@ export default function MerchantDetail() {
     { id },
     { enabled: Number.isFinite(id) && id > 0 }
   );
+  const licenseAccess = trpc.merchant.licenseAccess.useMutation();
+
+  const openBusinessLicense = async () => {
+    const preview = window.open("about:blank", "_blank");
+    if (preview) preview.opener = null;
+    try {
+      const result = await licenseAccess.mutateAsync({ id });
+      if (preview) {
+        preview.location.replace(result.url);
+      } else {
+        const anchor = document.createElement("a");
+        anchor.href = result.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.click();
+      }
+    } catch (error) {
+      preview?.close();
+      toast.error(error instanceof Error ? error.message : "营业执照暂时无法查看");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -141,15 +164,20 @@ export default function MerchantDetail() {
                     <FileImage className="h-3.5 w-3.5" />
                     营业执照
                   </span>
-                  {merchant.licenseImageUrl ? (
-                    <a
-                      href={merchant.licenseImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                  {merchant.hasLicenseDocument ? (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      disabled={licenseAccess.isPending}
+                      onClick={() => void openBusinessLicense()}
+                      className="h-auto justify-start p-0 text-sm font-normal"
                     >
-                      <FileImage className="h-4 w-4" /> 点击查看营业执照
-                    </a>
+                      {licenseAccess.isPending
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <FileImage className="h-4 w-4" />}
+                      {licenseAccess.isPending ? "正在获取安全链接…" : "点击查看营业执照"}
+                    </Button>
                   ) : (
                     <span className="text-sm text-foreground">—</span>
                   )}

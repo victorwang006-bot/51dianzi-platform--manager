@@ -662,6 +662,15 @@ function merchantReadScopeCondition(salesStaffCodes?: string[]) {
   );
 }
 
+/** 客户端读取商户时不得获得私有对象键或可复用的历史 URL。 */
+export function toMerchantReadDto(row: typeof merchants.$inferSelect) {
+  const { licenseObjectKey, licenseImageUrl, ...merchant } = row;
+  return {
+    ...merchant,
+    hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl),
+  };
+}
+
 /**
  * 商户分页列表，支持销售负责人及已批准协作者的数据范围隔离。
  *
@@ -707,7 +716,7 @@ export async function getMerchants(
   const data = await db.select().from(merchants).where(where).orderBy(desc(merchants.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
   return {
     data: data.map(row => ({
-      ...row,
+      ...toMerchantReadDto(row),
       canManage: salesStaffCodes === undefined || salesStaffCodes.includes(row.salesOwnerCode?.trim().toLowerCase() || ""),
     })),
     total: Number(count),
@@ -1174,6 +1183,88 @@ export async function getOwnedMerchantById(id: number, salesStaffCodes?: string[
   return result[0] ?? null;
 }
 
+type MerchantLicenseSource = {
+  objectKey: string | null;
+  legacyUrl: string | null;
+  fileName: string | null;
+};
+
+/**
+ * 通过商户已绑定的前台账号和统一社会信用代码读取私有执照稳定键。
+ * 对象键仅在服务端流转，绝不返回列表或详情客户端。
+ */
+export async function getMerchantLicenseSource(
+  merchant: Pick<typeof merchants.$inferSelect, "businessLicense" | "crmOwnerPortalUserId" | "licenseObjectKey" | "licenseImageUrl">,
+): Promise<MerchantLicenseSource | null> {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const creditCode = merchant.businessLicense?.trim().toUpperCase() || "";
+  if (!creditCode) return null;
+  const portalUserId = merchant.crmOwnerPortalUserId?.trim() || null;
+  try {
+    const result = (await db.execute(sql`
+      SELECT licenseObjectKey, licenseUrl, licenseFileName
+        FROM ${sql.raw(PLATFORM_DB)}.companies
+       WHERE UPPER(REPLACE(creditCode, ' ', '')) = ${creditCode.replace(/\s+/g, "")}
+         ${portalUserId ? sql`AND CAST(userId AS CHAR) = ${portalUserId}` : sql``}
+       LIMIT 2
+    `)) as unknown as [Array<{
+      licenseObjectKey: string | null;
+      licenseUrl: string | null;
+      licenseFileName: string | null;
+    }>, unknown];
+    const rows = result[0] ?? [];
+    if (rows.length > 1) throw new Error("PLATFORM_COMPANY_DUPLICATE");
+    const company = rows[0];
+    if (portalUserId && !company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+    const objectKey = company?.licenseObjectKey?.trim()
+      || (!portalUserId ? merchant.licenseObjectKey?.trim() : "")
+      || null;
+    const legacyUrl = objectKey
+      ? null
+      : company?.licenseUrl?.trim()
+        || (!portalUserId ? merchant.licenseImageUrl?.trim() : "")
+        || null;
+    return objectKey || legacyUrl
+      ? { objectKey, legacyUrl, fileName: company?.licenseFileName?.trim() || null }
+      : null;
+  } catch (error) {
+    if (
+      error instanceof Error
+      && ["PLATFORM_COMPANY_DUPLICATE", "PLATFORM_COMPANY_NOT_FOUND"].includes(error.message)
+    ) throw error;
+    console.error("[merchant.license] 跨库读取营业执照失败", {
+      errorType: error instanceof Error ? error.name : "UnknownError",
+    });
+    throw new Error("PLATFORM_LICENSE_LOOKUP_FAILED");
+  }
+}
+
+/** 记录敏感营业执照的成功查看，不记录对象键或签名 URL。 */
+export async function recordMerchantLicenseView(
+  merchantId: number,
+  source: "private_object" | "legacy_url",
+  actor: MaterialAuditActor = {},
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  await db.insert(auditLogs).values({
+    operatorId: actor.operatorId ?? null,
+    operatorName: actor.operatorName ?? "system",
+    operatorRole: actor.operatorRole ?? "system",
+    action: "merchant.license.view",
+    module: "merchants",
+    targetType: "merchant",
+    targetId: String(merchantId),
+    beforeValue: null,
+    afterValue: { source },
+    ipAddress: actor.ipAddress ?? null,
+    userAgent: actor.userAgent ?? null,
+    result: "success",
+    note: "授权查看营业执照",
+  });
+}
+
 /**
  * 超级管理员分配或更换商户销售负责人。
  * 商户后台与前台企业资料位于同一 RDS，必须在同一事务内同步，任一侧失败整体回滚。
@@ -1372,6 +1463,7 @@ export interface CrmApplicationInput {
   settlementAccount: string;
   settlementBank: string;
   businessScope?: string | null;
+  licenseObjectKey?: string | null;
   licenseImageUrl?: string | null;
   portalUserId?: string | null;
   note?: string | null;
@@ -1409,6 +1501,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
   }
 
   const now = new Date();
+  const licenseObjectKey = input.licenseObjectKey?.trim() || null;
   const profileFields = {
     companyName: input.companyName,
     companyType: input.companyType,
@@ -1422,7 +1515,11 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
     ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
     ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
     ...(input.businessScope ? { businessScope: input.businessScope } : {}),
-    ...(input.licenseImageUrl ? { licenseImageUrl: input.licenseImageUrl } : {}),
+    ...(licenseObjectKey
+      ? { licenseObjectKey, licenseImageUrl: null }
+      : input.licenseImageUrl
+        ? { licenseImageUrl: input.licenseImageUrl }
+        : {}),
     /**
      * 销售归属。用 `!== undefined` 而非真值判定，
      * 否则无法表达「显式清空归属」（null）与「本次不改动」（undefined）的差别。
