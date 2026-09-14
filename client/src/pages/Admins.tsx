@@ -83,7 +83,7 @@ function securityPresentation(risk: string | null | undefined) {
   if (risk === "high") return { label: "高风险", style: "danger" as const, Icon: ShieldAlert };
   if (risk === "attention") return { label: "需关注", style: "warning" as const, Icon: ShieldAlert };
   if (risk === "normal") return { label: "正常", style: "success" as const, Icon: ShieldCheck };
-  return { label: "待建立", style: "gray" as const, Icon: ShieldQuestion };
+  return { label: "安全基线未建立", style: "gray" as const, Icon: ShieldQuestion };
 }
 
 function loginMethodLabel(value: string | null | undefined) {

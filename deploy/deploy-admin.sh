@@ -112,27 +112,32 @@ test -f "$REL/scripts/apply-merchant-sales-owner-filter-schema.mjs" || { echo "F
 node "$REL/scripts/apply-merchant-sales-owner-filter-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4f. 执行后台账号与会话安全幂等迁移 ==="
+echo "=== 4f. 执行销售身份生命周期幂等迁移 ==="
+test -f "$REL/scripts/apply-sales-staff-lifecycle-schema.mjs" || { echo "FAIL: 缺少销售身份生命周期迁移脚本"; exit 1; }
+node "$REL/scripts/apply-sales-staff-lifecycle-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
+echo "=== 4g. 执行后台账号与会话安全幂等迁移 ==="
 test -f "$REL/scripts/apply-admin-account-security-schema.mjs" || { echo "FAIL: 缺少后台账号安全迁移脚本"; exit 1; }
 node "$REL/scripts/apply-admin-account-security-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4g. 执行业务模块新增提醒游标幂等迁移 ==="
+echo "=== 4h. 执行业务模块新增提醒游标幂等迁移 ==="
 test -f "$REL/scripts/apply-admin-module-notification-schema.mjs" || { echo "FAIL: 缺少模块提醒迁移脚本"; exit 1; }
 node "$REL/scripts/apply-admin-module-notification-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4h. 执行后台员工登录安全幂等迁移 ==="
+echo "=== 4i. 执行后台员工登录安全幂等迁移 ==="
 test -f "$REL/scripts/apply-admin-login-security-schema.mjs" || { echo "FAIL: 缺少员工登录安全迁移脚本"; exit 1; }
 node "$REL/scripts/apply-admin-login-security-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4i. 执行客户归属查询与申请审批幂等迁移 ==="
+echo "=== 4j. 执行客户归属查询与申请审批幂等迁移 ==="
 test -f "$REL/scripts/apply-merchant-ownership-schema.mjs" || { echo "FAIL: 缺少客户归属迁移脚本"; exit 1; }
 node "$REL/scripts/apply-merchant-ownership-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4j. 停用竞品专用物料并验证展示策略 ==="
+echo "=== 4k. 停用竞品专用物料并验证展示策略 ==="
 test -f "$REL/scripts/apply-competitor-material-policy.mjs" || { echo "FAIL: 缺少竞品物料策略脚本"; exit 1; }
 node "$REL/scripts/apply-competitor-material-policy.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env

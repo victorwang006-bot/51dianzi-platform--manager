@@ -83,6 +83,25 @@ describe("管理端功能清单闸门", () => {
       }
     });
 
+    it("启用账号的既有销售身份保持启用，但超级管理员不会被自动创建销售身份", () => {
+      const db = read("server/db.ts");
+      const migration = read("scripts/apply-sales-staff-lifecycle-schema.mjs");
+      const deploy = read("deploy/deploy-admin.sh");
+      const lifecycle = db.slice(
+        db.indexOf("export async function syncAdminUserSalesIdentity"),
+        db.indexOf("export async function replaceAdminUserSalesScopes"),
+      );
+      expect(lifecycle).toContain('const shouldBeActive = user.status === "active"');
+      expect(lifecycle).toContain('if (user.adminRole === "super_admin") return null');
+      expect(lifecycle.indexOf("if (linked)"))
+        .toBeLessThan(lifecycle.indexOf('if (user.adminRole === "super_admin") return null'));
+      expect(migration).toContain("INNER JOIN admin_users AS account ON account.id = staff.adminUserId");
+      expect(migration).toContain("account.status = 'active' THEN 'active'");
+      expect(deploy).toContain('apply-sales-staff-lifecycle-schema.mjs');
+      expect(deploy.indexOf("apply-sales-staff-lifecycle-schema.mjs"))
+        .toBeLessThan(deploy.indexOf('echo "=== 5. 原子切换软链 ==="'));
+    });
+
     it("前台销售负责人下拉的数据源接口 portal.listSalesStaff 必须存在", () => {
       // 前台企业资料页的「销售负责人」下拉依赖此接口；
       // 缺失会导致前台下拉为空、企业资料无法保存

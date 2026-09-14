@@ -16,6 +16,7 @@
     "test": "vitest run",
     "cleanup:test-merchants": "node scripts/cleanup-test-merchants.cjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:sales-staff-lifecycle": "node scripts/apply-sales-staff-lifecycle-schema.mjs",
     "db:admin-login-security": "node scripts/apply-admin-login-security-schema.mjs",
     "db:merchant-ownership": "node scripts/apply-merchant-ownership-schema.mjs"
   },

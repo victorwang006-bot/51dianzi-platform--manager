@@ -62,6 +62,8 @@ describe("后台内部员工登录安全", () => {
     expect(page).not.toContain('<div className="overflow-x-auto">');
     expect(page).toContain("强制退出全部设备");
     expect(page).toContain("IP归属地为网络出口的粗略位置");
+    expect(page).toContain('label: "安全基线未建立"');
+    expect(page).not.toContain('label: "待建立"');
     expect(page).toContain("loginHistoryQuery.data.map");
     expect(router).toContain("loginHistory: adminManageProcedure");
     expect(router).toContain("revokeSessions: adminManageProcedure");

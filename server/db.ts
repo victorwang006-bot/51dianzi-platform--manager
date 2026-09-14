@@ -2161,6 +2161,8 @@ export function salesIdentityCode(username: string, adminUserId: number) {
  *
  * 销售身份表不开放独立的增删接口，全部由本函数驱动，以避免出现
  * 「销售身份存在但对应后台用户已停用」的幽灵记录。
+ * 历史上已经绑定销售身份的超级管理员仍可能承担客户对接工作；只要账号启用，
+ * 其既有销售身份必须保持 active，但不得把该工号并入超级管理员的数据范围。
  *
  * 工号冲突处理（不可简化为直接 insert，否则重名用户会撞唯一索引导致建号失败）：
  *   1. 工号已被他人占用 → 降级为 user-{id}
@@ -2183,7 +2185,7 @@ export async function syncAdminUserSalesIdentity(
     .where(eq(salesStaff.adminUserId, user.id))
     .limit(1);
 
-  const shouldBeActive = user.adminRole !== "super_admin" && user.status === "active";
+  const shouldBeActive = user.status === "active";
   const nextStatus: "active" | "inactive" = shouldBeActive ? "active" : "inactive";
   const displayName = user.displayName?.trim() || user.username;
 
@@ -2195,7 +2197,7 @@ export async function syncAdminUserSalesIdentity(
     return user.adminRole === "super_admin" ? null : linked.staffCode;
   }
 
-  // 超级管理员不作为销售身份（不出现在前台销售负责人下拉中）
+  // 超级管理员不自动创建新的销售身份；已有的历史销售身份已在上方保留。
   if (user.adminRole === "super_admin") return null;
 
   let staffCode = salesIdentityCode(user.username, user.id);
