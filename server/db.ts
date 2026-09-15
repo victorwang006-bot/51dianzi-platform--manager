@@ -3137,7 +3137,7 @@ export interface ComplaintContextSnapshot {
   [key: string]: unknown;
 }
 
-type PortalMessageThreadType = "general" | "inquiry" | "service" | "onboarding" | "crm_apply" | "complaint";
+type PortalMessageThreadType = "general" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "crm_apply" | "complaint";
 type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
 
 /**
@@ -3157,7 +3157,7 @@ export function resolvePortalMessageThreadType(input: {
 
 function effectiveMessageThreadTypeSql() {
   return sql<EffectiveMessageThreadType>`CASE
-    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'onboarding', 'crm_apply', 'complaint')
+    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'onboarding', 'zhuomuniao_cooperation', 'crm_apply', 'complaint')
       THEN ${messageThreads.threadType}
     WHEN ${messageThreads.subject} LIKE '%企业开通申请%'
       THEN 'crm_apply'
@@ -3176,7 +3176,7 @@ export async function createPortalMessage(input: {
   contactPhone?: string | null;
   contactEmail?: string | null;
   portalUserId?: string | null;
-  threadType?: "general" | "inquiry" | "service" | "onboarding" | "crm_apply" | "complaint" | null;
+  threadType?: "general" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "crm_apply" | "complaint" | null;
   companyProfile?: CompanyProfileSnapshot | null;
   complaintContext?: ComplaintContextSnapshot | null;
   content: string;
@@ -3544,12 +3544,12 @@ export async function getPortalThreadMessages(threadNo: string) {
   };
 }
 
-/** 后台：会话列表（含独立开通消息；正式企业资料申请始终排除 crm_apply） */
+/** 后台：会话列表（含开通消息和啄木鸟检测合作咨询；正式企业资料申请始终排除 crm_apply） */
 export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "inquiry" | "service" | "onboarding" | "complaint";
+  threadType?: "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "complaint";
   keyword?: string;
 }) {
   const db = await getDb();

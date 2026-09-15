@@ -836,8 +836,8 @@ export const messageThreads = mysqlTable("message_threads", {
   portalUserId: varchar("portalUserId", { length: 64 }),
   /** 关联商户 ID（若留言来自已入驻商户，可选） */
   merchantId: int("merchantId"),
-  /** 会话类型：onboarding=开通消息；crm_apply=已提交完整资料的正式申请，不在消息中心展示 */
-  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "onboarding", "crm_apply", "complaint"]).default("general").notNull(),
+  /** 会话类型：zhuomuniao_cooperation=啄木鸟检测合作咨询；crm_apply=正式申请，不在消息中心展示 */
+  threadType: mysqlEnum("threadType", ["general", "inquiry", "service", "onboarding", "zhuomuniao_cooperation", "crm_apply", "complaint"]).default("general").notNull(),
   /** 客户公司资料快照（前台提交时附带，JSON：companyName/creditCode/companyType/legalPerson/companyRole/regAddress/certLevel 等） */
   companyProfile: json("companyProfile"),
   /** 举报投诉结构化上下文；仅 threadType=complaint 时写入。 */

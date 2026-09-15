@@ -90,11 +90,11 @@ try {
   }
   const currentType = await columnType("message_threads", "threadType");
   if (!currentType) throw new Error("管理后台 message_threads.threadType 不存在");
-  if (!currentType.includes("'onboarding'")) {
+  if (!currentType.includes("'zhuomuniao_cooperation'")) {
     await connection.query(`
       ALTER TABLE message_threads
       MODIFY COLUMN threadType
-        ENUM('general', 'inquiry', 'service', 'onboarding', 'crm_apply', 'complaint')
+        ENUM('general', 'inquiry', 'service', 'onboarding', 'zhuomuniao_cooperation', 'crm_apply', 'complaint')
         NOT NULL DEFAULT 'general'
     `);
   }
@@ -114,7 +114,7 @@ try {
   }
 
   const migratedType = await columnType("message_threads", "threadType");
-  const expectedValues = ["general", "inquiry", "service", "onboarding", "crm_apply", "complaint"];
+  const expectedValues = ["general", "inquiry", "service", "onboarding", "zhuomuniao_cooperation", "crm_apply", "complaint"];
   if (!expectedValues.every(value => migratedType.includes(`'${value}'`))) {
     throw new Error(`开通消息枚举迁移校验失败：${migratedType}`);
   }
@@ -128,6 +128,7 @@ try {
   console.log(JSON.stringify({
     ok: true,
     onboardingMessageType: migratedType.includes("'onboarding'"),
+    zhuomuniaoCooperationMessageType: migratedType.includes("'zhuomuniao_cooperation'"),
     onboardingLeadGuardTable: true,
     onboardingLeadTimestamp: true,
     preservedMessageTypes: expectedValues.filter(value => migratedType.includes(`'${value}'`)),

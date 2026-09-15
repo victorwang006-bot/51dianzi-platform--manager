@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, ShieldAlert, User,
+  ArrowLeft, Bird, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, ShieldAlert, User,
 } from "lucide-react";
 import { formatBeijingDateTime } from "@shared/beijingTime";
 
@@ -29,6 +29,7 @@ const THREAD_TYPE_META = {
   inquiry: { label: "快速询价", className: "bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent" },
   service: { label: "在线客服", className: "bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent" },
   onboarding: { label: "开通消息", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent" },
+  zhuomuniao_cooperation: { label: "啄木鸟检测合作咨询", className: "bg-cyan-100 text-cyan-900 hover:bg-cyan-100 border-transparent" },
   complaint: { label: "举报投诉", className: "bg-red-100 text-red-800 hover:bg-red-100 border-transparent" },
 } as const;
 
@@ -45,9 +46,11 @@ function ThreadTypeBadge({ type }: { type?: string | null }) {
     ? "inquiry"
     : type === "onboarding"
       ? "onboarding"
-      : type === "complaint"
-        ? "complaint"
-        : "service";
+      : type === "zhuomuniao_cooperation"
+        ? "zhuomuniao_cooperation"
+        : type === "complaint"
+          ? "complaint"
+          : "service";
   const meta = THREAD_TYPE_META[normalizedType];
   return <Badge className={meta.className}>{meta.label}</Badge>;
 }
@@ -152,7 +155,7 @@ interface ComplaintDetail {
 export default function Messages() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service" | "onboarding" | "complaint">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "complaint">("all");
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
@@ -193,7 +196,7 @@ export default function Messages() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">消息中心</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          统一查看并处理快速询价、在线客服、开通消息与举报投诉
+          统一查看并处理快速询价、在线客服、开通消息、合作咨询与举报投诉
         </p>
       </div>
 
@@ -214,7 +217,7 @@ export default function Messages() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Select value={typeFilter} onValueChange={v => { setTypeFilter(v as typeof typeFilter); setPage(1); }}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -222,6 +225,7 @@ export default function Messages() {
               <SelectItem value="inquiry">快速询价</SelectItem>
               <SelectItem value="service">在线客服</SelectItem>
               <SelectItem value="onboarding">开通消息</SelectItem>
+              <SelectItem value="zhuomuniao_cooperation">啄木鸟检测合作咨询</SelectItem>
               <SelectItem value="complaint">举报投诉</SelectItem>
             </SelectContent>
           </Select>
@@ -247,7 +251,7 @@ export default function Messages() {
           <div className="py-16 text-center text-muted-foreground">
             <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p>暂无消息</p>
-            <p className="text-xs mt-1">快速询价、在线客服、开通消息或举报投诉将在这里显示</p>
+            <p className="text-xs mt-1">快速询价、在线客服、开通消息、合作咨询或举报投诉将在这里显示</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -261,12 +265,16 @@ export default function Messages() {
                   <div className={`h-9 w-9 rounded-full flex items-center justify-center ${
                     (thread as { threadType?: string }).threadType === "complaint"
                       ? "bg-red-50"
+                      : (thread as { threadType?: string }).threadType === "zhuomuniao_cooperation"
+                        ? "bg-cyan-50"
                       : (thread as { threadType?: string }).threadType === "onboarding"
                         ? "bg-emerald-50"
                         : "bg-primary/10"
                   }`}>
                     {(thread as { threadType?: string }).threadType === "complaint"
                       ? <ShieldAlert className="h-4 w-4 text-red-600" />
+                      : (thread as { threadType?: string }).threadType === "zhuomuniao_cooperation"
+                        ? <Bird className="h-4 w-4 text-cyan-800" />
                       : (thread as { threadType?: string }).threadType === "onboarding"
                         ? <Building2 className="h-4 w-4 text-emerald-700" />
                         : <User className="h-4 w-4 text-primary" />}

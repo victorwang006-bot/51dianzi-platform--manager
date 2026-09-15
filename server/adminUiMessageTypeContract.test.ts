@@ -34,10 +34,11 @@ describe("后台导航与用户管理交互", () => {
 });
 
 describe("消息中心有效分类", () => {
-  it("管理页面独立展示快速询价、在线客服、开通消息和举报投诉", () => {
+  it("管理页面独立展示快速询价、在线客服、开通消息、合作咨询和举报投诉", () => {
     expect(messagesSource).toContain('<SelectItem value="inquiry">快速询价</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="service">在线客服</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="onboarding">开通消息</SelectItem>');
+    expect(messagesSource).toContain('<SelectItem value="zhuomuniao_cooperation">啄木鸟检测合作咨询</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="complaint">举报投诉</SelectItem>');
     expect(messagesSource).not.toContain('<SelectItem value="general">');
     expect(messagesSource).not.toContain("普通留言");
@@ -47,6 +48,7 @@ describe("消息中心有效分类", () => {
     expect(resolvePortalMessageThreadType({ threadType: "inquiry", subject: "任意" })).toBe("inquiry");
     expect(resolvePortalMessageThreadType({ threadType: "service", subject: "任意" })).toBe("service");
     expect(resolvePortalMessageThreadType({ threadType: "onboarding", subject: "任意" })).toBe("onboarding");
+    expect(resolvePortalMessageThreadType({ threadType: "zhuomuniao_cooperation", subject: "任意" })).toBe("zhuomuniao_cooperation");
     expect(resolvePortalMessageThreadType({ threadType: "complaint", subject: "任意" })).toBe("complaint");
     expect(resolvePortalMessageThreadType({ threadType: "general", subject: "快速询价 - STM32" })).toBe("inquiry");
     expect(resolvePortalMessageThreadType({ threadType: "general", subject: "BOM询价 - 24项" })).toBe("inquiry");
@@ -58,7 +60,7 @@ describe("消息中心有效分类", () => {
   it("列表筛选和未读统计统一使用有效类型表达式", () => {
     expect(dbSource).toContain("effectiveMessageThreadTypeSql");
     expect(dbSource).toContain("threadType: resolvePortalMessageThreadType(row)");
-    expect(routerSource).toContain('threadType: z.enum(["inquiry", "service", "onboarding", "complaint"]).optional()');
+    expect(routerSource).toContain('threadType: z.enum(["inquiry", "service", "onboarding", "zhuomuniao_cooperation", "complaint"]).optional()');
   });
 
   it("首页入驻点击由后台权威库原子创建开通消息并在24小时内去重", () => {
@@ -75,8 +77,9 @@ describe("消息中心有效分类", () => {
     expect(dbSource).toContain('like(messages.clientMessageId, "onboarding-%")');
     expect(dbSource).toContain("onDuplicateKeyUpdate");
     expect(dbSource).not.toContain("d51_onboarding_");
-    expect(schemaSource).toContain('"service", "onboarding", "crm_apply"');
-    expect(onboardingMigrationSource).toContain("ENUM('general', 'inquiry', 'service', 'onboarding', 'crm_apply', 'complaint')");
+    expect(schemaSource).toContain('"service", "onboarding", "zhuomuniao_cooperation", "crm_apply"');
+    expect(onboardingMigrationSource).toContain("ENUM('general', 'inquiry', 'service', 'onboarding', 'zhuomuniao_cooperation', 'crm_apply', 'complaint')");
+    expect(onboardingMigrationSource).toContain('zhuomuniaoCooperationMessageType');
     expect(onboardingMigrationSource).toContain("CREATE TABLE IF NOT EXISTS onboarding_lead_guards");
     expect(onboardingMigrationSource).toContain("lastOnboardingLeadAt TIMESTAMP NULL");
     expect(onboardingMigrationSource).toContain("后台消息基础表未建立，请先恢复基线数据库");
