@@ -448,7 +448,7 @@ export default function Merchants() {
                                       variant="ghost"
                                       className="h-6 w-6 text-muted-foreground"
                                       aria-label={`修改 ${m.companyName} 的联系人姓名`}
-                                      title="修改联系人姓名（仅后台）"
+                                      title="修改联系人姓名"
                                       disabled={internalContactMutation.isPending}
                                       onClick={() => setContactEditor({
                                         id: m.id,

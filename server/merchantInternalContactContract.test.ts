@@ -51,10 +51,10 @@ describe("后台联系人修改权限与UI", () => {
   it("列表以内部姓名优先、系统姓名回退，并提供紧凑行内编辑与恢复", () => {
     expect(page).toContain("internalContactName || systemContactName");
     expect(page).toContain("trpc.merchant.setInternalContactName.useMutation");
-    expect(page).toContain('title="修改联系人姓名（仅后台）"');
+    expect(page).toContain('title="修改联系人姓名"');
     expect(page).toContain('title="恢复系统联系人"');
     expect(page).toContain("expectedInternalContactName: internalContactName || null");
     expect(page).toContain("{canManage && (");
-    expect(page).not.toContain("后台标识");
+    expect(page).not.toContain("仅后台");
   });
 });
