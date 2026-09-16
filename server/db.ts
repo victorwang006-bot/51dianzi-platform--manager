@@ -1366,10 +1366,10 @@ export async function setMerchantSalesOwner(input: {
 }
 
 /**
- * 修改仅供后台使用的联系人姓名。
+ * 修改仅供后台业务人员使用的用户名。
  *
  * 该字段与前台企业资料 contactName 完全分离：本函数只更新后台 merchants 表，
- * 不写入平台 companies 表。传 null 表示恢复显示系统联系人。
+ * 不写入平台 companies 表。传 null 表示恢复显示原用户名。
  */
 export async function setMerchantInternalContactName(input: {
   merchantId: number;
@@ -1432,7 +1432,7 @@ export async function setMerchantInternalContactName(input: {
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
       result: "success",
-      note: nextName ? "更新后台联系人姓名" : "恢复系统联系人姓名",
+      note: nextName ? "更新后台用户名" : "恢复原用户名",
     });
 
     return {

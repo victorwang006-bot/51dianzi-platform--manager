@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, Search, ShieldCheck, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Pencil, Search, ShieldCheck, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -122,13 +122,13 @@ export default function Merchants() {
 
   const internalContactMutation = trpc.merchant.setInternalContactName.useMutation({
     onSuccess: result => {
-      toast.success(result.internalContactName ? "联系人姓名已更新" : "已恢复系统联系人姓名");
+      toast.success(result.internalContactName ? "用户名已更新" : "已恢复原用户名");
       setContactEditor(null);
       utils.merchant.list.invalidate();
       if (detailId === result.merchantId) utils.merchant.detail.invalidate({ id: result.merchantId });
     },
     onError: error => {
-      toast.error(`联系人姓名更新失败：${error.message}`);
+      toast.error(`用户名更新失败：${error.message}`);
       setContactEditor(null);
       utils.merchant.list.invalidate();
     },
@@ -346,7 +346,7 @@ export default function Merchants() {
                     <tr>
                       <th>商户编号</th>
                       <th>公司名称</th>
-                      <th>联系人</th>
+                      <th>用户名</th>
                       <th>销售负责人</th>
                       <th>ERP</th>
                       <th>协议</th>
@@ -389,9 +389,9 @@ export default function Merchants() {
                                     autoFocus
                                     value={contactEditor.value}
                                     maxLength={64}
-                                    placeholder={systemContactName || "联系人姓名"}
-                                    aria-label={`修改 ${m.companyName} 的联系人姓名`}
-                                    className="h-7 w-[104px] px-2 text-xs"
+                                    placeholder={systemContactName || "用户名"}
+                                    aria-label={`修改 ${m.companyName} 的用户名`}
+                                    className="h-7 w-[116px] px-2 text-xs"
                                     disabled={contactUpdating}
                                     onChange={event => setContactEditor({ ...contactEditor, value: event.target.value })}
                                     onKeyDown={event => {
@@ -404,33 +404,19 @@ export default function Merchants() {
                                     size="icon"
                                     variant="ghost"
                                     className="h-7 w-7 text-emerald-700"
-                                    aria-label="保存联系人姓名"
+                                    aria-label="保存用户名"
                                     title="保存"
                                     disabled={contactUpdating}
                                     onClick={() => saveInternalContactName(contactEditor.value)}
                                   >
                                     <Check className="h-3.5 w-3.5" />
                                   </Button>
-                                  {internalContactName && (
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-7 w-7"
-                                      aria-label="恢复系统联系人姓名"
-                                      title="恢复系统联系人"
-                                      disabled={contactUpdating}
-                                      onClick={() => saveInternalContactName(null)}
-                                    >
-                                      <RotateCcw className="h-3.5 w-3.5" />
-                                    </Button>
-                                  )}
                                   <Button
                                     type="button"
                                     size="icon"
                                     variant="ghost"
                                     className="h-7 w-7"
-                                    aria-label="取消修改联系人姓名"
+                                    aria-label="取消修改用户名"
                                     title="取消"
                                     disabled={contactUpdating}
                                     onClick={() => setContactEditor(null)}
@@ -444,13 +430,13 @@ export default function Merchants() {
                                   {canManage && (
                                     <Button
                                       type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-6 w-6 text-muted-foreground"
-                                      aria-label={`修改 ${m.companyName} 的联系人姓名`}
-                                      title="修改联系人姓名"
-                                      disabled={internalContactMutation.isPending}
-                                      onClick={() => setContactEditor({
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 text-muted-foreground"
+                                    aria-label={`修改 ${m.companyName} 的用户名`}
+                                    title="修改用户名"
+                                    disabled={internalContactMutation.isPending}
+                                    onClick={() => setContactEditor({
                                         id: m.id,
                                         expectedInternalContactName: internalContactName || null,
                                         systemContactName: systemContactName || null,
@@ -665,7 +651,7 @@ export default function Merchants() {
               <div className="grid grid-cols-2 gap-3">
                 <div><p className="text-xs text-muted-foreground">商户编号</p><p className="font-mono">{detail.merchantNo}</p></div>
                 <div><p className="text-xs text-muted-foreground">公司名称</p><p>{detail.companyName}</p></div>
-                <div><p className="text-xs text-muted-foreground">联系人</p><p>{detail.internalContactName?.trim() || detail.contactName || "-"}</p></div>
+                <div><p className="text-xs text-muted-foreground">用户名</p><p>{detail.internalContactName?.trim() || detail.contactName || "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">联系电话</p><p>{detail.contactPhone ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">邮箱</p><p>{detail.contactEmail ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">营业执照号</p><p className="font-mono">{detail.businessLicense ?? "-"}</p></div>

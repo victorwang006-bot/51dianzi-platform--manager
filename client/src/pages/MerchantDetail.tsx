@@ -231,9 +231,9 @@ export default function MerchantDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* 联系人信息 */}
-          <CollapsibleCard title="联系人信息" icon={User} contentClassName="space-y-4">
-              <InfoItem label="联系人" value={merchant.contactName} icon={User} />
+          {/* 后台显示用户名；优先使用业务员维护值，不修改前台企业资料。 */}
+          <CollapsibleCard title="联系信息" icon={User} contentClassName="space-y-4">
+              <InfoItem label="用户名" value={merchant.internalContactName?.trim() || merchant.contactName} icon={User} />
               <InfoItem label="联系电话" value={merchant.contactPhone} icon={Phone} />
               <InfoItem label="联系邮箱" value={merchant.contactEmail} icon={Mail} />
           </CollapsibleCard>

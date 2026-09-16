@@ -1353,7 +1353,7 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
-    /** 修改后台联系人姓名；仅影响管理后台，空值表示恢复显示前台系统联系人。 */
+    /** 修改后台用户名；仅影响管理后台，空值表示恢复显示前台原用户名。 */
     setInternalContactName: merchantWriteProcedure
       .input(z.object({
         id: z.number().int().positive(),
@@ -1377,10 +1377,10 @@ export const appRouter = router({
             throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
           }
           if (message === "INTERNAL_CONTACT_NAME_CHANGED") {
-            throw new TRPCError({ code: "CONFLICT", message: "联系人姓名已被其他人员修改，请刷新后重试" });
+            throw new TRPCError({ code: "CONFLICT", message: "用户名已被其他人员修改，请刷新后重试" });
           }
           if (message === "INTERNAL_CONTACT_NAME_TOO_LONG") {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "联系人姓名不能超过64个字符" });
+            throw new TRPCError({ code: "BAD_REQUEST", message: "用户名不能超过64个字符" });
           }
           throw error;
         }
