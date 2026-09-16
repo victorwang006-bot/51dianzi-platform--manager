@@ -407,6 +407,8 @@ export const merchants = mysqlTable("merchants", {
   /** 前台企业角色：供应商/采购方等 */
   companyRole: varchar("companyRole", { length: 64 }),
   contactName: varchar("contactName", { length: 64 }),
+  /** 后台业务人员维护的联系人姓名；为空时回退显示前台系统联系人，禁止同步到主站。 */
+  internalContactName: varchar("internalContactName", { length: 64 }),
   contactPhone: varchar("contactPhone", { length: 20 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
   businessLicense: varchar("businessLicense", { length: 64 }).unique(),

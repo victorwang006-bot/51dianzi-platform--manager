@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { ChevronLeft, ChevronRight, Search, ShieldCheck } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, Search, ShieldCheck, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -76,6 +76,12 @@ export default function Merchants() {
   const [rebindReason, setRebindReason] = useState("");
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
+  const [contactEditor, setContactEditor] = useState<{
+    id: number;
+    expectedInternalContactName: string | null;
+    systemContactName: string | null;
+    value: string;
+  } | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [ownershipLookupOpen, setOwnershipLookupOpen] = useState(false);
   const [tableScrollWidth, setTableScrollWidth] = useState(0);
@@ -110,6 +116,20 @@ export default function Merchants() {
     },
     onError: error => {
       toast.error(`销售负责人更新失败：${error.message}`);
+      utils.merchant.list.invalidate();
+    },
+  });
+
+  const internalContactMutation = trpc.merchant.setInternalContactName.useMutation({
+    onSuccess: result => {
+      toast.success(result.internalContactName ? "联系人姓名已更新" : "已恢复系统联系人姓名");
+      setContactEditor(null);
+      utils.merchant.list.invalidate();
+      if (detailId === result.merchantId) utils.merchant.detail.invalidate({ id: result.merchantId });
+    },
+    onError: error => {
+      toast.error(`联系人姓名更新失败：${error.message}`);
+      setContactEditor(null);
       utils.merchant.list.invalidate();
     },
   });
@@ -153,6 +173,17 @@ export default function Merchants() {
   const doSearch = () => {
     setSearch(searchInput);
     setPage(1);
+  };
+
+  const saveInternalContactName = (internalContactName: string | null) => {
+    if (!contactEditor) return;
+    const normalizedName = internalContactName?.normalize("NFKC").trim() || null;
+    const normalizedSystemName = contactEditor.systemContactName?.normalize("NFKC").trim() || null;
+    internalContactMutation.mutate({
+      id: contactEditor.id,
+      expectedInternalContactName: contactEditor.expectedInternalContactName,
+      internalContactName: normalizedName === normalizedSystemName ? null : normalizedName,
+    });
   };
 
   const resetFilters = () => {
@@ -330,7 +361,12 @@ export default function Merchants() {
                       const crmOwnerPortalUserId = ((m as { crmOwnerPortalUserId?: string | null }).crmOwnerPortalUserId ?? "").trim();
                       const salesOwner = ((m as { salesOwner?: string | null }).salesOwner ?? "").trim();
                       const salesOwnerCode = ((m as { salesOwnerCode?: string | null }).salesOwnerCode ?? "").trim().toLowerCase();
+                      const systemContactName = m.contactName?.trim() || "";
+                      const internalContactName = ((m as { internalContactName?: string | null }).internalContactName ?? "").trim();
+                      const displayedContactName = internalContactName || systemContactName || "-";
                       const canManage = (m as { canManage?: boolean }).canManage !== false;
+                      const contactEditing = contactEditor?.id === m.id;
+                      const contactUpdating = internalContactMutation.isPending && internalContactMutation.variables?.id === m.id;
                       const currentSalesIsActive = salesStaff.some(staff => staff.staffCode === salesOwnerCode);
                       const ownerUpdating = salesOwnerMutation.isPending && salesOwnerMutation.variables?.id === m.id;
                       const crmActuallyEnabled = crmStatus === "enabled" && Boolean(crmOwnerPortalUserId);
@@ -345,9 +381,87 @@ export default function Merchants() {
                               {m.companyName}
                             </Link>
                           </td>
-                          <td>
+                          <td className="min-w-[176px]">
                             <div className="text-xs">
-                              <p>{m.contactName ?? "-"}</p>
+                              {contactEditing ? (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    autoFocus
+                                    value={contactEditor.value}
+                                    maxLength={64}
+                                    placeholder={systemContactName || "联系人姓名"}
+                                    aria-label={`修改 ${m.companyName} 的联系人姓名`}
+                                    className="h-7 w-[104px] px-2 text-xs"
+                                    disabled={contactUpdating}
+                                    onChange={event => setContactEditor({ ...contactEditor, value: event.target.value })}
+                                    onKeyDown={event => {
+                                      if (event.key === "Enter") saveInternalContactName(contactEditor.value);
+                                      if (event.key === "Escape") setContactEditor(null);
+                                    }}
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 text-emerald-700"
+                                    aria-label="保存联系人姓名"
+                                    title="保存"
+                                    disabled={contactUpdating}
+                                    onClick={() => saveInternalContactName(contactEditor.value)}
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </Button>
+                                  {internalContactName && (
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7"
+                                      aria-label="恢复系统联系人姓名"
+                                      title="恢复系统联系人"
+                                      disabled={contactUpdating}
+                                      onClick={() => saveInternalContactName(null)}
+                                    >
+                                      <RotateCcw className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    aria-label="取消修改联系人姓名"
+                                    title="取消"
+                                    disabled={contactUpdating}
+                                    onClick={() => setContactEditor(null)}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <p className="max-w-[118px] truncate" title={displayedContactName}>{displayedContactName}</p>
+                                  {canManage && (
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-6 w-6 text-muted-foreground"
+                                      aria-label={`修改 ${m.companyName} 的联系人姓名`}
+                                      title="修改联系人姓名（仅后台）"
+                                      disabled={internalContactMutation.isPending}
+                                      onClick={() => setContactEditor({
+                                        id: m.id,
+                                        expectedInternalContactName: internalContactName || null,
+                                        systemContactName: systemContactName || null,
+                                        value: displayedContactName === "-" ? "" : displayedContactName,
+                                      })}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
                               <p className="text-muted-foreground">{m.contactPhone ?? ""}</p>
                             </div>
                           </td>
@@ -551,7 +665,7 @@ export default function Merchants() {
               <div className="grid grid-cols-2 gap-3">
                 <div><p className="text-xs text-muted-foreground">商户编号</p><p className="font-mono">{detail.merchantNo}</p></div>
                 <div><p className="text-xs text-muted-foreground">公司名称</p><p>{detail.companyName}</p></div>
-                <div><p className="text-xs text-muted-foreground">联系人</p><p>{detail.contactName ?? "-"}</p></div>
+                <div><p className="text-xs text-muted-foreground">联系人</p><p>{detail.internalContactName?.trim() || detail.contactName || "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">联系电话</p><p>{detail.contactPhone ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">邮箱</p><p>{detail.contactEmail ?? "-"}</p></div>
                 <div><p className="text-xs text-muted-foreground">营业执照号</p><p className="font-mono">{detail.businessLicense ?? "-"}</p></div>

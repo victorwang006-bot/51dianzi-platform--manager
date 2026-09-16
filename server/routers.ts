@@ -1353,6 +1353,38 @@ export const appRouter = router({
         await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
         return { success: true };
       }),
+    /** 修改后台联系人姓名；仅影响管理后台，空值表示恢复显示前台系统联系人。 */
+    setInternalContactName: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        expectedInternalContactName: z.string().trim().max(64).nullable(),
+        internalContactName: z.string().trim().max(64).nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await assertMerchantInSalesScope(ctx, input.id);
+        const allowedSalesStaffCodes = await getAdminSalesStaffCodes(ctx);
+        try {
+          return await db.setMerchantInternalContactName({
+            merchantId: input.id,
+            expectedInternalContactName: input.expectedInternalContactName,
+            internalContactName: input.internalContactName,
+            allowedSalesStaffCodes,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "MERCHANT_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
+          }
+          if (message === "INTERNAL_CONTACT_NAME_CHANGED") {
+            throw new TRPCError({ code: "CONFLICT", message: "联系人姓名已被其他人员修改，请刷新后重试" });
+          }
+          if (message === "INTERNAL_CONTACT_NAME_TOO_LONG") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "联系人姓名不能超过64个字符" });
+          }
+          throw error;
+        }
+      }),
     /** 分配、变更或清空销售负责人；提交当前工号用于防止多人同时覆盖。 */
     setSalesOwner: salesOwnerAssignProcedure
       .input(z.object({

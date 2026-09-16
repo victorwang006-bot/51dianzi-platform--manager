@@ -142,7 +142,12 @@ test -f "$REL/scripts/apply-merchant-license-access-schema.mjs" || { echo "FAIL:
 node "$REL/scripts/apply-merchant-license-access-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
-echo "=== 4l. 停用竞品专用物料并验证展示策略 ==="
+echo "=== 4l. 执行后台联系人独立字段幂等迁移 ==="
+test -f "$REL/scripts/apply-merchant-internal-contact-schema.mjs" || { echo "FAIL: 缺少后台联系人迁移脚本"; exit 1; }
+node "$REL/scripts/apply-merchant-internal-contact-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
+echo "=== 4m. 停用竞品专用物料并验证展示策略 ==="
 test -f "$REL/scripts/apply-competitor-material-policy.mjs" || { echo "FAIL: 缺少竞品物料策略脚本"; exit 1; }
 node "$REL/scripts/apply-competitor-material-policy.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env

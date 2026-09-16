@@ -1365,6 +1365,86 @@ export async function setMerchantSalesOwner(input: {
   });
 }
 
+/**
+ * 修改仅供后台使用的联系人姓名。
+ *
+ * 该字段与前台企业资料 contactName 完全分离：本函数只更新后台 merchants 表，
+ * 不写入平台 companies 表。传 null 表示恢复显示系统联系人。
+ */
+export async function setMerchantInternalContactName(input: {
+  merchantId: number;
+  expectedInternalContactName: string | null;
+  internalContactName: string | null;
+  /** undefined 表示超级管理员不限范围；数组表示当前后台账号获授的正式销售范围。 */
+  allowedSalesStaffCodes?: string[];
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("数据库不可用");
+  const normalizeName = (value: string | null | undefined) => value?.normalize("NFKC").trim() || null;
+  const expectedName = normalizeName(input.expectedInternalContactName);
+  const nextName = normalizeName(input.internalContactName);
+  if (nextName && nextName.length > 64) throw new Error("INTERNAL_CONTACT_NAME_TOO_LONG");
+
+  return db.transaction(async tx => {
+    const [merchant] = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, input.merchantId))
+      .limit(1)
+      .for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+
+    if (input.allowedSalesStaffCodes !== undefined) {
+      const currentOwnerCode = merchant.salesOwnerCode?.trim().toLowerCase() || "";
+      if (!currentOwnerCode || !input.allowedSalesStaffCodes.includes(currentOwnerCode)) {
+        throw new Error("MERCHANT_NOT_FOUND");
+      }
+    }
+
+    const currentName = normalizeName(merchant.internalContactName);
+    if (currentName !== expectedName) throw new Error("INTERNAL_CONTACT_NAME_CHANGED");
+    if (currentName === nextName) {
+      return {
+        success: true as const,
+        idempotent: true as const,
+        merchantId: merchant.id,
+        internalContactName: nextName,
+        effectiveContactName: nextName || merchant.contactName?.trim() || null,
+      };
+    }
+
+    await tx
+      .update(merchants)
+      .set({ internalContactName: nextName })
+      .where(eq(merchants.id, merchant.id));
+
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: "merchant.internal-contact.update",
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(merchant.id),
+      beforeValue: { internalContactName: currentName },
+      afterValue: { internalContactName: nextName },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note: nextName ? "更新后台联系人姓名" : "恢复系统联系人姓名",
+    });
+
+    return {
+      success: true as const,
+      idempotent: false as const,
+      merchantId: merchant.id,
+      internalContactName: nextName,
+      effectiveContactName: nextName || merchant.contactName?.trim() || null,
+    };
+  });
+}
+
 export async function updateMerchantStatus(id: number, status: string, reviewNote?: string, reviewedBy?: number) {
   const db = await getDb();
   if (!db) return;
