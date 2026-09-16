@@ -7,6 +7,9 @@ import {
   formatDateTime,
 } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
+import MerchantCreatedAtFilter, {
+  type MerchantCreatedAtFilterValue,
+} from "@/components/MerchantCreatedAtFilter";
 import MerchantOwnershipLookup from "@/components/MerchantOwnershipLookup";
 import SalesOwnerFilterCombobox from "@/components/SalesOwnerFilterCombobox";
 import { Button } from "@/components/ui/button";
@@ -56,6 +59,7 @@ export default function Merchants() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [createdAtFilter, setCreatedAtFilter] = useState<MerchantCreatedAtFilterValue>({ preset: "all" });
   const [salesOwnerFilter, setSalesOwnerFilter] = useState("all");
   const [crmTarget, setCrmTarget] = useState<{
     id: number;
@@ -90,6 +94,9 @@ export default function Merchants() {
     page,
     pageSize: 20,
     search: search || undefined,
+    createdAtPreset: createdAtFilter.preset === "all" ? undefined : createdAtFilter.preset,
+    createdFrom: createdAtFilter.preset === "custom" ? createdAtFilter.from : undefined,
+    createdTo: createdAtFilter.preset === "custom" ? createdAtFilter.to : undefined,
     salesOwnerCode: salesOwnerFilter === "all" ? undefined : salesOwnerFilter,
   });
   const { data: salesOwnerFilterOptions } = trpc.merchant.salesOwnerFilterOptions.useQuery();
@@ -158,11 +165,17 @@ export default function Merchants() {
   const resetFilters = () => {
     setSearchInput("");
     setSearch("");
+    setCreatedAtFilter({ preset: "all" });
     setSalesOwnerFilter("all");
     setPage(1);
   };
 
-  const hasFilters = Boolean(search || searchInput || salesOwnerFilter !== "all");
+  const hasFilters = Boolean(
+    search
+    || searchInput
+    || createdAtFilter.preset !== "all"
+    || salesOwnerFilter !== "all",
+  );
 
   useEffect(() => {
     if (!salesOwnerFilterOptions || salesOwnerFilter === "all" || salesOwnerFilter === "$unassigned") return;
@@ -241,6 +254,13 @@ export default function Merchants() {
               搜索
             </Button>
           </div>
+          <MerchantCreatedAtFilter
+            value={createdAtFilter}
+            onChange={value => {
+              setCreatedAtFilter(value);
+              setPage(1);
+            }}
+          />
           <SalesOwnerFilterCombobox
             value={salesOwnerFilter}
             onChange={value => {

@@ -20,7 +20,8 @@
     "db:admin-login-security": "node scripts/apply-admin-login-security-schema.mjs",
     "db:merchant-ownership": "node scripts/apply-merchant-ownership-schema.mjs",
     "db:merchant-license-access": "node scripts/apply-merchant-license-access-schema.mjs",
-    "db:merchant-internal-contact": "node scripts/apply-merchant-internal-contact-schema.mjs"
+    "db:merchant-internal-contact": "node scripts/apply-merchant-internal-contact-schema.mjs",
+    "db:merchant-created-at-filter": "node scripts/apply-merchant-created-at-filter-schema.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

@@ -56,6 +56,10 @@ import {
   COMPETITOR_DISPLAY_VALIDATION_MESSAGE,
   containsCompetitorDisplayName,
 } from "../shared/competitorDisplayPolicy";
+import {
+  isValidCalendarDate,
+  MERCHANT_CREATED_AT_PRESETS,
+} from "../shared/merchantCreatedAtFilter";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -943,6 +947,16 @@ export const appRouter = router({
           z.literal("$unassigned"),
           z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/),
         ]).optional(),
+        createdAtPreset: z.enum(MERCHANT_CREATED_AT_PRESETS).optional(),
+        createdFrom: z.string().refine(isValidCalendarDate, "开始日期无效").optional(),
+        createdTo: z.string().refine(isValidCalendarDate, "结束日期无效").optional(),
+      }).superRefine((input, ctx) => {
+        if (input.createdAtPreset === "custom" && (!input.createdFrom || !input.createdTo)) {
+          ctx.addIssue({ code: "custom", message: "请选择完整的开始和结束日期" });
+        }
+        if (input.createdFrom && input.createdTo && input.createdFrom > input.createdTo) {
+          ctx.addIssue({ code: "custom", message: "开始日期不能晚于结束日期" });
+        }
       }))
       .query(async ({ ctx, input }) => {
         // 非超级管理员仅可见自己销售范围内的商户（三态语义，勿改写）

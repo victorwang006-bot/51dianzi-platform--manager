@@ -470,6 +470,7 @@ export const merchants = mysqlTable("merchants", {
     table.salesOwnerCode,
     table.createdAt,
   ),
+  createdAtIdx: index("merchants_created_at_idx").on(table.createdAt),
   contactPhoneIdx: index("merchants_contact_phone_idx").on(table.contactPhone),
 }));
 

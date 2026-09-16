@@ -112,6 +112,11 @@ test -f "$REL/scripts/apply-merchant-sales-owner-filter-schema.mjs" || { echo "F
 node "$REL/scripts/apply-merchant-sales-owner-filter-schema.mjs" \
   --from-runtime-env /opt/config/dianzi51-admin/runtime.env
 
+echo "=== 4e-2. 执行商户入驻时间筛选索引幂等迁移 ==="
+test -f "$REL/scripts/apply-merchant-created-at-filter-schema.mjs" || { echo "FAIL: 缺少商户时间筛选迁移脚本"; exit 1; }
+node "$REL/scripts/apply-merchant-created-at-filter-schema.mjs" \
+  --from-runtime-env /opt/config/dianzi51-admin/runtime.env
+
 echo "=== 4f. 执行销售身份生命周期幂等迁移 ==="
 test -f "$REL/scripts/apply-sales-staff-lifecycle-schema.mjs" || { echo "FAIL: 缺少销售身份生命周期迁移脚本"; exit 1; }
 node "$REL/scripts/apply-sales-staff-lifecycle-schema.mjs" \

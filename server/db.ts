@@ -36,6 +36,10 @@ import {
 } from "./materialCode";
 import { getBeijingDateParts } from "../shared/beijingTime";
 import {
+  resolveMerchantCreatedAtBounds,
+  type MerchantCreatedAtPreset,
+} from "../shared/merchantCreatedAtFilter";
+import {
   expandShortPartNumber,
   isPackageSuffixExpansion,
 } from "../shared/partNumberFallback";
@@ -685,6 +689,9 @@ export async function getMerchants(
     status?: string;
     search?: string;
     salesOwnerCode?: string;
+    createdAtPreset?: MerchantCreatedAtPreset;
+    createdFrom?: string;
+    createdTo?: string;
     page?: number;
     pageSize?: number;
   },
@@ -698,6 +705,11 @@ export async function getMerchants(
   const conditions = [];
   if (status) conditions.push(eq(merchants.status, status as any));
   if (search) conditions.push(or(like(merchants.companyName, `%${search}%`), like(merchants.merchantNo, `%${search}%`)));
+  const createdAtBounds = resolveMerchantCreatedAtBounds(params);
+  if (createdAtBounds) {
+    conditions.push(gte(merchants.createdAt, createdAtBounds.from));
+    conditions.push(lt(merchants.createdAt, createdAtBounds.to));
+  }
   if (salesOwnerCode === "$unassigned") {
     // 未分配商户不属于任何销售范围，仅超级管理员可以查看。
     if (salesStaffCodes !== undefined) return { data: [], total: 0 };
