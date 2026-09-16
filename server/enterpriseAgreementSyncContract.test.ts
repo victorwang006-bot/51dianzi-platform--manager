@@ -27,7 +27,9 @@ describe("前台企业服务协议状态同步", () => {
     expect(route).toContain("agreementAccepted: z.literal(true)");
     expect(route).toContain("z.literal(ENTERPRISE_SERVICE_AGREEMENT_VERSION)");
     expect(route).toContain("z.literal(ENTERPRISE_SERVICE_AGREEMENT_HASH)");
-    expect(route).toContain("协议版本凭据不完整");
+    expect(route).not.toContain("agreementAccepted: z.literal(true).optional()");
+    expect(route).not.toContain("z.literal(ENTERPRISE_SERVICE_AGREEMENT_VERSION).optional()");
+    expect(route).not.toContain("z.literal(ENTERPRISE_SERVICE_AGREEMENT_HASH).optional()");
   });
 
   it("仅在收到明确协议凭据时把后台摘要更新为已同意", () => {

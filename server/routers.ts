@@ -1766,13 +1766,10 @@ export const appRouter = router({
         licenseImageUrl: z.string().url().max(512).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
         note: z.string().max(1000).optional().nullable(),
-        /**
-         * 前台企业服务协议接受凭据。第一阶段保持 optional 以兼容发布窗口内的旧前台服务，
-         * 新前台上线后将收紧为必传；仅明确为 true 且携带版本/哈希时更新后台摘要状态。
-         */
-        agreementAccepted: z.literal(true).optional(),
-        agreementVersion: z.literal(ENTERPRISE_SERVICE_AGREEMENT_VERSION).optional(),
-        agreementHash: z.literal(ENTERPRISE_SERVICE_AGREEMENT_HASH).optional(),
+        /** 前台企业服务协议接受凭据；缺失或版本不一致时必须拒绝申请。 */
+        agreementAccepted: z.literal(true),
+        agreementVersion: z.literal(ENTERPRISE_SERVICE_AGREEMENT_VERSION),
+        agreementHash: z.literal(ENTERPRISE_SERVICE_AGREEMENT_HASH),
         /**
          * 销售负责人。与 portal.submitMerchant 保持一致的双字段语义：
          * 新客户端传稳定工号（salesOwnerCode），旧客户端仅传姓名作兼容。
@@ -1786,9 +1783,6 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
-        if (input.agreementAccepted && (!input.agreementVersion || !input.agreementHash)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "协议版本凭据不完整" });
-        }
         // 必须走统一校验，不得将未校验的自由文本当作归属写入商户。
         const owner = await resolvePortalSalesOwner(input.salesOwnerCode, input.salesOwner);
         const { salesOwner: _legacyOwner, salesOwnerCode: _ownerCode, ...rest } = input;
