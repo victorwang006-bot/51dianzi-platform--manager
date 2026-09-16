@@ -49,17 +49,24 @@ describe("后台用户名修改权限与UI", () => {
     expect(route).toContain("INTERNAL_CONTACT_NAME_CHANGED");
   });
 
-  it("列表以后台用户名优先、原用户名回退，并提供紧凑行内编辑", () => {
+  it("列表仅展示用户名，修改入口转移到详情页的小型标签", () => {
     expect(page).toContain("internalContactName || systemContactName");
-    expect(page).toContain("trpc.merchant.setInternalContactName.useMutation");
     expect(page).toContain("<th>用户名</th>");
-    expect(page).toContain('title="修改用户名"');
-    expect(page).toContain('aria-label="保存用户名"');
-    expect(page).toContain("expectedInternalContactName: internalContactName || null");
-    expect(page).toContain("{canManage && (");
-    expect(page).not.toContain("RotateCcw");
-    expect(page).not.toContain('title="恢复系统联系人"');
-    expect(detailPage).toContain('label="用户名"');
+    expect(page).not.toContain("setInternalContactName.useMutation");
+    expect(page).not.toContain('aria-label="修改用户名"');
+    expect(detailPage).toContain("trpc.merchant.setInternalContactName.useMutation");
+    expect(detailPage).toContain("merchant.canManage && !usernameEditing");
+    expect(detailPage).toContain('aria-label="修改用户名"');
+    expect(detailPage).toContain('text-[10px] font-normal text-primary');
+    expect(detailPage).toContain("expectedInternalContactName: merchant.internalContactName");
     expect(detailPage).toContain("merchant.internalContactName?.trim() || merchant.contactName");
+    expect(detailPage).toContain("清空后保存可恢复原用户名");
+  });
+
+  it("详情接口仅向负责人范围内账号开放修改入口", () => {
+    const detailRoute = section(router, "detail: merchantReadProcedure", "/**\n     * 营业执照属于敏感资料");
+    expect(detailRoute).toContain("const salesStaffCodes = await getAdminSalesStaffCodes(ctx)");
+    expect(detailRoute).toContain("canManage: salesStaffCodes === undefined");
+    expect(detailRoute).toContain("salesStaffCodes.includes(merchant.salesOwnerCode?.trim().toLowerCase() || \"\")");
   });
 });

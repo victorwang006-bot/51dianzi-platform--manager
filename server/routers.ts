@@ -1044,8 +1044,14 @@ export const appRouter = router({
         }
       }),
     detail: merchantReadProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantById(input.id, await getAdminSalesStaffCodes(ctx));
-      return merchant ? db.toMerchantReadDto(merchant) : null;
+      const salesStaffCodes = await getAdminSalesStaffCodes(ctx);
+      const merchant = await db.getMerchantById(input.id, salesStaffCodes);
+      if (!merchant) return null;
+      return {
+        ...db.toMerchantReadDto(merchant),
+        canManage: salesStaffCodes === undefined
+          || salesStaffCodes.includes(merchant.salesOwnerCode?.trim().toLowerCase() || ""),
+      };
     }),
     /**
      * 营业执照属于敏感资料：先复用商户只读范围校验，再从主站稳定对象键实时签发

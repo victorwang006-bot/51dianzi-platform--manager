@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Check, ChevronLeft, ChevronRight, Pencil, Search, ShieldCheck, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -76,12 +76,6 @@ export default function Merchants() {
   const [rebindReason, setRebindReason] = useState("");
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
-  const [contactEditor, setContactEditor] = useState<{
-    id: number;
-    expectedInternalContactName: string | null;
-    systemContactName: string | null;
-    value: string;
-  } | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [ownershipLookupOpen, setOwnershipLookupOpen] = useState(false);
   const [tableScrollWidth, setTableScrollWidth] = useState(0);
@@ -116,20 +110,6 @@ export default function Merchants() {
     },
     onError: error => {
       toast.error(`销售负责人更新失败：${error.message}`);
-      utils.merchant.list.invalidate();
-    },
-  });
-
-  const internalContactMutation = trpc.merchant.setInternalContactName.useMutation({
-    onSuccess: result => {
-      toast.success(result.internalContactName ? "用户名已更新" : "已恢复原用户名");
-      setContactEditor(null);
-      utils.merchant.list.invalidate();
-      if (detailId === result.merchantId) utils.merchant.detail.invalidate({ id: result.merchantId });
-    },
-    onError: error => {
-      toast.error(`用户名更新失败：${error.message}`);
-      setContactEditor(null);
       utils.merchant.list.invalidate();
     },
   });
@@ -173,17 +153,6 @@ export default function Merchants() {
   const doSearch = () => {
     setSearch(searchInput);
     setPage(1);
-  };
-
-  const saveInternalContactName = (internalContactName: string | null) => {
-    if (!contactEditor) return;
-    const normalizedName = internalContactName?.normalize("NFKC").trim() || null;
-    const normalizedSystemName = contactEditor.systemContactName?.normalize("NFKC").trim() || null;
-    internalContactMutation.mutate({
-      id: contactEditor.id,
-      expectedInternalContactName: contactEditor.expectedInternalContactName,
-      internalContactName: normalizedName === normalizedSystemName ? null : normalizedName,
-    });
   };
 
   const resetFilters = () => {
@@ -365,8 +334,6 @@ export default function Merchants() {
                       const internalContactName = ((m as { internalContactName?: string | null }).internalContactName ?? "").trim();
                       const displayedContactName = internalContactName || systemContactName || "-";
                       const canManage = (m as { canManage?: boolean }).canManage !== false;
-                      const contactEditing = contactEditor?.id === m.id;
-                      const contactUpdating = internalContactMutation.isPending && internalContactMutation.variables?.id === m.id;
                       const currentSalesIsActive = salesStaff.some(staff => staff.staffCode === salesOwnerCode);
                       const ownerUpdating = salesOwnerMutation.isPending && salesOwnerMutation.variables?.id === m.id;
                       const crmActuallyEnabled = crmStatus === "enabled" && Boolean(crmOwnerPortalUserId);
@@ -381,73 +348,9 @@ export default function Merchants() {
                               {m.companyName}
                             </Link>
                           </td>
-                          <td className="min-w-[176px]">
+                          <td className="min-w-[148px]">
                             <div className="text-xs">
-                              {contactEditing ? (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    autoFocus
-                                    value={contactEditor.value}
-                                    maxLength={64}
-                                    placeholder={systemContactName || "用户名"}
-                                    aria-label={`修改 ${m.companyName} 的用户名`}
-                                    className="h-7 w-[116px] px-2 text-xs"
-                                    disabled={contactUpdating}
-                                    onChange={event => setContactEditor({ ...contactEditor, value: event.target.value })}
-                                    onKeyDown={event => {
-                                      if (event.key === "Enter") saveInternalContactName(contactEditor.value);
-                                      if (event.key === "Escape") setContactEditor(null);
-                                    }}
-                                  />
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7 text-emerald-700"
-                                    aria-label="保存用户名"
-                                    title="保存"
-                                    disabled={contactUpdating}
-                                    onClick={() => saveInternalContactName(contactEditor.value)}
-                                  >
-                                    <Check className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7"
-                                    aria-label="取消修改用户名"
-                                    title="取消"
-                                    disabled={contactUpdating}
-                                    onClick={() => setContactEditor(null)}
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1">
-                                  <p className="max-w-[118px] truncate" title={displayedContactName}>{displayedContactName}</p>
-                                  {canManage && (
-                                    <Button
-                                      type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-6 w-6 text-muted-foreground"
-                                    aria-label={`修改 ${m.companyName} 的用户名`}
-                                    title="修改用户名"
-                                    disabled={internalContactMutation.isPending}
-                                    onClick={() => setContactEditor({
-                                        id: m.id,
-                                        expectedInternalContactName: internalContactName || null,
-                                        systemContactName: systemContactName || null,
-                                        value: displayedContactName === "-" ? "" : displayedContactName,
-                                      })}
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
+                              <p className="max-w-[132px] truncate" title={displayedContactName}>{displayedContactName}</p>
                               <p className="text-muted-foreground">{m.contactPhone ?? ""}</p>
                             </div>
                           </td>

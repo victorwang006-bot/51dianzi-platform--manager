@@ -6,6 +6,7 @@ import {
   formatDateTime,
 } from "@/components/admin/shared";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
@@ -18,11 +19,13 @@ import {
   Landmark,
   Loader2,
   Mail,
+  Pencil,
   Phone,
   ScrollText,
   ShieldCheck,
   User,
 } from "lucide-react";
+import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 import MerchantCompanyWallPanel from "@/components/admin/MerchantCompanyWallPanel";
@@ -54,12 +57,27 @@ export default function MerchantDetail() {
   const [, params] = useRoute("/merchants/:id");
   const [, navigate] = useLocation();
   const id = Number(params?.id);
+  const [usernameEditing, setUsernameEditing] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const utils = trpc.useUtils();
 
   const { data: merchant, isLoading } = trpc.merchant.detail.useQuery(
     { id },
     { enabled: Number.isFinite(id) && id > 0 }
   );
   const licenseAccess = trpc.merchant.licenseAccess.useMutation();
+  const usernameMutation = trpc.merchant.setInternalContactName.useMutation({
+    onSuccess: result => {
+      toast.success(result.internalContactName ? "用户名已更新" : "已恢复原用户名");
+      setUsernameEditing(false);
+      void utils.merchant.detail.invalidate({ id: result.merchantId });
+      void utils.merchant.list.invalidate();
+    },
+    onError: error => {
+      toast.error(`用户名更新失败：${error.message}`);
+      void utils.merchant.detail.invalidate({ id });
+    },
+  });
 
   const openBusinessLicense = async () => {
     const preview = window.open("about:blank", "_blank");
@@ -79,6 +97,22 @@ export default function MerchantDetail() {
       preview?.close();
       toast.error(error instanceof Error ? error.message : "营业执照暂时无法查看");
     }
+  };
+
+  const startUsernameEdit = () => {
+    setUsernameDraft(merchant?.internalContactName?.trim() || merchant?.contactName?.trim() || "");
+    setUsernameEditing(true);
+  };
+
+  const saveUsername = () => {
+    if (!merchant) return;
+    const originalName = merchant.contactName?.normalize("NFKC").trim() || null;
+    const nextName = usernameDraft.normalize("NFKC").trim() || null;
+    usernameMutation.mutate({
+      id: merchant.id,
+      expectedInternalContactName: merchant.internalContactName?.normalize("NFKC").trim() || null,
+      internalContactName: nextName === originalName ? null : nextName,
+    });
   };
 
   if (isLoading) {
@@ -231,9 +265,70 @@ export default function MerchantDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* 后台显示用户名；优先使用业务员维护值，不修改前台企业资料。 */}
+          {/* 后台显示用户名；业务员可在此维护，不修改前台企业资料。 */}
           <CollapsibleCard title="联系信息" icon={User} contentClassName="space-y-4">
-              <InfoItem label="用户名" value={merchant.internalContactName?.trim() || merchant.contactName} icon={User} />
+              <div className="flex flex-col gap-1">
+                <span className="flex items-center gap-1 text-[11px] text-[#8a94a6]">
+                  <User className="h-3 w-3" />
+                  用户名
+                  {merchant.canManage && !usernameEditing && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-1 h-5 rounded px-1.5 text-[10px] font-normal text-primary"
+                      aria-label="修改用户名"
+                      onClick={startUsernameEdit}
+                    >
+                      <Pencil className="mr-0.5 h-2.5 w-2.5" />
+                      修改
+                    </Button>
+                  )}
+                </span>
+                {usernameEditing ? (
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      autoFocus
+                      value={usernameDraft}
+                      maxLength={64}
+                      className="h-7 max-w-[160px] px-2 text-xs"
+                      aria-label="后台用户名"
+                      disabled={usernameMutation.isPending}
+                      onChange={event => setUsernameDraft(event.target.value)}
+                      onKeyDown={event => {
+                        if (event.key === "Enter") saveUsername();
+                        if (event.key === "Escape") setUsernameEditing(false);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 px-2 text-[11px]"
+                      disabled={usernameMutation.isPending}
+                      onClick={saveUsername}
+                    >
+                      保存
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px]"
+                      disabled={usernameMutation.isPending}
+                      onClick={() => setUsernameEditing(false)}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="text-sm text-foreground break-all">
+                    {merchant.internalContactName?.trim() || merchant.contactName || "—"}
+                  </span>
+                )}
+                {usernameEditing && (
+                  <span className="text-[10px] text-[#8a94a6]">清空后保存可恢复原用户名</span>
+                )}
+              </div>
               <InfoItem label="联系电话" value={merchant.contactPhone} icon={Phone} />
               <InfoItem label="联系邮箱" value={merchant.contactEmail} icon={Mail} />
           </CollapsibleCard>
