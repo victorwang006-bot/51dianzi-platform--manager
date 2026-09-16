@@ -69,9 +69,9 @@ export default function SalesOwnerFilterCombobox({
       <PopoverContent className="w-[260px] p-0" align="end">
         <Command>
           <CommandInput placeholder="搜索姓名或工号" />
-          <CommandList>
+          <CommandList className="max-h-[min(420px,60vh)]">
             <CommandEmpty>未找到负责人</CommandEmpty>
-            <CommandGroup>
+            <CommandGroup heading={`负责人（${options.length}人）`}>
               <CommandItem value="全部负责人 all" onSelect={() => select("all")}>
                 <Check className={`h-4 w-4 ${value === "all" ? "opacity-100" : "opacity-0"}`} />
                 全部负责人

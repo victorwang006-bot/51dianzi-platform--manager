@@ -51,6 +51,10 @@ describe("商户销售负责人筛选", () => {
     expect(ownerFilter).toContain('staff.active ? "启用" : "停用"');
     expect(ownerFilter).toContain("duplicateNames");
     expect(ownerFilter).toContain('`（${staff.staffCode}）`');
+    expect(ownerFilter).toContain('className="max-h-[min(420px,60vh)]"');
+    expect(ownerFilter).toContain('heading={`负责人（${options.length}人）`}');
+    expect(ownerFilter).toContain("options.map(staff =>");
+    expect(ownerFilter).not.toMatch(/options\.(slice|splice)\(/);
     expect(page).toContain('salesOwnerCode: salesOwnerFilter === "all" ? undefined : salesOwnerFilter');
     expect(page).toContain("setSalesOwnerFilter(value)");
     expect(page).toContain("setPage(1)");
