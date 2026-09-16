@@ -34,8 +34,8 @@ export const merchantStatusMap: Record<string, { label: string; style: BadgeStyl
 };
 
 export const agreementStatusMap: Record<string, { label: string; style: BadgeStyle }> = {
-  unsigned: { label: "未签署", style: "gray" },
-  signed: { label: "已签署", style: "success" },
+  unsigned: { label: "未同意", style: "gray" },
+  signed: { label: "已同意", style: "success" },
   expired: { label: "已过期", style: "danger" },
 };
 

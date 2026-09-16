@@ -1559,6 +1559,10 @@ export interface CrmApplicationInput {
   licenseImageUrl?: string | null;
   portalUserId?: string | null;
   note?: string | null;
+  /** 前台已完成版本化协议存证；后台仅保存供审核列表展示的摘要状态。 */
+  agreementAccepted?: true;
+  agreementVersion?: string;
+  agreementHash?: string;
   /**
    * 销售负责人姓名（展示用）与工号（归属唯一依据）。
    *
@@ -1618,6 +1622,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
      */
     ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner } : {}),
     ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode } : {}),
+    ...(input.agreementAccepted ? { agreementStatus: "signed" as const } : {}),
   };
   try {
     return await db.transaction(async tx => {
