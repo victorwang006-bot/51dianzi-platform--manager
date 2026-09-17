@@ -154,6 +154,7 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
   const [offshelfTarget, setOffshelfTarget] = useState<{ id: number; partNumber: string } | null>(null);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [publisherDialogOpen, setPublisherDialogOpen] = useState(false);
+  const [publisherBulkUserId, setPublisherBulkUserId] = useState("");
   const [offshelfReason, setOffshelfReason] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const pageSize = 10;
@@ -193,9 +194,9 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
   const publisherPreviewQuery = platformMaterialApi.publisherOffshelfPreview.useQuery(
     {
       merchantId,
-      publisherUserId: publisherId === "all" ? 1 : Number(publisherId),
+      publisherUserId: publisherBulkUserId ? Number(publisherBulkUserId) : 1,
     },
-    { enabled: publisherDialogOpen && publisherId !== "all", retry: false },
+    { enabled: publisherDialogOpen && Boolean(publisherBulkUserId), retry: false },
   ) as {
     data?: { publisherUserId: number; publisherName: string | null; publishedCount: number };
     isLoading: boolean;
@@ -216,7 +217,7 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
   const allPageSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length;
   const somePageSelected = selectedOnPage.length > 0 && !allPageSelected;
   const selectedCount = selectedIds.size;
-  const selectedPublisher = publishers.find(publisher => publisher.id === publisherId) ?? null;
+  const selectedBulkPublisher = publishers.find(publisher => publisher.id === publisherBulkUserId) ?? null;
 
   const clearSelection = () => setSelectedIds(new Set());
   const resetPageAndSelection = () => {
@@ -292,17 +293,25 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
     }
   };
 
+  const openPublisherBulkDialog = () => {
+    setOffshelfReason("");
+    setPublisherBulkUserId(publisherId === "all" ? "" : publisherId);
+    setPublisherDialogOpen(true);
+  };
+
   const bulkOffshelfPublisher = async () => {
     const reason = offshelfReason.trim();
     if (!reason) return toast.error("请填写统一下架原因");
-    if (publisherId === "all" || publisherOffshelfMutation.isPending) return;
+    if (!publisherBulkUserId) return toast.error("请选择发布人");
+    if (publisherOffshelfMutation.isPending) return;
     try {
       const result = await publisherOffshelfMutation.mutateAsync({
         merchantId,
-        publisherUserId: Number(publisherId),
+        publisherUserId: Number(publisherBulkUserId),
         reason,
       });
       setPublisherDialogOpen(false);
+      setPublisherBulkUserId("");
       setOffshelfReason("");
       clearSelection();
       await utils.platformMaterial.list.invalidate();
@@ -337,7 +346,7 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
         <Button size="sm" className="h-8 text-xs" onClick={handleSearch} disabled={listQuery.isFetching}>{listQuery.isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "搜索"}</Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="h-8 text-xs" disabled={selectedCount === 0 && publisherId === "all"} data-material-bulk-menu>
+            <Button size="sm" variant="outline" className="h-8 text-xs" data-material-bulk-menu>
               批量操作 <ChevronDown className="ml-1 h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
@@ -345,7 +354,7 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
             <DropdownMenuItem disabled={selectedCount === 0} variant="destructive" onSelect={() => { setOffshelfReason(""); setBatchDialogOpen(true); }}>
               <ArrowDownToLine /> 下架选中物料{selectedCount ? `（${selectedCount}条）` : ""}
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={publisherId === "all"} variant="destructive" onSelect={() => { setOffshelfReason(""); setPublisherDialogOpen(true); }}>
+            <DropdownMenuItem variant="destructive" onSelect={openPublisherBulkDialog}>
               <ArrowDownToLine /> 下架该发布人的全部库存
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -421,22 +430,31 @@ export default function MerchantMaterialPanel({ merchantId, creditCode }: { merc
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={publisherDialogOpen} onOpenChange={open => { if (!publisherOffshelfMutation.isPending) { setPublisherDialogOpen(open); if (!open) setOffshelfReason(""); } }}>
+      <AlertDialog open={publisherDialogOpen} onOpenChange={open => { if (!publisherOffshelfMutation.isPending) { setPublisherDialogOpen(open); if (!open) { setPublisherBulkUserId(""); setOffshelfReason(""); } } }}>
         <AlertDialogContent data-publisher-bulk-offshelf-dialog>
           <AlertDialogHeader>
             <AlertDialogTitle>下架该发布人的全部库存？</AlertDialogTitle>
             <AlertDialogDescription>
-              {publisherPreviewQuery.isLoading
+              {!publisherBulkUserId
+                ? "请选择发布人，系统将先核对其已发布库存数量。"
+                : publisherPreviewQuery.isLoading
                 ? "正在核对该发布人的已发布库存…"
                 : publisherPreviewQuery.isError
                   ? `无法读取库存数量：${publisherPreviewQuery.error?.message || "请稍后重试"}`
-                  : <>即将下架 <span className="font-medium text-foreground">{selectedPublisher?.label || `用户 ${publisherId}`}</span> 在当前商户下的 <span className="font-medium text-foreground">{publisherPreviewQuery.data?.publishedCount ?? 0}</span> 条已发布库存。已下架、草稿和其他用户库存不受影响。</>}
+                  : <>即将下架 <span className="font-medium text-foreground">{selectedBulkPublisher?.label || `用户 ${publisherBulkUserId}`}</span> 在当前商户下的 <span className="font-medium text-foreground">{publisherPreviewQuery.data?.publishedCount ?? 0}</span> 条已发布库存。已下架、草稿和其他用户库存不受影响。</>}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-1.5"><label className="text-sm font-medium">统一下架原因 <span className="text-red-600">*</span></label><Textarea autoFocus value={offshelfReason} onChange={event => setOffshelfReason(event.target.value)} maxLength={255} rows={3} placeholder="请填写将展示给商户的下架原因" /></div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">发布人 <span className="text-red-600">*</span></label>
+            <Select value={publisherBulkUserId} onValueChange={setPublisherBulkUserId}>
+              <SelectTrigger aria-label="批量下架发布人"><SelectValue placeholder="请选择发布人" /></SelectTrigger>
+              <SelectContent>{publishers.map(publisher => <SelectItem key={publisher.id} value={publisher.id}>{publisher.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><label className="text-sm font-medium">统一下架原因 <span className="text-red-600">*</span></label><Textarea value={offshelfReason} onChange={event => setOffshelfReason(event.target.value)} maxLength={255} rows={3} placeholder="请填写将展示给商户的下架原因" /></div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={publisherOffshelfMutation.isPending}>取消</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" disabled={publisherOffshelfMutation.isPending || publisherPreviewQuery.isLoading || publisherPreviewQuery.isError || !publisherPreviewQuery.data?.publishedCount || !offshelfReason.trim()} onClick={event => { event.preventDefault(); void bulkOffshelfPublisher(); }}>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" disabled={!publisherBulkUserId || publisherOffshelfMutation.isPending || publisherPreviewQuery.isLoading || publisherPreviewQuery.isError || !publisherPreviewQuery.data?.publishedCount || !offshelfReason.trim()} onClick={event => { event.preventDefault(); void bulkOffshelfPublisher(); }}>
               {publisherOffshelfMutation.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}确认全部下架
             </AlertDialogAction>
           </AlertDialogFooter>

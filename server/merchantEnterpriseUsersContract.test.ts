@@ -74,6 +74,10 @@ describe("商户详情企业用户管理", () => {
     expect(panel).toContain("disabled,");
     expect(panel).toContain("恢复网站登录");
     expect(panel).toContain("禁用网站登录");
+    expect(panel).toContain("reasonRef.current?.focus()");
+    expect(panel).toContain('toast.error("请填写操作原因")');
+    expect(panel).toContain('disabled={busy} onClick={() => void toggleWebsiteLogin()}');
+    expect(panel).not.toContain('disabled={busy || !reason.trim()} onClick={() => void toggleWebsiteLogin()}');
     expect(panel).not.toContain("trpc.frontendUser");
     expect(panel).not.toContain("platformUser");
   });

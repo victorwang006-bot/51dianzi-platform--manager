@@ -35,7 +35,7 @@ import {
 } from "@shared/erpPermissions";
 import { formatBeijingDateTime } from "@shared/beijingTime";
 import { Loader2, ShieldAlert, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type MemberStatus = "active" | "suspended";
@@ -150,6 +150,7 @@ export default function MerchantEnterpriseUsersPanel({
   const [inventoryScope, setInventoryScope] = useState<InventoryScope>("own");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
 
   // 这些端点由商户范围契约提供；保留显式 merchantId，禁止绕过到全局用户管理接口。
   const merchantApi = trpc.merchant as unknown as Record<string, any>;
@@ -212,7 +213,11 @@ export default function MerchantEnterpriseUsersPanel({
 
   const requireReason = () => {
     const normalized = reason.trim();
-    if (!normalized) toast.error("请填写操作原因");
+    if (!normalized) {
+      toast.error("请填写操作原因");
+      reasonRef.current?.focus();
+      reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
     return normalized;
   };
 
@@ -471,7 +476,7 @@ export default function MerchantEnterpriseUsersPanel({
 
               <section className="space-y-1.5">
                 <Label htmlFor="merchant-member-reason" className="text-[13px]">操作原因 <span className="text-red-600">*</span></Label>
-                <Textarea id="merchant-member-reason" rows={3} maxLength={500} value={reason} onChange={event => setReason(event.target.value)} disabled={(!canEditManagedEnterprise && !canControlManagedLogin) || busy} placeholder="请填写本次权限、范围或登录状态变更原因" />
+                <Textarea ref={reasonRef} id="merchant-member-reason" rows={3} maxLength={500} value={reason} onChange={event => setReason(event.target.value)} disabled={(!canEditManagedEnterprise && !canControlManagedLogin) || busy} placeholder="请填写本次权限、范围或登录状态变更原因" />
               </section>
 
               <section className="rounded-md border bg-muted/20 p-3">
@@ -481,7 +486,7 @@ export default function MerchantEnterpriseUsersPanel({
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">此操作影响整站登录；企业成员暂停仅影响企业身份，两者相互独立。</p>
                   </div>
                   {canControlManagedLogin ? (
-                    <Button type="button" variant="outline" className="h-8 text-xs" disabled={busy || !reason.trim()} onClick={() => void toggleWebsiteLogin()}>
+                    <Button type="button" variant="outline" className="h-8 text-xs" disabled={busy} onClick={() => void toggleWebsiteLogin()}>
                       {loginMutation.isPending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
                       {managedMember.loginDisabled ? "恢复网站登录" : "禁用网站登录"}
                     </Button>

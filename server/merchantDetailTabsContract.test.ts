@@ -51,6 +51,11 @@ describe("物料批量操作", () => {
     expect(materials).toContain("publisherOffshelfPreview.useQuery");
     expect(materials).toContain("bulkOffshelfByPublisher.useMutation");
     expect(materials).toContain("下架该发布人的全部库存");
+    expect(materials).toContain('aria-label="批量下架发布人"');
+    expect(materials).toContain('placeholder="请选择发布人"');
+    expect(materials).toContain("请选择发布人，系统将先核对其已发布库存数量");
+    expect(materials).toContain("setPublisherBulkUserId");
+    expect(materials).not.toContain('disabled={publisherId === "all"} variant="destructive"');
     expect(materials).toContain("已下架、草稿和其他用户库存不受影响");
     expect(materials).toContain("utils.platformMaterial.exportSelected.fetch");
     expect(materials).toContain("失败项将保留勾选");
