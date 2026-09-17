@@ -306,14 +306,12 @@ export default function MerchantDetail() {
                   </button>
                 ) : homepageFeatureLoading ? (
                   <span className="text-[11px] text-muted-foreground" data-homepage-feature-loading>状态加载中…</span>
-                ) : homepageFeatureStatus ? (
+                ) : homepageFeatureStatus?.featured ? (
                   <span
-                    className={`rounded-md border px-2 py-0.5 text-xs ${homepageFeatureStatus.featured ? homepageFeatureNeedsCompletion ? "border-amber-200 bg-amber-50 text-amber-700" : "border-violet-200 bg-violet-50 text-violet-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}
+                    className={`rounded-md border px-2 py-0.5 text-xs ${homepageFeatureNeedsCompletion ? "border-amber-200 bg-amber-50 text-amber-700" : "border-violet-200 bg-violet-50 text-violet-700"}`}
                     data-homepage-feature-status
                   >
-                    {homepageFeatureStatus.featured
-                      ? homepageFeatureNeedsCompletion ? "优质商家 · 待完善" : "优质商家"
-                      : "未设优质商家"}
+                    {homepageFeatureNeedsCompletion ? "优质商家 · 待完善" : "优质商家"}
                   </span>
                 ) : null}
                 {merchant.canManage && homepageFeatureStatus ? (
@@ -350,7 +348,7 @@ export default function MerchantDetail() {
               <AlertDialogTitle>{homepageFeatureDialogTarget ? "设为优质商家？" : "取消优质商家？"}</AlertDialogTitle>
               <AlertDialogDescription>
                 {homepageFeatureDialogTarget
-                  ? "确认后将在首页优质商家中展示；资料暂未满足条件时仍可先保存设置。"
+                  ? "符合展示条件后，将在首页优质商家中展示。"
                   : "确认后将不再作为首页优质商家展示。"}
               </AlertDialogDescription>
             </AlertDialogHeader>

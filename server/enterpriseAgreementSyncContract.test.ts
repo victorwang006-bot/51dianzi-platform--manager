@@ -37,11 +37,12 @@ describe("前台企业服务协议状态同步", () => {
     expect(db).not.toContain('agreementStatus: "signed" as const,');
   });
 
-  it("后台界面使用点击接受语义而不是纸质签署语义", () => {
-    expect(sharedUi).toContain('unsigned: { label: "未同意"');
-    expect(sharedUi).toContain('signed: { label: "已同意"');
-    expect(sharedUi).not.toContain('label: "未签署"');
-    expect(sharedUi).not.toContain('label: "已签署"');
+  it("后台界面使用带协议主语的明确签署状态", () => {
+    expect(sharedUi).toContain('unsigned: { label: "协议未签署"');
+    expect(sharedUi).toContain('signed: { label: "协议已签署"');
+    expect(sharedUi).toContain('expired: { label: "协议已过期"');
+    expect(sharedUi).not.toContain('label: "未同意"');
+    expect(sharedUi).not.toContain('label: "已同意"');
   });
 
   it("历史回填默认只预览，且仅按用户与信用代码精确匹配当前版本存证", () => {

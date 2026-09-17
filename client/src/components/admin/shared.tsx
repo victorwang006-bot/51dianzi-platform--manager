@@ -34,9 +34,9 @@ export const merchantStatusMap: Record<string, { label: string; style: BadgeStyl
 };
 
 export const agreementStatusMap: Record<string, { label: string; style: BadgeStyle }> = {
-  unsigned: { label: "未同意", style: "gray" },
-  signed: { label: "已同意", style: "success" },
-  expired: { label: "已过期", style: "danger" },
+  unsigned: { label: "协议未签署", style: "gray" },
+  signed: { label: "协议已签署", style: "success" },
+  expired: { label: "协议已过期", style: "danger" },
 };
 
 // 商品状态

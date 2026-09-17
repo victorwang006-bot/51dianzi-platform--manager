@@ -23,6 +23,10 @@ describe("商户详情优质商家静态契约", () => {
     expect(source).toContain("data-homepage-feature-dialog");
     expect(source).toContain("设为优质商家？");
     expect(source).toContain("取消优质商家？");
+    expect(source).toContain("符合展示条件后，将在首页优质商家中展示。");
+    expect(source).not.toContain("资料暂未满足条件时仍可先保存设置");
+    expect(source).not.toContain('"未设优质商家"');
+    expect(source).toContain("homepageFeatureStatus?.featured ? (");
     expect(source).not.toContain("homepageFeatureReason");
     expect(source).not.toContain("填写原因");
   });
