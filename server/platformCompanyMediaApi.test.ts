@@ -8,7 +8,7 @@ const TEST_KEY = "homepage-feature-internal-key";
 const binding = { creditCode: "91310000TEST000001", expectedOwnerUserId: 700001 };
 const operator = {
   id: 9001,
-  name: "测试管理员",
+  name: "初始超级管理员",
   role: "merchant_mgr",
   ipAddress: "203.0.113.9",
   userAgent: "test-agent",
@@ -69,12 +69,19 @@ describe("internalCompanyMedia 首页精选代理", () => {
 
     for (const [index, featured] of [true, false].entries()) {
       const [url, init] = fetchMock.mock.calls[index] as [string, RequestInit];
+      const headers = init.headers as Record<string, string>;
+      const decode = (value: string) => Buffer.from(value.slice(4), "base64url").toString("utf8");
       expect(url).toBe(`http://platform.internal/api/trpc/internalCompanyMedia.${featured ? "setHomepageFeatured" : "clearHomepageFeatured"}?batch=1`);
       expect(init.method).toBe("POST");
-      expect((init.headers as Record<string, string>)["x-portal-key"]).toBe(TEST_KEY);
-      expect((init.headers as Record<string, string>)["x-internal-operator-id"]).toBe(String(operator.id));
-      expect((init.headers as Record<string, string>)["x-internal-operator-name"]).toBe(operator.name);
-      expect((init.headers as Record<string, string>)["x-internal-operator-role"]).toBe(operator.role);
+      expect(headers["x-portal-key"]).toBe(TEST_KEY);
+      expect(decode(headers["x-internal-operator-id"])).toBe(String(operator.id));
+      expect(decode(headers["x-internal-operator-name"])).toBe(operator.name);
+      expect(decode(headers["x-internal-operator-role"])).toBe(operator.role);
+      expect(Object.entries(headers)
+        .filter(([name]) => name.startsWith("x-internal-operator-"))
+        .every(([, value]) => [...value].every(character => character.charCodeAt(0) <= 127)))
+        .toBe(true);
+      expect(() => new Headers(headers)).not.toThrow();
       const mutationInput = JSON.parse(String(init.body))["0"].json;
       expect(mutationInput).toMatchObject({
         ...binding,

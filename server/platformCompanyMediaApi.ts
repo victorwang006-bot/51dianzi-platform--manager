@@ -60,12 +60,14 @@ function upstreamErrorMessage<T>(envelope: TrpcEnvelope<T> | null, status: numbe
 
 function operatorHeaders(operator?: PlatformCompanyMediaOperator): Record<string, string> {
   if (!operator) return {};
+  const encode = (value: string | number | null) =>
+    `b64.${Buffer.from(value === null ? "" : String(value), "utf8").toString("base64url")}`;
   return {
-    "x-internal-operator-id": String(operator.id),
-    "x-internal-operator-name": operator.name,
-    "x-internal-operator-role": operator.role,
-    "x-internal-operator-ip": operator.ipAddress ?? "",
-    "x-internal-operator-user-agent": operator.userAgent ?? "",
+    "x-internal-operator-id": encode(operator.id),
+    "x-internal-operator-name": encode(operator.name),
+    "x-internal-operator-role": encode(operator.role),
+    "x-internal-operator-ip": encode(operator.ipAddress),
+    "x-internal-operator-user-agent": encode(operator.userAgent),
   };
 }
 
