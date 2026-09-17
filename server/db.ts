@@ -4402,6 +4402,37 @@ export async function listMerchantOperationRecords(input: {
   return { items, total: Number(count) };
 }
 
+/** 首页精选由主站写入；后台只在上游成功后追加本地商户级不可变审计。 */
+export async function recordMerchantHomepageFeatureAudit(input: {
+  merchantId: number;
+  featured: boolean;
+  result: {
+    featured: boolean;
+    eligible: boolean;
+    approvedPhotoCount: number;
+    hasPublishedInventory: boolean;
+    missingReasons: string[];
+  };
+  actor: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(auditLogs).values({
+    operatorId: input.actor.operatorId ?? null,
+    operatorName: input.actor.operatorName ?? "system",
+    operatorRole: input.actor.operatorRole ?? "system",
+    action: input.featured ? "merchant.homepage_feature.set" : "merchant.homepage_feature.unset",
+    module: "merchants",
+    targetType: "merchant",
+    targetId: String(input.merchantId),
+    afterValue: input.result,
+    ipAddress: input.actor.ipAddress ?? null,
+    userAgent: input.actor.userAgent ?? null,
+    result: "success",
+    note: input.featured ? "后台设置商户首页精选" : "后台取消商户首页精选",
+  });
+}
+
 // ─── 企业公司信息墙（跨库读写前台 dianzi51 库）──────────────────────────────
 
 export type PlatformCompanyWallPhoto = {

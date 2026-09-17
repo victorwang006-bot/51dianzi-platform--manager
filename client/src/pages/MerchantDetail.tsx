@@ -8,6 +8,16 @@ import {
   formatDateTime,
 } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +50,33 @@ import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 
 type MerchantTab = "materials" | "users" | "company" | "images" | "records";
+type HomepageFeatureStatus = {
+  featured: boolean;
+  eligible: boolean;
+  approvedPhotoCount: number;
+  hasPublishedInventory: boolean;
+  missingReasons: string[];
+};
+type MerchantHomepageFeatureProcedures = {
+  homepageFeatureStatus: {
+    useQuery: (
+      input: { merchantId: number },
+      options: { enabled: boolean },
+    ) => {
+      data: HomepageFeatureStatus | undefined;
+      refetch: () => Promise<unknown>;
+    };
+  };
+  setHomepageFeatured: {
+    useMutation: (options: {
+      onSuccess: (result: HomepageFeatureStatus) => void;
+      onError: (error: Error) => void;
+    }) => {
+      isPending: boolean;
+      mutate: (input: { merchantId: number; featured: boolean }) => void;
+    };
+  };
+};
 
 const MERCHANT_TABS: { value: MerchantTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: "materials", label: "物料库存", icon: PackageSearch },
@@ -99,10 +136,16 @@ export default function MerchantDetail() {
   );
   const [usernameEditing, setUsernameEditing] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
+  const [homepageFeatureDialogTarget, setHomepageFeatureDialogTarget] = useState<boolean | null>(null);
   const utils = trpc.useUtils();
+  const homepageFeatureProcedures = trpc.merchant as unknown as MerchantHomepageFeatureProcedures;
 
   const { data: merchant, isLoading } = trpc.merchant.detail.useQuery(
     { id },
+    { enabled: Number.isFinite(id) && id > 0 },
+  );
+  const { data: homepageFeatureStatus, refetch: refetchHomepageFeatureStatus } = homepageFeatureProcedures.homepageFeatureStatus.useQuery(
+    { merchantId: id },
     { enabled: Number.isFinite(id) && id > 0 },
   );
   const licenseAccess = trpc.merchant.licenseAccess.useMutation();
@@ -116,6 +159,16 @@ export default function MerchantDetail() {
     onError: error => {
       toast.error(`用户名更新失败：${error.message}`);
       void utils.merchant.detail.invalidate({ id });
+    },
+  });
+  const homepageFeatureMutation = homepageFeatureProcedures.setHomepageFeatured.useMutation({
+    onSuccess: result => {
+      setHomepageFeatureDialogTarget(null);
+      toast.success(result.featured ? "已设为优质商家" : "已取消优质商家");
+      void refetchHomepageFeatureStatus();
+    },
+    onError: error => {
+      toast.error(`优质商家状态更新失败：${error.message}`);
     },
   });
 
@@ -198,6 +251,17 @@ export default function MerchantDetail() {
     label: merchant.agreementStatus,
     style: "gray" as const,
   };
+  const homepageFeatureNeedsCompletion = Boolean(
+    homepageFeatureStatus?.featured && !homepageFeatureStatus.eligible,
+  );
+  const homepageFeatureMissingHint = homepageFeatureNeedsCompletion
+    ? homepageFeatureStatus?.missingReasons[0]
+      ?? (homepageFeatureStatus?.approvedPhotoCount === 0
+        ? "缺公司照片"
+        : !homepageFeatureStatus?.hasPublishedInventory
+          ? "缺公开库存"
+          : "资料待完善")
+    : null;
 
   return (
     <DashboardLayout>
@@ -220,12 +284,69 @@ export default function MerchantDetail() {
                 <span className={`rounded-md border px-2 py-0.5 text-xs ${merchant.crmStatus === "enabled" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
                   ERP {merchant.crmStatus === "enabled" ? "已开通" : "未开通"}
                 </span>
+                {homepageFeatureStatus ? (
+                  <span
+                    className={`rounded-md border px-2 py-0.5 text-xs ${homepageFeatureStatus.featured ? homepageFeatureNeedsCompletion ? "border-amber-200 bg-amber-50 text-amber-700" : "border-violet-200 bg-violet-50 text-violet-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}
+                    data-homepage-feature-status
+                  >
+                    {homepageFeatureStatus.featured
+                      ? homepageFeatureNeedsCompletion ? "优质商家 · 待完善" : "优质商家"
+                      : "未设优质商家"}
+                  </span>
+                ) : null}
+                {merchant.canManage ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[11px]"
+                    data-homepage-feature-toggle
+                    disabled={!homepageFeatureStatus || homepageFeatureMutation.isPending}
+                    onClick={() => setHomepageFeatureDialogTarget(!homepageFeatureStatus?.featured)}
+                  >
+                    {homepageFeatureStatus?.featured ? "取消优质商家" : "设为优质商家"}
+                  </Button>
+                ) : null}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">商户编号 {merchant.merchantNo} · 统一社会信用代码 {merchant.businessLicense || "—"}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                <span>商户编号 {merchant.merchantNo} · 统一社会信用代码 {merchant.businessLicense || "—"}</span>
+                {homepageFeatureMissingHint ? <span data-homepage-feature-missing>待完善：{homepageFeatureMissingHint}</span> : null}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">入驻时间 {formatDateTime(merchant.createdAt)}</p>
           </div>
         </header>
+
+        <AlertDialog
+          open={homepageFeatureDialogTarget !== null}
+          onOpenChange={open => {
+            if (!open && !homepageFeatureMutation.isPending) setHomepageFeatureDialogTarget(null);
+          }}
+        >
+          <AlertDialogContent data-homepage-feature-dialog>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{homepageFeatureDialogTarget ? "设为优质商家？" : "取消优质商家？"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {homepageFeatureDialogTarget
+                  ? "确认后将在首页优质商家中展示；资料暂未满足条件时仍可先保存设置。"
+                  : "确认后将不再作为首页优质商家展示。"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={homepageFeatureMutation.isPending}>取消</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={homepageFeatureMutation.isPending}
+                onClick={event => {
+                  event.preventDefault();
+                  if (homepageFeatureDialogTarget === null) return;
+                  homepageFeatureMutation.mutate({ merchantId: id, featured: homepageFeatureDialogTarget });
+                }}
+              >
+                {homepageFeatureMutation.isPending ? "处理中…" : "确认"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <dl className="grid grid-cols-2 overflow-hidden rounded-lg border bg-white sm:grid-cols-4" data-merchant-stat-strip>
           <div className="border-b px-4 py-2.5 sm:border-b-0 sm:border-r"><dt className="text-[11px] text-muted-foreground">协议状态</dt><dd className="mt-0.5 font-medium">{agreementBadge.label}</dd></div>

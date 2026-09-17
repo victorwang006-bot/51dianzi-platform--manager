@@ -52,6 +52,10 @@ import {
   setPlatformEnterpriseMemberScope,
   setPlatformEnterpriseMemberStatus,
 } from "./platformEnterpriseApi";
+import {
+  getPlatformHomepageFeatureStatus,
+  setPlatformHomepageFeatured,
+} from "./platformCompanyMediaApi";
 import { ERP_PERMISSION_KEYS } from "../shared/erpPermissions";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
 import { normalizeAdminUsername } from "../shared/adminUsername";
@@ -307,6 +311,25 @@ async function getPlatformEnterpriseBinding(ctx: TrpcContext, merchantId: number
   if (!creditCode || !/^\d+$/.test(ownerText)
     || !Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户 ERP 企业绑定异常，请先核对信用代码与超级管理员" });
+  }
+  return { creditCode, expectedOwnerUserId: ownerUserId };
+}
+
+/**
+ * 公司照片墙及首页精选均由主站按企业身份处理。绑定只能由已获授权的本地商户
+ * 记录派生，绝不接受浏览器提交的信用代码、企业所有者或操作人。
+ */
+async function getPlatformCompanyMediaBinding(ctx: TrpcContext, merchantId: number) {
+  const merchant = await assertMerchantInSalesScope(ctx, merchantId);
+  const creditCode = merchant.businessLicense?.trim().replace(/\s+/g, "").toUpperCase() || "";
+  const ownerText = merchant.crmOwnerPortalUserId?.trim() || "";
+  const ownerUserId = Number(ownerText);
+  if (!creditCode || !/^\d+$/.test(ownerText)
+    || !Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "商户前台企业绑定异常，请先核对统一社会信用代码与企业所有者",
+    });
   }
   return { creditCode, expectedOwnerUserId: ownerUserId };
 }
@@ -1190,6 +1213,37 @@ export const appRouter = router({
           return { available: true as const, companyId: null, photos: [] };
         }
         return db.getMerchantCompanyWall(merchant.businessLicense);
+      }),
+    /**
+     * 首页精选资格由主站统一判定（审核照片、已发布库存及其他主站规则）。
+     * 浏览器只提供后台 merchantId；企业信用代码和 owner 均由服务端绑定派生。
+     */
+    homepageFeatureStatus: merchantReadProcedure
+      .input(z.object({ merchantId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return getPlatformHomepageFeatureStatus(binding);
+      }),
+    /** 销售在其负责范围内且拥有既有商户写权限时，可设置或取消首页精选。 */
+    setHomepageFeatured: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        featured: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const result = await setPlatformHomepageFeatured({
+          ...binding,
+          featured: input.featured,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+        await db.recordMerchantHomepageFeatureAudit({
+          merchantId: input.merchantId,
+          featured: input.featured,
+          result,
+          actor: auditActorFromContext(ctx),
+        });
+        return result;
       }),
     /** 为销售范围内商户设置首页主图或搜索展示图；两个用途保持独立。 */
     setCompanyWallDisplay: merchantWriteProcedure
