@@ -69,9 +69,10 @@ describe("商户首页精选代理", () => {
     }
   });
 
-  it("使用 INTERNAL_SERVICE_KEY 的主站内部 company-media 代理，并禁止密钥泄露", () => {
-    expect(mediaProxy).toContain("process.env.INTERNAL_SERVICE_KEY?.trim()");
-    expect(mediaProxy).toContain('"x-internal-service-key": key');
+  it("复用既有 PORTAL_API_KEY 的主站内部 company-media 代理，并禁止密钥泄露", () => {
+    expect(mediaProxy).toContain("process.env.PORTAL_API_KEY?.trim()");
+    expect(mediaProxy).toContain('"x-portal-key": key');
+    expect(mediaProxy).not.toContain("INTERNAL_SERVICE_KEY");
     expect(mediaProxy).toContain("internalCompanyMedia.${procedure}");
     expect(mediaProxy).toContain("homepageFeatureStatus");
     expect(mediaProxy).toContain("setHomepageFeatured");

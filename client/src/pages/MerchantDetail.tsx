@@ -64,6 +64,9 @@ type MerchantHomepageFeatureProcedures = {
       options: { enabled: boolean },
     ) => {
       data: HomepageFeatureStatus | undefined;
+      error: Error | null;
+      isLoading: boolean;
+      isFetching: boolean;
       refetch: () => Promise<unknown>;
     };
   };
@@ -144,7 +147,13 @@ export default function MerchantDetail() {
     { id },
     { enabled: Number.isFinite(id) && id > 0 },
   );
-  const { data: homepageFeatureStatus, refetch: refetchHomepageFeatureStatus } = homepageFeatureProcedures.homepageFeatureStatus.useQuery(
+  const {
+    data: homepageFeatureStatus,
+    error: homepageFeatureError,
+    isLoading: homepageFeatureLoading,
+    isFetching: homepageFeatureFetching,
+    refetch: refetchHomepageFeatureStatus,
+  } = homepageFeatureProcedures.homepageFeatureStatus.useQuery(
     { merchantId: id },
     { enabled: Number.isFinite(id) && id > 0 },
   );
@@ -284,7 +293,20 @@ export default function MerchantDetail() {
                 <span className={`rounded-md border px-2 py-0.5 text-xs ${merchant.crmStatus === "enabled" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
                   ERP {merchant.crmStatus === "enabled" ? "已开通" : "未开通"}
                 </span>
-                {homepageFeatureStatus ? (
+                {homepageFeatureError ? (
+                  <button
+                    type="button"
+                    className="h-6 rounded-md border border-amber-200 bg-amber-50 px-2 text-[11px] text-amber-700 hover:bg-amber-100"
+                    data-homepage-feature-retry
+                    disabled={homepageFeatureFetching}
+                    title={homepageFeatureError.message}
+                    onClick={() => void refetchHomepageFeatureStatus()}
+                  >
+                    {homepageFeatureFetching ? "重新加载中…" : "状态加载失败，点击重试"}
+                  </button>
+                ) : homepageFeatureLoading ? (
+                  <span className="text-[11px] text-muted-foreground" data-homepage-feature-loading>状态加载中…</span>
+                ) : homepageFeatureStatus ? (
                   <span
                     className={`rounded-md border px-2 py-0.5 text-xs ${homepageFeatureStatus.featured ? homepageFeatureNeedsCompletion ? "border-amber-200 bg-amber-50 text-amber-700" : "border-violet-200 bg-violet-50 text-violet-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}
                     data-homepage-feature-status
@@ -294,17 +316,17 @@ export default function MerchantDetail() {
                       : "未设优质商家"}
                   </span>
                 ) : null}
-                {merchant.canManage ? (
+                {merchant.canManage && homepageFeatureStatus ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="h-6 px-2 text-[11px]"
                     data-homepage-feature-toggle
-                    disabled={!homepageFeatureStatus || homepageFeatureMutation.isPending}
-                    onClick={() => setHomepageFeatureDialogTarget(!homepageFeatureStatus?.featured)}
+                    disabled={homepageFeatureMutation.isPending}
+                    onClick={() => setHomepageFeatureDialogTarget(!homepageFeatureStatus.featured)}
                   >
-                    {homepageFeatureStatus?.featured ? "取消优质商家" : "设为优质商家"}
+                    {homepageFeatureStatus.featured ? "取消优质商家" : "设为优质商家"}
                   </Button>
                 ) : null}
               </div>

@@ -31,17 +31,17 @@ function response(data: unknown, statusCode = 200) {
 describe("internalCompanyMedia 首页精选代理", () => {
   beforeEach(() => {
     process.env.PLATFORM_API_BASE = "http://platform.internal";
-    process.env.INTERNAL_SERVICE_KEY = TEST_KEY;
+    process.env.PORTAL_API_KEY = TEST_KEY;
   });
 
   afterEach(() => {
     delete process.env.PLATFORM_API_BASE;
-    delete process.env.INTERNAL_SERVICE_KEY;
+    delete process.env.PORTAL_API_KEY;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it("状态查询使用 INTERNAL_SERVICE_KEY、GET batch input，并传递服务端企业绑定", async () => {
+  it("状态查询复用 PORTAL_API_KEY、GET batch input，并传递服务端企业绑定", async () => {
     const fetchMock = vi.fn().mockResolvedValue(response(status));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -51,7 +51,7 @@ describe("internalCompanyMedia 首页精选代理", () => {
     expect(url).toContain("/api/trpc/internalCompanyMedia.homepageFeatureStatus?batch=1&input=");
     expect(init.method).toBe("GET");
     expect(init.body).toBeUndefined();
-    expect((init.headers as Record<string, string>)["x-internal-service-key"]).toBe(TEST_KEY);
+    expect((init.headers as Record<string, string>)["x-portal-key"]).toBe(TEST_KEY);
     const input = JSON.parse(new URL(url).searchParams.get("input") ?? "{}");
     expect(input["0"].json).toEqual(binding);
   });
@@ -71,7 +71,7 @@ describe("internalCompanyMedia 首页精选代理", () => {
       const [url, init] = fetchMock.mock.calls[index] as [string, RequestInit];
       expect(url).toBe(`http://platform.internal/api/trpc/internalCompanyMedia.${featured ? "setHomepageFeatured" : "clearHomepageFeatured"}?batch=1`);
       expect(init.method).toBe("POST");
-      expect((init.headers as Record<string, string>)["x-internal-service-key"]).toBe(TEST_KEY);
+      expect((init.headers as Record<string, string>)["x-portal-key"]).toBe(TEST_KEY);
       expect((init.headers as Record<string, string>)["x-internal-operator-id"]).toBe(String(operator.id));
       expect((init.headers as Record<string, string>)["x-internal-operator-name"]).toBe(operator.name);
       expect((init.headers as Record<string, string>)["x-internal-operator-role"]).toBe(operator.role);
@@ -99,13 +99,13 @@ describe("internalCompanyMedia 首页精选代理", () => {
       .rejects.toThrow("主站拒绝 [REDACTED]");
   });
 
-  it("缺少 INTERNAL_SERVICE_KEY 时不发起主站请求", async () => {
-    delete process.env.INTERNAL_SERVICE_KEY;
+  it("缺少 PORTAL_API_KEY 时不发起主站请求", async () => {
+    delete process.env.PORTAL_API_KEY;
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(getPlatformHomepageFeatureStatus(binding))
-      .rejects.toThrow("INTERNAL_SERVICE_KEY 未配置");
+      .rejects.toThrow("PORTAL_API_KEY 未配置");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

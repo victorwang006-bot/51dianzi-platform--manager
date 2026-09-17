@@ -38,9 +38,9 @@ type PlatformCompanyMediaProcedure =
 function getConfig() {
   const baseUrl = process.env.PLATFORM_API_BASE?.trim()
     || (process.env.NODE_ENV === "production" ? "http://127.0.0.1:3000" : "");
-  const key = process.env.INTERNAL_SERVICE_KEY?.trim();
+  const key = process.env.PORTAL_API_KEY?.trim();
   if (!baseUrl) throw new Error("PLATFORM_API_BASE 未配置，无法连接商城公司媒体服务");
-  if (!key) throw new Error("INTERNAL_SERVICE_KEY 未配置，无法连接商城公司媒体服务");
+  if (!key) throw new Error("PORTAL_API_KEY 未配置，无法连接商城公司媒体服务");
   return { baseUrl: baseUrl.replace(/\/+$/, ""), key };
 }
 
@@ -84,7 +84,7 @@ async function callPlatformCompanyMedia<T>(
       method,
       headers: {
         "content-type": "application/json",
-        "x-internal-service-key": key,
+        "x-portal-key": key,
         ...operatorHeaders(operator),
       },
       ...(method === "POST" ? { body } : {}),
