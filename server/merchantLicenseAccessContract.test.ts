@@ -19,7 +19,8 @@ describe("商户营业执照安全访问", () => {
     expect(database).toContain("const { licenseObjectKey, licenseImageUrl, ...merchant } = row");
     expect(database).toContain("hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl)");
     expect(database).toContain("...toMerchantReadDto(row)");
-    expect(routers).toContain("return merchant ? db.toMerchantReadDto(merchant) : null");
+    expect(routers).toContain("...db.toMerchantReadDto(merchant)");
+    expect(routers).toContain("canManage:");
     expect(routers).toContain('regex(/^licenses\\/[A-Za-z0-9._/-]+$/, "营业执照对象标识无效")');
   });
 

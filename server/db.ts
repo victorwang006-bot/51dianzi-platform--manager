@@ -3958,6 +3958,8 @@ function platformCreditScopeCondition(creditCodes: string[]) {
 export type PlatformInventoryRow = {
   id: number;
   userId: number;
+  /** 明确的发布者 ID；保留 userId 以兼容现有客户端。 */
+  publisherUserId: number;
   partNumber: string;
   brand: string;
   category: string;
@@ -3977,33 +3979,55 @@ export type PlatformInventoryRow = {
   offshelfReason: string | null;
 };
 
-/** 后台：查询商户在前台发布的物料（JOIN companies 获取企业名/信用代码） */
+export type PlatformInventoryPublisher = {
+  userId: number;
+  name: string | null;
+  phone: string | null;
+};
+
+/** 后台：查询商户在前台发布的物料（JOIN companies 获取企业名/信用代码）。 */
 export async function listMerchantInventories(params: {
   creditCode?: string;
-  keyword?: string; // 型号/品牌/企业名 模糊搜索
+  publisherUserId?: number;
+  keyword?: string;
   status?: "published" | "draft" | "offshelf" | "all";
   page?: number;
   pageSize?: number;
 }, allowedCreditCodes?: string[]) {
   const db = await getDb();
-  if (!db) return { available: false, items: [] as PlatformInventoryRow[], total: 0 };
-  const { creditCode, keyword, status = "published", page = 1, pageSize = 20 } = params;
+  if (!db) return { available: false, items: [] as PlatformInventoryRow[], total: 0, publishers: [] as PlatformInventoryPublisher[] };
+  const { creditCode, publisherUserId, keyword, status = "published", page = 1, pageSize = 20 } = params;
   const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
-  // 空范围必须短路；不能因为没有 SQL IN 值而退化成全量跨库查询。
   if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
-    return { available: true, items: [] as PlatformInventoryRow[], total: 0 };
+    return { available: true, items: [] as PlatformInventoryRow[], total: 0, publishers: [] as PlatformInventoryPublisher[] };
   }
   const offset = (page - 1) * pageSize;
   const conds = [sql`1=1`];
   if (status !== "all") conds.push(sql`i.status = ${status}`);
   if (creditCode) conds.push(sql`c.creditCode = ${creditCode}`);
+  if (publisherUserId) conds.push(sql`i.userId = ${publisherUserId}`);
   if (normalizedAllowedCreditCodes) conds.push(platformCreditScopeCondition(normalizedAllowedCreditCodes));
   if (keyword) {
     const kw = `%${keyword}%`;
     conds.push(sql`(i.partNumber LIKE ${kw} OR i.brand LIKE ${kw} OR c.companyName LIKE ${kw})`);
   }
   const whereSql = sql.join(conds, sql` AND `);
+  // 发布者选项只受当前企业信用代码和销售范围约束，不受发布者、状态或关键词筛选影响。
+  const publisherConds = [sql`1=1`];
+  if (creditCode) publisherConds.push(sql`c.creditCode = ${creditCode}`);
+  if (normalizedAllowedCreditCodes) publisherConds.push(platformCreditScopeCondition(normalizedAllowedCreditCodes));
+  const publisherWhereSql = sql.join(publisherConds, sql` AND `);
   try {
+    const publisherRows = (await db.execute(sql`
+      SELECT DISTINCT i.userId AS userId, u.name AS name, u.phone AS phone
+      FROM ${sql.raw(PLATFORM_DB)}.inventories i
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+        ON c.enterpriseId = i.enterpriseId
+        OR (i.enterpriseId IS NULL AND c.userId = i.userId)
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
+      WHERE ${publisherWhereSql}
+      ORDER BY u.name ASC, i.userId ASC
+    `)) as unknown as [PlatformInventoryPublisher[], unknown];
     const countRows = (await db.execute(sql`
       SELECT COUNT(*) AS cnt
       FROM ${sql.raw(PLATFORM_DB)}.inventories i
@@ -4028,50 +4052,227 @@ export async function listMerchantInventories(params: {
       ORDER BY i.publishedAt DESC, i.id DESC
       LIMIT ${pageSize} OFFSET ${offset}
     `)) as unknown as [PlatformInventoryRow[], unknown];
-    return { available: true, items: rows[0] ?? [], total };
+    const items = (rows[0] ?? []).map(row => ({
+      ...row,
+      userId: Number(row.userId),
+      publisherUserId: Number(row.userId),
+    }));
+    const publishers = (publisherRows[0] ?? []).map(row => ({
+      userId: Number(row.userId),
+      name: row.name ?? null,
+      phone: row.phone ?? null,
+    }));
+    return { available: true, items, total, publishers };
   } catch (error) {
     console.warn("[Database] 跨库查询前台物料失败（开发环境无 dianzi51 库属正常）:", (error as Error).message);
-    return { available: false, items: [] as PlatformInventoryRow[], total: 0 };
+    return { available: false, items: [] as PlatformInventoryRow[], total: 0, publishers: [] as PlatformInventoryPublisher[] };
   }
 }
 
 /**
- * 后台：下架前台物料（进入前台“已下架”列表，用户依据原因修改后可重新上架）。
- * status 与下架来源必须一起写入，不能把已发布过的库存混入从未发布的草稿。
+ * 后台批量下架前台物料。锁定读取、状态变更及后台审计在同一个事务中完成；
+ * 审计写入失败会令整个事务回滚，不能出现“已下架但没有操作人记录”的状态。
  */
+export async function bulkOffshelfPlatformInventories(
+  ids: number[],
+  reason: string,
+  allowedCreditCodes?: string[],
+  actor?: MaterialAuditActor,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length < 1 || ids.length > 50 || new Set(ids).size !== ids.length
+    || ids.some(id => !Number.isSafeInteger(id) || id <= 0)) {
+    throw new Error("物料 ID 列表无效");
+  }
+  const normalizedReason = reason.trim();
+  if (!normalizedReason || normalizedReason.length > 255) throw new Error("下架原因无效");
+  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
+  if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
+    return {
+      success: false as const,
+      results: ids.map(id => ({ id, success: false as const, error: "物料不存在或不在您负责的范围内" })),
+    };
+  }
+  try {
+    const creditScopeSql = normalizedAllowedCreditCodes
+      ? sql` AND ${platformCreditScopeCondition(normalizedAllowedCreditCodes)}`
+      : sql``;
+    return await db.transaction(async tx => {
+      const lockedRows = (await tx.execute(sql`
+        SELECT i.id, i.userId, i.status, c.creditCode, c.companyName
+        FROM ${sql.raw(PLATFORM_DB)}.inventories i
+        LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+          ON c.enterpriseId = i.enterpriseId
+          OR (i.enterpriseId IS NULL AND c.userId = i.userId)
+        WHERE i.id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})${creditScopeSql}
+        ORDER BY i.id ASC
+        FOR UPDATE
+      `)) as unknown as [[{
+        id: number;
+        userId: number;
+        status: "draft" | "published" | "offshelf";
+        creditCode: string | null;
+        companyName: string | null;
+      }], unknown];
+      const scopedRows = new Map<number, (typeof lockedRows)[0][number]>();
+      for (const row of lockedRows[0] ?? []) scopedRows.set(Number(row.id), row);
+      const results: Array<{ id: number; success: boolean; error?: string }> = [];
+      for (const id of ids) {
+        const target = scopedRows.get(id);
+        if (!target) {
+          results.push({ id, success: false, error: "物料不存在或不在您负责的范围内" });
+          continue;
+        }
+        if (target.status !== "published") {
+          results.push({ id, success: false, error: "物料已不是发布状态" });
+          continue;
+        }
+        const updated = (await tx.execute(sql`
+          UPDATE ${sql.raw(PLATFORM_DB)}.inventories
+          SET status = 'offshelf', publishedAt = NULL,
+              offshelfBy = 'admin', offshelfReason = ${normalizedReason}
+          WHERE id = ${id} AND status = 'published'
+        `)) as unknown as [{ affectedRows?: number }, unknown];
+        if (Number(updated[0]?.affectedRows ?? 0) !== 1) {
+          results.push({ id, success: false, error: "物料已不是发布状态" });
+          continue;
+        }
+        await tx.insert(auditLogs).values({
+          operatorId: actor?.operatorId ?? null,
+          operatorName: actor?.operatorName ?? "system",
+          operatorRole: actor?.operatorRole ?? "system",
+          action: "platform_material.offshelf",
+          module: "merchants",
+          targetType: "platform_inventory",
+          targetId: String(id),
+          beforeValue: {
+            status: "published",
+            publisherUserId: Number(target.userId),
+            creditCode: target.creditCode,
+            companyName: target.companyName,
+          },
+          afterValue: { status: "offshelf", offshelfBy: "admin" },
+          ipAddress: actor?.ipAddress ?? null,
+          userAgent: actor?.userAgent ?? null,
+          result: "success",
+          note: normalizedReason,
+        });
+        results.push({ id, success: true });
+      }
+      return { success: results.every(item => item.success), results };
+    });
+  } catch (error) {
+    const msg = (error as Error).message || "";
+    console.error("[Database] 批量下架前台物料失败:", msg);
+    throw new Error("下架失败：无法访问前台数据库或写入审计日志");
+  }
+}
+
+/** 单条下架复用批量事务核心，并维持原接口失败时抛错的兼容语义。 */
 export async function offshelfPlatformInventory(
   id: number,
   reason: string,
   allowedCreditCodes?: string[],
+  actor?: MaterialAuditActor,
 ) {
+  const result = await bulkOffshelfPlatformInventories([id], reason, allowedCreditCodes, actor);
+  const item = result.results[0];
+  if (!item?.success) throw new Error(item?.error || "物料下架失败");
+  return { success: true as const };
+}
+
+type PlatformInventoryExportRow = Pick<PlatformInventoryRow,
+  "id" | "userId" | "partNumber" | "brand" | "category" | "pkg" | "qtyOnSale"
+  | "priceEx" | "priceIncl" | "status" | "publishedAt" | "createdAt" | "companyName"
+  | "creditCode" | "userName"
+>;
+
+function csvCell(value: unknown) {
+  let text = value instanceof Date ? value.toISOString() : value === null || value === undefined ? "" : String(value);
+  if (/^[\t\r\n ]*[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+/** 构造 UTF-8 BOM + RFC4180 CSV；刻意不接收/输出发布者手机号。 */
+export function createPlatformInventoryCsv(rows: PlatformInventoryExportRow[]) {
+  const headers = [
+    "ID", "Publisher User ID", "Publisher Name", "Part Number", "Brand", "Category", "Package",
+    "Quantity", "Price Ex", "Price Incl", "Status", "Published At", "Created At", "Company Name", "Credit Code",
+  ];
+  const lines = rows.map(row => [
+    row.id, row.userId, row.userName, row.partNumber, row.brand, row.category, row.pkg,
+    row.qtyOnSale, row.priceEx, row.priceIncl, row.status, row.publishedAt, row.createdAt,
+    row.companyName, row.creditCode,
+  ].map(csvCell).join(","));
+  return `\uFEFF${headers.map(csvCell).join(",")}\r\n${lines.join("\r\n")}`;
+}
+
+/** 按选中 ID 重新做服务端范围校验后导出；任何缺失或越权 ID 都拒绝整批导出。 */
+export async function exportSelectedPlatformInventories(ids: number[], allowedCreditCodes?: string[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
   if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
     throw new Error("物料不存在或不在您负责的范围内");
   }
+  const creditScopeSql = normalizedAllowedCreditCodes
+    ? sql` AND ${platformCreditScopeCondition(normalizedAllowedCreditCodes)}`
+    : sql``;
   try {
-    const creditScopeSql = normalizedAllowedCreditCodes
-      ? sql` AND ${platformCreditScopeCondition(normalizedAllowedCreditCodes)}`
-      : sql``;
-    const result = (await db.execute(sql`
-      UPDATE ${sql.raw(PLATFORM_DB)}.inventories i
+    const rows = (await db.execute(sql`
+      SELECT i.id, i.userId, i.partNumber, i.brand, i.category, i.pkg,
+             i.qtyOnSale, i.priceEx, i.priceIncl, i.status, i.publishedAt, i.createdAt,
+             c.companyName, c.creditCode, u.name AS userName
+      FROM ${sql.raw(PLATFORM_DB)}.inventories i
       LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
         ON c.enterpriseId = i.enterpriseId
         OR (i.enterpriseId IS NULL AND c.userId = i.userId)
-      SET status = 'offshelf', publishedAt = NULL,
-          offshelfBy = 'admin', offshelfReason = ${reason}
-      WHERE i.id = ${id} AND i.status = 'published'${creditScopeSql}
-    `)) as unknown as [{ affectedRows?: number }, unknown];
-    const affected = Number(result[0]?.affectedRows ?? 0);
-    if (affected === 0) throw new Error("物料不存在、已不是发布状态或不在您负责的范围内");
-    return { success: true };
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
+      WHERE i.id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})${creditScopeSql}
+    `)) as unknown as [PlatformInventoryExportRow[], unknown];
+    const byId = new Map((rows[0] ?? []).map(row => [Number(row.id), row]));
+    if (byId.size !== ids.length) throw new Error("物料不存在或不在您负责的范围内");
+    const orderedRows = ids.map(id => byId.get(id)!);
+    const date = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date()).replace(/-/g, "");
+    return { filename: `platform-materials-${date}.csv`, csv: createPlatformInventoryCsv(orderedRows) };
   } catch (error) {
     const msg = (error as Error).message || "";
-    if (msg.includes("不存在") || msg.includes("已不是") || msg.includes("范围内")) throw error;
-    console.error("[Database] 下架前台物料失败:", msg);
-    throw new Error("下架失败：无法访问前台数据库（此功能仅在生产环境可用）");
+    if (msg.includes("不存在") || msg.includes("范围内")) throw error;
+    console.error("[Database] 导出前台物料失败:", msg);
+    throw new Error("导出失败：无法访问前台数据库");
   }
+}
+
+/** 商户详情操作记录：只选择允许展示的列，避免 before/after、IP 和 UA 泄露。 */
+export async function listMerchantOperationRecords(input: {
+  merchantId: number;
+  page: number;
+  pageSize: number;
+}) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const condition = and(
+    eq(auditLogs.module, "merchants"),
+    eq(auditLogs.targetType, "merchant"),
+    eq(auditLogs.targetId, String(input.merchantId)),
+  );
+  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(condition);
+  const items = await db.select({
+    time: auditLogs.createdAt,
+    action: auditLogs.action,
+    operatorName: auditLogs.operatorName,
+    role: auditLogs.operatorRole,
+    result: auditLogs.result,
+    note: auditLogs.note,
+  }).from(auditLogs)
+    .where(condition)
+    .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
+    .limit(input.pageSize)
+    .offset((input.page - 1) * input.pageSize);
+  return { items, total: Number(count) };
 }
 
 // ─── 企业公司信息墙（跨库读写前台 dianzi51 库）──────────────────────────────

@@ -45,6 +45,14 @@ import {
 } from "./platformUserApi";
 import { getPlatformAnalyticsOverview } from "./platformAnalyticsApi";
 import { completePlatformCrmRebind, validatePlatformCrmRebindTarget } from "./platformCrmApi";
+import {
+  listPlatformEnterpriseMembers,
+  setPlatformEnterpriseLoginDisabled,
+  setPlatformEnterpriseMemberPermissions,
+  setPlatformEnterpriseMemberScope,
+  setPlatformEnterpriseMemberStatus,
+} from "./platformEnterpriseApi";
+import { ERP_PERMISSION_KEYS } from "../shared/erpPermissions";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
 import { normalizeAdminUsername } from "../shared/adminUsername";
 import { getAdminLoginHistory } from "./adminLoginSecurity";
@@ -154,6 +162,22 @@ const orderReadProcedure = adminPermissionProcedure("orders.read");
 const analyticsReadProcedure = adminPermissionProcedure("analytics.read");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
 const logsReadProcedure = adminPermissionProcedure("logs.read");
+/** 操作记录同时要求商户读与日志读；不能仅因能看商户就获得审计轨迹。 */
+const merchantOperationRecordsProcedure = merchantReadProcedure.use(({ ctx, next }) => {
+  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  if (!hasAdminPermission(role, "logs.read", ctx.adminPermissions)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权查看操作记录" });
+  }
+  return next({ ctx });
+});
+/** 网站登录属于跨商户账号控制，必须同时具备商户写和前台用户管理权限。 */
+const merchantUserLoginProcedure = merchantWriteProcedure.use(({ ctx, next }) => {
+  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  if (!hasAdminPermission(role, "portalUsers.manage", ctx.adminPermissions)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权启停网站登录" });
+  }
+  return next({ ctx });
+});
 const crmRebindProcedure = adminProcedure.use(({ ctx, next }) => {
   const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
   if (role !== "super_admin") {
@@ -261,6 +285,30 @@ function platformUserOperatorFromContext(ctx: TrpcContext) {
     ipAddress: actor.ipAddress,
     userAgent: actor.userAgent,
   };
+}
+
+/** 企业成员内部接口的 operator 同样只由已认证后台上下文生成，禁止浏览器代填。 */
+function platformEnterpriseOperatorFromContext(ctx: TrpcContext) {
+  return platformUserOperatorFromContext(ctx);
+}
+
+/**
+ * 企业成员代理必须从销售范围内的本地商户记录派生信用代码和 owner 绑定。
+ * 前端输入只允许 merchantId，不能提交或覆盖 creditCode、ownerUserId、operator。
+ */
+async function getPlatformEnterpriseBinding(ctx: TrpcContext, merchantId: number) {
+  const merchant = await assertMerchantInSalesScope(ctx, merchantId);
+  if (merchant.crmStatus !== "enabled") {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户尚未启用 ERP，无法管理企业成员" });
+  }
+  const creditCode = merchant.businessLicense?.trim().replace(/\s+/g, "").toUpperCase() || "";
+  const ownerText = merchant.crmOwnerPortalUserId?.trim() || "";
+  const ownerUserId = Number(ownerText);
+  if (!creditCode || !/^\d+$/.test(ownerText)
+    || !Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户 ERP 企业绑定异常，请先核对信用代码与超级管理员" });
+  }
+  return { creditCode, expectedOwnerUserId: ownerUserId };
 }
 
 // 前台对接鉴权：请求头 x-portal-key 必须与 PORTAL_API_KEY 一致
@@ -1541,6 +1589,100 @@ export const appRouter = router({
           adminName: ctx.user.name ?? "平台客服",
         });
       }),
+    /** 当前商户绑定企业的成员列表；上游只接收服务端派生的企业身份。 */
+    enterpriseMembers: merchantReadProcedure
+      .input(z.object({ merchantId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const binding = await getPlatformEnterpriseBinding(ctx, input.merchantId);
+        return listPlatformEnterpriseMembers(binding);
+      }),
+    setEnterpriseMemberStatus: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        targetUserId: z.number().int().positive(),
+        status: z.enum(["active", "suspended"]),
+        reason: z.string().trim().min(1).max(500),
+        requestId: z.string().trim().min(8).max(64),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformEnterpriseBinding(ctx, input.merchantId);
+        return setPlatformEnterpriseMemberStatus({
+          ...binding,
+          targetUserId: input.targetUserId,
+          status: input.status,
+          reason: input.reason,
+          requestId: input.requestId,
+          operator: platformEnterpriseOperatorFromContext(ctx),
+        });
+      }),
+    setEnterpriseMemberPermissions: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        targetUserId: z.number().int().positive(),
+        permissionKeys: z.array(z.enum(ERP_PERMISSION_KEYS)).min(1).max(ERP_PERMISSION_KEYS.length)
+          .refine(values => new Set(values).size === values.length, "ERP 权限不能重复"),
+        reason: z.string().trim().min(1).max(500),
+        requestId: z.string().trim().min(8).max(64),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformEnterpriseBinding(ctx, input.merchantId);
+        return setPlatformEnterpriseMemberPermissions({
+          ...binding,
+          targetUserId: input.targetUserId,
+          permissionKeys: input.permissionKeys,
+          reason: input.reason,
+          requestId: input.requestId,
+          operator: platformEnterpriseOperatorFromContext(ctx),
+        });
+      }),
+    setEnterpriseMemberScope: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        targetUserId: z.number().int().positive(),
+        inventoryDataScope: z.enum(["own", "enterprise"]),
+        reason: z.string().trim().min(1).max(500),
+        requestId: z.string().trim().min(8).max(64),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformEnterpriseBinding(ctx, input.merchantId);
+        return setPlatformEnterpriseMemberScope({
+          ...binding,
+          targetUserId: input.targetUserId,
+          inventoryDataScope: input.inventoryDataScope,
+          reason: input.reason,
+          requestId: input.requestId,
+          operator: platformEnterpriseOperatorFromContext(ctx),
+        });
+      }),
+    setEnterpriseMemberLoginDisabled: merchantUserLoginProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        targetUserId: z.number().int().positive(),
+        disabled: z.boolean(),
+        reason: z.string().trim().min(1).max(500),
+        requestId: z.string().trim().min(8).max(64),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformEnterpriseBinding(ctx, input.merchantId);
+        return setPlatformEnterpriseLoginDisabled({
+          ...binding,
+          targetUserId: input.targetUserId,
+          disabled: input.disabled,
+          reason: input.reason,
+          requestId: input.requestId,
+          operator: platformEnterpriseOperatorFromContext(ctx),
+        });
+      }),
+    operationRecords: merchantOperationRecordsProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(20),
+      }))
+      .query(async ({ ctx, input }) => {
+        await assertMerchantInSalesScope(ctx, input.merchantId);
+        return db.listMerchantOperationRecords(input);
+      }),
   }),
 
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
@@ -2069,10 +2211,11 @@ export const appRouter = router({
 
   // ─── 客户物料管理（前台发布物料，跨库） ──────────────────────────────────
   platformMaterial: router({
-    /** 列表：查询商户在前台发布的物料，支持信用代码筛选与关键词搜索 */
+    /** 列表：销售范围内按信用代码、发布者、关键词和状态筛选，并返回发布者最小选项。 */
     list: merchantReadProcedure
       .input(z.object({
         creditCode: z.string().max(64).optional(),
+        publisherUserId: z.number().int().positive().optional(),
         keyword: z.string().max(128).optional(),
         status: z.enum(["published", "draft", "offshelf", "all"]).optional(),
         page: z.number().int().min(1).default(1),
@@ -2081,10 +2224,7 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return db.listMerchantInventories(input ?? {}, await getPlatformInventoryCreditScope(ctx));
       }),
-    /**
-     * 下架：进入已下架（offshelf）并记录 offshelfBy='admin' 与必填下架原因。
-     * 额外按销售范围对应的企业信用代码做服务端归属校验，不能只信任前端列表。
-     */
+    /** 单条下架复用批量事务核心，不改变“已下架”状态语义。 */
     offshelf: merchantWriteProcedure
       .input(z.object({
         id: z.number().int().positive(),
@@ -2095,8 +2235,32 @@ export const appRouter = router({
           input.id,
           input.reason,
           await getPlatformInventoryCreditScope(ctx),
+          auditActorFromContext(ctx),
         );
       }),
+    /** 批量下架：最多 50 个不重复 ID，逐项返回成功或范围/状态失败。 */
+    bulkOffshelf: merchantWriteProcedure
+      .input(z.object({
+        ids: z.array(z.number().int().positive()).min(1).max(50)
+          .refine(ids => new Set(ids).size === ids.length, "物料 ID 不能重复"),
+        reason: z.string().trim().min(1, "请填写下架原因").max(255, "下架原因不能超过255字"),
+      }))
+      .mutation(async ({ ctx, input }) => db.bulkOffshelfPlatformInventories(
+        input.ids,
+        input.reason,
+        await getPlatformInventoryCreditScope(ctx),
+        auditActorFromContext(ctx),
+      )),
+    /** 选中导出：服务端重新按销售范围读取，CSV 不包含手机号。 */
+    exportSelected: merchantReadProcedure
+      .input(z.object({
+        ids: z.array(z.number().int().positive()).min(1).max(50)
+          .refine(ids => new Set(ids).size === ids.length, "物料 ID 不能重复"),
+      }))
+      .query(async ({ ctx, input }) => db.exportSelectedPlatformInventories(
+        input.ids,
+        await getPlatformInventoryCreditScope(ctx),
+      )),
   }),
 
   // ─── 管理员管理 ──────────────────────────────────────────────────────────

@@ -12,12 +12,13 @@ const panel = read("client/src/components/admin/MerchantMaterialPanel.tsx");
 describe("管理后台物料下架状态", () => {
   it("只把仍在发布状态的物料原子更新为 offshelf", () => {
     const block = db.slice(
-      db.indexOf("export async function offshelfPlatformInventory"),
+      db.indexOf("export async function bulkOffshelfPlatformInventories"),
       db.indexOf("// ─── 企业公司信息墙"),
     );
     expect(block).toContain("SET status = 'offshelf', publishedAt = NULL");
     expect(block).toContain("offshelfBy = 'admin'");
-    expect(block).toContain("i.status = 'published'");
+    expect(block).toContain('status !== "published"');
+    expect(block).toContain("status = 'published'");
     expect(block).not.toContain("SET status = 'draft'");
   });
 
@@ -26,7 +27,8 @@ describe("管理后台物料下架状态", () => {
       router.indexOf("platformMaterial: router"),
       router.indexOf("// ─── 管理员管理"),
     );
-    expect(routeBlock).toContain("进入已下架（offshelf）");
+    expect(routeBlock).toContain("已下架");
+    expect(routeBlock).toContain("不改变“已下架”状态语义");
     expect(panel).toContain("已进入前台\\u201c已下架\\u201d列表");
     expect(panel).toContain("进入商户的“已下架”列表");
     expect(panel).toContain('item.status === "offshelf" && item.offshelfBy === "admin"');

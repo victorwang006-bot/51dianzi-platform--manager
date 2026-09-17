@@ -50,15 +50,10 @@ describe("后台首页图与搜索图设置", () => {
     expect(database).toContain("tx.insert(auditLogs)");
   });
 
-  it("照片墙位于商户详情主栅格之外的全宽区域", () => {
-    const gridEnd = detailPage.indexOf(
-      "      </div>\n\n      {/* 公司照片墙：全宽展示"
-    );
-    const wall = detailPage.indexOf(
-      "<MerchantCompanyWallPanel merchantId={merchant.id} />"
-    );
-    expect(gridEnd).toBeGreaterThan(-1);
-    expect(wall).toBeGreaterThan(gridEnd);
-    expect(detailPage).toContain('className="mt-6"');
+  it("照片墙在图片资料标签中按需全宽挂载", () => {
+    expect(detailPage).toContain('{visitedTabs.has("images") ? (');
+    expect(detailPage).toContain('<TabsContent value="images" forceMount');
+    expect(detailPage).toContain("<MerchantCompanyWallPanel merchantId={merchant.id} />");
+    expect(detailPage).toContain('className={activeTab === "images" ? "mt-0" : "hidden"}');
   });
 });

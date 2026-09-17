@@ -7,6 +7,8 @@ vi.mock("./db", async importOriginal => {
     ...actual,
     listMerchantInventories: vi.fn(),
     offshelfPlatformInventory: vi.fn(),
+    bulkOffshelfPlatformInventories: vi.fn(),
+    exportSelectedPlatformInventories: vi.fn(),
     getAdminUserSalesScopeCodes: vi.fn(),
     getScopedMerchantCreditCodes: vi.fn(),
   };
@@ -152,6 +154,7 @@ describe("platformMaterial 客户物料管理", () => {
       150464,
       "范围内商户物料下架",
       ["91440300MA5F7X2K9T"],
+      expect.objectContaining({ operatorId: 1, operatorRole: "merchant_mgr" }),
     );
   });
 
@@ -171,6 +174,7 @@ describe("platformMaterial 客户物料管理", () => {
       150464,
       "图片与型号不符，请更换实拍图",
       undefined,
+      expect.objectContaining({ operatorId: 1, operatorName: "管理员" }),
     );
     expect(result.success).toBe(true);
   });
@@ -194,6 +198,98 @@ describe("platformMaterial 客户物料管理", () => {
     vi.mocked(db.offshelfPlatformInventory).mockRejectedValue(new Error("物料不存在或已不是发布状态"));
     const caller = appRouter.createCaller(createAdminContext());
     await expect(caller.platformMaterial.offshelf({ id: 999999, reason: "测试原因" })).rejects.toThrow("物料不存在或已不是发布状态");
+  });
+
+  it("list 接受正整数 publisherUserId 并返回发布者选项", async () => {
+    vi.mocked(db.listMerchantInventories).mockResolvedValue({
+      available: true,
+      items: [],
+      total: 0,
+      publishers: [{ userId: 30002, name: "发布人", phone: "13800000000" }],
+    });
+    const result = await appRouter.createCaller(createAdminContext()).platformMaterial.list({
+      publisherUserId: 30002,
+      page: 1,
+      pageSize: 20,
+    });
+    expect(db.listMerchantInventories).toHaveBeenCalledWith(
+      expect.objectContaining({ publisherUserId: 30002 }),
+      undefined,
+    );
+    expect(result.publishers).toEqual([{ userId: 30002, name: "发布人", phone: "13800000000" }]);
+  });
+
+  it("bulkOffshelf 限制 1..50 个不重复正整数", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    await expect(caller.platformMaterial.bulkOffshelf({ ids: [], reason: "测试" })).rejects.toThrow();
+    await expect(caller.platformMaterial.bulkOffshelf({ ids: [1, 1], reason: "测试" })).rejects.toThrow();
+    await expect(caller.platformMaterial.bulkOffshelf({
+      ids: Array.from({ length: 51 }, (_, index) => index + 1),
+      reason: "测试",
+    })).rejects.toThrow();
+    expect(db.bulkOffshelfPlatformInventories).not.toHaveBeenCalled();
+  });
+
+  it("bulkOffshelf 传入销售范围和审计身份并返回逐项结果", async () => {
+    vi.mocked(db.getAdminUserSalesScopeCodes).mockResolvedValue(["sales-a"]);
+    vi.mocked(db.getScopedMerchantCreditCodes).mockResolvedValue(["91440300MA5F7X2K9T"]);
+    vi.mocked(db.bulkOffshelfPlatformInventories).mockResolvedValue({
+      success: false,
+      results: [
+        { id: 1, success: true },
+        { id: 2, success: false, error: "物料已不是发布状态" },
+      ],
+    });
+    const result = await appRouter.createCaller(createScopedMerchantManagerContext()).platformMaterial.bulkOffshelf({
+      ids: [1, 2],
+      reason: " 批量合规下架 ",
+    });
+    expect(db.bulkOffshelfPlatformInventories).toHaveBeenCalledWith(
+      [1, 2],
+      "批量合规下架",
+      ["91440300MA5F7X2K9T"],
+      expect.objectContaining({ operatorId: 1, operatorRole: "merchant_mgr" }),
+    );
+    expect(result.results).toHaveLength(2);
+  });
+
+  it("exportSelected 限制 ID、重新传递销售范围且不接收手机号", async () => {
+    vi.mocked(db.getAdminUserSalesScopeCodes).mockResolvedValue(["sales-a"]);
+    vi.mocked(db.getScopedMerchantCreditCodes).mockResolvedValue(["91440300MA5F7X2K9T"]);
+    vi.mocked(db.exportSelectedPlatformInventories).mockResolvedValue({
+      filename: "platform-materials.csv",
+      csv: "\uFEFFcsv",
+    });
+    const caller = appRouter.createCaller(createScopedMerchantManagerContext());
+    await expect(caller.platformMaterial.exportSelected({ ids: [1, 1] })).rejects.toThrow();
+    const result = await caller.platformMaterial.exportSelected({ ids: [3, 2] });
+    expect(db.exportSelectedPlatformInventories).toHaveBeenCalledWith([3, 2], ["91440300MA5F7X2K9T"]);
+    expect(result.csv.charCodeAt(0)).toBe(0xfeff);
+  });
+
+  it("CSV 使用 UTF-8 BOM、RFC4180 引号并阻止 Excel 公式注入", () => {
+    const csv = db.createPlatformInventoryCsv([{
+      id: 1,
+      userId: 2,
+      userName: "=HYPERLINK(\"https://bad.example\")",
+      partNumber: "A,\"B\"",
+      brand: "+CMD",
+      category: "IC",
+      pkg: null,
+      qtyOnSale: 10,
+      priceEx: "1",
+      priceIncl: "1.13",
+      status: "published",
+      publishedAt: new Date("2026-09-17T00:00:00Z"),
+      createdAt: new Date("2026-09-16T00:00:00Z"),
+      companyName: "测试公司",
+      creditCode: "91440300TEST",
+    }]);
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv).toContain('"\'=HYPERLINK(""https://bad.example"")"');
+    expect(csv).toContain('"A,""B"""');
+    expect(csv).toContain('"\'+CMD"');
+    expect(csv).not.toContain("Phone");
   });
 
   it("非管理员访问 list 被拒绝", async () => {
