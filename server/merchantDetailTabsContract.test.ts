@@ -42,11 +42,16 @@ describe("商户详情简洁标签页布局", () => {
 });
 
 describe("物料批量操作", () => {
-  it("支持当前页全选、发布人筛选、批量下架与导出选中", () => {
+  it("支持当前页全选、固定批量入口、发布人整批下架与导出选中", () => {
     expect(materials).toContain('aria-label="全选当前页物料"');
     expect(materials).toContain("publisherUserId:");
+    expect(materials).toContain("data-material-bulk-menu");
     expect(materials).toContain("data-material-bulk-actions");
     expect(materials).toContain("bulkOffshelfMutation.mutateAsync");
+    expect(materials).toContain("publisherOffshelfPreview.useQuery");
+    expect(materials).toContain("bulkOffshelfByPublisher.useMutation");
+    expect(materials).toContain("下架该发布人的全部库存");
+    expect(materials).toContain("已下架、草稿和其他用户库存不受影响");
     expect(materials).toContain("utils.platformMaterial.exportSelected.fetch");
     expect(materials).toContain("失败项将保留勾选");
     expect(materials).not.toContain("批量恢复");
@@ -60,16 +65,22 @@ describe("物料批量操作", () => {
     expect(block).toContain("new Set(ids).size === ids.length");
     expect(database).toContain("FOR UPDATE");
     expect(database).toContain("SET status = 'offshelf', publishedAt = NULL");
+    expect(database).toContain("bulkOffshelfPublisherInventories");
+    expect(database).toContain('action: "platform_material.publisher_bulk_offshelf"');
+    expect(database).toContain('targetType: "merchant"');
+    expect(router).toContain("assertMerchantInSalesScope(ctx, input.merchantId)");
     expect(database).not.toContain("restoreSelectedToDraft");
   });
 });
 
 describe("企业用户与操作记录响应式视图", () => {
-  it("桌面表格和窄屏卡片均可管理成员，所有者只读", () => {
+  it("桌面表格和窄屏卡片均可管理成员，所有者企业权限只读但登录可独立管控", () => {
     expect(users).toContain("data-responsive-member-table");
     expect(users).toContain("data-responsive-member-cards");
     expect(users).toContain("data-member-management-sheet");
     expect(users).toContain("data-owner-protection");
+    expect(users).toContain("canOverrideOwnerLogin");
+    expect(users).toContain("平台超级管理员仍可独立管控网站登录");
   });
 
   it("操作记录仅显示脱敏字段并提供桌面表格与移动时间线", () => {

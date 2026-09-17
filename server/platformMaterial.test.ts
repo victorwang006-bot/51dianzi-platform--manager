@@ -8,7 +8,10 @@ vi.mock("./db", async importOriginal => {
     listMerchantInventories: vi.fn(),
     offshelfPlatformInventory: vi.fn(),
     bulkOffshelfPlatformInventories: vi.fn(),
+    getPublisherPublishedInventoryCount: vi.fn(),
+    bulkOffshelfPublisherInventories: vi.fn(),
     exportSelectedPlatformInventories: vi.fn(),
+    getOwnedMerchantById: vi.fn(),
     getAdminUserSalesScopeCodes: vi.fn(),
     getScopedMerchantCreditCodes: vi.fn(),
   };
@@ -66,6 +69,10 @@ describe("platformMaterial 客户物料管理", () => {
     vi.clearAllMocks();
     vi.mocked(db.getAdminUserSalesScopeCodes).mockResolvedValue([]);
     vi.mocked(db.getScopedMerchantCreditCodes).mockResolvedValue([]);
+    vi.mocked(db.getOwnedMerchantById).mockResolvedValue({
+      id: 30391,
+      businessLicense: "91440300MA5F7X2K9T",
+    } as Awaited<ReturnType<typeof db.getOwnedMerchantById>>);
   });
 
   it("list 返回前台物料列表（含企业名与信用代码）", async () => {
@@ -251,6 +258,47 @@ describe("platformMaterial 客户物料管理", () => {
       expect.objectContaining({ operatorId: 1, operatorRole: "merchant_mgr" }),
     );
     expect(result.results).toHaveLength(2);
+  });
+
+  it("publisherOffshelfPreview 从服务端商户记录派生信用代码并返回已发布数量", async () => {
+    vi.mocked(db.getPublisherPublishedInventoryCount).mockResolvedValue({
+      publisherUserId: 30002,
+      publisherName: "发布人",
+      publishedCount: 491,
+    });
+    const result = await appRouter.createCaller(createAdminContext()).platformMaterial.publisherOffshelfPreview({
+      merchantId: 30391,
+      publisherUserId: 30002,
+    });
+    expect(db.getPublisherPublishedInventoryCount).toHaveBeenCalledWith({
+      creditCode: "91440300MA5F7X2K9T",
+      publisherUserId: 30002,
+      allowedCreditCodes: undefined,
+    });
+    expect(result.publishedCount).toBe(491);
+  });
+
+  it("bulkOffshelfByPublisher 按商户和发布人下架全部已发布库存并携带审计身份", async () => {
+    vi.mocked(db.bulkOffshelfPublisherInventories).mockResolvedValue({
+      success: true,
+      publisherUserId: 30002,
+      publisherName: "发布人",
+      affected: 491,
+    });
+    const result = await appRouter.createCaller(createAdminContext()).platformMaterial.bulkOffshelfByPublisher({
+      merchantId: 30391,
+      publisherUserId: 30002,
+      reason: " 违反平台物料规范 ",
+    });
+    expect(db.bulkOffshelfPublisherInventories).toHaveBeenCalledWith({
+      merchantId: 30391,
+      creditCode: "91440300MA5F7X2K9T",
+      publisherUserId: 30002,
+      reason: "违反平台物料规范",
+      allowedCreditCodes: undefined,
+      actor: expect.objectContaining({ operatorId: 1, operatorName: "管理员" }),
+    });
+    expect(result.affected).toBe(491);
   });
 
   it("exportSelected 限制 ID、重新传递销售范围且不接收手机号", async () => {

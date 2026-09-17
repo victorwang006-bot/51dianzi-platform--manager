@@ -255,7 +255,7 @@ export default function MerchantDetail() {
           {visitedTabs.has("materials") ? (
             <TabsContent value="materials" forceMount className={activeTab === "materials" ? "mt-0" : "hidden"}>
               {materialAvailable && merchant.businessLicense ? (
-                <MerchantMaterialPanel creditCode={merchant.businessLicense} />
+                <MerchantMaterialPanel merchantId={merchant.id} creditCode={merchant.businessLicense} />
               ) : (
                 <section className="rounded-lg border bg-white p-8 text-center">
                   <PackageSearch className="mx-auto h-8 w-8 text-muted-foreground/50" />
@@ -268,7 +268,12 @@ export default function MerchantDetail() {
 
           {visitedTabs.has("users") ? (
             <TabsContent value="users" forceMount className={activeTab === "users" ? "mt-0" : "hidden"}>
-              <MerchantEnterpriseUsersPanel merchantId={merchant.id} canManage={merchant.canManage} />
+              <MerchantEnterpriseUsersPanel
+                merchantId={merchant.id}
+                canManage={merchant.canManage}
+                canManageLogin={merchant.canManageLogin}
+                canOverrideOwnerLogin={merchant.canOverrideOwnerLogin}
+              />
             </TabsContent>
           ) : null}
 

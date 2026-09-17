@@ -1113,10 +1113,17 @@ export const appRouter = router({
       const salesStaffCodes = await getAdminSalesStaffCodes(ctx);
       const merchant = await db.getMerchantById(input.id, salesStaffCodes);
       if (!merchant) return null;
+      const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+      const canManage = salesStaffCodes === undefined
+        || salesStaffCodes.includes(merchant.salesOwnerCode?.trim().toLowerCase() || "");
+      const canManageLogin = canManage
+        && hasAdminPermission(role, "merchants.write", ctx.adminPermissions)
+        && hasAdminPermission(role, "portalUsers.manage", ctx.adminPermissions);
       return {
         ...db.toMerchantReadDto(merchant),
-        canManage: salesStaffCodes === undefined
-          || salesStaffCodes.includes(merchant.salesOwnerCode?.trim().toLowerCase() || ""),
+        canManage,
+        canManageLogin,
+        canOverrideOwnerLogin: canManageLogin && role === "super_admin",
       };
     }),
     /**
@@ -2251,6 +2258,46 @@ export const appRouter = router({
         await getPlatformInventoryCreditScope(ctx),
         auditActorFromContext(ctx),
       )),
+    /** 发布人整批下架预览：商户信用代码只从服务端商户记录派生。 */
+    publisherOffshelfPreview: merchantReadProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        publisherUserId: z.number().int().positive(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.merchantId);
+        const creditCode = merchant.businessLicense?.trim();
+        if (!creditCode) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户未登记统一社会信用代码" });
+        }
+        return db.getPublisherPublishedInventoryCount({
+          creditCode,
+          publisherUserId: input.publisherUserId,
+          allowedCreditCodes: await getPlatformInventoryCreditScope(ctx),
+        });
+      }),
+    /** 按发布人下架当前商户全部已发布库存；不受当前分页和关键词筛选影响。 */
+    bulkOffshelfByPublisher: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        publisherUserId: z.number().int().positive(),
+        reason: z.string().trim().min(1, "请填写下架原因").max(255, "下架原因不能超过255字"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.merchantId);
+        const creditCode = merchant.businessLicense?.trim();
+        if (!creditCode) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户未登记统一社会信用代码" });
+        }
+        return db.bulkOffshelfPublisherInventories({
+          merchantId: input.merchantId,
+          creditCode,
+          publisherUserId: input.publisherUserId,
+          reason: input.reason,
+          allowedCreditCodes: await getPlatformInventoryCreditScope(ctx),
+          actor: auditActorFromContext(ctx),
+        });
+      }),
     /** 选中导出：服务端重新按销售范围读取，CSV 不包含手机号。 */
     exportSelected: merchantReadProcedure
       .input(z.object({

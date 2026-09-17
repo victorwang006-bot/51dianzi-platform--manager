@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -32,6 +39,7 @@ import { trpc } from "@/lib/trpc";
 import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
 import {
   ArrowDownToLine,
+  ChevronDown,
   CloudOff,
   Download,
   ImageIcon,
@@ -136,7 +144,7 @@ function downloadCsv(csv: string, fileName: string) {
 }
 
 /** 商户详情中的前台物料库存。所有写操作仍由服务端按销售范围复核。 */
-export default function MerchantMaterialPanel({ creditCode }: { creditCode: string }) {
+export default function MerchantMaterialPanel({ merchantId, creditCode }: { merchantId: number; creditCode: string }) {
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [status, setStatus] = useState<"published" | "draft" | "offshelf" | "all">("published");
@@ -145,6 +153,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const [offshelfTarget, setOffshelfTarget] = useState<{ id: number; partNumber: string } | null>(null);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [publisherDialogOpen, setPublisherDialogOpen] = useState(false);
   const [offshelfReason, setOffshelfReason] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const pageSize = 10;
@@ -181,6 +190,22 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
     mutateAsync: (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
     isPending: boolean;
   };
+  const publisherPreviewQuery = platformMaterialApi.publisherOffshelfPreview.useQuery(
+    {
+      merchantId,
+      publisherUserId: publisherId === "all" ? 1 : Number(publisherId),
+    },
+    { enabled: publisherDialogOpen && publisherId !== "all", retry: false },
+  ) as {
+    data?: { publisherUserId: number; publisherName: string | null; publishedCount: number };
+    isLoading: boolean;
+    isError: boolean;
+    error?: { message?: string };
+  };
+  const publisherOffshelfMutation = platformMaterialApi.bulkOffshelfByPublisher.useMutation() as {
+    mutateAsync: (input: Record<string, unknown>) => Promise<{ affected?: number }>;
+    isPending: boolean;
+  };
   const data = listQuery.data;
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -191,6 +216,7 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
   const allPageSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length;
   const somePageSelected = selectedOnPage.length > 0 && !allPageSelected;
   const selectedCount = selectedIds.size;
+  const selectedPublisher = publishers.find(publisher => publisher.id === publisherId) ?? null;
 
   const clearSelection = () => setSelectedIds(new Set());
   const resetPageAndSelection = () => {
@@ -266,6 +292,28 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
     }
   };
 
+  const bulkOffshelfPublisher = async () => {
+    const reason = offshelfReason.trim();
+    if (!reason) return toast.error("请填写统一下架原因");
+    if (publisherId === "all" || publisherOffshelfMutation.isPending) return;
+    try {
+      const result = await publisherOffshelfMutation.mutateAsync({
+        merchantId,
+        publisherUserId: Number(publisherId),
+        reason,
+      });
+      setPublisherDialogOpen(false);
+      setOffshelfReason("");
+      clearSelection();
+      await utils.platformMaterial.list.invalidate();
+      toast.success(`已下架 ${Number(result.affected ?? 0)} 条物料`);
+    } catch (error) {
+      toast.error("按发布人批量下架失败", {
+        description: error instanceof Error ? error.message : "请稍后重试",
+      });
+    }
+  };
+
   return (
     <section className="overflow-hidden rounded-lg border bg-white text-[13px]" data-merchant-material-panel>
       <div className="border-b px-4 py-3">
@@ -287,21 +335,32 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
           <SelectContent><SelectItem value="all">全部发布人</SelectItem>{publishers.map(publisher => <SelectItem key={publisher.id} value={publisher.id}>{publisher.label}</SelectItem>)}</SelectContent>
         </Select>
         <Button size="sm" className="h-8 text-xs" onClick={handleSearch} disabled={listQuery.isFetching}>{listQuery.isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "搜索"}</Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8 text-xs" disabled={selectedCount === 0 && publisherId === "all"} data-material-bulk-menu>
+              批量操作 <ChevronDown className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem disabled={selectedCount === 0} variant="destructive" onSelect={() => { setOffshelfReason(""); setBatchDialogOpen(true); }}>
+              <ArrowDownToLine /> 下架选中物料{selectedCount ? `（${selectedCount}条）` : ""}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={publisherId === "all"} variant="destructive" onSelect={() => { setOffshelfReason(""); setPublisherDialogOpen(true); }}>
+              <ArrowDownToLine /> 下架该发布人的全部库存
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={selectedCount === 0 || isExporting} onSelect={() => void exportSelected()}>
+              <Download /> 导出选中物料
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         {keyword ? <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setSearchInput(""); setKeyword(""); resetPageAndSelection(); }}>清除</Button> : null}
       </div>
 
       {selectedCount > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/20 bg-primary/5 px-4 py-2.5" data-material-bulk-actions>
           <span className="text-xs font-medium text-primary">已选择 {selectedCount} 条</span>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" className="h-8 text-xs" disabled={isExporting} onClick={() => void exportSelected()}>
-              {isExporting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />} 导出选中
-            </Button>
-            <Button size="sm" variant="destructive" className="h-8 text-xs" disabled={bulkOffshelfMutation.isPending} onClick={() => { setOffshelfReason(""); setBatchDialogOpen(true); }}>
-              <ArrowDownToLine className="mr-1 h-3.5 w-3.5" /> 批量下架
-            </Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearSelection}>取消选择</Button>
-          </div>
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearSelection}>取消选择</Button>
         </div>
       ) : null}
 
@@ -359,6 +418,28 @@ export default function MerchantMaterialPanel({ creditCode }: { creditCode: stri
           <AlertDialogHeader><AlertDialogTitle>批量下架 {selectedCount} 条物料？</AlertDialogTitle><AlertDialogDescription>将对所有选中物料使用同一原因。已不是发布状态或不在当前商户范围内的物料会失败，失败项将保留勾选。</AlertDialogDescription></AlertDialogHeader>
           <div className="space-y-1.5"><label className="text-sm font-medium">统一下架原因 <span className="text-red-600">*</span></label><Textarea autoFocus value={offshelfReason} onChange={event => setOffshelfReason(event.target.value)} maxLength={255} rows={3} placeholder="请填写将展示给商户的下架原因" /></div>
           <AlertDialogFooter><AlertDialogCancel disabled={bulkOffshelfMutation.isPending}>取消</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" disabled={bulkOffshelfMutation.isPending || !offshelfReason.trim()} onClick={event => { event.preventDefault(); void bulkOffshelf(); }}>{bulkOffshelfMutation.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}确认批量下架</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={publisherDialogOpen} onOpenChange={open => { if (!publisherOffshelfMutation.isPending) { setPublisherDialogOpen(open); if (!open) setOffshelfReason(""); } }}>
+        <AlertDialogContent data-publisher-bulk-offshelf-dialog>
+          <AlertDialogHeader>
+            <AlertDialogTitle>下架该发布人的全部库存？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {publisherPreviewQuery.isLoading
+                ? "正在核对该发布人的已发布库存…"
+                : publisherPreviewQuery.isError
+                  ? `无法读取库存数量：${publisherPreviewQuery.error?.message || "请稍后重试"}`
+                  : <>即将下架 <span className="font-medium text-foreground">{selectedPublisher?.label || `用户 ${publisherId}`}</span> 在当前商户下的 <span className="font-medium text-foreground">{publisherPreviewQuery.data?.publishedCount ?? 0}</span> 条已发布库存。已下架、草稿和其他用户库存不受影响。</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5"><label className="text-sm font-medium">统一下架原因 <span className="text-red-600">*</span></label><Textarea autoFocus value={offshelfReason} onChange={event => setOffshelfReason(event.target.value)} maxLength={255} rows={3} placeholder="请填写将展示给商户的下架原因" /></div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publisherOffshelfMutation.isPending}>取消</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" disabled={publisherOffshelfMutation.isPending || publisherPreviewQuery.isLoading || publisherPreviewQuery.isError || !publisherPreviewQuery.data?.publishedCount || !offshelfReason.trim()} onClick={event => { event.preventDefault(); void bulkOffshelfPublisher(); }}>
+              {publisherOffshelfMutation.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}确认全部下架
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </section>

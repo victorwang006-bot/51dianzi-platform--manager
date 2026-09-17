@@ -4182,6 +4182,133 @@ export async function offshelfPlatformInventory(
   return { success: true as const };
 }
 
+function assertPublisherBulkScope(creditCode: string, allowedCreditCodes?: string[]) {
+  const normalizedCreditCode = normalizeCreditCode(creditCode);
+  if (!normalizedCreditCode) throw new Error("商户统一社会信用代码无效");
+  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
+  if (normalizedAllowedCreditCodes !== undefined && !normalizedAllowedCreditCodes.includes(normalizedCreditCode)) {
+    throw new Error("商户不存在或不在您负责的范围内");
+  }
+  return normalizedCreditCode;
+}
+
+/** 预览指定商户、指定发布人的全部已发布物料数量，不受当前分页和关键词影响。 */
+export async function getPublisherPublishedInventoryCount(input: {
+  creditCode: string;
+  publisherUserId: number;
+  allowedCreditCodes?: string[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const normalizedCreditCode = assertPublisherBulkScope(input.creditCode, input.allowedCreditCodes);
+  try {
+    const rows = (await db.execute(sql`
+      SELECT COUNT(*) AS publishedCount, MAX(u.name) AS publisherName
+      FROM ${sql.raw(PLATFORM_DB)}.inventories i
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+        ON c.enterpriseId = i.enterpriseId
+        OR (i.enterpriseId IS NULL AND c.userId = i.userId)
+      LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
+      WHERE UPPER(REPLACE(c.creditCode, ' ', '')) = ${normalizedCreditCode}
+        AND i.userId = ${input.publisherUserId}
+        AND i.status = 'published'
+    `)) as unknown as [[{ publishedCount: number; publisherName: string | null }], unknown];
+    const row = rows[0]?.[0];
+    return {
+      publisherUserId: input.publisherUserId,
+      publisherName: row?.publisherName ?? null,
+      publishedCount: Number(row?.publishedCount ?? 0),
+    };
+  } catch (error) {
+    console.error("[Database] 查询发布人已发布物料数量失败:", (error as Error).message);
+    throw new Error("无法读取该发布人的库存数量");
+  }
+}
+
+/**
+ * 下架指定商户中某发布人的全部已发布物料。选择、更新和商户级审计处于同一事务；
+ * 不接收浏览器传入的物料 ID，因此不会受到分页、关键词或过期勾选状态影响。
+ */
+export async function bulkOffshelfPublisherInventories(input: {
+  merchantId: number;
+  creditCode: string;
+  publisherUserId: number;
+  reason: string;
+  allowedCreditCodes?: string[];
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (!Number.isSafeInteger(input.publisherUserId) || input.publisherUserId <= 0) {
+    throw new Error("发布人无效");
+  }
+  const normalizedReason = input.reason.trim();
+  if (!normalizedReason || normalizedReason.length > 255) throw new Error("下架原因无效");
+  const normalizedCreditCode = assertPublisherBulkScope(input.creditCode, input.allowedCreditCodes);
+  try {
+    return await db.transaction(async tx => {
+      const lockedRows = (await tx.execute(sql`
+        SELECT i.id, u.name AS publisherName
+        FROM ${sql.raw(PLATFORM_DB)}.inventories i
+        LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+          ON c.enterpriseId = i.enterpriseId
+          OR (i.enterpriseId IS NULL AND c.userId = i.userId)
+        LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
+        WHERE UPPER(REPLACE(c.creditCode, ' ', '')) = ${normalizedCreditCode}
+          AND i.userId = ${input.publisherUserId}
+          AND i.status = 'published'
+        ORDER BY i.id ASC
+        FOR UPDATE
+      `)) as unknown as [[{ id: number; publisherName: string | null }], unknown];
+      const ids = (lockedRows[0] ?? []).map(row => Number(row.id));
+      const publisherName = lockedRows[0]?.[0]?.publisherName ?? null;
+      if (ids.length === 0) {
+        return { success: true as const, publisherUserId: input.publisherUserId, publisherName, affected: 0 };
+      }
+      const updated = (await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.inventories i
+        LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
+          ON c.enterpriseId = i.enterpriseId
+          OR (i.enterpriseId IS NULL AND c.userId = i.userId)
+        SET i.status = 'offshelf', i.publishedAt = NULL,
+            i.offshelfBy = 'admin', i.offshelfReason = ${normalizedReason}
+        WHERE UPPER(REPLACE(c.creditCode, ' ', '')) = ${normalizedCreditCode}
+          AND i.userId = ${input.publisherUserId}
+          AND i.status = 'published'
+      `)) as unknown as [{ affectedRows?: number }, unknown];
+      const affected = Number(updated[0]?.affectedRows ?? 0);
+      if (affected !== ids.length) throw new Error("发布人库存状态已变化，请刷新后重试");
+      await tx.insert(auditLogs).values({
+        operatorId: input.actor?.operatorId ?? null,
+        operatorName: input.actor?.operatorName ?? "system",
+        operatorRole: input.actor?.operatorRole ?? "system",
+        action: "platform_material.publisher_bulk_offshelf",
+        module: "merchants",
+        targetType: "merchant",
+        targetId: String(input.merchantId),
+        beforeValue: {
+          status: "published",
+          publisherUserId: input.publisherUserId,
+          publisherName,
+          creditCode: normalizedCreditCode,
+          inventoryCount: ids.length,
+        },
+        afterValue: { status: "offshelf", offshelfBy: "admin", affected },
+        ipAddress: input.actor?.ipAddress ?? null,
+        userAgent: input.actor?.userAgent ?? null,
+        result: "success",
+        note: normalizedReason,
+      });
+      return { success: true as const, publisherUserId: input.publisherUserId, publisherName, affected };
+    });
+  } catch (error) {
+    const message = (error as Error).message || "";
+    if (message.includes("范围内") || message.includes("状态已变化")) throw error;
+    console.error("[Database] 按发布人批量下架前台物料失败:", message);
+    throw new Error("批量下架失败：无法访问前台数据库或写入审计日志");
+  }
+}
+
 type PlatformInventoryExportRow = Pick<PlatformInventoryRow,
   "id" | "userId" | "partNumber" | "brand" | "category" | "pkg" | "qtyOnSale"
   | "priceEx" | "priceIncl" | "status" | "publishedAt" | "createdAt" | "companyName"

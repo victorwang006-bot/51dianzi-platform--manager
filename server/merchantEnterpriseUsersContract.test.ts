@@ -63,10 +63,12 @@ describe("商户详情企业用户管理", () => {
     expect(router).toContain("setPlatformEnterpriseLoginDisabled");
   });
 
-  it("企业用户抽屉保护所有者并仅调用 merchant scoped 登录接口", () => {
+  it("企业用户抽屉保护所有者企业权限，并允许超级管理员独立管控其网站登录", () => {
     expect(panel).toContain("data-owner-protection");
     expect(panel).toContain("managedMember.isOwner");
-    expect(panel).toContain("企业所有者拥有全部权限和全企业业务范围");
+    expect(panel).toContain("企业所有者的权限、业务范围和成员状态不可修改");
+    expect(panel).toContain("canOverrideOwnerLogin");
+    expect(panel).toContain("canControlManagedLogin");
     expect(panel).toContain("merchantApi.setEnterpriseMemberLoginDisabled.useMutation()");
     expect(panel).toContain("const disabled = !managedMember.loginDisabled");
     expect(panel).toContain("disabled,");
@@ -74,6 +76,12 @@ describe("商户详情企业用户管理", () => {
     expect(panel).toContain("禁用网站登录");
     expect(panel).not.toContain("trpc.frontendUser");
     expect(panel).not.toContain("platformUser");
+  });
+
+  it("商户详情按后台权限返回登录控制和所有者处罚能力", () => {
+    expect(router).toContain("canManageLogin");
+    expect(router).toContain('hasAdminPermission(role, "portalUsers.manage"');
+    expect(router).toContain("canOverrideOwnerLogin: canManageLogin && role === \"super_admin\"");
   });
 
   it("权限键与主站现行六项 ERP 权限一致", () => {

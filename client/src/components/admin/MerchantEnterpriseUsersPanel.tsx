@@ -135,9 +135,13 @@ function PermissionSummary({ member }: { member: EnterpriseMember }) {
 export default function MerchantEnterpriseUsersPanel({
   merchantId,
   canManage,
+  canManageLogin,
+  canOverrideOwnerLogin,
 }: {
   merchantId: number;
   canManage: boolean;
+  canManageLogin: boolean;
+  canOverrideOwnerLogin: boolean;
 }) {
   const utils = trpc.useUtils();
   const [status, setStatus] = useState<MemberFilter>("all");
@@ -184,6 +188,10 @@ export default function MerchantEnterpriseUsersPanel({
   );
   const busy = submitting || permissionMutation.isPending || scopeMutation.isPending
     || statusMutation.isPending || loginMutation.isPending;
+  const canEditManagedEnterprise = Boolean(managedMember) && !managedMember?.isOwner && canManage;
+  const canControlManagedLogin = Boolean(managedMember)
+    && canManageLogin
+    && (!managedMember?.isOwner || canOverrideOwnerLogin);
 
   const refresh = async () => {
     await (utils.merchant as unknown as Record<string, any>).enterpriseMembers.invalidate();
@@ -282,7 +290,7 @@ export default function MerchantEnterpriseUsersPanel({
   };
 
   const toggleWebsiteLogin = async () => {
-    if (!managedMember || managedMember.isOwner || busy) return;
+    if (!managedMember || !canControlManagedLogin || busy) return;
     const normalizedReason = requireReason();
     if (!normalizedReason) return;
     const disabled = !managedMember.loginDisabled;
@@ -417,7 +425,7 @@ export default function MerchantEnterpriseUsersPanel({
               {managedMember.isOwner ? (
                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900" data-owner-protection>
                   <div className="flex items-center gap-2 font-medium"><ShieldAlert className="h-4 w-4" /> 所有者保护</div>
-                  <p className="mt-1 text-xs leading-5">企业所有者拥有全部权限和全企业业务范围，本页仅可查看，不能暂停或修改。</p>
+                  <p className="mt-1 text-xs leading-5">企业所有者的权限、业务范围和成员状态不可修改；平台超级管理员仍可独立管控网站登录。</p>
                 </div>
               ) : !canManage ? (
                 <div className="rounded-md border bg-muted/30 p-3 text-muted-foreground">
@@ -463,7 +471,7 @@ export default function MerchantEnterpriseUsersPanel({
 
               <section className="space-y-1.5">
                 <Label htmlFor="merchant-member-reason" className="text-[13px]">操作原因 <span className="text-red-600">*</span></Label>
-                <Textarea id="merchant-member-reason" rows={3} maxLength={500} value={reason} onChange={event => setReason(event.target.value)} disabled={managedMember.isOwner || !canManage || busy} placeholder="请填写本次权限、范围或状态变更原因" />
+                <Textarea id="merchant-member-reason" rows={3} maxLength={500} value={reason} onChange={event => setReason(event.target.value)} disabled={(!canEditManagedEnterprise && !canControlManagedLogin) || busy} placeholder="请填写本次权限、范围或登录状态变更原因" />
               </section>
 
               <section className="rounded-md border bg-muted/20 p-3">
@@ -472,7 +480,7 @@ export default function MerchantEnterpriseUsersPanel({
                     <h3 className="font-medium">网站登录状态：{loginStatusLabel(managedMember.loginDisabled)}</h3>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">此操作影响整站登录；企业成员暂停仅影响企业身份，两者相互独立。</p>
                   </div>
-                  {!managedMember.isOwner && canManage ? (
+                  {canControlManagedLogin ? (
                     <Button type="button" variant="outline" className="h-8 text-xs" disabled={busy || !reason.trim()} onClick={() => void toggleWebsiteLogin()}>
                       {loginMutation.isPending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
                       {managedMember.loginDisabled ? "恢复网站登录" : "禁用网站登录"}
