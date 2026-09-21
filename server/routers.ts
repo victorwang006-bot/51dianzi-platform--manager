@@ -162,6 +162,14 @@ const portalUserReadProcedure = adminPermissionProcedure("portalUsers.read");
 const portalUserManageProcedure = adminPermissionProcedure("portalUsers.manage");
 const messageReadProcedure = adminPermissionProcedure("messages.read");
 const messageWriteProcedure = adminPermissionProcedure("messages.write");
+/** 开户消息内查询客户归属时，同时要求消息读取和商户读取权限。 */
+const messageMerchantReadProcedure = messageReadProcedure.use(({ ctx, next }) => {
+  const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+  if (!hasAdminPermission(role, "merchants.read", ctx.adminPermissions)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权查询客户归属" });
+  }
+  return next({ ctx });
+});
 const orderReadProcedure = adminPermissionProcedure("orders.read");
 const analyticsReadProcedure = adminPermissionProcedure("analytics.read");
 const adminManageProcedure = adminPermissionProcedure("admins.manage");
@@ -2237,6 +2245,36 @@ export const appRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在" });
         }
         return result;
+      }),
+
+    /** 仅按当前开户消息内的用户ID和手机号查询归属，不接受客户端自报身份字段。 */
+    ownershipSearch: messageMerchantReadProcedure
+      .input(z.object({ threadId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        try {
+          return await db.searchMerchantOwnership({
+            messageThreadId: input.threadId,
+            adminUserId: ctx.adminAccount?.id ?? ctx.user.id,
+            localAdminUserId: ctx.adminAccount?.id,
+            salesStaffCodes: await getAdminSalesStaffCodes(ctx),
+            ipAddress: auditActorFromContext(ctx).ipAddress,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "OWNERSHIP_QUERY_RATE_LIMITED") {
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "查询过于频繁，请稍后再试" });
+          }
+          if (message === "OWNERSHIP_MESSAGE_THREAD_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在" });
+          }
+          if (message === "OWNERSHIP_LOOKUP_REQUIRES_ONBOARDING_THREAD") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "仅开通消息支持客户归属查询" });
+          }
+          if (message === "OWNERSHIP_MESSAGE_HAS_NO_LOOKUP_EVIDENCE") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "当前消息缺少用户ID和手机号，无法查询归属" });
+          }
+          throw error;
+        }
       }),
 
     /** 回复会话 */

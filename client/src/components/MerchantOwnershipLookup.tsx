@@ -59,11 +59,17 @@ export default function MerchantOwnershipLookup({
   onOpenChange,
   isSuperAdmin,
   onOpenMerchant,
+  initialQuery = "",
+  messageThreadId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isSuperAdmin: boolean;
   onOpenMerchant: (merchantId: number) => void;
+  /** 消息详情等入口可预填手机号；打开后直接查询，无需再次输入。 */
+  initialQuery?: string;
+  /** 仅消息详情传入；服务端据此读取并校验开通消息中的用户ID和手机号。 */
+  messageThreadId?: number;
 }) {
   const utils = trpc.useUtils();
   const [tab, setTab] = useState<LookupTab>("lookup");
@@ -78,20 +84,38 @@ export default function MerchantOwnershipLookup({
   const [requestReason, setRequestReason] = useState("");
   const [reviewTargetId, setReviewTargetId] = useState<number | null>(null);
   const [reviewNote, setReviewNote] = useState("");
+  const [useMessageThreadEvidence, setUseMessageThreadEvidence] = useState(false);
+  const automaticQuery = useMemo(() => {
+    const normalized = initialQuery.trim();
+    return normalized.length >= 2 ? normalized : "";
+  }, [initialQuery]);
 
   useEffect(() => {
+    if (open) {
+      setTab("lookup");
+      setDraft(automaticQuery);
+      setQuery(automaticQuery);
+      setUseMessageThreadEvidence(messageThreadId !== undefined);
+      setRequestTarget(null);
+      return;
+    }
     if (!open) {
       setRequestTarget(null);
       setRequestReason("");
       setReviewTargetId(null);
       setReviewNote("");
     }
-  }, [open]);
+  }, [automaticQuery, messageThreadId, open]);
 
-  const searchQuery = trpc.merchant.ownershipSearch.useQuery(
+  const regularSearchQuery = trpc.merchant.ownershipSearch.useQuery(
     { query },
-    { enabled: open && tab === "lookup" && query.length >= 2, retry: false },
+    { enabled: open && tab === "lookup" && query.length >= 2 && !useMessageThreadEvidence, retry: false },
   );
+  const messageSearchQuery = trpc.message.ownershipSearch.useQuery(
+    { threadId: messageThreadId ?? 0 },
+    { enabled: open && tab === "lookup" && messageThreadId !== undefined && useMessageThreadEvidence, retry: false },
+  );
+  const searchQuery = useMessageThreadEvidence ? messageSearchQuery : regularSearchQuery;
   const myRequests = trpc.merchant.myOwnershipRequests.useQuery(undefined, {
     enabled: open && tab === "mine",
   });
@@ -130,6 +154,7 @@ export default function MerchantOwnershipLookup({
       toast.error("请至少输入 2 个字符");
       return;
     }
+    setUseMessageThreadEvidence(false);
     setQuery(normalized);
     setRequestTarget(null);
   };

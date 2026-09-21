@@ -31,7 +31,7 @@ describe("商户客户归属查询与申请审批", () => {
     expect(search).toContain("eq(users.id, input.adminUserId)");
     expect(search).toContain('.for("update")');
     expect(router).toContain("localAdminUserId: ctx.adminAccount?.id");
-    expect(search).toContain('createHash("sha256").update(compact).digest("hex")');
+    expect(search).toContain('input.messageThreadId !== undefined ? `thread:${input.messageThreadId}:${portalUserId ?? ""}:${compact}` : compact');
     expect(search).toContain("merchantOwnershipQueryAudits");
     expect(search).toContain("companyName: row.companyName");
     expect(search).toContain("ownerName: row.salesOwner");
@@ -49,6 +49,19 @@ describe("商户客户归属查询与申请审批", () => {
     expect(db).toContain('value.replace(/[!%_]/g, match => `!${match}`)');
     expect(search).toContain("eq(merchants.contactPhone, compact)");
     expect(search).toContain(".limit(10)");
+  });
+
+  it("消息中心由服务端绑定开户线程，按用户ID优先并以手机号精确回退", () => {
+    const search = section(db, "export async function searchMerchantOwnership", "export async function createMerchantOwnershipRequest");
+    expect(router).toContain("ownershipSearch: messageMerchantReadProcedure");
+    expect(router).toContain("messageThreadId: input.threadId");
+    expect(router).toContain('hasAdminPermission(role, "merchants.read", ctx.adminPermissions)');
+    expect(search).toContain("messageThreadId?: number");
+    expect(search).toContain("resolvePortalMessageThreadType(thread) !== \"onboarding\"");
+    expect(search).toContain("eq(merchants.crmOwnerPortalUserId, portalUserId)");
+    expect(search).toContain("if (rows.length === 0 && messagePhone)");
+    expect(search).toContain("eq(merchants.contactPhone, compact)");
+    expect(search).not.toContain("portalUserId?: string;");
   });
 
   it("认领、协作和转交均先申请，只有超级管理员可审批", () => {

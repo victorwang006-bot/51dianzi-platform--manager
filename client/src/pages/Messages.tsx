@@ -5,6 +5,7 @@ import {
   type BomInquiryMessage,
 } from "@/lib/bomInquiryMessage";
 import DashboardLayout from "@/components/DashboardLayout";
+import MerchantOwnershipLookup from "@/components/MerchantOwnershipLookup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,9 +16,12 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Bird, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, ShieldAlert, User,
+  ArrowLeft, Bird, Building2, CheckCircle2, Download, Mail, MessageSquare, Phone, RotateCcw, Search, Send, ShieldAlert, ShieldCheck, User,
 } from "lucide-react";
 import { formatBeijingDateTime } from "@shared/beijingTime";
+import { hasAdminPermission, type AdminRole } from "@shared/adminPermissions";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
 
 // 消息时间必须固定北京时间：客服与客户需要共同的时间基准，
 // 若按访问者电脑的时区渲染，会出现回复时间与提问时间对不上的情形。
@@ -328,6 +332,9 @@ export default function Messages() {
 
 function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => void }) {
   const [replyContent, setReplyContent] = useState("");
+  const [ownershipLookupOpen, setOwnershipLookupOpen] = useState(false);
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
   const { data, isLoading } = trpc.message.detail.useQuery(
@@ -357,6 +364,11 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
   const thread = data?.thread;
   const threadType = (thread as { threadType?: string } | undefined)?.threadType;
   const isComplaint = threadType === "complaint";
+  const isOnboarding = threadType === "onboarding";
+  const role = user?.adminRole as AdminRole | undefined;
+  const permissions = (user as { permissions?: string[] } | null)?.permissions;
+  const canReadMerchants = Boolean(user && hasAdminPermission(role, "merchants.read", permissions));
+  const isSuperAdmin = role === "super_admin";
   const complaint = (thread as { complaintContext?: ComplaintDetail | null } | undefined)?.complaintContext ?? null;
   const companyProfile = (thread as { companyProfile?: CompanyProfileSnapshot | null } | undefined)?.companyProfile ?? null;
   const hasCompanyProfile = !!companyProfile && Object.values(companyProfile).some(v => v != null && v !== "");
@@ -420,12 +432,24 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
                 <span className="text-muted-foreground shrink-0">联系人</span>
                 <span className="font-medium">{thread.contactName || "—"}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground shrink-0">电话</span>
                 {thread.contactPhone ? (
                   <a href={`tel:${thread.contactPhone}`} className="font-medium text-primary hover:underline">{thread.contactPhone}</a>
                 ) : <span>—</span>}
+                {isOnboarding && canReadMerchants && (thread.contactPhone || thread.portalUserId) && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="ml-1 h-8 bg-background"
+                    onClick={() => setOwnershipLookupOpen(true)}
+                  >
+                    <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                    客户归属查询
+                  </Button>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -485,6 +509,17 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
               </>
             )}
           </div>
+
+          {isOnboarding && canReadMerchants && (
+            <MerchantOwnershipLookup
+              open={ownershipLookupOpen}
+              onOpenChange={setOwnershipLookupOpen}
+              isSuperAdmin={isSuperAdmin}
+              initialQuery={thread.contactPhone || thread.portalUserId || ""}
+              messageThreadId={threadId}
+              onOpenMerchant={merchantId => navigate(`/merchants/${merchantId}`)}
+            />
+          )}
 
           {isComplaint && complaint ? (
             <div className="rounded-lg border border-red-200 bg-red-50/40 p-4">

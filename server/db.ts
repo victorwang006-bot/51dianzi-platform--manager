@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   adminModuleNotificationCursors,
@@ -820,7 +820,8 @@ function escapeLike(value: string) {
  * 不返回客户电话、邮箱、营业执照或经营资料，避免借查询枚举客户库。
  */
 export async function searchMerchantOwnership(input: {
-  query: string;
+  query?: string;
+  messageThreadId?: number;
   adminUserId: number;
   localAdminUserId?: number;
   salesStaffCodes?: string[];
@@ -847,7 +848,34 @@ export async function searchMerchantOwnership(input: {
       if (!rateLimitUser) throw new Error("OWNERSHIP_QUERY_USER_NOT_FOUND");
     }
 
-  const query = input.query.trim();
+  let portalUserId: string | null = null;
+  let messagePhone: string | null = null;
+  if (input.messageThreadId !== undefined) {
+    const [thread] = await tx
+      .select({
+        threadType: messageThreads.threadType,
+        subject: messageThreads.subject,
+        portalUserId: messageThreads.portalUserId,
+        contactPhone: messageThreads.contactPhone,
+      })
+      .from(messageThreads)
+      .where(eq(messageThreads.id, input.messageThreadId))
+      .limit(1);
+    if (!thread) throw new Error("OWNERSHIP_MESSAGE_THREAD_NOT_FOUND");
+    if (resolvePortalMessageThreadType(thread) !== "onboarding") {
+      throw new Error("OWNERSHIP_LOOKUP_REQUIRES_ONBOARDING_THREAD");
+    }
+    portalUserId = normalizePortalUserId(thread.portalUserId);
+    messagePhone = thread.contactPhone?.trim() || null;
+    if (!portalUserId && !messagePhone) {
+      throw new Error("OWNERSHIP_MESSAGE_HAS_NO_LOOKUP_EVIDENCE");
+    }
+  }
+
+  const query = messagePhone ?? input.query?.trim() ?? portalUserId ?? "";
+  if (input.messageThreadId === undefined && query.length < 2) {
+    throw new Error("OWNERSHIP_QUERY_TOO_SHORT");
+  }
   const compact = query.replace(/\s+/g, "").toUpperCase();
   const now = new Date();
   const minuteAgo = new Date(now.getTime() - 60_000);
@@ -866,57 +894,72 @@ export async function searchMerchantOwnership(input: {
     throw new Error("OWNERSHIP_QUERY_RATE_LIMITED");
   }
 
-  const kind = ownershipQueryKind(query);
+  const kind = input.messageThreadId !== undefined ? "message_thread" : ownershipQueryKind(query);
   const pattern = `%${escapeLike(query)}%`;
   const compactPattern = `%${escapeLike(compact)}%`;
-  const conditions = kind === "merchant_no"
+  const queryKind = ownershipQueryKind(query);
+  const queryConditions = queryKind === "merchant_no"
     ? [eq(merchants.merchantNo, compact)]
-    : kind === "credit_code"
+    : queryKind === "credit_code"
       ? [sql`UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact}`]
-      : kind === "phone"
+      : queryKind === "phone"
         ? [eq(merchants.contactPhone, compact)]
         : [
             sql`${merchants.companyName} LIKE ${pattern} ESCAPE '!'`,
             sql`${merchants.contactName} LIKE ${pattern} ESCAPE '!'`,
             sql`${merchants.merchantNo} LIKE ${compactPattern} ESCAPE '!'`,
           ];
+  const matchPriority = sql`CASE
+    WHEN ${merchants.merchantNo} = ${compact} THEN 0
+    WHEN UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact} THEN 0
+    WHEN ${merchants.contactPhone} = ${compact} THEN 0
+    WHEN ${merchants.companyName} = ${query} THEN 1
+    ELSE 2
+  END`;
   const scopeExpression = input.salesStaffCodes === undefined
     ? sql<number>`1`
     : input.salesStaffCodes.length === 0
       ? sql<number>`0`
       : sql<number>`CASE WHEN ${merchantReadScopeCondition(input.salesStaffCodes)} THEN 1 ELSE 0 END`;
 
-  const rows = await tx
-    .select({
-      id: merchants.id,
-      companyName: merchants.companyName,
-      status: merchants.status,
-      salesOwner: merchants.salesOwner,
-      salesOwnerCode: merchants.salesOwnerCode,
-      updatedAt: merchants.updatedAt,
-      ownerEmail: adminUsers.email,
-      ownerPhone: adminUsers.phone,
-      inScope: scopeExpression,
-    })
-    .from(merchants)
-    .leftJoin(salesStaff, eq(salesStaff.staffCode, merchants.salesOwnerCode))
-    .leftJoin(adminUsers, eq(adminUsers.id, salesStaff.adminUserId))
-    .where(or(...conditions))
-    .orderBy(
-      sql`CASE
-        WHEN ${merchants.merchantNo} = ${compact} THEN 0
-        WHEN UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact} THEN 0
-        WHEN ${merchants.contactPhone} = ${compact} THEN 0
-        WHEN ${merchants.companyName} = ${query} THEN 1
-        ELSE 2
-      END`,
-      desc(merchants.updatedAt),
-    )
-    .limit(10);
+  const selectRows = (condition: SQL<unknown>, priority: SQL<unknown>) => tx
+      .select({
+        id: merchants.id,
+        companyName: merchants.companyName,
+        status: merchants.status,
+        salesOwner: merchants.salesOwner,
+        salesOwnerCode: merchants.salesOwnerCode,
+        updatedAt: merchants.updatedAt,
+        ownerEmail: adminUsers.email,
+        ownerPhone: adminUsers.phone,
+        inScope: scopeExpression,
+      })
+      .from(merchants)
+      .leftJoin(salesStaff, eq(salesStaff.staffCode, merchants.salesOwnerCode))
+      .leftJoin(adminUsers, eq(adminUsers.id, salesStaff.adminUserId))
+      .where(condition)
+      .orderBy(priority, desc(merchants.updatedAt))
+      .limit(10);
+
+  let rows;
+  if (input.messageThreadId !== undefined) {
+    rows = portalUserId
+      ? await selectRows(eq(merchants.crmOwnerPortalUserId, portalUserId), sql`0`)
+      : [];
+    if (rows.length === 0 && messagePhone) {
+      rows = await selectRows(eq(merchants.contactPhone, compact), sql`0`);
+    }
+  } else {
+    const condition = or(...queryConditions);
+    if (!condition) throw new Error("OWNERSHIP_QUERY_TOO_SHORT");
+    rows = await selectRows(condition, matchPriority);
+  }
 
   await tx.insert(merchantOwnershipQueryAudits).values({
     adminUserId: input.adminUserId,
-    queryHash: createHash("sha256").update(compact).digest("hex"),
+    queryHash: createHash("sha256")
+      .update(input.messageThreadId !== undefined ? `thread:${input.messageThreadId}:${portalUserId ?? ""}:${compact}` : compact)
+      .digest("hex"),
     queryKind: kind,
     resultCount: rows.length,
     ipAddress: input.ipAddress ?? null,
