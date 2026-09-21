@@ -72,6 +72,7 @@ describe("商户营业执照安全访问", () => {
     expect(migration).toContain("ADD COLUMN `licenseObjectKey` varchar(512) NULL");
     expect(migration).toContain("CAST(c.userId AS CHAR) = m.crmOwnerPortalUserId");
     expect(migration).toContain("c.licenseObjectKey");
+    expect(migration).toContain("m.licenseObjectKey <> c.licenseObjectKey");
     expect(migration).toContain("m.licenseImageUrl = NULL");
     expect(migration).toContain("HAVING COUNT(*) = 1");
     expect(migration).toContain("SUM(CASE WHEN licenseObjectKey IS NOT NULL");

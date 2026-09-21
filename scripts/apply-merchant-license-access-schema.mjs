@@ -82,7 +82,11 @@ try {
            m.licenseImageUrl = NULL
      WHERE c.licenseObjectKey IS NOT NULL
        AND TRIM(c.licenseObjectKey) <> ''
-       AND (m.licenseObjectKey IS NULL OR TRIM(m.licenseObjectKey) = '')
+       AND (
+         m.licenseObjectKey IS NULL
+         OR TRIM(m.licenseObjectKey) = ''
+         OR m.licenseObjectKey <> c.licenseObjectKey
+       )
   `);
 
   const [unboundResult] = await connection.query(`
