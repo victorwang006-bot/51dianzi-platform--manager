@@ -14,7 +14,7 @@ const database = read("server/db.ts");
 describe("商户详情简洁标签页布局", () => {
   it("使用紧凑摘要、统计条和五个固定标签，默认物料库存", () => {
     expect(detail).toContain('useState<MerchantTab>("materials")');
-    for (const label of ["物料库存", "企业用户", "企业资料", "图片资料", "操作记录"]) {
+    for (const label of ["物料库存", "企业用户", "企业资料", "图片资料", "操作记录", "现货核验"]) {
       expect(detail).toContain(`label: "${label}"`);
     }
     expect(detail).toContain("data-merchant-summary-header");

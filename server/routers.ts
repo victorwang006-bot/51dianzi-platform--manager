@@ -56,6 +56,13 @@ import {
   getPlatformHomepageFeatureStatus,
   setPlatformHomepageFeatured,
 } from "./platformCompanyMediaApi";
+import {
+  approvePlatformSpotVerificationReview,
+  cancelPlatformSpotVerification,
+  listPlatformActiveSpotVerifications,
+  listPlatformSpotVerificationReviews,
+  rejectPlatformSpotVerificationReview,
+} from "./platformSpotVerificationApi";
 import { ERP_PERMISSION_KEYS } from "../shared/erpPermissions";
 import { portalClientMessageIdSchema } from "./portalClientMessageId";
 import { normalizeAdminUsername } from "../shared/adminUsername";
@@ -1252,6 +1259,60 @@ export const appRouter = router({
           actor: auditActorFromContext(ctx),
         });
         return result;
+      }),
+    spotVerificationReviews: merchantReadProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        status: z.enum(["pending", "approved", "rejected", "cancelled", "all"]).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return listPlatformSpotVerificationReviews({ ...binding, status: input.status ?? "pending" });
+      }),
+    activeSpotVerifications: merchantReadProcedure
+      .input(z.object({ merchantId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return listPlatformActiveSpotVerifications(binding);
+      }),
+    approveSpotVerification: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        reviewId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return approvePlatformSpotVerificationReview({
+          ...binding,
+          reviewId: input.reviewId,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+      }),
+    rejectSpotVerification: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        reviewId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return rejectPlatformSpotVerificationReview({
+          ...binding,
+          reviewId: input.reviewId,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+      }),
+    cancelSpotVerification: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        verificationId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return cancelPlatformSpotVerification({
+          ...binding,
+          verificationId: input.verificationId,
+          operator: platformUserOperatorFromContext(ctx),
+        });
       }),
     /** 为销售范围内商户设置首页主图或搜索展示图；两个用途保持独立。 */
     setCompanyWallDisplay: merchantWriteProcedure

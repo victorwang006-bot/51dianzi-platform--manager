@@ -2,6 +2,7 @@ import MerchantCompanyWallPanel from "@/components/admin/MerchantCompanyWallPane
 import MerchantEnterpriseUsersPanel from "@/components/admin/MerchantEnterpriseUsersPanel";
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 import MerchantOperationRecordsPanel from "@/components/admin/MerchantOperationRecordsPanel";
+import MerchantSpotVerificationPanel from "@/components/admin/MerchantSpotVerificationPanel";
 import {
   StatusBadge,
   agreementStatusMap,
@@ -26,6 +27,7 @@ import { trpc } from "@/lib/trpc";
 import { formatBeijingDate } from "@shared/beijingTime";
 import {
   ArrowLeft,
+  BadgeCheck,
   Building2,
   CalendarDays,
   Contact,
@@ -49,7 +51,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 
-type MerchantTab = "materials" | "users" | "company" | "images" | "records";
+type MerchantTab = "materials" | "users" | "company" | "images" | "records" | "spot";
 type HomepageFeatureStatus = {
   featured: boolean;
   eligible: boolean;
@@ -87,6 +89,7 @@ const MERCHANT_TABS: { value: MerchantTab; label: string; icon: React.ComponentT
   { value: "company", label: "企业资料", icon: Building2 },
   { value: "images", label: "图片资料", icon: Images },
   { value: "records", label: "操作记录", icon: History },
+  { value: "spot", label: "现货核验", icon: BadgeCheck },
 ];
 
 function InfoItem({
@@ -501,6 +504,12 @@ export default function MerchantDetail() {
           {visitedTabs.has("records") ? (
             <TabsContent value="records" forceMount className={activeTab === "records" ? "mt-0" : "hidden"}>
               <MerchantOperationRecordsPanel merchantId={merchant.id} />
+            </TabsContent>
+          ) : null}
+
+          {visitedTabs.has("spot") ? (
+            <TabsContent value="spot" forceMount className={activeTab === "spot" ? "mt-0" : "hidden"}>
+              <MerchantSpotVerificationPanel merchantId={merchant.id} canManage={Boolean(merchant.canManage)} />
             </TabsContent>
           ) : null}
         </Tabs>
