@@ -54,6 +54,7 @@ import { useLocation, useRoute } from "wouter";
 type MerchantTab = "materials" | "users" | "company" | "images" | "records" | "spot";
 type HomepageFeatureStatus = {
   featured: boolean;
+  showcased: boolean;
   eligible: boolean;
   approvedPhotoCount: number;
   hasPublishedInventory: boolean;
@@ -79,6 +80,15 @@ type MerchantHomepageFeatureProcedures = {
     }) => {
       isPending: boolean;
       mutate: (input: { merchantId: number; featured: boolean }) => void;
+    };
+  };
+  setHomepageShowcased: {
+    useMutation: (options: {
+      onSuccess: (result: HomepageFeatureStatus) => void;
+      onError: (error: Error) => void;
+    }) => {
+      isPending: boolean;
+      mutate: (input: { merchantId: number; showcased: boolean }) => void;
     };
   };
 };
@@ -143,6 +153,7 @@ export default function MerchantDetail() {
   const [usernameEditing, setUsernameEditing] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
   const [homepageFeatureDialogTarget, setHomepageFeatureDialogTarget] = useState<boolean | null>(null);
+  const [homepageShowcaseDialogTarget, setHomepageShowcaseDialogTarget] = useState<boolean | null>(null);
   const utils = trpc.useUtils();
   const homepageFeatureProcedures = trpc.merchant as unknown as MerchantHomepageFeatureProcedures;
 
@@ -181,6 +192,16 @@ export default function MerchantDetail() {
     },
     onError: error => {
       toast.error(`优质商家状态更新失败：${error.message}`);
+    },
+  });
+  const homepageShowcaseMutation = homepageFeatureProcedures.setHomepageShowcased.useMutation({
+    onSuccess: result => {
+      setHomepageShowcaseDialogTarget(null);
+      toast.success(result.showcased ? "已设为展示商家" : "已取消展示商家");
+      void refetchHomepageFeatureStatus();
+    },
+    onError: error => {
+      toast.error(`展示商家状态更新失败：${error.message}`);
     },
   });
 
@@ -330,6 +351,27 @@ export default function MerchantDetail() {
                     {homepageFeatureStatus.featured ? "取消优质商家" : "设为优质商家"}
                   </Button>
                 ) : null}
+                {homepageFeatureStatus?.showcased ? (
+                  <span
+                    className="rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs text-sky-700"
+                    data-homepage-showcase-status
+                  >
+                    展示商家
+                  </span>
+                ) : null}
+                {merchant.canManage && homepageFeatureStatus ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[11px]"
+                    data-homepage-showcase-toggle
+                    disabled={homepageShowcaseMutation.isPending}
+                    onClick={() => setHomepageShowcaseDialogTarget(!homepageFeatureStatus.showcased)}
+                  >
+                    {homepageFeatureStatus.showcased ? "取消展示商家" : "设为展示商家"}
+                  </Button>
+                ) : null}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                 <span>商户编号 {merchant.merchantNo} · 统一社会信用代码 {merchant.businessLicense || "—"}</span>
@@ -366,6 +408,37 @@ export default function MerchantDetail() {
                 }}
               >
                 {homepageFeatureMutation.isPending ? "处理中…" : "确认"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={homepageShowcaseDialogTarget !== null}
+          onOpenChange={open => {
+            if (!open && !homepageShowcaseMutation.isPending) setHomepageShowcaseDialogTarget(null);
+          }}
+        >
+          <AlertDialogContent data-homepage-showcase-dialog>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{homepageShowcaseDialogTarget ? "设为展示商家？" : "取消展示商家？"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {homepageShowcaseDialogTarget
+                  ? "确认后将在首页「入驻商家」中展示该公司照片。"
+                  : "确认后将不再出现在首页「入驻商家」照片轮播中。"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={homepageShowcaseMutation.isPending}>取消</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={homepageShowcaseMutation.isPending}
+                onClick={event => {
+                  event.preventDefault();
+                  if (homepageShowcaseDialogTarget === null) return;
+                  homepageShowcaseMutation.mutate({ merchantId: id, showcased: homepageShowcaseDialogTarget });
+                }}
+              >
+                {homepageShowcaseMutation.isPending ? "处理中…" : "确认"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -60,6 +60,7 @@ describe("商户首页精选代理", () => {
     expect(set).toContain("return result");
     for (const field of [
       "featured",
+      "showcased",
       "eligible",
       "approvedPhotoCount",
       "hasPublishedInventory",
@@ -77,6 +78,9 @@ describe("商户首页精选代理", () => {
     expect(mediaProxy).toContain("homepageFeatureStatus");
     expect(mediaProxy).toContain("setHomepageFeatured");
     expect(mediaProxy).toContain("raw.split(key).join(\"[REDACTED]\")");
+    expect(mediaProxy).toContain("setHomepageShowcased");
+    expect(mediaProxy).toContain("clearHomepageShowcased");
+    expect(mediaProxy).toContain("setPlatformHomepageShowcased");
   });
 
   it("成功设置或取消后写入商户级不可变审计，action 可区分两种操作", () => {

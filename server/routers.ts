@@ -55,6 +55,7 @@ import {
 import {
   getPlatformHomepageFeatureStatus,
   setPlatformHomepageFeatured,
+  setPlatformHomepageShowcased,
 } from "./platformCompanyMediaApi";
 import {
   approvePlatformSpotVerificationReview,
@@ -1255,6 +1256,26 @@ export const appRouter = router({
         await db.recordMerchantHomepageFeatureAudit({
           merchantId: input.merchantId,
           featured: input.featured,
+          result,
+          actor: auditActorFromContext(ctx),
+        });
+        return result;
+      }),
+    setHomepageShowcased: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        showcased: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const result = await setPlatformHomepageShowcased({
+          ...binding,
+          showcased: input.showcased,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+        await db.recordMerchantHomepageFeatureAudit({
+          merchantId: input.merchantId,
+          featured: input.showcased,
           result,
           actor: auditActorFromContext(ctx),
         });

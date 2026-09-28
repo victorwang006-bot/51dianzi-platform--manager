@@ -53,4 +53,13 @@ describe("商户详情优质商家静态契约", () => {
     expect(source).toContain("void refetchHomepageFeatureStatus()");
     expect(source).toContain('toast.success(result.featured ? "已设为优质商家" : "已取消优质商家")');
   });
+
+  it("在优质商家旁提供独立的展示商家开关，用于首页入驻商家照片", () => {
+    expect(source).toContain('"设为展示商家"');
+    expect(source).toContain('"取消展示商家"');
+    expect(source).toContain("data-homepage-showcase-toggle");
+    expect(source).toContain("data-homepage-showcase-dialog");
+    expect(source).toContain("确认后将在首页「入驻商家」中展示该公司照片。");
+    expect(source).toContain("homepageShowcaseMutation.mutate({ merchantId: id, showcased: homepageShowcaseDialogTarget })");
+  });
 });

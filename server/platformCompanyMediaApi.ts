@@ -11,6 +11,7 @@ export type PlatformCompanyMediaOperator = {
 /** 主站是首页展示资格的唯一权威来源，后台不复制这些规则。 */
 export type PlatformHomepageFeatureStatus = {
   featured: boolean;
+  showcased: boolean;
   eligible: boolean;
   approvedPhotoCount: number;
   hasPublishedInventory: boolean;
@@ -33,7 +34,9 @@ type TrpcEnvelope<T> = {
 type PlatformCompanyMediaProcedure =
   | "homepageFeatureStatus"
   | "setHomepageFeatured"
-  | "clearHomepageFeatured";
+  | "clearHomepageFeatured"
+  | "setHomepageShowcased"
+  | "clearHomepageShowcased";
 
 function getConfig() {
   const baseUrl = process.env.PLATFORM_API_BASE?.trim()
@@ -109,6 +112,7 @@ function normalizeHomepageFeatureStatus(value: unknown): PlatformHomepageFeature
   }
   const status = value as Record<string, unknown>;
   if (typeof status.featured !== "boolean"
+    || typeof status.showcased !== "boolean"
     || typeof status.eligible !== "boolean"
     || !Number.isSafeInteger(status.approvedPhotoCount)
     || (status.approvedPhotoCount as number) < 0
@@ -119,6 +123,7 @@ function normalizeHomepageFeatureStatus(value: unknown): PlatformHomepageFeature
   }
   return {
     featured: status.featured,
+    showcased: status.showcased,
     eligible: status.eligible,
     approvedPhotoCount: Number(status.approvedPhotoCount),
     hasPublishedInventory: status.hasPublishedInventory,
@@ -143,6 +148,21 @@ export function setPlatformHomepageFeatured(input: PlatformCompanyMediaBinding &
     expectedOwnerUserId: input.expectedOwnerUserId,
     reason: input.featured ? "后台设置为优质商家" : "后台取消优质商家",
     requestId: `homepage-feature:${randomUUID()}`,
+  };
+  return callPlatformCompanyMedia<unknown>(procedure, mutationInput, "POST", input.operator)
+    .then(normalizeHomepageFeatureStatus);
+}
+
+export function setPlatformHomepageShowcased(input: PlatformCompanyMediaBinding & {
+  showcased: boolean;
+  operator: PlatformCompanyMediaOperator;
+}) {
+  const procedure = input.showcased ? "setHomepageShowcased" : "clearHomepageShowcased";
+  const mutationInput = {
+    creditCode: input.creditCode,
+    expectedOwnerUserId: input.expectedOwnerUserId,
+    reason: input.showcased ? "后台设置为展示商家" : "后台取消展示商家",
+    requestId: `homepage-showcase:${randomUUID()}`,
   };
   return callPlatformCompanyMedia<unknown>(procedure, mutationInput, "POST", input.operator)
     .then(normalizeHomepageFeatureStatus);
