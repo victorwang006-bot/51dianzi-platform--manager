@@ -1,0 +1,5 @@
+# 公司级代理认证
+
+沿用既有B2B蓝白简洁视觉、品牌名称次要且状态轻量强调。后台主站以既有portal密钥及公司信用代码+账号强绑定接口同步，不信任客户端companyId或对象key；证件只存私有OSS稳定key，后台短时预览，前台仅批量查询的品牌数组。代理记录独立表，更新/取消保留审计与版本校验，不改物料交易字段、搜索排序和登录额度。
+
+主站：services/agencyCertification负责绑定、文件校验、事务与公开品牌批量查询；routers/internalAgencyCertification仅内部鉴权；client组件负责悬浮/点击。后台：platformAgencyCertificationApi复用跨服务鉴权；merchant接口复用salesScope；独立AgencyCertificationTab维护表单。数据库追加独立表，无旧表破坏性修改。两站独立不可变暂存和滚动激活，库存workers不重启，保留论坛SEO/历史importmap/私有uploads。

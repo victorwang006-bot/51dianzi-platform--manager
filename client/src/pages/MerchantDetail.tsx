@@ -3,6 +3,8 @@ import MerchantEnterpriseUsersPanel from "@/components/admin/MerchantEnterpriseU
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
 import MerchantOperationRecordsPanel from "@/components/admin/MerchantOperationRecordsPanel";
 import MerchantSpotVerificationPanel from "@/components/admin/MerchantSpotVerificationPanel";
+import AgencyCertificationTab from "@/components/merchant/AgencyCertificationTab";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   StatusBadge,
   agreementStatusMap,
@@ -25,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { formatBeijingDate } from "@shared/beijingTime";
+import { hasAdminPermission, type AdminRole } from "@shared/adminPermissions";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -51,7 +54,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 
-type MerchantTab = "materials" | "users" | "company" | "images" | "records" | "spot";
+type MerchantTab = "materials" | "users" | "company" | "images" | "records" | "spot" | "agency";
 type HomepageFeatureStatus = {
   featured: boolean;
   showcased: boolean;
@@ -100,6 +103,7 @@ const MERCHANT_TABS: { value: MerchantTab; label: string; icon: React.ComponentT
   { value: "images", label: "图片资料", icon: Images },
   { value: "records", label: "操作记录", icon: History },
   { value: "spot", label: "现货核验", icon: BadgeCheck },
+  { value: "agency", label: "代理认证", icon: ShieldCheck },
 ];
 
 function InfoItem({
@@ -145,6 +149,7 @@ function SectionCard({
 export default function MerchantDetail() {
   const [, params] = useRoute("/merchants/:id");
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const id = Number(params?.id);
   const [activeTab, setActiveTab] = useState<MerchantTab>("materials");
   const [visitedTabs, setVisitedTabs] = useState<Set<MerchantTab>>(
@@ -295,6 +300,10 @@ export default function MerchantDetail() {
           ? "缺公开库存"
           : "资料待完善")
     : null;
+  const adminRole = (user?.adminRole ?? "super_admin") as AdminRole;
+  const adminPermissions = (user as { permissions?: string[] } | null)?.permissions;
+  const canWriteAgencyCertification = Boolean(user) && Boolean(merchant.canManage)
+    && hasAdminPermission(adminRole, "merchants.write", adminPermissions);
 
   return (
     <DashboardLayout>
@@ -583,6 +592,12 @@ export default function MerchantDetail() {
           {visitedTabs.has("spot") ? (
             <TabsContent value="spot" forceMount className={activeTab === "spot" ? "mt-0" : "hidden"}>
               <MerchantSpotVerificationPanel merchantId={merchant.id} canManage={Boolean(merchant.canManage)} />
+            </TabsContent>
+          ) : null}
+
+          {visitedTabs.has("agency") ? (
+            <TabsContent value="agency" forceMount className={activeTab === "agency" ? "mt-0" : "hidden"}>
+              <AgencyCertificationTab merchantId={merchant.id} canWrite={canWriteAgencyCertification} />
             </TabsContent>
           ) : null}
         </Tabs>

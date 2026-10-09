@@ -4476,6 +4476,51 @@ export async function recordMerchantHomepageFeatureAudit(input: {
   });
 }
 
+/**
+ * 代理认证原件由主站私有存储。后台仅保留与本地商户关联的操作审计，严禁把
+ * object key、短时 URL 或 base64 原文写进审计日志。
+ */
+export async function recordMerchantAgencyCertificationAudit(input: {
+  merchantId: number;
+  certificationId: number;
+  action: "create" | "update" | "cancel" | "document_view";
+  brands?: string[];
+  replacedDocument?: boolean;
+  expectedRevision?: number;
+  requestId?: string;
+  fileName?: string;
+  expiresAt?: number;
+  actor: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const action = `merchant.agency_certification.${input.action}`;
+  await db.insert(auditLogs).values({
+    operatorId: input.actor.operatorId ?? null,
+    operatorName: input.actor.operatorName ?? "system",
+    operatorRole: input.actor.operatorRole ?? "system",
+    action,
+    module: "merchants",
+    targetType: "merchant",
+    targetId: String(input.merchantId),
+    afterValue: {
+      certificationId: input.certificationId,
+      ...(input.brands ? { brands: input.brands } : {}),
+      ...(input.replacedDocument !== undefined ? { replacedDocument: input.replacedDocument } : {}),
+      ...(input.expectedRevision !== undefined ? { expectedRevision: input.expectedRevision } : {}),
+      ...(input.requestId ? { requestId: input.requestId } : {}),
+      ...(input.fileName ? { fileName: input.fileName } : {}),
+      ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}),
+    },
+    ipAddress: input.actor.ipAddress ?? null,
+    userAgent: input.actor.userAgent ?? null,
+    result: "success",
+    note: input.action === "document_view"
+      ? "后台查看商户代理证短时链接"
+      : `后台${input.action === "cancel" ? "取消" : "保存"}商户代理认证`,
+  });
+}
+
 // ─── 企业公司信息墙（跨库读写前台 dianzi51 库）──────────────────────────────
 
 export type PlatformCompanyWallPhoto = {

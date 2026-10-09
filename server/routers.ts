@@ -58,6 +58,12 @@ import {
   setPlatformHomepageShowcased,
 } from "./platformCompanyMediaApi";
 import {
+  cancelPlatformAgencyCertification,
+  getPlatformAgencyCertificationDocument,
+  listPlatformAgencyCertifications,
+  upsertPlatformAgencyCertification,
+} from "./platformAgencyCertificationApi";
+import {
   approvePlatformSpotVerificationReview,
   cancelPlatformSpotVerification,
   listPlatformActiveSpotVerifications,
@@ -117,7 +123,61 @@ const COMPANY_WALL_MIME_SCHEMA = z.enum(["image/jpeg", "image/png", "image/webp"
 const COMPANY_WALL_CATEGORY_SCHEMA = z.enum(["storefront", "office", "warehouse", "production", "team", "other"]);
 const COMPANY_WALL_MAX_BYTES = 8 * 1024 * 1024;
 const COMPANY_WALL_THUMBNAIL_MAX_BYTES = 1024 * 1024;
+const AGENCY_CERTIFICATION_MAX_BYTES = 10 * 1024 * 1024;
+const AGENCY_CERTIFICATION_MAX_BASE64_LENGTH = Math.ceil(AGENCY_CERTIFICATION_MAX_BYTES / 3) * 4;
+const AGENCY_CERTIFICATION_MIME_SCHEMA = z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
+/** 代理品牌以用户可读名称保存；全角符号归一且按大小写去重，保留括号中的说明。 */
+function normalizeAgencyCertificationBrands(values: string[]) {
+  const brands: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    for (const part of value.normalize("NFKC").split(/[,;\n\r]+/)) {
+      const brand = part.trim();
+      if (!brand) continue;
+      const dedupeKey = brand.toLocaleLowerCase();
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      brands.push(brand);
+    }
+  }
+  return brands;
+}
+
+function isValidAgencyCertificationBuffer(buffer: Buffer, mimeType: string) {
+  if (buffer.length < 4) return false;
+  if (mimeType === "application/pdf") return buffer.subarray(0, 4).toString("latin1") === "%PDF";
+  return isValidImageBuffer(buffer, mimeType);
+}
+
+const AGENCY_CERTIFICATION_BRANDS_SCHEMA = z.array(z.string().max(2_560))
+  .min(1, "请至少填写一个代理品牌")
+  .max(30, "代理品牌最多 30 项")
+  .transform(normalizeAgencyCertificationBrands)
+  .refine(brands => brands.length > 0, "请至少填写一个代理品牌")
+  .refine(brands => brands.length <= 30, "代理品牌最多 30 项")
+  .refine(brands => brands.every(brand => brand.length <= 80), "每个代理品牌最多 80 个字符");
+
+const AGENCY_CERTIFICATION_FILE_SCHEMA = z.object({
+  fileName: z.string().trim().min(1, "证件文件名不能为空").max(255),
+  mimeType: AGENCY_CERTIFICATION_MIME_SCHEMA,
+  base64: z.string().min(4, "代理证文件为空").max(AGENCY_CERTIFICATION_MAX_BASE64_LENGTH, "代理证不能超过 10MiB"),
+}).superRefine((file, ctx) => {
+  // 先校验字符和理论上限，再解码，避免恶意客户端让服务端分配无限大 Buffer。
+  if (file.base64.length > AGENCY_CERTIFICATION_MAX_BASE64_LENGTH) return;
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(file.base64)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["base64"], message: "代理证文件编码无效" });
+    return;
+  }
+  const content = Buffer.from(file.base64, "base64");
+  if (content.length > AGENCY_CERTIFICATION_MAX_BYTES) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["base64"], message: "代理证不能超过 10MiB" });
+    return;
+  }
+  if (!isValidAgencyCertificationBuffer(content, file.mimeType)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["base64"], message: "代理证文件内容与类型不匹配" });
+  }
+});
 function companyWallStorageUrl(relativeUrl: string) {
   if (/^https?:\/\//i.test(relativeUrl)) return relativeUrl;
   const configured = process.env.ADMIN_PUBLIC_ORIGIN?.trim() || "https://admin.51dianzi.com";
@@ -1280,6 +1340,109 @@ export const appRouter = router({
           actor: auditActorFromContext(ctx),
         });
         return result;
+      }),
+    /**
+     * 代理认证列表只允许当前销售范围内的后台只读用户查询；主站不会返回私有
+     * 原件 key 或 URL。主站是认证记录、版本和有效状态的唯一权威来源。
+     */
+    agencyCertifications: merchantReadProcedure
+      .input(z.object({ merchantId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        return listPlatformAgencyCertifications({
+          ...binding,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+      }),
+    /** 新建需要原件；编辑保留未传 file 的既有私有原件，认证保存后立即生效。 */
+    saveAgencyCertification: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        id: z.number().int().positive().optional(),
+        expectedRevision: z.number().int().min(0).optional(),
+        brands: AGENCY_CERTIFICATION_BRANDS_SCHEMA,
+        file: AGENCY_CERTIFICATION_FILE_SCHEMA.optional(),
+        requestId: z.string().uuid("代理认证请求号无效"),
+      }).superRefine((value, ctx) => {
+        if (!value.id && !value.file) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["file"], message: "新建代理认证必须上传代理证" });
+        }
+        if (!value.id && value.expectedRevision !== undefined) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["expectedRevision"], message: "新建代理认证不能提供版本号" });
+        }
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const result = await upsertPlatformAgencyCertification({
+          ...binding,
+          id: input.id,
+          expectedRevision: input.expectedRevision,
+          brands: input.brands,
+          file: input.file,
+          requestId: input.requestId,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+        await db.recordMerchantAgencyCertificationAudit({
+          merchantId: input.merchantId,
+          certificationId: result.id,
+          action: input.id ? "update" : "create",
+          brands: input.brands,
+          replacedDocument: Boolean(input.file),
+          expectedRevision: input.expectedRevision,
+          requestId: input.requestId,
+          actor: auditActorFromContext(ctx),
+        });
+        return result;
+      }),
+    /** 取消是可逆业务状态：不删除主站记录或私有原件，立即取消当前认证展示。 */
+    cancelAgencyCertification: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        id: z.number().int().positive(),
+        expectedRevision: z.number().int().min(0),
+        requestId: z.string().uuid("代理认证请求号无效"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const result = await cancelPlatformAgencyCertification({
+          ...binding,
+          id: input.id,
+          expectedRevision: input.expectedRevision,
+          requestId: input.requestId,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+        await db.recordMerchantAgencyCertificationAudit({
+          merchantId: input.merchantId,
+          certificationId: input.id,
+          action: "cancel",
+          expectedRevision: input.expectedRevision,
+          requestId: input.requestId,
+          actor: auditActorFromContext(ctx),
+        });
+        return result;
+      }),
+    /** 原件按点击实时签发短时链接；浏览器和审计记录均不接触稳定对象 key。 */
+    agencyCertificationDocument: merchantReadProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        id: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const document = await getPlatformAgencyCertificationDocument({
+          ...binding,
+          id: input.id,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+        await db.recordMerchantAgencyCertificationAudit({
+          merchantId: input.merchantId,
+          certificationId: input.id,
+          action: "document_view",
+          fileName: document.fileName,
+          expiresAt: document.expiresAt,
+          actor: auditActorFromContext(ctx),
+        });
+        return document;
       }),
     spotVerificationReviews: merchantReadProcedure
       .input(z.object({
