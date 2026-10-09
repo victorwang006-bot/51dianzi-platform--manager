@@ -109,8 +109,8 @@ other_pids(){
  done
  printf '%s\n' "${out[@]}" | sort | paste -sd,
 }
-origin_get(){ curl --noproxy '*' -fsS --resolve admin.51dianzi.com:443:127.0.0.1 --max-time 15 "https://admin.51dianzi.com$1" -o "$2"; }
-origin_status(){ curl --noproxy '*' -sS -o /dev/null -w '%{http_code}' --resolve admin.51dianzi.com:443:127.0.0.1 --max-time 15 "https://admin.51dianzi.com$1"; }
+origin_get(){ curl -A "Mozilla/5.0" --noproxy '*' -fsS --resolve admin.51dianzi.com:443:127.0.0.1 --max-time 15 "https://admin.51dianzi.com$1" -o "$2"; }
+origin_status(){ curl -A "Mozilla/5.0" --noproxy '*' -sS -o /dev/null -w '%{http_code}' --resolve admin.51dianzi.com:443:127.0.0.1 --max-time 15 "https://admin.51dianzi.com$1"; }
 set_link(){ local path=$1 target=$2 tag=$3; ln -s "$target" "$path.$tag.$$"; mv -Tf "$path.$tag.$$" "$path"; }
 switch_links(){ local target=$1 tag=$2; set_link "$link" "$target" "$tag"; set_link "$sublink" "$target" "$tag"; }
 
