@@ -167,9 +167,6 @@ export default function Analytics() {
           <>
             {section === "web" ? (
               <>
-                <Card className="border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 shadow-none">
-                  网站访问从 {data.firstEventAt || "统计功能上线时"} 开始累计，不包含此前历史。
-                </Card>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                   <Metric label="页面浏览量 PV" value={number.format(summary.pageViews)} hint={`近${days}天页面打开次数`} icon={Eye} />
                   <Metric label="访客数 UV" value={number.format(summary.visitors)} hint="同一浏览器去重" icon={Users} />

@@ -52,7 +52,9 @@ describe("独立后台运营数据合同", () => {
     expect(page).toContain("1.12.15开发版开始累计");
     expect(page).not.toContain("7日活跃用户");
     expect(page).not.toContain("注册转化参考");
-    expect(page).toContain("不包含此前历史");
+    expect(page).not.toContain("网站访问从");
+    expect(page).not.toContain("不包含此前历史");
+    expect(page).toContain("数据始于 ${firstEventAt}");
   });
 
   it("热门页面使用与前台一致的中文名称并保留原路径", () => {
