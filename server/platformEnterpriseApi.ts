@@ -49,7 +49,10 @@ type PlatformEnterpriseProcedure =
   | "setLoginDisabled";
 
 type EnterpriseBinding = {
-  creditCode: string;
+  /** CN only. HK requests intentionally omit this field. */
+  creditCode?: string;
+  /** HK union identity, e.g. HK:12345678. */
+  registrationIdentifier?: string;
   expectedOwnerUserId: number;
 };
 

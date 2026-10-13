@@ -63,3 +63,51 @@ describe("商户详情优质商家静态契约", () => {
     expect(source).toContain("homepageShowcaseMutation.mutate({ merchantId: id, showcased: homepageShowcaseDialogTarget })");
   });
 });
+
+describe("香港注册资料人工审核静态契约", () => {
+  it("将生效资料和仅审核者可见的待审资料分为独立面板", () => {
+    expect(source).toContain("const hkRegistrationPending = merchant.hkRegistrationPending");
+    expect(source).toContain('SectionCard title="香港企业注册资料"');
+    expect(source).toContain('SectionCard title="香港注册资料（待人工审核）"');
+    expect(source).toContain('merchant.registrationRegion === "HK" && hkRegistrationPending');
+    expect(source).toContain('label="银行账户号码" value={hkRegistrationPending.bankAccountNumber}');
+    expect(source).toContain('label="SWIFT（选填）" value={hkRegistrationPending.swift}');
+    expect(source).toContain('label="银行代码（选填）" value={hkRegistrationPending.bankCode}');
+  });
+
+  it("以 pending source 申请短期原件链接，且浏览器不接触对象键", () => {
+    expect(source).toContain('source: "effective" | "pending" = "effective"');
+    expect(source).toContain('source === "pending"');
+    expect(source).toContain("expectedSubmissionId: hkRegistrationPending.submissionId");
+    expect(source).toContain("expectedPayloadHash: hkRegistrationPending.payloadHash");
+    expect(source).toContain('openHkDocument(kind, "pending", {');
+    expect(source).not.toContain("document.objectKey");
+    expect(source).not.toContain("hkRegistrationPending.documentObjectKeys");
+  });
+
+  it("要求审核员人工逐份核对三证；OCR 失败不会自动通过", () => {
+    expect(source).toContain("OCR 识别成功仅作辅助；识别失败仅表示待人工分类，均不会自动通过。");
+    expect(source).toContain("审核者必须逐份打开 BR、CI 和银行证明原件");
+    expect(source).toContain("我已逐份查看 BR、CI 与银行证明原件");
+    expect(source).toContain("hkReviewDecision === \"approved\" && !hkIdentityConfirmed");
+    expect(source).toContain('hkReviewDecision === "rejected" && !hkReviewNote.trim()');
+    expect(source).toContain("confirmed: hkReviewDecision === \"approved\" ? hkIdentityConfirmed : undefined");
+  });
+
+  it("冻结审核时看到的版本，版本变更后取消确认并提交版本令牌", () => {
+    expect(source).toContain("trpc.merchant.reviewHkRegistrationDraft.useMutation");
+    expect(source).toContain("decision: hkReviewDecision");
+    expect(source).toContain("note: hkReviewNote.trim() || undefined");
+    expect(source).toContain("const [hkReviewVersion, setHkReviewVersion]");
+    expect(source).toContain("const openHkReviewDialog");
+    expect(source).toContain("hkReviewVersionIsStale");
+    expect(source).toContain("data-hk-registration-review-version-changed");
+    expect(source).toContain("setHkIdentityConfirmed(false)");
+    expect(source).toContain("expectedSubmissionId: hkReviewVersion.expectedSubmissionId");
+    expect(source).toContain("expectedPayloadHash: hkReviewVersion.expectedPayloadHash");
+    expect(source).toContain("await Promise.all([");
+    expect(source).toContain("utils.merchant.detail.invalidate({ id })");
+    expect(source).toContain("utils.merchant.list.invalidate()");
+    expect(source).toContain("ERP 开通仍由原后台流程后续人工处理。");
+  });
+});

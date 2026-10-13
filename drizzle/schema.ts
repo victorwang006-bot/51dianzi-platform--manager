@@ -411,10 +411,23 @@ export const merchants = mysqlTable("merchants", {
   internalContactName: varchar("internalContactName", { length: 64 }),
   contactPhone: varchar("contactPhone", { length: 20 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
+  /** 注册辖区；历史及默认业务均为 CN，香港企业使用 HK 稳定身份。 */
+  registrationRegion: mysqlEnum("registrationRegion", ["CN", "HK"]).default("CN").notNull(),
+  /** CN:18位USCC / HK:8位BRN。可空以兼容尚未完成身份登记的历史商户。 */
+  registrationIdentifier: varchar("registrationIdentifier", { length: 32 }),
+  hkSubmissionId: varchar("hkSubmissionId", { length: 36 }),
+  hkPayloadHash: varchar("hkPayloadHash", { length: 64 }),
+  /** 已批准的辖区注册资料；不进入商户列表/详情的通用 DTO。 */
+  registrationData: json("registrationData").$type<Record<string, unknown>>(),
+  /** 香港重复提交在审核中使用的候选资料，绝不覆盖已批准资料。 */
+  registrationPendingData: json("registrationPendingData").$type<Record<string, unknown>>(),
   businessLicense: varchar("businessLicense", { length: 64 }).unique(),
   licenseExpiry: timestamp("licenseExpiry"),
   /** 私有营业执照对象键；客户端不得直接获得，只在授权查看时由服务端短时签名。 */
   licenseObjectKey: varchar("licenseObjectKey", { length: 512 }),
+  /** 香港 BR / CI / 银行证明私有对象键；只允许经授权的服务端短时签名。 */
+  ciObjectKey: varchar("ciObjectKey", { length: 512 }),
+  bankDocumentObjectKey: varchar("bankDocumentObjectKey", { length: 512 }),
   /** 历史营业执照 URL，仅兼容存量；新增申请不得持久化临时签名 URL。 */
   licenseImageUrl: varchar("licenseImageUrl", { length: 512 }),
   registeredCapital: varchar("registeredCapital", { length: 64 }),
@@ -466,6 +479,7 @@ export const merchants = mysqlTable("merchants", {
   createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
   updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
 }, table => ({
+  registrationIdentifierUnique: uniqueIndex("merchants_registration_identifier_unique").on(table.registrationIdentifier),
   salesOwnerCreatedIdx: index("merchants_sales_owner_created_idx").on(
     table.salesOwnerCode,
     table.createdAt,
@@ -752,8 +766,10 @@ export const crmOwnerRebindLogs = mysqlTable("crm_owner_rebind_logs", {
   merchantId: int("merchantId").notNull(),
   expectedOwnerPortalUserId: varchar("expectedOwnerPortalUserId", { length: 64 }).notNull(),
   nextOwnerPortalUserId: varchar("nextOwnerPortalUserId", { length: 64 }).notNull(),
-  /** 换绑发起时的标准化信用代码，供同一 requestId 的平台确认重试使用。 */
+  /** CN 换绑发起时的标准化信用代码；HK 记录必须为 NULL。 */
   creditCode: varchar("creditCode", { length: 64 }),
+  /** HK 换绑使用的稳定 union identity；CN 记录必须为 NULL。 */
+  registrationIdentifier: varchar("registrationIdentifier", { length: 32 }),
   reason: text("reason").notNull(),
   operatorId: int("operatorId"),
   operatorName: varchar("operatorName", { length: 64 }),

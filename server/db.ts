@@ -57,6 +57,17 @@ import {
   normalizeCrmPortalUserId,
   type MerchantCrmStatus,
 } from "./crmGrantPolicy";
+import {
+  hkRegistrationDataSchema,
+  hkRegistrationIdentifier,
+  normalizeHkDate,
+  type HkDocumentKind,
+  type HkRegistrationData,
+} from "../shared/hongKongRegistration";
+import {
+  ENTERPRISE_SERVICE_AGREEMENT_HASH,
+  ENTERPRISE_SERVICE_AGREEMENT_VERSION,
+} from "../shared/enterpriseServiceAgreementSummary";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -117,6 +128,261 @@ function normalizeCreditCode(value: string) {
 function normalizePortalUserId(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+export type HkRegistrationDocuments = Record<HkDocumentKind, {
+  objectKey: string;
+  fileName: string;
+}>;
+
+export type HkDocumentVerification = Record<HkDocumentKind, {
+  documentId: string; ocrStatus: "recognized" | "failed"; recognizedType: string | null;
+  classification: "ocr-assisted" | "manual-classification-required";
+}>;
+
+type StoredHkRegistrationData = {
+  registration: HkRegistrationData;
+  documents: Record<HkDocumentKind, { fileName: string }>;
+  submittedAt: string;
+  /** Present for all submissions created after the HK submission-ledger rollout. */
+  submissionId?: string;
+  payloadHash?: string;
+};
+
+/** Pending values are private server-side data: object keys are never included in a merchant DTO. */
+type StoredPendingHkRegistrationData = StoredHkRegistrationData & {
+  documentObjectKeys: Record<HkDocumentKind, string>;
+  documentVerification?: HkDocumentVerification;
+  submissionId: string;
+  payloadHash: string;
+};
+
+function normalizeHkSubmissionId(value: unknown) {
+  const text = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(text) ? text : null;
+}
+
+function normalizeHkPayloadHash(value: unknown) {
+  const text = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return /^[0-9a-f]{64}$/.test(text) ? text : null;
+}
+
+/** HK 私有证据必须由主站 owner 表确认后才调用本后台；后台仍严格限制可接受的命名空间。 */
+export function assertHkDocumentObjectKey(
+  objectKey: string,
+  portalUserId: string,
+  kind: HkDocumentKind,
+) {
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(portalUserId)) {
+    throw new Error("HK_PORTAL_USER_ID_INVALID");
+  }
+  const key = objectKey.trim();
+  const escapedUserId = portalUserId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `^hk-registration/user-${escapedUserId}/${kind}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_[A-Za-z0-9][A-Za-z0-9_-]{0,127}\\.(?:jpg|png|pdf)$`,
+    "i",
+  );
+  if (!pattern.test(key) || key.split("/").some(part => part === "." || part === "..")) {
+    throw new Error("HK_DOCUMENT_OBJECT_KEY_INVALID");
+  }
+  return key;
+}
+
+/**
+ * A reviewer may approve a document submitted by the original data owner after
+ * a later ERP owner rebind. Re-derive and validate that immutable creator from
+ * the key instead of incorrectly comparing it to the current CRM owner.
+ */
+export function assertStoredHkDocumentObjectKey(objectKey: string, kind: HkDocumentKind) {
+  const match = /^hk-registration\/user-([A-Za-z0-9_-]{1,64})\/(BR|CI|BANK)\//i.exec(objectKey.trim());
+  if (!match || match[2].toUpperCase() !== kind) throw new Error("HK_DOCUMENT_OBJECT_KEY_INVALID");
+  return assertHkDocumentObjectKey(objectKey, match[1], kind);
+}
+
+/**
+ * Historical effective data remains readable even when its BR later expires.
+ * This deliberately performs only structural / identity validation; the
+ * time-sensitive shared schema is still used at review and ERP-enable time.
+ */
+function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | null {
+  const raw = decodeJsonValue<Record<string, unknown>>(value, null);
+  const data = raw?.registration && typeof raw.registration === "object"
+    ? raw.registration as Record<string, unknown>
+    : raw;
+  if (!data || typeof data !== "object") return null;
+  const required = (field: string, max: number) => {
+    const value = data[field];
+    return typeof value === "string" && value.trim() && value.trim().length <= max ? value.trim() : null;
+  };
+  const optional = (field: string, max: number) => {
+    const value = data[field];
+    return typeof value === "string" && value.trim().length <= max ? value.trim() : null;
+  };
+  const companyName = required("companyName", 128);
+  const businessNature = required("businessNature", 128);
+  const legalStatus = required("legalStatus", 64);
+  const brn = required("brn", 8);
+  const registrationNumber = required("registrationNumber", 32);
+  const brStartDate = normalizeHkDate(data.brStartDate);
+  const brExpiryDate = normalizeHkDate(data.brExpiryDate);
+  const ciNumber = required("ciNumber", 32);
+  const regAddress = required("regAddress", 255);
+  const bankAccountName = required("bankAccountName", 128);
+  const bankAccountNumber = required("bankAccountNumber", 64);
+  const bankName = required("bankName", 128);
+  const establishedAtRaw = optional("establishedAt", 10);
+  const establishedAt = establishedAtRaw === null ? null : establishedAtRaw ? normalizeHkDate(establishedAtRaw) : "";
+  if (!companyName || !businessNature || !legalStatus || !brn || !registrationNumber
+    || !brStartDate || !brExpiryDate || !ciNumber || !regAddress || !bankAccountName
+    || !bankAccountNumber || !bankName || establishedAt === null
+    || !/^\d{8}$/.test(brn)
+    || !/^\d{8}[-\s]\d{3}[-\s]\d{2}[-\s]\d$/.test(registrationNumber)
+    || registrationNumber.slice(0, 8) !== brn
+    || brStartDate > brExpiryDate
+    || !/^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(bankAccountNumber)
+    || /SOLE|PARTNERSHIP|独资|獨資|合伙|合夥/i.test(legalStatus)) return null;
+  const optionalText = (field: string, max: number) => optional(field, max) ?? "";
+  return {
+    companyName,
+    chineseName: optionalText("chineseName", 128),
+    businessNature,
+    legalStatus,
+    brn,
+    registrationNumber,
+    brStartDate,
+    brExpiryDate,
+    ciNumber,
+    establishedAt,
+    regAddress,
+    bankAccountName,
+    bankAccountNumber,
+    bankName,
+    bankAddress: optionalText("bankAddress", 255),
+    swift: optionalText("swift", 32),
+    bankCode: optionalText("bankCode", 32),
+    companyRole: optionalText("companyRole", 64),
+    salesOwner: optionalText("salesOwner", 64),
+    salesOwnerCode: optionalText("salesOwnerCode", 64),
+  };
+}
+
+/** Stable canonical representation for cross-system HK registration comparisons. */
+function canonicalHkRegistration(data: HkRegistrationData) {
+  return JSON.stringify({
+    companyName: data.companyName,
+    chineseName: data.chineseName,
+    businessNature: data.businessNature,
+    legalStatus: data.legalStatus,
+    brn: data.brn,
+    registrationNumber: data.registrationNumber,
+    brStartDate: data.brStartDate,
+    brExpiryDate: data.brExpiryDate,
+    ciNumber: data.ciNumber,
+    establishedAt: data.establishedAt,
+    regAddress: data.regAddress,
+    bankAccountName: data.bankAccountName,
+    bankAccountNumber: data.bankAccountNumber,
+    bankName: data.bankName,
+    bankAddress: data.bankAddress,
+    swift: data.swift,
+    bankCode: data.bankCode,
+    companyRole: data.companyRole,
+    salesOwner: data.salesOwner,
+    salesOwnerCode: data.salesOwnerCode,
+  });
+}
+
+function parseStoredHkRegistration(value: unknown): StoredHkRegistrationData | null {
+  const raw = decodeJsonValue<Record<string, unknown>>(value, null);
+  if (!raw || typeof raw !== "object") return null;
+  const registration = parseStoredHkRegistrationData(raw.registration ?? raw);
+  if (!registration) return null;
+  const documents = raw.documents as Record<string, unknown> | undefined;
+  const names = (kind: HkDocumentKind) => {
+    const fileName = documents?.[kind] && typeof documents[kind] === "object"
+      ? (documents[kind] as { fileName?: unknown }).fileName
+      : undefined;
+    return typeof fileName === "string" && fileName.trim()
+      ? fileName.trim().slice(0, 255)
+      : `${kind} 文件`;
+  };
+  return {
+    registration,
+    documents: { BR: { fileName: names("BR") }, CI: { fileName: names("CI") }, BANK: { fileName: names("BANK") } },
+    submittedAt: typeof raw.submittedAt === "string" ? raw.submittedAt : "",
+    ...(normalizeHkSubmissionId(raw.submissionId) ? { submissionId: normalizeHkSubmissionId(raw.submissionId)! } : {}),
+    ...(normalizeHkPayloadHash(raw.payloadHash) ? { payloadHash: normalizeHkPayloadHash(raw.payloadHash)! } : {}),
+  };
+}
+
+function buildStoredHkRegistration(
+  registration: HkRegistrationData,
+  documents: HkRegistrationDocuments,
+  ledger: { submissionId: string; payloadHash: string },
+): StoredHkRegistrationData {
+  return {
+    registration,
+    documents: {
+      BR: { fileName: documents.BR.fileName.trim().slice(0, 255) },
+      CI: { fileName: documents.CI.fileName.trim().slice(0, 255) },
+      BANK: { fileName: documents.BANK.fileName.trim().slice(0, 255) },
+    },
+    submittedAt: new Date().toISOString(),
+    submissionId: ledger.submissionId,
+    payloadHash: ledger.payloadHash,
+  };
+}
+
+function buildPendingHkRegistration(
+  registration: HkRegistrationData,
+  documents: HkRegistrationDocuments,
+  ledger: { submissionId: string; payloadHash: string },
+): StoredPendingHkRegistrationData {
+  return {
+    ...buildStoredHkRegistration(registration, documents, ledger),
+    submissionId: ledger.submissionId,
+    payloadHash: ledger.payloadHash,
+    documentObjectKeys: {
+      BR: documents.BR.objectKey,
+      CI: documents.CI.objectKey,
+      BANK: documents.BANK.objectKey,
+    },
+  };
+}
+
+function parsePendingHkRegistration(value: unknown): StoredPendingHkRegistrationData | null {
+  const stored = parseStoredHkRegistration(value);
+  const raw = decodeJsonValue<Record<string, unknown>>(value, null);
+  const keys = raw?.documentObjectKeys;
+  const submissionId = normalizeHkSubmissionId(raw?.submissionId);
+  const payloadHash = normalizeHkPayloadHash(raw?.payloadHash);
+  if (!stored || !keys || typeof keys !== "object" || !submissionId || !payloadHash) return null;
+  const read = (kind: HkDocumentKind) => (keys as Record<string, unknown>)[kind];
+  if (!["BR", "CI", "BANK"].every(kind => typeof read(kind as HkDocumentKind) === "string")) return null;
+  try {
+    return {
+      ...stored,
+      submissionId,
+      payloadHash,
+      documentVerification: raw?.documentVerification as HkDocumentVerification | undefined,
+      documentObjectKeys: {
+        BR: assertStoredHkDocumentObjectKey(read("BR") as string, "BR"),
+        CI: assertStoredHkDocumentObjectKey(read("CI") as string, "CI"),
+        BANK: assertStoredHkDocumentObjectKey(read("BANK") as string, "BANK"),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function merchantRegistrationIdentity(merchant: Pick<typeof merchants.$inferSelect, "registrationRegion" | "registrationIdentifier" | "businessLicense">) {
+  if (merchant.registrationRegion === "HK") {
+    const identity = merchant.registrationIdentifier?.trim().toUpperCase() || "";
+    return /^HK:\d{8}$/.test(identity) ? identity : null;
+  }
+  const creditCode = merchant.businessLicense?.trim();
+  return creditCode ? `CN:${normalizeCreditCode(creditCode)}` : null;
 }
 
 export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通ERP,请联系管理员";
@@ -668,10 +934,110 @@ function merchantReadScopeCondition(salesStaffCodes?: string[]) {
 
 /** 客户端读取商户时不得获得私有对象键或可复用的历史 URL。 */
 export function toMerchantReadDto(row: typeof merchants.$inferSelect) {
-  const { licenseObjectKey, licenseImageUrl, ...merchant } = row;
+  const {
+    licenseObjectKey,
+    licenseImageUrl,
+    ciObjectKey,
+    bankDocumentObjectKey,
+    registrationData,
+    registrationPendingData,
+    ...merchant
+  } = row;
   return {
     ...merchant,
-    hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl),
+    // HK account numbers are only necessary inside the dedicated reviewer DTO.
+    // Do not accidentally leak a first-submit pending account through generic detail/list fields.
+    ...(merchant.registrationRegion === "HK" ? { settlementAccount: null } : {}),
+    hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl || ciObjectKey),
+    hasHkBrDocument: merchant.registrationRegion === "HK" && Boolean(licenseObjectKey),
+    hasHkCiDocument: merchant.registrationRegion === "HK" && Boolean(ciObjectKey),
+    hasHkBankDocument: merchant.registrationRegion === "HK" && Boolean(bankDocumentObjectKey),
+    hasPendingHkRegistration: merchant.registrationRegion === "HK" && Boolean(parsePendingHkRegistration(registrationPendingData)),
+  };
+}
+
+/**
+ * Field-level HK detail allowlist. Pending draft information is exposed only to
+ * a formal reviewer; it never includes account numbers, object keys or draft
+ * JSON itself.
+ */
+export function toMerchantHkRegistrationDetail(
+  row: typeof merchants.$inferSelect,
+) {
+  if (row.registrationRegion !== "HK") return null;
+  const effective = parseStoredHkRegistration(row.registrationData);
+  if (!effective) return null;
+  const data = effective.registration;
+  const activeKeys = { BR: row.licenseObjectKey, CI: row.ciObjectKey, BANK: row.bankDocumentObjectKey };
+  return {
+    identity: merchantRegistrationIdentity(row),
+    companyName: data.companyName,
+    chineseName: data.chineseName || null,
+    businessNature: data.businessNature,
+    legalStatus: data.legalStatus,
+    brn: data.brn,
+    registrationNumber: data.registrationNumber,
+    brStartDate: data.brStartDate,
+    brExpiryDate: data.brExpiryDate,
+    ciNumber: data.ciNumber,
+    establishedAt: data.establishedAt || null,
+    regAddress: data.regAddress,
+    bankAccountName: data.bankAccountName,
+    bankName: data.bankName,
+    bankAddress: data.bankAddress || null,
+    documents: {
+      BR: { available: Boolean(activeKeys.BR), fileName: effective.documents.BR.fileName },
+      CI: { available: Boolean(activeKeys.CI), fileName: effective.documents.CI.fileName },
+      BANK: { available: Boolean(activeKeys.BANK), fileName: effective.documents.BANK.fileName },
+    },
+  };
+}
+
+/**
+ * Full candidate data for a formal HK reviewer only. It intentionally exposes
+ * fields needed to compare a submission (including bank number/SWIFT/code),
+ * but never private object keys or raw pending JSON.
+ */
+export function toMerchantHkRegistrationPendingDetail(row: typeof merchants.$inferSelect) {
+  if (row.registrationRegion !== "HK") return null;
+  const pending = parsePendingHkRegistration(row.registrationPendingData);
+  if (!pending) return null;
+  const data = pending.registration;
+  return {
+    identity: merchantRegistrationIdentity(row),
+    // These are opaque optimistic-concurrency values, not document object keys.
+    // A reviewer must return the exact version they inspected before any action
+    // can affect this candidate.
+    submissionId: pending.submissionId,
+    payloadHash: pending.payloadHash,
+    manualClassificationRequired: !pending.documentVerification || Object.values(pending.documentVerification).some(value => value.classification === "manual-classification-required"),
+    documentVerification: pending.documentVerification ?? null,
+    submittedAt: pending.submittedAt || null,
+    companyName: data.companyName,
+    chineseName: data.chineseName || null,
+    businessNature: data.businessNature,
+    legalStatus: data.legalStatus,
+    brn: data.brn,
+    registrationNumber: data.registrationNumber,
+    brStartDate: data.brStartDate,
+    brExpiryDate: data.brExpiryDate,
+    ciNumber: data.ciNumber,
+    establishedAt: data.establishedAt || null,
+    regAddress: data.regAddress,
+    bankAccountName: data.bankAccountName,
+    bankAccountNumber: data.bankAccountNumber,
+    bankName: data.bankName,
+    bankAddress: data.bankAddress || null,
+    swift: data.swift || null,
+    bankCode: data.bankCode || null,
+    companyRole: data.companyRole || null,
+    salesOwner: data.salesOwner || null,
+    salesOwnerCode: data.salesOwnerCode || null,
+    documents: {
+      BR: { available: true, fileName: pending.documents.BR.fileName },
+      CI: { available: true, fileName: pending.documents.CI.fileName },
+      BANK: { available: true, fileName: pending.documents.BANK.fileName },
+    },
   };
 }
 
@@ -1165,24 +1531,26 @@ export async function reviewMerchantOwnershipRequest(input: {
           salesOwner: staff.displayName,
           salesOwnerCode: staff.staffCode,
         }).where(eq(merchants.id, merchant.id));
-        const creditCode = merchant.businessLicense?.trim();
-        if (creditCode) {
-          const platformResult = (await tx.execute(sql`
-            SELECT id
-              FROM ${sql.raw(PLATFORM_DB)}.companies
-             WHERE UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(creditCode)}
-             LIMIT 2
-             FOR UPDATE
-          `)) as unknown as [{ id: number }[], unknown];
-          if (platformResult[0].length === 0) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
-          if (platformResult[0].length > 1) throw new Error("PLATFORM_COMPANY_DUPLICATE");
-          platformCompanyId = Number(platformResult[0][0].id);
-          await tx.execute(sql`
-            UPDATE ${sql.raw(PLATFORM_DB)}.companies
-               SET salesOwner = ${staff.displayName}, salesOwnerCode = ${staff.staffCode}
-             WHERE id = ${platformCompanyId}
-          `);
-        }
+        const identity = merchantRegistrationIdentity(merchant);
+        if (!identity) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+        const platformIdentityWhere = merchant.registrationRegion === "HK"
+          ? sql`registrationRegion = 'HK' AND registrationIdentifier = ${identity}`
+          : sql`registrationRegion = 'CN' AND UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(merchant.businessLicense || "")}`;
+        const platformResult = (await tx.execute(sql`
+          SELECT id
+            FROM ${sql.raw(PLATFORM_DB)}.companies
+           WHERE ${platformIdentityWhere}
+           LIMIT 2
+           FOR UPDATE
+        `)) as unknown as [{ id: number }[], unknown];
+        if (platformResult[0].length === 0) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+        if (platformResult[0].length > 1) throw new Error("PLATFORM_COMPANY_DUPLICATE");
+        platformCompanyId = Number(platformResult[0][0].id);
+        await tx.execute(sql`
+          UPDATE ${sql.raw(PLATFORM_DB)}.companies
+             SET salesOwner = ${staff.displayName}, salesOwnerCode = ${staff.staffCode}
+           WHERE id = ${platformCompanyId}
+        `);
       }
     }
 
@@ -1249,8 +1617,10 @@ type MerchantLicenseSource = {
  * 对象键仅在服务端流转，绝不返回列表或详情客户端。
  */
 export async function getMerchantLicenseSource(
-  merchant: Pick<typeof merchants.$inferSelect, "businessLicense" | "crmOwnerPortalUserId" | "licenseObjectKey" | "licenseImageUrl">,
+  merchant: Pick<typeof merchants.$inferSelect, "registrationRegion" | "businessLicense" | "crmOwnerPortalUserId" | "licenseObjectKey" | "licenseImageUrl">,
 ): Promise<MerchantLicenseSource | null> {
+  // HK BR/CI/BANK documents are separately stored and must only pass through getMerchantHkDocumentSource.
+  if (merchant.registrationRegion === "HK") return null;
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
   const creditCode = merchant.businessLicense?.trim().toUpperCase() || "";
@@ -1320,6 +1690,61 @@ export async function recordMerchantLicenseView(
   });
 }
 
+/** HK BR/CI/BANK source is read only from backend-effective data or reviewer-only first draft. */
+export async function getMerchantHkDocumentSource(
+  merchant: Pick<typeof merchants.$inferSelect, "registrationRegion" | "registrationData" | "registrationPendingData" | "hkSubmissionId" | "hkPayloadHash" | "licenseObjectKey" | "ciObjectKey" | "bankDocumentObjectKey">,
+  kind: HkDocumentKind,
+  source: "effective" | "pending" = "effective",
+  expectedPendingVersion?: { expectedSubmissionId: string; expectedPayloadHash: string },
+): Promise<{ objectKey: string; fileName: string } | null> {
+  if (merchant.registrationRegion !== "HK") return null;
+  if (source === "effective") {
+    const effective = parseStoredHkRegistration(merchant.registrationData);
+    if (!effective) return null;
+    const objectKey = kind === "BR" ? merchant.licenseObjectKey
+      : kind === "CI" ? merchant.ciObjectKey : merchant.bankDocumentObjectKey;
+    if (!objectKey?.trim()) return null;
+    return { objectKey: assertStoredHkDocumentObjectKey(objectKey, kind), fileName: effective.documents[kind].fileName };
+  }
+  const pending = parsePendingHkRegistration(merchant.registrationPendingData);
+  if (!pending) return null;
+  // Do not let a stale detail page sign URLs for a later resubmission. The
+  // version must agree with both the stored candidate and its local ledger.
+  if (!expectedPendingVersion
+    || pending.submissionId !== expectedPendingVersion.expectedSubmissionId
+    || pending.payloadHash !== expectedPendingVersion.expectedPayloadHash
+    || merchant.hkSubmissionId !== expectedPendingVersion.expectedSubmissionId
+    || merchant.hkPayloadHash !== expectedPendingVersion.expectedPayloadHash) {
+    throw new Error("HK_REVIEW_VERSION_CHANGED");
+  }
+  return { objectKey: pending.documentObjectKeys[kind], fileName: pending.documents[kind].fileName };
+}
+
+/** 成功预览留审计痕迹，但审计值从不保存对象键或可复用签名 URL。 */
+export async function recordMerchantHkDocumentView(
+  merchantId: number,
+  kind: HkDocumentKind,
+  actor: MaterialAuditActor = {},
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  await db.insert(auditLogs).values({
+    operatorId: actor.operatorId ?? null,
+    operatorName: actor.operatorName ?? "system",
+    operatorRole: actor.operatorRole ?? "system",
+    action: "merchant.hk-document.view",
+    module: "merchants",
+    targetType: "merchant",
+    targetId: String(merchantId),
+    beforeValue: null,
+    afterValue: { kind },
+    ipAddress: actor.ipAddress ?? null,
+    userAgent: actor.userAgent ?? null,
+    result: "success",
+    note: "授权查看香港私有注册材料",
+  });
+}
+
 /**
  * 超级管理员分配或更换商户销售负责人。
  * 商户后台与前台企业资料位于同一 RDS，必须在同一事务内同步，任一侧失败整体回滚。
@@ -1377,14 +1802,19 @@ export async function setMerchantSalesOwner(input: {
       .where(eq(merchants.id, merchant.id));
 
     let platformRowsUpdated = 0;
-    const creditCode = merchant.businessLicense?.trim();
-    if (creditCode) {
-      const result = (await tx.execute(sql`
-        UPDATE ${sql.raw(PLATFORM_DB)}.companies
-        SET salesOwner = ${nextName}, salesOwnerCode = ${nextCode}
-        WHERE UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(creditCode)}
-      `)) as unknown as [{ affectedRows?: number }, unknown];
-      platformRowsUpdated = Number(result[0]?.affectedRows ?? 0);
+    const identity = merchantRegistrationIdentity(merchant);
+    if (!identity) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+    const platformIdentityWhere = merchant.registrationRegion === "HK"
+      ? sql`registrationRegion = 'HK' AND registrationIdentifier = ${identity}`
+      : sql`registrationRegion = 'CN' AND UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(merchant.businessLicense || "")}`;
+    const result = (await tx.execute(sql`
+      UPDATE ${sql.raw(PLATFORM_DB)}.companies
+      SET salesOwner = ${nextName}, salesOwnerCode = ${nextCode}
+      WHERE ${platformIdentityWhere}
+    `)) as unknown as [{ affectedRows?: number }, unknown];
+    platformRowsUpdated = Number(result[0]?.affectedRows ?? 0);
+    if (merchant.registrationRegion === "HK" && platformRowsUpdated !== 1) {
+      throw new Error("PLATFORM_COMPANY_NOT_FOUND");
     }
 
     await tx.insert(auditLogs).values({
@@ -1845,6 +2275,495 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
   }
 }
 
+export type HkCrmApplicationInput = {
+  registrationIdentifier: string;
+  registrationData: HkRegistrationData;
+  documents: HkRegistrationDocuments;
+  documentVerification?: HkDocumentVerification;
+  /** Main-site HK submission ledger identity; a replay must retain this payload hash. */
+  submissionId: string;
+  payloadHash: string;
+  portalUserId: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  agreementAccepted: true;
+  agreementVersion: string;
+  agreementHash: string;
+  salesOwner?: string | null;
+  salesOwnerCode?: string | null;
+};
+
+export type AdminCrmApplicationResult = {
+  accepted: boolean;
+  created: boolean;
+  code: string;
+  crmStatus: MerchantCrmStatus | "none";
+  merchantId?: number;
+  merchantNo?: string;
+  message?: string;
+};
+
+/**
+ * 香港注册公司 ERP 申请。身份永远是 HK:<8 位 BRN>，不借用 businessLicense / creditCode。
+ * 主站在调用前验证附件私有证据 owner；本层再次校验身份、字段、协议与不可越权的键前缀。
+ */
+export async function submitHkCrmApplication(input: HkCrmApplicationInput): Promise<AdminCrmApplicationResult> {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const portalUserId = normalizePortalUserId(input.portalUserId);
+  if (!portalUserId) {
+    return { accepted: false, created: false, code: "CRM_ACCOUNT_REQUIRED", crmStatus: "none", message: "请先登录前台账号后再提交企业开通申请" };
+  }
+  if (input.agreementAccepted !== true
+    || input.agreementVersion !== ENTERPRISE_SERVICE_AGREEMENT_VERSION
+    || input.agreementHash !== ENTERPRISE_SERVICE_AGREEMENT_HASH) {
+    throw new Error("HK_ENTERPRISE_AGREEMENT_INVALID");
+  }
+  const submissionId = normalizeHkSubmissionId(input.submissionId);
+  const payloadHash = normalizeHkPayloadHash(input.payloadHash);
+  if (!submissionId || !payloadHash) throw new Error("HK_SUBMISSION_LEDGER_INVALID");
+  const parsed = hkRegistrationDataSchema.parse(input.registrationData);
+  const identity = hkRegistrationIdentifier(parsed.brn);
+  if (input.registrationIdentifier.trim().toUpperCase() !== identity) {
+    throw new Error("HK_REGISTRATION_IDENTIFIER_MISMATCH");
+  }
+  const documents: HkRegistrationDocuments = {
+    BR: { objectKey: assertHkDocumentObjectKey(input.documents.BR.objectKey, portalUserId, "BR"), fileName: input.documents.BR.fileName.trim() },
+    CI: { objectKey: assertHkDocumentObjectKey(input.documents.CI.objectKey, portalUserId, "CI"), fileName: input.documents.CI.fileName.trim() },
+    BANK: { objectKey: assertHkDocumentObjectKey(input.documents.BANK.objectKey, portalUserId, "BANK"), fileName: input.documents.BANK.fileName.trim() },
+  };
+  if (Object.values(documents).some(document => !document.fileName || document.fileName.length > 255)) {
+    throw new Error("HK_DOCUMENT_FILE_NAME_INVALID");
+  }
+  const verification = input.documentVerification;
+  if (verification) {
+    for (const kind of ["BR", "CI", "BANK"] as const) {
+      const value = verification[kind];
+      if (!value || !normalizeHkSubmissionId(value.documentId) || !["recognized", "failed"].includes(value.ocrStatus)
+        || !["ocr-assisted", "manual-classification-required"].includes(value.classification)) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+    }
+  }
+  const pendingData = { ...buildPendingHkRegistration(parsed, documents, { submissionId, payloadHash }),
+    documentVerification: verification ?? Object.fromEntries((["BR", "CI", "BANK"] as const).map(kind => [kind, { documentId: "", ocrStatus: "failed", recognizedType: null, classification: "manual-classification-required" }])) };
+  const now = new Date();
+  const profileFields = {
+    companyName: parsed.companyName,
+    companyType: "香港注册公司",
+    companyRole: parsed.companyRole || null,
+    registeredAddress: parsed.regAddress,
+    establishedDate: parsed.establishedAt ? new Date(`${parsed.establishedAt}T00:00:00+08:00`) : null,
+    settlementAccountName: parsed.bankAccountName,
+    settlementAccount: parsed.bankAccountNumber,
+    settlementBank: parsed.bankName,
+    contactName: input.contactName?.trim() || null,
+    contactPhone: input.contactPhone?.trim() || null,
+    contactEmail: input.contactEmail?.trim() || null,
+    agreementStatus: "signed" as const,
+    registrationRegion: "HK" as const,
+    registrationIdentifier: identity,
+    ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner } : {}),
+    ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode } : {}),
+  };
+
+  try {
+    return await db.transaction(async tx => {
+    const [existing] = await tx.select().from(merchants)
+      .where(eq(merchants.registrationIdentifier, identity)).limit(1).for("update");
+    if (!existing) {
+      const merchantNo = genMerchantNo(now);
+      const result = await tx.insert(merchants).values({
+        merchantNo,
+        ...profileFields,
+        businessLicense: null,
+        registrationData: null,
+        registrationPendingData: pendingData,
+        hkSubmissionId: submissionId,
+        hkPayloadHash: payloadHash,
+        licenseObjectKey: documents.BR.objectKey,
+        ciObjectKey: documents.CI.objectKey,
+        bankDocumentObjectKey: documents.BANK.objectKey,
+        crmOwnerPortalUserId: portalUserId,
+        status: "pending",
+        source: "portal",
+        submittedAt: now,
+        crmStatus: "pending",
+        crmAppliedAt: now,
+      });
+      const merchantId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+      return { accepted: true, created: true, code: "HK_CRM_APPLICATION_ACCEPTED", crmStatus: "pending", merchantId, merchantNo };
+    }
+    if (existing.registrationRegion !== "HK") throw new Error("HK_REGISTRATION_REGION_CONFLICT");
+    const owner = normalizePortalUserId(existing.crmOwnerPortalUserId);
+    if (owner && owner !== portalUserId) {
+      return {
+        accepted: false, created: false,
+        code: existing.crmStatus === "pending" ? "CRM_COMPANY_APPLICATION_PENDING" : "CRM_COMPANY_ALREADY_BOUND",
+        crmStatus: existing.crmStatus, merchantId: existing.id, merchantNo: existing.merchantNo,
+        message: getCrmCompanyConflictMessage(existing.crmStatus, "该香港企业已绑定其他前台账号，请联系企业管理员或平台客服"),
+      };
+    }
+    if (existing.hkSubmissionId === submissionId) {
+      if (existing.hkPayloadHash !== payloadHash) throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
+      return {
+        accepted: true,
+        created: false,
+        code: "HK_CRM_APPLICATION_IDEMPOTENT",
+        crmStatus: existing.crmStatus,
+        merchantId: existing.id,
+        merchantNo: existing.merchantNo,
+        message: "该香港企业提交已受理，未重复覆盖现有审核资料",
+      };
+    }
+    const effective = existing.crmStatus === "enabled" || existing.crmStatus === "disabled" || existing.status === "approved";
+    if (effective) {
+      // 已开通/暂停企业的有效资料、有效附件和 CRM 状态绝不被一次重新提交覆盖；留待人工审核。
+      await tx.update(merchants).set({
+        registrationPendingData: pendingData,
+        hkSubmissionId: submissionId,
+        hkPayloadHash: payloadHash,
+      }).where(eq(merchants.id, existing.id));
+      return {
+        accepted: true, created: false,
+        code: "HK_CRM_PROFILE_REVIEW_PENDING",
+        crmStatus: existing.crmStatus, merchantId: existing.id, merchantNo: existing.merchantNo,
+        message: "新的香港注册资料已保存为待审核草稿，当前生效资料与 ERP 状态未变更",
+      };
+    }
+
+    await tx.update(merchants).set({
+      ...profileFields,
+      businessLicense: null,
+      registrationData: null,
+      registrationPendingData: pendingData,
+      hkSubmissionId: submissionId,
+      hkPayloadHash: payloadHash,
+      licenseObjectKey: documents.BR.objectKey,
+      ciObjectKey: documents.CI.objectKey,
+      bankDocumentObjectKey: documents.BANK.objectKey,
+      crmOwnerPortalUserId: owner ?? portalUserId,
+      crmStatus: "pending",
+      crmAppliedAt: now,
+      status: "pending",
+      source: "portal",
+      submittedAt: now,
+    }).where(eq(merchants.id, existing.id));
+    return {
+      accepted: true, created: false,
+      code: existing.crmStatus === "rejected" ? "HK_CRM_APPLICATION_REAPPLIED" : "HK_CRM_APPLICATION_ACCEPTED",
+      crmStatus: "pending", merchantId: existing.id, merchantNo: existing.merchantNo,
+    };
+    });
+  } catch (error) {
+    const mysqlError = error as {
+      errno?: number;
+      code?: string;
+      cause?: { errno?: number; code?: string };
+    };
+    const duplicate = mysqlError.errno === 1062
+      || mysqlError.code === "ER_DUP_ENTRY"
+      || mysqlError.cause?.errno === 1062
+      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    if (!duplicate) throw error;
+    // A concurrent first submit won the unique HK identity. Re-read it once;
+    // never retry an insert or overwrite the winner's pending/effective data.
+    const [raced] = await db.select().from(merchants)
+      .where(eq(merchants.registrationIdentifier, identity)).limit(1);
+    if (!raced || raced.registrationRegion !== "HK") throw error;
+    const racedOwner = normalizePortalUserId(raced.crmOwnerPortalUserId);
+    if (racedOwner && racedOwner !== portalUserId) {
+      return {
+        accepted: false,
+        created: false,
+        code: raced.crmStatus === "pending" ? "CRM_COMPANY_APPLICATION_PENDING" : "CRM_COMPANY_ALREADY_BOUND",
+        crmStatus: raced.crmStatus,
+        merchantId: raced.id,
+        merchantNo: raced.merchantNo,
+        message: getCrmCompanyConflictMessage(raced.crmStatus, "该香港企业已绑定其他前台账号，请联系企业管理员或平台客服"),
+      };
+    }
+    if (raced.hkSubmissionId === submissionId) {
+      if (raced.hkPayloadHash !== payloadHash) throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
+      return {
+        accepted: true,
+        created: false,
+        code: "HK_CRM_APPLICATION_IDEMPOTENT",
+        crmStatus: raced.crmStatus,
+        merchantId: raced.id,
+        merchantNo: raced.merchantNo,
+        message: "该香港企业提交已受理，未重复覆盖现有审核资料",
+      };
+    }
+    return {
+      accepted: false,
+      created: false,
+      code: raced.crmStatus === "pending" ? "CRM_APPLICATION_PENDING" : "CRM_COMPANY_ALREADY_BOUND",
+      crmStatus: raced.crmStatus,
+      merchantId: raced.id,
+      merchantNo: raced.merchantNo,
+      message: "该香港企业提交正在审核或已存在，请刷新后确认状态",
+    };
+  }
+}
+
+/**
+ * HK registration review is deliberately separate from ERP enablement.  The
+ * reviewer promotes pending data atomically; an ERP enable later verifies this
+ * reviewed state and never treats an upload as approval.
+ */
+export async function reviewHkRegistrationDraft(input: {
+  merchantId: number;
+  decision: "approved" | "rejected";
+  note?: string | null;
+  expectedSubmissionId: string;
+  expectedPayloadHash: string;
+  /** Internal reviewer acknowledgement; this is not an official attestation. */
+  confirmed?: boolean;
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const note = input.note?.trim() || null;
+  if (input.decision === "rejected" && !note) throw new Error("HK_REVIEW_NOTE_REQUIRED");
+  if (input.decision === "approved" && input.confirmed !== true) throw new Error("HK_REVIEW_CONFIRMATION_REQUIRED");
+  return db.transaction(async tx => {
+    const [merchant] = await tx.select().from(merchants)
+      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+    if (merchant.registrationRegion !== "HK") throw new Error("HK_REGISTRATION_REQUIRED");
+    const identity = merchantRegistrationIdentity(merchant);
+    const pending = parsePendingHkRegistration(merchant.registrationPendingData);
+    if (!identity || !pending) throw new Error("HK_PENDING_REGISTRATION_NOT_FOUND");
+    // This locked local record is the first CAS boundary. It must reject a
+    // reviewer action for an older candidate before reading or updating the
+    // cross-database company records.
+    if (pending.submissionId !== input.expectedSubmissionId
+      || pending.payloadHash !== input.expectedPayloadHash
+      || merchant.hkSubmissionId !== input.expectedSubmissionId
+      || merchant.hkPayloadHash !== input.expectedPayloadHash) {
+      throw new Error("HK_REVIEW_VERSION_CHANGED");
+    }
+    // Date/BRN rules are re-evaluated at the moment of human decision.
+    const registration = hkRegistrationDataSchema.parse(pending.registration);
+    if (hkRegistrationIdentifier(registration.brn) !== identity) throw new Error("HK_REGISTRATION_DATA_INVALID");
+
+    const effective = parseStoredHkRegistration(merchant.registrationData);
+    const crmOwner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
+    if (!crmOwner) throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
+
+    /*
+     * `companies.userId` is the immutable data owner and can legitimately be
+     * the original submitter after an ERP-owner rebind. Review / enable must
+     * instead bind to the enterprise's current super administrator.
+     */
+    const platformResult = (await tx.execute(sql`
+      SELECT company.id, enterprise.id AS enterpriseId, company.registrationData, company.pendingDraft,
+             company.licenseObjectKey, company.licenseFileName,
+             company.bankLicenseObjectKey, company.bankLicenseFileName,
+             company.certLevel, company.reviewStatus, company.registrationSubmissionId, company.registrationPayloadHash,
+             CAST(enterprise.superAdminUserId AS CHAR) AS enterpriseOwnerUserId
+        FROM ${sql.raw(PLATFORM_DB)}.companies AS company
+        INNER JOIN ${sql.raw(PLATFORM_DB)}.enterprises AS enterprise
+          ON enterprise.id = company.enterpriseId
+       WHERE company.registrationRegion = 'HK'
+         AND company.registrationIdentifier = ${identity}
+         AND CAST(enterprise.superAdminUserId AS CHAR) = ${crmOwner}
+       LIMIT 2
+       FOR UPDATE
+    `)) as unknown as [[{
+      id: number;
+      enterpriseId: number;
+      registrationData: unknown;
+      pendingDraft: unknown;
+      licenseObjectKey: string | null;
+      licenseFileName: string | null;
+      bankLicenseObjectKey: string | null;
+      bankLicenseFileName: string | null;
+      certLevel: string;
+      reviewStatus: string;
+      registrationSubmissionId: string | null;
+      registrationPayloadHash: string | null;
+      enterpriseOwnerUserId: string | null;
+    }], unknown];
+    const platformCompanies = platformResult[0] ?? [];
+    const platformCompany = platformCompanies[0];
+    if (platformCompanies.length !== 1 || !platformCompany
+      || String(platformCompany.enterpriseOwnerUserId ?? "") !== crmOwner) {
+      throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
+    }
+
+    const pendingDraft = decodeJsonValue<Record<string, unknown>>(platformCompany.pendingDraft, null);
+    const isResubmission = pendingDraft !== null;
+    const sourceFields = pendingDraft ?? platformCompany;
+    const mainCandidate = sourceFields.registrationData;
+    const mainRegistration = hkRegistrationDataSchema.safeParse(mainCandidate);
+    const mainBrObjectKey = typeof sourceFields.licenseObjectKey === "string" ? sourceFields.licenseObjectKey.trim() : "";
+    const mainBrFileName = typeof sourceFields.licenseFileName === "string" ? sourceFields.licenseFileName.trim() : "";
+    const mainBankObjectKey = typeof sourceFields.bankLicenseObjectKey === "string" ? sourceFields.bankLicenseObjectKey.trim() : "";
+    const mainBankFileName = typeof sourceFields.bankLicenseFileName === "string" ? sourceFields.bankLicenseFileName.trim() : "";
+    if (platformCompany.registrationSubmissionId !== pending.submissionId || platformCompany.registrationPayloadHash !== pending.payloadHash
+      || !mainRegistration.success
+      || canonicalHkRegistration(mainRegistration.data) !== canonicalHkRegistration(registration)
+      || mainBrObjectKey !== pending.documentObjectKeys.BR
+      || mainBrFileName !== pending.documents.BR.fileName
+      || mainBankObjectKey !== pending.documentObjectKeys.BANK
+      || mainBankFileName !== pending.documents.BANK.fileName) {
+      throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
+    }
+    // CI is held by the backend private-document store rather than the main
+    // site's pendingDraft. parsePendingHkRegistration has already validated its immutable owner-scoped key.
+    assertStoredHkDocumentObjectKey(pending.documentObjectKeys.CI, "CI");
+
+    const expectedPendingDraft = isResubmission ? JSON.stringify(pendingDraft) : null;
+    const reviewGuard = isResubmission
+      ? sql`AND company.reviewStatus = 'pending'
+            AND company.pendingDraft IS NOT NULL
+            AND JSON_CONTAINS(company.pendingDraft, CAST(${expectedPendingDraft} AS JSON))
+            AND JSON_CONTAINS(CAST(${expectedPendingDraft} AS JSON), company.pendingDraft)`
+      : sql`AND company.reviewStatus = 'pending' AND company.pendingDraft IS NULL`;
+    const platformCompanyWhere = sql`
+      company.id = ${platformCompany.id}
+      AND company.registrationRegion = 'HK'
+      AND company.registrationIdentifier = ${identity}
+      AND company.registrationSubmissionId = ${pending.submissionId}
+      AND company.registrationPayloadHash = ${pending.payloadHash}
+      AND CAST(enterprise.superAdminUserId AS CHAR) = ${crmOwner}
+      ${reviewGuard}
+    `;
+
+    if (input.decision === "approved") {
+      const companyResult = (await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies AS company
+        INNER JOIN ${sql.raw(PLATFORM_DB)}.enterprises AS enterprise
+          ON enterprise.id = company.enterpriseId
+           SET company.registrationData = CAST(${canonicalHkRegistration(registration)} AS JSON),
+               company.companyName = ${registration.companyName},
+               company.companyType = ${registration.businessNature},
+               company.companyRole = ${registration.companyRole || null},
+               company.regAddress = ${registration.regAddress},
+               company.establishedAt = ${registration.establishedAt || null},
+               company.bankName = ${registration.bankName},
+               company.bankAccountName = ${registration.bankAccountName},
+               company.bankAccountNumber = ${registration.bankAccountNumber},
+               company.salesOwner = ${registration.salesOwner || null},
+               company.salesOwnerCode = ${registration.salesOwnerCode || null},
+               company.licenseObjectKey = ${pending.documentObjectKeys.BR},
+               company.licenseFileName = ${pending.documents.BR.fileName},
+               company.bankLicenseObjectKey = ${pending.documentObjectKeys.BANK},
+               company.bankLicenseFileName = ${pending.documents.BANK.fileName},
+               company.pendingDraft = NULL,
+               company.reviewStatus = 'approved',
+               company.certLevel = CASE WHEN company.certLevel = 'premium' THEN 'premium' ELSE 'certified' END,
+               company.rejectReason = NULL,
+               company.reviewedAt = NOW(),
+               company.merchantSinceAt = COALESCE(company.merchantSinceAt, NOW())
+         WHERE ${platformCompanyWhere}
+      `)) as unknown as [{ affectedRows?: number }, unknown];
+      if (Number(companyResult[0]?.affectedRows ?? 0) !== 1) {
+        throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
+      }
+      // Keep the unified enterprise name in sync only after the candidate has
+      // passed the guarded company promotion. The SELECT FOR UPDATE above has
+      // already locked and verified this enterprise's current owner/version;
+      // MySQL may report zero changed rows when the name is identical, so that
+      // is intentionally not interpreted as a failed update.
+      await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.enterprises AS enterprise
+           SET enterprise.companyName = ${registration.companyName}
+         WHERE enterprise.id = ${platformCompany.enterpriseId}
+           AND CAST(enterprise.superAdminUserId AS CHAR) = ${crmOwner}
+      `);
+      // merchantSinceAt and companies.userId are deliberately absent: both are stable
+      // lifecycle/data-owner attributes and review only promotes the registration fields.
+      await tx.update(merchants).set({
+        companyName: registration.companyName,
+        companyType: "香港注册公司",
+        companyRole: registration.companyRole || null,
+        registeredAddress: registration.regAddress,
+        establishedDate: registration.establishedAt ? new Date(`${registration.establishedAt}T00:00:00+08:00`) : null,
+        settlementAccountName: registration.bankAccountName,
+        settlementAccount: registration.bankAccountNumber,
+        settlementBank: registration.bankName,
+        salesOwner: registration.salesOwner || null,
+        salesOwnerCode: registration.salesOwnerCode || null,
+        registrationData: buildStoredHkRegistration(registration, {
+          BR: { objectKey: pending.documentObjectKeys.BR, fileName: pending.documents.BR.fileName },
+          CI: { objectKey: pending.documentObjectKeys.CI, fileName: pending.documents.CI.fileName },
+          BANK: { objectKey: pending.documentObjectKeys.BANK, fileName: pending.documents.BANK.fileName },
+        }, { submissionId: pending.submissionId, payloadHash: pending.payloadHash }),
+        registrationPendingData: null,
+        licenseObjectKey: pending.documentObjectKeys.BR,
+        ciObjectKey: pending.documentObjectKeys.CI,
+        bankDocumentObjectKey: pending.documentObjectKeys.BANK,
+        status: "approved",
+        reviewNote: note,
+        reviewedBy: input.actor?.operatorId ?? null,
+        reviewedAt: new Date(),
+      }).where(eq(merchants.id, merchant.id));
+    } else {
+      const companyResult = (await tx.execute(sql`
+        UPDATE ${sql.raw(PLATFORM_DB)}.companies AS company
+        INNER JOIN ${sql.raw(PLATFORM_DB)}.enterprises AS enterprise
+          ON enterprise.id = company.enterpriseId
+           SET company.pendingDraft = NULL,
+               company.reviewStatus = ${effective ? "approved" : "rejected"},
+               company.certLevel = ${effective ? sql`company.certLevel` : "pending"},
+               company.rejectReason = ${note},
+               company.reviewedAt = NOW()
+         WHERE ${platformCompanyWhere}
+      `)) as unknown as [{ affectedRows?: number }, unknown];
+      if (Number(companyResult[0]?.affectedRows ?? 0) !== 1) {
+        throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
+      }
+      await tx.update(merchants).set({
+        registrationPendingData: null,
+        ...(effective ? {} : {
+          licenseObjectKey: null,
+          ciObjectKey: null,
+          bankDocumentObjectKey: null,
+          status: "supplement" as const,
+        }),
+        reviewNote: note,
+        reviewedBy: input.actor?.operatorId ?? null,
+        reviewedAt: new Date(),
+      }).where(eq(merchants.id, merchant.id));
+    }
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: `merchant.hk-registration.review.${input.decision}`,
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(merchant.id),
+      beforeValue: {
+        crmStatus: merchant.crmStatus,
+        registrationRegion: "HK",
+        identity,
+        submissionId: pending.submissionId,
+        payloadHash: pending.payloadHash,
+        hadEffectiveRegistration: Boolean(effective),
+        hadPendingRegistration: true,
+      },
+      afterValue: {
+        crmStatus: merchant.crmStatus,
+        registrationRegion: "HK",
+        identity,
+        submissionId: pending.submissionId,
+        payloadHash: pending.payloadHash,
+        manualConfirmation: input.decision === "approved" ? true : null,
+        promoted: input.decision === "approved",
+        pendingCleared: true,
+      },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note,
+    });
+    return { success: true as const, decision: input.decision, crmStatus: merchant.crmStatus };
+  });
+}
+
 /** 后台：设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
 export async function setMerchantCrmStatus(input: {
   merchantId: number;
@@ -1872,6 +2791,37 @@ export async function setMerchantCrmStatus(input: {
     const ownerToKeep = decision.kind === "enable"
       ? decision.ownerToBind
       : decision.existingOwner;
+    if (input.crmStatus === "enabled" && merchant.registrationRegion === "HK") {
+      const registration = parseStoredHkRegistration(merchant.registrationData);
+      if (!registration || merchant.registrationIdentifier !== hkRegistrationIdentifier(registration.registration.brn)) {
+        throw new Error("HK_REGISTRATION_DATA_INVALID");
+      }
+      if (merchant.status !== "approved" || !ownerToKeep || !merchant.licenseObjectKey || !merchant.ciObjectKey || !merchant.bankDocumentObjectKey) {
+        throw new Error("HK_REQUIRED_DOCUMENTS_MISSING");
+      }
+      // Re-parse at enable time: expiry/date rules remain time-sensitive after the human draft review.
+      hkRegistrationDataSchema.parse(registration.registration);
+      assertStoredHkDocumentObjectKey(merchant.licenseObjectKey, "BR");
+      assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI");
+      assertStoredHkDocumentObjectKey(merchant.bankDocumentObjectKey, "BANK");
+      const identity = merchantRegistrationIdentity(merchant);
+      if (!identity) throw new Error("HK_REGISTRATION_DATA_INVALID");
+      const platformRows = (await tx.execute(sql`
+        SELECT CAST(enterprise.superAdminUserId AS CHAR) AS ownerUserId, company.reviewStatus, company.pendingDraft,
+               company.registrationSubmissionId, company.registrationPayloadHash
+          FROM ${sql.raw(PLATFORM_DB)}.companies company
+          INNER JOIN ${sql.raw(PLATFORM_DB)}.enterprises enterprise ON enterprise.id = company.enterpriseId
+         WHERE company.registrationRegion = 'HK' AND company.registrationIdentifier = ${identity}
+         LIMIT 2
+         FOR UPDATE
+      `)) as unknown as [[{ ownerUserId: string | null; reviewStatus: string; pendingDraft: unknown; registrationSubmissionId: string | null; registrationPayloadHash: string | null }], unknown];
+      const company = platformRows[0]?.[0];
+      if (platformRows[0]?.length !== 1 || company?.reviewStatus !== "approved" || company.pendingDraft !== null
+        || String(company.ownerUserId ?? "") !== ownerToKeep
+        || company.registrationSubmissionId !== registration.submissionId || company.registrationPayloadHash !== registration.payloadHash) {
+        throw new Error("HK_PLATFORM_REVIEW_OR_OWNER_INVALID");
+      }
+    }
     const ownerCondition = decision.kind === "enable"
       ? decision.expectedExistingOwner
         ? eq(merchants.crmOwnerPortalUserId, decision.expectedExistingOwner)
@@ -1992,6 +2942,18 @@ export async function rebindMerchantCrmOwner(input: {
     }
     if (oldOwner === newOwner) throw new Error("新超级管理员不能与当前绑定账号相同");
 
+    // HK must retain its real BRN union identity; it must never be represented as a blank/fake CN credit code.
+    const identity = merchantRegistrationIdentity(merchant);
+    if (!identity) throw new Error("MERCHANT_CRM_IDENTITY_INVALID");
+    const registrationIdentifier = merchant.registrationRegion === "HK" ? identity : null;
+    const creditCode = merchant.registrationRegion === "HK" ? null : normalizeCreditCode(merchant.businessLicense || "");
+    if (merchant.registrationRegion === "HK" && !/^HK:\d{8}$/.test(registrationIdentifier || "")) {
+      throw new Error("HK_REGISTRATION_DATA_INVALID");
+    }
+    if (merchant.registrationRegion !== "HK" && !creditCode) {
+      throw new Error("MERCHANT_CRM_IDENTITY_INVALID");
+    }
+
     const updateResult = await tx.update(merchants).set({
       crmOwnerPortalUserId: newOwner,
       crmNote: reason,
@@ -2010,7 +2972,8 @@ export async function rebindMerchantCrmOwner(input: {
       merchantId: input.merchantId,
       expectedOwnerPortalUserId: expectedOwner,
       nextOwnerPortalUserId: newOwner,
-      creditCode: normalizeCreditCode(merchant.businessLicense || ""),
+      creditCode,
+      registrationIdentifier,
       reason,
       operatorId: input.actor?.operatorId ?? null,
       operatorName: input.actor?.operatorName ?? "system",
@@ -2032,10 +2995,14 @@ export async function rebindMerchantCrmOwner(input: {
       beforeValue: {
         crmStatus: merchant.crmStatus,
         crmOwnerPortalUserId: oldOwner,
+        registrationRegion: merchant.registrationRegion,
+        identity,
       },
       afterValue: {
         crmStatus: merchant.crmStatus,
         crmOwnerPortalUserId: newOwner,
+        registrationRegion: merchant.registrationRegion,
+        identity,
       },
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
@@ -2309,6 +3276,75 @@ export async function getCrmBindingByCreditCode(creditCodeInput: string) {
     creditCode,
     crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId),
   };
+}
+
+/** 香港 ERP 门禁：仅接受 HK:<8位BRN>，绝不回退到 creditCode / businessLicense。 */
+export async function getHkCrmAccessByRegistrationIdentifier(
+  registrationIdentifierInput: string,
+  portalUserIdInput?: string | null,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const identity = registrationIdentifierInput.trim().toUpperCase();
+  if (!/^HK:\d{8}$/.test(identity)) throw new Error("HK_REGISTRATION_IDENTIFIER_INVALID");
+  const portalUserId = normalizePortalUserId(portalUserIdInput);
+  if (!portalUserId) return { allowed: false, code: "CRM_ACCOUNT_REQUIRED" as const, crmStatus: "none" as const, identity, message: "请先登录前台账号后再访问 ERP" };
+  const [merchant] = await db.select().from(merchants).where(and(
+    eq(merchants.registrationRegion, "HK"),
+    eq(merchants.registrationIdentifier, identity),
+  )).limit(1);
+  if (!merchant) return { allowed: false, code: "CRM_NOT_ENABLED" as const, crmStatus: "none" as const, identity, message: "您尚未开通ERP，请先提交香港企业开通申请" };
+  const owner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
+  if (!owner) return { allowed: false, code: "CRM_BINDING_REQUIRED" as const, crmStatus: merchant.crmStatus, identity, message: "该企业需要平台核验绑定关系，请联系客服" };
+  if (owner !== portalUserId) {
+    return {
+      allowed: false,
+      code: merchant.crmStatus === "pending" ? "CRM_COMPANY_APPLICATION_PENDING" as const
+        : merchant.crmStatus === "enabled" ? "CRM_COMPANY_ALREADY_ENABLED" as const : "CRM_COMPANY_ALREADY_BOUND" as const,
+      crmStatus: merchant.crmStatus,
+      identity,
+      message: getCrmCompanyConflictMessage(merchant.crmStatus, "该香港企业已绑定其他前台账号"),
+    };
+  }
+  if (merchant.crmStatus === "enabled") {
+    return { allowed: true, code: "CRM_ACCESS_GRANTED" as const, crmStatus: "enabled" as const, identity, message: null, merchantNo: merchant.merchantNo, crmThreadNo: merchant.crmThreadNo ?? null };
+  }
+  const messageMap: Record<string, string> = {
+    disabled: "您的ERP权限已经被暂停，请联系客服", pending: "您的ERP开通申请正在审核中，请耐心等待",
+    rejected: "您的ERP开通申请未通过，如有疑问请联系客服", none: "您尚未开通ERP，请先提交企业开通申请",
+  };
+  return {
+    allowed: false,
+    code: merchant.crmStatus === "pending" ? "CRM_APPLICATION_PENDING" as const
+      : merchant.crmStatus === "rejected" ? "CRM_APPLICATION_REJECTED" as const
+        : merchant.crmStatus === "disabled" ? "CRM_ACCESS_DISABLED" as const : "CRM_NOT_ENABLED" as const,
+    crmStatus: merchant.crmStatus,
+    identity,
+    message: messageMap[merchant.crmStatus] ?? messageMap.none,
+    merchantNo: merchant.merchantNo,
+    crmThreadNo: merchant.crmThreadNo ?? null,
+  };
+}
+
+/** 仅 portal-key 路由使用的 HK 绑定对账投影；不返回任何私有注册/附件数据。 */
+export async function getHkCrmBindingByRegistrationIdentifier(registrationIdentifierInput: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const identity = registrationIdentifierInput.trim().toUpperCase();
+  if (!/^HK:\d{8}$/.test(identity)) throw new Error("HK_REGISTRATION_IDENTIFIER_INVALID");
+  const [merchant] = await db.select({
+    merchantId: merchants.id,
+    merchantNo: merchants.merchantNo,
+    companyName: merchants.companyName,
+    registrationIdentifier: merchants.registrationIdentifier,
+    crmStatus: merchants.crmStatus,
+    crmOwnerPortalUserId: merchants.crmOwnerPortalUserId,
+  }).from(merchants).where(and(
+    eq(merchants.registrationRegion, "HK"),
+    eq(merchants.registrationIdentifier, identity),
+  )).limit(1);
+  if (!merchant) return { found: false as const, identity, crmStatus: "none" as const, crmOwnerPortalUserId: null };
+  return { found: true as const, ...merchant, identity, crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId) };
 }
 
 // ─── 管理员 ───────────────────────────────────────────────────────────────────

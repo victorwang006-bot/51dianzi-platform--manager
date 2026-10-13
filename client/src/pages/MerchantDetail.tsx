@@ -22,11 +22,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { formatBeijingDate } from "@shared/beijingTime";
+import { displayHkDate } from "@shared/hongKongDateDisplay";
 import { hasAdminPermission, type AdminRole } from "@shared/adminPermissions";
 import {
   ArrowLeft,
@@ -50,11 +53,15 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 
 type MerchantTab = "materials" | "users" | "company" | "images" | "records" | "spot" | "agency";
+type HkReviewVersion = {
+  expectedSubmissionId: string;
+  expectedPayloadHash: string;
+};
 type HomepageFeatureStatus = {
   featured: boolean;
   showcased: boolean;
@@ -159,6 +166,12 @@ export default function MerchantDetail() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [homepageFeatureDialogTarget, setHomepageFeatureDialogTarget] = useState<boolean | null>(null);
   const [homepageShowcaseDialogTarget, setHomepageShowcaseDialogTarget] = useState<boolean | null>(null);
+  const [hkReviewDecision, setHkReviewDecision] = useState<"approved" | "rejected" | null>(null);
+  const [hkReviewNote, setHkReviewNote] = useState("");
+  const [hkIdentityConfirmed, setHkIdentityConfirmed] = useState(false);
+  // Frozen only when the reviewer opens the dialog. A refetch must never swap
+  // the dialog to a newly submitted candidate or preserve its confirmation.
+  const [hkReviewVersion, setHkReviewVersion] = useState<HkReviewVersion | null>(null);
   const utils = trpc.useUtils();
   const homepageFeatureProcedures = trpc.merchant as unknown as MerchantHomepageFeatureProcedures;
 
@@ -177,6 +190,23 @@ export default function MerchantDetail() {
     { enabled: Number.isFinite(id) && id > 0 },
   );
   const licenseAccess = trpc.merchant.licenseAccess.useMutation();
+  const hkDocumentAccess = trpc.merchant.hkDocumentAccess.useMutation();
+  const reviewHkRegistrationDraftMutation = trpc.merchant.reviewHkRegistrationDraft.useMutation({
+    onSuccess: async result => {
+      await Promise.all([
+        utils.merchant.detail.invalidate({ id }),
+        utils.merchant.list.invalidate(),
+      ]);
+      setHkReviewDecision(null);
+      setHkReviewNote("");
+      setHkIdentityConfirmed(false);
+      setHkReviewVersion(null);
+      toast.success(result.decision === "approved" ? "香港注册资料已通过人工审核" : "已退回香港注册资料");
+    },
+    onError: error => {
+      toast.error(`香港注册资料审核失败：${error.message}`);
+    },
+  });
   const usernameMutation = trpc.merchant.setInternalContactName.useMutation({
     onSuccess: result => {
       toast.success(result.internalContactName ? "用户名已更新" : "已恢复原用户名");
@@ -230,6 +260,35 @@ export default function MerchantDetail() {
     }
   };
 
+  /** HK records never reuse the CN license signer or expose object keys to the browser. */
+  const openHkDocument = async (
+    kind: "BR" | "CI" | "BANK",
+    source: "effective" | "pending" = "effective",
+    expectedPendingVersion?: HkReviewVersion,
+  ) => {
+    const preview = window.open("about:blank", "_blank");
+    if (preview) preview.opener = null;
+    try {
+      const result = await hkDocumentAccess.mutateAsync(
+        source === "pending"
+          ? { id, kind, source, ...expectedPendingVersion }
+          : { id, kind, source },
+      );
+      if (preview) {
+        preview.location.replace(result.url);
+      } else {
+        const anchor = document.createElement("a");
+        anchor.href = result.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.click();
+      }
+    } catch (error) {
+      preview?.close();
+      toast.error(error instanceof Error ? error.message : "香港审核材料暂时无法查看");
+    }
+  };
+
   const startUsernameEdit = () => {
     setUsernameDraft(merchant?.internalContactName?.trim() || merchant?.contactName?.trim() || "");
     setUsernameEditing(true);
@@ -256,6 +315,23 @@ export default function MerchantDetail() {
       return updated;
     });
   };
+
+  useEffect(() => {
+    if (!hkReviewDecision || !hkReviewVersion) return;
+    const latest = merchant?.hkRegistrationPending;
+    if (!latest
+      || latest.submissionId !== hkReviewVersion.expectedSubmissionId
+      || latest.payloadHash !== hkReviewVersion.expectedPayloadHash) {
+      // The action remains frozen and disabled until the dialog is closed and
+      // the reviewer reopens the new candidate's three source documents.
+      setHkIdentityConfirmed(false);
+    }
+  }, [
+    hkReviewDecision,
+    hkReviewVersion,
+    merchant?.hkRegistrationPending?.submissionId,
+    merchant?.hkRegistrationPending?.payloadHash,
+  ]);
 
   if (isLoading) {
     return (
@@ -304,6 +380,33 @@ export default function MerchantDetail() {
   const adminPermissions = (user as { permissions?: string[] } | null)?.permissions;
   const canWriteAgencyCertification = Boolean(user) && Boolean(merchant.canManage)
     && hasAdminPermission(adminRole, "merchants.write", adminPermissions);
+  // Keep the narrowed value stable inside nested document map callbacks below.
+  const hkRegistration = merchant.hkRegistration;
+  // The API returns this sensitive candidate only to a scoped merchant writer/reviewer.
+  const hkRegistrationPending = merchant.hkRegistrationPending;
+  const hkReviewVersionIsStale = Boolean(
+    hkReviewDecision && (!hkReviewVersion
+      || !hkRegistrationPending
+      || hkRegistrationPending.submissionId !== hkReviewVersion.expectedSubmissionId
+      || hkRegistrationPending.payloadHash !== hkReviewVersion.expectedPayloadHash),
+  );
+  const closeHkReviewDialog = () => {
+    if (reviewHkRegistrationDraftMutation.isPending) return;
+    setHkReviewDecision(null);
+    setHkReviewNote("");
+    setHkIdentityConfirmed(false);
+    setHkReviewVersion(null);
+  };
+  const openHkReviewDialog = (decision: "approved" | "rejected") => {
+    if (!hkRegistrationPending) return;
+    setHkReviewVersion({
+      expectedSubmissionId: hkRegistrationPending.submissionId,
+      expectedPayloadHash: hkRegistrationPending.payloadHash,
+    });
+    setHkReviewNote("");
+    setHkIdentityConfirmed(false);
+    setHkReviewDecision(decision);
+  };
 
   return (
     <DashboardLayout>
@@ -383,7 +486,11 @@ export default function MerchantDetail() {
                 ) : null}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                <span>商户编号 {merchant.merchantNo} · 统一社会信用代码 {merchant.businessLicense || "—"}</span>
+                <span>
+                  商户编号 {merchant.merchantNo} · {merchant.registrationRegion === "HK"
+                    ? `香港商业登记号码 ${merchant.hkRegistration?.brn || "—"}`
+                    : `统一社会信用代码 ${merchant.businessLicense || "—"}`}
+                </span>
                 {homepageFeatureMissingHint ? <span data-homepage-feature-missing>待完善：{homepageFeatureMissingHint}</span> : null}
               </div>
             </div>
@@ -453,6 +560,74 @@ export default function MerchantDetail() {
           </AlertDialogContent>
         </AlertDialog>
 
+        <AlertDialog
+          open={hkReviewDecision !== null}
+          onOpenChange={open => {
+            if (!open) closeHkReviewDialog();
+          }}
+        >
+          <AlertDialogContent data-hk-registration-review-dialog>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{hkReviewDecision === "approved" ? "通过香港注册资料？" : "退回香港注册资料？"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {hkReviewDecision === "approved"
+                  ? "通过仅会正式生效本次已核对的香港注册资料；ERP 开通仍由原后台流程后续人工处理。"
+                  : "退回后，商户需按审核备注重新提交香港注册资料。"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {hkReviewVersionIsStale ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900" data-hk-registration-review-version-changed>
+                待审核资料已更新。本次确认已取消；请关闭后重新查看 BR、CI 与银行证明原件，再发起审核。
+              </p>
+            ) : null}
+            {hkReviewDecision === "approved" ? (
+              <label className="flex cursor-pointer items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+                <Checkbox
+                  checked={hkIdentityConfirmed}
+                  disabled={reviewHkRegistrationDraftMutation.isPending || hkReviewVersionIsStale}
+                  onCheckedChange={checked => setHkIdentityConfirmed(checked === true)}
+                />
+                <span>我已逐份查看 BR、CI 与银行证明原件，并人工确认三证主体及银行账户与待审资料一致。</span>
+              </label>
+            ) : (
+              <div className="space-y-1.5">
+                <label htmlFor="hk-review-note" className="text-xs font-medium">退回原因（必填）</label>
+                <Textarea
+                  id="hk-review-note"
+                  value={hkReviewNote}
+                  maxLength={1000}
+                  disabled={reviewHkRegistrationDraftMutation.isPending || hkReviewVersionIsStale}
+                  placeholder="请说明需补充或更正的资料"
+                  onChange={event => setHkReviewNote(event.target.value)}
+                />
+              </div>
+            )}
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={reviewHkRegistrationDraftMutation.isPending}>取消</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={reviewHkRegistrationDraftMutation.isPending
+                  || hkReviewVersionIsStale
+                  || (hkReviewDecision === "approved" && !hkIdentityConfirmed)
+                  || (hkReviewDecision === "rejected" && !hkReviewNote.trim())}
+                onClick={event => {
+                  event.preventDefault();
+                  if (!hkReviewDecision || !hkReviewVersion || hkReviewVersionIsStale) return;
+                  reviewHkRegistrationDraftMutation.mutate({
+                    id,
+                    decision: hkReviewDecision,
+                    note: hkReviewNote.trim() || undefined,
+                    expectedSubmissionId: hkReviewVersion.expectedSubmissionId,
+                    expectedPayloadHash: hkReviewVersion.expectedPayloadHash,
+                    confirmed: hkReviewDecision === "approved" ? hkIdentityConfirmed : undefined,
+                  });
+                }}
+              >
+                {reviewHkRegistrationDraftMutation.isPending ? "处理中…" : hkReviewDecision === "approved" ? "确认通过" : "确认退回"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <dl className="grid grid-cols-2 overflow-hidden rounded-lg border bg-white sm:grid-cols-4" data-merchant-stat-strip>
           <div className="border-b px-4 py-2.5 sm:border-b-0 sm:border-r"><dt className="text-[11px] text-muted-foreground">协议状态</dt><dd className="mt-0.5 font-medium">{agreementBadge.label}</dd></div>
           <div className="border-b px-4 py-2.5 sm:border-b-0 sm:border-r"><dt className="text-[11px] text-muted-foreground">ERP 状态</dt><dd className="mt-0.5 font-medium">{merchant.crmStatus === "enabled" ? "已开通" : "未开通"}</dd></div>
@@ -506,35 +681,126 @@ export default function MerchantDetail() {
           {visitedTabs.has("company") ? (
             <TabsContent value="company" forceMount className={activeTab === "company" ? "mt-0" : "hidden"}>
               <div className="grid gap-3 lg:grid-cols-2" data-enterprise-profile-full-width>
-                <SectionCard title="企业工商信息" icon={Building2}>
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-                    <InfoItem label="企业名称" value={merchant.companyName} icon={Building2} />
-                    <InfoItem label="统一社会信用代码" value={merchant.businessLicense} icon={FileText} />
-                    <InfoItem label="企业类型" value={merchant.companyType} icon={Building2} />
-                    <InfoItem label="企业角色" value={merchant.companyRole} icon={ShieldCheck} />
-                    <InfoItem label="注册资本" value={merchant.registeredCapital} icon={Landmark} />
-                    <InfoItem label="成立日期" value={merchant.establishedDate ? formatBeijingDate(merchant.establishedDate) : null} icon={CalendarDays} />
-                    <InfoItem label="注册地址" value={merchant.registeredAddress} />
-                    <InfoItem label="法人姓名" value={merchant.legalPersonName} icon={User} />
-                    <InfoItem label="法人身份证号" value={merchant.legalPersonIdNo} icon={FileText} />
-                    <InfoItem label="法人联系电话" value={merchant.legalPersonPhone} icon={Phone} />
-                    <div className="min-w-0">
-                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><FileImage className="h-3 w-3" />营业执照</span>
-                      {merchant.hasLicenseDocument ? (
-                        <Button type="button" variant="link" size="sm" disabled={licenseAccess.isPending} onClick={() => void openBusinessLicense()} className="mt-1 h-auto justify-start p-0 text-[13px] font-normal">
-                          {licenseAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-4 w-4" />}
-                          {licenseAccess.isPending ? "正在获取安全链接…" : "点击查看营业执照"}
-                        </Button>
-                      ) : <span className="mt-1 block text-[13px]">—</span>}
+                {merchant.registrationRegion === "HK" && hkRegistration ? (
+                  <SectionCard title="香港企业注册资料" icon={Building2}>
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                      <InfoItem label="英文企业名称" value={hkRegistration.companyName} icon={Building2} />
+                      <InfoItem label="中文名称" value={hkRegistration.chineseName} icon={Building2} />
+                      <InfoItem label="业务性质" value={hkRegistration.businessNature} icon={ScrollText} />
+                      <InfoItem label="法律地位" value={hkRegistration.legalStatus} icon={ShieldCheck} />
+                      <InfoItem label="8位商业登记号码（BRN）" value={hkRegistration.brn} icon={FileText} />
+                      <InfoItem label="完整商业登记证号码" value={hkRegistration.registrationNumber} icon={FileText} />
+                      <InfoItem label="BR 生效日期" value={displayHkDate(hkRegistration.brStartDate)} icon={CalendarDays} />
+                      <InfoItem label="BR 届满日期" value={displayHkDate(hkRegistration.brExpiryDate)} icon={CalendarDays} />
+                      <InfoItem label="公司注册证编号（CI）" value={hkRegistration.ciNumber} icon={FileText} />
+                      <InfoItem label="成立日期（选填）" value={displayHkDate(hkRegistration.establishedAt)} icon={CalendarDays} />
+                      <InfoItem label="营业地址" value={hkRegistration.regAddress} />
+                      <InfoItem label="银行账户名称" value={hkRegistration.bankAccountName} icon={CreditCard} />
+                      <InfoItem label="开户行" value={hkRegistration.bankName} icon={Landmark} />
+                      <InfoItem label="银行地址（选填）" value={hkRegistration.bankAddress} icon={Landmark} />
+                      {(["BR", "CI", "BANK"] as const).map(kind => {
+                        const document = hkRegistration.documents[kind];
+                        const label = kind === "BR" ? "商业登记证（BR）" : kind === "CI" ? "公司注册证（CI）" : "银行证明";
+                        return (
+                          <div className="min-w-0" key={kind}>
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><FileImage className="h-3 w-3" />{label}</span>
+                            {document.available ? (
+                              <Button type="button" variant="link" size="sm" disabled={hkDocumentAccess.isPending} onClick={() => void openHkDocument(kind)} className="mt-1 h-auto max-w-full justify-start p-0 text-[13px] font-normal">
+                                {hkDocumentAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-4 w-4" />}
+                                <span className="truncate">{hkDocumentAccess.isPending ? "正在获取安全链接…" : `查看 ${document.fileName}`}</span>
+                              </Button>
+                            ) : <span className="mt-1 block text-[13px]">—</span>}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="min-w-0">
-                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><FileText className="h-3 w-3" />签署协议文件</span>
-                      {merchant.agreementFileUrl ? <a href={merchant.agreementFileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[13px] text-primary hover:underline"><FileText className="h-4 w-4" /> 查看已签署协议</a> : <span className="mt-1 block text-[13px]">商户尚未上传签署协议</span>}
+                    {merchant.source === "portal" ? <p className="mt-3 text-xs text-muted-foreground">香港注册资料由前台商家提交{merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}</p> : null}
+                  </SectionCard>
+                ) : (
+                  <SectionCard title="企业工商信息" icon={Building2}>
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                      <InfoItem label="企业名称" value={merchant.companyName} icon={Building2} />
+                      <InfoItem label="统一社会信用代码" value={merchant.businessLicense} icon={FileText} />
+                      <InfoItem label="企业类型" value={merchant.companyType} icon={Building2} />
+                      <InfoItem label="企业角色" value={merchant.companyRole} icon={ShieldCheck} />
+                      <InfoItem label="注册资本" value={merchant.registeredCapital} icon={Landmark} />
+                      <InfoItem label="成立日期" value={merchant.establishedDate ? formatBeijingDate(merchant.establishedDate) : null} icon={CalendarDays} />
+                      <InfoItem label="注册地址" value={merchant.registeredAddress} />
+                      <InfoItem label="法人姓名" value={merchant.legalPersonName} icon={User} />
+                      <InfoItem label="法人身份证号" value={merchant.legalPersonIdNo} icon={FileText} />
+                      <InfoItem label="法人联系电话" value={merchant.legalPersonPhone} icon={Phone} />
+                      <div className="min-w-0">
+                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><FileImage className="h-3 w-3" />营业执照</span>
+                        {merchant.hasLicenseDocument ? (
+                          <Button type="button" variant="link" size="sm" disabled={licenseAccess.isPending} onClick={() => void openBusinessLicense()} className="mt-1 h-auto justify-start p-0 text-[13px] font-normal">
+                            {licenseAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-4 w-4" />}
+                            {licenseAccess.isPending ? "正在获取安全链接…" : "点击查看营业执照"}
+                          </Button>
+                        ) : <span className="mt-1 block text-[13px]">—</span>}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><FileText className="h-3 w-3" />签署协议文件</span>
+                        {merchant.agreementFileUrl ? <a href={merchant.agreementFileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[13px] text-primary hover:underline"><FileText className="h-4 w-4" /> 查看已签署协议</a> : <span className="mt-1 block text-[13px]">商户尚未上传签署协议</span>}
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-4 border-t pt-4"><span className="mb-1 flex items-center gap-1 text-[11px] text-muted-foreground"><ScrollText className="h-3 w-3" />经营范围</span><p className="text-[13px] leading-6">{merchant.businessScope || "—"}</p></div>
-                  {merchant.source === "portal" ? <p className="mt-3 text-xs text-muted-foreground">工商信息由前台商家提交{merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}</p> : null}
-                </SectionCard>
+                    <div className="mt-4 border-t pt-4"><span className="mb-1 flex items-center gap-1 text-[11px] text-muted-foreground"><ScrollText className="h-3 w-3" />经营范围</span><p className="text-[13px] leading-6">{merchant.businessScope || "—"}</p></div>
+                    {merchant.source === "portal" ? <p className="mt-3 text-xs text-muted-foreground">工商信息由前台商家提交{merchant.submittedAt ? ` · 提交时间 ${formatDateTime(merchant.submittedAt)}` : ""}</p> : null}
+                  </SectionCard>
+                )}
+
+                {merchant.registrationRegion === "HK" && hkRegistrationPending ? (
+                  <SectionCard title="香港注册资料（待人工审核）" icon={ShieldCheck}>
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+                      <strong>OCR 识别成功仅作辅助；识别失败仅表示待人工分类，均不会自动通过。</strong>审核者必须逐份打开 BR、CI 和银行证明原件，人工确认主体与银行账户一致后方可批准。
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                      <InfoItem label="香港企业身份" value={hkRegistrationPending.identity} icon={ShieldCheck} />
+                      <InfoItem label="提交时间" value={hkRegistrationPending.submittedAt ? formatDateTime(hkRegistrationPending.submittedAt) : null} icon={CalendarDays} />
+                      <InfoItem label="英文企业名称" value={hkRegistrationPending.companyName} icon={Building2} />
+                      <InfoItem label="中文名称" value={hkRegistrationPending.chineseName} icon={Building2} />
+                      <InfoItem label="业务性质" value={hkRegistrationPending.businessNature} icon={ScrollText} />
+                      <InfoItem label="法律地位" value={hkRegistrationPending.legalStatus} icon={ShieldCheck} />
+                      <InfoItem label="8位商业登记号码（BRN）" value={hkRegistrationPending.brn} icon={FileText} />
+                      <InfoItem label="完整商业登记证号码" value={hkRegistrationPending.registrationNumber} icon={FileText} />
+                      <InfoItem label="BR 生效日期" value={displayHkDate(hkRegistrationPending.brStartDate)} icon={CalendarDays} />
+                      <InfoItem label="BR 届满日期" value={displayHkDate(hkRegistrationPending.brExpiryDate)} icon={CalendarDays} />
+                      <InfoItem label="公司注册证编号（CI）" value={hkRegistrationPending.ciNumber} icon={FileText} />
+                      <InfoItem label="成立日期（选填）" value={displayHkDate(hkRegistrationPending.establishedAt)} icon={CalendarDays} />
+                      <InfoItem label="营业地址" value={hkRegistrationPending.regAddress} />
+                      <InfoItem label="企业角色" value={hkRegistrationPending.companyRole} icon={ShieldCheck} />
+                      <InfoItem label="销售负责人" value={hkRegistrationPending.salesOwner} icon={User} />
+                      <InfoItem label="销售工号" value={hkRegistrationPending.salesOwnerCode} icon={User} />
+                      <InfoItem label="银行账户名称" value={hkRegistrationPending.bankAccountName} icon={CreditCard} />
+                      <InfoItem label="银行账户号码" value={hkRegistrationPending.bankAccountNumber} icon={CreditCard} />
+                      <InfoItem label="开户行" value={hkRegistrationPending.bankName} icon={Landmark} />
+                      <InfoItem label="银行地址（选填）" value={hkRegistrationPending.bankAddress} icon={Landmark} />
+                      <InfoItem label="SWIFT（选填）" value={hkRegistrationPending.swift} icon={Landmark} />
+                      <InfoItem label="银行代码（选填）" value={hkRegistrationPending.bankCode} icon={Landmark} />
+                      {(["BR", "CI", "BANK"] as const).map(kind => {
+                        const document = hkRegistrationPending.documents[kind];
+                        const label = kind === "BR" ? "商业登记证（BR）" : kind === "CI" ? "公司注册证（CI）" : "银行证明";
+                        return (
+                          <div className="min-w-0" key={kind}>
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><FileImage className="h-3 w-3" />{label}</span>
+                            {document.available ? (
+                              <Button type="button" variant="link" size="sm" disabled={hkDocumentAccess.isPending} onClick={() => void openHkDocument(kind, "pending", {
+                                expectedSubmissionId: hkRegistrationPending.submissionId,
+                                expectedPayloadHash: hkRegistrationPending.payloadHash,
+                              })} className="mt-1 h-auto max-w-full justify-start p-0 text-[13px] font-normal">
+                                {hkDocumentAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-4 w-4" />}
+                                <span className="truncate">{hkDocumentAccess.isPending ? "正在获取安全链接…" : `查看待审 ${document.fileName}`}</span>
+                              </Button>
+                            ) : <span className="mt-1 block text-[13px]">—</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
+                      <Button type="button" size="sm" disabled={reviewHkRegistrationDraftMutation.isPending} onClick={() => openHkReviewDialog("approved")}>人工核对后通过</Button>
+                      <Button type="button" size="sm" variant="outline" disabled={reviewHkRegistrationDraftMutation.isPending} onClick={() => openHkReviewDialog("rejected")}>退回审核</Button>
+                    </div>
+                  </SectionCard>
+                ) : null}
 
                 <div className="space-y-3">
                   <SectionCard title="联系信息" icon={Contact}>

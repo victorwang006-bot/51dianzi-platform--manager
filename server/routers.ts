@@ -27,6 +27,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { storageGetOssSignedUrl, storagePut } from "./storage";
+import { ENV as hkStorageEnv } from "./_core/env";
 import { removeLocalFile, saveLocalFile } from "./localUpload";
 import {
   getPlatformOrderDetail,
@@ -90,6 +91,7 @@ import {
   ENTERPRISE_SERVICE_AGREEMENT_HASH,
   ENTERPRISE_SERVICE_AGREEMENT_VERSION,
 } from "../shared/enterpriseServiceAgreementSummary";
+import { hkRegistrationDataSchema } from "../shared/hongKongRegistration";
 // 允许的上传类型与大小限制
 const MAX_PDF_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -322,21 +324,37 @@ async function confirmPlatformCrmOwnerRebind(record: {
   merchantId: number;
   expectedOwnerPortalUserId: string;
   nextOwnerPortalUserId: string;
+  /** CN only; HK records intentionally keep this null. */
   creditCode: string | null;
+  /** HK only; CN records intentionally keep this null. */
+  registrationIdentifier: string | null;
   reason: string;
 }) {
   let platform;
   try {
-    const merchant = record.creditCode ? null : await db.getMerchantById(record.merchantId);
-    const creditCode = record.creditCode?.trim() || merchant?.businessLicense?.trim() || "";
-    if (!creditCode) throw new Error("换绑账本缺少统一社会信用代码，无法确认前台企业角色");
-    platform = await completePlatformCrmRebind({
-      creditCode,
-      expectedPortalUserId: record.expectedOwnerPortalUserId,
-      newPortalUserId: record.nextOwnerPortalUserId,
-      reason: record.reason,
-      requestId: record.requestId,
-    });
+    const registrationIdentifier = record.registrationIdentifier?.trim().toUpperCase() || "";
+    const creditCode = record.creditCode?.trim() || "";
+    if (registrationIdentifier) {
+      if (!/^HK:\d{8}$/.test(registrationIdentifier) || creditCode) {
+        throw new Error("换绑账本香港企业身份异常，无法确认前台企业角色");
+      }
+      platform = await completePlatformCrmRebind({
+        registrationIdentifier,
+        expectedPortalUserId: record.expectedOwnerPortalUserId,
+        newPortalUserId: record.nextOwnerPortalUserId,
+        reason: record.reason,
+        requestId: record.requestId,
+      });
+    } else {
+      if (!creditCode) throw new Error("换绑账本缺少统一社会信用代码，无法确认前台企业角色");
+      platform = await completePlatformCrmRebind({
+        creditCode,
+        expectedPortalUserId: record.expectedOwnerPortalUserId,
+        newPortalUserId: record.nextOwnerPortalUserId,
+        reason: record.reason,
+        requestId: record.requestId,
+      });
+    }
     if (!platform.success) throw new Error("前台企业角色同步未确认成功");
     await db.completeCrmOwnerRebindPlatformSync(record.requestId);
   } catch (error) {
@@ -382,13 +400,18 @@ async function getPlatformEnterpriseBinding(ctx: TrpcContext, merchantId: number
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户尚未启用 ERP，无法管理企业成员" });
   }
   const creditCode = merchant.businessLicense?.trim().replace(/\s+/g, "").toUpperCase() || "";
+  const registrationIdentifier = merchant.registrationRegion === "HK"
+    ? merchant.registrationIdentifier?.trim().toUpperCase() || ""
+    : "";
   const ownerText = merchant.crmOwnerPortalUserId?.trim() || "";
   const ownerUserId = Number(ownerText);
-  if (!creditCode || !/^\d+$/.test(ownerText)
+  if ((!creditCode && !/^HK:\d{8}$/.test(registrationIdentifier)) || !/^\d+$/.test(ownerText)
     || !Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户 ERP 企业绑定异常，请先核对信用代码与超级管理员" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户 ERP 企业绑定异常，请先核对企业身份与超级管理员" });
   }
-  return { creditCode, expectedOwnerUserId: ownerUserId };
+  return merchant.registrationRegion === "HK"
+    ? { registrationIdentifier, expectedOwnerUserId: ownerUserId }
+    : { creditCode, expectedOwnerUserId: ownerUserId };
 }
 
 /**
@@ -397,6 +420,9 @@ async function getPlatformEnterpriseBinding(ctx: TrpcContext, merchantId: number
  */
 async function getPlatformCompanyMediaBinding(ctx: TrpcContext, merchantId: number) {
   const merchant = await assertMerchantInSalesScope(ctx, merchantId);
+  if (merchant.registrationRegion === "HK") {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "香港企业请使用支持香港企业身份的主站资料服务" });
+  }
   const creditCode = merchant.businessLicense?.trim().replace(/\s+/g, "").toUpperCase() || "";
   const ownerText = merchant.crmOwnerPortalUserId?.trim() || "";
   const ownerUserId = Number(ownerText);
@@ -1215,11 +1241,22 @@ export const appRouter = router({
       const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
       const canManage = salesStaffCodes === undefined
         || salesStaffCodes.includes(merchant.salesOwnerCode?.trim().toLowerCase() || "");
+      // Pending HK data includes account numbers and is deliberately a stricter
+      // reviewer-only DTO than the normal merchant-detail allowlist.
+      const isHkRegistrationReviewer = canManage
+        && hasAdminPermission(role, "merchants.write", ctx.adminPermissions);
+      const hkRegistrationPending = isHkRegistrationReviewer
+        ? db.toMerchantHkRegistrationPendingDetail(merchant)
+        : null;
       const canManageLogin = canManage
         && hasAdminPermission(role, "merchants.write", ctx.adminPermissions)
         && hasAdminPermission(role, "portalUsers.manage", ctx.adminPermissions);
       return {
         ...db.toMerchantReadDto(merchant),
+        // Generic DTO deliberately excludes raw registrationData and object keys; this is a field-level allowlist for detail only.
+        hkRegistration: db.toMerchantHkRegistrationDetail(merchant),
+        hkRegistrationPending,
+        hasPendingHkRegistration: isHkRegistrationReviewer && Boolean(hkRegistrationPending),
         canManage,
         canManageLogin,
         canOverrideOwnerLogin: canManageLogin && role === "super_admin",
@@ -1279,6 +1316,63 @@ export const appRouter = router({
 
         await db.recordMerchantLicenseView(input.id, auditSource, auditActorFromContext(ctx));
         return { url, expiresAt, fileName: source.fileName };
+      }),
+    /** HK 私有 BR / CI / 银行证明预览：仅正式负责人或审核管理员可签发 15 分钟 URL。 */
+    hkDocumentAccess: merchantReadProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        kind: z.enum(["BR", "CI", "BANK"]),
+        // Existing callers receive the effective registration document by default.
+        source: z.enum(["effective", "pending"]).default("effective"),
+        // Required only for a pending draft. They bind a short-lived URL to the
+        // exact candidate the reviewer is currently viewing.
+        expectedSubmissionId: z.string().uuid("香港提交号无效").optional(),
+        expectedPayloadHash: z.string().trim().regex(/^[a-f0-9]{64}$/i, "香港提交版本校验值无效").optional(),
+      }).superRefine((value, context) => {
+        if (value.source !== "pending") return;
+        if (!value.expectedSubmissionId) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["expectedSubmissionId"], message: "查看待审核香港原件必须提供提交版本" });
+        }
+        if (!value.expectedPayloadHash) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["expectedPayloadHash"], message: "查看待审核香港原件必须提供资料版本" });
+        }
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        if (input.source === "pending") {
+          const role: AdminRole = ctx.adminAccount?.adminRole ?? "super_admin";
+          if (!hasAdminPermission(role, "merchants.write", ctx.adminPermissions)) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "当前角色无权查看待审核的香港注册原件" });
+          }
+        }
+        let source;
+        try {
+          source = await db.getMerchantHkDocumentSource(
+            merchant,
+            input.kind,
+            input.source,
+            input.source === "pending"
+              ? {
+                expectedSubmissionId: input.expectedSubmissionId!,
+                expectedPayloadHash: input.expectedPayloadHash!,
+              }
+              : undefined,
+          );
+        } catch (error) {
+          if (error instanceof Error && error.message === "HK_REVIEW_VERSION_CHANGED") {
+            throw new TRPCError({ code: "CONFLICT", message: "待审核香港注册资料已变化，请刷新后重新查看原件" });
+          }
+          throw error;
+        }
+        if (!source) throw new TRPCError({ code: "NOT_FOUND", message: "该香港商户尚未上传此审核材料" });
+        try {
+          db.assertStoredHkDocumentObjectKey(source.objectKey, input.kind);
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "香港审核材料存储标识异常，请联系管理员" });
+        }
+        const url = await storageGetOssSignedUrl(source.objectKey, 15 * 60);
+        await db.recordMerchantHkDocumentView(input.id, input.kind, auditActorFromContext(ctx));
+        return { url, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(), fileName: source.fileName };
       }),
     /** 当前销售范围内商户的公司信息墙；超管不受范围限制。 */
     companyWall: merchantReadProcedure
@@ -1729,7 +1823,15 @@ export const appRouter = router({
          * 先校验归属：销售只能审自己跟进的商家，
          * 主管可审范围内全部，超级管理员不限（含无归属商家）。
          */
-        await assertMerchantInSalesScope(ctx, input.id);
+        const merchant = await assertMerchantInSalesScope(ctx, input.id);
+        // HK registration candidates must be promoted by the dedicated, original-document
+        // review flow. Generic approval/reactivation cannot turn a draft into valid data.
+        if (merchant.registrationRegion === "HK" && (input.action === "approve" || input.action === "reactivate")) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "香港注册企业必须先完成注册资料人工审核，不能通过通用商户审核直接通过或恢复",
+          });
+        }
         const statusMap: Record<string, string> = {
           approve: "approved",
           supplement: "supplement",
@@ -1820,6 +1922,54 @@ export const appRouter = router({
           actor: auditActorFromContext(ctx),
         });
       }),
+    /** HK registration review is separate from ERP enablement and only promotes a pending private draft. */
+    reviewHkRegistrationDraft: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        decision: z.enum(["approved", "rejected"]),
+        note: z.string().trim().max(1000).optional().nullable(),
+        expectedSubmissionId: z.string().uuid("香港提交号无效"),
+        expectedPayloadHash: z.string().trim().regex(/^[a-f0-9]{64}$/i, "香港提交版本校验值无效"),
+        // This is an internal human-workflow acknowledgement, not a claim of
+        // external official attestation.
+        confirmed: z.boolean().optional(),
+      }).superRefine((value, context) => {
+        if (value.decision === "rejected" && !value.note?.trim()) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["note"], message: "拒绝香港注册资料必须填写原因" });
+        }
+        if (value.decision === "approved" && value.confirmed !== true) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["confirmed"], message: "通过香港注册资料前必须确认已人工核对三份原件" });
+        }
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await assertMerchantInSalesScope(ctx, input.id);
+        try {
+          return await db.reviewHkRegistrationDraft({
+            merchantId: input.id,
+            decision: input.decision,
+            note: input.note,
+            expectedSubmissionId: input.expectedSubmissionId,
+            expectedPayloadHash: input.expectedPayloadHash,
+            confirmed: input.confirmed,
+            actor: auditActorFromContext(ctx),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "HK_PENDING_REGISTRATION_NOT_FOUND") {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该香港企业没有待审核的注册资料" });
+          }
+          if (message === "HK_PLATFORM_DRAFT_PROMOTION_FAILED") {
+            throw new TRPCError({ code: "CONFLICT", message: "主站香港企业待审资料已变化，请刷新后重新核对" });
+          }
+          if (message === "HK_REVIEW_VERSION_CHANGED") {
+            throw new TRPCError({ code: "CONFLICT", message: "待审核香港注册资料已变化，请刷新后重新查看三份原件" });
+          }
+          if (message === "HK_REGISTRATION_REQUIRED") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "该商户不是香港注册企业" });
+          }
+          throw error;
+        }
+      }),
     /** 专用换绑：只变更 ERP 超级管理员绑定，不改变企业、ERP 状态或既有业务数据。 */
     rebindCrmOwner: crmRebindProcedure
       .input(z.object({
@@ -1837,16 +1987,20 @@ export const appRouter = router({
          * 不会收窄现有权限。
          */
         const merchant = await assertMerchantInSalesScope(ctx, input.id);
-        if (!merchant.businessLicense?.trim()) {
+        const hkRegistrationIdentifier = merchant.registrationRegion === "HK"
+          ? merchant.registrationIdentifier?.trim().toUpperCase() || ""
+          : "";
+        const creditCode = merchant.businessLicense?.trim().replace(/\s+/g, "").toUpperCase() || "";
+        if (merchant.registrationRegion === "HK" ? !/^HK:\d{8}$/.test(hkRegistrationIdentifier) : !creditCode) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: "商户未登记统一社会信用代码，无法校验换绑目标",
+            message: "商户企业身份异常，无法校验换绑目标",
           });
         }
         const existingRequest = await db.getCrmOwnerRebindLog(input.requestId);
         if (!existingRequest) {
           await validatePlatformCrmRebindTarget({
-            creditCode: merchant.businessLicense.trim(),
+            ...(merchant.registrationRegion === "HK" ? { registrationIdentifier: hkRegistrationIdentifier } : { creditCode }),
             expectedPortalUserId: input.expectedPortalUserId,
             newPortalUserId: input.newPortalUserId,
           });
@@ -2001,6 +2155,20 @@ export const appRouter = router({
 
   // ─── 前台对接（商家入驻资料提交）──────────────────────────────────────────
   portal: router({
+    /** HK 主站必须先完成此受保护的协议握手，才可结合本地开关与 OCR 能力开放香港申请。 */
+    hkRegistrationCapabilities: publicProcedure.query(({ ctx }) => {
+      assertPortalKey(ctx.req);
+      // This is a pure readiness gate: capability discovery must never run DDL
+      // or try to repair a database. Private-document signing must also be ready.
+      const hkPrivateStorageReady = Boolean(
+        (hkStorageEnv.forgeApiUrl.trim() && hkStorageEnv.forgeApiKey.trim())
+        || (hkStorageEnv.ossAccessKeyId.trim() && hkStorageEnv.ossAccessKeySecret.trim() && hkStorageEnv.ossBucket.trim() && hkStorageEnv.ossRegion.trim()),
+      );
+      const enabled = process.env.HK_REGISTRATION_ENABLED === "1" && hkPrivateStorageReady;
+      return enabled
+        ? { version: 1, enabled: true } as const
+        : { version: 0, enabled: false } as const;
+    }),
     /** 只读协议能力探针；供主站发布前确认后台已完成兼容接口与数据库迁移。 */
     capabilities: publicProcedure.query(({ ctx }) => {
       assertPortalKey(ctx.req);
@@ -2246,6 +2414,74 @@ export const appRouter = router({
       }),
 
     /**
+     * 香港注册公司 ERP 申请。主站必须先按私有证据表核验 objectKey 的 owner 与 document role；
+     * 后台再校验 HK 身份、日期、协议和固定对象命名空间，初次提交永远只进入 pending。
+     */
+    submitHkCrmApplication: publicProcedure
+      .input(z.object({
+        registrationIdentifier: z.string().trim().regex(/^HK:\d{8}$/i, "香港企业身份必须为 HK:8位BRN"),
+        registrationData: hkRegistrationDataSchema,
+        documents: z.object({
+          BR: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }),
+          CI: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }),
+          BANK: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }),
+        }).strict(),
+        // The portal sends a complete verification record for each fixed document
+        // kind. It cannot invent a document role or an "unknown" OCR result.
+        documentVerification: z.object({
+          BR: z.object({
+            documentId: z.string().uuid("BR 证件记录 ID 无效"),
+            ocrStatus: z.enum(["recognized", "failed"]),
+            recognizedType: z.enum(["BR", "CI", "BANK"]).nullable(),
+            classification: z.enum(["ocr-assisted", "manual-classification-required"]),
+          }).strict(),
+          CI: z.object({
+            documentId: z.string().uuid("CI 证件记录 ID 无效"),
+            ocrStatus: z.enum(["recognized", "failed"]),
+            recognizedType: z.enum(["BR", "CI", "BANK"]).nullable(),
+            classification: z.enum(["ocr-assisted", "manual-classification-required"]),
+          }).strict(),
+          BANK: z.object({
+            documentId: z.string().uuid("银行证明记录 ID 无效"),
+            ocrStatus: z.enum(["recognized", "failed"]),
+            recognizedType: z.enum(["BR", "CI", "BANK"]).nullable(),
+            classification: z.enum(["ocr-assisted", "manual-classification-required"]),
+          }).strict(),
+        }).strict(),
+        submissionId: z.string().uuid("香港提交号无效"),
+        payloadHash: z.string().trim().regex(/^[a-f0-9]{64}$/i, "香港提交载荷哈希必须为64位十六进制字符"),
+        portalUserId: z.string().trim().regex(/^[A-Za-z0-9_-]{1,64}$/, "前台用户 ID 无效"),
+        contactName: z.string().trim().max(64).optional().nullable(),
+        contactPhone: z.string().trim().max(20).optional().nullable(),
+        contactEmail: z.string().trim().email().max(320).optional().nullable(),
+        agreementAccepted: z.literal(true),
+        agreementVersion: z.literal(ENTERPRISE_SERVICE_AGREEMENT_VERSION),
+        agreementHash: z.literal(ENTERPRISE_SERVICE_AGREEMENT_HASH),
+        salesOwner: z.string().max(64).optional().nullable(),
+        salesOwnerCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const owner = await resolvePortalSalesOwner(input.salesOwnerCode, input.salesOwner);
+        const { salesOwner: _legacyOwner, salesOwnerCode: _ownerCode, ...rest } = input;
+        try {
+          return await db.submitHkCrmApplication({ ...rest, ...owner });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "HK_DOCUMENT_OBJECT_KEY_INVALID" || message === "HK_PORTAL_USER_ID_INVALID") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "香港私有证件标识无效或不属于当前申请账号" });
+          }
+          if (message === "HK_REGISTRATION_IDENTIFIER_MISMATCH") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "香港企业身份必须与 BRN 一致" });
+          }
+          if (message === "HK_ENTERPRISE_AGREEMENT_INVALID") {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业服务协议凭据无效，请重新确认协议" });
+          }
+          throw error;
+        }
+      }),
+
+    /**
      * 前台按会话编号拉取全部消息（含后台回复），拉取后前台未读数清零。鉴权：x-portal-key。
      */
     getMessages: publicProcedure
@@ -2287,6 +2523,16 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
         return db.getCrmAccessByCreditCode(input.creditCode, input.portalUserId);
+      }),
+    /** 香港 ERP 门禁仅使用 HK:<8位BRN> union identity；主站不得为 HK 传入 creditCode。 */
+    getHkCrmAccess: publicProcedure
+      .input(z.object({
+        registrationIdentifier: z.string().trim().regex(/^HK:\d{8}$/i, "香港企业身份必须为 HK:8位BRN"),
+        portalUserId: z.string().trim().max(64).optional().nullable(),
+      }))
+      .query(({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.getHkCrmAccessByRegistrationIdentifier(input.registrationIdentifier, input.portalUserId);
       }),
     /**
      * 企业所有者发起 ERP 负责人换绑。商户仅通过统一社会信用代码定位，绝不接受
@@ -2366,6 +2612,74 @@ export const appRouter = router({
         return { ...local, success: true as const, platformEnterpriseId: platform.enterpriseId };
       }),
     /**
+     * 香港企业所有者换绑：HK:<8位BRN> 是唯一企业身份，不接受 merchantId 或伪造 creditCode。
+     * 新请求预检同企业 active target 后才落本地 CAS 账本；失败保留同一 requestId 可重试。
+     */
+    rebindHkCrmOwnerByEnterpriseOwner: publicProcedure
+      .input(z.object({
+        registrationIdentifier: z.string().trim().toUpperCase()
+          .regex(/^HK:\d{8}$/, "香港企业身份必须为 HK:8位BRN"),
+        expectedPortalUserId: z.string().trim().max(64)
+          .regex(/^\d+$/, "当前企业所有者用户 ID 必须为数字字符串"),
+        newPortalUserId: z.string().trim().max(64)
+          .regex(/^\d+$/, "新企业所有者用户 ID 必须为数字字符串"),
+        reason: z.string().trim().min(2, "换绑原因至少需要 2 个字符").max(1000),
+        requestId: z.string().trim().min(8, "换绑请求号无效").max(64),
+        actorName: z.string().trim().max(128).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        const existingRequest = await db.getCrmOwnerRebindLog(input.requestId);
+        if (existingRequest) {
+          const sameRequest = existingRequest.registrationIdentifier?.trim().toUpperCase() === input.registrationIdentifier
+            && existingRequest.creditCode === null
+            && existingRequest.expectedOwnerPortalUserId === input.expectedPortalUserId
+            && existingRequest.nextOwnerPortalUserId === input.newPortalUserId
+            && existingRequest.reason === input.reason;
+          if (!sameRequest) {
+            throw new TRPCError({ code: "CONFLICT", message: "换绑请求号已用于其他操作" });
+          }
+          if (existingRequest.platformSyncStatus === "completed") {
+            return { success: true as const, idempotent: true as const, requestId: existingRequest.requestId };
+          }
+          const platform = await confirmPlatformCrmOwnerRebind(existingRequest);
+          return {
+            success: true as const,
+            idempotent: true as const,
+            requestId: existingRequest.requestId,
+            platformEnterpriseId: platform.enterpriseId,
+          };
+        }
+
+        const binding = await db.getHkCrmBindingByRegistrationIdentifier(input.registrationIdentifier);
+        if (!binding.found) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "未找到对应香港企业的 ERP 绑定" });
+        }
+        if (binding.crmStatus !== "enabled" && binding.crmStatus !== "disabled") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "只有已开通或已暂停的 ERP 企业可以换绑负责人" });
+        }
+        if (binding.crmOwnerPortalUserId !== input.expectedPortalUserId) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "当前企业所有者绑定已变化，请刷新页面后重试" });
+        }
+        await validatePlatformCrmRebindTarget({
+          registrationIdentifier: input.registrationIdentifier,
+          expectedPortalUserId: input.expectedPortalUserId,
+          newPortalUserId: input.newPortalUserId,
+        });
+        const local = await db.rebindMerchantCrmOwner({
+          merchantId: binding.merchantId,
+          expectedPortalUserId: input.expectedPortalUserId,
+          newPortalUserId: input.newPortalUserId,
+          reason: input.reason,
+          requestId: input.requestId,
+          actor: enterpriseOwnerRebindAuditActor(ctx, input.expectedPortalUserId, input.actorName),
+        });
+        const record = await db.getCrmOwnerRebindLog(local.requestId);
+        if (!record) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "换绑账本写入失败" });
+        const platform = await confirmPlatformCrmOwnerRebind(record);
+        return { ...local, success: true as const, platformEnterpriseId: platform.enterpriseId };
+      }),
+    /**
      * 前台服务端对账 ERP 企业绑定。仅 x-portal-key 可访问；用于专用换绑后同步企业超级管理员，
      * 不直接暴露给浏览器。
      */
@@ -2374,6 +2688,13 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
         return db.getCrmBindingByCreditCode(input.creditCode);
+      }),
+    /** HK owner/member service binding lookup.  This intentionally has no creditCode field. */
+    getHkCrmBinding: publicProcedure
+      .input(z.object({ registrationIdentifier: z.string().trim().regex(/^HK:\d{8}$/i, "香港企业身份必须为 HK:8位BRN") }))
+      .query(({ ctx, input }) => {
+        assertPortalKey(ctx.req);
+        return db.getHkCrmBindingByRegistrationIdentifier(input.registrationIdentifier);
       }),
     /**
      * 上传物料图片并按型号回写 materials 表。鉴权：x-portal-key。

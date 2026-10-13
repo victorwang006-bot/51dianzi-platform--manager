@@ -6,7 +6,8 @@ type BatchResponse<T> = Array<{
 type CrmRebindValidationResult = {
   valid: true;
   enterpriseId: number;
-  creditCode: string;
+  creditCode?: string | null;
+  registrationIdentifier?: string | null;
   expectedSuperAdminUserId: number;
   targetUserId: number;
 };
@@ -32,7 +33,10 @@ function getConfig() {
  * 平台端不会为该请求反查后台，避免形成循环调用。
  */
 export async function completePlatformCrmRebind(input: {
-  creditCode: string;
+  /** CN only. HK calls omit this and send registrationIdentifier. */
+  creditCode?: string;
+  /** HK union identity, e.g. HK:12345678. */
+  registrationIdentifier?: string;
   expectedPortalUserId: string;
   newPortalUserId: string;
   reason: string;
@@ -66,7 +70,10 @@ export async function completePlatformCrmRebind(input: {
 
 /** @deprecated 新换绑流程改为先落本地权威绑定、后调用 completePlatformCrmRebind。 */
 export async function validatePlatformCrmRebindTarget(input: {
-  creditCode: string;
+  /** CN only. HK calls omit this and send registrationIdentifier. */
+  creditCode?: string;
+  /** HK union identity, e.g. HK:12345678. */
+  registrationIdentifier?: string;
   expectedPortalUserId: string;
   newPortalUserId: string;
 }) {
