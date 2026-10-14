@@ -2562,10 +2562,9 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
       }
       if (existing.crmStatus === "enabled") {
         return crmDuplicateOpeningResult(existing.crmStatus);
-      }
+    }
     if (existing.hkSubmissionId === submissionId) {
       if (existing.hkPayloadHash !== payloadHash) throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
-      if (existing.crmStatus === "pending") return crmDuplicateOpeningResult(existing.crmStatus);
       return {
         accepted: true,
         created: false,
@@ -2609,10 +2608,9 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
       source: "portal",
       submittedAt: now,
     }).where(eq(merchants.id, existing.id));
-    if (existing.crmStatus === "pending") return crmDuplicateOpeningResult(existing.crmStatus);
     return {
       accepted: true, created: false,
-      code: existing.crmStatus === "rejected" ? "HK_CRM_APPLICATION_REAPPLIED" : "HK_CRM_APPLICATION_ACCEPTED",
+      code: existing.crmStatus === "pending" ? "HK_CRM_APPLICATION_UPDATED" : existing.crmStatus === "rejected" ? "HK_CRM_APPLICATION_REAPPLIED" : "HK_CRM_APPLICATION_ACCEPTED",
       crmStatus: "pending", merchantId: existing.id, merchantNo: existing.merchantNo,
     };
     }));

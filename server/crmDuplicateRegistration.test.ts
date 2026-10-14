@@ -529,3 +529,34 @@ describe("CRM duplicate registration guard — real handlers with mocked transac
     expect(state.writes + state.inserts).toBe(0);
   });
 });
+
+describe("HK same-owner pending sales update acknowledgement", () => {
+  function existingHk(overrides: Record<string, unknown> = {}) {
+    return merchant({ id: 7, merchantNo: "M000007", registrationRegion: "HK", registrationIdentifier: "HK:12345678", businessLicense: null, crmOwnerPortalUserId: "owner-hk", crmStatus: "pending", status: "pending", hkSubmissionId: "22222222-2222-4222-8222-222222222222", hkPayloadHash: "b".repeat(64), licenseObjectKey: hkInput().documents.BR.objectKey, salesOwner: null, salesOwnerCode: null, ...overrides });
+  }
+  it("同所有者新payload补交更新原商户并返回成功，随后相同提交回放零写入", async () => {
+    const existing = existingHk(); reset([existing]);
+    const input = hkInput({ salesOwner: "SYNTHETIC SALES", salesOwnerCode: "synthetic-sales", registrationData: { ...hkInput().registrationData, salesOwner: "SYNTHETIC SALES", salesOwnerCode: "synthetic-sales" } });
+    const first = await dbModule.submitHkCrmApplication(input);
+    expect(first).toMatchObject({ accepted: true, created: false, code: "HK_CRM_APPLICATION_UPDATED", merchantId: 7 });
+    expect(existing).toMatchObject({ salesOwner: "SYNTHETIC SALES", salesOwnerCode: "synthetic-sales", hkSubmissionId: input.submissionId, hkPayloadHash: input.payloadHash });
+    expect(state.rows).toHaveLength(1); expect(state.inserts).toBe(0); expect(state.writes).toBe(1);
+    const replay = await dbModule.submitHkCrmApplication(input);
+    expect(replay).toMatchObject({ accepted: true, created: false, code: "HK_CRM_APPLICATION_IDEMPOTENT", merchantId: 7 });
+    expect(state.writes).toBe(1); expect(state.inserts).toBe(0);
+  });
+  it("未选择负责人时待审补交不清除后台手动设置的销售", async () => {
+    const existing = existingHk({ salesOwner: "MANUALLY ASSIGNED", salesOwnerCode: "manual-sales" }); reset([existing]);
+    await expect(dbModule.submitHkCrmApplication(hkInput())).resolves.toMatchObject({ accepted: true, code: "HK_CRM_APPLICATION_UPDATED" });
+    expect(existing).toMatchObject({ salesOwner: "MANUALLY ASSIGNED", salesOwnerCode: "manual-sales" }); expect(state.inserts).toBe(0);
+  });
+  it.each(["other-owner", "enabled"])("真正的%s重复仍失败且不修改现有记录", async reason => {
+    const existing = existingHk(reason === "other-owner" ? { crmOwnerPortalUserId: "other-owner" } : { crmStatus: "enabled", status: "approved" }); reset([existing]);
+    await expect(dbModule.submitHkCrmApplication(hkInput({ salesOwner: "SYNTHETIC SALES", salesOwnerCode: "synthetic-sales" }))).resolves.toMatchObject({ accepted: false, created: false, code: CRM_DUPLICATE_OPENING_CODE });
+    expect(state.writes + state.inserts).toBe(0);
+  });
+  it("同一提交号但hash不同仍拒绝且零写入", async () => {
+    reset([existingHk({ hkSubmissionId: hkInput().submissionId, hkPayloadHash: "b".repeat(64) })]);
+    await expect(dbModule.submitHkCrmApplication(hkInput())).rejects.toThrow("HK_SUBMISSION_PAYLOAD_CONFLICT"); expect(state.writes + state.inserts).toBe(0);
+  });
+});
