@@ -1,3 +1,5 @@
+import { effectiveHkChineseCompanyName, merchantEffectiveHkChineseNameSql } from "./services/merchantDisplayName";
+export { merchantEffectiveHkChineseNameSql } from "./services/merchantDisplayName";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
@@ -934,25 +936,34 @@ function merchantReadScopeCondition(salesStaffCodes?: string[]) {
 
 /** 客户端读取商户时不得获得私有对象键或可复用的历史 URL。 */
 export function toMerchantReadDto(row: typeof merchants.$inferSelect) {
+  const { licenseObjectKey, licenseImageUrl, ...merchant } = row;
   const {
-    licenseObjectKey,
-    licenseImageUrl,
     ciObjectKey,
     bankDocumentObjectKey,
     registrationData,
     registrationPendingData,
-    ...merchant
-  } = row;
+    ...safeMerchant
+  } = merchant;
+  const registeredCompanyName = safeMerchant.companyName;
+  const displayCompanyName = effectiveHkChineseCompanyName({
+    registrationRegion: safeMerchant.registrationRegion,
+    registrationData,
+    status: safeMerchant.status,
+    crmStatus: safeMerchant.crmStatus,
+  }) ?? registeredCompanyName;
   return {
-    ...merchant,
+    ...safeMerchant,
+    // Keep the persisted English/registered value independently auditable.
+    companyName: displayCompanyName,
+    registeredCompanyName,
     // HK account numbers are only necessary inside the dedicated reviewer DTO.
     // Do not accidentally leak a first-submit pending account through generic detail/list fields.
-    ...(merchant.registrationRegion === "HK" ? { settlementAccount: null } : {}),
-    hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl || ciObjectKey),
-    hasHkBrDocument: merchant.registrationRegion === "HK" && Boolean(licenseObjectKey),
-    hasHkCiDocument: merchant.registrationRegion === "HK" && Boolean(ciObjectKey),
-    hasHkBankDocument: merchant.registrationRegion === "HK" && Boolean(bankDocumentObjectKey),
-    hasPendingHkRegistration: merchant.registrationRegion === "HK" && Boolean(parsePendingHkRegistration(registrationPendingData)),
+    ...(safeMerchant.registrationRegion === "HK" ? { settlementAccount: null } : {}),
+    hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl) || Boolean(ciObjectKey),
+    hasHkBrDocument: safeMerchant.registrationRegion === "HK" && Boolean(licenseObjectKey),
+    hasHkCiDocument: safeMerchant.registrationRegion === "HK" && Boolean(ciObjectKey),
+    hasHkBankDocument: safeMerchant.registrationRegion === "HK" && Boolean(bankDocumentObjectKey),
+    hasPendingHkRegistration: safeMerchant.registrationRegion === "HK" && Boolean(parsePendingHkRegistration(registrationPendingData)),
   };
 }
 
@@ -1070,7 +1081,14 @@ export async function getMerchants(
   const salesOwnerCode = params.salesOwnerCode?.trim().toLowerCase();
   const conditions = [];
   if (status) conditions.push(eq(merchants.status, status as any));
-  if (search) conditions.push(or(like(merchants.companyName, `%${search}%`), like(merchants.merchantNo, `%${search}%`)));
+  if (search) {
+    const keyword = `%${search}%`;
+    conditions.push(or(
+      like(merchants.companyName, keyword),
+      like(merchantEffectiveHkChineseNameSql(), keyword),
+      like(merchants.merchantNo, keyword),
+    )!);
+  }
   const createdAtBounds = resolveMerchantCreatedAtBounds(params);
   if (createdAtBounds) {
     conditions.push(gte(merchants.createdAt, createdAtBounds.from));
