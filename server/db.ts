@@ -1,5 +1,16 @@
 import { effectiveHkChineseCompanyName, merchantEffectiveHkChineseNameSql } from "./services/merchantDisplayName";
 export { merchantEffectiveHkChineseNameSql } from "./services/merchantDisplayName";
+import {
+  CRM_DUPLICATE_OPENING_CODE,
+  CRM_DUPLICATE_OPENING_MESSAGE,
+  CRM_LICENSE_REQUIRED_CODE,
+  assertCrmLicenseEvidence,
+  crmDuplicateNamesFromMerchant,
+  crmDuplicateOpeningResult,
+  crmLicenseRequiredResult,
+  findCrmDuplicateRegistrationConflict,
+  withCrmDuplicateRegistrationLock,
+} from "./services/crmDuplicateRegistration";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
@@ -1984,6 +1995,7 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
 
+  const businessLicense = normalizeCreditCode(input.businessLicense);
   const now = new Date();
   const baseFields = {
     companyName: input.companyName,
@@ -2006,29 +2018,48 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
     source: "portal",
   };
 
-  const existing = await db
-    .select()
-    .from(merchants)
-    .where(eq(merchants.businessLicense, input.businessLicense))
-    .limit(1);
+  // submitMerchant predates CRM and carries no portal enterprise owner. It is
+  // still able to create a merchants row, so it joins the same carrier lock
+  // and guard rather than remaining a bypass into the CRM registry.
+  return withCrmDuplicateRegistrationLock(() => db.transaction(async tx => {
+    const existing = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.businessLicense, businessLicense))
+      .limit(1)
+      .for("update");
+    const current = existing[0];
+    const mayUpdateUnboundNonCrmRecord = current?.crmStatus === "none"
+      && !normalizePortalUserId(current.crmOwnerPortalUserId);
+    const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+      identity: /^[0-9A-HJ-NPQRTUWXY]{18}$/.test(businessLicense) ? `CN:${businessLicense}` : null,
+      companyNames: [input.companyName],
+      crmOwnerPortalUserId: null,
+      currentMerchantId: mayUpdateUnboundNonCrmRecord ? current.id : undefined,
+    });
+    if (duplicate) {
+      const error = new Error(CRM_DUPLICATE_OPENING_MESSAGE) as Error & { code?: string };
+      error.code = CRM_DUPLICATE_OPENING_CODE;
+      throw error;
+    }
 
-  if (existing.length > 0) {
-    const m = existing[0];
-    // 已入驻商户资料变更仅更新资料；其余状态重置为 pending 重新审核
-    const nextStatus = m.status === "approved" ? m.status : ("pending" as const);
-    await db.update(merchants).set({ ...baseFields, status: nextStatus }).where(eq(merchants.id, m.id));
-    return { merchantId: m.id, merchantNo: m.merchantNo, created: false, status: nextStatus };
-  }
+    if (current) {
+      // 已入驻商户资料变更仅更新资料；其余状态重置为 pending 重新审核
+      const nextStatus = current.status === "approved" ? current.status : ("pending" as const);
+      await tx.update(merchants).set({ ...baseFields, status: nextStatus }).where(eq(merchants.id, current.id));
+      return { merchantId: current.id, merchantNo: current.merchantNo, created: false, status: nextStatus };
+    }
 
-  const merchantNo = genMerchantNo(now);
-  const result = await db.insert(merchants).values({
-    merchantNo,
-    businessLicense: input.businessLicense,
-    status: "pending",
-    ...baseFields,
-  });
-  const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
-  return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
+    const merchantNo = genMerchantNo(now);
+    const result = await tx.insert(merchants).values({
+      merchantNo,
+      businessLicense,
+      status: "pending",
+      ...baseFields,
+    });
+    const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+    return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
+  }));
 }
 
 /** 前台企业开通 ERP 申请入参 */
@@ -2076,6 +2107,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
 
   const creditCode = normalizeCreditCode(input.creditCode);
+  if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(creditCode)) throw new Error("CRM_CREDIT_CODE_INVALID");
   const portalUserId = normalizePortalUserId(input.portalUserId);
   if (!portalUserId) {
     return {
@@ -2104,9 +2136,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
     ...(input.businessScope ? { businessScope: input.businessScope } : {}),
     ...(licenseObjectKey
       ? { licenseObjectKey, licenseImageUrl: null }
-      : input.licenseImageUrl
-        ? { licenseImageUrl: input.licenseImageUrl }
-        : {}),
+      : {}),
     /**
      * 销售归属。用 `!== undefined` 而非真值判定，
      * 否则无法表达「显式清空归属」（null）与「本次不改动」（undefined）的差别。
@@ -2116,13 +2146,49 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
     ...(input.agreementAccepted ? { agreementStatus: "signed" as const } : {}),
   };
   try {
-    return await db.transaction(async tx => {
+    return await withCrmDuplicateRegistrationLock(() => db.transaction(async tx => {
       const existing = await tx
         .select()
         .from(merchants)
         .where(eq(merchants.businessLicense, creditCode))
         .limit(1)
         .for("update");
+
+      const current = existing[0];
+      const currentOwner = current ? normalizePortalUserId(current.crmOwnerPortalUserId) : null;
+      const ownExistingPrivateLicense = currentOwner === portalUserId
+        ? current?.licenseObjectKey?.trim() || null
+        : null;
+      const ownExistingLegacyLicense = currentOwner === portalUserId
+        ? current?.licenseImageUrl?.trim() || null
+        : null;
+      const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+        identity: `CN:${creditCode}`,
+        companyNames: [input.companyName],
+        crmOwnerPortalUserId: portalUserId,
+        // Only an exact same-owner identity may reuse its existing private
+        // evidence. A changed code/name candidate cannot inherit another row.
+        licenseObjectKey: licenseObjectKey,
+        // An exact self update remains permitted (including rejected
+        // re-submission); every other legacy duplicate is examined by the
+        // detector and remains a safe enablement blocker.
+        currentMerchantId: current && (currentOwner === portalUserId
+          || (!currentOwner && current.crmStatus === "none")) ? current.id : undefined,
+      });
+      if (duplicate) return crmDuplicateOpeningResult(current?.crmStatus ?? "none");
+      try {
+        assertCrmLicenseEvidence({
+          submittedPrivateLicenseObjectKey: licenseObjectKey,
+          portalUserId,
+          storedPrivateLicenseObjectKey: ownExistingPrivateLicense,
+          storedLegacyLicenseImageUrl: ownExistingLegacyLicense,
+        });
+      } catch (error) {
+        if ((error as { code?: string }).code === CRM_LICENSE_REQUIRED_CODE) {
+          return crmLicenseRequiredResult();
+        }
+        throw error;
+      }
 
       if (existing.length > 0) {
         const merchant = existing[0];
@@ -2188,7 +2254,14 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
           };
         }
 
+        if (merchant.crmStatus === "enabled") {
+          // The existing portal adapter uses this exact same-owner acknowledgement for
+          // profile review updates. Opening routes still reject it as already enabled.
+          return { ...crmDuplicateOpeningResult(merchant.crmStatus), code: "CRM_ALREADY_ENABLED" as const };
+        }
+
         if (merchant.crmStatus === "rejected" || merchant.crmStatus === "none") {
+          const wasRejected = merchant.crmStatus === "rejected";
           await tx.update(merchants).set({
             ...profileFields,
             crmStatus: "pending",
@@ -2198,7 +2271,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
           return {
             accepted: true,
             created: false,
-            code: merchant.crmStatus === "rejected"
+            code: wasRejected
               ? "CRM_APPLICATION_REAPPLIED" as const
               : "CRM_APPLICATION_ACCEPTED" as const,
             crmStatus: "pending" as const,
@@ -2209,14 +2282,23 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
 
         await tx.update(merchants).set(profileFields).where(eq(merchants.id, merchant.id));
 
+        if (merchant.crmStatus === "pending") {
+          // This exact same-owner identity refreshes its existing application,
+          // allowing the portal to persist the same pending revision without creating a new merchant.
+          return {
+            accepted: true,
+            created: false,
+            code: "CRM_APPLICATION_UPDATED" as const,
+            crmStatus: "pending" as const,
+            merchantId: merchant.id,
+            merchantNo: merchant.merchantNo,
+          };
+        }
+
         return {
           accepted: false,
           created: false,
-          code: merchant.crmStatus === "enabled"
-            ? "CRM_ALREADY_ENABLED" as const
-            : merchant.crmStatus === "pending"
-              ? "CRM_APPLICATION_PENDING" as const
-              : "CRM_ACCESS_DISABLED" as const,
+          code: "CRM_ACCESS_DISABLED" as const,
           crmStatus: merchant.crmStatus,
           merchantId: merchant.id,
           merchantNo: merchant.merchantNo,
@@ -2245,7 +2327,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
         merchantId: insertId,
         merchantNo,
       };
-    });
+    }));
   } catch (error) {
     const mysqlError = error as {
       errno?: number;
@@ -2273,23 +2355,7 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
       .where(eq(merchants.businessLicense, creditCode)).limit(1);
     const merchant = rows[0];
     if (!merchant) throw error;
-    const sameOwner = normalizePortalUserId(merchant.crmOwnerPortalUserId) === portalUserId;
-    return sameOwner
-      ? {
-          accepted: false,
-          created: false,
-          code: "CRM_APPLICATION_PENDING" as const,
-          crmStatus: merchant.crmStatus,
-          merchantId: merchant.id,
-          merchantNo: merchant.merchantNo,
-        }
-      : {
-          accepted: false,
-          created: false,
-          code: "CRM_COMPANY_APPLICATION_PENDING" as const,
-          crmStatus: merchant.crmStatus,
-          message: "该企业的 ERP 开通申请正在审核中",
-        };
+    return crmDuplicateOpeningResult(merchant.crmStatus);
   }
 }
 
@@ -2385,9 +2451,19 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
   };
 
   try {
-    return await db.transaction(async tx => {
+    return await withCrmDuplicateRegistrationLock(() => db.transaction(async tx => {
     const [existing] = await tx.select().from(merchants)
       .where(eq(merchants.registrationIdentifier, identity)).limit(1).for("update");
+    const existingOwner = existing ? normalizePortalUserId(existing.crmOwnerPortalUserId) : null;
+    const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+      identity,
+      companyNames: [parsed.companyName, parsed.chineseName],
+      crmOwnerPortalUserId: portalUserId,
+      licenseObjectKey: documents.BR.objectKey,
+      currentMerchantId: existing && (existingOwner === portalUserId
+        || (!existingOwner && existing.crmStatus === "none")) ? existing.id : undefined,
+    });
+    if (duplicate) return crmDuplicateOpeningResult(existing?.crmStatus ?? "none");
     if (!existing) {
       const merchantNo = genMerchantNo(now);
       const result = await tx.insert(merchants).values({
@@ -2420,9 +2496,13 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
         crmStatus: existing.crmStatus, merchantId: existing.id, merchantNo: existing.merchantNo,
         message: getCrmCompanyConflictMessage(existing.crmStatus, "该香港企业已绑定其他前台账号，请联系企业管理员或平台客服"),
       };
-    }
+      }
+      if (existing.crmStatus === "enabled") {
+        return crmDuplicateOpeningResult(existing.crmStatus);
+      }
     if (existing.hkSubmissionId === submissionId) {
       if (existing.hkPayloadHash !== payloadHash) throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
+      if (existing.crmStatus === "pending") return crmDuplicateOpeningResult(existing.crmStatus);
       return {
         accepted: true,
         created: false,
@@ -2433,7 +2513,7 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
         message: "该香港企业提交已受理，未重复覆盖现有审核资料",
       };
     }
-    const effective = existing.crmStatus === "enabled" || existing.crmStatus === "disabled" || existing.status === "approved";
+    const effective = existing.crmStatus === "disabled" || existing.status === "approved";
     if (effective) {
       // 已开通/暂停企业的有效资料、有效附件和 CRM 状态绝不被一次重新提交覆盖；留待人工审核。
       await tx.update(merchants).set({
@@ -2466,12 +2546,13 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
       source: "portal",
       submittedAt: now,
     }).where(eq(merchants.id, existing.id));
+    if (existing.crmStatus === "pending") return crmDuplicateOpeningResult(existing.crmStatus);
     return {
       accepted: true, created: false,
       code: existing.crmStatus === "rejected" ? "HK_CRM_APPLICATION_REAPPLIED" : "HK_CRM_APPLICATION_ACCEPTED",
       crmStatus: "pending", merchantId: existing.id, merchantNo: existing.merchantNo,
     };
-    });
+    }));
   } catch (error) {
     const mysqlError = error as {
       errno?: number;
@@ -2488,39 +2569,7 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
     const [raced] = await db.select().from(merchants)
       .where(eq(merchants.registrationIdentifier, identity)).limit(1);
     if (!raced || raced.registrationRegion !== "HK") throw error;
-    const racedOwner = normalizePortalUserId(raced.crmOwnerPortalUserId);
-    if (racedOwner && racedOwner !== portalUserId) {
-      return {
-        accepted: false,
-        created: false,
-        code: raced.crmStatus === "pending" ? "CRM_COMPANY_APPLICATION_PENDING" : "CRM_COMPANY_ALREADY_BOUND",
-        crmStatus: raced.crmStatus,
-        merchantId: raced.id,
-        merchantNo: raced.merchantNo,
-        message: getCrmCompanyConflictMessage(raced.crmStatus, "该香港企业已绑定其他前台账号，请联系企业管理员或平台客服"),
-      };
-    }
-    if (raced.hkSubmissionId === submissionId) {
-      if (raced.hkPayloadHash !== payloadHash) throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
-      return {
-        accepted: true,
-        created: false,
-        code: "HK_CRM_APPLICATION_IDEMPOTENT",
-        crmStatus: raced.crmStatus,
-        merchantId: raced.id,
-        merchantNo: raced.merchantNo,
-        message: "该香港企业提交已受理，未重复覆盖现有审核资料",
-      };
-    }
-    return {
-      accepted: false,
-      created: false,
-      code: raced.crmStatus === "pending" ? "CRM_APPLICATION_PENDING" : "CRM_COMPANY_ALREADY_BOUND",
-      crmStatus: raced.crmStatus,
-      merchantId: raced.id,
-      merchantNo: raced.merchantNo,
-      message: "该香港企业提交正在审核或已存在，请刷新后确认状态",
-    };
+    return crmDuplicateOpeningResult(raced.crmStatus);
   }
 }
 
@@ -2797,7 +2846,7 @@ export async function setMerchantCrmStatus(input: {
     throw new Error(input.crmStatus === "disabled" ? "暂停 ERP 必须填写原因" : "拒绝 ERP 申请必须填写原因");
   }
 
-  return db.transaction(async tx => {
+  const transaction = () => db.transaction(async tx => {
     const rows = await tx.select().from(merchants)
       .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
     const merchant = rows[0];
@@ -2809,6 +2858,29 @@ export async function setMerchantCrmStatus(input: {
     const ownerToKeep = decision.kind === "enable"
       ? decision.ownerToBind
       : decision.existingOwner;
+    if (input.crmStatus === "enabled") {
+      if (merchant.registrationRegion !== "HK") {
+        assertCrmLicenseEvidence({
+          storedPrivateLicenseObjectKey: merchant.licenseObjectKey,
+          storedLegacyLicenseImageUrl: merchant.licenseImageUrl,
+        }, "开通 ERP 前必须上传营业执照");
+      }
+      const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+        identity: merchantRegistrationIdentity(merchant),
+        companyNames: crmDuplicateNamesFromMerchant(merchant),
+        crmOwnerPortalUserId: ownerToKeep,
+        licenseObjectKey: merchant.licenseObjectKey,
+        currentMerchantId: merchant.id,
+      });
+      if (duplicate) {
+        return {
+          success: false as const,
+          code: CRM_DUPLICATE_OPENING_CODE,
+          message: CRM_DUPLICATE_OPENING_MESSAGE,
+          crmOwnerPortalUserId: ownerToKeep,
+        };
+      }
+    }
     if (input.crmStatus === "enabled" && merchant.registrationRegion === "HK") {
       const registration = parseStoredHkRegistration(merchant.registrationData);
       if (!registration || merchant.registrationIdentifier !== hkRegistrationIdentifier(registration.registration.brn)) {
@@ -2900,6 +2972,11 @@ export async function setMerchantCrmStatus(input: {
 
     return { success: true, crmOwnerPortalUserId: ownerToKeep };
   });
+  // Only create/open/resume joins the MySQL carrier lock. Reject/disable retain
+  // their original behavior and do not acquire a new serialization dependency.
+  return input.crmStatus === "enabled"
+    ? withCrmDuplicateRegistrationLock(transaction)
+    : transaction();
 }
 
 /** 后台专用：ERP 超级管理员换绑。普通开通/恢复接口永远不能修改既有 owner。 */

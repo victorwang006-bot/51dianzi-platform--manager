@@ -11,7 +11,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
  * DATABASE_URL below can never open a socket or access production credentials.
  */
 const drizzleMock = vi.hoisted(() => vi.fn());
+const createLockConnectionMock = vi.hoisted(() => vi.fn());
 vi.mock("drizzle-orm/mysql2", () => ({ drizzle: drizzleMock }));
+vi.mock("mysql2/promise", () => ({ default: { createConnection: createLockConnectionMock } }));
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
 const DB_SOURCE_PATH = path.join(PROJECT_ROOT, "server", "db.ts");
@@ -296,6 +298,13 @@ beforeAll(async () => {
 beforeEach(() => {
   drizzleMock.mockClear();
   drizzleMock.mockReturnValue(fakeDatabase);
+  createLockConnectionMock.mockReset();
+  createLockConnectionMock.mockResolvedValue({
+    query: async (statement: string) => statement.includes("GET_LOCK")
+      ? [[{ acquired: 1 }], undefined]
+      : [[{ released: 1 }], undefined],
+    end: async () => undefined,
+  });
   installPlan();
 });
 
@@ -493,6 +502,7 @@ describe("setMerchantCrmStatus — real HK enablement gate with offline mysql/dr
     const plan = installPlan({
       selectResults: [
         [merchant],
+        [], // read-only duplicate detector under the advisory carrier lock
         [{ crmStatus: "enabled", crmOwnerPortalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN, crmNote: null }],
       ],
       executeResults: [[[crmPlatformCompany()], undefined]],
