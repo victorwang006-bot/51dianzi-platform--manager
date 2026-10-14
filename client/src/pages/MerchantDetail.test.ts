@@ -85,10 +85,10 @@ describe("香港注册资料人工审核静态契约", () => {
     expect(source).not.toContain("hkRegistrationPending.documentObjectKeys");
   });
 
-  it("要求审核员人工逐份核对三证；OCR 失败不会自动通过", () => {
+  it("要求审核员人工逐份核对已提交证件；OCR 失败不会自动通过", () => {
     expect(source).toContain("OCR 识别成功仅作辅助；识别失败仅表示待人工分类，均不会自动通过。");
-    expect(source).toContain("审核者必须逐份打开 BR、CI 和银行证明原件");
-    expect(source).toContain("我已逐份查看 BR、CI 与银行证明原件");
+    expect(source).toContain("审核者必须逐份打开 BR、银行证明及已提供的 CI 原件");
+    expect(source).toContain("我已逐份查看 BR、银行证明及已提供的 CI 原件");
     expect(source).toContain("hkReviewDecision === \"approved\" && !hkIdentityConfirmed");
     expect(source).toContain('hkReviewDecision === "rejected" && !hkReviewNote.trim()');
     expect(source).toContain("confirmed: hkReviewDecision === \"approved\" ? hkIdentityConfirmed : undefined");

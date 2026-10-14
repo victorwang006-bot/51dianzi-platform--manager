@@ -2423,11 +2423,11 @@ export const appRouter = router({
         registrationData: hkRegistrationDataSchema,
         documents: z.object({
           BR: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }),
-          CI: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }),
+          CI: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }).optional(),
           BANK: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }),
         }).strict(),
-        // The portal sends a complete verification record for each fixed document
-        // kind. It cannot invent a document role or an "unknown" OCR result.
+        // BR/BANK always have verification records. CI has one only when its
+        // optional file is included; no placeholder OCR record is permitted.
         documentVerification: z.object({
           BR: z.object({
             documentId: z.string().uuid("BR 证件记录 ID 无效"),
@@ -2440,7 +2440,7 @@ export const appRouter = router({
             ocrStatus: z.enum(["recognized", "failed"]),
             recognizedType: z.enum(["BR", "CI", "BANK"]).nullable(),
             classification: z.enum(["ocr-assisted", "manual-classification-required"]),
-          }).strict(),
+          }).strict().optional(),
           BANK: z.object({
             documentId: z.string().uuid("银行证明记录 ID 无效"),
             ocrStatus: z.enum(["recognized", "failed"]),
@@ -2459,6 +2459,13 @@ export const appRouter = router({
         agreementHash: z.literal(ENTERPRISE_SERVICE_AGREEMENT_HASH),
         salesOwner: z.string().max(64).optional().nullable(),
         salesOwnerCode: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/).optional().nullable(),
+      }).superRefine((value, context) => {
+        if (value.documents.CI && !value.documentVerification.CI) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["documentVerification", "CI"], message: "上传公司注册证时必须提供CI识别记录" });
+        }
+        if (!value.documents.CI && value.documentVerification.CI) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["documentVerification", "CI"], message: "未上传公司注册证时不得提供CI识别记录" });
+        }
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);

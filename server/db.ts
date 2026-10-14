@@ -144,19 +144,37 @@ function normalizePortalUserId(value?: string | null) {
   return normalized ? normalized : null;
 }
 
-export type HkRegistrationDocuments = Record<HkDocumentKind, {
+type HkRegistrationDocument = {
   objectKey: string;
   fileName: string;
-}>;
+};
 
-export type HkDocumentVerification = Record<HkDocumentKind, {
+/** BR and bank evidence are mandatory; a CI document is optional. */
+export type HkRegistrationDocuments = {
+  BR: HkRegistrationDocument;
+  BANK: HkRegistrationDocument;
+  CI?: HkRegistrationDocument;
+};
+
+type HkDocumentVerificationEntry = {
   documentId: string; ocrStatus: "recognized" | "failed"; recognizedType: string | null;
   classification: "ocr-assisted" | "manual-classification-required";
-}>;
+};
+
+/** An OCR record may only exist for CI when the optional CI file was supplied. */
+export type HkDocumentVerification = {
+  BR: HkDocumentVerificationEntry;
+  BANK: HkDocumentVerificationEntry;
+  CI?: HkDocumentVerificationEntry;
+};
 
 type StoredHkRegistrationData = {
   registration: HkRegistrationData;
-  documents: Record<HkDocumentKind, { fileName: string }>;
+  documents: {
+    BR: { fileName: string };
+    BANK: { fileName: string };
+    CI?: { fileName: string };
+  };
   submittedAt: string;
   /** Present for all submissions created after the HK submission-ledger rollout. */
   submissionId?: string;
@@ -165,7 +183,11 @@ type StoredHkRegistrationData = {
 
 /** Pending values are private server-side data: object keys are never included in a merchant DTO. */
 type StoredPendingHkRegistrationData = StoredHkRegistrationData & {
-  documentObjectKeys: Record<HkDocumentKind, string>;
+  documentObjectKeys: {
+    BR: string;
+    BANK: string;
+    CI?: string;
+  };
   documentVerification?: HkDocumentVerification;
   submissionId: string;
   payloadHash: string;
@@ -244,7 +266,10 @@ function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | nul
       ? storedCertificateNumber : null);
   const brStartDate = normalizeHkDate(data.brStartDate);
   const brExpiryDate = normalizeHkDate(data.brExpiryDate);
-  const ciNumber = required("ciNumber", 32);
+  // CI became optional after historical data already existed.  Preserve a
+  // missing value as an empty string, but do not make malformed stored data
+  // silently valid.
+  const ciNumber = data.ciNumber === undefined ? "" : optional("ciNumber", 32);
   const regAddress = required("regAddress", 255);
   const bankAccountName = required("bankAccountName", 128);
   const bankAccountNumber = required("bankAccountNumber", 64);
@@ -252,7 +277,7 @@ function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | nul
   const establishedAtRaw = optional("establishedAt", 10);
   const establishedAt = establishedAtRaw === null ? null : establishedAtRaw ? normalizeHkDate(establishedAtRaw) : "";
   if (!companyName || !businessNature || !legalStatus || !brn || !registrationNumber
-    || !brStartDate || !brExpiryDate || !ciNumber || !regAddress || !bankAccountName
+    || !brStartDate || !brExpiryDate || ciNumber === null || !regAddress || !bankAccountName
     || !bankAccountNumber || !bankName || establishedAt === null
     || !/^\d{8}$/.test(brn)
     || registrationNumber.slice(0, 8) !== brn
@@ -316,7 +341,7 @@ function parseStoredHkRegistration(value: unknown): StoredHkRegistrationData | n
   const registration = parseStoredHkRegistrationData(raw.registration ?? raw);
   if (!registration) return null;
   const documents = raw.documents as Record<string, unknown> | undefined;
-  const names = (kind: HkDocumentKind) => {
+  const names = (kind: "BR" | "BANK") => {
     const fileName = documents?.[kind] && typeof documents[kind] === "object"
       ? (documents[kind] as { fileName?: unknown }).fileName
       : undefined;
@@ -324,9 +349,15 @@ function parseStoredHkRegistration(value: unknown): StoredHkRegistrationData | n
       ? fileName.trim().slice(0, 255)
       : `${kind} 文件`;
   };
+  const ciFileName = documents?.CI && typeof documents.CI === "object"
+    ? (documents.CI as { fileName?: unknown }).fileName
+    : undefined;
+  const ci = typeof ciFileName === "string" && ciFileName.trim()
+    ? { fileName: ciFileName.trim().slice(0, 255) }
+    : undefined;
   return {
     registration,
-    documents: { BR: { fileName: names("BR") }, CI: { fileName: names("CI") }, BANK: { fileName: names("BANK") } },
+    documents: { BR: { fileName: names("BR") }, BANK: { fileName: names("BANK") }, ...(ci ? { CI: ci } : {}) },
     submittedAt: typeof raw.submittedAt === "string" ? raw.submittedAt : "",
     ...(normalizeHkSubmissionId(raw.submissionId) ? { submissionId: normalizeHkSubmissionId(raw.submissionId)! } : {}),
     ...(normalizeHkPayloadHash(raw.payloadHash) ? { payloadHash: normalizeHkPayloadHash(raw.payloadHash)! } : {}),
@@ -342,8 +373,8 @@ function buildStoredHkRegistration(
     registration,
     documents: {
       BR: { fileName: documents.BR.fileName.trim().slice(0, 255) },
-      CI: { fileName: documents.CI.fileName.trim().slice(0, 255) },
       BANK: { fileName: documents.BANK.fileName.trim().slice(0, 255) },
+      ...(documents.CI ? { CI: { fileName: documents.CI.fileName.trim().slice(0, 255) } } : {}),
     },
     submittedAt: new Date().toISOString(),
     submissionId: ledger.submissionId,
@@ -362,8 +393,8 @@ function buildPendingHkRegistration(
     payloadHash: ledger.payloadHash,
     documentObjectKeys: {
       BR: documents.BR.objectKey,
-      CI: documents.CI.objectKey,
       BANK: documents.BANK.objectKey,
+      ...(documents.CI ? { CI: documents.CI.objectKey } : {}),
     },
   };
 }
@@ -376,17 +407,25 @@ function parsePendingHkRegistration(value: unknown): StoredPendingHkRegistration
   const payloadHash = normalizeHkPayloadHash(raw?.payloadHash);
   if (!stored || !keys || typeof keys !== "object" || !submissionId || !payloadHash) return null;
   const read = (kind: HkDocumentKind) => (keys as Record<string, unknown>)[kind];
-  if (!["BR", "CI", "BANK"].every(kind => typeof read(kind as HkDocumentKind) === "string")) return null;
+  if (!["BR", "BANK"].every(kind => typeof read(kind as HkDocumentKind) === "string")) return null;
+  const ciObjectKey = read("CI");
+  if (ciObjectKey !== undefined && (typeof ciObjectKey !== "string" || !ciObjectKey.trim())) return null;
+  // A CI key must always have its matching non-secret display metadata, and
+  // vice versa. This keeps a document-less candidate from acquiring a forged
+  // CI record when read by a reviewer.
+  if (Boolean(ciObjectKey) !== Boolean(stored.documents.CI)) return null;
+  const verification = raw?.documentVerification as HkDocumentVerification | undefined;
+  if (verification?.CI && !ciObjectKey) return null;
   try {
     return {
       ...stored,
       submissionId,
       payloadHash,
-      documentVerification: raw?.documentVerification as HkDocumentVerification | undefined,
+      documentVerification: verification,
       documentObjectKeys: {
         BR: assertStoredHkDocumentObjectKey(read("BR") as string, "BR"),
-        CI: assertStoredHkDocumentObjectKey(read("CI") as string, "CI"),
         BANK: assertStoredHkDocumentObjectKey(read("BANK") as string, "BANK"),
+        ...(ciObjectKey ? { CI: assertStoredHkDocumentObjectKey(ciObjectKey, "CI") } : {}),
       },
     };
   } catch {
@@ -1014,7 +1053,7 @@ export function toMerchantHkRegistrationDetail(
     bankAddress: data.bankAddress || null,
     documents: {
       BR: { available: Boolean(activeKeys.BR), fileName: effective.documents.BR.fileName },
-      CI: { available: Boolean(activeKeys.CI), fileName: effective.documents.CI.fileName },
+      CI: { available: Boolean(activeKeys.CI && effective.documents.CI), fileName: effective.documents.CI?.fileName ?? null },
       BANK: { available: Boolean(activeKeys.BANK), fileName: effective.documents.BANK.fileName },
     },
   };
@@ -1062,7 +1101,7 @@ export function toMerchantHkRegistrationPendingDetail(row: typeof merchants.$inf
     salesOwnerCode: data.salesOwnerCode || null,
     documents: {
       BR: { available: true, fileName: pending.documents.BR.fileName },
-      CI: { available: true, fileName: pending.documents.CI.fileName },
+      CI: { available: Boolean(pending.documentObjectKeys.CI && pending.documents.CI), fileName: pending.documents.CI?.fileName ?? null },
       BANK: { available: true, fileName: pending.documents.BANK.fileName },
     },
   };
@@ -1737,8 +1776,9 @@ export async function getMerchantHkDocumentSource(
     if (!effective) return null;
     const objectKey = kind === "BR" ? merchant.licenseObjectKey
       : kind === "CI" ? merchant.ciObjectKey : merchant.bankDocumentObjectKey;
-    if (!objectKey?.trim()) return null;
-    return { objectKey: assertStoredHkDocumentObjectKey(objectKey, kind), fileName: effective.documents[kind].fileName };
+    const document = effective.documents[kind];
+    if (!objectKey?.trim() || !document) return null;
+    return { objectKey: assertStoredHkDocumentObjectKey(objectKey, kind), fileName: document.fileName };
   }
   const pending = parsePendingHkRegistration(merchant.registrationPendingData);
   if (!pending) return null;
@@ -1751,7 +1791,9 @@ export async function getMerchantHkDocumentSource(
     || merchant.hkPayloadHash !== expectedPendingVersion.expectedPayloadHash) {
     throw new Error("HK_REVIEW_VERSION_CHANGED");
   }
-  return { objectKey: pending.documentObjectKeys[kind], fileName: pending.documents[kind].fileName };
+  const objectKey = pending.documentObjectKeys[kind];
+  const document = pending.documents[kind];
+  return objectKey && document ? { objectKey, fileName: document.fileName } : null;
 }
 
 /** 成功预览留审计痕迹，但审计值从不保存对象键或可复用签名 URL。 */
@@ -2417,24 +2459,40 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
   if (input.registrationIdentifier.trim().toUpperCase() !== identity) {
     throw new Error("HK_REGISTRATION_IDENTIFIER_MISMATCH");
   }
+  if (!input.documents?.BR || !input.documents.BANK) {
+    throw new Error("HK_REQUIRED_DOCUMENTS_MISSING");
+  }
   const documents: HkRegistrationDocuments = {
     BR: { objectKey: assertHkDocumentObjectKey(input.documents.BR.objectKey, portalUserId, "BR"), fileName: input.documents.BR.fileName.trim() },
-    CI: { objectKey: assertHkDocumentObjectKey(input.documents.CI.objectKey, portalUserId, "CI"), fileName: input.documents.CI.fileName.trim() },
     BANK: { objectKey: assertHkDocumentObjectKey(input.documents.BANK.objectKey, portalUserId, "BANK"), fileName: input.documents.BANK.fileName.trim() },
+    ...(input.documents.CI ? {
+      CI: { objectKey: assertHkDocumentObjectKey(input.documents.CI.objectKey, portalUserId, "CI"), fileName: input.documents.CI.fileName.trim() },
+    } : {}),
   };
   if (Object.values(documents).some(document => !document.fileName || document.fileName.length > 255)) {
     throw new Error("HK_DOCUMENT_FILE_NAME_INVALID");
   }
   const verification = input.documentVerification;
   if (verification) {
-    for (const kind of ["BR", "CI", "BANK"] as const) {
+    for (const kind of ["BR", "BANK"] as const) {
       const value = verification[kind];
       if (!value || !normalizeHkSubmissionId(value.documentId) || !["recognized", "failed"].includes(value.ocrStatus)
         || !["ocr-assisted", "manual-classification-required"].includes(value.classification)) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
     }
   }
+  // CI verification is evidence of a real optional file, never a placeholder
+  // OCR row.  The router supplies BR/BANK verification on every new request;
+  // this server-side guard also protects direct/internal callers.
+  const ciVerification = verification?.CI;
+  if (documents.CI && !ciVerification) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+  if (!documents.CI && ciVerification) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+  if (ciVerification && (!normalizeHkSubmissionId(ciVerification.documentId)
+    || !["recognized", "failed"].includes(ciVerification.ocrStatus)
+    || !["ocr-assisted", "manual-classification-required"].includes(ciVerification.classification))) {
+    throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+  }
   const pendingData = { ...buildPendingHkRegistration(parsed, documents, { submissionId, payloadHash }),
-    documentVerification: verification ?? Object.fromEntries((["BR", "CI", "BANK"] as const).map(kind => [kind, { documentId: "", ocrStatus: "failed", recognizedType: null, classification: "manual-classification-required" }])) };
+    ...(verification ? { documentVerification: verification } : {}) };
   const now = new Date();
   const profileFields = {
     companyName: parsed.companyName,
@@ -2480,7 +2538,7 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
         hkSubmissionId: submissionId,
         hkPayloadHash: payloadHash,
         licenseObjectKey: documents.BR.objectKey,
-        ciObjectKey: documents.CI.objectKey,
+        ciObjectKey: documents.CI?.objectKey ?? null,
         bankDocumentObjectKey: documents.BANK.objectKey,
         crmOwnerPortalUserId: portalUserId,
         status: "pending",
@@ -2542,7 +2600,7 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
       hkSubmissionId: submissionId,
       hkPayloadHash: payloadHash,
       licenseObjectKey: documents.BR.objectKey,
-      ciObjectKey: documents.CI.objectKey,
+      ciObjectKey: documents.CI?.objectKey ?? null,
       bankDocumentObjectKey: documents.BANK.objectKey,
       crmOwnerPortalUserId: owner ?? portalUserId,
       crmStatus: "pending",
@@ -2622,6 +2680,23 @@ export async function reviewHkRegistrationDraft(input: {
     const effective = parseStoredHkRegistration(merchant.registrationData);
     const crmOwner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
     if (!crmOwner) throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
+    const candidateCi = pending.documentObjectKeys.CI && pending.documents.CI
+      ? {
+        objectKey: assertStoredHkDocumentObjectKey(pending.documentObjectKeys.CI, "CI"),
+        fileName: pending.documents.CI.fileName,
+      }
+      : undefined;
+    // A profile resubmission may omit optional CI. In that case, promote the
+    // already-effective CI record as-is rather than deleting it or inventing a
+    // first-submission CI record. Stored-key validation admits only the
+    // original immutable private namespace; it never reuses a caller key.
+    const effectiveCi = !candidateCi && effective?.documents.CI && merchant.ciObjectKey
+      ? {
+        objectKey: assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI"),
+        fileName: effective.documents.CI.fileName,
+      }
+      : undefined;
+    const promotedCi = candidateCi ?? effectiveCi;
 
     /*
      * `companies.userId` is the immutable data owner and can legitimately be
@@ -2683,8 +2758,8 @@ export async function reviewHkRegistrationDraft(input: {
       throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
     }
     // CI is held by the backend private-document store rather than the main
-    // site's pendingDraft. parsePendingHkRegistration has already validated its immutable owner-scoped key.
-    assertStoredHkDocumentObjectKey(pending.documentObjectKeys.CI, "CI");
+    // site's pendingDraft. A supplied CI was validated above; no CI evidence
+    // is expected or manufactured for a CI-omitted candidate.
 
     const expectedPendingDraft = isResubmission ? JSON.stringify(pendingDraft) : null;
     const reviewGuard = isResubmission
@@ -2760,12 +2835,12 @@ export async function reviewHkRegistrationDraft(input: {
         salesOwnerCode: registration.salesOwnerCode || null,
         registrationData: buildStoredHkRegistration(registration, {
           BR: { objectKey: pending.documentObjectKeys.BR, fileName: pending.documents.BR.fileName },
-          CI: { objectKey: pending.documentObjectKeys.CI, fileName: pending.documents.CI.fileName },
           BANK: { objectKey: pending.documentObjectKeys.BANK, fileName: pending.documents.BANK.fileName },
+          ...(promotedCi ? { CI: promotedCi } : {}),
         }, { submissionId: pending.submissionId, payloadHash: pending.payloadHash }),
         registrationPendingData: null,
         licenseObjectKey: pending.documentObjectKeys.BR,
-        ciObjectKey: pending.documentObjectKeys.CI,
+        ciObjectKey: promotedCi?.objectKey ?? null,
         bankDocumentObjectKey: pending.documentObjectKeys.BANK,
         status: "approved",
         reviewNote: note,
@@ -2891,13 +2966,13 @@ export async function setMerchantCrmStatus(input: {
       if (!registration || merchant.registrationIdentifier !== hkRegistrationIdentifier(registration.registration.brn)) {
         throw new Error("HK_REGISTRATION_DATA_INVALID");
       }
-      if (merchant.status !== "approved" || !ownerToKeep || !merchant.licenseObjectKey || !merchant.ciObjectKey || !merchant.bankDocumentObjectKey) {
+      if (merchant.status !== "approved" || !ownerToKeep || !merchant.licenseObjectKey || !merchant.bankDocumentObjectKey) {
         throw new Error("HK_REQUIRED_DOCUMENTS_MISSING");
       }
       // Re-parse at enable time: expiry/date rules remain time-sensitive after the human draft review.
       hkRegistrationDataSchema.parse(registration.registration);
       assertStoredHkDocumentObjectKey(merchant.licenseObjectKey, "BR");
-      assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI");
+      if (merchant.ciObjectKey) assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI");
       assertStoredHkDocumentObjectKey(merchant.bankDocumentObjectKey, "BANK");
       const identity = merchantRegistrationIdentity(merchant);
       if (!identity) throw new Error("HK_REGISTRATION_DATA_INVALID");

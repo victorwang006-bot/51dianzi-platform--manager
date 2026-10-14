@@ -46,7 +46,7 @@ export const hkRegistrationDataSchema = z.object({
   registrationNumber: z.string().transform(value => normalizeHkBrCertificateNumber(value) ?? "").pipe(z.string().regex(/^\d{8}-\d{3}-\d{2}-\d{2}-\d$/, "请输入16位BR完整登记证号码")),
   brStartDate: dateField,
   brExpiryDate: dateField,
-  ciNumber: requiredText("公司注册证编号", 32),
+  ciNumber: optionalText(32),
   establishedAt: z.string().trim().default("").refine(v => !v || Boolean(normalizeHkDate(v)), "请输入有效成立日期"),
   regAddress: requiredText("营业地址", 255),
   bankAccountName: requiredText("账户名称", 128),

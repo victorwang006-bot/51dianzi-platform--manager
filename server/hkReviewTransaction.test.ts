@@ -366,6 +366,85 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
     expect(enterpriseUpdate?.sql).toContain("enterprise.superAdminUserId");
   });
 
+  it("approves a first HK draft without CI without manufacturing CI evidence", async () => {
+    const noCiRegistration = { ...registration, ciNumber: "" };
+    const noCiPending = pendingRegistration({
+      registration: noCiRegistration,
+      documents: {
+        BR: { fileName: documents.BR.fileName },
+        BANK: { fileName: documents.BANK.fileName },
+      },
+      documentObjectKeys: {
+        BR: documents.BR.objectKey,
+        BANK: documents.BANK.objectKey,
+      },
+    });
+    const plan = installPlan({
+      selectResults: [[hkMerchant({ ciObjectKey: null, registrationPendingData: noCiPending })]],
+      executeResults: [
+        [[firstDraftPlatformCompany({ registrationData: noCiRegistration })], undefined],
+        [{ affectedRows: 1 }, undefined],
+      ],
+    });
+
+    await expect(dbModule.reviewHkRegistrationDraft(reviewInput({ note: "BR and bank proof manually verified" })))
+      .resolves.toEqual({ success: true, decision: "approved", crmStatus: "pending" });
+
+    expect(plan.merchantSets[0]).toMatchObject({ ciObjectKey: null, status: "approved" });
+    expect((plan.merchantSets[0].registrationData as Record<string, any>).documents).not.toHaveProperty("CI");
+  });
+
+  it("keeps an existing effective CI when an approved profile resubmission omits CI", async () => {
+    const noCiRegistration = { ...registration, ciNumber: "" };
+    const noCiPending = pendingRegistration({
+      registration: noCiRegistration,
+      documents: {
+        BR: { fileName: documents.BR.fileName },
+        BANK: { fileName: documents.BANK.fileName },
+      },
+      documentObjectKeys: {
+        BR: documents.BR.objectKey,
+        BANK: documents.BANK.objectKey,
+      },
+    });
+    const effectiveCiObjectKey = "hk-registration/user-original-company-user/CI/22222222-2222-4222-8222-222222222222_effective-ci.pdf";
+    const merchant = hkMerchant({
+      crmStatus: "enabled",
+      status: "approved",
+      registrationData: storedEffectiveRegistration({
+        documents: {
+          BR: { fileName: "effective-br.pdf" },
+          CI: { fileName: "effective-ci.pdf" },
+          BANK: { fileName: "effective-bank.pdf" },
+        },
+      }),
+      registrationPendingData: noCiPending,
+      ciObjectKey: effectiveCiObjectKey,
+    });
+    const plan = installPlan({
+      selectResults: [[merchant]],
+      executeResults: [
+        [[resubmissionPlatformCompany({
+          pendingDraft: JSON.stringify({
+            registrationData: noCiRegistration,
+            licenseObjectKey: documents.BR.objectKey,
+            licenseFileName: documents.BR.fileName,
+            bankLicenseObjectKey: documents.BANK.objectKey,
+            bankLicenseFileName: documents.BANK.fileName,
+          }),
+        })], undefined],
+        [{ affectedRows: 1 }, undefined],
+      ],
+    });
+
+    await expect(dbModule.reviewHkRegistrationDraft(reviewInput({ note: "Optional CI not re-uploaded" })))
+      .resolves.toEqual({ success: true, decision: "approved", crmStatus: "enabled" });
+
+    expect(plan.merchantSets[0].ciObjectKey).toBe(effectiveCiObjectKey);
+    expect((plan.merchantSets[0].registrationData as Record<string, any>).documents.CI)
+      .toEqual({ fileName: "effective-ci.pdf" });
+  });
+
   it.each([
     ["submission revision", (company: Record<string, unknown>) => { company.registrationSubmissionId = "33333333-3333-4333-8333-333333333333"; }],
     ["payload hash", (company: Record<string, unknown>) => { company.registrationPayloadHash = "c".repeat(64); }],
@@ -490,6 +569,30 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
       { expectedSubmissionId: SUBMISSION_ID, expectedPayloadHash: PAYLOAD_HASH },
     )).rejects.toThrow("HK_REVIEW_VERSION_CHANGED");
   });
+
+  it("returns no CI source for a version-matched candidate that did not submit optional CI", async () => {
+    const merchant = hkMerchant({
+      ciObjectKey: null,
+      registrationPendingData: pendingRegistration({
+        registration: { ...registration, ciNumber: "" },
+        documents: {
+          BR: { fileName: documents.BR.fileName },
+          BANK: { fileName: documents.BANK.fileName },
+        },
+        documentObjectKeys: {
+          BR: documents.BR.objectKey,
+          BANK: documents.BANK.objectKey,
+        },
+      }),
+    });
+
+    await expect(dbModule.getMerchantHkDocumentSource(
+      merchant,
+      "CI",
+      "pending",
+      { expectedSubmissionId: SUBMISSION_ID, expectedPayloadHash: PAYLOAD_HASH },
+    )).resolves.toBeNull();
+  });
 });
 
 describe("setMerchantCrmStatus — real HK enablement gate with offline mysql/drizzle", () => {
@@ -525,6 +628,41 @@ describe("setMerchantCrmStatus — real HK enablement gate with offline mysql/dr
     expect(read.sql).toContain("company.pendingDraft");
     expect(read.sql).toContain("company.registrationSubmissionId");
     expect(read.sql).toContain("company.registrationPayloadHash");
+  });
+
+  it("enables a reviewed HK registration with BR and bank evidence but no CI", async () => {
+    const noCiRegistration = { ...registration, ciNumber: "" };
+    const merchant = hkMerchant({
+      status: "approved",
+      ciObjectKey: null,
+      registrationData: storedEffectiveRegistration({
+        registration: noCiRegistration,
+        documents: {
+          BR: { fileName: documents.BR.fileName },
+          BANK: { fileName: documents.BANK.fileName },
+        },
+        submissionId: SUBMISSION_ID,
+        payloadHash: PAYLOAD_HASH,
+      }),
+      registrationPendingData: null,
+    });
+    const plan = installPlan({
+      selectResults: [
+        [merchant],
+        [],
+        [{ crmStatus: "enabled", crmOwnerPortalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN, crmNote: null }],
+      ],
+      executeResults: [[[crmPlatformCompany()], undefined]],
+      updateResults: [[{ affectedRows: 1 }]],
+    });
+
+    await expect(dbModule.setMerchantCrmStatus({
+      merchantId: 30004,
+      crmStatus: "enabled",
+      portalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN,
+    })).resolves.toEqual({ success: true, crmOwnerPortalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN });
+
+    expect(plan.merchantSets[0]).toMatchObject({ crmStatus: "enabled" });
   });
 
   it.each([

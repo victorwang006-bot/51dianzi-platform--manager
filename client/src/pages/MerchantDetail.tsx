@@ -577,7 +577,7 @@ export default function MerchantDetail() {
             </AlertDialogHeader>
             {hkReviewVersionIsStale ? (
               <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900" data-hk-registration-review-version-changed>
-                待审核资料已更新。本次确认已取消；请关闭后重新查看 BR、CI 与银行证明原件，再发起审核。
+                待审核资料已更新。本次确认已取消；请关闭后重新查看已提交的证件及银行证明原件，再发起审核。
               </p>
             ) : null}
             {hkReviewDecision === "approved" ? (
@@ -587,7 +587,7 @@ export default function MerchantDetail() {
                   disabled={reviewHkRegistrationDraftMutation.isPending || hkReviewVersionIsStale}
                   onCheckedChange={checked => setHkIdentityConfirmed(checked === true)}
                 />
-                <span>我已逐份查看 BR、CI 与银行证明原件，并人工确认三证主体及银行账户与待审资料一致。</span>
+                <span>我已逐份查看 BR、银行证明及已提供的 CI 原件，并人工确认已提交证件的主体及银行账户与待审资料一致。</span>
               </label>
             ) : (
               <div className="space-y-1.5">
@@ -751,7 +751,7 @@ export default function MerchantDetail() {
                 {merchant.registrationRegion === "HK" && hkRegistrationPending ? (
                   <SectionCard title="香港注册资料（待人工审核）" icon={ShieldCheck}>
                     <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-                      <strong>OCR 识别成功仅作辅助；识别失败仅表示待人工分类，均不会自动通过。</strong>审核者必须逐份打开 BR、CI 和银行证明原件，人工确认主体与银行账户一致后方可批准。
+                      <strong>OCR 识别成功仅作辅助；识别失败仅表示待人工分类，均不会自动通过。</strong>审核者必须逐份打开 BR、银行证明及已提供的 CI 原件，人工确认主体与银行账户一致后方可批准。
                     </div>
                     <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                       <InfoItem label="香港企业身份" value={hkRegistrationPending.identity} icon={ShieldCheck} />

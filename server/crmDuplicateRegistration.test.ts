@@ -201,6 +201,11 @@ function hkInput(overrides: Record<string, unknown> = {}) {
       CI: { objectKey: `hk-registration/user-${owner}/CI/${submissionId}_ci-proof.pdf`, fileName: "ci.pdf" },
       BANK: { objectKey: `hk-registration/user-${owner}/BANK/${submissionId}_bank-proof.pdf`, fileName: "bank.pdf" },
     },
+    documentVerification: {
+      BR: { documentId: submissionId, ocrStatus: "recognized" as const, recognizedType: "BR", classification: "ocr-assisted" as const },
+      CI: { documentId: submissionId, ocrStatus: "recognized" as const, recognizedType: "CI", classification: "ocr-assisted" as const },
+      BANK: { documentId: submissionId, ocrStatus: "recognized" as const, recognizedType: "BANK", classification: "ocr-assisted" as const },
+    },
     submissionId,
     payloadHash: "a".repeat(64),
     portalUserId: owner,
@@ -297,6 +302,86 @@ describe("CRM duplicate registration guard — real handlers with mocked transac
 
     expect(result).toMatchObject({ code: CRM_DUPLICATE_OPENING_CODE, message: CRM_DUPLICATE_OPENING_MESSAGE });
     expect(state.inserts + state.writes).toBe(0);
+  });
+
+  it("accepts a first HK submission without CI and does not create CI evidence or OCR data", async () => {
+    const input = hkInput({
+      registrationData: { ...hkInput().registrationData, ciNumber: "" },
+      documents: {
+        BR: hkInput().documents.BR,
+        BANK: hkInput().documents.BANK,
+      },
+      documentVerification: {
+        BR: hkInput().documentVerification.BR,
+        BANK: hkInput().documentVerification.BANK,
+      },
+    });
+
+    await expect(dbModule.submitHkCrmApplication(input)).resolves.toMatchObject({
+      accepted: true,
+      created: true,
+      code: "HK_CRM_APPLICATION_ACCEPTED",
+    });
+
+    expect(state.rows).toHaveLength(1);
+    expect(state.rows[0]).toMatchObject({ ciObjectKey: null });
+    expect(state.rows[0].registrationPendingData.documents).not.toHaveProperty("CI");
+    expect(state.rows[0].registrationPendingData.documentObjectKeys).not.toHaveProperty("CI");
+    expect(state.rows[0].registrationPendingData.documentVerification).not.toHaveProperty("CI");
+  });
+
+  it("keeps an effective CI key intact while a CI-omitted paused HK resubmission waits for review", async () => {
+    const effectiveCiObjectKey = "hk-registration/user-owner-hk/CI/22222222-2222-4222-8222-222222222222_effective-ci.pdf";
+    const existing = merchant({
+      id: 7,
+      merchantNo: "M000007",
+      registrationRegion: "HK",
+      registrationIdentifier: "HK:12345678",
+      businessLicense: null,
+      crmOwnerPortalUserId: "owner-hk",
+      crmStatus: "disabled",
+      status: "approved",
+      ciObjectKey: effectiveCiObjectKey,
+      registrationData: { registration: hkInput().registrationData },
+    });
+    reset([existing]);
+
+    const result = await dbModule.submitHkCrmApplication(hkInput({
+      registrationData: { ...hkInput().registrationData, ciNumber: "" },
+      documents: { BR: hkInput().documents.BR, BANK: hkInput().documents.BANK },
+      documentVerification: { BR: hkInput().documentVerification.BR, BANK: hkInput().documentVerification.BANK },
+    }));
+
+    expect(result).toMatchObject({ accepted: true, created: false, code: "HK_CRM_PROFILE_REVIEW_PENDING", crmStatus: "disabled" });
+    expect(existing.ciObjectKey).toBe(effectiveCiObjectKey);
+    expect(existing.registrationPendingData.documents).not.toHaveProperty("CI");
+  });
+
+  it.each([
+    ["BR", () => ({ CI: hkInput().documents.CI, BANK: hkInput().documents.BANK })],
+    ["BANK", () => ({ BR: hkInput().documents.BR, CI: hkInput().documents.CI })],
+  ])("rejects an HK submission missing required %s evidence", async (_kind, withoutRequiredDocument) => {
+    await expect(dbModule.submitHkCrmApplication(hkInput({ documents: withoutRequiredDocument() })))
+      .rejects.toThrow();
+    expect(state.writes + state.inserts).toBe(0);
+  });
+
+  it.each([
+    ["invalid CI object key", "hk-registration/user-owner-hk/CI/11111111-1111-4111-8111-111111111111_ci-proof.exe"],
+    ["cross-owner CI object key", "hk-registration/user-other-owner/CI/11111111-1111-4111-8111-111111111111_ci-proof.pdf"],
+  ])("rejects %s rather than treating supplied CI as optional", async (_label, ciObjectKey) => {
+    await expect(dbModule.submitHkCrmApplication(hkInput({
+      documents: { ...hkInput().documents, CI: { ...hkInput().documents.CI, objectKey: ciObjectKey } },
+    }))).rejects.toThrow("HK_DOCUMENT_OBJECT_KEY_INVALID");
+    expect(state.writes + state.inserts).toBe(0);
+  });
+
+  it("rejects a CI OCR record when the optional CI file is absent", async () => {
+    await expect(dbModule.submitHkCrmApplication(hkInput({
+      registrationData: { ...hkInput().registrationData, ciNumber: "" },
+      documents: { BR: hkInput().documents.BR, BANK: hkInput().documents.BANK },
+    }))).rejects.toThrow("HK_DOCUMENT_CLASSIFICATION_INVALID");
+    expect(state.writes + state.inserts).toBe(0);
   });
 
   it("permits exact same-owner rejected identity re-submission using its pre-existing private evidence", async () => {

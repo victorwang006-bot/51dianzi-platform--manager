@@ -87,4 +87,26 @@ describe("HK registration contract", () => {
     expect(JSON.stringify(detail)).not.toContain("hk-registration/");
     expect(JSON.stringify(detail)).not.toContain("must-not-leak");
   });
+
+  it("reports optional CI as unavailable when neither an effective CI key nor a CI document was submitted", () => {
+    const detail = toMerchantHkRegistrationDetail({
+      registrationRegion: "HK",
+      registrationIdentifier: "HK:12345678",
+      businessLicense: null,
+      registrationData: {
+        registration: { ...validRegistration, ciNumber: "" },
+        documents: {
+          BR: { fileName: "BR.pdf" },
+          BANK: { fileName: "Bank.pdf" },
+        },
+      },
+      registrationPendingData: null,
+      licenseObjectKey: "hk-registration/user-390005/BR/123e4567-e89b-12d3-a456-426614174000_br-proof.pdf",
+      ciObjectKey: null,
+      bankDocumentObjectKey: "hk-registration/user-390005/BANK/123e4567-e89b-12d3-a456-426614174000_bank-proof.pdf",
+    } as never);
+
+    expect(detail?.ciNumber).toBe("");
+    expect(detail?.documents.CI).toEqual({ available: false, fileName: null });
+  });
 });

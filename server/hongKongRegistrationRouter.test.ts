@@ -46,13 +46,17 @@ describe("HK registration router contract", () => {
     expect(reviewRoute).toContain("confirmed: input.confirmed");
   });
 
-  it("requires submission replay identifiers and complete constrained three-document verification records", () => {
+  it("requires submission replay identifiers and constrained BR/BANK verification while making CI file and OCR conditional", () => {
     expect(source).toContain('submissionId: z.string().uuid("香港提交号无效")');
     expect(source).toContain('payloadHash: z.string().trim().regex(/^[a-f0-9]{64}$/i');
     expect(source).toContain("documentVerification: z.object({");
-    for (const kind of ["BR", "CI", "BANK"]) {
+    for (const kind of ["BR", "BANK"]) {
       expect(source).toContain(`${kind}: z.object({`);
     }
+    expect(source).toContain('CI: z.object({ objectKey: z.string().trim().min(1).max(512), fileName: z.string().trim().min(1).max(255) }).optional()');
+    expect(source).toContain('}).strict().optional(),');
+    expect(source).toContain('if (value.documents.CI && !value.documentVerification.CI)');
+    expect(source).toContain('if (!value.documents.CI && value.documentVerification.CI)');
     expect(source).toContain('documentId: z.string().uuid(');
     expect(source).toContain('ocrStatus: z.enum(["recognized", "failed"])');
     expect(source).toContain('recognizedType: z.enum(["BR", "CI", "BANK"]).nullable()');
