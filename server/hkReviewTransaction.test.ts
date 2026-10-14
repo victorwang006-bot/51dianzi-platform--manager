@@ -49,7 +49,7 @@ const registration = {
   businessNature: "Electronic components distribution",
   legalStatus: "Limited Company",
   brn: "12345678",
-  registrationNumber: "12345678-001-01-1",
+  registrationNumber: "12345678-001-01-01-1",
   brStartDate: "2020-01-01",
   brExpiryDate: "2099-12-31",
   ciNumber: "CI-EXAMPLE-001",

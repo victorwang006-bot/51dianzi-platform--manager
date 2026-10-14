@@ -24,6 +24,15 @@ export function hkToday(): string {
   return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** IRD Certificate No. is 8-3-2-2-1 (16 digits); BRN is only its first eight. */
+export function normalizeHkBrCertificateNumber(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.normalize("NFKC").trim().replace(/[‐‑‒–—―−﹘﹣]/g, "-");
+  if (!/^[\d\s-]+$/.test(text)) return null;
+  const match = /^(\d{8})(\d{3})(\d{2})(\d{2})(\d)$/.exec(text.replace(/[\s-]/g, ""));
+  return match ? match.slice(1).join("-") : null;
+}
+
 const requiredText = (label: string, max: number) => z.string().trim().min(1, `请输入${label}`).max(max);
 const optionalText = (max: number) => z.string().trim().max(max).default("");
 const dateField = z.string().transform(normalizeHkDate).pipe(z.string({ error: "请输入有效日期（日/月/年）" }));
@@ -34,7 +43,7 @@ export const hkRegistrationDataSchema = z.object({
   businessNature: requiredText("企业性质（业务性质）", 128),
   legalStatus: requiredText("法律地位", 64),
   brn: z.string().trim().regex(/^\d{8}$/, "请输入8位商业登记号码BRN"),
-  registrationNumber: z.string().trim().transform(value => value.replace(/\s+/g, "-")).pipe(z.string().regex(/^\d{8}-\d{3}-\d{2}-\d$/, "请输入BR完整登记证号码")),
+  registrationNumber: z.string().transform(value => normalizeHkBrCertificateNumber(value) ?? "").pipe(z.string().regex(/^\d{8}-\d{3}-\d{2}-\d{2}-\d$/, "请输入16位BR完整登记证号码")),
   brStartDate: dateField,
   brExpiryDate: dateField,
   ciNumber: requiredText("公司注册证编号", 32),

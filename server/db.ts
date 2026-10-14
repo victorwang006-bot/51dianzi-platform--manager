@@ -73,6 +73,7 @@ import {
 import {
   hkRegistrationDataSchema,
   hkRegistrationIdentifier,
+  normalizeHkBrCertificateNumber,
   normalizeHkDate,
   type HkDocumentKind,
   type HkRegistrationData,
@@ -235,7 +236,12 @@ function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | nul
   const businessNature = required("businessNature", 128);
   const legalStatus = required("legalStatus", 64);
   const brn = required("brn", 8);
-  const registrationNumber = required("registrationNumber", 32);
+  const storedCertificateNumber = required("registrationNumber", 32);
+  // The former schema stored four groups. Preserve historical reads only;
+  // new submissions/reviews use the strict full 16-digit shared schema.
+  const registrationNumber = normalizeHkBrCertificateNumber(storedCertificateNumber)
+    ?? (storedCertificateNumber && /^\d{8}[-\s]\d{3}[-\s]\d{2}[-\s]\d$/.test(storedCertificateNumber)
+      ? storedCertificateNumber : null);
   const brStartDate = normalizeHkDate(data.brStartDate);
   const brExpiryDate = normalizeHkDate(data.brExpiryDate);
   const ciNumber = required("ciNumber", 32);
@@ -249,7 +255,6 @@ function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | nul
     || !brStartDate || !brExpiryDate || !ciNumber || !regAddress || !bankAccountName
     || !bankAccountNumber || !bankName || establishedAt === null
     || !/^\d{8}$/.test(brn)
-    || !/^\d{8}[-\s]\d{3}[-\s]\d{2}[-\s]\d$/.test(registrationNumber)
     || registrationNumber.slice(0, 8) !== brn
     || brStartDate > brExpiryDate
     || !/^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(bankAccountNumber)

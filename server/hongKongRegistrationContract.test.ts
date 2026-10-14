@@ -16,7 +16,7 @@ const validRegistration = {
   businessNature: "Electronics trading",
   legalStatus: "Private company limited by shares",
   brn: "12345678",
-  registrationNumber: "12345678-001-23-4",
+  registrationNumber: "12345678-001-01-23-4",
   brStartDate: "01/01/2025",
   brExpiryDate: "31/12/2099",
   ciNumber: "CI-123456",
@@ -43,7 +43,7 @@ describe("HK registration contract", () => {
 
   it("requires BRN/full-number consistency, valid dates, and rejects sole proprietorship", () => {
     expect(hkRegistrationDataSchema.safeParse(validRegistration).success).toBe(true);
-    expect(hkRegistrationDataSchema.safeParse({ ...validRegistration, registrationNumber: "87654321-001-23-4" }).success).toBe(false);
+    expect(hkRegistrationDataSchema.safeParse({ ...validRegistration, registrationNumber: "87654321-001-01-23-4" }).success).toBe(false);
     expect(hkRegistrationDataSchema.safeParse({ ...validRegistration, legalStatus: "Sole proprietorship" }).success).toBe(false);
   });
 
