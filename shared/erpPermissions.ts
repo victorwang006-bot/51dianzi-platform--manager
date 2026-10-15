@@ -1,6 +1,7 @@
 export const ERP_PERMISSION_KEYS = [
   "inventory.manage",
   "inventory.publish",
+  "inquiry.receive",
   "sales_orders.manage",
   "inventory.inbound",
   "inventory.dashboard",
@@ -22,6 +23,11 @@ export const ERP_PERMISSION_DEFINITIONS: Record<
     label: "发布库存",
     description: "新建、导入并发布库存",
     href: "/publish",
+  },
+  "inquiry.receive": {
+    label: "询价接待",
+    description: "接收本人分配的询价，并通过聊一聊回复和报价；不含库存编辑权限",
+    href: "/inquiries",
   },
   "sales_orders.manage": {
     label: "销售订单",
