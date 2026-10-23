@@ -1,0 +1,1 @@
+{"after":{"companyStillVisible":false,"pageText":"共 714 条记录，第 1 / 36 页","url":"/merchants"},"before":{"company":"240","mainScroll":0,"offset":935.875,"pageText":"共 714 条记录，第 12 / 36 页","url":"/merchants?page=12","y":1573},"detail":{"url":"/merchants/240"}}

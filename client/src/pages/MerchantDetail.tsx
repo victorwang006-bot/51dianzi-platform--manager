@@ -1,3 +1,5 @@
+import { useAdminPageMemory, returnToPageSource } from "@/hooks/useAdminPageMemory";
+import { MerchantSequentialNavigation } from "@/components/admin/MerchantNavigation";
 import MerchantCompanyWallPanel from "@/components/admin/MerchantCompanyWallPanel";
 import MerchantEnterpriseUsersPanel from "@/components/admin/MerchantEnterpriseUsersPanel";
 import MerchantMaterialPanel from "@/components/admin/MerchantMaterialPanel";
@@ -154,6 +156,7 @@ function SectionCard({
 }
 
 export default function MerchantDetail() {
+  useAdminPageMemory();
   const [, params] = useRoute("/merchants/:id");
   const [, navigate] = useLocation();
   const { user } = useAuth();
@@ -350,8 +353,8 @@ export default function MerchantDetail() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center gap-4 py-24">
           <p className="text-muted-foreground">未找到该商户</p>
-          <Button variant="outline" onClick={() => navigate("/merchants")}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> 返回商户列表
+          <Button variant="outline" onClick={() => returnToPageSource(navigate, "/merchants")}>
+            <ArrowLeft className="mr-1 h-4 w-4" /> 返回上一页
           </Button>
         </div>
       </DashboardLayout>
@@ -415,9 +418,9 @@ export default function MerchantDetail() {
           variant="ghost"
           size="sm"
           className="-ml-2 h-8 text-xs text-muted-foreground hover:text-primary"
-          onClick={() => navigate("/merchants")}
+          onClick={() => returnToPageSource(navigate, "/merchants")}
         >
-          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> 返回商户列表
+          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> 返回上一页
         </Button>
 
         <header className="rounded-lg border bg-white px-4 py-3" data-merchant-summary-header>
@@ -635,7 +638,8 @@ export default function MerchantDetail() {
           <div className="px-4 py-2.5"><dt className="text-[11px] text-muted-foreground">销售负责人</dt><dd className="mt-0.5 truncate font-medium">{merchant.salesOwner || merchant.salesOwnerCode || "未分配"}</dd></div>
         </dl>
 
-        <Tabs value={activeTab} onValueChange={changeTab} className="gap-3">
+        <MerchantSequentialNavigation merchantId={id} />
+      <Tabs value={activeTab} onValueChange={changeTab} className="gap-3">
           <div className="overflow-x-auto rounded-lg border bg-white" data-responsive-tab-scroll>
             <TabsList className="h-10 min-w-max rounded-none bg-transparent p-0">
               {MERCHANT_TABS.map(tab => {

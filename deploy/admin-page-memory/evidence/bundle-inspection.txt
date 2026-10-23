@@ -1,0 +1,111 @@
+
+MODULE /home/ubuntu/admin-page-memory/baseline/assets/index-Ced0FmRH.js
+EXPORT export{$O as A,Ff as B,FO as C,wg as D,Co as E,QA as F,UA as G,pv as H,D2 as I,nt as J,m_ as K,GA as L,gE as M,p0 as N,BA as O,Ba as P,kA as Q,JO as R,Xe as S,P_ as T,PA as U,s2 as V,q_ as W,VA as X,HA as Y,gg as a,xr as b,O0 as c,Wn as d,ld as e,PO as f,cd as g,qA as h,qg as i,N as j,CE as k,Xg as l,bg as m,IO as n,vg as o,pd as p,hE as q,E as r,k_ as s,Sl as t,r2 as u,YA as v,qo as w,mA as x,dA as y,La as z};
+
+MODULE /home/ubuntu/admin-page-memory/baseline/assets/Merchants-Cl0nP06k.js
+import{c as $t,r,i as nt,u as Dt,j as e,R as Lt,a as Tt,k as G,b as ct,P as F,d as pe,A as lt,e as ot,l as _t,m as zt,D as Ut,C as Bt,n as Vt,g as ne,o as me,p as Kt,t as $,h as z,S as qe,L as Ht}from"./index-Ced0FmRH.js";
+import{P as Wt,E as qt,b as Gt,S as Ge,f as Qt,a as Jt}from"./shared-BsJe8hgg.js";
+import{D as Xt}from"./DashboardLayout-CzD_2KID.js";
+import{B as P}from"./button-9CkCORwk.js";
+import{I as Me}from"./input-D7iHNvM1.js";
+import{h as Yt,g as Zt,i as es,F as ts,j as ss,P as as,O as rs,C as ns,D as Ne,a as Pe,b as Ee,d as ke,e as Qe,f as Je}from"./index-CYWADLor.js";
+import{C as cs}from"./calendar-days-RJyk1Pqc.js";
+import{C as ls,e as Ce,S as os,a as is,b as ds,c as us,d as Oe}from"./select-D6WmsM6-.js";
+import{M as ps}from"./MerchantOwnershipLookup-kDLbgkah.js";
+import{S as it}from"./search-D-gcZGx8.js";
+import{C as Xe,a as Ye}from"./card-CR_U6FqM.js";
+import{T as Ze}from"./textarea-DuMEQ0n_.js";
+import{S as ms}from"./shield-check-C72s1HR6.js";
+import{C as xs,a as hs}from"./chevron-right-DiqfXYLT.js";
+import"./beijingTime-Dmhx7eVn.js";
+import"./index-D4nJALOo.js";
+import"./building-2-DAmgVRZ1.js";
+import"./external-link-CEwcwewU.js";
+import"./phone-BvG81C_i.js";
+import"./mail-CLev25_q.js";
+EXPORT export{ka as default};
+TARGET function ka(){const[t,a]=r.useState(1),[s,u]=r.useState(""),[c,l]=r.useState(""),[i,x]=r.useState({preset:"all"}),[v,p]=r.useState("all"),[d,g]=r.useState(null),[j,M]=r.useState(""),[R,V]=r.useState(""),[D,J]=r.useState(null),[ge,fe]=r.useState(""),[ve,I]=r.useState(""),[w,S]=r.useState(null),[K,H]=r.useState(""),[W,X]=r.useState(null),[le,oe]=r.useState(!1),[L,T]=r.useState(0),[Y,Z]=r.useState(!1),ee=r.useRef(null),ie=r.useRef(null),{user:be}=Kt(),te=(be?.adminRole??"super_admin")==="super_admin",n=$.useUtils(),{data:h,isLoading:b}=$.merchant.list.useQuery({page:t,pageSize:20,search:s||void 0,createdAtPreset:i.preset==="all"?void 0:i.preset,createdFrom:i.preset==="custom"?i.from:void 0,createdTo:i.preset==="custom"?i.to:void 0,salesOwnerCode:v==="all"?void 0:v}),{data:m}=$.merchant.salesOwnerFilterOptions.useQuery(),{data:f}=$.merchant.detail.useQuery({id:W??0},{enabled:W!==null}),{data:C=[]}=$.salesStaff.list.useQuery({includeInactive:!1},{enabled:te}),N=$.merchant.setSalesOwner.useMutation({onSuccess:o=>{z.success(o.salesOwner?`销售负责人已更新为 ${o.salesOwner}`:"已清空销售负责人"),n.merchant.list.invalidate(),n.merchant.salesOwnerFilterOptions.invalidate()},onError:o=>{z.error(`销售负责人更新失败：${o.message}`),n.merchant.list.invalidate()}}),y=$.merchant.setCrmStatus.useMutation({onSuccess:(o,O)=>{z.success(O.crmStatus==="enabled"&&d?.currentStatus==="disabled"?"ERP 已恢复":O.crmStatus==="enabled"?"已绑定前台用户并开通 ERP":O.crmStatus==="rejected"?"已拒绝该申请":"ERP 已暂停"),n.merchant.list.invalidate(),g(null),M(""),V("")},onError:o=>z.error(`操作失败：${o.message}`)});$.merchant.rebindCrmOwner.useMutation({onSuccess:o=>{z.success(o.idempotent?"该换绑请求已处理":"ERP 超级管理员已换绑"),n.merchant.list.invalidate(),J(null),fe(""),I("")},onError:o=>z.error(`换绑失败：${o.message}`)});const q=$.merchant.sendMessage.useMutation({onSucces
+
+MODULE /home/ubuntu/admin-page-memory/baseline/assets/Merchants-UE0G_Vx8.js
+import{c as $t,r,i as nt,u as Dt,j as e,R as Lt,a as Tt,k as G,b as ct,P as F,d as pe,A as lt,e as ot,l as _t,m as zt,D as Ut,C as Bt,n as Vt,g as ne,o as me,p as Kt,t as $,h as z,S as qe,L as Ht}from"./index-DLgFRkpf.js";
+import{P as Wt,E as qt,b as Gt,S as Ge,f as Qt,a as Jt}from"./shared-DDDrNCiB.js";
+import{D as Xt}from"./DashboardLayout-DgxfYQ_X.js";
+import{B as P}from"./button-DX3rWX4H.js";
+import{I as Me}from"./input-CnNPLJVS.js";
+import{h as Yt,g as Zt,i as es,F as ts,j as ss,P as as,O as rs,C as ns,D as Ne,a as Pe,b as Ee,d as ke,e as Qe,f as Je}from"./index-CuUCF3Wv.js";
+import{C as cs}from"./calendar-days-_hXyFGUf.js";
+import{C as ls,e as Ce,S as os,a as is,b as ds,c as us,d as Oe}from"./select-BNVY_3ZW.js";
+import{M as ps}from"./MerchantOwnershipLookup-Cd-s6QfV.js";
+import{S as it}from"./search-AjHbWIGi.js";
+import{C as Xe,a as Ye}from"./card-BTT6cthe.js";
+import{T as Ze}from"./textarea-DXLzxRu3.js";
+import{S as ms}from"./shield-check-Cn41lDzs.js";
+import{C as xs,a as hs}from"./chevron-right-C1_NKMvj.js";
+import"./beijingTime-Dmhx7eVn.js";
+import"./index-Co3XyHIG.js";
+import"./building-2-BJIVBjyr.js";
+import"./external-link-CzQovG8k.js";
+import"./phone-CHWtvwk2.js";
+import"./mail-DKTZDMVe.js";
+EXPORT export{ka as default};
+TARGET function ka(){const[t,a]=r.useState(1),[s,u]=r.useState(""),[c,l]=r.useState(""),[i,x]=r.useState({preset:"all"}),[v,p]=r.useState("all"),[d,g]=r.useState(null),[j,M]=r.useState(""),[R,V]=r.useState(""),[D,J]=r.useState(null),[ge,fe]=r.useState(""),[ve,I]=r.useState(""),[w,S]=r.useState(null),[K,H]=r.useState(""),[W,X]=r.useState(null),[le,oe]=r.useState(!1),[L,T]=r.useState(0),[Y,Z]=r.useState(!1),ee=r.useRef(null),ie=r.useRef(null),{user:be}=Kt(),te=(be?.adminRole??"super_admin")==="super_admin",n=$.useUtils(),{data:h,isLoading:b}=$.merchant.list.useQuery({page:t,pageSize:20,search:s||void 0,createdAtPreset:i.preset==="all"?void 0:i.preset,createdFrom:i.preset==="custom"?i.from:void 0,createdTo:i.preset==="custom"?i.to:void 0,salesOwnerCode:v==="all"?void 0:v}),{data:m}=$.merchant.salesOwnerFilterOptions.useQuery(),{data:f}=$.merchant.detail.useQuery({id:W??0},{enabled:W!==null}),{data:C=[]}=$.salesStaff.list.useQuery({includeInactive:!1},{enabled:te}),N=$.merchant.setSalesOwner.useMutation({onSuccess:o=>{z.success(o.salesOwner?`销售负责人已更新为 ${o.salesOwner}`:"已清空销售负责人"),n.merchant.list.invalidate(),n.merchant.salesOwnerFilterOptions.invalidate()},onError:o=>{z.error(`销售负责人更新失败：${o.message}`),n.merchant.list.invalidate()}}),y=$.merchant.setCrmStatus.useMutation({onSuccess:(o,O)=>{z.success(O.crmStatus==="enabled"&&d?.currentStatus==="disabled"?"ERP 已恢复":O.crmStatus==="enabled"?"已绑定前台用户并开通 ERP":O.crmStatus==="rejected"?"已拒绝该申请":"ERP 已暂停"),n.merchant.list.invalidate(),g(null),M(""),V("")},onError:o=>z.error(`操作失败：${o.message}`)});$.merchant.rebindCrmOwner.useMutation({onSuccess:o=>{z.success(o.idempotent?"该换绑请求已处理":"ERP 超级管理员已换绑"),n.merchant.list.invalidate(),J(null),fe(""),I("")},onError:o=>z.error(`换绑失败：${o.message}`)});const q=$.merchant.sendMessage.useMutation({onSucces
+
+MODULE /home/ubuntu/admin-page-memory/baseline/assets/MerchantDetail-hk-62b2f7b8ce94.js
+import { r as React } from "/assets/index-Ced0FmRH.js";
+import { B } from "/assets/button-9CkCORwk.js";
+import { b } from "/assets/button-9CkCORwk.js";
+import { I } from "/assets/input-D7iHNvM1.js";
+import { j as runtime } from "/assets/index-Ced0FmRH.js";
+import { t } from "/assets/index-Ced0FmRH.js";
+import { h } from "/assets/index-Ced0FmRH.js";
+import { T } from "/assets/textarea-DuMEQ0n_.js";
+import { D } from "/assets/DashboardLayout-CzD_2KID.js";
+import { T as T2 } from "/assets/tabs-BwchRMaT.js";
+import { a } from "/assets/tabs-BwchRMaT.js";
+import { b as b2 } from "/assets/tabs-BwchRMaT.js";
+import { c } from "/assets/tabs-BwchRMaT.js";
+import { v } from "/assets/index-Ced0FmRH.js";
+import { w } from "/assets/index-Ced0FmRH.js";
+EXPORT export {
+  MerchantDetail as default
+};
+TARGET function MerchantDetail() {
+  const [, params] = v("/merchants/:id");
+  const [, navigate] = w();
+  const { user } = useAuth();
+  const id = Number(params?.id);
+  const [activeTab, setActiveTab] = useState("materials");
+  const [visitedTabs, setVisitedTabs] = useState(
+    () => /* @__PURE__ */ new Set(["materials"])
+  );
+  const [usernameEditing, setUsernameEditing] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [homepageFeatureDialogTarget, setHomepageFeatureDialogTarget] = useState(null);
+  const [homepageShowcaseDialogTarget, setHomepageShowcaseDialogTarget] = useState(null);
+  const [hkReviewDecision, setHkReviewDecision] = useState(null);
+  const [hkReviewNote, setHkReviewNote] = useState("");
+  const [hkIdentityConfirmed, setHkIdentityConfirmed] = useState(false);
+  const [hkReviewVersion, setHkReviewVersion] = useState(null);
+  const utils = t.useUtils();
+  const homepageFeatureProcedures = t.merchant;
+  const { data: merchant, isLoading } = t.merchant.detail.useQuery(
+    { id },
+    { enabled: Number.isFinite(id) && id > 0 }
+  );
+  const {
+    data: homepageFeatureStatus,
+    error: homepageFeatureError,
+    isLoading: homepageFeatureLoading,
+    isFetching: homepageFeatureFetching,
+    refetch: refetchHomepageFeatureStatus
+  } = homepageFeatureProcedures.homepageFeatureStatus.useQuery(
+    { merchantId: id },
+    { enabled: Number.isFinite(id) && id > 0 }
+  );
+  const licenseAccess = t.merchant.licenseAccess.useMutation();
+  const hkDocumentAccess = t.merchant.hkDocumentAccess.useMutation();
+  const reviewHkRegistrationDraftMutation = t.merchant.reviewHkRegistrationDraft.useMutation({
+    onSuccess: async (result) => {
+      await Promise.all([
+        utils.merchant.detail.invalidate({ id }),
+        utils.merchant.list.

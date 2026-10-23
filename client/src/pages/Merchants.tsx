@@ -1,3 +1,5 @@
+import { useAdminPageMemory, useAdminRememberedState, useAdminUrlState, useAdminRestoringQuery, freshAdminListOptions, useAdminPageBounds } from "@/hooks/useAdminPageMemory";
+import { MerchantPagination } from "@/components/admin/MerchantNavigation";
 import {
   EmptyState,
   PageHeader,
@@ -56,11 +58,13 @@ const crmActionLabels: Record<string, string> = {
 };
 
 export default function Merchants() {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [createdAtFilter, setCreatedAtFilter] = useState<MerchantCreatedAtFilterValue>({ preset: "all" });
-  const [salesOwnerFilter, setSalesOwnerFilter] = useState("all");
+  const memoryReady = useAdminPageMemory();
+  const [pageSize, setPageSize] = useAdminUrlState("pageSize", 20);
+  const [page, setPage] = useAdminUrlState("page", 1);
+  const [search, setSearch] = useAdminUrlState("search", "");
+  const [searchInput, setSearchInput] = useAdminRememberedState("searchInput", "");
+  const [createdAtFilter, setCreatedAtFilter] = useAdminUrlState<MerchantCreatedAtFilterValue>("createdAtFilter", { preset: "all" });
+  const [salesOwnerFilter, setSalesOwnerFilter] = useAdminUrlState("salesOwnerFilter", "all");
   const [crmTarget, setCrmTarget] = useState<{
     id: number;
     name: string;
@@ -90,15 +94,17 @@ export default function Merchants() {
   const { user } = useAuth();
   const isSuperAdmin = (user?.adminRole ?? "super_admin") === "super_admin";
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.merchant.list.useQuery({
+  const listQuery = useAdminRestoringQuery(trpc.merchant.list.useQuery({
     page,
-    pageSize: 20,
+    pageSize,
     search: search || undefined,
     createdAtPreset: createdAtFilter.preset === "all" ? undefined : createdAtFilter.preset,
     createdFrom: createdAtFilter.preset === "custom" ? createdAtFilter.from : undefined,
     createdTo: createdAtFilter.preset === "custom" ? createdAtFilter.to : undefined,
     salesOwnerCode: salesOwnerFilter === "all" ? undefined : salesOwnerFilter,
-  });
+  }, freshAdminListOptions({}, memoryReady)));
+  const { data, isLoading } = listQuery;
+  useAdminPageBounds(page, pageSize, listQuery, setPage);
   const { data: salesOwnerFilterOptions } = trpc.merchant.salesOwnerFilterOptions.useQuery();
   const { data: detail } = trpc.merchant.detail.useQuery(
     { id: detailId ?? 0 },
@@ -361,7 +367,7 @@ export default function Merchants() {
                         ? { label: "待绑定账号", style: "warning" as const }
                         : (crmStatusMap[crmStatus] ?? crmStatusMap.none);
                       return (
-                        <tr key={m.id}>
+                        <tr data-page-memory-row={`merchant:${m.id}`} key={m.id}>
                           <td className="font-mono text-xs">{m.merchantNo}</td>
                           <td className="max-w-[220px]">
                             <Link href={`/merchants/${m.id}`} className="text-primary hover:underline text-left truncate block max-w-full">
@@ -465,7 +471,7 @@ export default function Merchants() {
                   </table>
                 </div>
               </div>
-              <Pagination page={page} pageSize={20} total={data.total} onPageChange={setPage} />
+              <MerchantPagination page={page} pageSize={pageSize} total={data.total} onPageChange={setPage} onPageSizeChange={size => { setPageSize(size); setPage(1); }} />
             </>
           )}
         </CardContent>

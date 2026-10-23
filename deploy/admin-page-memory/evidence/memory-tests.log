@@ -1,0 +1,11 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /home/ubuntu/51dianzi-manager
+
+ ✓ client/src/lib/adminPageMemory.test.ts (8 tests) 183ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  16:29:48
+   Duration  1.25s (transform 205ms, setup 0ms, collect 153ms, tests 183ms, environment 646ms, prepare 86ms)
+

@@ -1,0 +1,25 @@
+{
+  "baselineDefect": {
+    "sourcePage": 12,
+    "returnedPage": 1
+  },
+  "candidate": {
+    "directUrlPage12": true,
+    "continuous240to241to242": true,
+    "currentNavigationPage13": true,
+    "returnsExactSourceHistoryEntry": true,
+    "returnsOriginalPage12": true,
+    "searchPreserved": "合成",
+    "freshChangedCompanyReturned": true,
+    "originalRowScreenOffsetPreservedWithin1px": true
+  },
+  "environment": "真实线上前端模块及隔离合成714条企业，不使用个人生产账号",
+  "passed": true,
+  "finalCandidate": "96bccb8f3a9b4b1cdab8ce131da0a89f13ae3fd104818bf44e424108a67237af",
+  "jump7And12": true,
+  "invalidJumpRejected": true,
+  "pageSize50AndSearchSurviveRefresh": true,
+  "reducedTotal220ClampsTo5At50PerPageWithoutReset": true,
+  "unitTestsPassed": 8,
+  "typecheckPassed": true
+}

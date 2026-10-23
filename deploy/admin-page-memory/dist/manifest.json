@@ -1,0 +1,464 @@
+{
+  "oldHtmlSha256": "881f829481422d91883cfb5e26d87fa27d982d53e0d95ea023396f30e7dda0b9",
+  "newHtmlSha256": "96bccb8f3a9b4b1cdab8ce131da0a89f13ae3fd104818bf44e424108a67237af",
+  "main": "/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js",
+  "core": "/assets/AdminPageMemory-core-20b7a4a9009ef255.js",
+  "runtime": "/assets/AdminPageMemory-runtime-553a216b9020de93.js",
+  "imports": {
+    "/assets/51-ordering-information-a40a0c1191ff8253/Merchants-DJDebSyd.js": "/assets/Merchants-page-memory-ebeb0c53ad997e4e.js",
+    "/assets/51-ordering-information-a40a0c1191ff8253/MerchantDetail-DaCXJBhL.js": "/assets/MerchantDetail-page-memory-e9991ae6deac82e1.js"
+  },
+  "pages": [
+    {
+      "name": "Merchants",
+      "original": "assets/51-ordering-information-a40a0c1191ff8253/Merchants-DJDebSyd.js",
+      "url": "/assets/Merchants-page-memory-ebeb0c53ad997e4e.js"
+    },
+    {
+      "name": "MerchantDetail",
+      "original": "assets/51-ordering-information-a40a0c1191ff8253/MerchantDetail-DaCXJBhL.js",
+      "url": "/assets/MerchantDetail-page-memory-e9991ae6deac82e1.js"
+    }
+  ],
+  "files": [
+    {
+      "name": "AdminPageMemory-core-20b7a4a9009ef255.js",
+      "sha256": "20b7a4a9009ef25584f75f2c726acf07927a8e6c1e12439a556f5e582631602e"
+    },
+    {
+      "name": "AdminPageMemory-runtime-553a216b9020de93.js",
+      "sha256": "553a216b9020de9358b895998d229f4e01d98c689d257f9fdf4e90c689ee1fbd"
+    },
+    {
+      "name": "Merchants-page-memory-ebeb0c53ad997e4e.js",
+      "sha256": "ebeb0c53ad997e4ea506caf980e00f7f42c34b8bda84e5cfa17d428eb1e6e902",
+      "original": "assets/51-ordering-information-a40a0c1191ff8253/Merchants-DJDebSyd.js",
+      "oldSha256": "0ef9eeb3222cdbc79e26f34e4f6db71eb35b5fb69826c35868d6f6975764b3fe",
+      "edits": [
+        {
+          "start": 39033,
+          "end": 39140,
+          "text": "e.jsx(AM.MerchantPagination,{page:t,pageSize:amPageSize,total:h.total,onPageChange:a,onPageSizeChange:size=>{amSetPageSize(size);a(1)}})",
+          "reason": "jump page and adjustable page size"
+        },
+        {
+          "start": 34788,
+          "end": 34788,
+          "text": "\"data-page-memory-row\":`merchant:${o.id}`,",
+          "reason": "source row anchor"
+        },
+        {
+          "start": 27676,
+          "end": 27910,
+          "text": "AM.useAdminBoundQuery($.merchant.list.useQuery({page:t,pageSize:amPageSize,search:s||void 0,createdAtPreset:i.preset===\"all\"?void 0:i.preset,createdFrom:i.preset===\"custom\"?i.from:void 0,createdTo:i.preset===\"custom\"?i.to:void 0,salesOwnerCode:v===\"all\"?void 0:v},AM.freshAdminListOptions({},amReady)),t,amPageSize,a)",
+          "reason": "fresh fetch before position restoration"
+        },
+        {
+          "start": 27257,
+          "end": 27274,
+          "text": "AM.useAdminUrlState(\"salesOwnerFilter\",\"all\")",
+          "reason": "remember browser field salesOwnerFilter"
+        },
+        {
+          "start": 27224,
+          "end": 27250,
+          "text": "AM.useAdminUrlState(\"createdAtFilter\",{preset:\"all\"})",
+          "reason": "remember browser field createdAtFilter"
+        },
+        {
+          "start": 27203,
+          "end": 27217,
+          "text": "AM.useAdminRememberedState(\"searchInput\",\"\")",
+          "reason": "remember browser field searchInput"
+        },
+        {
+          "start": 27182,
+          "end": 27196,
+          "text": "AM.useAdminUrlState(\"search\",\"\")",
+          "reason": "remember browser field search"
+        },
+        {
+          "start": 27162,
+          "end": 27175,
+          "text": "AM.useAdminUrlState(\"page\",1)",
+          "reason": "remember browser field page"
+        },
+        {
+          "start": 27151,
+          "end": 27151,
+          "text": "const amReady=AM.useAdminPageMemory();const[amPageSize,amSetPageSize]=AM.useAdminUrlState(\"pageSize\",20);",
+          "reason": "account scope before state slots"
+        },
+        {
+          "start": 1184,
+          "end": 1204,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/mail-B9EHNsni.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1156,
+          "end": 1177,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/phone-Dt041O2l.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1120,
+          "end": 1149,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/external-link-CtZFwqlq.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1087,
+          "end": 1113,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/building-2-DnlzHu5L.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1059,
+          "end": 1080,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/index-BxIknkQT.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1025,
+          "end": 1052,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/beijingTime-Dmhx7eVn.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 989,
+          "end": 1018,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/chevron-right-D7AAEguC.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 933,
+          "end": 961,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/shield-check-Bhn1fKJh.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 889,
+          "end": 913,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/textarea-AlYXvdnB.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 849,
+          "end": 869,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/card-BpMjDmhD.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 799,
+          "end": 821,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/search-Bl7wJx9d.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 740,
+          "end": 779,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/MerchantOwnershipLookup-4qzAbwrR.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 698,
+          "end": 720,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/select-DNYB8Nr3.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 601,
+          "end": 630,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/calendar-days-C3ePHT92.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 560,
+          "end": 581,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/index-Vli2UG98.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 415,
+          "end": 436,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/input-BAUWThJc.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 373,
+          "end": 395,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/button-CR1TDJVl.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 323,
+          "end": 354,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/DashboardLayout-D56MNqM7.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 281,
+          "end": 303,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/shared-ftCIbCBD.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 200,
+          "end": 221,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 0,
+          "end": 0,
+          "text": "import * as AM from \"/assets/AdminPageMemory-runtime-553a216b9020de93.js\";\n",
+          "reason": "single live hook runtime"
+        }
+      ]
+    },
+    {
+      "name": "MerchantDetail-page-memory-e9991ae6deac82e1.js",
+      "sha256": "e9991ae6deac82e1528ef9c1e56139499b819b07f1f06b6a21f8cde1ee53af35",
+      "original": "assets/51-ordering-information-a40a0c1191ff8253/MerchantDetail-DaCXJBhL.js",
+      "oldSha256": "0e16c8a15aac9f0ded11da1a86909a2819c8758111e72c457adb6e09f2df5578",
+      "edits": [
+        {
+          "start": 146063,
+          "end": 146063,
+          "text": "]})",
+          "reason": "close detail navigation group"
+        },
+        {
+          "start": 127659,
+          "end": 127659,
+          "text": "e.jsxs(p.Fragment,{children:[e.jsx(AM.MerchantSequentialNavigation,{merchantId:s}),",
+          "reason": "detail sequential view without changing source"
+        },
+        {
+          "start": 118390,
+          "end": 118399,
+          "text": "\" 返回上一页\"",
+          "reason": "honest back label"
+        },
+        {
+          "start": 118270,
+          "end": 118285,
+          "text": "AM.returnToPageSource(t,\"/merchants\")",
+          "reason": "return actual source"
+        },
+        {
+          "start": 117171,
+          "end": 117180,
+          "text": "\" 返回上一页\"",
+          "reason": "honest back label"
+        },
+        {
+          "start": 117055,
+          "end": 117070,
+          "text": "AM.returnToPageSource(t,\"/merchants\")",
+          "reason": "return actual source"
+        },
+        {
+          "start": 113183,
+          "end": 113183,
+          "text": "AM.useAdminPageMemory();",
+          "reason": "detail uses actual admin identity"
+        },
+        {
+          "start": 1879,
+          "end": 1899,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/mail-B9EHNsni.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1838,
+          "end": 1859,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/phone-Dt041O2l.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1789,
+          "end": 1818,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/calendar-days-C3ePHT92.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1741,
+          "end": 1769,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/shield-check-Bhn1fKJh.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1695,
+          "end": 1721,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/building-2-DnlzHu5L.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1649,
+          "end": 1675,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/arrow-left-Ufox99VU.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1609,
+          "end": 1629,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/tabs-C0FgN2Ve.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1543,
+          "end": 1565,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/shared-ftCIbCBD.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1478,
+          "end": 1507,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/chevron-right-D7AAEguC.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1429,
+          "end": 1450,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/image-BVKJei5a.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1385,
+          "end": 1409,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/download-DUgIjuPk.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1343,
+          "end": 1365,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/search-Bl7wJx9d.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1302,
+          "end": 1323,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/index-Vli2UG98.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1165,
+          "end": 1194,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/loader-circle-DhoFYnAd.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1119,
+          "end": 1146,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/beijingTime-Dmhx7eVn.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1059,
+          "end": 1083,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/textarea-AlYXvdnB.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 1018,
+          "end": 1039,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/table-CQ1_OvPI.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 939,
+          "end": 960,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/label-B1JcvZZN.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 898,
+          "end": 919,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/index-BxIknkQT.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 857,
+          "end": 878,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/badge-DEC80p8-.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 818,
+          "end": 837,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/eye-CtEo5SJk.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 775,
+          "end": 798,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/eye-off-DiOGdtPs.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 732,
+          "end": 755,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/trash-2-CThM2yFx.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 690,
+          "end": 712,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/pencil-CBFz-00G.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 640,
+          "end": 670,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/erpPermissions-BuODN5xa.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 566,
+          "end": 588,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/upload-aSSG-stf.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 508,
+          "end": 530,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/select-DNYB8Nr3.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 401,
+          "end": 432,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/DashboardLayout-D56MNqM7.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 256,
+          "end": 277,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/input-BAUWThJc.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 214,
+          "end": 236,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/button-CR1TDJVl.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 166,
+          "end": 187,
+          "text": "\"/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js\"",
+          "reason": "keep exact original dependency"
+        },
+        {
+          "start": 0,
+          "end": 0,
+          "text": "import * as AM from \"/assets/AdminPageMemory-runtime-553a216b9020de93.js\";\n",
+          "reason": "single live hook runtime"
+        }
+      ]
+    }
+  ],
+  "scope": "Only actual admin frontend memory/pagination; no backend, CRM, CSS, Nginx or process change"
+}
