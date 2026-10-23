@@ -1,5 +1,7 @@
 # 后台商户跳页、连续查看与返回原页
 
+2026-10-24 00:34:56 已单次增量上线，`APPLY_OK`、6119项文件保护及服务进程核验通过。实现提交 `a40e408` 已推送；公开HTTPS入口及四新JS的HTTP200、完整SHA和原CRM入口未变核验也均通过。没有业务数据库写入、后端重启或CRM修改。已打开的后台标签页须刷新一次加载新版。
+
 ## 已实现的行为
 
 商户列表从第12页进入企业详情，点“返回上一页”恢复进入前的真实列表历史条目、第12页、搜索、负责人、入驻时间筛选、每页条数与企业行位置。列表保留原服务端排序，不增加未经后端支持的排序参数。
@@ -31,7 +33,7 @@
 
 实际Nginx静态根为 `/opt/releases/20261018-multi-enterprise-v1/admin/dist/public`。旧 `/opt/apps/dianzi51-admin-subdomain` 指针不是当前公网入口，不发布到该旧目录。
 
-仅新增4个哈希JS并原子替换真实后台HTML，通过2项import-map接入商户列表和详情。`dist/<JS>`明确映射到OPS/payload/assets及实际public/assets，原启动模块仍为 `/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js`。6115项发布前文件保护及全部服务进程、指针保持；预期发布后保护6119项。禁止数据库写入、后端变更、PM2重启或Nginx修改，CRM8ea/15map与旧CSS均保护。
+仅新增4个哈希JS并原子替换真实后台HTML，通过2项import-map接入商户列表和详情。`dist/<JS>`明确映射到OPS/payload/assets及实际public/assets，原启动模块仍为 `/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js`。6115项发布前文件保护及全部服务进程、指针保持；发布后6119项保护实际核验通过。禁止数据库写入、后端变更、PM2重启或Nginx修改，CRM8ea/15map与旧CSS均保护。
 
 最终独立暂存为 `/opt/ops/20261024-admin-page-memory-final`；先前候选仅暂存未激活，不重用或当上线。实际结果以 `evidence/release-result.json` 与HTTPS完整内容哈希读回为准。
 

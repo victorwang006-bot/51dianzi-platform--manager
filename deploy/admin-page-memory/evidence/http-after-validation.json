@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "adminHtmlSha256": "96bccb8f3a9b4b1cdab8ce131da0a89f13ae3fd104818bf44e424108a67237af",
+  "mapCount": 2,
+  "startupUnchanged": "/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js",
+  "assets": [
+    {
+      "name": "AdminPageMemory-core-20b7a4a9009ef255.js",
+      "status": 200,
+      "sha256": "20b7a4a9009ef25584f75f2c726acf07927a8e6c1e12439a556f5e582631602e",
+      "mime": "text/javascript",
+      "passed": true
+    },
+    {
+      "name": "AdminPageMemory-runtime-553a216b9020de93.js",
+      "status": 200,
+      "sha256": "553a216b9020de9358b895998d229f4e01d98c689d257f9fdf4e90c689ee1fbd",
+      "mime": "text/javascript",
+      "passed": true
+    },
+    {
+      "name": "Merchants-page-memory-ebeb0c53ad997e4e.js",
+      "status": 200,
+      "sha256": "ebeb0c53ad997e4ea506caf980e00f7f42c34b8bda84e5cfa17d428eb1e6e902",
+      "mime": "text/javascript",
+      "passed": true
+    },
+    {
+      "name": "MerchantDetail-page-memory-e9991ae6deac82e1.js",
+      "status": 200,
+      "sha256": "e9991ae6deac82e1528ef9c1e56139499b819b07f1f06b6a21f8cde1ee53af35",
+      "mime": "text/javascript",
+      "passed": true
+    }
+  ],
+  "crmHtmlSha256Unchanged": "8ea1ce2ffb36bf96f73c1aeb5b765bfd4b364dd982ced8b0584c21427d53197b",
+  "csp": null
+}
