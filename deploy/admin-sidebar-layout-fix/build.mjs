@@ -1,0 +1,14 @@
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import {build} from "esbuild";
+const dir=path.dirname(new URL(import.meta.url).pathname);
+const output=path.join(dir,"dist");fs.mkdirSync(output,{recursive:true});
+const result=await build({entryPoints:[path.resolve(dir,"../../client/src/components/zhijie-sidebar.css")],bundle:true,minify:true,write:false,outfile:path.join(output,"virtual.css")});
+const css=result.outputFiles.find(f=>f.path.endsWith(".css"))?.contents;
+if(!css)throw new Error("CSS输出缺失");
+const sha256=crypto.createHash("sha256").update(css).digest("hex");
+const name=`AdminSidebar-layout-fixed-${sha256.slice(0,16)}.css`;
+fs.writeFileSync(path.join(output,name),css);
+fs.writeFileSync(path.join(output,"manifest.json"),JSON.stringify({name,sha256,scope:"Replace current unique ZhijieSidebar CSS reference only; no JS, permissions, data, nginx or service changes"},null,2)+"\n");
+console.log(JSON.stringify({name,sha256}));
