@@ -1,0 +1,7 @@
+baseline/
+dist/
+*.tar.gz
+evidence/*.json
+remote-plan.json
+
+__pycache__/

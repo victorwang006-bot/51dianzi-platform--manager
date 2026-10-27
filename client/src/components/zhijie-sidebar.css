@@ -1,0 +1,62 @@
+.zj-sidebar {
+  font-family: Arial, "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.zj-sidebar h2 {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 32px;
+  padding: 0 12px;
+  color: #64748b;
+  margin: 0;
+}
+.zj-sidebar ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.zj-sidebar li {
+  margin: 2px 0;
+}
+.zj-sidebar button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.zj-sidebar button:hover {
+  background: #f1f5f9;
+}
+.zj-sidebar button[aria-current="page"] {
+  background: #e8f1fa;
+  color: #185fa5;
+  font-weight: 500;
+}
+.zj-sidebar button:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 1px;
+}
+.zj-sidebar svg {
+  flex-shrink: 0;
+}
+[data-collapsible="icon"] .zj-sidebar h2,
+[data-collapsible="icon"] .zj-sidebar button span {
+  display: none;
+}
+[data-collapsible="icon"] .zj-sidebar button {
+  justify-content: center;
+  padding: 0;
+  overflow: visible;
+}

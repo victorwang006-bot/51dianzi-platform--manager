@@ -20,6 +20,7 @@ import {
   LazyPortalUsers,
   LazyProfile,
   LazyReviews,
+  LazyZhijieBusiness,
 } from "./lib/adminRouteChunks";
 import {
   hasAdminPermission,
@@ -192,6 +193,12 @@ function AppRoutes() {
   return (
     <AuthGate>
       <Switch>
+        <Route path={"/zhijie"}>
+          <LazyScreen><LazyZhijieBusiness /></LazyScreen>
+        </Route>
+        <Route path={"/zhijie/:module"}>
+          <LazyScreen><LazyZhijieBusiness /></LazyScreen>
+        </Route>
         <Route path={"/"} component={MaterialsRoute} />
         <Route path={"/merchants"} component={MerchantsRoute} />
         <Route path={"/merchants/:id"} component={MerchantDetailRoute} />
