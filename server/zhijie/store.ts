@@ -293,7 +293,9 @@ export class MysqlZhijieAccessStore implements ZhijieAccessStore {
 
   async listAudits(limit: number): Promise<ZhijieAuditRow[]> {
     const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
-    const [rows] = await this.pool.execute<RowDataPacket[]>(
+    // mysql2's binary protocol binds JS numbers as DOUBLE. MySQL 8 can reject
+    // that type for LIMIT; query() safely formats this bounded numeric value.
+    const [rows] = await this.pool.query<RowDataPacket[]>(
       `SELECT id, actorAdminId, targetAdminId, action, reason, createdAt
          FROM zhijie_access_audits
         ORDER BY id DESC LIMIT ?`,
