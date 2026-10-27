@@ -19,7 +19,6 @@ const pageLoaders = {
   analytics: () => import("@/pages/Analytics"),
   forbidden: () => import("@/pages/Forbidden"),
   notFound: () => import("@/pages/NotFound"),
-  zhijie: () => import("@/pages/zhijie/ZhijieBusiness"),
 } as const;
 
 export const LazyLogin = lazy(pageLoaders.login);
@@ -36,7 +35,6 @@ export const LazyReviews = lazy(pageLoaders.reviews);
 export const LazyAnalytics = lazy(pageLoaders.analytics);
 export const LazyForbidden = lazy(pageLoaders.forbidden);
 export const LazyNotFound = lazy(pageLoaders.notFound);
-export const LazyZhijieBusiness = lazy(pageLoaders.zhijie);
 
 export type AdminNavigationChunk =
   | "materials"
@@ -48,8 +46,7 @@ export type AdminNavigationChunk =
   | "profile"
   | "exceptionLogs"
   | "reviews"
-  | "analytics"
-  | "zhijie";
+  | "analytics";
 
 /**
  * Navigation intent may warm a small number of next screens after authentication.

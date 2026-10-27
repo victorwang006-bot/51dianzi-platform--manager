@@ -42,7 +42,6 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
-import ZhijieSidebar from "./ZhijieSidebar";
 import {
   preloadAdminRoute,
   type AdminNavigationChunk,
@@ -448,7 +447,6 @@ function DashboardLayoutContent({
                 </SidebarGroupContent>
               </SidebarGroup>
             ))}
-            <ZhijieSidebar />
           </SidebarContent>
 
           <SidebarFooter className="p-3 border-t border-sidebar-border">
