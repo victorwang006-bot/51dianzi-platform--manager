@@ -1,0 +1,28 @@
+{
+  "before": {
+    "backend": "236ea7579bae39126dcb3ab27dcad8a90348e13fc59a5cf2083985a40ba5e369",
+    "merchant": "adc6198c54ccaa09c96288f1350da7a2debe106310b68d264265e850903e42e4",
+    "messages": "fd62d9eb834a9f60ee3184e2b8b626920baaf74d58b4fa9a3b670c90b24c9923",
+    "dashboard": "f47b71280a7dfdff408798597ba545f1fc6aa8525481ca2cfeeca5a8ee4ff024",
+    "html": "3c722250846fe8bf7411f3ba59440f3c1c8e875f123b8adcb5e6a2f9fbbe2c2a"
+  },
+  "after": {
+    "backend": "b7e56c7640adcfbc4e46386862e68a4e233eade06578e26e02e5bff039038ec2",
+    "merchant": "ba914c3931f20dd2e0c4ba9da8f98578418208bdfc7735ded7799e6dbe8d98d1",
+    "messages": "edaa5dbc2da1b5ae833ee12c065d9822add46729a27ebab63db587d7b2be1390",
+    "dashboard": "d228d21ad4181162988e9c18a90a2879c18b4462a4f5d1bde5dd8392a59e151c",
+    "html": "4ec72e3957b6d9e8f8ae4d71dce8443ea13a98f82323df049e6dd424896dff87"
+  },
+  "names": {
+    "backend": "index.backend.js",
+    "merchant": "Merchants-review-standard-ba914c3931f20dd2.js",
+    "messages": "Messages-review-standard-edaa5dbc2da1b5ae.js",
+    "dashboard": "DashboardLayout-review-standard-d228d21ad4181162.js"
+  },
+  "mapping": {
+    "/assets/Merchants-review-display-adc6198c54ccaa09.js": "/assets/Merchants-review-standard-ba914c3931f20dd2.js",
+    "/assets/Messages-review-display-fd62d9eb834a9f60.js": "/assets/Messages-review-standard-edaa5dbc2da1b5ae.js",
+    "/assets/DashboardLayout-review-display-f47b71280a7dfdff.js": "/assets/DashboardLayout-review-standard-d228d21ad4181162.js"
+  },
+  "policy": "name/legalPerson resubmissions use existing manual approve/reject; credit, owner, transaction, permissions and audit guards retained"
+}

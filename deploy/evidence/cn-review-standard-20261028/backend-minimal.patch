@@ -1,0 +1,84 @@
+--- before/index.js
++++ after/index.js
+@@ -3921,11 +3921,8 @@
+   if (crmOwner && crmOwner !== String(row.dataOwnerUserId ?? "")) {
+     throw new Error("CN_REVIEW_OWNER_OR_SUBJECT_INVALID");
+   }
+-  // A legal-subject or responsible-person change may only use the existing
+-  // verified legal-change workflow. A normal profile draft cannot overwrite it.
+-  if (isResubmission && (candidate.companyName !== cnReviewText(row.companyName, 128, true) || candidate.legalPerson !== cnReviewText(row.legalPerson, 64, true))) {
+-    throw new Error("CN_REVIEW_LEGAL_CHANGE_REQUIRED");
+-  }
++  // Authorized profile reviews may update companyName/legalPerson.
++  // Credit-code identity, owner/member binding and account guards above remain mandatory.
+ }
+ function cnReviewCompanyGuard(identity, merchant, expectedVersion) {
+   const creditCode = identity.slice(3);
+@@ -3951,6 +3948,15 @@
+   `);
+   return (result[0] ?? []).find((row) => row.expectedVersion === expectedVersion) ?? null;
+ }
++function cnReviewChangeNotice(row, candidate, isResubmission) {
++  if (!candidate || !isResubmission) return null;
++  const nameChanged = candidate.companyName !== cnReviewText(row.companyName, 128, true);
++  const personChanged = candidate.legalPerson !== cnReviewText(row.legalPerson, 64, true);
++  if (nameChanged && personChanged) return "企业名称和法人信息有变更，请核对资料后审核。";
++  if (nameChanged) return "企业名称有变更，请核对资料后审核。";
++  if (personChanged) return "法人信息有变更，请核对资料后审核。";
++  return null;
++}
+ async function getCnRegistrationReviewDetail(merchantId) {
+   const db = await getDb();
+   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+@@ -3961,16 +3967,7 @@
+   if (!identity) throw new Error("CN_REVIEW_SUBJECT_MISMATCH");
+   const row = await cnReviewReadPlatformCompany(db, merchant);
+   const state = cnReviewState(row);
+-  let reviewBlockedReason = null;
+-  if (state.candidate) {
+-    try {
+-      cnReviewAssertSubject(merchant, row, state.candidate, state.reviewKind === "resubmission");
+-    } catch (error) {
+-      // Read permission is not approval permission. Keep all subject/owner guards.
+-      if (!(error instanceof Error) || error.message !== "CN_REVIEW_LEGAL_CHANGE_REQUIRED") throw error;
+-      reviewBlockedReason = "本次提交涉及企业名称或法定代表人变更，可查看新旧资料对比，但不能在普通资料审核中直接通过或退回。请使用既有合法主体变更流程处理；已生效资料保持不变。";
+-    }
+-  }
++  if (state.candidate) cnReviewAssertSubject(merchant, row, state.candidate, state.reviewKind === "resubmission");
+   const effectiveSummary = state.effective ? cnReviewSummary(state.effective, row) : null;
+   return {
+     merchantId: merchant.id,
+@@ -3984,9 +3981,10 @@
+     } : null,
+     differences: cnReviewDifferences(state.effective, state.candidate ?? cnReviewEffectiveCandidate(row)),
+     reviewStatus: row.reviewStatus ?? "none",
+-    reviewBlockedReason,
+-    reviewBlockedCode: reviewBlockedReason ? "CN_REVIEW_LEGAL_CHANGE_REQUIRED" : null,
+-    canReview: Boolean(state.candidate) && !reviewBlockedReason
++    reviewBlockedReason: null,
++    reviewBlockedCode: null,
++    reviewNotice: cnReviewChangeNotice(row, state.candidate, state.reviewKind === "resubmission"),
++    canReview: Boolean(state.candidate)
+   };
+ }
+ async function reviewCnRegistrationDraft(input) {
+@@ -4056,7 +4054,7 @@
+          WHERE ${companyGuard}
+       `);
+       if (Number(companyUpdate[0]?.affectedRows ?? 0) !== 1) throw new Error("CN_REVIEW_VERSION_CHANGED");
+-      await tx.execute(sql4`
++      const enterpriseUpdate = await tx.execute(sql4`
+         UPDATE ${sql4.raw(PLATFORM_DB)}.enterprises AS enterprise
+            SET enterprise.companyName = ${candidate.companyName}
+          WHERE enterprise.id = ${row.enterpriseId}
+@@ -4064,8 +4062,10 @@
+            AND UPPER(REPLACE(enterprise.creditCode, ' ', '')) = ${identity.slice(3)}
+            AND CAST(enterprise.superAdminUserId AS CHAR) = CAST(enterprise.crmDataOwnerUserId AS CHAR)
+       `);
++      if (candidate.companyName !== cnReviewText(row.companyName, 128, true) && Number(enterpriseUpdate[0]?.affectedRows ?? 0) !== 1) throw new Error("CN_REVIEW_VERSION_CHANGED");
+       const merchantUpdate = await tx.update(merchants).set({
+         companyName: candidate.companyName,
++        legalPersonName: candidate.legalPerson,
+         companyType: candidate.companyType,
+         companyRole: candidate.companyRole,
+         registeredAddress: candidate.regAddress,
