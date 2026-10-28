@@ -1,0 +1,25 @@
+{
+  "before": {
+    "merchant": "148b184dd7bdde0f6ef08184a40df03d9363a5333f952c4aaf5d40a9d28d9de0",
+    "messages": "e0e10f0fd8ffa44a4ac56a03a2a22f8257d4ea85ccd269bb9ef0279a1f09e534",
+    "dashboard": "7f6d6fc75a8bf67581d0c90d9ff688204f70ae0a788521e92e91f38679b4f687",
+    "html": "9381eca8adefa5d320efb15ca370fe73762a2c26856ef1c4fb67cab25bbd53aa"
+  },
+  "after": {
+    "merchant": "adc6198c54ccaa09c96288f1350da7a2debe106310b68d264265e850903e42e4",
+    "messages": "fd62d9eb834a9f60ee3184e2b8b626920baaf74d58b4fa9a3b670c90b24c9923",
+    "dashboard": "f47b71280a7dfdff408798597ba545f1fc6aa8525481ca2cfeeca5a8ee4ff024",
+    "html": "3c722250846fe8bf7411f3ba59440f3c1c8e875f123b8adcb5e6a2f9fbbe2c2a"
+  },
+  "names": {
+    "merchant": "Merchants-review-display-adc6198c54ccaa09.js",
+    "messages": "Messages-review-display-fd62d9eb834a9f60.js",
+    "dashboard": "DashboardLayout-review-display-f47b71280a7dfdff.js"
+  },
+  "mapping": {
+    "/assets/Merchants-review-readable-148b184dd7bdde0f.js": "/assets/Merchants-review-display-adc6198c54ccaa09.js",
+    "/assets/Messages-review-dialog-notice-e0e10f0fd8ffa44a.js": "/assets/Messages-review-display-fd62d9eb834a9f60.js",
+    "/assets/DashboardLayout-platform-navigation-7f6d6fc75a8bf675.js": "/assets/DashboardLayout-review-display-f47b71280a7dfdff.js"
+  },
+  "unchangedBackendSha256": "236ea7579bae39126dcb3ab27dcad8a90348e13fc59a5cf2083985a40ba5e369"
+}

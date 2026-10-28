@@ -1,0 +1,12 @@
+{
+  "type": "original-component-readonly-simulation",
+  "sourceMerchantSha256": "adc6198c54ccaa09c96288f1350da7a2debe106310b68d264265e850903e42e4",
+  "normal": {"detailsVisible": true, "approveVisible": true, "approveDisabled": false, "rejectVisible": true, "rejectDisabled": false, "queueStatus": "可普通审核"},
+  "protected": {"detailsVisible": true, "reasonVisible": true, "approveVisible": true, "approveDisabled": true, "rejectVisible": true, "rejectDisabled": true, "refreshVisible": true, "refreshDisabled": false, "queueStatus": "需专门处理"},
+  "missing": {"explicitSnapshotUnavailable": true, "refreshVisible": true, "refreshDisabled": false, "closeVisible": true, "noFabricatedApproval": true, "misleadingEmptyMessageAbsent": true},
+  "realProductionMutationExecuted": false,
+  "productionAuthenticatedPageVerified": false,
+  "productionEntryAndNewModulesActuallyLoaded": true,
+  "allThreeStageBaselineTestsPassed": 47,
+  "note": "真实浏览器验证复用了生产原组件与CSS、mock数据和语义等价基础按钮；仅QA副本默认打开modal，不冒充用户生产页面。"
+}

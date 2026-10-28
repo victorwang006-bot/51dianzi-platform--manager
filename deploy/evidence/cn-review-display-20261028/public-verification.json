@@ -1,0 +1,37 @@
+[
+  {
+    "kind": "html",
+    "url": "https://admin.51dianzi.com/merchants",
+    "http": 200,
+    "sha256": "3c722250846fe8bf7411f3ba59440f3c1c8e875f123b8adcb5e6a2f9fbbe2c2a",
+    "matched": true
+  },
+  {
+    "kind": "html-main",
+    "url": "https://51dianzi.com/admin/merchants",
+    "http": 200,
+    "sha256": "3c722250846fe8bf7411f3ba59440f3c1c8e875f123b8adcb5e6a2f9fbbe2c2a",
+    "matched": true
+  },
+  {
+    "kind": "merchant",
+    "url": "https://admin.51dianzi.com/assets/Merchants-review-display-adc6198c54ccaa09.js",
+    "http": 200,
+    "sha256": "adc6198c54ccaa09c96288f1350da7a2debe106310b68d264265e850903e42e4",
+    "matched": true
+  },
+  {
+    "kind": "messages",
+    "url": "https://admin.51dianzi.com/assets/Messages-review-display-fd62d9eb834a9f60.js",
+    "http": 200,
+    "sha256": "fd62d9eb834a9f60ee3184e2b8b626920baaf74d58b4fa9a3b670c90b24c9923",
+    "matched": true
+  },
+  {
+    "kind": "dashboard",
+    "url": "https://admin.51dianzi.com/assets/DashboardLayout-review-display-f47b71280a7dfdff.js",
+    "http": 200,
+    "sha256": "f47b71280a7dfdff408798597ba545f1fc6aa8525481ca2cfeeca5a8ee4ff024",
+    "matched": true
+  }
+]
