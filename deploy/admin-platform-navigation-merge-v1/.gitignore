@@ -1,0 +1,5 @@
+baseline/
+dist/
+evidence/*baseline*.json
+evidence/*coordination*.json
+__pycache__/

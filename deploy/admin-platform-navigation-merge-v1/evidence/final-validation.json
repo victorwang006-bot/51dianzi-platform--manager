@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "manifestSha256": "0d108e9865f2e369dd2b84f35805902fa10d93fe1d06ba6c5f119d2bc8e1d1e1",
+  "sourceIdentity": {
+    "client/src/components/admin/adminWorkbenchNavigationModel.ts": "b573f2f72a72beb5baf73852e6be25cdeeda07bed4c345eaa0dd08c513715f6a",
+    "client/src/components/admin/adminWorkbenchNavigationModel.test.ts": "471dbffd2275ffeebea2b431a1da8f85acecd456f0557933e4347351902b6214",
+    "client/src/components/admin/AdminWorkbenchNavigation.tsx": "52415426e41c674e0efeae14611fa0140415721820f0c07d34929309816b48c9"
+  },
+  "operationsSha256": "c011d7121fffd23633bc27aa2f646d64943cdf9b9c97b6728552ad37b682f5fb",
+  "evidence": {
+    "typecheck.log": "57a8ad9fe9aeac12e7d47b04d25737c43ee5212e2dbea5d125d9df07c09ce55f",
+    "unit-tests.log": "55c4eddf2cd98c5505578c49b50c76b1582df489f2b047c5dc100be624216881",
+    "build-manifest.log": "0d108e9865f2e369dd2b84f35805902fa10d93fe1d06ba6c5f119d2bc8e1d1e1",
+    "layout-qa.json": "295cc93edbc516316070cabee9349820b50e91af78090a96ceef92313d362cb2",
+    "deploy-tests.log": "d5c42298542e8087193ca809f6dfcba308030c868c5e717efbc32ab0ad47b9de",
+    "permissions-tests.log": "88d1d5b13fbcd8c08a4a245fdca75a90ba5b825cca8a493ab551bf6f95c63a19"
+  },
+  "typecheckPassed": true,
+  "unitTests": 10,
+  "permissionTests": 7,
+  "compiledChromiumChecks": 18,
+  "deploymentSafetyTests": 10,
+  "boundary": "actual compiled navigation and existing CSS; original layout remains byte-identical except one nav import literal; React/menu fixtures isolated; no authenticated production business write test"
+}

@@ -1,0 +1,114 @@
+{
+  "passed": true,
+  "cases": 18,
+  "checks": [
+    {
+      "name": "two groups preserve seven platform and three system entries",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "one platform title replaces three old titles",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "platform collapse hides seven items but keeps system",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "platform expands all seven original items",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "approved width typography rows and expanded icon hiding",
+      "passed": true,
+      "detail": {
+        "width": 220,
+        "title": 14,
+        "item": 13,
+        "height": 40,
+        "icons": true
+      }
+    },
+    {
+      "name": "independent system collapse hides its menu",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "account A collapse memory restored",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "different account does not inherit collapse",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "switch back restores only account A state",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "direct detail route opens correct system group and one current menu",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "seven original callbacks and paths remain with active indicators",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "menu callback receives original item and badge remains",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "pre-filtered permissions hide missing items and empty groups",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "global collapsed sidebar keeps all ten entries reachable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "low-height expanded menu scrolls without shrinking overlap or footer cover",
+      "passed": true,
+      "detail": {
+        "scroll": true,
+        "noOverlap": true,
+        "withinFooter": true,
+        "minRow": 40
+      }
+    },
+    {
+      "name": "last menu remains clickable after scrolling",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile text menu stays within horizontal viewport",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no browser exception or external production request",
+      "passed": true,
+      "detail": {
+        "errors": [],
+        "externalRequests": []
+      }
+    }
+  ],
+  "navigationRuntimeSha256": "2d8efc8b9299b4ebc652105c61997a39eedda8d9d47b2332f14ba87f2445d3d4",
+  "layoutSha256": "7f6d6fc75a8bf67581d0c90d9ff688204f70ae0a788521e92e91f38679b4f687",
+  "productionRequests": 0,
+  "boundary": "actual final compiled navigation runtime; isolated React bridge and menu callback fixture with actual existing CSS, not authenticated full backend or production business write test"
+}

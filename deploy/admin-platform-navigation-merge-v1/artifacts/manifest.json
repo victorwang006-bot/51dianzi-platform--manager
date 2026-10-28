@@ -1,0 +1,30 @@
+{
+  "schema": "admin-platform-navigation-merge-v1",
+  "files": [
+    {
+      "name": "AdminWorkbenchNavigation-platform-2d8efc8b9299b4eb.js",
+      "sha256": "2d8efc8b9299b4ebc652105c61997a39eedda8d9d47b2332f14ba87f2445d3d4",
+      "bytes": 2614
+    },
+    {
+      "name": "DashboardLayout-platform-navigation-7f6d6fc75a8bf675.js",
+      "sha256": "7f6d6fc75a8bf67581d0c90d9ff688204f70ae0a788521e92e91f38679b4f687",
+      "bytes": 51420
+    }
+  ],
+  "key": "/assets/51-ordering-information-a40a0c1191ff8253/DashboardLayout-D56MNqM7.js",
+  "oldTarget": "/assets/DashboardLayout-workbench-navigation-092c0021d3342d8e.js",
+  "layout": "/assets/DashboardLayout-platform-navigation-7f6d6fc75a8bf675.js",
+  "runtime": "/assets/AdminWorkbenchNavigation-platform-2d8efc8b9299b4eb.js",
+  "oldRuntime": "/assets/AdminWorkbenchNavigation-5a444a56f1ed1e9c.js",
+  "stylesheet": "/assets/AdminWorkbenchNavigation-03bc84b6de5c6901.css",
+  "oldHtmlSha256": "4cb496f0a168d25c1746ca679cdbe0db5154069f5da65da660f8bc31e7696e14",
+  "newHtmlSha256": "60161797a246a0b5b84d1eeb1ea16bd526709816aef5a70ccd8a8522b9c5304b",
+  "oldLayoutSha256": "092c0021d3342d8eeccf030115a8932ff1d1e9f43e7093346821179f90970ce0",
+  "oldRuntimeSha256": "5a444a56f1ed1e9c6faf0b4654aec4d2b3cb205b66c537ca030a7ee0a34d1180",
+  "stylesheetSha256": "03bc84b6de5c6901bab300bd20c0682afb1e12e2d6c1c21961d2429c6214a94a",
+  "exactHtmlOneLiteral": true,
+  "exactLayoutOneDependencyLiteral": true,
+  "unchangedLayoutBytes": 51357,
+  "scope": "admin left navigation only; merge platform groups; seven platform and three system items preserved; no stock page/API/DB/www/worker/Nginx/service changes"
+}

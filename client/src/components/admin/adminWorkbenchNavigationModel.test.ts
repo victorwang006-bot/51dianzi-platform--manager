@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_WORKBENCH_NAVIGATION_GROUPS,
   autoOpenAdminWorkbenchNavigationGroup,
   createDefaultAdminWorkbenchNavigationExpandedGroups,
   findAdminWorkbenchNavigationGroupId,
@@ -30,26 +31,35 @@ function createStorage(): StorageLike & { values: Map<string, string> } {
 }
 
 describe("后台工作台导航分组", () => {
-  it("按批准的四组路径顺序分组，并忽略不属于后台菜单的项目", () => {
+  it("按平台七项路径顺序分组，并保留原项目对象", () => {
     const items: TestItem[] = [
       { path: "/analytics", label: "运营数据", permission: "analytics.read" },
       { path: "/profile", label: "个人信息", permission: "profile.manage" },
       { path: "/merchants", label: "商户管理", permission: "merchants.read" },
       { path: "/", label: "物料数据库", permission: "materials.read" },
       { path: "/portal-users", label: "用户管理", permission: "portalUsers.read" },
+      { path: "/reviews", label: "评价管理", permission: "reviews.read" },
+      { path: "/orders", label: "订单管理", permission: "orders.read" },
+      { path: "/messages", label: "消息中心", permission: "messages.read" },
       { path: "/not-a-menu", label: "不应出现", permission: "none" },
     ];
+    const platformItems = [
+      items[2],
+      items[4],
+      items[6],
+      items[7],
+      items[5],
+      items[3],
+      items[0],
+    ];
+    const groups = groupAdminWorkbenchNavigationItems(items);
 
-    expect(groupAdminWorkbenchNavigationItems(items)).toEqual([
+    expect(ADMIN_WORKBENCH_NAVIGATION_GROUPS).toHaveLength(2);
+    expect(groups).toEqual([
       {
-        id: "users-merchants",
-        label: "用户与商户",
-        items: [items[2], items[4]],
-      },
-      {
-        id: "data-operations",
-        label: "数据与运营",
-        items: [items[3], items[0]],
+        id: "platform",
+        label: "平台管理",
+        items: platformItems,
       },
       {
         id: "system",
@@ -57,6 +67,9 @@ describe("后台工作台导航分组", () => {
         items: [items[1]],
       },
     ]);
+    platformItems.forEach((item, index) => {
+      expect(groups[0].items[index]).toBe(item);
+    });
   });
 
   it("先接收过滤后的项目，完全无权限时不输出空分组", () => {
@@ -67,8 +80,8 @@ describe("后台工作台导航分组", () => {
       ])
     ).toEqual([
       {
-        id: "transactions",
-        label: "交易与服务",
+        id: "platform",
+        label: "平台管理",
         items: [
           { path: "/orders", label: "订单管理", permission: "orders.read" },
         ],
@@ -77,27 +90,30 @@ describe("后台工作台导航分组", () => {
   });
 
   it("详情路径打开其所属组，根路径只精确匹配而不吞掉其他路由", () => {
-    expect(findAdminWorkbenchNavigationGroupId("/")).toBe("data-operations");
+    expect(findAdminWorkbenchNavigationGroupId("/")).toBe("platform");
     expect(findAdminWorkbenchNavigationGroupId("/merchants/merchant-240")).toBe(
-      "users-merchants"
+      "platform"
     );
     expect(findAdminWorkbenchNavigationGroupId("/orders/1001")).toBe(
-      "transactions"
+      "platform"
     );
     expect(findAdminWorkbenchNavigationGroupId("/analytics/monthly")).toBe(
-      "data-operations"
+      "platform"
     );
+    expect(findAdminWorkbenchNavigationGroupId("/admins/7")).toBe("system");
     expect(findAdminWorkbenchNavigationGroupId("/unrelated")).toBeNull();
 
     const allCollapsed = {
-      "users-merchants": false,
-      transactions: false,
-      "data-operations": false,
+      platform: false,
       system: false,
     };
     expect(autoOpenAdminWorkbenchNavigationGroup(allCollapsed, "/orders/1001")).toEqual({
       ...allCollapsed,
-      transactions: true,
+      platform: true,
+    });
+    expect(autoOpenAdminWorkbenchNavigationGroup(allCollapsed, "/admins/7")).toEqual({
+      ...allCollapsed,
+      system: true,
     });
   });
 });
@@ -107,7 +123,7 @@ describe("后台工作台导航展开状态存储", () => {
     const storage = createStorage();
     const firstAccount = {
       ...createDefaultAdminWorkbenchNavigationExpandedGroups(),
-      "users-merchants": false,
+      platform: false,
     };
 
     writeAdminWorkbenchNavigationExpandedGroups("admin-1", firstAccount, storage);
@@ -150,5 +166,46 @@ describe("后台工作台导航展开状态存储", () => {
     expect(readAdminWorkbenchNavigationExpandedGroups(7, unavailableStorage)).toEqual(
       createDefaultAdminWorkbenchNavigationExpandedGroups()
     );
+  });
+
+  it("读取旧三组状态时忽略旧键，保留系统管理状态", () => {
+    const storage = createStorage();
+    storage.values.set(
+      getAdminWorkbenchNavigationStorageKey("admin-legacy"),
+      JSON.stringify({
+        "users-merchants": false,
+        transactions: false,
+        "data-operations": false,
+        system: false,
+      })
+    );
+
+    expect(
+      readAdminWorkbenchNavigationExpandedGroups("admin-legacy", storage)
+    ).toEqual({
+      platform: true,
+      system: false,
+    });
+  });
+
+  it("保存新的合并状态时只持久化平台管理和系统管理", () => {
+    const storage = createStorage();
+    const expandedGroups = {
+      platform: false,
+      system: true,
+    };
+
+    writeAdminWorkbenchNavigationExpandedGroups(
+      "admin-merged",
+      expandedGroups,
+      storage
+    );
+
+    expect(
+      storage.values.get(getAdminWorkbenchNavigationStorageKey("admin-merged"))
+    ).toBe(JSON.stringify(expandedGroups));
+    expect(
+      readAdminWorkbenchNavigationExpandedGroups("admin-merged", storage)
+    ).toEqual(expandedGroups);
   });
 });

@@ -3,11 +3,7 @@ export type AdminWorkbenchNavigationItem = {
   label: string;
 };
 
-export type AdminWorkbenchNavigationGroupId =
-  | "users-merchants"
-  | "transactions"
-  | "data-operations"
-  | "system";
+export type AdminWorkbenchNavigationGroupId = "platform" | "system";
 
 export type AdminWorkbenchNavigationGroupDefinition = {
   id: AdminWorkbenchNavigationGroupId;
@@ -23,19 +19,17 @@ export type AdminWorkbenchNavigationGroup<T extends AdminWorkbenchNavigationItem
 
 export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigationGroupDefinition[] = [
   {
-    id: "users-merchants",
-    label: "用户与商户",
-    paths: ["/merchants", "/portal-users"],
-  },
-  {
-    id: "transactions",
-    label: "交易与服务",
-    paths: ["/orders", "/messages", "/reviews"],
-  },
-  {
-    id: "data-operations",
-    label: "数据与运营",
-    paths: ["/", "/analytics"],
+    id: "platform",
+    label: "平台管理",
+    paths: [
+      "/merchants",
+      "/portal-users",
+      "/orders",
+      "/messages",
+      "/reviews",
+      "/",
+      "/analytics",
+    ],
   },
   {
     id: "system",

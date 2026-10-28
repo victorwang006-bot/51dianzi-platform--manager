@@ -1,0 +1,117 @@
+{
+  "passed": true,
+  "verifiedAt": "2026-10-28T03:59:57.096740+00:00",
+  "manifestSha256": "0d108e9865f2e369dd2b84f35805902fa10d93fe1d06ba6c5f119d2bc8e1d1e1",
+  "checks": [
+    {
+      "name": "admin HTML HTTP200 and exact final hash",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "sha256": "60161797a246a0b5b84d1eeb1ea16bd526709816aef5a70ccd8a8522b9c5304b"
+      }
+    },
+    {
+      "name": "public HTML equals prior HTML with exactly one layout literal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "exact current layout map",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "AdminWorkbenchNavigation-platform-2d8efc8b9299b4eb.js exact bytes and JS MIME",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "sha256": "2d8efc8b9299b4ebc652105c61997a39eedda8d9d47b2332f14ba87f2445d3d4",
+        "mime": "text/javascript"
+      }
+    },
+    {
+      "name": "DashboardLayout-platform-navigation-7f6d6fc75a8bf675.js exact bytes and JS MIME",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "sha256": "7f6d6fc75a8bf67581d0c90d9ff688204f70ae0a788521e92e91f38679b4f687",
+        "mime": "text/javascript"
+      }
+    },
+    {
+      "name": "layout points to exact new nav runtime",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original dependency retained AdminWorkbenchNavigation-03bc84b6de5c6901.css",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original dependency retained AdminWorkbenchNavigation-5a444a56f1ed1e9c.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original dependency retained DashboardLayout-workbench-navigation-092c0021d3342d8e.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "existing CSS tag remains unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /login",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /merchants",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /portal-users",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /orders",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /messages",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /reviews",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "original page URL remains available /analytics",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "retired route still 404 /zhijie",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "retired route still 404 /api/zhijie",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "count": 19,
+  "databaseWrites": 0,
+  "authenticatedProductionTests": 0,
+  "boundary": "public HTTP and exact static asset hashes; no fabricated login or production business writes"
+}

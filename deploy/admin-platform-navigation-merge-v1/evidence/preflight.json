@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "manifestSha256": "0d108e9865f2e369dd2b84f35805902fa10d93fe1d06ba6c5f119d2bc8e1d1e1",
+  "protectedFiles": 46983,
+  "htmlBefore": "4cb496f0a168d25c1746ca679cdbe0db5154069f5da65da660f8bc31e7696e14",
+  "htmlAfter": "60161797a246a0b5b84d1eeb1ea16bd526709816aef5a70ccd8a8522b9c5304b",
+  "databaseWrites": 0,
+  "serviceReloads": 0
+}
