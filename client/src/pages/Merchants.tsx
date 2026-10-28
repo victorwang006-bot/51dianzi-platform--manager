@@ -14,6 +14,8 @@ import MerchantCreatedAtFilter, {
 } from "@/components/MerchantCreatedAtFilter";
 import MerchantOwnershipLookup from "@/components/MerchantOwnershipLookup";
 import SalesOwnerFilterCombobox from "@/components/SalesOwnerFilterCombobox";
+import CnRegistrationReviewDetail from "@/components/merchant/CnRegistrationReviewDetail";
+import CnRegistrationReviewQueue from "@/components/merchant/CnRegistrationReviewQueue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -85,6 +87,7 @@ export default function Merchants() {
   const [msgTarget, setMsgTarget] = useState<{ id: number; name: string } | null>(null);
   const [msgContent, setMsgContent] = useState("");
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [cnReviewMerchantId, setCnReviewMerchantId] = useState<number | null>(null);
   const [ownershipLookupOpen, setOwnershipLookupOpen] = useState(false);
   const [tableScrollWidth, setTableScrollWidth] = useState(0);
   const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
@@ -243,6 +246,8 @@ export default function Merchants() {
   return (
     <DashboardLayout>
       <PageHeader title="商户管理" description="ERP 开通审核、账号绑定、协议状态与结算账户配置" />
+
+      <CnRegistrationReviewQueue onOpenDetail={setCnReviewMerchantId} />
 
       {/* 筛选栏 */}
       <Card className="mb-4">
@@ -566,6 +571,24 @@ export default function Merchants() {
               发送
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CN 注册资料审核：仅恢复既有队列入口，不新增路由。 */}
+      <Dialog open={cnReviewMerchantId !== null} onOpenChange={open => !open && setCnReviewMerchantId(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>审核操作</DialogTitle>
+          </DialogHeader>
+          {cnReviewMerchantId !== null ? (
+            <CnRegistrationReviewDetail
+              merchantId={cnReviewMerchantId}
+              onClose={() => setCnReviewMerchantId(null)}
+              onReviewed={() => {
+                void utils.merchant.list.invalidate();
+              }}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
 
