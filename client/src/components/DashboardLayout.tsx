@@ -10,12 +10,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
@@ -42,6 +38,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
+import { AdminWorkbenchNavigation } from "./admin/AdminWorkbenchNavigation";
 import {
   preloadAdminRoute,
   type AdminNavigationChunk,
@@ -168,7 +165,7 @@ const isMenuPathActive = (location: string, path: string) =>
   location === path || (path !== "/" && location.startsWith(`${path}/`));
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 240;
+const DEFAULT_WIDTH = 220;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
 
@@ -389,64 +386,59 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 py-2">
-            {menuGroups.map(group => (
-              <SidebarGroup key={group.label} className="py-1">
-                <SidebarGroupLabel className="sidebar-group-label px-3">
-                  {group.label}
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu className="px-2">
-                    {group.items
-                      .filter(item =>
-                        hasAdminPermission(
-                          adminRole,
-                          item.permission,
-                          adminPermissions
-                        )
-                      )
-                      .map(item => {
-                        const isActive = isMenuPathActive(location, item.path);
-                        const badgeCount = item.path === "/messages"
-                          ? unreadTotal
-                          : item.notificationModule
-                            ? moduleNotificationCounts[item.notificationModule]
-                            : 0;
-                        const showUnread = badgeCount > 0;
-                        return (
-                          <SidebarMenuItem key={item.path}>
-                            <SidebarMenuButton
-                              isActive={isActive}
-                              onClick={() => {
-                                if (item.notificationModule) {
-                                  lastMarkedModuleRef.current = item.notificationModule;
-                                  markModuleSeen.mutate({ module: item.notificationModule });
-                                }
-                                setLocation(item.path);
-                              }}
-                              onPointerEnter={() =>
-                                preloadAdminRoute(item.chunk)
-                              }
-                              onFocus={() => preloadAdminRoute(item.chunk)}
-                              tooltip={item.label}
-                              className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
-                            >
-                              <item.icon
-                                className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                              />
-                              <span>{item.label}</span>
-                              {showUnread && (
-                                <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
-                                  {badgeCount > 99 ? "99+" : badgeCount}
-                                </span>
-                              )}
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        );
-                      })}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ))}
+            <AdminWorkbenchNavigation
+              items={menuGroups.flatMap(group =>
+                group.items.filter(item =>
+                  hasAdminPermission(
+                    adminRole,
+                    item.permission,
+                    adminPermissions
+                  )
+                )
+              )}
+              renderItem={item => {
+                const isActive = isMenuPathActive(location, item.path);
+                const badgeCount = item.path === "/messages"
+                  ? unreadTotal
+                  : item.notificationModule
+                    ? moduleNotificationCounts[item.notificationModule]
+                    : 0;
+                const showUnread = badgeCount > 0;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => {
+                        if (item.notificationModule) {
+                          lastMarkedModuleRef.current = item.notificationModule;
+                          markModuleSeen.mutate({ module: item.notificationModule });
+                        }
+                        setLocation(item.path);
+                      }}
+                      onPointerEnter={() =>
+                        preloadAdminRoute(item.chunk)
+                      }
+                      onFocus={() => preloadAdminRoute(item.chunk)}
+                      tooltip={item.label}
+                      className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
+                    >
+                      <item.icon
+                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                      />
+                      <span>{item.label}</span>
+                      {showUnread && (
+                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
+                          {badgeCount > 99 ? "99+" : badgeCount}
+                        </span>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              }}
+              location={location}
+              accountId={user?.id ?? "unknown-admin"}
+              collapsed={isCollapsed && !isMobile}
+            />
           </SidebarContent>
 
           <SidebarFooter className="p-3 border-t border-sidebar-border">
