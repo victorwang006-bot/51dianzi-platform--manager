@@ -1,0 +1,571 @@
+{
+  "schema": "verified-production-baseline/v1",
+  "repository": "victorwang006-bot/51dianzi-platform--manager",
+  "observation_time_utc": "2026-10-28T14:04:34.174047+00:00",
+  "purpose": "Align main with already-deployed reviewed branch and record observed file hashes; no production deployment.",
+  "code_baseline_commit": "16cec88a371b7c17a5056cfe36678b00685972ee",
+  "main_before_alignment": "fc456eabc3f74ac4b8b5b080a74ca1e6612e6f77",
+  "integrated_feature_branch": "fix/cn-review-established-date-20261028",
+  "integration_method": "Fast-forward main to a documentation-only child of the reviewed feature commit; no force update.",
+  "runtime": {
+    "node_versions": [
+      "v22.22.0"
+    ],
+    "nginx_version": "nginx version: nginx/1.30.2"
+  },
+  "service_entries": [
+    {
+      "service": "dianzi51-admin",
+      "instance_count_observed": 2,
+      "observed_statuses": [
+        "online"
+      ],
+      "entry_files": [
+        {
+          "file": "dist/index.js",
+          "bytes": 602946,
+          "sha256": "b7e56c7640adcfbc4e46386862e68a4e233eade06578e26e02e5bff039038ec2",
+          "git_blob_sha1": "854e564d410505b48b13c81872314c646993a95f"
+        }
+      ]
+    }
+  ],
+  "backend_and_worker_modules": [
+    {
+      "file": "dist/index.js",
+      "bytes": 602946,
+      "sha256": "b7e56c7640adcfbc4e46386862e68a4e233eade06578e26e02e5bff039038ec2",
+      "git_blob_sha1": "854e564d410505b48b13c81872314c646993a95f",
+      "release_role": "main-backend"
+    }
+  ],
+  "html_entry": {
+    "file": "index.html",
+    "bytes": 370200,
+    "sha256": "4ec72e3957b6d9e8f8ae4d71dce8443ea13a98f82323df049e6dd424896dff87",
+    "git_blob_sha1": "43fe95376a749752e42edf678eac45933231c5fb"
+  },
+  "html_asset_refs": [
+    "/assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js",
+    "/assets/AdminWorkbenchNavigation-03bc84b6de5c6901.css",
+    "/assets/DashboardLayout-review-standard-d228d21ad4181162.js",
+    "/assets/MerchantDetail-page-memory-review-sync-766feaff54be3916.js",
+    "/assets/Merchants-review-standard-ba914c3931f20dd2.js",
+    "/assets/Messages-review-standard-edaa5dbc2da1b5ae.js",
+    "/assets/index-BQ9-sahB.css"
+  ],
+  "import_maps": [
+    {
+      "imports": {
+        "/assets/51-ordering-information-a40a0c1191ff8253/DashboardLayout-D56MNqM7.js": "/assets/DashboardLayout-review-standard-d228d21ad4181162.js",
+        "/assets/51-ordering-information-a40a0c1191ff8253/MerchantDetail-DaCXJBhL.js": "/assets/MerchantDetail-page-memory-review-sync-766feaff54be3916.js",
+        "/assets/51-ordering-information-a40a0c1191ff8253/Merchants-DJDebSyd.js": "/assets/Merchants-review-standard-ba914c3931f20dd2.js",
+        "/assets/51-ordering-information-a40a0c1191ff8253/Messages-BexpJdzf.js": "/assets/Messages-review-standard-edaa5dbc2da1b5ae.js"
+      }
+    }
+  ],
+  "frontend_static_literal_graph": {
+    "files": [
+      {
+        "file": "assets/index-BQ9-sahB.css",
+        "bytes": 129789,
+        "sha256": "dfe789ed21545726dc77983b84eedec87a5aebcfaee48ea981c18a8eed3a708b",
+        "git_blob_sha1": "26518ff560bd3e5ac315154cd7d7122a14209d12"
+      },
+      {
+        "file": "assets/Messages-review-standard-edaa5dbc2da1b5ae.js",
+        "bytes": 39684,
+        "sha256": "edaa5dbc2da1b5ae833ee12c065d9822add46729a27ebab63db587d7b2be1390",
+        "git_blob_sha1": "7edc96aaaa7524cc0b362a69dedb8a98aa70096d"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/textarea-AlYXvdnB.js",
+        "bytes": 1183,
+        "sha256": "e2d1d9b7e6a81c71ed8b685469e35c9784145c5392299676299862ed956c4d54",
+        "git_blob_sha1": "5329f3bc21873a0f81a5194aadb7ec845e008871"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/input-BAUWThJc.js",
+        "bytes": 2024,
+        "sha256": "fe96560486edf17f1b91988ab09a472387a595f7b5f852a331786e8bf86c52bd",
+        "git_blob_sha1": "2341ab4f66a56ca703f0d98da2e3218e6116c509"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/index-Vli2UG98.js",
+        "bytes": 31884,
+        "sha256": "1208f8d9736a6641d8b030b0dd4f8b8b11daf42322d326831a1211c739572576",
+        "git_blob_sha1": "9dc4ee6595cdb3f473e167836a052b8ed6c92f66"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/index-BOdW8NbX.js",
+        "bytes": 427548,
+        "sha256": "6021ad22e119ab57892b6c39f4bb19a3b5b4d0f20a20fb812c0de12f4288be19",
+        "git_blob_sha1": "18b7e3d00d5524569bff4381d2f53fc555b4f3b2"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Reviews-DKf6QNa-.js",
+        "bytes": 16359,
+        "sha256": "2a408234d2c3ea86d6293ba217d0a123a834feee3c45f96c22b8d5bb140c12a5",
+        "git_blob_sha1": "80f2a90dc5e87b992f1466fb1c4ca8e6cd433786"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/trash-2-CThM2yFx.js",
+        "bytes": 526,
+        "sha256": "6b69e49a2c11f2eb2fe3ac101c731d6b75742b495c479fe44726c24840c1d8c1",
+        "git_blob_sha1": "493a83ee91b4be2ebc89d73faf78075237abc9ca"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/table-CQ1_OvPI.js",
+        "bytes": 1550,
+        "sha256": "1eb3cbf6e710795ce1db1ba0b3b241cf2931300eea05b0487d8e23e58cefcd23",
+        "git_blob_sha1": "8cbe4a38a6b88adddfadb1b1413486af35be4783"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/shield-check-Bhn1fKJh.js",
+        "bytes": 488,
+        "sha256": "c19f39b5ae3e9cdb576db59b4e56af8fd74e2a37bf4a2afefe1e3f8b8eaecf86",
+        "git_blob_sha1": "fc7d690b25242567a0992c6bcf67d4c903f95fc3"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/search-Bl7wJx9d.js",
+        "bytes": 336,
+        "sha256": "7aadefa732251c3ff7d4b77a66a9111e97ad49c17e2a7b3cef59a98f607ebb44",
+        "git_blob_sha1": "8949c6c923f8214c9cf4fde96dc4ade648786624"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/refresh-cw-DFm8FUgd.js",
+        "bytes": 489,
+        "sha256": "5bc5457cbb26f01d015ff99845e207cada1a5c1638e5d52ab6a5c67aa5d36d74",
+        "git_blob_sha1": "8e326d97473500d8fbfbba381085f84c79a4e1cb"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/message-square-text-Da_LZXP8.js",
+        "bytes": 424,
+        "sha256": "56fafa2ba86a50d8fa26e0ceb09f2e920e6e70f7e547ce1d9e0b22e3359f8b74",
+        "git_blob_sha1": "9b9003a1f31c33e2957e4d70d357e6c31a1d2cb8"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/loader-circle-DhoFYnAd.js",
+        "bytes": 312,
+        "sha256": "89a0824c94b0a956b3a0fae8f4edd5553f31afd167f4ebd28ef45c0f7d2e1331",
+        "git_blob_sha1": "fa59f2d6bf2f7607ec80c97482d34eea701e9288"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/image-BVKJei5a.js",
+        "bytes": 438,
+        "sha256": "0dcd3846cc500355141581316abcbd86b6a726822f3a1daba95b6ee5c7cdc504",
+        "git_blob_sha1": "1f8dd7d50de8eceac72e93084a316539925348d8"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/eye-off-DiOGdtPs.js",
+        "bytes": 598,
+        "sha256": "d4ac7beaefb4900921396fa815cb4fc9fdf157fcbd8539e5f6707707efc4bea8",
+        "git_blob_sha1": "a3674f72df8e304c5620a4f4671a7dab515bbee2"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/chevron-right-D7AAEguC.js",
+        "bytes": 547,
+        "sha256": "b44b0e3218f6c8e81ab3826d39908f0fceb7e45b7812a691bc47fe82c5fab6ae",
+        "git_blob_sha1": "7da848c4146cbff0b4eff1885d5970c4866a114e"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/card-BpMjDmhD.js",
+        "bytes": 947,
+        "sha256": "a1490ecf604e002e50dcdf06bea2a8fced580f96083dbc7147fe0f382590ea4d",
+        "git_blob_sha1": "f8655c0b6f9b076000876638d0e29e5af5cd3cef"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/button-CR1TDJVl.js",
+        "bytes": 2197,
+        "sha256": "ae620ea64d63595880a9c645d06a9ec3a6049077fef122bdb065995558a625ee",
+        "git_blob_sha1": "895b40e30b73d17521cf60ee39a1c274e20e1761"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/beijingTime-Dmhx7eVn.js",
+        "bytes": 698,
+        "sha256": "910491e44c7aa7e41ae658ce507c667f2e1ba852556f0eeb690fb6a268c40d94",
+        "git_blob_sha1": "f0edf6840999cc470c9fc557b3bb433937550836"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/badge-DEC80p8-.js",
+        "bytes": 1230,
+        "sha256": "7e07f4b12ed6996e14d6b98d2eac9b49e7bc75ef031e38c0694d22db8bf5de87",
+        "git_blob_sha1": "0373380066dba66e2c8722fe992c188f41633f68"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/DashboardLayout-D56MNqM7.js",
+        "bytes": 50429,
+        "sha256": "46459b379cc7ad316773e5ecca593d22ee3c1873b1f540b87f9b2d1994431966",
+        "git_blob_sha1": "19174981874376143007717b7f5783414287e4a7"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Profile-DKBxczO6.js",
+        "bytes": 10893,
+        "sha256": "0693c1cac8a415258fff8b8fe63c3ff1326ea80be087284f4bbd78e760b3c6b3",
+        "git_blob_sha1": "907144cb9d0b06cb365e703b2c1799a4f437e489"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/phone-Dt041O2l.js",
+        "bytes": 563,
+        "sha256": "04dda94e692a5ea49d3ad9669bcbdbbb51f491ff3f43e53161e5acade7a6f526",
+        "git_blob_sha1": "e6ab00f382d60d28dababdcdfecfc535c47f931d"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/mail-B9EHNsni.js",
+        "bytes": 384,
+        "sha256": "4ba83ffc82aff7c7c548b9dbc5373963df692118498612968b69d8bfeb4b7502",
+        "git_blob_sha1": "a22562fcc33586db8d864025e0a5f859ce1ad0ad"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/label-B1JcvZZN.js",
+        "bytes": 663,
+        "sha256": "b756b023f36616f5f59b2922123a66448237a15c8ba34056a7c82a10535b21f0",
+        "git_blob_sha1": "e95b38ac80b1e6f6c95e5a1bbb3f9488da479f07"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/PortalUsers-B0rgdSi9.js",
+        "bytes": 30116,
+        "sha256": "ec43f1803751a77dc4daccef717cd5077b525208e62d03f0fb2d574c038f2a6b",
+        "git_blob_sha1": "bf52e9d35e1257ed5d7b872efd809a3a19f15013"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/erpPermissions-BuODN5xa.js",
+        "bytes": 1796,
+        "sha256": "6bbe9897a8ae0bde9be04bbe4ce732a796501cfae96d3b1018a9fe48dc9c8cc5",
+        "git_blob_sha1": "2d5ada1f7aefbe00b7cbd56bcd79bd48ba5babb8"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Orders-ChqXFQnl.js",
+        "bytes": 23977,
+        "sha256": "73abbd508a65c644d992a9482c46deddd1191cfb2a782f0b5712f6143fa8654f",
+        "git_blob_sha1": "ddfb097c0338850f4f77e0c3279d9d1ea4aba8a2"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/select-DNYB8Nr3.js",
+        "bytes": 23064,
+        "sha256": "edba3fce70f6b17758459e7638d19c4729cdd7733c5db3dc5ed495f3c3b53b08",
+        "git_blob_sha1": "7cce78156a63f70bd1cc8245fbc20883475576f1"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/index-BxIknkQT.js",
+        "bytes": 232,
+        "sha256": "d80ea110cda82697407810823b776f0222bb2838c648c593f01d56cdc1e3aae9",
+        "git_blob_sha1": "cc034368a841540e6129dd53649f0e3020ca3fde"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/calendar-days-C3ePHT92.js",
+        "bytes": 662,
+        "sha256": "b89e769db9b95e35cafe8c8cb56c2c4fc56136fc6c2c10e587d4ef15c4463df5",
+        "git_blob_sha1": "215ef12ef8a720edd7a0018370046c557931caef"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/building-2-DnlzHu5L.js",
+        "bytes": 607,
+        "sha256": "1e8fe2f863cfedff247d1b84baa15cdebb44fc160eff769619e9cc550c433f92",
+        "git_blob_sha1": "db755d3df2a44f7f2366ff29e527a5fc23594c07"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/arrow-left-Ufox99VU.js",
+        "bytes": 333,
+        "sha256": "f522408de35ca9483e9ff3946b3d441d10e05bb2d823a4a02c8337c920cfeaa8",
+        "git_blob_sha1": "db98d6910ea1c032cfc73cb6ceca50b9d276c35c"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/NotFound-DMgNn3YZ.js",
+        "bytes": 2829,
+        "sha256": "4fa5237011133b174e5f5df3e8a8afff3a73c54837ce9efb64db143ca9c55060",
+        "git_blob_sha1": "1183e96013d7c2e113dd834871cba3d49b47e57c"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Messages-BexpJdzf.js",
+        "bytes": 32296,
+        "sha256": "a40a0c1191ff825361c4e66c44f384d020fcc332a666fbd9488df1daeca4fe2d",
+        "git_blob_sha1": "2f7416f53ea0343e24e462dbaadcaadf733cd07b"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/shared-ftCIbCBD.js",
+        "bytes": 3359,
+        "sha256": "6ae8520cb91370e2d64d952c9891b61ddbc4f85bab373b6a5324b4b5ffde5809",
+        "git_blob_sha1": "8f2541a4ce4a5e8081dc09fbe43f390fd74d4091"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/external-link-CtZFwqlq.js",
+        "bytes": 419,
+        "sha256": "308507b4f82f1f462268faf44ce6a7b94c933efd2e5b3d514e2ddb078b319aea",
+        "git_blob_sha1": "f840ac2e831ccef17a1fee521d330a6db12f8990"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/download-DUgIjuPk.js",
+        "bytes": 431,
+        "sha256": "b3551fab3eeaff0ebeaa24269424e76b8604a0d2e4311b76652b30c1e7a5858b",
+        "git_blob_sha1": "c34b5f14aa0f6a34e7db0f27e393d394343e5a4f"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/circle-check-dYU0ssho.js",
+        "bytes": 341,
+        "sha256": "2d15cdacbb9ced03dd99e944721a22796ea10840277778fae303b197d3e2353f",
+        "git_blob_sha1": "c4b82be0b50414117528a7df3892911069b03df8"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/MerchantOwnershipLookup-4qzAbwrR.js",
+        "bytes": 16578,
+        "sha256": "162a4f61ffce861d1455949c671d8a69f1fcdcc349132aa4e3267741c2e11779",
+        "git_blob_sha1": "d7b7cb352177d1d747b6dc73089c5cfc9668e2c1"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Merchants-DJDebSyd.js",
+        "bytes": 48670,
+        "sha256": "0ef9eeb3222cdbc79e26f34e4f6db71eb35b5fb69826c35868d6f6975764b3fe",
+        "git_blob_sha1": "13b744864b204756e9c8995c067ae06ba950e071"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/MerchantDetail-DaCXJBhL.js",
+        "bytes": 153626,
+        "sha256": "0e16c8a15aac9f0ded11da1a86909a2819c8758111e72c457adb6e09f2df5578",
+        "git_blob_sha1": "a7192e4519d42f8b6634790adb25a482afe5cd5e"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/upload-aSSG-stf.js",
+        "bytes": 1360,
+        "sha256": "6fe6c8bb52553b5ba276280e4668708fee7c07019b25f6aee123a062e133f302",
+        "git_blob_sha1": "f1ff870ffaea57cf0bf4c99d1c3e56f02babbb51"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/tabs-C0FgN2Ve.js",
+        "bytes": 3662,
+        "sha256": "e6d03d7bfd74b468d25ab8a1b02c3b8de6c528e649b40c19446303926c47eb7c",
+        "git_blob_sha1": "1958cc7a8079284f5351da919ce9aeed6e44a835"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/pencil-CBFz-00G.js",
+        "bytes": 445,
+        "sha256": "7bdaae62cdfcc2a68339640a12d90aa0d0dfddeecb612c3312dce24048631cd2",
+        "git_blob_sha1": "9ba4c9054df71182ed6c23509ac5e74de463d761"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/eye-CtEo5SJk.js",
+        "bytes": 420,
+        "sha256": "3aae3040fe69d63b2506e4bf1d66b483c01dda0dd88df077967cd81f43727067",
+        "git_blob_sha1": "aca30d503de6ee0267c18e1344ede7ebc3901f30"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Materials-ChH8H_oE.js",
+        "bytes": 28862,
+        "sha256": "66c9898ee1ff8092a6ec401fa544e3317ef7c26dc28041ac39cd855a4924cfba",
+        "git_blob_sha1": "83f7db2c3636ebcd9b1ffb7ffcdf90b9311478b2"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/plus-DUw775CV.js",
+        "bytes": 322,
+        "sha256": "c1d1196d0a1d9d4f54cfdcd859c3ee5f85b8e8c1efeb5d2f8cda7a4249a62324",
+        "git_blob_sha1": "c55086a3c6f34b195eda8b171419f806d66ef0c8"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Login-lT7TyFbI.js",
+        "bytes": 25415,
+        "sha256": "24a009c0affe8d650032ab8b3ed9f3c82ef62d5e47b63fd493b0c7e58f29e21c",
+        "git_blob_sha1": "a1827e90bc948d8d7e9d4e86c15f305aba88a13a"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/smartphone-Di8jgQWy.js",
+        "bytes": 366,
+        "sha256": "b165df86f861c66a0457d8f22fd4106de8d3f7c337101da5f47be8d6f1eda1a5",
+        "git_blob_sha1": "79e67a1b60609b79d8298c8d5ddd59b8f564bbde"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Forbidden-ZpqM_zE9.js",
+        "bytes": 977,
+        "sha256": "79f5bc8d0589aff225cf51ac312141a1c8839b9613258dcb6cfb8e8e82aeb44d",
+        "git_blob_sha1": "ed0873f24ce6fe74d9614f9e6ff83a69c65f0755"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/ExceptionLogs-Cf3dYTTy.js",
+        "bytes": 14110,
+        "sha256": "178a1425f5985669f5d5b0c195b6a454e96707d27160ca708d6368e4d00c4ce8",
+        "git_blob_sha1": "e162bb3e03a5a7aacd68fdaf07fce7ca6783d971"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Analytics-BgNlaz2Y.js",
+        "bytes": 407439,
+        "sha256": "8444a92e86efd666a161a48019c21e44f5f213e3195430c3f79207d6e2a346c5",
+        "git_blob_sha1": "59096e3abcdee90d75ba66ede76ad2c6c99edbc0"
+      },
+      {
+        "file": "assets/51-ordering-information-a40a0c1191ff8253/Admins-C28Z7IkG.js",
+        "bytes": 30879,
+        "sha256": "2715eb98e88b0a86046ca4b072f69765d86e15bba23ba786cd561fc9e26f8169",
+        "git_blob_sha1": "78d6a9cba1a29c6541f56ae2c85ab914a2632d3f"
+      },
+      {
+        "file": "assets/Merchants-review-standard-ba914c3931f20dd2.js",
+        "bytes": 85424,
+        "sha256": "ba914c3931f20dd2e0c4ba9da8f98578418208bdfc7735ded7799e6dbe8d98d1",
+        "git_blob_sha1": "9c99f2ce71b5859e84da0f5ba094f5513607d74a"
+      },
+      {
+        "file": "assets/ReviewSync-766feaff54be3916.js",
+        "bytes": 14884,
+        "sha256": "766feaff54be391605b48a14ee8bf3ad19b0b51e17ed97306ada84776584d94b",
+        "git_blob_sha1": "5fdc1c6e9d5a05f0cb32544e63c0dc9d68ed71b1"
+      },
+      {
+        "file": "assets/AdminPageMemory-runtime-553a216b9020de93.js",
+        "bytes": 9760,
+        "sha256": "553a216b9020de9358b895998d229f4e01d98c689d257f9fdf4e90c689ee1fbd",
+        "git_blob_sha1": "2fbb65dbd688019ed2729f33915156e73e10d12e"
+      },
+      {
+        "file": "assets/AdminPageMemory-core-20b7a4a9009ef255.js",
+        "bytes": 10886,
+        "sha256": "20b7a4a9009ef25584f75f2c726acf07927a8e6c1e12439a556f5e582631602e",
+        "git_blob_sha1": "5d36703352af6c26f10639ebfc279932c20cde23"
+      },
+      {
+        "file": "assets/MerchantDetail-page-memory-review-sync-766feaff54be3916.js",
+        "bytes": 155488,
+        "sha256": "aefc2bc15a52f8fb998fe0588b80ebc37abb15b5cca4731495acc1d1260044ef",
+        "git_blob_sha1": "20073412720e85a15d33285f6cd728250856a057"
+      },
+      {
+        "file": "assets/DashboardLayout-review-standard-d228d21ad4181162.js",
+        "bytes": 51270,
+        "sha256": "d228d21ad4181162988e9c18a90a2879c18b4462a4f5d1bde5dd8392a59e151c",
+        "git_blob_sha1": "3722d7f11e67d003ec8412a1623199d6bf2815bb"
+      },
+      {
+        "file": "assets/AdminWorkbenchNavigation-platform-2d8efc8b9299b4eb.js",
+        "bytes": 2614,
+        "sha256": "2d8efc8b9299b4ebc652105c61997a39eedda8d9d47b2332f14ba87f2445d3d4",
+        "git_blob_sha1": "cf2a8beac6bd8147edb08e7858d4fcc615f0288d"
+      },
+      {
+        "file": "assets/AdminWorkbenchNavigation-03bc84b6de5c6901.css",
+        "bytes": 2648,
+        "sha256": "03bc84b6de5c6901bab300bd20c0682afb1e12e2d6c1c21961d2429c6214a94a",
+        "git_blob_sha1": "1ebf7d20da77bb31a31c1b1f1eca6d7a304aeed6"
+      }
+    ],
+    "missing_references": [],
+    "truncated": false,
+    "method": "Static literal ES imports/exports, dynamic imports and require; does not execute application or cover computed imports.",
+    "boundary": "Includes all declared import-map targets, some of which are historical. Static graph is not proof of every browser execution path, computed import or complete source reproduction."
+  },
+  "dependencies": {
+    "source_files_at_code_baseline": {
+      "package.json": {
+        "bytes": 4912,
+        "sha256": "1a0d04a1aa0dfa555500b128766c9882b962b5512546d4d7751a4bd0253c9f0a",
+        "package_metadata": {
+          "name": "51dianzi_admin_backend",
+          "version": "1.0.0",
+          "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+          "engines": null
+        },
+        "build_scripts": {
+          "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:./vite-dev",
+          "build:admin": "VITE_BASE_PATH=/admin/ pnpm build",
+          "build:subdomain": "VITE_BASE_PATH=/ pnpm build"
+        }
+      },
+      "pnpm-lock.yaml": {
+        "bytes": 324879,
+        "sha256": "03bcc99fe46a361fb3d226f0ada2d1584d7d62804042785688e1a94d985b0d91"
+      }
+    },
+    "observed_runtime_packages": [
+      {
+        "release_role": "main-backend",
+        "package_json": {
+          "file": "package.json",
+          "bytes": 4912,
+          "sha256": "1a0d04a1aa0dfa555500b128766c9882b962b5512546d4d7751a4bd0253c9f0a",
+          "git_blob_sha1": "f96d139f56d9a317919c0a9cf2a34005ff7b63af"
+        },
+        "package_metadata": {
+          "name": "51dianzi_admin_backend",
+          "version": "1.0.0",
+          "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+          "engines": null
+        },
+        "build_scripts": {
+          "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:./vite-dev",
+          "build:admin": "VITE_BASE_PATH=/admin/ pnpm build",
+          "build:subdomain": "VITE_BASE_PATH=/ pnpm build"
+        },
+        "runtime_lock_metadata": [
+          {
+            "file": "node_modules/.pnpm/lock.yaml",
+            "bytes": 241419,
+            "sha256": "4f931dc583213c6ea50a3c1e2c6178c423ea5de262813e87849ed211c134397a",
+            "git_blob_sha1": "47c8f78b0c7eb77e8d58c31cb472b5b3e017726c"
+          },
+          {
+            "file": "node_modules/.modules.yaml",
+            "bytes": 33123,
+            "sha256": "a2848f4b7861abbdc28d424f5954f237f47d6f3f5378ceb5e3d883cc50ca09de",
+            "git_blob_sha1": "219c545c25924c46f07b3ec32294caa6b7315a55"
+          }
+        ],
+        "package_json_bytes_equal_source": true,
+        "generated_lock_bytes_equal_source": {
+          "node_modules/.pnpm/lock.yaml": false
+        }
+      }
+    ],
+    "lock_equivalence": "No equality claim between repository lockfile and generated installed lockfile; both byte hashes are recorded.",
+    "byte_comparison_boundary": "Byte inequality can reflect generated format or metadata differences and does not by itself establish dependency-version drift."
+  },
+  "release_evidence_on_integrated_branch": [
+    {
+      "path": "deploy/evidence/cn-review-standard-20261028/manifest.json",
+      "matched_production_hashes": [
+        {
+          "file": "index.js",
+          "sha256": "b7e56c7640adcfbc4e46386862e68a4e233eade06578e26e02e5bff039038ec2"
+        },
+        {
+          "file": "index.html",
+          "sha256": "4ec72e3957b6d9e8f8ae4d71dce8443ea13a98f82323df049e6dd424896dff87"
+        },
+        {
+          "file": "DashboardLayout-review-standard-d228d21ad4181162.js",
+          "sha256": "d228d21ad4181162988e9c18a90a2879c18b4462a4f5d1bde5dd8392a59e151c"
+        },
+        {
+          "file": "Merchants-review-standard-ba914c3931f20dd2.js",
+          "sha256": "ba914c3931f20dd2e0c4ba9da8f98578418208bdfc7735ded7799e6dbe8d98d1"
+        },
+        {
+          "file": "Messages-review-standard-edaa5dbc2da1b5ae.js",
+          "sha256": "edaa5dbc2da1b5ae833ee12c065d9822add46729a27ebab63db587d7b2be1390"
+        }
+      ]
+    }
+  ],
+  "reproducibility": {
+    "full_clean_rebuild_verified": false,
+    "status": "partial-source-and-runtime-overlay-baseline",
+    "known_boundaries": [
+      "Integrated review fixes are deployment patches, scripts and evidence; this does not establish that the application main source independently reproduces the current runtime bundle.",
+      "Current layout retains the platform-navigation dependency while adding review-standard changes."
+    ],
+    "prohibited_shortcut": "Do not rebuild and deploy over production from this branch solely because main has been aligned. Full source backfill/rebuild acceptance requires a separate controlled verification."
+  },
+  "safety": {
+    "no_production_file_writes": true,
+    "no_service_restart": true,
+    "no_database_writes": true,
+    "no_other_feature_branch_integrated": true,
+    "published_manifest_excludes": [
+      "credentials",
+      "environment_values",
+      "private_keys",
+      "host_IPs",
+      "hostnames",
+      "PIDs",
+      "absolute_deployment_paths",
+      "business_records"
+    ]
+  },
+  "merge_semantics": "Evidence/tooling/release-record merge only. The 40 added files do not backport production fixes into maintained application source."
+}
