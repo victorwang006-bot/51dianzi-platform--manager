@@ -26,6 +26,11 @@ import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
+import {
+  getCnRegistrationReviewDetail,
+  getCnRegistrationReviewQueue,
+  reviewCnRegistrationDraft,
+} from "./cnRegistrationReview";
 import { storageGetOssSignedUrl, storagePut } from "./storage";
 import { ENV as hkStorageEnv } from "./_core/env";
 import { removeLocalFile, saveLocalFile } from "./localUpload";
@@ -1138,10 +1143,37 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         // 非超级管理员仅可见自己销售范围内的商户（三态语义，勿改写）
         return db.getMerchants(input, await getAdminSalesStaffCodes(ctx));
-      }),
+    }),
     salesOwnerFilterOptions: merchantReadProcedure.query(async ({ ctx }) => {
       return db.getMerchantSalesOwnerFilterOptions(await getAdminSalesStaffCodes(ctx));
     }),
+    listCnRegistrationReviewQueue: merchantReadProcedure
+      .input(z.object({
+        page: z.number().int().positive().optional(),
+        pageSize: z.number().int().positive().max(100).optional(),
+      }))
+      .query(async ({ ctx, input }) =>
+        getCnRegistrationReviewQueue(input, await getAdminSalesStaffCodes(ctx)),
+      ),
+    getCnRegistrationReviewDetail: merchantReadProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        await assertMerchantInSalesScope(ctx, input.id);
+        try {
+          return await getCnRegistrationReviewDetail(input.id);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "MERCHANT_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
+          if (message === "CN_REGISTRATION_REQUIRED") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户不是中国内地注册企业" });
+          if (["CN_REVIEW_SUBJECT_MISMATCH", "CN_REVIEW_OWNER_OR_SUBJECT_INVALID"].includes(message)) {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业主体或负责人绑定不一致，请使用既有合法变更流程" });
+          }
+          if (["CN_REVIEW_CANDIDATE_INVALID", "CN_REVIEW_UNSUPPORTED_DRAFT_FIELD", "CN_REVIEW_DOCUMENT_REFERENCE_INVALID", "CN_REVIEW_DOCUMENT_MIGRATION_REQUIRED"].includes(message)) {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "待审核企业资料无效，无法安全覆盖有效资料" });
+          }
+          throw error;
+        }
+      }),
     /**
      * 客户开发前跨销售范围查重。仅返回公司、负责人、内部联系方式和状态，
      * 不返回客户手机号、邮箱、营业执照等资料；查询按账号限流并写摘要审计。
@@ -1838,7 +1870,29 @@ export const appRouter = router({
           suspend: "suspended",
           reactivate: "approved",
         };
-        await db.updateMerchantStatus(input.id, statusMap[input.action], input.note, ctx.user.id);
+        try {
+          await db.reviewMerchantStatus({
+            merchantId: input.id,
+            status: statusMap[input.action],
+            reviewNote: input.note,
+            reviewedBy: ctx.user.id,
+            actor: auditActorFromContext(ctx),
+            // Rechecked after the merchant row is locked; the preliminary
+            // router lookup remains only for non-enumerating UX semantics.
+            allowedSalesStaffCodes: await getAdminSalesStaffCodes(ctx),
+          });
+        } catch (error) {
+          if (error instanceof Error && error.message === "CN_REGISTRATION_REVIEW_PENDING") {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "中国内地企业资料必须通过版本化资料审核",
+            });
+          }
+          if (error instanceof Error && error.message === "MERCHANT_NOT_FOUND") {
+            throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在或不在您负责的范围内" });
+          }
+          throw error;
+        }
         return { success: true };
       }),
     /** 修改后台用户名；仅影响管理后台，空值表示恢复显示前台原用户名。 */
@@ -1914,13 +1968,65 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         // ERP 开通/拒绝/暂停同属商户写操作，需同样的归属校验
         await assertMerchantInSalesScope(ctx, input.id);
+        const allowedSalesStaffCodes = await getAdminSalesStaffCodes(ctx);
         return db.setMerchantCrmStatus({
           merchantId: input.id,
           crmStatus: input.crmStatus,
           portalUserId: input.portalUserId,
           note: input.note,
           actor: auditActorFromContext(ctx),
+          allowedSalesStaffCodes,
         });
+      }),
+    reviewCnRegistrationDraft: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        decision: z.enum(["approved", "rejected"]),
+        expectedVersion: z.string().trim().regex(/^[a-f0-9]{64}$/i, "审核版本无效"),
+        note: z.string().trim().max(1000).optional().nullable(),
+        confirmed: z.boolean().optional(),
+      }).superRefine((value, context) => {
+        if (value.decision === "rejected" && !value.note?.trim()) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["note"], message: "拒绝企业资料必须填写原因" });
+        }
+        if (value.decision === "approved" && value.confirmed !== true) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["confirmed"], message: "通过企业资料前必须确认已人工核对" });
+        }
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await assertMerchantInSalesScope(ctx, input.id);
+        const allowedSalesStaffCodes = await getAdminSalesStaffCodes(ctx);
+        try {
+          return await reviewCnRegistrationDraft({
+            merchantId: input.id,
+            decision: input.decision,
+            expectedVersion: input.expectedVersion,
+            note: input.note,
+            confirmed: input.confirmed,
+            actor: auditActorFromContext(ctx),
+            allowedSalesStaffCodes,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message === "MERCHANT_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
+          if (message === "CN_REGISTRATION_REQUIRED") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户不是中国内地注册企业" });
+          if (["CN_REVIEW_VERSION_CHANGED", "CN_REVIEW_CANDIDATE_NOT_FOUND"].includes(message)) {
+            throw new TRPCError({ code: "CONFLICT", message: "待审核企业资料已变化，请刷新后重新核对" });
+          }
+          if (message === "CN_REVIEW_ALREADY_DECIDED") {
+            throw new TRPCError({ code: "CONFLICT", message: "该版本已由其他审核员完成不同决定" });
+          }
+          if (["CN_REVIEW_SUBJECT_MISMATCH", "CN_REVIEW_OWNER_OR_SUBJECT_INVALID"].includes(message)) {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业主体或负责人绑定不一致，请使用既有合法变更流程" });
+          }
+          if (message === "CN_REVIEW_MERCHANT_STATE_INVALID") {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "待审核企业资料已变化，请刷新后重新核对" });
+          }
+          if (["CN_REVIEW_CANDIDATE_INVALID", "CN_REVIEW_UNSUPPORTED_DRAFT_FIELD", "CN_REVIEW_DOCUMENT_REFERENCE_INVALID", "CN_REVIEW_DOCUMENT_MIGRATION_REQUIRED"].includes(message)) {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "待审核企业资料无效，无法安全覆盖有效资料" });
+          }
+          throw error;
+        }
       }),
     /** HK registration review is separate from ERP enablement and only promotes a pending private draft. */
     reviewHkRegistrationDraft: merchantWriteProcedure
@@ -1943,6 +2049,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         await assertMerchantInSalesScope(ctx, input.id);
+        const allowedSalesStaffCodes = await getAdminSalesStaffCodes(ctx);
         try {
           return await db.reviewHkRegistrationDraft({
             merchantId: input.id,
@@ -1952,6 +2059,7 @@ export const appRouter = router({
             expectedPayloadHash: input.expectedPayloadHash,
             confirmed: input.confirmed,
             actor: auditActorFromContext(ctx),
+            allowedSalesStaffCodes,
           });
         } catch (error) {
           const message = error instanceof Error ? error.message : "";

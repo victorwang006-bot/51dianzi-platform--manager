@@ -82,6 +82,7 @@ import {
   ENTERPRISE_SERVICE_AGREEMENT_HASH,
   ENTERPRISE_SERVICE_AGREEMENT_VERSION,
 } from "../shared/enterpriseServiceAgreementSummary";
+import { cnReviewOwnerInScope, platformDatabaseIdentifier } from "./cnRegistrationPolicy";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -2006,12 +2007,86 @@ export async function setMerchantInternalContactName(input: {
   });
 }
 
+/**
+ * @deprecated This unrestricted legacy primitive has no in-tree caller. New
+ * status decisions must use reviewMerchantStatus so authorization, CAS, and
+ * audit are one transaction; do not add callers to this export.
+ */
 export async function updateMerchantStatus(id: number, status: string, reviewNote?: string, reviewedBy?: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(merchants).set({ status: status as any, reviewNote, reviewedBy, reviewedAt: new Date() }).where(eq(merchants.id, id));
 }
 
+/**
+ * The retired generic review route still exists for legacy operations. CN
+ * registration candidates must never be moved out of their dedicated review
+ * queue by that route, so lock local merchant + matching platform company
+ * before any local status mutation.
+ */
+export async function reviewMerchantStatus(input: {
+  merchantId: number;
+  status: string;
+  reviewNote?: string;
+  reviewedBy?: number;
+  /** undefined is super-admin; collaborators are intentionally not writers. */
+  allowedSalesStaffCodes?: string[];
+  actor?: MaterialAuditActor;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  return db.transaction(async tx => {
+    const [merchant] = await tx.select().from(merchants)
+      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+    // Recheck the formal-owner authorization under this row lock. `undefined`
+    // remains super-admin while an empty array intentionally authorizes nobody.
+    if (!cnReviewOwnerInScope(merchant.salesOwnerCode, input.allowedSalesStaffCodes)) {
+      throw new Error("MERCHANT_NOT_FOUND");
+    }
+    if (merchant.registrationRegion === "CN") {
+      const creditCode = merchant.businessLicense?.replace(/\s+/g, "").toUpperCase() || "";
+      if (creditCode) {
+        const pending = (await tx.execute(sql`
+          SELECT company.id
+            FROM ${sql.raw(PLATFORM_DB)}.companies AS company
+           WHERE company.registrationRegion = 'CN'
+             AND UPPER(REPLACE(company.creditCode, ' ', '')) = ${creditCode}
+             AND company.reviewStatus = 'pending'
+           LIMIT 1
+           FOR UPDATE
+        `)) as unknown as [{ id: number }[], unknown];
+        if (pending[0]?.length) throw new Error("CN_REGISTRATION_REVIEW_PENDING");
+      }
+    }
+    const updateResult = await tx.update(merchants).set({
+      status: input.status as any,
+      reviewNote: input.reviewNote,
+      reviewedBy: input.reviewedBy,
+      reviewedAt: new Date(),
+    }).where(and(eq(merchants.id, merchant.id), eq(merchants.status, merchant.status)));
+    const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
+    if (affectedRows !== 1) throw new Error("MERCHANT_STATUS_CONFLICT");
+
+    // Keep the privileged decision auditable without serializing the full
+    // merchant/registration record or any material/document payload.
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: `merchant.review.${input.status}`,
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(merchant.id),
+      beforeValue: { merchantId: merchant.id, status: merchant.status },
+      afterValue: { merchantId: merchant.id, status: input.status },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note: null,
+    });
+  });
+}
 /** 前台商家提交的入驻资料字段 */
 export interface PortalMerchantSubmission {
   companyName: string;
@@ -2648,6 +2723,8 @@ export async function reviewHkRegistrationDraft(input: {
   /** Internal reviewer acknowledgement; this is not an official attestation. */
   confirmed?: boolean;
   actor?: MaterialAuditActor;
+  /** undefined means super-admin; a concrete array is formal-owner scope only. */
+  allowedSalesStaffCodes?: string[];
 }) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
@@ -2658,6 +2735,11 @@ export async function reviewHkRegistrationDraft(input: {
     const [merchant] = await tx.select().from(merchants)
       .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
     if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+    // The router lookup is only non-enumerating UX. Enforce the same
+    // formal-owner scope after this transaction has locked the current row.
+    if (!cnReviewOwnerInScope(merchant.salesOwnerCode, input.allowedSalesStaffCodes)) {
+      throw new Error("MERCHANT_NOT_FOUND");
+    }
     if (merchant.registrationRegion !== "HK") throw new Error("HK_REGISTRATION_REQUIRED");
     const identity = merchantRegistrationIdentity(merchant);
     const pending = parsePendingHkRegistration(merchant.registrationPendingData);
@@ -2916,6 +2998,8 @@ export async function setMerchantCrmStatus(input: {
   portalUserId?: string | null;
   note?: string | null;
   actor?: MaterialAuditActor;
+  /** undefined means super-admin; a concrete array is formal-owner scope only. */
+  allowedSalesStaffCodes?: string[];
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -2929,6 +3013,12 @@ export async function setMerchantCrmStatus(input: {
       .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
     const merchant = rows[0];
     if (!merchant) throw new Error("商户不存在");
+    // A preliminary router lookup cannot authorize a later write after sales
+    // ownership changes. Recheck the current formal owner while row-locked for
+    // every CRM state transition; [] intentionally grants no authority.
+    if (!cnReviewOwnerInScope(merchant.salesOwnerCode, input.allowedSalesStaffCodes)) {
+      throw new Error("MERCHANT_NOT_FOUND");
+    }
 
     const fromStatus = merchant.crmStatus as MerchantCrmStatus;
     assertMerchantCrmStatusTransition(fromStatus, input.crmStatus);
@@ -2957,6 +3047,38 @@ export async function setMerchantCrmStatus(input: {
           message: CRM_DUPLICATE_OPENING_MESSAGE,
           crmOwnerPortalUserId: ownerToKeep,
         };
+      }
+      if (merchant.registrationRegion === "CN") {
+        const creditCode = merchant.businessLicense?.replace(/\s+/g, "").toUpperCase() || "";
+        if (merchant.status !== "approved" || !ownerToKeep || !creditCode) {
+          throw new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID");
+        }
+        const platformRows = (await tx.execute(sql`
+          SELECT CAST(enterprise.superAdminUserId AS CHAR) AS superAdminUserId,
+                 CAST(enterprise.crmDataOwnerUserId AS CHAR) AS dataOwnerUserId,
+                 CAST(company.userId AS CHAR) AS companyUserId,
+                 company.reviewStatus, company.pendingDraft
+            FROM ${sql.raw(PLATFORM_DB)}.companies AS company
+            INNER JOIN ${sql.raw(PLATFORM_DB)}.enterprises AS enterprise ON enterprise.id = company.enterpriseId
+           WHERE company.registrationRegion = 'CN' AND enterprise.registrationRegion = 'CN'
+             AND UPPER(REPLACE(company.creditCode, ' ', '')) = ${creditCode}
+             AND UPPER(REPLACE(enterprise.creditCode, ' ', '')) = ${creditCode}
+           LIMIT 2
+           FOR UPDATE
+        `)) as unknown as [[{
+          superAdminUserId: string | null;
+          dataOwnerUserId: string | null;
+          companyUserId: string | null;
+          reviewStatus: string | null;
+          pendingDraft: unknown;
+        }], unknown];
+        const company = platformRows[0]?.[0];
+        if (platformRows[0]?.length !== 1 || company?.reviewStatus !== "approved" || company.pendingDraft !== null
+          || String(company.superAdminUserId ?? "") !== ownerToKeep
+          || String(company.dataOwnerUserId ?? "") !== ownerToKeep
+          || String(company.companyUserId ?? "") !== ownerToKeep) {
+          throw new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID");
+        }
       }
     }
     if (input.crmStatus === "enabled" && merchant.registrationRegion === "HK") {
@@ -5031,7 +5153,7 @@ export async function getPortalThreadUnread(threadNo: string) {
 // 可直接以 `dianzi51.表名` 跨库访问。开发环境（Manus TiDB）无该库，查询失败时
 // 返回 available:false 供前端展示"生产环境可用"提示。
 
-const PLATFORM_DB = process.env.PLATFORM_DB_NAME || "dianzi51";
+const PLATFORM_DB = platformDatabaseIdentifier();
 
 export type AdminModuleNotificationCounts = Record<AdminNotificationModule, number>;
 

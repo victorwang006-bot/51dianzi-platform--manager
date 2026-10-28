@@ -17,7 +17,8 @@ vi.mock("mysql2/promise", () => ({ default: { createConnection: createLockConnec
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
 const DB_SOURCE_PATH = path.join(PROJECT_ROOT, "server", "db.ts");
-const MAIN_SCHEMA_PATH = "/home/ubuntu/51-sticky-production/drizzle/schema.ts";
+const MAIN_SCHEMA_PATH = process.env.PLATFORM_SCHEMA_TEST_PATH
+  ?? path.resolve(PROJECT_ROOT, "../51dianzi-platform/drizzle/schema.ts");
 const dialect = new MySqlDialect();
 
 const REGISTRATION_IDENTIFIER = "HK:12345678";
@@ -208,6 +209,7 @@ function hkMerchant(overrides: Partial<Record<string, unknown>> = {}) {
     licenseObjectKey: documents.BR.objectKey,
     ciObjectKey: documents.CI.objectKey,
     bankDocumentObjectKey: documents.BANK.objectKey,
+    salesOwnerCode: "sales-a",
     ...overrides,
   };
 }
@@ -327,6 +329,7 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
       ...reviewInput(),
       note: "All HK documents verified",
       actor: { operatorId: 9, operatorName: "reviewer", operatorRole: "super_admin" },
+      allowedSalesStaffCodes: ["sales-a"],
     })).resolves.toEqual({ success: true, decision: "approved", crmStatus: "pending" });
 
     expect(drizzleMock).toHaveBeenCalledWith("mysql://unit:unit@127.0.0.1:3306/unit_hk_review");
@@ -364,6 +367,37 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
     const enterpriseUpdate = plan.rendered.find(call => /UPDATE unit_platform\.enterprises AS enterprise/i.test(call.sql));
     expect(enterpriseUpdate?.sql).toContain("enterprise.companyName = ?");
     expect(enterpriseUpdate?.sql).toContain("enterprise.superAdminUserId");
+  });
+
+  it("B-01：超级管理员以 undefined 范围可复核已转移负责人的HK候选", async () => {
+    const plan = installPlan({
+      selectResults: [[hkMerchant({ salesOwnerCode: "sales-b" })]],
+      executeResults: [
+        [[firstDraftPlatformCompany()], undefined],
+        [{ affectedRows: 1 }, undefined],
+      ],
+    });
+    await expect(dbModule.reviewHkRegistrationDraft({
+      ...reviewInput(),
+      allowedSalesStaffCodes: undefined,
+    })).resolves.toEqual({ success: true, decision: "approved", crmStatus: "pending" });
+    expect(activeTransaction.update).toHaveBeenCalledTimes(1);
+    expect(plan.auditValues).toHaveLength(1);
+  });
+
+  it.each([
+    ["owner 已转移", hkMerchant({ salesOwnerCode: "sales-b" }), ["sales-a"]],
+    ["普通账号无销售范围", hkMerchant(), []],
+  ])("B-01：HK 复核在锁内因%s被拒绝，平台/本地/审计均零写入", async (_label, merchant, allowedSalesStaffCodes) => {
+    const plan = installPlan({ selectResults: [[merchant]] });
+    await expect(dbModule.reviewHkRegistrationDraft({
+      ...reviewInput(),
+      allowedSalesStaffCodes,
+    })).rejects.toThrow("MERCHANT_NOT_FOUND");
+    expect(activeTransaction.execute).not.toHaveBeenCalled();
+    expect(activeTransaction.update).not.toHaveBeenCalled();
+    expect(plan.auditValues).toEqual([]);
+    expect(plan.rendered).toEqual([]);
   });
 
   it("approves a first HK draft without CI without manufacturing CI evidence", async () => {
@@ -596,6 +630,23 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
 });
 
 describe("setMerchantCrmStatus — real HK enablement gate with offline mysql/drizzle", () => {
+  it.each([
+    ["owner 已转移", hkMerchant({ salesOwnerCode: "sales-b" }), ["sales-a"]],
+    ["普通账号无销售范围", hkMerchant(), []],
+  ])("B-01：HK ERP enable 在锁内因%s被拒绝，平台/本地/审计均零写入", async (_label, merchant, allowedSalesStaffCodes) => {
+    const plan = installPlan({ selectResults: [[merchant]] });
+    await expect(dbModule.setMerchantCrmStatus({
+      merchantId: 30004,
+      crmStatus: "enabled",
+      portalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN,
+      allowedSalesStaffCodes,
+    })).rejects.toThrow("MERCHANT_NOT_FOUND");
+    expect(activeTransaction.execute).not.toHaveBeenCalled();
+    expect(activeTransaction.update).not.toHaveBeenCalled();
+    expect(plan.auditValues).toEqual([]);
+    expect(plan.rendered).toEqual([]);
+  });
+
   it("enables only a reviewed, non-pending platform registration with matching submission ledger IDs", async () => {
     const merchant = hkMerchant({
       status: "approved",
@@ -616,6 +667,7 @@ describe("setMerchantCrmStatus — real HK enablement gate with offline mysql/dr
       merchantId: 30004,
       crmStatus: "enabled",
       portalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN,
+      allowedSalesStaffCodes: ["sales-a"],
     })).resolves.toEqual({ success: true, crmOwnerPortalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN });
 
     expect(activeTransaction.update).toHaveBeenCalledTimes(1);
@@ -628,6 +680,32 @@ describe("setMerchantCrmStatus — real HK enablement gate with offline mysql/dr
     expect(read.sql).toContain("company.pendingDraft");
     expect(read.sql).toContain("company.registrationSubmissionId");
     expect(read.sql).toContain("company.registrationPayloadHash");
+  });
+
+  it("B-01：超级管理员以 undefined 范围可为已转移负责人开通HK ERP", async () => {
+    const merchant = hkMerchant({
+      salesOwnerCode: "sales-b",
+      status: "approved",
+      registrationData: storedEffectiveRegistration({ submissionId: SUBMISSION_ID, payloadHash: PAYLOAD_HASH }),
+      registrationPendingData: null,
+    });
+    const plan = installPlan({
+      selectResults: [
+        [merchant],
+        [],
+        [{ crmStatus: "enabled", crmOwnerPortalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN, crmNote: null }],
+      ],
+      executeResults: [[[crmPlatformCompany()], undefined]],
+      updateResults: [[{ affectedRows: 1 }]],
+    });
+    await expect(dbModule.setMerchantCrmStatus({
+      merchantId: 30004,
+      crmStatus: "enabled",
+      portalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN,
+      allowedSalesStaffCodes: undefined,
+    })).resolves.toEqual({ success: true, crmOwnerPortalUserId: CURRENT_ENTERPRISE_SUPER_ADMIN });
+    expect(activeTransaction.update).toHaveBeenCalledTimes(1);
+    expect(plan.auditValues).toHaveLength(1);
   });
 
   it("enables a reviewed HK registration with BR and bank evidence but no CI", async () => {
@@ -771,8 +849,8 @@ describe("HK cross-database SQL source guard", () => {
     ];
 
     // Review: SELECT + guarded company promotion + enterprise-name sync +
-    // reject UPDATE; CRM enable: SELECT.
-    expect(statements.map(statement => statement.kind)).toEqual(["SELECT", "UPDATE", "UPDATE", "UPDATE", "SELECT"]);
+    // reject UPDATE; CRM enable: separate CN and HK guarded SELECTs.
+    expect(statements.map(statement => statement.kind)).toEqual(["SELECT", "UPDATE", "UPDATE", "UPDATE", "SELECT", "SELECT"]);
     for (const statement of statements) {
       expect(statement.text).toContain("${sql.raw(PLATFORM_DB)}");
       if (statement.text.includes(".companies")) {

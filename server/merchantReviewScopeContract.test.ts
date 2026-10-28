@@ -103,7 +103,7 @@ describe("商户写接口：全部必须先做归属校验", () => {
     // 若先改状态再校验，越权操作已经生效，校验失去意义
     const body = procedureBody("review");
     const assertIdx = body.indexOf("assertMerchantInSalesScope");
-    const updateIdx = body.indexOf("db.updateMerchantStatus");
+    const updateIdx = body.indexOf("db.reviewMerchantStatus");
     expect(assertIdx).toBeGreaterThan(-1);
     expect(updateIdx).toBeGreaterThan(-1);
     expect(assertIdx).toBeLessThan(updateIdx);
