@@ -1,0 +1,18 @@
+{
+  "before": {
+    "backend": "e5719e5cacdabad4f5bf945d84a40d1ae768590b0bfdf9a0a354f765bfb3172f",
+    "frontend": "8bbfe0e38a230e0b2d70a04c70c5683ca7fe7b4bc91a4ce9e9e18c97059c0357",
+    "html": "60161797a246a0b5b84d1eeb1ea16bd526709816aef5a70ccd8a8522b9c5304b"
+  },
+  "after": {
+    "backend": "236ea7579bae39126dcb3ab27dcad8a90348e13fc59a5cf2083985a40ba5e369",
+    "frontend": "148b184dd7bdde0f6ef08184a40df03d9363a5333f952c4aaf5d40a9d28d9de0",
+    "html": "9381eca8adefa5d320efb15ca370fe73762a2c26856ef1c4fb67cab25bbd53aa"
+  },
+  "outputs": {
+    "backend": "index.backend.js",
+    "frontend": "Merchants-review-readable-148b184dd7bdde0f.js",
+    "html": "index.html"
+  },
+  "frontendUrl": "/assets/Merchants-review-readable-148b184dd7bdde0f.js"
+}
