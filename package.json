@@ -13,7 +13,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "pnpm test:unit",
     "cleanup:test-merchants": "node scripts/cleanup-test-merchants.cjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "db:sales-staff-lifecycle": "node scripts/apply-sales-staff-lifecycle-schema.mjs",
@@ -22,7 +22,10 @@
     "db:merchant-license-access": "node scripts/apply-merchant-license-access-schema.mjs",
     "db:merchant-internal-contact": "node scripts/apply-merchant-internal-contact-schema.mjs",
     "db:merchant-created-at-filter": "node scripts/apply-merchant-created-at-filter-schema.mjs",
-    "db:backfill-enterprise-agreement": "node scripts/backfill-enterprise-agreement-status.mjs"
+    "db:backfill-enterprise-agreement": "node scripts/backfill-enterprise-agreement-status.mjs",
+    "test:unit": "node scripts/testing/run-unit-tests.mjs",
+    "test:integration": "node scripts/testing/run-integration-tests.mjs",
+    "lint": "prettier --check .github/workflows/quality.yml docs/engineering-quality.md package.json pnpm-workspace.yaml vitest.config.ts vitest.unit.config.ts vitest.integration.config.ts scripts/testing && node --check scripts/testing/*.mjs && tsx scripts/testing/check-governance-syntax.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
