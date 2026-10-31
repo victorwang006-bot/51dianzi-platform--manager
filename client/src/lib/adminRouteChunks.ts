@@ -17,6 +17,7 @@ const pageLoaders = {
   exceptionLogs: () => import("@/pages/ExceptionLogs"),
   reviews: () => import("@/pages/Reviews"),
   analytics: () => import("@/pages/Analytics"),
+  businessWorkbench: () => import("@/business/BusinessWorkbenchPage"),
   forbidden: () => import("@/pages/Forbidden"),
   notFound: () => import("@/pages/NotFound"),
 } as const;
@@ -33,6 +34,7 @@ export const LazyProfile = lazy(pageLoaders.profile);
 export const LazyExceptionLogs = lazy(pageLoaders.exceptionLogs);
 export const LazyReviews = lazy(pageLoaders.reviews);
 export const LazyAnalytics = lazy(pageLoaders.analytics);
+export const LazyBusinessWorkbench = lazy(pageLoaders.businessWorkbench);
 export const LazyForbidden = lazy(pageLoaders.forbidden);
 export const LazyNotFound = lazy(pageLoaders.notFound);
 
@@ -46,7 +48,8 @@ export type AdminNavigationChunk =
   | "profile"
   | "exceptionLogs"
   | "reviews"
-  | "analytics";
+  | "analytics"
+  | "businessWorkbench";
 
 /**
  * Navigation intent may warm a small number of next screens after authentication.

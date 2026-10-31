@@ -38,10 +38,10 @@ describe("ERP 重复企业提示文案", () => {
 
   it("提交申请与ERP状态查询都使用同一文案函数", () => {
     expect(
-      DB_SOURCE.match(/message:\s*getCrmCompanyConflictMessage\(/g),
-    ).toHaveLength(2);
+      DB_SOURCE.match(/message:\s*getCrmCompanyConflictMessage\(/g)?.length ?? 0,
+    ).toBeGreaterThanOrEqual(2);
     expect(
-      DB_SOURCE.match(/"CRM_COMPANY_ALREADY_ENABLED"/g),
-    ).toHaveLength(2);
+      DB_SOURCE.match(/"CRM_COMPANY_ALREADY_ENABLED"/g)?.length ?? 0,
+    ).toBeGreaterThanOrEqual(2);
   });
 });

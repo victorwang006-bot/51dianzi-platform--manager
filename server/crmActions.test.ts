@@ -2,6 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import * as db from "./db";
+import {
+  assertCrmApplicationFixtureEnvironment,
+  cleanupApprovedCnCrmEnablement,
+  prepareApprovedCnCrmEnablement,
+  strictCrmApplicationFixture,
+} from "./crmApplicationTestFixture";
 import { eq, like } from "drizzle-orm";
 import { merchants, messages, messageThreads } from "../drizzle/schema";
 
@@ -39,11 +45,12 @@ function adminCtx(): TrpcContext {
   };
 }
 
-const TEST_CREDIT_CODE = "91TEST33R000000001";
+const TEST_CREDIT_CODE = "91310100A1B2C3D401";
 const TEST_COMPANY = "【测试】R33CRM操作电子有限公司";
-const TEST_PORTAL_USER_ID = "crm-actions-test-user";
+const TEST_PORTAL_USER_ID = "7101";
 
 async function cleanup() {
+  assertCrmApplicationFixtureEnvironment();
   const conn = await db.getDb();
   if (!conn) return;
   const rows = await conn.select().from(merchants)
@@ -65,21 +72,29 @@ async function cleanup() {
     await conn.delete(messageThreads).where(eq(messageThreads.id, t.id));
   }
   await conn.delete(merchants).where(eq(merchants.businessLicense, TEST_CREDIT_CODE));
+  await cleanupApprovedCnCrmEnablement({
+    creditCode: TEST_CREDIT_CODE,
+    enterpriseId: Number(TEST_PORTAL_USER_ID),
+    portalUserId: TEST_PORTAL_USER_ID,
+  });
 }
 
 describe("商户 ERP 操作重构（第三十三轮）", () => {
-  beforeAll(async () => { await cleanup(); });
+  beforeAll(async () => {
+    assertCrmApplicationFixtureEnvironment();
+    await cleanup();
+  });
   afterAll(async () => { await cleanup(); });
 
   it("提交 ERP 申请 → getCrmAccess 返回 pending 审核中提示", async () => {
     const portal = appRouter.createCaller(portalCtx()).portal;
-    const submitted = await portal.submitCrmApplication({
+    const submitted = await portal.submitCrmApplication(strictCrmApplicationFixture({
       companyName: TEST_COMPANY,
       creditCode: TEST_CREDIT_CODE,
       portalUserId: TEST_PORTAL_USER_ID,
       contactName: "测试联系人",
       contactPhone: "13800001111",
-    });
+    }));
     expect(submitted.crmStatus).toBe("pending");
 
     const access = await portal.getCrmAccess({
@@ -148,6 +163,11 @@ describe("商户 ERP 操作重构（第三十三轮）", () => {
     const conn = await db.getDb();
     const m = (await conn!.select().from(merchants)
       .where(eq(merchants.businessLicense, TEST_CREDIT_CODE)))[0];
+    await prepareApprovedCnCrmEnablement({
+      merchantId: m.id,
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
 
     await admin.merchant.setCrmStatus({
       id: m.id,

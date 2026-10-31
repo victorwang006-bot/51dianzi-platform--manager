@@ -34,6 +34,53 @@ describe("后台首屏分片契约", () => {
     }
     expect(appSource).toContain("Suspense");
     expect(appSource).toMatch(/<LazyLogin\s*\/>/);
+    expect(chunksSource).toContain('import("@/business/BusinessWorkbenchPage")');
+    expect(appSource).toContain("LazyBusinessWorkbench");
+  });
+
+  it("统一注册工作台业务路径，且不从浏览器侧推断商户身份", () => {
+    const workbenchRoutes = [
+      ["/workbench", "BusinessWorkbenchRoute"],
+      ["/workbench/inventory", "BusinessInventoryRoute"],
+      ["/workbench/publish/:id/edit", "BusinessInventoryRoute"],
+      ["/workbench/publish", "BusinessInventoryRoute"],
+      ["/workbench/inbound", "BusinessInventoryRoute"],
+      ["/workbench/channel-inventory", "BusinessInventoryRoute"],
+      ["/workbench/customers/:id", "BusinessCustomersRoute"],
+      ["/workbench/customers", "BusinessCustomersRoute"],
+      ["/workbench/customer-demands", "BusinessCustomersRoute"],
+      ["/workbench/orders", "BusinessOrdersRoute"],
+      ["/workbench/outbound", "BusinessOrdersRoute"],
+      ["/workbench/chat", "BusinessCustomersRoute"],
+      ["/workbench/procurement-demands", "BusinessProcurementRoute"],
+      ["/workbench/procurement-orders/quote", "BusinessProcurementRoute"],
+      ["/workbench/procurement-orders/accepted", "BusinessProcurementRoute"],
+      ["/workbench/procurement-orders/create", "BusinessProcurementRoute"],
+      ["/workbench/procurement-orders", "BusinessProcurementRoute"],
+      ["/workbench/add-user", "BusinessUsersRoute"],
+      ["/workbench/user-records", "BusinessUsersRoute"],
+      ["/workbench/company-info", "BusinessUsersRoute"],
+    ] as const;
+
+    for (const [path, component] of workbenchRoutes) {
+      expect(appSource).toContain(
+        `<Route path={"${path}"} component={${component}} />`
+      );
+    }
+    expect(appSource).toContain('routeBase="/workbench"');
+    expect(appSource).toContain("merchantId is intentionally not inferred");
+    // B01: independent BFF scope/binding, not auth.me native permission keys,
+    // decides every workbench route. An approved merchant_mgr has no business.*
+    // native key, while a native super_admin with no scope still fails in BFF.
+    expect(appSource).toContain("function BusinessWorkbenchRoute()");
+    expect(appSource).toContain("selected merchant's scope/binding/context");
+    expect(appSource).not.toContain('permission="business.inventory.read"');
+    expect(appSource).not.toContain('permission="business.customers.read"');
+    expect(appSource).not.toContain('permission="business.orders.read"');
+    expect(appSource).not.toContain('permission="business.procurement.read"');
+    expect(appSource).not.toContain('permission="business.users.read"');
+    expect(appSource).toContain('<PermissionGate permission="materials.read">');
+    expect(appSource).toContain('<PermissionGate permission="admins.manage">');
   });
 
   it("未认证门卫不挂载或预取后台页面，权限判断仍在懒加载页面之前", () => {
@@ -52,14 +99,15 @@ describe("后台首屏分片契约", () => {
     expect(chunksSource).toContain(
       "prefetchedNavigationChunks.size >= MAX_ADMIN_ROUTE_PREFETCHES"
     );
+    // Native operation/system entries retain their old authorization source;
+    // workbench navigation deliberately stays on the separate BFF projection.
+    expect(dashboardSource).toContain("hasAdminPermission(adminRole, item.permission, adminPermissions)");
+    expect(dashboardSource).toContain("hasBusinessWorkbenchCapability(workbenchCapabilities, item.workbenchCapability)");
     expect(dashboardSource).toMatch(
-      /group\.items\s*\.filter\(item\s*=>\s*hasAdminPermission/
+      /onPointerEnter=\{\(\)\s*=>\s*\{\s*if\s*\(item\.chunk\)\s*preloadAdminRoute\(item\.chunk\)/
     );
     expect(dashboardSource).toMatch(
-      /onPointerEnter=\{\(\)\s*=>\s*preloadAdminRoute\(item\.chunk\)\s*\}/
-    );
-    expect(dashboardSource).toMatch(
-      /onFocus=\{\(\)\s*=>\s*preloadAdminRoute\(item\.chunk\)\}/
+      /onFocus=\{\(\)\s*=>\s*\{\s*if\s*\(item\.chunk\)\s*preloadAdminRoute\(item\.chunk\)/
     );
     expect(dashboardSource).not.toContain("requestIdleCallback");
   });

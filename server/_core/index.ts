@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic } from "./vite";
 import { getUploadRoot } from "../localUpload";
 import { startExceptionLogCleanup } from "../exceptionLogCleanup";
+import { registerBusinessTrpcGateway } from "../businessGateway";
 
 const PRIVATE_NO_STORE_CACHE_CONTROL = "private, no-store, max-age=0";
 
@@ -52,6 +53,7 @@ async function startServer() {
     setPrivateNoStoreHeaders(res);
     next();
   });
+  registerBusinessTrpcGateway(app);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   startExceptionLogCleanup();

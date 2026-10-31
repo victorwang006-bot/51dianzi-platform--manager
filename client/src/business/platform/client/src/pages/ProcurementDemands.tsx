@@ -1,0 +1,502 @@
+import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
+import { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  CUSTOMER_DEMAND_UNITS,
+} from "../../../shared/customerDemands";
+import { formatBeijingDateTime } from "../../../shared/beijingTime";
+import PlatformLayout from "../../../../BusinessContentFrame";
+import { DemandQuoteDialog } from "../components/customerDemands/DemandQuoteDialog";
+import { DemandQuoteList } from "../components/customerDemands/DemandQuoteList";
+import { ProcurementWorkspaceNav } from "../components/customerDemands/ProcurementWorkspaceNav";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { trpc } from "../../../../api/business-trpc";
+
+type QuoteView = "all" | "unquoted" | "quoted";
+
+const PAGE_SIZE = 20;
+const toolbarClass =
+  "h-8 border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
+
+function quoteProgress(demand: { mySupplierCount?: number; myQuoteRoundCount?: number; myQuoteNeedsReconfirmation?: boolean }) {
+  if ((demand.mySupplierCount ?? 0) > 0) return `${demand.mySupplierCount}家 · 累计${demand.myQuoteRoundCount ?? 0}轮`;
+  return demand.myQuoteNeedsReconfirmation ? "待更新" : "待报价";
+}
+function formatQty(value: number | null | undefined, unit: string | undefined) {
+  return value == null ? "待确认" : `${value.toLocaleString("zh-CN")}${unit || "片"}`;
+}
+function priorityLabel(priority: "normal" | "urgent") {
+  return priority === "urgent" ? "紧急" : "普通";
+}
+
+function ProcurementDemandDetailDialog({
+  id,
+  onClose,
+  onQuote,
+}: {
+  id: number;
+  onClose: () => void;
+  onQuote: (quoteId?: number) => void;
+}) {
+  const detailQuery = trpc.customerDemand.procurementGet.useQuery({ id });
+  const detail = detailQuery.data;
+  return (
+    <Dialog
+      open
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="flex min-w-0 max-h-[90dvh] w-[calc(100vw-32px)] max-w-[1100px] sm:max-w-[1100px] flex-col gap-0 overflow-hidden p-0"
+        onEscapeKeyDown={event => {
+          event.preventDefault();
+          onClose();
+        }}
+        onInteractOutside={event => {
+          event.preventDefault();
+          onClose();
+        }}
+      >
+        <div className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+          <div className="min-w-0">
+            <DialogTitle className="text-base font-semibold text-slate-800">
+              采购需求详情
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-xs text-slate-500">
+              内部需求，仅供授权采购独立报价
+            </DialogDescription>
+          </div>
+          <button
+            type="button"
+            aria-label="关闭采购需求详情"
+            onClick={onClose}
+            className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3">
+          {detailQuery.isLoading && (
+            <div className="flex items-center gap-2 py-8 text-xs text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              正在加载需求…
+            </div>
+          )}
+          {detailQuery.error && (
+            <p
+              role="alert"
+              className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+            >
+              {detailQuery.error.message || "需求加载失败"}
+            </p>
+          )}
+          {detail && (
+            <>
+              <div className="grid gap-2 border-b border-slate-100 pb-3 sm:grid-cols-4">
+                <div>
+                  <p className="text-[11px] text-slate-500">需求编号</p>
+                  <p className="mt-1 text-xs font-medium text-slate-800">
+                    {detail.demandNo}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-500">项目</p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    {detail.projectName || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-500">销售</p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    {detail.salesName || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-500">优先级</p>
+                  <p
+                    className={`mt-1 text-xs ${detail.priority === "urgent" ? "font-medium text-red-600" : "text-slate-700"}`}
+                  >
+                    {priorityLabel(detail.priority)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-500">要求回复时间</p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    {formatBeijingDateTime(detail.replyDueAt) || "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3">
+                <h3 className="mb-2 text-sm font-semibold text-slate-800">
+                  物料明细
+                </h3>
+                <div className="overflow-x-auto rounded border border-slate-200">
+                  <table className="min-w-[760px] w-full text-xs">
+                    <thead>
+                      <tr className="h-8 bg-slate-50 text-left text-[11px] text-slate-500">
+                        <th className="px-2">型号</th>
+                        <th className="px-2">品牌</th>
+                        <th className="px-2">封装</th>
+                        <th className="px-2">数量</th>
+                        <th className="px-2">单位</th>
+                        <th className="px-2">要求交期</th>
+                        <th className="px-2">备注</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detail.items.map(item => (
+                        <tr
+                          key={item.id}
+                          className="border-t border-slate-100 text-slate-700"
+                        >
+                          <td className="px-2 py-2 font-medium">
+                            {item.partNumber || "—"}
+                          </td>
+                          <td className="px-2 py-2">{item.brand || "—"}</td>
+                          <td className="px-2 py-2">{item.pkg || "—"}</td>
+                          <td className="px-2 py-2 tabular-nums">
+                            {item.qty ?? "—"}
+                          </td>
+                          <td className="px-2 py-2">
+                            {item.qtyUnit &&
+                            CUSTOMER_DEMAND_UNITS.includes(
+                              item.qtyUnit as never
+                            )
+                              ? item.qtyUnit
+                              : "—"}
+                          </td>
+                          <td className="px-2 py-2">
+                            {item.deliveryRequirement || "—"}
+                          </td>
+                          <td className="px-2 py-2">{item.note || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="mt-3">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  需求说明
+                </h3>
+                <p className="mt-1 whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700">
+                  {detail.note || "—"}
+                </p>
+              </div>
+              <DemandQuoteList demandId={id} audience="procurement" onCreate={() => onQuote()} onEdit={onQuote} />
+            </>
+          )}
+        </div>
+      <div className="flex min-w-0 shrink-0 justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onClose}
+            className="h-8 bg-white text-xs"
+          >
+            关闭
+          </Button>
+          {detail &&
+            (detail.status === "submitted" ||
+              detail.status === "processing") && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onQuote()}
+                className="h-8 bg-[#185FA5] text-xs hover:bg-[#0C447C]"
+              >
+                新增供应商报价
+              </Button>
+            )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function ProcurementDemands() {
+  const d51Ready = usePageMemory();
+
+  const [view, setView] = useRememberedState<QuoteView>("view", "all");
+  const [keywordInput, setKeywordInput] = useRememberedState("keywordInput", "");
+  const [keyword, setKeyword] = useRememberedState("keyword", "");
+  const [page, setPage] = useRememberedState("page", 1);
+  const [openedId, setOpenedId] = useState<number | null>(null);
+  const [quoteTarget, setQuoteTarget] = useState<{ demandId: number; quoteId?: number } | null>(null);
+  const listQuery = useRestoringListQuery(trpc.customerDemand.procurementList.useQuery({
+    view,
+    keyword,
+    page,
+    pageSize: PAGE_SIZE,
+  }, freshListOptions({}, d51Ready)));
+  const result = listQuery.data;
+  const items = result?.items ?? [];
+  const currentPage = result?.page ?? page;
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
+
+  useEffect(() => {
+    if (result?.page && result.page !== page) setPage(result.page);
+  }, [result?.page, page]);
+  const chooseView = (next: QuoteView) => {
+    setView(next);
+    setPage(1);
+  };
+  const search = () => {
+    setKeyword(keywordInput.trim());
+    setPage(1);
+  };
+  const manualRefresh = async () => {
+    try {
+      await listQuery.refetch?.();
+    } catch {
+      toast.error("刷新失败，请稍后重试");
+    }
+  };
+  const quoteable = (demand: (typeof items)[number]) =>
+    demand.status === "submitted" || demand.status === "processing";
+
+  return (
+    <PlatformLayout>
+    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="text-lg font-semibold text-slate-800">采购工作台</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          按供应商独立报价，修改自动保留历史轮次
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => void manualRefresh()}
+          disabled={Boolean(listQuery.isFetching)}
+          className="h-8 border-[#185FA5]/40 bg-white text-xs text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+        >
+          <RefreshCw
+            className={`mr-1.5 h-3.5 w-3.5 ${listQuery.isFetching ? "animate-spin" : ""}`}
+          />
+        手动刷新
+      </Button>
+    </div>
+    <ProcurementWorkspaceNav active="internal" />
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-2">
+        <div
+          role="tablist"
+          aria-label="采购报价视图"
+          className="flex rounded-md border border-slate-200 p-0.5"
+        >
+          {(
+            [
+              ["all", "全部需求"],
+              ["unquoted", "我未报价"],
+              ["quoted", "我已报价"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === key}
+              key={key}
+              onClick={() => chooseView(key)}
+              className={`h-7 rounded px-2.5 text-xs ${view === key ? "bg-[#185FA5] text-white" : "text-slate-600 hover:bg-slate-50"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex min-w-[240px] flex-1 gap-2 sm:max-w-[400px]">
+          <Input
+            aria-label="搜索需求编号或型号"
+            value={keywordInput}
+            onChange={event => setKeywordInput(event.target.value)}
+            onKeyDown={event => {
+              if (event.key === "Enter") search();
+            }}
+            placeholder="搜索需求编号或型号"
+            className="h-8 min-w-0 flex-1 bg-white text-xs"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={search}
+            className={`${toolbarClass} min-w-[60px]`}
+          >
+            <Search className="mr-1 h-3.5 w-3.5" />
+            搜索
+          </Button>
+        </div>
+      </div>
+      <Card className="gap-0 overflow-hidden p-0">
+        {listQuery.isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            正在加载采购需求…
+          </div>
+        ) : listQuery.error ? (
+          <div role="alert" className="p-4 text-xs text-red-600">
+            {listQuery.error.message || "采购需求加载失败"}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-sm font-medium text-slate-700">暂无需求</p>
+            <p className="mt-1 text-xs text-slate-500">
+              当前筛选条件下没有可报价的内部需求
+            </p>
+          </div>
+        ) : (
+          <Table className="min-w-[980px] table-fixed">
+            <colgroup>
+              <col className="w-[16%]" />
+              <col className="w-[19%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+            </colgroup>
+            <TableHeader>
+              <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">需求编号</TableHead>
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">型号</TableHead>
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">品牌</TableHead>
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">数量</TableHead>
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">交期</TableHead>
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">销售</TableHead>
+                <TableHead className="h-8 px-2 text-[11px] text-slate-500">报价进度</TableHead>
+                <TableHead className="h-8 px-2 text-right text-[11px] text-slate-500">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map(demand => (
+                <TableRow
+                  key={demand.id}
+                  className="h-14" data-page-memory-row={String(demand.id)}
+                >
+                  <TableCell className="px-2 py-1.5 text-[12px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-slate-800">{demand.demandNo}</span>
+                      {demand.priority === "urgent" ? <span className="text-[10px] font-medium text-red-600">紧急</span> : null}
+                    </div>
+                    <div className="mt-0.5 truncate text-[11px] text-slate-500" title={demand.projectName || undefined}>{demand.projectName || "—"}</div>
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5 text-[12px]">
+                    <div className="truncate font-semibold text-slate-800" title={demand.firstPartNumber || undefined}>{demand.firstPartNumber || "—"}</div>
+                    {demand.itemCount > 1 ? <div className="mt-0.5 text-[11px] text-slate-500">共{demand.itemCount}项</div> : null}
+                  </TableCell>
+                  <TableCell className="truncate px-2 py-1.5 text-[12px] text-slate-600" title={demand.firstBrand || undefined}>{demand.firstBrand || "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap px-2 py-1.5 text-[12px] font-medium tabular-nums text-slate-800">{formatQty(demand.firstQty, demand.firstQtyUnit)}</TableCell>
+                  <TableCell className="truncate px-2 py-1.5 text-[12px] text-slate-600" title={demand.firstDeliveryRequirement || undefined}>{demand.firstDeliveryRequirement || "待确认"}</TableCell>
+                  <TableCell className="truncate px-2 py-1.5 text-[12px] text-slate-600">{demand.salesName || "—"}</TableCell>
+                  <TableCell className="px-2 py-1.5">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-slate-700">
+                      <span aria-hidden="true" className={`text-[10px] ${(demand.mySupplierCount ?? 0) > 0 ? "text-emerald-500" : "text-amber-500"}`}>●</span>
+                      <span className="font-medium">{quoteProgress(demand)}</span>
+                    </div>
+                    {(demand.currentQuoteCount ?? 0) > 0 ? <div className="mt-0.5 text-[11px] text-slate-500">全部共{demand.currentQuoteCount}份</div> : null}
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5 text-right">
+                    <div className="inline-flex items-center divide-x divide-slate-200">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setOpenedId(demand.id)}
+                        className="h-7 rounded-none px-2 text-[11px] text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      >
+                        查看
+                      </Button>
+                      {quoteable(demand) && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setQuoteTarget({ demandId: demand.id })}
+                          className="h-7 rounded-none px-2 text-[11px] text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                        >
+                          {(demand.myActiveQuoteCount ?? 0) > 0 ? "新增报价" : demand.myQuoteNeedsReconfirmation ? "更新报价" : "报价"}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        {!listQuery.isLoading && !listQuery.error && (result?.total ?? 0) > 0 ? (
+        <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
+          <span>共 {result?.total} 条 · 第 {currentPage}/{totalPages} 页</span>
+          <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 bg-white px-2.5 text-[11px]"
+            disabled={currentPage <= 1 || Boolean(listQuery.isFetching)}
+            onClick={() => setPage(currentPage - 1)}
+            aria-label="上一页"
+          >
+            <ChevronLeft className="mr-1 h-3.5 w-3.5" />上一页
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 bg-white px-2.5 text-[11px]"
+            disabled={
+              currentPage >= totalPages || Boolean(listQuery.isFetching)
+            }
+            onClick={() => setPage(currentPage + 1)}
+            aria-label="下一页"
+          >
+            下一页<ChevronRight className="ml-1 h-3.5 w-3.5" />
+          </Button>
+          </div>
+        </div>
+        ) : null}
+      </Card>
+      {openedId !== null && (
+        <ProcurementDemandDetailDialog
+          id={openedId}
+          onClose={() => setOpenedId(null)}
+          onQuote={quoteId => {
+            setOpenedId(null);
+            setQuoteTarget({ demandId: openedId, ...(quoteId == null ? {} : { quoteId }) });
+          }}
+        />
+      )}
+      {quoteTarget !== null && (
+        <DemandQuoteDialog
+          demandId={quoteTarget.demandId}
+          quoteId={quoteTarget.quoteId}
+          onClose={() => setQuoteTarget(null)}
+          onSaved={() => {
+            void listQuery.refetch?.();
+          }}
+        />
+      )}
+    </PlatformLayout>
+  );
+}

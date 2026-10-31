@@ -1,0 +1,513 @@
+/* New Host-only layout. Existing ci-* component styles remain the visual source of truth. */
+.ci-host {
+  color: #334e68;
+}
+
+.ci-host-state {
+  border: 1px solid #e1eaf2;
+  border-radius: 8px;
+  background: #fff;
+  padding: 28px;
+  color: #667788;
+  font-size: 14px;
+  text-align: center;
+}
+
+.ci-host-error {
+  color: #a54a4a;
+}
+
+.ci-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ci-title-line h1 {
+  margin: 0;
+  color: #233548;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.ci-title-line p {
+  max-width: 680px;
+  margin: 4px 0 0;
+  color: #74869a;
+  font-size: 12px;
+  line-height: 19px;
+}
+
+.ci-heading-actions,
+.ci-row-actions,
+.ci-pagination,
+.ci-host-dialog footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ci-button {
+  min-height: 32px;
+  border: 1px solid #c9d7e4;
+  border-radius: 5px;
+  padding: 0 11px;
+  color: #476581;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+.ci-button:hover:not(:disabled) {
+  border-color: #88a9c8;
+  background: #f5f9fd;
+  color: #185fa5;
+}
+
+.ci-button:focus-visible,
+.ci-inline-link:focus-visible,
+.ci-host input:focus-visible,
+.ci-host select:focus-visible,
+.ci-host textarea:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+
+.ci-button:disabled,
+.ci-inline-link:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.ci-primary {
+  border-color: #185fa5;
+  color: #fff;
+  background: #185fa5;
+}
+
+.ci-primary:hover:not(:disabled) {
+  border-color: #0c4d85;
+  color: #fff;
+  background: #0c4d85;
+}
+
+.ci-tabs {
+  display: flex;
+  height: 40px;
+  gap: 22px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #dce5ee;
+}
+
+.ci-tabs button {
+  position: relative;
+  border: 0;
+  padding: 0 2px;
+  color: #6f8193;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ci-tabs button[aria-selected="true"] {
+  color: #185fa5;
+  font-weight: 600;
+}
+
+.ci-tabs button[aria-selected="true"]::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: #185fa5;
+}
+
+.ci-panel {
+  border: 1px solid #dfe8f1;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.ci-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e8eef4;
+  background: #fbfdff;
+}
+
+.ci-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  color: #60758a;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ci-field input,
+.ci-field select,
+.ci-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #c9d7e4;
+  border-radius: 5px;
+  padding: 6px 8px;
+  color: #334e68;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ci-field textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.ci-field small {
+  color: #8797aa;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.ci-filter-count {
+  margin-left: auto;
+  padding-bottom: 7px;
+  color: #8192a4;
+  font-size: 11px;
+}
+
+.ci-table {
+  border-collapse: collapse;
+  color: #425d78;
+  font-size: 12px;
+}
+
+.ci-table th {
+  color: #74869a;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.ci-table td {
+  border-top: 1px solid #edf1f5;
+}
+
+.ci-page.ci-host .ci-table th {
+  height: 36px;
+  padding: 8px 10px;
+  line-height: 18px;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+.ci-page.ci-host .ci-table td {
+  height: auto;
+  padding: 10px;
+  line-height: 18px;
+  vertical-align: middle;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ci-table tbody tr:hover td {
+  background: #fbfdff;
+}
+
+.ci-subtext {
+  display: block;
+  margin-top: 2px;
+  color: #8595a7;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ci-empty {
+  padding: 36px 12px !important;
+  color: #8192a4;
+  text-align: center;
+}
+
+.ci-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  border: 1px solid;
+  border-radius: 10px;
+  padding: 0 7px;
+  font-size: 11px;
+}
+
+.ci-status-active {
+  border-color: #c5e5d3;
+  color: #437e5d;
+  background: #f2fbf5;
+}
+
+.ci-status-inactive {
+  border-color: #e3e6eb;
+  color: #78899b;
+  background: #f8fafc;
+}
+
+.ci-inline-link {
+  border: 0;
+  padding: 0;
+  color: #185fa5;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.ci-inline-link:hover:not(:disabled) {
+  color: #0c4d85;
+  text-decoration: underline;
+}
+
+.ci-danger-link {
+  color: #ad5d5d;
+}
+
+.ci-readonly {
+  color: #8797aa;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ci-pagination {
+  justify-content: flex-end;
+  min-height: 52px;
+  padding: 9px 12px;
+  border-top: 1px solid #e8eef4;
+  color: #7d8fa1;
+  font-size: 11px;
+}
+
+.ci-pagination span {
+  margin-right: auto;
+}
+
+.ci-error {
+  margin: 0 0 12px;
+  border: 1px solid #f0caca;
+  border-radius: 5px;
+  padding: 8px 10px;
+  color: #a54949;
+  background: #fff7f7;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ci-modal-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  overflow-y: auto;
+  place-items: start center;
+  padding: 28px 14px;
+  background: rgba(30, 53, 77, .34);
+}
+
+.ci-host-dialog {
+  width: min(620px, 100%);
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 52px rgba(35, 53, 72, .22);
+}
+
+.ci-host-material-dialog {
+  width: min(720px, 100%);
+}
+
+.ci-host-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #e7edf3;
+}
+
+.ci-host-dialog h2 {
+  margin: 0;
+  color: #233548;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ci-host-dialog header p {
+  margin: 5px 0 0;
+  color: #74869a;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.ci-icon-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  color: #789;
+  background: transparent;
+  font-size: 22px;
+  line-height: 26px;
+  cursor: pointer;
+}
+
+.ci-icon-close:hover:not(:disabled) {
+  color: #314b64;
+  background: #f4f7fa;
+}
+
+.ci-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.ci-form-wide {
+  grid-column: 1 / -1;
+}
+
+.ci-host-dialog footer {
+  justify-content: flex-end;
+  padding: 13px 20px;
+  border-top: 1px solid #e7edf3;
+  background: #fbfdff;
+}
+
+/* The Host renders semantic native table elements, so the compact archive rules
+ * intentionally target th/td and column classes rather than the old Table bridge
+ * data-slot attributes. */
+.ci-page.ci-host .ci-compact-tablewrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table {
+  width: 100%;
+  min-width: 920px !important;
+  table-layout: fixed;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-col-index { width: 3.5%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-part-col { width: 18%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-type-col { width: 7%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-qty-col { width: 12%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-price-col { width: 12%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-lead-col { width: 7.5%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-date-col { width: 13%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-notes-col { width: 27%; }
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table th,
+.ci-page.ci-host .ci-table.ci-compact-stock-table td {
+  height: auto;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 18px;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table td {
+  overflow-wrap: anywhere;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-cell-title {
+  display: block;
+  padding: 0;
+  font-size: 13px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-subtext {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-date {
+  font-size: 11px;
+  line-height: 18px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-channel-type-tag {
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes { min-width: 0; max-width: 100%; }
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-open { display: flex; align-items: center; gap: 6px; width: 100%; max-width: 100%; min-width: 0; padding: 4px 0; border: 0; border-radius: 3px; background: transparent; text-align: left; color: #1e6093; font: inherit; line-height: 18px; cursor: pointer; }
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-open:hover { color: #164e7a; }
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-open:focus-visible { outline: 2px solid #3569a1; outline-offset: 2px; }
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-open:disabled { opacity: .55; cursor: not-allowed; }
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-summary { min-width: 0; flex: 1 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-time,
+.ci-page.ci-host .ci-compact-stock-table .ci-compact-notes-history { flex: 0 0 auto; color: #8793a1; font-size: 11px; line-height: 18px; white-space: nowrap; }
+
+@media (max-width: 1023px) {
+  .ci-page.ci-host .ci-channel-table { min-width: 700px !important; table-layout: fixed; }
+  .ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 920px !important; }
+  .ci-page.ci-host .ci-table th.ci-col-actions,
+  .ci-page.ci-host .ci-table td.ci-col-actions {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: -5px 0 8px -7px #64748b;
+  }
+  .ci-page.ci-host .ci-table th.ci-col-actions { z-index: 3; background: #f8fafc; }
+  .ci-page.ci-host .ci-table tbody tr:hover td.ci-col-actions { background: #f8fafc; }
+}
+
+@media (max-width: 680px) {
+  .ci-modal-backdrop {
+    padding: 10px;
+  }
+
+  .ci-host-dialog > header,
+  .ci-form-grid,
+  .ci-host-dialog footer {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .ci-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ci-form-wide {
+    grid-column: auto;
+  }
+
+  .ci-pagination {
+    flex-wrap: wrap;
+  }
+
+  .ci-pagination span {
+    width: 100%;
+  }
+}

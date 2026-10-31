@@ -2,6 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import * as db from "./db";
+import {
+  assertCrmApplicationFixtureEnvironment,
+  cleanupApprovedCnCrmEnablement,
+  prepareApprovedCnCrmEnablement,
+  strictCrmApplicationFixture,
+} from "./crmApplicationTestFixture";
 import { eq, like } from "drizzle-orm";
 import { merchants, messages, messageThreads } from "../drizzle/schema";
 
@@ -40,9 +46,15 @@ function adminCtx(): TrpcContext {
 }
 
 const TEST_PREFIX = "【测试】R31";
-const TEST_CREDIT_CODE = "91TEST31R000000001";
+const TEST_CREDIT_CODE = "91310100A1B2C3D402";
+const TEST_PORTAL_USER_ID = "7102";
+
+beforeAll(() => {
+  assertCrmApplicationFixtureEnvironment();
+});
 
 async function cleanup() {
+  assertCrmApplicationFixtureEnvironment();
   const conn = await db.getDb();
   if (!conn) return;
   const rows = await conn.select().from(messageThreads)
@@ -52,6 +64,11 @@ async function cleanup() {
     await conn.delete(messageThreads).where(eq(messageThreads.id, t.id));
   }
   await conn.delete(merchants).where(eq(merchants.businessLicense, TEST_CREDIT_CODE));
+  await cleanupApprovedCnCrmEnablement({
+    creditCode: TEST_CREDIT_CODE,
+    enterpriseId: Number(TEST_PORTAL_USER_ID),
+    portalUserId: TEST_PORTAL_USER_ID,
+  });
 }
 
 describe("会话类型与公司资料展示（第三十一轮）", () => {
@@ -127,7 +144,7 @@ describe("会话类型与公司资料展示（第三十一轮）", () => {
     expect(detail!.thread.companyProfile ?? null).toBeNull();
   });
 
-  it("未指定 threadType 时默认 general（兼容存量前台调用）", async () => {
+  it("未指定 threadType 时按当前请求语义默认 service（兼容存量前台调用）", async () => {
     const portal = appRouter.createCaller(portalCtx()).portal;
     const admin = appRouter.createCaller(adminCtx());
 
@@ -138,26 +155,28 @@ describe("会话类型与公司资料展示（第三十一轮）", () => {
     const list = await admin.message.threads({ page: 1, pageSize: 50, keyword: `${TEST_PREFIX}-普通留言` });
     const item = list.items.find(t => t.threadNo === submitted.threadNo);
     expect(item).toBeTruthy();
-    expect(item!.threadType).toBe("general");
+    expect(item!.threadType).toBe("service");
   });
 });
 
 describe("企业开通 CRM 申请落商户管理（第三十一轮）", () => {
+  afterAll(async () => { await cleanup(); });
+
   it("完整链路：前台申请 → 商户管理待开通 → 管理员开通 → 重复申请不降级", async () => {
     const portal = appRouter.createCaller(portalCtx()).portal;
     const admin = appRouter.createCaller(adminCtx());
 
     // 1. 前台提交企业开通申请 → 创建商户（crmStatus=pending）
-    const applied = await portal.submitCrmApplication({
+    const applied = await portal.submitCrmApplication(strictCrmApplicationFixture({
       companyName: "测试电子有限公司",
       creditCode: TEST_CREDIT_CODE,
-      portalUserId: "crm-profile-test-user",
+      portalUserId: "7102",
       contactName: "王先生",
       contactPhone: "15817256366",
       legalPersonName: "王先生",
       registeredAddress: "深圳市南山区科技园",
       note: "希望开通 CRM 管理客户",
-    });
+    }));
     expect(applied.created).toBe(true);
     expect(applied.crmStatus).toBe("pending");
     expect(applied.merchantNo).toMatch(/^M\d+/);
@@ -167,12 +186,17 @@ describe("企业开通 CRM 申请落商户管理（第三十一轮）", () => {
     const merchant = list.data.find(m => m.businessLicense === TEST_CREDIT_CODE);
     expect(merchant).toBeTruthy();
     expect(merchant!.crmStatus).toBe("pending");
+    await prepareApprovedCnCrmEnablement({
+      merchantId: merchant!.id,
+      creditCode: TEST_CREDIT_CODE,
+      portalUserId: TEST_PORTAL_USER_ID,
+    });
 
     // 3. 管理员开通 CRM
     const enabled = await admin.merchant.setCrmStatus({
       id: merchant!.id,
       crmStatus: "enabled",
-      portalUserId: "crm-profile-test-user",
+      portalUserId: TEST_PORTAL_USER_ID,
       note: "资料齐全，同意开通",
     });
     expect(enabled.success).toBe(true);
@@ -182,12 +206,12 @@ describe("企业开通 CRM 申请落商户管理（第三十一轮）", () => {
     expect(after!.crmEnabledAt).toBeTruthy();
 
     // 4. 重复申请（幂等）：已开通状态不被降级回 pending
-    const reapplied = await portal.submitCrmApplication({
+    const reapplied = await portal.submitCrmApplication(strictCrmApplicationFixture({
       companyName: "测试电子有限公司",
       creditCode: TEST_CREDIT_CODE,
-      portalUserId: "crm-profile-test-user",
+      portalUserId: TEST_PORTAL_USER_ID,
       contactPhone: "15817256366",
-    });
+    }));
     expect(reapplied.created).toBe(false);
     expect(reapplied.crmStatus).toBe("enabled");
 

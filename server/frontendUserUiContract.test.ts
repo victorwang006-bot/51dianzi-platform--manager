@@ -16,8 +16,8 @@ describe("后台前台用户管理界面契约", () => {
     expect(messageIndex).toBeGreaterThan(-1);
     expect(userIndex).toBeGreaterThan(messageIndex);
     expect(layout).toContain('path: "/portal-users",');
-    expect(layout).toContain('permission: "portalUsers.read" as AdminPermission,');
-    expect(layout).toContain('chunk: "portalUsers" as AdminNavigationChunk,');
+    expect(layout).toContain('permission: "portalUsers.read",');
+    expect(layout).toContain('chunk: "portalUsers",');
     expect(layout).toContain('nested: false,');
   });
 

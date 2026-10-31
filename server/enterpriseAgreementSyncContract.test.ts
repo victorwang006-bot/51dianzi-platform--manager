@@ -19,6 +19,12 @@ function portalCrmRoute() {
   return routers.slice(start, end);
 }
 
+function cnCrmSubmission() {
+  const start = db.indexOf("export async function submitCrmApplication");
+  const end = db.indexOf("export type HkCrmApplicationInput", start);
+  return db.slice(start, end);
+}
+
 describe("前台企业服务协议状态同步", () => {
   it("只接受当前固定版本与内容哈希，并要求同意为显式 true", () => {
     expect(ENTERPRISE_SERVICE_AGREEMENT_VERSION).toBe("V1.0");
@@ -33,8 +39,9 @@ describe("前台企业服务协议状态同步", () => {
   });
 
   it("仅在收到明确协议凭据时把后台摘要更新为已同意", () => {
-    expect(db).toContain('input.agreementAccepted ? { agreementStatus: "signed" as const } : {}');
-    expect(db).not.toContain('agreementStatus: "signed" as const,');
+    const submission = cnCrmSubmission();
+    expect(submission).toContain('input.agreementAccepted ? { agreementStatus: "signed" as const } : {}');
+    expect(submission).not.toContain('agreementStatus: "signed" as const,');
   });
 
   it("后台界面使用带协议主语的明确签署状态", () => {

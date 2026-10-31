@@ -1,0 +1,231 @@
+/* Scoped to channel inventory; no application-wide overflow suppression. */
+.ci-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.ci-page .ci-heading {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ci-page .ci-title-line {
+  min-width: 0;
+}
+.ci-page .ci-heading-actions {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.ci-page .ci-heading-actions .ci-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.ci-page .ci-panel {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+.ci-page .ci-toolbar {
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+}
+.ci-page .ci-toolbar-summary {
+  max-width: 100%;
+}
+.ci-page .ci-toolbar-summary h2 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 22px;
+}
+.ci-page .ci-toolbar .ci-toolbar-search {
+  flex: 0 1 180px;
+  width: 180px;
+  min-width: 120px;
+  max-width: 100%;
+}
+.ci-page .ci-toolbar .ci-wide-search {
+  flex: 0 1 220px;
+  width: 220px;
+  min-width: 140px;
+  max-width: 100%;
+}
+.ci-page .ci-toolbar .ci-brand-input {
+  flex: 0 1 120px;
+  width: 120px;
+  min-width: 96px;
+  max-width: 100%;
+}
+.ci-page .ci-toolbar .ci-channel-select {
+  width: 160px;
+  min-width: 100px;
+  max-width: 100%;
+}
+.ci-page .ci-toolbar .ci-short-select {
+  width: 112px;
+  max-width: 100%;
+}
+.ci-page .ci-tablewrap {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.ci-page .ci-channel-table,
+.ci-page .ci-material-table {
+  width: 100%;
+  min-width: 0 !important;
+  table-layout: fixed;
+}
+.ci-page .ci-table [data-slot="table-head"] {
+  height: 36px;
+  padding: 8px 10px;
+  white-space: normal;
+  vertical-align: middle;
+}
+.ci-page .ci-table [data-slot="table-cell"] {
+  height: auto;
+  padding: 10px;
+  line-height: 18px;
+  vertical-align: middle;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ci-page .ci-channel-table .ci-channel-name-col {
+  width: 26%;
+}
+.ci-page .ci-channel-table .ci-channel-type-col {
+  width: 60px;
+}
+.ci-page .ci-channel-table .ci-channel-contact-col {
+  width: auto;
+}
+.ci-page .ci-channel-table .ci-channel-status-col {
+  width: 76px;
+}
+.ci-page .ci-channel-table .ci-channel-date-col {
+  width: 124px;
+}
+.ci-page .ci-channel-table .ci-col-actions {
+  width: 154px;
+}
+.ci-page .ci-stock-edit-table .ci-col-index {
+  width: 40px;
+}
+.ci-page .ci-stock-edit-table .ci-material-part-col {
+  width: auto;
+}
+.ci-page .ci-stock-edit-table .ci-material-qty-col {
+  width: 15%;
+}
+.ci-page .ci-stock-edit-table .ci-material-price-col {
+  width: 14%;
+}
+.ci-page .ci-stock-edit-table .ci-material-lead-col {
+  width: 9%;
+}
+.ci-page .ci-stock-edit-table .ci-material-date-col {
+  width: 124px;
+}
+.ci-page .ci-stock-edit-table .ci-col-actions {
+  width: 100px;
+}
+.ci-page .ci-table .ci-date {
+  white-space: normal !important;
+  overflow-wrap: normal;
+}
+.ci-page .ci-table .ci-channel-name,
+.ci-page .ci-table .ci-cell-title {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: inline-block;
+  height: auto;
+  min-height: 0;
+  line-height: 18px;
+}
+.ci-page .ci-table .ci-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px 10px;
+  white-space: normal;
+}
+.ci-page .ci-table .ci-row-actions .ci-inline-link {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.ci-page .ci-table [data-slot="table-cell"].ci-col-actions {
+  padding-left: 8px;
+  padding-right: 12px;
+  overflow-wrap: normal;
+}
+.ci-page .ci-table [data-slot="table-head"].ci-col-actions {
+  padding-right: 12px;
+}
+.ci-page .ci-table .ci-number,
+.ci-page .ci-table .ci-price {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1023px) {
+  .ci-page .ci-heading {
+    align-items: flex-start;
+  }
+  .ci-page .ci-heading-actions {
+    justify-content: flex-start;
+  }
+  .ci-page .ci-toolbar-summary {
+    width: 100%;
+  }
+  .ci-page .ci-toolbar .ci-toolbar-search,
+  .ci-page .ci-toolbar .ci-wide-search {
+    flex: 1 1 150px;
+    width: auto;
+  }
+  .ci-page .ci-filter-count {
+    width: 100%;
+    margin-left: 0;
+  }
+  .ci-page .ci-channel-table {
+    min-width: 700px !important;
+  }
+  .ci-page .ci-material-table {
+    min-width: 720px !important;
+  }
+  .ci-page .ci-table [data-slot="table-head"].ci-col-actions,
+  .ci-page .ci-table [data-slot="table-cell"].ci-col-actions {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: -5px 0 8px -7px #64748b;
+  }
+  .ci-page .ci-table [data-slot="table-head"].ci-col-actions {
+    z-index: 3;
+    background: #f8fafc;
+  }
+  .ci-page .ci-table tbody tr:hover [data-slot="table-cell"].ci-col-actions {
+    background: #f8fafc;
+  }
+}
+@media (max-width: 420px) {
+  .ci-page .ci-heading-actions {
+    width: 100%;
+  }
+  .ci-page .ci-heading-actions .ci-button {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+  .ci-page .ci-toolbar {
+    padding: 10px;
+    gap: 7px;
+  }
+  .ci-page .ci-toolbar .ci-brand-input {
+    flex: 1 1 100px;
+    width: auto;
+  }
+}

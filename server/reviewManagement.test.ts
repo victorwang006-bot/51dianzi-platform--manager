@@ -54,7 +54,7 @@ describe("评价管理窗口", () => {
     expect(app).toContain('permission="logs.read"');
     expect(layout).toContain('label: "评价管理"');
     expect(layout).toContain('path: "/reviews"');
-    const businessGroup = layout.slice(layout.indexOf('label: "业务管理"'), layout.indexOf('label: "系统"'));
+    const businessGroup = layout.slice(layout.indexOf('label: "运营管理"'), layout.indexOf('label: "库存管理"'));
     const systemGroup = layout.slice(layout.indexOf('label: "系统"'));
     expect(businessGroup).toContain('label: "评价管理"');
     expect(systemGroup).not.toContain('label: "评价管理"');

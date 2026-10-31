@@ -17,7 +17,7 @@ describe("商户营业执照安全访问", () => {
     expect(schema).toContain('licenseObjectKey: varchar("licenseObjectKey", { length: 512 })');
     expect(database).toContain("export function toMerchantReadDto");
     expect(database).toContain("const { licenseObjectKey, licenseImageUrl, ...merchant } = row");
-    expect(database).toContain("hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl)");
+    expect(database).toMatch(/hasLicenseDocument:\s*Boolean\(licenseObjectKey \|\| licenseImageUrl\)/);
     expect(database).toContain("...toMerchantReadDto(row)");
     expect(routers).toContain("...db.toMerchantReadDto(merchant)");
     expect(routers).toContain("canManage,");

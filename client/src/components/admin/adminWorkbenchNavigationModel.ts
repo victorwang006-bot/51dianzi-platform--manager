@@ -3,7 +3,13 @@ export type AdminWorkbenchNavigationItem = {
   label: string;
 };
 
-export type AdminWorkbenchNavigationGroupId = "platform" | "system";
+export type AdminWorkbenchNavigationGroupId =
+  | "operations"
+  | "inventory"
+  | "customers"
+  | "procurement"
+  | "user-center"
+  | "system";
 
 export type AdminWorkbenchNavigationGroupDefinition = {
   id: AdminWorkbenchNavigationGroupId;
@@ -17,26 +23,76 @@ export type AdminWorkbenchNavigationGroup<T extends AdminWorkbenchNavigationItem
   items: T[];
 };
 
+/**
+ * 后台唯一侧栏的导航事实源。
+ *
+ * 运营页面继续使用其原始路由；业务工作台页面统一使用 /workbench 前缀。
+ * 不在此模型中折叠或伪造企业业务页面，页面的真实 staff/BFF 权限仍由路由和服务端复核。
+ */
 export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigationGroupDefinition[] = [
   {
-    id: "platform",
-    label: "平台管理",
+    id: "operations",
+    label: "运营管理",
     paths: [
       "/merchants",
-      "/portal-users",
+      "/",
       "/orders",
       "/messages",
       "/reviews",
-      "/",
+      "/portal-users",
       "/analytics",
+    ],
+  },
+  {
+    id: "inventory",
+    label: "库存管理",
+    paths: [
+      "/workbench/inventory",
+      "/workbench/publish",
+      "/workbench/inbound",
+      "/workbench/channel-inventory",
+    ],
+  },
+  {
+    id: "customers",
+    label: "客户管理",
+    paths: [
+      "/workbench/customers",
+      "/workbench/customer-demands",
+      "/workbench/orders",
+      "/workbench/outbound",
+      "/workbench/chat",
+    ],
+  },
+  {
+    id: "procurement",
+    label: "采购管理",
+    paths: [
+      "/workbench/procurement-demands",
+      "/workbench/procurement-orders",
+    ],
+  },
+  {
+    id: "user-center",
+    label: "用户中心",
+    paths: [
+      "/workbench/add-user",
+      "/workbench/user-records",
+      "/workbench/company-info",
+      // 这里复用后台 staff Profile；不使用前台用户资料页冒充工作人员资料。
+      "/profile",
     ],
   },
   {
     id: "system",
     label: "系统管理",
-    paths: ["/admins", "/exception-logs", "/profile"],
+    paths: ["/admins", "/exception-logs"],
   },
 ] as const;
+
+export const ADMIN_BUSINESS_WORKBENCH_PATHS = ADMIN_WORKBENCH_NAVIGATION_GROUPS
+  .filter(group => ["inventory", "customers", "procurement", "user-center"].includes(group.id))
+  .flatMap(group => group.paths.filter(path => path.startsWith("/workbench/")));
 
 export type AdminWorkbenchNavigationExpandedGroups = Record<
   AdminWorkbenchNavigationGroupId,
@@ -109,6 +165,12 @@ export function findAdminWorkbenchNavigationGroupId(
   }
 
   return null;
+}
+
+export function isAdminBusinessWorkbenchPath(location: string): boolean {
+  return ADMIN_BUSINESS_WORKBENCH_PATHS.some(path =>
+    isAdminWorkbenchNavigationRouteMatch(location, path)
+  );
 }
 
 export function autoOpenAdminWorkbenchNavigationGroup(

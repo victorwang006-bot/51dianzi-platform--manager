@@ -102,7 +102,9 @@ describe("后台 CRM 专用换绑持久化、审计与平台确认合同", () =>
     expect(preflight).toBeGreaterThanOrEqual(0);
     expect(rebind).toBeGreaterThan(preflight);
     expect(complete).toBeGreaterThan(rebind);
-    expect(source).toContain("merchant.businessLicense.trim()");
+    expect(source).toContain("merchant.businessLicense?.trim().replace");
+    expect(source).toContain("merchant.registrationRegion === \"HK\"");
+    expect(source).toContain("{ registrationIdentifier: hkRegistrationIdentifier } : { creditCode }");
     expect(routerSource).toContain("markCrmOwnerRebindPlatformSyncRetryable");
     expect(routerSource).toContain("retryCrmOwnerRebind: crmRebindProcedure");
   });

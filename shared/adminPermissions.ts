@@ -29,6 +29,21 @@ export const ADMIN_PERMISSIONS = [
   "messages.write",
   "orders.read",
   "analytics.read",
+  /**
+   * 后台业务网关权限。它们只允许经受控 BFF 访问主站企业领域服务，
+   * 不等同于前台企业成员权限，且绝不能由角色默认权限自动取得。
+   */
+  "business.context.read",
+  "business.inventory.read",
+  "business.inventory.write",
+  "business.customers.read",
+  "business.customers.write",
+  "business.procurement.read",
+  "business.procurement.write",
+  "business.users.read",
+  "business.users.write",
+  "business.orders.read",
+  "business.orders.write",
   /** 维护本人个人信息与登录密码（「个人信息」菜单的准入依据） */
   "profile.manage",
   "admins.manage",
@@ -54,6 +69,17 @@ export const ASSIGNABLE_ADMIN_PERMISSIONS = [
   "messages.write",
   "orders.read",
   "analytics.read",
+  "business.context.read",
+  "business.inventory.read",
+  "business.inventory.write",
+  "business.customers.read",
+  "business.customers.write",
+  "business.procurement.read",
+  "business.procurement.write",
+  "business.users.read",
+  "business.users.write",
+  "business.orders.read",
+  "business.orders.write",
 ] as const satisfies readonly AdminPermission[];
 
 export type AssignableAdminPermission = (typeof ASSIGNABLE_ADMIN_PERMISSIONS)[number];
@@ -72,6 +98,11 @@ export function normalizeAssignedAdminPermissions(
   if (next.has("merchants.write")) next.add("merchants.read");
   if (next.has("portalUsers.manage")) next.add("portalUsers.read");
   if (next.has("messages.write")) next.add("messages.read");
+  if (next.has("business.inventory.write")) next.add("business.inventory.read");
+  if (next.has("business.customers.write")) next.add("business.customers.read");
+  if (next.has("business.procurement.write")) next.add("business.procurement.read");
+  if (next.has("business.users.write")) next.add("business.users.read");
+  if (next.has("business.orders.write")) next.add("business.orders.read");
   next.add("profile.manage");
   return Array.from(next);
 }

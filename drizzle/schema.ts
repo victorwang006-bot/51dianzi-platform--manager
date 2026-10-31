@@ -1,5 +1,6 @@
 import {
   bigint,
+  check,
   customType,
   decimal,
   index,
@@ -202,6 +203,113 @@ export const adminUsers = mysqlTable("admin_users", {
 }));
 
 export type AdminUser = typeof adminUsers.$inferSelect;
+
+/**
+ * 后台员工到主站真实前台用户的当前业务主体绑定。
+ *
+ * `adminUserId` 和非空 `frontUserId` 均由数据库唯一索引约束为一对一。撤销时
+ * 清空当前 frontUserId，历史值只保存在不可变审计表，以便该前台员工在完成审计
+ * 后可被重新分配，而不会留下一个仍占用唯一键的“已撤销当前绑定”。
+ */
+export const adminBusinessStaffBindings = mysqlTable("admin_business_staff_bindings", {
+  id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  frontUserId: int("frontUserId"),
+  status: mysqlEnum("status", ["active", "revoked"]).default("revoked").notNull(),
+  /** 每次建立、换绑或撤销递增；客户端必须带期望版本防止静默覆盖。 */
+  bindingVersion: int("bindingVersion", { unsigned: true }).default(1).notNull(),
+  createdByAdminUserId: int("createdByAdminUserId").notNull(),
+  updatedByAdminUserId: int("updatedByAdminUserId").notNull(),
+  revokedByAdminUserId: int("revokedByAdminUserId"),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+}, table => ({
+  adminUserUnique: uniqueIndex("admin_business_staff_bindings_admin_user_unique").on(table.adminUserId),
+  frontUserUnique: uniqueIndex("admin_business_staff_bindings_front_user_unique").on(table.frontUserId),
+  statusUpdatedIdx: index("admin_business_staff_bindings_status_updated_idx").on(table.status, table.updatedAt),
+}));
+
+export type AdminBusinessStaffBinding = typeof adminBusinessStaffBindings.$inferSelect;
+
+/**
+ * 不可变的绑定操作审计。requestId 全局唯一，事务先检查它以确保网络重试不会
+ * 再次修改当前绑定；这里存真实后台操作者与前台用户 ID，不依赖 admin_users.userId。
+ */
+export const adminBusinessStaffBindingAudits = mysqlTable("admin_business_staff_binding_audits", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  bindingId: int("bindingId").notNull(),
+  adminUserId: int("adminUserId").notNull(),
+  frontUserId: int("frontUserId"),
+  action: mysqlEnum("action", ["bound", "rebound", "revoked", "unchanged"]).notNull(),
+  expectedVersion: int("expectedVersion", { unsigned: true }).notNull(),
+  resultingVersion: int("resultingVersion", { unsigned: true }).notNull(),
+  requestId: varchar("requestId", { length: 64 }).notNull(),
+  operatorAdminUserId: int("operatorAdminUserId").notNull(),
+  operatorName: varchar("operatorName", { length: 128 }).notNull(),
+  operatorRole: varchar("operatorRole", { length: 64 }).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: varchar("userAgent", { length: 512 }),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+}, table => ({
+  requestIdUnique: uniqueIndex("admin_business_staff_binding_audits_request_unique").on(table.requestId),
+  adminCreatedIdx: index("admin_business_staff_binding_audits_admin_created_idx").on(table.adminUserId, table.createdAt),
+  frontCreatedIdx: index("admin_business_staff_binding_audits_front_created_idx").on(table.frontUserId, table.createdAt),
+}));
+
+export type AdminBusinessStaffBindingAudit = typeof adminBusinessStaffBindingAudits.$inferSelect;
+
+/**
+ * BFF-only exact merchant scope. It never changes admin_user_permissions,
+ * admin roles or native sales scopes; original front permissions stay
+ * authoritative after this outer bridge gate.
+ */
+export const adminBusinessMerchantScopes = mysqlTable("admin_business_merchant_scopes", {
+  id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  merchantId: int("merchantId").notNull(),
+  status: mysqlEnum("status", ["active", "revoked"]).default("revoked").notNull(),
+  scopeVersion: int("scopeVersion", { unsigned: true }).default(1).notNull(),
+  /** Approved BFF entry modules only, never a substitute for front permissions. */
+  modulePermissions: json("modulePermissions").$type<string[]>().notNull(),
+  createdByAdminUserId: int("createdByAdminUserId").notNull(),
+  updatedByAdminUserId: int("updatedByAdminUserId").notNull(),
+  revokedByAdminUserId: int("revokedByAdminUserId"),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+}, table => ({
+  adminMerchantUnique: uniqueIndex("admin_business_merchant_scopes_admin_merchant_unique").on(table.adminUserId, table.merchantId),
+  adminStatusIdx: index("admin_business_merchant_scopes_admin_status_idx").on(table.adminUserId, table.status, table.updatedAt),
+  merchantStatusIdx: index("admin_business_merchant_scopes_merchant_status_idx").on(table.merchantId, table.status),
+  activeModulesCheck: check("admin_business_merchant_scopes_active_modules_check", sql`(${table.status} = 'active' AND JSON_LENGTH(${table.modulePermissions}) > 0) OR (${table.status} = 'revoked')`),
+}));
+export type AdminBusinessMerchantScope = typeof adminBusinessMerchantScopes.$inferSelect;
+
+/** Immutable request-id audit for scope CAS, grants, changes and revocation. */
+export const adminBusinessMerchantScopeAudits = mysqlTable("admin_business_merchant_scope_audits", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  scopeId: int("scopeId").notNull(),
+  adminUserId: int("adminUserId").notNull(),
+  merchantId: int("merchantId").notNull(),
+  action: mysqlEnum("action", ["granted", "updated", "revoked", "unchanged"]).notNull(),
+  expectedVersion: int("expectedVersion", { unsigned: true }).notNull(),
+  resultingVersion: int("resultingVersion", { unsigned: true }).notNull(),
+  beforeModulePermissions: json("beforeModulePermissions").$type<string[]>(),
+  afterModulePermissions: json("afterModulePermissions").$type<string[]>(),
+  requestId: varchar("requestId", { length: 64 }).notNull(),
+  operatorAdminUserId: int("operatorAdminUserId").notNull(),
+  operatorName: varchar("operatorName", { length: 128 }).notNull(),
+  operatorRole: varchar("operatorRole", { length: 64 }).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: varchar("userAgent", { length: 512 }),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+}, table => ({
+  requestIdUnique: uniqueIndex("admin_business_merchant_scope_audits_request_unique").on(table.requestId),
+  adminCreatedIdx: index("admin_business_merchant_scope_audits_admin_created_idx").on(table.adminUserId, table.createdAt),
+  merchantCreatedIdx: index("admin_business_merchant_scope_audits_merchant_created_idx").on(table.merchantId, table.createdAt),
+}));
+export type AdminBusinessMerchantScopeAudit = typeof adminBusinessMerchantScopeAudits.$inferSelect;
 
 /**
  * 后台员工登录安全事件。仅超级管理员可通过后台用户管理查看。

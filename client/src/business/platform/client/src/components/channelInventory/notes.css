@@ -1,0 +1,347 @@
+/* Scoped additions for shared inventory notes. Do not change page/body overflow. */
+.ci-page .ci-toolbar .ci-notes-type-filter {
+  width: 104px;
+  max-width: 100%;
+}
+
+.ci-page .ci-stock-edit-table .ci-col-index {
+  width: 4%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-part-col {
+  width: 17%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-type-col {
+  width: 9%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-notes-col {
+  width: 15%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-qty-col {
+  width: 13%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-price-col {
+  width: 12%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-lead-col {
+  width: 8%;
+}
+
+.ci-page .ci-stock-edit-table .ci-material-date-col {
+  width: 13%;
+}
+
+.ci-page .ci-stock-edit-table .ci-col-actions {
+  width: 9%;
+}
+
+.ci-page .ci-part-with-type {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.ci-page .ci-part-with-type .ci-cell-title {
+  min-width: 0;
+  padding: 0;
+  color: #1e3a5f;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.ci-page .ci-channel-type-tag {
+  flex: 0 0 auto;
+  border: 1px solid #d5e2ef;
+  border-radius: 3px;
+  padding: 0 4px;
+  color: #476581;
+  background: #f7fafd;
+  font-size: 11px;
+  line-height: 17px;
+  white-space: nowrap;
+}
+
+.ci-page .ci-notes-summary {
+  min-width: 0;
+  color: #536b83;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.ci-page .ci-notes-summary-open {
+  display: inline;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: #2563a9;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 17px;
+  text-align: left;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ci-page .ci-notes-summary-open:hover,
+.ci-page .ci-notes-summary-open:focus-visible {
+  color: #174b82;
+  text-decoration: underline;
+}
+
+.ci-page .ci-notes-summary-open:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.ci-page .ci-notes-summary-text {
+  overflow: hidden;
+  color: #425d78;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ci-page .ci-notes-summary-meta {
+  overflow: hidden;
+  color: #8797aa;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ci-notes-dialog {
+  width: min(640px, calc(100vw - 28px));
+  max-width: 640px;
+  color: #334e68;
+  background: #fff;
+  font-size: 13px;
+}
+
+.ci-notes-dialog .ci-notes-material {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 3px 8px;
+  margin: 2px 0 10px;
+  padding: 9px 10px;
+  border: 1px solid #dbe6f0;
+  border-radius: 5px;
+  background: #f8fbfe;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.ci-notes-dialog .ci-notes-material span {
+  color: #6d8197;
+}
+
+.ci-notes-dialog .ci-notes-material strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #274c77;
+  font-weight: 600;
+}
+
+.ci-notes-history {
+  display: grid;
+  max-height: min(47vh, 390px);
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.ci-note-entry {
+  border: 1px solid #dce7f0;
+  border-radius: 5px;
+  padding: 9px 10px;
+  background: #fff;
+}
+
+.ci-note-entry.ci-note-legacy {
+  border-style: dashed;
+  background: #fbfdff;
+}
+
+.ci-note-entry-meta {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: #6a8197;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ci-note-entry-meta strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #2f577f;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ci-note-entry-meta span {
+  flex: 0 1 auto;
+  text-align: right;
+}
+
+.ci-note-entry p {
+  margin: 5px 0 0;
+  color: #334e68;
+  line-height: 19px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ci-note-edit-link {
+  min-height: 20px;
+  margin-top: 4px;
+  padding: 0;
+  font-size: 12px;
+}
+
+.ci-note-textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #cddbea;
+  border-radius: 4px;
+  padding: 7px 8px;
+  color: #334e68;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.ci-note-textarea:focus {
+  border-color: #6b9dc9;
+  outline: 2px solid rgba(74, 132, 182, 0.16);
+  outline-offset: 0;
+}
+
+.ci-note-textarea:disabled {
+  color: #7c8fa3;
+  background: #f6f9fc;
+}
+
+.ci-note-edit-form {
+  margin-top: 7px;
+}
+
+.ci-note-edit-actions,
+.ci-note-add-meta,
+.ci-notes-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #788ba0;
+  font-size: 12px;
+}
+
+.ci-note-edit-actions,
+.ci-note-add-meta {
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.ci-note-edit-actions span,
+.ci-note-add-meta span {
+  margin-right: auto;
+}
+
+.ci-notes-pagination {
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid #e1e9f1;
+}
+
+.ci-notes-pagination span {
+  margin-right: auto;
+}
+
+.ci-note-add {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid #dfe8f1;
+}
+
+.ci-note-add > label {
+  display: block;
+  margin-bottom: 5px;
+  color: #41617f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ci-notes-empty,
+.ci-notes-loading {
+  margin: 4px 0;
+  padding: 13px 0;
+  color: #788ba0;
+  text-align: center;
+}
+
+.ci-notes-dialog .ci-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.ci-notes-retry {
+  margin-left: 8px;
+}
+
+@media (max-width: 1023px) {
+  /* Horizontal scroll remains inside the existing table container; page width is untouched. */
+  .ci-page .ci-stock-edit-table {
+    min-width: 960px !important;
+  }
+
+  .ci-page .ci-stock-edit-table .ci-material-notes-col {
+    width: 15%;
+  }
+}
+
+@media (max-width: 520px) {
+  .ci-notes-dialog {
+    width: calc(100vw - 20px);
+  }
+
+  .ci-notes-history {
+    max-height: 42vh;
+  }
+
+  .ci-note-entry-meta {
+    display: block;
+  }
+
+  .ci-note-entry-meta span {
+    display: block;
+    text-align: left;
+  }
+
+  .ci-notes-pagination {
+    flex-wrap: wrap;
+  }
+
+  .ci-notes-pagination span {
+    width: 100%;
+  }
+}

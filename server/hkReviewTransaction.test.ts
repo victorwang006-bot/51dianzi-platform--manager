@@ -4,11 +4,13 @@ import * as ts from "typescript";
 import type { SQL } from "drizzle-orm";
 import { MySqlDialect } from "drizzle-orm/mysql-core";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { assertGuardedTestDatabase } from "../tests/frozenTestEnvironment";
+import { platformDatabaseIdentifier } from "./cnRegistrationPolicy";
 
 /**
  * This suite deliberately loads the real db.ts implementation. The mysql2
- * Drizzle entrypoint is replaced before db.ts is imported, so the synthetic
- * DATABASE_URL below can never open a socket or access production credentials.
+ * Drizzle entrypoint is replaced before db.ts is imported, so the isolated
+ * test DATABASE_URL is never opened by this offline fixture.
  */
 const drizzleMock = vi.hoisted(() => vi.fn());
 const createLockConnectionMock = vi.hoisted(() => vi.fn());
@@ -17,7 +19,9 @@ vi.mock("mysql2/promise", () => ({ default: { createConnection: createLockConnec
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
 const DB_SOURCE_PATH = path.join(PROJECT_ROOT, "server", "db.ts");
-const MAIN_SCHEMA_PATH = "/home/ubuntu/51-sticky-production/drizzle/schema.ts";
+// Use the migrated front source that db.ts actually targets. This candidate
+// tree is portable; an historical workstation checkout is not a source input.
+const MAIN_SCHEMA_PATH = path.resolve(PROJECT_ROOT, "..", "front", "drizzle", "schema.ts");
 const dialect = new MySqlDialect();
 
 const REGISTRATION_IDENTIFIER = "HK:12345678";
@@ -86,6 +90,8 @@ type FakeTransaction = {
 let dbModule: typeof import("./db");
 let activePlan: TransactionPlan;
 let activeTransaction: FakeTransaction;
+let testDatabaseUrl = "";
+let platformDatabaseName = "";
 
 const fakeDatabase = {
   transaction: async <T>(callback: (tx: FakeTransaction) => Promise<T>) => callback(activeTransaction),
@@ -289,9 +295,26 @@ function platformSelect(plan: TransactionPlan) {
 }
 
 beforeAll(async () => {
-  // These are deliberately synthetic unit-test values, never read from a file.
-  process.env.DATABASE_URL = "mysql://unit:unit@127.0.0.1:3306/unit_hk_review";
-  process.env.PLATFORM_DB_NAME = "unit_platform";
+  const configuredUrl = process.env.DATABASE_URL;
+  if (!configuredUrl) throw new Error("HK_REVIEW_TEST_DATABASE_URL_REQUIRED");
+  const parsed = new URL(configuredUrl);
+  const database = parsed.pathname.slice(1);
+  if (process.env.MIGRATION_FROZEN_MODE === "frozen-full") {
+    testDatabaseUrl = assertGuardedTestDatabase(configuredUrl, /^$/);
+    platformDatabaseName = platformDatabaseIdentifier();
+    dbModule = await import("./db");
+    return;
+  }
+  if (
+    parsed.hostname !== "127.0.0.1"
+    || parsed.port !== "13307"
+    || !/^migration_v2_admin_[a-z_]+_test$/.test(database)
+    || process.env.PLATFORM_DB_NAME !== database
+  ) {
+    throw new Error("HK_REVIEW_TEST_REQUIRES_ADMIN_ERP_LOOPBACK_DATABASE");
+  }
+  testDatabaseUrl = configuredUrl;
+  platformDatabaseName = database;
   dbModule = await import("./db");
 });
 
@@ -306,11 +329,6 @@ beforeEach(() => {
     end: async () => undefined,
   });
   installPlan();
-});
-
-afterAll(() => {
-  delete process.env.DATABASE_URL;
-  delete process.env.PLATFORM_DB_NAME;
 });
 
 describe("reviewHkRegistrationDraft — real transaction with offline mysql/drizzle", () => {
@@ -329,7 +347,7 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
       actor: { operatorId: 9, operatorName: "reviewer", operatorRole: "super_admin" },
     })).resolves.toEqual({ success: true, decision: "approved", crmStatus: "pending" });
 
-    expect(drizzleMock).toHaveBeenCalledWith("mysql://unit:unit@127.0.0.1:3306/unit_hk_review");
+    expect(drizzleMock).toHaveBeenCalledWith(testDatabaseUrl);
     expect(activeTransaction.execute).toHaveBeenCalledTimes(3);
     expect(activeTransaction.update).toHaveBeenCalledTimes(1);
     expect(activePlan.merchantSets[0]).toMatchObject({
@@ -354,14 +372,14 @@ describe("reviewHkRegistrationDraft — real transaction with offline mysql/driz
     expect(read.params).toContain(CURRENT_ENTERPRISE_SUPER_ADMIN);
 
     const update = platformUpdate(plan);
-    expect(update.sql).toMatch(/UPDATE unit_platform\.companies AS company/i);
+    expect(update.sql).toContain(`UPDATE ${platformDatabaseName}.companies AS company`);
     expect(update.sql).toContain("company.registrationSubmissionId = ?");
     expect(update.sql).toContain("company.registrationPayloadHash = ?");
     expect(update.sql).toContain("company.reviewStatus = 'pending'");
     expect(update.sql).toContain("company.pendingDraft IS NULL");
     expect(update.params).toContain(SUBMISSION_ID);
     expect(update.params).toContain(PAYLOAD_HASH);
-    const enterpriseUpdate = plan.rendered.find(call => /UPDATE unit_platform\.enterprises AS enterprise/i.test(call.sql));
+    const enterpriseUpdate = plan.rendered.find(call => call.sql.includes(`UPDATE ${platformDatabaseName}.enterprises AS enterprise`));
     expect(enterpriseUpdate?.sql).toContain("enterprise.companyName = ?");
     expect(enterpriseUpdate?.sql).toContain("enterprise.superAdminUserId");
   });
@@ -771,8 +789,9 @@ describe("HK cross-database SQL source guard", () => {
     ];
 
     // Review: SELECT + guarded company promotion + enterprise-name sync +
-    // reject UPDATE; CRM enable: SELECT.
-    expect(statements.map(statement => statement.kind)).toEqual(["SELECT", "UPDATE", "UPDATE", "UPDATE", "SELECT"]);
+    // reject UPDATE; CRM enable first probes CN compatibility, then locks the
+    // HK registration. Both reads are real cross-database source statements.
+    expect(statements.map(statement => statement.kind)).toEqual(["SELECT", "UPDATE", "UPDATE", "UPDATE", "SELECT", "SELECT"]);
     for (const statement of statements) {
       expect(statement.text).toContain("${sql.raw(PLATFORM_DB)}");
       if (statement.text.includes(".companies")) {

@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { AdminUser, User } from "../../drizzle/schema";
-import { parseLocalAdminId } from "../adminAuth";
+import { LOCAL_ADMIN_SESSION_APP_ID, parseLocalAdminId } from "../adminAuth";
 import * as db from "../db";
 import { sdk, type SessionPayload } from "./sdk";
 
@@ -67,7 +67,14 @@ export async function createContext(
            * intentionally rejected (security over a one-year smooth-login
            * window); OAuth sessions retain their legacy compatibility path.
            */
-          if (isCurrentLocalAdminSession(account, verifiedSession)) {
+          // A matching HMAC is not enough: local_admin tokens are only valid for
+          // this application audience.  This leaves the legacy OAuth fallback
+          // untouched while stopping another same-secret application from minting
+          // a token with a local_admin-looking openId.
+          if (
+            verifiedSession.appId === LOCAL_ADMIN_SESSION_APP_ID
+            && isCurrentLocalAdminSession(account, verifiedSession)
+          ) {
             adminAccount = account;
             adminPermissions = await db.getAdminUserPermissions(account.id);
             // 将本地账号映射为兼容的 User 形状，业务代码 ctx.user.role === "admin" 依旧成立

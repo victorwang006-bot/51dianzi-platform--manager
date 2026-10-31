@@ -66,7 +66,7 @@ describe("后台用户名修改权限与UI", () => {
   it("详情接口仅向负责人范围内账号开放修改入口", () => {
     const detailRoute = section(router, "detail: merchantReadProcedure", "/**\n     * 营业执照属于敏感资料");
     expect(detailRoute).toContain("const salesStaffCodes = await getAdminSalesStaffCodes(ctx)");
-    expect(detailRoute).toContain("canManage: salesStaffCodes === undefined");
+    expect(detailRoute).toContain("const canManage = salesStaffCodes === undefined");
     expect(detailRoute).toContain("salesStaffCodes.includes(merchant.salesOwnerCode?.trim().toLowerCase() || \"\")");
   });
 });

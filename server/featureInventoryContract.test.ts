@@ -137,8 +137,8 @@ describe("管理端功能清单闸门", () => {
       // 两者混同处理会让「无任何范围的普通用户」看到全部商户，权限完全反转
       const db = read("server/db.ts");
       // 空数组必须短路为「无结果」，而不是跳过过滤
-      expect(db).toMatch(/salesStaffCodes !== undefined && salesStaffCodes\.length === 0/);
-      expect(db).toMatch(/if \(salesStaffCodes !== undefined\) conditions\.push/);
+      expect(db).toContain("if (salesStaffCodes === undefined) return undefined");
+      expect(db).toContain("if (salesStaffCodes.length === 0) return sql`1 = 0`");
       const routers = read("server/routers.ts");
       expect(routers).toContain("Promise<string[] | undefined>");
     });

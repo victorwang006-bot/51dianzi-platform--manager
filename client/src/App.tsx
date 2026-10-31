@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import {
   LazyAdmins,
   LazyAnalytics,
+  LazyBusinessWorkbench,
   LazyExceptionLogs,
   LazyForbidden,
   LazyLogin,
@@ -176,6 +177,42 @@ const AnalyticsRoute = () => (
     </LazyScreen>
   </PermissionGate>
 );
+
+/**
+ * Workbench availability is deliberately resolved only after the lazy page
+ * asks the business BFF for the selected merchant's scope/binding/context.
+ * Do not put this route behind native adminPermissions: an independently
+ * scoped merchant_mgr may correctly have no `business.*` native key.
+ */
+function BusinessWorkbenchRoute() {
+  return (
+    <LazyScreen>
+      {/**
+       * merchantId is intentionally not inferred from local storage or a
+       * front-site session. The URL only restores a candidate selection; the
+       * BFF revalidates it and the page renders its explicit no-selection or
+       * unavailable state without fabricating access.
+       */}
+      <LazyBusinessWorkbench routeBase="/workbench" />
+    </LazyScreen>
+  );
+}
+
+const BusinessInventoryRoute = () => (
+  <BusinessWorkbenchRoute />
+);
+const BusinessCustomersRoute = () => (
+  <BusinessWorkbenchRoute />
+);
+const BusinessOrdersRoute = () => (
+  <BusinessWorkbenchRoute />
+);
+const BusinessProcurementRoute = () => (
+  <BusinessWorkbenchRoute />
+);
+const BusinessUsersRoute = () => (
+  <BusinessWorkbenchRoute />
+);
 const NotFoundRoute = () => (
   <LazyScreen>
     <LazyNotFound />
@@ -204,6 +241,26 @@ function AppRoutes() {
         <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
         <Route path={"/analytics"} component={AnalyticsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
+        <Route path={"/workbench"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/inventory"} component={BusinessInventoryRoute} />
+        <Route path={"/workbench/publish/:id/edit"} component={BusinessInventoryRoute} />
+        <Route path={"/workbench/publish"} component={BusinessInventoryRoute} />
+        <Route path={"/workbench/inbound"} component={BusinessInventoryRoute} />
+        <Route path={"/workbench/channel-inventory"} component={BusinessInventoryRoute} />
+        <Route path={"/workbench/customers/:id"} component={BusinessCustomersRoute} />
+        <Route path={"/workbench/customers"} component={BusinessCustomersRoute} />
+        <Route path={"/workbench/customer-demands"} component={BusinessCustomersRoute} />
+        <Route path={"/workbench/orders"} component={BusinessOrdersRoute} />
+        <Route path={"/workbench/outbound"} component={BusinessOrdersRoute} />
+        <Route path={"/workbench/chat"} component={BusinessCustomersRoute} />
+        <Route path={"/workbench/procurement-demands"} component={BusinessProcurementRoute} />
+        <Route path={"/workbench/procurement-orders/quote"} component={BusinessProcurementRoute} />
+        <Route path={"/workbench/procurement-orders/accepted"} component={BusinessProcurementRoute} />
+        <Route path={"/workbench/procurement-orders/create"} component={BusinessProcurementRoute} />
+        <Route path={"/workbench/procurement-orders"} component={BusinessProcurementRoute} />
+        <Route path={"/workbench/add-user"} component={BusinessUsersRoute} />
+        <Route path={"/workbench/user-records"} component={BusinessUsersRoute} />
+        <Route path={"/workbench/company-info"} component={BusinessUsersRoute} />
         <Route path={"/404"} component={NotFoundRoute} />
         <Route component={NotFoundRoute} />
       </Switch>

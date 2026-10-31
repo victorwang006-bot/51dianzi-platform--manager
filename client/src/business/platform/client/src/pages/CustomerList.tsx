@@ -1,0 +1,747 @@
+import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Loader2, Plus } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { toast } from "sonner";
+import {
+  CUSTOMER_GRADES,
+  CUSTOMER_STAGE_LABELS,
+  CUSTOMER_STAGES,
+  type CustomerData,
+  customerNeedsCompletion,
+} from "../../../shared/crmCustomers";
+import PlatformLayout from "../../../../BusinessContentFrame";
+import { CustomerCreateForm, type CustomerCreateSaveMode, type CustomerCreateState } from "../components/customers/CustomerCreateForm";
+import { ConfirmDialog } from "../components/customers/ConfirmDialog";
+import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
+import {
+  errorMessage,
+  formatCustomerDateTime,
+} from "../components/customers/customerUtils";
+import { trpc } from "../../../../api/business-trpc";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+
+const PAGE_SIZE = 20;
+type GradeFilter = "" | CustomerData["grade"];
+type StageFilter = "" | CustomerData["stage"];
+type ScopeFilter = "mine" | "all";
+type DueFilter = "all" | "today" | "overdue";
+
+type FilterState = {
+  keyword: string;
+  grade: GradeFilter;
+  stage: StageFilter;
+  scope: ScopeFilter;
+  assignedUserId: string;
+  due: DueFilter;
+  archived: boolean;
+};
+
+const DEFAULT_FILTERS: FilterState = {
+  keyword: "",
+  grade: "",
+  stage: "",
+  scope: "mine",
+  assignedUserId: "",
+  due: "all",
+  archived: false,
+};
+
+const toolbarActionClass =
+  "h-8 min-w-[60px] border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
+
+export default function CustomerList() {
+  const d51Ready = usePageMemory();
+
+  const [, navigate] = useLocation();
+  const search = useSearch();
+  const utils = trpc.useUtils();
+  const contextQuery = trpc.customer.context.useQuery();
+  const [createOpen, setCreateOpen] = useState(() => new URLSearchParams(search).get("create") === "1");
+  const [createState, setCreateState] = useState<CustomerCreateState>({ dirty: false, busy: false });
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [demandCustomer, setDemandCustomer] = useState<{ id: number; name: string; archivedAt: string | null } | null>(null);
+  const mountedRef = useRef(true);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get("create") !== "1") return;
+    setCreateOpen(true);
+    params.delete("create");
+    navigate(`/customers${params.size ? `?${params}` : ""}`, { replace: true });
+  }, [search, navigate]);
+  const [draftFilters, setDraftFilters] =
+    useRememberedState<FilterState>("draftFilters", DEFAULT_FILTERS);
+  const [appliedFilters, setAppliedFilters] =
+    useRememberedState<FilterState>("appliedFilters", DEFAULT_FILTERS);
+  const [moreFiltersOpen, setMoreFiltersOpen] = useRememberedState("moreFiltersOpen", false);
+  const [page, setPage] = useRememberedState("page", 1);
+  const canManageAll = contextQuery.data?.canManageAll ?? false;
+
+  // A non-admin must never retain an all-company scope or another seller's id,
+  // including while permissions refresh after the page is already open.
+  useEffect(() => {
+    if (contextQuery.isLoading || contextQuery.isPending || !contextQuery.data) return;
+    if (canManageAll) return;
+    const restrictToMine = (current: FilterState) =>
+      current.scope === "mine" && !current.assignedUserId
+        ? current
+        : { ...current, scope: "mine" as const, assignedUserId: "" };
+    setDraftFilters(restrictToMine);
+    setAppliedFilters(restrictToMine);
+  }, [canManageAll, contextQuery.isLoading, contextQuery.isPending, contextQuery.data]);
+
+  const listInput = useMemo(() => {
+    const scope = canManageAll ? appliedFilters.scope : "mine";
+    const assignedUserId = Number(appliedFilters.assignedUserId);
+    return {
+      keyword: appliedFilters.keyword.trim(),
+      ...(appliedFilters.grade ? { grade: appliedFilters.grade } : {}),
+      ...(appliedFilters.stage ? { stage: appliedFilters.stage } : {}),
+      scope,
+      ...(canManageAll &&
+      scope === "all" &&
+      Number.isInteger(assignedUserId) &&
+      assignedUserId > 0
+        ? { assignedUserId }
+        : {}),
+      archived: appliedFilters.archived,
+      due: appliedFilters.due,
+      page,
+      pageSize: PAGE_SIZE,
+    };
+  }, [appliedFilters, canManageAll, page]);
+  const listQuery = useRestoringListQuery(trpc.customer.list.useQuery(listInput, freshListOptions({
+    enabled: Boolean(contextQuery.data),
+  }, d51Ready)));
+  const result = listQuery.data;
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
+  const safePage = result ? Math.min(page, totalPages) : page;
+  const currentListInputRef = useRef(listInput);
+  currentListInputRef.current = listInput;
+
+  const closeCreate = () => {
+    setCreateOpen(false);
+    setConfirmDiscard(false);
+    setCreateState({ dirty: false, busy: false });
+    createButtonRef.current?.focus({ preventScroll: true });
+  };
+  const requestCloseCreate = () => {
+    if (createState.busy) return;
+    if (createState.dirty) setConfirmDiscard(true);
+    else closeCreate();
+  };
+  const handleCustomerSaved = ({ id, mode }: { id: number; mode: CustomerCreateSaveMode }) => {
+    if (mode === "close") closeCreate();
+    const savedListInput = listInput;
+    // Keep the current scope, filters and page. Never inject a record that does
+    // not match the server's authoritative filtered result into this table.
+    void utils.customer.list.invalidate()
+      .then(() => utils.customer.list.fetch(savedListInput, { staleTime: 0 }))
+      .then(refreshed => {
+        if (!mountedRef.current || JSON.stringify(currentListInputRef.current) !== JSON.stringify(savedListInput)) return;
+        if (!refreshed.items.some(customer => customer.id === id)) {
+          toast.info("客户已保存，当前筛选或页码下未显示，可调整筛选或查看客户。", {
+            action: { label: "查看客户", onClick: () => navigate(`/customers/${id}`) },
+          });
+        }
+      })
+      .catch(() => {
+        if (mountedRef.current) toast.warning("客户已保存，但列表刷新失败，请重试刷新列表，不要重复录入。");
+      });
+  };
+
+  useEffect(() => {
+    if (result && !listQuery.isFetching && safePage !== page) setPage(safePage);
+  }, [page, safePage, result, listQuery.isFetching]);
+
+  const updateDraft = <K extends keyof FilterState>(
+    key: K,
+    value: FilterState[K]
+  ) => {
+    setDraftFilters(current => ({ ...current, [key]: value }));
+  };
+
+  const applyFilters = () => {
+    const next = {
+      ...draftFilters,
+      keyword: draftFilters.keyword.trim(),
+      assignedUserId:
+        draftFilters.scope === "all" ? draftFilters.assignedUserId : "",
+    };
+    setDraftFilters(next);
+    setAppliedFilters(next);
+    setPage(1);
+  };
+
+  const resetFilters = () => {
+    // Scope is a header-level view choice, like inventory status, rather than
+    // a transient form condition. Resetting filters must not expose another
+    // assignee when moving between scope views.
+    const scope = canManageAll ? appliedFilters.scope : "mine";
+    const next = { ...DEFAULT_FILTERS, scope };
+    setDraftFilters(next);
+    setAppliedFilters(next);
+    setPage(1);
+  };
+
+  const changeScope = (scope: ScopeFilter) => {
+    const safeScope = canManageAll && scope === "all" ? "all" : "mine";
+    // Clear both draft and applied assignment when scope changes so switching
+    // back to all-company cannot silently revive a previous owner filter.
+    setDraftFilters(current => ({
+      ...current,
+      scope: safeScope,
+      assignedUserId: "",
+    }));
+    setAppliedFilters(current => ({
+      ...current,
+      scope: safeScope,
+      assignedUserId: "",
+    }));
+    setPage(1);
+  };
+
+  const canResetFilters = Boolean(
+    draftFilters.keyword ||
+      draftFilters.grade ||
+      draftFilters.stage ||
+      draftFilters.assignedUserId ||
+      draftFilters.due !== "all" ||
+      draftFilters.archived ||
+      appliedFilters.keyword ||
+      appliedFilters.grade ||
+      appliedFilters.stage ||
+      appliedFilters.assignedUserId ||
+      appliedFilters.due !== "all" ||
+      appliedFilters.archived
+  );
+
+  const emptyMessage = appliedFilters.archived
+    ? "暂无已归档客户"
+    : "暂无匹配客户";
+
+  return (
+    <PlatformLayout>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <h1 className="text-lg font-semibold text-slate-800">客户列表</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          {canManageAll ? (
+            <Select
+              value={appliedFilters.scope}
+              onValueChange={value => changeScope(value as ScopeFilter)}
+            >
+              <SelectTrigger
+                aria-label="客户范围"
+                className="h-8 w-[112px] bg-white text-xs"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mine">我的客户</SelectItem>
+                <SelectItem value="all">全企业</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Button
+            ref={createButtonRef}
+            type="button"
+            size="sm"
+            className="h-8 bg-[#185FA5] text-xs hover:bg-[#0C447C]"
+            aria-expanded={createOpen}
+            aria-controls="customer-entry-panel"
+            disabled={createState.busy || contextQuery.isPending || contextQuery.isError}
+            onClick={() => createOpen ? requestCloseCreate() : setCreateOpen(true)}
+          >
+            {createOpen ? <ChevronUp className="mr-1 h-3.5 w-3.5" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
+            {createOpen ? "收起录入" : "录入客户"}
+          </Button>
+        </div>
+      </div>
+
+      <section className="mb-3 rounded-lg border border-slate-200 bg-white p-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            placeholder="搜索客户名称、联系人或电话"
+            aria-label="搜索客户名称、联系人或电话"
+            value={draftFilters.keyword}
+            onChange={event => updateDraft("keyword", event.target.value)}
+            onKeyDown={event => {
+              if (event.key === "Enter") applyFilters();
+            }}
+            className="h-8 w-full bg-white text-xs sm:w-[230px]"
+          />
+          <Select
+            value={draftFilters.grade || "all"}
+            onValueChange={value =>
+              updateDraft(
+                "grade",
+                value === "all" ? "" : (value as GradeFilter)
+              )
+            }
+          >
+            <SelectTrigger
+              aria-label="按客户等级筛选"
+              className="h-8 w-[112px] bg-white text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部等级</SelectItem>
+              {CUSTOMER_GRADES.map(grade => (
+                <SelectItem key={grade} value={grade}>
+                  {grade}级客户
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={draftFilters.due}
+            onValueChange={value => updateDraft("due", value as DueFilter)}
+          >
+            <SelectTrigger
+              aria-label="按跟进状态筛选"
+              className="h-8 w-[126px] bg-white text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部跟进</SelectItem>
+              <SelectItem value="today">今日待跟进</SelectItem>
+              <SelectItem value="overdue">已逾期</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="inline-flex items-center gap-1.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className={toolbarActionClass}
+              onClick={applyFilters}
+            >
+              筛选
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className={toolbarActionClass}
+              disabled={!canResetFilters}
+              onClick={resetFilters}
+            >
+              重置
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-expanded={moreFiltersOpen}
+              className="h-8 min-w-[88px] justify-between border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900"
+              onClick={() => setMoreFiltersOpen(open => !open)}
+            >
+              更多筛选
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${moreFiltersOpen ? "rotate-180" : ""}`}
+              />
+            </Button>
+          </div>
+        </div>
+
+        {moreFiltersOpen ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+            <Select
+              value={draftFilters.stage || "all"}
+              onValueChange={value =>
+                updateDraft(
+                  "stage",
+                  value === "all" ? "" : (value as StageFilter)
+                )
+              }
+            >
+              <SelectTrigger
+                aria-label="按客户阶段筛选"
+                className="h-8 w-[126px] bg-white text-xs"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部阶段</SelectItem>
+                {CUSTOMER_STAGES.map(stage => (
+                  <SelectItem key={stage} value={stage}>
+                    {CUSTOMER_STAGE_LABELS[stage]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {canManageAll && draftFilters.scope === "all" ? (
+              <Select
+                value={draftFilters.assignedUserId || "all"}
+                onValueChange={value =>
+                  updateDraft("assignedUserId", value === "all" ? "" : value)
+                }
+              >
+                <SelectTrigger
+                  aria-label="按负责人筛选"
+                  className="h-8 w-[142px] bg-white text-xs"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部负责人</SelectItem>
+                  {contextQuery.data?.members.map(member => (
+                    <SelectItem
+                      key={member.userId}
+                      value={String(member.userId)}
+                    >
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            <Select
+              value={draftFilters.archived ? "archived" : "active"}
+              onValueChange={value =>
+                updateDraft("archived", value === "archived")
+              }
+            >
+              <SelectTrigger
+                aria-label="按归档状态筛选"
+                className="h-8 w-[126px] bg-white text-xs"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">在档客户</SelectItem>
+                <SelectItem value="archived">已归档客户</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className={toolbarActionClass}
+              onClick={applyFilters}
+            >
+              确定
+            </Button>
+          </div>
+        ) : null}
+      </section>
+
+      {createOpen && (
+        <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">
+          <CustomerCreateForm onCancel={requestCloseCreate} onSaved={handleCustomerSaved} onStateChange={setCreateState} />
+        </section>
+      )}
+      {confirmDiscard && <ConfirmDialog
+        title="放弃未保存的客户信息？"
+        description="已填写的信息尚未保存，收起录入后将被清空。"
+        confirmLabel="放弃并收起"
+        onCancel={() => setConfirmDiscard(false)}
+        onConfirm={closeCreate}
+      />}
+
+      {contextQuery.isError ? (
+        <ErrorPanel
+          message={`无法读取客户权限：${errorMessage(contextQuery.error)}`}
+          onRetry={() => contextQuery.refetch()}
+        />
+      ) : listQuery.isError ? (
+        <ErrorPanel
+          message={errorMessage(listQuery.error)}
+          onRetry={() => listQuery.refetch()}
+        />
+      ) : (
+        <Card className="gap-0 overflow-hidden p-0">
+          {listQuery.isPending ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (result?.items.length ?? 0) === 0 ? (
+            <div className="p-14 text-center">
+              <p className="text-sm font-medium text-slate-600">
+                {emptyMessage}
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {appliedFilters.archived
+                  ? "归档客户会保留历史记录，可由管理员恢复。"
+                  : "可以新建客户，或调整筛选条件后再试。"}
+              </p>
+              {!appliedFilters.archived ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="mt-2 h-7 px-0 text-xs text-[#185FA5]"
+                  disabled={createState.busy || contextQuery.isPending || contextQuery.isError}
+                  onClick={() => {
+                    setCreateOpen(true);
+                    document.getElementById("customer-entry-panel")?.scrollIntoView({ block: "nearest" });
+                  }}
+                >
+                  录入第一位客户
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <Table className="min-w-[900px] table-fixed">
+              <colgroup>
+                <col />
+                <col className="w-[164px]" />
+                <col className="w-[116px]" />
+                <col className="w-[96px]" />
+                <col className="w-[156px]" />
+                <col className="w-[88px]" />
+                <col className="w-[72px]" />
+              </colgroup>
+              <TableHeader>
+                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                    客户名称
+                  </TableHead>
+                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                    联系人 / 电话
+                  </TableHead>
+                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                    等级 / 阶段
+                  </TableHead>
+                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                    负责人
+                  </TableHead>
+                  <TableHead className="h-8 px-3 text-center text-[11px] text-slate-500" data-testid="followup-header">
+                    下次跟进
+                  </TableHead>
+                  <TableHead className="h-8 px-2 text-center text-[11px] text-slate-500" data-testid="demand-header">
+                    需求
+                  </TableHead>
+                  <TableHead className="h-8 whitespace-nowrap border-l border-slate-100 px-3 text-center text-[11px] text-slate-500" data-testid="actions-header">
+                    操作
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {result?.items.map(customer => {
+                  const incomplete = customerNeedsCompletion(customer);
+                  const overdue = isFollowUpOverdue(customer.nextFollowUpAt);
+                  return (
+                    <TableRow key={customer.id} className="h-14" data-page-memory-row={String(customer.id)}>
+                      <TableCell className="px-2 py-1.5 text-[12px]">
+                        <button
+                          type="button"
+                          className="block max-w-full truncate text-left font-semibold text-[#185FA5] hover:underline"
+                          title={customer.name || "未命名客户"}
+                          onClick={() => navigate(`/customers/${customer.id}`)}
+                        >
+                          {customer.name?.trim() || "未命名客户"}
+                        </button>
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          {incomplete ? (
+                            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                              待补全
+                            </span>
+                          ) : null}
+                          {customer.archivedAt ? (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+                              已归档
+                            </span>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-[12px]">
+                        <div
+                          className="truncate text-slate-700"
+                          title={customer.contactName || undefined}
+                        >
+                          {customer.contactName?.trim() || "—"}
+                        </div>
+                        <div
+                          className="mt-0.5 truncate text-[11px] text-muted-foreground"
+                          title={customer.phone || undefined}
+                        >
+                          {customer.phone?.trim() || "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-[12px]">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${gradeClass(customer.grade)}`}
+                          >
+                            {customer.grade}
+                          </span>
+                          <span
+                            className="truncate text-slate-600"
+                            title={CUSTOMER_STAGE_LABELS[customer.stage]}
+                          >
+                            {CUSTOMER_STAGE_LABELS[customer.stage]}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className="truncate px-2 py-1.5 text-[12px] text-slate-600"
+                        title={customer.assignedName}
+                      >
+                        {customer.assignedName || "—"}
+                      </TableCell>
+                      <TableCell className="px-3 py-1.5 text-center text-[12px] tabular-nums" data-testid="followup-cell">
+                        <div
+                          title={formatCustomerDateTime(customer.nextFollowUpAt)}
+                          className={
+                            overdue
+                              ? "truncate text-amber-700"
+                              : customer.nextFollowUpAt
+                                ? "truncate text-slate-700"
+                                : "truncate text-muted-foreground"
+                          }
+                        >
+                          {formatCustomerDateTime(customer.nextFollowUpAt)}
+                        </div>
+                        {overdue ? (
+                          <div className="mt-0.5 text-[10px] text-amber-700">
+                            已逾期
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-center" data-testid="demand-cell">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={Boolean(customer.archivedAt)}
+                          className="h-7 whitespace-nowrap px-1.5 text-[11px] text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                          onClick={() => setDemandCustomer({ id: customer.id, name: customer.name, archivedAt: customer.archivedAt })}
+                        >
+                          需求录入
+                        </Button>
+                      </TableCell>
+                      <TableCell className="border-l border-slate-100 px-3 py-1.5 text-center" data-testid="actions-cell">
+                        <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={Boolean(customer.archivedAt)}
+                            className="h-7 shrink-0 px-1.5 text-[11px] text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                            onClick={() =>
+                              navigate(`/customers/${customer.id}?follow=1`)
+                            }
+                          >
+                            跟进
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+
+          <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-3 py-2 text-xs text-muted-foreground">
+            <span className="whitespace-nowrap">
+              共 {result?.total ?? 0} 条 · 第 {safePage} / {totalPages} 页
+            </span>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 bg-white px-2 text-[11px]"
+                disabled={safePage <= 1 || listQuery.isFetching}
+                onClick={() => setPage(value => Math.max(1, value - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 bg-white px-2 text-[11px]"
+                disabled={safePage >= totalPages || listQuery.isFetching}
+                onClick={() =>
+                  setPage(value => Math.min(totalPages, value + 1))
+                }
+              >
+                下一页
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+      {demandCustomer && <CustomerDemandDialog
+        customer={demandCustomer}
+        onClose={() => setDemandCustomer(null)}
+      />}
+    </PlatformLayout>
+  );
+}
+
+function gradeClass(grade: CustomerData["grade"]): string {
+  return grade === "A"
+    ? "bg-[#FCEBEB] text-[#A32D2D]"
+    : grade === "B"
+      ? "bg-[#FFF7E6] text-[#B8741A]"
+      : grade === "C"
+        ? "bg-[#e8f0fe] text-[#185FA5]"
+        : "bg-slate-100 text-slate-500";
+}
+
+function isFollowUpOverdue(value: string | null | undefined): boolean {
+  if (!value || Number.isNaN(new Date(value).getTime())) return false;
+  const dateKey = (date: Date) => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find(item => item.type === type)?.value ?? "";
+    return `${part("year")}-${part("month")}-${part("day")}`;
+  };
+  return dateKey(new Date(value)) < dateKey(new Date());
+}
+
+function ErrorPanel({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <section className="rounded-lg border border-[#F5C2C2] bg-[#FFF8F8] p-5 text-center">
+      <p className="text-sm text-[#A32D2D]">加载失败：{message}</p>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="mt-3 h-8 text-xs"
+        onClick={onRetry}
+      >
+        重试
+      </Button>
+    </section>
+  );
+}

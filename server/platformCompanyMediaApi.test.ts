@@ -15,6 +15,7 @@ const operator = {
 };
 const status = {
   featured: false,
+  showcased: false,
   eligible: true,
   approvedPhotoCount: 3,
   hasPublishedInventory: true,

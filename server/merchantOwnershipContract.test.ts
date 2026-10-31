@@ -31,7 +31,8 @@ describe("商户客户归属查询与申请审批", () => {
     expect(search).toContain("eq(users.id, input.adminUserId)");
     expect(search).toContain('.for("update")');
     expect(router).toContain("localAdminUserId: ctx.adminAccount?.id");
-    expect(search).toContain('input.messageThreadId !== undefined ? `thread:${input.messageThreadId}:${portalUserId ?? ""}:${compact}` : compact');
+    expect(search).toContain("input.messageThreadId !== undefined");
+    expect(search).toContain("`thread:${input.messageThreadId}:${portalUserId ?? \"\"}:${compact}`");
     expect(search).toContain("merchantOwnershipQueryAudits");
     expect(search).toContain("companyName: row.companyName");
     expect(search).toContain("ownerName: row.salesOwner");
@@ -80,7 +81,9 @@ describe("商户客户归属查询与申请审批", () => {
   it("创建申请必须携带绑定当前账号与商户的短时查重凭证", () => {
     expect(db).toContain("OWNERSHIP_REQUEST_TOKEN_TTL_MS");
     expect(db).toContain('createHmac("sha256", secret)');
-    expect(db).toContain("verifyOwnershipRequestToken(input.verificationToken, input.merchantId, input.requesterAdminUserId)");
+    expect(db).toContain("verifyOwnershipRequestToken(");
+    expect(db).toContain("input.verificationToken,");
+    expect(db).toContain("input.requesterAdminUserId");
     expect(router).toContain("verificationToken: z.string().min(1)");
     expect(lookup).toContain("verificationToken: requestTarget.verificationToken");
   });

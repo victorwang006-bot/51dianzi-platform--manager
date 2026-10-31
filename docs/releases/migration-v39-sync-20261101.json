@@ -1,0 +1,43 @@
+{
+  "release": "migration-v39",
+  "repository": "victorwang006-bot/51dianzi-platform--manager",
+  "side": "admin",
+  "sourceTruth": "Verified actually delivered ECS v39 source archive; not a new deployment",
+  "sourceArchiveSha256": "99f8312d9fb68921c316d9ae522ab24e87856dda3b7b0c4da34e82fac5414f0a",
+  "fixedSourceManifestSha256": "e34069ac40a69f941da2760625d7b1dc793c38d54119f1194b9c953df33f8839",
+  "sourceAggregateSha256": "2540d9109ead8620c8e9c2522a03b9476a87a0fd89abe3fcf2110a246314f47b",
+  "verifiedSourceFileCount": 1219,
+  "githubParentCommit": "963f0b6a2bfaca6f7f47f7ed92054514a6f77d74",
+  "syncPreparedAt": "2026-10-31T17:10:55.868763+00:00",
+  "ecsActivationStartedAt": "2026-10-31T16:28:10.937Z",
+  "ecsPostStateReadCompletedAt": "2026-10-31T16:28:46.751Z",
+  "completionReceiptWriteObservedAt": "2026-10-31T16:31:39.105Z",
+  "timestampNote": "Activation start and completion evidence write are distinct; Git author/committer timestamps are current, never backdated.",
+  "productionStaticRoot": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+  "productionFrontendAsset": {
+    "path": "/assets/main-d3ILIzDL.js",
+    "sha256": "c2fe3800a970685738b171c5d3d640f23b7ee5b6cae2d5b285bf878a048ccbc0"
+  },
+  "productionLayerBoundary": {
+    "v39Changed": [
+      "frontend-static"
+    ],
+    "v39Unchanged": [
+      "backend-static",
+      "frontend-server-runtime",
+      "backend-server-runtime",
+      "workers",
+      "database"
+    ],
+    "thisSyncChangesProduction": false
+  },
+  "remoteOnlyExistingFilesPreserved": true,
+  "workflowPermissionsNeeded": false,
+  "secretFilesIncluded": false,
+  "originalFrozenFileCount": 1220,
+  "repositorySyncedSourceFileCount": 1219,
+  "excludedScaffoldFiles": [
+    "template.json"
+  ],
+  "exclusionNote": "template.json is Manus scaffold metadata excluded by the existing repository GIT_WORKFLOW; original archive and manifest hashes remain unchanged."
+}

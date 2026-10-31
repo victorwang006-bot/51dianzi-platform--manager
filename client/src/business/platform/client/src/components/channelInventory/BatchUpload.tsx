@@ -1,0 +1,844 @@
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  Button,
+} from "./bridge";
+import {
+  fields,
+  mapGrid,
+  suggestMapping,
+  templateGrid,
+  validateDraft,
+  validateMapping,
+  toPayload,
+  type Draft,
+  type Payload,
+} from "./import";
+import { runBatch, type BatchEntry } from "./queue";
+import "./batch.css";
+import "./layout.css";
+
+type Channel = { id: number; name: string; active: boolean };
+type Grid = (string | number | null | undefined)[][];
+type Props = {
+  channels: Channel[];
+  channelTotal: number | null;
+  initialChannelId?: number;
+  enterpriseId: number;
+  actorUserId: number;
+  onClose: () => void;
+  onDirtyChange: (value: boolean) => void;
+  onBusyChange: (value: boolean) => void;
+  onLoadMoreChannels: () => void;
+  loadingMoreChannels: boolean;
+  onCreate: (payload: Payload, requestId: string) => Promise<unknown>;
+  onComplete: () => void;
+  isCurrent: () => boolean;
+};
+function Icon({
+  kind,
+  size = 18,
+}: {
+  kind: "upload" | "file" | "lock" | "check";
+  size?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {kind === "upload" ? (
+        <>
+          <path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5" />
+        </>
+      ) : kind === "file" ? (
+        <>
+          <path d="M14 2H6v20h12V6l-4-4ZM14 2v5h5M9 11h6m-6 4h6" />
+        </>
+      ) : kind === "lock" ? (
+        <>
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 6v2" />
+        </>
+      ) : (
+        <path d="m5 12 4 4L19 6" />
+      )}
+    </svg>
+  );
+}
+const uuid = () => crypto.randomUUID();
+export function BatchUpload(props: Props) {
+  const {
+    channels,
+    channelTotal,
+    initialChannelId,
+    enterpriseId,
+    actorUserId,
+  } = props;
+  const key = `d51-channel-inventory-batch-v1:${actorUserId}:${enterpriseId}`;
+  const [channelId, setChannelId] = useState(String(initialChannelId ?? ""));
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [grid, setGrid] = useState<Grid>([]);
+  const [rawGrid, setRawGrid] = useState<Grid>([]);
+  const [mapping, setMapping] = useState<Record<keyof Draft, number>>(
+    suggestMapping([])
+  );
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [excluded, setExcluded] = useState<number[]>([]);
+  const [entries, setEntries] = useState<BatchEntry[]>([]);
+  const [saved, setSaved] = useState<{
+    channelId: number;
+    entries: BatchEntry[];
+    name: string;
+  } | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const mounted = useRef(true);
+  const serial = useRef(0);
+  const stop = useRef(false);
+  const running = useRef(false);
+  const latest = useRef(props);
+  latest.current = props;
+  const current = () => mounted.current && latest.current.isCurrent();
+  useEffect(() => {
+    mounted.current = true;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (
+          data.version === 1 &&
+          data.actorUserId === actorUserId &&
+          data.enterpriseId === enterpriseId &&
+          Number.isSafeInteger(data.channelId) &&
+          data.channelId > 0 &&
+          Array.isArray(data.entries) &&
+          data.entries.length <= 1000 &&
+          data.entries.length > 0 &&
+          data.entries.every(
+            (r: BatchEntry) =>
+              /^[-0-9a-f]{36}$/i.test(r.requestId) &&
+              ["pending", "success", "unknown"].includes(r.status) &&
+              r.payload.channelId === data.channelId
+          )
+        )
+          setSaved(data);
+      }
+    } catch {
+      setError("无法读取上次上传记录；请检查浏览器会话存储权限。");
+    }
+    return () => {
+      mounted.current = false;
+      serial.current += 1;
+      stop.current = true;
+    };
+  }, [key]);
+  useEffect(() => {
+    const handler = (event: BeforeUnloadEvent) => {
+      if (running.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+  const persist = (next: BatchEntry[], id: number) => {
+    try {
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({
+          version: 1,
+          enterpriseId,
+          actorUserId,
+          channelId: id,
+          name,
+          entries: next,
+        })
+      );
+      return true;
+    } catch {
+      stop.current = true;
+      if (current())
+        setError(
+          "浏览器无法保存幂等恢复记录，已停止后续上传。请勿另开新批次重复导入。"
+        );
+      return false;
+    }
+  };
+  const loadGrid = (
+    next: Grid,
+    fileName: string,
+    originalValues: Grid = []
+  ) => {
+    setGrid(next);
+    setRawGrid(originalValues);
+    setMapping(suggestMapping(next[0]?.map(String) ?? []));
+    setName(fileName);
+    setExcluded([]);
+    setError("");
+    setStep(2);
+    latest.current.onDirtyChange(true);
+  };
+  const selectFile = async (file: File) => {
+    const token = ++serial.current;
+    setError("");
+    if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
+      setError("请选择 Excel（.xlsx/.xls）或 CSV 文件。");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("每份文件最多 5MB，请拆分后上传。");
+      return;
+    }
+    setLoading(true);
+    try {
+      const XLSX = await import("xlsx");
+      const buffer = await file.arrayBuffer();
+      if (!current() || token !== serial.current) return;
+      const workbook = XLSX.read(buffer, {
+        type: "array",
+        sheetRows: 1002,
+        cellFormula: false,
+        cellHTML: false,
+        cellDates: false,
+        raw: /\.csv$/i.test(file.name),
+      });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) throw new Error("表格没有可读取的工作表。");
+      const sheet = workbook.Sheets[sheetName];
+      const range = XLSX.utils.decode_range(
+        sheet["!fullref"] ?? sheet["!ref"] ?? "A1"
+      );
+      if (range.e.r > 1000)
+        throw new Error(
+          "每批最多1000行数据，请拆分表格；不会截断或静默跳过数据。"
+        );
+      if (range.e.c > 39)
+        throw new Error("每份表格最多40列，请删除无关列后重新上传。");
+      const next = XLSX.utils.sheet_to_json<(string | number)[]>(sheet, {
+        header: 1,
+        defval: "",
+        raw: false,
+        blankrows: true,
+      });
+      const originalValues = XLSX.utils.sheet_to_json<(string | number)[]>(
+        sheet,
+        {
+          header: 1,
+          defval: "",
+          raw: true,
+          blankrows: true,
+        }
+      );
+      if (next.length < 2)
+        throw new Error("首行应为表头，且至少有一行库存数据。");
+      if (current() && token === serial.current)
+        loadGrid(next, `${file.name} · ${sheetName}`, originalValues);
+    } catch (e) {
+      if (current() && token === serial.current)
+        setError(
+          e instanceof Error ? e.message : "文件读取失败，请用模板整理后重试。"
+        );
+    } finally {
+      if (current() && token === serial.current) setLoading(false);
+    }
+  };
+  const download = async () => {
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet(templateGrid());
+      sheet["!cols"] = fields.map(f => ({ wch: f.key === "note" ? 35 : 18 }));
+      XLSX.utils.book_append_sheet(workbook, sheet, "渠道库存");
+      XLSX.writeFileXLSX(workbook, "渠道库存批量上传模板.xlsx");
+    } catch {
+      if (current()) setError("模板生成失败，请稍后重试。");
+    }
+  };
+  const rows = mapGrid(grid, mapping, rawGrid).filter(
+    r => !excluded.includes(r.row)
+  );
+  const bad = rows.filter(r => r.errors.length);
+  const mappingErrors = validateMapping(mapping);
+  const selected = channels.find(c => c.id === Number(channelId));
+  const completed = entries.filter(e => e.status === "success").length;
+  const hasQueue = entries.length > 0;
+  const start = async () => {
+    if (running.current || !current()) return;
+    if (!selected || !selected.active) {
+      setError("请选择有权访问且启用的已加载渠道。");
+      return;
+    }
+    let next = entries;
+    if (!hasQueue) {
+      if (mappingErrors.length || bad.length || !rows.length) {
+        setError("请完成字段匹配并修正错误行。");
+        return;
+      }
+      next = rows.map(r => ({
+        row: r.row,
+        requestId: uuid(),
+        payload: toPayload(r.draft, selected.id),
+        status: "pending",
+      }));
+    }
+    if (!persist(next, selected.id)) return;
+    stop.current = false;
+    running.current = true;
+    setBusy(true);
+    setError("");
+    setEntries(next);
+    setStep(4);
+    props.onBusyChange(true);
+    props.onDirtyChange(true);
+    try {
+      const result = await runBatch(next, {
+        submit: (payload, requestId) =>
+          latest.current.onCreate(payload, requestId),
+        isCurrent: current,
+        shouldStop: () => stop.current,
+        onProgress: progress => {
+          persist(progress, selected.id);
+          if (current()) setEntries(progress);
+        },
+      });
+      if (!current()) return;
+      setEntries(result.entries);
+      props.onComplete();
+      if (result.complete) {
+        sessionStorage.removeItem(key);
+        props.onDirtyChange(false);
+        setSaved(null);
+      } else if (result.reason) {
+        setError(
+          result.reason === "stopped"
+            ? "上传已暂停，已保存记录不会撤回；可继续原批次。"
+            : result.reason === "context-changed"
+              ? "当前企业或账号已变化，已停止后续上传。"
+              : (result.entries.find(entry => entry.error)?.error ??
+                "有记录的保存结果待确认，请按原批次重试。")
+        );
+      }
+    } catch (e) {
+      if (current())
+        setError(
+          e instanceof Error ? e.message : "上传已中断，请保持当前批次并重试。"
+        );
+    } finally {
+      running.current = false;
+      if (current()) {
+        setBusy(false);
+        props.onBusyChange(false);
+      }
+    }
+  };
+  const close = () => {
+    if (running.current) {
+      stop.current = true;
+      setError("正在停止：当前请求完成后不再提交下一行，请稍候。");
+      return;
+    }
+    if (
+      entries.length &&
+      completed !== entries.length &&
+      !window.confirm(
+        `本批次已确认保存${completed}条，剩余记录可能尚未提交。关闭后可在当前标签页恢复原批次，切勿重新上传相同表格。是否关闭？`
+      )
+    )
+      return;
+    if (
+      !entries.length &&
+      grid.length &&
+      !window.confirm("尚未提交的表格将被关闭，是否继续？")
+    )
+      return;
+    props.onDirtyChange(false);
+    props.onClose();
+  };
+  const restore = () => {
+    if (!saved) return;
+    setChannelId(String(saved.channelId));
+    setEntries(saved.entries);
+    setName(saved.name);
+    setSaved(null);
+    setStep(4);
+    props.onDirtyChange(true);
+    setError(
+      "已恢复原批次。继续上传将使用原请求号确认未知结果，不会重复创建已保存记录。"
+    );
+  };
+  return (
+    <Dialog open onOpenChange={(value: boolean) => !value && close()}>
+      <DialogContent
+        className="ci-dialog ci-batch-dialog"
+        onEscapeKeyDown={(event: KeyboardEvent) => {
+          if (busy) {
+            event.preventDefault();
+            stop.current = true;
+          }
+        }}
+        onPointerDownOutside={(event: Event) => event.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>批量上传渠道库存</DialogTitle>
+          <DialogDescription>
+            Excel/CSV → 字段匹配 →
+            预览确认。仅记录渠道信息，不入库、不公开发布、不换算币种税额。
+          </DialogDescription>
+        </DialogHeader>
+        <div className="ci-batch-tabs">
+          <span>单个上传请使用页面单条入口</span>
+          <strong>
+            <Icon kind="file" size={15} />
+            Excel / CSV 批量上传
+          </strong>
+        </div>
+        <div className="ci-batch-steps">
+          {["选择表格", "匹配字段", "预览确认", "上传结果"].map((label, i) => (
+            <span key={label} className={step >= i + 1 ? "is-active" : ""}>
+              <b>{step > i + 1 ? "✓" : i + 1}</b>
+              {label}
+            </span>
+          ))}
+        </div>
+        <div className="ci-batch-channel">
+          <label className="ci-field">
+            <span>关联渠道 *</span>
+            <select
+              className="ci-batch-control"
+              aria-label="批量关联渠道"
+              value={channelId}
+              disabled={hasQueue || busy}
+              onChange={e => setChannelId(e.target.value)}
+            >
+              <option value="">请选择渠道</option>
+              {channels.map(c => (
+                <option key={c.id} value={c.id} disabled={!c.active}>
+                  {c.name}
+                  {c.active ? "" : "（已停用）"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p>
+            <Icon kind="lock" size={14} />
+            所有行关联同一个渠道；账号、企业和负责人由服务端校验，沿用原数据权限。
+          </p>
+        </div>
+        {channelTotal !== null && channels.length < channelTotal && (
+          <p className="ci-dialog-note">
+            已加载 {channels.length} / {channelTotal} 个渠道。
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="ci-inline-link"
+              onClick={props.onLoadMoreChannels}
+              disabled={props.loadingMoreChannels || busy}
+            >
+              {props.loadingMoreChannels ? "正在加载…" : "加载更多渠道"}
+            </Button>
+          </p>
+        )}
+        {saved && (
+          <div className="ci-batch-resume">
+            <Icon kind="file" />
+            <div>
+              <strong>发现本标签页未完成的上传批次</strong>
+              <p>
+                已确认{" "}
+                {saved.entries.filter(e => e.status === "success").length} /{" "}
+                {saved.entries.length} 条。建议恢复原批次，不要重复上传表格。
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="ci-button ci-primary"
+              onClick={restore}
+            >
+              恢复原批次
+            </Button>
+          </div>
+        )}
+        {step === 1 && (
+          <>
+            <div
+              className={`ci-batch-drop ${dragging ? "is-dragging" : ""}`}
+              onDragOver={e => {
+                e.preventDefault();
+                if (!saved) setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setDragging(false);
+                const file = e.dataTransfer.files[0];
+                if (file && !loading && !saved) void selectFile(file);
+              }}
+            >
+              <Icon kind="upload" size={33} />
+              <strong>
+                {loading
+                  ? "正在读取本地表格…"
+                  : "拖拽库存表格到这里，或选择文件"}
+              </strong>
+              <p>XLSX / XLS / CSV · 首行表头 · 单批1000条以内 · 5MB以内</p>
+              <input
+                hidden
+                ref={fileInput}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) void selectFile(file);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                className="ci-button ci-primary"
+                disabled={loading || !!saved}
+                onClick={() => fileInput.current?.click()}
+              >
+                <Icon kind="upload" size={15} />
+                选择库存表格
+              </Button>
+              <small>
+                文件在本地浏览器解析，确认前不提交库存；多工作表仅读第一个。
+              </small>
+            </div>
+            <button
+              className="ci-batch-template"
+              type="button"
+              onClick={() => void download()}
+            >
+              <Icon kind="file" size={15} />
+              下载空白Excel模板
+            </button>
+            <div className="ci-batch-note">
+              <strong>填写说明</strong>
+              <p>
+                料号、品牌必填；数量空白表示待确认，报价空白表示面议。金额仅接受
+                CNY，税务口径为空按“待确认”记录，不进行转换。
+              </p>
+              <p>
+                自动识别规范千位分隔符（如4,000→4000）；Excel数量使用原始数值，不会因显示格式误报或把小数四舍五入为整数。
+              </p>
+              <p>
+                不读取表格中的账号、企业、负责人或渠道列。批量按新记录添加，不覆盖已有库存。
+              </p>
+            </div>
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <div className="ci-batch-file">
+              <Icon kind="file" />
+              <div>
+                <strong>{name}</strong>
+                <p>识别到 {rows.length} 条非空记录；请核对字段对应关系。</p>
+              </div>
+            </div>
+            <div className="ci-batch-mapping">
+              {fields.map(f => (
+                <label className="ci-field" key={f.key}>
+                  <span>
+                    {f.label}
+                    {f.required ? " *" : ""}
+                  </span>
+                  <select
+                    aria-label={`匹配${f.label}`}
+                    className="ci-batch-control"
+                    value={mapping[f.key]}
+                    onChange={e =>
+                      setMapping(v => ({
+                        ...v,
+                        [f.key]: Number(e.target.value),
+                      }))
+                    }
+                  >
+                    <option value={-1}>不导入 / 留空</option>
+                    {(grid[0] ?? []).map((header, i) => (
+                      <option key={i} value={i}>
+                        {String(header || `第${i + 1}列`)}
+                      </option>
+                    ))}
+                  </select>
+                  {mapping[f.key] >= 0 && (
+                    <small>
+                      示例：{String(grid[1]?.[mapping[f.key]] ?? "") || "空白"}
+                    </small>
+                  )}
+                </label>
+              ))}
+            </div>
+            {mappingErrors.length > 0 && (
+              <div className="ci-error">{mappingErrors.join("；")}</div>
+            )}
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <div className="ci-batch-summary">
+              <span>
+                <b>{rows.length - bad.length}</b> 条通过校验
+              </span>
+              <span className={bad.length ? "ci-batch-red" : ""}>
+                <b>{bad.length}</b> 条需要修正
+              </span>
+              {excluded.length > 0 && (
+                <small>已明确移除 {excluded.length} 行</small>
+              )}
+            </div>
+            {bad.length > 0 && (
+              <div className="ci-error ci-batch-errors">
+                <div>
+                  请修正文件后重新上传，或明确移除错误行。不会静默跳过错误记录。
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="ci-button"
+                  onClick={() =>
+                    setExcluded(v => [...v, ...bad.map(r => r.row)])
+                  }
+                >
+                  移除全部错误行
+                </Button>
+              </div>
+            )}
+            <div className="ci-batch-preview">
+              <table>
+                <thead>
+                  <tr>
+                    <th>原表行号</th>
+                    <th>料号 / 品牌</th>
+                    <th>可供数量</th>
+                    <th>报价 CNY</th>
+                    <th>税务口径</th>
+                    <th>校验</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.slice(0, 100).map(r => (
+                    <tr
+                      key={r.row}
+                      className={r.errors.length ? "has-error" : ""}
+                    >
+                      <td>{r.row}</td>
+                      <td>
+                        <strong>{r.draft.partNumber || "—"}</strong>
+                        <small>{r.draft.brand || "—"}</small>
+                      </td>
+                      <td>{r.draft.qty || "待确认"}</td>
+                      <td>{r.draft.price || "面议"}</td>
+                      <td>
+                        {r.draft.taxIncluded === "true"
+                          ? "含税"
+                          : r.draft.taxIncluded === "false"
+                            ? "未税"
+                            : "待确认"}
+                      </td>
+                      <td>
+                        {r.errors.length ? (
+                          <span className="ci-batch-red">
+                            {r.errors.join("；")}
+                          </span>
+                        ) : (
+                          <span className="ci-batch-green">✓ 通过</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          title={`移除原表第${r.row}行`}
+                          aria-label={`移除原表第${r.row}行`}
+                          onClick={() => setExcluded(v => [...v, r.row])}
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="ci-batch-preview-note">
+              预览展示前100条；确认将添加本批全部 {rows.length}{" "}
+              条记录，不覆盖原库存。渠道：{selected?.name ?? "未选择"}。
+            </p>
+          </>
+        )}
+        {step === 4 && (
+          <>
+            <div className="ci-batch-result">
+              <Icon
+                kind={
+                  completed === entries.length && entries.length
+                    ? "check"
+                    : "upload"
+                }
+                size={31}
+              />
+              <h3>
+                {busy
+                  ? "正在按行上传，请勿重复提交"
+                  : completed === entries.length
+                    ? "本批渠道库存已保存"
+                    : "上传已暂停 / 中断"}
+              </h3>
+              <p>
+                已确认保存 <strong>{completed}</strong> / {entries.length} 条
+              </p>
+              <progress value={completed} max={entries.length || 1} />
+              <small>
+                每行独立保存；暂停不会撤回已保存行。继续时沿用原请求号，未知结果会安全重试确认。
+              </small>
+            </div>
+            <div className="ci-batch-preview">
+              <table>
+                <thead>
+                  <tr>
+                    <th>原表行号</th>
+                    <th>料号</th>
+                    <th>状态</th>
+                    <th>说明</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries
+                    .filter(e => e.status !== "success")
+                    .slice(0, 50)
+                    .map(e => (
+                      <tr key={e.requestId}>
+                        <td>{e.row}</td>
+                        <td>{e.payload.partNumber}</td>
+                        <td>
+                          {e.status === "unknown"
+                            ? "待确认 / 重试"
+                            : "等待上传"}
+                        </td>
+                        <td className="ci-batch-red">{e.error ?? "—"}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+        {error && (
+          <div className="ci-error" role="alert">
+            {error}
+          </div>
+        )}
+        <div className="ci-dialog-footer ci-batch-footer">
+          <span>
+            <Icon kind="lock" size={13} />
+            沿用现有渠道库存权限
+          </span>
+          {step > 1 && !hasQueue && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="ci-button"
+              disabled={loading}
+              onClick={() => {
+                setStep(step === 3 ? 2 : 1);
+                setError("");
+              }}
+            >
+              上一步
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ci-button"
+            onClick={close}
+          >
+            {busy
+              ? "停止后关闭"
+              : hasQueue && completed === entries.length
+                ? "完成"
+                : "取消"}
+          </Button>
+          {step === 2 && (
+            <Button
+              type="button"
+              className="ci-button ci-primary"
+              size="sm"
+              disabled={!!mappingErrors.length || !rows.length}
+              onClick={() => {
+                setExcluded([]);
+                setStep(3);
+              }}
+            >
+              预览并校验
+            </Button>
+          )}
+          {step === 3 && (
+            <Button
+              type="button"
+              size="sm"
+              className="ci-button ci-primary"
+              disabled={
+                !selected?.active ||
+                !!bad.length ||
+                !rows.length ||
+                !!mappingErrors.length
+              }
+              onClick={() => void start()}
+            >
+              确认上传 {rows.length} 条
+            </Button>
+          )}
+          {step === 4 && completed < entries.length && (
+            <Button
+              type="button"
+              size="sm"
+              className="ci-button ci-primary"
+              disabled={busy || !selected?.active}
+              onClick={() => void start()}
+            >
+              按原批次继续 / 重试
+            </Button>
+          )}
+          {busy && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="ci-button"
+              onClick={() => {
+                stop.current = true;
+                setError("将在当前请求结束后暂停。");
+              }}
+            >
+              暂停上传
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

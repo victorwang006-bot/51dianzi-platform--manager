@@ -1,0 +1,478 @@
+.ci-batch-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-width: 900px !important;
+  font-size: 13px !important;
+}
+.ci-batch-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 7px 0 13px;
+  font-size: 12px;
+}
+.ci-batch-tabs > span {
+  color: #9aa6b6;
+  font-size: 11px;
+}
+.ci-batch-tabs > strong {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: #185fa5;
+  font-weight: 500;
+}
+.ci-batch-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 9px 0 15px;
+}
+.ci-batch-steps > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a3afbf;
+  font-size: 11px;
+  white-space: nowrap;
+  flex: 1;
+}
+.ci-batch-steps b {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9bacbf;
+  font-size: 10px;
+  font-weight: 500;
+}
+.ci-batch-steps .is-active {
+  color: #185fa5;
+}
+.ci-batch-steps .is-active b {
+  background: #eaf3fd;
+  border-color: #c9ddf2;
+  color: #185fa5;
+}
+.ci-batch-channel {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 20px;
+  align-items: end;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e8edf3;
+}
+.ci-batch-channel > p {
+  margin: 0;
+  padding-bottom: 7px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #8998ad;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.ci-batch-control {
+  display: block;
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 6px;
+  height: 36px;
+  padding: 5px 9px;
+  font: inherit;
+  color: #475569;
+  font-size: 12px;
+}
+.ci-batch-control:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+.ci-batch-resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffbf1;
+  border: 1px solid #f0e4c4;
+  padding: 12px 14px;
+  border-radius: 6px;
+  color: #aa8d5d;
+}
+.ci-batch-resume > div {
+  flex: 1;
+}
+.ci-batch-resume strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.ci-batch-resume p {
+  font-size: 11px;
+  margin: 5px 0 0;
+  line-height: 1.8;
+}
+.ci-batch-drop {
+  border: 1.5px dashed #c9d9ee;
+  border-radius: 7px;
+  padding: 28px 15px;
+  background: #fbfdff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: #6b8dbb;
+  margin-top: 6px;
+}
+.ci-batch-drop.is-dragging {
+  background: #edf5ff;
+  border-color: #185fa5;
+}
+.ci-batch-drop strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: #5579a6;
+}
+.ci-batch-drop p {
+  margin: 0;
+  font-size: 11px;
+  color: #95a7bf;
+}
+.ci-batch-drop small {
+  font-size: 10px;
+  color: #a8b5c6;
+  line-height: 1.8;
+}
+.ci-batch-dialog svg {
+  flex-shrink: 0;
+}
+.ci-batch-template {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto;
+  border: 0;
+  background: none;
+  color: #185fa5;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.ci-batch-note {
+  border: 1px solid #e7edf4;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 13px 15px;
+  color: #8899af;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.ci-batch-note strong {
+  color: #647d9d;
+  font-weight: 500;
+}
+.ci-batch-note p {
+  margin: 6px 0 0;
+}
+.ci-batch-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e0eaf5;
+  background: #f8fbff;
+  border-radius: 6px;
+  padding: 12px 14px;
+  color: #6d8daf;
+}
+.ci-batch-file strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.ci-batch-file p {
+  font-size: 10px;
+  margin: 5px 0 0;
+  color: #94a5bc;
+}
+.ci-batch-mapping {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 19px 18px;
+}
+.ci-batch-mapping small {
+  font-size: 10px;
+  color: #a0aec1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.ci-batch-summary {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  background: #f7fafc;
+  border: 1px solid #e5edf4;
+  border-radius: 6px;
+  padding: 14px 17px;
+  font-size: 11px;
+  color: #6e9c8e;
+}
+.ci-batch-summary b {
+  font-size: 22px;
+  font-weight: 500;
+  margin-right: 5px;
+}
+.ci-batch-summary small {
+  margin-left: auto;
+  color: #a0aec0;
+  font-size: 10px;
+}
+.ci-batch-errors {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 0;
+}
+.ci-batch-preview {
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  max-height: 300px;
+}
+.ci-batch-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.ci-batch-preview th {
+  padding: 10px 12px;
+  text-align: left;
+  color: #7e90a8;
+  background: #f8fafc;
+  font-size: 10px;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+}
+.ci-batch-preview td {
+  padding: 11px 12px;
+  border-top: 1px solid #edf1f6;
+  color: #657990;
+}
+.ci-batch-preview td strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #486285;
+}
+.ci-batch-preview td small {
+  display: block;
+  font-size: 10px;
+  color: #99a8bb;
+  margin-top: 4px;
+}
+.ci-batch-preview td > button {
+  border: 0;
+  background: none;
+  color: #a7b1c1;
+  font-size: 17px;
+  padding: 2px 4px;
+}
+.ci-batch-preview .has-error {
+  background: #fff7f6;
+}
+.ci-batch-preview .ci-batch-red {
+  display: block;
+  min-width: 120px;
+  max-width: 230px;
+  white-space: normal;
+  line-height: 1.8;
+}
+.ci-batch-red {
+  color: #ae7270 !important;
+}
+.ci-batch-green {
+  color: #5e9785;
+}
+.ci-batch-preview-note {
+  margin: 0;
+  color: #9ba9bc;
+  font-size: 10px;
+  line-height: 1.9;
+}
+.ci-batch-footer {
+  margin-top: 5px;
+}
+.ci-batch-footer > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: auto;
+  font-size: 10px;
+  color: #9aabbe;
+}
+.ci-batch-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 11px;
+  padding: 18px 10px;
+  color: #7896b8;
+}
+.ci-batch-result h3 {
+  font-size: 15px;
+  font-weight: 500;
+  color: #59779e;
+  margin: 0;
+}
+.ci-batch-result p {
+  font-size: 12px;
+  color: #889db7;
+  margin: 0;
+}
+.ci-batch-result p strong {
+  font-weight: 500;
+  color: #185fa5;
+  font-size: 20px;
+  margin: 0 3px;
+}
+.ci-batch-result progress {
+  width: min(340px, 90%);
+  height: 7px;
+  border-radius: 8px;
+  accent-color: #185fa5;
+}
+.ci-batch-result small {
+  font-size: 10px;
+  color: #a1b0c3;
+  line-height: 1.9;
+  max-width: 510px;
+}
+.ci-batch-dialog button:focus-visible,
+.ci-batch-dialog select:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+.ci-batch-dialog .ci-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+.ci-batch-dialog .ci-batch-control:hover:not(:disabled) {
+  border-color: #94a9c4;
+}
+.ci-batch-dialog .ci-error {
+  margin-top: 0;
+}
+@media (max-width: 700px) {
+  .ci-batch-dialog {
+    width: calc(100vw - 20px);
+    max-height: 92dvh;
+  }
+  .ci-batch-steps {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ci-batch-steps > span {
+    font-size: 10px;
+    gap: 5px;
+  }
+  .ci-batch-steps b {
+    width: 20px;
+    height: 20px;
+  }
+  .ci-batch-channel {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .ci-batch-channel > p {
+    font-size: 10px;
+    padding: 0;
+  }
+  .ci-batch-mapping {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px 12px;
+  }
+  .ci-batch-footer {
+    flex-wrap: wrap;
+  }
+  .ci-batch-footer > span {
+    flex-basis: 100%;
+    margin-bottom: 3px;
+  }
+  .ci-batch-drop {
+    padding: 22px 13px;
+    gap: 12px;
+  }
+  .ci-batch-drop p {
+    font-size: 10px;
+    line-height: 1.9;
+  }
+  .ci-batch-resume {
+    flex-wrap: wrap;
+    font-size: 10px;
+  }
+  .ci-batch-summary {
+    gap: 16px;
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+  .ci-batch-summary b {
+    font-size: 19px;
+  }
+  .ci-batch-summary small {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+  .ci-batch-errors {
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+  .ci-batch-tabs > span {
+    font-size: 10px;
+    max-width: 150px;
+  }
+  .ci-batch-tabs > strong {
+    font-size: 11px;
+  }
+}
+@media (max-width: 390px) {
+  .ci-batch-steps > span {
+    flex-basis: 40%;
+  }
+  .ci-batch-mapping {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Only inventory tables: channel-management columns remain unchanged. */
+.ci-stock-edit-table .ci-col-index {
+  width: 5%;
+}
+.ci-stock-edit-table .ci-material-part-col {
+  width: 29%;
+}
+.ci-stock-edit-table .ci-material-qty-col {
+  width: 17%;
+}
+.ci-stock-edit-table .ci-material-price-col {
+  width: 15%;
+}
+.ci-stock-edit-table .ci-material-lead-col {
+  width: 10%;
+}
+.ci-stock-edit-table .ci-material-date-col {
+  width: 14%;
+}
+.ci-stock-edit-table .ci-col-actions {
+  width: 10%;
+}
+.ci-stock-edit-table .ci-row-actions {
+  gap: 7px;
+}

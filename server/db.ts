@@ -1,4 +1,7 @@
-import { effectiveHkChineseCompanyName, merchantEffectiveHkChineseNameSql } from "./services/merchantDisplayName";
+import {
+  effectiveHkChineseCompanyName,
+  merchantEffectiveHkChineseNameSql,
+} from "./services/merchantDisplayName";
 export { merchantEffectiveHkChineseNameSql } from "./services/merchantDisplayName";
 import {
   CRM_DUPLICATE_OPENING_CODE,
@@ -12,9 +15,30 @@ import {
   withCrmDuplicateRegistrationLock,
 } from "./services/crmDuplicateRegistration";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql, type SQL } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  lt,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
+import { drizzle } from "drizzle-orm/mysql2";
+import { withBusinessAuthorizationFence } from "./businessAuthorizationFence";
+export { withBusinessAuthorizationFence } from "./businessAuthorizationFence";
+import {
+  adminBusinessMerchantScopeAudits,
+  adminBusinessMerchantScopes,
+  adminBusinessStaffBindingAudits,
+  adminBusinessStaffBindings,
   adminModuleNotificationCursors,
   adminUserPermissionAudits,
   adminUserPermissions,
@@ -41,7 +65,10 @@ import {
 import type { AdminNotificationModule } from "../shared/adminModuleNotifications";
 import { ENV } from "./_core/env";
 import { normalizeAssignedAdminPermissions } from "../shared/adminPermissions";
-import { canonicalAdminUsername, normalizeAdminUsername } from "../shared/adminUsername";
+import {
+  canonicalAdminUsername,
+  normalizeAdminUsername,
+} from "../shared/adminUsername";
 import { toAdminUserDto } from "./adminUserDto";
 import {
   formatMaterialNo,
@@ -82,6 +109,10 @@ import {
   ENTERPRISE_SERVICE_AGREEMENT_HASH,
   ENTERPRISE_SERVICE_AGREEMENT_VERSION,
 } from "../shared/enterpriseServiceAgreementSummary";
+import {
+  cnReviewOwnerInScope,
+  platformDatabaseIdentifier,
+} from "./cnRegistrationPolicy";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -98,7 +129,10 @@ export async function getDb() {
 }
 
 /** 兼容 TiDB 返回对象与 MariaDB 返回 JSON 字符串的差异。 */
-function decodeJsonValue<T>(value: unknown, fallback: T | null = null): T | null {
+function decodeJsonValue<T>(
+  value: unknown,
+  fallback: T | null = null
+): T | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") return value as T;
   try {
@@ -116,10 +150,14 @@ function normalizeMaterialJson<T extends object>(row: T): T {
     }
   }
   if (Object.prototype.hasOwnProperty.call(normalized, "specs")) {
-    normalized.specs = decodeJsonValue<Record<string, string>>(normalized.specs);
+    normalized.specs = decodeJsonValue<Record<string, string>>(
+      normalized.specs
+    );
   }
   if (Object.prototype.hasOwnProperty.call(normalized, "images")) {
-    normalized.images = decodeJsonValue<{ url: string; key: string; name?: string }[]>(normalized.images);
+    normalized.images = decodeJsonValue<
+      { url: string; key: string; name?: string }[]
+    >(normalized.images);
   }
   return normalized as T;
 }
@@ -127,10 +165,14 @@ function normalizeMaterialJson<T extends object>(row: T): T {
 function normalizeMessageThreadJson<T extends object>(row: T): T {
   const normalized = { ...row } as Record<string, unknown>;
   if (Object.prototype.hasOwnProperty.call(normalized, "companyProfile")) {
-    normalized.companyProfile = decodeJsonValue<Record<string, string | null>>(normalized.companyProfile);
+    normalized.companyProfile = decodeJsonValue<Record<string, string | null>>(
+      normalized.companyProfile
+    );
   }
   if (Object.prototype.hasOwnProperty.call(normalized, "complaintContext")) {
-    normalized.complaintContext = decodeJsonValue<Record<string, unknown>>(normalized.complaintContext);
+    normalized.complaintContext = decodeJsonValue<Record<string, unknown>>(
+      normalized.complaintContext
+    );
   }
   return normalized as T;
 }
@@ -157,7 +199,9 @@ export type HkRegistrationDocuments = {
 };
 
 type HkDocumentVerificationEntry = {
-  documentId: string; ocrStatus: "recognized" | "failed"; recognizedType: string | null;
+  documentId: string;
+  ocrStatus: "recognized" | "failed";
+  recognizedType: string | null;
   classification: "ocr-assisted" | "manual-classification-required";
 };
 
@@ -195,7 +239,11 @@ type StoredPendingHkRegistrationData = StoredHkRegistrationData & {
 
 function normalizeHkSubmissionId(value: unknown) {
   const text = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(text) ? text : null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+    text
+  )
+    ? text
+    : null;
 }
 
 function normalizeHkPayloadHash(value: unknown) {
@@ -207,7 +255,7 @@ function normalizeHkPayloadHash(value: unknown) {
 export function assertHkDocumentObjectKey(
   objectKey: string,
   portalUserId: string,
-  kind: HkDocumentKind,
+  kind: HkDocumentKind
 ) {
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(portalUserId)) {
     throw new Error("HK_PORTAL_USER_ID_INVALID");
@@ -216,9 +264,12 @@ export function assertHkDocumentObjectKey(
   const escapedUserId = portalUserId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(
     `^hk-registration/user-${escapedUserId}/${kind}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_[A-Za-z0-9][A-Za-z0-9_-]{0,127}\\.(?:jpg|png|pdf)$`,
-    "i",
+    "i"
   );
-  if (!pattern.test(key) || key.split("/").some(part => part === "." || part === "..")) {
+  if (
+    !pattern.test(key) ||
+    key.split("/").some(part => part === "." || part === "..")
+  ) {
     throw new Error("HK_DOCUMENT_OBJECT_KEY_INVALID");
   }
   return key;
@@ -229,9 +280,16 @@ export function assertHkDocumentObjectKey(
  * a later ERP owner rebind. Re-derive and validate that immutable creator from
  * the key instead of incorrectly comparing it to the current CRM owner.
  */
-export function assertStoredHkDocumentObjectKey(objectKey: string, kind: HkDocumentKind) {
-  const match = /^hk-registration\/user-([A-Za-z0-9_-]{1,64})\/(BR|CI|BANK)\//i.exec(objectKey.trim());
-  if (!match || match[2].toUpperCase() !== kind) throw new Error("HK_DOCUMENT_OBJECT_KEY_INVALID");
+export function assertStoredHkDocumentObjectKey(
+  objectKey: string,
+  kind: HkDocumentKind
+) {
+  const match =
+    /^hk-registration\/user-([A-Za-z0-9_-]{1,64})\/(BR|CI|BANK)\//i.exec(
+      objectKey.trim()
+    );
+  if (!match || match[2].toUpperCase() !== kind)
+    throw new Error("HK_DOCUMENT_OBJECT_KEY_INVALID");
   return assertHkDocumentObjectKey(objectKey, match[1], kind);
 }
 
@@ -240,19 +298,28 @@ export function assertStoredHkDocumentObjectKey(objectKey: string, kind: HkDocum
  * This deliberately performs only structural / identity validation; the
  * time-sensitive shared schema is still used at review and ERP-enable time.
  */
-function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | null {
+function parseStoredHkRegistrationData(
+  value: unknown
+): HkRegistrationData | null {
   const raw = decodeJsonValue<Record<string, unknown>>(value, null);
-  const data = raw?.registration && typeof raw.registration === "object"
-    ? raw.registration as Record<string, unknown>
-    : raw;
+  const data =
+    raw?.registration && typeof raw.registration === "object"
+      ? (raw.registration as Record<string, unknown>)
+      : raw;
   if (!data || typeof data !== "object") return null;
   const required = (field: string, max: number) => {
     const value = data[field];
-    return typeof value === "string" && value.trim() && value.trim().length <= max ? value.trim() : null;
+    return typeof value === "string" &&
+      value.trim() &&
+      value.trim().length <= max
+      ? value.trim()
+      : null;
   };
   const optional = (field: string, max: number) => {
     const value = data[field];
-    return typeof value === "string" && value.trim().length <= max ? value.trim() : null;
+    return typeof value === "string" && value.trim().length <= max
+      ? value.trim()
+      : null;
   };
   const companyName = required("companyName", 128);
   const businessNature = required("businessNature", 128);
@@ -261,9 +328,12 @@ function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | nul
   const storedCertificateNumber = required("registrationNumber", 32);
   // The former schema stored four groups. Preserve historical reads only;
   // new submissions/reviews use the strict full 16-digit shared schema.
-  const registrationNumber = normalizeHkBrCertificateNumber(storedCertificateNumber)
-    ?? (storedCertificateNumber && /^\d{8}[-\s]\d{3}[-\s]\d{2}[-\s]\d$/.test(storedCertificateNumber)
-      ? storedCertificateNumber : null);
+  const registrationNumber =
+    normalizeHkBrCertificateNumber(storedCertificateNumber) ??
+    (storedCertificateNumber &&
+    /^\d{8}[-\s]\d{3}[-\s]\d{2}[-\s]\d$/.test(storedCertificateNumber)
+      ? storedCertificateNumber
+      : null);
   const brStartDate = normalizeHkDate(data.brStartDate);
   const brExpiryDate = normalizeHkDate(data.brExpiryDate);
   // CI became optional after historical data already existed.  Preserve a
@@ -275,16 +345,35 @@ function parseStoredHkRegistrationData(value: unknown): HkRegistrationData | nul
   const bankAccountNumber = required("bankAccountNumber", 64);
   const bankName = required("bankName", 128);
   const establishedAtRaw = optional("establishedAt", 10);
-  const establishedAt = establishedAtRaw === null ? null : establishedAtRaw ? normalizeHkDate(establishedAtRaw) : "";
-  if (!companyName || !businessNature || !legalStatus || !brn || !registrationNumber
-    || !brStartDate || !brExpiryDate || ciNumber === null || !regAddress || !bankAccountName
-    || !bankAccountNumber || !bankName || establishedAt === null
-    || !/^\d{8}$/.test(brn)
-    || registrationNumber.slice(0, 8) !== brn
-    || brStartDate > brExpiryDate
-    || !/^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(bankAccountNumber)
-    || /SOLE|PARTNERSHIP|独资|獨資|合伙|合夥/i.test(legalStatus)) return null;
-  const optionalText = (field: string, max: number) => optional(field, max) ?? "";
+  const establishedAt =
+    establishedAtRaw === null
+      ? null
+      : establishedAtRaw
+        ? normalizeHkDate(establishedAtRaw)
+        : "";
+  if (
+    !companyName ||
+    !businessNature ||
+    !legalStatus ||
+    !brn ||
+    !registrationNumber ||
+    !brStartDate ||
+    !brExpiryDate ||
+    ciNumber === null ||
+    !regAddress ||
+    !bankAccountName ||
+    !bankAccountNumber ||
+    !bankName ||
+    establishedAt === null ||
+    !/^\d{8}$/.test(brn) ||
+    registrationNumber.slice(0, 8) !== brn ||
+    brStartDate > brExpiryDate ||
+    !/^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(bankAccountNumber) ||
+    /SOLE|PARTNERSHIP|独资|獨資|合伙|合夥/i.test(legalStatus)
+  )
+    return null;
+  const optionalText = (field: string, max: number) =>
+    optional(field, max) ?? "";
   return {
     companyName,
     chineseName: optionalText("chineseName", 128),
@@ -335,46 +424,61 @@ function canonicalHkRegistration(data: HkRegistrationData) {
   });
 }
 
-function parseStoredHkRegistration(value: unknown): StoredHkRegistrationData | null {
+function parseStoredHkRegistration(
+  value: unknown
+): StoredHkRegistrationData | null {
   const raw = decodeJsonValue<Record<string, unknown>>(value, null);
   if (!raw || typeof raw !== "object") return null;
   const registration = parseStoredHkRegistrationData(raw.registration ?? raw);
   if (!registration) return null;
   const documents = raw.documents as Record<string, unknown> | undefined;
   const names = (kind: "BR" | "BANK") => {
-    const fileName = documents?.[kind] && typeof documents[kind] === "object"
-      ? (documents[kind] as { fileName?: unknown }).fileName
-      : undefined;
+    const fileName =
+      documents?.[kind] && typeof documents[kind] === "object"
+        ? (documents[kind] as { fileName?: unknown }).fileName
+        : undefined;
     return typeof fileName === "string" && fileName.trim()
       ? fileName.trim().slice(0, 255)
       : `${kind} 文件`;
   };
-  const ciFileName = documents?.CI && typeof documents.CI === "object"
-    ? (documents.CI as { fileName?: unknown }).fileName
-    : undefined;
-  const ci = typeof ciFileName === "string" && ciFileName.trim()
-    ? { fileName: ciFileName.trim().slice(0, 255) }
-    : undefined;
+  const ciFileName =
+    documents?.CI && typeof documents.CI === "object"
+      ? (documents.CI as { fileName?: unknown }).fileName
+      : undefined;
+  const ci =
+    typeof ciFileName === "string" && ciFileName.trim()
+      ? { fileName: ciFileName.trim().slice(0, 255) }
+      : undefined;
   return {
     registration,
-    documents: { BR: { fileName: names("BR") }, BANK: { fileName: names("BANK") }, ...(ci ? { CI: ci } : {}) },
+    documents: {
+      BR: { fileName: names("BR") },
+      BANK: { fileName: names("BANK") },
+      ...(ci ? { CI: ci } : {}),
+    },
     submittedAt: typeof raw.submittedAt === "string" ? raw.submittedAt : "",
-    ...(normalizeHkSubmissionId(raw.submissionId) ? { submissionId: normalizeHkSubmissionId(raw.submissionId)! } : {}),
-    ...(normalizeHkPayloadHash(raw.payloadHash) ? { payloadHash: normalizeHkPayloadHash(raw.payloadHash)! } : {}),
+    ...(normalizeHkSubmissionId(raw.submissionId)
+      ? { submissionId: normalizeHkSubmissionId(raw.submissionId)! }
+      : {}),
+    ...(normalizeHkPayloadHash(raw.payloadHash)
+      ? { payloadHash: normalizeHkPayloadHash(raw.payloadHash)! }
+      : {}),
   };
 }
 
 function buildStoredHkRegistration(
   registration: HkRegistrationData,
   documents: HkRegistrationDocuments,
-  ledger: { submissionId: string; payloadHash: string },
+  ledger: { submissionId: string; payloadHash: string }
 ): StoredHkRegistrationData {
   return {
     registration,
     documents: {
       BR: { fileName: documents.BR.fileName.trim().slice(0, 255) },
       BANK: { fileName: documents.BANK.fileName.trim().slice(0, 255) },
-      ...(documents.CI ? { CI: { fileName: documents.CI.fileName.trim().slice(0, 255) } } : {}),
+      ...(documents.CI
+        ? { CI: { fileName: documents.CI.fileName.trim().slice(0, 255) } }
+        : {}),
     },
     submittedAt: new Date().toISOString(),
     submissionId: ledger.submissionId,
@@ -385,7 +489,7 @@ function buildStoredHkRegistration(
 function buildPendingHkRegistration(
   registration: HkRegistrationData,
   documents: HkRegistrationDocuments,
-  ledger: { submissionId: string; payloadHash: string },
+  ledger: { submissionId: string; payloadHash: string }
 ): StoredPendingHkRegistrationData {
   return {
     ...buildStoredHkRegistration(registration, documents, ledger),
@@ -399,22 +503,43 @@ function buildPendingHkRegistration(
   };
 }
 
-function parsePendingHkRegistration(value: unknown): StoredPendingHkRegistrationData | null {
+function parsePendingHkRegistration(
+  value: unknown
+): StoredPendingHkRegistrationData | null {
   const stored = parseStoredHkRegistration(value);
   const raw = decodeJsonValue<Record<string, unknown>>(value, null);
   const keys = raw?.documentObjectKeys;
   const submissionId = normalizeHkSubmissionId(raw?.submissionId);
   const payloadHash = normalizeHkPayloadHash(raw?.payloadHash);
-  if (!stored || !keys || typeof keys !== "object" || !submissionId || !payloadHash) return null;
-  const read = (kind: HkDocumentKind) => (keys as Record<string, unknown>)[kind];
-  if (!["BR", "BANK"].every(kind => typeof read(kind as HkDocumentKind) === "string")) return null;
+  if (
+    !stored ||
+    !keys ||
+    typeof keys !== "object" ||
+    !submissionId ||
+    !payloadHash
+  )
+    return null;
+  const read = (kind: HkDocumentKind) =>
+    (keys as Record<string, unknown>)[kind];
+  if (
+    !["BR", "BANK"].every(
+      kind => typeof read(kind as HkDocumentKind) === "string"
+    )
+  )
+    return null;
   const ciObjectKey = read("CI");
-  if (ciObjectKey !== undefined && (typeof ciObjectKey !== "string" || !ciObjectKey.trim())) return null;
+  if (
+    ciObjectKey !== undefined &&
+    (typeof ciObjectKey !== "string" || !ciObjectKey.trim())
+  )
+    return null;
   // A CI key must always have its matching non-secret display metadata, and
   // vice versa. This keeps a document-less candidate from acquiring a forged
   // CI record when read by a reviewer.
   if (Boolean(ciObjectKey) !== Boolean(stored.documents.CI)) return null;
-  const verification = raw?.documentVerification as HkDocumentVerification | undefined;
+  const verification = raw?.documentVerification as
+    | HkDocumentVerification
+    | undefined;
   if (verification?.CI && !ciObjectKey) return null;
   try {
     return {
@@ -425,7 +550,9 @@ function parsePendingHkRegistration(value: unknown): StoredPendingHkRegistration
       documentObjectKeys: {
         BR: assertStoredHkDocumentObjectKey(read("BR") as string, "BR"),
         BANK: assertStoredHkDocumentObjectKey(read("BANK") as string, "BANK"),
-        ...(ciObjectKey ? { CI: assertStoredHkDocumentObjectKey(ciObjectKey, "CI") } : {}),
+        ...(ciObjectKey
+          ? { CI: assertStoredHkDocumentObjectKey(ciObjectKey, "CI") }
+          : {}),
       },
     };
   } catch {
@@ -433,20 +560,27 @@ function parsePendingHkRegistration(value: unknown): StoredPendingHkRegistration
   }
 }
 
-function merchantRegistrationIdentity(merchant: Pick<typeof merchants.$inferSelect, "registrationRegion" | "registrationIdentifier" | "businessLicense">) {
+function merchantRegistrationIdentity(
+  merchant: Pick<
+    typeof merchants.$inferSelect,
+    "registrationRegion" | "registrationIdentifier" | "businessLicense"
+  >
+) {
   if (merchant.registrationRegion === "HK") {
-    const identity = merchant.registrationIdentifier?.trim().toUpperCase() || "";
+    const identity =
+      merchant.registrationIdentifier?.trim().toUpperCase() || "";
     return /^HK:\d{8}$/.test(identity) ? identity : null;
   }
   const creditCode = merchant.businessLicense?.trim();
   return creditCode ? `CN:${normalizeCreditCode(creditCode)}` : null;
 }
 
-export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE = "该公司已经开通ERP,请联系管理员";
+export const CRM_COMPANY_ALREADY_ENABLED_MESSAGE =
+  "该公司已经开通ERP,请联系管理员";
 
 export function getCrmCompanyConflictMessage(
   crmStatus: string,
-  fallbackMessage: string,
+  fallbackMessage: string
 ) {
   if (crmStatus === "pending") return "该企业的 ERP 开通申请正在审核中";
   if (crmStatus === "enabled") return CRM_COMPANY_ALREADY_ENABLED_MESSAGE;
@@ -471,7 +605,10 @@ type MaterialMutationAudit = MaterialAuditActor & {
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
+  if (!db) {
+    console.warn("[Database] Cannot upsert user: database not available");
+    return;
+  }
   try {
     const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
@@ -485,31 +622,66 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet[field] = normalized;
     };
     textFields.forEach(assignNullable);
-    if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
-    if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
-    else if (user.openId === ENV.ownerOpenId) { values.role = "admin"; updateSet.role = "admin"; }
+    if (user.lastSignedIn !== undefined) {
+      values.lastSignedIn = user.lastSignedIn;
+      updateSet.lastSignedIn = user.lastSignedIn;
+    }
+    if (user.role !== undefined) {
+      values.role = user.role;
+      updateSet.role = user.role;
+    } else if (user.openId === ENV.ownerOpenId) {
+      values.role = "admin";
+      updateSet.role = "admin";
+    }
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
-    if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-    await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
-  } catch (error) { console.error("[Database] Failed to upsert user:", error); throw error; }
+    if (Object.keys(updateSet).length === 0)
+      updateSet.lastSignedIn = new Date();
+    await db
+      .insert(users)
+      .values(values)
+      .onDuplicateKeyUpdate({ set: updateSet });
+  } catch (error) {
+    console.error("[Database] Failed to upsert user:", error);
+    throw error;
+  }
 }
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
 // ─── 物料数据库 ───────────────────────────────────────────────────────────────
 
-const COMPETITOR_MATERIAL_TERMS = ["%立创%", "%szlcsc%", "%lcsc%", "%jlcpcb%", "%jlcsmt%", "%jlc3dp%", "%jlcmc%", "%jlceda%"];
+const COMPETITOR_MATERIAL_TERMS = [
+  "%立创%",
+  "%szlcsc%",
+  "%lcsc%",
+  "%jlcpcb%",
+  "%jlcsmt%",
+  "%jlc3dp%",
+  "%jlcmc%",
+  "%jlceda%",
+];
 
 function safeMaterialMetadataCondition() {
   return and(
-    ...[materials.name, materials.brand, materials.category, materials.description].flatMap(column =>
-      COMPETITOR_MATERIAL_TERMS.map(term => sql`LOWER(COALESCE(${column}, '')) NOT LIKE ${term}`),
-    ),
+    ...[
+      materials.name,
+      materials.brand,
+      materials.category,
+      materials.description,
+    ].flatMap(column =>
+      COMPETITOR_MATERIAL_TERMS.map(
+        term => sql`LOWER(COALESCE(${column}, '')) NOT LIKE ${term}`
+      )
+    )
   )!;
 }
 
@@ -524,7 +696,15 @@ export async function getMaterials(params: {
 }) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
-  const { search, category, brand, lifecycle, status, page = 1, pageSize = 20 } = params;
+  const {
+    search,
+    category,
+    brand,
+    lifecycle,
+    status,
+    page = 1,
+    pageSize = 20,
+  } = params;
   const conditions = [safeMaterialMetadataCondition()];
   if (search) {
     conditions.push(
@@ -538,8 +718,8 @@ export async function getMaterials(params: {
           FROM material_code_aliases AS material_alias
           WHERE material_alias.materialId = ${materials.id}
             AND material_alias.aliasCode LIKE ${`%${search}%`}
-        )`,
-      )!,
+        )`
+      )!
     );
   }
   if (category) conditions.push(eq(materials.category, category));
@@ -547,7 +727,10 @@ export async function getMaterials(params: {
   if (lifecycle) conditions.push(eq(materials.lifecycle, lifecycle as any));
   if (status) conditions.push(eq(materials.status, status as any));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(materials).where(where);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(materials)
+    .where(where);
   const data = await db
     .select()
     .from(materials)
@@ -575,11 +758,15 @@ export async function getMaterialCategories() {
   const rows = await db
     .selectDistinct({ category: materials.category })
     .from(materials)
-    .where(and(
-      sql`${materials.category} IS NOT NULL AND ${materials.category} != ''`,
-      safeMaterialMetadataCondition(),
-    ));
-  return rows.map(r => sanitizeCompetitorDisplayText(r.category)).filter(Boolean) as string[];
+    .where(
+      and(
+        sql`${materials.category} IS NOT NULL AND ${materials.category} != ''`,
+        safeMaterialMetadataCondition()
+      )
+    );
+  return rows
+    .map(r => sanitizeCompetitorDisplayText(r.category))
+    .filter(Boolean) as string[];
 }
 
 export async function getMaterialBrands() {
@@ -588,11 +775,15 @@ export async function getMaterialBrands() {
   const rows = await db
     .selectDistinct({ brand: materials.brand })
     .from(materials)
-    .where(and(
-      sql`${materials.brand} IS NOT NULL AND ${materials.brand} != ''`,
-      safeMaterialMetadataCondition(),
-    ));
-  return rows.map(r => sanitizeCompetitorDisplayText(r.brand)).filter(Boolean) as string[];
+    .where(
+      and(
+        sql`${materials.brand} IS NOT NULL AND ${materials.brand} != ''`,
+        safeMaterialMetadataCondition()
+      )
+    );
+  return rows
+    .map(r => sanitizeCompetitorDisplayText(r.brand))
+    .filter(Boolean) as string[];
 }
 
 /**
@@ -628,9 +819,9 @@ export async function lookupMaterials(keyword: string) {
             FROM material_code_aliases AS material_alias
             WHERE material_alias.materialId = ${materials.id}
               AND material_alias.aliasCode LIKE ${`%${keyword}%`}
-          )`,
-        ),
-      ),
+          )`
+        )
+      )
     )
     .orderBy(materials.partNumber)
     .limit(20);
@@ -675,9 +866,9 @@ export async function getMaterialSpecsByPartNumber(partNumber: string) {
             FROM material_code_aliases AS material_alias
             WHERE material_alias.materialId = ${materials.id}
               AND UPPER(material_alias.aliasCode) = UPPER(${partNumber.trim()})
-          )`,
-        ),
-      ),
+          )`
+        )
+      )
     )
     .limit(1);
   return result[0] ? normalizeMaterialJson(result[0]) : null;
@@ -698,8 +889,18 @@ export async function searchMaterialsPublic(params: {
 }) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
-  const { keyword, category, brand, specFilters, page = 1, pageSize = 20 } = params;
-  const conditions = [eq(materials.status, "enabled"), safeMaterialMetadataCondition()];
+  const {
+    keyword,
+    category,
+    brand,
+    specFilters,
+    page = 1,
+    pageSize = 20,
+  } = params;
+  const conditions = [
+    eq(materials.status, "enabled"),
+    safeMaterialMetadataCondition(),
+  ];
   if (keyword) {
     conditions.push(
       or(
@@ -713,8 +914,8 @@ export async function searchMaterialsPublic(params: {
           FROM material_code_aliases AS material_alias
           WHERE material_alias.materialId = ${materials.id}
             AND material_alias.aliasCode LIKE ${`%${keyword}%`}
-        )`,
-      )!,
+        )`
+      )!
     );
   }
   if (category) conditions.push(eq(materials.category, category));
@@ -723,12 +924,15 @@ export async function searchMaterialsPublic(params: {
     for (const [key, value] of Object.entries(specFilters)) {
       // JSON_EXTRACT 按键取值后模糊匹配，键名通过 JSON_QUOTE 防注入
       conditions.push(
-        sql`JSON_UNQUOTE(JSON_EXTRACT(${materials.specs}, CONCAT('$.', JSON_QUOTE(${key})))) LIKE ${`%${value}%`}`,
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${materials.specs}, CONCAT('$.', JSON_QUOTE(${key})))) LIKE ${`%${value}%`}`
       );
     }
   }
   const where = and(...conditions);
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(materials).where(where);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(materials)
+    .where(where);
   const data = await db
     .select({
       id: materials.id,
@@ -758,7 +962,7 @@ export async function searchMaterialsPublic(params: {
 
 export async function createMaterial(
   data: Omit<InsertMaterial, "materialNo">,
-  actor: MaterialAuditActor = {},
+  actor: MaterialAuditActor = {}
 ) {
   const db = await getDb();
   if (!db) throw new Error("数据库不可用");
@@ -767,12 +971,16 @@ export async function createMaterial(
     await tx
       .insert(materialNumberSequences)
       .values({ sequenceKey: PLATFORM_MATERIAL_SEQUENCE_KEY, nextValue: 1 })
-      .onDuplicateKeyUpdate({ set: { sequenceKey: PLATFORM_MATERIAL_SEQUENCE_KEY } });
+      .onDuplicateKeyUpdate({
+        set: { sequenceKey: PLATFORM_MATERIAL_SEQUENCE_KEY },
+      });
 
     const [sequenceRow] = await tx
       .select({ nextValue: materialNumberSequences.nextValue })
       .from(materialNumberSequences)
-      .where(eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY))
+      .where(
+        eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY)
+      )
       .for("update");
     if (!sequenceRow) throw new Error("MATERIAL_SEQUENCE_NOT_INITIALIZED");
 
@@ -780,10 +988,16 @@ export async function createMaterial(
     await tx
       .update(materialNumberSequences)
       .set({ nextValue: sequenceRow.nextValue + 1 })
-      .where(eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY));
+      .where(
+        eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY)
+      );
 
     await tx.insert(materials).values({ ...data, materialNo });
-    const result = await tx.select().from(materials).where(eq(materials.materialNo, materialNo)).limit(1);
+    const result = await tx
+      .select()
+      .from(materials)
+      .where(eq(materials.materialNo, materialNo))
+      .limit(1);
     const material = result[0] ?? null;
     if (material) {
       await tx.insert(auditLogs).values({
@@ -809,18 +1023,26 @@ export async function createMaterial(
 export async function updateMaterial(
   id: number,
   data: Partial<InsertMaterial>,
-  audit: MaterialMutationAudit = {},
+  audit: MaterialMutationAudit = {}
 ) {
   const db = await getDb();
   if (!db) return;
   return db.transaction(async tx => {
-    const [existing] = await tx.select().from(materials).where(eq(materials.id, id)).limit(1);
+    const [existing] = await tx
+      .select()
+      .from(materials)
+      .where(eq(materials.id, id))
+      .limit(1);
     if (!existing) throw new Error("MATERIAL_NOT_FOUND");
     if (Object.prototype.hasOwnProperty.call(data, "materialNo")) {
       throw new Error("MATERIAL_CODE_IMMUTABLE");
     }
     await tx.update(materials).set(data).where(eq(materials.id, id));
-    const [updated] = await tx.select().from(materials).where(eq(materials.id, id)).limit(1);
+    const [updated] = await tx
+      .select()
+      .from(materials)
+      .where(eq(materials.id, id))
+      .limit(1);
     await tx.insert(auditLogs).values({
       operatorId: audit.operatorId ?? null,
       operatorName: audit.operatorName ?? "system",
@@ -841,12 +1063,19 @@ export async function updateMaterial(
 }
 
 /** 对外“移除”只能软归档；主档行和平台码永久保留，避免历史业务引用失效。 */
-export async function archiveMaterial(id: number, actor: MaterialAuditActor = {}) {
-  return updateMaterial(id, { status: "disabled" }, {
-    ...actor,
-    action: "material.archive",
-    note: "物料已停用归档；平台物料码永久保留且不可复用",
-  });
+export async function archiveMaterial(
+  id: number,
+  actor: MaterialAuditActor = {}
+) {
+  return updateMaterial(
+    id,
+    { status: "disabled" },
+    {
+      ...actor,
+      action: "material.archive",
+      note: "物料已停用归档；平台物料码永久保留且不可复用",
+    }
+  );
 }
 
 /** 生产代码无条件禁止物理删除物料主档。 */
@@ -856,7 +1085,8 @@ export async function deleteMaterial(_id: number): Promise<never> {
 
 /** 仅供 Vitest 隔离数据库清理夹具，部署进程无法调用。 */
 export async function deleteMaterialFixture(id: number) {
-  if (process.env.VITEST !== "true") throw new Error("MATERIAL_FIXTURE_PURGE_FORBIDDEN");
+  if (process.env.VITEST !== "true")
+    throw new Error("MATERIAL_FIXTURE_PURGE_FORBIDDEN");
   const db = await getDb();
   if (!db) return;
   const existing = await getMaterialById(id);
@@ -902,7 +1132,8 @@ export async function getMaterialByPartNumber(partNumber: string) {
     .where(inArray(sql`UPPER(${materials.partNumber})`, candidates))
     .limit(2);
   if (fallback.length !== 1) return null;
-  if (!isPackageSuffixExpansion(partNumber, fallback[0].partNumber)) return null;
+  if (!isPackageSuffixExpansion(partNumber, fallback[0].partNumber))
+    return null;
   return normalizeMaterialJson(fallback[0]);
 }
 
@@ -913,7 +1144,7 @@ export async function getMaterialByPartNumber(partNumber: string) {
  */
 export async function appendMaterialImage(
   id: number,
-  image: { url: string; name?: string; asCover: boolean },
+  image: { url: string; name?: string; asCover: boolean }
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB_NOT_AVAILABLE");
@@ -921,21 +1152,32 @@ export async function appendMaterialImage(
     // `images` 是 JSON 数组；事务外读后覆写会在多 PM2 实例并发上传时丢失更新。
     // 锁住物料行，确保每次追加都以已提交的最新图集为基准。
     const [existing] = await tx
-      .select({ images: materials.images, coverImageUrl: materials.coverImageUrl })
+      .select({
+        images: materials.images,
+        coverImageUrl: materials.coverImageUrl,
+      })
       .from(materials)
       .where(eq(materials.id, id))
       .limit(1)
       .for("update");
     if (!existing) throw new Error("MATERIAL_NOT_FOUND");
 
-    const currentImages = decodeJsonValue<{ url: string; key: string; name?: string }[]>(existing.images, []);
+    const currentImages = decodeJsonValue<
+      { url: string; key: string; name?: string }[]
+    >(existing.images, []);
     const list = Array.isArray(currentImages) ? [...currentImages] : [];
     if (!list.some(item => item.url === image.url)) {
       list.push({ url: image.url, key: image.url, name: image.name });
     }
     while (list.length > 9) list.shift();
-    const coverImageUrl = image.asCover || !existing.coverImageUrl ? image.url : existing.coverImageUrl;
-    await tx.update(materials).set({ images: list, coverImageUrl }).where(eq(materials.id, id));
+    const coverImageUrl =
+      image.asCover || !existing.coverImageUrl
+        ? image.url
+        : existing.coverImageUrl;
+    await tx
+      .update(materials)
+      .set({ images: list, coverImageUrl })
+      .where(eq(materials.id, id));
     return { coverImageUrl, imageCount: list.length };
   });
 }
@@ -964,11 +1206,13 @@ export async function getEnabledErpPortalUserIds() {
   const rows = await db
     .selectDistinct({ portalUserId: merchants.crmOwnerPortalUserId })
     .from(merchants)
-    .where(and(
-      eq(merchants.crmStatus, "enabled"),
-      sql`${merchants.crmOwnerPortalUserId} IS NOT NULL`,
-      sql`TRIM(${merchants.crmOwnerPortalUserId}) <> ''`,
-    ));
+    .where(
+      and(
+        eq(merchants.crmStatus, "enabled"),
+        sql`${merchants.crmOwnerPortalUserId} IS NOT NULL`,
+        sql`TRIM(${merchants.crmOwnerPortalUserId}) <> ''`
+      )
+    );
   return rows
     .map(row => row.portalUserId?.trim() ?? "")
     .filter((value): value is string => value.length > 0);
@@ -977,7 +1221,10 @@ export async function getEnabledErpPortalUserIds() {
 function merchantReadScopeCondition(salesStaffCodes?: string[]) {
   if (salesStaffCodes === undefined) return undefined;
   if (salesStaffCodes.length === 0) return sql`1 = 0`;
-  const staffCodes = sql.join(salesStaffCodes.map(code => sql`${code}`), sql`, `);
+  const staffCodes = sql.join(
+    salesStaffCodes.map(code => sql`${code}`),
+    sql`, `
+  );
   return or(
     inArray(merchants.salesOwnerCode, salesStaffCodes),
     sql`EXISTS (
@@ -985,7 +1232,7 @@ function merchantReadScopeCondition(salesStaffCodes?: string[]) {
        WHERE collaborator.merchantId = ${merchants.id}
          AND collaborator.staffCode IN (${staffCodes})
          AND collaborator.revokedAt IS NULL
-    )`,
+    )`
   );
 }
 
@@ -1000,12 +1247,13 @@ export function toMerchantReadDto(row: typeof merchants.$inferSelect) {
     ...safeMerchant
   } = merchant;
   const registeredCompanyName = safeMerchant.companyName;
-  const displayCompanyName = effectiveHkChineseCompanyName({
-    registrationRegion: safeMerchant.registrationRegion,
-    registrationData,
-    status: safeMerchant.status,
-    crmStatus: safeMerchant.crmStatus,
-  }) ?? registeredCompanyName;
+  const displayCompanyName =
+    effectiveHkChineseCompanyName({
+      registrationRegion: safeMerchant.registrationRegion,
+      registrationData,
+      status: safeMerchant.status,
+      crmStatus: safeMerchant.crmStatus,
+    }) ?? registeredCompanyName;
   return {
     ...safeMerchant,
     // Keep the persisted English/registered value independently auditable.
@@ -1013,12 +1261,21 @@ export function toMerchantReadDto(row: typeof merchants.$inferSelect) {
     registeredCompanyName,
     // HK account numbers are only necessary inside the dedicated reviewer DTO.
     // Do not accidentally leak a first-submit pending account through generic detail/list fields.
-    ...(safeMerchant.registrationRegion === "HK" ? { settlementAccount: null } : {}),
-    hasLicenseDocument: Boolean(licenseObjectKey || licenseImageUrl) || Boolean(ciObjectKey),
-    hasHkBrDocument: safeMerchant.registrationRegion === "HK" && Boolean(licenseObjectKey),
-    hasHkCiDocument: safeMerchant.registrationRegion === "HK" && Boolean(ciObjectKey),
-    hasHkBankDocument: safeMerchant.registrationRegion === "HK" && Boolean(bankDocumentObjectKey),
-    hasPendingHkRegistration: safeMerchant.registrationRegion === "HK" && Boolean(parsePendingHkRegistration(registrationPendingData)),
+    ...(safeMerchant.registrationRegion === "HK"
+      ? { settlementAccount: null }
+      : {}),
+    hasLicenseDocument:
+      Boolean(licenseObjectKey || licenseImageUrl) || Boolean(ciObjectKey),
+    hasHkBrDocument:
+      safeMerchant.registrationRegion === "HK" && Boolean(licenseObjectKey),
+    hasHkCiDocument:
+      safeMerchant.registrationRegion === "HK" && Boolean(ciObjectKey),
+    hasHkBankDocument:
+      safeMerchant.registrationRegion === "HK" &&
+      Boolean(bankDocumentObjectKey),
+    hasPendingHkRegistration:
+      safeMerchant.registrationRegion === "HK" &&
+      Boolean(parsePendingHkRegistration(registrationPendingData)),
   };
 }
 
@@ -1028,13 +1285,17 @@ export function toMerchantReadDto(row: typeof merchants.$inferSelect) {
  * JSON itself.
  */
 export function toMerchantHkRegistrationDetail(
-  row: typeof merchants.$inferSelect,
+  row: typeof merchants.$inferSelect
 ) {
   if (row.registrationRegion !== "HK") return null;
   const effective = parseStoredHkRegistration(row.registrationData);
   if (!effective) return null;
   const data = effective.registration;
-  const activeKeys = { BR: row.licenseObjectKey, CI: row.ciObjectKey, BANK: row.bankDocumentObjectKey };
+  const activeKeys = {
+    BR: row.licenseObjectKey,
+    CI: row.ciObjectKey,
+    BANK: row.bankDocumentObjectKey,
+  };
   return {
     identity: merchantRegistrationIdentity(row),
     companyName: data.companyName,
@@ -1052,9 +1313,18 @@ export function toMerchantHkRegistrationDetail(
     bankName: data.bankName,
     bankAddress: data.bankAddress || null,
     documents: {
-      BR: { available: Boolean(activeKeys.BR), fileName: effective.documents.BR.fileName },
-      CI: { available: Boolean(activeKeys.CI && effective.documents.CI), fileName: effective.documents.CI?.fileName ?? null },
-      BANK: { available: Boolean(activeKeys.BANK), fileName: effective.documents.BANK.fileName },
+      BR: {
+        available: Boolean(activeKeys.BR),
+        fileName: effective.documents.BR.fileName,
+      },
+      CI: {
+        available: Boolean(activeKeys.CI && effective.documents.CI),
+        fileName: effective.documents.CI?.fileName ?? null,
+      },
+      BANK: {
+        available: Boolean(activeKeys.BANK),
+        fileName: effective.documents.BANK.fileName,
+      },
     },
   };
 }
@@ -1064,7 +1334,9 @@ export function toMerchantHkRegistrationDetail(
  * fields needed to compare a submission (including bank number/SWIFT/code),
  * but never private object keys or raw pending JSON.
  */
-export function toMerchantHkRegistrationPendingDetail(row: typeof merchants.$inferSelect) {
+export function toMerchantHkRegistrationPendingDetail(
+  row: typeof merchants.$inferSelect
+) {
   if (row.registrationRegion !== "HK") return null;
   const pending = parsePendingHkRegistration(row.registrationPendingData);
   if (!pending) return null;
@@ -1076,7 +1348,11 @@ export function toMerchantHkRegistrationPendingDetail(row: typeof merchants.$inf
     // can affect this candidate.
     submissionId: pending.submissionId,
     payloadHash: pending.payloadHash,
-    manualClassificationRequired: !pending.documentVerification || Object.values(pending.documentVerification).some(value => value.classification === "manual-classification-required"),
+    manualClassificationRequired:
+      !pending.documentVerification ||
+      Object.values(pending.documentVerification).some(
+        value => value.classification === "manual-classification-required"
+      ),
     documentVerification: pending.documentVerification ?? null,
     submittedAt: pending.submittedAt || null,
     companyName: data.companyName,
@@ -1101,7 +1377,12 @@ export function toMerchantHkRegistrationPendingDetail(row: typeof merchants.$inf
     salesOwnerCode: data.salesOwnerCode || null,
     documents: {
       BR: { available: true, fileName: pending.documents.BR.fileName },
-      CI: { available: Boolean(pending.documentObjectKeys.CI && pending.documents.CI), fileName: pending.documents.CI?.fileName ?? null },
+      CI: {
+        available: Boolean(
+          pending.documentObjectKeys.CI && pending.documents.CI
+        ),
+        fileName: pending.documents.CI?.fileName ?? null,
+      },
       BANK: { available: true, fileName: pending.documents.BANK.fileName },
     },
   };
@@ -1127,22 +1408,25 @@ export async function getMerchants(
     page?: number;
     pageSize?: number;
   },
-  salesStaffCodes?: string[],
+  salesStaffCodes?: string[]
 ) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
-  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return { data: [], total: 0 };
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0)
+    return { data: [], total: 0 };
   const { status, search, page = 1, pageSize = 20 } = params;
   const salesOwnerCode = params.salesOwnerCode?.trim().toLowerCase();
   const conditions = [];
   if (status) conditions.push(eq(merchants.status, status as any));
   if (search) {
     const keyword = `%${search}%`;
-    conditions.push(or(
-      like(merchants.companyName, keyword),
-      like(merchantEffectiveHkChineseNameSql(), keyword),
-      like(merchants.merchantNo, keyword),
-    )!);
+    conditions.push(
+      or(
+        like(merchants.companyName, keyword),
+        like(merchantEffectiveHkChineseNameSql(), keyword),
+        like(merchants.merchantNo, keyword)
+      )!
+    );
   }
   const createdAtBounds = resolveMerchantCreatedAtBounds(params);
   if (createdAtBounds) {
@@ -1152,10 +1436,15 @@ export async function getMerchants(
   if (salesOwnerCode === "$unassigned") {
     // 未分配商户不属于任何销售范围，仅超级管理员可以查看。
     if (salesStaffCodes !== undefined) return { data: [], total: 0 };
-    conditions.push(or(isNull(merchants.salesOwnerCode), eq(merchants.salesOwnerCode, "")));
+    conditions.push(
+      or(isNull(merchants.salesOwnerCode), eq(merchants.salesOwnerCode, ""))
+    );
   } else if (salesOwnerCode) {
     // 伪造范围外工号时返回空结果，不泄露该工号是否存在或是否名下有商户。
-    if (salesStaffCodes !== undefined && !salesStaffCodes.includes(salesOwnerCode)) {
+    if (
+      salesStaffCodes !== undefined &&
+      !salesStaffCodes.includes(salesOwnerCode)
+    ) {
       return { data: [], total: 0 };
     }
     conditions.push(eq(merchants.salesOwnerCode, salesOwnerCode));
@@ -1163,12 +1452,25 @@ export async function getMerchants(
     conditions.push(merchantReadScopeCondition(salesStaffCodes)!);
   }
   const where = conditions.length > 0 ? and(...conditions) : undefined;
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(merchants).where(where);
-  const data = await db.select().from(merchants).where(where).orderBy(desc(merchants.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(merchants)
+    .where(where);
+  const data = await db
+    .select()
+    .from(merchants)
+    .where(where)
+    .orderBy(desc(merchants.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
   return {
     data: data.map(row => ({
       ...toMerchantReadDto(row),
-      canManage: salesStaffCodes === undefined || salesStaffCodes.includes(row.salesOwnerCode?.trim().toLowerCase() || ""),
+      canManage:
+        salesStaffCodes === undefined ||
+        salesStaffCodes.includes(
+          row.salesOwnerCode?.trim().toLowerCase() || ""
+        ),
     })),
     total: Number(count),
   };
@@ -1178,21 +1480,24 @@ export async function getMerchants(
  * 商户页负责人筛选选项。超级管理员看到全部销售和未分配；普通账号只看到
  * 自己的数据范围，避免借筛选项枚举其他销售身份。
  */
-export async function getMerchantSalesOwnerFilterOptions(salesStaffCodes?: string[]) {
+export async function getMerchantSalesOwnerFilterOptions(
+  salesStaffCodes?: string[]
+) {
   const db = await getDb();
   if (!db || (salesStaffCodes !== undefined && salesStaffCodes.length === 0)) {
     return { options: [], canViewUnassigned: salesStaffCodes === undefined };
   }
 
-  const scopeCondition = salesStaffCodes === undefined
-    ? undefined
-    : inArray(salesStaff.staffCode, salesStaffCodes);
+  const scopeCondition =
+    salesStaffCodes === undefined
+      ? undefined
+      : inArray(salesStaff.staffCode, salesStaffCodes);
   const conditions = and(
     scopeCondition,
     or(
       eq(salesStaff.status, "active"),
-      sql`EXISTS (SELECT 1 FROM merchants m WHERE m.salesOwnerCode = ${salesStaff.staffCode})`,
-    ),
+      sql`EXISTS (SELECT 1 FROM merchants m WHERE m.salesOwnerCode = ${salesStaff.staffCode})`
+    )
   );
   const rows = await db
     .select({
@@ -1205,7 +1510,7 @@ export async function getMerchantSalesOwnerFilterOptions(salesStaffCodes?: strin
     .orderBy(
       sql`CASE WHEN ${salesStaff.status} = 'active' THEN 0 ELSE 1 END`,
       asc(salesStaff.sortOrder),
-      asc(salesStaff.id),
+      asc(salesStaff.id)
     );
 
   return {
@@ -1222,8 +1527,14 @@ const OWNERSHIP_QUERY_MINUTE_LIMIT = 30;
 const OWNERSHIP_QUERY_DAY_LIMIT = 300;
 const OWNERSHIP_REQUEST_TOKEN_TTL_MS = 10 * 60_000;
 
-function ownershipRequestToken(merchantId: number, adminUserId: number, expiresAt: number) {
-  const secret = ENV.cookieSecret || (ENV.isProduction ? "" : "development-merchant-ownership");
+function ownershipRequestToken(
+  merchantId: number,
+  adminUserId: number,
+  expiresAt: number
+) {
+  const secret =
+    ENV.cookieSecret ||
+    (ENV.isProduction ? "" : "development-merchant-ownership");
   if (!secret) throw new Error("JWT_SECRET 未配置，无法生成客户归属申请凭证");
   const signature = createHmac("sha256", secret)
     .update(`${merchantId}:${adminUserId}:${expiresAt}`)
@@ -1231,15 +1542,30 @@ function ownershipRequestToken(merchantId: number, adminUserId: number, expiresA
   return `${expiresAt}.${signature}`;
 }
 
-function verifyOwnershipRequestToken(token: string, merchantId: number, adminUserId: number) {
+function verifyOwnershipRequestToken(
+  token: string,
+  merchantId: number,
+  adminUserId: number
+) {
   const [expiresText, signature, extra] = token.split(".");
-  if (extra !== undefined || !/^\d{13}$/.test(expiresText ?? "") || !/^[0-9a-f]{64}$/.test(signature ?? "")) {
+  if (
+    extra !== undefined ||
+    !/^\d{13}$/.test(expiresText ?? "") ||
+    !/^[0-9a-f]{64}$/.test(signature ?? "")
+  ) {
     return false;
   }
   const expiresAt = Number(expiresText);
   if (!Number.isSafeInteger(expiresAt) || expiresAt < Date.now()) return false;
-  const expectedSignature = ownershipRequestToken(merchantId, adminUserId, expiresAt).split(".")[1];
-  return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"));
+  const expectedSignature = ownershipRequestToken(
+    merchantId,
+    adminUserId,
+    expiresAt
+  ).split(".")[1];
+  return timingSafeEqual(
+    Buffer.from(signature, "hex"),
+    Buffer.from(expectedSignature, "hex")
+  );
 }
 
 function ownershipQueryKind(query: string) {
@@ -1287,139 +1613,166 @@ export async function searchMerchantOwnership(input: {
       if (!rateLimitUser) throw new Error("OWNERSHIP_QUERY_USER_NOT_FOUND");
     }
 
-  let portalUserId: string | null = null;
-  let messagePhone: string | null = null;
-  if (input.messageThreadId !== undefined) {
-    const [thread] = await tx
+    let portalUserId: string | null = null;
+    let messagePhone: string | null = null;
+    if (input.messageThreadId !== undefined) {
+      const [thread] = await tx
+        .select({
+          threadType: messageThreads.threadType,
+          subject: messageThreads.subject,
+          portalUserId: messageThreads.portalUserId,
+          contactPhone: messageThreads.contactPhone,
+        })
+        .from(messageThreads)
+        .where(eq(messageThreads.id, input.messageThreadId))
+        .limit(1);
+      if (!thread) throw new Error("OWNERSHIP_MESSAGE_THREAD_NOT_FOUND");
+      if (resolvePortalMessageThreadType(thread) !== "onboarding") {
+        throw new Error("OWNERSHIP_LOOKUP_REQUIRES_ONBOARDING_THREAD");
+      }
+      portalUserId = normalizePortalUserId(thread.portalUserId);
+      messagePhone = thread.contactPhone?.trim() || null;
+      if (!portalUserId && !messagePhone) {
+        throw new Error("OWNERSHIP_MESSAGE_HAS_NO_LOOKUP_EVIDENCE");
+      }
+    }
+
+    const query = messagePhone ?? input.query?.trim() ?? portalUserId ?? "";
+    if (input.messageThreadId === undefined && query.length < 2) {
+      throw new Error("OWNERSHIP_QUERY_TOO_SHORT");
+    }
+    const compact = query.replace(/\s+/g, "").toUpperCase();
+    const now = new Date();
+    const minuteAgo = new Date(now.getTime() - 60_000);
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
+    const [usage] = await tx
       .select({
-        threadType: messageThreads.threadType,
-        subject: messageThreads.subject,
-        portalUserId: messageThreads.portalUserId,
-        contactPhone: messageThreads.contactPhone,
+        minuteCount: sql<number>`SUM(CASE WHEN ${merchantOwnershipQueryAudits.createdAt} >= ${minuteAgo} THEN 1 ELSE 0 END)`,
+        dayCount: sql<number>`COUNT(*)`,
       })
-      .from(messageThreads)
-      .where(eq(messageThreads.id, input.messageThreadId))
-      .limit(1);
-    if (!thread) throw new Error("OWNERSHIP_MESSAGE_THREAD_NOT_FOUND");
-    if (resolvePortalMessageThreadType(thread) !== "onboarding") {
-      throw new Error("OWNERSHIP_LOOKUP_REQUIRES_ONBOARDING_THREAD");
+      .from(merchantOwnershipQueryAudits)
+      .where(
+        and(
+          eq(merchantOwnershipQueryAudits.adminUserId, input.adminUserId),
+          gte(merchantOwnershipQueryAudits.createdAt, dayAgo)
+        )
+      );
+    if (
+      Number(usage?.minuteCount ?? 0) >= OWNERSHIP_QUERY_MINUTE_LIMIT ||
+      Number(usage?.dayCount ?? 0) >= OWNERSHIP_QUERY_DAY_LIMIT
+    ) {
+      throw new Error("OWNERSHIP_QUERY_RATE_LIMITED");
     }
-    portalUserId = normalizePortalUserId(thread.portalUserId);
-    messagePhone = thread.contactPhone?.trim() || null;
-    if (!portalUserId && !messagePhone) {
-      throw new Error("OWNERSHIP_MESSAGE_HAS_NO_LOOKUP_EVIDENCE");
-    }
-  }
 
-  const query = messagePhone ?? input.query?.trim() ?? portalUserId ?? "";
-  if (input.messageThreadId === undefined && query.length < 2) {
-    throw new Error("OWNERSHIP_QUERY_TOO_SHORT");
-  }
-  const compact = query.replace(/\s+/g, "").toUpperCase();
-  const now = new Date();
-  const minuteAgo = new Date(now.getTime() - 60_000);
-  const dayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
-  const [usage] = await tx
-    .select({
-      minuteCount: sql<number>`SUM(CASE WHEN ${merchantOwnershipQueryAudits.createdAt} >= ${minuteAgo} THEN 1 ELSE 0 END)`,
-      dayCount: sql<number>`COUNT(*)`,
-    })
-    .from(merchantOwnershipQueryAudits)
-    .where(and(
-      eq(merchantOwnershipQueryAudits.adminUserId, input.adminUserId),
-      gte(merchantOwnershipQueryAudits.createdAt, dayAgo),
-    ));
-  if (Number(usage?.minuteCount ?? 0) >= OWNERSHIP_QUERY_MINUTE_LIMIT || Number(usage?.dayCount ?? 0) >= OWNERSHIP_QUERY_DAY_LIMIT) {
-    throw new Error("OWNERSHIP_QUERY_RATE_LIMITED");
-  }
-
-  const kind = input.messageThreadId !== undefined ? "message_thread" : ownershipQueryKind(query);
-  const pattern = `%${escapeLike(query)}%`;
-  const compactPattern = `%${escapeLike(compact)}%`;
-  const queryKind = ownershipQueryKind(query);
-  const queryConditions = queryKind === "merchant_no"
-    ? [eq(merchants.merchantNo, compact)]
-    : queryKind === "credit_code"
-      ? [sql`UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact}`]
-      : queryKind === "phone"
-        ? [eq(merchants.contactPhone, compact)]
-        : [
-            sql`${merchants.companyName} LIKE ${pattern} ESCAPE '!'`,
-            sql`${merchants.contactName} LIKE ${pattern} ESCAPE '!'`,
-            sql`${merchants.merchantNo} LIKE ${compactPattern} ESCAPE '!'`,
-          ];
-  const matchPriority = sql`CASE
+    const kind =
+      input.messageThreadId !== undefined
+        ? "message_thread"
+        : ownershipQueryKind(query);
+    const pattern = `%${escapeLike(query)}%`;
+    const compactPattern = `%${escapeLike(compact)}%`;
+    const queryKind = ownershipQueryKind(query);
+    const queryConditions =
+      queryKind === "merchant_no"
+        ? [eq(merchants.merchantNo, compact)]
+        : queryKind === "credit_code"
+          ? [
+              sql`UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact}`,
+            ]
+          : queryKind === "phone"
+            ? [eq(merchants.contactPhone, compact)]
+            : [
+                sql`${merchants.companyName} LIKE ${pattern} ESCAPE '!'`,
+                sql`${merchants.contactName} LIKE ${pattern} ESCAPE '!'`,
+                sql`${merchants.merchantNo} LIKE ${compactPattern} ESCAPE '!'`,
+              ];
+    const matchPriority = sql`CASE
     WHEN ${merchants.merchantNo} = ${compact} THEN 0
     WHEN UPPER(REPLACE(${merchants.businessLicense}, ' ', '')) = ${compact} THEN 0
     WHEN ${merchants.contactPhone} = ${compact} THEN 0
     WHEN ${merchants.companyName} = ${query} THEN 1
     ELSE 2
   END`;
-  const scopeExpression = input.salesStaffCodes === undefined
-    ? sql<number>`1`
-    : input.salesStaffCodes.length === 0
-      ? sql<number>`0`
-      : sql<number>`CASE WHEN ${merchantReadScopeCondition(input.salesStaffCodes)} THEN 1 ELSE 0 END`;
+    const scopeExpression =
+      input.salesStaffCodes === undefined
+        ? sql<number>`1`
+        : input.salesStaffCodes.length === 0
+          ? sql<number>`0`
+          : sql<number>`CASE WHEN ${merchantReadScopeCondition(input.salesStaffCodes)} THEN 1 ELSE 0 END`;
 
-  const selectRows = (condition: SQL<unknown>, priority: SQL<unknown>) => tx
-      .select({
-        id: merchants.id,
-        companyName: merchants.companyName,
-        status: merchants.status,
-        salesOwner: merchants.salesOwner,
-        salesOwnerCode: merchants.salesOwnerCode,
-        updatedAt: merchants.updatedAt,
-        ownerEmail: adminUsers.email,
-        ownerPhone: adminUsers.phone,
-        inScope: scopeExpression,
-      })
-      .from(merchants)
-      .leftJoin(salesStaff, eq(salesStaff.staffCode, merchants.salesOwnerCode))
-      .leftJoin(adminUsers, eq(adminUsers.id, salesStaff.adminUserId))
-      .where(condition)
-      .orderBy(priority, desc(merchants.updatedAt))
-      .limit(10);
+    const selectRows = (condition: SQL<unknown>, priority: SQL<unknown>) =>
+      tx
+        .select({
+          id: merchants.id,
+          companyName: merchants.companyName,
+          status: merchants.status,
+          salesOwner: merchants.salesOwner,
+          salesOwnerCode: merchants.salesOwnerCode,
+          updatedAt: merchants.updatedAt,
+          ownerEmail: adminUsers.email,
+          ownerPhone: adminUsers.phone,
+          inScope: scopeExpression,
+        })
+        .from(merchants)
+        .leftJoin(
+          salesStaff,
+          eq(salesStaff.staffCode, merchants.salesOwnerCode)
+        )
+        .leftJoin(adminUsers, eq(adminUsers.id, salesStaff.adminUserId))
+        .where(condition)
+        .orderBy(priority, desc(merchants.updatedAt))
+        .limit(10);
 
-  let rows;
-  if (input.messageThreadId !== undefined) {
-    rows = portalUserId
-      ? await selectRows(eq(merchants.crmOwnerPortalUserId, portalUserId), sql`0`)
-      : [];
-    if (rows.length === 0 && messagePhone) {
-      rows = await selectRows(eq(merchants.contactPhone, compact), sql`0`);
+    let rows;
+    if (input.messageThreadId !== undefined) {
+      rows = portalUserId
+        ? await selectRows(
+            eq(merchants.crmOwnerPortalUserId, portalUserId),
+            sql`0`
+          )
+        : [];
+      if (rows.length === 0 && messagePhone) {
+        rows = await selectRows(eq(merchants.contactPhone, compact), sql`0`);
+      }
+    } else {
+      const condition = or(...queryConditions);
+      if (!condition) throw new Error("OWNERSHIP_QUERY_TOO_SHORT");
+      rows = await selectRows(condition, matchPriority);
     }
-  } else {
-    const condition = or(...queryConditions);
-    if (!condition) throw new Error("OWNERSHIP_QUERY_TOO_SHORT");
-    rows = await selectRows(condition, matchPriority);
-  }
 
-  await tx.insert(merchantOwnershipQueryAudits).values({
-    adminUserId: input.adminUserId,
-    queryHash: createHash("sha256")
-      .update(input.messageThreadId !== undefined ? `thread:${input.messageThreadId}:${portalUserId ?? ""}:${compact}` : compact)
-      .digest("hex"),
-    queryKind: kind,
-    resultCount: rows.length,
-    ipAddress: input.ipAddress ?? null,
-  });
+    await tx.insert(merchantOwnershipQueryAudits).values({
+      adminUserId: input.adminUserId,
+      queryHash: createHash("sha256")
+        .update(
+          input.messageThreadId !== undefined
+            ? `thread:${input.messageThreadId}:${portalUserId ?? ""}:${compact}`
+            : compact
+        )
+        .digest("hex"),
+      queryKind: kind,
+      resultCount: rows.length,
+      ipAddress: input.ipAddress ?? null,
+    });
 
-  const requestTokenExpiresAt = Date.now() + OWNERSHIP_REQUEST_TOKEN_TTL_MS;
+    const requestTokenExpiresAt = Date.now() + OWNERSHIP_REQUEST_TOKEN_TTL_MS;
 
-  return {
-    results: rows.map(row => ({
-      id: row.id,
-      companyName: row.companyName,
-      status: row.status,
-      ownerName: row.salesOwner?.trim() || null,
-      ownerCode: row.salesOwnerCode?.trim().toLowerCase() || null,
-      ownerEmail: row.ownerEmail?.trim() || null,
-      ownerPhone: row.ownerPhone?.trim() || null,
-      updatedAt: row.updatedAt,
-      inScope: Number(row.inScope) === 1,
-      requestToken: ownershipRequestToken(row.id, input.adminUserId, requestTokenExpiresAt),
-    })),
-  };
+    return {
+      results: rows.map(row => ({
+        id: row.id,
+        companyName: row.companyName,
+        status: row.status,
+        ownerName: row.salesOwner?.trim() || null,
+        ownerCode: row.salesOwnerCode?.trim().toLowerCase() || null,
+        ownerEmail: row.ownerEmail?.trim() || null,
+        ownerPhone: row.ownerPhone?.trim() || null,
+        updatedAt: row.updatedAt,
+        inScope: Number(row.inScope) === 1,
+        requestToken: ownershipRequestToken(
+          row.id,
+          input.adminUserId,
+          requestTokenExpiresAt
+        ),
+      })),
+    };
   });
 }
 
@@ -1432,7 +1785,13 @@ export async function createMerchantOwnershipRequest(input: {
   verificationToken: string;
   actor?: MaterialAuditActor;
 }) {
-  if (!verifyOwnershipRequestToken(input.verificationToken, input.merchantId, input.requesterAdminUserId)) {
+  if (
+    !verifyOwnershipRequestToken(
+      input.verificationToken,
+      input.merchantId,
+      input.requesterAdminUserId
+    )
+  ) {
     throw new Error("OWNERSHIP_LOOKUP_REQUIRED");
   }
   const db = await getDb();
@@ -1441,10 +1800,12 @@ export async function createMerchantOwnershipRequest(input: {
     const [staff] = await tx
       .select()
       .from(salesStaff)
-      .where(and(
-        eq(salesStaff.adminUserId, input.requesterAdminUserId),
-        eq(salesStaff.status, "active"),
-      ))
+      .where(
+        and(
+          eq(salesStaff.adminUserId, input.requesterAdminUserId),
+          eq(salesStaff.status, "active")
+        )
+      )
       .limit(1);
     if (!staff) throw new Error("REQUESTER_HAS_NO_ACTIVE_SALES_IDENTITY");
     const [merchant] = await tx
@@ -1456,30 +1817,44 @@ export async function createMerchantOwnershipRequest(input: {
     if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
     const ownerCode = merchant.salesOwnerCode?.trim().toLowerCase() || null;
     if (ownerCode === staff.staffCode) throw new Error("ALREADY_OWNER");
-    if (input.requestType === "claim" && ownerCode) throw new Error("MERCHANT_ALREADY_ASSIGNED");
-    if (input.requestType !== "claim" && !ownerCode) throw new Error("MERCHANT_UNASSIGNED");
+    if (input.requestType === "claim" && ownerCode)
+      throw new Error("MERCHANT_ALREADY_ASSIGNED");
+    if (input.requestType !== "claim" && !ownerCode)
+      throw new Error("MERCHANT_UNASSIGNED");
     if (input.requestType === "collaborate") {
       const [existingCollaborator] = await tx
         .select({ id: merchantSalesCollaborators.id })
         .from(merchantSalesCollaborators)
-        .where(and(
-          eq(merchantSalesCollaborators.merchantId, merchant.id),
-          eq(merchantSalesCollaborators.staffCode, staff.staffCode),
-          isNull(merchantSalesCollaborators.revokedAt),
-        ))
+        .where(
+          and(
+            eq(merchantSalesCollaborators.merchantId, merchant.id),
+            eq(merchantSalesCollaborators.staffCode, staff.staffCode),
+            isNull(merchantSalesCollaborators.revokedAt)
+          )
+        )
         .limit(1);
       if (existingCollaborator) throw new Error("ALREADY_COLLABORATOR");
     }
     const [pending] = await tx
       .select({ id: merchantOwnershipRequests.id })
       .from(merchantOwnershipRequests)
-      .where(and(
-        eq(merchantOwnershipRequests.merchantId, merchant.id),
-        eq(merchantOwnershipRequests.requesterAdminUserId, input.requesterAdminUserId),
-        eq(merchantOwnershipRequests.status, "pending"),
-      ))
+      .where(
+        and(
+          eq(merchantOwnershipRequests.merchantId, merchant.id),
+          eq(
+            merchantOwnershipRequests.requesterAdminUserId,
+            input.requesterAdminUserId
+          ),
+          eq(merchantOwnershipRequests.status, "pending")
+        )
+      )
       .limit(1);
-    if (pending) return { success: true as const, idempotent: true as const, requestId: pending.id };
+    if (pending)
+      return {
+        success: true as const,
+        idempotent: true as const,
+        requestId: pending.id,
+      };
 
     const result = await tx.insert(merchantOwnershipRequests).values({
       merchantId: merchant.id,
@@ -1499,7 +1874,11 @@ export async function createMerchantOwnershipRequest(input: {
       module: "merchants",
       targetType: "merchant_ownership_request",
       targetId: String(requestId),
-      afterValue: { merchantId: merchant.id, expectedOwnerCode: ownerCode, requesterStaffCode: staff.staffCode },
+      afterValue: {
+        merchantId: merchant.id,
+        expectedOwnerCode: ownerCode,
+        requesterStaffCode: staff.staffCode,
+      },
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
       result: "success",
@@ -1517,9 +1896,15 @@ export async function listMerchantOwnershipRequests(input: {
   if (!db) return [];
   const conditions = [];
   if (input.requesterAdminUserId !== undefined) {
-    conditions.push(eq(merchantOwnershipRequests.requesterAdminUserId, input.requesterAdminUserId));
+    conditions.push(
+      eq(
+        merchantOwnershipRequests.requesterAdminUserId,
+        input.requesterAdminUserId
+      )
+    );
   }
-  if (input.status) conditions.push(eq(merchantOwnershipRequests.status, input.status));
+  if (input.status)
+    conditions.push(eq(merchantOwnershipRequests.status, input.status));
   return db
     .select({
       id: merchantOwnershipRequests.id,
@@ -1537,7 +1922,10 @@ export async function listMerchantOwnershipRequests(input: {
       reviewedAt: merchantOwnershipRequests.reviewedAt,
     })
     .from(merchantOwnershipRequests)
-    .innerJoin(merchants, eq(merchants.id, merchantOwnershipRequests.merchantId))
+    .innerJoin(
+      merchants,
+      eq(merchants.id, merchantOwnershipRequests.merchantId)
+    )
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(merchantOwnershipRequests.createdAt))
     .limit(Math.min(input.limit ?? 50, 100));
@@ -1561,7 +1949,8 @@ export async function reviewMerchantOwnershipRequest(input: {
       .limit(1)
       .for("update");
     if (!request) throw new Error("OWNERSHIP_REQUEST_NOT_FOUND");
-    if (request.status !== "pending") throw new Error("OWNERSHIP_REQUEST_ALREADY_REVIEWED");
+    if (request.status !== "pending")
+      throw new Error("OWNERSHIP_REQUEST_ALREADY_REVIEWED");
     const [merchant] = await tx
       .select()
       .from(merchants)
@@ -1569,46 +1958,59 @@ export async function reviewMerchantOwnershipRequest(input: {
       .limit(1)
       .for("update");
     if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
-    const currentOwnerCode = merchant.salesOwnerCode?.trim().toLowerCase() || null;
+    const currentOwnerCode =
+      merchant.salesOwnerCode?.trim().toLowerCase() || null;
 
-    if (input.decision === "approved" && currentOwnerCode !== (request.expectedOwnerCode || null)) {
+    if (
+      input.decision === "approved" &&
+      currentOwnerCode !== (request.expectedOwnerCode || null)
+    ) {
       throw new Error("SALES_OWNER_CHANGED");
     }
     let platformCompanyId: number | null = null;
     if (input.decision === "approved") {
       if (request.requestType === "collaborate") {
-        await tx.insert(merchantSalesCollaborators).values({
-          merchantId: merchant.id,
-          staffCode: request.requesterStaffCode,
-          grantedByAdminUserId: input.reviewerAdminUserId,
-          sourceRequestId: request.id,
-          revokedAt: null,
-        }).onDuplicateKeyUpdate({
-          set: {
+        await tx
+          .insert(merchantSalesCollaborators)
+          .values({
+            merchantId: merchant.id,
+            staffCode: request.requesterStaffCode,
             grantedByAdminUserId: input.reviewerAdminUserId,
             sourceRequestId: request.id,
             revokedAt: null,
-          },
-        });
+          })
+          .onDuplicateKeyUpdate({
+            set: {
+              grantedByAdminUserId: input.reviewerAdminUserId,
+              sourceRequestId: request.id,
+              revokedAt: null,
+            },
+          });
       } else {
         const [staff] = await tx
           .select()
           .from(salesStaff)
-          .where(and(
-            eq(salesStaff.staffCode, request.requesterStaffCode),
-            eq(salesStaff.status, "active"),
-          ))
+          .where(
+            and(
+              eq(salesStaff.staffCode, request.requesterStaffCode),
+              eq(salesStaff.status, "active")
+            )
+          )
           .limit(1);
         if (!staff) throw new Error("INVALID_SALES_STAFF_CODE");
-        await tx.update(merchants).set({
-          salesOwner: staff.displayName,
-          salesOwnerCode: staff.staffCode,
-        }).where(eq(merchants.id, merchant.id));
+        await tx
+          .update(merchants)
+          .set({
+            salesOwner: staff.displayName,
+            salesOwnerCode: staff.staffCode,
+          })
+          .where(eq(merchants.id, merchant.id));
         const identity = merchantRegistrationIdentity(merchant);
         if (!identity) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
-        const platformIdentityWhere = merchant.registrationRegion === "HK"
-          ? sql`registrationRegion = 'HK' AND registrationIdentifier = ${identity}`
-          : sql`registrationRegion = 'CN' AND UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(merchant.businessLicense || "")}`;
+        const platformIdentityWhere =
+          merchant.registrationRegion === "HK"
+            ? sql`registrationRegion = 'HK' AND registrationIdentifier = ${identity}`
+            : sql`registrationRegion = 'CN' AND UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(merchant.businessLicense || "")}`;
         const platformResult = (await tx.execute(sql`
           SELECT id
             FROM ${sql.raw(PLATFORM_DB)}.companies
@@ -1616,8 +2018,10 @@ export async function reviewMerchantOwnershipRequest(input: {
            LIMIT 2
            FOR UPDATE
         `)) as unknown as [{ id: number }[], unknown];
-        if (platformResult[0].length === 0) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
-        if (platformResult[0].length > 1) throw new Error("PLATFORM_COMPANY_DUPLICATE");
+        if (platformResult[0].length === 0)
+          throw new Error("PLATFORM_COMPANY_NOT_FOUND");
+        if (platformResult[0].length > 1)
+          throw new Error("PLATFORM_COMPANY_DUPLICATE");
         platformCompanyId = Number(platformResult[0][0].id);
         await tx.execute(sql`
           UPDATE ${sql.raw(PLATFORM_DB)}.companies
@@ -1627,13 +2031,16 @@ export async function reviewMerchantOwnershipRequest(input: {
       }
     }
 
-    await tx.update(merchantOwnershipRequests).set({
-      status: input.decision,
-      reviewerAdminUserId: input.reviewerAdminUserId,
-      reviewerName: input.reviewerName,
-      reviewNote: input.reviewNote?.trim() || null,
-      reviewedAt: new Date(),
-    }).where(eq(merchantOwnershipRequests.id, request.id));
+    await tx
+      .update(merchantOwnershipRequests)
+      .set({
+        status: input.decision,
+        reviewerAdminUserId: input.reviewerAdminUserId,
+        reviewerName: input.reviewerName,
+        reviewNote: input.reviewNote?.trim() || null,
+        reviewedAt: new Date(),
+      })
+      .where(eq(merchantOwnershipRequests.id, request.id));
     await tx.insert(auditLogs).values({
       operatorId: input.actor?.operatorId ?? input.reviewerAdminUserId,
       operatorName: input.actor?.operatorName ?? input.reviewerName,
@@ -1661,21 +2068,89 @@ export async function reviewMerchantOwnershipRequest(input: {
 export async function getMerchantById(id: number, salesStaffCodes?: string[]) {
   const db = await getDb();
   if (!db) return null;
-  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return null;
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0)
+    return null;
   const conditions = [eq(merchants.id, id)];
-  if (salesStaffCodes !== undefined) conditions.push(merchantReadScopeCondition(salesStaffCodes)!);
-  const result = await db.select().from(merchants).where(and(...conditions)).limit(1);
+  if (salesStaffCodes !== undefined)
+    conditions.push(merchantReadScopeCondition(salesStaffCodes)!);
+  const result = await db
+    .select()
+    .from(merchants)
+    .where(and(...conditions))
+    .limit(1);
   return result[0] ?? null;
 }
 
-/** 写操作只认正式负责人范围，协作者不得审核、开通 ERP 或向客户发信。 */
-export async function getOwnedMerchantById(id: number, salesStaffCodes?: string[]) {
+/**
+ * Workbench-only tenant lookup. Its caller has already checked the exact
+ * source-controlled/configured allowlist. Do not add native admin sales-owner
+ * or collaborator predicates here: those scopes remain for native admin routes
+ * and would incorrectly block a bound staff member's original front enterprise.
+ */
+export async function getBusinessWorkbenchMerchantById(
+  id: number,
+): Promise<typeof merchants.$inferSelect | null> {
   const db = await getDb();
   if (!db) return null;
-  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0) return null;
+  const [merchant] = await db
+    .select()
+    .from(merchants)
+    .where(eq(merchants.id, id))
+    .limit(1);
+  return merchant ?? null;
+}
+
+/** Exact allowlist list query, deliberately separate from getMerchants native scope semantics. */
+export async function getBusinessWorkbenchMerchants(
+  params: { page?: number; pageSize?: number; search?: string },
+  merchantIds: readonly number[],
+) {
+  const db = await getDb();
+  if (!db || merchantIds.length === 0) {
+    return { data: [] as Array<typeof merchants.$inferSelect>, total: 0 };
+  }
+  const { page = 1, pageSize = 20, search } = params;
+  const conditions = [inArray(merchants.id, [...merchantIds])];
+  if (search) {
+    const keyword = `%${search}%`;
+    conditions.push(or(
+      like(merchants.companyName, keyword),
+      like(merchantEffectiveHkChineseNameSql(), keyword),
+      like(merchants.merchantNo, keyword),
+    )!);
+  }
+  const where = and(...conditions);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(merchants)
+    .where(where);
+  const data = await db
+    .select()
+    .from(merchants)
+    .where(where)
+    .orderBy(desc(merchants.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+  return { data, total: Number(count) };
+}
+
+/** 写操作只认正式负责人范围，协作者不得审核、开通 ERP 或向客户发信。 */
+export async function getOwnedMerchantById(
+  id: number,
+  salesStaffCodes?: string[]
+) {
+  const db = await getDb();
+  if (!db) return null;
+  if (salesStaffCodes !== undefined && salesStaffCodes.length === 0)
+    return null;
   const conditions = [eq(merchants.id, id)];
-  if (salesStaffCodes !== undefined) conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
-  const result = await db.select().from(merchants).where(and(...conditions)).limit(1);
+  if (salesStaffCodes !== undefined)
+    conditions.push(inArray(merchants.salesOwnerCode, salesStaffCodes));
+  const result = await db
+    .select()
+    .from(merchants)
+    .where(and(...conditions))
+    .limit(1);
   return result[0] ?? null;
 }
 
@@ -1690,7 +2165,14 @@ type MerchantLicenseSource = {
  * 对象键仅在服务端流转，绝不返回列表或详情客户端。
  */
 export async function getMerchantLicenseSource(
-  merchant: Pick<typeof merchants.$inferSelect, "registrationRegion" | "businessLicense" | "crmOwnerPortalUserId" | "licenseObjectKey" | "licenseImageUrl">,
+  merchant: Pick<
+    typeof merchants.$inferSelect,
+    | "registrationRegion"
+    | "businessLicense"
+    | "crmOwnerPortalUserId"
+    | "licenseObjectKey"
+    | "licenseImageUrl"
+  >
 ): Promise<MerchantLicenseSource | null> {
   // HK BR/CI/BANK documents are separately stored and must only pass through getMerchantHkDocumentSource.
   if (merchant.registrationRegion === "HK") return null;
@@ -1706,31 +2188,42 @@ export async function getMerchantLicenseSource(
        WHERE UPPER(REPLACE(creditCode, ' ', '')) = ${creditCode.replace(/\s+/g, "")}
          ${portalUserId ? sql`AND CAST(userId AS CHAR) = ${portalUserId}` : sql``}
        LIMIT 2
-    `)) as unknown as [Array<{
-      licenseObjectKey: string | null;
-      licenseUrl: string | null;
-      licenseFileName: string | null;
-    }>, unknown];
+    `)) as unknown as [
+      Array<{
+        licenseObjectKey: string | null;
+        licenseUrl: string | null;
+        licenseFileName: string | null;
+      }>,
+      unknown,
+    ];
     const rows = result[0] ?? [];
     if (rows.length > 1) throw new Error("PLATFORM_COMPANY_DUPLICATE");
     const company = rows[0];
     if (portalUserId && !company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
-    const objectKey = company?.licenseObjectKey?.trim()
-      || (!portalUserId ? merchant.licenseObjectKey?.trim() : "")
-      || null;
+    const objectKey =
+      company?.licenseObjectKey?.trim() ||
+      (!portalUserId ? merchant.licenseObjectKey?.trim() : "") ||
+      null;
     const legacyUrl = objectKey
       ? null
-      : company?.licenseUrl?.trim()
-        || (!portalUserId ? merchant.licenseImageUrl?.trim() : "")
-        || null;
+      : company?.licenseUrl?.trim() ||
+        (!portalUserId ? merchant.licenseImageUrl?.trim() : "") ||
+        null;
     return objectKey || legacyUrl
-      ? { objectKey, legacyUrl, fileName: company?.licenseFileName?.trim() || null }
+      ? {
+          objectKey,
+          legacyUrl,
+          fileName: company?.licenseFileName?.trim() || null,
+        }
       : null;
   } catch (error) {
     if (
-      error instanceof Error
-      && ["PLATFORM_COMPANY_DUPLICATE", "PLATFORM_COMPANY_NOT_FOUND"].includes(error.message)
-    ) throw error;
+      error instanceof Error &&
+      ["PLATFORM_COMPANY_DUPLICATE", "PLATFORM_COMPANY_NOT_FOUND"].includes(
+        error.message
+      )
+    )
+      throw error;
     console.error("[merchant.license] 跨库读取营业执照失败", {
       errorType: error instanceof Error ? error.name : "UnknownError",
     });
@@ -1742,7 +2235,7 @@ export async function getMerchantLicenseSource(
 export async function recordMerchantLicenseView(
   merchantId: number,
   source: "private_object" | "legacy_url",
-  actor: MaterialAuditActor = {},
+  actor: MaterialAuditActor = {}
 ) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
@@ -1763,44 +2256,973 @@ export async function recordMerchantLicenseView(
   });
 }
 
+/**
+ * Record a successful BFF tenant-context resolution without persisting the
+ * credit code, portal owner, service key, or any returned business data.
+ * Domain mutations retain their own transactional audits in the portal service.
+ */
+export async function recordBusinessContextAccess(
+  merchantId: number,
+  actor: BusinessStaffBindingActor,
+  linearization?: {
+    requestId: string;
+    bindingVersion: number;
+    scopeVersion: number;
+  },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const verifiedActor = bindingActor(actor);
+  if (linearization && (
+    !/^[A-Za-z0-9_-]{8,64}$/.test(linearization.requestId)
+    || !Number.isSafeInteger(linearization.bindingVersion)
+    || linearization.bindingVersion <= 0
+    || !Number.isSafeInteger(linearization.scopeVersion)
+    || linearization.scopeVersion <= 0
+  )) {
+    throw new Error("BUSINESS_CONTEXT_AUDIT_INPUT_INVALID");
+  }
+  await db.insert(auditLogs).values({
+    operatorId: verifiedActor.operatorId,
+    operatorName: verifiedActor.operatorName,
+    operatorRole: verifiedActor.operatorRole,
+    action: "business.context.view",
+    module: "business_bff",
+    targetType: "merchant",
+    targetId: String(merchantId),
+    beforeValue: null,
+    afterValue: {
+      resolved: true,
+      requestId: linearization?.requestId ?? null,
+      bindingVersion: linearization?.bindingVersion ?? null,
+      scopeVersion: linearization?.scopeVersion ?? null,
+      authorizationFence: linearization ? "held" : "legacy",
+    },
+    ipAddress: verifiedActor.ipAddress,
+    userAgent: verifiedActor.userAgent,
+    result: "success",
+    note: "后台工作人员查看已授权业务上下文",
+  });
+}
+
+export type BusinessStaffBindingActor = {
+  operatorId: number;
+  operatorName: string;
+  operatorRole: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
+
+export type ActiveBusinessStaffBinding = {
+  id: number;
+  adminUserId: number;
+  frontUserId: number;
+  bindingVersion: number;
+};
+
+function bindingActor(actor: BusinessStaffBindingActor) {
+  if (!Number.isSafeInteger(actor.operatorId) || actor.operatorId <= 0) {
+    throw new Error("BUSINESS_BINDING_ACTOR_REQUIRED");
+  }
+  return {
+    operatorId: actor.operatorId,
+    operatorName: actor.operatorName.trim().slice(0, 128) || "unknown",
+    operatorRole: actor.operatorRole.trim().slice(0, 64) || "unknown",
+    ipAddress: actor.ipAddress ?? null,
+    userAgent: actor.userAgent ?? null,
+  };
+}
+
+function bindingAuditPayload(input: {
+  adminUserId: number;
+  frontUserId: number | null;
+  expectedVersion: number;
+  resultingVersion: number;
+  requestId: string;
+  action: "bound" | "rebound" | "revoked" | "unchanged";
+  actor: BusinessStaffBindingActor;
+}) {
+  const actor = bindingActor(input.actor);
+  return {
+    adminUserId: input.adminUserId,
+    frontUserId: input.frontUserId,
+    action: input.action,
+    expectedVersion: input.expectedVersion,
+    resultingVersion: input.resultingVersion,
+    requestId: input.requestId,
+    operatorAdminUserId: actor.operatorId,
+    operatorName: actor.operatorName,
+    operatorRole: actor.operatorRole,
+    ipAddress: actor.ipAddress,
+    userAgent: actor.userAgent,
+  };
+}
+
+function assertBusinessBindingRequest(input: {
+  adminUserId: number;
+  expectedVersion: number;
+  requestId: string;
+}) {
+  if (!Number.isSafeInteger(input.adminUserId) || input.adminUserId <= 0) {
+    throw new Error("BUSINESS_BINDING_ADMIN_INVALID");
+  }
+  if (
+    !Number.isSafeInteger(input.expectedVersion) ||
+    input.expectedVersion < 0
+  ) {
+    throw new Error("BUSINESS_BINDING_VERSION_INVALID");
+  }
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(input.requestId)) {
+    throw new Error("BUSINESS_BINDING_REQUEST_ID_INVALID");
+  }
+}
+
+/** Return only a current active mapping. Revoked history is deliberately not usable as a principal. */
+export async function getActiveBusinessStaffBinding(
+  adminUserId: number
+): Promise<ActiveBusinessStaffBinding | null> {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const [row] = await db
+    .select({
+      id: adminBusinessStaffBindings.id,
+      adminUserId: adminBusinessStaffBindings.adminUserId,
+      frontUserId: adminBusinessStaffBindings.frontUserId,
+      bindingVersion: adminBusinessStaffBindings.bindingVersion,
+    })
+    .from(adminBusinessStaffBindings)
+    .where(
+      and(
+        eq(adminBusinessStaffBindings.adminUserId, adminUserId),
+        eq(adminBusinessStaffBindings.status, "active"),
+        isNotNull(adminBusinessStaffBindings.frontUserId)
+      )
+    )
+    .limit(1);
+  const frontUserId = row?.frontUserId;
+  if (
+    !row ||
+    typeof frontUserId !== "number" ||
+    !Number.isSafeInteger(frontUserId) ||
+    frontUserId <= 0
+  )
+    return null;
+  return {
+    id: row.id,
+    adminUserId: row.adminUserId,
+    frontUserId,
+    bindingVersion: row.bindingVersion,
+  };
+}
+
+type BusinessStaffBindingMutation = {
+  bindingId: number;
+  adminUserId: number;
+  frontUserId: number | null;
+  status: "active" | "revoked";
+  bindingVersion: number;
+  action: "bound" | "rebound" | "revoked" | "unchanged";
+  idempotent: boolean;
+};
+
+function mysqlDuplicateKeyMessage(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const duplicate =
+    ("code" in error && error.code === "ER_DUP_ENTRY") ||
+    ("errno" in error && error.errno === 1062);
+  if (duplicate) {
+    if ("sqlMessage" in error && typeof error.sqlMessage === "string")
+      return error.sqlMessage;
+    if ("message" in error && typeof error.message === "string")
+      return error.message;
+    return "";
+  }
+  return "cause" in error ? mysqlDuplicateKeyMessage(error.cause) : null;
+}
+
+function mysqlErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  if ("code" in error && typeof error.code === "string") return error.code;
+  return "cause" in error ? mysqlErrorCode(error.cause) : null;
+}
+
+function rethrowBusinessBindingUniqueConflict(error: unknown): never {
+  // Two first-time bindings for the same front user can contend on the unique
+  // index's absent-key gap. InnoDB rolls one transaction back with a deadlock
+  // before the winner commits; no loser mutation exists, so surface the same
+  // non-enumerating one-to-one conflict rather than leaking a driver error.
+  if (mysqlErrorCode(error) === "ER_LOCK_DEADLOCK") {
+    throw new Error("BUSINESS_BINDING_FRONT_USER_ALREADY_BOUND");
+  }
+  const message = mysqlDuplicateKeyMessage(error);
+  if (message?.includes("admin_business_staff_binding_audits_request_unique")) {
+    throw new Error("BUSINESS_BINDING_REQUEST_ID_REUSED");
+  }
+  if (message?.includes("admin_business_staff_bindings_front_user_unique")) {
+    throw new Error("BUSINESS_BINDING_FRONT_USER_ALREADY_BOUND");
+  }
+  throw error;
+}
+
+/**
+ * Establish or replace a current mapping only after the BFF has independently
+ * confirmed the candidate through the platform's service-key-only endpoint.
+ */
+export async function bindBusinessStaffPrincipal(input: {
+  adminUserId: number;
+  frontUserId: number;
+  expectedVersion: number;
+  requestId: string;
+  actor: BusinessStaffBindingActor;
+}): Promise<BusinessStaffBindingMutation> {
+  assertBusinessBindingRequest(input);
+  if (!Number.isSafeInteger(input.frontUserId) || input.frontUserId <= 0) {
+    throw new Error("BUSINESS_BINDING_FRONT_USER_INVALID");
+  }
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const actor = bindingActor(input.actor);
+  try {
+    return await withBusinessAuthorizationFence({ adminUserId: input.adminUserId }, () => db.transaction(async tx => {
+      // Lock the actual target account first; this serializes all changes to one admin principal.
+      const [targetAccount] = await tx
+        .select({ id: adminUsers.id, status: adminUsers.status })
+        .from(adminUsers)
+        .where(eq(adminUsers.id, input.adminUserId))
+        .limit(1)
+        .for("update");
+      if (!targetAccount) throw new Error("BUSINESS_BINDING_ADMIN_NOT_FOUND");
+      if (targetAccount.status !== "active")
+        throw new Error("BUSINESS_BINDING_ADMIN_INACTIVE");
+
+      const [replayed] = await tx
+        .select()
+        .from(adminBusinessStaffBindingAudits)
+        .where(eq(adminBusinessStaffBindingAudits.requestId, input.requestId))
+        .limit(1)
+        .for("update");
+      if (replayed) {
+        const samePayload =
+          replayed.adminUserId === input.adminUserId &&
+          replayed.frontUserId === input.frontUserId &&
+          replayed.expectedVersion === input.expectedVersion &&
+          replayed.action !== "revoked";
+        if (!samePayload) throw new Error("BUSINESS_BINDING_REQUEST_ID_REUSED");
+        return {
+          bindingId: replayed.bindingId,
+          adminUserId: replayed.adminUserId,
+          frontUserId: replayed.frontUserId,
+          status:
+            replayed.action === "unchanged" ||
+            replayed.action === "bound" ||
+            replayed.action === "rebound"
+              ? "active"
+              : "revoked",
+          bindingVersion: replayed.resultingVersion,
+          action: replayed.action,
+          idempotent: true,
+        };
+      }
+
+      const [current] = await tx
+        .select()
+        .from(adminBusinessStaffBindings)
+        .where(eq(adminBusinessStaffBindings.adminUserId, input.adminUserId))
+        .limit(1)
+        .for("update");
+      const currentVersion = current?.bindingVersion ?? 0;
+      if (input.expectedVersion !== currentVersion)
+        throw new Error("BUSINESS_BINDING_VERSION_CONFLICT");
+
+      const [occupied] = await tx
+        .select({
+          id: adminBusinessStaffBindings.id,
+          adminUserId: adminBusinessStaffBindings.adminUserId,
+        })
+        .from(adminBusinessStaffBindings)
+        .where(
+          and(
+            eq(adminBusinessStaffBindings.frontUserId, input.frontUserId),
+            eq(adminBusinessStaffBindings.status, "active")
+          )
+        )
+        .limit(1)
+        .for("update");
+      if (occupied && occupied.adminUserId !== input.adminUserId) {
+        throw new Error("BUSINESS_BINDING_FRONT_USER_ALREADY_BOUND");
+      }
+
+      let bindingId: number;
+      let resultingVersion: number;
+      let action: BusinessStaffBindingMutation["action"];
+      if (!current) {
+        const [inserted] = await tx
+          .insert(adminBusinessStaffBindings)
+          .values({
+            adminUserId: input.adminUserId,
+            frontUserId: input.frontUserId,
+            status: "active",
+            bindingVersion: 1,
+            createdByAdminUserId: actor.operatorId,
+            updatedByAdminUserId: actor.operatorId,
+            revokedByAdminUserId: null,
+            revokedAt: null,
+          })
+          .$returningId();
+        if (
+          !inserted ||
+          !Number.isSafeInteger(inserted.id) ||
+          inserted.id <= 0
+        ) {
+          throw new Error("BUSINESS_BINDING_CREATE_FAILED");
+        }
+        bindingId = inserted.id;
+        resultingVersion = 1;
+        action = "bound";
+      } else if (
+        current.status === "active" &&
+        current.frontUserId === input.frontUserId
+      ) {
+        bindingId = current.id;
+        resultingVersion = current.bindingVersion;
+        action = "unchanged";
+      } else {
+        bindingId = current.id;
+        resultingVersion = current.bindingVersion + 1;
+        action = current.status === "active" ? "rebound" : "bound";
+        await tx
+          .update(adminBusinessStaffBindings)
+          .set({
+            frontUserId: input.frontUserId,
+            status: "active",
+            bindingVersion: resultingVersion,
+            updatedByAdminUserId: actor.operatorId,
+            revokedByAdminUserId: null,
+            revokedAt: null,
+          })
+          .where(
+            and(
+              eq(adminBusinessStaffBindings.id, bindingId),
+              eq(
+                adminBusinessStaffBindings.bindingVersion,
+                current.bindingVersion
+              )
+            )
+          );
+      }
+
+      await tx.insert(adminBusinessStaffBindingAudits).values({
+        bindingId,
+        ...bindingAuditPayload({
+          adminUserId: input.adminUserId,
+          frontUserId: input.frontUserId,
+          expectedVersion: input.expectedVersion,
+          resultingVersion,
+          requestId: input.requestId,
+          action,
+          actor,
+        }),
+      });
+      await tx.insert(auditLogs).values({
+        operatorId: actor.operatorId,
+        operatorName: actor.operatorName,
+        operatorRole: actor.operatorRole,
+        action: `business.staff-binding.${action}`,
+        module: "business_bff",
+        targetType: "admin_user",
+        targetId: String(input.adminUserId),
+        beforeValue: current
+          ? {
+              frontUserId: current.frontUserId,
+              status: current.status,
+              bindingVersion: current.bindingVersion,
+            }
+          : null,
+        afterValue: {
+          frontUserId: input.frontUserId,
+          status: "active",
+          bindingVersion: resultingVersion,
+          requestId: input.requestId,
+        },
+        ipAddress: actor.ipAddress,
+        userAgent: actor.userAgent,
+        result: "success",
+        note: "后台账号绑定真实前台业务员工主体",
+      });
+      return {
+        bindingId,
+        adminUserId: input.adminUserId,
+        frontUserId: input.frontUserId,
+        status: "active",
+        bindingVersion: resultingVersion,
+        action,
+        idempotent: action === "unchanged",
+      };
+    }));
+  } catch (error) {
+    return rethrowBusinessBindingUniqueConflict(error);
+  }
+}
+
+export async function revokeBusinessStaffPrincipal(input: {
+  adminUserId: number;
+  expectedVersion: number;
+  requestId: string;
+  actor: BusinessStaffBindingActor;
+}): Promise<BusinessStaffBindingMutation> {
+  assertBusinessBindingRequest(input);
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const actor = bindingActor(input.actor);
+  try {
+    return await withBusinessAuthorizationFence({ adminUserId: input.adminUserId }, () => db.transaction(async tx => {
+      const [targetAccount] = await tx
+        .select({ id: adminUsers.id })
+        .from(adminUsers)
+        .where(eq(adminUsers.id, input.adminUserId))
+        .limit(1)
+        .for("update");
+      if (!targetAccount) throw new Error("BUSINESS_BINDING_ADMIN_NOT_FOUND");
+      const [replayed] = await tx
+        .select()
+        .from(adminBusinessStaffBindingAudits)
+        .where(eq(adminBusinessStaffBindingAudits.requestId, input.requestId))
+        .limit(1)
+        .for("update");
+      if (replayed) {
+        if (
+          replayed.adminUserId !== input.adminUserId ||
+          replayed.expectedVersion !== input.expectedVersion ||
+          replayed.action !== "revoked"
+        ) {
+          throw new Error("BUSINESS_BINDING_REQUEST_ID_REUSED");
+        }
+        return {
+          bindingId: replayed.bindingId,
+          adminUserId: replayed.adminUserId,
+          frontUserId: null,
+          status: "revoked",
+          bindingVersion: replayed.resultingVersion,
+          action: "revoked",
+          idempotent: true,
+        };
+      }
+      const [current] = await tx
+        .select()
+        .from(adminBusinessStaffBindings)
+        .where(eq(adminBusinessStaffBindings.adminUserId, input.adminUserId))
+        .limit(1)
+        .for("update");
+      if (!current) throw new Error("BUSINESS_BINDING_NOT_FOUND");
+      if (current.bindingVersion !== input.expectedVersion)
+        throw new Error("BUSINESS_BINDING_VERSION_CONFLICT");
+      if (current.status !== "active" || !current.frontUserId)
+        throw new Error("BUSINESS_BINDING_NOT_ACTIVE");
+      const frontUserId = current.frontUserId;
+      const resultingVersion = current.bindingVersion + 1;
+      await tx
+        .update(adminBusinessStaffBindings)
+        .set({
+          frontUserId: null,
+          status: "revoked",
+          bindingVersion: resultingVersion,
+          updatedByAdminUserId: actor.operatorId,
+          revokedByAdminUserId: actor.operatorId,
+          revokedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(adminBusinessStaffBindings.id, current.id),
+            eq(
+              adminBusinessStaffBindings.bindingVersion,
+              current.bindingVersion
+            )
+          )
+        );
+      await tx.insert(adminBusinessStaffBindingAudits).values({
+        bindingId: current.id,
+        ...bindingAuditPayload({
+          adminUserId: input.adminUserId,
+          frontUserId,
+          expectedVersion: input.expectedVersion,
+          resultingVersion,
+          requestId: input.requestId,
+          action: "revoked",
+          actor,
+        }),
+      });
+      await tx.insert(auditLogs).values({
+        operatorId: actor.operatorId,
+        operatorName: actor.operatorName,
+        operatorRole: actor.operatorRole,
+        action: "business.staff-binding.revoked",
+        module: "business_bff",
+        targetType: "admin_user",
+        targetId: String(input.adminUserId),
+        beforeValue: {
+          frontUserId,
+          status: current.status,
+          bindingVersion: current.bindingVersion,
+        },
+        afterValue: {
+          frontUserId: null,
+          status: "revoked",
+          bindingVersion: resultingVersion,
+          requestId: input.requestId,
+        },
+        ipAddress: actor.ipAddress,
+        userAgent: actor.userAgent,
+        result: "success",
+        note: "撤销后台账号的前台业务员工主体绑定",
+      });
+      return {
+        bindingId: current.id,
+        adminUserId: input.adminUserId,
+        frontUserId: null,
+        status: "revoked",
+        bindingVersion: resultingVersion,
+        action: "revoked",
+        idempotent: false,
+      };
+    }));
+  } catch (error) {
+    return rethrowBusinessBindingUniqueConflict(error);
+  }
+}
+
+export type ActiveBusinessMerchantScope = {
+  id: number;
+  adminUserId: number;
+  merchantId: number;
+  scopeVersion: number;
+  modulePermissions: string[];
+};
+
+export type BusinessMerchantScopeMutation = {
+  scopeId: number;
+  adminUserId: number;
+  merchantId: number;
+  status: "active" | "revoked";
+  scopeVersion: number;
+  modulePermissions: string[];
+  action: "granted" | "updated" | "revoked" | "unchanged";
+  idempotent: boolean;
+};
+
+function normalizedBusinessScopeModules(input: readonly string[]) {
+  const values = input.map(value => value.trim()).filter(Boolean);
+  if (values.length === 0 || values.length > 32 || new Set(values).size !== values.length) {
+    throw new Error("BUSINESS_SCOPE_MODULES_INVALID");
+  }
+  if (values.some(value => !/^business\.(context|inventory|customers|procurement|users|orders)\.(read|write)$/.test(value))) {
+    throw new Error("BUSINESS_SCOPE_MODULES_INVALID");
+  }
+  return [...values].sort();
+}
+
+function assertBusinessScopeRequest(input: {
+  adminUserId: number;
+  merchantId: number;
+  expectedVersion: number;
+  requestId: string;
+}) {
+  if (!Number.isSafeInteger(input.adminUserId) || input.adminUserId <= 0) {
+    throw new Error("BUSINESS_SCOPE_ADMIN_INVALID");
+  }
+  if (!Number.isSafeInteger(input.merchantId) || input.merchantId <= 0) {
+    throw new Error("BUSINESS_SCOPE_MERCHANT_INVALID");
+  }
+  if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0) {
+    throw new Error("BUSINESS_SCOPE_VERSION_INVALID");
+  }
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(input.requestId)) {
+    throw new Error("BUSINESS_SCOPE_REQUEST_ID_INVALID");
+  }
+}
+
+function businessScopeAuditActor(actor: BusinessStaffBindingActor) {
+  return bindingActor(actor);
+}
+
+function scopeModules(row: { modulePermissions: unknown }) {
+  return normalizedBusinessScopeModules(decodeJsonValue<string[]>(row.modulePermissions, []) ?? []);
+}
+
+function scopeMutationFromAudit(row: typeof adminBusinessMerchantScopeAudits.$inferSelect): BusinessMerchantScopeMutation {
+  const modulePermissions = row.action === "revoked"
+    ? []
+    : normalizedBusinessScopeModules(decodeJsonValue<string[]>(row.afterModulePermissions, []) ?? []);
+  return {
+    scopeId: row.scopeId,
+    adminUserId: row.adminUserId,
+    merchantId: row.merchantId,
+    status: row.action === "revoked" ? "revoked" : "active",
+    scopeVersion: row.resultingVersion,
+    modulePermissions,
+    action: row.action,
+    idempotent: true,
+  };
+}
+
+/** No super-admin bypass: callers must hold an active exact BFF scope row. */
+export async function getActiveBusinessMerchantScope(
+  adminUserId: number,
+  merchantId: number,
+): Promise<ActiveBusinessMerchantScope | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [scope] = await db
+    .select()
+    .from(adminBusinessMerchantScopes)
+    .where(and(
+      eq(adminBusinessMerchantScopes.adminUserId, adminUserId),
+      eq(adminBusinessMerchantScopes.merchantId, merchantId),
+      eq(adminBusinessMerchantScopes.status, "active"),
+    ))
+    .limit(1);
+  if (!scope) return null;
+  try {
+    return {
+      id: scope.id,
+      adminUserId: scope.adminUserId,
+      merchantId: scope.merchantId,
+      scopeVersion: scope.scopeVersion,
+      modulePermissions: scopeModules(scope),
+    };
+  } catch {
+    // Corrupt scope JSON fails closed rather than granting a partial module set.
+    return null;
+  }
+}
+
+/** Used only for merchant selection/navigation; native sales scopes are never consulted. */
+export async function listActiveBusinessMerchantScopes(adminUserId: number): Promise<ActiveBusinessMerchantScope[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const scopes = await db
+    .select()
+    .from(adminBusinessMerchantScopes)
+    .where(and(
+      eq(adminBusinessMerchantScopes.adminUserId, adminUserId),
+      eq(adminBusinessMerchantScopes.status, "active"),
+    ))
+    .orderBy(asc(adminBusinessMerchantScopes.merchantId));
+  return scopes.flatMap(scope => {
+    try {
+      return [{
+        id: scope.id,
+        adminUserId: scope.adminUserId,
+        merchantId: scope.merchantId,
+        scopeVersion: scope.scopeVersion,
+        modulePermissions: scopeModules(scope),
+      }];
+    } catch {
+      return [];
+    }
+  });
+}
+
+/**
+ * Grant or replace the approved BFF module projection for one exact merchant.
+ * It does not call, read, or modify admin_user_permissions or sales scopes.
+ */
+export async function grantBusinessMerchantScope(input: {
+  adminUserId: number;
+  merchantId: number;
+  modulePermissions: readonly string[];
+  expectedVersion: number;
+  requestId: string;
+  actor: BusinessStaffBindingActor;
+}): Promise<BusinessMerchantScopeMutation> {
+  assertBusinessScopeRequest(input);
+  const modulePermissions = normalizedBusinessScopeModules(input.modulePermissions);
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const actor = businessScopeAuditActor(input.actor);
+  return withBusinessAuthorizationFence({ adminUserId: input.adminUserId, merchantId: input.merchantId }, () => db.transaction(async tx => {
+    const [targetAccount] = await tx
+      .select({ id: adminUsers.id, status: adminUsers.status })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, input.adminUserId))
+      .limit(1)
+      .for("update");
+    if (!targetAccount) throw new Error("BUSINESS_SCOPE_ADMIN_NOT_FOUND");
+    if (targetAccount.status !== "active") throw new Error("BUSINESS_SCOPE_ADMIN_INACTIVE");
+    const [replayed] = await tx
+      .select()
+      .from(adminBusinessMerchantScopeAudits)
+      .where(eq(adminBusinessMerchantScopeAudits.requestId, input.requestId))
+      .limit(1)
+      .for("update");
+    if (replayed) {
+      const samePayload = replayed.adminUserId === input.adminUserId
+        && replayed.merchantId === input.merchantId
+        && replayed.expectedVersion === input.expectedVersion
+        && JSON.stringify(normalizedBusinessScopeModules(decodeJsonValue<string[]>(replayed.afterModulePermissions, []) ?? [])) === JSON.stringify(modulePermissions)
+        && replayed.action !== "revoked";
+      if (!samePayload) throw new Error("BUSINESS_SCOPE_REQUEST_ID_REUSED");
+      return scopeMutationFromAudit(replayed);
+    }
+    const [current] = await tx
+      .select()
+      .from(adminBusinessMerchantScopes)
+      .where(and(
+        eq(adminBusinessMerchantScopes.adminUserId, input.adminUserId),
+        eq(adminBusinessMerchantScopes.merchantId, input.merchantId),
+      ))
+      .limit(1)
+      .for("update");
+    const currentVersion = current?.scopeVersion ?? 0;
+    if (currentVersion !== input.expectedVersion) throw new Error("BUSINESS_SCOPE_VERSION_CONFLICT");
+    const beforeModules = current && current.status === "active" ? scopeModules(current) : [];
+    let scopeId: number;
+    let scopeVersion: number;
+    let action: BusinessMerchantScopeMutation["action"];
+    if (!current) {
+      const [created] = await tx.insert(adminBusinessMerchantScopes).values({
+        adminUserId: input.adminUserId,
+        merchantId: input.merchantId,
+        status: "active",
+        scopeVersion: 1,
+        modulePermissions,
+        createdByAdminUserId: actor.operatorId,
+        updatedByAdminUserId: actor.operatorId,
+        revokedByAdminUserId: null,
+        revokedAt: null,
+      }).$returningId();
+      if (!created?.id) throw new Error("BUSINESS_SCOPE_CREATE_FAILED");
+      scopeId = created.id;
+      scopeVersion = 1;
+      action = "granted";
+    } else if (current.status === "active" && JSON.stringify(beforeModules) === JSON.stringify(modulePermissions)) {
+      scopeId = current.id;
+      scopeVersion = current.scopeVersion;
+      action = "unchanged";
+    } else {
+      scopeId = current.id;
+      scopeVersion = current.scopeVersion + 1;
+      action = current.status === "active" ? "updated" : "granted";
+      await tx.update(adminBusinessMerchantScopes).set({
+        status: "active",
+        scopeVersion,
+        modulePermissions,
+        updatedByAdminUserId: actor.operatorId,
+        revokedByAdminUserId: null,
+        revokedAt: null,
+      }).where(and(
+        eq(adminBusinessMerchantScopes.id, current.id),
+        eq(adminBusinessMerchantScopes.scopeVersion, current.scopeVersion),
+      ));
+    }
+    await tx.insert(adminBusinessMerchantScopeAudits).values({
+      scopeId,
+      adminUserId: input.adminUserId,
+      merchantId: input.merchantId,
+      action,
+      expectedVersion: input.expectedVersion,
+      resultingVersion: scopeVersion,
+      beforeModulePermissions: beforeModules,
+      afterModulePermissions: modulePermissions,
+      requestId: input.requestId,
+      operatorAdminUserId: actor.operatorId,
+      operatorName: actor.operatorName,
+      operatorRole: actor.operatorRole,
+      ipAddress: actor.ipAddress,
+      userAgent: actor.userAgent,
+    });
+    await tx.insert(auditLogs).values({
+      operatorId: actor.operatorId,
+      operatorName: actor.operatorName,
+      operatorRole: actor.operatorRole,
+      action: `business.merchant-scope.${action}`,
+      module: "business_bff",
+      targetType: "merchant",
+      targetId: String(input.merchantId),
+      beforeValue: current ? { status: current.status, scopeVersion: current.scopeVersion, modulePermissions: beforeModules } : null,
+      afterValue: { adminUserId: input.adminUserId, status: "active", scopeVersion, modulePermissions, requestId: input.requestId },
+      ipAddress: actor.ipAddress,
+      userAgent: actor.userAgent,
+      result: "success",
+      note: "更新后台账号继承工作台的精确 BFF 商户范围",
+    });
+    return { scopeId, adminUserId: input.adminUserId, merchantId: input.merchantId, status: "active", scopeVersion, modulePermissions, action, idempotent: action === "unchanged" };
+  }));
+}
+
+export async function revokeBusinessMerchantScope(input: {
+  adminUserId: number;
+  merchantId: number;
+  expectedVersion: number;
+  requestId: string;
+  actor: BusinessStaffBindingActor;
+}): Promise<BusinessMerchantScopeMutation> {
+  assertBusinessScopeRequest(input);
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const actor = businessScopeAuditActor(input.actor);
+  return withBusinessAuthorizationFence({ adminUserId: input.adminUserId, merchantId: input.merchantId }, () => db.transaction(async tx => {
+    // Match grant's lock order. A disabled target may still be revoked, but its
+    // row remains the shared first lock so audit-gap and scope locks cannot cycle.
+    const [targetAccount] = await tx.select({ id: adminUsers.id })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, input.adminUserId))
+      .limit(1)
+      .for("update");
+    if (!targetAccount) throw new Error("BUSINESS_SCOPE_ADMIN_NOT_FOUND");
+    const [replayed] = await tx.select().from(adminBusinessMerchantScopeAudits)
+      .where(eq(adminBusinessMerchantScopeAudits.requestId, input.requestId)).limit(1).for("update");
+    if (replayed) {
+      if (replayed.adminUserId !== input.adminUserId || replayed.merchantId !== input.merchantId
+        || replayed.expectedVersion !== input.expectedVersion || replayed.action !== "revoked") {
+        throw new Error("BUSINESS_SCOPE_REQUEST_ID_REUSED");
+      }
+      return scopeMutationFromAudit(replayed);
+    }
+    const [current] = await tx.select().from(adminBusinessMerchantScopes).where(and(
+      eq(adminBusinessMerchantScopes.adminUserId, input.adminUserId),
+      eq(adminBusinessMerchantScopes.merchantId, input.merchantId),
+    )).limit(1).for("update");
+    if (!current) throw new Error("BUSINESS_SCOPE_NOT_FOUND");
+    if (current.scopeVersion !== input.expectedVersion) throw new Error("BUSINESS_SCOPE_VERSION_CONFLICT");
+    if (current.status !== "active") throw new Error("BUSINESS_SCOPE_NOT_ACTIVE");
+    const beforeModules = scopeModules(current);
+    const scopeVersion = current.scopeVersion + 1;
+    await tx.update(adminBusinessMerchantScopes).set({
+      status: "revoked", scopeVersion, modulePermissions: [], updatedByAdminUserId: actor.operatorId,
+      revokedByAdminUserId: actor.operatorId, revokedAt: new Date(),
+    }).where(and(eq(adminBusinessMerchantScopes.id, current.id), eq(adminBusinessMerchantScopes.scopeVersion, current.scopeVersion)));
+    await tx.insert(adminBusinessMerchantScopeAudits).values({
+      scopeId: current.id, adminUserId: input.adminUserId, merchantId: input.merchantId,
+      action: "revoked", expectedVersion: input.expectedVersion, resultingVersion: scopeVersion,
+      beforeModulePermissions: beforeModules, afterModulePermissions: [], requestId: input.requestId,
+      operatorAdminUserId: actor.operatorId, operatorName: actor.operatorName, operatorRole: actor.operatorRole,
+      ipAddress: actor.ipAddress, userAgent: actor.userAgent,
+    });
+    await tx.insert(auditLogs).values({
+      operatorId: actor.operatorId, operatorName: actor.operatorName, operatorRole: actor.operatorRole,
+      action: "business.merchant-scope.revoked", module: "business_bff", targetType: "merchant", targetId: String(input.merchantId),
+      beforeValue: { adminUserId: input.adminUserId, status: "active", scopeVersion: current.scopeVersion, modulePermissions: beforeModules },
+      afterValue: { adminUserId: input.adminUserId, status: "revoked", scopeVersion, requestId: input.requestId },
+      ipAddress: actor.ipAddress, userAgent: actor.userAgent, result: "success", note: "撤销后台账号继承工作台的精确 BFF 商户范围",
+    });
+    return { scopeId: current.id, adminUserId: input.adminUserId, merchantId: input.merchantId, status: "revoked", scopeVersion, modulePermissions: [], action: "revoked", idempotent: false };
+  }));
+}
+
+/** Successful calls retain both the real backend actor and the independently verified front staff ID. */
+export async function recordBusinessCommandAccess(input: {
+  merchantId: number;
+  staffUserId: number;
+  bindingVersion: number;
+  /** Every BFF-forwarded command supplies the exact scope version held by its fence. */
+  scopeVersion?: number;
+  method: string;
+  requestId: string;
+  actor: BusinessStaffBindingActor;
+}) {
+  if (
+    !Number.isSafeInteger(input.merchantId) ||
+    input.merchantId <= 0 ||
+    !Number.isSafeInteger(input.staffUserId) ||
+    input.staffUserId <= 0 ||
+    !Number.isSafeInteger(input.bindingVersion) ||
+    input.bindingVersion <= 0 ||
+    (input.scopeVersion !== undefined && (
+      !Number.isSafeInteger(input.scopeVersion) || input.scopeVersion <= 0
+    )) ||
+    !/^[A-Za-z0-9._*-]{1,96}$/.test(input.method) ||
+    !/^[A-Za-z0-9_-]{8,64}$/.test(input.requestId)
+  ) {
+    throw new Error("BUSINESS_COMMAND_AUDIT_INPUT_INVALID");
+  }
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  const actor = bindingActor(input.actor);
+  await db.insert(auditLogs).values({
+    operatorId: actor.operatorId,
+    operatorName: actor.operatorName,
+    operatorRole: actor.operatorRole,
+    action: `business.command.${input.method.slice(0, 96)}`,
+    module: "business_bff",
+    targetType: "merchant",
+    targetId: String(input.merchantId),
+    beforeValue: null,
+    afterValue: {
+      staffUserId: input.staffUserId,
+      bindingVersion: input.bindingVersion,
+      scopeVersion: input.scopeVersion ?? null,
+      requestId: input.requestId,
+      authorizationFence: input.scopeVersion === undefined ? "legacy" : "held",
+    },
+    ipAddress: actor.ipAddress,
+    userAgent: actor.userAgent,
+    result: "success",
+    note: "后台 BFF 以已绑定真实前台员工主体执行受控业务方法",
+  });
+}
+
 /** HK BR/CI/BANK source is read only from backend-effective data or reviewer-only first draft. */
 export async function getMerchantHkDocumentSource(
-  merchant: Pick<typeof merchants.$inferSelect, "registrationRegion" | "registrationData" | "registrationPendingData" | "hkSubmissionId" | "hkPayloadHash" | "licenseObjectKey" | "ciObjectKey" | "bankDocumentObjectKey">,
+  merchant: Pick<
+    typeof merchants.$inferSelect,
+    | "registrationRegion"
+    | "registrationData"
+    | "registrationPendingData"
+    | "hkSubmissionId"
+    | "hkPayloadHash"
+    | "licenseObjectKey"
+    | "ciObjectKey"
+    | "bankDocumentObjectKey"
+  >,
   kind: HkDocumentKind,
   source: "effective" | "pending" = "effective",
-  expectedPendingVersion?: { expectedSubmissionId: string; expectedPayloadHash: string },
+  expectedPendingVersion?: {
+    expectedSubmissionId: string;
+    expectedPayloadHash: string;
+  }
 ): Promise<{ objectKey: string; fileName: string } | null> {
   if (merchant.registrationRegion !== "HK") return null;
   if (source === "effective") {
     const effective = parseStoredHkRegistration(merchant.registrationData);
     if (!effective) return null;
-    const objectKey = kind === "BR" ? merchant.licenseObjectKey
-      : kind === "CI" ? merchant.ciObjectKey : merchant.bankDocumentObjectKey;
+    const objectKey =
+      kind === "BR"
+        ? merchant.licenseObjectKey
+        : kind === "CI"
+          ? merchant.ciObjectKey
+          : merchant.bankDocumentObjectKey;
     const document = effective.documents[kind];
     if (!objectKey?.trim() || !document) return null;
-    return { objectKey: assertStoredHkDocumentObjectKey(objectKey, kind), fileName: document.fileName };
+    return {
+      objectKey: assertStoredHkDocumentObjectKey(objectKey, kind),
+      fileName: document.fileName,
+    };
   }
   const pending = parsePendingHkRegistration(merchant.registrationPendingData);
   if (!pending) return null;
   // Do not let a stale detail page sign URLs for a later resubmission. The
   // version must agree with both the stored candidate and its local ledger.
-  if (!expectedPendingVersion
-    || pending.submissionId !== expectedPendingVersion.expectedSubmissionId
-    || pending.payloadHash !== expectedPendingVersion.expectedPayloadHash
-    || merchant.hkSubmissionId !== expectedPendingVersion.expectedSubmissionId
-    || merchant.hkPayloadHash !== expectedPendingVersion.expectedPayloadHash) {
+  if (
+    !expectedPendingVersion ||
+    pending.submissionId !== expectedPendingVersion.expectedSubmissionId ||
+    pending.payloadHash !== expectedPendingVersion.expectedPayloadHash ||
+    merchant.hkSubmissionId !== expectedPendingVersion.expectedSubmissionId ||
+    merchant.hkPayloadHash !== expectedPendingVersion.expectedPayloadHash
+  ) {
     throw new Error("HK_REVIEW_VERSION_CHANGED");
   }
   const objectKey = pending.documentObjectKeys[kind];
   const document = pending.documents[kind];
-  return objectKey && document ? { objectKey, fileName: document.fileName } : null;
+  return objectKey && document
+    ? { objectKey, fileName: document.fileName }
+    : null;
 }
 
 /** 成功预览留审计痕迹，但审计值从不保存对象键或可复用签名 URL。 */
 export async function recordMerchantHkDocumentView(
   merchantId: number,
   kind: HkDocumentKind,
-  actor: MaterialAuditActor = {},
+  actor: MaterialAuditActor = {}
 ) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
@@ -1833,7 +3255,8 @@ export async function setMerchantSalesOwner(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("数据库不可用");
-  const expectedCode = input.expectedSalesOwnerCode?.trim().toLowerCase() || null;
+  const expectedCode =
+    input.expectedSalesOwnerCode?.trim().toLowerCase() || null;
   const requestedCode = input.salesOwnerCode?.trim().toLowerCase() || null;
 
   return db.transaction(async tx => {
@@ -1854,14 +3277,22 @@ export async function setMerchantSalesOwner(input: {
       const [staff] = await tx
         .select()
         .from(salesStaff)
-        .where(and(eq(salesStaff.staffCode, requestedCode), eq(salesStaff.status, "active")))
+        .where(
+          and(
+            eq(salesStaff.staffCode, requestedCode),
+            eq(salesStaff.status, "active")
+          )
+        )
         .limit(1);
       if (!staff) throw new Error("INVALID_SALES_STAFF_CODE");
       nextCode = staff.staffCode;
       nextName = staff.displayName;
     }
 
-    if (currentCode === nextCode && (merchant.salesOwner?.trim() || null) === nextName) {
+    if (
+      currentCode === nextCode &&
+      (merchant.salesOwner?.trim() || null) === nextName
+    ) {
       return {
         success: true as const,
         idempotent: true as const,
@@ -1880,9 +3311,10 @@ export async function setMerchantSalesOwner(input: {
     let platformRowsUpdated = 0;
     const identity = merchantRegistrationIdentity(merchant);
     if (!identity) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
-    const platformIdentityWhere = merchant.registrationRegion === "HK"
-      ? sql`registrationRegion = 'HK' AND registrationIdentifier = ${identity}`
-      : sql`registrationRegion = 'CN' AND UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(merchant.businessLicense || "")}`;
+    const platformIdentityWhere =
+      merchant.registrationRegion === "HK"
+        ? sql`registrationRegion = 'HK' AND registrationIdentifier = ${identity}`
+        : sql`registrationRegion = 'CN' AND UPPER(REPLACE(creditCode, ' ', '')) = ${normalizeCreditCode(merchant.businessLicense || "")}`;
     const result = (await tx.execute(sql`
       UPDATE ${sql.raw(PLATFORM_DB)}.companies
       SET salesOwner = ${nextName}, salesOwnerCode = ${nextCode}
@@ -1942,10 +3374,12 @@ export async function setMerchantInternalContactName(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("数据库不可用");
-  const normalizeName = (value: string | null | undefined) => value?.normalize("NFKC").trim() || null;
+  const normalizeName = (value: string | null | undefined) =>
+    value?.normalize("NFKC").trim() || null;
   const expectedName = normalizeName(input.expectedInternalContactName);
   const nextName = normalizeName(input.internalContactName);
-  if (nextName && nextName.length > 64) throw new Error("INTERNAL_CONTACT_NAME_TOO_LONG");
+  if (nextName && nextName.length > 64)
+    throw new Error("INTERNAL_CONTACT_NAME_TOO_LONG");
 
   return db.transaction(async tx => {
     const [merchant] = await tx
@@ -1957,14 +3391,19 @@ export async function setMerchantInternalContactName(input: {
     if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
 
     if (input.allowedSalesStaffCodes !== undefined) {
-      const currentOwnerCode = merchant.salesOwnerCode?.trim().toLowerCase() || "";
-      if (!currentOwnerCode || !input.allowedSalesStaffCodes.includes(currentOwnerCode)) {
+      const currentOwnerCode =
+        merchant.salesOwnerCode?.trim().toLowerCase() || "";
+      if (
+        !currentOwnerCode ||
+        !input.allowedSalesStaffCodes.includes(currentOwnerCode)
+      ) {
         throw new Error("MERCHANT_NOT_FOUND");
       }
     }
 
     const currentName = normalizeName(merchant.internalContactName);
-    if (currentName !== expectedName) throw new Error("INTERNAL_CONTACT_NAME_CHANGED");
+    if (currentName !== expectedName)
+      throw new Error("INTERNAL_CONTACT_NAME_CHANGED");
     if (currentName === nextName) {
       return {
         success: true as const,
@@ -2006,10 +3445,186 @@ export async function setMerchantInternalContactName(input: {
   });
 }
 
-export async function updateMerchantStatus(id: number, status: string, reviewNote?: string, reviewedBy?: number) {
+export async function updateMerchantStatus(
+  id: number,
+  status: string,
+  reviewNote?: string,
+  reviewedBy?: number
+) {
   const db = await getDb();
   if (!db) return;
-  await db.update(merchants).set({ status: status as any, reviewNote, reviewedBy, reviewedAt: new Date() }).where(eq(merchants.id, id));
+  await db
+    .update(merchants)
+    .set({
+      status: status as any,
+      reviewNote,
+      reviewedBy,
+      reviewedAt: new Date(),
+    })
+    .where(eq(merchants.id, id));
+}
+
+type MerchantReviewStatus = NonNullable<
+  (typeof merchants.$inferInsert)["status"]
+>;
+
+function isMerchantReviewStatus(
+  status: string
+): status is MerchantReviewStatus {
+  return [
+    "draft",
+    "pending",
+    "supplement",
+    "approved",
+    "suspended",
+    "terminated",
+  ].includes(status);
+}
+
+type PendingCnCompanyRow = {
+  id: number;
+};
+
+type CnCrmPlatformCompanyRow = {
+  superAdminUserId: string | null;
+  dataOwnerUserId: string | null;
+  companyUserId: string | null;
+  reviewStatus: string | null;
+  pendingDraft: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return typeof value === "string" || value === null;
+}
+
+function mysqlRawRows<T>(
+  result: unknown,
+  isRow: (value: unknown) => value is T
+): T[] {
+  if (!Array.isArray(result)) return [];
+  const [first] = result;
+  if (!Array.isArray(first)) return [];
+  const rows: T[] = [];
+  for (const candidate of first) {
+    if (isRow(candidate)) rows.push(candidate);
+  }
+  return rows;
+}
+
+function isPendingCnCompanyRow(value: unknown): value is PendingCnCompanyRow {
+  return isRecord(value) && typeof value.id === "number";
+}
+
+function isCnCrmPlatformCompanyRow(
+  value: unknown
+): value is CnCrmPlatformCompanyRow {
+  return (
+    isRecord(value) &&
+    isNullableString(value.superAdminUserId) &&
+    isNullableString(value.dataOwnerUserId) &&
+    isNullableString(value.companyUserId) &&
+    isNullableString(value.reviewStatus) &&
+    "pendingDraft" in value
+  );
+}
+
+/**
+ * The retired generic review route still exists for legacy operations. CN
+ * registration candidates must never be moved out of their dedicated review
+ * queue by that route, so lock local merchant + matching platform company
+ * before any local status mutation.
+ */
+export async function reviewMerchantStatus(input: {
+  merchantId: number;
+  status: string;
+  reviewNote?: string;
+  reviewedBy?: number;
+  /** undefined is super-admin; collaborators are intentionally not writers. */
+  allowedSalesStaffCodes?: string[];
+  actor?: MaterialAuditActor;
+}) {
+  const status = input.status;
+  if (!isMerchantReviewStatus(status))
+    throw new Error("MERCHANT_STATUS_INVALID");
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  return db.transaction(async tx => {
+    const [merchant] = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, input.merchantId))
+      .limit(1)
+      .for("update");
+    if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
+    // Recheck the formal-owner authorization under this row lock. `undefined`
+    // remains super-admin while an empty array intentionally authorizes nobody.
+    if (
+      !cnReviewOwnerInScope(
+        merchant.salesOwnerCode,
+        input.allowedSalesStaffCodes
+      )
+    ) {
+      throw new Error("MERCHANT_NOT_FOUND");
+    }
+    if (merchant.registrationRegion === "CN") {
+      const creditCode =
+        merchant.businessLicense?.replace(/\s+/g, "").toUpperCase() || "";
+      if (creditCode) {
+        const pending = mysqlRawRows(
+          await tx.execute(sql`
+            SELECT company.id
+            FROM ${sql.raw(PLATFORM_DB)}.companies AS company
+           WHERE company.registrationRegion = 'CN'
+             AND UPPER(REPLACE(company.creditCode, ' ', '')) = ${creditCode}
+             AND company.reviewStatus = 'pending'
+           LIMIT 1
+           FOR UPDATE
+          `),
+          isPendingCnCompanyRow
+        );
+        if (pending.length > 0)
+          throw new Error("CN_REGISTRATION_REVIEW_PENDING");
+      }
+    }
+    const [updateResult] = await tx
+      .update(merchants)
+      .set({
+        status,
+        reviewNote: input.reviewNote,
+        reviewedBy: input.reviewedBy,
+        reviewedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(merchants.id, merchant.id),
+          eq(merchants.status, merchant.status)
+        )
+      );
+    if (updateResult.affectedRows !== 1)
+      throw new Error("MERCHANT_STATUS_CONFLICT");
+
+    // Keep the privileged decision auditable without serializing the full
+    // merchant/registration record or any material/document payload.
+    await tx.insert(auditLogs).values({
+      operatorId: input.actor?.operatorId ?? null,
+      operatorName: input.actor?.operatorName ?? "system",
+      operatorRole: input.actor?.operatorRole ?? "system",
+      action: `merchant.review.${status}`,
+      module: "merchants",
+      targetType: "merchant",
+      targetId: String(merchant.id),
+      beforeValue: { merchantId: merchant.id, status: merchant.status },
+      afterValue: { merchantId: merchant.id, status },
+      ipAddress: input.actor?.ipAddress ?? null,
+      userAgent: input.actor?.userAgent ?? null,
+      result: "success",
+      note: null,
+    });
+  });
 }
 
 /** 前台商家提交的入驻资料字段 */
@@ -2031,6 +3646,8 @@ export interface PortalMerchantSubmission {
   legalPersonIdNo?: string | null;
   legalPersonPhone?: string | null;
   salesOwner?: string | null;
+  /** 已由 portal 路由解析并校验为 active staff 的稳定销售工号。 */
+  salesOwnerCode?: string | null;
 }
 
 /**
@@ -2052,7 +3669,9 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
     licenseImageUrl: input.licenseImageUrl ?? null,
     licenseExpiry: input.licenseExpiry ?? null,
     agreementFileUrl: input.agreementFileUrl ?? null,
-    agreementStatus: (input.agreementSigned ? "signed" : "unsigned") as "signed" | "unsigned",
+    agreementStatus: (input.agreementSigned ? "signed" : "unsigned") as
+      | "signed"
+      | "unsigned",
     registeredCapital: input.registeredCapital ?? null,
     registeredAddress: input.registeredAddress ?? null,
     businessScope: input.businessScope ?? null,
@@ -2060,7 +3679,12 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
     legalPersonName: input.legalPersonName ?? null,
     legalPersonIdNo: input.legalPersonIdNo ?? null,
     legalPersonPhone: input.legalPersonPhone ?? null,
-    ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner ?? null } : {}),
+    ...(input.salesOwner !== undefined
+      ? { salesOwner: input.salesOwner ?? null }
+      : {}),
+    ...(input.salesOwnerCode !== undefined
+      ? { salesOwnerCode: input.salesOwnerCode ?? null }
+      : {}),
     submittedAt: now,
     source: "portal",
   };
@@ -2068,45 +3692,69 @@ export async function upsertPortalMerchant(input: PortalMerchantSubmission) {
   // submitMerchant predates CRM and carries no portal enterprise owner. It is
   // still able to create a merchants row, so it joins the same carrier lock
   // and guard rather than remaining a bypass into the CRM registry.
-  return withCrmDuplicateRegistrationLock(() => db.transaction(async tx => {
-    const existing = await tx
-      .select()
-      .from(merchants)
-      .where(eq(merchants.businessLicense, businessLicense))
-      .limit(1)
-      .for("update");
-    const current = existing[0];
-    const mayUpdateUnboundNonCrmRecord = current?.crmStatus === "none"
-      && !normalizePortalUserId(current.crmOwnerPortalUserId);
-    const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
-      identity: /^[0-9A-HJ-NPQRTUWXY]{18}$/.test(businessLicense) ? `CN:${businessLicense}` : null,
-      companyNames: [input.companyName],
-      crmOwnerPortalUserId: null,
-      currentMerchantId: mayUpdateUnboundNonCrmRecord ? current.id : undefined,
-    });
-    if (duplicate) {
-      const error = new Error(CRM_DUPLICATE_OPENING_MESSAGE) as Error & { code?: string };
-      error.code = CRM_DUPLICATE_OPENING_CODE;
-      throw error;
-    }
+  return withCrmDuplicateRegistrationLock(() =>
+    db.transaction(async tx => {
+      const existing = await tx
+        .select()
+        .from(merchants)
+        .where(eq(merchants.businessLicense, businessLicense))
+        .limit(1)
+        .for("update");
+      const current = existing[0];
+      const mayUpdateUnboundNonCrmRecord =
+        current?.crmStatus === "none" &&
+        !normalizePortalUserId(current.crmOwnerPortalUserId);
+      const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+        identity: /^[0-9A-HJ-NPQRTUWXY]{18}$/.test(businessLicense)
+          ? `CN:${businessLicense}`
+          : null,
+        companyNames: [input.companyName],
+        crmOwnerPortalUserId: null,
+        currentMerchantId: mayUpdateUnboundNonCrmRecord
+          ? current.id
+          : undefined,
+      });
+      if (duplicate) {
+        const error = new Error(CRM_DUPLICATE_OPENING_MESSAGE) as Error & {
+          code?: string;
+        };
+        error.code = CRM_DUPLICATE_OPENING_CODE;
+        throw error;
+      }
 
-    if (current) {
-      // 已入驻商户资料变更仅更新资料；其余状态重置为 pending 重新审核
-      const nextStatus = current.status === "approved" ? current.status : ("pending" as const);
-      await tx.update(merchants).set({ ...baseFields, status: nextStatus }).where(eq(merchants.id, current.id));
-      return { merchantId: current.id, merchantNo: current.merchantNo, created: false, status: nextStatus };
-    }
+      if (current) {
+        // 已入驻商户资料变更仅更新资料；其余状态重置为 pending 重新审核
+        const nextStatus =
+          current.status === "approved" ? current.status : ("pending" as const);
+        await tx
+          .update(merchants)
+          .set({ ...baseFields, status: nextStatus })
+          .where(eq(merchants.id, current.id));
+        return {
+          merchantId: current.id,
+          merchantNo: current.merchantNo,
+          created: false,
+          status: nextStatus,
+        };
+      }
 
-    const merchantNo = genMerchantNo(now);
-    const result = await tx.insert(merchants).values({
-      merchantNo,
-      businessLicense,
-      status: "pending",
-      ...baseFields,
-    });
-    const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
-    return { merchantId: insertId, merchantNo, created: true, status: "pending" as const };
-  }));
+      const merchantNo = genMerchantNo(now);
+      const result = await tx.insert(merchants).values({
+        merchantNo,
+        businessLicense,
+        status: "pending",
+        ...baseFields,
+      });
+      const insertId =
+        (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+      return {
+        merchantId: insertId,
+        merchantNo,
+        created: true,
+        status: "pending" as const,
+      };
+    })
+  );
 }
 
 /** 前台企业开通 ERP 申请入参 */
@@ -2149,12 +3797,16 @@ export interface CrmApplicationInput {
  * 已存在商户 → 补充资料并将 crmStatus 置为 pending（已开通 enabled 的不降级）；
  * 不存在 → 创建新商户记录（source=portal，status=pending，crmStatus=pending）。
  */
-export async function submitCrmApplication(input: CrmApplicationInput, retryAttempt = 0) {
+export async function submitCrmApplication(
+  input: CrmApplicationInput,
+  retryAttempt = 0
+) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
 
   const creditCode = normalizeCreditCode(input.creditCode);
-  if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(creditCode)) throw new Error("CRM_CREDIT_CODE_INVALID");
+  if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(creditCode))
+    throw new Error("CRM_CREDIT_CODE_INVALID");
   const portalUserId = normalizePortalUserId(input.portalUserId);
   if (!portalUserId) {
     return {
@@ -2181,200 +3833,232 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
     ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
     ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
     ...(input.businessScope ? { businessScope: input.businessScope } : {}),
-    ...(licenseObjectKey
-      ? { licenseObjectKey, licenseImageUrl: null }
-      : {}),
+    ...(licenseObjectKey ? { licenseObjectKey, licenseImageUrl: null } : {}),
     /**
      * 销售归属。用 `!== undefined` 而非真值判定，
      * 否则无法表达「显式清空归属」（null）与「本次不改动」（undefined）的差别。
      */
     ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner } : {}),
-    ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode } : {}),
+    ...(input.salesOwnerCode !== undefined
+      ? { salesOwnerCode: input.salesOwnerCode }
+      : {}),
     ...(input.agreementAccepted ? { agreementStatus: "signed" as const } : {}),
   };
   try {
-    return await withCrmDuplicateRegistrationLock(() => db.transaction(async tx => {
-      const existing = await tx
-        .select()
-        .from(merchants)
-        .where(eq(merchants.businessLicense, creditCode))
-        .limit(1)
-        .for("update");
+    return await withCrmDuplicateRegistrationLock(() =>
+      db.transaction(async tx => {
+        const existing = await tx
+          .select()
+          .from(merchants)
+          .where(eq(merchants.businessLicense, creditCode))
+          .limit(1)
+          .for("update");
 
-      const current = existing[0];
-      const currentOwner = current ? normalizePortalUserId(current.crmOwnerPortalUserId) : null;
-      const ownExistingPrivateLicense = currentOwner === portalUserId
-        ? current?.licenseObjectKey?.trim() || null
-        : null;
-      const ownExistingLegacyLicense = currentOwner === portalUserId
-        ? current?.licenseImageUrl?.trim() || null
-        : null;
-      const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
-        identity: `CN:${creditCode}`,
-        companyNames: [input.companyName],
-        crmOwnerPortalUserId: portalUserId,
-        // Only an exact same-owner identity may reuse its existing private
-        // evidence. A changed code/name candidate cannot inherit another row.
-        licenseObjectKey: licenseObjectKey,
-        // An exact self update remains permitted (including rejected
-        // re-submission); every other legacy duplicate is examined by the
-        // detector and remains a safe enablement blocker.
-        currentMerchantId: current && (currentOwner === portalUserId
-          || (!currentOwner && current.crmStatus === "none")) ? current.id : undefined,
-      });
-      if (duplicate) return crmDuplicateOpeningResult(current?.crmStatus ?? "none");
-      try {
-        assertCrmLicenseEvidence({
-          submittedPrivateLicenseObjectKey: licenseObjectKey,
-          portalUserId,
-          storedPrivateLicenseObjectKey: ownExistingPrivateLicense,
-          storedLegacyLicenseImageUrl: ownExistingLegacyLicense,
+        const current = existing[0];
+        const currentOwner = current
+          ? normalizePortalUserId(current.crmOwnerPortalUserId)
+          : null;
+        const ownExistingPrivateLicense =
+          currentOwner === portalUserId
+            ? current?.licenseObjectKey?.trim() || null
+            : null;
+        const ownExistingLegacyLicense =
+          currentOwner === portalUserId
+            ? current?.licenseImageUrl?.trim() || null
+            : null;
+        const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+          identity: `CN:${creditCode}`,
+          companyNames: [input.companyName],
+          crmOwnerPortalUserId: portalUserId,
+          // Only an exact same-owner identity may reuse its existing private
+          // evidence. A changed code/name candidate cannot inherit another row.
+          licenseObjectKey: licenseObjectKey,
+          // An exact self update remains permitted (including rejected
+          // re-submission); every other legacy duplicate is examined by the
+          // detector and remains a safe enablement blocker.
+          currentMerchantId:
+            current &&
+            (currentOwner === portalUserId ||
+              (!currentOwner && current.crmStatus === "none"))
+              ? current.id
+              : undefined,
         });
-      } catch (error) {
-        if ((error as { code?: string }).code === CRM_LICENSE_REQUIRED_CODE) {
-          return crmLicenseRequiredResult();
-        }
-        throw error;
-      }
-
-      if (existing.length > 0) {
-        const merchant = existing[0];
-        const owner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
-
-        if (!owner) {
-          if (merchant.crmStatus !== "none") {
-            return {
-              accepted: false,
-              created: false,
-              code: "CRM_BINDING_REQUIRED" as const,
-              crmStatus: merchant.crmStatus,
-              message: "该企业需要平台核验绑定关系，请联系客服",
-            };
+        if (duplicate)
+          return crmDuplicateOpeningResult(current?.crmStatus ?? "none");
+        try {
+          assertCrmLicenseEvidence({
+            submittedPrivateLicenseObjectKey: licenseObjectKey,
+            portalUserId,
+            storedPrivateLicenseObjectKey: ownExistingPrivateLicense,
+            storedLegacyLicenseImageUrl: ownExistingLegacyLicense,
+          });
+        } catch (error) {
+          if ((error as { code?: string }).code === CRM_LICENSE_REQUIRED_CODE) {
+            return crmLicenseRequiredResult();
           }
+          throw error;
+        }
 
-          const claimResult = await tx.update(merchants).set({
-            ...profileFields,
-            crmOwnerPortalUserId: portalUserId,
-            crmStatus: "pending",
-            crmAppliedAt: now,
-            ...(input.note ? { crmNote: input.note } : {}),
-          }).where(and(
-            eq(merchants.id, merchant.id),
-            isNull(merchants.crmOwnerPortalUserId),
-            eq(merchants.crmStatus, "none"),
-          ));
-          const affectedRows = (claimResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
-          if (affectedRows !== 1) {
+        if (existing.length > 0) {
+          const merchant = existing[0];
+          const owner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
+
+          if (!owner) {
+            if (merchant.crmStatus !== "none") {
+              return {
+                accepted: false,
+                created: false,
+                code: "CRM_BINDING_REQUIRED" as const,
+                crmStatus: merchant.crmStatus,
+                message: "该企业需要平台核验绑定关系，请联系客服",
+              };
+            }
+
+            const claimResult = await tx
+              .update(merchants)
+              .set({
+                ...profileFields,
+                crmOwnerPortalUserId: portalUserId,
+                crmStatus: "pending",
+                crmAppliedAt: now,
+                ...(input.note ? { crmNote: input.note } : {}),
+              })
+              .where(
+                and(
+                  eq(merchants.id, merchant.id),
+                  isNull(merchants.crmOwnerPortalUserId),
+                  eq(merchants.crmStatus, "none")
+                )
+              );
+            const affectedRows =
+              (claimResult as unknown as [{ affectedRows?: number }])[0]
+                ?.affectedRows ?? 0;
+            if (affectedRows !== 1) {
+              return {
+                accepted: false,
+                created: false,
+                code: "CRM_COMPANY_APPLICATION_PENDING" as const,
+                crmStatus: "pending" as const,
+                message: "该企业的 ERP 开通申请正在审核中",
+              };
+            }
             return {
-              accepted: false,
+              accepted: true,
               created: false,
-              code: "CRM_COMPANY_APPLICATION_PENDING" as const,
+              code: "CRM_APPLICATION_ACCEPTED" as const,
               crmStatus: "pending" as const,
-              message: "该企业的 ERP 开通申请正在审核中",
+              merchantId: merchant.id,
+              merchantNo: merchant.merchantNo,
             };
           }
-          return {
-            accepted: true,
-            created: false,
-            code: "CRM_APPLICATION_ACCEPTED" as const,
-            crmStatus: "pending" as const,
-            merchantId: merchant.id,
-            merchantNo: merchant.merchantNo,
-          };
-        }
 
-        if (owner !== portalUserId) {
-          const code = merchant.crmStatus === "pending"
-            ? "CRM_COMPANY_APPLICATION_PENDING"
-            : merchant.crmStatus === "enabled"
-              ? "CRM_COMPANY_ALREADY_ENABLED"
-              : "CRM_COMPANY_ALREADY_BOUND";
+          if (owner !== portalUserId) {
+            const code =
+              merchant.crmStatus === "pending"
+                ? "CRM_COMPANY_APPLICATION_PENDING"
+                : merchant.crmStatus === "enabled"
+                  ? "CRM_COMPANY_ALREADY_ENABLED"
+                  : "CRM_COMPANY_ALREADY_BOUND";
+            return {
+              accepted: false,
+              created: false,
+              code,
+              crmStatus: merchant.crmStatus,
+              message: getCrmCompanyConflictMessage(
+                merchant.crmStatus,
+                "该企业已绑定其他前台账号，请联系企业管理员或平台客服"
+              ),
+            };
+          }
+
+          if (merchant.crmStatus === "enabled") {
+            // The existing portal adapter uses this exact same-owner acknowledgement for
+            // profile review updates. Opening routes still reject it as already enabled.
+            return {
+              ...crmDuplicateOpeningResult(merchant.crmStatus),
+              code: "CRM_ALREADY_ENABLED" as const,
+            };
+          }
+
+          if (
+            merchant.crmStatus === "rejected" ||
+            merchant.crmStatus === "none"
+          ) {
+            const wasRejected = merchant.crmStatus === "rejected";
+            await tx
+              .update(merchants)
+              .set({
+                ...profileFields,
+                crmStatus: "pending",
+                crmAppliedAt: now,
+                ...(input.note ? { crmNote: input.note } : {}),
+              })
+              .where(eq(merchants.id, merchant.id));
+            return {
+              accepted: true,
+              created: false,
+              code: wasRejected
+                ? ("CRM_APPLICATION_REAPPLIED" as const)
+                : ("CRM_APPLICATION_ACCEPTED" as const),
+              crmStatus: "pending" as const,
+              merchantId: merchant.id,
+              merchantNo: merchant.merchantNo,
+            };
+          }
+
+          await tx
+            .update(merchants)
+            .set(profileFields)
+            .where(eq(merchants.id, merchant.id));
+
+          if (merchant.crmStatus === "pending") {
+            // This exact same-owner identity refreshes its existing application,
+            // allowing the portal to persist the same pending revision without creating a new merchant.
+            return {
+              accepted: true,
+              created: false,
+              code: "CRM_APPLICATION_UPDATED" as const,
+              crmStatus: "pending" as const,
+              merchantId: merchant.id,
+              merchantNo: merchant.merchantNo,
+            };
+          }
+
           return {
             accepted: false,
             created: false,
-            code,
+            code: "CRM_ACCESS_DISABLED" as const,
             crmStatus: merchant.crmStatus,
-            message: getCrmCompanyConflictMessage(
-              merchant.crmStatus,
-              "该企业已绑定其他前台账号，请联系企业管理员或平台客服",
-            ),
-          };
-        }
-
-        if (merchant.crmStatus === "enabled") {
-          // The existing portal adapter uses this exact same-owner acknowledgement for
-          // profile review updates. Opening routes still reject it as already enabled.
-          return { ...crmDuplicateOpeningResult(merchant.crmStatus), code: "CRM_ALREADY_ENABLED" as const };
-        }
-
-        if (merchant.crmStatus === "rejected" || merchant.crmStatus === "none") {
-          const wasRejected = merchant.crmStatus === "rejected";
-          await tx.update(merchants).set({
-            ...profileFields,
-            crmStatus: "pending",
-            crmAppliedAt: now,
-            ...(input.note ? { crmNote: input.note } : {}),
-          }).where(eq(merchants.id, merchant.id));
-          return {
-            accepted: true,
-            created: false,
-            code: wasRejected
-              ? "CRM_APPLICATION_REAPPLIED" as const
-              : "CRM_APPLICATION_ACCEPTED" as const,
-            crmStatus: "pending" as const,
             merchantId: merchant.id,
             merchantNo: merchant.merchantNo,
           };
         }
 
-        await tx.update(merchants).set(profileFields).where(eq(merchants.id, merchant.id));
-
-        if (merchant.crmStatus === "pending") {
-          // This exact same-owner identity refreshes its existing application,
-          // allowing the portal to persist the same pending revision without creating a new merchant.
-          return {
-            accepted: true,
-            created: false,
-            code: "CRM_APPLICATION_UPDATED" as const,
-            crmStatus: "pending" as const,
-            merchantId: merchant.id,
-            merchantNo: merchant.merchantNo,
-          };
-        }
-
+        const merchantNo = genMerchantNo(now);
+        const result = await tx.insert(merchants).values({
+          merchantNo,
+          ...profileFields,
+          businessLicense: creditCode,
+          crmOwnerPortalUserId: portalUserId,
+          status: "pending",
+          source: "portal",
+          submittedAt: now,
+          crmStatus: "pending",
+          crmAppliedAt: now,
+          crmNote: input.note ?? null,
+        });
+        const insertId =
+          (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
         return {
-          accepted: false,
-          created: false,
-          code: "CRM_ACCESS_DISABLED" as const,
-          crmStatus: merchant.crmStatus,
-          merchantId: merchant.id,
-          merchantNo: merchant.merchantNo,
+          accepted: true,
+          created: true,
+          code: "CRM_APPLICATION_ACCEPTED" as const,
+          crmStatus: "pending" as const,
+          merchantId: insertId,
+          merchantNo,
         };
-      }
-
-      const merchantNo = genMerchantNo(now);
-      const result = await tx.insert(merchants).values({
-        merchantNo,
-        ...profileFields,
-        businessLicense: creditCode,
-        crmOwnerPortalUserId: portalUserId,
-        status: "pending",
-        source: "portal",
-        submittedAt: now,
-        crmStatus: "pending",
-        crmAppliedAt: now,
-        crmNote: input.note ?? null,
-      });
-      const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
-      return {
-        accepted: true,
-        created: true,
-        code: "CRM_APPLICATION_ACCEPTED" as const,
-        crmStatus: "pending" as const,
-        merchantId: insertId,
-        merchantNo,
-      };
-    }));
+      })
+    );
   } catch (error) {
     const mysqlError = error as {
       errno?: number;
@@ -2382,24 +4066,34 @@ export async function submitCrmApplication(input: CrmApplicationInput, retryAtte
       sqlState?: string;
       cause?: { errno?: number; code?: string; sqlState?: string };
     };
-    const retryableConflict = mysqlError.errno === 1213
-      || mysqlError.code === "ER_LOCK_DEADLOCK"
-      || mysqlError.sqlState === "40001"
-      || mysqlError.cause?.errno === 1213
-      || mysqlError.cause?.code === "ER_LOCK_DEADLOCK"
-      || mysqlError.cause?.sqlState === "40001";
+    const retryableConflict =
+      mysqlError.errno === 1213 ||
+      mysqlError.code === "ER_LOCK_DEADLOCK" ||
+      mysqlError.sqlState === "40001" ||
+      mysqlError.cause?.errno === 1213 ||
+      mysqlError.cause?.code === "ER_LOCK_DEADLOCK" ||
+      mysqlError.cause?.sqlState === "40001";
     if (retryableConflict && retryAttempt < 2) {
-      await new Promise(resolve => setTimeout(resolve, 15 * (retryAttempt + 1)));
-      return submitCrmApplication({ ...input, creditCode, portalUserId }, retryAttempt + 1);
+      await new Promise(resolve =>
+        setTimeout(resolve, 15 * (retryAttempt + 1))
+      );
+      return submitCrmApplication(
+        { ...input, creditCode, portalUserId },
+        retryAttempt + 1
+      );
     }
-    const duplicate = mysqlError.errno === 1062
-      || mysqlError.code === "ER_DUP_ENTRY"
-      || mysqlError.cause?.errno === 1062
-      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    const duplicate =
+      mysqlError.errno === 1062 ||
+      mysqlError.code === "ER_DUP_ENTRY" ||
+      mysqlError.cause?.errno === 1062 ||
+      mysqlError.cause?.code === "ER_DUP_ENTRY";
     if (!duplicate) throw error;
 
-    const rows = await db.select().from(merchants)
-      .where(eq(merchants.businessLicense, creditCode)).limit(1);
+    const rows = await db
+      .select()
+      .from(merchants)
+      .where(eq(merchants.businessLicense, creditCode))
+      .limit(1);
     const merchant = rows[0];
     if (!merchant) throw error;
     return crmDuplicateOpeningResult(merchant.crmStatus);
@@ -2439,21 +4133,32 @@ export type AdminCrmApplicationResult = {
  * 香港注册公司 ERP 申请。身份永远是 HK:<8 位 BRN>，不借用 businessLicense / creditCode。
  * 主站在调用前验证附件私有证据 owner；本层再次校验身份、字段、协议与不可越权的键前缀。
  */
-export async function submitHkCrmApplication(input: HkCrmApplicationInput): Promise<AdminCrmApplicationResult> {
+export async function submitHkCrmApplication(
+  input: HkCrmApplicationInput
+): Promise<AdminCrmApplicationResult> {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
   const portalUserId = normalizePortalUserId(input.portalUserId);
   if (!portalUserId) {
-    return { accepted: false, created: false, code: "CRM_ACCOUNT_REQUIRED", crmStatus: "none", message: "请先登录前台账号后再提交企业开通申请" };
+    return {
+      accepted: false,
+      created: false,
+      code: "CRM_ACCOUNT_REQUIRED",
+      crmStatus: "none",
+      message: "请先登录前台账号后再提交企业开通申请",
+    };
   }
-  if (input.agreementAccepted !== true
-    || input.agreementVersion !== ENTERPRISE_SERVICE_AGREEMENT_VERSION
-    || input.agreementHash !== ENTERPRISE_SERVICE_AGREEMENT_HASH) {
+  if (
+    input.agreementAccepted !== true ||
+    input.agreementVersion !== ENTERPRISE_SERVICE_AGREEMENT_VERSION ||
+    input.agreementHash !== ENTERPRISE_SERVICE_AGREEMENT_HASH
+  ) {
     throw new Error("HK_ENTERPRISE_AGREEMENT_INVALID");
   }
   const submissionId = normalizeHkSubmissionId(input.submissionId);
   const payloadHash = normalizeHkPayloadHash(input.payloadHash);
-  if (!submissionId || !payloadHash) throw new Error("HK_SUBMISSION_LEDGER_INVALID");
+  if (!submissionId || !payloadHash)
+    throw new Error("HK_SUBMISSION_LEDGER_INVALID");
   const parsed = hkRegistrationDataSchema.parse(input.registrationData);
   const identity = hkRegistrationIdentifier(parsed.brn);
   if (input.registrationIdentifier.trim().toUpperCase() !== identity) {
@@ -2463,43 +4168,91 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
     throw new Error("HK_REQUIRED_DOCUMENTS_MISSING");
   }
   const documents: HkRegistrationDocuments = {
-    BR: { objectKey: assertHkDocumentObjectKey(input.documents.BR.objectKey, portalUserId, "BR"), fileName: input.documents.BR.fileName.trim() },
-    BANK: { objectKey: assertHkDocumentObjectKey(input.documents.BANK.objectKey, portalUserId, "BANK"), fileName: input.documents.BANK.fileName.trim() },
-    ...(input.documents.CI ? {
-      CI: { objectKey: assertHkDocumentObjectKey(input.documents.CI.objectKey, portalUserId, "CI"), fileName: input.documents.CI.fileName.trim() },
-    } : {}),
+    BR: {
+      objectKey: assertHkDocumentObjectKey(
+        input.documents.BR.objectKey,
+        portalUserId,
+        "BR"
+      ),
+      fileName: input.documents.BR.fileName.trim(),
+    },
+    BANK: {
+      objectKey: assertHkDocumentObjectKey(
+        input.documents.BANK.objectKey,
+        portalUserId,
+        "BANK"
+      ),
+      fileName: input.documents.BANK.fileName.trim(),
+    },
+    ...(input.documents.CI
+      ? {
+          CI: {
+            objectKey: assertHkDocumentObjectKey(
+              input.documents.CI.objectKey,
+              portalUserId,
+              "CI"
+            ),
+            fileName: input.documents.CI.fileName.trim(),
+          },
+        }
+      : {}),
   };
-  if (Object.values(documents).some(document => !document.fileName || document.fileName.length > 255)) {
+  if (
+    Object.values(documents).some(
+      document => !document.fileName || document.fileName.length > 255
+    )
+  ) {
     throw new Error("HK_DOCUMENT_FILE_NAME_INVALID");
   }
   const verification = input.documentVerification;
   if (verification) {
     for (const kind of ["BR", "BANK"] as const) {
       const value = verification[kind];
-      if (!value || !normalizeHkSubmissionId(value.documentId) || !["recognized", "failed"].includes(value.ocrStatus)
-        || !["ocr-assisted", "manual-classification-required"].includes(value.classification)) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+      if (
+        !value ||
+        !normalizeHkSubmissionId(value.documentId) ||
+        !["recognized", "failed"].includes(value.ocrStatus) ||
+        !["ocr-assisted", "manual-classification-required"].includes(
+          value.classification
+        )
+      )
+        throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
     }
   }
   // CI verification is evidence of a real optional file, never a placeholder
   // OCR row.  The router supplies BR/BANK verification on every new request;
   // this server-side guard also protects direct/internal callers.
   const ciVerification = verification?.CI;
-  if (documents.CI && !ciVerification) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
-  if (!documents.CI && ciVerification) throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
-  if (ciVerification && (!normalizeHkSubmissionId(ciVerification.documentId)
-    || !["recognized", "failed"].includes(ciVerification.ocrStatus)
-    || !["ocr-assisted", "manual-classification-required"].includes(ciVerification.classification))) {
+  if (documents.CI && !ciVerification)
+    throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+  if (!documents.CI && ciVerification)
+    throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
+  if (
+    ciVerification &&
+    (!normalizeHkSubmissionId(ciVerification.documentId) ||
+      !["recognized", "failed"].includes(ciVerification.ocrStatus) ||
+      !["ocr-assisted", "manual-classification-required"].includes(
+        ciVerification.classification
+      ))
+  ) {
     throw new Error("HK_DOCUMENT_CLASSIFICATION_INVALID");
   }
-  const pendingData = { ...buildPendingHkRegistration(parsed, documents, { submissionId, payloadHash }),
-    ...(verification ? { documentVerification: verification } : {}) };
+  const pendingData = {
+    ...buildPendingHkRegistration(parsed, documents, {
+      submissionId,
+      payloadHash,
+    }),
+    ...(verification ? { documentVerification: verification } : {}),
+  };
   const now = new Date();
   const profileFields = {
     companyName: parsed.companyName,
     companyType: "香港注册公司",
     companyRole: parsed.companyRole || null,
     registeredAddress: parsed.regAddress,
-    establishedDate: parsed.establishedAt ? new Date(`${parsed.establishedAt}T00:00:00+08:00`) : null,
+    establishedDate: parsed.establishedAt
+      ? new Date(`${parsed.establishedAt}T00:00:00+08:00`)
+      : null,
     settlementAccountName: parsed.bankAccountName,
     settlementAccount: parsed.bankAccountNumber,
     settlementBank: parsed.bankName,
@@ -2510,125 +4263,182 @@ export async function submitHkCrmApplication(input: HkCrmApplicationInput): Prom
     registrationRegion: "HK" as const,
     registrationIdentifier: identity,
     ...(input.salesOwner !== undefined ? { salesOwner: input.salesOwner } : {}),
-    ...(input.salesOwnerCode !== undefined ? { salesOwnerCode: input.salesOwnerCode } : {}),
+    ...(input.salesOwnerCode !== undefined
+      ? { salesOwnerCode: input.salesOwnerCode }
+      : {}),
   };
 
   try {
-    return await withCrmDuplicateRegistrationLock(() => db.transaction(async tx => {
-    const [existing] = await tx.select().from(merchants)
-      .where(eq(merchants.registrationIdentifier, identity)).limit(1).for("update");
-    const existingOwner = existing ? normalizePortalUserId(existing.crmOwnerPortalUserId) : null;
-    const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
-      identity,
-      companyNames: [parsed.companyName, parsed.chineseName],
-      crmOwnerPortalUserId: portalUserId,
-      licenseObjectKey: documents.BR.objectKey,
-      currentMerchantId: existing && (existingOwner === portalUserId
-        || (!existingOwner && existing.crmStatus === "none")) ? existing.id : undefined,
-    });
-    if (duplicate) return crmDuplicateOpeningResult(existing?.crmStatus ?? "none");
-    if (!existing) {
-      const merchantNo = genMerchantNo(now);
-      const result = await tx.insert(merchants).values({
-        merchantNo,
-        ...profileFields,
-        businessLicense: null,
-        registrationData: null,
-        registrationPendingData: pendingData,
-        hkSubmissionId: submissionId,
-        hkPayloadHash: payloadHash,
-        licenseObjectKey: documents.BR.objectKey,
-        ciObjectKey: documents.CI?.objectKey ?? null,
-        bankDocumentObjectKey: documents.BANK.objectKey,
-        crmOwnerPortalUserId: portalUserId,
-        status: "pending",
-        source: "portal",
-        submittedAt: now,
-        crmStatus: "pending",
-        crmAppliedAt: now,
-      });
-      const merchantId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
-      return { accepted: true, created: true, code: "HK_CRM_APPLICATION_ACCEPTED", crmStatus: "pending", merchantId, merchantNo };
-    }
-    if (existing.registrationRegion !== "HK") throw new Error("HK_REGISTRATION_REGION_CONFLICT");
-    const owner = normalizePortalUserId(existing.crmOwnerPortalUserId);
-    if (owner && owner !== portalUserId) {
-      return {
-        accepted: false, created: false,
-        code: existing.crmStatus === "pending" ? "CRM_COMPANY_APPLICATION_PENDING" : "CRM_COMPANY_ALREADY_BOUND",
-        crmStatus: existing.crmStatus, merchantId: existing.id, merchantNo: existing.merchantNo,
-        message: getCrmCompanyConflictMessage(existing.crmStatus, "该香港企业已绑定其他前台账号，请联系企业管理员或平台客服"),
-      };
-      }
-      if (existing.crmStatus === "enabled") {
-        return crmDuplicateOpeningResult(existing.crmStatus);
-    }
-    if (existing.hkSubmissionId === submissionId) {
-      if (existing.hkPayloadHash !== payloadHash) throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
-      return {
-        accepted: true,
-        created: false,
-        code: "HK_CRM_APPLICATION_IDEMPOTENT",
-        crmStatus: existing.crmStatus,
-        merchantId: existing.id,
-        merchantNo: existing.merchantNo,
-        message: "该香港企业提交已受理，未重复覆盖现有审核资料",
-      };
-    }
-    const effective = existing.crmStatus === "disabled" || existing.status === "approved";
-    if (effective) {
-      // 已开通/暂停企业的有效资料、有效附件和 CRM 状态绝不被一次重新提交覆盖；留待人工审核。
-      await tx.update(merchants).set({
-        registrationPendingData: pendingData,
-        hkSubmissionId: submissionId,
-        hkPayloadHash: payloadHash,
-      }).where(eq(merchants.id, existing.id));
-      return {
-        accepted: true, created: false,
-        code: "HK_CRM_PROFILE_REVIEW_PENDING",
-        crmStatus: existing.crmStatus, merchantId: existing.id, merchantNo: existing.merchantNo,
-        message: "新的香港注册资料已保存为待审核草稿，当前生效资料与 ERP 状态未变更",
-      };
-    }
+    return await withCrmDuplicateRegistrationLock(() =>
+      db.transaction(async tx => {
+        const [existing] = await tx
+          .select()
+          .from(merchants)
+          .where(eq(merchants.registrationIdentifier, identity))
+          .limit(1)
+          .for("update");
+        const existingOwner = existing
+          ? normalizePortalUserId(existing.crmOwnerPortalUserId)
+          : null;
+        const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+          identity,
+          companyNames: [parsed.companyName, parsed.chineseName],
+          crmOwnerPortalUserId: portalUserId,
+          licenseObjectKey: documents.BR.objectKey,
+          currentMerchantId:
+            existing &&
+            (existingOwner === portalUserId ||
+              (!existingOwner && existing.crmStatus === "none"))
+              ? existing.id
+              : undefined,
+        });
+        if (duplicate)
+          return crmDuplicateOpeningResult(existing?.crmStatus ?? "none");
+        if (!existing) {
+          const merchantNo = genMerchantNo(now);
+          const result = await tx.insert(merchants).values({
+            merchantNo,
+            ...profileFields,
+            businessLicense: null,
+            registrationData: null,
+            registrationPendingData: pendingData,
+            hkSubmissionId: submissionId,
+            hkPayloadHash: payloadHash,
+            licenseObjectKey: documents.BR.objectKey,
+            ciObjectKey: documents.CI?.objectKey ?? null,
+            bankDocumentObjectKey: documents.BANK.objectKey,
+            crmOwnerPortalUserId: portalUserId,
+            status: "pending",
+            source: "portal",
+            submittedAt: now,
+            crmStatus: "pending",
+            crmAppliedAt: now,
+          });
+          const merchantId =
+            (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+          return {
+            accepted: true,
+            created: true,
+            code: "HK_CRM_APPLICATION_ACCEPTED",
+            crmStatus: "pending",
+            merchantId,
+            merchantNo,
+          };
+        }
+        if (existing.registrationRegion !== "HK")
+          throw new Error("HK_REGISTRATION_REGION_CONFLICT");
+        const owner = normalizePortalUserId(existing.crmOwnerPortalUserId);
+        if (owner && owner !== portalUserId) {
+          return {
+            accepted: false,
+            created: false,
+            code:
+              existing.crmStatus === "pending"
+                ? "CRM_COMPANY_APPLICATION_PENDING"
+                : "CRM_COMPANY_ALREADY_BOUND",
+            crmStatus: existing.crmStatus,
+            merchantId: existing.id,
+            merchantNo: existing.merchantNo,
+            message: getCrmCompanyConflictMessage(
+              existing.crmStatus,
+              "该香港企业已绑定其他前台账号，请联系企业管理员或平台客服"
+            ),
+          };
+        }
+        if (existing.crmStatus === "enabled") {
+          return crmDuplicateOpeningResult(existing.crmStatus);
+        }
+        if (existing.hkSubmissionId === submissionId) {
+          if (existing.hkPayloadHash !== payloadHash)
+            throw new Error("HK_SUBMISSION_PAYLOAD_CONFLICT");
+          return {
+            accepted: true,
+            created: false,
+            code: "HK_CRM_APPLICATION_IDEMPOTENT",
+            crmStatus: existing.crmStatus,
+            merchantId: existing.id,
+            merchantNo: existing.merchantNo,
+            message: "该香港企业提交已受理，未重复覆盖现有审核资料",
+          };
+        }
+        const effective =
+          existing.crmStatus === "disabled" || existing.status === "approved";
+        if (effective) {
+          // 已开通/暂停企业的有效资料、有效附件和 CRM 状态绝不被一次重新提交覆盖；留待人工审核。
+          await tx
+            .update(merchants)
+            .set({
+              registrationPendingData: pendingData,
+              hkSubmissionId: submissionId,
+              hkPayloadHash: payloadHash,
+            })
+            .where(eq(merchants.id, existing.id));
+          return {
+            accepted: true,
+            created: false,
+            code: "HK_CRM_PROFILE_REVIEW_PENDING",
+            crmStatus: existing.crmStatus,
+            merchantId: existing.id,
+            merchantNo: existing.merchantNo,
+            message:
+              "新的香港注册资料已保存为待审核草稿，当前生效资料与 ERP 状态未变更",
+          };
+        }
 
-    await tx.update(merchants).set({
-      ...profileFields,
-      businessLicense: null,
-      registrationData: null,
-      registrationPendingData: pendingData,
-      hkSubmissionId: submissionId,
-      hkPayloadHash: payloadHash,
-      licenseObjectKey: documents.BR.objectKey,
-      ciObjectKey: documents.CI?.objectKey ?? null,
-      bankDocumentObjectKey: documents.BANK.objectKey,
-      crmOwnerPortalUserId: owner ?? portalUserId,
-      crmStatus: "pending",
-      crmAppliedAt: now,
-      status: "pending",
-      source: "portal",
-      submittedAt: now,
-    }).where(eq(merchants.id, existing.id));
-    return {
-      accepted: true, created: false,
-      code: existing.crmStatus === "pending" ? "HK_CRM_APPLICATION_UPDATED" : existing.crmStatus === "rejected" ? "HK_CRM_APPLICATION_REAPPLIED" : "HK_CRM_APPLICATION_ACCEPTED",
-      crmStatus: "pending", merchantId: existing.id, merchantNo: existing.merchantNo,
-    };
-    }));
+        await tx
+          .update(merchants)
+          .set({
+            ...profileFields,
+            businessLicense: null,
+            registrationData: null,
+            registrationPendingData: pendingData,
+            hkSubmissionId: submissionId,
+            hkPayloadHash: payloadHash,
+            licenseObjectKey: documents.BR.objectKey,
+            ciObjectKey: documents.CI?.objectKey ?? null,
+            bankDocumentObjectKey: documents.BANK.objectKey,
+            crmOwnerPortalUserId: owner ?? portalUserId,
+            crmStatus: "pending",
+            crmAppliedAt: now,
+            status: "pending",
+            source: "portal",
+            submittedAt: now,
+          })
+          .where(eq(merchants.id, existing.id));
+        return {
+          accepted: true,
+          created: false,
+          code:
+            existing.crmStatus === "pending"
+              ? "HK_CRM_APPLICATION_UPDATED"
+              : existing.crmStatus === "rejected"
+                ? "HK_CRM_APPLICATION_REAPPLIED"
+                : "HK_CRM_APPLICATION_ACCEPTED",
+          crmStatus: "pending",
+          merchantId: existing.id,
+          merchantNo: existing.merchantNo,
+        };
+      })
+    );
   } catch (error) {
     const mysqlError = error as {
       errno?: number;
       code?: string;
       cause?: { errno?: number; code?: string };
     };
-    const duplicate = mysqlError.errno === 1062
-      || mysqlError.code === "ER_DUP_ENTRY"
-      || mysqlError.cause?.errno === 1062
-      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    const duplicate =
+      mysqlError.errno === 1062 ||
+      mysqlError.code === "ER_DUP_ENTRY" ||
+      mysqlError.cause?.errno === 1062 ||
+      mysqlError.cause?.code === "ER_DUP_ENTRY";
     if (!duplicate) throw error;
     // A concurrent first submit won the unique HK identity. Re-read it once;
     // never retry an insert or overwrite the winner's pending/effective data.
-    const [raced] = await db.select().from(merchants)
-      .where(eq(merchants.registrationIdentifier, identity)).limit(1);
+    const [raced] = await db
+      .select()
+      .from(merchants)
+      .where(eq(merchants.registrationIdentifier, identity))
+      .limit(1);
     if (!raced || raced.registrationRegion !== "HK") throw error;
     return crmDuplicateOpeningResult(raced.crmStatus);
   }
@@ -2648,52 +4458,85 @@ export async function reviewHkRegistrationDraft(input: {
   /** Internal reviewer acknowledgement; this is not an official attestation. */
   confirmed?: boolean;
   actor?: MaterialAuditActor;
+  /** undefined means super-admin; a concrete array is formal-owner scope only. */
+  allowedSalesStaffCodes?: string[];
 }) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
   const note = input.note?.trim() || null;
-  if (input.decision === "rejected" && !note) throw new Error("HK_REVIEW_NOTE_REQUIRED");
-  if (input.decision === "approved" && input.confirmed !== true) throw new Error("HK_REVIEW_CONFIRMATION_REQUIRED");
+  if (input.decision === "rejected" && !note)
+    throw new Error("HK_REVIEW_NOTE_REQUIRED");
+  if (input.decision === "approved" && input.confirmed !== true)
+    throw new Error("HK_REVIEW_CONFIRMATION_REQUIRED");
   return db.transaction(async tx => {
-    const [merchant] = await tx.select().from(merchants)
-      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
+    const [merchant] = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, input.merchantId))
+      .limit(1)
+      .for("update");
     if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
-    if (merchant.registrationRegion !== "HK") throw new Error("HK_REGISTRATION_REQUIRED");
+    // The router lookup is only non-enumerating UX. Enforce the same
+    // formal-owner scope after this transaction has locked the current row.
+    if (
+      !cnReviewOwnerInScope(
+        merchant.salesOwnerCode,
+        input.allowedSalesStaffCodes
+      )
+    ) {
+      throw new Error("MERCHANT_NOT_FOUND");
+    }
+    if (merchant.registrationRegion !== "HK")
+      throw new Error("HK_REGISTRATION_REQUIRED");
     const identity = merchantRegistrationIdentity(merchant);
-    const pending = parsePendingHkRegistration(merchant.registrationPendingData);
-    if (!identity || !pending) throw new Error("HK_PENDING_REGISTRATION_NOT_FOUND");
+    const pending = parsePendingHkRegistration(
+      merchant.registrationPendingData
+    );
+    if (!identity || !pending)
+      throw new Error("HK_PENDING_REGISTRATION_NOT_FOUND");
     // This locked local record is the first CAS boundary. It must reject a
     // reviewer action for an older candidate before reading or updating the
     // cross-database company records.
-    if (pending.submissionId !== input.expectedSubmissionId
-      || pending.payloadHash !== input.expectedPayloadHash
-      || merchant.hkSubmissionId !== input.expectedSubmissionId
-      || merchant.hkPayloadHash !== input.expectedPayloadHash) {
+    if (
+      pending.submissionId !== input.expectedSubmissionId ||
+      pending.payloadHash !== input.expectedPayloadHash ||
+      merchant.hkSubmissionId !== input.expectedSubmissionId ||
+      merchant.hkPayloadHash !== input.expectedPayloadHash
+    ) {
       throw new Error("HK_REVIEW_VERSION_CHANGED");
     }
     // Date/BRN rules are re-evaluated at the moment of human decision.
     const registration = hkRegistrationDataSchema.parse(pending.registration);
-    if (hkRegistrationIdentifier(registration.brn) !== identity) throw new Error("HK_REGISTRATION_DATA_INVALID");
+    if (hkRegistrationIdentifier(registration.brn) !== identity)
+      throw new Error("HK_REGISTRATION_DATA_INVALID");
 
     const effective = parseStoredHkRegistration(merchant.registrationData);
     const crmOwner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
     if (!crmOwner) throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
-    const candidateCi = pending.documentObjectKeys.CI && pending.documents.CI
-      ? {
-        objectKey: assertStoredHkDocumentObjectKey(pending.documentObjectKeys.CI, "CI"),
-        fileName: pending.documents.CI.fileName,
-      }
-      : undefined;
+    const candidateCi =
+      pending.documentObjectKeys.CI && pending.documents.CI
+        ? {
+            objectKey: assertStoredHkDocumentObjectKey(
+              pending.documentObjectKeys.CI,
+              "CI"
+            ),
+            fileName: pending.documents.CI.fileName,
+          }
+        : undefined;
     // A profile resubmission may omit optional CI. In that case, promote the
     // already-effective CI record as-is rather than deleting it or inventing a
     // first-submission CI record. Stored-key validation admits only the
     // original immutable private namespace; it never reuses a caller key.
-    const effectiveCi = !candidateCi && effective?.documents.CI && merchant.ciObjectKey
-      ? {
-        objectKey: assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI"),
-        fileName: effective.documents.CI.fileName,
-      }
-      : undefined;
+    const effectiveCi =
+      !candidateCi && effective?.documents.CI && merchant.ciObjectKey
+        ? {
+            objectKey: assertStoredHkDocumentObjectKey(
+              merchant.ciObjectKey,
+              "CI"
+            ),
+            fileName: effective.documents.CI.fileName,
+          }
+        : undefined;
     const promotedCi = candidateCi ?? effectiveCi;
 
     /*
@@ -2715,51 +4558,80 @@ export async function reviewHkRegistrationDraft(input: {
          AND CAST(enterprise.superAdminUserId AS CHAR) = ${crmOwner}
        LIMIT 2
        FOR UPDATE
-    `)) as unknown as [[{
-      id: number;
-      enterpriseId: number;
-      registrationData: unknown;
-      pendingDraft: unknown;
-      licenseObjectKey: string | null;
-      licenseFileName: string | null;
-      bankLicenseObjectKey: string | null;
-      bankLicenseFileName: string | null;
-      certLevel: string;
-      reviewStatus: string;
-      registrationSubmissionId: string | null;
-      registrationPayloadHash: string | null;
-      enterpriseOwnerUserId: string | null;
-    }], unknown];
+    `)) as unknown as [
+      [
+        {
+          id: number;
+          enterpriseId: number;
+          registrationData: unknown;
+          pendingDraft: unknown;
+          licenseObjectKey: string | null;
+          licenseFileName: string | null;
+          bankLicenseObjectKey: string | null;
+          bankLicenseFileName: string | null;
+          certLevel: string;
+          reviewStatus: string;
+          registrationSubmissionId: string | null;
+          registrationPayloadHash: string | null;
+          enterpriseOwnerUserId: string | null;
+        },
+      ],
+      unknown,
+    ];
     const platformCompanies = platformResult[0] ?? [];
     const platformCompany = platformCompanies[0];
-    if (platformCompanies.length !== 1 || !platformCompany
-      || String(platformCompany.enterpriseOwnerUserId ?? "") !== crmOwner) {
+    if (
+      platformCompanies.length !== 1 ||
+      !platformCompany ||
+      String(platformCompany.enterpriseOwnerUserId ?? "") !== crmOwner
+    ) {
       throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
     }
 
-    const pendingDraft = decodeJsonValue<Record<string, unknown>>(platformCompany.pendingDraft, null);
+    const pendingDraft = decodeJsonValue<Record<string, unknown>>(
+      platformCompany.pendingDraft,
+      null
+    );
     const isResubmission = pendingDraft !== null;
     const sourceFields = pendingDraft ?? platformCompany;
     const mainCandidate = sourceFields.registrationData;
     const mainRegistration = hkRegistrationDataSchema.safeParse(mainCandidate);
-    const mainBrObjectKey = typeof sourceFields.licenseObjectKey === "string" ? sourceFields.licenseObjectKey.trim() : "";
-    const mainBrFileName = typeof sourceFields.licenseFileName === "string" ? sourceFields.licenseFileName.trim() : "";
-    const mainBankObjectKey = typeof sourceFields.bankLicenseObjectKey === "string" ? sourceFields.bankLicenseObjectKey.trim() : "";
-    const mainBankFileName = typeof sourceFields.bankLicenseFileName === "string" ? sourceFields.bankLicenseFileName.trim() : "";
-    if (platformCompany.registrationSubmissionId !== pending.submissionId || platformCompany.registrationPayloadHash !== pending.payloadHash
-      || !mainRegistration.success
-      || canonicalHkRegistration(mainRegistration.data) !== canonicalHkRegistration(registration)
-      || mainBrObjectKey !== pending.documentObjectKeys.BR
-      || mainBrFileName !== pending.documents.BR.fileName
-      || mainBankObjectKey !== pending.documentObjectKeys.BANK
-      || mainBankFileName !== pending.documents.BANK.fileName) {
+    const mainBrObjectKey =
+      typeof sourceFields.licenseObjectKey === "string"
+        ? sourceFields.licenseObjectKey.trim()
+        : "";
+    const mainBrFileName =
+      typeof sourceFields.licenseFileName === "string"
+        ? sourceFields.licenseFileName.trim()
+        : "";
+    const mainBankObjectKey =
+      typeof sourceFields.bankLicenseObjectKey === "string"
+        ? sourceFields.bankLicenseObjectKey.trim()
+        : "";
+    const mainBankFileName =
+      typeof sourceFields.bankLicenseFileName === "string"
+        ? sourceFields.bankLicenseFileName.trim()
+        : "";
+    if (
+      platformCompany.registrationSubmissionId !== pending.submissionId ||
+      platformCompany.registrationPayloadHash !== pending.payloadHash ||
+      !mainRegistration.success ||
+      canonicalHkRegistration(mainRegistration.data) !==
+        canonicalHkRegistration(registration) ||
+      mainBrObjectKey !== pending.documentObjectKeys.BR ||
+      mainBrFileName !== pending.documents.BR.fileName ||
+      mainBankObjectKey !== pending.documentObjectKeys.BANK ||
+      mainBankFileName !== pending.documents.BANK.fileName
+    ) {
       throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
     }
     // CI is held by the backend private-document store rather than the main
     // site's pendingDraft. A supplied CI was validated above; no CI evidence
     // is expected or manufactured for a CI-omitted candidate.
 
-    const expectedPendingDraft = isResubmission ? JSON.stringify(pendingDraft) : null;
+    const expectedPendingDraft = isResubmission
+      ? JSON.stringify(pendingDraft)
+      : null;
     const reviewGuard = isResubmission
       ? sql`AND company.reviewStatus = 'pending'
             AND company.pendingDraft IS NOT NULL
@@ -2820,31 +4692,49 @@ export async function reviewHkRegistrationDraft(input: {
       `);
       // merchantSinceAt and companies.userId are deliberately absent: both are stable
       // lifecycle/data-owner attributes and review only promotes the registration fields.
-      await tx.update(merchants).set({
-        companyName: registration.companyName,
-        companyType: "香港注册公司",
-        companyRole: registration.companyRole || null,
-        registeredAddress: registration.regAddress,
-        establishedDate: registration.establishedAt ? new Date(`${registration.establishedAt}T00:00:00+08:00`) : null,
-        settlementAccountName: registration.bankAccountName,
-        settlementAccount: registration.bankAccountNumber,
-        settlementBank: registration.bankName,
-        salesOwner: registration.salesOwner || null,
-        salesOwnerCode: registration.salesOwnerCode || null,
-        registrationData: buildStoredHkRegistration(registration, {
-          BR: { objectKey: pending.documentObjectKeys.BR, fileName: pending.documents.BR.fileName },
-          BANK: { objectKey: pending.documentObjectKeys.BANK, fileName: pending.documents.BANK.fileName },
-          ...(promotedCi ? { CI: promotedCi } : {}),
-        }, { submissionId: pending.submissionId, payloadHash: pending.payloadHash }),
-        registrationPendingData: null,
-        licenseObjectKey: pending.documentObjectKeys.BR,
-        ciObjectKey: promotedCi?.objectKey ?? null,
-        bankDocumentObjectKey: pending.documentObjectKeys.BANK,
-        status: "approved",
-        reviewNote: note,
-        reviewedBy: input.actor?.operatorId ?? null,
-        reviewedAt: new Date(),
-      }).where(eq(merchants.id, merchant.id));
+      await tx
+        .update(merchants)
+        .set({
+          companyName: registration.companyName,
+          companyType: "香港注册公司",
+          companyRole: registration.companyRole || null,
+          registeredAddress: registration.regAddress,
+          establishedDate: registration.establishedAt
+            ? new Date(`${registration.establishedAt}T00:00:00+08:00`)
+            : null,
+          settlementAccountName: registration.bankAccountName,
+          settlementAccount: registration.bankAccountNumber,
+          settlementBank: registration.bankName,
+          salesOwner: registration.salesOwner || null,
+          salesOwnerCode: registration.salesOwnerCode || null,
+          registrationData: buildStoredHkRegistration(
+            registration,
+            {
+              BR: {
+                objectKey: pending.documentObjectKeys.BR,
+                fileName: pending.documents.BR.fileName,
+              },
+              BANK: {
+                objectKey: pending.documentObjectKeys.BANK,
+                fileName: pending.documents.BANK.fileName,
+              },
+              ...(promotedCi ? { CI: promotedCi } : {}),
+            },
+            {
+              submissionId: pending.submissionId,
+              payloadHash: pending.payloadHash,
+            }
+          ),
+          registrationPendingData: null,
+          licenseObjectKey: pending.documentObjectKeys.BR,
+          ciObjectKey: promotedCi?.objectKey ?? null,
+          bankDocumentObjectKey: pending.documentObjectKeys.BANK,
+          status: "approved",
+          reviewNote: note,
+          reviewedBy: input.actor?.operatorId ?? null,
+          reviewedAt: new Date(),
+        })
+        .where(eq(merchants.id, merchant.id));
     } else {
       const companyResult = (await tx.execute(sql`
         UPDATE ${sql.raw(PLATFORM_DB)}.companies AS company
@@ -2860,18 +4750,23 @@ export async function reviewHkRegistrationDraft(input: {
       if (Number(companyResult[0]?.affectedRows ?? 0) !== 1) {
         throw new Error("HK_PLATFORM_DRAFT_PROMOTION_FAILED");
       }
-      await tx.update(merchants).set({
-        registrationPendingData: null,
-        ...(effective ? {} : {
-          licenseObjectKey: null,
-          ciObjectKey: null,
-          bankDocumentObjectKey: null,
-          status: "supplement" as const,
-        }),
-        reviewNote: note,
-        reviewedBy: input.actor?.operatorId ?? null,
-        reviewedAt: new Date(),
-      }).where(eq(merchants.id, merchant.id));
+      await tx
+        .update(merchants)
+        .set({
+          registrationPendingData: null,
+          ...(effective
+            ? {}
+            : {
+                licenseObjectKey: null,
+                ciObjectKey: null,
+                bankDocumentObjectKey: null,
+                status: "supplement" as const,
+              }),
+          reviewNote: note,
+          reviewedBy: input.actor?.operatorId ?? null,
+          reviewedAt: new Date(),
+        })
+        .where(eq(merchants.id, merchant.id));
     }
     await tx.insert(auditLogs).values({
       operatorId: input.actor?.operatorId ?? null,
@@ -2905,7 +4800,11 @@ export async function reviewHkRegistrationDraft(input: {
       result: "success",
       note,
     });
-    return { success: true as const, decision: input.decision, crmStatus: merchant.crmStatus };
+    return {
+      success: true as const,
+      decision: input.decision,
+      crmStatus: merchant.crmStatus,
+    };
   });
 }
 
@@ -2916,65 +4815,143 @@ export async function setMerchantCrmStatus(input: {
   portalUserId?: string | null;
   note?: string | null;
   actor?: MaterialAuditActor;
+  /** undefined means super-admin; a concrete array is formal-owner scope only. */
+  allowedSalesStaffCodes?: string[];
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const normalizedNote = input.note?.trim() || null;
-  if ((input.crmStatus === "disabled" || input.crmStatus === "rejected") && !normalizedNote) {
-    throw new Error(input.crmStatus === "disabled" ? "暂停 ERP 必须填写原因" : "拒绝 ERP 申请必须填写原因");
+  if (
+    (input.crmStatus === "disabled" || input.crmStatus === "rejected") &&
+    !normalizedNote
+  ) {
+    throw new Error(
+      input.crmStatus === "disabled"
+        ? "暂停 ERP 必须填写原因"
+        : "拒绝 ERP 申请必须填写原因"
+    );
   }
 
-  const transaction = () => db.transaction(async tx => {
-    const rows = await tx.select().from(merchants)
-      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
-    const merchant = rows[0];
-    if (!merchant) throw new Error("商户不存在");
+  const transaction = () =>
+    db.transaction(async tx => {
+      const rows = await tx
+        .select()
+        .from(merchants)
+        .where(eq(merchants.id, input.merchantId))
+        .limit(1)
+        .for("update");
+      const merchant = rows[0];
+      if (!merchant) throw new Error("商户不存在");
+      // A preliminary router lookup cannot authorize a later write after sales
+      // ownership changes. Recheck the current formal owner while row-locked for
+      // every CRM state transition; [] intentionally grants no authority.
+      if (
+        !cnReviewOwnerInScope(
+          merchant.salesOwnerCode,
+          input.allowedSalesStaffCodes
+        )
+      ) {
+        throw new Error("MERCHANT_NOT_FOUND");
+      }
 
-    const fromStatus = merchant.crmStatus as MerchantCrmStatus;
-    assertMerchantCrmStatusTransition(fromStatus, input.crmStatus);
-    const decision = decideMerchantCrmGrant(merchant, input);
-    const ownerToKeep = decision.kind === "enable"
-      ? decision.ownerToBind
-      : decision.existingOwner;
-    if (input.crmStatus === "enabled") {
-      if (merchant.registrationRegion !== "HK") {
-        assertCrmLicenseEvidence({
-          storedPrivateLicenseObjectKey: merchant.licenseObjectKey,
-          storedLegacyLicenseImageUrl: merchant.licenseImageUrl,
-        }, "开通 ERP 前必须上传营业执照");
-      }
-      const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
-        identity: merchantRegistrationIdentity(merchant),
-        companyNames: crmDuplicateNamesFromMerchant(merchant),
-        crmOwnerPortalUserId: ownerToKeep,
-        licenseObjectKey: merchant.licenseObjectKey,
-        currentMerchantId: merchant.id,
-      });
-      if (duplicate) {
-        return {
-          success: false as const,
-          code: CRM_DUPLICATE_OPENING_CODE,
-          message: CRM_DUPLICATE_OPENING_MESSAGE,
+      const fromStatus = merchant.crmStatus as MerchantCrmStatus;
+      assertMerchantCrmStatusTransition(fromStatus, input.crmStatus);
+      const decision = decideMerchantCrmGrant(merchant, input);
+      const ownerToKeep =
+        decision.kind === "enable"
+          ? decision.ownerToBind
+          : decision.existingOwner;
+      if (input.crmStatus === "enabled") {
+        if (merchant.registrationRegion !== "HK") {
+          assertCrmLicenseEvidence(
+            {
+              storedPrivateLicenseObjectKey: merchant.licenseObjectKey,
+              storedLegacyLicenseImageUrl: merchant.licenseImageUrl,
+            },
+            "开通 ERP 前必须上传营业执照"
+          );
+        }
+        const duplicate = await findCrmDuplicateRegistrationConflict(tx, {
+          identity: merchantRegistrationIdentity(merchant),
+          companyNames: crmDuplicateNamesFromMerchant(merchant),
           crmOwnerPortalUserId: ownerToKeep,
-        };
+          licenseObjectKey: merchant.licenseObjectKey,
+          currentMerchantId: merchant.id,
+        });
+        if (duplicate) {
+          return {
+            success: false as const,
+            code: CRM_DUPLICATE_OPENING_CODE,
+            message: CRM_DUPLICATE_OPENING_MESSAGE,
+            crmOwnerPortalUserId: ownerToKeep,
+          };
+        }
+        if (merchant.registrationRegion === "CN") {
+          const creditCode =
+            merchant.businessLicense?.replace(/\s+/g, "").toUpperCase() || "";
+          if (merchant.status !== "approved" || !ownerToKeep || !creditCode) {
+            throw new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID");
+          }
+          const platformCompanies = mysqlRawRows(
+            await tx.execute(sql`
+              SELECT CAST(enterprise.superAdminUserId AS CHAR) AS superAdminUserId,
+                 CAST(enterprise.crmDataOwnerUserId AS CHAR) AS dataOwnerUserId,
+                 CAST(company.userId AS CHAR) AS companyUserId,
+                 company.reviewStatus, company.pendingDraft
+            FROM ${sql.raw(PLATFORM_DB)}.companies AS company
+            INNER JOIN ${sql.raw(PLATFORM_DB)}.enterprises AS enterprise ON enterprise.id = company.enterpriseId
+           WHERE company.registrationRegion = 'CN' AND enterprise.registrationRegion = 'CN'
+             AND UPPER(REPLACE(company.creditCode, ' ', '')) = ${creditCode}
+             AND UPPER(REPLACE(enterprise.creditCode, ' ', '')) = ${creditCode}
+           LIMIT 2
+           FOR UPDATE
+            `),
+            isCnCrmPlatformCompanyRow
+          );
+          const company = platformCompanies[0];
+          if (
+            platformCompanies.length !== 1 ||
+            company?.reviewStatus !== "approved" ||
+            company.pendingDraft !== null ||
+            String(company.superAdminUserId ?? "") !== ownerToKeep ||
+            String(company.dataOwnerUserId ?? "") !== ownerToKeep ||
+            String(company.companyUserId ?? "") !== ownerToKeep
+          ) {
+            throw new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID");
+          }
+        }
       }
-    }
-    if (input.crmStatus === "enabled" && merchant.registrationRegion === "HK") {
-      const registration = parseStoredHkRegistration(merchant.registrationData);
-      if (!registration || merchant.registrationIdentifier !== hkRegistrationIdentifier(registration.registration.brn)) {
-        throw new Error("HK_REGISTRATION_DATA_INVALID");
-      }
-      if (merchant.status !== "approved" || !ownerToKeep || !merchant.licenseObjectKey || !merchant.bankDocumentObjectKey) {
-        throw new Error("HK_REQUIRED_DOCUMENTS_MISSING");
-      }
-      // Re-parse at enable time: expiry/date rules remain time-sensitive after the human draft review.
-      hkRegistrationDataSchema.parse(registration.registration);
-      assertStoredHkDocumentObjectKey(merchant.licenseObjectKey, "BR");
-      if (merchant.ciObjectKey) assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI");
-      assertStoredHkDocumentObjectKey(merchant.bankDocumentObjectKey, "BANK");
-      const identity = merchantRegistrationIdentity(merchant);
-      if (!identity) throw new Error("HK_REGISTRATION_DATA_INVALID");
-      const platformRows = (await tx.execute(sql`
+      if (
+        input.crmStatus === "enabled" &&
+        merchant.registrationRegion === "HK"
+      ) {
+        const registration = parseStoredHkRegistration(
+          merchant.registrationData
+        );
+        if (
+          !registration ||
+          merchant.registrationIdentifier !==
+            hkRegistrationIdentifier(registration.registration.brn)
+        ) {
+          throw new Error("HK_REGISTRATION_DATA_INVALID");
+        }
+        if (
+          merchant.status !== "approved" ||
+          !ownerToKeep ||
+          !merchant.licenseObjectKey ||
+          !merchant.bankDocumentObjectKey
+        ) {
+          throw new Error("HK_REQUIRED_DOCUMENTS_MISSING");
+        }
+        // Re-parse at enable time: expiry/date rules remain time-sensitive after the human draft review.
+        hkRegistrationDataSchema.parse(registration.registration);
+        assertStoredHkDocumentObjectKey(merchant.licenseObjectKey, "BR");
+        if (merchant.ciObjectKey)
+          assertStoredHkDocumentObjectKey(merchant.ciObjectKey, "CI");
+        assertStoredHkDocumentObjectKey(merchant.bankDocumentObjectKey, "BANK");
+        const identity = merchantRegistrationIdentity(merchant);
+        if (!identity) throw new Error("HK_REGISTRATION_DATA_INVALID");
+        const platformRows = (await tx.execute(sql`
         SELECT CAST(enterprise.superAdminUserId AS CHAR) AS ownerUserId, company.reviewStatus, company.pendingDraft,
                company.registrationSubmissionId, company.registrationPayloadHash
           FROM ${sql.raw(PLATFORM_DB)}.companies company
@@ -2982,74 +4959,112 @@ export async function setMerchantCrmStatus(input: {
          WHERE company.registrationRegion = 'HK' AND company.registrationIdentifier = ${identity}
          LIMIT 2
          FOR UPDATE
-      `)) as unknown as [[{ ownerUserId: string | null; reviewStatus: string; pendingDraft: unknown; registrationSubmissionId: string | null; registrationPayloadHash: string | null }], unknown];
-      const company = platformRows[0]?.[0];
-      if (platformRows[0]?.length !== 1 || company?.reviewStatus !== "approved" || company.pendingDraft !== null
-        || String(company.ownerUserId ?? "") !== ownerToKeep
-        || company.registrationSubmissionId !== registration.submissionId || company.registrationPayloadHash !== registration.payloadHash) {
-        throw new Error("HK_PLATFORM_REVIEW_OR_OWNER_INVALID");
+      `)) as unknown as [
+          [
+            {
+              ownerUserId: string | null;
+              reviewStatus: string;
+              pendingDraft: unknown;
+              registrationSubmissionId: string | null;
+              registrationPayloadHash: string | null;
+            },
+          ],
+          unknown,
+        ];
+        const company = platformRows[0]?.[0];
+        if (
+          platformRows[0]?.length !== 1 ||
+          company?.reviewStatus !== "approved" ||
+          company.pendingDraft !== null ||
+          String(company.ownerUserId ?? "") !== ownerToKeep ||
+          company.registrationSubmissionId !== registration.submissionId ||
+          company.registrationPayloadHash !== registration.payloadHash
+        ) {
+          throw new Error("HK_PLATFORM_REVIEW_OR_OWNER_INVALID");
+        }
       }
-    }
-    const ownerCondition = decision.kind === "enable"
-      ? decision.expectedExistingOwner
-        ? eq(merchants.crmOwnerPortalUserId, decision.expectedExistingOwner)
-        : isNull(merchants.crmOwnerPortalUserId)
-      : ownerToKeep
-        ? eq(merchants.crmOwnerPortalUserId, ownerToKeep)
-        : isNull(merchants.crmOwnerPortalUserId);
+      const ownerCondition =
+        decision.kind === "enable"
+          ? decision.expectedExistingOwner
+            ? eq(merchants.crmOwnerPortalUserId, decision.expectedExistingOwner)
+            : isNull(merchants.crmOwnerPortalUserId)
+          : ownerToKeep
+            ? eq(merchants.crmOwnerPortalUserId, ownerToKeep)
+            : isNull(merchants.crmOwnerPortalUserId);
 
-    const updateResult = await tx.update(merchants).set({
-      ...(decision.kind === "enable" ? { crmOwnerPortalUserId: ownerToKeep } : {}),
-      crmStatus: input.crmStatus,
-      ...(input.crmStatus === "enabled" ? { crmEnabledAt: merchant.crmEnabledAt ?? new Date() } : {}),
-      ...(input.note !== undefined ? { crmNote: normalizedNote } : {}),
-    }).where(and(
-      eq(merchants.id, input.merchantId),
-      eq(merchants.crmStatus, fromStatus),
-      ownerCondition,
-    ));
-    const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
+      const updateResult = await tx
+        .update(merchants)
+        .set({
+          ...(decision.kind === "enable"
+            ? { crmOwnerPortalUserId: ownerToKeep }
+            : {}),
+          crmStatus: input.crmStatus,
+          ...(input.crmStatus === "enabled"
+            ? { crmEnabledAt: merchant.crmEnabledAt ?? new Date() }
+            : {}),
+          ...(input.note !== undefined ? { crmNote: normalizedNote } : {}),
+        })
+        .where(
+          and(
+            eq(merchants.id, input.merchantId),
+            eq(merchants.crmStatus, fromStatus),
+            ownerCondition
+          )
+        );
+      const affectedRows =
+        (updateResult as unknown as [{ affectedRows?: number }])[0]
+          ?.affectedRows ?? 0;
 
-    if (affectedRows !== 1) {
-      const latestRows = await tx.select().from(merchants)
-        .where(eq(merchants.id, input.merchantId)).limit(1);
-      if (
-        input.crmStatus !== "enabled"
-        || !isEquivalentEnabledBinding(latestRows[0], ownerToKeep ?? "")
-      ) {
-        throw new Error("商户 ERP 状态已变化，请刷新页面后重试");
+      if (affectedRows !== 1) {
+        const latestRows = await tx
+          .select()
+          .from(merchants)
+          .where(eq(merchants.id, input.merchantId))
+          .limit(1);
+        if (
+          input.crmStatus !== "enabled" ||
+          !isEquivalentEnabledBinding(latestRows[0], ownerToKeep ?? "")
+        ) {
+          throw new Error("商户 ERP 状态已变化，请刷新页面后重试");
+        }
       }
-    }
 
-    const latestRows = await tx.select().from(merchants)
-      .where(eq(merchants.id, input.merchantId)).limit(1);
-    const latest = latestRows[0];
-    await tx.insert(auditLogs).values({
-      operatorId: input.actor?.operatorId ?? null,
-      operatorName: input.actor?.operatorName ?? "system",
-      operatorRole: input.actor?.operatorRole ?? "system",
-      action: `merchant.crm.${crmStatusAction(fromStatus, input.crmStatus)}`,
-      module: "merchants",
-      targetType: "merchant",
-      targetId: String(input.merchantId),
-      beforeValue: {
-        crmStatus: fromStatus,
-        crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId),
-        crmNote: merchant.crmNote,
-      },
-      afterValue: {
-        crmStatus: latest?.crmStatus ?? input.crmStatus,
-        crmOwnerPortalUserId: normalizeCrmPortalUserId(latest?.crmOwnerPortalUserId) ?? ownerToKeep,
-        crmNote: latest?.crmNote ?? normalizedNote,
-      },
-      ipAddress: input.actor?.ipAddress ?? null,
-      userAgent: input.actor?.userAgent ?? null,
-      result: "success",
-      note: normalizedNote,
+      const latestRows = await tx
+        .select()
+        .from(merchants)
+        .where(eq(merchants.id, input.merchantId))
+        .limit(1);
+      const latest = latestRows[0];
+      await tx.insert(auditLogs).values({
+        operatorId: input.actor?.operatorId ?? null,
+        operatorName: input.actor?.operatorName ?? "system",
+        operatorRole: input.actor?.operatorRole ?? "system",
+        action: `merchant.crm.${crmStatusAction(fromStatus, input.crmStatus)}`,
+        module: "merchants",
+        targetType: "merchant",
+        targetId: String(input.merchantId),
+        beforeValue: {
+          crmStatus: fromStatus,
+          crmOwnerPortalUserId: normalizeCrmPortalUserId(
+            merchant.crmOwnerPortalUserId
+          ),
+          crmNote: merchant.crmNote,
+        },
+        afterValue: {
+          crmStatus: latest?.crmStatus ?? input.crmStatus,
+          crmOwnerPortalUserId:
+            normalizeCrmPortalUserId(latest?.crmOwnerPortalUserId) ??
+            ownerToKeep,
+          crmNote: latest?.crmNote ?? normalizedNote,
+        },
+        ipAddress: input.actor?.ipAddress ?? null,
+        userAgent: input.actor?.userAgent ?? null,
+        result: "success",
+        note: normalizedNote,
+      });
+
+      return { success: true, crmOwnerPortalUserId: ownerToKeep };
     });
-
-    return { success: true, crmOwnerPortalUserId: ownerToKeep };
-  });
   // Only create/open/resume joins the MySQL carrier lock. Reject/disable retain
   // their original behavior and do not acquire a new serialization dependency.
   return input.crmStatus === "enabled"
@@ -3079,14 +5094,17 @@ export async function rebindMerchantCrmOwner(input: {
 
   return db.transaction(async tx => {
     const existingRequest = (
-      await tx.select().from(crmOwnerRebindLogs)
-        .where(eq(crmOwnerRebindLogs.requestId, requestId)).limit(1)
+      await tx
+        .select()
+        .from(crmOwnerRebindLogs)
+        .where(eq(crmOwnerRebindLogs.requestId, requestId))
+        .limit(1)
     )[0];
     if (existingRequest) {
       if (
-        existingRequest.merchantId !== input.merchantId
-        || existingRequest.expectedOwnerPortalUserId !== expectedOwner
-        || existingRequest.nextOwnerPortalUserId !== newOwner
+        existingRequest.merchantId !== input.merchantId ||
+        existingRequest.expectedOwnerPortalUserId !== expectedOwner ||
+        existingRequest.nextOwnerPortalUserId !== newOwner
       ) {
         throw new Error("换绑请求号已用于其他操作");
       }
@@ -3101,41 +5119,61 @@ export async function rebindMerchantCrmOwner(input: {
       };
     }
 
-    const rows = await tx.select().from(merchants)
-      .where(eq(merchants.id, input.merchantId)).limit(1).for("update");
+    const rows = await tx
+      .select()
+      .from(merchants)
+      .where(eq(merchants.id, input.merchantId))
+      .limit(1)
+      .for("update");
     const merchant = rows[0];
     if (!merchant) throw new Error("商户不存在");
     if (merchant.crmStatus !== "enabled" && merchant.crmStatus !== "disabled") {
       throw new Error("只有已开通或已暂停的 ERP 企业可以换绑超级管理员");
     }
     const oldOwner = normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId);
-    if (!oldOwner) throw new Error("当前企业尚未绑定超级管理员，请先完成开通绑定");
+    if (!oldOwner)
+      throw new Error("当前企业尚未绑定超级管理员，请先完成开通绑定");
     if (oldOwner !== expectedOwner) {
       throw new Error("当前超级管理员绑定已变化，请刷新页面后重试");
     }
-    if (oldOwner === newOwner) throw new Error("新超级管理员不能与当前绑定账号相同");
+    if (oldOwner === newOwner)
+      throw new Error("新超级管理员不能与当前绑定账号相同");
 
     // HK must retain its real BRN union identity; it must never be represented as a blank/fake CN credit code.
     const identity = merchantRegistrationIdentity(merchant);
     if (!identity) throw new Error("MERCHANT_CRM_IDENTITY_INVALID");
-    const registrationIdentifier = merchant.registrationRegion === "HK" ? identity : null;
-    const creditCode = merchant.registrationRegion === "HK" ? null : normalizeCreditCode(merchant.businessLicense || "");
-    if (merchant.registrationRegion === "HK" && !/^HK:\d{8}$/.test(registrationIdentifier || "")) {
+    const registrationIdentifier =
+      merchant.registrationRegion === "HK" ? identity : null;
+    const creditCode =
+      merchant.registrationRegion === "HK"
+        ? null
+        : normalizeCreditCode(merchant.businessLicense || "");
+    if (
+      merchant.registrationRegion === "HK" &&
+      !/^HK:\d{8}$/.test(registrationIdentifier || "")
+    ) {
       throw new Error("HK_REGISTRATION_DATA_INVALID");
     }
     if (merchant.registrationRegion !== "HK" && !creditCode) {
       throw new Error("MERCHANT_CRM_IDENTITY_INVALID");
     }
 
-    const updateResult = await tx.update(merchants).set({
-      crmOwnerPortalUserId: newOwner,
-      crmNote: reason,
-    }).where(and(
-      eq(merchants.id, input.merchantId),
-      eq(merchants.crmOwnerPortalUserId, expectedOwner),
-      eq(merchants.crmStatus, merchant.crmStatus),
-    ));
-    const affectedRows = (updateResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
+    const updateResult = await tx
+      .update(merchants)
+      .set({
+        crmOwnerPortalUserId: newOwner,
+        crmNote: reason,
+      })
+      .where(
+        and(
+          eq(merchants.id, input.merchantId),
+          eq(merchants.crmOwnerPortalUserId, expectedOwner),
+          eq(merchants.crmStatus, merchant.crmStatus)
+        )
+      );
+    const affectedRows =
+      (updateResult as unknown as [{ affectedRows?: number }])[0]
+        ?.affectedRows ?? 0;
     if (affectedRows !== 1) {
       throw new Error("商户 ERP 绑定状态已变化，请刷新页面后重试");
     }
@@ -3232,16 +5270,25 @@ export async function completeCrmOwnerRebindPlatformSync(requestId: string) {
         platformSyncedAt: new Date(),
       })
       .where(eq(crmOwnerRebindLogs.id, record.id));
-    return { ...record, platformSyncStatus: "completed" as const, platformSyncError: null };
+    return {
+      ...record,
+      platformSyncStatus: "completed" as const,
+      platformSyncError: null,
+    };
   });
 }
 
 /** 平台确认失败必须留存可重试证据；错误截断防止第三方响应撑大账本。 */
-export async function markCrmOwnerRebindPlatformSyncRetryable(requestId: string, error: unknown) {
+export async function markCrmOwnerRebindPlatformSyncRetryable(
+  requestId: string,
+  error: unknown
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const normalized = requestId.trim();
-  const message = (error instanceof Error ? error.message : "平台企业角色同步失败")
+  const message = (
+    error instanceof Error ? error.message : "平台企业角色同步失败"
+  )
     .replace(/\s+/g, " ")
     .slice(0, 1000);
   return db.transaction(async tx => {
@@ -3261,7 +5308,11 @@ export async function markCrmOwnerRebindPlatformSyncRetryable(requestId: string,
         platformSyncAttemptCount: sql`${crmOwnerRebindLogs.platformSyncAttemptCount} + 1`,
       })
       .where(eq(crmOwnerRebindLogs.id, record.id));
-    return { ...record, platformSyncStatus: "retryable" as const, platformSyncError: message };
+    return {
+      ...record,
+      platformSyncStatus: "retryable" as const,
+      platformSyncError: message,
+    };
   });
 }
 
@@ -3278,15 +5329,22 @@ export async function sendMerchantMessage(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const rows = await db.select().from(merchants).where(eq(merchants.id, input.merchantId)).limit(1);
+  const rows = await db
+    .select()
+    .from(merchants)
+    .where(eq(merchants.id, input.merchantId))
+    .limit(1);
   const merchant = rows[0];
   if (!merchant) throw new Error("商户不存在");
 
   // 复用已关联的会话
   let thread: typeof messageThreads.$inferSelect | undefined;
   if (merchant.crmThreadNo) {
-    const tr = await db.select().from(messageThreads)
-      .where(eq(messageThreads.threadNo, merchant.crmThreadNo)).limit(1);
+    const tr = await db
+      .select()
+      .from(messageThreads)
+      .where(eq(messageThreads.threadNo, merchant.crmThreadNo))
+      .limit(1);
     thread = tr[0];
   }
 
@@ -3306,10 +5364,16 @@ export async function sendMerchantMessage(input: {
       lastMessagePreview: preview,
       lastMessageAt: new Date(),
     });
-    const tr = await db.select().from(messageThreads)
-      .where(eq(messageThreads.threadNo, threadNo)).limit(1);
+    const tr = await db
+      .select()
+      .from(messageThreads)
+      .where(eq(messageThreads.threadNo, threadNo))
+      .limit(1);
     thread = tr[0];
-    await db.update(merchants).set({ crmThreadNo: threadNo }).where(eq(merchants.id, merchant.id));
+    await db
+      .update(merchants)
+      .set({ crmThreadNo: threadNo })
+      .where(eq(merchants.id, merchant.id));
   }
 
   await db.insert(messages).values({
@@ -3319,12 +5383,15 @@ export async function sendMerchantMessage(input: {
     senderName: input.adminName,
     content: input.content,
   });
-  await db.update(messageThreads).set({
-    status: "open",
-    portalUnreadCount: sql`${messageThreads.portalUnreadCount} + 1`,
-    lastMessagePreview: preview,
-    lastMessageAt: new Date(),
-  }).where(eq(messageThreads.id, thread!.id));
+  await db
+    .update(messageThreads)
+    .set({
+      status: "open",
+      portalUnreadCount: sql`${messageThreads.portalUnreadCount} + 1`,
+      lastMessagePreview: preview,
+      lastMessageAt: new Date(),
+    })
+    .where(eq(messageThreads.id, thread!.id));
 
   return { success: true, threadNo: thread!.threadNo, threadId: thread!.id };
 }
@@ -3336,7 +5403,7 @@ export async function sendMerchantMessage(input: {
  */
 export async function getCrmAccessByCreditCode(
   creditCodeInput: string,
-  portalUserIdInput?: string | null,
+  portalUserIdInput?: string | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -3351,8 +5418,11 @@ export async function getCrmAccessByCreditCode(
   }
 
   const creditCode = normalizeCreditCode(creditCodeInput);
-  const rows = await db.select().from(merchants)
-    .where(eq(merchants.businessLicense, creditCode)).limit(1);
+  const rows = await db
+    .select()
+    .from(merchants)
+    .where(eq(merchants.businessLicense, creditCode))
+    .limit(1);
   const merchant = rows[0];
   if (!merchant) {
     return {
@@ -3375,15 +5445,16 @@ export async function getCrmAccessByCreditCode(
   if (owner !== portalUserId) {
     return {
       allowed: false,
-      code: merchant.crmStatus === "pending"
-        ? "CRM_COMPANY_APPLICATION_PENDING" as const
-        : merchant.crmStatus === "enabled"
-          ? "CRM_COMPANY_ALREADY_ENABLED" as const
-          : "CRM_COMPANY_ALREADY_BOUND" as const,
+      code:
+        merchant.crmStatus === "pending"
+          ? ("CRM_COMPANY_APPLICATION_PENDING" as const)
+          : merchant.crmStatus === "enabled"
+            ? ("CRM_COMPANY_ALREADY_ENABLED" as const)
+            : ("CRM_COMPANY_ALREADY_BOUND" as const),
       crmStatus: merchant.crmStatus,
       message: getCrmCompanyConflictMessage(
         merchant.crmStatus,
-        "该企业已绑定其他前台账号",
+        "该企业已绑定其他前台账号"
       ),
     };
   }
@@ -3407,13 +5478,14 @@ export async function getCrmAccessByCreditCode(
   };
   return {
     allowed: false,
-    code: crmStatus === "pending"
-      ? "CRM_APPLICATION_PENDING" as const
-      : crmStatus === "rejected"
-        ? "CRM_APPLICATION_REJECTED" as const
-        : crmStatus === "disabled"
-          ? "CRM_ACCESS_DISABLED" as const
-          : "CRM_NOT_ENABLED" as const,
+    code:
+      crmStatus === "pending"
+        ? ("CRM_APPLICATION_PENDING" as const)
+        : crmStatus === "rejected"
+          ? ("CRM_APPLICATION_REJECTED" as const)
+          : crmStatus === "disabled"
+            ? ("CRM_ACCESS_DISABLED" as const)
+            : ("CRM_NOT_ENABLED" as const),
     crmStatus,
     message: messageMap[crmStatus] ?? messageMap.none,
     merchantNo: merchant.merchantNo,
@@ -3426,14 +5498,18 @@ export async function getCrmBindingByCreditCode(creditCodeInput: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const creditCode = normalizeCreditCode(creditCodeInput);
-  const rows = await db.select({
-    merchantId: merchants.id,
-    merchantNo: merchants.merchantNo,
-    companyName: merchants.companyName,
-    creditCode: merchants.businessLicense,
-    crmStatus: merchants.crmStatus,
-    crmOwnerPortalUserId: merchants.crmOwnerPortalUserId,
-  }).from(merchants).where(eq(merchants.businessLicense, creditCode)).limit(1);
+  const rows = await db
+    .select({
+      merchantId: merchants.id,
+      merchantNo: merchants.merchantNo,
+      companyName: merchants.companyName,
+      creditCode: merchants.businessLicense,
+      crmStatus: merchants.crmStatus,
+      crmOwnerPortalUserId: merchants.crmOwnerPortalUserId,
+    })
+    .from(merchants)
+    .where(eq(merchants.businessLicense, creditCode))
+    .limit(1);
   const merchant = rows[0];
   if (!merchant) {
     return {
@@ -3447,50 +5523,102 @@ export async function getCrmBindingByCreditCode(creditCodeInput: string) {
     found: true as const,
     ...merchant,
     creditCode,
-    crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId),
+    crmOwnerPortalUserId: normalizeCrmPortalUserId(
+      merchant.crmOwnerPortalUserId
+    ),
   };
 }
 
 /** 香港 ERP 门禁：仅接受 HK:<8位BRN>，绝不回退到 creditCode / businessLicense。 */
 export async function getHkCrmAccessByRegistrationIdentifier(
   registrationIdentifierInput: string,
-  portalUserIdInput?: string | null,
+  portalUserIdInput?: string | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const identity = registrationIdentifierInput.trim().toUpperCase();
-  if (!/^HK:\d{8}$/.test(identity)) throw new Error("HK_REGISTRATION_IDENTIFIER_INVALID");
+  if (!/^HK:\d{8}$/.test(identity))
+    throw new Error("HK_REGISTRATION_IDENTIFIER_INVALID");
   const portalUserId = normalizePortalUserId(portalUserIdInput);
-  if (!portalUserId) return { allowed: false, code: "CRM_ACCOUNT_REQUIRED" as const, crmStatus: "none" as const, identity, message: "请先登录前台账号后再访问 ERP" };
-  const [merchant] = await db.select().from(merchants).where(and(
-    eq(merchants.registrationRegion, "HK"),
-    eq(merchants.registrationIdentifier, identity),
-  )).limit(1);
-  if (!merchant) return { allowed: false, code: "CRM_NOT_ENABLED" as const, crmStatus: "none" as const, identity, message: "您尚未开通ERP，请先提交香港企业开通申请" };
+  if (!portalUserId)
+    return {
+      allowed: false,
+      code: "CRM_ACCOUNT_REQUIRED" as const,
+      crmStatus: "none" as const,
+      identity,
+      message: "请先登录前台账号后再访问 ERP",
+    };
+  const [merchant] = await db
+    .select()
+    .from(merchants)
+    .where(
+      and(
+        eq(merchants.registrationRegion, "HK"),
+        eq(merchants.registrationIdentifier, identity)
+      )
+    )
+    .limit(1);
+  if (!merchant)
+    return {
+      allowed: false,
+      code: "CRM_NOT_ENABLED" as const,
+      crmStatus: "none" as const,
+      identity,
+      message: "您尚未开通ERP，请先提交香港企业开通申请",
+    };
   const owner = normalizePortalUserId(merchant.crmOwnerPortalUserId);
-  if (!owner) return { allowed: false, code: "CRM_BINDING_REQUIRED" as const, crmStatus: merchant.crmStatus, identity, message: "该企业需要平台核验绑定关系，请联系客服" };
+  if (!owner)
+    return {
+      allowed: false,
+      code: "CRM_BINDING_REQUIRED" as const,
+      crmStatus: merchant.crmStatus,
+      identity,
+      message: "该企业需要平台核验绑定关系，请联系客服",
+    };
   if (owner !== portalUserId) {
     return {
       allowed: false,
-      code: merchant.crmStatus === "pending" ? "CRM_COMPANY_APPLICATION_PENDING" as const
-        : merchant.crmStatus === "enabled" ? "CRM_COMPANY_ALREADY_ENABLED" as const : "CRM_COMPANY_ALREADY_BOUND" as const,
+      code:
+        merchant.crmStatus === "pending"
+          ? ("CRM_COMPANY_APPLICATION_PENDING" as const)
+          : merchant.crmStatus === "enabled"
+            ? ("CRM_COMPANY_ALREADY_ENABLED" as const)
+            : ("CRM_COMPANY_ALREADY_BOUND" as const),
       crmStatus: merchant.crmStatus,
       identity,
-      message: getCrmCompanyConflictMessage(merchant.crmStatus, "该香港企业已绑定其他前台账号"),
+      message: getCrmCompanyConflictMessage(
+        merchant.crmStatus,
+        "该香港企业已绑定其他前台账号"
+      ),
     };
   }
   if (merchant.crmStatus === "enabled") {
-    return { allowed: true, code: "CRM_ACCESS_GRANTED" as const, crmStatus: "enabled" as const, identity, message: null, merchantNo: merchant.merchantNo, crmThreadNo: merchant.crmThreadNo ?? null };
+    return {
+      allowed: true,
+      code: "CRM_ACCESS_GRANTED" as const,
+      crmStatus: "enabled" as const,
+      identity,
+      message: null,
+      merchantNo: merchant.merchantNo,
+      crmThreadNo: merchant.crmThreadNo ?? null,
+    };
   }
   const messageMap: Record<string, string> = {
-    disabled: "您的ERP权限已经被暂停，请联系客服", pending: "您的ERP开通申请正在审核中，请耐心等待",
-    rejected: "您的ERP开通申请未通过，如有疑问请联系客服", none: "您尚未开通ERP，请先提交企业开通申请",
+    disabled: "您的ERP权限已经被暂停，请联系客服",
+    pending: "您的ERP开通申请正在审核中，请耐心等待",
+    rejected: "您的ERP开通申请未通过，如有疑问请联系客服",
+    none: "您尚未开通ERP，请先提交企业开通申请",
   };
   return {
     allowed: false,
-    code: merchant.crmStatus === "pending" ? "CRM_APPLICATION_PENDING" as const
-      : merchant.crmStatus === "rejected" ? "CRM_APPLICATION_REJECTED" as const
-        : merchant.crmStatus === "disabled" ? "CRM_ACCESS_DISABLED" as const : "CRM_NOT_ENABLED" as const,
+    code:
+      merchant.crmStatus === "pending"
+        ? ("CRM_APPLICATION_PENDING" as const)
+        : merchant.crmStatus === "rejected"
+          ? ("CRM_APPLICATION_REJECTED" as const)
+          : merchant.crmStatus === "disabled"
+            ? ("CRM_ACCESS_DISABLED" as const)
+            : ("CRM_NOT_ENABLED" as const),
     crmStatus: merchant.crmStatus,
     identity,
     message: messageMap[merchant.crmStatus] ?? messageMap.none,
@@ -3500,31 +5628,55 @@ export async function getHkCrmAccessByRegistrationIdentifier(
 }
 
 /** 仅 portal-key 路由使用的 HK 绑定对账投影；不返回任何私有注册/附件数据。 */
-export async function getHkCrmBindingByRegistrationIdentifier(registrationIdentifierInput: string) {
+export async function getHkCrmBindingByRegistrationIdentifier(
+  registrationIdentifierInput: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const identity = registrationIdentifierInput.trim().toUpperCase();
-  if (!/^HK:\d{8}$/.test(identity)) throw new Error("HK_REGISTRATION_IDENTIFIER_INVALID");
-  const [merchant] = await db.select({
-    merchantId: merchants.id,
-    merchantNo: merchants.merchantNo,
-    companyName: merchants.companyName,
-    registrationIdentifier: merchants.registrationIdentifier,
-    crmStatus: merchants.crmStatus,
-    crmOwnerPortalUserId: merchants.crmOwnerPortalUserId,
-  }).from(merchants).where(and(
-    eq(merchants.registrationRegion, "HK"),
-    eq(merchants.registrationIdentifier, identity),
-  )).limit(1);
-  if (!merchant) return { found: false as const, identity, crmStatus: "none" as const, crmOwnerPortalUserId: null };
-  return { found: true as const, ...merchant, identity, crmOwnerPortalUserId: normalizeCrmPortalUserId(merchant.crmOwnerPortalUserId) };
+  if (!/^HK:\d{8}$/.test(identity))
+    throw new Error("HK_REGISTRATION_IDENTIFIER_INVALID");
+  const [merchant] = await db
+    .select({
+      merchantId: merchants.id,
+      merchantNo: merchants.merchantNo,
+      companyName: merchants.companyName,
+      registrationIdentifier: merchants.registrationIdentifier,
+      crmStatus: merchants.crmStatus,
+      crmOwnerPortalUserId: merchants.crmOwnerPortalUserId,
+    })
+    .from(merchants)
+    .where(
+      and(
+        eq(merchants.registrationRegion, "HK"),
+        eq(merchants.registrationIdentifier, identity)
+      )
+    )
+    .limit(1);
+  if (!merchant)
+    return {
+      found: false as const,
+      identity,
+      crmStatus: "none" as const,
+      crmOwnerPortalUserId: null,
+    };
+  return {
+    found: true as const,
+    ...merchant,
+    identity,
+    crmOwnerPortalUserId: normalizeCrmPortalUserId(
+      merchant.crmOwnerPortalUserId
+    ),
+  };
 }
 
 // ─── 管理员 ───────────────────────────────────────────────────────────────────
 
 /** 可传入事务对象或 db 实例，便于在事务内复用同一套销售身份逻辑 */
 type DbHandle = NonNullable<Awaited<ReturnType<typeof getDb>>>;
-type DbExecutor = DbHandle | Parameters<Parameters<DbHandle["transaction"]>[0]>[0];
+type DbExecutor =
+  | DbHandle
+  | Parameters<Parameters<DbHandle["transaction"]>[0]>[0];
 
 /**
  * 销售身份列表（前台「销售负责人」下拉与后台只读列表均取此）。
@@ -3565,10 +5717,10 @@ export async function getSalesStaffByCode(staffCode: string) {
 export async function normalizeSalesStaffCodes(
   executor: DbExecutor,
   staffCodes: string[],
-  options: { activeOnly?: boolean; strict?: boolean } = {},
+  options: { activeOnly?: boolean; strict?: boolean } = {}
 ) {
   const normalized = Array.from(
-    new Set(staffCodes.map(code => code.trim().toLowerCase()).filter(Boolean)),
+    new Set(staffCodes.map(code => code.trim().toLowerCase()).filter(Boolean))
   );
   if (normalized.length === 0) return [];
   const activeOnly = options.activeOnly ?? true;
@@ -3577,8 +5729,11 @@ export async function normalizeSalesStaffCodes(
     .from(salesStaff)
     .where(
       activeOnly
-        ? and(inArray(salesStaff.staffCode, normalized), eq(salesStaff.status, "active"))
-        : inArray(salesStaff.staffCode, normalized),
+        ? and(
+            inArray(salesStaff.staffCode, normalized),
+            eq(salesStaff.status, "active")
+          )
+        : inArray(salesStaff.staffCode, normalized)
     );
   const valid = new Set(rows.map(row => row.staffCode));
   const invalid = normalized.filter(code => !valid.has(code));
@@ -3623,7 +5778,7 @@ export async function syncAdminUserSalesIdentity(
     displayName?: string | null;
     adminRole: string;
     status: string;
-  },
+  }
 ): Promise<string | null> {
   const [linked] = await executor
     .select()
@@ -3632,7 +5787,9 @@ export async function syncAdminUserSalesIdentity(
     .limit(1);
 
   const shouldBeActive = user.status === "active";
-  const nextStatus: "active" | "inactive" = shouldBeActive ? "active" : "inactive";
+  const nextStatus: "active" | "inactive" = shouldBeActive
+    ? "active"
+    : "inactive";
   const displayName = user.displayName?.trim() || user.username;
 
   if (linked) {
@@ -3680,21 +5837,24 @@ export async function syncAdminUserSalesIdentity(
  */
 export async function getAdminUserSalesScopeCodes(
   adminUserId: number,
-  options: { includeInactive?: boolean } = {},
+  options: { includeInactive?: boolean } = {}
 ) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
     .select({ staffCode: adminUserSalesScopes.staffCode })
     .from(adminUserSalesScopes)
-    .innerJoin(salesStaff, eq(salesStaff.staffCode, adminUserSalesScopes.staffCode))
+    .innerJoin(
+      salesStaff,
+      eq(salesStaff.staffCode, adminUserSalesScopes.staffCode)
+    )
     .where(
       options.includeInactive
         ? eq(adminUserSalesScopes.adminUserId, adminUserId)
         : and(
             eq(adminUserSalesScopes.adminUserId, adminUserId),
-            eq(salesStaff.status, "active"),
-          ),
+            eq(salesStaff.status, "active")
+          )
     )
     .orderBy(asc(adminUserSalesScopes.id));
   return rows.map(row => row.staffCode);
@@ -3704,7 +5864,7 @@ export async function getAdminUserSalesScopeCodes(
 export async function replaceAdminUserSalesScopes(
   executor: DbExecutor,
   adminUserId: number,
-  staffCodes: string[],
+  staffCodes: string[]
 ) {
   await executor
     .delete(adminUserSalesScopes)
@@ -3730,50 +5890,67 @@ export async function getScopedMerchantCreditCodes(salesStaffCodes: string[]) {
       and(
         inArray(merchants.salesOwnerCode, salesStaffCodes),
         sql`${merchants.businessLicense} IS NOT NULL`,
-        sql`TRIM(${merchants.businessLicense}) <> ''`,
-      ),
+        sql`TRIM(${merchants.businessLicense}) <> ''`
+      )
     );
-  return rows.map(row => row.creditCode?.trim() ?? "").filter(value => value.length > 0);
+  return rows
+    .map(row => row.creditCode?.trim() ?? "")
+    .filter(value => value.length > 0);
 }
 
 /**
  * 后台用户分页列表，每行附带销售范围与自身工号。
  * scope / identity 均按页批量查询并在内存归集，避免 N+1。
  */
-export async function getAdminUsers(params: { page?: number; pageSize?: number } = {}) {
+export async function getAdminUsers(
+  params: { page?: number; pageSize?: number } = {}
+) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
   const { page = 1, pageSize = 20 } = params;
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(adminUsers);
-  const data = await db.select().from(adminUsers).orderBy(desc(adminUsers.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(adminUsers);
+  const data = await db
+    .select()
+    .from(adminUsers)
+    .orderBy(desc(adminUsers.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
 
   const userIds = data.map(user => user.id);
-  const scopeRows = userIds.length > 0
-    ? await db
-        .select({
-          adminUserId: adminUserSalesScopes.adminUserId,
-          staffCode: adminUserSalesScopes.staffCode,
-        })
-        .from(adminUserSalesScopes)
-        .where(inArray(adminUserSalesScopes.adminUserId, userIds))
-        .orderBy(asc(adminUserSalesScopes.id))
-    : [];
-  const identityRows = userIds.length > 0
-    ? await db
-        .select({ adminUserId: salesStaff.adminUserId, staffCode: salesStaff.staffCode })
-        .from(salesStaff)
-        .where(inArray(salesStaff.adminUserId, userIds))
-    : [];
-  const permissionRows = userIds.length > 0
-    ? await db
-        .select({
-          adminUserId: adminUserPermissions.adminUserId,
-          permission: adminUserPermissions.permission,
-        })
-        .from(adminUserPermissions)
-        .where(inArray(adminUserPermissions.adminUserId, userIds))
-        .orderBy(asc(adminUserPermissions.id))
-    : [];
+  const scopeRows =
+    userIds.length > 0
+      ? await db
+          .select({
+            adminUserId: adminUserSalesScopes.adminUserId,
+            staffCode: adminUserSalesScopes.staffCode,
+          })
+          .from(adminUserSalesScopes)
+          .where(inArray(adminUserSalesScopes.adminUserId, userIds))
+          .orderBy(asc(adminUserSalesScopes.id))
+      : [];
+  const identityRows =
+    userIds.length > 0
+      ? await db
+          .select({
+            adminUserId: salesStaff.adminUserId,
+            staffCode: salesStaff.staffCode,
+          })
+          .from(salesStaff)
+          .where(inArray(salesStaff.adminUserId, userIds))
+      : [];
+  const permissionRows =
+    userIds.length > 0
+      ? await db
+          .select({
+            adminUserId: adminUserPermissions.adminUserId,
+            permission: adminUserPermissions.permission,
+          })
+          .from(adminUserPermissions)
+          .where(inArray(adminUserPermissions.adminUserId, userIds))
+          .orderBy(asc(adminUserPermissions.id))
+      : [];
 
   const scopeMap = new Map<number, string[]>();
   for (const row of scopeRows) {
@@ -3783,7 +5960,8 @@ export async function getAdminUsers(params: { page?: number; pageSize?: number }
   }
   const identityMap = new Map<number, string>();
   for (const row of identityRows) {
-    if (row.adminUserId !== null) identityMap.set(row.adminUserId, row.staffCode);
+    if (row.adminUserId !== null)
+      identityMap.set(row.adminUserId, row.staffCode);
   }
   const permissionMap = new Map<number, string[]>();
   for (const row of permissionRows) {
@@ -3821,7 +5999,11 @@ export async function getAdminUserByUsername(username: string) {
 export async function getAdminUserById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(adminUsers).where(eq(adminUsers.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(adminUsers)
+    .where(eq(adminUsers.id, id))
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -3847,7 +6029,12 @@ export async function getAdminUserPermissionsByIds(adminUserIds: number[]) {
       permission: adminUserPermissions.permission,
     })
     .from(adminUserPermissions)
-    .where(inArray(adminUserPermissions.adminUserId, Array.from(new Set(adminUserIds))))
+    .where(
+      inArray(
+        adminUserPermissions.adminUserId,
+        Array.from(new Set(adminUserIds))
+      )
+    )
     .orderBy(asc(adminUserPermissions.id));
   const map = new Map<number, string[]>();
   for (const row of rows) {
@@ -3862,13 +6049,15 @@ export async function getAdminUserPermissionsByIds(adminUserIds: number[]) {
 async function replaceAdminUserPermissions(
   tx: DbExecutor,
   adminUserId: number,
-  permissions: string[],
+  permissions: string[]
 ) {
-  await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUserId));
+  await tx
+    .delete(adminUserPermissions)
+    .where(eq(adminUserPermissions.adminUserId, adminUserId));
   if (permissions.length === 0) return;
-  await tx.insert(adminUserPermissions).values(
-    permissions.map(permission => ({ adminUserId, permission })),
-  );
+  await tx
+    .insert(adminUserPermissions)
+    .values(permissions.map(permission => ({ adminUserId, permission })));
 }
 
 /** 记录权限变更审计；审计失败不应阻断业务事务回滚，因此由调用方在同一事务中写入。 */
@@ -3882,7 +6071,7 @@ async function insertAdminUserPermissionAudit(
     afterPermissions: string[];
     ipAddress?: string | null;
     userAgent?: string | null;
-  },
+  }
 ) {
   await tx.insert(adminUserPermissionAudits).values({
     adminUserId: input.adminUserId,
@@ -3919,7 +6108,10 @@ export async function setAdminUserPassword(id: number, passwordHash: string) {
   if (!db) throw new Error("Database not available");
   await db
     .update(adminUsers)
-    .set({ passwordHash, sessionVersion: sql`${adminUsers.sessionVersion} + 1` })
+    .set({
+      passwordHash,
+      sessionVersion: sql`${adminUsers.sessionVersion} + 1`,
+    })
     .where(eq(adminUsers.id, id));
 }
 
@@ -3927,20 +6119,27 @@ export async function setAdminUserPassword(id: number, passwordHash: string) {
 export async function touchAdminUserLogin(id: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, id));
+  await db
+    .update(adminUsers)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(adminUsers.id, id));
 }
 
 /** 递增会话版本使该员工的全部既有后台JWT立即失效，并保留审计记录。 */
 export async function revokeAdminUserSessions(
   id: number,
   reason: string,
-  actor?: MaterialAuditActor,
+  actor?: MaterialAuditActor
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.transaction(async tx => {
     const [target] = await tx
-      .select({ id: adminUsers.id, username: adminUsers.username, sessionVersion: adminUsers.sessionVersion })
+      .select({
+        id: adminUsers.id,
+        username: adminUsers.username,
+        sessionVersion: adminUsers.sessionVersion,
+      })
       .from(adminUsers)
       .where(eq(adminUsers.id, id))
       .limit(1)
@@ -3958,7 +6157,10 @@ export async function revokeAdminUserSessions(
       module: "admin_users",
       targetType: "admin_user",
       targetId: String(id),
-      beforeValue: { username: target.username, sessionVersion: target.sessionVersion },
+      beforeValue: {
+        username: target.username,
+        sessionVersion: target.sessionVersion,
+      },
       afterValue: { sessionVersion: target.sessionVersion + 1 },
       ipAddress: actor?.ipAddress ?? null,
       userAgent: actor?.userAgent ?? null,
@@ -4000,18 +6202,23 @@ export async function createPasswordResetCode(input: {
     if (!account) throw new Error("ADMIN_USER_NOT_FOUND");
 
     const resendIntervalMs = input.resendIntervalMs ?? 60_000;
-    const resendIntervalSeconds = Math.max(1, Math.ceil(resendIntervalMs / 1_000));
+    const resendIntervalSeconds = Math.max(
+      1,
+      Math.ceil(resendIntervalMs / 1_000)
+    );
     const [active] = await tx
       .select()
       .from(passwordResetCodes)
-      .where(and(
-        eq(passwordResetCodes.adminUserId, input.adminUserId),
-        isNull(passwordResetCodes.usedAt),
-        // Compare on the database clock. Reading a MySQL TIMESTAMP into a JS
-        // Date can shift by the connection timezone and silently bypass the
-        // resend window even though both requests hit the same database.
-        sql`${passwordResetCodes.createdAt} >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ${resendIntervalSeconds} SECOND)`,
-      ))
+      .where(
+        and(
+          eq(passwordResetCodes.adminUserId, input.adminUserId),
+          isNull(passwordResetCodes.usedAt),
+          // Compare on the database clock. Reading a MySQL TIMESTAMP into a JS
+          // Date can shift by the connection timezone and silently bypass the
+          // resend window even though both requests hit the same database.
+          sql`${passwordResetCodes.createdAt} >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ${resendIntervalSeconds} SECOND)`
+        )
+      )
       .orderBy(desc(passwordResetCodes.createdAt))
       .limit(1)
       .for("update");
@@ -4022,7 +6229,12 @@ export async function createPasswordResetCode(input: {
     await tx
       .update(passwordResetCodes)
       .set({ usedAt: new Date() })
-      .where(and(eq(passwordResetCodes.adminUserId, input.adminUserId), isNull(passwordResetCodes.usedAt)));
+      .where(
+        and(
+          eq(passwordResetCodes.adminUserId, input.adminUserId),
+          isNull(passwordResetCodes.usedAt)
+        )
+      );
     await tx.insert(passwordResetCodes).values({
       adminUserId: input.adminUserId,
       channel: input.channel,
@@ -4041,11 +6253,13 @@ export async function getActivePasswordResetCode(adminUserId: number) {
   const rows = await db
     .select()
     .from(passwordResetCodes)
-    .where(and(
-      eq(passwordResetCodes.adminUserId, adminUserId),
-      isNull(passwordResetCodes.usedAt),
-      gt(passwordResetCodes.expiresAt, new Date()),
-    ))
+    .where(
+      and(
+        eq(passwordResetCodes.adminUserId, adminUserId),
+        isNull(passwordResetCodes.usedAt),
+        gt(passwordResetCodes.expiresAt, new Date())
+      )
+    )
     .orderBy(desc(passwordResetCodes.createdAt))
     .limit(1);
   return rows[0] ?? null;
@@ -4078,7 +6292,8 @@ export async function consumePasswordResetCode(input: {
       eq(passwordResetCodes.adminUserId, input.adminUserId),
       isNull(passwordResetCodes.usedAt),
     ];
-    if (input.target !== undefined) codeConditions.push(eq(passwordResetCodes.target, input.target));
+    if (input.target !== undefined)
+      codeConditions.push(eq(passwordResetCodes.target, input.target));
     const [record] = await tx
       .select()
       .from(passwordResetCodes)
@@ -4093,14 +6308,24 @@ export async function consumePasswordResetCode(input: {
       await tx
         .update(passwordResetCodes)
         .set({ usedAt: now })
-        .where(and(eq(passwordResetCodes.id, record.id), isNull(passwordResetCodes.usedAt)));
+        .where(
+          and(
+            eq(passwordResetCodes.id, record.id),
+            isNull(passwordResetCodes.usedAt)
+          )
+        );
       return "INVALID";
     }
     if (record.attempts >= RESET_CODE_MAX_ATTEMPTS) {
       await tx
         .update(passwordResetCodes)
         .set({ usedAt: now })
-        .where(and(eq(passwordResetCodes.id, record.id), isNull(passwordResetCodes.usedAt)));
+        .where(
+          and(
+            eq(passwordResetCodes.id, record.id),
+            isNull(passwordResetCodes.usedAt)
+          )
+        );
       return "ATTEMPTS_EXHAUSTED";
     }
 
@@ -4115,22 +6340,28 @@ export async function consumePasswordResetCode(input: {
           attempts: nextAttempts,
           ...(nextAttempts >= RESET_CODE_MAX_ATTEMPTS ? { usedAt: now } : {}),
         })
-        .where(and(
-          eq(passwordResetCodes.id, record.id),
-          isNull(passwordResetCodes.usedAt),
-          eq(passwordResetCodes.attempts, record.attempts),
-        ));
-      return nextAttempts >= RESET_CODE_MAX_ATTEMPTS ? "ATTEMPTS_EXHAUSTED" : "INVALID";
+        .where(
+          and(
+            eq(passwordResetCodes.id, record.id),
+            isNull(passwordResetCodes.usedAt),
+            eq(passwordResetCodes.attempts, record.attempts)
+          )
+        );
+      return nextAttempts >= RESET_CODE_MAX_ATTEMPTS
+        ? "ATTEMPTS_EXHAUSTED"
+        : "INVALID";
     }
 
     await tx
       .update(passwordResetCodes)
       .set({ usedAt: now })
-      .where(and(
-        eq(passwordResetCodes.id, record.id),
-        isNull(passwordResetCodes.usedAt),
-        eq(passwordResetCodes.attempts, record.attempts),
-      ));
+      .where(
+        and(
+          eq(passwordResetCodes.id, record.id),
+          isNull(passwordResetCodes.usedAt),
+          eq(passwordResetCodes.attempts, record.attempts)
+        )
+      );
     if (input.newPasswordHash) {
       await tx
         .update(adminUsers)
@@ -4151,7 +6382,13 @@ export async function incrementResetCodeAttempts(id: number) {
   await db
     .update(passwordResetCodes)
     .set({ attempts: sql`${passwordResetCodes.attempts} + 1` })
-    .where(and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt), sql`${passwordResetCodes.attempts} < ${RESET_CODE_MAX_ATTEMPTS}`));
+    .where(
+      and(
+        eq(passwordResetCodes.id, id),
+        isNull(passwordResetCodes.usedAt),
+        sql`${passwordResetCodes.attempts} < ${RESET_CODE_MAX_ATTEMPTS}`
+      )
+    );
 }
 
 export async function markResetCodeUsed(id: number) {
@@ -4160,14 +6397,23 @@ export async function markResetCodeUsed(id: number) {
   await db
     .update(passwordResetCodes)
     .set({ usedAt: new Date() })
-    .where(and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt)));
+    .where(
+      and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt))
+    );
 }
 /**
  * Account lifecycle mutations.  Creation, role/status changes, password
  * resets, sales identity and sales scope all funnel through this section;
  * callers must not update admin_users directly.
  */
-type AdminLifecycleRole = "super_admin" | "operation" | "merchant_mgr" | "customer_svc" | "risk_control" | "finance" | "auditor";
+type AdminLifecycleRole =
+  | "super_admin"
+  | "operation"
+  | "merchant_mgr"
+  | "customer_svc"
+  | "risk_control"
+  | "finance"
+  | "auditor";
 type AdminLifecycleStatus = "active" | "disabled" | "locked";
 
 type AdminPermissionAuditInput = {
@@ -4181,7 +6427,12 @@ async function lockActiveSuperAdmins(tx: DbExecutor) {
   return tx
     .select({ id: adminUsers.id })
     .from(adminUsers)
-    .where(and(eq(adminUsers.adminRole, "super_admin"), eq(adminUsers.status, "active")))
+    .where(
+      and(
+        eq(adminUsers.adminRole, "super_admin"),
+        eq(adminUsers.status, "active")
+      )
+    )
     .for("update");
 }
 
@@ -4190,11 +6441,12 @@ function assertSuperAdminContinuity(
   target: { id: number; adminRole: string; status: string },
   nextRole: string,
   nextStatus: string,
-  removing = false,
+  removing = false
 ) {
-  const removesActiveSuperAdmin = target.adminRole === "super_admin"
-    && target.status === "active"
-    && (removing || nextRole !== "super_admin" || nextStatus !== "active");
+  const removesActiveSuperAdmin =
+    target.adminRole === "super_admin" &&
+    target.status === "active" &&
+    (removing || nextRole !== "super_admin" || nextStatus !== "active");
   if (removesActiveSuperAdmin && activeSuperAdminCount <= 1) {
     throw new Error("LAST_SUPER_ADMIN_FORBIDDEN");
   }
@@ -4204,7 +6456,10 @@ async function getSalesScopesForUpdate(tx: DbExecutor, adminUserId: number) {
   const rows = await tx
     .select({ staffCode: adminUserSalesScopes.staffCode })
     .from(adminUserSalesScopes)
-    .innerJoin(salesStaff, eq(salesStaff.staffCode, adminUserSalesScopes.staffCode))
+    .innerJoin(
+      salesStaff,
+      eq(salesStaff.staffCode, adminUserSalesScopes.staffCode)
+    )
     .where(eq(adminUserSalesScopes.adminUserId, adminUserId))
     .orderBy(asc(adminUserSalesScopes.id))
     .for("update");
@@ -4257,7 +6512,9 @@ export async function createAdminUser(input: {
       status: "active",
       sessionVersion: 1,
     });
-    createdId = Number((result as unknown as [{ insertId?: number }])[0]?.insertId ?? 0);
+    createdId = Number(
+      (result as unknown as [{ insertId?: number }])[0]?.insertId ?? 0
+    );
     const [created] = await tx
       .select()
       .from(adminUsers)
@@ -4268,18 +6525,27 @@ export async function createAdminUser(input: {
 
     ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, created);
     if (input.adminRole === "merchant_mgr") {
-      const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? [], {
-        activeOnly: true,
-        strict: true,
-      });
-      scopeCodes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]));
+      const requestedCodes = await normalizeSalesStaffCodes(
+        tx,
+        input.salesStaffCodes ?? [],
+        {
+          activeOnly: true,
+          strict: true,
+        }
+      );
+      scopeCodes = Array.from(
+        new Set(
+          [ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]
+        )
+      );
       if (scopeCodes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
     }
     await replaceAdminUserSalesScopes(tx, created.id, scopeCodes);
 
-    const nextPermissions = input.adminRole === "super_admin"
-      ? []
-      : normalizeAssignedAdminPermissions(input.permissions ?? []);
+    const nextPermissions =
+      input.adminRole === "super_admin"
+        ? []
+        : normalizeAssignedAdminPermissions(input.permissions ?? []);
     await replaceAdminUserPermissions(tx, created.id, nextPermissions);
     if (input.permissions !== undefined) {
       await insertAdminUserPermissionAudit(tx, {
@@ -4297,7 +6563,10 @@ export async function createAdminUser(input: {
     ...toAdminUserDto(created),
     salesStaffCodes: scopeCodes,
     ownSalesStaffCode,
-    permissions: input.adminRole === "super_admin" ? [] : normalizeAssignedAdminPermissions(input.permissions ?? []),
+    permissions:
+      input.adminRole === "super_admin"
+        ? []
+        : normalizeAssignedAdminPermissions(input.permissions ?? []),
   };
 }
 
@@ -4306,19 +6575,22 @@ export async function createAdminUser(input: {
  * credential/access/authorization change increments sessionVersion, revoking
  * previously issued local JWTs on their next authenticated request.
  */
-export async function updateAdminUser(id: number, input: {
-  displayName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  adminRole?: AdminLifecycleRole;
-  salesStaffCodes?: string[];
-  permissions?: string[];
-  permissionAudit?: AdminPermissionAuditInput;
-  status?: AdminLifecycleStatus;
-  passwordHash?: string;
-  /** Authenticated actor; supplied by externally reachable lifecycle routes. */
-  actorAdminUserId?: number | null;
-}) {
+export async function updateAdminUser(
+  id: number,
+  input: {
+    displayName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    adminRole?: AdminLifecycleRole;
+    salesStaffCodes?: string[];
+    permissions?: string[];
+    permissionAudit?: AdminPermissionAuditInput;
+    status?: AdminLifecycleStatus;
+    passwordHash?: string;
+    /** Authenticated actor; supplied by externally reachable lifecycle routes. */
+    actorAdminUserId?: number | null;
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -4338,12 +6610,18 @@ export async function updateAdminUser(id: number, input: {
     const nextRole = input.adminRole ?? existing.adminRole;
     const nextStatus = input.status ?? existing.status;
     if (input.actorAdminUserId === id) {
-      if (nextStatus !== "active") throw new Error("ADMIN_SELF_DISABLE_FORBIDDEN");
+      if (nextStatus !== "active")
+        throw new Error("ADMIN_SELF_DISABLE_FORBIDDEN");
       if (existing.adminRole === "super_admin" && nextRole !== "super_admin") {
         throw new Error("ADMIN_SELF_DEMOTE_FORBIDDEN");
       }
     }
-    assertSuperAdminContinuity(activeSuperAdmins.length, existing, nextRole, nextStatus);
+    assertSuperAdminContinuity(
+      activeSuperAdmins.length,
+      existing,
+      nextRole,
+      nextStatus
+    );
     const currentScopes = await getSalesScopesForUpdate(tx, id);
 
     const set: Record<string, unknown> = {};
@@ -4353,13 +6631,16 @@ export async function updateAdminUser(id: number, input: {
     if (input.adminRole !== undefined) set.adminRole = input.adminRole;
     if (input.status !== undefined) set.status = input.status;
     if (input.passwordHash !== undefined) set.passwordHash = input.passwordHash;
-    const mustRevokeSessions = input.passwordHash !== undefined
+    const mustRevokeSessions =
+      input.passwordHash !== undefined ||
       // Re-enabling is an access transition too: a token issued before a
       // disable/enable cycle must not become valid again.
-      || (input.status !== undefined && input.status !== existing.status)
-      || (input.adminRole !== undefined && input.adminRole !== existing.adminRole)
-      || input.permissions !== undefined;
-    if (mustRevokeSessions) set.sessionVersion = sql`${adminUsers.sessionVersion} + 1`;
+      (input.status !== undefined && input.status !== existing.status) ||
+      (input.adminRole !== undefined &&
+        input.adminRole !== existing.adminRole) ||
+      input.permissions !== undefined;
+    if (mustRevokeSessions)
+      set.sessionVersion = sql`${adminUsers.sessionVersion} + 1`;
     if (Object.keys(set).length > 0) {
       await tx.update(adminUsers).set(set).where(eq(adminUsers.id, id));
     }
@@ -4367,17 +6648,28 @@ export async function updateAdminUser(id: number, input: {
     const ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, {
       id,
       username: existing.username,
-      displayName: input.displayName !== undefined ? input.displayName : existing.displayName,
+      displayName:
+        input.displayName !== undefined
+          ? input.displayName
+          : existing.displayName,
       adminRole: nextRole,
       status: nextStatus,
     });
     let nextScopes: string[] = [];
     if (nextRole === "merchant_mgr") {
-      const requestedCodes = await normalizeSalesStaffCodes(tx, input.salesStaffCodes ?? currentScopes, {
-        activeOnly: nextStatus === "active",
-        strict: input.salesStaffCodes !== undefined,
-      });
-      nextScopes = Array.from(new Set([ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]));
+      const requestedCodes = await normalizeSalesStaffCodes(
+        tx,
+        input.salesStaffCodes ?? currentScopes,
+        {
+          activeOnly: nextStatus === "active",
+          strict: input.salesStaffCodes !== undefined,
+        }
+      );
+      nextScopes = Array.from(
+        new Set(
+          [ownSalesStaffCode, ...requestedCodes].filter(Boolean) as string[]
+        )
+      );
       if (nextScopes.length === 0) throw new Error("SALES_SCOPE_REQUIRED");
     }
     await replaceAdminUserSalesScopes(tx, id, nextScopes);
@@ -4389,9 +6681,10 @@ export async function updateAdminUser(id: number, input: {
         .where(eq(adminUserPermissions.adminUserId, id))
         .orderBy(asc(adminUserPermissions.id));
       const before = beforeRows.map(row => row.permission);
-      const nextPermissions = nextRole === "super_admin"
-        ? []
-        : normalizeAssignedAdminPermissions(input.permissions ?? before);
+      const nextPermissions =
+        nextRole === "super_admin"
+          ? []
+          : normalizeAssignedAdminPermissions(input.permissions ?? before);
       await replaceAdminUserPermissions(tx, id, nextPermissions);
       if (input.permissions !== undefined || nextRole !== existing.adminRole) {
         await insertAdminUserPermissionAudit(tx, {
@@ -4409,7 +6702,7 @@ export async function updateAdminUser(id: number, input: {
 export async function toggleAdminUserStatus(
   id: number,
   status: "active" | "disabled",
-  actorAdminUserId?: number | null,
+  actorAdminUserId?: number | null
 ) {
   return updateAdminUser(id, { status, actorAdminUserId });
 }
@@ -4419,7 +6712,10 @@ export async function toggleAdminUserStatus(
  * inactive unlinked staff record. This prevents an active “ghost” salesperson
  * and keeps merchant ownership data interpretable.
  */
-export async function deleteAdminUser(id: number, actorAdminUserId?: number | null) {
+export async function deleteAdminUser(
+  id: number,
+  actorAdminUserId?: number | null
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.transaction(async tx => {
@@ -4432,15 +6728,27 @@ export async function deleteAdminUser(id: number, actorAdminUserId?: number | nu
       .for("update");
     if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
     if (actorAdminUserId === id) throw new Error("ADMIN_SELF_REMOVE_FORBIDDEN");
-    assertSuperAdminContinuity(activeSuperAdmins.length, existing, existing.adminRole, existing.status, true);
+    assertSuperAdminContinuity(
+      activeSuperAdmins.length,
+      existing,
+      existing.adminRole,
+      existing.status,
+      true
+    );
 
     await tx
       .update(salesStaff)
       .set({ adminUserId: null, status: "inactive" })
       .where(eq(salesStaff.adminUserId, id));
-    await tx.delete(adminUserSalesScopes).where(eq(adminUserSalesScopes.adminUserId, id));
-    await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, id));
-    await tx.delete(passwordResetCodes).where(eq(passwordResetCodes.adminUserId, id));
+    await tx
+      .delete(adminUserSalesScopes)
+      .where(eq(adminUserSalesScopes.adminUserId, id));
+    await tx
+      .delete(adminUserPermissions)
+      .where(eq(adminUserPermissions.adminUserId, id));
+    await tx
+      .delete(passwordResetCodes)
+      .where(eq(passwordResetCodes.adminUserId, id));
     await tx.delete(adminUsers).where(eq(adminUsers.id, id));
     return { success: true as const };
   });
@@ -4481,12 +6789,31 @@ export interface ComplaintContextSnapshot {
   detail?: string | null;
   conversationId: number;
   createdAt: string;
-  reporter: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
-  reported: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
+  reporter: {
+    userId: number;
+    name: string;
+    phone?: string | null;
+    wechatId?: string | null;
+    companyName?: string | null;
+  };
+  reported: {
+    userId: number;
+    name: string;
+    phone?: string | null;
+    wechatId?: string | null;
+    companyName?: string | null;
+  };
   [key: string]: unknown;
 }
 
-type PortalMessageThreadType = "general" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "crm_apply" | "complaint";
+type PortalMessageThreadType =
+  | "general"
+  | "inquiry"
+  | "service"
+  | "onboarding"
+  | "zhuomuniao_cooperation"
+  | "crm_apply"
+  | "complaint";
 type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
 
 /**
@@ -4497,7 +6824,8 @@ export function resolvePortalMessageThreadType(input: {
   threadType?: PortalMessageThreadType | null;
   subject?: string | null;
 }): EffectiveMessageThreadType {
-  if (input.threadType && input.threadType !== "general") return input.threadType;
+  if (input.threadType && input.threadType !== "general")
+    return input.threadType;
   const subject = input.subject?.trim() ?? "";
   if (subject.includes("企业开通申请")) return "crm_apply";
   if (subject.includes("询价")) return "inquiry";
@@ -4525,7 +6853,15 @@ export async function createPortalMessage(input: {
   contactPhone?: string | null;
   contactEmail?: string | null;
   portalUserId?: string | null;
-  threadType?: "general" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "crm_apply" | "complaint" | null;
+  threadType?:
+    | "general"
+    | "inquiry"
+    | "service"
+    | "onboarding"
+    | "zhuomuniao_cooperation"
+    | "crm_apply"
+    | "complaint"
+    | null;
   companyProfile?: CompanyProfileSnapshot | null;
   complaintContext?: ComplaintContextSnapshot | null;
   content: string;
@@ -4544,9 +6880,9 @@ export async function createPortalMessage(input: {
       throw new Error("消息幂等键与原留言内容不一致");
     }
     if (
-      input.portalUserId
-      && existing.portalUserId
-      && existing.portalUserId !== input.portalUserId
+      input.portalUserId &&
+      existing.portalUserId &&
+      existing.portalUserId !== input.portalUserId
     ) {
       throw new Error("消息幂等键与原留言用户不一致");
     }
@@ -4576,7 +6912,8 @@ export async function createPortalMessage(input: {
   };
 
   const existingBeforeTransaction = await findExisting();
-  if (existingBeforeTransaction) return validateExisting(existingBeforeTransaction);
+  if (existingBeforeTransaction)
+    return validateExisting(existingBeforeTransaction);
 
   try {
     return await db.transaction(async tx => {
@@ -4630,18 +6967,27 @@ export async function createPortalMessage(input: {
           .limit(1);
         thread = rows[0];
       } else {
-        await tx.update(messageThreads).set({
-          status: "open",
-          adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
-          lastMessagePreview: preview,
-          lastMessageAt: new Date(),
-          ...(input.contactName ? { contactName: input.contactName } : {}),
-          ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
-          ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
-          ...(input.companyProfile ? { companyProfile: input.companyProfile } : {}),
-          ...(input.complaintContext ? { complaintContext: input.complaintContext } : {}),
-          ...(input.threadType ? { threadType: resolvePortalMessageThreadType(input) } : {}),
-        }).where(eq(messageThreads.id, thread.id));
+        await tx
+          .update(messageThreads)
+          .set({
+            status: "open",
+            adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
+            lastMessagePreview: preview,
+            lastMessageAt: new Date(),
+            ...(input.contactName ? { contactName: input.contactName } : {}),
+            ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+            ...(input.contactEmail ? { contactEmail: input.contactEmail } : {}),
+            ...(input.companyProfile
+              ? { companyProfile: input.companyProfile }
+              : {}),
+            ...(input.complaintContext
+              ? { complaintContext: input.complaintContext }
+              : {}),
+            ...(input.threadType
+              ? { threadType: resolvePortalMessageThreadType(input) }
+              : {}),
+          })
+          .where(eq(messageThreads.id, thread.id));
       }
       if (!thread) throw new Error("消息会话创建失败");
 
@@ -4652,8 +6998,12 @@ export async function createPortalMessage(input: {
         senderName: input.contactName ?? null,
         content: input.content,
       });
-      const messageIdResult = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
-      const messageIdRows = (messageIdResult as unknown as [Array<{ id: number }>, unknown])[0];
+      const messageIdResult = await tx.execute(
+        sql`SELECT LAST_INSERT_ID() AS id`
+      );
+      const messageIdRows = (
+        messageIdResult as unknown as [Array<{ id: number }>, unknown]
+      )[0];
       const messageId = Number(messageIdRows[0]?.id);
       return {
         threadNo: thread.threadNo,
@@ -4668,10 +7018,11 @@ export async function createPortalMessage(input: {
       code?: string;
       cause?: { errno?: number; code?: string };
     };
-    const duplicate = mysqlError.errno === 1062
-      || mysqlError.code === "ER_DUP_ENTRY"
-      || mysqlError.cause?.errno === 1062
-      || mysqlError.cause?.code === "ER_DUP_ENTRY";
+    const duplicate =
+      mysqlError.errno === 1062 ||
+      mysqlError.code === "ER_DUP_ENTRY" ||
+      mysqlError.cause?.errno === 1062 ||
+      mysqlError.cause?.code === "ER_DUP_ENTRY";
     if (!duplicate || !input.clientMessageId) throw error;
 
     const existingAfterConflict = await findExisting();
@@ -4700,93 +7051,109 @@ export async function createPortalOnboardingLead(input: {
   if (!db) throw new Error("Database not available");
   const portalUserId = normalizePortalUserId(input.portalUserId);
   if (!portalUserId) throw new Error("开通消息缺少有效的前台用户 ID");
-  if (!input.clientMessageId.startsWith("onboarding-")) throw new Error("开通消息幂等键前缀不正确");
-  const crmPortalUserId = normalizePortalUserId(input.crmPortalUserId) ?? portalUserId;
+  if (!input.clientMessageId.startsWith("onboarding-"))
+    throw new Error("开通消息幂等键前缀不正确");
+  const crmPortalUserId =
+    normalizePortalUserId(input.crmPortalUserId) ?? portalUserId;
   const recentThreshold = new Date(Date.now() - 24 * 60 * 60 * 1_000);
 
   return db.transaction(async tx => {
     // 写入同一 guard 行会取得并持有行锁直至本事务提交/回滚；连接归还连接池后不会残留锁。
-    await tx.insert(onboardingLeadGuards).values({ portalUserId })
+    await tx
+      .insert(onboardingLeadGuards)
+      .values({ portalUserId })
       .onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
     const guardRows = await tx
-      .select({ lastOnboardingLeadAt: onboardingLeadGuards.lastOnboardingLeadAt })
+      .select({
+        lastOnboardingLeadAt: onboardingLeadGuards.lastOnboardingLeadAt,
+      })
       .from(onboardingLeadGuards)
       .where(eq(onboardingLeadGuards.portalUserId, portalUserId))
       .limit(1)
       .for("update");
     const lastOnboardingLeadAt = guardRows[0]?.lastOnboardingLeadAt;
 
-      const linkedMerchants = await tx
-        .select({ id: merchants.id, crmStatus: merchants.crmStatus })
-        .from(merchants)
-        .where(eq(merchants.crmOwnerPortalUserId, crmPortalUserId))
-        .for("update");
-      if (linkedMerchants.some(row => row.crmStatus === "enabled")) {
-        return {
-          status: "already_enabled" as const,
-          threadNo: null,
-          threadId: null,
-          messageId: null,
-        };
-      }
+    const linkedMerchants = await tx
+      .select({ id: merchants.id, crmStatus: merchants.crmStatus })
+      .from(merchants)
+      .where(eq(merchants.crmOwnerPortalUserId, crmPortalUserId))
+      .for("update");
+    if (linkedMerchants.some(row => row.crmStatus === "enabled")) {
+      return {
+        status: "already_enabled" as const,
+        threadNo: null,
+        threadId: null,
+        messageId: null,
+      };
+    }
 
-      const existingThreads = await tx
-        .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
-        .from(messageThreads)
-        .where(and(
+    const existingThreads = await tx
+      .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+      .from(messageThreads)
+      .where(
+        and(
           eq(messageThreads.portalUserId, portalUserId),
-          eq(messageThreads.threadType, "onboarding"),
-        ))
-        .orderBy(desc(messageThreads.lastMessageAt))
-        .limit(1)
-        .for("update");
-      let thread = existingThreads[0];
+          eq(messageThreads.threadType, "onboarding")
+        )
+      )
+      .orderBy(desc(messageThreads.lastMessageAt))
+      .limit(1)
+      .for("update");
+    let thread = existingThreads[0];
 
-      if (thread && lastOnboardingLeadAt && lastOnboardingLeadAt >= recentThreshold) {
-        const latestLeadMessages = await tx
-          .select({ id: messages.id })
-          .from(messages)
-          .where(and(
+    if (
+      thread &&
+      lastOnboardingLeadAt &&
+      lastOnboardingLeadAt >= recentThreshold
+    ) {
+      const latestLeadMessages = await tx
+        .select({ id: messages.id })
+        .from(messages)
+        .where(
+          and(
             eq(messages.threadId, thread.id),
             eq(messages.senderType, "portal"),
-            like(messages.clientMessageId, "onboarding-%"),
-          ))
-          .orderBy(desc(messages.createdAt))
-          .limit(1);
-        if (latestLeadMessages[0]) {
-          return {
-            status: "deduplicated" as const,
-            threadNo: thread.threadNo,
-            threadId: thread.id,
-            messageId: latestLeadMessages[0].id,
-          };
-        }
+            like(messages.clientMessageId, "onboarding-%")
+          )
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
+      if (latestLeadMessages[0]) {
+        return {
+          status: "deduplicated" as const,
+          threadNo: thread.threadNo,
+          threadId: thread.id,
+          messageId: latestLeadMessages[0].id,
+        };
       }
+    }
 
-      const preview = input.content.slice(0, 200);
-      if (!thread) {
-        const threadNo = genThreadNo();
-        await tx.insert(messageThreads).values({
-          threadNo,
-          subject: `ERP开通意向 - ${input.contactName}`,
-          contactName: input.contactName,
-          contactPhone: input.contactPhone ?? null,
-          contactEmail: input.contactEmail ?? null,
-          portalUserId,
-          threadType: "onboarding",
-          companyProfile: input.companyProfile ?? null,
-          adminUnreadCount: 1,
-          lastMessagePreview: preview,
-          lastMessageAt: new Date(),
-        });
-        const createdThreads = await tx
-          .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
-          .from(messageThreads)
-          .where(eq(messageThreads.threadNo, threadNo))
-          .limit(1);
-        thread = createdThreads[0];
-      } else {
-        await tx.update(messageThreads).set({
+    const preview = input.content.slice(0, 200);
+    if (!thread) {
+      const threadNo = genThreadNo();
+      await tx.insert(messageThreads).values({
+        threadNo,
+        subject: `ERP开通意向 - ${input.contactName}`,
+        contactName: input.contactName,
+        contactPhone: input.contactPhone ?? null,
+        contactEmail: input.contactEmail ?? null,
+        portalUserId,
+        threadType: "onboarding",
+        companyProfile: input.companyProfile ?? null,
+        adminUnreadCount: 1,
+        lastMessagePreview: preview,
+        lastMessageAt: new Date(),
+      });
+      const createdThreads = await tx
+        .select({ id: messageThreads.id, threadNo: messageThreads.threadNo })
+        .from(messageThreads)
+        .where(eq(messageThreads.threadNo, threadNo))
+        .limit(1);
+      thread = createdThreads[0];
+    } else {
+      await tx
+        .update(messageThreads)
+        .set({
           status: "open",
           adminUnreadCount: sql`${messageThreads.adminUnreadCount} + 1`,
           lastMessagePreview: preview,
@@ -4795,29 +7162,37 @@ export async function createPortalOnboardingLead(input: {
           contactPhone: input.contactPhone ?? null,
           contactEmail: input.contactEmail ?? null,
           companyProfile: input.companyProfile ?? null,
-        }).where(eq(messageThreads.id, thread.id));
-      }
-      if (!thread) throw new Error("开通消息会话创建失败");
+        })
+        .where(eq(messageThreads.id, thread.id));
+    }
+    if (!thread) throw new Error("开通消息会话创建失败");
 
-      await tx.insert(messages).values({
-        threadId: thread.id,
-        clientMessageId: input.clientMessageId,
-        senderType: "portal",
-        senderName: input.contactName,
-        content: input.content,
-      });
-      await tx.update(onboardingLeadGuards).set({
+    await tx.insert(messages).values({
+      threadId: thread.id,
+      clientMessageId: input.clientMessageId,
+      senderType: "portal",
+      senderName: input.contactName,
+      content: input.content,
+    });
+    await tx
+      .update(onboardingLeadGuards)
+      .set({
         lastOnboardingLeadAt: new Date(),
         updatedAt: new Date(),
-      }).where(eq(onboardingLeadGuards.portalUserId, portalUserId));
-      const messageIdResult = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
-      const messageIdRows = (messageIdResult as unknown as [Array<{ id: number }>, unknown])[0];
-      return {
-        status: "created" as const,
-        threadNo: thread.threadNo,
-        threadId: thread.id,
-        messageId: Number(messageIdRows[0]?.id),
-      };
+      })
+      .where(eq(onboardingLeadGuards.portalUserId, portalUserId));
+    const messageIdResult = await tx.execute(
+      sql`SELECT LAST_INSERT_ID() AS id`
+    );
+    const messageIdRows = (
+      messageIdResult as unknown as [Array<{ id: number }>, unknown]
+    )[0];
+    return {
+      status: "created" as const,
+      threadNo: thread.threadNo,
+      threadId: thread.id,
+      messageId: Number(messageIdRows[0]?.id),
+    };
   });
 }
 
@@ -4827,8 +7202,20 @@ export async function createPortalComplaint(input: {
   reason: "fraud" | "harassment" | "false_inventory" | "illegal" | "other";
   detail?: string | null;
   conversationId: number;
-  reporter: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
-  reported: { userId: number; name: string; phone?: string | null; wechatId?: string | null; companyName?: string | null };
+  reporter: {
+    userId: number;
+    name: string;
+    phone?: string | null;
+    wechatId?: string | null;
+    companyName?: string | null;
+  };
+  reported: {
+    userId: number;
+    name: string;
+    phone?: string | null;
+    wechatId?: string | null;
+    companyName?: string | null;
+  };
 }) {
   const reasonLabel = {
     fraud: "涉嫌欺诈",
@@ -4869,14 +7256,22 @@ export async function createPortalComplaint(input: {
 export async function getPortalThreadMessages(threadNo: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const rows = await db.select().from(messageThreads)
-    .where(eq(messageThreads.threadNo, threadNo)).limit(1);
+  const rows = await db
+    .select()
+    .from(messageThreads)
+    .where(eq(messageThreads.threadNo, threadNo))
+    .limit(1);
   const thread = rows[0];
   if (!thread) return null;
-  const list = await db.select().from(messages)
-    .where(eq(messages.threadId, thread.id)).orderBy(messages.createdAt);
+  const list = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.threadId, thread.id))
+    .orderBy(messages.createdAt);
   if (thread.portalUnreadCount > 0) {
-    await db.update(messageThreads).set({ portalUnreadCount: 0 })
+    await db
+      .update(messageThreads)
+      .set({ portalUnreadCount: 0 })
       .where(eq(messageThreads.id, thread.id));
   }
   return {
@@ -4886,7 +7281,8 @@ export async function getPortalThreadMessages(threadNo: string) {
     messages: list.map(m => ({
       id: m.id,
       senderType: m.senderType,
-      senderName: m.senderType === "admin" ? (m.senderName ?? "平台客服") : m.senderName,
+      senderName:
+        m.senderType === "admin" ? (m.senderName ?? "平台客服") : m.senderName,
       content: m.content,
       createdAt: m.createdAt,
     })),
@@ -4898,7 +7294,12 @@ export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
   status?: "open" | "closed";
-  threadType?: "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "complaint";
+  threadType?:
+    | "inquiry"
+    | "service"
+    | "onboarding"
+    | "zhuomuniao_cooperation"
+    | "complaint";
   keyword?: string;
 }) {
   const db = await getDb();
@@ -4908,25 +7309,32 @@ export async function getMessageThreads(input: {
   // 企业开通申请直接落商户管理，不在消息中心展示；旧 general 记录按主题归类。
   conds.push(sql`${effectiveThreadType} <> 'crm_apply'`);
   if (input.status) conds.push(eq(messageThreads.status, input.status));
-  if (input.threadType) conds.push(sql`${effectiveThreadType} = ${input.threadType}`);
+  if (input.threadType)
+    conds.push(sql`${effectiveThreadType} = ${input.threadType}`);
   if (input.keyword) {
     const kw = `%${input.keyword}%`;
-    conds.push(or(
-      like(messageThreads.subject, kw),
-      like(messageThreads.contactName, kw),
-      like(messageThreads.contactPhone, kw),
-      like(messageThreads.contactEmail, kw),
-      like(messageThreads.threadNo, kw),
-    ));
+    conds.push(
+      or(
+        like(messageThreads.subject, kw),
+        like(messageThreads.contactName, kw),
+        like(messageThreads.contactPhone, kw),
+        like(messageThreads.contactEmail, kw),
+        like(messageThreads.threadNo, kw)
+      )
+    );
   }
   const where = conds.length ? and(...conds) : undefined;
-  const items = await db.select().from(messageThreads)
+  const items = await db
+    .select()
+    .from(messageThreads)
     .where(where)
     .orderBy(desc(messageThreads.lastMessageAt))
     .limit(input.pageSize)
     .offset((input.page - 1) * input.pageSize);
-  const totalRows = await db.select({ count: sql<number>`count(*)` })
-    .from(messageThreads).where(where);
+  const totalRows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messageThreads)
+    .where(where);
   return {
     items: items.map(row => ({
       ...normalizeMessageThreadJson(row),
@@ -4940,17 +7348,28 @@ export async function getMessageThreads(input: {
 export async function getMessageThreadDetail(threadId: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(messageThreads)
-    .where(eq(messageThreads.id, threadId)).limit(1);
+  const rows = await db
+    .select()
+    .from(messageThreads)
+    .where(eq(messageThreads.id, threadId))
+    .limit(1);
   const normalizedThread = rows[0] ? normalizeMessageThreadJson(rows[0]) : null;
   const thread = normalizedThread
-    ? { ...normalizedThread, threadType: resolvePortalMessageThreadType(normalizedThread) }
+    ? {
+        ...normalizedThread,
+        threadType: resolvePortalMessageThreadType(normalizedThread),
+      }
     : null;
   if (!thread) return null;
-  const list = await db.select().from(messages)
-    .where(eq(messages.threadId, threadId)).orderBy(messages.createdAt);
+  const list = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.threadId, threadId))
+    .orderBy(messages.createdAt);
   if (thread.adminUnreadCount > 0) {
-    await db.update(messageThreads).set({ adminUnreadCount: 0 })
+    await db
+      .update(messageThreads)
+      .set({ adminUnreadCount: 0 })
       .where(eq(messageThreads.id, threadId));
   }
 
@@ -4966,8 +7385,11 @@ export async function replyMessageThread(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const rows = await db.select().from(messageThreads)
-    .where(eq(messageThreads.id, input.threadId)).limit(1);
+  const rows = await db
+    .select()
+    .from(messageThreads)
+    .where(eq(messageThreads.id, input.threadId))
+    .limit(1);
   if (!rows[0]) throw new Error("会话不存在");
   if (resolvePortalMessageThreadType(rows[0]) === "complaint") {
     throw new Error("举报投诉不支持直接回复，请处理后关闭");
@@ -4979,21 +7401,30 @@ export async function replyMessageThread(input: {
     senderName: input.adminName,
     content: input.content,
   });
-  await db.update(messageThreads).set({
-    status: "open",
-    portalUnreadCount: sql`${messageThreads.portalUnreadCount} + 1`,
-    adminUnreadCount: 0,
-    lastMessagePreview: input.content.slice(0, 200),
-    lastMessageAt: new Date(),
-  }).where(eq(messageThreads.id, input.threadId));
+  await db
+    .update(messageThreads)
+    .set({
+      status: "open",
+      portalUnreadCount: sql`${messageThreads.portalUnreadCount} + 1`,
+      adminUnreadCount: 0,
+      lastMessagePreview: input.content.slice(0, 200),
+      lastMessageAt: new Date(),
+    })
+    .where(eq(messageThreads.id, input.threadId));
   return { success: true };
 }
 
 /** 后台：关闭/重开会话 */
-export async function setMessageThreadStatus(threadId: number, status: "open" | "closed") {
+export async function setMessageThreadStatus(
+  threadId: number,
+  status: "open" | "closed"
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(messageThreads).set({ status }).where(eq(messageThreads.id, threadId));
+  await db
+    .update(messageThreads)
+    .set({ status })
+    .where(eq(messageThreads.id, threadId));
   return { success: true };
 }
 
@@ -5002,9 +7433,17 @@ export async function getAdminUnreadTotal() {
   const db = await getDb();
   if (!db) return 0;
   const effectiveThreadType = effectiveMessageThreadTypeSql();
-  const rows = await db.select({ total: sql<number>`COALESCE(SUM(${messageThreads.adminUnreadCount}), 0)` })
+  const rows = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${messageThreads.adminUnreadCount}), 0)`,
+    })
     .from(messageThreads)
-    .where(and(eq(messageThreads.status, "open"), sql`${effectiveThreadType} <> 'crm_apply'`));
+    .where(
+      and(
+        eq(messageThreads.status, "open"),
+        sql`${effectiveThreadType} <> 'crm_apply'`
+      )
+    );
   return Number(rows[0]?.total ?? 0);
 }
 
@@ -5012,11 +7451,15 @@ export async function getAdminUnreadTotal() {
 export async function getPortalThreadUnread(threadNo: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const rows = await db.select({
-    portalUnreadCount: messageThreads.portalUnreadCount,
-    status: messageThreads.status,
-    lastMessageAt: messageThreads.lastMessageAt,
-  }).from(messageThreads).where(eq(messageThreads.threadNo, threadNo)).limit(1);
+  const rows = await db
+    .select({
+      portalUnreadCount: messageThreads.portalUnreadCount,
+      status: messageThreads.status,
+      lastMessageAt: messageThreads.lastMessageAt,
+    })
+    .from(messageThreads)
+    .where(eq(messageThreads.threadNo, threadNo))
+    .limit(1);
   if (!rows[0]) return null;
   return {
     threadNo,
@@ -5031,9 +7474,12 @@ export async function getPortalThreadUnread(threadNo: string) {
 // 可直接以 `dianzi51.表名` 跨库访问。开发环境（Manus TiDB）无该库，查询失败时
 // 返回 available:false 供前端展示"生产环境可用"提示。
 
-const PLATFORM_DB = process.env.PLATFORM_DB_NAME || "dianzi51";
+const PLATFORM_DB = platformDatabaseIdentifier();
 
-export type AdminModuleNotificationCounts = Record<AdminNotificationModule, number>;
+export type AdminModuleNotificationCounts = Record<
+  AdminNotificationModule,
+  number
+>;
 
 type AdminModuleNotificationStat = {
   available: boolean;
@@ -5045,27 +7491,43 @@ function emptyAdminModuleNotificationCounts(): AdminModuleNotificationCounts {
   return { merchants: 0, orders: 0, reviews: 0, portalUsers: 0 };
 }
 
-function notificationSalesScopeCondition(alias: "merchant" | "order", salesStaffCodes?: string[]) {
+function notificationSalesScopeCondition(
+  alias: "merchant" | "order",
+  salesStaffCodes?: string[]
+) {
   if (salesStaffCodes === undefined) return sql`1 = 1`;
   if (salesStaffCodes.length === 0) return sql`1 = 0`;
   return alias === "merchant"
     ? inArray(merchants.salesOwnerCode, salesStaffCodes)
-    : sql`c.salesOwnerCode IN (${sql.join(salesStaffCodes.map(code => sql`${code}`), sql`, `)})`;
+    : sql`c.salesOwnerCode IN (${sql.join(
+        salesStaffCodes.map(code => sql`${code}`),
+        sql`, `
+      )})`;
 }
 
 async function getAdminModuleNotificationStat(
   module: AdminNotificationModule,
   lastSeenId: number | null,
-  salesStaffCodes?: string[],
+  salesStaffCodes?: string[]
 ): Promise<AdminModuleNotificationStat> {
   const db = await getDb();
   if (!db) return { available: false, maxId: lastSeenId ?? 0, unread: 0 };
 
   try {
     if (module === "merchants") {
-      const scope = notificationSalesScopeCondition("merchant", salesStaffCodes);
-      const [maxRow] = await db.select({ maxId: sql<number>`COALESCE(MAX(${merchants.id}), 0)` }).from(merchants);
-      if (lastSeenId === null) return { available: true, maxId: Number(maxRow?.maxId ?? 0), unread: 0 };
+      const scope = notificationSalesScopeCondition(
+        "merchant",
+        salesStaffCodes
+      );
+      const [maxRow] = await db
+        .select({ maxId: sql<number>`COALESCE(MAX(${merchants.id}), 0)` })
+        .from(merchants);
+      if (lastSeenId === null)
+        return {
+          available: true,
+          maxId: Number(maxRow?.maxId ?? 0),
+          unread: 0,
+        };
       const [countRow] = await db
         .select({ unread: sql<number>`COUNT(*)` })
         .from(merchants)
@@ -5090,11 +7552,16 @@ async function getAdminModuleNotificationStat(
           LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c ON c.userId = o.buyerId
          WHERE o.id > ${lastSeenId} AND ${scope}
       `)) as unknown as [{ unread: number }[], unknown];
-      return { available: true, maxId, unread: Number(countResult[0]?.[0]?.unread ?? 0) };
+      return {
+        available: true,
+        maxId,
+        unread: Number(countResult[0]?.[0]?.unread ?? 0),
+      };
     }
 
     const tableName = module === "reviews" ? "public_company_reviews" : "users";
-    const maxWhere = module === "portalUsers" ? sql`WHERE role = 'user'` : sql``;
+    const maxWhere =
+      module === "portalUsers" ? sql`WHERE role = 'user'` : sql``;
     const maxResult = (await db.execute(sql`
       SELECT COALESCE(MAX(id), 0) AS maxId
         FROM ${sql.raw(PLATFORM_DB)}.${sql.raw(tableName)}
@@ -5102,17 +7569,25 @@ async function getAdminModuleNotificationStat(
     `)) as unknown as [{ maxId: number }[], unknown];
     const maxId = Number(maxResult[0]?.[0]?.maxId ?? 0);
     if (lastSeenId === null) return { available: true, maxId, unread: 0 };
-    const unreadWhere = module === "portalUsers"
-      ? sql`role = 'user' AND id > ${lastSeenId}`
-      : sql`id > ${lastSeenId}`;
+    const unreadWhere =
+      module === "portalUsers"
+        ? sql`role = 'user' AND id > ${lastSeenId}`
+        : sql`id > ${lastSeenId}`;
     const countResult = (await db.execute(sql`
       SELECT COUNT(*) AS unread
         FROM ${sql.raw(PLATFORM_DB)}.${sql.raw(tableName)}
        WHERE ${unreadWhere}
     `)) as unknown as [{ unread: number }[], unknown];
-    return { available: true, maxId, unread: Number(countResult[0]?.[0]?.unread ?? 0) };
+    return {
+      available: true,
+      maxId,
+      unread: Number(countResult[0]?.[0]?.unread ?? 0),
+    };
   } catch (error) {
-    console.warn(`[Database] 查询后台模块新增提醒失败 (${module}):`, (error as Error).message);
+    console.warn(
+      `[Database] 查询后台模块新增提醒失败 (${module}):`,
+      (error as Error).message
+    );
     return { available: false, maxId: lastSeenId ?? 0, unread: 0 };
   }
 }
@@ -5136,16 +7611,26 @@ export async function getAdminModuleNotificationSummary(input: {
       lastSeenId: adminModuleNotificationCursors.lastSeenId,
     })
     .from(adminModuleNotificationCursors)
-    .where(and(
-      eq(adminModuleNotificationCursors.viewerKey, input.viewerKey),
-      inArray(adminModuleNotificationCursors.module, input.modules),
-    ));
-  const cursors = new Map(rows.map(row => [row.module, Number(row.lastSeenId)]));
+    .where(
+      and(
+        eq(adminModuleNotificationCursors.viewerKey, input.viewerKey),
+        inArray(adminModuleNotificationCursors.module, input.modules)
+      )
+    );
+  const cursors = new Map(
+    rows.map(row => [row.module, Number(row.lastSeenId)])
+  );
 
-  const stats = await Promise.all(input.modules.map(async module => ({
-    module,
-    stat: await getAdminModuleNotificationStat(module, cursors.get(module) ?? null, input.salesStaffCodes),
-  })));
+  const stats = await Promise.all(
+    input.modules.map(async module => ({
+      module,
+      stat: await getAdminModuleNotificationStat(
+        module,
+        cursors.get(module) ?? null,
+        input.salesStaffCodes
+      ),
+    }))
+  );
 
   for (const { module, stat } of stats) {
     if (!stat.available) continue;
@@ -5173,8 +7658,13 @@ export async function markAdminModuleNotificationsSeen(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const stat = await getAdminModuleNotificationStat(input.module, null, input.salesStaffCodes);
-  if (!stat.available) return { success: false as const, module: input.module, lastSeenId: 0 };
+  const stat = await getAdminModuleNotificationStat(
+    input.module,
+    null,
+    input.salesStaffCodes
+  );
+  if (!stat.available)
+    return { success: false as const, module: input.module, lastSeenId: 0 };
 
   await db.execute(sql`
     INSERT INTO ${adminModuleNotificationCursors}
@@ -5184,7 +7674,11 @@ export async function markAdminModuleNotificationsSeen(input: {
       \`lastSeenId\` = GREATEST(\`lastSeenId\`, VALUES(\`lastSeenId\`)),
       \`updatedAt\` = CURRENT_TIMESTAMP
   `);
-  return { success: true as const, module: input.module, lastSeenId: stat.maxId };
+  return {
+    success: true as const,
+    module: input.module,
+    lastSeenId: stat.maxId,
+  };
 }
 
 /**
@@ -5193,17 +7687,19 @@ export async function markAdminModuleNotificationsSeen(input: {
  */
 function normalizePlatformCreditCodes(creditCodes?: string[]) {
   if (creditCodes === undefined) return undefined;
-  return Array.from(new Set(
-    creditCodes
-      .map(code => code.replace(/\s+/g, "").toUpperCase())
-      .filter(Boolean),
-  ));
+  return Array.from(
+    new Set(
+      creditCodes
+        .map(code => code.replace(/\s+/g, "").toUpperCase())
+        .filter(Boolean)
+    )
+  );
 }
 
 function platformCreditScopeCondition(creditCodes: string[]) {
   return sql`UPPER(REPLACE(c.creditCode, ' ', '')) IN (${sql.join(
     creditCodes.map(code => sql`${code}`),
-    sql`, `,
+    sql`, `
   )})`;
 }
 
@@ -5238,36 +7734,67 @@ export type PlatformInventoryPublisher = {
 };
 
 /** 后台：查询商户在前台发布的物料（JOIN companies 获取企业名/信用代码）。 */
-export async function listMerchantInventories(params: {
-  creditCode?: string;
-  publisherUserId?: number;
-  keyword?: string;
-  status?: "published" | "draft" | "offshelf" | "all";
-  page?: number;
-  pageSize?: number;
-}, allowedCreditCodes?: string[]) {
+export async function listMerchantInventories(
+  params: {
+    creditCode?: string;
+    publisherUserId?: number;
+    keyword?: string;
+    status?: "published" | "draft" | "offshelf" | "all";
+    page?: number;
+    pageSize?: number;
+  },
+  allowedCreditCodes?: string[]
+) {
   const db = await getDb();
-  if (!db) return { available: false, items: [] as PlatformInventoryRow[], total: 0, publishers: [] as PlatformInventoryPublisher[] };
-  const { creditCode, publisherUserId, keyword, status = "published", page = 1, pageSize = 20 } = params;
-  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
-  if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
-    return { available: true, items: [] as PlatformInventoryRow[], total: 0, publishers: [] as PlatformInventoryPublisher[] };
+  if (!db)
+    return {
+      available: false,
+      items: [] as PlatformInventoryRow[],
+      total: 0,
+      publishers: [] as PlatformInventoryPublisher[],
+    };
+  const {
+    creditCode,
+    publisherUserId,
+    keyword,
+    status = "published",
+    page = 1,
+    pageSize = 20,
+  } = params;
+  const normalizedAllowedCreditCodes =
+    normalizePlatformCreditCodes(allowedCreditCodes);
+  if (
+    normalizedAllowedCreditCodes !== undefined &&
+    normalizedAllowedCreditCodes.length === 0
+  ) {
+    return {
+      available: true,
+      items: [] as PlatformInventoryRow[],
+      total: 0,
+      publishers: [] as PlatformInventoryPublisher[],
+    };
   }
   const offset = (page - 1) * pageSize;
   const conds = [sql`1=1`];
   if (status !== "all") conds.push(sql`i.status = ${status}`);
   if (creditCode) conds.push(sql`c.creditCode = ${creditCode}`);
   if (publisherUserId) conds.push(sql`i.userId = ${publisherUserId}`);
-  if (normalizedAllowedCreditCodes) conds.push(platformCreditScopeCondition(normalizedAllowedCreditCodes));
+  if (normalizedAllowedCreditCodes)
+    conds.push(platformCreditScopeCondition(normalizedAllowedCreditCodes));
   if (keyword) {
     const kw = `%${keyword}%`;
-    conds.push(sql`(i.partNumber LIKE ${kw} OR i.brand LIKE ${kw} OR c.companyName LIKE ${kw})`);
+    conds.push(
+      sql`(i.partNumber LIKE ${kw} OR i.brand LIKE ${kw} OR c.companyName LIKE ${kw})`
+    );
   }
   const whereSql = sql.join(conds, sql` AND `);
   // 发布者选项只受当前企业信用代码和销售范围约束，不受发布者、状态或关键词筛选影响。
   const publisherConds = [sql`1=1`];
   if (creditCode) publisherConds.push(sql`c.creditCode = ${creditCode}`);
-  if (normalizedAllowedCreditCodes) publisherConds.push(platformCreditScopeCondition(normalizedAllowedCreditCodes));
+  if (normalizedAllowedCreditCodes)
+    publisherConds.push(
+      platformCreditScopeCondition(normalizedAllowedCreditCodes)
+    );
   const publisherWhereSql = sql.join(publisherConds, sql` AND `);
   try {
     const publisherRows = (await db.execute(sql`
@@ -5288,7 +7815,9 @@ export async function listMerchantInventories(params: {
         OR (i.enterpriseId IS NULL AND c.userId = i.userId)
       WHERE ${whereSql}
     `)) as unknown as [{ cnt: number }[], unknown];
-    const total = Number((countRows[0]?.[0] as { cnt?: number } | undefined)?.cnt ?? 0);
+    const total = Number(
+      (countRows[0]?.[0] as { cnt?: number } | undefined)?.cnt ?? 0
+    );
     const rows = (await db.execute(sql`
       SELECT i.id, i.userId, i.partNumber, i.brand, i.category, i.pkg,
              i.qtyOnSale, i.priceEx, i.priceIncl, i.status, i.publishedAt, i.createdAt,
@@ -5316,8 +7845,16 @@ export async function listMerchantInventories(params: {
     }));
     return { available: true, items, total, publishers };
   } catch (error) {
-    console.warn("[Database] 跨库查询前台物料失败（开发环境无 dianzi51 库属正常）:", (error as Error).message);
-    return { available: false, items: [] as PlatformInventoryRow[], total: 0, publishers: [] as PlatformInventoryPublisher[] };
+    console.warn(
+      "[Database] 跨库查询前台物料失败（开发环境无 dianzi51 库属正常）:",
+      (error as Error).message
+    );
+    return {
+      available: false,
+      items: [] as PlatformInventoryRow[],
+      total: 0,
+      publishers: [] as PlatformInventoryPublisher[],
+    };
   }
 }
 
@@ -5329,21 +7866,34 @@ export async function bulkOffshelfPlatformInventories(
   ids: number[],
   reason: string,
   allowedCreditCodes?: string[],
-  actor?: MaterialAuditActor,
+  actor?: MaterialAuditActor
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  if (ids.length < 1 || ids.length > 50 || new Set(ids).size !== ids.length
-    || ids.some(id => !Number.isSafeInteger(id) || id <= 0)) {
+  if (
+    ids.length < 1 ||
+    ids.length > 50 ||
+    new Set(ids).size !== ids.length ||
+    ids.some(id => !Number.isSafeInteger(id) || id <= 0)
+  ) {
     throw new Error("物料 ID 列表无效");
   }
   const normalizedReason = reason.trim();
-  if (!normalizedReason || normalizedReason.length > 255) throw new Error("下架原因无效");
-  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
-  if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
+  if (!normalizedReason || normalizedReason.length > 255)
+    throw new Error("下架原因无效");
+  const normalizedAllowedCreditCodes =
+    normalizePlatformCreditCodes(allowedCreditCodes);
+  if (
+    normalizedAllowedCreditCodes !== undefined &&
+    normalizedAllowedCreditCodes.length === 0
+  ) {
     return {
       success: false as const,
-      results: ids.map(id => ({ id, success: false as const, error: "物料不存在或不在您负责的范围内" })),
+      results: ids.map(id => ({
+        id,
+        success: false as const,
+        error: "物料不存在或不在您负责的范围内",
+      })),
     };
   }
   try {
@@ -5357,23 +7907,37 @@ export async function bulkOffshelfPlatformInventories(
         LEFT JOIN ${sql.raw(PLATFORM_DB)}.companies c
           ON c.enterpriseId = i.enterpriseId
           OR (i.enterpriseId IS NULL AND c.userId = i.userId)
-        WHERE i.id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})${creditScopeSql}
+        WHERE i.id IN (${sql.join(
+          ids.map(id => sql`${id}`),
+          sql`, `
+        )})${creditScopeSql}
         ORDER BY i.id ASC
         FOR UPDATE
-      `)) as unknown as [[{
-        id: number;
-        userId: number;
-        status: "draft" | "published" | "offshelf";
-        creditCode: string | null;
-        companyName: string | null;
-      }], unknown];
+      `)) as unknown as [
+        [
+          {
+            id: number;
+            userId: number;
+            status: "draft" | "published" | "offshelf";
+            creditCode: string | null;
+            companyName: string | null;
+          },
+        ],
+        unknown,
+      ];
       const scopedRows = new Map<number, (typeof lockedRows)[0][number]>();
-      for (const row of lockedRows[0] ?? []) scopedRows.set(Number(row.id), row);
-      const results: Array<{ id: number; success: boolean; error?: string }> = [];
+      for (const row of lockedRows[0] ?? [])
+        scopedRows.set(Number(row.id), row);
+      const results: Array<{ id: number; success: boolean; error?: string }> =
+        [];
       for (const id of ids) {
         const target = scopedRows.get(id);
         if (!target) {
-          results.push({ id, success: false, error: "物料不存在或不在您负责的范围内" });
+          results.push({
+            id,
+            success: false,
+            error: "物料不存在或不在您负责的范围内",
+          });
           continue;
         }
         if (target.status !== "published") {
@@ -5426,19 +7990,31 @@ export async function offshelfPlatformInventory(
   id: number,
   reason: string,
   allowedCreditCodes?: string[],
-  actor?: MaterialAuditActor,
+  actor?: MaterialAuditActor
 ) {
-  const result = await bulkOffshelfPlatformInventories([id], reason, allowedCreditCodes, actor);
+  const result = await bulkOffshelfPlatformInventories(
+    [id],
+    reason,
+    allowedCreditCodes,
+    actor
+  );
   const item = result.results[0];
   if (!item?.success) throw new Error(item?.error || "物料下架失败");
   return { success: true as const };
 }
 
-function assertPublisherBulkScope(creditCode: string, allowedCreditCodes?: string[]) {
+function assertPublisherBulkScope(
+  creditCode: string,
+  allowedCreditCodes?: string[]
+) {
   const normalizedCreditCode = normalizeCreditCode(creditCode);
   if (!normalizedCreditCode) throw new Error("商户统一社会信用代码无效");
-  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
-  if (normalizedAllowedCreditCodes !== undefined && !normalizedAllowedCreditCodes.includes(normalizedCreditCode)) {
+  const normalizedAllowedCreditCodes =
+    normalizePlatformCreditCodes(allowedCreditCodes);
+  if (
+    normalizedAllowedCreditCodes !== undefined &&
+    !normalizedAllowedCreditCodes.includes(normalizedCreditCode)
+  ) {
     throw new Error("商户不存在或不在您负责的范围内");
   }
   return normalizedCreditCode;
@@ -5452,7 +8028,10 @@ export async function getPublisherPublishedInventoryCount(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const normalizedCreditCode = assertPublisherBulkScope(input.creditCode, input.allowedCreditCodes);
+  const normalizedCreditCode = assertPublisherBulkScope(
+    input.creditCode,
+    input.allowedCreditCodes
+  );
   try {
     const rows = (await db.execute(sql`
       SELECT COUNT(*) AS publishedCount, MAX(u.name) AS publisherName
@@ -5464,7 +8043,10 @@ export async function getPublisherPublishedInventoryCount(input: {
       WHERE UPPER(REPLACE(c.creditCode, ' ', '')) = ${normalizedCreditCode}
         AND i.userId = ${input.publisherUserId}
         AND i.status = 'published'
-    `)) as unknown as [[{ publishedCount: number; publisherName: string | null }], unknown];
+    `)) as unknown as [
+      [{ publishedCount: number; publisherName: string | null }],
+      unknown,
+    ];
     const row = rows[0]?.[0];
     return {
       publisherUserId: input.publisherUserId,
@@ -5472,7 +8054,10 @@ export async function getPublisherPublishedInventoryCount(input: {
       publishedCount: Number(row?.publishedCount ?? 0),
     };
   } catch (error) {
-    console.error("[Database] 查询发布人已发布物料数量失败:", (error as Error).message);
+    console.error(
+      "[Database] 查询发布人已发布物料数量失败:",
+      (error as Error).message
+    );
     throw new Error("无法读取该发布人的库存数量");
   }
 }
@@ -5491,12 +8076,19 @@ export async function bulkOffshelfPublisherInventories(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  if (!Number.isSafeInteger(input.publisherUserId) || input.publisherUserId <= 0) {
+  if (
+    !Number.isSafeInteger(input.publisherUserId) ||
+    input.publisherUserId <= 0
+  ) {
     throw new Error("发布人无效");
   }
   const normalizedReason = input.reason.trim();
-  if (!normalizedReason || normalizedReason.length > 255) throw new Error("下架原因无效");
-  const normalizedCreditCode = assertPublisherBulkScope(input.creditCode, input.allowedCreditCodes);
+  if (!normalizedReason || normalizedReason.length > 255)
+    throw new Error("下架原因无效");
+  const normalizedCreditCode = assertPublisherBulkScope(
+    input.creditCode,
+    input.allowedCreditCodes
+  );
   try {
     return await db.transaction(async tx => {
       const lockedRows = (await tx.execute(sql`
@@ -5511,11 +8103,19 @@ export async function bulkOffshelfPublisherInventories(input: {
           AND i.status = 'published'
         ORDER BY i.id ASC
         FOR UPDATE
-      `)) as unknown as [[{ id: number; publisherName: string | null }], unknown];
+      `)) as unknown as [
+        [{ id: number; publisherName: string | null }],
+        unknown,
+      ];
       const ids = (lockedRows[0] ?? []).map(row => Number(row.id));
       const publisherName = lockedRows[0]?.[0]?.publisherName ?? null;
       if (ids.length === 0) {
-        return { success: true as const, publisherUserId: input.publisherUserId, publisherName, affected: 0 };
+        return {
+          success: true as const,
+          publisherUserId: input.publisherUserId,
+          publisherName,
+          affected: 0,
+        };
       }
       const updated = (await tx.execute(sql`
         UPDATE ${sql.raw(PLATFORM_DB)}.inventories i
@@ -5529,7 +8129,8 @@ export async function bulkOffshelfPublisherInventories(input: {
           AND i.status = 'published'
       `)) as unknown as [{ affectedRows?: number }, unknown];
       const affected = Number(updated[0]?.affectedRows ?? 0);
-      if (affected !== ids.length) throw new Error("发布人库存状态已变化，请刷新后重试");
+      if (affected !== ids.length)
+        throw new Error("发布人库存状态已变化，请刷新后重试");
       await tx.insert(auditLogs).values({
         operatorId: input.actor?.operatorId ?? null,
         operatorName: input.actor?.operatorName ?? "system",
@@ -5551,24 +8152,48 @@ export async function bulkOffshelfPublisherInventories(input: {
         result: "success",
         note: normalizedReason,
       });
-      return { success: true as const, publisherUserId: input.publisherUserId, publisherName, affected };
+      return {
+        success: true as const,
+        publisherUserId: input.publisherUserId,
+        publisherName,
+        affected,
+      };
     });
   } catch (error) {
     const message = (error as Error).message || "";
-    if (message.includes("范围内") || message.includes("状态已变化")) throw error;
+    if (message.includes("范围内") || message.includes("状态已变化"))
+      throw error;
     console.error("[Database] 按发布人批量下架前台物料失败:", message);
     throw new Error("批量下架失败：无法访问前台数据库或写入审计日志");
   }
 }
 
-type PlatformInventoryExportRow = Pick<PlatformInventoryRow,
-  "id" | "userId" | "partNumber" | "brand" | "category" | "pkg" | "qtyOnSale"
-  | "priceEx" | "priceIncl" | "status" | "publishedAt" | "createdAt" | "companyName"
-  | "creditCode" | "userName"
+type PlatformInventoryExportRow = Pick<
+  PlatformInventoryRow,
+  | "id"
+  | "userId"
+  | "partNumber"
+  | "brand"
+  | "category"
+  | "pkg"
+  | "qtyOnSale"
+  | "priceEx"
+  | "priceIncl"
+  | "status"
+  | "publishedAt"
+  | "createdAt"
+  | "companyName"
+  | "creditCode"
+  | "userName"
 >;
 
 function csvCell(value: unknown) {
-  let text = value instanceof Date ? value.toISOString() : value === null || value === undefined ? "" : String(value);
+  let text =
+    value instanceof Date
+      ? value.toISOString()
+      : value === null || value === undefined
+        ? ""
+        : String(value);
   if (/^[\t\r\n ]*[=+\-@]/.test(text)) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 }
@@ -5576,23 +8201,59 @@ function csvCell(value: unknown) {
 /** 构造 UTF-8 BOM + RFC4180 CSV；刻意不接收/输出发布者手机号。 */
 export function createPlatformInventoryCsv(rows: PlatformInventoryExportRow[]) {
   const headers = [
-    "ID", "Publisher User ID", "Publisher Name", "Part Number", "Brand", "Category", "Package",
-    "Quantity", "Price Ex", "Price Incl", "Status", "Published At", "Created At", "Company Name", "Credit Code",
+    "ID",
+    "Publisher User ID",
+    "Publisher Name",
+    "Part Number",
+    "Brand",
+    "Category",
+    "Package",
+    "Quantity",
+    "Price Ex",
+    "Price Incl",
+    "Status",
+    "Published At",
+    "Created At",
+    "Company Name",
+    "Credit Code",
   ];
-  const lines = rows.map(row => [
-    row.id, row.userId, row.userName, row.partNumber, row.brand, row.category, row.pkg,
-    row.qtyOnSale, row.priceEx, row.priceIncl, row.status, row.publishedAt, row.createdAt,
-    row.companyName, row.creditCode,
-  ].map(csvCell).join(","));
+  const lines = rows.map(row =>
+    [
+      row.id,
+      row.userId,
+      row.userName,
+      row.partNumber,
+      row.brand,
+      row.category,
+      row.pkg,
+      row.qtyOnSale,
+      row.priceEx,
+      row.priceIncl,
+      row.status,
+      row.publishedAt,
+      row.createdAt,
+      row.companyName,
+      row.creditCode,
+    ]
+      .map(csvCell)
+      .join(",")
+  );
   return `\uFEFF${headers.map(csvCell).join(",")}\r\n${lines.join("\r\n")}`;
 }
 
 /** 按选中 ID 重新做服务端范围校验后导出；任何缺失或越权 ID 都拒绝整批导出。 */
-export async function exportSelectedPlatformInventories(ids: number[], allowedCreditCodes?: string[]) {
+export async function exportSelectedPlatformInventories(
+  ids: number[],
+  allowedCreditCodes?: string[]
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const normalizedAllowedCreditCodes = normalizePlatformCreditCodes(allowedCreditCodes);
-  if (normalizedAllowedCreditCodes !== undefined && normalizedAllowedCreditCodes.length === 0) {
+  const normalizedAllowedCreditCodes =
+    normalizePlatformCreditCodes(allowedCreditCodes);
+  if (
+    normalizedAllowedCreditCodes !== undefined &&
+    normalizedAllowedCreditCodes.length === 0
+  ) {
     throw new Error("物料不存在或不在您负责的范围内");
   }
   const creditScopeSql = normalizedAllowedCreditCodes
@@ -5608,15 +8269,27 @@ export async function exportSelectedPlatformInventories(ids: number[], allowedCr
         ON c.enterpriseId = i.enterpriseId
         OR (i.enterpriseId IS NULL AND c.userId = i.userId)
       LEFT JOIN ${sql.raw(PLATFORM_DB)}.users u ON u.id = i.userId
-      WHERE i.id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})${creditScopeSql}
+      WHERE i.id IN (${sql.join(
+        ids.map(id => sql`${id}`),
+        sql`, `
+      )})${creditScopeSql}
     `)) as unknown as [PlatformInventoryExportRow[], unknown];
     const byId = new Map((rows[0] ?? []).map(row => [Number(row.id), row]));
-    if (byId.size !== ids.length) throw new Error("物料不存在或不在您负责的范围内");
+    if (byId.size !== ids.length)
+      throw new Error("物料不存在或不在您负责的范围内");
     const orderedRows = ids.map(id => byId.get(id)!);
     const date = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
-    }).format(new Date()).replace(/-/g, "");
-    return { filename: `platform-materials-${date}.csv`, csv: createPlatformInventoryCsv(orderedRows) };
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+      .format(new Date())
+      .replace(/-/g, "");
+    return {
+      filename: `platform-materials-${date}.csv`,
+      csv: createPlatformInventoryCsv(orderedRows),
+    };
   } catch (error) {
     const msg = (error as Error).message || "";
     if (msg.includes("不存在") || msg.includes("范围内")) throw error;
@@ -5636,17 +8309,22 @@ export async function listMerchantOperationRecords(input: {
   const condition = and(
     eq(auditLogs.module, "merchants"),
     eq(auditLogs.targetType, "merchant"),
-    eq(auditLogs.targetId, String(input.merchantId)),
+    eq(auditLogs.targetId, String(input.merchantId))
   );
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(condition);
-  const items = await db.select({
-    time: auditLogs.createdAt,
-    action: auditLogs.action,
-    operatorName: auditLogs.operatorName,
-    role: auditLogs.operatorRole,
-    result: auditLogs.result,
-    note: auditLogs.note,
-  }).from(auditLogs)
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(auditLogs)
+    .where(condition);
+  const items = await db
+    .select({
+      time: auditLogs.createdAt,
+      action: auditLogs.action,
+      operatorName: auditLogs.operatorName,
+      role: auditLogs.operatorRole,
+      result: auditLogs.result,
+      note: auditLogs.note,
+    })
+    .from(auditLogs)
     .where(condition)
     .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
     .limit(input.pageSize)
@@ -5673,7 +8351,9 @@ export async function recordMerchantHomepageFeatureAudit(input: {
     operatorId: input.actor.operatorId ?? null,
     operatorName: input.actor.operatorName ?? "system",
     operatorRole: input.actor.operatorRole ?? "system",
-    action: input.featured ? "merchant.homepage_feature.set" : "merchant.homepage_feature.unset",
+    action: input.featured
+      ? "merchant.homepage_feature.set"
+      : "merchant.homepage_feature.unset",
     module: "merchants",
     targetType: "merchant",
     targetId: String(input.merchantId),
@@ -5715,8 +8395,12 @@ export async function recordMerchantAgencyCertificationAudit(input: {
     afterValue: {
       certificationId: input.certificationId,
       ...(input.brands ? { brands: input.brands } : {}),
-      ...(input.replacedDocument !== undefined ? { replacedDocument: input.replacedDocument } : {}),
-      ...(input.expectedRevision !== undefined ? { expectedRevision: input.expectedRevision } : {}),
+      ...(input.replacedDocument !== undefined
+        ? { replacedDocument: input.replacedDocument }
+        : {}),
+      ...(input.expectedRevision !== undefined
+        ? { expectedRevision: input.expectedRevision }
+        : {}),
       ...(input.requestId ? { requestId: input.requestId } : {}),
       ...(input.fileName ? { fileName: input.fileName } : {}),
       ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}),
@@ -5724,9 +8408,10 @@ export async function recordMerchantAgencyCertificationAudit(input: {
     ipAddress: input.actor.ipAddress ?? null,
     userAgent: input.actor.userAgent ?? null,
     result: "success",
-    note: input.action === "document_view"
-      ? "后台查看商户代理证短时链接"
-      : `后台${input.action === "cancel" ? "取消" : "保存"}商户代理认证`,
+    note:
+      input.action === "document_view"
+        ? "后台查看商户代理证短时链接"
+        : `后台${input.action === "cancel" ? "取消" : "保存"}商户代理认证`,
   });
 }
 
@@ -5740,7 +8425,13 @@ export type PlatformCompanyWallPhoto = {
   thumbnailObjectKey: string | null;
   name: string | null;
   mimeType: string;
-  category: "storefront" | "office" | "warehouse" | "production" | "team" | "other";
+  category:
+    | "storefront"
+    | "office"
+    | "warehouse"
+    | "production"
+    | "team"
+    | "other";
   caption: string | null;
   status: "pending" | "approved" | "rejected";
   sortOrder: number;
@@ -5749,7 +8440,12 @@ export type PlatformCompanyWallPhoto = {
 
 export async function getMerchantCompanyWall(creditCode: string) {
   const db = await getDb();
-  if (!db) return { available: false as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
+  if (!db)
+    return {
+      available: false as const,
+      companyId: null,
+      photos: [] as PlatformCompanyWallPhoto[],
+    };
   const normalized = normalizeCreditCode(creditCode);
   try {
     const companiesRows = (await db.execute(sql`
@@ -5758,18 +8454,26 @@ export async function getMerchantCompanyWall(creditCode: string) {
       FROM ${sql.raw(PLATFORM_DB)}.companies
       WHERE creditCode = ${normalized}
       LIMIT 1
-    `)) as unknown as [{
-      id: number;
-      userId: number;
-      homeCoverPhotoId: number | null;
-      avatarPhotoId: number | null;
-      avatarDisplayMode: "logo" | "photo";
-      avatarCropZoom: string | number | null;
-      avatarCropX: number | null;
-      avatarCropY: number | null;
-    }[], unknown];
+    `)) as unknown as [
+      {
+        id: number;
+        userId: number;
+        homeCoverPhotoId: number | null;
+        avatarPhotoId: number | null;
+        avatarDisplayMode: "logo" | "photo";
+        avatarCropZoom: string | number | null;
+        avatarCropX: number | null;
+        avatarCropY: number | null;
+      }[],
+      unknown,
+    ];
     const company = companiesRows[0]?.[0];
-    if (!company) return { available: true as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
+    if (!company)
+      return {
+        available: true as const,
+        companyId: null,
+        photos: [] as PlatformCompanyWallPhoto[],
+      };
     const photoRows = (await db.execute(sql`
       SELECT id, url, objectKey, thumbnailUrl, thumbnailObjectKey, name, mimeType, category, caption, status, sortOrder, createdAt
       FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
@@ -5781,9 +8485,16 @@ export async function getMerchantCompanyWall(creditCode: string) {
       available: true as const,
       companyId: Number(company.id),
       portalUserId: Number(company.userId),
-      homeCoverPhotoId: company.homeCoverPhotoId === null ? null : Number(company.homeCoverPhotoId),
-      avatarPhotoId: company.avatarPhotoId === null ? null : Number(company.avatarPhotoId),
-      avatarDisplayMode: company.avatarDisplayMode === "photo" ? "photo" as const : "logo" as const,
+      homeCoverPhotoId:
+        company.homeCoverPhotoId === null
+          ? null
+          : Number(company.homeCoverPhotoId),
+      avatarPhotoId:
+        company.avatarPhotoId === null ? null : Number(company.avatarPhotoId),
+      avatarDisplayMode:
+        company.avatarDisplayMode === "photo"
+          ? ("photo" as const)
+          : ("logo" as const),
       avatarCrop: {
         zoom: Number(company.avatarCropZoom ?? 100) / 100,
         offsetX: Number(company.avatarCropX ?? 0),
@@ -5792,8 +8503,15 @@ export async function getMerchantCompanyWall(creditCode: string) {
       photos: photoRows[0] ?? [],
     };
   } catch (error) {
-    console.warn("[Database] 跨库查询公司信息墙失败:", (error as Error).message);
-    return { available: false as const, companyId: null, photos: [] as PlatformCompanyWallPhoto[] };
+    console.warn(
+      "[Database] 跨库查询公司信息墙失败:",
+      (error as Error).message
+    );
+    return {
+      available: false as const,
+      companyId: null,
+      photos: [] as PlatformCompanyWallPhoto[],
+    };
   }
 }
 
@@ -5818,22 +8536,31 @@ export async function setMerchantCompanyDisplayPhoto(input: {
       WHERE creditCode = ${normalized}
       LIMIT 1
       FOR UPDATE
-    `)) as unknown as [{
-      id: number;
-      homeCoverPhotoId: number | null;
-      avatarPhotoId: number | null;
-      avatarDisplayMode: "logo" | "photo";
-      avatarCropZoom: string | number | null;
-      avatarCropX: number | null;
-      avatarCropY: number | null;
-    }[], unknown];
+    `)) as unknown as [
+      {
+        id: number;
+        homeCoverPhotoId: number | null;
+        avatarPhotoId: number | null;
+        avatarDisplayMode: "logo" | "photo";
+        avatarCropZoom: string | number | null;
+        avatarCropX: number | null;
+        avatarCropY: number | null;
+      }[],
+      unknown,
+    ];
     const company = companyRows[0]?.[0];
     if (!company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
 
-    const currentPhotoId = input.kind === "home"
-      ? (company.homeCoverPhotoId === null ? null : Number(company.homeCoverPhotoId))
-      : (company.avatarPhotoId === null ? null : Number(company.avatarPhotoId));
-    if (currentPhotoId !== input.expectedPhotoId) throw new Error("COMPANY_DISPLAY_PHOTO_CHANGED");
+    const currentPhotoId =
+      input.kind === "home"
+        ? company.homeCoverPhotoId === null
+          ? null
+          : Number(company.homeCoverPhotoId)
+        : company.avatarPhotoId === null
+          ? null
+          : Number(company.avatarPhotoId);
+    if (currentPhotoId !== input.expectedPhotoId)
+      throw new Error("COMPANY_DISPLAY_PHOTO_CHANGED");
 
     if (input.photoId !== null) {
       const photoRows = (await tx.execute(sql`
@@ -5858,7 +8585,7 @@ export async function setMerchantCompanyDisplayPhoto(input: {
       await tx.execute(sql`
         UPDATE ${sql.raw(PLATFORM_DB)}.companies
         SET avatarPhotoId = ${input.photoId},
-            avatarDisplayMode = ${input.photoId === null ? "logo" : input.displayMode ?? "photo"},
+            avatarDisplayMode = ${input.photoId === null ? "logo" : (input.displayMode ?? "photo")},
             avatarCropZoom = ${input.photoId === null ? 100 : Math.round(crop.zoom * 100)},
             avatarCropX = ${input.photoId === null ? 0 : crop.offsetX},
             avatarCropY = ${input.photoId === null ? 0 : crop.offsetY},
@@ -5871,33 +8598,47 @@ export async function setMerchantCompanyDisplayPhoto(input: {
       operatorId: input.actor?.operatorId ?? null,
       operatorName: input.actor?.operatorName ?? "system",
       operatorRole: input.actor?.operatorRole ?? "system",
-      action: input.kind === "home" ? "merchant.company_wall.home_cover" : "merchant.company_wall.search_display",
+      action:
+        input.kind === "home"
+          ? "merchant.company_wall.home_cover"
+          : "merchant.company_wall.search_display",
       module: "merchants",
       targetType: "merchant",
       targetId: String(input.merchantId),
-      beforeValue: input.kind === "home"
-        ? { photoId: currentPhotoId }
-        : {
-            photoId: currentPhotoId,
-            displayMode: company.avatarDisplayMode,
-            crop: {
-              zoom: Number(company.avatarCropZoom ?? 100) / 100,
-              offsetX: Number(company.avatarCropX ?? 0),
-              offsetY: Number(company.avatarCropY ?? 0),
+      beforeValue:
+        input.kind === "home"
+          ? { photoId: currentPhotoId }
+          : {
+              photoId: currentPhotoId,
+              displayMode: company.avatarDisplayMode,
+              crop: {
+                zoom: Number(company.avatarCropZoom ?? 100) / 100,
+                offsetX: Number(company.avatarCropX ?? 0),
+                offsetY: Number(company.avatarCropY ?? 0),
+              },
             },
-          },
-      afterValue: input.kind === "home"
-        ? { photoId: input.photoId }
-        : { photoId: input.photoId, displayMode: input.displayMode ?? "photo", crop },
+      afterValue:
+        input.kind === "home"
+          ? { photoId: input.photoId }
+          : {
+              photoId: input.photoId,
+              displayMode: input.displayMode ?? "photo",
+              crop,
+            },
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
-      note: input.kind === "home" ? "后台设置首页公司展示主图" : "后台设置搜索展示图",
+      note:
+        input.kind === "home"
+          ? "后台设置首页公司展示主图"
+          : "后台设置搜索展示图",
     });
 
     return {
       success: true as const,
-      homeCoverPhotoId: input.kind === "home" ? input.photoId : company.homeCoverPhotoId,
-      avatarPhotoId: input.kind === "search" ? input.photoId : company.avatarPhotoId,
+      homeCoverPhotoId:
+        input.kind === "home" ? input.photoId : company.homeCoverPhotoId,
+      avatarPhotoId:
+        input.kind === "search" ? input.photoId : company.avatarPhotoId,
     };
   });
 }
@@ -5929,15 +8670,18 @@ export async function createMerchantCompanyWallPhoto(input: {
     const company = companyRows[0]?.[0];
     if (!company) throw new Error("PLATFORM_COMPANY_NOT_FOUND");
     const prefix = `company-wall/${company.id}/`;
-    if (!input.objectKey.startsWith(prefix)) throw new Error("COMPANY_PHOTO_KEY_INVALID");
-    if (!input.thumbnailObjectKey.startsWith(`${prefix}thumbs/`)) throw new Error("COMPANY_PHOTO_THUMBNAIL_KEY_INVALID");
+    if (!input.objectKey.startsWith(prefix))
+      throw new Error("COMPANY_PHOTO_KEY_INVALID");
+    if (!input.thumbnailObjectKey.startsWith(`${prefix}thumbs/`))
+      throw new Error("COMPANY_PHOTO_THUMBNAIL_KEY_INVALID");
     const countRows = (await tx.execute(sql`
       SELECT COUNT(*) AS count
       FROM ${sql.raw(PLATFORM_DB)}.company_profile_photos
       WHERE companyId = ${company.id} AND deletedAt IS NULL
       FOR UPDATE
     `)) as unknown as [{ count: number }[], unknown];
-    if (Number(countRows[0]?.[0]?.count ?? 0) >= 9) throw new Error("COMPANY_PHOTO_LIMIT_REACHED");
+    if (Number(countRows[0]?.[0]?.count ?? 0) >= 9)
+      throw new Error("COMPANY_PHOTO_LIMIT_REACHED");
     const inserted = (await tx.execute(sql`
       INSERT INTO ${sql.raw(PLATFORM_DB)}.company_profile_photos
         (companyId, uploaderUserId, objectKey, url, thumbnailObjectKey, thumbnailUrl, name, mimeType, category, caption,
@@ -5956,7 +8700,12 @@ export async function createMerchantCompanyWallPhoto(input: {
       module: "merchants",
       targetType: "merchant",
       targetId: String(input.merchantId),
-      afterValue: { photoId, companyId: Number(company.id), category: input.category, caption: input.caption || null },
+      afterValue: {
+        photoId,
+        companyId: Number(company.id),
+        category: input.category,
+        caption: input.caption || null,
+      },
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
       note: "后台代企业上传公司信息墙照片",
@@ -5986,7 +8735,17 @@ export async function updateMerchantCompanyWallPhoto(input: {
       WHERE p.id = ${input.photoId} AND c.creditCode = ${normalized} AND p.deletedAt IS NULL
       LIMIT 1
       FOR UPDATE
-    `)) as unknown as [{ id: number; category: string; caption: string | null; sortOrder: number; status: string; companyId: number }[], unknown];
+    `)) as unknown as [
+      {
+        id: number;
+        category: string;
+        caption: string | null;
+        sortOrder: number;
+        status: string;
+        companyId: number;
+      }[],
+      unknown,
+    ];
     const before = rows[0]?.[0];
     if (!before) throw new Error("COMPANY_PHOTO_NOT_FOUND");
     await tx.execute(sql`
@@ -6008,7 +8767,12 @@ export async function updateMerchantCompanyWallPhoto(input: {
         WHERE id = ${before.companyId} AND homeCoverPhotoId = ${input.photoId}
       `);
     }
-    const after = { category: input.category, caption: input.caption?.trim() || null, sortOrder: input.sortOrder, status: input.status };
+    const after = {
+      category: input.category,
+      caption: input.caption?.trim() || null,
+      sortOrder: input.sortOrder,
+      status: input.status,
+    };
     await tx.insert(auditLogs).values({
       operatorId: input.actor?.operatorId ?? null,
       operatorName: input.actor?.operatorName ?? "system",
@@ -6044,7 +8808,16 @@ export async function deleteMerchantCompanyWallPhoto(input: {
       WHERE p.id = ${input.photoId} AND c.creditCode = ${normalized} AND p.deletedAt IS NULL
       LIMIT 1
       FOR UPDATE
-    `)) as unknown as [{ id: number; url: string; category: string; caption: string | null; companyId: number }[], unknown];
+    `)) as unknown as [
+      {
+        id: number;
+        url: string;
+        category: string;
+        caption: string | null;
+        companyId: number;
+      }[],
+      unknown,
+    ];
     const before = rows[0]?.[0];
     if (!before) throw new Error("COMPANY_PHOTO_NOT_FOUND");
     await tx.execute(sql`
@@ -6096,11 +8869,18 @@ export async function reorderMerchantCompanyWallPhotos(input: {
       WHERE c.creditCode = ${normalized} AND p.deletedAt IS NULL
       ORDER BY p.sortOrder ASC, p.createdAt ASC
       FOR UPDATE
-    `)) as unknown as [{ id: number; sortOrder: number; companyId: number }[], unknown];
+    `)) as unknown as [
+      { id: number; sortOrder: number; companyId: number }[],
+      unknown,
+    ];
     const current = rows[0] ?? [];
-    if (current.length !== input.photoIds.length) throw new Error("COMPANY_PHOTO_ORDER_STALE");
+    if (current.length !== input.photoIds.length)
+      throw new Error("COMPANY_PHOTO_ORDER_STALE");
     const currentIds = new Set(current.map(row => Number(row.id)));
-    if (new Set(input.photoIds).size !== input.photoIds.length || input.photoIds.some(id => !currentIds.has(id))) {
+    if (
+      new Set(input.photoIds).size !== input.photoIds.length ||
+      input.photoIds.some(id => !currentIds.has(id))
+    ) {
       throw new Error("COMPANY_PHOTO_ORDER_INVALID");
     }
     const companyId = current[0]?.companyId;
@@ -6121,7 +8901,10 @@ export async function reorderMerchantCompanyWallPhotos(input: {
       module: "merchants",
       targetType: "merchant",
       targetId: String(input.merchantId),
-      beforeValue: current.map(row => ({ id: Number(row.id), sortOrder: Number(row.sortOrder) })),
+      beforeValue: current.map(row => ({
+        id: Number(row.id),
+        sortOrder: Number(row.sortOrder),
+      })),
       afterValue: input.photoIds.map((id, sortOrder) => ({ id, sortOrder })),
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
@@ -6133,7 +8916,10 @@ export async function reorderMerchantCompanyWallPhotos(input: {
 
 // ─── 公开评价管理（跨库读写前台 dianzi51 库）────────────────────────────────
 
-export type PlatformPublicReviewStatus = "published" | "user_deleted" | "platform_hidden";
+export type PlatformPublicReviewStatus =
+  | "published"
+  | "user_deleted"
+  | "platform_hidden";
 
 export type PlatformPublicReviewRow = {
   id: number;
@@ -6169,7 +8955,12 @@ export async function listPlatformPublicReviews(params: {
   pageSize?: number;
 }) {
   const db = await getDb();
-  if (!db) return { available: false as const, items: [] as PlatformPublicReviewRow[], total: 0 };
+  if (!db)
+    return {
+      available: false as const,
+      items: [] as PlatformPublicReviewRow[],
+      total: 0,
+    };
   const { status = "all", keyword, page = 1, pageSize = 30 } = params;
   const offset = (page - 1) * pageSize;
   const conditions = [sql`1=1`];
@@ -6208,15 +8999,24 @@ export async function listPlatformPublicReviews(params: {
        LIMIT ${pageSize} OFFSET ${offset}
     `)) as unknown as [Omit<PlatformPublicReviewRow, "images">[], unknown];
     const rows = rowResult[0] ?? [];
-    const imagesByReview = new Map<number, Array<{ id: number; url: string }>>();
+    const imagesByReview = new Map<
+      number,
+      Array<{ id: number; url: string }>
+    >();
     if (rows.length > 0) {
       const ids = rows.map(row => Number(row.id));
       const imageResult = (await db.execute(sql`
         SELECT id, reviewId, url
           FROM ${sql.raw(PLATFORM_DB)}.public_company_review_images
-         WHERE reviewId IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
+         WHERE reviewId IN (${sql.join(
+           ids.map(id => sql`${id}`),
+           sql`, `
+         )})
          ORDER BY reviewId ASC, sortOrder ASC, id ASC
-      `)) as unknown as [{ id: number; reviewId: number; url: string }[], unknown];
+      `)) as unknown as [
+        { id: number; reviewId: number; url: string }[],
+        unknown,
+      ];
       for (const image of imageResult[0] ?? []) {
         const reviewId = Number(image.reviewId);
         const list = imagesByReview.get(reviewId) ?? [];
@@ -6226,18 +9026,34 @@ export async function listPlatformPublicReviews(params: {
     }
     return {
       available: true as const,
-      items: rows.map(row => ({ ...row, id: Number(row.id), revision: Number(row.revision), images: imagesByReview.get(Number(row.id)) ?? [] })),
+      items: rows.map(row => ({
+        ...row,
+        id: Number(row.id),
+        revision: Number(row.revision),
+        images: imagesByReview.get(Number(row.id)) ?? [],
+      })),
       total,
     };
   } catch (error) {
     console.warn("[Database] 跨库查询公开评价失败:", (error as Error).message);
-    return { available: false as const, items: [] as PlatformPublicReviewRow[], total: 0 };
+    return {
+      available: false as const,
+      items: [] as PlatformPublicReviewRow[],
+      total: 0,
+    };
   }
 }
 
 export async function getPlatformPublicReviewStats() {
   const db = await getDb();
-  if (!db) return { available: false as const, total: 0, published: 0, userDeleted: 0, platformHidden: 0 };
+  if (!db)
+    return {
+      available: false as const,
+      total: 0,
+      published: 0,
+      userDeleted: 0,
+      platformHidden: 0,
+    };
   try {
     const result = (await db.execute(sql`
       SELECT COUNT(*) AS total,
@@ -6245,7 +9061,15 @@ export async function getPlatformPublicReviewStats() {
              SUM(status = 'user_deleted') AS userDeleted,
              SUM(status = 'platform_hidden') AS platformHidden
         FROM ${sql.raw(PLATFORM_DB)}.public_company_reviews
-    `)) as unknown as [{ total: number; published: number; userDeleted: number; platformHidden: number }[], unknown];
+    `)) as unknown as [
+      {
+        total: number;
+        published: number;
+        userDeleted: number;
+        platformHidden: number;
+      }[],
+      unknown,
+    ];
     const row = result[0]?.[0];
     return {
       available: true as const,
@@ -6256,7 +9080,13 @@ export async function getPlatformPublicReviewStats() {
     };
   } catch (error) {
     console.warn("[Database] 跨库统计公开评价失败:", (error as Error).message);
-    return { available: false as const, total: 0, published: 0, userDeleted: 0, platformHidden: 0 };
+    return {
+      available: false as const,
+      total: 0,
+      published: 0,
+      userDeleted: 0,
+      platformHidden: 0,
+    };
   }
 }
 
@@ -6274,7 +9104,17 @@ export async function hidePlatformPublicReview(input: {
        WHERE id = ${input.reviewId}
        LIMIT 1
        FOR UPDATE
-    `)) as unknown as [{ id: number; status: PlatformPublicReviewStatus; raterUserId: number; ratedUserId: number; raterCompanyName: string; content: string }[], unknown];
+    `)) as unknown as [
+      {
+        id: number;
+        status: PlatformPublicReviewStatus;
+        raterUserId: number;
+        ratedUserId: number;
+        raterCompanyName: string;
+        content: string;
+      }[],
+      unknown,
+    ];
     const before = result[0]?.[0];
     if (!before) throw new Error("REVIEW_NOT_FOUND");
     if (before.status !== "published") throw new Error("REVIEW_NOT_PUBLISHED");
@@ -6317,10 +9157,21 @@ export async function restorePlatformPublicReview(input: {
        WHERE id = ${input.reviewId}
        LIMIT 1
        FOR UPDATE
-    `)) as unknown as [{ id: number; status: PlatformPublicReviewStatus; hiddenReason: string | null; hiddenByAdminId: number | null; hiddenByAdminName: string | null; hiddenAt: Date | null }[], unknown];
+    `)) as unknown as [
+      {
+        id: number;
+        status: PlatformPublicReviewStatus;
+        hiddenReason: string | null;
+        hiddenByAdminId: number | null;
+        hiddenByAdminName: string | null;
+        hiddenAt: Date | null;
+      }[],
+      unknown,
+    ];
     const before = result[0]?.[0];
     if (!before) throw new Error("REVIEW_NOT_FOUND");
-    if (before.status !== "platform_hidden") throw new Error("REVIEW_NOT_PLATFORM_HIDDEN");
+    if (before.status !== "platform_hidden")
+      throw new Error("REVIEW_NOT_PLATFORM_HIDDEN");
     await tx.execute(sql`
       UPDATE ${sql.raw(PLATFORM_DB)}.public_company_reviews
          SET status = 'published',
@@ -6372,7 +9223,9 @@ export type ExceptionLogInput = {
  * 刻意吞掉所有异常：日志写入失败绝不能影响主业务流程。
  * 若数据库不可用或表尚未建好，静默跳过并在控制台留痕即可。
  */
-export async function writeExceptionLog(input: ExceptionLogInput): Promise<void> {
+export async function writeExceptionLog(
+  input: ExceptionLogInput
+): Promise<void> {
   try {
     const db = await getDb();
     if (!db) return;
@@ -6394,12 +9247,17 @@ export async function writeExceptionLog(input: ExceptionLogInput): Promise<void>
       detail: (input.detail ?? null) as never,
     });
   } catch (error) {
-    console.warn("[ExceptionLog] 写入失败（已忽略，不影响主流程）:", (error as Error).message);
+    console.warn(
+      "[ExceptionLog] 写入失败（已忽略，不影响主流程）:",
+      (error as Error).message
+    );
   }
 }
 
 /** 批量写入，供前台按批上报使用。 */
-export async function writeExceptionLogs(inputs: ExceptionLogInput[]): Promise<number> {
+export async function writeExceptionLogs(
+  inputs: ExceptionLogInput[]
+): Promise<number> {
   if (inputs.length === 0) return 0;
   try {
     const db = await getDb();
@@ -6421,11 +9279,14 @@ export async function writeExceptionLogs(inputs: ExceptionLogInput[]): Promise<n
         userName: input.userName?.slice(0, 128) ?? null,
         durationMs: input.durationMs ?? null,
         detail: (input.detail ?? null) as never,
-      })),
+      }))
     );
     return inputs.length;
   } catch (error) {
-    console.warn("[ExceptionLog] 批量写入失败（已忽略）:", (error as Error).message);
+    console.warn(
+      "[ExceptionLog] 批量写入失败（已忽略）:",
+      (error as Error).message
+    );
     return 0;
   }
 }
@@ -6464,8 +9325,8 @@ export async function listExceptionLogs(params: {
       or(
         like(exceptionLogs.summary, `%${search}%`),
         like(exceptionLogs.path, `%${search}%`),
-        like(exceptionLogs.ipAddress, `%${search}%`),
-      )!,
+        like(exceptionLogs.ipAddress, `%${search}%`)
+      )!
     );
   }
   const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -6523,8 +9384,8 @@ export async function getExceptionLogStats() {
     .where(
       and(
         gte(exceptionLogs.createdAt, since7d),
-        eq(exceptionLogs.category, "attack_probe"),
-      ),
+        eq(exceptionLogs.category, "attack_probe")
+      )
     )
     .groupBy(exceptionLogs.ipAddress, exceptionLogs.ipOrigin)
     .orderBy(desc(sql`count(*)`))
@@ -6556,13 +9417,13 @@ export async function getExceptionLogStats() {
  * 返回删除条数，供定时任务记录。
  */
 export async function purgeExpiredExceptionLogs(
-  retentionDays: number = LOG_RETENTION_DAYS,
+  retentionDays: number = LOG_RETENTION_DAYS
 ): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
   const result = (await db.execute(
-    sql`DELETE FROM exception_logs WHERE createdAt < ${cutoff}`,
+    sql`DELETE FROM exception_logs WHERE createdAt < ${cutoff}`
   )) as unknown as [{ affectedRows?: number }, unknown];
   return Number(result[0]?.affectedRows ?? 0);
 }

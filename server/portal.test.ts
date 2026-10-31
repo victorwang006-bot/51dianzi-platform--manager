@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import * as db from "./db";
 import type { TrpcContext } from "./_core/context";
-import { eq } from "drizzle-orm";
-import { merchants } from "../drizzle/schema";
+import { eq, inArray } from "drizzle-orm";
+import { merchants, salesStaff } from "../drizzle/schema";
 
 const PORTAL_KEY = "test-portal-key-12345";
 
@@ -23,6 +23,20 @@ function createPortalContext(portalKey?: string): TrpcContext {
 
 const uniqueLicense = `91330100TEST${Date.now().toString().slice(-6)}`;
 const createdMerchantIds = new Set<number>();
+const portalSalesStaff = [
+  {
+    staffCode: `portal-sales-zhao-${Date.now()}`,
+    displayName: "赵销售",
+    status: "active" as const,
+    sortOrder: 1,
+  },
+  {
+    staffCode: `portal-sales-qian-${Date.now()}`,
+    displayName: "钱销售",
+    status: "active" as const,
+    sortOrder: 2,
+  },
+];
 
 const submission = {
   companyName: "测试对接电子有限公司",
@@ -38,8 +52,11 @@ const submission = {
   legalPersonPhone: "13800002222",
 };
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.PORTAL_API_KEY = PORTAL_KEY;
+  const conn = await db.getDb();
+  if (!conn) throw new Error("DATABASE_NOT_AVAILABLE");
+  await conn.insert(salesStaff).values(portalSalesStaff);
 });
 
 afterAll(async () => {
@@ -48,6 +65,10 @@ afterAll(async () => {
   for (const id of createdMerchantIds) {
     await conn.delete(merchants).where(eq(merchants.id, id));
   }
+  await conn.delete(salesStaff).where(inArray(
+    salesStaff.staffCode,
+    portalSalesStaff.map(staff => staff.staffCode),
+  ));
 });
 
 describe("portal.submitMerchant", () => {
@@ -98,28 +119,41 @@ describe("portal.submitMerchant", () => {
     expect(merchant?.contactPhone).toBe("13711113333");
   });
 
-  it("可选参数 salesOwner 写入商户销售负责人列，重复提交可更新", async () => {
+  it("有效 salesOwnerCode 写入商户销售负责人列，重复提交可更新", async () => {
     const caller = appRouter.createCaller(createPortalContext(PORTAL_KEY));
     const license = `91330100SALES${Date.now().toString().slice(-6)}`;
     const created = await caller.portal.submitMerchant({
       ...submission,
+      companyName: "测试销售负责人电子有限公司",
       businessLicense: license,
-      salesOwner: "赵销售",
+      salesOwnerCode: portalSalesStaff[0].staffCode,
     });
     createdMerchantIds.add(created.merchantId);
     expect(created.created).toBe(true);
     let merchant = await db.getMerchantById(created.merchantId);
     expect(merchant?.salesOwner).toBe("赵销售");
+    expect(merchant?.salesOwnerCode).toBe(portalSalesStaff[0].staffCode);
 
-    // 不传 salesOwner 时保留原值
-    await caller.portal.submitMerchant({ ...submission, businessLicense: license });
+    // 不传 salesOwnerCode 时保留原值
+    await caller.portal.submitMerchant({
+      ...submission,
+      companyName: "测试销售负责人电子有限公司",
+      businessLicense: license,
+    });
     merchant = await db.getMerchantById(created.merchantId);
     expect(merchant?.salesOwner).toBe("赵销售");
+    expect(merchant?.salesOwnerCode).toBe(portalSalesStaff[0].staffCode);
 
-    // 再次提交可更新销售负责人
-    await caller.portal.submitMerchant({ ...submission, businessLicense: license, salesOwner: "钱销售" });
+    // 再次提交可更新为另一有效销售负责人
+    await caller.portal.submitMerchant({
+      ...submission,
+      companyName: "测试销售负责人电子有限公司",
+      businessLicense: license,
+      salesOwnerCode: portalSalesStaff[1].staffCode,
+    });
     merchant = await db.getMerchantById(created.merchantId);
     expect(merchant?.salesOwner).toBe("钱销售");
+    expect(merchant?.salesOwnerCode).toBe(portalSalesStaff[1].staffCode);
   });
 });
 

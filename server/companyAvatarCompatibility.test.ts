@@ -16,12 +16,8 @@ describe("company display image compatibility", () => {
     expect(database).toContain(
       "SELECT id, userId, homeCoverPhotoId, avatarPhotoId, avatarDisplayMode"
     );
-    expect(database).toContain(
-      "homeCoverPhotoId: company.homeCoverPhotoId === null ? null"
-    );
-    expect(database).toContain(
-      "avatarPhotoId: company.avatarPhotoId === null ? null"
-    );
+    expect(database).toMatch(/homeCoverPhotoId:\s*company\.homeCoverPhotoId === null/);
+    expect(database).toMatch(/avatarPhotoId:\s*company\.avatarPhotoId === null/);
     expect(database).toContain("avatarCrop:");
     expect(panel).toContain("首页展示图");
     expect(panel).toContain("搜索展示图");

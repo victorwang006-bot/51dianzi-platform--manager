@@ -20,20 +20,31 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
+  Archive,
   Database,
   BarChart3,
+  Boxes,
+  ClipboardList,
+  Contact,
+  FileText,
   LogOut,
+  PackagePlus,
   PanelLeft,
+  ReceiptText,
+  Send,
   MessagesSquare,
   ShieldAlert,
   Store,
   ShoppingCart,
+  Truck,
   User,
   UserCog,
   Users,
+  Warehouse,
 } from "lucide-react";
 import { MessageSquare } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { buildBusinessNavigationTarget } from "@/lib/businessNavigation";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -49,6 +60,10 @@ import {
   type AdminRole,
 } from "@shared/adminPermissions";
 import {
+  hasBusinessWorkbenchCapability,
+  type BusinessWorkbenchCapability,
+} from "@/lib/businessWorkbenchCapabilities";
+import {
   ADMIN_NOTIFICATION_MODULE_BY_PATH,
   type AdminNotificationModule,
 } from "@shared/adminModuleNotifications";
@@ -57,39 +72,42 @@ type MenuItem = {
   icon: typeof Database;
   label: string;
   path: string;
-  permission: AdminPermission;
-  chunk: AdminNavigationChunk;
+  /** Native admin page authorization only. */
+  permission?: AdminPermission;
+  /** Bound portal-staff projection only; never copied into adminPermissions. */
+  workbenchCapability?: BusinessWorkbenchCapability;
+  chunk?: AdminNavigationChunk;
   nested: boolean;
   notificationModule?: AdminNotificationModule;
 };
 
 const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
   {
-    label: "业务管理",
+    label: "运营管理",
     items: [
-      {
-        icon: Database,
-        label: "物料数据库",
-        path: "/",
-        permission: "materials.read" as AdminPermission,
-        chunk: "materials" as AdminNavigationChunk,
-        nested: false,
-      },
       {
         icon: Store,
         label: "商户管理",
         path: "/merchants",
-        permission: "merchants.read" as AdminPermission,
-        chunk: "merchants" as AdminNavigationChunk,
+        permission: "merchants.read",
+        chunk: "merchants",
         nested: false,
         notificationModule: "merchants",
+      },
+      {
+        icon: Database,
+        label: "物料数据库",
+        path: "/",
+        permission: "materials.read",
+        chunk: "materials",
+        nested: false,
       },
       {
         icon: ShoppingCart,
         label: "订单管理",
         path: "/orders",
-        permission: "orders.read" as AdminPermission,
-        chunk: "orders" as AdminNavigationChunk,
+        permission: "orders.read",
+        chunk: "orders",
         nested: false,
         notificationModule: "orders",
       },
@@ -97,16 +115,16 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         icon: MessageSquare,
         label: "消息中心",
         path: "/messages",
-        permission: "messages.read" as AdminPermission,
-        chunk: "messages" as AdminNavigationChunk,
+        permission: "messages.read",
+        chunk: "messages",
         nested: false,
       },
       {
         icon: MessagesSquare,
         label: "评价管理",
         path: "/reviews",
-        permission: "logs.read" as AdminPermission,
-        chunk: "reviews" as AdminNavigationChunk,
+        permission: "logs.read",
+        chunk: "reviews",
         nested: false,
         notificationModule: "reviews",
       },
@@ -114,8 +132,8 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         icon: Users,
         label: "用户管理",
         path: "/portal-users",
-        permission: "portalUsers.read" as AdminPermission,
-        chunk: "portalUsers" as AdminNavigationChunk,
+        permission: "portalUsers.read",
+        chunk: "portalUsers",
         nested: false,
         notificationModule: "portalUsers",
       },
@@ -123,37 +141,155 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         icon: BarChart3,
         label: "运营数据",
         path: "/analytics",
-        permission: "analytics.read" as AdminPermission,
-        chunk: "analytics" as AdminNavigationChunk,
+        permission: "analytics.read",
+        chunk: "analytics",
         nested: false,
       },
     ],
   },
   {
-    label: "系统",
+    label: "库存管理",
     items: [
       {
-        icon: UserCog,
-        label: "后台用户管理",
-        path: "/admins",
-        permission: "admins.manage" as AdminPermission,
-        chunk: "admins" as AdminNavigationChunk,
+        icon: Boxes,
+        label: "我的库存",
+        path: "/workbench/inventory",
+        workbenchCapability: "inventory.read",
         nested: false,
       },
       {
-        icon: ShieldAlert,
-        label: "异常日志",
-        path: "/exception-logs",
-        permission: "logs.read" as AdminPermission,
-        chunk: "exceptionLogs" as AdminNavigationChunk,
+        icon: PackagePlus,
+        label: "发布库存",
+        path: "/workbench/publish",
+        workbenchCapability: "inventory.publish",
+        nested: false,
+      },
+      {
+        icon: Warehouse,
+        label: "入库管理",
+        path: "/workbench/inbound",
+        workbenchCapability: "inventory.inbound",
+        nested: false,
+      },
+      {
+        icon: Archive,
+        label: "渠道库存",
+        path: "/workbench/channel-inventory",
+        workbenchCapability: "inventory.channel",
+        nested: false,
+      },
+    ],
+  },
+  {
+    label: "客户管理",
+    items: [
+      {
+        icon: Contact,
+        label: "客户管理",
+        path: "/workbench/customers",
+        workbenchCapability: "customers.manage",
+        nested: false,
+      },
+      {
+        icon: ClipboardList,
+        label: "客户需求",
+        path: "/workbench/customer-demands",
+        workbenchCapability: "customers.manage",
+        nested: false,
+      },
+      {
+        icon: ReceiptText,
+        label: "销售订单",
+        path: "/workbench/orders",
+        workbenchCapability: "crm.sales_orders",
+        nested: false,
+      },
+      {
+        icon: Truck,
+        label: "出库管理",
+        path: "/workbench/outbound",
+        workbenchCapability: "marketplace.seller",
+        nested: false,
+      },
+      {
+        icon: MessageSquare,
+        label: "询价聊天",
+        path: "/workbench/chat",
+        workbenchCapability: "inquiry.receive",
+        nested: false,
+      },
+    ],
+  },
+  {
+    label: "采购管理",
+    items: [
+      {
+        icon: ClipboardList,
+        label: "采购需求",
+        path: "/workbench/procurement-demands",
+        workbenchCapability: "procurement.demands",
+        nested: false,
+      },
+      {
+        icon: ReceiptText,
+        label: "采购订单",
+        path: "/workbench/procurement-orders",
+        workbenchCapability: "procurement.orders",
+        nested: false,
+      },
+    ],
+  },
+  {
+    label: "用户中心",
+    items: [
+      {
+        icon: Users,
+        label: "成员管理",
+        path: "/workbench/add-user",
+        workbenchCapability: "enterprise.members.manage",
+        nested: false,
+      },
+      {
+        icon: ClipboardList,
+        label: "成员记录",
+        path: "/workbench/user-records",
+        workbenchCapability: "enterprise.members.manage",
+        nested: false,
+      },
+      {
+        icon: FileText,
+        label: "公司信息",
+        path: "/workbench/company-info",
+        workbenchCapability: "company.read",
         nested: false,
       },
       {
         icon: User,
         label: "个人信息",
         path: "/profile",
-        permission: "profile.manage" as AdminPermission,
-        chunk: "profile" as AdminNavigationChunk,
+        permission: "profile.manage",
+        chunk: "profile",
+        nested: false,
+      },
+    ],
+  },
+  {
+    label: "系统管理",
+    items: [
+      {
+        icon: UserCog,
+        label: "后台用户管理",
+        path: "/admins",
+        permission: "admins.manage",
+        chunk: "admins",
+        nested: false,
+      },
+      {
+        icon: ShieldAlert,
+        label: "异常日志",
+        path: "/exception-logs",
+        permission: "logs.read",
+        chunk: "exceptionLogs",
         nested: false,
       },
     ],
@@ -257,6 +393,11 @@ function DashboardLayoutContent({
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
   const trpcUtils = trpc.useUtils();
+  const { data: businessNavigation } = trpc.business.navigation.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: true,
+  });
+  const workbenchCapabilities = businessNavigation?.workbenchCapabilities;
   const canReadMessages = hasAdminPermission(
     adminRole,
     "messages.read",
@@ -389,11 +530,10 @@ function DashboardLayoutContent({
             <AdminWorkbenchNavigation
               items={menuGroups.flatMap(group =>
                 group.items.filter(item =>
-                  hasAdminPermission(
-                    adminRole,
-                    item.permission,
-                    adminPermissions
-                  )
+                  item.workbenchCapability
+                    ? hasBusinessWorkbenchCapability(workbenchCapabilities, item.workbenchCapability)
+                    : item.permission !== undefined
+                      && hasAdminPermission(adminRole, item.permission, adminPermissions)
                 )
               )}
               renderItem={item => {
@@ -413,12 +553,18 @@ function DashboardLayoutContent({
                           lastMarkedModuleRef.current = item.notificationModule;
                           markModuleSeen.mutate({ module: item.notificationModule });
                         }
-                        setLocation(item.path);
+                        const navigationTarget = buildBusinessNavigationTarget(
+                          `${window.location.pathname}${window.location.search}`,
+                          item.path,
+                        );
+                        if (navigationTarget !== null) setLocation(navigationTarget);
                       }}
-                      onPointerEnter={() =>
-                        preloadAdminRoute(item.chunk)
-                      }
-                      onFocus={() => preloadAdminRoute(item.chunk)}
+                      onPointerEnter={() => {
+                        if (item.chunk) preloadAdminRoute(item.chunk);
+                      }}
+                      onFocus={() => {
+                        if (item.chunk) preloadAdminRoute(item.chunk);
+                      }}
                       tooltip={item.label}
                       className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
                     >
