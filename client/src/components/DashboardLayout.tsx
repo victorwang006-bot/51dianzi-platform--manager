@@ -158,7 +158,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
       {
         icon: MessageSquare,
         label: "询价接待",
-        path: "/workbench/chat",
+        path: "/workbench/inquiries",
         workbenchCapability: "inquiry.receive",
         nested: false,
       },

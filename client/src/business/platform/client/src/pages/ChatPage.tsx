@@ -441,15 +441,6 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       ? rawTargetUserId
       : null;
   const inquiryKey = inquiryIntent ? buildInquiryKey(inquiryIntent) : null;
-  const personalFlowNotice = useMemo(() => {
-    if (!businessReception) return null;
-    if (wantService) return businessReception.personalFlowMessages["chat.getServiceUser"];
-    if (Number.isInteger(rawTargetUserId) && rawTargetUserId > 0) {
-      return businessReception.personalFlowMessages["chat.getOrCreateConversation"];
-    }
-    if (inquiryIntent || quoteChatDraft) return businessReception.personalFlowMessages["chat.startInventoryInquiry"];
-    return null;
-  }, [businessReception, inquiryIntent, quoteChatDraft, rawTargetUserId, wantService]);
 
   // State
   const [activeConvId, setActiveConvId] = useState<number | null>(null);
@@ -2046,16 +2037,6 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f5] font-sans text-[13px]">
-      {businessReception ? (
-        <section
-          data-testid="business-reception-scope-notice"
-          role="status"
-          className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs leading-5 text-amber-950"
-        >
-          <strong>企业接待范围：</strong>当前仅处理已分配的询价会话，按 {businessReception.requiredPermission} 权限和实际绑定员工执行。
-          {personalFlowNotice ? <span className="ml-1">{personalFlowNotice}</span> : <span className="ml-1">论坛未读和企业成员邀请属于员工个人流程，未调用或投影到此工作台。</span>}
-        </section>
-      ) : null}
       {/* Dashboard is the sole host chrome in the business workbench. */}
       {/* ── 主体三栏 ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">

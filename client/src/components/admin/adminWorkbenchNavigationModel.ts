@@ -70,7 +70,7 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
         "/workbench/customer-demands",
         "/workbench/orders",
         "/workbench/outbound",
-        "/workbench/chat",
+        "/workbench/inquiries",
       ],
     },
     {
@@ -126,6 +126,12 @@ export const ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES: readonly AdminWorkbenchNa
       label: "员工与权限",
     },
     {
+      path: "/workbench/chat",
+      canonicalPath: "/workbench/inquiries",
+      groupId: "customers",
+      label: "询价接待",
+    },
+    {
       path: "/profile",
       canonicalPath: "/profile",
       groupId: "system",
@@ -142,7 +148,7 @@ const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
   "/workbench/customer-demands": "客户需求",
   "/workbench/orders": "销售订单",
   "/workbench/outbound": "出库管理",
-  "/workbench/chat": "询价接待",
+  "/workbench/inquiries": "询价接待",
   "/workbench/procurement-demands": "采购需求",
   "/workbench/procurement-orders": "采购订单",
   "/merchants": "商户管理",
@@ -171,6 +177,7 @@ export const ADMIN_BUSINESS_WORKBENCH_PATHS = [
   "/workbench/customer-demands",
   "/workbench/orders",
   "/workbench/outbound",
+  "/workbench/inquiries",
   "/workbench/chat",
   "/workbench/procurement-demands",
   "/workbench/procurement-orders",

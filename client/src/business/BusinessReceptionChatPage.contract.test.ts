@@ -13,11 +13,11 @@ describe("Business reception ChatPage contract", () => {
     expect(page).toContain("enabled: !receptionMessage && Number.isSafeInteger(invitationId)");
   });
 
-  it("shows a visible explanation instead of hiding ordinary reception controls", () => {
-    expect(page).toContain('data-testid="business-reception-scope-notice"');
+  it("removes the scope visual block without changing the protected reception surface", () => {
+    expect(page).not.toContain('data-testid="business-reception-scope-notice"');
     expect(page).toContain('data-testid="business-reception-invitation-notice"');
     expect(page).toContain("businessReception={businessReception}");
-    expect(page).toContain("企业接待范围：");
-    expect(page).toContain("论坛未读和企业成员邀请属于员工个人流程");
+    expect(page).not.toContain("企业接待范围：");
+    expect(page).not.toContain("论坛未读和企业成员邀请属于员工个人流程");
   });
 });

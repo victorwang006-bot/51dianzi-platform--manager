@@ -487,7 +487,7 @@ function downloadOfficialCsv(
 export default function OfficialChannelInventory() {
   const { user } = useAuth();
   const trpcUtils = trpc.useUtils();
-  const [tab, setTab] = useState<"sources" | "stocks">("sources");
+  const [tab, setTab] = useState<"sources" | "stocks">("stocks");
   const [sourcePage, setSourcePage] = useState(1);
   const [stockPage, setStockPage] = useState(1);
   const [sourceFilters, setSourceFilters] = useState<SourceFilters>({
@@ -1144,18 +1144,18 @@ export default function OfficialChannelInventory() {
           <button
             type="button"
             role="tab"
-            aria-selected={tab === "sources"}
-            onClick={() => setTab("sources")}
-          >
-            来源管理
-          </button>
-          <button
-            type="button"
-            role="tab"
             aria-selected={tab === "stocks"}
             onClick={() => setTab("stocks")}
           >
             渠道库存
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "sources"}
+            onClick={() => setTab("sources")}
+          >
+            渠道管理
           </button>
         </div>
 

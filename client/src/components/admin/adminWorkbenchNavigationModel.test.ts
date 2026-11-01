@@ -100,7 +100,7 @@ const navigationItems: TestItem[] = [
     permission: "business.orders.read",
   },
   {
-    path: "/workbench/chat",
+    path: "/workbench/inquiries",
     label: "询价接待",
     permission: "business.customers.read",
   },
@@ -149,7 +149,7 @@ describe("后台工作台导航分组", () => {
           item("/workbench/customer-demands"),
           item("/workbench/orders"),
           item("/workbench/outbound"),
-          item("/workbench/chat"),
+          item("/workbench/inquiries"),
         ],
       },
       {
@@ -271,6 +271,12 @@ describe("后台工作台导航分组", () => {
         label: "员工与权限",
       },
       {
+        path: "/workbench/chat",
+        canonicalPath: "/workbench/inquiries",
+        groupId: "customers",
+        label: "询价接待",
+      },
+      {
         path: "/profile",
         canonicalPath: "/profile",
         groupId: "system",
@@ -280,6 +286,9 @@ describe("后台工作台导航分组", () => {
     expect(findAdminWorkbenchNavigationGroupId("/admins/7")).toBe("system");
     expect(findAdminWorkbenchNavigationGroupId("/workbench/add-user")).toBe(
       "system"
+    );
+    expect(findAdminWorkbenchNavigationGroupId("/workbench/chat")).toBe(
+      "customers"
     );
     expect(findAdminWorkbenchNavigationGroupId("/profile")).toBe("system");
     expect(getAdminWorkbenchNavigationRoute("/admins/7")).toMatchObject({
@@ -292,6 +301,11 @@ describe("后台工作台导航分组", () => {
       label: "个人信息",
       isAlias: true,
     });
+    expect(getAdminWorkbenchNavigationRoute("/workbench/chat")).toMatchObject({
+      canonicalPath: "/workbench/inquiries",
+      label: "询价接待",
+      isAlias: true,
+    });
     expect(
       ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)
     ).toContain("/staff");
@@ -301,6 +315,9 @@ describe("后台工作台导航分组", () => {
     expect(
       ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)
     ).not.toContain("/workbench/add-user");
+    expect(
+      ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)
+    ).not.toContain("/workbench/chat");
     expect(
       ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)
     ).not.toContain("/profile");
@@ -315,6 +332,7 @@ describe("后台工作台导航分组", () => {
       "/workbench/customer-demands",
       "/workbench/orders",
       "/workbench/outbound",
+      "/workbench/inquiries",
       "/workbench/chat",
       "/workbench/procurement-demands",
       "/workbench/procurement-orders",
@@ -345,6 +363,12 @@ describe("后台工作台导航展开状态存储", () => {
       procurement: false,
       operations: false,
       system: false,
+    });
+    expect(
+      autoOpenAdminWorkbenchNavigationGroup(defaults, "/workbench/inquiries")
+    ).toEqual({
+      ...defaults,
+      customers: true,
     });
     expect(
       autoOpenAdminWorkbenchNavigationGroup(defaults, "/workbench/chat")

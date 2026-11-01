@@ -82,7 +82,7 @@ describe("BusinessWorkbenchPage native migration contract", () => {
     expect((page.match(/<DashboardLayout>/g) ?? []).length).toBe(1);
     for (const path of [
       "/inventory", "/publish/:id/edit", "/inbound", "/channel-inventory",
-      "/customers/new/:id", "/customer-demands", "/orders", "/outbound", "/chat",
+      "/customers/new/:id", "/customer-demands", "/orders", "/outbound", "/chat", "/inquiries",
       "/procurement-demands", "/procurement-orders/quote", "/procurement-orders/accepted",
       "/procurement-orders/create", "/add-user", "/user-records", "/company-info",
     ]) expect(page).toContain(`<Route path="${path}"`);
@@ -122,5 +122,13 @@ describe("BusinessWorkbenchPage native migration contract", () => {
     expect(page).toContain("BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES");
     expect(scope).toContain("receptionReady?: boolean");
     expect(scope).toContain("chat?: false");
+  });
+
+  it("uses the permission-gated inquiry inbox as the entry and hands off to the original scoped chat route", () => {
+    const page = source("./BusinessWorkbenchPage.tsx");
+    const inbox = source("./platform/client/src/pages/EnterpriseInquiryInbox.tsx");
+    expect(page).toContain('<Route path="/inquiries" component={EnterpriseInquiryInbox} />');
+    expect(page).toContain('if (pathname === "/chat" || pathname === "/inquiries") return { capability: "inquiry.receive" };');
+    expect(inbox).toContain('href={`/chat?conversationId=${encodeURIComponent(String(conversationId))}`}');
   });
 });

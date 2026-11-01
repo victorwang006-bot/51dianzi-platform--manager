@@ -286,6 +286,10 @@ function AppRoutes() {
         />
         <Route path={"/workbench/orders"} component={BusinessOrdersRoute} />
         <Route path={"/workbench/outbound"} component={BusinessOrdersRoute} />
+        <Route
+          path={"/workbench/inquiries"}
+          component={BusinessCustomersRoute}
+        />
         <Route path={"/workbench/chat"} component={BusinessCustomersRoute} />
         <Route
           path={"/workbench/procurement-demands"}

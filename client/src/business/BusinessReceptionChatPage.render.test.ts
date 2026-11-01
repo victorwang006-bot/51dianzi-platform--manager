@@ -238,8 +238,8 @@ describe("Business reception ChatPage rendered behavior", () => {
     mounted = await mountPage();
     await mounted.render("?service=1", receptionConfig);
 
-    expect(mounted.container.textContent).toContain("企业接待范围：");
-    expect(mounted.container.textContent).toContain("客服属于员工个人流程，企业接待不会请求该接口。");
+    expect(mounted.container.querySelector('[data-testid="business-reception-scope-notice"]')).toBeNull();
+    expect(mounted.container.textContent).not.toContain("企业接待范围：");
     expect(mounted.container.textContent).toContain("全部会话");
     expect(mounted.container.textContent).toContain("新建分组");
     expect(testState.queryCalls.some(call => call.path === "chat.getServiceUser" && call.enabled === false)).toBe(true);
@@ -271,9 +271,7 @@ describe("Business reception ChatPage rendered behavior", () => {
     expect(testState.mutationCalls.some(call => call.path === "chat.sendMessage")).toBe(true);
 
     await mounted.render("?userId=8420104", receptionConfig);
-    expect(mounted.container.textContent).toContain("私聊属于员工个人流程，企业接待不会请求该接口。");
     await mounted.render("?inventoryId=8429001&inquiryPart=LM358&inquiryBrand=TI&inquiryId=buyer-8429001", receptionConfig);
-    expect(mounted.container.textContent).toContain("买方询价属于前台个人流程，企业接待不会请求该接口。");
     expect(testState.mutationCalls.some(call => ["chat.getOrCreateConversation", "chat.startInventoryInquiry", "enterprise.acceptInvitation", "enterprise.rejectInvitation"].includes(call.path))).toBe(false);
   });
 

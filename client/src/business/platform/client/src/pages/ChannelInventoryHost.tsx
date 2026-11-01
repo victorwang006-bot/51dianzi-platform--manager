@@ -271,7 +271,7 @@ export default function ChannelInventoryHost() {
   const identity = ready ? `${enterpriseId}:${actorUserId}` : "";
   const identityRef = useRef(identity);
 
-  const [tab, setTab] = useState<"channels" | "materials">("channels");
+  const [tab, setTab] = useState<"channels" | "materials">("materials");
   const [channelFilters, setChannelFilters] = useState<ChannelFilters>({
     name: "",
     type: "all",
@@ -629,7 +629,6 @@ export default function ChannelInventoryHost() {
       <header className="ci-heading">
         <div className="ci-title-line">
           <h1>渠道库存</h1>
-          <p>管理渠道资料与渠道库存。数量、价格和税务口径未确认时会明确保留为待确认，不作换算或推断。</p>
         </div>
         <div className="ci-heading-actions">
           {tab === "channels" ? (
@@ -644,8 +643,8 @@ export default function ChannelInventoryHost() {
       </header>
 
       <div className="ci-tabs" role="tablist" aria-label="渠道库存内容">
-        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>渠道管理</button>
         <button type="button" role="tab" aria-selected={tab === "materials"} onClick={() => setTab("materials")}>渠道库存</button>
+        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>渠道管理</button>
       </div>
 
       {message ? <p className="ci-error" role="alert">{message}</p> : null}

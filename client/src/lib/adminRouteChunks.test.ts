@@ -55,6 +55,7 @@ describe("后台首屏分片契约", () => {
       ["/workbench/customer-demands", "BusinessCustomersRoute"],
       ["/workbench/orders", "BusinessOrdersRoute"],
       ["/workbench/outbound", "BusinessOrdersRoute"],
+      ["/workbench/inquiries", "BusinessCustomersRoute"],
       ["/workbench/chat", "BusinessCustomersRoute"],
       ["/workbench/procurement-demands", "BusinessProcurementRoute"],
       ["/workbench/procurement-orders/quote", "BusinessProcurementRoute"],
