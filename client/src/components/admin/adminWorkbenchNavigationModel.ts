@@ -17,7 +17,9 @@ export type AdminWorkbenchNavigationGroupDefinition = {
   paths: readonly string[];
 };
 
-export type AdminWorkbenchNavigationGroup<T extends AdminWorkbenchNavigationItem> = {
+export type AdminWorkbenchNavigationGroup<
+  T extends AdminWorkbenchNavigationItem,
+> = {
   id: AdminWorkbenchNavigationGroupId;
   label: string;
   items: T[];
@@ -48,86 +50,88 @@ export type AdminWorkbenchNavigationRoute = {
  * staff 是唯一可点击的人员入口。旧员工和个人资料路径仅作为路由上下文别名，
  * 不会因别名而产生第二个侧栏入口；页面的真实 staff/BFF 权限仍由路由和服务端复核。
  */
-export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigationGroupDefinition[] = [
-  {
-    id: "inventory",
-    label: "库存管理",
-    paths: [
-      "/workbench/inventory",
-      "/workbench/publish",
-      "/workbench/inbound",
-      "/workbench/channel-inventory",
-    ],
-  },
-  {
-    id: "customers",
-    label: "客户管理",
-    paths: [
-      "/workbench/customers",
-      "/workbench/customer-demands",
-      "/workbench/orders",
-      "/workbench/outbound",
-      "/workbench/chat",
-    ],
-  },
-  {
-    id: "procurement",
-    label: "采购管理",
-    paths: [
-      "/workbench/procurement-demands",
-      "/workbench/procurement-orders",
-    ],
-  },
-  {
-    id: "operations",
-    label: "运营管理",
-    paths: [
-      "/merchants",
-      "/",
-      "/orders",
-      "/messages",
-      "/reviews",
-      "/portal-users",
-      "/analytics",
-    ],
-  },
-  {
-    id: "system",
-    label: "系统设置",
-    paths: [
-      "/staff",
-      "/workbench/company-info",
-      "/workbench/user-records",
-      "/exception-logs",
-    ],
-  },
-] as const;
+export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigationGroupDefinition[] =
+  [
+    {
+      id: "inventory",
+      label: "库存管理",
+      paths: [
+        "/workbench/inventory",
+        "/workbench/publish",
+        "/workbench/inbound",
+        "/workbench/channel-inventory",
+      ],
+    },
+    {
+      id: "customers",
+      label: "客户管理",
+      paths: [
+        "/workbench/customers",
+        "/workbench/customer-demands",
+        "/workbench/orders",
+        "/workbench/outbound",
+        "/workbench/chat",
+      ],
+    },
+    {
+      id: "procurement",
+      label: "采购管理",
+      paths: [
+        "/workbench/procurement-demands",
+        "/workbench/procurement-orders",
+      ],
+    },
+    {
+      id: "operations",
+      label: "运营管理",
+      paths: [
+        "/merchants",
+        "/",
+        "/orders",
+        "/messages",
+        "/reviews",
+        "/portal-users",
+        "/analytics",
+      ],
+    },
+    {
+      id: "system",
+      label: "系统设置",
+      paths: [
+        "/staff",
+        "/workbench/company-info",
+        "/workbench/user-records",
+        "/exception-logs",
+      ],
+    },
+  ] as const;
 
 /**
  * Legacy routes remain explicit navigation aliases for active state, breadcrumbs,
  * automatic group expansion, and business-path authorization detection. They are
  * intentionally absent from group `paths`, so they cannot render duplicate entries.
  */
-export const ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES: readonly AdminWorkbenchNavigationRouteAlias[] = [
-  {
-    path: "/admins",
-    canonicalPath: "/staff",
-    groupId: "system",
-    label: "员工与权限",
-  },
-  {
-    path: "/workbench/add-user",
-    canonicalPath: "/staff",
-    groupId: "system",
-    label: "员工与权限",
-  },
-  {
-    path: "/profile",
-    canonicalPath: "/profile",
-    groupId: "system",
-    label: "个人信息",
-  },
-] as const;
+export const ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES: readonly AdminWorkbenchNavigationRouteAlias[] =
+  [
+    {
+      path: "/admins",
+      canonicalPath: "/staff",
+      groupId: "system",
+      label: "员工与权限",
+    },
+    {
+      path: "/workbench/add-user",
+      canonicalPath: "/staff",
+      groupId: "system",
+      label: "员工与权限",
+    },
+    {
+      path: "/profile",
+      canonicalPath: "/profile",
+      groupId: "system",
+      label: "个人信息",
+    },
+  ] as const;
 
 const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
   "/workbench/inventory": "我的库存",
@@ -155,14 +159,14 @@ const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
 };
 
 /**
- * The complete existing business workbench path set. `/workbench/add-user` remains
- * here even though its only visible navigation target is now `/staff`.
+ * The complete merchant-business workbench path set. `/workbench/add-user` remains
+ * here even though its only visible navigation target is now `/staff`; the official
+ * channel-inventory path is deliberately excluded because it is native-admin only.
  */
 export const ADMIN_BUSINESS_WORKBENCH_PATHS = [
   "/workbench/inventory",
   "/workbench/publish",
   "/workbench/inbound",
-  "/workbench/channel-inventory",
   "/workbench/customers",
   "/workbench/customer-demands",
   "/workbench/orders",
@@ -186,14 +190,11 @@ const STORAGE_PREFIX_V1 = "admin-workbench-navigation:v1:expanded";
 const STORAGE_PREFIX_V2 = "admin-workbench-navigation:v2:expanded";
 
 export function createDefaultAdminWorkbenchNavigationExpandedGroups(): AdminWorkbenchNavigationExpandedGroups {
-  return ADMIN_WORKBENCH_NAVIGATION_GROUPS.reduce(
-    (expandedGroups, group) => {
-      // New accounts start compact; the active route is opened afterwards.
-      expandedGroups[group.id] = false;
-      return expandedGroups;
-    },
-    {} as AdminWorkbenchNavigationExpandedGroups
-  );
+  return ADMIN_WORKBENCH_NAVIGATION_GROUPS.reduce((expandedGroups, group) => {
+    // New accounts start compact; the active route is opened afterwards.
+    expandedGroups[group.id] = false;
+    return expandedGroups;
+  }, {} as AdminWorkbenchNavigationExpandedGroups);
 }
 
 export function groupAdminWorkbenchNavigationItems<
@@ -343,7 +344,9 @@ function normalizeExpandedGroups(
   return defaults;
 }
 
-function migrateV1ExpandedGroups(value: unknown): AdminWorkbenchNavigationExpandedGroups {
+function migrateV1ExpandedGroups(
+  value: unknown
+): AdminWorkbenchNavigationExpandedGroups {
   const defaults = createDefaultAdminWorkbenchNavigationExpandedGroups();
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return defaults;

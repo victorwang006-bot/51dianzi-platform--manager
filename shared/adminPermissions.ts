@@ -30,6 +30,16 @@ export const ADMIN_PERMISSIONS = [
   "orders.read",
   "analytics.read",
   /**
+   * 官方渠道库存是后台自有域：不读取、不映射商户 ERP 权限。除 super_admin 外，
+   * 只有员工级显式授权才可获得；团队成员/组长身份绝不自动附带这些模块权限。
+   */
+  "officialInventory.read",
+  "officialInventory.write",
+  "officialInventory.publish",
+  "officialInventory.note",
+  /** 官方团队配置是系统权限，只由真实 super_admin 在服务端认可，不能下放。 */
+  "officialTeams.manage",
+  /**
    * 后台业务网关权限。它们只允许经受控 BFF 访问主站企业领域服务，
    * 不等同于前台企业成员权限，且绝不能由角色默认权限自动取得。
    */
@@ -69,6 +79,10 @@ export const ASSIGNABLE_ADMIN_PERMISSIONS = [
   "messages.write",
   "orders.read",
   "analytics.read",
+  "officialInventory.read",
+  "officialInventory.write",
+  "officialInventory.publish",
+  "officialInventory.note",
   "business.context.read",
   "business.inventory.read",
   "business.inventory.write",
@@ -82,25 +96,36 @@ export const ASSIGNABLE_ADMIN_PERMISSIONS = [
   "business.orders.write",
 ] as const satisfies readonly AdminPermission[];
 
-export type AssignableAdminPermission = (typeof ASSIGNABLE_ADMIN_PERMISSIONS)[number];
+export type AssignableAdminPermission =
+  (typeof ASSIGNABLE_ADMIN_PERMISSIONS)[number];
 
-export function isAssignableAdminPermission(value: unknown): value is AssignableAdminPermission {
-  return typeof value === "string"
-    && (ASSIGNABLE_ADMIN_PERMISSIONS as readonly string[]).includes(value);
+export function isAssignableAdminPermission(
+  value: unknown
+): value is AssignableAdminPermission {
+  return (
+    typeof value === "string" &&
+    (ASSIGNABLE_ADMIN_PERMISSIONS as readonly string[]).includes(value)
+  );
 }
 
 /** 写权限自动补齐对应读权限；个人信息权限对所有普通后台用户固定保留。 */
 export function normalizeAssignedAdminPermissions(
-  values: readonly string[],
+  values: readonly string[]
 ): AdminPermission[] {
-  const next = new Set<AdminPermission>(values.filter(isAssignableAdminPermission));
+  const next = new Set<AdminPermission>(
+    values.filter(isAssignableAdminPermission)
+  );
   if (next.has("materials.write")) next.add("materials.read");
   if (next.has("merchants.write")) next.add("merchants.read");
   if (next.has("portalUsers.manage")) next.add("portalUsers.read");
   if (next.has("messages.write")) next.add("messages.read");
+  if (next.has("officialInventory.write")) next.add("officialInventory.read");
+  if (next.has("officialInventory.publish")) next.add("officialInventory.read");
+  if (next.has("officialInventory.note")) next.add("officialInventory.read");
   if (next.has("business.inventory.write")) next.add("business.inventory.read");
   if (next.has("business.customers.write")) next.add("business.customers.read");
-  if (next.has("business.procurement.write")) next.add("business.procurement.read");
+  if (next.has("business.procurement.write"))
+    next.add("business.procurement.read");
   if (next.has("business.users.write")) next.add("business.users.read");
   if (next.has("business.orders.write")) next.add("business.orders.read");
   next.add("profile.manage");
@@ -123,7 +148,12 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "profile.manage",
   ],
   // 普通用户：仅商户管理、订单中心，并按销售权限限制可见数据范围
-  merchant_mgr: ["merchants.read", "merchants.write", "orders.read", "profile.manage"],
+  merchant_mgr: [
+    "merchants.read",
+    "merchants.write",
+    "orders.read",
+    "profile.manage",
+  ],
   customer_svc: [
     "merchants.read",
     "portalUsers.read",
@@ -153,16 +183,24 @@ const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
 };
 
 export function isAdminRole(value: unknown): value is AdminRole {
-  return typeof value === "string" && (ADMIN_ROLES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (ADMIN_ROLES as readonly string[]).includes(value)
+  );
 }
 
-export function getAdminRolePermissions(role: AdminRole | string | null | undefined): readonly AdminPermission[] {
+export function getAdminRolePermissions(
+  role: AdminRole | string | null | undefined
+): readonly AdminPermission[] {
   if (!isAdminRole(role)) return [];
   return ROLE_PERMISSIONS[role];
 }
 
 export function isAdminPermission(value: unknown): value is AdminPermission {
-  return typeof value === "string" && (ADMIN_PERMISSIONS as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (ADMIN_PERMISSIONS as readonly string[]).includes(value)
+  );
 }
 
 /**
@@ -173,11 +211,17 @@ export function isAdminPermission(value: unknown): value is AdminPermission {
  */
 export function resolveAdminPermissions(
   role: AdminRole | string | null | undefined,
-  userPermissions?: readonly string[] | null,
+  userPermissions?: readonly string[] | null
 ): readonly AdminPermission[] {
   if (role === "super_admin") return ADMIN_PERMISSIONS;
   if (userPermissions && userPermissions.length > 0) {
-    return userPermissions.filter(isAdminPermission);
+    // officialTeams.manage is a non-delegable system capability.  Keep this
+    // defensive filter even though it is not assignable, so a stale/manual DB
+    // row can never make an ordinary account a team-configuration principal.
+    return userPermissions.filter(
+      (permission): permission is AdminPermission =>
+        permission !== "officialTeams.manage" && isAdminPermission(permission)
+    );
   }
   return getAdminRolePermissions(role);
 }
@@ -185,7 +229,7 @@ export function resolveAdminPermissions(
 export function hasAdminPermission(
   role: AdminRole | string | null | undefined,
   permission: AdminPermission,
-  userPermissions?: readonly string[] | null,
+  userPermissions?: readonly string[] | null
 ): boolean {
   return resolveAdminPermissions(role, userPermissions).includes(permission);
 }

@@ -527,7 +527,7 @@ export function adminPermissionsForUpdate(
 ): AdminPermission[] {
   if (role === "super_admin") return [];
   const preserved = existing.filter(permission =>
-    permission === "profile.manage" || permission.startsWith("business."),
+    permission === "profile.manage" || permission.startsWith("business.") || permission.startsWith("officialInventory."),
   );
   return normalizeAssignedAdminPermissions([...preserved, ...normalizeStaffAdminPermissions(draftVisible)]);
 }

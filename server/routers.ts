@@ -1,4 +1,7 @@
 import { businessRouter } from "./businessRouter";
+import { officialTeamsRouter } from "./routers/officialTeams";
+import { officialChannelInventoryRouter } from "./routers/officialChannelInventory";
+import { officialChannelLegacyRouter } from "./routers/officialChannelLegacy";
 import { COOKIE_NAME } from "@shared/const";
 import {
   ASSIGNABLE_ADMIN_PERMISSIONS,
@@ -689,19 +692,24 @@ export const materialInput = z.object({
 
 export const appRouter = router({
   business: businessRouter,
+  officialTeams: officialTeamsRouter,
+  officialChannelInventory: officialChannelInventoryRouter,
+  officialChannelLegacy: officialChannelLegacyRouter,
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => {
       if (!opts.ctx.user) return null;
       // 附带账号密码登录会话的后台角色（Manus OAuth 会话则为 super_admin 兼容显示）
+      const hasNativeAdminAccount = Boolean(opts.ctx.adminAccount) && opts.ctx.user.role === "admin";
       return {
         ...opts.ctx.user,
         adminRole: opts.ctx.adminAccount?.adminRole ?? ("super_admin" as const),
         username: opts.ctx.adminAccount?.username ?? null,
+        hasNativeAdminAccount,
         permissions: resolveAdminPermissions(
           opts.ctx.adminAccount?.adminRole ?? "super_admin",
           opts.ctx.adminPermissions,
-        ),
+        ).filter(permission => hasNativeAdminAccount || !permission.startsWith("official")),
       };
     }),
     logout: publicProcedure.mutation(({ ctx }) => {

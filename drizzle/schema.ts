@@ -1102,3 +1102,6 @@ export const exceptionLogs = mysqlTable("exception_logs", {
 }));
 
 export type ExceptionLog = typeof exceptionLogs.$inferSelect;
+
+// Separate native-admin domain; merchant ERP models are not modified.
+export * from "./officialChannelSchema";

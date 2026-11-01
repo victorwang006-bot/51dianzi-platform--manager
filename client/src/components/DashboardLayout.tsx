@@ -118,7 +118,8 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         icon: Archive,
         label: "渠道库存",
         path: "/workbench/channel-inventory",
-        workbenchCapability: "inventory.channel",
+        permission: "officialInventory.read",
+        chunk: "officialChannelInventory",
         nested: false,
       },
     ],
@@ -432,8 +433,7 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeNavigationRoute = getAdminWorkbenchNavigationRoute(location);
   const isMobile = useIsMobile();
-  const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ??
-    "super_admin") as AdminRole;
+  const adminRole = (user as { adminRole?: AdminRole } | null)?.adminRole ?? "";
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
   const trpcUtils = trpc.useUtils();
@@ -461,27 +461,37 @@ function DashboardLayoutContent({
     "profile.manage",
     adminPermissions
   );
-  const accountRoleLabel = adminRoleLabels[
-    (user as { adminRole?: string })?.adminRole ?? ""
-  ] ?? "管理员";
+  const accountRoleLabel =
+    adminRoleLabels[(user as { adminRole?: string })?.adminRole ?? ""] ??
+    "管理员";
   const visibleMenuItems = menuGroups.flatMap(group =>
     group.items.filter(item => {
-      const hasNativeAdminPermission = item.permission !== undefined
-        && hasAdminPermission(adminRole, item.permission, adminPermissions);
-      const hasWorkbenchPermission = item.workbenchCapability !== undefined
-        && hasBusinessWorkbenchCapability(
+      if (
+        item.path === "/workbench/channel-inventory" &&
+        user?.hasNativeAdminAccount !== true
+      )
+        return false;
+      const hasNativeAdminPermission =
+        item.permission !== undefined &&
+        hasAdminPermission(adminRole, item.permission, adminPermissions);
+      const hasWorkbenchPermission =
+        item.workbenchCapability !== undefined &&
+        hasBusinessWorkbenchCapability(
           workbenchCapabilities,
           item.workbenchCapability
         );
-      const hasFallbackWorkbenchPermission = item.fallbackWorkbenchCapability !== undefined
-        && hasBusinessWorkbenchCapability(
+      const hasFallbackWorkbenchPermission =
+        item.fallbackWorkbenchCapability !== undefined &&
+        hasBusinessWorkbenchCapability(
           workbenchCapabilities,
           item.fallbackWorkbenchCapability
         );
 
-      return hasNativeAdminPermission
-        || hasWorkbenchPermission
-        || hasFallbackWorkbenchPermission;
+      return (
+        hasNativeAdminPermission ||
+        hasWorkbenchPermission ||
+        hasFallbackWorkbenchPermission
+      );
     })
   );
   const canReadMessages = hasAdminPermission(
@@ -500,37 +510,48 @@ function DashboardLayoutContent({
     "orders.read",
     "logs.read",
     "portalUsers.read",
-  ].some(permission => hasAdminPermission(
-    adminRole,
-    permission as AdminPermission,
-    adminPermissions,
-  ));
-  const { data: moduleNotificationData } = trpc.moduleNotification.summary.useQuery(undefined, {
-    enabled: canReadAnyNotifiedModule,
-    refetchInterval: canReadAnyNotifiedModule ? 30000 : false,
-  });
+  ].some(permission =>
+    hasAdminPermission(
+      adminRole,
+      permission as AdminPermission,
+      adminPermissions
+    )
+  );
+  const { data: moduleNotificationData } =
+    trpc.moduleNotification.summary.useQuery(undefined, {
+      enabled: canReadAnyNotifiedModule,
+      refetchInterval: canReadAnyNotifiedModule ? 30000 : false,
+    });
   const moduleNotificationCounts = moduleNotificationData?.counts ?? {
     merchants: 0,
     orders: 0,
     reviews: 0,
     portalUsers: 0,
   };
-  const activeNotificationModule = Object.entries(ADMIN_NOTIFICATION_MODULE_BY_PATH)
-    .find(([path]) => isMenuPathActive(location, path))?.[1];
+  const activeNotificationModule = Object.entries(
+    ADMIN_NOTIFICATION_MODULE_BY_PATH
+  ).find(([path]) => isMenuPathActive(location, path))?.[1];
   const lastMarkedModuleRef = useRef<AdminNotificationModule | null>(null);
   const markModuleSeen = trpc.moduleNotification.markSeen.useMutation({
     onMutate: async ({ module }) => {
       await trpcUtils.moduleNotification.summary.cancel();
       const previous = trpcUtils.moduleNotification.summary.getData();
-      trpcUtils.moduleNotification.summary.setData(undefined, current => current ? {
-        ...current,
-        counts: { ...current.counts, [module]: 0 },
-      } : current);
+      trpcUtils.moduleNotification.summary.setData(undefined, current =>
+        current
+          ? {
+              ...current,
+              counts: { ...current.counts, [module]: 0 },
+            }
+          : current
+      );
       return { previous };
     },
     onError: (_error, variables, context) => {
       if (context?.previous) {
-        trpcUtils.moduleNotification.summary.setData(undefined, context.previous);
+        trpcUtils.moduleNotification.summary.setData(
+          undefined,
+          context.previous
+        );
       }
       if (lastMarkedModuleRef.current === variables.module) {
         lastMarkedModuleRef.current = null;
@@ -623,12 +644,14 @@ function DashboardLayoutContent({
             <AdminWorkbenchNavigation
               items={visibleMenuItems}
               renderItem={item => {
-                const isActive = activeNavigationRoute?.canonicalPath === item.path;
-                const badgeCount = item.path === "/messages"
-                  ? unreadTotal
-                  : item.notificationModule
-                    ? moduleNotificationCounts[item.notificationModule]
-                    : 0;
+                const isActive =
+                  activeNavigationRoute?.canonicalPath === item.path;
+                const badgeCount =
+                  item.path === "/messages"
+                    ? unreadTotal
+                    : item.notificationModule
+                      ? moduleNotificationCounts[item.notificationModule]
+                      : 0;
                 const showUnread = badgeCount > 0;
                 return (
                   <SidebarMenuItem key={item.path}>
@@ -637,13 +660,19 @@ function DashboardLayoutContent({
                       onClick={() => {
                         if (item.notificationModule) {
                           lastMarkedModuleRef.current = item.notificationModule;
-                          markModuleSeen.mutate({ module: item.notificationModule });
+                          markModuleSeen.mutate({
+                            module: item.notificationModule,
+                          });
                         }
-                        const navigationTarget = buildBusinessNavigationTarget(
-                          `${window.location.pathname}${window.location.search}`,
-                          item.path,
-                        );
-                        if (navigationTarget !== null) setLocation(navigationTarget);
+                        const navigationTarget =
+                          item.path === "/workbench/channel-inventory"
+                            ? item.path
+                            : buildBusinessNavigationTarget(
+                                `${window.location.pathname}${window.location.search}`,
+                                item.path
+                              );
+                        if (navigationTarget !== null)
+                          setLocation(navigationTarget);
                       }}
                       onPointerEnter={() => {
                         if (item.chunk) preloadAdminRoute(item.chunk);
@@ -681,7 +710,9 @@ function DashboardLayoutContent({
               aria-label={isCollapsed ? "展开导航" : "收起导航"}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:justify-center"
             >
-              <PanelLeft className={`h-4 w-4 shrink-0 transition-transform ${isCollapsed ? "rotate-180" : ""}`} />
+              <PanelLeft
+                className={`h-4 w-4 shrink-0 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
+              />
               <span className="group-data-[collapsible=icon]:hidden">
                 {isCollapsed ? "展开导航" : "收起导航"}
               </span>
@@ -701,12 +732,19 @@ function DashboardLayoutContent({
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            {isMobile ? <SidebarTrigger className="h-9 w-9 shrink-0 rounded-lg bg-background" /> : null}
-            <nav aria-label="当前位置" className="flex min-w-0 items-center gap-2 text-sm">
+            {isMobile ? (
+              <SidebarTrigger className="h-9 w-9 shrink-0 rounded-lg bg-background" />
+            ) : null}
+            <nav
+              aria-label="当前位置"
+              className="flex min-w-0 items-center gap-2 text-sm"
+            >
               <span className="truncate font-medium text-foreground">
                 {activeNavigationRoute?.groupLabel ?? "后台管理"}
               </span>
-              <span aria-hidden="true" className="text-muted-foreground">/</span>
+              <span aria-hidden="true" className="text-muted-foreground">
+                /
+              </span>
               <span className="truncate text-muted-foreground">
                 {activeNavigationRoute?.label ?? "概览"}
               </span>

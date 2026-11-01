@@ -22,6 +22,7 @@ const pages = [
   "ExceptionLogs",
   "Reviews",
   "Analytics",
+  "OfficialChannelInventory",
   "NotFound",
 ] as const;
 
@@ -35,18 +36,20 @@ describe("后台首屏分片契约", () => {
     }
     expect(appSource).toContain("Suspense");
     expect(appSource).toMatch(/<LazyLogin\s*\/>/);
-    expect(chunksSource).toContain('import("@/business/BusinessWorkbenchPage")');
+    expect(chunksSource).toContain(
+      'import("@/business/BusinessWorkbenchPage")'
+    );
     expect(appSource).toContain("LazyBusinessWorkbench");
   });
 
   it("统一注册工作台业务路径，且不从浏览器侧推断商户身份", () => {
+    const normalizedAppSource = appSource.replace(/\s+/g, "");
     const workbenchRoutes = [
       ["/workbench", "BusinessWorkbenchRoute"],
       ["/workbench/inventory", "BusinessInventoryRoute"],
       ["/workbench/publish/:id/edit", "BusinessInventoryRoute"],
       ["/workbench/publish", "BusinessInventoryRoute"],
       ["/workbench/inbound", "BusinessInventoryRoute"],
-      ["/workbench/channel-inventory", "BusinessInventoryRoute"],
       ["/workbench/customers/:id", "BusinessCustomersRoute"],
       ["/workbench/customers", "BusinessCustomersRoute"],
       ["/workbench/customer-demands", "BusinessCustomersRoute"],
@@ -64,8 +67,8 @@ describe("后台首屏分片契约", () => {
     ] as const;
 
     for (const [path, component] of workbenchRoutes) {
-      expect(appSource).toContain(
-        `<Route path={"${path}"} component={${component}} />`
+      expect(normalizedAppSource).toContain(
+        `<Routepath={"${path}"}component={${component}}/>`
       );
     }
     expect(appSource).toContain('routeBase="/workbench"');
@@ -82,12 +85,24 @@ describe("后台首屏分片契约", () => {
     expect(appSource).not.toContain('permission="business.users.read"');
     expect(appSource).toContain('<PermissionGate permission="materials.read">');
     expect(appSource).toContain('<PermissionGate permission="admins.manage">');
+    expect(appSource).toContain(
+      '<PermissionGate permission="officialInventory.read">'
+    );
+    expect(normalizedAppSource).toContain(
+      'path={"/workbench/channel-inventory"}component={OfficialChannelInventoryRoute}'
+    );
+    expect(normalizedAppSource).not.toContain(
+      'path={"/workbench/channel-inventory"}component={BusinessInventoryRoute}'
+    );
   });
 
   it("未认证门卫不挂载或预取后台页面，权限判断仍在懒加载页面之前", () => {
     expect(appSource).toMatch(/if\s*\(!user\)\s*return\s*<RouteFallback\s*\/>/);
-    expect(appSource).toContain(
-      "if (hasAdminPermission(role, permission, permissions))"
+    expect(appSource).toMatch(
+      /if\s*\(\s*hasRequiredNativeAccount\s*&&\s*hasAdminPermission\(\s*role,\s*permission,\s*permissions\s*\)\s*\)/
+    );
+    expect(appSource).toMatch(
+      /!permission\.startsWith\("official"\)\s*\|\|\s*user\?\.hasNativeAdminAccount\s*===\s*true/
     );
     expect(appSource).toMatch(
       /return\s*\(\s*<LazyScreen>\s*<LazyForbidden\s*\/>\s*<\/LazyScreen>\s*\)/
@@ -103,10 +118,18 @@ describe("后台首屏分片契约", () => {
     // Native operation/system entries retain their old authorization source;
     // workbench navigation deliberately stays on the separate BFF projection.
     const normalizedDashboard = dashboardSource.replace(/\s+/g, "");
-    expect(normalizedDashboard).toContain("hasAdminPermission(adminRole,item.permission,adminPermissions)");
-    expect(normalizedDashboard).toContain("hasBusinessWorkbenchCapability(workbenchCapabilities,item.workbenchCapability)");
-    expect(normalizedDashboard).toContain("hasBusinessWorkbenchCapability(workbenchCapabilities,item.fallbackWorkbenchCapability)");
-    expect(normalizedDashboard).toContain("hasNativeAdminPermission||hasWorkbenchPermission||hasFallbackWorkbenchPermission");
+    expect(normalizedDashboard).toContain(
+      "hasAdminPermission(adminRole,item.permission,adminPermissions)"
+    );
+    expect(normalizedDashboard).toContain(
+      "hasBusinessWorkbenchCapability(workbenchCapabilities,item.workbenchCapability)"
+    );
+    expect(normalizedDashboard).toContain(
+      "hasBusinessWorkbenchCapability(workbenchCapabilities,item.fallbackWorkbenchCapability)"
+    );
+    expect(normalizedDashboard).toContain(
+      "hasNativeAdminPermission||hasWorkbenchPermission||hasFallbackWorkbenchPermission"
+    );
     expect(dashboardSource).toContain('path: "/staff"');
     expect(dashboardSource).toContain('chunk: "staff"');
     expect(dashboardSource).toMatch(

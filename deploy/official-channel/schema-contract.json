@@ -1,0 +1,248 @@
+{
+  "contractSourceSha256": "15a2a28676ff7aec78213402747d8f2e143413aa315ebd11ff431119630a0dfd",
+  "tableDefinitions": [
+    [
+      "official_channel_teams",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_teams (\n      id INT NOT NULL AUTO_INCREMENT,\n      name VARCHAR(128) NOT NULL,\n      status ENUM('active', 'archived') NOT NULL DEFAULT 'active',\n      revision INT UNSIGNED NOT NULL DEFAULT 1,\n      createdByAdminUserId INT NOT NULL,\n      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      KEY official_channel_teams_status_updated_idx (status, updatedAt)\n    ) ENGINE=InnoDB\n  "
+    ],
+    [
+      "official_channel_team_members",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_team_members (\n      id INT NOT NULL AUTO_INCREMENT,\n      adminUserId INT NOT NULL,\n      teamId INT NOT NULL,\n      role ENUM('member', 'leader') NOT NULL DEFAULT 'member',\n      leaderTeamId INT GENERATED ALWAYS AS (CASE WHEN role = 'leader' THEN teamId ELSE NULL END) STORED,\n      revision INT UNSIGNED NOT NULL DEFAULT 1,\n      updatedByAdminUserId INT NOT NULL,\n      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      UNIQUE KEY official_channel_team_members_admin_user_unique (adminUserId),\n      KEY official_channel_team_members_team_idx (teamId),\n      UNIQUE KEY official_channel_team_members_leader_team_unique (leaderTeamId)\n    ) ENGINE=InnoDB\n  "
+    ],
+    [
+      "official_channel_sources",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_sources (\n      id INT NOT NULL AUTO_INCREMENT,\n      teamId INT NULL,\n      name VARCHAR(128) NOT NULL,\n      type ENUM('factory', 'agent', 'trade', 'other') NOT NULL,\n      contactName VARCHAR(128) NULL,\n      phone VARCHAR(64) NULL,\n      wechat VARCHAR(128) NULL,\n      qq VARCHAR(64) NULL,\n      notes TEXT NULL,\n      active BOOLEAN NOT NULL DEFAULT TRUE,\n      publicationApproved BOOLEAN NOT NULL DEFAULT FALSE,\n      everPublished BOOLEAN NOT NULL DEFAULT FALSE,\n      createdByAdminUserId INT NOT NULL,\n      revision INT UNSIGNED NOT NULL DEFAULT 1,\n      legacySourceId VARCHAR(64) NULL,\n      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      KEY official_channel_sources_team_active_idx (teamId, active),\n      UNIQUE KEY official_channel_sources_legacy_source_unique (legacySourceId)\n    ) ENGINE=InnoDB\n  "
+    ],
+    [
+      "official_channel_stocks",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_stocks (\n      id INT NOT NULL AUTO_INCREMENT,\n      sourceId INT NOT NULL,\n      teamId INT NULL,\n      createdByAdminUserId INT NOT NULL,\n      ownerAdminUserId INT NOT NULL,\n      partNumber VARCHAR(256) NOT NULL,\n      brand VARCHAR(128) NULL,\n      qty INT UNSIGNED NULL,\n      dateCode VARCHAR(64) NULL,\n      price VARCHAR(64) NULL,\n      currency VARCHAR(8) NOT NULL DEFAULT 'CNY',\n      taxIncluded BOOLEAN NULL,\n      leadTime VARCHAR(128) NULL,\n      note TEXT NULL,\n      status ENUM('draft', 'published', 'offshelf') NOT NULL DEFAULT 'draft',\n      revision INT UNSIGNED NOT NULL DEFAULT 1,\n      createRequestId VARCHAR(64) NOT NULL,\n      createPayloadHash VARCHAR(64) NOT NULL,\n      publishedAt TIMESTAMP NULL,\n      legacyMaterialId VARCHAR(64) NULL,\n      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      KEY official_channel_stocks_source_idx (sourceId),\n      KEY official_channel_stocks_team_status_idx (teamId, status, updatedAt),\n      KEY official_channel_stocks_team_owner_idx (teamId, ownerAdminUserId, updatedAt),\n      UNIQUE KEY official_channel_stocks_create_request_unique (createRequestId),\n      UNIQUE KEY official_channel_stocks_legacy_material_unique (legacyMaterialId),\n      CONSTRAINT official_channel_stocks_qty_nonnegative CHECK (qty IS NULL OR qty >= 0)\n    ) ENGINE=InnoDB\n  "
+    ],
+    [
+      "official_channel_stock_notes",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_stock_notes (\n      id BIGINT NOT NULL AUTO_INCREMENT,\n      stockId INT NOT NULL,\n      authorAdminUserId INT NOT NULL,\n      body TEXT NOT NULL,\n      requestId VARCHAR(64) NOT NULL,\n      payloadHash VARCHAR(64) NOT NULL,\n      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      KEY official_channel_stock_notes_stock_created_idx (stockId, createdAt),\n      UNIQUE KEY official_channel_stock_notes_request_unique (requestId)\n    ) ENGINE=InnoDB\n  "
+    ],
+    [
+      "official_channel_publications",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_publications (\n      id INT NOT NULL AUTO_INCREMENT,\n      stockId INT NOT NULL,\n      publicId VARCHAR(64) NOT NULL,\n      snapshot JSON NOT NULL,\n      batchId VARCHAR(64) NOT NULL,\n      revision INT UNSIGNED NOT NULL DEFAULT 1,\n      publishedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      UNIQUE KEY official_channel_publications_stock_unique (stockId),\n      UNIQUE KEY official_channel_publications_public_id_unique (publicId),\n      KEY official_channel_publications_published_idx (publishedAt)\n    ) ENGINE=InnoDB\n  "
+    ],
+    [
+      "official_channel_audits",
+      "\n    CREATE TABLE IF NOT EXISTS official_channel_audits (\n      id BIGINT NOT NULL AUTO_INCREMENT,\n      action VARCHAR(64) NOT NULL,\n      targetId VARCHAR(64) NOT NULL,\n      actorAdminUserId INT NOT NULL,\n      requestId VARCHAR(64) NOT NULL,\n      payloadHash VARCHAR(64) NOT NULL,\n      beforeData JSON NULL,\n      afterData JSON NULL,\n      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n      PRIMARY KEY (id),\n      UNIQUE KEY official_channel_audits_request_unique (requestId),\n      KEY official_channel_audits_target_created_idx (targetId, createdAt),\n      KEY official_channel_audits_actor_created_idx (actorAdminUserId, createdAt)\n    ) ENGINE=InnoDB\n  "
+    ]
+  ],
+  "expectedColumns": {
+    "official_channel_teams": [
+      "id",
+      "name",
+      "status",
+      "revision",
+      "createdByAdminUserId",
+      "createdAt",
+      "updatedAt"
+    ],
+    "official_channel_team_members": [
+      "id",
+      "adminUserId",
+      "teamId",
+      "role",
+      "leaderTeamId",
+      "revision",
+      "updatedByAdminUserId",
+      "createdAt",
+      "updatedAt"
+    ],
+    "official_channel_sources": [
+      "id",
+      "teamId",
+      "name",
+      "type",
+      "contactName",
+      "phone",
+      "wechat",
+      "qq",
+      "notes",
+      "active",
+      "publicationApproved",
+      "everPublished",
+      "createdByAdminUserId",
+      "revision",
+      "legacySourceId",
+      "createdAt",
+      "updatedAt"
+    ],
+    "official_channel_stocks": [
+      "id",
+      "sourceId",
+      "teamId",
+      "createdByAdminUserId",
+      "ownerAdminUserId",
+      "partNumber",
+      "brand",
+      "qty",
+      "dateCode",
+      "price",
+      "currency",
+      "taxIncluded",
+      "leadTime",
+      "note",
+      "status",
+      "revision",
+      "createRequestId",
+      "createPayloadHash",
+      "publishedAt",
+      "legacyMaterialId",
+      "createdAt",
+      "updatedAt"
+    ],
+    "official_channel_stock_notes": [
+      "id",
+      "stockId",
+      "authorAdminUserId",
+      "body",
+      "requestId",
+      "payloadHash",
+      "createdAt"
+    ],
+    "official_channel_publications": [
+      "id",
+      "stockId",
+      "publicId",
+      "snapshot",
+      "batchId",
+      "revision",
+      "publishedAt",
+      "updatedAt"
+    ],
+    "official_channel_audits": [
+      "id",
+      "action",
+      "targetId",
+      "actorAdminUserId",
+      "requestId",
+      "payloadHash",
+      "beforeData",
+      "afterData",
+      "createdAt"
+    ]
+  },
+  "expectedIndexes": {
+    "official_channel_teams": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_teams_status_updated_idx": {
+        "columns": "status,updatedAt",
+        "unique": false
+      }
+    },
+    "official_channel_team_members": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_team_members_admin_user_unique": {
+        "columns": "adminUserId",
+        "unique": true
+      },
+      "official_channel_team_members_team_idx": {
+        "columns": "teamId",
+        "unique": false
+      },
+      "official_channel_team_members_leader_team_unique": {
+        "columns": "leaderTeamId",
+        "unique": true
+      }
+    },
+    "official_channel_sources": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_sources_team_active_idx": {
+        "columns": "teamId,active",
+        "unique": false
+      },
+      "official_channel_sources_legacy_source_unique": {
+        "columns": "legacySourceId",
+        "unique": true
+      }
+    },
+    "official_channel_stocks": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_stocks_source_idx": {
+        "columns": "sourceId",
+        "unique": false
+      },
+      "official_channel_stocks_team_status_idx": {
+        "columns": "teamId,status,updatedAt",
+        "unique": false
+      },
+      "official_channel_stocks_team_owner_idx": {
+        "columns": "teamId,ownerAdminUserId,updatedAt",
+        "unique": false
+      },
+      "official_channel_stocks_create_request_unique": {
+        "columns": "createRequestId",
+        "unique": true
+      },
+      "official_channel_stocks_legacy_material_unique": {
+        "columns": "legacyMaterialId",
+        "unique": true
+      }
+    },
+    "official_channel_stock_notes": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_stock_notes_stock_created_idx": {
+        "columns": "stockId,createdAt",
+        "unique": false
+      },
+      "official_channel_stock_notes_request_unique": {
+        "columns": "requestId",
+        "unique": true
+      }
+    },
+    "official_channel_publications": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_publications_stock_unique": {
+        "columns": "stockId",
+        "unique": true
+      },
+      "official_channel_publications_public_id_unique": {
+        "columns": "publicId",
+        "unique": true
+      },
+      "official_channel_publications_published_idx": {
+        "columns": "publishedAt",
+        "unique": false
+      }
+    },
+    "official_channel_audits": {
+      "PRIMARY": {
+        "columns": "id",
+        "unique": true
+      },
+      "official_channel_audits_request_unique": {
+        "columns": "requestId",
+        "unique": true
+      },
+      "official_channel_audits_target_created_idx": {
+        "columns": "targetId,createdAt",
+        "unique": false
+      },
+      "official_channel_audits_actor_created_idx": {
+        "columns": "actorAdminUserId,createdAt",
+        "unique": false
+      }
+    }
+  }
+}

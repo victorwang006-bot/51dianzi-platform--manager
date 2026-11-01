@@ -26,6 +26,7 @@ import {
   isNotNull,
   isNull,
   like,
+  notInArray,
   lt,
   or,
   sql,
@@ -6045,19 +6046,28 @@ export async function getAdminUserPermissionsByIds(adminUserIds: number[]) {
   return map;
 }
 
-/** 在事务内替换用户级模块权限；超级管理员应传空数组，表示由代码授予全部权限。 */
+/** 普通后台配置只替换旧模块权限；官方四权限只能由官方团队接口独立修改。 */
 async function replaceAdminUserPermissions(
   tx: DbExecutor,
   adminUserId: number,
   permissions: string[]
 ) {
+  const officialPermissions = ["officialInventory.read", "officialInventory.write", "officialInventory.publish", "officialInventory.note"];
+  const preservedOfficial = await tx
+    .select({ permission: adminUserPermissions.permission })
+    .from(adminUserPermissions)
+    .where(and(eq(adminUserPermissions.adminUserId, adminUserId), inArray(adminUserPermissions.permission, officialPermissions)))
+    .for("update");
+  const editable = permissions.filter(permission => !officialPermissions.includes(permission));
   await tx
     .delete(adminUserPermissions)
-    .where(eq(adminUserPermissions.adminUserId, adminUserId));
-  if (permissions.length === 0) return;
-  await tx
-    .insert(adminUserPermissions)
-    .values(permissions.map(permission => ({ adminUserId, permission })));
+    .where(and(eq(adminUserPermissions.adminUserId, adminUserId), notInArray(adminUserPermissions.permission, officialPermissions)));
+  if (editable.length > 0) {
+    await tx
+      .insert(adminUserPermissions)
+      .values(editable.map(permission => ({ adminUserId, permission })));
+  }
+  return [...preservedOfficial.map(row => row.permission), ...editable];
 }
 
 /** 记录权限变更审计；审计失败不应阻断业务事务回滚，因此由调用方在同一事务中写入。 */
@@ -6685,13 +6695,13 @@ export async function updateAdminUser(
         nextRole === "super_admin"
           ? []
           : normalizeAssignedAdminPermissions(input.permissions ?? before);
-      await replaceAdminUserPermissions(tx, id, nextPermissions);
+      const actualPermissions = await replaceAdminUserPermissions(tx, id, nextPermissions);
       if (input.permissions !== undefined || nextRole !== existing.adminRole) {
         await insertAdminUserPermissionAudit(tx, {
           adminUserId: id,
           ...input.permissionAudit,
           beforePermissions: before,
-          afterPermissions: nextPermissions,
+          afterPermissions: actualPermissions,
         });
       }
     }

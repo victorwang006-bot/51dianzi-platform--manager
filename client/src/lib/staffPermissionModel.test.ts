@@ -215,6 +215,12 @@ describe("staff permission model", () => {
       .toEqual(expect.arrayContaining(["profile.manage", "business.inventory.read", "messages.read", "messages.write"]));
   });
 
+  it("普通后台操作权限保存保留独立官方四权限，不把它们混入ERP或可见操作控件", () => {
+    const official = ["officialInventory.read", "officialInventory.write", "officialInventory.publish", "officialInventory.note"];
+    expect(adminPermissionsForUpdate([...official, "profile.manage"], ["messages.read"], "operation"))
+      .toEqual(expect.arrayContaining([...official, "profile.manage", "messages.read"]));
+  });
+
   it("列表展示只显示前两项真实 ERP 权限，并把其余项交给统一配置窗口", () => {
     const preview = staffErpPermissionPreview({
       member: {
