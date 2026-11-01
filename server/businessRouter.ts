@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "./_core/trpc";
+import { readonlyQueryCorrelation } from "./_core/readonlyQueryTiming";
 import {
   assertBusinessMerchantAccess,
   businessEnterpriseBindingFromMerchant,
@@ -20,6 +21,8 @@ import {
   callPlatformBusinessCommand,
   getPlatformBusinessContext,
   PlatformBusinessPublicError,
+  PlatformBusinessServiceError,
+  type PlatformBusinessUpstreamTiming,
   validatePlatformBusinessStaffCandidate,
 } from "./platformBusinessApi";
 import type { TrpcContext } from "./_core/context";
@@ -137,6 +140,65 @@ function merchantCanEnterWorkbench(
   projection: BusinessWorkbenchProjection,
 ) {
   return context.staffPrincipal.status === "ready" && projection.workbenchCapabilities.length > 0;
+}
+
+type NavigationCandidateResult = "AVAILABLE" | "INELIGIBLE" | "RATE_LIMITED" | "UNAVAILABLE";
+
+const NAVIGATION_INELIGIBLE_TRPC_CODES = new Set(["FORBIDDEN", "NOT_FOUND", "PRECONDITION_FAILED"]);
+
+function navigationCandidateResult(error: unknown): Exclude<NavigationCandidateResult, "AVAILABLE"> {
+  if (error instanceof PlatformBusinessPublicError) {
+    if (error.code === "TOO_MANY_REQUESTS") return "RATE_LIMITED";
+    if (NAVIGATION_INELIGIBLE_TRPC_CODES.has(error.code)) return "INELIGIBLE";
+    // TIMEOUT, BAD_REQUEST and CONFLICT do not prove a candidate is unauthorized.
+    return "UNAVAILABLE";
+  }
+  if (error instanceof TRPCError) {
+    if (error.code === "TOO_MANY_REQUESTS") return "RATE_LIMITED";
+    if (NAVIGATION_INELIGIBLE_TRPC_CODES.has(error.code)) return "INELIGIBLE";
+    return "UNAVAILABLE";
+  }
+  if (error instanceof PlatformBusinessServiceError) return "UNAVAILABLE";
+  return "UNAVAILABLE";
+}
+
+function navigationFailure(result: Exclude<NavigationCandidateResult, "AVAILABLE" | "INELIGIBLE">) {
+  if (result === "RATE_LIMITED") {
+    return new TRPCError({ code: "TOO_MANY_REQUESTS", message: "业务导航请求过于频繁，请稍后重试" });
+  }
+  return new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务导航暂时不可用，请稍后重试" });
+}
+
+function logNavigationCandidate(input: {
+  correlationId: string;
+  adminAccountId: number;
+  candidateCount: number;
+  candidateOrdinal: number;
+  result: NavigationCandidateResult;
+  totalMs: number;
+  scopeLookupMs?: number;
+  upstreamTiming?: PlatformBusinessUpstreamTiming;
+}) {
+  // Deliberately no merchant identifier, error name/message/stack, request URL,
+  // portal key, Cookie, profile, or SQL. The numeric admin identity is an audit
+  // principal, not a user profile, and the correlation id is request-local.
+  try {
+    const upstreamMs = input.upstreamTiming
+      ? input.upstreamTiming.configMs + input.upstreamTiming.requestMs + input.upstreamTiming.decodeMs : 0;
+    console.info("[businessBff] navigation candidate", {
+      correlationId: input.correlationId,
+      identity: { adminAccountId: input.adminAccountId },
+      candidateCount: input.candidateCount,
+      candidateOrdinal: input.candidateOrdinal,
+      result: input.result,
+      totalMs: input.totalMs,
+      scopeLookupMs: input.scopeLookupMs ?? 0,
+      authorizationMs: Math.max(0, input.totalMs - upstreamMs),
+      upstreamTiming: input.upstreamTiming ?? null,
+    });
+  } catch {
+    // Observability cannot change authorization or the availability result.
+  }
 }
 
 type CurrentBusinessAuthorization = {
@@ -594,17 +656,34 @@ export const businessRouter = router({
    */
   navigation: publicProcedure.query(async ({ ctx }) => {
     const account = requireBusinessAdminAccount(ctx);
-    const configuredMerchantIds = new Set(getBusinessWorkbenchMerchantIds());
-    const scopedMerchantIds = (await db.listActiveBusinessMerchantScopes(account.id))
-      .filter(scope => configuredMerchantIds.has(scope.merchantId) && businessScopeAllows(scope, "context", "read"))
-      .map(scope => scope.merchantId);
-    const merchants = (await Promise.all(scopedMerchantIds.map(async merchantId => {
+    const correlationId = readonlyQueryCorrelation(ctx.req);
+    const scopeLookupStartedAt = Date.now();
+    let scopedMerchantIds: number[];
+    try {
+      const configuredMerchantIds = new Set(getBusinessWorkbenchMerchantIds());
+      scopedMerchantIds = (await db.listActiveBusinessMerchantScopes(account.id))
+        .filter(scope => configuredMerchantIds.has(scope.merchantId) && businessScopeAllows(scope, "context", "read"))
+        .map(scope => scope.merchantId);
+    } catch {
+      const elapsed = Math.max(0, Date.now() - scopeLookupStartedAt);
+      logNavigationCandidate({ correlationId, adminAccountId: account.id, candidateCount: 0,
+        candidateOrdinal: 0, result: "UNAVAILABLE", totalMs: elapsed, scopeLookupMs: elapsed });
+      throw navigationFailure("UNAVAILABLE");
+    }
+    const scopeLookupMs = Math.max(0, Date.now() - scopeLookupStartedAt);
+    const merchants = (await Promise.all(scopedMerchantIds.map(async (merchantId, index) => {
+      const candidateStartedAt = Date.now();
+      let upstreamTiming: PlatformBusinessUpstreamTiming | undefined;
       try {
-        return await withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account: currentAccount, staffBinding, scope, merchant }) => {
+        const choice = await withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account: currentAccount, staffBinding, scope, merchant }) => {
           const context = await getPlatformBusinessContext(businessEnterpriseBindingFromMerchant(merchant), {
             staffUserId: staffBinding.frontUserId,
             adminAccountId: currentAccount.id,
             bindingVersion: staffBinding.bindingVersion,
+          }, {
+            onUpstreamTiming: timing => {
+              upstreamTiming = timing;
+            },
           });
           const projection = projectBusinessWorkbenchCapabilities({
             scope,
@@ -614,10 +693,38 @@ export const businessRouter = router({
             ? toBusinessMerchantChoice(merchant, projection)
             : null;
         });
-      } catch {
-        // A stale/disabled ERP tenant, revoked binding or scope is hidden. It
-        // is never represented by a permissive display capability.
-        return null;
+        logNavigationCandidate({
+          correlationId,
+          adminAccountId: account.id,
+          candidateCount: scopedMerchantIds.length,
+          candidateOrdinal: index + 1,
+          result: choice ? "AVAILABLE" : "INELIGIBLE",
+          totalMs: Math.max(0, Date.now() - candidateStartedAt),
+          scopeLookupMs,
+          upstreamTiming,
+        });
+        return choice;
+      } catch (error) {
+        const result = navigationCandidateResult(error);
+        logNavigationCandidate({
+          correlationId,
+          adminAccountId: account.id,
+          candidateCount: scopedMerchantIds.length,
+          candidateOrdinal: index + 1,
+          result,
+          totalMs: Math.max(0, Date.now() - candidateStartedAt),
+          scopeLookupMs,
+          upstreamTiming,
+        });
+        if (result === "INELIGIBLE") {
+          // A verified revoked scope/binding, disabled ERP tenant or real
+          // upstream authorization denial cannot create a permissive choice.
+          // It may be omitted, but no other candidate failure may be omitted.
+          return null;
+        }
+        // Network, timeout, 5xx, parsing/configuration and unknown failures
+        // leave this candidate unverified. Do not calculate a wider intersection.
+        throw navigationFailure(result);
       }
     }))).filter((merchant): merchant is NonNullable<typeof merchant> => merchant !== null);
     const sharedCapabilities = merchants.length === 0

@@ -90,6 +90,45 @@ export class PlatformBusinessPublicError extends Error {
   }
 }
 
+/**
+ * Non-domain transport/configuration failures are deliberately opaque.  Callers
+ * may use `kind` for controlled handling and observability, never the upstream
+ * exception message, response body or request secrets.
+ */
+export const PLATFORM_BUSINESS_FAILURE_KINDS = [
+  "CONFIGURATION",
+  "NETWORK",
+  "TIMEOUT",
+  "UPSTREAM_4XX",
+  "UPSTREAM_5XX",
+  "PARSE",
+  "INVALID_RESPONSE",
+  "UNKNOWN",
+] as const;
+
+export type PlatformBusinessFailureKind = (typeof PLATFORM_BUSINESS_FAILURE_KINDS)[number];
+
+export type PlatformBusinessUpstreamTiming = Readonly<{
+  configMs: number;
+  requestMs: number;
+  decodeMs: number;
+}>;
+
+export class PlatformBusinessServiceError extends Error {
+  constructor(
+    readonly kind: PlatformBusinessFailureKind,
+    readonly timing: PlatformBusinessUpstreamTiming,
+  ) {
+    super("主站业务服务暂不可用，请稍后重试");
+    this.name = "PlatformBusinessServiceError";
+  }
+}
+
+export type PlatformBusinessCallOptions = Readonly<{
+  /** Receives only phase durations, never a URL, response body, error or secret. */
+  onUpstreamTiming?: (timing: PlatformBusinessUpstreamTiming) => void;
+}>;
+
 function getConfig() {
   const baseUrl = process.env.PLATFORM_API_BASE?.trim()
     || (process.env.NODE_ENV === "production" ? "http://127.0.0.1:3000" : "");
@@ -105,9 +144,36 @@ function firstEnvelope<T>(payload: unknown): TrpcEnvelope<T> | null {
   return null;
 }
 
-/** Never forward remote implementation errors, secret values or service inputs to a browser. */
-function upstreamFailure(status: number) {
-  return new Error("主站业务服务暂不可用，请稍后重试");
+function elapsedMs(startedAt: number) {
+  return Math.max(0, Date.now() - startedAt);
+}
+
+function reportTiming(options: PlatformBusinessCallOptions | undefined, timing: PlatformBusinessUpstreamTiming) {
+  try {
+    options?.onUpstreamTiming?.(timing);
+  } catch {
+    // Observability must never change the authorization or transport result.
+  }
+}
+
+function isTimeout(error: unknown) {
+  return error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+}
+
+function serviceFailure(
+  kind: PlatformBusinessFailureKind,
+  timing: PlatformBusinessUpstreamTiming,
+  options?: PlatformBusinessCallOptions,
+): PlatformBusinessServiceError {
+  reportTiming(options, timing);
+  return new PlatformBusinessServiceError(kind, timing);
+}
+
+function withFailureKind(
+  kind: PlatformBusinessFailureKind,
+  timing: PlatformBusinessUpstreamTiming,
+): PlatformBusinessServiceError {
+  return new PlatformBusinessServiceError(kind, timing);
 }
 
 function publicUpstreamError(error: TrpcEnvelope<unknown>["error"]) {
@@ -134,49 +200,109 @@ async function callPlatformTrpc<T>(input: {
   procedure: string;
   kind: "query" | "mutation";
   payload: unknown;
-}): Promise<T> {
-  const { baseUrl, key } = getConfig();
+}, options?: PlatformBusinessCallOptions): Promise<T> {
+  const startedAt = Date.now();
+  let configMs = 0;
+  let requestMs = 0;
+  let decodeMs = 0;
+  const timing = () => ({ configMs, requestMs, decodeMs });
+
+  let config: ReturnType<typeof getConfig>;
+  try {
+    config = getConfig();
+    configMs = elapsedMs(startedAt);
+  } catch {
+    configMs = elapsedMs(startedAt);
+    throw serviceFailure("CONFIGURATION", timing(), options);
+  }
+
   const encoded = trpcInput(input.payload);
-  const url = `${baseUrl}/api/trpc/${input.procedure}?batch=1${input.kind === "query" ? `&input=${encodeURIComponent(encoded)}` : ""}`;
+  const url = `${config.baseUrl}/api/trpc/${input.procedure}?batch=1${input.kind === "query" ? `&input=${encodeURIComponent(encoded)}` : ""}`;
   let response: Response;
+  const requestStartedAt = Date.now();
   try {
     response = await fetch(url, {
       method: input.kind === "query" ? "GET" : "POST",
       headers: {
         "content-type": "application/json",
-        "x-portal-key": key,
+        "x-portal-key": config.key,
       },
       // Only server-derived JSON is sent. No Cookie or Authorization is propagated.
       body: input.kind === "mutation" ? encoded : undefined,
       signal: AbortSignal.timeout(10_000),
     });
-  } catch {
-    throw new Error("主站业务服务暂不可用，请稍后重试");
+    requestMs = elapsedMs(requestStartedAt);
+  } catch (error) {
+    requestMs = elapsedMs(requestStartedAt);
+    throw serviceFailure(isTimeout(error) ? "TIMEOUT" : "NETWORK", timing(), options);
   }
-  const payload = await response.json().catch(() => null) as unknown;
+
+  let payload: unknown;
+  const decodeStartedAt = Date.now();
+  try {
+    payload = await response.json();
+    decodeMs = elapsedMs(decodeStartedAt);
+  } catch {
+    decodeMs = elapsedMs(decodeStartedAt);
+    throw serviceFailure("PARSE", timing(), options);
+  }
+
   const envelope = firstEnvelope<T>(payload);
-  if (envelope?.error) throw publicUpstreamError(envelope.error) ?? upstreamFailure(response.status);
-  if (!response.ok) throw upstreamFailure(response.status);
+  // A 5xx response is not a trustworthy domain denial even if its body happens
+  // to resemble a tRPC envelope. It must remain a controlled availability error.
+  if (response.status >= 500) {
+    throw serviceFailure("UPSTREAM_5XX", timing(), options);
+  }
+  if (envelope?.error) {
+    const publicError = publicUpstreamError(envelope.error);
+    if (publicError) {
+      reportTiming(options, timing());
+      throw publicError;
+    }
+    if (response.status === 429) {
+      reportTiming(options, timing());
+      throw new PlatformBusinessPublicError("TOO_MANY_REQUESTS", "业务服务请求过于频繁，请稍后重试");
+    }
+    throw serviceFailure("UPSTREAM_4XX", timing(), options);
+  }
+  if (!response.ok) {
+    if (response.status === 429) {
+      reportTiming(options, timing());
+      throw new PlatformBusinessPublicError("TOO_MANY_REQUESTS", "业务服务请求过于频繁，请稍后重试");
+    }
+    throw serviceFailure("UPSTREAM_4XX", timing(), options);
+  }
+
   const data = envelope?.result?.data;
   const result = (typeof data === "object" && data !== null && "json" in data ? data.json : data) as T | undefined;
-  if (result === undefined) throw new Error("主站业务服务返回格式异常");
+  if (result === undefined) {
+    throw serviceFailure("INVALID_RESPONSE", timing(), options);
+  }
+  reportTiming(options, timing());
   return result;
 }
 
 export async function getPlatformBusinessContext(
   input: PlatformBusinessBinding,
   trustedBinding?: { staffUserId: number; adminAccountId: number; bindingVersion: number },
+  options?: PlatformBusinessCallOptions,
 ): Promise<PlatformBusinessContext> {
+  let upstreamTiming: PlatformBusinessUpstreamTiming = { configMs: 0, requestMs: 0, decodeMs: 0 };
   const result = await callPlatformTrpc<PlatformBusinessContext>({
     procedure: "internalBusiness.context",
     kind: "query",
     payload: { ...input, ...trustedBinding },
+  }, {
+    onUpstreamTiming: timing => {
+      upstreamTiming = timing;
+      options?.onUpstreamTiming?.(timing);
+    },
   });
   if (!Number.isSafeInteger(result.enterpriseId) || result.enterpriseId <= 0) {
-    throw new Error("主站业务服务返回格式异常");
+    throw withFailureKind("INVALID_RESPONSE", upstreamTiming);
   }
   if (result.staffPrincipal.status === "ready" && result.staffPrincipal.enterpriseId !== result.enterpriseId) {
-    throw new Error("主站业务服务返回了不一致的员工企业范围");
+    throw withFailureKind("INVALID_RESPONSE", upstreamTiming);
   }
   return result;
 }
@@ -188,7 +314,7 @@ export async function validatePlatformBusinessStaffCandidate(staffUserId: number
     payload: { staffUserId },
   });
   if (result.frontendUserId !== staffUserId || result.user.id !== staffUserId || result.user.loginDisabled) {
-    throw new Error("主站前台员工主体校验失败");
+    throw withFailureKind("INVALID_RESPONSE", { configMs: 0, requestMs: 0, decodeMs: 0 });
   }
   return result;
 }

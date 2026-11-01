@@ -64,9 +64,16 @@ import {
   type BusinessWorkbenchCapability,
 } from "@/lib/businessWorkbenchCapabilities";
 import {
+  getBusinessNavigationDisplayState,
+  getBusinessNavigationQueryKey,
+  shouldRetryBusinessNavigation,
+  type BusinessNavigationDisplayState,
+} from "@/lib/businessNavigationQuery";
+import {
   ADMIN_NOTIFICATION_MODULE_BY_PATH,
   type AdminNotificationModule,
 } from "@shared/adminModuleNotifications";
+import { useQuery } from "@tanstack/react-query";
 
 type MenuItem = {
   icon: typeof Database;
@@ -374,6 +381,63 @@ type DashboardLayoutContentProps = {
   setSidebarWidth: (width: number) => void;
 };
 
+function BusinessNavigationStatus({
+  state,
+  isRetrying,
+  onRetry,
+}: {
+  state: BusinessNavigationDisplayState;
+  isRetrying: boolean;
+  onRetry: () => void;
+}) {
+  if (state.status === "ready") return null;
+
+  if (state.status === "loading") {
+    return (
+      <div
+        aria-live="polite"
+        aria-disabled="true"
+        className="mx-2 mb-2 rounded-md border border-sidebar-border px-3 py-2 text-xs text-muted-foreground"
+        data-business-navigation-state="loading"
+      >
+        正在验证业务工作台权限…
+      </div>
+    );
+  }
+
+  if (state.status === "empty") {
+    return (
+      <div
+        aria-live="polite"
+        aria-disabled="true"
+        className="mx-2 mb-2 rounded-md border border-sidebar-border px-3 py-2 text-xs text-muted-foreground"
+        data-business-navigation-state="empty"
+      >
+        当前账号暂无业务工作台入口
+      </div>
+    );
+  }
+
+  return (
+    <div
+      aria-live="assertive"
+      className="mx-2 mb-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground"
+      data-business-navigation-state="error"
+    >
+      <p>业务工作台暂时不可用，未显示业务入口。</p>
+      <button
+        type="button"
+        aria-label="只读重新获取业务导航"
+        className="mt-1 text-xs font-medium text-primary underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isRetrying}
+        onClick={onRetry}
+      >
+        {isRetrying ? "重试中…" : "重试"}
+      </button>
+    </div>
+  );
+}
+
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
@@ -393,11 +457,25 @@ function DashboardLayoutContent({
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
   const trpcUtils = trpc.useUtils();
-  const { data: businessNavigation } = trpc.business.navigation.useQuery(undefined, {
-    retry: false,
+  const accountId = user?.id;
+  const hasCurrentAccount = accountId !== undefined && accountId !== null;
+  const businessNavigationQuery = useQuery({
+    queryKey: getBusinessNavigationQueryKey(accountId),
+    // Use the tRPC proxy client so this request goes through the dedicated
+    // business.navigation httpLink configured in main.tsx, not the batch.
+    queryFn: () => trpcUtils.client.business.navigation.query(),
+    enabled: hasCurrentAccount,
+    retry: shouldRetryBusinessNavigation,
     refetchOnWindowFocus: true,
   });
-  const workbenchCapabilities = businessNavigation?.workbenchCapabilities;
+  const businessNavigationState = getBusinessNavigationDisplayState({
+    enabled: hasCurrentAccount,
+    isPending: businessNavigationQuery.isPending,
+    isSuccess: businessNavigationQuery.isSuccess,
+    isError: businessNavigationQuery.isError,
+    data: businessNavigationQuery.data,
+  });
+  const workbenchCapabilities = businessNavigationState.workbenchCapabilities;
   const canReadMessages = hasAdminPermission(
     adminRole,
     "messages.read",
@@ -527,6 +605,13 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 py-2">
+            <BusinessNavigationStatus
+              state={businessNavigationState}
+              isRetrying={businessNavigationQuery.isFetching}
+              onRetry={() => {
+                void businessNavigationQuery.refetch();
+              }}
+            />
             <AdminWorkbenchNavigation
               items={menuGroups.flatMap(group =>
                 group.items.filter(item =>
@@ -582,7 +667,7 @@ function DashboardLayoutContent({
                 );
               }}
               location={location}
-              accountId={user?.id ?? "unknown-admin"}
+              accountId={accountId ?? "signed-out"}
               collapsed={isCollapsed && !isMobile}
             />
           </SidebarContent>
