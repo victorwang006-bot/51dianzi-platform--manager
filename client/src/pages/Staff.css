@@ -3,6 +3,17 @@
   overflow: visible;
 }
 
+/* The shared Card adds py-6/gap-6; the compact staff page owns its spacing. */
+[data-staff-page] [data-slot="card"] {
+  padding-top: 0;
+  padding-bottom: 0;
+  gap: 0;
+}
+
+[data-staff-page] [data-slot="card-header"] {
+  padding: 12px 16px;
+}
+
 /* Table renders its own scroll wrapper; keep this as the sole horizontal scroller. */
 [data-staff-page] .staff-management-table-scroll > [data-slot="table-container"] {
   overflow-x: auto;
