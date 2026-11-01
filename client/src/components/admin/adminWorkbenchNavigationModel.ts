@@ -4,16 +4,16 @@ export type AdminWorkbenchNavigationItem = {
 };
 
 export type AdminWorkbenchNavigationGroupId =
-  | "operations"
   | "inventory"
   | "customers"
   | "procurement"
-  | "user-center"
+  | "operations"
   | "system";
 
 export type AdminWorkbenchNavigationGroupDefinition = {
   id: AdminWorkbenchNavigationGroupId;
   label: string;
+  /** Visible canonical menu paths, in display order. */
   paths: readonly string[];
 };
 
@@ -23,26 +23,32 @@ export type AdminWorkbenchNavigationGroup<T extends AdminWorkbenchNavigationItem
   items: T[];
 };
 
+export type AdminWorkbenchNavigationRouteAlias = {
+  /** Legacy/non-sidebar route that should retain its navigation context. */
+  path: string;
+  /** The canonical visible page, or /profile for the top account menu. */
+  canonicalPath: string;
+  groupId: AdminWorkbenchNavigationGroupId;
+  label: string;
+};
+
+export type AdminWorkbenchNavigationRoute = {
+  path: string;
+  canonicalPath: string;
+  groupId: AdminWorkbenchNavigationGroupId;
+  groupLabel: string;
+  label: string;
+  isAlias: boolean;
+};
+
 /**
  * 后台唯一侧栏的导航事实源。
  *
- * 运营页面继续使用其原始路由；业务工作台页面统一使用 /workbench 前缀。
- * 不在此模型中折叠或伪造企业业务页面，页面的真实 staff/BFF 权限仍由路由和服务端复核。
+ * 运营页面继续使用原始路由；业务工作台页面统一使用 /workbench 前缀。
+ * staff 是唯一可点击的人员入口。旧员工和个人资料路径仅作为路由上下文别名，
+ * 不会因别名而产生第二个侧栏入口；页面的真实 staff/BFF 权限仍由路由和服务端复核。
  */
 export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigationGroupDefinition[] = [
-  {
-    id: "operations",
-    label: "运营管理",
-    paths: [
-      "/merchants",
-      "/",
-      "/orders",
-      "/messages",
-      "/reviews",
-      "/portal-users",
-      "/analytics",
-    ],
-  },
   {
     id: "inventory",
     label: "库存管理",
@@ -73,26 +79,101 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
     ],
   },
   {
-    id: "user-center",
-    label: "用户中心",
+    id: "operations",
+    label: "运营管理",
     paths: [
-      "/workbench/add-user",
-      "/workbench/user-records",
-      "/workbench/company-info",
-      // 这里复用后台 staff Profile；不使用前台用户资料页冒充工作人员资料。
-      "/profile",
+      "/merchants",
+      "/",
+      "/orders",
+      "/messages",
+      "/reviews",
+      "/portal-users",
+      "/analytics",
     ],
   },
   {
     id: "system",
-    label: "系统管理",
-    paths: ["/admins", "/exception-logs"],
+    label: "系统设置",
+    paths: [
+      "/staff",
+      "/workbench/company-info",
+      "/workbench/user-records",
+      "/exception-logs",
+    ],
   },
 ] as const;
 
-export const ADMIN_BUSINESS_WORKBENCH_PATHS = ADMIN_WORKBENCH_NAVIGATION_GROUPS
-  .filter(group => ["inventory", "customers", "procurement", "user-center"].includes(group.id))
-  .flatMap(group => group.paths.filter(path => path.startsWith("/workbench/")));
+/**
+ * Legacy routes remain explicit navigation aliases for active state, breadcrumbs,
+ * automatic group expansion, and business-path authorization detection. They are
+ * intentionally absent from group `paths`, so they cannot render duplicate entries.
+ */
+export const ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES: readonly AdminWorkbenchNavigationRouteAlias[] = [
+  {
+    path: "/admins",
+    canonicalPath: "/staff",
+    groupId: "system",
+    label: "员工与权限",
+  },
+  {
+    path: "/workbench/add-user",
+    canonicalPath: "/staff",
+    groupId: "system",
+    label: "员工与权限",
+  },
+  {
+    path: "/profile",
+    canonicalPath: "/profile",
+    groupId: "system",
+    label: "个人信息",
+  },
+] as const;
+
+const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
+  "/workbench/inventory": "我的库存",
+  "/workbench/publish": "发布库存",
+  "/workbench/inbound": "入库管理",
+  "/workbench/channel-inventory": "渠道库存",
+  "/workbench/customers": "客户列表",
+  "/workbench/customer-demands": "客户需求",
+  "/workbench/orders": "销售订单",
+  "/workbench/outbound": "出库管理",
+  "/workbench/chat": "询价接待",
+  "/workbench/procurement-demands": "采购需求",
+  "/workbench/procurement-orders": "采购订单",
+  "/merchants": "商户管理",
+  "/": "物料数据库",
+  "/orders": "平台订单",
+  "/messages": "消息中心",
+  "/reviews": "评价管理",
+  "/portal-users": "平台用户",
+  "/analytics": "运营数据",
+  "/staff": "员工与权限",
+  "/workbench/company-info": "公司信息",
+  "/workbench/user-records": "员工操作记录",
+  "/exception-logs": "异常日志",
+};
+
+/**
+ * The complete existing business workbench path set. `/workbench/add-user` remains
+ * here even though its only visible navigation target is now `/staff`.
+ */
+export const ADMIN_BUSINESS_WORKBENCH_PATHS = [
+  "/workbench/inventory",
+  "/workbench/publish",
+  "/workbench/inbound",
+  "/workbench/channel-inventory",
+  "/workbench/customers",
+  "/workbench/customer-demands",
+  "/workbench/orders",
+  "/workbench/outbound",
+  "/workbench/chat",
+  "/workbench/procurement-demands",
+  "/workbench/procurement-orders",
+  "/workbench/add-user",
+  "/workbench/user-records",
+  "/workbench/company-info",
+] as const;
 
 export type AdminWorkbenchNavigationExpandedGroups = Record<
   AdminWorkbenchNavigationGroupId,
@@ -101,12 +182,14 @@ export type AdminWorkbenchNavigationExpandedGroups = Record<
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
-const STORAGE_PREFIX = "admin-workbench-navigation:v1:expanded";
+const STORAGE_PREFIX_V1 = "admin-workbench-navigation:v1:expanded";
+const STORAGE_PREFIX_V2 = "admin-workbench-navigation:v2:expanded";
 
 export function createDefaultAdminWorkbenchNavigationExpandedGroups(): AdminWorkbenchNavigationExpandedGroups {
   return ADMIN_WORKBENCH_NAVIGATION_GROUPS.reduce(
     (expandedGroups, group) => {
-      expandedGroups[group.id] = true;
+      // New accounts start compact; the active route is opened afterwards.
+      expandedGroups[group.id] = false;
       return expandedGroups;
     },
     {} as AdminWorkbenchNavigationExpandedGroups
@@ -151,20 +234,49 @@ export function isAdminWorkbenchNavigationRouteMatch(
   return location === path || location.startsWith(`${path}/`);
 }
 
-export function findAdminWorkbenchNavigationGroupId(
+export function getAdminWorkbenchNavigationRoute(
   location: string
-): AdminWorkbenchNavigationGroupId | null {
+): AdminWorkbenchNavigationRoute | null {
   for (const group of ADMIN_WORKBENCH_NAVIGATION_GROUPS) {
-    if (
-      group.paths.some(path =>
-        isAdminWorkbenchNavigationRouteMatch(location, path)
-      )
-    ) {
-      return group.id;
+    const path = group.paths.find(candidate =>
+      isAdminWorkbenchNavigationRouteMatch(location, candidate)
+    );
+    if (path) {
+      return {
+        path,
+        canonicalPath: path,
+        groupId: group.id,
+        groupLabel: group.label,
+        label: NAVIGATION_LABEL_BY_PATH[path] ?? group.label,
+        isAlias: false,
+      };
     }
   }
 
-  return null;
+  const alias = ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES.find(candidate =>
+    isAdminWorkbenchNavigationRouteMatch(location, candidate.path)
+  );
+  if (!alias) return null;
+
+  const group = ADMIN_WORKBENCH_NAVIGATION_GROUPS.find(
+    candidate => candidate.id === alias.groupId
+  );
+  if (!group) return null;
+
+  return {
+    path: alias.path,
+    canonicalPath: alias.canonicalPath,
+    groupId: alias.groupId,
+    groupLabel: group.label,
+    label: alias.label,
+    isAlias: true,
+  };
+}
+
+export function findAdminWorkbenchNavigationGroupId(
+  location: string
+): AdminWorkbenchNavigationGroupId | null {
+  return getAdminWorkbenchNavigationRoute(location)?.groupId ?? null;
 }
 
 export function isAdminBusinessWorkbenchPath(location: string): boolean {
@@ -191,7 +303,13 @@ export function autoOpenAdminWorkbenchNavigationGroup(
 export function getAdminWorkbenchNavigationStorageKey(
   accountId: string | number
 ): string {
-  return `${STORAGE_PREFIX}:${String(accountId)}`;
+  return `${STORAGE_PREFIX_V2}:${String(accountId)}`;
+}
+
+export function getLegacyAdminWorkbenchNavigationStorageKey(
+  accountId: string | number
+): string {
+  return `${STORAGE_PREFIX_V1}:${String(accountId)}`;
 }
 
 function getBrowserStorage(): StorageLike | null {
@@ -225,6 +343,24 @@ function normalizeExpandedGroups(
   return defaults;
 }
 
+function migrateV1ExpandedGroups(value: unknown): AdminWorkbenchNavigationExpandedGroups {
+  const defaults = createDefaultAdminWorkbenchNavigationExpandedGroups();
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return defaults;
+  }
+
+  const legacyGroups = value as Record<string, unknown>;
+  for (const group of ADMIN_WORKBENCH_NAVIGATION_GROUPS) {
+    // v1 defaulted every group to true. Only explicit false values are safe to
+    // carry forward; otherwise a v1 default would recreate an all-expanded v2 nav.
+    if (legacyGroups[group.id] === false) {
+      defaults[group.id] = false;
+    }
+  }
+
+  return defaults;
+}
+
 export function readAdminWorkbenchNavigationExpandedGroups(
   accountId: string | number,
   storage: StorageLike | null = getBrowserStorage()
@@ -234,10 +370,23 @@ export function readAdminWorkbenchNavigationExpandedGroups(
   }
 
   try {
-    const value = storage.getItem(getAdminWorkbenchNavigationStorageKey(accountId));
-    return value === null
-      ? createDefaultAdminWorkbenchNavigationExpandedGroups()
-      : normalizeExpandedGroups(JSON.parse(value));
+    const storageKey = getAdminWorkbenchNavigationStorageKey(accountId);
+    const v2Value = storage.getItem(storageKey);
+    if (v2Value !== null) {
+      return normalizeExpandedGroups(JSON.parse(v2Value));
+    }
+
+    const v1Value = storage.getItem(
+      getLegacyAdminWorkbenchNavigationStorageKey(accountId)
+    );
+    if (v1Value === null) {
+      return createDefaultAdminWorkbenchNavigationExpandedGroups();
+    }
+
+    const migrated = migrateV1ExpandedGroups(JSON.parse(v1Value));
+    // Persist the migration so an account retains only intentional v2 choices.
+    storage.setItem(storageKey, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return createDefaultAdminWorkbenchNavigationExpandedGroups();
   }

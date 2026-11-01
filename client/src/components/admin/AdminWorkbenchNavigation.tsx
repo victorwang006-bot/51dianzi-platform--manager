@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  BarChart3,
+  Boxes,
+  ClipboardList,
+  Contact,
+  Settings,
+} from "lucide-react";
+import {
   autoOpenAdminWorkbenchNavigationGroup,
   groupAdminWorkbenchNavigationItems,
   readAdminWorkbenchNavigationExpandedGroups,
@@ -9,6 +16,14 @@ import {
   type AdminWorkbenchNavigationItem,
 } from "./adminWorkbenchNavigationModel";
 import "./AdminWorkbenchNavigation.css";
+
+const GROUP_ICON_BY_ID: Record<AdminWorkbenchNavigationGroupId, typeof Boxes> = {
+  inventory: Boxes,
+  customers: Contact,
+  procurement: ClipboardList,
+  operations: BarChart3,
+  system: Settings,
+};
 
 type AdminWorkbenchNavigationProps<T extends AdminWorkbenchNavigationItem> = {
   items: T[];
@@ -75,12 +90,13 @@ function AdminWorkbenchNavigationContent<
   return (
     <nav
       className="admin-workbench-nav"
-      data-admin-navigation="workbench-v1"
+      data-admin-navigation="workbench-v2"
       data-collapsed={collapsed ? "true" : "false"}
       aria-label="后台功能导航"
     >
       {groups.map(group => {
         const isExpanded = collapsed || expandedGroups[group.id];
+        const GroupIcon = GROUP_ICON_BY_ID[group.id];
 
         return (
           <section
@@ -96,6 +112,10 @@ function AdminWorkbenchNavigationContent<
               aria-controls={`admin-workbench-nav-${group.id}`}
               onClick={() => toggleGroup(group.id)}
             >
+              <GroupIcon
+                aria-hidden="true"
+                className="admin-workbench-nav__group-icon"
+              />
               <span className="admin-workbench-nav__group-label">
                 {group.label}
               </span>

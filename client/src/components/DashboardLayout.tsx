@@ -26,12 +26,10 @@ import {
   Boxes,
   ClipboardList,
   Contact,
-  FileText,
   LogOut,
   PackagePlus,
   PanelLeft,
   ReceiptText,
-  Send,
   MessagesSquare,
   ShieldAlert,
   Store,
@@ -50,6 +48,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
 import { AdminWorkbenchNavigation } from "./admin/AdminWorkbenchNavigation";
+import { getAdminWorkbenchNavigationRoute } from "./admin/adminWorkbenchNavigationModel";
 import {
   preloadAdminRoute,
   type AdminNavigationChunk,
@@ -83,77 +82,14 @@ type MenuItem = {
   permission?: AdminPermission;
   /** Bound portal-staff projection only; never copied into adminPermissions. */
   workbenchCapability?: BusinessWorkbenchCapability;
+  /** Display-only staff fallback; it is OR-ed with native admin permission. */
+  fallbackWorkbenchCapability?: BusinessWorkbenchCapability;
   chunk?: AdminNavigationChunk;
   nested: boolean;
   notificationModule?: AdminNotificationModule;
 };
 
 const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
-  {
-    label: "运营管理",
-    items: [
-      {
-        icon: Store,
-        label: "商户管理",
-        path: "/merchants",
-        permission: "merchants.read",
-        chunk: "merchants",
-        nested: false,
-        notificationModule: "merchants",
-      },
-      {
-        icon: Database,
-        label: "物料数据库",
-        path: "/",
-        permission: "materials.read",
-        chunk: "materials",
-        nested: false,
-      },
-      {
-        icon: ShoppingCart,
-        label: "订单管理",
-        path: "/orders",
-        permission: "orders.read",
-        chunk: "orders",
-        nested: false,
-        notificationModule: "orders",
-      },
-      {
-        icon: MessageSquare,
-        label: "消息中心",
-        path: "/messages",
-        permission: "messages.read",
-        chunk: "messages",
-        nested: false,
-      },
-      {
-        icon: MessagesSquare,
-        label: "评价管理",
-        path: "/reviews",
-        permission: "logs.read",
-        chunk: "reviews",
-        nested: false,
-        notificationModule: "reviews",
-      },
-      {
-        icon: Users,
-        label: "用户管理",
-        path: "/portal-users",
-        permission: "portalUsers.read",
-        chunk: "portalUsers",
-        nested: false,
-        notificationModule: "portalUsers",
-      },
-      {
-        icon: BarChart3,
-        label: "运营数据",
-        path: "/analytics",
-        permission: "analytics.read",
-        chunk: "analytics",
-        nested: false,
-      },
-    ],
-  },
   {
     label: "库存管理",
     items: [
@@ -192,7 +128,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
     items: [
       {
         icon: Contact,
-        label: "客户管理",
+        label: "客户列表",
         path: "/workbench/customers",
         workbenchCapability: "customers.manage",
         nested: false,
@@ -220,7 +156,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
       },
       {
         icon: MessageSquare,
-        label: "询价聊天",
+        label: "询价接待",
         path: "/workbench/chat",
         workbenchCapability: "inquiry.receive",
         nested: false,
@@ -247,48 +183,94 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
     ],
   },
   {
-    label: "用户中心",
+    label: "运营管理",
     items: [
       {
+        icon: Store,
+        label: "商户管理",
+        path: "/merchants",
+        permission: "merchants.read",
+        chunk: "merchants",
+        nested: false,
+        notificationModule: "merchants",
+      },
+      {
+        icon: Database,
+        label: "物料数据库",
+        path: "/",
+        permission: "materials.read",
+        chunk: "materials",
+        nested: false,
+      },
+      {
+        icon: ShoppingCart,
+        label: "平台订单",
+        path: "/orders",
+        permission: "orders.read",
+        chunk: "orders",
+        nested: false,
+        notificationModule: "orders",
+      },
+      {
+        icon: MessageSquare,
+        label: "消息中心",
+        path: "/messages",
+        permission: "messages.read",
+        chunk: "messages",
+        nested: false,
+      },
+      {
+        icon: MessagesSquare,
+        label: "评价管理",
+        path: "/reviews",
+        permission: "logs.read",
+        chunk: "reviews",
+        nested: false,
+        notificationModule: "reviews",
+      },
+      {
         icon: Users,
-        label: "成员管理",
-        path: "/workbench/add-user",
-        workbenchCapability: "enterprise.members.manage",
+        label: "平台用户",
+        path: "/portal-users",
+        permission: "portalUsers.read",
+        chunk: "portalUsers",
+        nested: false,
+        notificationModule: "portalUsers",
+      },
+      {
+        icon: BarChart3,
+        label: "运营数据",
+        path: "/analytics",
+        permission: "analytics.read",
+        chunk: "analytics",
+        nested: false,
+      },
+    ],
+  },
+  {
+    label: "系统设置",
+    items: [
+      {
+        icon: UserCog,
+        label: "员工与权限",
+        path: "/staff",
+        permission: "admins.manage",
+        fallbackWorkbenchCapability: "enterprise.members.manage",
+        chunk: "staff",
         nested: false,
       },
       {
-        icon: ClipboardList,
-        label: "成员记录",
-        path: "/workbench/user-records",
-        workbenchCapability: "enterprise.members.manage",
-        nested: false,
-      },
-      {
-        icon: FileText,
+        icon: Store,
         label: "公司信息",
         path: "/workbench/company-info",
         workbenchCapability: "company.read",
         nested: false,
       },
       {
-        icon: User,
-        label: "个人信息",
-        path: "/profile",
-        permission: "profile.manage",
-        chunk: "profile",
-        nested: false,
-      },
-    ],
-  },
-  {
-    label: "系统管理",
-    items: [
-      {
-        icon: UserCog,
-        label: "后台用户管理",
-        path: "/admins",
-        permission: "admins.manage",
-        chunk: "admins",
+        icon: ClipboardList,
+        label: "员工操作记录",
+        path: "/workbench/user-records",
+        workbenchCapability: "enterprise.members.manage",
         nested: false,
       },
       {
@@ -448,9 +430,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = allMenuItems.find(item =>
-    isMenuPathActive(location, item.path)
-  );
+  const activeNavigationRoute = getAdminWorkbenchNavigationRoute(location);
   const isMobile = useIsMobile();
   const adminRole = ((user as { adminRole?: AdminRole } | null)?.adminRole ??
     "super_admin") as AdminRole;
@@ -476,6 +456,34 @@ function DashboardLayoutContent({
     data: businessNavigationQuery.data,
   });
   const workbenchCapabilities = businessNavigationState.workbenchCapabilities;
+  const canManageProfile = hasAdminPermission(
+    adminRole,
+    "profile.manage",
+    adminPermissions
+  );
+  const accountRoleLabel = adminRoleLabels[
+    (user as { adminRole?: string })?.adminRole ?? ""
+  ] ?? "管理员";
+  const visibleMenuItems = menuGroups.flatMap(group =>
+    group.items.filter(item => {
+      const hasNativeAdminPermission = item.permission !== undefined
+        && hasAdminPermission(adminRole, item.permission, adminPermissions);
+      const hasWorkbenchPermission = item.workbenchCapability !== undefined
+        && hasBusinessWorkbenchCapability(
+          workbenchCapabilities,
+          item.workbenchCapability
+        );
+      const hasFallbackWorkbenchPermission = item.fallbackWorkbenchCapability !== undefined
+        && hasBusinessWorkbenchCapability(
+          workbenchCapabilities,
+          item.fallbackWorkbenchCapability
+        );
+
+      return hasNativeAdminPermission
+        || hasWorkbenchPermission
+        || hasFallbackWorkbenchPermission;
+    })
+  );
   const canReadMessages = hasAdminPermission(
     adminRole,
     "messages.read",
@@ -613,16 +621,9 @@ function DashboardLayoutContent({
               }}
             />
             <AdminWorkbenchNavigation
-              items={menuGroups.flatMap(group =>
-                group.items.filter(item =>
-                  item.workbenchCapability
-                    ? hasBusinessWorkbenchCapability(workbenchCapabilities, item.workbenchCapability)
-                    : item.permission !== undefined
-                      && hasAdminPermission(adminRole, item.permission, adminPermissions)
-                )
-              )}
+              items={visibleMenuItems}
               renderItem={item => {
-                const isActive = isMenuPathActive(location, item.path);
+                const isActive = activeNavigationRoute?.canonicalPath === item.path;
                 const badgeCount = item.path === "/messages"
                   ? unreadTotal
                   : item.notificationModule
@@ -673,36 +674,18 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3 border-t border-sidebar-border">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium bg-primary text-primary-foreground">
-                      {user?.name?.charAt(0).toUpperCase() || "管"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {adminRoleLabels[
-                        (user as { adminRole?: string })?.adminRole ?? ""
-                      ] ?? "管理员"}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>退出登录</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              title={isCollapsed ? "展开导航" : "收起导航"}
+              aria-label={isCollapsed ? "展开导航" : "收起导航"}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:justify-center"
+            >
+              <PanelLeft className={`h-4 w-4 shrink-0 transition-transform ${isCollapsed ? "rotate-180" : ""}`} />
+              <span className="group-data-[collapsible=icon]:hidden">
+                {isCollapsed ? "展开导航" : "收起导航"}
+              </span>
+            </button>
           </SidebarFooter>
         </Sidebar>
         <div
@@ -716,20 +699,67 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset>
-        {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <Logo className="h-8 w-auto object-contain" />
-                <span className="tracking-tight text-foreground font-medium">
-                  {activeMenuItem?.label ?? "菜单"}
-                </span>
-              </div>
-            </div>
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            {isMobile ? <SidebarTrigger className="h-9 w-9 shrink-0 rounded-lg bg-background" /> : null}
+            <nav aria-label="当前位置" className="flex min-w-0 items-center gap-2 text-sm">
+              <span className="truncate font-medium text-foreground">
+                {activeNavigationRoute?.groupLabel ?? "后台管理"}
+              </span>
+              <span aria-hidden="true" className="text-muted-foreground">/</span>
+              <span className="truncate text-muted-foreground">
+                {activeNavigationRoute?.label ?? "概览"}
+              </span>
+            </nav>
           </div>
-        )}
-        <main className="flex-1 p-6 bg-background min-h-screen">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onPointerEnter={() => {
+                  if (canManageProfile) preloadAdminRoute("profile");
+                }}
+                onFocus={() => {
+                  if (canManageProfile) preloadAdminRoute("profile");
+                }}
+                className="flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Avatar className="h-8 w-8 border shrink-0">
+                  <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
+                    {user?.name?.charAt(0).toUpperCase() || "管"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden min-w-0 text-left sm:block">
+                  <p className="max-w-28 truncate text-sm font-medium leading-none">
+                    {user?.name || "-"}
+                  </p>
+                  <p className="mt-1 max-w-28 truncate text-xs text-muted-foreground">
+                    {accountRoleLabel}
+                  </p>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {canManageProfile ? (
+                <DropdownMenuItem
+                  onClick={() => setLocation("/profile")}
+                  className="cursor-pointer"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  <span>个人信息</span>
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem
+                onClick={logout}
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>退出登录</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+        <main className="min-h-[calc(100svh-3.5rem)] flex-1 bg-background p-6">
           {children}
         </main>
       </SidebarInset>

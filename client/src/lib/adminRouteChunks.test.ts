@@ -16,6 +16,7 @@ const pages = [
   "Messages",
   "PortalUsers",
   "Admins",
+  "Staff",
   "Orders",
   "Profile",
   "ExceptionLogs",
@@ -101,8 +102,13 @@ describe("后台首屏分片契约", () => {
     );
     // Native operation/system entries retain their old authorization source;
     // workbench navigation deliberately stays on the separate BFF projection.
-    expect(dashboardSource).toContain("hasAdminPermission(adminRole, item.permission, adminPermissions)");
-    expect(dashboardSource).toContain("hasBusinessWorkbenchCapability(workbenchCapabilities, item.workbenchCapability)");
+    const normalizedDashboard = dashboardSource.replace(/\s+/g, "");
+    expect(normalizedDashboard).toContain("hasAdminPermission(adminRole,item.permission,adminPermissions)");
+    expect(normalizedDashboard).toContain("hasBusinessWorkbenchCapability(workbenchCapabilities,item.workbenchCapability)");
+    expect(normalizedDashboard).toContain("hasBusinessWorkbenchCapability(workbenchCapabilities,item.fallbackWorkbenchCapability)");
+    expect(normalizedDashboard).toContain("hasNativeAdminPermission||hasWorkbenchPermission||hasFallbackWorkbenchPermission");
+    expect(dashboardSource).toContain('path: "/staff"');
+    expect(dashboardSource).toContain('chunk: "staff"');
     expect(dashboardSource).toMatch(
       /onPointerEnter=\{\(\)\s*=>\s*\{\s*if\s*\(item\.chunk\)\s*preloadAdminRoute\(item\.chunk\)/
     );

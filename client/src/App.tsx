@@ -21,6 +21,7 @@ import {
   LazyPortalUsers,
   LazyProfile,
   LazyReviews,
+  LazyStaff,
 } from "./lib/adminRouteChunks";
 import {
   hasAdminPermission,
@@ -142,6 +143,16 @@ const AdminsRoute = () => (
     </LazyScreen>
   </PermissionGate>
 );
+/**
+ * Staff resolves the native-admin OR BFF-enterprise path inside the lazy page.
+ * A native PermissionGate here would incorrectly block a valid ERP member
+ * manager before that page can verify the selected merchant/context.
+ */
+const StaffRoute = () => (
+  <LazyScreen>
+    <LazyStaff />
+  </LazyScreen>
+);
 const OrdersRoute = () => (
   <PermissionGate permission="orders.read">
     <LazyScreen>
@@ -237,6 +248,7 @@ function AppRoutes() {
         <Route path={"/orders"} component={OrdersRoute} />
         <Route path={"/orders/:id"} component={OrdersRoute} />
         <Route path={"/admins"} component={AdminsRoute} />
+        <Route path={"/staff"} component={StaffRoute} />
         <Route path={"/reviews"} component={ReviewsRoute} />
         <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
         <Route path={"/analytics"} component={AnalyticsRoute} />

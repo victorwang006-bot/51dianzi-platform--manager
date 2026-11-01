@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   ADMIN_BUSINESS_WORKBENCH_PATHS,
   ADMIN_WORKBENCH_NAVIGATION_GROUPS,
+  ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES,
   autoOpenAdminWorkbenchNavigationGroup,
   createDefaultAdminWorkbenchNavigationExpandedGroups,
   findAdminWorkbenchNavigationGroupId,
+  getAdminWorkbenchNavigationRoute,
   getAdminWorkbenchNavigationStorageKey,
+  getLegacyAdminWorkbenchNavigationStorageKey,
   groupAdminWorkbenchNavigationItems,
   isAdminBusinessWorkbenchPath,
   readAdminWorkbenchNavigationExpandedGroups,
@@ -35,27 +38,25 @@ function createStorage(): StorageLike & { values: Map<string, string> } {
 const navigationItems: TestItem[] = [
   { path: "/analytics", label: "运营数据", permission: "analytics.read" },
   { path: "/workbench/procurement-orders", label: "采购订单", permission: "business.procurement.read" },
-  { path: "/profile", label: "个人信息", permission: "profile.manage" },
   { path: "/merchants", label: "商户管理", permission: "merchants.read" },
   { path: "/workbench/inventory", label: "我的库存", permission: "business.inventory.read" },
   { path: "/workbench/customer-demands", label: "客户需求", permission: "business.customers.read" },
   { path: "/", label: "物料数据库", permission: "materials.read" },
-  { path: "/admins", label: "后台用户管理", permission: "admins.manage" },
+  { path: "/staff", label: "员工与权限", permission: "admins.manage" },
   { path: "/workbench/company-info", label: "公司信息", permission: "business.users.read" },
   { path: "/workbench/publish", label: "发布库存", permission: "business.inventory.read" },
-  { path: "/workbench/customers", label: "客户管理", permission: "business.customers.read" },
+  { path: "/workbench/customers", label: "客户列表", permission: "business.customers.read" },
   { path: "/workbench/procurement-demands", label: "采购需求", permission: "business.procurement.read" },
-  { path: "/workbench/add-user", label: "成员管理", permission: "business.users.read" },
-  { path: "/orders", label: "订单管理", permission: "orders.read" },
+  { path: "/orders", label: "平台订单", permission: "orders.read" },
   { path: "/messages", label: "消息中心", permission: "messages.read" },
   { path: "/reviews", label: "评价管理", permission: "logs.read" },
-  { path: "/portal-users", label: "用户管理", permission: "portalUsers.read" },
+  { path: "/portal-users", label: "平台用户", permission: "portalUsers.read" },
   { path: "/workbench/inbound", label: "入库管理", permission: "business.inventory.read" },
   { path: "/workbench/channel-inventory", label: "渠道库存", permission: "business.inventory.read" },
   { path: "/workbench/orders", label: "销售订单", permission: "business.orders.read" },
   { path: "/workbench/outbound", label: "出库管理", permission: "business.orders.read" },
-  { path: "/workbench/chat", label: "询价聊天", permission: "business.customers.read" },
-  { path: "/workbench/user-records", label: "成员记录", permission: "business.users.read" },
+  { path: "/workbench/chat", label: "询价接待", permission: "business.customers.read" },
+  { path: "/workbench/user-records", label: "员工操作记录", permission: "business.users.read" },
   { path: "/exception-logs", label: "异常日志", permission: "logs.read" },
   { path: "/not-a-menu", label: "不应出现", permission: "none" },
 ];
@@ -67,31 +68,17 @@ function item(path: string): TestItem {
 }
 
 describe("后台工作台导航分组", () => {
-  it("严格按运营、库存、客户、采购、用户中心、系统六组和固定路径顺序分组", () => {
+  it("严格按库存、客户、采购、运营、系统设置五组和固定路径顺序分组", () => {
     const groups = groupAdminWorkbenchNavigationItems(navigationItems);
 
     expect(ADMIN_WORKBENCH_NAVIGATION_GROUPS.map(group => group.id)).toEqual([
-      "operations",
       "inventory",
       "customers",
       "procurement",
-      "user-center",
+      "operations",
       "system",
     ]);
     expect(groups).toEqual([
-      {
-        id: "operations",
-        label: "运营管理",
-        items: [
-          item("/merchants"),
-          item("/"),
-          item("/orders"),
-          item("/messages"),
-          item("/reviews"),
-          item("/portal-users"),
-          item("/analytics"),
-        ],
-      },
       {
         id: "inventory",
         label: "库存管理",
@@ -119,24 +106,32 @@ describe("后台工作台导航分组", () => {
         items: [item("/workbench/procurement-demands"), item("/workbench/procurement-orders")],
       },
       {
-        id: "user-center",
-        label: "用户中心",
+        id: "operations",
+        label: "运营管理",
         items: [
-          item("/workbench/add-user"),
-          item("/workbench/user-records"),
-          item("/workbench/company-info"),
-          item("/profile"),
+          item("/merchants"),
+          item("/"),
+          item("/orders"),
+          item("/messages"),
+          item("/reviews"),
+          item("/portal-users"),
+          item("/analytics"),
         ],
       },
       {
         id: "system",
-        label: "系统管理",
-        items: [item("/admins"), item("/exception-logs")],
+        label: "系统设置",
+        items: [
+          item("/staff"),
+          item("/workbench/company-info"),
+          item("/workbench/user-records"),
+          item("/exception-logs"),
+        ],
       },
     ]);
   });
 
-  it("先接收过滤后的项目，完全无权限时不输出空分组", () => {
+  it("仅接收过滤后的项目，完全无权限时不输出空分组", () => {
     expect(groupAdminWorkbenchNavigationItems([])).toEqual([]);
     expect(
       groupAdminWorkbenchNavigationItems([
@@ -153,7 +148,7 @@ describe("后台工作台导航分组", () => {
     ]);
   });
 
-  it("详情、编辑、报价和创建路径打开所属组，根路径不吞掉其他路由", () => {
+  it("详情、编辑和创建路径打开所属组，根路径不吞掉其他路由", () => {
     expect(findAdminWorkbenchNavigationGroupId("/")).toBe("operations");
     expect(findAdminWorkbenchNavigationGroupId("/merchants/merchant-240")).toBe("operations");
     expect(findAdminWorkbenchNavigationGroupId("/workbench/publish/42/edit")).toBe("inventory");
@@ -161,24 +156,61 @@ describe("后台工作台导航分组", () => {
     expect(findAdminWorkbenchNavigationGroupId("/workbench/procurement-orders/quote")).toBe("procurement");
     expect(findAdminWorkbenchNavigationGroupId("/workbench/procurement-orders/accepted")).toBe("procurement");
     expect(findAdminWorkbenchNavigationGroupId("/workbench/procurement-orders/create")).toBe("procurement");
-    expect(findAdminWorkbenchNavigationGroupId("/profile")).toBe("user-center");
-    expect(findAdminWorkbenchNavigationGroupId("/admins/7")).toBe("system");
+    expect(findAdminWorkbenchNavigationGroupId("/staff/7")).toBe("system");
     expect(findAdminWorkbenchNavigationGroupId("/unrelated")).toBeNull();
 
-    const allCollapsed = Object.fromEntries(
-      ADMIN_WORKBENCH_NAVIGATION_GROUPS.map(group => [group.id, false])
-    ) as ReturnType<typeof createDefaultAdminWorkbenchNavigationExpandedGroups>;
+    const allCollapsed = createDefaultAdminWorkbenchNavigationExpandedGroups();
     expect(autoOpenAdminWorkbenchNavigationGroup(allCollapsed, "/workbench/orders/1001")).toEqual({
       ...allCollapsed,
       customers: true,
     });
-    expect(autoOpenAdminWorkbenchNavigationGroup(allCollapsed, "/admins/7")).toEqual({
+    expect(autoOpenAdminWorkbenchNavigationGroup(allCollapsed, "/staff/7")).toEqual({
       ...allCollapsed,
       system: true,
     });
   });
 
-  it("登记了唯一工作台前缀下的所有业务入口", () => {
+  it("旧人员和个人资料路由是显式别名，只将员工与权限作为侧栏入口", () => {
+    expect(ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES).toEqual([
+      {
+        path: "/admins",
+        canonicalPath: "/staff",
+        groupId: "system",
+        label: "员工与权限",
+      },
+      {
+        path: "/workbench/add-user",
+        canonicalPath: "/staff",
+        groupId: "system",
+        label: "员工与权限",
+      },
+      {
+        path: "/profile",
+        canonicalPath: "/profile",
+        groupId: "system",
+        label: "个人信息",
+      },
+    ]);
+    expect(findAdminWorkbenchNavigationGroupId("/admins/7")).toBe("system");
+    expect(findAdminWorkbenchNavigationGroupId("/workbench/add-user")).toBe("system");
+    expect(findAdminWorkbenchNavigationGroupId("/profile")).toBe("system");
+    expect(getAdminWorkbenchNavigationRoute("/admins/7")).toMatchObject({
+      canonicalPath: "/staff",
+      label: "员工与权限",
+      isAlias: true,
+    });
+    expect(getAdminWorkbenchNavigationRoute("/profile")).toMatchObject({
+      canonicalPath: "/profile",
+      label: "个人信息",
+      isAlias: true,
+    });
+    expect(ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)).toContain("/staff");
+    expect(ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)).not.toContain("/admins");
+    expect(ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)).not.toContain("/workbench/add-user");
+    expect(ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)).not.toContain("/profile");
+  });
+
+  it("登记了全部十四条既有业务工作台路径，包括隐藏的 add-user 别名", () => {
     expect(ADMIN_BUSINESS_WORKBENCH_PATHS).toEqual([
       "/workbench/inventory",
       "/workbench/publish",
@@ -197,16 +229,33 @@ describe("后台工作台导航分组", () => {
     ]);
     expect(isAdminBusinessWorkbenchPath("/workbench/publish/42/edit")).toBe(true);
     expect(isAdminBusinessWorkbenchPath("/workbench/procurement-orders/create")).toBe(true);
+    expect(isAdminBusinessWorkbenchPath("/workbench/add-user")).toBe(true);
     expect(isAdminBusinessWorkbenchPath("/profile")).toBe(false);
   });
 });
 
 describe("后台工作台导航展开状态存储", () => {
-  it("按账号使用独立存储键，不会在账号间沿用展开状态", () => {
+  it("未保存时五组均收起，当前路由再自动打开所属组", () => {
+    const defaults = createDefaultAdminWorkbenchNavigationExpandedGroups();
+    expect(defaults).toEqual({
+      inventory: false,
+      customers: false,
+      procurement: false,
+      operations: false,
+      system: false,
+    });
+    expect(autoOpenAdminWorkbenchNavigationGroup(defaults, "/workbench/chat")).toEqual({
+      ...defaults,
+      customers: true,
+    });
+  });
+
+  it("按账号使用独立 v2 存储键，保留各自的主动展开设置", () => {
     const storage = createStorage();
     const firstAccount = {
       ...createDefaultAdminWorkbenchNavigationExpandedGroups(),
-      inventory: false,
+      inventory: true,
+      system: true,
     };
 
     writeAdminWorkbenchNavigationExpandedGroups("admin-1", firstAccount, storage);
@@ -217,8 +266,30 @@ describe("后台工作台导航展开状态存储", () => {
     expect(readAdminWorkbenchNavigationExpandedGroups("admin-2", storage)).toEqual(
       createDefaultAdminWorkbenchNavigationExpandedGroups()
     );
+    expect(getAdminWorkbenchNavigationStorageKey("admin-1")).toContain(":v2:");
     expect(getAdminWorkbenchNavigationStorageKey("admin-1")).not.toBe(
       getAdminWorkbenchNavigationStorageKey("admin-2")
+    );
+  });
+
+  it("迁移 v1 时只带入 false 组并立即写入 v2，避免继承旧版全展开默认值", () => {
+    const storage = createStorage();
+    storage.values.set(
+      getLegacyAdminWorkbenchNavigationStorageKey("admin-legacy"),
+      JSON.stringify({
+        inventory: true,
+        customers: true,
+        procurement: true,
+        operations: true,
+        system: false,
+        "user-center": false,
+      })
+    );
+
+    const migrated = readAdminWorkbenchNavigationExpandedGroups("admin-legacy", storage);
+    expect(migrated).toEqual(createDefaultAdminWorkbenchNavigationExpandedGroups());
+    expect(storage.values.get(getAdminWorkbenchNavigationStorageKey("admin-legacy"))).toBe(
+      JSON.stringify(createDefaultAdminWorkbenchNavigationExpandedGroups())
     );
   });
 
@@ -251,53 +322,27 @@ describe("后台工作台导航展开状态存储", () => {
     );
   });
 
-  it("读取旧平台分组状态时忽略已删除键，但保留同名系统管理状态", () => {
-    const storage = createStorage();
-    storage.values.set(
-      getAdminWorkbenchNavigationStorageKey("admin-legacy"),
-      JSON.stringify({
-        platform: false,
-        "users-merchants": false,
-        transactions: false,
-        "data-operations": false,
-        system: false,
-      })
-    );
-
-    expect(
-      readAdminWorkbenchNavigationExpandedGroups("admin-legacy", storage)
-    ).toEqual({
-      operations: true,
-      inventory: true,
-      customers: true,
-      procurement: true,
-      "user-center": true,
-      system: false,
-    });
-  });
-
-  it("保存时仅持久化当前六组状态", () => {
+  it("保存时只持久化当前五组状态到 v2", () => {
     const storage = createStorage();
     const expandedGroups = {
-      operations: false,
-      inventory: true,
-      customers: false,
-      procurement: true,
-      "user-center": false,
-      system: true,
+      inventory: false,
+      customers: true,
+      procurement: false,
+      operations: true,
+      system: false,
     };
 
     writeAdminWorkbenchNavigationExpandedGroups(
-      "admin-six-groups",
+      "admin-five-groups",
       expandedGroups,
       storage
     );
 
     expect(
-      storage.values.get(getAdminWorkbenchNavigationStorageKey("admin-six-groups"))
+      storage.values.get(getAdminWorkbenchNavigationStorageKey("admin-five-groups"))
     ).toBe(JSON.stringify(expandedGroups));
     expect(
-      readAdminWorkbenchNavigationExpandedGroups("admin-six-groups", storage)
+      readAdminWorkbenchNavigationExpandedGroups("admin-five-groups", storage)
     ).toEqual(expandedGroups);
   });
 });
