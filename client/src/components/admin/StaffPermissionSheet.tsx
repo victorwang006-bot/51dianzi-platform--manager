@@ -12,14 +12,12 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
   ERP_PERMISSION_GROUPS,
-  ERP_VISIBLE_PERMISSION_KEYS,
   STAFF_ADMIN_PERMISSION_GROUPS,
   adminPermissionsForUpdate,
   erpPermissionLabel,
@@ -37,7 +35,7 @@ import {
 } from "@/lib/staffPermissionModel";
 import { ERP_PERMISSION_DEFINITIONS, type ErpPermissionKey } from "@/business/platform/shared/erpPermissions";
 import { formatDateTime } from "@/components/admin/shared";
-import { ExternalLink, ShieldCheck } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -58,6 +56,8 @@ export type StaffEnterpriseEditorAccess = StaffErpEditorAccess & {
   inviteHref: string | null;
   unavailableReason?: string | null;
 };
+
+export type StaffPermissionSheetSection = "basic" | "member" | "admin" | "erp" | "scope" | "status";
 
 function roleLabel(role: string) {
   if (role === "super_admin") return "超级管理员";
@@ -99,6 +99,7 @@ function errorSummary(outcome: StaffSaveOutcome) {
 export default function StaffPermissionSheet({
   open,
   row,
+  initialSection = "erp",
   canManageAdmin,
   enterpriseAccess,
   saving,
@@ -110,6 +111,7 @@ export default function StaffPermissionSheet({
 }: {
   open: boolean;
   row: StaffRow | null;
+  initialSection?: StaffPermissionSheetSection;
   canManageAdmin: boolean;
   enterpriseAccess: StaffEnterpriseEditorAccess;
   saving: boolean;
@@ -128,6 +130,7 @@ export default function StaffPermissionSheet({
   const [baseline, setBaseline] = useState<StaffSaveBaseline>(() => row ? toDraftBaseline(row) : draft);
   const previousOpen = useRef(false);
   const previousKey = useRef<string | null>(null);
+  const sectionRefs = useRef<Partial<Record<StaffPermissionSheetSection, HTMLElement | null>>>({});
 
   useEffect(() => {
     const key = row?.key ?? null;
@@ -140,17 +143,31 @@ export default function StaffPermissionSheet({
     previousKey.current = key;
   }, [open, row]);
 
+  useEffect(() => {
+    if (!open || !row) return;
+    const frame = window.requestAnimationFrame(() => {
+      sectionRefs.current[initialSection]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialSection, open, row]);
+
   const preview = useMemo(() => staffChangePreview(baseline, draft), [baseline, draft]);
   const hasChanges = hasStaffDraftChanges(baseline, draft);
   const admin = row?.admin;
   const member = row?.member;
-  const canEditAdmin = Boolean(admin && canManageAdmin);
   const erpGuard = staffErpMutationGuard(row, enterpriseAccess);
   const canEditErp = erpGuard.allowed;
   const availableErpKeys = enterpriseAccess.grantableKeys;
   const availableErpSet = new Set(availableErpKeys);
   const lockedErpKeys = protectedStaffErpKeys(baseline.erpPermissionKeys, availableErpKeys, enterpriseAccess.actorIsOwner);
   const canEditErpPermissions = canEditErp && lockedErpKeys.length === 0;
+  const adminStatus = admin
+    ? admin.status === "active"
+      ? { label: "启用", style: "success" }
+      : admin.status === "locked"
+        ? { label: "锁定", style: "warning" }
+        : { label: "停用", style: "gray" }
+    : null;
 
   const updateAdminPermission = (permission: StaffSaveDraft["adminPermissions"][number]) => {
     setDraft(current => ({
@@ -202,57 +219,62 @@ export default function StaffPermissionSheet({
   };
 
   const erpDescription = !member
-    ? row?.bindingState === "bound"
-      ? "该后台账号绑定的前台用户不是当前官方企业成员，系统不会按姓名或手机号补配。"
-      : "该后台账号尚未关联当前官方企业成员；ERP 设置保持禁用。"
+    ? "完成成员关联后可配置 ERP 权限。"
     : !erpGuard.allowed
-      ? erpGuard.reason
-      : "ERP 权限和业务范围仍由原站企业服务在每次请求中复核。";
+      ? "当前无法编辑此员工的 ERP 权限。"
+      : "按需选择员工可使用的 ERP 功能。";
+
+  const scrollToSection = (section: StaffPermissionSheetSection) => {
+    sectionRefs.current[section]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <Sheet open={open} onOpenChange={nextOpen => { if (!saving) onOpenChange(nextOpen); }}>
-      <SheetContent side="right" className="w-full gap-0 overflow-hidden p-0 sm:max-w-[680px]" data-staff-permission-sheet>
+      <SheetContent side="right" className="w-full gap-0 overflow-hidden p-0 sm:max-w-[720px]" data-staff-permission-sheet>
         <SheetHeader className="border-b px-5 py-4 pr-12">
-          <SheetTitle>员工与权限</SheetTitle>
-          <SheetDescription>
-            {row ? `${admin?.displayName || admin?.username || member?.displayName || "员工"} · 运营权限、ERP 权限和业务范围在同一窗口查看` : "选择员工后配置权限"}
-          </SheetDescription>
+          <SheetTitle>{row ? `${admin?.displayName || admin?.username || member?.displayName || "员工"} · 配置权限` : "配置权限"}</SheetTitle>
+          <p className="mt-1 text-sm text-muted-foreground">在同一窗口查看员工账户和业务权限。</p>
         </SheetHeader>
         {row ? (
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-            <section className="rounded-md border bg-muted/20 p-3 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                {admin ? <Badge variant="outline">后台账号：{admin.username}</Badge> : <Badge variant="outline">未关联后台账号</Badge>}
-                {member ? <Badge variant="outline">企业成员：{member.isOwner ? "所有者" : member.status === "active" ? "正常" : "已暂停"}</Badge> : <Badge variant="outline">未关联企业成员</Badge>}
-              </div>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                员工关联仅以后台账号的 active `frontUserId` binding 与企业成员 `userId` 精确匹配；没有匹配时不会自动迁移、关联或合并登录身份。
-              </p>
+            <nav className="sticky top-0 z-10 -mx-5 -mt-5 flex gap-1 overflow-x-auto border-b bg-background/95 px-5 py-2 backdrop-blur" aria-label="员工配置分区">
+              <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => scrollToSection("basic")}>基本信息</Button>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => scrollToSection("member")}>成员关联</Button>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => scrollToSection("admin")}>后台角色</Button>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => scrollToSection("erp")}>ERP 权限</Button>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => scrollToSection("scope")}>数据范围</Button>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => scrollToSection("status")}>账号状态</Button>
+            </nav>
+
+            <section ref={node => { sectionRefs.current.basic = node; }} className="scroll-mt-14 rounded-md border p-4" aria-labelledby="staff-basic-title">
+              <div className="mb-3"><h3 id="staff-basic-title" className="text-sm font-medium">基本信息</h3></div>
+              <dl className="grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
+                <div><dt className="text-xs text-muted-foreground">姓名</dt><dd className="mt-1 break-words font-medium">{admin?.displayName || member?.displayName || admin?.username || "—"}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">后台账号</dt><dd className="mt-1 break-all font-mono text-xs">{admin?.username || "—"}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">手机号</dt><dd className="mt-1 break-words">{admin?.phone || member?.phone || "—"}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">邮箱</dt><dd className="mt-1 break-all">{admin?.email || "—"}</dd></div>
+              </dl>
             </section>
 
-            <section className="rounded-md border p-4" aria-labelledby="staff-bff-status-title">
-              <div className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <h3 id="staff-bff-status-title" className="text-sm font-medium">业务工作台前置状态</h3>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{row.bff.detail}</p>
-                  {row.bff.missingPermissions.length ? (
-                    <p className="mt-2 break-words text-xs text-amber-700">缺少 BFF scope：{row.bff.missingPermissions.join("、")}</p>
-                  ) : null}
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">已配置 ERP 业务权限不代表 BFF 全部可用；本页不会修改 binding 或商户 scope。</p>
-                </div>
+            <section ref={node => { sectionRefs.current.member = node; }} className="scroll-mt-14 rounded-md border p-4" aria-labelledby="staff-member-title">
+              <div className="mb-3"><h3 id="staff-member-title" className="text-sm font-medium">成员关联</h3></div>
+              <div className="flex flex-wrap gap-2">
+                {admin ? <Badge variant="outline">后台账号：{admin.username}</Badge> : <Badge variant="outline">暂无后台账号</Badge>}
+                {member ? <Badge variant="outline">企业成员：{member.isOwner ? "所有者" : member.status === "active" ? "正常" : "已暂停"}</Badge> : <Badge variant="outline">待关联企业成员</Badge>}
               </div>
+              {!admin || !member ? <div className="mt-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground">该员工尚未完成关联。请使用现有员工邀请与业务交接流程处理。</div> : null}
+              {enterpriseAccess.inviteHref ? <a href={enterpriseAccess.inviteHref} className="mt-3 inline-flex items-center gap-1 text-sm text-primary underline-offset-4 hover:underline">员工邀请与业务交接 <ExternalLink className="h-3.5 w-3.5" /></a> : null}
             </section>
 
-            <section className="space-y-3" aria-labelledby="staff-admin-permissions-title">
+            <section ref={node => { sectionRefs.current.admin = node; }} className="scroll-mt-14 space-y-3 rounded-md border p-4" aria-labelledby="staff-admin-permissions-title">
               <div>
-                <h3 id="staff-admin-permissions-title" className="text-sm font-medium">后台运营权限</h3>
-                <p className="mt-1 text-xs text-muted-foreground">后台账户权限与企业 ERP 身份相互独立。保存沿用服务端的本人/最后管理员保护规则。</p>
+                <h3 id="staff-admin-permissions-title" className="text-sm font-medium">后台角色</h3>
+                <p className="mt-1 text-xs text-muted-foreground">配置后台角色和模块访问范围。</p>
               </div>
               {!admin ? (
-                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">该行没有已关联后台账号，不能提交后台用户更新。</div>
+                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">当前没有可配置的后台账号。</div>
               ) : !canManageAdmin ? (
-                <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">当前账号没有 `admins.manage`，未读取也不能修改后台账户。</div>
+                <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">当前账号没有后台账户配置权限。</div>
               ) : (
                 <>
                   <div className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-center">
@@ -267,7 +289,7 @@ export default function StaffPermissionSheet({
                     </Select>
                   </div>
                   {draft.adminRole === "super_admin" ? (
-                    <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">超级管理员的后台模块权限由服务端授予全部权限。</div>
+                    <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">超级管理员拥有全部后台模块权限。</div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
                       {STAFF_ADMIN_PERMISSION_GROUPS.map(group => (
@@ -294,16 +316,16 @@ export default function StaffPermissionSheet({
               )}
             </section>
 
-            <section className="space-y-3 border-t pt-5" aria-labelledby="staff-erp-permissions-title">
+            <section ref={node => { sectionRefs.current.erp = node; }} className="scroll-mt-14 space-y-3 rounded-md border p-4" aria-labelledby="staff-erp-permissions-title">
               <div>
-                <h3 id="staff-erp-permissions-title" className="text-sm font-medium">ERP 业务权限与业务范围</h3>
+                <h3 id="staff-erp-permissions-title" className="text-sm font-medium">ERP 权限</h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{erpDescription}</p>
               </div>
               {member ? (
                 <>
                   {lockedErpKeys.length && enterpriseAccess.available ? (
                     <div role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
-                      已有权限“{lockedErpKeys.map(erpPermissionLabel).join("、")}”超出你的可授予范围。为避免误撤销，ERP 权限在本窗口只读，请由企业所有者调整；现有权限不会被隐藏或删除。
+                      当前权限中包含你不能调整的项目，ERP 权限在本窗口只读。
                     </div>
                   ) : null}
                   <div className="space-y-4">
@@ -330,51 +352,52 @@ export default function StaffPermissionSheet({
                       );
                     })}
                   </div>
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">业务范围</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="rounded-md border p-3 text-sm">
-                        <input type="radio" className="mr-2 accent-primary" name="staff-business-scope" checked={draft.inventoryDataScope === "own" && !member.isOwner} disabled={!canEditErp || saving} onChange={() => setDraft(current => ({ ...current, inventoryDataScope: "own" }))} />
-                        仅本人业务
-                      </label>
-                      <label className="rounded-md border p-3 text-sm">
-                        <input type="radio" className="mr-2 accent-primary" name="staff-business-scope" checked={member.isOwner || draft.inventoryDataScope === "enterprise"} disabled={!canEditErp || !enterpriseAccess.actorIsOwner || saving} onChange={() => setDraft(current => ({ ...current, inventoryDataScope: "enterprise" }))} />
-                        全企业业务
-                      </label>
-                    </div>
-                    {!enterpriseAccess.actorIsOwner && canEditErp ? <p className="mt-1.5 text-xs text-muted-foreground">全企业业务仅当前企业所有者可授予。</p> : null}
-                  </div>
                 </>
               ) : (
-                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">没有可验证的企业成员记录，因此不会发起 ERP 读取或写入。</div>
+                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">完成成员关联后可查看和配置 ERP 权限。</div>
               )}
             </section>
 
+            <section ref={node => { sectionRefs.current.scope = node; }} className="scroll-mt-14 space-y-3 rounded-md border p-4" aria-labelledby="staff-scope-title">
+              <div><h3 id="staff-scope-title" className="text-sm font-medium">数据范围</h3><p className="mt-1 text-xs text-muted-foreground">设置员工可处理的业务范围。</p></div>
+              {member ? <div className="grid grid-cols-2 gap-2">
+                <label className="rounded-md border p-3 text-sm">
+                  <input type="radio" className="mr-2 accent-primary" name="staff-business-scope" checked={draft.inventoryDataScope === "own" && !member.isOwner} disabled={!canEditErp || saving} onChange={() => setDraft(current => ({ ...current, inventoryDataScope: "own" }))} />
+                  仅本人业务
+                </label>
+                <label className="rounded-md border p-3 text-sm">
+                  <input type="radio" className="mr-2 accent-primary" name="staff-business-scope" checked={member.isOwner || draft.inventoryDataScope === "enterprise"} disabled={!canEditErp || !enterpriseAccess.actorIsOwner || saving} onChange={() => setDraft(current => ({ ...current, inventoryDataScope: "enterprise" }))} />
+                  全企业业务
+                </label>
+              </div> : <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">完成成员关联后可配置数据范围。</div>}
+            </section>
+
+            <section ref={node => { sectionRefs.current.status = node; }} className="scroll-mt-14 space-y-3 rounded-md border p-4" aria-labelledby="staff-status-title">
+              <div><h3 id="staff-status-title" className="text-sm font-medium">账号状态</h3><p className="mt-1 text-xs text-muted-foreground">查看当前账户和企业成员状态。</p></div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-md border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">后台账号</p><div className="mt-2">{adminStatus ? <Badge variant="outline">{adminStatus.label}</Badge> : <span className="text-sm text-muted-foreground">—</span>}</div></div>
+                <div className="rounded-md border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">企业成员</p><div className="mt-2">{member ? <Badge variant="outline">{member.status === "active" ? "正常" : "已暂停"}</Badge> : <span className="text-sm text-muted-foreground">—</span>}</div></div>
+              </div>
+            </section>
+
             <section className="space-y-3 border-t pt-5" aria-labelledby="staff-change-preview-title">
-              <div><h3 id="staff-change-preview-title" className="text-sm font-medium">变更预览</h3><p className="mt-1 text-xs text-muted-foreground">跨服务保存不是原子操作；成功步骤会立即保留，失败步骤可在本窗口重试。</p></div>
+              <div><h3 id="staff-change-preview-title" className="text-sm font-medium">变更预览</h3></div>
               {!hasChanges ? <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">尚未修改设置。</p> : (
                 <div className="space-y-2 rounded-md border p-3 text-sm">
                   {preview.roleChanged ? <p>后台角色：{roleLabel(baseline.adminRole)} → {roleLabel(draft.adminRole)}</p> : null}
                   {preview.adminAdded.length || preview.adminRemoved.length ? <p>后台权限：{preview.adminAdded.length ? `新增 ${preview.adminAdded.join("、")}` : ""}{preview.adminAdded.length && preview.adminRemoved.length ? "；" : ""}{preview.adminRemoved.length ? `撤销 ${preview.adminRemoved.join("、")}` : ""}</p> : null}
                   {preview.erpAdded.length || preview.erpRemoved.length ? <p>ERP 权限：{preview.erpAdded.length ? `新增 ${preview.erpAdded.map(erpPermissionLabel).join("、")}` : ""}{preview.erpAdded.length && preview.erpRemoved.length ? "；" : ""}{preview.erpRemoved.length ? `撤销 ${preview.erpRemoved.map(erpPermissionLabel).join("、")}` : ""}</p> : null}
-                  {preview.scopeChanged ? <p>业务范围：{baseline.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"} → {draft.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"}</p> : null}
-                  <p className="text-xs text-muted-foreground">BFF binding 与商户 scope 只读展示，永不随本次保存变更。</p>
+                  {preview.scopeChanged ? <p>数据范围：{baseline.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"} → {draft.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"}</p> : null}
                 </div>
               )}
             </section>
 
             {admin && canManageAdmin ? (
               <section className="border-t pt-5" aria-labelledby="staff-login-security-title">
-                <h3 id="staff-login-security-title" className="text-sm font-medium">登录安全</h3>
-                <p className="mt-1 text-xs text-muted-foreground">以下为后台账户日志，不表示当前会话已额外认证。</p>
-                {securityLoading ? <p className="mt-3 text-sm text-muted-foreground">正在加载登录记录…</p> : securityError ? <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">加载失败：{securityError}</p> : !securityLogs?.length ? <p className="mt-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground">暂无登录安全记录。</p> : <div className="mt-3 space-y-2">{securityLogs.slice(0, 8).map(log => <div key={log.id} className="rounded-md border p-3 text-xs"><div className="flex flex-wrap justify-between gap-2"><span>{log.success ? "登录成功" : "登录失败"} · {loginMethodLabel(log.authMethod)}</span><span className="text-muted-foreground">{formatDateTime(log.occurredAt)}</span></div><p className="mt-1 text-muted-foreground">{log.ipAddress || "未知 IP"} · {log.location || "未知归属地"} · {log.operatingSystem || "未知系统"} / {log.browser || log.deviceType || "未知设备"}</p></div>)}</div>}
+                <h3 id="staff-login-security-title" className="text-sm font-medium">登录记录</h3>
+                {securityLoading ? <p className="mt-3 text-sm text-muted-foreground">正在加载登录记录…</p> : securityError ? <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">加载失败：{securityError}</p> : !securityLogs?.length ? <p className="mt-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground">暂无登录记录。</p> : <div className="mt-3 space-y-2">{securityLogs.slice(0, 8).map(log => <div key={log.id} className="rounded-md border p-3 text-xs"><div className="flex flex-wrap justify-between gap-2"><span>{log.success ? "登录成功" : "登录失败"} · {loginMethodLabel(log.authMethod)}</span><span className="text-muted-foreground">{formatDateTime(log.occurredAt)}</span></div><p className="mt-1 text-muted-foreground">{log.ipAddress || "未知 IP"} · {log.location || "未知归属地"} · {log.operatingSystem || "未知系统"} / {log.browser || log.deviceType || "未知设备"}</p></div>)}</div>}
               </section>
             ) : null}
-
-            <section className="flex flex-wrap gap-2 border-t pt-5 text-sm">
-              {enterpriseAccess.inviteHref ? <a href={enterpriseAccess.inviteHref} className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline">员工邀请与业务交接 <ExternalLink className="h-3.5 w-3.5" /></a> : null}
-              {canManageAdmin ? <a href="/admins" className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline">新建后台账号与完整账号生命周期仍在旧入口 <ExternalLink className="h-3.5 w-3.5" /></a> : null}
-            </section>
           </div>
         ) : null}
         <SheetFooter className="flex-row items-center justify-end gap-2 border-t bg-background px-5 py-4">

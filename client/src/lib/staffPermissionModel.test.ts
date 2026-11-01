@@ -9,6 +9,8 @@ import {
   runGuardedStaffErpMutation,
   selectOfficialStaffMerchant,
   staffChangePreview,
+  staffErpPermissionPreview,
+  staffRowNeedsAssociation,
   type StaffRow,
   toggleStaffErpPermission,
   validateStaffBusinessContext,
@@ -211,5 +213,24 @@ describe("staff permission model", () => {
     expect(preview.scopeChanged).toBe(true);
     expect(adminPermissionsForUpdate(["profile.manage", "business.inventory.read"], ["messages.write"], "merchant_mgr"))
       .toEqual(expect.arrayContaining(["profile.manage", "business.inventory.read", "messages.read", "messages.write"]));
+  });
+
+  it("列表展示只显示前两项真实 ERP 权限，并把其余项交给统一配置窗口", () => {
+    const preview = staffErpPermissionPreview({
+      member: {
+        ...member,
+        permissionKeys: ["inventory.manage", "inquiry.receive", "sales_orders.manage"],
+      },
+    });
+    expect(preview).toEqual({ labels: ["我的库存", "询价接待"], remaining: 1, total: 3 });
+    expect(staffErpPermissionPreview({ member: { ...member, isOwner: true } }))
+      .toEqual({ labels: ["全部 ERP 权限"], remaining: 0, total: 1 });
+    expect(staffErpPermissionPreview({ member: undefined })).toEqual({ labels: [], remaining: 0, total: 0 });
+  });
+
+  it("待关联仅由真实合并行的后台账号和企业成员缺失状态决定", () => {
+    expect(staffRowNeedsAssociation({ admin, member })).toBe(false);
+    expect(staffRowNeedsAssociation({ admin })).toBe(true);
+    expect(staffRowNeedsAssociation({ member })).toBe(true);
   });
 });

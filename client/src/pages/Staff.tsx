@@ -1,5 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import StaffPermissionSheet, { type StaffEnterpriseEditorAccess } from "@/components/admin/StaffPermissionSheet";
+import StaffPermissionSheet, {
+  type StaffEnterpriseEditorAccess,
+  type StaffPermissionSheetSection,
+} from "@/components/admin/StaffPermissionSheet";
 import { EmptyState, PageHeader, Pagination, StatusBadge } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +29,6 @@ import {
   type ErpPermissionKey,
 } from "@/business/platform/shared/erpPermissions";
 import {
-  OFFICIAL_STAFF_MERCHANT_ID,
   adminPermissionsForUpdate,
   exactMerchantScope,
   mergeStaffRows,
@@ -39,8 +41,10 @@ import {
   sameStringSet,
   selectOfficialStaffMerchant,
   staffErpMutationGuard,
+  staffErpPermissionPreview,
   staffQueryKey,
   staffQueryPrefix,
+  staffRowNeedsAssociation,
   validateStaffBusinessContext,
   validateStaffEnterpriseSummary,
   type BindingReadState,
@@ -59,10 +63,12 @@ import { ExternalLink, Pencil, RefreshCw, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSearch } from "wouter";
+import "./Staff.css";
 
 const PAGE_SIZE = 20;
 
 type StaffStatusFilter = "all" | "active" | "disabled" | "locked" | "suspended";
+type StaffRoleFilter = "all" | string;
 
 function requestId(prefix: string) {
   const suffix = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -94,18 +100,6 @@ function accountStatus(account: StaffAdminAccount) {
   return { label: "停用", style: "gray" as const };
 }
 
-function bffBadge(row: StaffRow) {
-  const labels = {
-    "not-applicable": { label: "待关联", style: "gray" as const },
-    checking: { label: "核验中", style: "warning" as const },
-    unlinked: { label: "未关联", style: "warning" as const },
-    "scope-unavailable": { label: "缺少 BFF scope", style: "danger" as const },
-    "scope-incomplete": { label: "BFF 范围不完整", style: "warning" as const },
-    ready: { label: "BFF 前置已匹配", style: "success" as const },
-  };
-  return labels[row.bff.state];
-}
-
 function adminPermissionSummary(account?: StaffAdminAccount) {
   if (!account) return "未关联后台账号";
   if (account.adminRole === "super_admin") return "全部后台模块";
@@ -119,14 +113,6 @@ function adminPermissionSummary(account?: StaffAdminAccount) {
   ];
   const selected = labels.filter(([permission]) => account.permissions.includes(permission)).map(([, label]) => label);
   return selected.length ? selected.join("、") : "未配置可见运营模块";
-}
-
-function erpPermissionSummary(row: StaffRow) {
-  const member = row.member;
-  if (!member) return "未关联企业成员";
-  if (member.isOwner) return "企业所有者（全部 ERP 权限）";
-  if (!member.permissionKeys.length) return "未配置 ERP 模块权限";
-  return member.permissionKeys.map(key => ERP_PERMISSION_DEFINITIONS[key].label).join("、");
 }
 
 function parseEnterpriseAccess(
@@ -196,7 +182,7 @@ function parseEnterpriseAccess(
   };
 }
 
-function matchesFilter(row: StaffRow, keyword: string, status: StaffStatusFilter) {
+function matchesFilter(row: StaffRow, keyword: string, status: StaffStatusFilter, role: StaffRoleFilter) {
   const normalized = keyword.trim().toLocaleLowerCase();
   const haystack = [
     row.admin?.username,
@@ -207,6 +193,7 @@ function matchesFilter(row: StaffRow, keyword: string, status: StaffStatusFilter
     row.member?.phone,
   ].filter(Boolean).join(" ").toLocaleLowerCase();
   if (normalized && !haystack.includes(normalized)) return false;
+  if (role !== "all" && row.admin?.adminRole !== role) return false;
   if (status === "all") return true;
   return row.admin?.status === status || row.member?.status === status;
 }
@@ -227,12 +214,14 @@ export default function Staff() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<StaffStatusFilter>("all");
+  const [role, setRole] = useState<StaffRoleFilter>("all");
   const [selectedRow, setSelectedRow] = useState<StaffRow | null>(null);
+  const [selectedSection, setSelectedSection] = useState<StaffPermissionSheetSection>("erp");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setPage(1);
-  }, [keyword, status]);
+  }, [keyword, role, status]);
 
   useEffect(() => () => {
     queryClient.removeQueries({ queryKey: staffQueryPrefix(accountId) });
@@ -359,9 +348,12 @@ export default function Staff() {
     });
     return mergeStaffRows({ admins: adminAccounts, members: enterpriseMembers, bindings, scopes, expectedMerchantId: merchantId });
   }, [adminAccounts, bindingQueries, canManageAdmin, enterpriseMembers, merchantId, scopeQueries]);
+  const roleOptions = useMemo(() => Array.from(new Set(
+    staffRows.map(row => row.admin?.adminRole).filter((item): item is string => Boolean(item)),
+  )).sort((left, right) => roleLabel(left).localeCompare(roleLabel(right), "zh-CN")), [staffRows]);
   const visibleRows = useMemo(
-    () => staffRows.filter(row => matchesFilter(row, keyword, status)),
-    [keyword, staffRows, status],
+    () => staffRows.filter(row => matchesFilter(row, keyword, status, role)),
+    [keyword, role, staffRows, status],
   );
 
   const loginHistoryQuery = trpc.adminUser.loginHistory.useQuery(
@@ -457,7 +449,7 @@ export default function Staff() {
         || !sameStringSet(baseline.adminPermissions, draft.adminPermissions)
       );
       if (row.admin && adminChanged && !canManageAdmin) {
-        outcome.errors.admin = "当前账号没有 admins.manage，后台权限未保存";
+        outcome.errors.admin = "当前账号没有后台账户配置权限，后台角色未保存";
       }
       if (canManageAdmin && row.admin && adminChanged) {
         try {
@@ -484,19 +476,23 @@ export default function Staff() {
   );
 
   const businessNotice = (() => {
-    if (navigationQuery.isPending) return { tone: "muted", message: "正在读取当前账号可见的业务商户；后台账户列表不受此读取影响。" };
-    if (navigationQuery.isError) return { tone: "warn", message: `业务商户授权暂不可读：${errorMessage(navigationQuery.error)}。后台运营员工仍可查看。` };
-    if (navigationQuery.isSuccess && officialMerchant.reason) return { tone: "warn", message: officialMerchant.reason };
-    if (merchantId && contextQuery.isPending) return { tone: "muted", message: "正在核验官方商户的后台账号、前台员工与企业上下文…" };
-    if (contextQuery.isError) return { tone: "warn", message: `业务上下文不可用：${errorMessage(contextQuery.error)}。系统未把错误当成空成员数据。` };
-    if (merchantId && contextQuery.isSuccess && contextValidation.reason) return { tone: "warn", message: contextValidation.reason };
-    if (contextReady && enterpriseMeQuery.isPending) return { tone: "muted", message: "正在读取当前前台业务员工的企业权限摘要…" };
-    if (enterpriseMeQuery.isError) return { tone: "warn", message: `企业权限摘要不可用：${errorMessage(enterpriseMeQuery.error)}` };
-    if (contextReady && enterpriseMeQuery.isSuccess && !enterpriseAccess.canManageMembers) return { tone: "warn", message: enterpriseAccess.unavailableReason || "当前前台业务员工不能管理企业成员。" };
-    if (enterpriseMembersQuery.isError) return { tone: "warn", message: `企业成员加载失败：${errorMessage(enterpriseMembersQuery.error)}。未将失败显示为无成员。` };
-    if (enterpriseMembersQuery.isSuccess) return { tone: "ready", message: `官方商户 ${OFFICIAL_STAFF_MERCHANT_ID} 的企业成员已按当前前台身份核验；保存仍由原站服务复核。` };
+    if (navigationQuery.isPending || (merchantId && contextQuery.isPending) || (contextReady && enterpriseMeQuery.isPending)) {
+      return { tone: "muted", message: "正在加载业务权限信息…" };
+    }
+    if (navigationQuery.isError || (navigationQuery.isSuccess && officialMerchant.reason) || contextQuery.isError || (contextQuery.isSuccess && contextValidation.reason) || enterpriseMeQuery.isError) {
+      return { tone: "warn", message: "业务权限信息暂时不可用，请稍后刷新。" };
+    }
+    if (contextReady && enterpriseMeQuery.isSuccess && !enterpriseAccess.canManageMembers) {
+      return { tone: "warn", message: "当前账号暂不能管理企业成员。" };
+    }
+    if (enterpriseMembersQuery.isError) return { tone: "warn", message: "企业成员加载失败，请稍后刷新。" };
     return null;
   })();
+
+  const openStaffSheet = (row: StaffRow, section: StaffPermissionSheetSection) => {
+    setSelectedSection(section);
+    setSelectedRow(row);
+  };
 
   const refresh = async () => {
     await Promise.all([
@@ -508,66 +504,72 @@ export default function Staff() {
 
   return (
     <DashboardLayout>
-      <PageHeader
-        title="员工与权限"
-        description="在一个入口核对后台运营权限、原站 ERP 权限、业务范围与 BFF 前置条件；不同身份只在存在受信任关联时同窗保存。"
-        actions={<div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => void refresh()} disabled={adminUsersQuery.isFetching || navigationQuery.isFetching}><RefreshCw className={`mr-1 h-4 w-4 ${adminUsersQuery.isFetching || navigationQuery.isFetching ? "animate-spin" : ""}`} />刷新</Button>{canManageAdmin ? <Button asChild variant="outline" size="sm"><a href="/admins">新建后台账号 <ExternalLink className="ml-1 h-3.5 w-3.5" /></a></Button> : null}</div>}
-      />
+      <div data-staff-page className="staff-management-page">
+        <PageHeader
+          title="员工与权限"
+          description="统一管理团队成员、后台角色、ERP 权限与数据范围。"
+          actions={<div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => void refresh()} disabled={adminUsersQuery.isFetching || navigationQuery.isFetching}><RefreshCw className={`mr-1 h-4 w-4 ${adminUsersQuery.isFetching || navigationQuery.isFetching ? "animate-spin" : ""}`} />刷新</Button>{canManageAdmin ? <Button asChild variant="outline" size="sm"><a href="/admins">新建后台账号 <ExternalLink className="ml-1 h-3.5 w-3.5" /></a></Button> : null}</div>}
+        />
 
-      {businessNotice ? <div className={`mb-4 rounded-md border p-3 text-sm ${businessNotice.tone === "warn" ? "border-amber-300 bg-amber-50 text-amber-950" : businessNotice.tone === "ready" ? "border-emerald-200 bg-emerald-50 text-emerald-950" : "bg-muted/30 text-muted-foreground"}`}>{businessNotice.message}</div> : null}
-      {!canManageAdmin && !enterpriseAccess.canManageMembers && !navigationQuery.isPending ? <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">当前账号既没有 `admins.manage`，也未通过企业成员管理核验。本页不会请求后台员工列表或越权的企业成员接口。</div> : null}
+        {businessNotice ? <div className={`mb-4 rounded-md border p-3 text-sm ${businessNotice.tone === "warn" ? "border-amber-300 bg-amber-50 text-amber-950" : "bg-muted/30 text-muted-foreground"}`}>{businessNotice.message}</div> : null}
 
-      <Card>
-        <CardHeader className="flex flex-col gap-3 space-y-0 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
-          <div><CardTitle className="text-base">员工列表</CardTitle><p className="mt-1 text-xs text-muted-foreground">后台账户仅在拥有 `admins.manage` 时读取；企业成员仅在已核验的原站成员管理能力下读取。</p></div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索账号、姓名、邮箱或手机号" className="sm:w-[240px]" aria-label="搜索员工" />
-            <select value={status} onChange={event => setStatus(event.target.value as StaffStatusFilter)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" aria-label="员工状态筛选"><option value="all">全部状态</option><option value="active">正常 / 启用</option><option value="disabled">后台停用</option><option value="locked">后台锁定</option><option value="suspended">企业暂停</option></select>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {adminUsersQuery.isLoading || (enterpriseMembersQuery.isPending && contextReady && enterpriseAccess.canManageMembers) ? <div className="space-y-3 p-6"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : visibleRows.length === 0 ? (
-            <EmptyState message={canManageAdmin || enterpriseMembersQuery.isSuccess ? "当前筛选没有可显示的真实员工记录。" : "没有可读取的员工数据；请先完成相应后台或企业授权。"} />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[1050px]">
-                <TableHeader><TableRow className="bg-muted/30"><TableHead>员工 / 身份</TableHead><TableHead>后台运营权限</TableHead><TableHead>ERP 权限与范围</TableHead><TableHead>BFF 前置状态</TableHead><TableHead>状态</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
-                <TableBody>{visibleRows.map(row => {
-                  const adminStatus = row.admin ? accountStatus(row.admin) : null;
-                  const bff = bffBadge(row);
-                  return <TableRow key={row.key} className="align-top">
-                    <TableCell className="min-w-[200px]"><div className="font-medium">{row.admin?.displayName || row.member?.displayName || row.admin?.username || "未命名员工"}</div>{row.admin ? <p className="mt-1 font-mono text-xs text-muted-foreground">{row.admin.username}</p> : null}{row.member?.phone ? <p className="mt-1 text-xs text-muted-foreground">{row.member.phone}</p> : null}<div className="mt-2 flex flex-wrap gap-1">{row.admin ? <Badge variant="outline">后台账号</Badge> : null}{row.member ? <Badge variant="outline">企业成员{row.member.isOwner ? " · 所有者" : ""}</Badge> : null}{!row.admin || !row.member ? <Badge variant="outline">权限待关联</Badge> : null}</div></TableCell>
-                    <TableCell className="max-w-[210px] text-sm"><p title={adminPermissionSummary(row.admin)} className="line-clamp-2">{adminPermissionSummary(row.admin)}</p>{row.admin ? <p className="mt-1 text-xs text-muted-foreground">{roleLabel(row.admin.adminRole)}</p> : null}</TableCell>
-                    <TableCell className="max-w-[270px] text-sm"><p title={erpPermissionSummary(row)} className="line-clamp-2">{erpPermissionSummary(row)}</p>{row.member ? <p className="mt-1 text-xs text-muted-foreground">范围：{row.member.isOwner || row.member.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"}</p> : null}</TableCell>
-                    <TableCell className="max-w-[230px]"><StatusBadge label={bff.label} style={bff.style} /><p className="mt-2 break-words text-xs leading-5 text-muted-foreground">{row.bff.detail}</p>{row.bff.missingPermissions.length ? <p className="mt-1 break-words text-xs text-amber-700">缺：{row.bff.missingPermissions.join("、")}</p> : null}</TableCell>
-                    <TableCell><div className="flex flex-wrap gap-1">{adminStatus ? <StatusBadge label={adminStatus.label} style={adminStatus.style} /> : null}{row.member ? <StatusBadge label={row.member.status === "active" ? "企业正常" : "企业暂停"} style={row.member.status === "active" ? "success" : "warning"} /> : null}</div></TableCell>
-                    <TableCell className="text-right"><Button size="sm" variant="outline" onClick={() => setSelectedRow(row)}><Pencil className="mr-1 h-3.5 w-3.5" />查看 / 配置</Button></TableCell>
-                  </TableRow>;
-                })}</TableBody>
-              </Table>
+        <Card>
+          <CardHeader className="flex flex-col gap-3 space-y-0 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div><CardTitle className="text-base">员工列表</CardTitle><p className="mt-1 text-xs text-muted-foreground">按员工信息、账号状态和后台角色快速定位。</p></div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索账号、姓名、邮箱或手机号" className="sm:w-[240px]" aria-label="搜索员工" />
+              <select value={status} onChange={event => setStatus(event.target.value as StaffStatusFilter)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" aria-label="员工状态筛选"><option value="all">全部状态</option><option value="active">正常 / 启用</option><option value="disabled">后台停用</option><option value="locked">后台锁定</option><option value="suspended">企业暂停</option></select>
+              <select value={role} onChange={event => setRole(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" aria-label="后台角色筛选"><option value="all">全部后台角色</option>{roleOptions.map(option => <option key={option} value={option}>{roleLabel(option)}</option>)}</select>
             </div>
-          )}
-          {canManageAdmin && adminUsersQuery.data ? <Pagination page={page} pageSize={PAGE_SIZE} total={adminUsersQuery.data.total} onPageChange={setPage} /> : null}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="p-0">
+            {adminUsersQuery.isLoading || (enterpriseMembersQuery.isPending && contextReady && enterpriseAccess.canManageMembers) ? <div className="space-y-3 p-6"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : visibleRows.length === 0 ? (
+              <EmptyState message={canManageAdmin || enterpriseMembersQuery.isSuccess ? "当前筛选没有可显示的员工记录。" : "暂无可显示的员工记录。"} />
+            ) : (
+              <div className="staff-management-table-scroll">
+                <Table className="staff-management-table min-w-[1120px] table-fixed">
+                  <colgroup><col className="w-[24%]" /><col className="w-[17%]" /><col className="w-[20%]" /><col className="w-[14%]" /><col className="w-[13%]" /><col className="w-[12%]" /></colgroup>
+                  <TableHeader><TableRow className="bg-muted/30"><TableHead>员工信息</TableHead><TableHead>后台角色</TableHead><TableHead>ERP 权限</TableHead><TableHead>数据范围</TableHead><TableHead>账号状态</TableHead><TableHead className="staff-action-head text-right">操作</TableHead></TableRow></TableHeader>
+                  <TableBody>{visibleRows.map(row => {
+                    const adminStatus = row.admin ? accountStatus(row.admin) : null;
+                    const erpPreview = staffErpPermissionPreview(row);
+                    const needsAssociation = staffRowNeedsAssociation(row);
+                    const displayName = row.admin?.displayName || row.member?.displayName || row.admin?.username || "未命名员工";
+                    return <TableRow key={row.key} className="align-top">
+                      <TableCell className="min-w-[230px]"><div className="flex items-center gap-3"><span className="staff-avatar" aria-hidden="true">{displayName.slice(0, 1)}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="truncate font-medium">{displayName}</span>{needsAssociation ? <button type="button" className="staff-association-action" onClick={() => openStaffSheet(row, "member")}>待关联</button> : null}</div>{row.admin ? <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{row.admin.username}</p> : null}{row.member?.phone ? <p className="mt-1 text-xs text-muted-foreground">{row.member.phone}</p> : null}<div className="mt-2 flex flex-wrap gap-1">{row.admin ? <Badge variant="outline">后台账号</Badge> : null}{row.member ? <Badge variant="outline">企业成员{row.member.isOwner ? " · 所有者" : ""}</Badge> : null}</div></div></div></TableCell>
+                      <TableCell className="min-w-[160px] text-sm">{row.admin ? <><p className="font-medium">{roleLabel(row.admin.adminRole)}</p><p title={adminPermissionSummary(row.admin)} className="mt-1 line-clamp-2 text-xs text-muted-foreground">{adminPermissionSummary(row.admin)}</p></> : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="min-w-[200px]">{erpPreview.total ? <div className="staff-erp-tags">{erpPreview.labels.map(label => <span key={label} className="staff-erp-tag">{label}</span>)}{erpPreview.remaining ? <button type="button" className="staff-erp-more" onClick={() => openStaffSheet(row, "erp")} aria-label={`查看 ${displayName} 的全部 ${erpPreview.total} 项 ERP 权限`}>+{erpPreview.remaining}</button> : null}</div> : <span className="text-sm text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="min-w-[150px] text-sm">{row.member ? <span className="text-muted-foreground">{row.member.isOwner || row.member.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"}</span> : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="min-w-[150px]"><div className="flex flex-wrap gap-1">{adminStatus ? <StatusBadge label={adminStatus.label} style={adminStatus.style} /> : null}{row.member ? <StatusBadge label={row.member.status === "active" ? "企业正常" : "企业暂停"} style={row.member.status === "active" ? "success" : "warning"} /> : null}{!adminStatus && !row.member ? <span className="text-sm text-muted-foreground">—</span> : null}</div></TableCell>
+                      <TableCell className="staff-action-cell w-[148px] min-w-[148px] whitespace-nowrap text-right"><Button size="sm" variant="outline" onClick={() => openStaffSheet(row, "erp")}><Pencil className="mr-1 h-3.5 w-3.5" />配置权限</Button></TableCell>
+                    </TableRow>;
+                  })}</TableBody>
+                </Table>
+              </div>
+            )}
+            {canManageAdmin && adminUsersQuery.data ? <Pagination page={page} pageSize={PAGE_SIZE} total={adminUsersQuery.data.total} onPageChange={setPage} /> : null}
+          </CardContent>
+        </Card>
 
-      <Card className="mt-4 border-dashed">
-        <CardContent className="flex flex-col gap-3 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-2"><Users className="mt-0.5 h-4 w-4 shrink-0" /><p>企业所有者转让、成员邀请和业务交接保留在原站流程，未在此页创建另一套人员管理或自动账号关联。</p></div>{enterpriseAccess.inviteHref ? <a href={enterpriseAccess.inviteHref} className="shrink-0 text-primary underline-offset-4 hover:underline">员工邀请与业务交接</a> : null}</CardContent>
-      </Card>
+        <Card className="mt-4 border-dashed">
+          <CardContent className="flex flex-col gap-3 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-2"><Users className="mt-0.5 h-4 w-4 shrink-0" /><p>需要邀请员工或交接业务时，可继续使用现有流程。</p></div>{enterpriseAccess.inviteHref ? <a href={enterpriseAccess.inviteHref} className="shrink-0 text-primary underline-offset-4 hover:underline">员工邀请与业务交接</a> : null}</CardContent>
+        </Card>
 
-      <StaffPermissionSheet
-        key={`${accountId ?? "signed-out"}:${selectedCurrentRow?.key ?? "none"}`}
-        open={Boolean(selectedRow)}
-        row={selectedCurrentRow}
-        canManageAdmin={canManageAdmin}
-        enterpriseAccess={enterpriseAccess}
-        saving={saving}
-        securityLogs={loginHistoryQuery.data as never}
-        securityLoading={loginHistoryQuery.isLoading}
-        securityError={loginHistoryQuery.isError ? errorMessage(loginHistoryQuery.error) : null}
-        onOpenChange={open => { if (!open && !saving) setSelectedRow(null); }}
-        onSave={saveSelected}
-      />
+        <StaffPermissionSheet
+          key={`${accountId ?? "signed-out"}:${selectedCurrentRow?.key ?? "none"}`}
+          open={Boolean(selectedRow)}
+          row={selectedCurrentRow}
+          initialSection={selectedSection}
+          canManageAdmin={canManageAdmin}
+          enterpriseAccess={enterpriseAccess}
+          saving={saving}
+          securityLogs={loginHistoryQuery.data as never}
+          securityLoading={loginHistoryQuery.isLoading}
+          securityError={loginHistoryQuery.isError ? errorMessage(loginHistoryQuery.error) : null}
+          onOpenChange={open => { if (!open && !saving) setSelectedRow(null); }}
+          onSave={saveSelected}
+        />
+      </div>
     </DashboardLayout>
   );
 }

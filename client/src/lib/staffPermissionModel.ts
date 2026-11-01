@@ -576,4 +576,28 @@ export function erpPermissionLabel(key: ErpPermissionKey) {
   return ERP_PERMISSION_DEFINITIONS[key].label;
 }
 
+/**
+ * List-only presentation derived from a real merged row. It never invents
+ * permissions or changes the full set used by the editor and save guards.
+ */
+export function staffErpPermissionPreview(
+  row: Pick<StaffRow, "member">,
+  maxVisible = 2,
+): { labels: string[]; remaining: number; total: number } {
+  const member = row.member;
+  if (!member) return { labels: [], remaining: 0, total: 0 };
+  if (member.isOwner) return { labels: ["全部 ERP 权限"], remaining: 0, total: 1 };
+  const visibleCount = Math.max(0, Math.floor(maxVisible));
+  return {
+    labels: member.permissionKeys.slice(0, visibleCount).map(erpPermissionLabel),
+    remaining: Math.max(0, member.permissionKeys.length - visibleCount),
+    total: member.permissionKeys.length,
+  };
+}
+
+/** A row is actionable only through the existing unified permission sheet. */
+export function staffRowNeedsAssociation(row: Pick<StaffRow, "admin" | "member">) {
+  return !row.admin || !row.member;
+}
+
 export { ERP_PERMISSION_GROUPS, ERP_VISIBLE_PERMISSION_KEYS };
