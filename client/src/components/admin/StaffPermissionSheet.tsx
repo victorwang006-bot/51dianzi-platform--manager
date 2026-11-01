@@ -25,9 +25,11 @@ import {
   erpPermissionLabel,
   hasStaffDraftChanges,
   protectedStaffErpKeys,
+  staffErpMutationGuard,
   staffChangePreview,
   staffDraftFromRow,
   toggleStaffErpPermission,
+  type StaffErpEditorAccess,
   type StaffRow,
   type StaffSaveBaseline,
   type StaffSaveDraft,
@@ -52,12 +54,7 @@ type SecurityLog = {
   deviceType?: string | null;
 };
 
-export type StaffEnterpriseEditorAccess = {
-  available: boolean;
-  canManageMembers: boolean;
-  actorIsOwner: boolean;
-  currentUserId: number | null;
-  grantableKeys: ErpPermissionKey[];
+export type StaffEnterpriseEditorAccess = StaffErpEditorAccess & {
   inviteHref: string | null;
   unavailableReason?: string | null;
 };
@@ -148,14 +145,8 @@ export default function StaffPermissionSheet({
   const admin = row?.admin;
   const member = row?.member;
   const canEditAdmin = Boolean(admin && canManageAdmin);
-  const isSelfMember = Boolean(member && enterpriseAccess.currentUserId === member.userId);
-  const canEditErp = Boolean(
-    member
-      && enterpriseAccess.available
-      && enterpriseAccess.canManageMembers
-      && !member.isOwner
-      && !isSelfMember,
-  );
+  const erpGuard = staffErpMutationGuard(row, enterpriseAccess);
+  const canEditErp = erpGuard.allowed;
   const availableErpKeys = enterpriseAccess.grantableKeys;
   const availableErpSet = new Set(availableErpKeys);
   const lockedErpKeys = protectedStaffErpKeys(baseline.erpPermissionKeys, availableErpKeys, enterpriseAccess.actorIsOwner);
@@ -214,15 +205,9 @@ export default function StaffPermissionSheet({
     ? row?.bindingState === "bound"
       ? "该后台账号绑定的前台用户不是当前官方企业成员，系统不会按姓名或手机号补配。"
       : "该后台账号尚未关联当前官方企业成员；ERP 设置保持禁用。"
-    : member.isOwner
-      ? "企业所有者的 ERP 权限与业务范围只读；平台超级管理员不能绕过企业所有者规则。"
-      : isSelfMember
-        ? "当前业务操作者不能修改自己的 ERP 权限或业务范围。"
-        : !enterpriseAccess.available
-          ? enterpriseAccess.unavailableReason || "业务上下文未安全就绪，ERP 设置保持禁用。"
-          : !enterpriseAccess.canManageMembers
-            ? "当前前台业务员工没有企业成员管理权限。"
-            : "ERP 权限和业务范围仍由原站企业服务在每次请求中复核。";
+    : !erpGuard.allowed
+      ? erpGuard.reason
+      : "ERP 权限和业务范围仍由原站企业服务在每次请求中复核。";
 
   return (
     <Sheet open={open} onOpenChange={nextOpen => { if (!saving) onOpenChange(nextOpen); }}>

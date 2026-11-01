@@ -35,8 +35,10 @@ import {
   positiveInteger,
   protectedStaffErpKeys,
   readStaffMerchantSelection,
+  runGuardedStaffErpMutation,
   sameStringSet,
   selectOfficialStaffMerchant,
+  staffErpMutationGuard,
   staffQueryKey,
   staffQueryPrefix,
   validateStaffBusinessContext,
@@ -335,7 +337,7 @@ export default function Staff() {
     const scopes = new Map<number, { state: ScopeReadState; scope: ReturnType<typeof exactMerchantScope> }>();
     adminAccounts.forEach((account, index) => {
       const bindingQuery = bindingQueries[index];
-      const binding = bindingQuery?.isSuccess ? parseStaffBinding(bindingQuery.data) : null;
+      const binding = bindingQuery?.isSuccess ? parseStaffBinding(bindingQuery.data, account.id) : null;
       const state: BindingReadState = !canManageAdmin
         ? "not-requested"
         : bindingQuery?.isPending
@@ -355,7 +357,7 @@ export default function Staff() {
             : scope ? "ready" : "missing";
       scopes.set(account.id, { state: scopeState, scope });
     });
-    return mergeStaffRows({ admins: adminAccounts, members: enterpriseMembers, bindings, scopes });
+    return mergeStaffRows({ admins: adminAccounts, members: enterpriseMembers, bindings, scopes, expectedMerchantId: merchantId });
   }, [adminAccounts, bindingQueries, canManageAdmin, enterpriseMembers, merchantId, scopeQueries]);
   const visibleRows = useMemo(
     () => staffRows.filter(row => matchesFilter(row, keyword, status)),
@@ -385,56 +387,67 @@ export default function Staff() {
     if (!row) return outcome;
     setSaving(true);
     try {
-      const canEditErp = Boolean(
-        row.member
-        && enterpriseAccess.available
-        && enterpriseAccess.canManageMembers
-        && !row.member.isOwner
-        && enterpriseAccess.currentUserId !== row.member.userId,
-      );
+      // ERP writes use the live merged row rather than the snapshot captured
+      // when the sheet opened. Pending/error/mismatched binding or scope reads
+      // therefore cannot inherit a previously ready state.
+      const currentErpRow = staffRows.find(candidate => candidate.key === row.key);
+      const erpGuard = staffErpMutationGuard(currentErpRow, enterpriseAccess);
+      const canEditErp = erpGuard.allowed;
       const lockedPermissionKeys = protectedStaffErpKeys(baseline.erpPermissionKeys, enterpriseAccess.grantableKeys, enterpriseAccess.actorIsOwner);
       const canEditErpPermissions = canEditErp && lockedPermissionKeys.length === 0;
       const erpPermissionsChanged = !sameStringSet(baseline.erpPermissionKeys, draft.erpPermissionKeys);
       const erpScopeChanged = baseline.inventoryDataScope !== draft.inventoryDataScope;
-      if (row.member && erpPermissionsChanged && !canEditErpPermissions) {
+      if (erpPermissionsChanged && !canEditErpPermissions) {
         outcome.errors.erpPermissions = lockedPermissionKeys.length
           ? "该员工已有超出当前操作者可授予范围的权限；为避免误撤销，请由企业所有者调整。"
-          : "当前状态不允许修改该企业成员的 ERP 权限";
+          : erpGuard.allowed ? "当前状态不允许修改该企业成员的 ERP 权限" : erpGuard.reason;
       }
-      if (row.member && erpScopeChanged && !canEditErp) {
-        outcome.errors.erpScope = "当前状态不允许修改该企业成员的业务范围";
+      if (erpScopeChanged && !canEditErp) {
+        outcome.errors.erpScope = erpGuard.allowed ? "当前状态不允许修改该企业成员的业务范围" : erpGuard.reason;
       }
-      if (canEditErpPermissions && row.member && erpPermissionsChanged) {
+      if (canEditErpPermissions && currentErpRow?.member && erpPermissionsChanged) {
         try {
-          if (!domainClient) throw new Error("业务客户端未就绪");
-          if (!draft.erpPermissionKeys.length) throw new Error("请至少保留一项 ERP 权限");
-          if (draft.erpPermissionKeys.some(key => !enterpriseAccess.grantableKeys.includes(key))) {
-            throw new Error("只能授予当前前台业务员工已拥有的 ERP 权限");
-          }
-          await domainClient.enterprise.updatePermissions.mutate({
-            userId: row.member.userId,
-            permissionKeys: draft.erpPermissionKeys,
-            requestId: requestId("staff_erp_permissions"),
+          const execution = await runGuardedStaffErpMutation(currentErpRow, enterpriseAccess, async () => {
+            if (!domainClient) throw new Error("业务客户端未就绪");
+            if (!draft.erpPermissionKeys.length) throw new Error("请至少保留一项 ERP 权限");
+            if (draft.erpPermissionKeys.some(key => !enterpriseAccess.grantableKeys.includes(key))) {
+              throw new Error("只能授予当前前台业务员工已拥有的 ERP 权限");
+            }
+            return domainClient.enterprise.updatePermissions.mutate({
+              userId: currentErpRow.member!.userId,
+              permissionKeys: draft.erpPermissionKeys,
+              requestId: requestId("staff_erp_permissions"),
+            });
           });
-          outcome.completed.erpPermissions = true;
-          await refreshBusinessMembers();
+          if (!execution.allowed) {
+            outcome.errors.erpPermissions = execution.reason;
+          } else {
+            outcome.completed.erpPermissions = true;
+            await refreshBusinessMembers();
+          }
         } catch (error) {
           outcome.errors.erpPermissions = errorMessage(error);
         }
       }
-      if (canEditErp && row.member && erpScopeChanged) {
+      if (canEditErp && currentErpRow?.member && erpScopeChanged) {
         try {
-          if (!domainClient) throw new Error("业务客户端未就绪");
-          if (draft.inventoryDataScope === "enterprise" && !enterpriseAccess.actorIsOwner) {
-            throw new Error("全企业业务仅当前企业所有者可授予");
-          }
-          await domainClient.enterprise.updateInventoryScope.mutate({
-            userId: row.member.userId,
-            inventoryDataScope: draft.inventoryDataScope,
-            requestId: requestId("staff_erp_scope"),
+          const execution = await runGuardedStaffErpMutation(currentErpRow, enterpriseAccess, async () => {
+            if (!domainClient) throw new Error("业务客户端未就绪");
+            if (draft.inventoryDataScope === "enterprise" && !enterpriseAccess.actorIsOwner) {
+              throw new Error("全企业业务仅当前企业所有者可授予");
+            }
+            return domainClient.enterprise.updateInventoryScope.mutate({
+              userId: currentErpRow.member!.userId,
+              inventoryDataScope: draft.inventoryDataScope,
+              requestId: requestId("staff_erp_scope"),
+            });
           });
-          outcome.completed.erpScope = true;
-          await refreshBusinessMembers();
+          if (!execution.allowed) {
+            outcome.errors.erpScope = execution.reason;
+          } else {
+            outcome.completed.erpScope = true;
+            await refreshBusinessMembers();
+          }
         } catch (error) {
           outcome.errors.erpScope = errorMessage(error);
         }
@@ -464,6 +477,11 @@ export default function Staff() {
       setSaving(false);
     }
   };
+
+  const selectedCurrentRow = useMemo(
+    () => selectedRow ? staffRows.find(candidate => candidate.key === selectedRow.key) ?? null : null,
+    [selectedRow, staffRows],
+  );
 
   const businessNotice = (() => {
     if (navigationQuery.isPending) return { tone: "muted", message: "正在读取当前账号可见的业务商户；后台账户列表不受此读取影响。" };
@@ -538,9 +556,9 @@ export default function Staff() {
       </Card>
 
       <StaffPermissionSheet
-        key={`${accountId ?? "signed-out"}:${selectedRow?.key ?? "none"}`}
+        key={`${accountId ?? "signed-out"}:${selectedCurrentRow?.key ?? "none"}`}
         open={Boolean(selectedRow)}
-        row={selectedRow}
+        row={selectedCurrentRow}
         canManageAdmin={canManageAdmin}
         enterpriseAccess={enterpriseAccess}
         saving={saving}

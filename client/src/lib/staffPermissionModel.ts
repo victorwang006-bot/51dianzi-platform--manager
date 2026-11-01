@@ -63,6 +63,19 @@ export type StaffBffReadiness = {
   detail: string;
 };
 
+/** Minimum verified operator context needed before an ERP member write may start. */
+export type StaffErpEditorAccess = {
+  available: boolean;
+  canManageMembers: boolean;
+  actorIsOwner: boolean;
+  currentUserId: number | null;
+  grantableKeys: readonly ErpPermissionKey[];
+};
+
+export type StaffErpMutationGuard =
+  | { allowed: true }
+  | { allowed: false; reason: string };
+
 export type StaffRow = {
   key: string;
   admin?: StaffAdminAccount;
@@ -330,12 +343,18 @@ export function parseEnterpriseMembers(value: unknown): StaffEnterpriseMember[] 
   return members;
 }
 
-export function parseStaffBinding(value: unknown): StaffBinding | null {
+/**
+ * `staffBindings.current` is already active-only on the server. The browser
+ * must still reject a response whose returned principal is not the requested
+ * admin account; response shape alone is not an identity proof.
+ */
+export function parseStaffBinding(value: unknown, expectedAdminUserId: unknown): StaffBinding | null {
   if (!isRecord(value)) return null;
+  const expectedAdminId = positiveInteger(expectedAdminUserId);
   const adminUserId = positiveInteger(value.adminUserId);
   const frontUserId = positiveInteger(value.frontUserId);
   const bindingVersion = positiveInteger(value.bindingVersion);
-  if (!adminUserId || !frontUserId || !bindingVersion) return null;
+  if (!expectedAdminId || !adminUserId || adminUserId !== expectedAdminId || !frontUserId || !bindingVersion) return null;
   return { adminUserId, frontUserId, bindingVersion };
 }
 
@@ -361,8 +380,9 @@ export function evaluateBffReadiness(input: {
   bindingState: BindingReadState;
   scope?: StaffBffScope | null;
   scopeState: ScopeReadState;
+  expectedMerchantId: number | null;
 }): StaffBffReadiness {
-  const { admin, member, binding, bindingState, scope, scopeState } = input;
+  const { admin, member, binding, bindingState, scope, scopeState, expectedMerchantId } = input;
   if (!admin || !member) {
     return {
       state: "not-applicable",
@@ -374,7 +394,7 @@ export function evaluateBffReadiness(input: {
   }
   if (bindingState === "loading") return { state: "checking", missingPermissions: [], detail: "正在核验后台账号与前台员工绑定…" };
   if (bindingState === "error") return { state: "checking", missingPermissions: [], detail: "绑定状态暂不可读，未将其视为未关联。" };
-  if (!binding || binding.frontUserId !== member.userId) {
+  if (bindingState !== "bound" || !binding || binding.adminUserId !== admin.id || binding.frontUserId !== member.userId) {
     return { state: "unlinked", missingPermissions: [], detail: "后台账号与该企业成员没有可用的一对一绑定，不能合并保存两侧权限。" };
   }
   if (scopeState === "loading") return { state: "checking", missingPermissions: [], detail: "正在读取该官方商户的 BFF scope…" };
@@ -382,7 +402,9 @@ export function evaluateBffReadiness(input: {
   if (admin.status !== "active" || member.status !== "active") {
     return { state: "scope-incomplete", missingPermissions: [], detail: "后台账号或企业成员不是 active，BFF 不会把该组合视为有效业务人员。" };
   }
-  if (!scope) return { state: "scope-unavailable", missingPermissions: ["business.context.read"], detail: "未找到该官方商户的 active BFF scope。" };
+  if (!expectedMerchantId || !scope || scope.merchantId !== expectedMerchantId) {
+    return { state: "scope-unavailable", missingPermissions: ["business.context.read"], detail: "未找到该官方商户的 active BFF scope。" };
+  }
   const required = requiredBffPermissions(member);
   const missingPermissions = required.filter(permission => !scope.modulePermissions.includes(permission));
   if (missingPermissions.length) {
@@ -399,28 +421,67 @@ export function evaluateBffReadiness(input: {
   };
 }
 
+/**
+ * Shared UI/save gate. A ready BFF state is only accepted with the same target
+ * admin/front identity again checked here, so a stale or handcrafted row cannot
+ * make an ERP mutation permissive.
+ */
+export function staffErpMutationGuard(
+  row: StaffRow | null | undefined,
+  access: Pick<StaffErpEditorAccess, "available" | "canManageMembers" | "currentUserId">,
+): StaffErpMutationGuard {
+  const member = row?.member;
+  const admin = row?.admin;
+  const binding = row?.binding;
+  if (!member || !admin) return { allowed: false, reason: "目标后台账号或企业成员未完成可信关联，ERP 设置保持禁用。" };
+  if (member.isOwner) return { allowed: false, reason: "企业所有者的 ERP 权限与业务范围只读。" };
+  if (access.currentUserId === member.userId) return { allowed: false, reason: "当前业务操作者不能修改自己的 ERP 权限或业务范围。" };
+  if (!access.available) return { allowed: false, reason: "业务上下文未安全就绪，ERP 设置保持禁用。" };
+  if (!access.canManageMembers) return { allowed: false, reason: "当前前台业务员工没有企业成员管理权限。" };
+  if (row.bindingState !== "bound" || row.bff.state !== "ready") {
+    return { allowed: false, reason: "目标成员的绑定或 BFF 前置核验未完成，ERP 设置保持禁用。" };
+  }
+  if (!binding || binding.adminUserId !== admin.id || binding.frontUserId !== member.userId) {
+    return { allowed: false, reason: "目标成员的后台账号与前台身份绑定不一致，ERP 设置保持禁用。" };
+  }
+  return { allowed: true };
+}
+
+/** The caller supplies the sole mutation action; denied states never invoke it. */
+export async function runGuardedStaffErpMutation<T>(
+  row: StaffRow | null | undefined,
+  access: Pick<StaffErpEditorAccess, "available" | "canManageMembers" | "currentUserId">,
+  mutation: () => Promise<T>,
+): Promise<StaffErpMutationGuard & { value?: T }> {
+  const guard = staffErpMutationGuard(row, access);
+  if (!guard.allowed) return guard;
+  return { allowed: true, value: await mutation() };
+}
+
 export function mergeStaffRows(input: {
   admins: readonly StaffAdminAccount[];
   members: readonly StaffEnterpriseMember[];
   bindings: ReadonlyMap<number, { state: BindingReadState; binding: StaffBinding | null }>;
   scopes: ReadonlyMap<number, { state: ScopeReadState; scope: StaffBffScope | null }>;
+  expectedMerchantId: number | null;
 }): StaffRow[] {
   const memberByUserId = new Map(input.members.map(member => [member.userId, member]));
   const attachedMemberIds = new Set<number>();
   const rows: StaffRow[] = input.admins.map(admin => {
     const bindingResult = input.bindings.get(admin.id) ?? { state: "not-requested" as const, binding: null };
-    const member = bindingResult.binding ? memberByUserId.get(bindingResult.binding.frontUserId) : undefined;
+    const binding = bindingResult.binding?.adminUserId === admin.id ? bindingResult.binding : null;
+    const member = binding ? memberByUserId.get(binding.frontUserId) : undefined;
     if (member) attachedMemberIds.add(member.userId);
     const scopeResult = input.scopes.get(admin.id) ?? { state: "not-requested" as const, scope: null };
     return {
       key: `admin:${admin.id}`,
       admin,
       member,
-      binding: bindingResult.binding,
+      binding,
       bindingState: bindingResult.state,
       scope: scopeResult.scope,
       scopeState: scopeResult.state,
-      bff: evaluateBffReadiness({ admin, member, binding: bindingResult.binding, bindingState: bindingResult.state, scope: scopeResult.scope, scopeState: scopeResult.state }),
+      bff: evaluateBffReadiness({ admin, member, binding, bindingState: bindingResult.state, scope: scopeResult.scope, scopeState: scopeResult.state, expectedMerchantId: input.expectedMerchantId }),
     };
   });
   for (const member of input.members) {
@@ -430,7 +491,7 @@ export function mergeStaffRows(input: {
       member,
       bindingState: "not-requested",
       scopeState: "not-requested",
-      bff: evaluateBffReadiness({ member, bindingState: "not-requested", scopeState: "not-requested" }),
+      bff: evaluateBffReadiness({ member, bindingState: "not-requested", scopeState: "not-requested", expectedMerchantId: input.expectedMerchantId }),
     });
   }
   return rows;
