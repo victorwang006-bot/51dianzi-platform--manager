@@ -5,7 +5,6 @@ import StaffPermissionSheet, {
 } from "@/components/admin/StaffPermissionSheet";
 import { EmptyState, PageHeader, Pagination, StatusBadge } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -98,21 +97,6 @@ function accountStatus(account: StaffAdminAccount) {
   if (account.status === "active") return { label: "启用", style: "success" as const };
   if (account.status === "locked") return { label: "锁定", style: "warning" as const };
   return { label: "停用", style: "gray" as const };
-}
-
-function adminPermissionSummary(account?: StaffAdminAccount) {
-  if (!account) return "未关联后台账号";
-  if (account.adminRole === "super_admin") return "全部后台模块";
-  const labels: Array<[string, string]> = [
-    ["materials.read", "物料"],
-    ["merchants.read", "商户"],
-    ["portalUsers.read", "用户"],
-    ["messages.read", "消息"],
-    ["orders.read", "订单"],
-    ["analytics.read", "数据"],
-  ];
-  const selected = labels.filter(([permission]) => account.permissions.includes(permission)).map(([, label]) => label);
-  return selected.length ? selected.join("、") : "未配置可见运营模块";
 }
 
 function parseEnterpriseAccess(
@@ -514,34 +498,35 @@ export default function Staff() {
         {businessNotice ? <div className={`mb-4 rounded-md border p-3 text-sm ${businessNotice.tone === "warn" ? "border-amber-300 bg-amber-50 text-amber-950" : "bg-muted/30 text-muted-foreground"}`}>{businessNotice.message}</div> : null}
 
         <Card>
-          <CardHeader className="flex flex-col gap-3 space-y-0 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <div><CardTitle className="text-base">员工列表</CardTitle><p className="mt-1 text-xs text-muted-foreground">按员工信息、账号状态和后台角色快速定位。</p></div>
+          <CardHeader className="flex flex-col gap-2 space-y-0 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-base">员工列表</CardTitle>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索账号、姓名、邮箱或手机号" className="sm:w-[240px]" aria-label="搜索员工" />
-              <select value={status} onChange={event => setStatus(event.target.value as StaffStatusFilter)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" aria-label="员工状态筛选"><option value="all">全部状态</option><option value="active">正常 / 启用</option><option value="disabled">后台停用</option><option value="locked">后台锁定</option><option value="suspended">企业暂停</option></select>
-              <select value={role} onChange={event => setRole(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" aria-label="后台角色筛选"><option value="all">全部后台角色</option>{roleOptions.map(option => <option key={option} value={option}>{roleLabel(option)}</option>)}</select>
+              <Input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="搜索姓名、账号或手机" className="h-8 text-sm sm:w-[220px]" aria-label="搜索员工" />
+              <select value={status} onChange={event => setStatus(event.target.value as StaffStatusFilter)} className="h-8 rounded-md border border-input bg-background px-2 text-xs" aria-label="员工状态筛选"><option value="all">全部状态</option><option value="active">正常 / 启用</option><option value="disabled">后台停用</option><option value="locked">后台锁定</option><option value="suspended">企业暂停</option></select>
+              <select value={role} onChange={event => setRole(event.target.value)} className="h-8 rounded-md border border-input bg-background px-2 text-xs" aria-label="后台角色筛选"><option value="all">全部后台角色</option>{roleOptions.map(option => <option key={option} value={option}>{roleLabel(option)}</option>)}</select>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {adminUsersQuery.isLoading || (enterpriseMembersQuery.isPending && contextReady && enterpriseAccess.canManageMembers) ? <div className="space-y-3 p-6"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : visibleRows.length === 0 ? (
               <EmptyState message={canManageAdmin || enterpriseMembersQuery.isSuccess ? "当前筛选没有可显示的员工记录。" : "暂无可显示的员工记录。"} />
             ) : (
-              <div className="staff-management-table-scroll">
-                <Table className="staff-management-table min-w-[1120px] table-fixed">
-                  <colgroup><col className="w-[24%]" /><col className="w-[17%]" /><col className="w-[20%]" /><col className="w-[14%]" /><col className="w-[13%]" /><col className="w-[12%]" /></colgroup>
-                  <TableHeader><TableRow className="bg-muted/30"><TableHead>员工信息</TableHead><TableHead>后台角色</TableHead><TableHead>ERP 权限</TableHead><TableHead>数据范围</TableHead><TableHead>账号状态</TableHead><TableHead className="staff-action-head text-right">操作</TableHead></TableRow></TableHeader>
+              <div className="staff-management-table-scroll" data-staff-table-scroll>
+                <Table className="staff-management-table min-w-[860px] table-fixed">
+                  <colgroup><col className="w-[25%]" /><col className="w-[16%]" /><col className="w-[22%]" /><col className="w-[14%]" /><col className="w-[13%]" /><col className="w-[112px]" /></colgroup>
+                  <TableHeader><TableRow className="bg-muted/30"><TableHead className="px-3 text-xs">员工信息</TableHead><TableHead className="px-3 text-xs">后台角色</TableHead><TableHead className="px-3 text-xs">ERP 权限</TableHead><TableHead className="px-3 text-xs">数据范围</TableHead><TableHead className="px-3 text-xs">账号状态</TableHead><TableHead className="staff-action-head px-3 text-right text-xs">操作</TableHead></TableRow></TableHeader>
                   <TableBody>{visibleRows.map(row => {
                     const adminStatus = row.admin ? accountStatus(row.admin) : null;
                     const erpPreview = staffErpPermissionPreview(row);
                     const needsAssociation = staffRowNeedsAssociation(row);
                     const displayName = row.admin?.displayName || row.member?.displayName || row.admin?.username || "未命名员工";
-                    return <TableRow key={row.key} className="align-top">
-                      <TableCell className="min-w-[230px]"><div className="flex items-center gap-3"><span className="staff-avatar" aria-hidden="true">{displayName.slice(0, 1)}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="truncate font-medium">{displayName}</span>{needsAssociation ? <button type="button" className="staff-association-action" onClick={() => openStaffSheet(row, "member")}>待关联</button> : null}</div>{row.admin ? <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{row.admin.username}</p> : null}{row.member?.phone ? <p className="mt-1 text-xs text-muted-foreground">{row.member.phone}</p> : null}<div className="mt-2 flex flex-wrap gap-1">{row.admin ? <Badge variant="outline">后台账号</Badge> : null}{row.member ? <Badge variant="outline">企业成员{row.member.isOwner ? " · 所有者" : ""}</Badge> : null}</div></div></div></TableCell>
-                      <TableCell className="min-w-[160px] text-sm">{row.admin ? <><p className="font-medium">{roleLabel(row.admin.adminRole)}</p><p title={adminPermissionSummary(row.admin)} className="mt-1 line-clamp-2 text-xs text-muted-foreground">{adminPermissionSummary(row.admin)}</p></> : <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="min-w-[200px]">{erpPreview.total ? <div className="staff-erp-tags">{erpPreview.labels.map(label => <span key={label} className="staff-erp-tag">{label}</span>)}{erpPreview.remaining ? <button type="button" className="staff-erp-more" onClick={() => openStaffSheet(row, "erp")} aria-label={`查看 ${displayName} 的全部 ${erpPreview.total} 项 ERP 权限`}>+{erpPreview.remaining}</button> : null}</div> : <span className="text-sm text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="min-w-[150px] text-sm">{row.member ? <span className="text-muted-foreground">{row.member.isOwner || row.member.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"}</span> : <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="min-w-[150px]"><div className="flex flex-wrap gap-1">{adminStatus ? <StatusBadge label={adminStatus.label} style={adminStatus.style} /> : null}{row.member ? <StatusBadge label={row.member.status === "active" ? "企业正常" : "企业暂停"} style={row.member.status === "active" ? "success" : "warning"} /> : null}{!adminStatus && !row.member ? <span className="text-sm text-muted-foreground">—</span> : null}</div></TableCell>
-                      <TableCell className="staff-action-cell w-[148px] min-w-[148px] whitespace-nowrap text-right"><Button size="sm" variant="outline" onClick={() => openStaffSheet(row, "erp")}><Pencil className="mr-1 h-3.5 w-3.5" />配置权限</Button></TableCell>
+                    const showEnterpriseStatus = Boolean(row.member && (row.member.status === "suspended" || !adminStatus));
+                    return <TableRow key={row.key} className="h-14 align-middle" data-staff-row={row.key}>
+                      <TableCell className="min-w-[190px] py-2.5" data-staff-identity><div className="flex min-w-0 items-center gap-2"><span className="staff-avatar" aria-hidden="true">{displayName.slice(0, 1)}</span><div className="flex min-w-0 items-center gap-2"><span className="truncate font-medium">{displayName}</span>{needsAssociation ? <button type="button" className="staff-association-action" onClick={() => openStaffSheet(row, "member")}>待关联</button> : null}</div></div></TableCell>
+                      <TableCell className="py-2.5 text-sm" data-staff-role>{row.admin ? <span className="block truncate font-medium">{roleLabel(row.admin.adminRole)}</span> : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="py-2.5" data-staff-erp-summary>{erpPreview.total ? <div className="staff-erp-tags">{erpPreview.labels.map(label => <span key={label} className="staff-erp-tag">{label}</span>)}{erpPreview.remaining ? <button type="button" className="staff-erp-more" onClick={() => openStaffSheet(row, "erp")} aria-label={`查看 ${displayName} 的全部 ${erpPreview.total} 项 ERP 权限`}>+{erpPreview.remaining}</button> : null}</div> : <span className="text-sm text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="py-2.5 text-sm" data-staff-scope>{row.member ? <span className="text-muted-foreground">{row.member.isOwner || row.member.inventoryDataScope === "enterprise" ? "全企业业务" : "仅本人业务"}</span> : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="py-2.5" data-staff-status><div className="flex flex-nowrap items-center gap-1">{adminStatus ? <StatusBadge label={adminStatus.label} style={adminStatus.style} /> : null}{showEnterpriseStatus ? <StatusBadge label={row.member?.status === "suspended" ? "企业暂停" : "企业正常"} style={row.member?.status === "suspended" ? "warning" : "success"} /> : null}{!adminStatus && !row.member ? <span className="text-sm text-muted-foreground">—</span> : null}</div></TableCell>
+                      <TableCell className="staff-action-cell w-[112px] min-w-[112px] py-2.5 pr-3 whitespace-nowrap text-right" data-staff-action-cell><Button size="sm" variant="outline" className="h-8 px-2 text-xs" onClick={() => openStaffSheet(row, "erp")}><Pencil className="mr-1 h-3.5 w-3.5" />配置权限</Button></TableCell>
                     </TableRow>;
                   })}</TableBody>
                 </Table>

@@ -1,5 +1,10 @@
 [data-staff-page] .staff-management-table-scroll {
   isolation: isolate;
+  overflow: visible;
+}
+
+/* Table renders its own scroll wrapper; keep this as the sole horizontal scroller. */
+[data-staff-page] .staff-management-table-scroll > [data-slot="table-container"] {
   overflow-x: auto;
 }
 
@@ -11,6 +16,11 @@
 [data-staff-page] .staff-management-table th,
 [data-staff-page] .staff-management-table td {
   overflow: hidden;
+  vertical-align: middle;
+}
+
+[data-staff-page] .staff-management-table tbody tr {
+  height: 3.5rem;
 }
 
 [data-staff-page] .staff-management-table tbody td {
@@ -21,26 +31,16 @@
   background: #f9fbff;
 }
 
+/* On desktop the operation cell is an ordinary table cell, never a floating rail. */
 [data-staff-page] .staff-action-head,
 [data-staff-page] .staff-action-cell {
-  position: sticky;
-  right: 0;
-}
-
-[data-staff-page] .staff-action-head {
-  z-index: 20;
-  background: var(--color-muted, #f5f7fa);
-  box-shadow: -10px 0 14px -14px rgb(37 64 96 / 0.45);
+  position: static;
+  background: transparent;
+  box-shadow: none;
 }
 
 [data-staff-page] .staff-action-cell {
-  z-index: 10;
-  background: var(--color-card, #fff);
-  box-shadow: -10px 0 14px -14px rgb(37 64 96 / 0.45);
-}
-
-[data-staff-page] .staff-management-table tbody tr:hover .staff-action-cell {
-  background: #f9fbff;
+  overflow: visible;
 }
 
 [data-staff-page] .staff-action-cell > button {
@@ -49,15 +49,15 @@
 
 [data-staff-page] .staff-avatar {
   display: inline-flex;
-  height: 2.25rem;
-  width: 2.25rem;
+  height: 2rem;
+  width: 2rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
   background: var(--color-brand-100, #e8f0fe);
   color: var(--color-brand-600, #185fa5);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -72,6 +72,7 @@
 }
 
 [data-staff-page] .staff-association-action {
+  height: 1.5rem;
   border: 1px solid #f0dfc0;
   background: #fffaf0;
   padding: 0 0.375rem;
@@ -87,21 +88,24 @@
 
 [data-staff-page] .staff-erp-tags {
   display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: 0.375rem;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 [data-staff-page] .staff-erp-tag,
 [data-staff-page] .staff-erp-more {
   display: inline-flex;
-  max-width: 100%;
+  min-width: 0;
   align-items: center;
   border: 1px solid transparent;
   padding: 0.125rem 0.4375rem;
 }
 
 [data-staff-page] .staff-erp-tag {
+  flex: 0 1 auto;
   overflow: hidden;
   border-radius: 0.25rem;
   background: #f3f6fa;
@@ -124,6 +128,32 @@
   background: #e3efff;
   color: #185fa5;
   outline: none;
+}
+
+/* The inner Table wrapper is the horizontal scroller, so sticky positioning works here. */
+@media (max-width: 1023px) {
+  [data-staff-page] .staff-action-head,
+  [data-staff-page] .staff-action-cell {
+    position: sticky;
+    right: 0;
+    overflow: visible;
+  }
+
+  [data-staff-page] .staff-action-head {
+    z-index: 2;
+    background: var(--color-muted, #f5f7fa);
+    border-left: 1px solid var(--color-border, #e5e7eb);
+  }
+
+  [data-staff-page] .staff-action-cell {
+    z-index: 1;
+    background: var(--color-card, #fff);
+    border-left: 1px solid var(--color-border, #e5e7eb);
+  }
+
+  [data-staff-page] .staff-management-table tbody tr:hover .staff-action-cell {
+    background: #f9fbff;
+  }
 }
 
 @media (max-width: 640px) {
