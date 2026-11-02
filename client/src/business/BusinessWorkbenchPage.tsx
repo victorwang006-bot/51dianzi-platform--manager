@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Route, Router, Switch, useLocation, useSearch } from "wouter";
-import { trpc as adminTrpc } from "../lib/trpc";
 import DashboardLayout from "../components/DashboardLayout";
 import BusinessUserRecordsPage from "./BusinessUserRecordsPage";
 import BusinessContentFrame from "./BusinessContentFrame";
@@ -22,9 +21,7 @@ import {
   businessNavigationHrefs,
   useBusinessLocation,
 } from "./api/business-wouter";
-import {
-  BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES,
-} from "./BusinessChatContract";
+import { BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES } from "./BusinessChatContract";
 import {
   BusinessWorkbenchAccessProvider,
   BusinessWorkbenchRouteGate,
@@ -85,7 +82,9 @@ function workbenchBase(routeBase?: string): string {
   const fallback = "/workbench";
   if (!routeBase) return fallback;
   const normalized = routeBase.trim().replace(/\/+$/, "") || "/";
-  return normalized.startsWith("/") && !/[?#\\\s]/.test(normalized) ? normalized : fallback;
+  return normalized.startsWith("/") && !/[?#\\\s]/.test(normalized)
+    ? normalized
+    : fallback;
 }
 
 function numberFromMerchantInput(value: unknown): number | null {
@@ -95,7 +94,9 @@ function numberFromMerchantInput(value: unknown): number | null {
 
 function queryMerchantId(search: string): number | null {
   const merchantIds = new URLSearchParams(search).getAll("merchantId");
-  return merchantIds.length === 1 ? numberFromMerchantInput(merchantIds[0]) : null;
+  return merchantIds.length === 1
+    ? numberFromMerchantInput(merchantIds[0])
+    : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -103,16 +104,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** Runtime validation preserves the boundary if a partially deployed BFF returns stale JSON. */
-function readyStaffPrincipal(value: unknown): ReadyBusinessStaffPrincipal | null {
+function readyStaffPrincipal(
+  value: unknown
+): ReadyBusinessStaffPrincipal | null {
   if (!isRecord(value) || value.status !== "ready") return null;
   const frontendUserId = numberFromMerchantInput(value.frontendUserId);
   const adminAccountId = numberFromMerchantInput(value.adminAccountId);
   const enterpriseId = numberFromMerchantInput(value.enterpriseId);
-  if (!frontendUserId || !adminAccountId || !enterpriseId || !isRecord(value.user)) return null;
+  const bindingVersion = numberFromMerchantInput(value.bindingVersion);
+  if (
+    !frontendUserId ||
+    !adminAccountId ||
+    !enterpriseId ||
+    !bindingVersion ||
+    !isRecord(value.user)
+  )
+    return null;
   const userId = numberFromMerchantInput(value.user.id);
   // The BFF must prove its principal and returned PublicAuthUser are the same actor.
   if (userId !== frontendUserId) return null;
-  return value as unknown as ReadyBusinessStaffPrincipal;
+  return {
+    ...value,
+    frontendUserId,
+    adminAccountId,
+    enterpriseId,
+    bindingVersion,
+  } as unknown as ReadyBusinessStaffPrincipal;
 }
 
 function contextCapabilities(value: unknown): BusinessSessionCapabilities {
@@ -122,14 +139,60 @@ function contextCapabilities(value: unknown): BusinessSessionCapabilities {
     : isRecord(value.capabilities)
       ? value.capabilities
       : {};
-  return Object.fromEntries(Object.entries(raw).filter(([, enabled]) => typeof enabled === "boolean")) as BusinessSessionCapabilities;
+  return Object.fromEntries(
+    Object.entries(raw).filter(([, enabled]) => typeof enabled === "boolean")
+  ) as BusinessSessionCapabilities;
 }
 
-function AccessState({ title, detail }: { title: string; detail: string }) {
+/**
+ * A domain QueryClient is never shared between a different bound actor, admin
+ * session, enterprise or binding revision. The BFF remains authoritative, but
+ * this prevents a previously verified customer response from being rendered
+ * while a newly selected/revoked binding is being checked.
+ */
+function businessDomainScope(
+  merchantId: number,
+  principal: ReadyBusinessStaffPrincipal
+): string {
+  const bindingVersion = numberFromMerchantInput(principal.bindingVersion);
+  if (!bindingVersion) throw new Error("BUSINESS_BINDING_VERSION_REQUIRED");
+  return `business-domain:v1:staff:${principal.frontendUserId}:admin:${principal.adminAccountId}:enterprise:${principal.enterpriseId}:merchant:${merchantId}:binding:${bindingVersion}`;
+}
+
+function AccessState({
+  title,
+  detail,
+  onRetry,
+  retrying = false,
+  retryTestId = "business-context-retry",
+}: {
+  title: string;
+  detail: string;
+  onRetry?: () => void;
+  retrying?: boolean;
+  retryTestId?: string;
+}) {
   return (
-    <section className="m-5 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950" role="status">
+    <section
+      className="m-5 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
+      role="status"
+    >
       <h1 className="text-base font-semibold">{title}</h1>
       <p className="mt-2 leading-6">{detail}</p>
+      {onRetry ? (
+        <button
+          type="button"
+          className="mt-3 rounded border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-950 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={retrying}
+          onClick={onRetry}
+          data-business-retry={retryTestId}
+          data-business-context-retry={
+            retryTestId === "business-context-retry" ? "" : undefined
+          }
+        >
+          {retrying ? "重新核验中…" : "重新核验"}
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -186,33 +249,53 @@ type BusinessRouteRequirement = {
  * front procedure remain the actual authorization checks. In particular,
  * marketplace seller flow never borrows CRM sales-order capability.
  */
-function businessRouteRequirement(location: string): BusinessRouteRequirement | null {
+function businessRouteRequirement(
+  location: string
+): BusinessRouteRequirement | null {
   const pathname = location.split(/[?#]/, 1)[0] || "/";
-  if (pathname === "/" || pathname === "/inventory") return { capability: "inventory.read" };
+  if (pathname === "/" || pathname === "/inventory")
+    return { capability: "inventory.read" };
   if (pathname === "/publish" || /^\/publish\/[^/]+\/edit$/.test(pathname)) {
     return { capability: "inventory.publish", requiresWrite: true };
   }
-  if (pathname === "/inbound") return { capability: "inventory.inbound", requiresWrite: true };
-  if (pathname === "/channel-inventory") return { capability: "inventory.channel" };
+  if (pathname === "/inbound")
+    return { capability: "inventory.inbound", requiresWrite: true };
+  if (pathname === "/channel-inventory")
+    return { capability: "inventory.channel" };
   if (pathname === "/customers/new" || pathname.startsWith("/customers/new/")) {
     return { capability: "customers.manage", requiresWrite: true };
   }
   if (pathname === "/customers") return { capability: "customers.manage" };
-  if (pathname.startsWith("/customers/")) return { capability: "customers.manage", requiresWrite: true };
-  if (pathname === "/customer-demands") return { capability: "customers.manage" };
-  if (pathname === "/orders" || pathname === "/sales-orders") return { capability: "crm.sales_orders" };
+  if (pathname.startsWith("/customers/"))
+    return { capability: "customers.manage", requiresWrite: true };
+  if (pathname === "/customer-demands")
+    return { capability: "customers.manage" };
+  if (pathname === "/orders" || pathname === "/sales-orders")
+    return { capability: "crm.sales_orders" };
   if (pathname === "/outbound") return { capability: "marketplace.seller" };
-  if (pathname === "/chat" || pathname === "/inquiries") return { capability: "inquiry.receive" };
-  if (pathname === "/procurement-demands" || pathname === "/procurement/demands" || pathname === "/demand-quotes") {
+  if (pathname === "/chat" || pathname === "/inquiries")
+    return { capability: "inquiry.receive" };
+  if (
+    pathname === "/procurement-demands" ||
+    pathname === "/procurement/demands" ||
+    pathname === "/demand-quotes"
+  ) {
     return { capability: "procurement.demands" };
   }
-  if (pathname === "/procurement-orders/create") return { capability: "procurement.orders", requiresWrite: true };
-  if (pathname.startsWith("/procurement-orders") || pathname === "/procurement/orders") {
+  if (pathname === "/procurement-orders/create")
+    return { capability: "procurement.orders", requiresWrite: true };
+  if (
+    pathname.startsWith("/procurement-orders") ||
+    pathname === "/procurement/orders"
+  ) {
     return { capability: "procurement.orders" };
   }
-  if (pathname === "/add-user") return { capability: "enterprise.members.manage", requiresWrite: true };
-  if (pathname === "/user-records") return { capability: "enterprise.members.manage" };
-  if (pathname === "/company-info" || pathname === "/company") return { capability: "company.read" };
+  if (pathname === "/add-user")
+    return { capability: "enterprise.members.manage", requiresWrite: true };
+  if (pathname === "/user-records")
+    return { capability: "enterprise.members.manage" };
+  if (pathname === "/company-info" || pathname === "/company")
+    return { capability: "company.read" };
   return null;
 }
 
@@ -226,7 +309,10 @@ function BusinessRoutes() {
       <Route path="/publish/:id/edit" component={EditInventory} />
       <Route path="/publish" component={PublishInventory} />
       <Route path="/inbound" component={InboundManagement} />
-      <Route path="/channel-inventory" component={BusinessChannelInventoryRoute} />
+      <Route
+        path="/channel-inventory"
+        component={BusinessChannelInventoryRoute}
+      />
       <Route path="/customers/new/:id" component={CustomerCreate} />
       <Route path="/customers/new" component={CustomerCreate} />
       <Route path="/customers/:id" component={CustomerDetail} />
@@ -239,7 +325,10 @@ function BusinessRoutes() {
       <Route path="/procurement-demands" component={ProcurementDemands} />
       <Route path="/procurement/demands" component={ProcurementDemands} />
       <Route path="/procurement-orders/quote" component={ProcurementOrders} />
-      <Route path="/procurement-orders/accepted" component={ProcurementOrders} />
+      <Route
+        path="/procurement-orders/accepted"
+        component={ProcurementOrders}
+      />
       <Route path="/procurement-orders/create" component={ProcurementOrders} />
       <Route path="/procurement-orders" component={ProcurementOrders} />
       <Route path="/procurement/orders" component={ProcurementOrders} />
@@ -253,53 +342,102 @@ function BusinessRoutes() {
     </Switch>
   );
   return requirement ? (
-    <BusinessWorkbenchRouteGate capability={requirement.capability} requiresWrite={requirement.requiresWrite}>
+    <BusinessWorkbenchRouteGate
+      capability={requirement.capability}
+      requiresWrite={requirement.requiresWrite}
+    >
       {routes}
     </BusinessWorkbenchRouteGate>
-  ) : routes;
+  ) : (
+    routes
+  );
 }
 
-function BusinessContextGate({
+function useFocusContextRevalidation(revalidate: () => void) {
+  const current = useRef(revalidate);
+  current.current = revalidate;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onFocus = () => current.current();
+    const onPageShow = (event: PageTransitionEvent) => {
+      // A normal first-load pageshow follows the initial query. Only a bfcache
+      // restore is a re-entry that could otherwise retain an old context.
+      if (event.persisted) current.current();
+    };
+    // `pageshow` covers a restored workbench document; `focus` covers an
+    // already mounted tab. Both transitions must not reuse an old UI gate.
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, []);
+}
+
+function VerifiedBusinessWorkbench({
   merchantId,
   routeBase,
-  queryClient,
-  domainClient,
+  principal,
+  capabilities,
+  rawContext,
 }: {
   merchantId: number;
   routeBase: string;
-  queryClient: QueryClient;
-  domainClient: ReturnType<typeof createBusinessTrpcClient>;
+  principal: ReadyBusinessStaffPrincipal;
+  capabilities: BusinessSessionCapabilities;
+  rawContext: BusinessContextContract;
 }) {
-  const contextQuery = businessScopeTrpc.context.useQuery(undefined, { retry: false });
-  const rawContext = contextQuery.data as BusinessContextContract | undefined;
-  const principal = readyStaffPrincipal(rawContext?.staffPrincipal);
-  const capabilities = contextCapabilities(rawContext);
-  const contextMerchant = rawContext?.merchant;
+  const domainScope = businessDomainScope(merchantId, principal);
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, refetchOnWindowFocus: false },
+        },
+      }),
+    [domainScope]
+  );
+  const domainClient = useMemo(
+    () => createBusinessTrpcClient(merchantId),
+    [domainScope, merchantId]
+  );
 
-  if (contextQuery.isLoading) {
-    return <AccessState title="正在核验业务主体绑定" detail="在确认商户、企业和工作人员绑定前，系统不会进入业务页面。" />;
-  }
-  if (contextQuery.isError) {
-    return <AccessState title="业务上下文不可用" detail={contextQuery.error.message || "当前商户和工作人员会话未能通过核验。"} />;
-  }
-  if (!principal) {
-    return <AccessState title="未绑定前台业务主体" detail="当前后台工作人员尚未获得与该商户匹配的真实前台员工身份；系统不会改用后台账号、企业负责人或伪造角色。" />;
-  }
-  if (!businessContextMatchesMerchant(merchantId, contextMerchant)) {
-    return <AccessState title="业务上下文与当前商户不一致" detail="系统拒绝使用其他商户的权限信息；请重新打开智捷工作区，以重新核验当前绑定和访问范围。" />;
-  }
+  useEffect(
+    () => () => {
+      // The logout route already unmounts this branch. Cancelling here gives the
+      // same fail-closed behavior when a focus recheck or identity change removes
+      // the branch before an original customer request settles.
+      void queryClient.cancelQueries();
+      queryClient.clear();
+    },
+    [queryClient]
+  );
 
   return (
-    <trpc.Provider client={domainClient} queryClient={queryClient}>
+    <trpc.Provider
+      client={domainClient}
+      queryClient={queryClient}
+      abortOnUnmount
+    >
       <QueryClientProvider client={queryClient}>
-        <BusinessScopeProvider merchantId={merchantId} staffPrincipal={principal} sessionCapabilities={capabilities}>
+        <BusinessScopeProvider
+          merchantId={merchantId}
+          staffPrincipal={principal}
+          sessionCapabilities={capabilities}
+        >
           <BusinessWorkbenchAccessProvider
             merchantId={merchantId}
-            merchantCanWrite={contextMerchant?.canWrite === true}
-            workbenchCapabilities={rawContext?.workbenchCapabilities}
-            writeCapabilities={rawContext?.writeCapabilities}
+            merchantCanWrite={rawContext.merchant?.canWrite === true}
+            workbenchCapabilities={rawContext.workbenchCapabilities}
+            writeCapabilities={rawContext.writeCapabilities}
           >
-            <Router base={routeBase} hook={useBusinessLocation} hrefs={businessNavigationHrefs}>
+            <Router
+              base={routeBase}
+              hook={useBusinessLocation}
+              hrefs={businessNavigationHrefs}
+            >
               <BusinessRoutes />
             </Router>
           </BusinessWorkbenchAccessProvider>
@@ -309,49 +447,243 @@ function BusinessContextGate({
   );
 }
 
-function ScopedBusinessWorkbench({ merchantId, routeBase }: { merchantId: number; routeBase: string }) {
-  const queryClient = useMemo(() => new QueryClient({
-    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
-  }), [merchantId]);
-  const domainClient = useMemo(() => createBusinessTrpcClient(merchantId), [merchantId]);
-  const contextClient = useMemo(() => createBusinessScopeTrpcClient(merchantId), [merchantId]);
+function BusinessContextGate({
+  merchantId,
+  routeBase,
+}: {
+  merchantId: number;
+  routeBase: string;
+}) {
+  const contextQuery = businessScopeTrpc.context.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+    trpc: { abortOnUnmount: true },
+  });
+  const rawContext = contextQuery.data as BusinessContextContract | undefined;
+  const principal = readyStaffPrincipal(rawContext?.staffPrincipal);
+  const capabilities = contextCapabilities(rawContext);
+  const contextMerchant = rawContext?.merchant;
+  const revalidate = useCallback(() => {
+    void contextQuery.refetch({ cancelRefetch: true });
+  }, [contextQuery.refetch]);
+  useFocusContextRevalidation(revalidate);
 
-  useEffect(() => () => queryClient.clear(), [queryClient]);
+  // React Query retains successful data during refetch. It must never retain
+  // its rendering authority: the old context is hidden until the current BFF
+  // request completes, including after the tab regains focus.
+  if (contextQuery.isLoading || contextQuery.isFetching) {
+    return (
+      <AccessState
+        title="正在核验业务主体绑定"
+        detail="在确认商户、企业和工作人员绑定前，系统不会进入业务页面。"
+      />
+    );
+  }
+  if (contextQuery.isError) {
+    return (
+      <AccessState
+        title="业务上下文不可用"
+        detail={
+          contextQuery.error.message || "当前商户和工作人员会话未能通过核验。"
+        }
+        retrying={contextQuery.isFetching}
+        onRetry={revalidate}
+      />
+    );
+  }
+  if (!principal || !rawContext) {
+    return (
+      <AccessState
+        title="未绑定前台业务主体"
+        detail="当前后台工作人员尚未获得与该商户匹配的真实前台员工身份；系统不会改用后台账号、企业负责人或伪造角色。"
+      />
+    );
+  }
+  if (!businessContextMatchesMerchant(merchantId, contextMerchant)) {
+    return (
+      <AccessState
+        title="业务上下文与当前商户不一致"
+        detail="系统拒绝使用其他商户的权限信息；请重新打开智捷工作区，以重新核验当前绑定和访问范围。"
+      />
+    );
+  }
 
   return (
-    <businessScopeTrpc.Provider client={contextClient} queryClient={queryClient}>
-      <BusinessContextGate merchantId={merchantId} routeBase={routeBase} queryClient={queryClient} domainClient={domainClient} />
+    <VerifiedBusinessWorkbench
+      key={businessDomainScope(merchantId, principal)}
+      merchantId={merchantId}
+      routeBase={routeBase}
+      principal={principal}
+      capabilities={capabilities}
+      rawContext={rawContext}
+    />
+  );
+}
+
+function ScopedBusinessWorkbench({
+  merchantId,
+  routeBase,
+}: {
+  merchantId: number;
+  routeBase: string;
+}) {
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, refetchOnWindowFocus: false },
+        },
+      }),
+    [merchantId]
+  );
+  const contextClient = useMemo(
+    () => createBusinessScopeTrpcClient(merchantId),
+    [merchantId]
+  );
+
+  useEffect(
+    () => () => {
+      void queryClient.cancelQueries();
+      queryClient.clear();
+    },
+    [queryClient]
+  );
+
+  return (
+    <businessScopeTrpc.Provider
+      client={contextClient}
+      queryClient={queryClient}
+    >
+      <QueryClientProvider client={queryClient}>
+        <BusinessContextGate merchantId={merchantId} routeBase={routeBase} />
+      </QueryClientProvider>
     </businessScopeTrpc.Provider>
   );
 }
 
-/** Native same-DOM workbench for the one approved internal official merchant. */
-function BusinessWorkbenchContent({ merchantId, routeBase }: BusinessWorkbenchPageProps) {
+function BusinessWorkbenchDiscovery({
+  merchantId,
+  routeBase,
+}: BusinessWorkbenchPageProps) {
   const search = useSearch();
-  const merchantList = adminTrpc.business.merchants.useQuery({ page: 1, pageSize: 100 }, { retry: false });
+  // `merchants` is an explicitly mounted BusinessRouter procedure at
+  // /api/business-trpc. This uses the same BFF-only, bounded transport as
+  // `context`; it does not trust a URL value or pick a fallback merchant.
+  const merchantList = businessScopeTrpc.merchants.useQuery(
+    { page: 1, pageSize: 100 },
+    {
+      retry: false,
+      refetchOnWindowFocus: false,
+      trpc: { abortOnUnmount: true },
+    }
+  );
   const hasQueryMerchantId = new URLSearchParams(search).has("merchantId");
   const hasExplicitMerchant = merchantId !== undefined || hasQueryMerchantId;
-  const requestedId = merchantId === undefined ? queryMerchantId(search) : numberFromMerchantInput(merchantId);
+  const requestedId =
+    merchantId === undefined
+      ? queryMerchantId(search)
+      : numberFromMerchantInput(merchantId);
   const merchants: MerchantChoice[] = merchantList.data?.data ?? [];
-  const officialMerchant = merchants.find(merchant => merchant.id === OFFICIAL_ZHIJIE_MERCHANT_ID) ?? null;
+  const officialMerchant =
+    merchants.find(merchant => merchant.id === OFFICIAL_ZHIJIE_MERCHANT_ID) ??
+    null;
   const base = workbenchBase(routeBase);
+  const retryDiscovery = useCallback(() => {
+    void merchantList.refetch({ cancelRefetch: true });
+  }, [merchantList.refetch]);
 
-  if (merchantList.isLoading) {
-    return <AccessState title="正在加载授权商户" detail="在读取后台业务可见范围前，不会请求任何前台领域接口。" />;
+  // A refetch can retain the previous list. As with context, it has no
+  // rendering authority until its current BFF verification settles.
+  if (merchantList.isLoading || merchantList.isFetching) {
+    return (
+      <AccessState
+        title="正在加载授权商户"
+        detail="在读取后台业务可见范围前，不会请求任何前台领域接口。"
+      />
+    );
   }
   if (merchantList.isError) {
-    return <AccessState title="无法读取授权商户" detail={merchantList.error.message || "请确认当前后台会话已获得业务上下文权限。"} />;
+    return (
+      <AccessState
+        title="无法读取授权商户"
+        detail={
+          merchantList.error.message || "当前授权商户核验未完成，请重新核验。"
+        }
+        retrying={merchantList.isFetching}
+        onRetry={retryDiscovery}
+        retryTestId="business-discovery-retry"
+      />
+    );
   }
   if (hasExplicitMerchant && requestedId !== OFFICIAL_ZHIJIE_MERCHANT_ID) {
-    return <AccessState title="请求的业务商户不可用" detail="后台业务工作区仅限智捷官方商户；指定的其他商户不能在此工作区中打开。" />;
+    return (
+      <AccessState
+        title="请求的业务商户不可用"
+        detail="后台业务工作区仅限智捷官方商户；指定的其他商户不能在此工作区中打开。"
+      />
+    );
   }
   if (!officialMerchant) {
-    return <AccessState title="智捷官方工作区不可用" detail="智捷官方商户当前不可见、未完成业务绑定或已失去访问授权。系统不会改用负责人或其他商户。" />;
+    return (
+      <AccessState
+        title="未取得可用授权"
+        detail="当前未取得可用授权商户、业务绑定或访问范围；系统不会改用负责人、其他商户或默认商户。"
+        retrying={merchantList.isFetching}
+        onRetry={retryDiscovery}
+        retryTestId="business-discovery-retry"
+      />
+    );
   }
-  return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} />;
+  return (
+    <ScopedBusinessWorkbench
+      merchantId={officialMerchant.id}
+      routeBase={base}
+    />
+  );
 }
 
-export default function BusinessWorkbenchPage(props: BusinessWorkbenchPageProps) {
+/** Native same-DOM workbench for the one approved internal official merchant. */
+function BusinessWorkbenchContent({
+  merchantId,
+  routeBase,
+}: BusinessWorkbenchPageProps) {
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, refetchOnWindowFocus: false },
+        },
+      }),
+    []
+  );
+  const discoveryClient = useMemo(() => createBusinessScopeTrpcClient(), []);
+
+  useEffect(
+    () => () => {
+      void queryClient.cancelQueries();
+      queryClient.clear();
+    },
+    [queryClient]
+  );
+
+  return (
+    <businessScopeTrpc.Provider
+      client={discoveryClient}
+      queryClient={queryClient}
+    >
+      <QueryClientProvider client={queryClient}>
+        <BusinessWorkbenchDiscovery
+          merchantId={merchantId}
+          routeBase={routeBase}
+        />
+      </QueryClientProvider>
+    </businessScopeTrpc.Provider>
+  );
+}
+
+export default function BusinessWorkbenchPage(
+  props: BusinessWorkbenchPageProps
+) {
   return (
     <DashboardLayout>
       <BusinessWorkbenchContent {...props} />
