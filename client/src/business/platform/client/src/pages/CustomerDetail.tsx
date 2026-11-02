@@ -15,6 +15,7 @@ import {
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { ConfirmDialog } from "../components/customers/ConfirmDialog";
 import { CustomerFields } from "../components/customers/CustomerFields";
+import { CustomerContactsManager } from "../components/customers/CustomerContactsManager";
 import { BeijingDateTimePicker } from "../components/customers/BeijingDateTimePicker";
 import { CustomerDemandHistory } from "../components/customerDemands/CustomerDemandHistory";
 import "../components/customers/CustomerDetailCompact.css";
@@ -23,14 +24,21 @@ import {
   errorMessage,
   formatCustomerDateTime,
   isoToBeijingDateTimeLocal,
-  isDuplicateConflict,
   makeCustomerRequestId,
   nowBeijingDateTimeLocal,
   recordToCustomerForm,
   type CustomerFormState,
 } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
-import { validateCustomerForm, type CustomerFieldErrors } from "../components/customers/customerValidation";
+import type { CustomerFieldErrors } from "../components/customers/customerValidation";
+import {
+  contactErrorMessage,
+  customerContactBaseData,
+  isDuplicateContactConflict,
+  useCustomerContactScope,
+  validateCustomerContactBase,
+  withCustomerContactScope,
+} from "../components/customers/customerContacts";
 
 type FollowUpForm = {
   method: typeof CUSTOMER_FOLLOW_METHODS[number];
@@ -62,6 +70,7 @@ export default function CustomerDetail() {
   const search = useSearch();
   const utils = trpc.useUtils();
   const contextQuery = trpc.customer.context.useQuery();
+  const contactScope = useCustomerContactScope(contextQuery.data);
   const detailQuery = trpc.customer.get.useQuery({ id }, { enabled: validId });
   const detail = detailQuery.data;
   const customer = detail?.customer;
@@ -71,8 +80,9 @@ export default function CustomerDetail() {
   const [form, setForm] = useState<CustomerFormState | null>(null);
   const [editError, setEditError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<CustomerFieldErrors>({});
-  const [duplicateNotice, setDuplicateNotice] = useState("");
   const [confirmUpdateDuplicate, setConfirmUpdateDuplicate] = useState(false);
+  const basicRequestRef = useRef<{ fingerprint: string; requestId: string } | null>(null);
+  const [contactsOpen, setContactsOpen] = useState(false);
   const [basicExpanded, setBasicExpanded] = useState(false);
   const [basicDirty, setBasicDirty] = useState(false);
   const [followUp, setFollowUp] = useState<FollowUpForm>(() => ({ ...EMPTY_FOLLOW_UP, occurredAt: nowBeijingDateTimeLocal() }));
@@ -131,7 +141,7 @@ export default function CustomerDetail() {
     return () => cancelAnimationFrame(frame);
   }, [followOpen, search]);
 
-  const updateMutation = trpc.customer.update.useMutation();
+  const updateMutation = trpc.customer.updateBasic.useMutation();
   const followMutation = trpc.customer.addFollowUp.useMutation();
   const transferMutation = trpc.customer.transfer.useMutation();
   const archiveMutation = trpc.customer.archive.useMutation();
@@ -202,27 +212,41 @@ export default function CustomerDetail() {
     }
   };
 
+  useEffect(() => {
+    setConfirmUpdateDuplicate(false);
+    basicRequestRef.current = null;
+  }, [contactScope.identityKey]);
+
   const submitUpdate = async (confirmDuplicate = false) => {
-    if (!customer || !form || isArchived) return;
-    const parsed = validateCustomerForm(form);
-    setFieldErrors(parsed.errors);
-    if (!parsed.success) { setBasicExpanded(true); setEditError(""); return; }
+    if (!customer || !form || isArchived || !contactScope.scope || !contactScope.ready || updateMutation.isPending) return;
+    const validationErrors = validateCustomerContactBase(form);
+    setFieldErrors(validationErrors as CustomerFieldErrors);
+    if (Object.keys(validationErrors).length) { setBasicExpanded(true); setEditError(""); return; }
     setEditError("");
-    setDuplicateNotice("");
     try {
-      await updateMutation.mutateAsync({ id, data: parsed.data, version: formVersion.current, confirmDuplicate });
+      const { assignedUserId: _ignored, ...data } = customerContactBaseData(form);
+      const fingerprint = JSON.stringify({ identity: contactScope.identityKey, customerId: id, data, version: formVersion.current });
+      if (!basicRequestRef.current || basicRequestRef.current.fingerprint !== fingerprint) {
+        basicRequestRef.current = { fingerprint, requestId: makeCustomerRequestId() };
+      }
+      await updateMutation.mutateAsync(withCustomerContactScope(contactScope.scope, {
+        customerId: id,
+        data,
+        version: formVersion.current,
+        requestId: basicRequestRef.current.requestId,
+        confirmDuplicate,
+      }));
       formDirty.current = false;
       setBasicDirty(false);
-      toast.success("客户信息已更新");
       setConfirmUpdateDuplicate(false);
+      basicRequestRef.current = null;
+      toast.success("客户信息已更新");
       await refreshCustomer();
     } catch (error) {
-      const message = errorMessage(error);
-      if (!confirmDuplicate && isDuplicateConflict(error)) {
-        setDuplicateNotice("系统发现可能与已有客户重复。无权限客户的资料不会展示；如确认仍需修改，请明确确认。 ");
+      if (!confirmDuplicate && isDuplicateContactConflict(error)) {
         setConfirmUpdateDuplicate(true);
       } else {
-        setEditError(message);
+        setEditError(contactErrorMessage(error));
       }
     }
   };
@@ -353,22 +377,29 @@ export default function CustomerDetail() {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h2 className="text-sm font-semibold text-slate-800">基础信息</h2>
               {basicDirty && <span className="text-xs text-amber-700" role="status">未保存</span>}
-              <span className="text-xs text-slate-600">联系人：{form?.contactName || customer.contactName || "—"}</span>
-              <span className="text-xs text-slate-600">电话：{form?.phone || customer.phone || "—"}</span>
+              <span className="text-xs text-slate-600">主联系人：{customer.contactName || "—"}</span>
+              <span className="text-xs text-slate-600">电话：{customer.phone || "—"}</span>
               <span className="text-xs text-slate-600">当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {!isArchived && basicExpanded && <button type="button" className="crm-btn crm-btn-primary" disabled={!form || updateMutation.isPending} onClick={() => void submitUpdate()}>{updateMutation.isPending ? "保存中…" : "保存修改"}</button>}
+            {!isArchived && basicExpanded && <button type="button" className="crm-btn crm-btn-primary" disabled={!form || updateMutation.isPending || !contactScope.ready} onClick={() => void submitUpdate()}>{updateMutation.isPending ? "保存中…" : "保存修改"}</button>}
             <button type="button" className="crm-btn" aria-expanded={basicExpanded} aria-controls="customer-base-editor" onClick={() => setBasicExpanded(open => !open)}>{basicExpanded ? "收起" : "展开"}</button>
           </div>
         </div>
         {basicExpanded && <div id="customer-base-editor" className="border-t border-slate-100 p-4 sm:p-5">
-          {duplicateNotice && <div className="mb-4 rounded-md border border-[#F1D3A6] bg-[#FFF9ED] px-3 py-2 text-xs text-[#8A5A16]">{duplicateNotice}</div>}
-          {form ? <CustomerFields value={form} onChange={next => { formDirty.current = true; setBasicDirty(true); setForm(current => current ? typeof next === "function" ? next(current) : next : current); }} members={contextQuery.data?.members ?? []} canManageAll={canManageAll} allowAssigneeChange={false} currentAssigneeName={currentAssignee} fieldErrors={fieldErrors} disabled={isArchived || updateMutation.isPending} /> : null}
+          {form ? <CustomerFields value={form} onChange={next => { formDirty.current = true; setBasicDirty(true); setForm(current => current ? typeof next === "function" ? next(current) : next : current); }} members={contextQuery.data?.members ?? []} canManageAll={canManageAll} allowAssigneeChange={false} currentAssigneeName={currentAssignee} includeLegacyContactFields={false} fieldErrors={fieldErrors} disabled={isArchived || updateMutation.isPending || !contactScope.ready} /> : null}
         </div>}
       </section>
+
+      <section id="customer-contacts" className="mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div><h2 className="text-sm font-semibold text-slate-800">联系人</h2><p className="mt-0.5 text-[11px] text-muted-foreground">查看全部联系人及停用历史；新增、编辑、停用和设主均由当前客户权限决定。</p></div>
+          <button type="button" className="crm-btn crm-btn-primary" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
+        </div>
+      </section>
+      <CustomerContactsManager customerId={customer.id} open={contactsOpen} onClose={() => setContactsOpen(false)} scope={contactScope.scope} scopeReady={contactScope.ready} identityKey={contactScope.identityKey} />
 
       <div id="customer-demands" className="mb-4">
         <CustomerDemandHistory key={customer.id} customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} />

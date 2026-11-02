@@ -74,6 +74,8 @@ export const BUSINESS_METHOD_IDS = [
   "inbound.cancelMany", "inbound.cancel", "inbound.remove",
   "customer.context", "customer.list", "customer.get", "customer.ownershipSearch", "customer.checkDuplicate",
   "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer",
+  "customer.createMulti", "customer.contactsList", "customer.contactsSummary", "customer.contactsAdd",
+  "customer.contactsEdit", "customer.contactsStop", "customer.contactsSetPrimary", "customer.updateBasic",
   "customerDemand.suggestPartNumbers", "customerDemand.quoteSave", "customerDemand.quoteWithdraw", "customerDemand.quoteList",
   "customerDemand.quoteHistory", "customerDemand.quoteAccept", "customerDemand.save", "customerDemand.list", "customerDemand.salesList",
   "customerDemand.get", "customerDemand.revisionHistory", "customerDemand.procurementList", "customerDemand.procurementGet", "customerDemand.claim",
@@ -160,10 +162,13 @@ for (const method of [
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = INVENTORY_INBOUND;
 for (const method of [
   "customer.context", "customer.list", "customer.get", "customer.ownershipSearch", "customer.checkDuplicate", "customerDemand.suggestPartNumbers",
+  "customer.contactsList", "customer.contactsSummary",
   "customerDemand.quoteAccept", "customerDemand.list", "customerDemand.salesList", "customerDemand.get", "customerDemand.revisionHistory",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = CUSTOMER_READ;
 for (const method of [
   "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer", "customerDemand.save",
+  "customer.createMulti", "customer.contactsAdd", "customer.contactsEdit", "customer.contactsStop",
+  "customer.contactsSetPrimary", "customer.updateBasic",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = CUSTOMER;
 for (const method of ["customerDemand.procurementList", "customerDemand.procurementGet", "demand.receivedQuotes"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = PROCUREMENT_DEMAND_READ;

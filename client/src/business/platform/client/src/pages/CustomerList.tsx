@@ -13,6 +13,8 @@ import {
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { CustomerCreateForm, type CustomerCreateSaveMode, type CustomerCreateState } from "../components/customers/CustomerCreateForm";
 import { ConfirmDialog } from "../components/customers/ConfirmDialog";
+import { CustomerContactsSummary } from "../components/customers/CustomerContactsSummary";
+import { formatContactMethod, useCustomerContactScope, withCustomerContactScope, type ContactSummary } from "../components/customers/customerContacts";
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
 import {
   errorMessage,
@@ -74,6 +76,7 @@ export default function CustomerList() {
   const search = useSearch();
   const utils = trpc.useUtils();
   const contextQuery = trpc.customer.context.useQuery();
+  const contactScope = useCustomerContactScope(contextQuery.data);
   const [createOpen, setCreateOpen] = useState(() => new URLSearchParams(search).get("create") === "1");
   const [createState, setCreateState] = useState<CustomerCreateState>({ dirty: false, busy: false });
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -136,6 +139,31 @@ export default function CustomerList() {
     enabled: Boolean(contextQuery.data),
   }, d51Ready)));
   const result = listQuery.data;
+  const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
+  const contactIdentityRef = useRef(contactScope.identityKey);
+  useEffect(() => {
+    if (contactIdentityRef.current === contactScope.identityKey) return;
+    contactIdentityRef.current = contactScope.identityKey;
+    // A scope is part of every contacts request. Reset both restored caches when
+    // account or enterprise changes instead of allowing an old page result to linger.
+    void Promise.all([
+      utils.customer.contactsSummary.reset(),
+      utils.customer.contactsList.reset(),
+    ]);
+  }, [contactScope.identityKey, utils]);
+  const summaryInput = contactScope.scope
+    ? withCustomerContactScope(contactScope.scope, { customerIds: pageCustomerIds })
+    : { customerIds: pageCustomerIds, expectedActorUserId: 0, expectedEnterpriseId: 0 };
+  // One bounded query for the already-authorized current page; never fetch a full
+  // contacts list per table row.
+  const contactsSummaryQuery = trpc.customer.contactsSummary.useQuery(summaryInput, {
+    enabled: contactScope.ready && Boolean(contactScope.scope) && pageCustomerIds.length > 0,
+    retry: false,
+    staleTime: 0,
+  });
+  const contactSummaries = useMemo(() => new Map(
+    (contactsSummaryQuery.data?.items ?? []).map(summary => [summary.customerId, summary]),
+  ), [contactsSummaryQuery.data]);
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const safePage = result ? Math.min(page, totalPages) : page;
   const currentListInputRef = useRef(listInput);
@@ -452,7 +480,7 @@ export default function CustomerList() {
 
       {createOpen && (
         <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">
-          <CustomerCreateForm onCancel={requestCloseCreate} onSaved={handleCustomerSaved} onStateChange={setCreateState} />
+          <CustomerCreateForm onCancel={requestCloseCreate} onSaved={handleCustomerSaved} onStateChange={setCreateState} onIdentityInvalidated={closeCreate} />
         </section>
       )}
       {confirmDiscard && <ConfirmDialog
@@ -570,18 +598,15 @@ export default function CustomerList() {
                         </div>
                       </TableCell>
                       <TableCell className="px-2 py-1.5 text-[12px]">
-                        <div
-                          className="truncate text-slate-700"
-                          title={customer.contactName || undefined}
-                        >
-                          {customer.contactName?.trim() || "—"}
-                        </div>
-                        <div
-                          className="mt-0.5 truncate text-[11px] text-muted-foreground"
-                          title={customer.phone || undefined}
-                        >
-                          {customer.phone?.trim() || "—"}
-                        </div>
+                        <CustomerContactsSummary
+                          customerId={customer.id}
+                          contactName={contactSummaries.get(customer.id)?.primaryContact?.name ?? customer.contactName}
+                          primaryMethod={contactSummaries.get(customer.id)?.primaryContact?.methods[0] ? formatContactMethod(contactSummaries.get(customer.id)!.primaryContact!.methods[0]) : customer.phone}
+                          contactCount={contactSummaries.get(customer.id)?.contactCount ?? 1}
+                          scope={contactScope.scope}
+                          scopeReady={contactScope.ready}
+                          identityKey={contactScope.identityKey}
+                        />
                       </TableCell>
                       <TableCell className="px-2 py-1.5 text-[12px]">
                         <div className="flex items-center gap-1.5 whitespace-nowrap">

@@ -16,10 +16,13 @@ type Props = {
   members: CustomerMember[]; canManageAll: boolean; allowAssigneeChange?: boolean;
   currentAssigneeName?: string; includeInitialFollowUp?: boolean; disabled?: boolean;
   fieldErrors?: CustomerFieldErrors; nameError?: string; nameAction?: ReactNode;
+  /** Multi-contact routes own contactName/phone/email separately and must not overwrite legacy fields. */
+  includeLegacyContactFields?: boolean;
 };
 
 export function CustomerFields({ value, onChange, members, canManageAll, allowAssigneeChange = true,
-  currentAssigneeName, includeInitialFollowUp = false, disabled = false, fieldErrors = {}, nameError, nameAction }: Props) {
+  currentAssigneeName, includeInitialFollowUp = false, disabled = false, fieldErrors = {}, nameError, nameAction,
+  includeLegacyContactFields = true }: Props) {
   const prefix = useId();
   const errors = { ...fieldErrors, ...(nameError ? { name: nameError } : {}) };
   const set = <K extends keyof CustomerFormState>(key: K, next: CustomerFormState[K]) => onChange(current => ({ ...current, [key]: next }));
@@ -55,9 +58,11 @@ export function CustomerFields({ value, onChange, members, canManageAll, allowAs
   return <div className="customer-fields" data-testid="customer-fields-expanded">
     <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
       {field("name", "客户名称", <div className="flex items-center gap-2"><Input {...props("name", "客户名称", true)} className={`${inputClass} min-w-0 flex-1`} maxLength={128} placeholder="请输入公司或客户名称" value={value.name} onChange={e => set("name", e.target.value)} />{nameAction}</div>, true, "sm:col-span-2")}
-      {field("contactName", "联系人", <Input {...props("contactName", "联系人", true)} className={inputClass} maxLength={64} placeholder="联系人姓名" value={value.contactName} onChange={e => set("contactName", e.target.value)} />, true)}
-      {field("phone", "联系电话", <Input {...props("phone", "联系电话", true)} className={inputClass} type="tel" maxLength={64} placeholder="手机、座机或国际号码" value={value.phone} onChange={e => set("phone", e.target.value)} />, true)}
-      {field("email", "邮箱", <Input {...props("email", "邮箱")} className={inputClass} type="email" maxLength={254} placeholder="name@example.com" value={value.email} onChange={e => set("email", e.target.value)} />)}
+      {includeLegacyContactFields ? <>
+        {field("contactName", "联系人", <Input {...props("contactName", "联系人", true)} className={inputClass} maxLength={64} placeholder="联系人姓名" value={value.contactName} onChange={e => set("contactName", e.target.value)} />, true)}
+        {field("phone", "联系电话", <Input {...props("phone", "联系电话", true)} className={inputClass} type="tel" maxLength={64} placeholder="手机、座机或国际号码" value={value.phone} onChange={e => set("phone", e.target.value)} />, true)}
+        {field("email", "邮箱", <Input {...props("email", "邮箱")} className={inputClass} type="email" maxLength={254} placeholder="name@example.com" value={value.email} onChange={e => set("email", e.target.value)} />)}
+      </> : null}
       {dropdown("grade", "客户等级", CUSTOMER_GRADES, CUSTOMER_GRADE_LABELS)}
       {dropdown("scale", "员工规模", CUSTOMER_SCALES, CUSTOMER_SCALE_LABELS)}
       {dropdown("stage", "当前阶段", CUSTOMER_STAGES, CUSTOMER_STAGE_LABELS)}

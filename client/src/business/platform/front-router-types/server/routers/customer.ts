@@ -6,7 +6,27 @@ import {
   customerListSchema,
   customerUpdateSchema,
 } from "../../../shared/crmCustomers";
+import {
+  contactsAddSchema,
+  contactsEditSchema,
+  contactsListSchema,
+  contactsSetPrimarySchema,
+  contactsStopSchema,
+  contactsSummarySchema,
+  createMultiSchema,
+  updateBasicSchema,
+} from "../../../shared/customerContacts";
 import { createCrmAnyPermissionProcedure, router } from "../_core/trpc";
+import {
+  contactsAdd,
+  contactsEdit,
+  contactsList,
+  contactsSetPrimary,
+  contactsStop,
+  contactsSummary,
+  createMulti,
+  updateBasic,
+} from "../services/customerContacts";
 import {
   addCustomerFollowUp,
   archiveCustomer,
@@ -79,8 +99,32 @@ export const customerRouter = router({
   create: customerProcedure.input(customerCreateSchema).mutation(({ ctx, input }) =>
     createCustomer(scopeFor(ctx), input)),
 
+  createMulti: customerProcedure.input(createMultiSchema).mutation(({ ctx, input }) =>
+    createMulti(scopeFor(ctx), input)),
+
   update: customerProcedure.input(customerUpdateSchema).mutation(({ ctx, input }) =>
     updateCustomer(scopeFor(ctx), input)),
+
+  updateBasic: customerProcedure.input(updateBasicSchema).mutation(({ ctx, input }) =>
+    updateBasic(scopeFor(ctx), input)),
+
+  contactsList: customerProcedure.input(contactsListSchema).query(({ ctx, input }) =>
+    contactsList(scopeFor(ctx), input)),
+
+  contactsSummary: customerProcedure.input(contactsSummarySchema).query(({ ctx, input }) =>
+    contactsSummary(scopeFor(ctx), input)),
+
+  contactsAdd: customerProcedure.input(contactsAddSchema).mutation(({ ctx, input }) =>
+    contactsAdd(scopeFor(ctx), input)),
+
+  contactsEdit: customerProcedure.input(contactsEditSchema).mutation(({ ctx, input }) =>
+    contactsEdit(scopeFor(ctx), input)),
+
+  contactsStop: customerProcedure.input(contactsStopSchema).mutation(({ ctx, input }) =>
+    contactsStop(scopeFor(ctx), input)),
+
+  contactsSetPrimary: customerProcedure.input(contactsSetPrimarySchema).mutation(({ ctx, input }) =>
+    contactsSetPrimary(scopeFor(ctx), input)),
 
   addFollowUp: customerProcedure.input(customerFollowUpSchema).mutation(({ ctx, input }) =>
     addCustomerFollowUp(scopeFor(ctx), input)),

@@ -31,6 +31,16 @@ import {
   projectBusinessWorkbenchCapabilities,
   type BusinessWorkbenchProjection,
 } from "./businessWorkbenchProjection";
+import {
+  contactsAddSchema,
+  contactsEditSchema,
+  contactsListSchema,
+  contactsSetPrimarySchema,
+  contactsStopSchema,
+  contactsSummarySchema,
+  createMultiSchema,
+  updateBasicSchema,
+} from "../client/src/business/platform/shared/customerContacts";
 
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
@@ -283,13 +293,29 @@ async function forwardBusinessMethod(
   });
 }
 
+/** Fixed mirrored DTOs for the only added customer-contact BFF methods. */
+const CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  "customer.createMulti": createMultiSchema,
+  "customer.contactsList": contactsListSchema,
+  "customer.contactsSummary": contactsSummarySchema,
+  "customer.contactsAdd": contactsAddSchema,
+  "customer.contactsEdit": contactsEditSchema,
+  "customer.contactsStop": contactsStopSchema,
+  "customer.contactsSetPrimary": contactsSetPrimarySchema,
+  "customer.updateBasic": updateBasicSchema,
+};
+
+function businessInputSchema(method: string): z.ZodTypeAny {
+  return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? z.unknown();
+}
+
 function businessQuery(method: string, module: BusinessModule, mode: BusinessAccessMode = "read") {
-  return publicProcedure.input(z.unknown()).query(({ ctx, input }) =>
+  return publicProcedure.input(businessInputSchema(method)).query(({ ctx, input }) =>
     forwardBusinessMethod(ctx, input, { method, module, mode }));
 }
 
 function businessMutation(method: string, module: BusinessModule) {
-  return publicProcedure.input(z.unknown()).mutation(({ ctx, input }) =>
+  return publicProcedure.input(businessInputSchema(method)).mutation(({ ctx, input }) =>
     forwardBusinessMethod(ctx, input, { method, module, mode: "write" }));
 }
 
@@ -403,7 +429,15 @@ const customerBusinessRouter = router({
   ownershipSearch: businessQuery("customer.ownershipSearch", "customers"),
   checkDuplicate: businessQuery("customer.checkDuplicate", "customers"),
   create: businessMutation("customer.create", "customers"),
+  createMulti: businessMutation("customer.createMulti", "customers"),
   update: businessMutation("customer.update", "customers"),
+  updateBasic: businessMutation("customer.updateBasic", "customers"),
+  contactsList: businessQuery("customer.contactsList", "customers"),
+  contactsSummary: businessQuery("customer.contactsSummary", "customers"),
+  contactsAdd: businessMutation("customer.contactsAdd", "customers"),
+  contactsEdit: businessMutation("customer.contactsEdit", "customers"),
+  contactsStop: businessMutation("customer.contactsStop", "customers"),
+  contactsSetPrimary: businessMutation("customer.contactsSetPrimary", "customers"),
   addFollowUp: businessMutation("customer.addFollowUp", "customers"),
   archive: businessMutation("customer.archive", "customers"),
   restore: businessMutation("customer.restore", "customers"),

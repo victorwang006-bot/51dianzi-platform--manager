@@ -18,7 +18,8 @@ function validateWriteData(data: CustomerData): CustomerData {
   return checked.data;
 }
 
-type SqlExecutor = { execute: (query: string | SQLWrapper) => Promise<unknown> };
+/** Minimal SQL surface deliberately exposed to the additive customer-contacts service. */
+export type CrmSqlExecutor = { execute: (query: string | SQLWrapper) => Promise<unknown> };
 
 /** This scope is constructed only by the router from enterprisePermissionScope and ctx.user.id. */
 export type CustomerServerScope = {
@@ -76,7 +77,7 @@ const CUSTOMER_ALL_PERMISSION = "customers.manage_all";
 const BEIJING_TIME_ZONE = "Asia/Shanghai";
 const EPOCH = "1970-01-01 00:00:00";
 /** CRM DATETIME values are always explicit Beijing wall-clock values, never server defaults. */
-const CRM_NOW = sql`CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00')`;
+export const CRM_NOW = sql`CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00')`;
 
 function resultRows<T>(result: unknown): T[] {
   return ((result as [T[], unknown] | undefined)?.[0] ?? []) as T[];
@@ -92,7 +93,7 @@ async function requireDb() {
   return db;
 }
 
-function displayName(name: string | null | undefined, userId: number) {
+export function displayName(name: string | null | undefined, userId: number) {
   return name?.trim() || `用户${userId}`;
 }
 
@@ -110,7 +111,7 @@ export function normalizeCustomerEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-function nullableText(value: string | null | undefined) {
+export function nullableText(value: string | null | undefined) {
   const text = String(value ?? "").trim();
   return text || null;
 }
@@ -253,7 +254,7 @@ function scopeWhere(scope: CustomerServerScope, alias = "c") {
 }
 
 async function lockEnterpriseAndMembers(
-  tx: SqlExecutor,
+  tx: CrmSqlExecutor,
   scope: CustomerServerScope,
 ): Promise<LockedAccess> {
   const enterprise = resultRows<{ id: number; superAdminUserId: number }>(await tx.execute(sql`
@@ -311,7 +312,7 @@ function assertTargetCanOwn(access: LockedAccess, targetUserId: number, enterpri
 }
 
 async function assertTargetHasCustomerPermission(
-  tx: SqlExecutor,
+  tx: CrmSqlExecutor,
   scope: CustomerServerScope,
   access: LockedAccess,
   targetUserId: number,
@@ -330,7 +331,7 @@ async function assertTargetHasCustomerPermission(
   }
 }
 
-async function lockCustomer(tx: SqlExecutor, enterpriseId: number, id: number) {
+async function lockCustomer(tx: CrmSqlExecutor, enterpriseId: number, id: number) {
   const row = resultRows<CustomerRow>(await tx.execute(sql`
     SELECT c.* FROM crm_customers c
      WHERE c.enterpriseId = ${enterpriseId} AND c.id = ${id}
@@ -346,8 +347,56 @@ function assertCustomerAccess(customer: CustomerRow | undefined, scope: Customer
   return customer;
 }
 
+/** The locked customer shape intentionally exposes only fields required by contacts. */
+export type CrmCustomerContactCustomer = Pick<
+  CustomerRow,
+  "id" | "assignedUserId" | "name" | "archivedAt" | "version"
+>;
+
+export type CrmCustomerContactTransaction = {
+  tx: CrmSqlExecutor;
+  customer: CrmCustomerContactCustomer;
+  canManageAll: boolean;
+};
+
+/**
+ * Reuses the established member-lock → customer-lock order before any contact mutation.
+ * `scope.canManageAll` is deliberately ignored in favor of the freshly locked permission.
+ */
+export async function withCrmCustomerContactTransaction<T>(
+  scope: CustomerServerScope,
+  customerId: number,
+  run: (context: CrmCustomerContactTransaction) => Promise<T>,
+): Promise<T> {
+  const db = await requireDb();
+  return db.transaction(async tx => {
+    const access = await lockEnterpriseAndMembers(tx, scope);
+    const customer = assertCustomerAccess(
+      await lockCustomer(tx, scope.enterpriseId, customerId),
+      scope,
+      access.canManageAll,
+    );
+    return run({ tx, customer, canManageAll: access.canManageAll });
+  });
+}
+
+/**
+ * Read-only contact summaries still re-check the active enterprise member under the
+ * normal member lock; no collaborator or member/grant data is returned to callers.
+ */
+export async function withCrmCustomerContactRead<T>(
+  scope: CustomerServerScope,
+  run: (context: { tx: CrmSqlExecutor; canManageAll: boolean }) => Promise<T>,
+): Promise<T> {
+  const db = await requireDb();
+  return db.transaction(async tx => {
+    const access = await lockEnterpriseAndMembers(tx, scope);
+    return run({ tx, canManageAll: access.canManageAll });
+  });
+}
+
 async function insertAudit(
-  tx: SqlExecutor,
+  tx: CrmSqlExecutor,
   input: { enterpriseId: number; customerId: number; actorUserId: number; action: string; note: string; requestId?: string | null },
 ) {
   await tx.execute(sql`
@@ -356,8 +405,16 @@ async function insertAudit(
   `);
 }
 
+/** Narrow bridge for the additive contacts audit; no generic customer data is exposed. */
+export async function insertCrmCustomerContactAudit(
+  tx: CrmSqlExecutor,
+  input: { enterpriseId: number; customerId: number; actorUserId: number; action: string; note: string; requestId?: string | null },
+) {
+  await insertAudit(tx, input);
+}
+
 async function reserveRequest(
-  tx: SqlExecutor,
+  tx: CrmSqlExecutor,
   input: { enterpriseId: number; actorUserId: number; requestId: string; action: "create" | "followup"; payloadHash: string },
 ) {
   const existing = resultRows<{ action: string; payloadHash: string; customerId: number; recordId: number | null }>(await tx.execute(sql`
@@ -384,7 +441,7 @@ async function reserveRequest(
 type DuplicateMatchRow = { id: number; name: string; assignedName: string | null; archivedAt: Date | string | null; assignedUserId: number };
 
 async function duplicateRows(
-  executor: SqlExecutor,
+  executor: CrmSqlExecutor,
   scope: CustomerServerScope,
   input: { name: string; phone?: string; email?: string; excludeId?: number },
   canManageAll = scope.canManageAll,
@@ -416,7 +473,7 @@ async function duplicateRows(
 }
 
 async function duplicateState(
-  executor: SqlExecutor,
+  executor: CrmSqlExecutor,
   scope: CustomerServerScope,
   input: { name: string; phone?: string; email?: string; excludeId?: number },
   canManageAll: boolean,
@@ -426,11 +483,51 @@ async function duplicateState(
   return { rows, visible, restricted: rows.length > visible.length };
 }
 
-function throwDuplicate(restricted: boolean) {
+function throwDuplicate(restricted: boolean): never {
   throw new TRPCError({
     code: "CONFLICT",
     message: restricted ? "检测到相似客户，请确认后继续" : "已存在相似客户，请确认后继续",
   });
+}
+
+/** Limited duplicate primitive needed by updateBasic; it preserves the original leak-safe wording. */
+export async function crmCustomerDuplicateState(
+  executor: CrmSqlExecutor,
+  scope: CustomerServerScope,
+  input: { name: string; phone?: string; email?: string; excludeId?: number },
+  canManageAll: boolean,
+) {
+  return duplicateState(executor, scope, input, canManageAll);
+}
+
+export function throwCrmCustomerDuplicate(restricted: boolean): never {
+  return throwDuplicate(restricted);
+}
+
+export type CrmCustomerCreateExtension = {
+  readonly payloadHash: string;
+  readonly afterCustomerCreated: (context: {
+    tx: CrmSqlExecutor;
+    scope: CustomerServerScope;
+    customerId: number;
+    requestId: string;
+  }) => Promise<void>;
+};
+
+const trustedCustomerCreateExtensions = new WeakSet<CrmCustomerCreateExtension>();
+
+/**
+ * Only server modules can create this opaque hook. It lets createMulti stay in the
+ * existing customer-create transaction without making contact internals HTTP input.
+ */
+export function prepareCrmCustomerCreateExtension(
+  extension: CrmCustomerCreateExtension,
+): CrmCustomerCreateExtension {
+  if (!/^[a-f0-9]{64}$/.test(extension.payloadHash)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "联系人创建请求无效" });
+  }
+  trustedCustomerCreateExtensions.add(extension);
+  return extension;
 }
 
 export async function getCustomerContext(scope: CustomerServerScope): Promise<{
@@ -493,7 +590,24 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   conditions.push(input.archived ? sql`c.archivedAt IS NOT NULL` : sql`c.archivedAt IS NULL`);
   if (input.keyword) {
     const keyword = `%${input.keyword.trim()}%`;
-    conditions.push(sql`(c.name LIKE ${keyword} OR cc.contactName LIKE ${keyword} OR cc.phone LIKE ${keyword} OR cc.email LIKE ${keyword})`);
+    conditions.push(sql`(
+      c.name LIKE ${keyword}
+      OR cc.contactName LIKE ${keyword}
+      OR cc.phone LIKE ${keyword}
+      OR cc.email LIKE ${keyword}
+      OR EXISTS(
+        SELECT 1 FROM crm_customer_contact_profiles p
+         WHERE p.enterpriseId = c.enterpriseId AND p.customerId = c.id AND p.stoppedAt IS NULL
+           AND p.name LIKE ${keyword}
+      )
+      OR EXISTS(
+        SELECT 1 FROM crm_customer_contact_methods m
+        INNER JOIN crm_customer_contact_profiles p ON p.id = m.contactId
+         WHERE m.enterpriseId = c.enterpriseId AND m.customerId = c.id AND m.stoppedAt IS NULL
+           AND p.enterpriseId = c.enterpriseId AND p.customerId = c.id AND p.stoppedAt IS NULL
+           AND m.value LIKE ${keyword}
+      )
+    )`);
   }
   if (input.grade) conditions.push(sql`c.grade = ${input.grade}`);
   if (input.stage) conditions.push(sql`c.stage = ${input.stage}`);
@@ -599,10 +713,17 @@ export async function checkCustomerDuplicate(scope: CustomerServerScope, input: 
   };
 }
 
-export async function createCustomer(scope: CustomerServerScope, input: { data: CustomerData; requestId: string; initialFollowUp: string; confirmDuplicate: boolean }) {
-  input = { ...input, data: validateWriteData(input.data) };
+export async function createCustomer(
+  scope: CustomerServerScope,
+  input: { data: CustomerData; requestId: string; initialFollowUp: string; confirmDuplicate: boolean },
+  extension?: CrmCustomerCreateExtension,
+) {
+  if (extension && !trustedCustomerCreateExtensions.has(extension)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "无效的内部联系人创建能力" });
+  }
+  input = extension ? { ...input } : { ...input, data: validateWriteData(input.data) };
   const db = await requireDb();
-  const payloadHash = customerCreatePayloadHash(input);
+  const payloadHash = extension?.payloadHash ?? customerCreatePayloadHash(input);
   return db.transaction(async tx => {
     const assignedUserId = input.data.assignedUserId ?? scope.actorUserId;
     const access = await lockEnterpriseAndMembers(tx, scope);
@@ -632,6 +753,9 @@ export async function createCustomer(scope: CustomerServerScope, input: { data: 
       INSERT INTO crm_customer_contacts (customerId, contactName, phone, phoneNormalized, email, emailNormalized, isPrimary, createdAt, updatedAt)
       VALUES (${customerId}, ${nullableText(data.contactName)}, ${nullableText(data.phone)}, ${normalizeCustomerPhone(data.phone)}, ${nullableText(data.email)}, ${normalizeCustomerEmail(data.email)}, 1, ${CRM_NOW}, ${CRM_NOW})
     `);
+    if (extension) {
+      await extension.afterCustomerCreated({ tx, scope, customerId, requestId: input.requestId });
+    }
     if (input.initialFollowUp.trim()) {
       await tx.execute(sql`
         INSERT INTO crm_customer_followups
@@ -678,6 +802,15 @@ export async function updateCustomer(scope: CustomerServerScope, input: { id: nu
          SET contactName = ${nullableText(data.contactName)}, phone = ${nullableText(data.phone)}, phoneNormalized = ${normalizeCustomerPhone(data.phone)},
              email = ${nullableText(data.email)}, emailNormalized = ${normalizeCustomerEmail(data.email)}, updatedAt = ${CRM_NOW}
        WHERE customerId = ${input.id} AND isPrimary = 1
+         AND NOT EXISTS(
+           SELECT 1 FROM crm_customer_contact_primary p
+            WHERE p.enterpriseId = ${scope.enterpriseId} AND p.customerId = ${input.id}
+              AND p.legacyContactPresent = 0
+         )
+         AND NOT EXISTS(
+           SELECT 1 FROM crm_customer_contact_profiles p
+            WHERE p.enterpriseId = ${scope.enterpriseId} AND p.customerId = ${input.id}
+         )
     `);
     const changes = [
       customer.grade === data.grade ? "" : `客户等级：${customer.grade}→${data.grade}`,
@@ -741,7 +874,7 @@ export async function addCustomerFollowUp(scope: CustomerServerScope, input: {
 async function adminCustomerMutation(
   scope: CustomerServerScope,
   input: { id: number; version: number },
-  mutate: (tx: SqlExecutor, access: LockedAccess, customer: CustomerRow) => Promise<void>,
+  mutate: (tx: CrmSqlExecutor, access: LockedAccess, customer: CustomerRow) => Promise<void>,
 ) {
   const db = await requireDb();
   return db.transaction(async tx => {
