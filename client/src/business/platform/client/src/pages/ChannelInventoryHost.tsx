@@ -70,7 +70,7 @@ type FrozenCreate<T> = {
 
 const PAGE_SIZE = 20;
 const CHANNEL_TYPES: readonly { value: ChannelType; label: string }[] = [
-  { value: "factory", label: "原厂" },
+  { value: "factory", label: "工厂" },
   { value: "agent", label: "代理商" },
   { value: "trade", label: "贸易商" },
   { value: "other", label: "其他" },

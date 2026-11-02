@@ -386,6 +386,18 @@ export function BatchUpload(props: Props) {
     <Dialog open onOpenChange={(value: boolean) => !value && close()}>
       <DialogContent
         className="ci-dialog ci-batch-dialog"
+        data-testid="channel-inventory-batch-dialog"
+        style={{
+          width: "min(880px, calc(100vw - 24px))",
+          maxWidth: "880px",
+          height: "min(85dvh, 680px)",
+          maxHeight: "85dvh",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          overflow: "hidden",
+          padding: "18px",
+        }}
         onEscapeKeyDown={(event: KeyboardEvent) => {
           if (busy) {
             event.preventDefault();
@@ -394,92 +406,96 @@ export function BatchUpload(props: Props) {
         }}
         onPointerDownOutside={(event: Event) => event.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader style={{ flex: "0 0 auto" }}>
           <DialogTitle>批量上传渠道库存</DialogTitle>
-          <DialogDescription>
-            Excel/CSV → 字段匹配 →
-            预览确认。仅记录渠道信息，不入库、不公开发布、不换算币种税额。
-          </DialogDescription>
+          <DialogDescription>导入渠道库存，确认后保存。</DialogDescription>
         </DialogHeader>
-        <div className="ci-batch-tabs">
-          <span>单个上传请使用页面单条入口</span>
-          <strong>
-            <Icon kind="file" size={15} />
-            Excel / CSV 批量上传
-          </strong>
-        </div>
-        <div className="ci-batch-steps">
-          {["选择表格", "匹配字段", "预览确认", "上传结果"].map((label, i) => (
-            <span key={label} className={step >= i + 1 ? "is-active" : ""}>
-              <b>{step > i + 1 ? "✓" : i + 1}</b>
-              {label}
-            </span>
-          ))}
-        </div>
-        <div className="ci-batch-channel">
-          <label className="ci-field">
-            <span>关联渠道 *</span>
-            <select
-              className="ci-batch-control"
-              aria-label="批量关联渠道"
-              value={channelId}
-              disabled={hasQueue || busy}
-              onChange={e => setChannelId(e.target.value)}
-            >
-              <option value="">请选择渠道</option>
-              {channels.map(c => (
-                <option key={c.id} value={c.id} disabled={!c.active}>
-                  {c.name}
-                  {c.active ? "" : "（已停用）"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p>
-            <Icon kind="lock" size={14} />
-            所有行关联同一个渠道；账号、企业和负责人由服务端校验，沿用原数据权限。
-          </p>
-        </div>
-        {channelTotal !== null && channels.length < channelTotal && (
-          <p className="ci-dialog-note">
-            已加载 {channels.length} / {channelTotal} 个渠道。
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="ci-inline-link"
-              onClick={props.onLoadMoreChannels}
-              disabled={props.loadingMoreChannels || busy}
-            >
-              {props.loadingMoreChannels ? "正在加载…" : "加载更多渠道"}
-            </Button>
-          </p>
-        )}
-        {saved && (
-          <div className="ci-batch-resume">
-            <Icon kind="file" />
-            <div>
-              <strong>发现本标签页未完成的上传批次</strong>
-              <p>
-                已确认{" "}
-                {saved.entries.filter(e => e.status === "success").length} /{" "}
-                {saved.entries.length} 条。建议恢复原批次，不要重复上传表格。
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              className="ci-button ci-primary"
-              onClick={restore}
-            >
-              恢复原批次
-            </Button>
+        <div
+          data-testid="channel-inventory-batch-scroll"
+          style={{
+            flex: "1 1 auto",
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
+            display: "grid",
+            alignContent: "start",
+            gap: "12px",
+            paddingRight: "4px",
+          }}
+        >
+          <div className="ci-batch-steps" style={{ padding: "0" }}>
+            {["选文件", "匹配字段", "确认上传"].map((label, i) => (
+              <span key={label} className={step >= i + 1 ? "is-active" : ""}>
+                <b>{step > i + 1 ? "✓" : i + 1}</b>
+                {label}
+              </span>
+            ))}
           </div>
-        )}
-        {step === 1 && (
+          <div className="ci-batch-channel" style={{ gap: "12px", paddingBottom: "9px" }}>
+            <label className="ci-field">
+              <span>关联渠道 *</span>
+              <select
+                className="ci-batch-control"
+                aria-label="批量关联渠道"
+                value={channelId}
+                disabled={hasQueue || busy}
+                onChange={e => setChannelId(e.target.value)}
+              >
+                <option value="">请选择渠道</option>
+                {channels.map(c => (
+                  <option key={c.id} value={c.id} disabled={!c.active}>
+                    {c.name}
+                    {c.active ? "" : "（已停用）"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p style={{ paddingBottom: "4px" }}>
+              <Icon kind="lock" size={14} />
+              本批使用同一渠道
+            </p>
+          </div>
+          {channelTotal !== null && channels.length < channelTotal && (
+            <p className="ci-dialog-note">
+              已加载 {channels.length} / {channelTotal} 个渠道。
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="ci-inline-link"
+                onClick={props.onLoadMoreChannels}
+                disabled={props.loadingMoreChannels || busy}
+              >
+                {props.loadingMoreChannels ? "正在加载…" : "加载更多渠道"}
+              </Button>
+            </p>
+          )}
+          {saved && (
+            <div className="ci-batch-resume">
+              <Icon kind="file" />
+              <div>
+                <strong>发现本标签页未完成的上传批次</strong>
+                <p>
+                  已确认{" "}
+                  {saved.entries.filter(e => e.status === "success").length} /{" "}
+                  {saved.entries.length} 条。建议恢复原批次，不要重复上传表格。
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                className="ci-button ci-primary"
+                onClick={restore}
+              >
+                恢复原批次
+              </Button>
+            </div>
+          )}
+          {step === 1 && (
           <>
             <div
               className={`ci-batch-drop ${dragging ? "is-dragging" : ""}`}
+              style={{ minHeight: "160px", padding: "10px 12px", gap: "5px" }}
               onDragOver={e => {
                 e.preventDefault();
                 if (!saved) setDragging(true);
@@ -492,13 +508,13 @@ export function BatchUpload(props: Props) {
                 if (file && !loading && !saved) void selectFile(file);
               }}
             >
-              <Icon kind="upload" size={33} />
+              <Icon kind="upload" size={24} />
               <strong>
                 {loading
                   ? "正在读取本地表格…"
                   : "拖拽库存表格到这里，或选择文件"}
               </strong>
-              <p>XLSX / XLS / CSV · 首行表头 · 单批1000条以内 · 5MB以内</p>
+              <p>Excel / CSV · 5MB以内 · 最多1000行 · 首行为表头</p>
               <input
                 hidden
                 ref={fileInput}
@@ -519,9 +535,7 @@ export function BatchUpload(props: Props) {
                 <Icon kind="upload" size={15} />
                 选择库存表格
               </Button>
-              <small>
-                文件在本地浏览器解析，确认前不提交库存；多工作表仅读第一个。
-              </small>
+              <small>确认前不提交；仅读首张 sheet。</small>
             </div>
             <button
               className="ci-batch-template"
@@ -531,19 +545,18 @@ export function BatchUpload(props: Props) {
               <Icon kind="file" size={15} />
               下载空白Excel模板
             </button>
-            <div className="ci-batch-note">
-              <strong>填写说明</strong>
+            <details className="ci-batch-note">
+              <summary>填写说明</summary>
               <p>
-                料号、品牌必填；数量空白表示待确认，报价空白表示面议。金额仅接受
-                CNY，税务口径为空按“待确认”记录，不进行转换。
+                料号、品牌必填；数量空白为待确认，价格空白为面议。
               </p>
               <p>
-                自动识别规范千位分隔符（如4,000→4000）；Excel数量使用原始数值，不会因显示格式误报或把小数四舍五入为整数。
+                仅新增，不覆盖已有库存。账号、企业和负责人由服务端校验。
               </p>
               <p>
-                不读取表格中的账号、企业、负责人或渠道列。批量按新记录添加，不覆盖已有库存。
+                金额仅支持 CNY；税务口径为空按待确认记录，不做转换。
               </p>
-            </div>
+            </details>
           </>
         )}
         {step === 2 && (
@@ -749,11 +762,16 @@ export function BatchUpload(props: Props) {
             {error}
           </div>
         )}
-        <div className="ci-dialog-footer ci-batch-footer">
-          <span>
-            <Icon kind="lock" size={13} />
-            沿用现有渠道库存权限
-          </span>
+        </div>
+        <div
+          className="ci-dialog-footer ci-batch-footer"
+          style={{
+            flex: "0 0 auto",
+            marginTop: 0,
+            paddingTop: "10px",
+            borderTop: "1px solid #e8edf3",
+          }}
+        >
           {step > 1 && !hasQueue && (
             <Button
               type="button"
