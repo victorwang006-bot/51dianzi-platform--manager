@@ -270,7 +270,7 @@ function AppRoutes() {
         <Route path={"/workbench/inbound"} component={BusinessInventoryRoute} />
         <Route
           path={"/workbench/channel-inventory"}
-          component={OfficialChannelInventoryRoute}
+          component={BusinessInventoryRoute}
         />
         <Route
           path={"/workbench/customers/:id"}

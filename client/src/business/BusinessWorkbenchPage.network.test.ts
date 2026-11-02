@@ -68,6 +68,29 @@ const verifiedContext = {
   writeCapabilities: [],
 };
 
+// Mirrors the preserved legacy channel-inventory scope: merchant 30061 is
+// bound to the original portal data owner 397751 in enterprise 1. This is a
+// route contract fixture only; the BFF remains the production authority.
+const legacyChannelInventoryContext = {
+  ...verifiedContext,
+  enterprise: {
+    id: 1,
+    companyName: "旧渠道库存所属企业",
+    dataOwnerUserId: 397751,
+  },
+  staffPrincipal: {
+    ...verifiedContext.staffPrincipal,
+    frontendUserId: 397751,
+    user: {
+      ...verifiedContext.staffPrincipal.user,
+      id: 397751,
+      openId: "front-staff:397751",
+      username: "legacy-channel-owner",
+    },
+  },
+  workbenchCapabilities: ["inventory.channel"],
+};
+
 type FetchCall = {
   url: string;
   pathname: string;
@@ -90,6 +113,15 @@ function trpcResult(value: unknown): Response {
     status: 200,
     headers: { "content-type": "application/json" },
   });
+}
+
+function trpcBatchResult(...values: unknown[]): Response {
+  return new Response(
+    JSON.stringify(
+      values.map(value => ({ result: { data: { json: value } } }))
+    ),
+    { status: 200, headers: { "content-type": "application/json" } }
+  );
 }
 
 function trpcError(status: number, code: string, message: string): Response {
@@ -152,11 +184,13 @@ function customerRecord(id: number, name: string) {
   };
 }
 
-async function mountWorkbench(): Promise<MountedWorkbench> {
+async function mountWorkbench(
+  initialPath = "/workbench/customers"
+): Promise<MountedWorkbench> {
   const dom = new JSDOM(
     '<!doctype html><html><body><div id="root"></div></body></html>',
     {
-      url: "http://workbench.test/workbench/customers",
+      url: `http://workbench.test${initialPath}`,
     }
   );
   Object.defineProperty(globalThis, "navigator", {
@@ -279,6 +313,50 @@ function successfulWorkbenchResponse(call: FetchCall): Response {
   throw new Error(`UNEXPECTED_NETWORK_STUB_PATH:${call.pathname}`);
 }
 
+function legacyChannelInventoryResponse(call: FetchCall): Response {
+  if (call.pathname === "/api/business-trpc/merchants") {
+    return trpcResult({
+      data: [officialMerchant],
+      pageAvailableCount: 1,
+      sourceTotal: 1,
+    });
+  }
+  if (call.pathname === "/api/business-trpc/context")
+    return trpcResult(legacyChannelInventoryContext);
+  if (call.pathname === "/api/business-trpc/enterprise.me") {
+    return trpcResult({
+      enterprise: {
+        id: 1,
+        companyName: "旧渠道库存所属企业",
+        dataOwnerUserId: 397751,
+      },
+      currentUserId: 397751,
+      isOwner: true,
+      permissionKeys: ["inventory.manage"],
+    });
+  }
+  if (
+    call.pathname ===
+    "/api/business-trpc/channelInventory.listSharedMaterials,channelInventory.listChannels"
+  ) {
+    return trpcBatchResult(
+      { items: [], total: 33, page: 1, pageSize: 20 },
+      { items: [], total: 5, page: 1, pageCount: 1 }
+    );
+  }
+  if (
+    call.pathname === "/api/business-trpc/channelInventory.listSharedMaterials"
+  ) {
+    return trpcResult({ items: [], total: 33, page: 1, pageSize: 20 });
+  }
+  if (call.pathname === "/api/business-trpc/channelInventory.listChannels") {
+    return trpcResult({ items: [], total: 5, page: 1, pageCount: 1 });
+  }
+  throw new Error(
+    `UNEXPECTED_LEGACY_CHANNEL_NETWORK_STUB_PATH:${call.pathname}`
+  );
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -356,6 +434,61 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         call => call.pathname === "/api/business-trpc/customer.list"
       )
     ).toBe(true);
+  });
+
+  it("opens the restored channel address through the BFF-bound legacy host and owner scope", async () => {
+    const network = installNetwork(legacyChannelInventoryResponse);
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+
+    await waitFor(() => {
+      expect(mounted?.container.textContent).toContain("渠道库存");
+      expect(mounted?.container.textContent).toContain("33 条库存");
+    });
+    const contextRequest = network.calls.find(
+      call => call.pathname === "/api/business-trpc/context"
+    );
+    expect(contextRequest?.headers.get("x-business-merchant-id")).toBe("30061");
+    expect(
+      network.calls.some(
+        call => call.pathname === "/api/business-trpc/enterprise.me"
+      )
+    ).toBe(true);
+    expect(
+      network.calls.some(call =>
+        call.pathname.includes("channelInventory.listSharedMaterials")
+      )
+    ).toBe(true);
+    expect(
+      network.calls.some(call =>
+        call.pathname.includes("officialChannelInventory")
+      )
+    ).toBe(false);
+  });
+
+  it("keeps the restored channel address closed without BFF inventory.channel scope", async () => {
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") {
+        return trpcResult({
+          ...legacyChannelInventoryContext,
+          workbenchCapabilities: [],
+        });
+      }
+      return legacyChannelInventoryResponse(call);
+    });
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain(
+        "当前商户未获该业务模块访问范围"
+      )
+    );
+    expect(
+      network.calls.some(
+        call =>
+          call.pathname === "/api/business-trpc/enterprise.me" ||
+          call.pathname.startsWith("/api/business-trpc/channelInventory.")
+      )
+    ).toBe(false);
   });
 
   it.each([

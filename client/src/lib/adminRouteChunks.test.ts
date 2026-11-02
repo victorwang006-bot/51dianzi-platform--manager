@@ -50,6 +50,7 @@ describe("后台首屏分片契约", () => {
       ["/workbench/publish/:id/edit", "BusinessInventoryRoute"],
       ["/workbench/publish", "BusinessInventoryRoute"],
       ["/workbench/inbound", "BusinessInventoryRoute"],
+      ["/workbench/channel-inventory", "BusinessInventoryRoute"],
       ["/workbench/customers/:id", "BusinessCustomersRoute"],
       ["/workbench/customers", "BusinessCustomersRoute"],
       ["/workbench/customer-demands", "BusinessCustomersRoute"],
@@ -90,10 +91,10 @@ describe("后台首屏分片契约", () => {
       '<PermissionGate permission="officialInventory.read">'
     );
     expect(normalizedAppSource).toContain(
-      'path={"/workbench/channel-inventory"}component={OfficialChannelInventoryRoute}'
+      'path={"/workbench/channel-inventory"}component={BusinessInventoryRoute}'
     );
     expect(normalizedAppSource).not.toContain(
-      'path={"/workbench/channel-inventory"}component={BusinessInventoryRoute}'
+      'path={"/workbench/channel-inventory"}component={OfficialChannelInventoryRoute}'
     );
   });
 
