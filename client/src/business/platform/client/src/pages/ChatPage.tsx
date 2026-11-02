@@ -1,10 +1,19 @@
-import { ChatEntryAuthWait } from "../components/ChatEntryWait";
+import { ChatEntryAuthWait, ChatEnterpriseWait } from "../components/ChatEntryWait";
 import { readMarketQuoteChatDraft } from "../lib/marketQuoteChat";
-import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
 import { Link, useLocation, useSearch } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getQueryKey } from "@trpc/react-query";
 import { trpc } from "../../../../api/business-trpc";
 import { buildInquiryKey, parseSearchInquiry } from "../lib/searchInquiry";
 import { createClientMessageId } from "../lib/clientMessageId";
+import { createEnterpriseScopedTrpcClient } from "../lib/enterpriseTrpcClient";
+import { clearSessionQueryCache, installAuthSessionClearListener } from "../lib/authSessionEvents";
+import {
+  isOperatingEnterprise,
+  useEnterpriseSession,
+} from "../contexts/EnterpriseSessionContext";
+import { InquiryEnterpriseChooserDialog } from "../components/InquiryEnterpriseChooserDialog";
 import { accountDisplayName } from "../lib/accountDisplayName";
 import {
   createPublicReviewImage,
@@ -311,6 +320,7 @@ interface InquiryDeliveryState {
   phase: InquiryDeliveryPhase;
   inventoryId: number;
   userId: number;
+  enterpriseId: number;
   key: string;
   conversationId?: number;
 }
@@ -331,7 +341,7 @@ type ChatPageProps = {
   params?: { [routeParameter: number]: string | undefined };
 };
 
-type InquiryTransportFailure = "retryable" | "unauthorized" | "permanent" | "account_changed" | null;
+type InquiryTransportFailure = "retryable" | "unauthorized" | "permanent" | "account_changed" | "enterprise_changed" | null;
 
 /** A source-tab claim expires quickly and may only belong to its original buyer and inventory. */
 export const INVENTORY_INQUIRY_AUTO_WINDOW_MS = 10 * 60 * 1000;
@@ -342,11 +352,13 @@ export function isFreshInventoryInquiryClaim(
   claim: unknown,
   buyerUserId: number,
   inventoryId: number,
+  inquiryEnterpriseId: number,
   now = Date.now(),
 ) {
   if (!claim || typeof claim !== "object") return false;
-  const candidate = claim as { buyerUserId?: unknown; inventoryId?: unknown; at?: unknown };
+  const candidate = claim as { buyerUserId?: unknown; inquiryEnterpriseId?: unknown; inventoryId?: unknown; at?: unknown };
   const claimedBuyerId = Number(candidate.buyerUserId);
+  const claimedEnterpriseId = Number(candidate.inquiryEnterpriseId);
   const claimedInventoryId = Number(candidate.inventoryId);
   const claimedAt = Number(candidate.at);
   return Number.isInteger(buyerUserId)
@@ -354,6 +366,7 @@ export function isFreshInventoryInquiryClaim(
     && Number.isInteger(inventoryId)
     && inventoryId > 0
     && claimedBuyerId === buyerUserId
+    && claimedEnterpriseId === inquiryEnterpriseId
     && claimedInventoryId === inventoryId
     && Number.isFinite(claimedAt)
     && now >= claimedAt
@@ -377,8 +390,15 @@ function inquiryConversationId(result: { status: string; conversationId: number 
 }
 
 // ─── Main Component ───
-export default function ChatPage({ businessReception }: ChatPageProps) {
-  const { user, loading, logout } = useAuth();
+type ChatPageContentProps = ChatPageProps & {
+  user: ReturnType<typeof useAuth>["user"];
+  loading: boolean;
+  /** The immutable buyer-enterprise snapshot used by every chat RPC in this body. */
+  enterpriseScopeId: number | null;
+};
+
+function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }: ChatPageContentProps) {
+  const { logout } = useAuth();
   /*
    * 新标签页必须重新确认Cookie登录态。认证查询与受保护查询使用同一个
    * httpBatchLink；在认证仍加载时就挂载会话/分组查询，可以让服务端在
@@ -506,22 +526,37 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
   const inquiryActionRef = useRef(false);
   const inquiryTransportRef = useRef<InquiryTransportFailure>(null);
   const currentUserIdRef = useRef<number | null>(user?.id ?? null);
+  const currentEnterpriseIdRef = useRef<number | null>(enterpriseScopeId);
+  const scopeMountedRef = useRef(false);
+  const scopeGenerationRef = useRef(0);
   const selectedConversationLinkRef = useRef<string | null>(null);
-  // Update during render so an in-flight request cannot send or update UI for a newly switched account.
+  // Update during render so an in-flight request cannot send or update UI for a newly switched account/enterprise.
   currentUserIdRef.current = user?.id ?? null;
+  currentEnterpriseIdRef.current = enterpriseScopeId;
   const shouldStickToBottomRef = useRef(true);
   const scrolledConversationRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    scopeMountedRef.current = true;
+    scopeGenerationRef.current += 1;
+    return () => {
+      // Layout cleanup runs in the same commit as the new scope. A stale
+      // promise/timer must not send, retry, or navigate from the retired body.
+      scopeMountedRef.current = false;
+      scopeGenerationRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) setLoginOpen(true);
   }, [loading, user]);
 
   useEffect(() => {
-    // The one-shot mount guard must never survive a logout/account switch.
+    // The one-shot mount guard must never survive a logout, account switch, or enterprise switch.
     autoInquiryKeyRef.current = null;
     selectedConversationLinkRef.current = null;
-    setInquiryDelivery(current => current?.userId === user?.id ? current : null);
-  }, [user?.id]);
+    setInquiryDelivery(current => current && current.userId === user?.id && current.enterpriseId === enterpriseScopeId ? current : null);
+  }, [enterpriseScopeId, user?.id]);
 
   useEffect(() => {
     setRecentStickerIds(getRecentChatStickerIds());
@@ -1086,8 +1121,11 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       inventoryId: number;
       source?: "search" | "detail" | "recommend" | "quote" | "data_hub" | "company";
       initiatorUserId: number;
+      initiatorEnterpriseId: number;
       inquiryProtocol: "buyer-bound-v3";
     }) => {
+      const generation = scopeGenerationRef.current;
+      if (!scopeMountedRef.current) return null;
       if (receptionMode) {
         toast.error(businessReception?.personalFlowMessages["chat.startInventoryInquiry"] ?? "企业接待不能代替买方创建询价。");
         return null;
@@ -1096,13 +1134,22 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
         inquiryTransportRef.current = "account_changed";
         return null;
       }
+      if (currentEnterpriseIdRef.current !== payload.initiatorEnterpriseId) {
+        inquiryTransportRef.current = "enterprise_changed";
+        return null;
+      }
       shouldStickToBottomRef.current = true;
       setMessageListAtBottom(true);
       try {
         const result = await startInventoryInquiryMut.mutateAsync(payload);
-        // A response from the prior account must not select a conversation in the new account.
+        // A response from the prior account or enterprise must not select a conversation in the new scope.
+        if (!scopeMountedRef.current || generation !== scopeGenerationRef.current) return null;
         if (currentUserIdRef.current !== payload.initiatorUserId) {
           inquiryTransportRef.current = "account_changed";
+          return null;
+        }
+        if (currentEnterpriseIdRef.current !== payload.initiatorEnterpriseId) {
+          inquiryTransportRef.current = "enterprise_changed";
           return null;
         }
         setActiveConvId(result.conversationId);
@@ -1125,7 +1172,7 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
         return null;
       }
     },
-    [businessReception, receptionMode, user, startInventoryInquiryMut, utils],
+    [businessReception, receptionMode, startInventoryInquiryMut, user, utils],
   );
 
   /**
@@ -1134,28 +1181,36 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
    */
   const checkInquiryDelivery = useCallback(async (forceSend = false, forcedId?: string) => {
     if (receptionMode) return;
-    if (!user || !inquiryIntent || inquiryActionRef.current) return;
+    if (!scopeMountedRef.current || !user || !inquiryIntent || !enterpriseScopeId || inquiryActionRef.current) return;
+    const generation = scopeGenerationRef.current;
     const buyerUserId = user.id;
+    const buyerEnterpriseId = enterpriseScopeId;
     const clientMessageId = forcedId ?? inquiryIntent.clientMessageId;
     if (!clientMessageId) {
       setInquiryDelivery({
         phase: "unavailable",
         inventoryId: inquiryIntent.inventoryId,
         userId: buyerUserId,
+        enterpriseId: buyerEnterpriseId,
         key: "",
       });
       return;
     }
 
     const input = { inventoryId: inquiryIntent.inventoryId, clientMessageId };
-    const base = { inventoryId: inquiryIntent.inventoryId, userId: buyerUserId, key: clientMessageId };
-    const isCurrentBuyer = () => currentUserIdRef.current === buyerUserId;
-    const setForCurrentBuyer = (next: Omit<InquiryDeliveryState, "inventoryId" | "userId" | "key">) => {
+    const base = { inventoryId: inquiryIntent.inventoryId, userId: buyerUserId, enterpriseId: buyerEnterpriseId, key: clientMessageId };
+    const isCurrentBuyer = () => scopeMountedRef.current
+      && generation === scopeGenerationRef.current
+      && currentUserIdRef.current === buyerUserId
+      && currentEnterpriseIdRef.current === buyerEnterpriseId;
+    const setForCurrentBuyer = (next: Omit<InquiryDeliveryState, "inventoryId" | "userId" | "enterpriseId" | "key">) => {
       if (isCurrentBuyer()) setInquiryDelivery({ ...base, ...next });
     };
     const readStatus = async () => {
+      if (!isCurrentBuyer()) throw new Error("询价企业作用域已退出");
       // `fetch` may otherwise return a cached success after an ambiguous transport failure.
       await utils.chat.getInventoryInquiryStatus.invalidate(input);
+      if (!isCurrentBuyer()) throw new Error("询价企业作用域已退出");
       return utils.chat.getInventoryInquiryStatus.fetch(input);
     };
     const openSentConversation = (conversationId: number) => {
@@ -1195,13 +1250,13 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
 
       const sendOnce = async () => {
         if (!isCurrentBuyer()) {
-          inquiryTransportRef.current = "account_changed";
+          inquiryTransportRef.current = currentUserIdRef.current === buyerUserId ? "enterprise_changed" : "account_changed";
           return null;
         }
         inquiryTransportRef.current = null;
         // Persist before every mutation: a reload after an ambiguous request may only recheck.
         try {
-          localStorage.setItem(`dianzi51-inquiry-attempt:${buyerUserId}:${clientMessageId}`, String(Date.now()));
+          localStorage.setItem(`dianzi51-inquiry-attempt:${buyerUserId}:${buyerEnterpriseId}:${clientMessageId}`, String(Date.now()));
         } catch {
           // The source claim requires storage; explicit manual sending still remains available.
         }
@@ -1211,10 +1266,12 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
           inventoryId: inquiryIntent.inventoryId,
           source: inquiryIntent.source,
           initiatorUserId: user.id,
+          initiatorEnterpriseId: buyerEnterpriseId,
           inquiryProtocol: "buyer-bound-v3",
         });
       };
       const finishSent = (conversationId: number) => {
+        if (!isCurrentBuyer()) return;
         openSentConversation(conversationId);
         setInquiryDelivery(null);
         navigate("/chat", { replace: true });
@@ -1283,7 +1340,7 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
     } finally {
       inquiryActionRef.current = false;
     }
-  }, [inquiryIntent, navigate, receptionMode, submitInventoryInquiry, user, utils]);
+  }, [enterpriseScopeId, inquiryIntent, navigate, receptionMode, submitInventoryInquiry, user, utils]);
 
   // ─── 初始化：先核对投递状态；仅来源页同买家的一次性新点击可在核对后自动发送 ───
   useEffect(() => {
@@ -1301,10 +1358,11 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       autoInquiryKeyRef.current = null;
       setInquiryDelivery(null);
       if (!targetUserId || targetUserId === user.id) return;
+      const generation = scopeGenerationRef.current;
       void (async () => {
         try {
           const data = await getOrCreateConv.mutateAsync({ otherUserId: targetUserId });
-          if (currentUserIdRef.current !== user.id) return;
+          if (!scopeMountedRef.current || generation !== scopeGenerationRef.current || currentUserIdRef.current !== user.id) return;
           setActiveConvId(data.conversationId);
           if (quoteChatDraft) setMsgInput(current => current.trim() ? current : quoteChatDraft);
           void utils.chat.listConversations.invalidate();
@@ -1315,9 +1373,12 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       return;
     }
 
-    // inquiryKey is stable for one URL; the account-switch effect clears this Strict Mode guard.
-    if (autoInquiryKeyRef.current === inquiryKey) return;
-    autoInquiryKeyRef.current = inquiryKey;
+    if (!enterpriseScopeId) return;
+    // The guard is stable per URL, account, and enterprise; a later company switch
+    // must not consume or retry the former buyer's one-shot intent.
+    const scopedInquiryKey = `${user.id}:${enterpriseScopeId}:${inquiryKey ?? ""}`;
+    if (autoInquiryKeyRef.current === scopedInquiryKey) return;
+    autoInquiryKeyRef.current = scopedInquiryKey;
 
     void (async () => {
       /*
@@ -1332,7 +1393,7 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       }
 
       let freshSourceClaim = false;
-      if (params.get("inquiryAuto") === "1") {
+      if (params.get("inquiryAuto") === "1" && inquiryIntent.inquiryEnterpriseId === enterpriseScopeId) {
         const claimKey = `dianzi51-inquiry-intent:${inquiryMsgId}`;
         try {
           const rawClaim = localStorage.getItem(claimKey);
@@ -1340,11 +1401,12 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
             rawClaim ? JSON.parse(rawClaim) : null,
             user.id,
             inquiryIntent.inventoryId,
+            enterpriseScopeId,
           );
         } catch {
           freshSourceClaim = false;
         } finally {
-          // Consume before the status check/send, including stale, malformed, and cross-account claims.
+          // Consume before the status check/send, including stale, malformed, cross-account, and cross-enterprise claims.
           try {
             localStorage.removeItem(claimKey);
           } catch {
@@ -1356,7 +1418,7 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       // Storage failure is deliberately treated as already attempted: never auto-send without a durable guard.
       let attempted = true;
       try {
-        attempted = Boolean(localStorage.getItem(`dianzi51-inquiry-attempt:${user.id}:${inquiryMsgId}`));
+        attempted = Boolean(localStorage.getItem(`dianzi51-inquiry-attempt:${user.id}:${enterpriseScopeId}:${inquiryMsgId}`));
       } catch {
         // Keep the safe default.
       }
@@ -1364,7 +1426,7 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
     })();
     // The guard above intentionally owns this one mount/URL initialization.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, targetUserId, inquiryKey, quoteChatDraft, receptionMode]);
+  }, [enterpriseScopeId, user, targetUserId, inquiryKey, quoteChatDraft, receptionMode]);
 
   const uploadAndSendAttachment = useCallback(async (
     file: File,
@@ -2017,6 +2079,7 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
     inquiryIntent
       && inquiryDelivery
       && inquiryDelivery.userId === user.id
+      && inquiryDelivery.enterpriseId === enterpriseScopeId
       && inquiryDelivery.inventoryId === inquiryIntent.inventoryId,
   );
   const handleInquiryDeliveryAction = () => {
@@ -3636,6 +3699,119 @@ export default function ChatPage({ businessReception }: ChatPageProps) {
       <MallLoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
     </div>
   );
+}
+
+function EnterpriseChatScopedProviders({
+  accountId,
+  enterpriseId,
+  children,
+}: {
+  accountId: number;
+  enterpriseId: number;
+  children: ReactNode;
+}) {
+  const client = useMemo(() => createEnterpriseScopedTrpcClient({ enterpriseId }), [enterpriseId]);
+  const queryClient = useMemo(() => new QueryClient(), [accountId, enterpriseId]);
+  useEffect(
+    () => installAuthSessionClearListener(() =>
+      clearSessionQueryCache(queryClient, getQueryKey(trpc.auth.me, undefined, "query")),
+    ),
+    [queryClient],
+  );
+  useEffect(() => () => {
+    // A late response under the former account/enterprise has nowhere to populate.
+    void queryClient.cancelQueries();
+    queryClient.clear();
+  }, [queryClient]);
+  return (
+    <trpc.Provider client={client} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </trpc.Provider>
+  );
+}
+
+function InquiryEnterpriseSelectionGate({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <>
+      <InquiryEnterpriseChooserDialog open={open} onOpenChange={onOpenChange} onSelect={() => onOpenChange(false)} />
+      <main className="mx-auto mt-10 max-w-lg rounded-xl border border-[#dfe8f1] bg-white p-6 text-center shadow-sm" data-testid="chat-inquiry-enterprise-gate">
+        <h1 className="text-lg font-semibold text-slate-800">请选择询价企业</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600">询价必须以您明确选择的已开通企业发起。未选择、列表加载失败或没有可用企业时，不会发送询价。</p>
+        <button type="button" className="mt-4 rounded-md bg-[#185FA5] px-4 py-2 text-sm font-medium text-white hover:bg-[#0C447C]" onClick={() => onOpenChange(true)}>选择询价企业</button>
+      </main>
+    </>
+  );
+}
+
+function InquiryEnterpriseMismatchGate() {
+  return (
+    <main className="mx-auto mt-10 max-w-lg rounded-xl border border-amber-200 bg-amber-50 p-6 text-center shadow-sm" data-testid="chat-inquiry-enterprise-mismatch">
+      <h1 className="text-lg font-semibold text-amber-950">询价企业已变更</h1>
+      <p className="mt-2 text-sm leading-6 text-amber-900">此询价链接绑定的买方企业与当前企业不一致。为避免跨企业发送或重试，请返回来源页后重新发起询价。</p>
+    </main>
+  );
+}
+
+function EnterpriseScopedChatPage({ user, loading }: Pick<ChatPageContentProps, "user" | "loading">) {
+  const session = useEnterpriseSession();
+  const searchStr = useSearch();
+  const inquiryIntent = useMemo(() => parseSearchInquiry(new URLSearchParams(searchStr)), [searchStr]);
+  const inquiryKey = inquiryIntent ? buildInquiryKey(inquiryIntent) : null;
+  const [chooserOpen, setChooserOpen] = useState(true);
+  useEffect(() => {
+    setChooserOpen(true);
+  }, [inquiryKey, user?.id]);
+
+  // Root auth stays outside this boundary. Anonymous visitors retain the original login surface.
+  if (!user) return <ChatPageContent user={user} loading={loading} enterpriseScopeId={null} />;
+  if (loading || session.authLoading || session.accountId !== user.id || session.isLoading || session.isRestoringSelection) {
+    return <ChatEnterpriseWait />;
+  }
+  if (session.error) {
+    return inquiryIntent
+      ? <InquiryEnterpriseSelectionGate open={chooserOpen} onOpenChange={setChooserOpen} />
+      : <main className="mx-auto mt-10 max-w-lg rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700" role="alert">企业列表加载失败，暂不能加载聊天。</main>;
+  }
+
+  const active = session.activeEnterprise;
+  const hasOperatingScope = isOperatingEnterprise(active ?? undefined);
+  if (inquiryIntent) {
+    const intendedEnterpriseId = inquiryIntent.inquiryEnterpriseId ?? null;
+    // A bound source link must not silently adopt a different current company.
+    if (intendedEnterpriseId && (!hasOperatingScope || active?.enterpriseId !== intendedEnterpriseId)) {
+      return <InquiryEnterpriseMismatchGate />;
+    }
+    // Legacy links never consume an old claim or chat's automatic first-row fallback.
+    if (!intendedEnterpriseId && (!hasOperatingScope || !session.hasExplicitSelection)) {
+      return <InquiryEnterpriseSelectionGate open={chooserOpen} onOpenChange={setChooserOpen} />;
+    }
+  }
+
+  if (hasOperatingScope && active) {
+    return (
+      <EnterpriseChatScopedProviders key={`chat:${user.id}:${active.enterpriseId}`} accountId={user.id} enterpriseId={active.enterpriseId}>
+        <ChatPageContent user={user} loading={loading} enterpriseScopeId={active.enterpriseId} />
+      </EnterpriseChatScopedProviders>
+    );
+  }
+  // Personal accounts with no enterprise retain the legacy non-enterprise chat flow.
+  if (session.items.length === 0) return <ChatPageContent user={user} loading={loading} enterpriseScopeId={null} />;
+  return <InquiryEnterpriseSelectionGate open={chooserOpen} onOpenChange={setChooserOpen} />;
+}
+
+/** Root auth remains outside; reception mode deliberately retains its existing BFF surface. */
+export default function ChatPage(props: ChatPageProps) {
+  const { user, loading } = useAuth();
+  if (props.businessReception !== undefined) {
+    return <ChatPageContent {...props} user={user} loading={loading} enterpriseScopeId={null} />;
+  }
+  return <EnterpriseScopedChatPage user={user} loading={loading} />;
 }
 
 // ─── 消息气泡子组件 ───

@@ -19,6 +19,8 @@ export interface SearchInquiryIntent {
   userId?: number;
   /** 来源页当前已登录的买家；仅用于浏览器本地一次性意图，不能作为服务端身份。 */
   buyerUserId?: number;
+  /** 来源页由买家明确选择的经营企业；独立于普通 URL 选企业，服务端仍逐请求鉴权。 */
+  inquiryEnterpriseId?: number;
   inventoryId: number;
   partNumber: string;
   /** 用户明确调整过的询价数量；未调整时为 null，进入聊天后再确认。 */
@@ -53,13 +55,24 @@ export function createSearchInquiryUrl(intent: SearchInquiryIntent) {
     inquiryBrand: intent.brand.trim(),
     inquiryId: clientMessageId,
   });
+  const inquiryEnterpriseId = Number.isInteger(intent.inquiryEnterpriseId) && (intent.inquiryEnterpriseId ?? 0) > 0
+    ? intent.inquiryEnterpriseId
+    : undefined;
+  if (inquiryEnterpriseId) {
+    // `enterpriseId` restores the buyer's scoped client in the new tab; the
+    // named field keeps the inquiry intent independent from any seller URL.
+    params.set("enterpriseId", String(inquiryEnterpriseId));
+    params.set("inquiryEnterpriseId", String(inquiryEnterpriseId));
+  }
   // 仅来源页可为“新点击 + 当前买家”写入同源本地凭据；旧链接/存储失败不自动发。
   if (Number.isInteger(intent.buyerUserId) && (intent.buyerUserId ?? 0) > 0
-    && Number.isInteger(intent.inventoryId) && intent.inventoryId > 0) {
-    try {
-      window.localStorage.setItem(`dianzi51-inquiry-intent:${clientMessageId}`, JSON.stringify({
-        buyerUserId: intent.buyerUserId,
-        inventoryId: intent.inventoryId,
+    && Number.isInteger(intent.inventoryId) && intent.inventoryId > 0
+    && inquiryEnterpriseId) {
+      try {
+        window.localStorage.setItem(`dianzi51-inquiry-intent:${clientMessageId}`, JSON.stringify({
+          buyerUserId: intent.buyerUserId,
+          inquiryEnterpriseId,
+          inventoryId: intent.inventoryId,
         at: Date.now(),
       }));
       params.set("inquiryAuto", "1");
@@ -75,6 +88,7 @@ export function createSearchInquiryUrl(intent: SearchInquiryIntent) {
 
 export function parseSearchInquiry(params: URLSearchParams): SearchInquiryIntent | null {
   const userId = positiveInteger(params.get("userId"));
+  const inquiryEnterpriseId = positiveInteger(params.get("inquiryEnterpriseId"));
   const inventoryId = positiveInteger(params.get("inventoryId"));
   const qty = positiveInteger(params.get("inquiryQty"));
   const partNumber = params.get("inquiryPart")?.trim() ?? "";
@@ -93,6 +107,7 @@ export function parseSearchInquiry(params: URLSearchParams): SearchInquiryIntent
   if (!inventoryId || !partNumber || !brand) return null;
   return {
     ...(userId ? { userId } : {}),
+    ...(inquiryEnterpriseId ? { inquiryEnterpriseId } : {}),
     inventoryId,
     partNumber,
     qty,
