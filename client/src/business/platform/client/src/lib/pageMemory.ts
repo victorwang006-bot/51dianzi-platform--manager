@@ -21,7 +21,7 @@ const UI_SLOTS = new Set([
   "paymentFilter", "shippingFilter", "invoiceFilter", "lifecycle", "selectedOrderId",
   "detailTab", "status", "selectedId", "tab", "draftPage", "listing",
   "materialDraft", "materialFilters", "channelDraft", "channelFilters", "channelPage", "channelId",
-  "filters", "sort",
+  "filters", "sort", "createOpen",
 ]);
 const UI_FIELDS = new Set([
   "page", "filters", "sort", "status", "owner", "keyword", "grade", "stage", "scope", "assignedUserId",
@@ -55,6 +55,8 @@ function validScroll(value: unknown): ScrollSnapshot | undefined {
 const books = new Map<string, Book>();
 const listeners = new Set<() => void>();
 let scope: PageScope = null;
+let lastConfirmedScope: PageScope = null;
+export const PAGE_IDENTITY_CHANGED_EVENT = "d51:page-identity-changed";
 let activeId = "";
 let epoch = 0;
 let installed = false;
@@ -176,6 +178,12 @@ export function setPageMemoryScope(next: PageScope) {
     selectedRow = null;
     return;
   }
+  if (lastConfirmedScope !== null && lastConfirmedScope !== next) {
+    // Never notify a React external store during a provider render. The empty
+    // event contains no identity or form data and runs before the next user task.
+    queueMicrotask(() => window.dispatchEvent(new Event(PAGE_IDENTITY_CHANGED_EVENT)));
+  }
+  lastConfirmedScope = next;
   const before = scope;
   scope = next;
   const b = book();

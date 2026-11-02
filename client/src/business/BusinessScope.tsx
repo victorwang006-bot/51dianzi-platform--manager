@@ -39,6 +39,17 @@ export type BusinessSessionCapabilities = Readonly<{
   receptionReady?: boolean;
 }>;
 
+/**
+ * Public UI signal for imported front pages. `identity` is derived locally from
+ * the BFF-proven scope below; neither field can grant a permission or select a
+ * different enterprise. A draft hook may retain in-memory input only while the
+ * state is `revalidating`; actual binding/access loss must clear old drafts.
+ */
+export type BusinessContextVerification = Readonly<{
+  state: "verified" | "revalidating";
+  identity: string;
+}>;
+
 type BusinessScopeValue = {
   merchantId: number;
   /** BFF-bound front-office actor; never the current admin account. */
@@ -47,9 +58,14 @@ type BusinessScopeValue = {
   sessionCapabilities: BusinessSessionCapabilities;
   /** UI-only cache/draft namespace. Authorization stays exclusively in the BFF. */
   storageScope: string;
+  /** A current BFF recheck temporarily freezes imported business write controls. */
+  contextVerification: BusinessContextVerification;
 };
 
 const BusinessScopeContext = createContext<BusinessScopeValue | null>(null);
+/** Consumed by the isolated front customer-entry draft store. */
+export const CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT =
+  "d51:customer-entry-drafts-invalidated";
 let activeStorageScope: string | null = null;
 
 export function businessStorageScope(): string | null {
@@ -70,11 +86,13 @@ export function BusinessScopeProvider({
   merchantId,
   staffPrincipal,
   sessionCapabilities,
+  contextVerificationState,
   children,
 }: {
   merchantId: number;
   staffPrincipal: ReadyBusinessStaffPrincipal;
   sessionCapabilities?: BusinessSessionCapabilities;
+  contextVerificationState: BusinessContextVerification["state"];
   children: ReactNode;
 }) {
   const frontUser = staffPrincipal.user;
@@ -83,6 +101,10 @@ export function BusinessScopeProvider({
   // restore another customer workspace's remembered filters/position.
   const storageScope = `business-domain:v1:staff:${frontUser.id}:admin:${staffPrincipal.adminAccountId}:enterprise:${staffPrincipal.enterpriseId}:merchant:${merchantId}:binding:${staffPrincipal.bindingVersion}`;
   const capabilities = sessionCapabilities ?? {};
+  const contextVerification = useMemo<BusinessContextVerification>(
+    () => ({ state: contextVerificationState, identity: storageScope }),
+    [contextVerificationState, storageScope]
+  );
   const value = useMemo<BusinessScopeValue>(
     () => ({
       merchantId,
@@ -90,8 +112,16 @@ export function BusinessScopeProvider({
       staffPrincipal,
       sessionCapabilities: capabilities,
       storageScope,
+      contextVerification,
     }),
-    [merchantId, frontUser, staffPrincipal, capabilities, storageScope]
+    [
+      merchantId,
+      frontUser,
+      staffPrincipal,
+      capabilities,
+      storageScope,
+      contextVerification,
+    ]
   );
 
   // Publish before descendants synchronously restore drafts. There is no
@@ -102,6 +132,8 @@ export function BusinessScopeProvider({
     activeStorageScope = storageScope;
     setPageMemoryScope(storageScope);
     return () => {
+      // Ordinary navigation outside the workbench is not an abandonment.
+      // The Gate and global auth invalidate only confirmed binding/access loss.
       if (activeStorageScope === storageScope) {
         activeStorageScope = null;
         setPageMemoryScope(null);

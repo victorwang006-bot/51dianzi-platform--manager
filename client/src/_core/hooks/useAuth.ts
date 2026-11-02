@@ -2,11 +2,16 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
+import { signalAuthSessionCleared } from "../../business/platform/client/src/lib/authSessionEvents";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
 };
+
+let lastConfirmedAdminAccountId: number | null = null;
+const invalidateCustomerDrafts = () =>
+  window.dispatchEvent(new Event("d51:customer-entry-drafts-invalidated"));
 
 export function useAuth(options?: UseAuthOptions) {
   // Login is started via startLogin() in the effect below, only when we actually
@@ -45,6 +50,9 @@ export function useAuth(options?: UseAuthOptions) {
       try {
         sessionStorage.removeItem("manus-cookie");
       } catch {}
+      invalidateCustomerDrafts();
+      signalAuthSessionCleared();
+      lastConfirmedAdminAccountId = null;
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
@@ -67,6 +75,24 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.isLoading,
     logoutMutation.error,
     logoutMutation.isPending,
+  ]);
+
+  useEffect(() => {
+    if (meQuery.isLoading || logoutMutation.isPending) return;
+    const id = Number(meQuery.data?.id);
+    const confirmed =
+      !meQuery.error && Number.isSafeInteger(id) && id > 0 ? id : null;
+    if (
+      lastConfirmedAdminAccountId !== null &&
+      lastConfirmedAdminAccountId !== confirmed
+    )
+      invalidateCustomerDrafts();
+    lastConfirmedAdminAccountId = confirmed;
+  }, [
+    logoutMutation.isPending,
+    meQuery.data?.id,
+    meQuery.error,
+    meQuery.isLoading,
   ]);
 
   useEffect(() => {

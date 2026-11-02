@@ -1,4 +1,5 @@
 import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
+import { useCustomerCreateDraft, useCustomerCreateDraftIdentity } from "../hooks/useCustomerCreateDraft";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Plus } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
@@ -12,14 +13,10 @@ import {
 } from "../../../shared/crmCustomers";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { CustomerCreateForm, type CustomerCreateSaveMode, type CustomerCreateState } from "../components/customers/CustomerCreateForm";
-import { ConfirmDialog } from "../components/customers/ConfirmDialog";
 import { CustomerContactsSummary } from "../components/customers/CustomerContactsSummary";
 import { formatContactMethod, useCustomerContactScope, withCustomerContactScope, type ContactSummary } from "../components/customers/customerContacts";
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
-import {
-  errorMessage,
-  formatCustomerDateTime,
-} from "../components/customers/customerUtils";
+import { EMPTY_CUSTOMER_FORM, errorMessage, formatCustomerDateTime } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -77,9 +74,19 @@ export default function CustomerList() {
   const utils = trpc.useUtils();
   const contextQuery = trpc.customer.context.useQuery();
   const contactScope = useCustomerContactScope(contextQuery.data);
-  const [createOpen, setCreateOpen] = useState(() => new URLSearchParams(search).get("create") === "1");
+  const createDraftIdentity = useCustomerCreateDraftIdentity(contactScope.scope, contactScope.ready, contextQuery.isPending && !contextQuery.isError);
+  const emptyCreateDraft = useMemo(() => ({
+    form: EMPTY_CUSTOMER_FORM,
+    contacts: [],
+    request: null,
+    pendingSave: null,
+  }), []);
+  const createDraft = useCustomerCreateDraft(createDraftIdentity, emptyCreateDraft);
+  const [createOpen, setCreateOpen] = useRememberedState(
+    "createOpen",
+    () => new URLSearchParams(search).get("create") === "1",
+  );
   const [createState, setCreateState] = useState<CustomerCreateState>({ dirty: false, busy: false });
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [demandCustomer, setDemandCustomer] = useState<{ id: number; name: string; archivedAt: string | null } | null>(null);
   const mountedRef = useRef(true);
   const createButtonRef = useRef<HTMLButtonElement>(null);
@@ -169,19 +176,14 @@ export default function CustomerList() {
   const currentListInputRef = useRef(listInput);
   currentListInputRef.current = listInput;
 
-  const closeCreate = () => {
+  const collapseCreate = (force = false) => {
+    if (!force && createState.busy) return;
     setCreateOpen(false);
-    setConfirmDiscard(false);
     setCreateState({ dirty: false, busy: false });
     createButtonRef.current?.focus({ preventScroll: true });
   };
-  const requestCloseCreate = () => {
-    if (createState.busy) return;
-    if (createState.dirty) setConfirmDiscard(true);
-    else closeCreate();
-  };
   const handleCustomerSaved = ({ id, mode }: { id: number; mode: CustomerCreateSaveMode }) => {
-    if (mode === "close") closeCreate();
+    if (mode === "close") collapseCreate(true);
     const savedListInput = listInput;
     // Keep the current scope, filters and page. Never inject a record that does
     // not match the server's authoritative filtered result into this table.
@@ -199,6 +201,17 @@ export default function CustomerList() {
         if (mountedRef.current) toast.warning("客户已保存，但列表刷新失败，请重试刷新列表，不要重复录入。");
       });
   };
+
+  // A request can settle after this list has unmounted. The completion is scoped
+  // by the exact draft identity, so a later identity cannot consume it.
+  useEffect(() => {
+    if (!contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
+    const completion = createDraft.completion;
+    if (!completion) return;
+    createDraft.consumeCompletion();
+    if (completion.mode === "continue") setCreateOpen(true);
+    handleCustomerSaved(completion);
+  }, [contactScope.ready, contextQuery.isError, contextQuery.isPending, createDraft, createDraft.completion]);
 
   useEffect(() => {
     if (result && !listQuery.isFetching && safePage !== page) setPage(safePage);
@@ -299,8 +312,8 @@ export default function CustomerList() {
             className="h-8 bg-[#185FA5] text-xs hover:bg-[#0C447C]"
             aria-expanded={createOpen}
             aria-controls="customer-entry-panel"
-            disabled={createState.busy || contextQuery.isPending || contextQuery.isError}
-            onClick={() => createOpen ? requestCloseCreate() : setCreateOpen(true)}
+            disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
+            onClick={() => createOpen ? collapseCreate() : setCreateOpen(true)}
           >
             {createOpen ? <ChevronUp className="mr-1 h-3.5 w-3.5" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
             {createOpen ? "收起录入" : "录入客户"}
@@ -480,16 +493,16 @@ export default function CustomerList() {
 
       {createOpen && (
         <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">
-          <CustomerCreateForm onCancel={requestCloseCreate} onSaved={handleCustomerSaved} onStateChange={setCreateState} onIdentityInvalidated={closeCreate} />
+          <CustomerCreateForm
+            onCollapse={collapseCreate}
+            onDiscarded={collapseCreate}
+            onSaved={handleCustomerSaved}
+            onStateChange={setCreateState}
+            onIdentityInvalidated={() => collapseCreate(true)}
+            draftIdentity={createDraftIdentity}
+          />
         </section>
       )}
-      {confirmDiscard && <ConfirmDialog
-        title="放弃未保存的客户信息？"
-        description="已填写的信息尚未保存，收起录入后将被清空。"
-        confirmLabel="放弃并收起"
-        onCancel={() => setConfirmDiscard(false)}
-        onConfirm={closeCreate}
-      />}
 
       {contextQuery.isError ? (
         <ErrorPanel
@@ -523,7 +536,7 @@ export default function CustomerList() {
                   variant="link"
                   size="sm"
                   className="mt-2 h-7 px-0 text-xs text-[#185FA5]"
-                  disabled={createState.busy || contextQuery.isPending || contextQuery.isError}
+                  disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
                   onClick={() => {
                     setCreateOpen(true);
                     document.getElementById("customer-entry-panel")?.scrollIntoView({ block: "nearest" });

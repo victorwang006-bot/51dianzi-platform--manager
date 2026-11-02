@@ -2,7 +2,10 @@ import { createRequire } from "node:module";
 import { act, createElement, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import BusinessWorkbenchPage from "./BusinessWorkbenchPage";
-import { businessStorageScope } from "./BusinessScope";
+import {
+  businessStorageScope,
+  CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+} from "./BusinessScope";
 import {
   BUSINESS_SCOPE_REQUEST_TIMEOUT_MS,
   createBusinessScopeTrpcClient,
@@ -77,6 +80,8 @@ type NetworkResponder = (call: FetchCall) => Promise<Response> | Response;
 
 type MountedWorkbench = {
   container: HTMLElement;
+  leaveWorkbench(): Promise<void>;
+  returnToWorkbench(): Promise<void>;
   unmount(): Promise<void>;
 };
 
@@ -197,6 +202,20 @@ async function mountWorkbench(): Promise<MountedWorkbench> {
 
   return {
     container,
+    async leaveWorkbench() {
+      await act(async () => {
+        history.pushState({}, "", "/users");
+        root.render(createElement("h1", null, "其它后台页面"));
+      });
+    },
+    async returnToWorkbench() {
+      await act(async () => {
+        history.pushState({}, "", "/workbench/customers");
+        root.render(
+          createElement(BusinessWorkbenchPage, { routeBase: "/workbench" })
+        );
+      });
+    },
     async unmount() {
       await act(async () => root.unmount());
       dom.window.close();
@@ -687,8 +706,9 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toHaveLength(2);
   });
 
-  it("fails closed immediately on focus and a rechecked missing binding cannot retain the prior customer page", async () => {
+  it("keeps the same verified customer tree inert during focus revalidation, then closes it when the binding disappears", async () => {
     const focusContext = deferred<Response>();
+    const draftInvalidated = vi.fn();
     let contextAttempts = 0;
     const network = installNetwork(call => {
       if (call.pathname === "/api/business-trpc/context") {
@@ -706,14 +726,34 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       "business-domain:v1:staff:7002:admin:6001:enterprise:88001:merchant:30061:binding:4"
     );
     const initialDomainCallCount = domainCalls(network.calls).length;
+    const initialCustomerTitle = Array.from(
+      mounted.container.querySelectorAll("h1")
+    ).find(title => title.textContent === "客户列表");
+    expect(initialCustomerTitle).toBeTruthy();
+    window.addEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
 
     await act(async () => {
       window.dispatchEvent(new window.Event("focus"));
     });
     await waitFor(() => {
-      expect(mounted?.container.textContent).toContain("正在核验业务主体绑定");
-      expect(mounted?.container.textContent).not.toContain("客户列表");
+      const boundary = mounted?.container.querySelector(
+        '[data-business-context-verification="revalidating"]'
+      );
+      expect(boundary?.textContent).toContain(
+        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+      );
+      expect(boundary?.querySelector("[inert]")).not.toBeNull();
+      expect(boundary?.textContent).toContain("客户列表");
+      expect(
+        Array.from(mounted?.container.querySelectorAll("h1") ?? []).find(
+          title => title.textContent === "客户列表"
+        )
+      ).toBe(initialCustomerTitle);
     });
+    expect(draftInvalidated).not.toHaveBeenCalled();
     focusContext.resolve(
       trpcResult({
         ...verifiedContext,
@@ -731,6 +771,168 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     expect(contextAttempts).toBe(2);
     expect(domainCalls(network.calls)).toHaveLength(initialDomainCallCount);
     expect(businessStorageScope()).toBeNull();
+    expect(draftInvalidated).toHaveBeenCalledTimes(1);
+    window.removeEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
+  });
+
+  it("fails closed after a focus recheck error even though React Query still retains the old successful context data", async () => {
+    const focusContext = deferred<Response>();
+    let contextAttempts = 0;
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") {
+        contextAttempts += 1;
+        if (contextAttempts === 2) return focusContext.promise;
+      }
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() => {
+      expect(mounted?.container.textContent).toContain("客户列表");
+      expect(mounted?.container.textContent).toContain("暂无匹配客户");
+    });
+    const initialDomainCallCount = domainCalls(network.calls).length;
+
+    await act(async () => {
+      window.dispatchEvent(new window.Event("focus"));
+    });
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain(
+        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+      )
+    );
+    focusContext.reject(
+      new TypeError("focus-context-revalidation-unavailable")
+    );
+    await waitFor(() => {
+      expect(mounted?.container.textContent).toContain("业务上下文不可用");
+      expect(mounted?.container.textContent).toContain(
+        "focus-context-revalidation-unavailable"
+      );
+    });
+    expect(mounted?.container.textContent).not.toContain("客户列表");
+    expect(domainCalls(network.calls)).toHaveLength(initialDomainCallCount);
+    expect(businessStorageScope()).toBeNull();
+  });
+
+  it("restores the same verified identity after focus without remounting its customer tree or invalidating drafts", async () => {
+    const focusContext = deferred<Response>();
+    const draftInvalidated = vi.fn();
+    let contextAttempts = 0;
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") {
+        contextAttempts += 1;
+        if (contextAttempts === 2) return focusContext.promise;
+      }
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() => {
+      expect(mounted?.container.textContent).toContain("客户列表");
+      expect(mounted?.container.textContent).toContain("暂无匹配客户");
+    });
+    const initialCustomerTitle = Array.from(
+      mounted.container.querySelectorAll("h1")
+    ).find(title => title.textContent === "客户列表");
+    expect(initialCustomerTitle).toBeTruthy();
+    window.addEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
+
+    await act(async () => {
+      window.dispatchEvent(new window.Event("focus"));
+    });
+    await waitFor(() =>
+      expect(
+        mounted?.container.querySelector(
+          '[data-business-context-verification="revalidating"]'
+        )
+      ).not.toBeNull()
+    );
+    focusContext.resolve(trpcResult(verifiedContext));
+
+    await waitFor(() => {
+      expect(
+        mounted?.container.querySelector(
+          '[data-business-context-verification="verified"]'
+        )
+      ).not.toBeNull();
+      expect(
+        Array.from(mounted?.container.querySelectorAll("h1") ?? []).find(
+          title => title.textContent === "客户列表"
+        )
+      ).toBe(initialCustomerTitle);
+    });
+    expect(contextAttempts).toBe(2);
+    expect(draftInvalidated).not.toHaveBeenCalled();
+    window.removeEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
+  });
+
+  it("preserves the customer draft and expanded form after visiting another backend page with the same identity", async () => {
+    installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/customer.context") {
+        return trpcResult({
+          canManageAll: false,
+          actorUserId: verifiedContext.staffPrincipal.frontendUserId,
+          members: [
+            {
+              userId: verifiedContext.staffPrincipal.frontendUserId,
+              name: "虚构绑定员工",
+            },
+          ],
+        });
+      }
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("暂无匹配客户")
+    );
+    const toggle = Array.from(
+      mounted.container.querySelectorAll<HTMLButtonElement>("button")
+    ).find(node => node.textContent?.trim() === "录入客户");
+    expect(toggle).toBeTruthy();
+    await act(async () => toggle!.click());
+    const input = mounted.container.querySelector<HTMLInputElement>(
+      '[data-customer-field="name"]'
+    );
+    expect(input).toBeTruthy();
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )!.set!.call(input, "跨后台页虚构测试客户");
+      input!.dispatchEvent(new window.Event("input", { bubbles: true }));
+      input!.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    expect(input!.value).toBe("跨后台页虚构测试客户");
+    const invalidated = vi.fn();
+    window.addEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      invalidated
+    );
+    await mounted.leaveWorkbench();
+    expect(mounted.container.textContent).toContain("其它后台页面");
+    expect(invalidated).not.toHaveBeenCalled();
+    await mounted.returnToWorkbench();
+    await waitFor(() =>
+      expect(
+        mounted?.container.querySelector<HTMLInputElement>(
+          '[data-customer-field="name"]'
+        )?.value
+      ).toBe("跨后台页虚构测试客户")
+    );
+    expect(invalidated).not.toHaveBeenCalled();
+    window.removeEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      invalidated
+    );
   });
 
   it("uses a new domain cache and storage namespace when a focus recheck returns a new bindingVersion", async () => {
@@ -788,6 +990,73 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     expect(listAttempts).toBe(2);
     expect(businessStorageScope()).toBe(
       "business-domain:v1:staff:7002:admin:6001:enterprise:88001:merchant:30061:binding:5"
+    );
+  });
+
+  it("invalidates customer-entry drafts and remounts the branch when a successful focus recheck revokes customer write scope without changing identity", async () => {
+    const focusContext = deferred<Response>();
+    const draftInvalidated = vi.fn();
+    const customerWriteContext = {
+      ...verifiedContext,
+      merchant: { id: 30061, canWrite: true },
+      writeCapabilities: ["customers.manage"],
+    };
+    let contextAttempts = 0;
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") {
+        contextAttempts += 1;
+        if (contextAttempts === 1) return trpcResult(customerWriteContext);
+        if (contextAttempts === 2) return focusContext.promise;
+      }
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() => {
+      expect(mounted?.container.textContent).toContain("客户列表");
+      expect(mounted?.container.textContent).toContain("暂无匹配客户");
+    });
+    const initialCustomerTitle = Array.from(
+      mounted.container.querySelectorAll("h1")
+    ).find(title => title.textContent === "客户列表");
+    expect(initialCustomerTitle).toBeTruthy();
+    window.addEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
+
+    await act(async () => {
+      window.dispatchEvent(new window.Event("focus"));
+    });
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain(
+        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+      )
+    );
+    expect(draftInvalidated).not.toHaveBeenCalled();
+    focusContext.resolve(
+      trpcResult({
+        ...customerWriteContext,
+        merchant: { id: 30061, canWrite: false },
+        writeCapabilities: [],
+      })
+    );
+
+    await waitFor(() => {
+      const currentCustomerTitle = Array.from(
+        mounted?.container.querySelectorAll("h1") ?? []
+      ).find(title => title.textContent === "客户列表");
+      expect(currentCustomerTitle).toBeTruthy();
+      expect(currentCustomerTitle).not.toBe(initialCustomerTitle);
+      expect(mounted?.container.textContent).toContain("暂无匹配客户");
+    });
+    expect(contextAttempts).toBe(2);
+    expect(businessStorageScope()).toBe(
+      "business-domain:v1:staff:7002:admin:6001:enterprise:88001:merchant:30061:binding:4"
+    );
+    expect(draftInvalidated).toHaveBeenCalledTimes(1);
+    window.removeEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
     );
   });
 

@@ -175,7 +175,11 @@ export function contactErrorMessage(error: unknown): string {
 }
 
 export function formatContactMethod(method: ContactMethodDraft): string {
-  return `${CONTACT_METHOD_LABELS[method.type]}：${method.value}${method.label ? `（${method.label}）` : ""}`;
+  // The legacy phone marker is internal provenance, not customer-facing copy.
+  // Keep the original number and all genuine user-authored method remarks.
+  const isPhone = method.type === "other" || method.type === "mobile" || method.type === "landline";
+  const label = isPhone && plainContactText(method.label) === "历史电话" ? "" : method.label;
+  return `${CONTACT_METHOD_LABELS[method.type]}：${method.value}${label ? `（${label}）` : ""}`;
 }
 
 /**
