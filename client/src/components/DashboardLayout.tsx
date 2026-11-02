@@ -379,11 +379,15 @@ function BusinessNavigationStatus({
     return (
       <div
         aria-live="polite"
-        aria-disabled="true"
-        className="mx-2 mb-2 rounded-md border border-sidebar-border px-3 py-2 text-xs text-muted-foreground"
+        aria-busy="true"
+        className="mx-2 mb-2 flex items-center gap-2 rounded-md border border-sidebar-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground"
         data-business-navigation-state="loading"
       >
-        正在验证业务工作台权限…
+        <span
+          aria-hidden="true"
+          className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-muted-foreground/40"
+        />
+        <span>正在核验业务入口…</span>
       </div>
     );
   }
@@ -443,7 +447,8 @@ function DashboardLayoutContent({
     queryKey: getBusinessNavigationQueryKey(accountId),
     // Use the tRPC proxy client so this request goes through the dedicated
     // business.navigation httpLink configured in main.tsx, not the batch.
-    queryFn: () => trpcUtils.client.business.navigation.query(),
+    queryFn: ({ signal }) =>
+      trpcUtils.client.business.navigation.query(undefined, { signal }),
     enabled: hasCurrentAccount,
     retry: shouldRetryBusinessNavigation,
     refetchOnWindowFocus: true,

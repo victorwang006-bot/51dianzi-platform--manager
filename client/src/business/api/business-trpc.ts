@@ -20,9 +20,9 @@ export const trpc = createTRPCReact<AppRouter>();
 export const businessScopeTrpc = createTRPCReact<BusinessRouter>();
 
 /**
- * Context is the workbench's only pre-render BFF request. Bound it so a lost
- * browser-to-BFF connection cannot leave the fail-closed loading gate pending
- * forever. Domain requests retain their existing transport semantics.
+ * Scope bootstrap and the root read-only navigation projection must not wait
+ * indefinitely for an incomplete BFF HTTP response. Domain requests retain
+ * their existing transport semantics.
  */
 export const BUSINESS_SCOPE_REQUEST_TIMEOUT_MS = 10_000;
 
@@ -48,29 +48,69 @@ export function createBoundedBusinessScopeFetch(
     const controller = new AbortController();
     const upstreamSignal = init?.signal;
     let timedOut = false;
-    const onUpstreamAbort = () => controller.abort();
-    if (upstreamSignal?.aborted) controller.abort();
+    let settled = false;
+    let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      if (timer !== undefined) globalThis.clearTimeout(timer);
+      upstreamSignal?.removeEventListener("abort", onUpstreamAbort);
+    };
+    const onUpstreamAbort = () => {
+      controller.abort();
+      // Unmount/cancel belongs to React Query, not to the timeout UI. It must
+      // also release this listener/timer if a Response body ignores abort.
+      cleanup();
+    };
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = globalThis.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        reject(new BusinessScopeRequestTimeoutError());
+      }, timeoutMs);
+    });
+    if (upstreamSignal?.aborted) onUpstreamAbort();
     else
       upstreamSignal?.addEventListener("abort", onUpstreamAbort, {
         once: true,
       });
-    const timer = globalThis.setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, timeoutMs);
 
     try {
-      return await fetchImpl(input, {
-        ...(init ?? {}),
-        credentials: "include",
-        signal: controller.signal,
+      // fetch() resolves as soon as response headers arrive. Keep the same
+      // deadline alive for tRPC's later Response.json() call, otherwise a
+      // chunked 200 response with a body that never ends leaves the gate
+      // pending forever despite the apparent timeout.
+      const response = await Promise.race([
+        fetchImpl(input, {
+          ...(init ?? {}),
+          credentials: "include",
+          signal: controller.signal,
+        }),
+        deadline,
+      ]);
+      const readJson = response.json.bind(response);
+      Object.defineProperty(response, "json", {
+        configurable: true,
+        value: async () => {
+          try {
+            return await Promise.race([readJson(), deadline]);
+          } catch (error) {
+            // Aborting a native body reader can synchronously reject json()
+            // with AbortError before the deadline promise wins the race. Once
+            // our own deadline fired, the UI must receive the same bounded,
+            // retryable timeout regardless of that implementation ordering.
+            if (timedOut) throw new BusinessScopeRequestTimeoutError();
+            throw error;
+          } finally {
+            cleanup();
+          }
+        },
       });
+      return response;
     } catch (error) {
+      cleanup();
       if (timedOut) throw new BusinessScopeRequestTimeoutError();
       throw error;
-    } finally {
-      globalThis.clearTimeout(timer);
-      upstreamSignal?.removeEventListener("abort", onUpstreamAbort);
     }
   };
 }

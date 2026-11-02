@@ -463,6 +463,73 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     expect(signals[0]?.aborted).toBe(true);
   });
 
+  it("keeps the BFF deadline through a real 200 Response whose JSON body never finishes", async () => {
+    const signals: AbortSignal[] = [];
+    const client = createBusinessScopeTrpcClient(30061, {
+      timeoutMs: 5,
+      fetch: async (_input, init) => {
+        if (init?.signal) signals.push(init.signal);
+        // fetch has already fulfilled with 200 headers. Only response.json(),
+        // which actual tRPC runs after fetch(), is stalled here. The native
+        // reader also errors as soon as the bounded fetch aborts, exercising
+        // the AbortError-vs-timeout ordering race in real browsers.
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              init?.signal?.addEventListener(
+                "abort",
+                () =>
+                  controller.error(new DOMException("aborted", "AbortError")),
+                { once: true }
+              );
+              // Intentionally do not enqueue or close the body.
+            },
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }
+        );
+      },
+    });
+
+    await expect(client.context.query()).rejects.toThrow(
+      "业务主体绑定核验请求超时，请重试"
+    );
+    expect(signals[0]?.aborted).toBe(true);
+  });
+
+  it("keeps an upstream cancellation as cancellation rather than converting it to a timeout", async () => {
+    const caller = new AbortController();
+    let bodyReaderStarted = false;
+    const client = createBusinessScopeTrpcClient(30061, {
+      timeoutMs: 50,
+      fetch: async (_input, init) =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              bodyReaderStarted = true;
+              init?.signal?.addEventListener(
+                "abort",
+                () =>
+                  controller.error(new DOMException("aborted", "AbortError")),
+                { once: true }
+              );
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        ),
+    });
+
+    const request = client.context.query(undefined, { signal: caller.signal });
+    await waitFor(() => expect(bodyReaderStarted).toBe(true));
+    caller.abort();
+
+    await expect(request).rejects.not.toThrow(
+      "业务主体绑定核验请求超时，请重试"
+    );
+  });
+
   it("cancels an in-flight context request when the workbench unmounts", async () => {
     let contextSignal: AbortSignal | null | undefined;
     installNetwork(call => {

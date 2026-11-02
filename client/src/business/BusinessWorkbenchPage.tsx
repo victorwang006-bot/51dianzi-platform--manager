@@ -197,6 +197,30 @@ function AccessState({
   );
 }
 
+/** A normal authorization read is not a permission failure. Keep it neutral. */
+function BusinessLoadingState({
+  label,
+  testId,
+}: {
+  label: string;
+  testId: string;
+}) {
+  return (
+    <section
+      className="m-5 flex max-w-3xl items-center gap-3 rounded-lg border border-border bg-muted/30 px-5 py-4 text-sm text-muted-foreground"
+      aria-busy="true"
+      aria-live="polite"
+      data-business-loading={testId}
+    >
+      <span
+        aria-hidden="true"
+        className="h-4 w-4 shrink-0 animate-pulse rounded-full bg-muted-foreground/30"
+      />
+      <span>{label}</span>
+    </section>
+  );
+}
+
 function BusinessChannelInventoryRoute() {
   return (
     <BusinessContentFrame>
@@ -473,9 +497,9 @@ function BusinessContextGate({
   // request completes, including after the tab regains focus.
   if (contextQuery.isLoading || contextQuery.isFetching) {
     return (
-      <AccessState
-        title="正在核验业务主体绑定"
-        detail="在确认商户、企业和工作人员绑定前，系统不会进入业务页面。"
+      <BusinessLoadingState
+        label="正在核验业务主体绑定…"
+        testId="business-context"
       />
     );
   }
@@ -596,9 +620,9 @@ function BusinessWorkbenchDiscovery({
   // rendering authority until its current BFF verification settles.
   if (merchantList.isLoading || merchantList.isFetching) {
     return (
-      <AccessState
-        title="正在加载授权商户"
-        detail="在读取后台业务可见范围前，不会请求任何前台领域接口。"
+      <BusinessLoadingState
+        label="正在核验授权商户…"
+        testId="business-discovery"
       />
     );
   }

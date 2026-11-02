@@ -5,6 +5,7 @@ import { httpBatchLink, httpLink, splitLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { createBoundedBusinessScopeFetch } from "./business/api/business-trpc";
 import "./index.css";
 
 // ResizeObserver loop 错误是浏览器的良性告警（元素尺寸在同一帧内连续变化时触发，
@@ -78,6 +79,14 @@ const trpcHttpLinkOptions = {
   },
 };
 
+// Keep this deadline limited to the independent, read-only workbench-entry
+// projection. Other root queries and every mutation retain their existing
+// transport behavior.
+const businessNavigationHttpLinkOptions = {
+  ...trpcHttpLinkOptions,
+  fetch: createBoundedBusinessScopeFetch(),
+};
+
 const trpcClient = trpc.createClient({
   links: [
     splitLink({
@@ -87,7 +96,7 @@ const trpcClient = trpc.createClient({
       condition(operation) {
         return operation.type === "query" && operation.path === "business.navigation";
       },
-      true: httpLink(trpcHttpLinkOptions),
+      true: httpLink(businessNavigationHttpLinkOptions),
       false: httpBatchLink(trpcHttpLinkOptions),
     }),
   ],
