@@ -34,6 +34,7 @@ const THREAD_TYPE_META = {
   service: { label: "在线客服", className: "bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent" },
   onboarding: { label: "开通消息", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent" },
   zhuomuniao_cooperation: { label: "啄木鸟检测合作咨询", className: "bg-cyan-100 text-cyan-900 hover:bg-cyan-100 border-transparent" },
+  order_consultation: { label: "订货咨询", className: "bg-orange-100 text-orange-900 hover:bg-orange-100 border-transparent" },
   complaint: { label: "举报投诉", className: "bg-red-100 text-red-800 hover:bg-red-100 border-transparent" },
 } as const;
 
@@ -50,8 +51,10 @@ function ThreadTypeBadge({ type }: { type?: string | null }) {
     ? "inquiry"
     : type === "onboarding"
       ? "onboarding"
-      : type === "zhuomuniao_cooperation"
-        ? "zhuomuniao_cooperation"
+    : type === "zhuomuniao_cooperation"
+      ? "zhuomuniao_cooperation"
+      : type === "order_consultation"
+        ? "order_consultation"
         : type === "complaint"
           ? "complaint"
           : "service";
@@ -159,7 +162,7 @@ interface ComplaintDetail {
 export default function Messages() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "complaint">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "inquiry" | "service" | "onboarding" | "zhuomuniao_cooperation" | "order_consultation" | "complaint">("all");
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
@@ -200,7 +203,7 @@ export default function Messages() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">消息中心</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          统一查看并处理快速询价、在线客服、开通消息、合作咨询与举报投诉
+          统一查看并处理快速询价、在线客服、开通消息、合作/订货咨询与举报投诉
         </p>
       </div>
 
@@ -230,6 +233,7 @@ export default function Messages() {
               <SelectItem value="service">在线客服</SelectItem>
               <SelectItem value="onboarding">开通消息</SelectItem>
               <SelectItem value="zhuomuniao_cooperation">啄木鸟检测合作咨询</SelectItem>
+              <SelectItem value="order_consultation">订货咨询</SelectItem>
               <SelectItem value="complaint">举报投诉</SelectItem>
             </SelectContent>
           </Select>
@@ -255,7 +259,7 @@ export default function Messages() {
           <div className="py-16 text-center text-muted-foreground">
             <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p>暂无消息</p>
-            <p className="text-xs mt-1">快速询价、在线客服、开通消息、合作咨询或举报投诉将在这里显示</p>
+            <p className="text-xs mt-1">快速询价、在线客服、开通消息、合作/订货咨询或举报投诉将在这里显示</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -271,6 +275,8 @@ export default function Messages() {
                       ? "bg-red-50"
                       : (thread as { threadType?: string }).threadType === "zhuomuniao_cooperation"
                         ? "bg-cyan-50"
+                      : (thread as { threadType?: string }).threadType === "order_consultation"
+                        ? "bg-orange-50"
                       : (thread as { threadType?: string }).threadType === "onboarding"
                         ? "bg-emerald-50"
                         : "bg-primary/10"
@@ -279,6 +285,8 @@ export default function Messages() {
                       ? <ShieldAlert className="h-4 w-4 text-red-600" />
                       : (thread as { threadType?: string }).threadType === "zhuomuniao_cooperation"
                         ? <Bird className="h-4 w-4 text-cyan-800" />
+                      : (thread as { threadType?: string }).threadType === "order_consultation"
+                        ? <Phone className="h-4 w-4 text-orange-700" />
                       : (thread as { threadType?: string }).threadType === "onboarding"
                         ? <Building2 className="h-4 w-4 text-emerald-700" />
                         : <User className="h-4 w-4 text-primary" />}
@@ -295,8 +303,13 @@ export default function Messages() {
                         {thread.adminUnreadCount}
                       </Badge>
                     )}
+                    {(thread as { threadType?: string }).threadType === "order_consultation" && thread.status === "open" && (
+                      <Badge className="border-transparent bg-orange-100 text-orange-900 hover:bg-orange-100">待跟进</Badge>
+                    )}
                     {thread.status === "closed" && (
-                      <Badge variant="secondary">已关闭</Badge>
+                      <Badge variant="secondary">
+                        {(thread as { threadType?: string }).threadType === "order_consultation" ? "已跟进" : "已关闭"}
+                      </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground truncate mt-0.5">
@@ -355,8 +368,8 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
     onSuccess: (_d, vars) => {
       utils.message.detail.invalidate({ threadId });
       toast.success(vars.status === "closed"
-        ? (isComplaint ? "举报投诉已处理" : "会话已关闭")
-        : (isComplaint ? "举报投诉已重新打开" : "会话已重新打开"));
+        ? (isComplaint ? "举报投诉已处理" : isOrderConsultation ? "订货咨询已标记为已跟进" : "会话已关闭")
+        : (isComplaint ? "举报投诉已重新打开" : isOrderConsultation ? "订货咨询已重新打开" : "会话已重新打开"));
     },
     onError: err => toast.error(err.message || "操作失败"),
   });
@@ -365,6 +378,7 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
   const threadType = (thread as { threadType?: string } | undefined)?.threadType;
   const isComplaint = threadType === "complaint";
   const isOnboarding = threadType === "onboarding";
+  const isOrderConsultation = threadType === "order_consultation";
   const role = user?.adminRole as AdminRole | undefined;
   const permissions = (user as { permissions?: string[] } | null)?.permissions;
   const canReadMerchants = Boolean(user && hasAdminPermission(role, "merchants.read", permissions));
@@ -393,6 +407,11 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-semibold">{thread.subject || "（无主题）"}</h1>
                 <ThreadTypeBadge type={(thread as { threadType?: string }).threadType} />
+                {isOrderConsultation && (
+                  <Badge className="border-transparent bg-orange-100 text-orange-900 hover:bg-orange-100">
+                    {thread.status === "open" ? "待跟进" : "已跟进"}
+                  </Badge>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
                 <span>{thread.threadNo}</span>
@@ -405,7 +424,7 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
                   onClick={() => statusMutation.mutate({ threadId, status: "closed" })}
                   disabled={statusMutation.isPending}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> {isComplaint ? "标记已处理" : "关闭会话"}
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> {isComplaint ? "标记已处理" : isOrderConsultation ? "标记已跟进" : "关闭会话"}
                 </Button>
               ) : (
                 <Button
@@ -432,6 +451,12 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
                 <span className="text-muted-foreground shrink-0">联系人</span>
                 <span className="font-medium">{thread.contactName || "—"}</span>
               </div>
+              {!isComplaint && (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground shrink-0">用户ID</span>
+                  <span className="font-medium">{thread.portalUserId || "—"}</span>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground shrink-0">电话</span>
@@ -509,6 +534,15 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
               </>
             )}
           </div>
+
+          {isOrderConsultation && (
+            <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-4 text-sm">
+              <p className="font-medium text-orange-950">订货跟进说明</p>
+              <p className="mt-1 text-orange-900/80">
+                请工作人员联系客户，确认所需型号、数量与期望交期；确认后可点击“标记已跟进”。
+              </p>
+            </div>
+          )}
 
           {isOnboarding && canReadMerchants && (
             <MerchantOwnershipLookup
@@ -612,7 +646,7 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-2">
-              会话已关闭。如需继续沟通，请点击"重新打开"。
+              {isOrderConsultation ? "该订货咨询已跟进。如需继续沟通，请点击“重新打开”。" : "会话已关闭。如需继续沟通，请点击“重新打开”。"}
             </p>
           )}
         </>

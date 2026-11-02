@@ -34,11 +34,12 @@ describe("后台导航与用户管理交互", () => {
 });
 
 describe("消息中心有效分类", () => {
-  it("管理页面独立展示快速询价、在线客服、开通消息、合作咨询和举报投诉", () => {
+  it("管理页面独立展示快速询价、在线客服、开通消息、合作/订货咨询和举报投诉", () => {
     expect(messagesSource).toContain('<SelectItem value="inquiry">快速询价</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="service">在线客服</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="onboarding">开通消息</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="zhuomuniao_cooperation">啄木鸟检测合作咨询</SelectItem>');
+    expect(messagesSource).toContain('<SelectItem value="order_consultation">订货咨询</SelectItem>');
     expect(messagesSource).toContain('<SelectItem value="complaint">举报投诉</SelectItem>');
     expect(messagesSource).not.toContain('<SelectItem value="general">');
     expect(messagesSource).not.toContain("普通留言");
@@ -49,6 +50,7 @@ describe("消息中心有效分类", () => {
     expect(resolvePortalMessageThreadType({ threadType: "service", subject: "任意" })).toBe("service");
     expect(resolvePortalMessageThreadType({ threadType: "onboarding", subject: "任意" })).toBe("onboarding");
     expect(resolvePortalMessageThreadType({ threadType: "zhuomuniao_cooperation", subject: "任意" })).toBe("zhuomuniao_cooperation");
+    expect(resolvePortalMessageThreadType({ threadType: "order_consultation", subject: "任意" })).toBe("order_consultation");
     expect(resolvePortalMessageThreadType({ threadType: "complaint", subject: "任意" })).toBe("complaint");
     expect(resolvePortalMessageThreadType({ threadType: "general", subject: "快速询价 - STM32" })).toBe("inquiry");
     expect(resolvePortalMessageThreadType({ threadType: "general", subject: "BOM询价 - 24项" })).toBe("inquiry");
@@ -60,7 +62,25 @@ describe("消息中心有效分类", () => {
   it("列表筛选和未读统计统一使用有效类型表达式", () => {
     expect(dbSource).toContain("effectiveMessageThreadTypeSql");
     expect(dbSource).toContain("threadType: resolvePortalMessageThreadType(row)");
-    expect(routerSource).toContain('threadType: z.enum(["inquiry", "service", "onboarding", "zhuomuniao_cooperation", "complaint"]).optional()');
+    expect(routerSource).toContain('threadType: z.enum(["inquiry", "service", "onboarding", "zhuomuniao_cooperation", "order_consultation", "complaint"]).optional()');
+    expect(routerSource).toContain("threads: messageReadProcedure");
+    expect(routerSource).toContain("setStatus: messageWriteProcedure");
+  });
+
+  it("订货咨询保持独立类型，开放时提示待跟进，关闭后显示已跟进和确认说明", () => {
+    expect(dbSource).toContain('"order_consultation"');
+    expect(dbSource).toContain("'order_consultation'");
+    expect(routerSource).toContain('threadType === "order_consultation" && input.threadNo');
+    expect(messagesSource).toContain('threadType === "order_consultation"');
+    expect(messagesSource).toContain("待跟进");
+    expect(messagesSource).toContain("已跟进");
+    expect(messagesSource).toContain("订货跟进说明");
+    expect(messagesSource).toContain("确认所需型号、数量与期望交期");
+    expect(messagesSource).toContain("用户ID");
+    expect(schemaSource).toContain('"domestic_substitution", "order_consultation"');
+    const orderMigrationSource = read("../drizzle/0028_order_consultation_message_type.sql");
+    expect(orderMigrationSource).toContain("'domestic_substitution'");
+    expect(orderMigrationSource).toContain("'order_consultation'");
   });
 
   it("首页入驻点击由后台权威库原子创建开通消息并在24小时内去重", () => {

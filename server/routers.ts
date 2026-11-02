@@ -2405,8 +2405,8 @@ export const appRouter = router({
         contactPhone: z.string().max(32).optional().nullable(),
         contactEmail: z.string().email().max(320).optional().nullable(),
         portalUserId: z.string().max(64).optional().nullable(),
-        /** 会话类型：zhuomuniao_cooperation=啄木鸟检测合作咨询；crm_apply=正式申请 */
-        threadType: z.enum(["general", "inquiry", "service", "onboarding", "zhuomuniao_cooperation", "crm_apply", "complaint"]).optional().nullable(),
+        /** 会话类型：order_consultation=首页订货咨询；crm_apply=正式申请 */
+        threadType: z.enum(["general", "inquiry", "service", "onboarding", "zhuomuniao_cooperation", "order_consultation", "crm_apply", "complaint"]).optional().nullable(),
         /** 客户公司资料快照（已提交公司资料的用户，前台附带传入，后台会话详情展示） */
         companyProfile: z.object({
           companyName: z.string().max(256).optional().nullable(),
@@ -2421,6 +2421,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         assertPortalKey(ctx.req);
+        // 订货咨询必须首次独立建线程，不能通过已存在 service/inquiry 线程伪装或改类。
+        if (input.threadType === "order_consultation" && input.threadNo) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "订货咨询必须创建独立会话" });
+        }
         return db.createPortalMessage(input);
       }),
 
@@ -2914,7 +2918,7 @@ export const appRouter = router({
     threads: messageReadProcedure
       .input(pageInput.extend({
         status: z.enum(["open", "closed"]).optional(),
-        threadType: z.enum(["inquiry", "service", "onboarding", "zhuomuniao_cooperation", "complaint"]).optional(),
+        threadType: z.enum(["inquiry", "service", "onboarding", "zhuomuniao_cooperation", "order_consultation", "complaint"]).optional(),
         keyword: z.string().max(128).optional(),
       }))
       .query(async ({ input }) => {

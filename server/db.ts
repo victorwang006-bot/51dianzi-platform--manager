@@ -6822,19 +6822,26 @@ type PortalMessageThreadType =
   | "service"
   | "onboarding"
   | "zhuomuniao_cooperation"
+  | "order_consultation"
   | "crm_apply"
-  | "complaint";
+  | "complaint"
+  /** 已有生产枚举值；本轮不新增其筛选或 UI，只维持历史 service 回退。 */
+  | "domestic_substitution";
 type EffectiveMessageThreadType = Exclude<PortalMessageThreadType, "general">;
 
 /**
- * 消息中心展示快速询价、在线客服、开通消息和举报投诉。历史 general 是旧调用漏传类型的兼容值：
+ * 消息中心展示快速询价、在线客服、开通消息、合作/订货咨询和举报投诉。历史 general 是旧调用漏传类型的兼容值：
  * 询价主题归 inquiry、企业开通申请归 crm_apply，其余归在线客服。
  */
 export function resolvePortalMessageThreadType(input: {
   threadType?: PortalMessageThreadType | null;
   subject?: string | null;
 }): EffectiveMessageThreadType {
-  if (input.threadType && input.threadType !== "general")
+  if (
+    input.threadType &&
+    input.threadType !== "general" &&
+    input.threadType !== "domestic_substitution"
+  )
     return input.threadType;
   const subject = input.subject?.trim() ?? "";
   if (subject.includes("企业开通申请")) return "crm_apply";
@@ -6844,7 +6851,7 @@ export function resolvePortalMessageThreadType(input: {
 
 function effectiveMessageThreadTypeSql() {
   return sql<EffectiveMessageThreadType>`CASE
-    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'onboarding', 'zhuomuniao_cooperation', 'crm_apply', 'complaint')
+    WHEN ${messageThreads.threadType} IN ('inquiry', 'service', 'onboarding', 'zhuomuniao_cooperation', 'order_consultation', 'crm_apply', 'complaint')
       THEN ${messageThreads.threadType}
     WHEN ${messageThreads.subject} LIKE '%企业开通申请%'
       THEN 'crm_apply'
@@ -6869,6 +6876,7 @@ export async function createPortalMessage(input: {
     | "service"
     | "onboarding"
     | "zhuomuniao_cooperation"
+    | "order_consultation"
     | "crm_apply"
     | "complaint"
     | null;
@@ -7299,7 +7307,7 @@ export async function getPortalThreadMessages(threadNo: string) {
   };
 }
 
-/** 后台：会话列表（含开通消息和啄木鸟检测合作咨询；正式企业资料申请始终排除 crm_apply） */
+/** 后台：会话列表（含开通、合作和订货咨询；正式企业资料申请始终排除 crm_apply） */
 export async function getMessageThreads(input: {
   page: number;
   pageSize: number;
@@ -7309,6 +7317,7 @@ export async function getMessageThreads(input: {
     | "service"
     | "onboarding"
     | "zhuomuniao_cooperation"
+    | "order_consultation"
     | "complaint";
   keyword?: string;
 }) {
