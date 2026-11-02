@@ -554,16 +554,20 @@ export const localAuthRouter = router({
     }),
 
   /** 当前已登录账号的 QQ 资料；不向 auth.me 扩展，避免旧客户端扩大投影。 */
-  qqProfile: protectedProcedure.query(async ({ ctx }) => {
+  qqProfile: protectedProcedure
+    .input(z.object({ cacheScope: z.string().max(80) }).optional())
+    .query(async ({ ctx }) => {
     try {
-      return await getUserQqProfile(ctx.user.id);
+      // cacheScope only separates client caches. Authorization and the returned
+      // account scope always come from the authenticated session user.
+      return { ...await getUserQqProfile(ctx.user.id), accountScope: String(ctx.user.id) };
     } catch (error) {
       if (error instanceof UserQqProfileError) {
         throw new TRPCError({ code: error.kind === "forbidden" ? "FORBIDDEN" : error.kind === "conflict" ? "CONFLICT" : "BAD_REQUEST", message: error.message });
       }
       throw error;
     }
-  }),
+    }),
 
   /** 更新个人资料 */
   updateProfile: protectedProcedure

@@ -7,6 +7,8 @@ import {
 } from "drizzle-orm";
 import { getDb } from "../db";
 import { userQqProfiles, users } from "../../drizzle/schema";
+import { getEnterpriseContextForUser } from "./enterpriseAccess";
+import { getEnterpriseBusinessRequestContext } from "./enterpriseRequestContext";
 
 export type UserQqProfileView = {
   numbers: string[];
@@ -44,28 +46,31 @@ type QqSharedScopeRow = {
   enterpriseId?: unknown;
   memberStatus?: unknown;
   dataOwnerUserId?: unknown;
-  canonicalCompanyId?: unknown;
+  hasCanonicalCompany?: unknown;
 };
 
 /**
- * The company condition is deliberately part of the membership lookup: a member
- * is not allowed to borrow an arbitrary data owner's QQ when its canonical legacy
- * company mapping is absent or ambiguous.
+ * The selected enterprise is resolved before this query from the actor-bound
+ * request context. EXISTS deliberately treats duplicate legacy company records as
+ * duplicate proof of the same eligibility, never as a reason to choose a row.
  */
-export function qqSharedBuildScopeQuery(userId: number, lock = false) {
+export function qqSharedBuildScopeQuery(userId: number, enterpriseId: number, lock = false) {
   const qqSharedLockClause = lock ? qqSharedSql.raw(" FOR UPDATE") : qqSharedSql.raw("");
   return qqSharedSql`
     SELECT
       em.enterpriseId AS enterpriseId,
       em.status AS memberStatus,
       e.crmDataOwnerUserId AS dataOwnerUserId,
-      c.id AS canonicalCompanyId
+      EXISTS(
+        SELECT 1
+        FROM companies AS c
+        WHERE c.userId = e.crmDataOwnerUserId
+          AND c.enterpriseId = e.id
+      ) AS hasCanonicalCompany
     FROM enterprise_members AS em
     INNER JOIN enterprises AS e ON e.id = em.enterpriseId
-    LEFT JOIN companies AS c
-      ON c.userId = e.crmDataOwnerUserId
-      AND c.enterpriseId = e.id
-    WHERE em.userId = ${userId}${qqSharedLockClause}
+    WHERE em.userId = ${userId}
+      AND em.enterpriseId = ${enterpriseId}${qqSharedLockClause}
   `;
 }
 
@@ -86,26 +91,81 @@ function qqSharedPositiveId(value: unknown): number | null {
   return Number.isSafeInteger(qqSharedId) && qqSharedId > 0 ? qqSharedId : null;
 }
 
-async function qqSharedResolveScope(executor: QqSharedExecutor, userId: number, lock = false): Promise<QqSharedScope | null> {
-  if (typeof executor.execute !== "function") throw new Error("Database not available");
-  const qqSharedRowsFound = qqSharedRows(await executor.execute(qqSharedBuildScopeQuery(userId, lock)));
-  if (qqSharedRowsFound.length === 0) return null;
-  if (qqSharedRowsFound.length !== 1) {
-    throw new UserQqProfileError("conflict", "企业QQ归属存在歧义，请刷新后重试");
+function qqSharedCompanyExists(value: unknown): boolean {
+  return value === true || Number(value) === 1;
+}
+
+type QqSharedSelectedEnterprise = { enterpriseId: number };
+
+/**
+ * Only the actor-bound enterprise selector may decide which enterprise owns an
+ * account-details QQ view. A selected enterprise that no longer contains the
+ * actor is never allowed to fall through to a personal profile.
+ */
+async function qqSharedSelectedEnterprise(userId: number): Promise<QqSharedSelectedEnterprise | null> {
+  const qqSharedRequest = getEnterpriseBusinessRequestContext(userId);
+  const qqSharedContext = await getEnterpriseContextForUser(userId);
+  if (!qqSharedContext) {
+    if (qqSharedRequest?.enterpriseId != null) {
+      throw new UserQqProfileError("forbidden", "当前账号不是所选企业成员");
+    }
+    return null;
   }
-  const qqSharedRow = qqSharedRowsFound[0];
-  const qqSharedEnterpriseId = qqSharedPositiveId(qqSharedRow.enterpriseId);
-  const qqSharedDataOwnerUserId = qqSharedPositiveId(qqSharedRow.dataOwnerUserId);
-  if (!qqSharedEnterpriseId || !qqSharedDataOwnerUserId || !qqSharedPositiveId(qqSharedRow.canonicalCompanyId)) {
+  const qqSharedEnterpriseId = qqSharedPositiveId(qqSharedContext.enterprise.id);
+  if (!qqSharedEnterpriseId) {
     throw new UserQqProfileError("conflict", "企业QQ归属资料不完整，请联系企业管理员处理");
   }
-  if (qqSharedRow.memberStatus !== "active" && qqSharedRow.memberStatus !== "suspended") {
-    throw new UserQqProfileError("conflict", "企业成员状态存在歧义，请刷新后重试");
+  if (qqSharedRequest?.enterpriseId != null && qqSharedRequest.enterpriseId !== qqSharedEnterpriseId) {
+    throw new UserQqProfileError("conflict", "企业QQ归属已变化，请刷新后重试");
+  }
+  return { enterpriseId: qqSharedEnterpriseId };
+}
+
+async function qqSharedResolveScope(
+  executor: QqSharedExecutor,
+  userId: number,
+  enterpriseId: number,
+  lock = false,
+): Promise<QqSharedScope> {
+  if (typeof executor.execute !== "function") throw new Error("Database not available");
+  const qqSharedRowsFound = qqSharedRows(await executor.execute(qqSharedBuildScopeQuery(userId, enterpriseId, lock)));
+  if (qqSharedRowsFound.length === 0) {
+    throw new UserQqProfileError("conflict", "企业成员身份已变化，请刷新后重试");
+  }
+  const qqSharedDistinctRows = new Map<string, QqSharedScopeRow>();
+  for (const qqSharedRow of qqSharedRowsFound) {
+    const qqSharedEnterpriseId = qqSharedPositiveId(qqSharedRow.enterpriseId);
+    const qqSharedDataOwnerUserId = qqSharedPositiveId(qqSharedRow.dataOwnerUserId);
+    if (!qqSharedEnterpriseId || !qqSharedDataOwnerUserId) {
+      throw new UserQqProfileError("conflict", "企业QQ归属资料不完整，请联系企业管理员处理");
+    }
+    if (qqSharedRow.memberStatus !== "active" && qqSharedRow.memberStatus !== "suspended") {
+      throw new UserQqProfileError("conflict", "企业成员状态存在歧义，请刷新后重试");
+    }
+    qqSharedDistinctRows.set(
+      `${qqSharedEnterpriseId}:${qqSharedDataOwnerUserId}:${qqSharedRow.memberStatus}:${qqSharedCompanyExists(qqSharedRow.hasCanonicalCompany)}`,
+      qqSharedRow,
+    );
+  }
+  if (qqSharedDistinctRows.size !== 1) {
+    throw new UserQqProfileError("conflict", "企业QQ归属存在歧义，请刷新后重试");
+  }
+  const qqSharedRow = Array.from(qqSharedDistinctRows.values())[0]!;
+  const qqSharedEnterpriseId = qqSharedPositiveId(qqSharedRow.enterpriseId);
+  const qqSharedDataOwnerUserId = qqSharedPositiveId(qqSharedRow.dataOwnerUserId);
+  const qqSharedMemberStatus = qqSharedRow.memberStatus;
+  if (
+    qqSharedEnterpriseId !== enterpriseId
+    || !qqSharedDataOwnerUserId
+    || !qqSharedCompanyExists(qqSharedRow.hasCanonicalCompany)
+  ) {
+    throw new UserQqProfileError("conflict", "企业QQ归属资料不完整，请联系企业管理员处理");
   }
   return {
     enterpriseId: qqSharedEnterpriseId,
     dataOwnerUserId: qqSharedDataOwnerUserId,
-    status: qqSharedRow.memberStatus,
+    // The loop above rejects every value other than these two member states.
+    status: qqSharedMemberStatus as "active" | "suspended",
   };
 }
 
@@ -206,13 +266,11 @@ function legacyDefault(qqId: string | null | undefined): string | null {
   return value && LEGACY_QQ_RE.test(value) ? value : null;
 }
 
-/** Read only the profile for an authenticated owner; absent rows intentionally fall back to old users.qqId. */
-export async function getUserQqProfile(userId: number): Promise<UserQqProfileView> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const qqSharedScope = await qqSharedResolveScope(db, userId);
-  qqSharedRequireActive(qqSharedScope);
-  const qqSharedCanonicalUserId = qqSharedScope?.dataOwnerUserId ?? userId;
+async function qqSharedReadCanonicalProfile(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  canonicalUserId: number,
+  scope: QqSharedScope | null,
+): Promise<UserQqProfileView> {
   const [row] = await db
     .select({
       contacts: userQqProfiles.contacts,
@@ -221,16 +279,16 @@ export async function getUserQqProfile(userId: number): Promise<UserQqProfileVie
       version: userQqProfiles.version,
     })
     .from(userQqProfiles)
-    .where(qqProfileEq(userQqProfiles.userId, qqSharedCanonicalUserId))
+    .where(qqProfileEq(userQqProfiles.userId, canonicalUserId))
     .limit(1);
   if (row) {
     const qqSharedProfile = persistedProfile(row);
-    return qqSharedScope ? { ...qqSharedProfile, scope: qqSharedScopeToken(qqSharedScope) } : qqSharedProfile;
+    return scope ? { ...qqSharedProfile, scope: qqSharedScopeToken(scope) } : qqSharedProfile;
   }
   const [user] = await db
     .select({ qqId: users.qqId })
     .from(users)
-    .where(qqProfileEq(users.id, qqSharedCanonicalUserId))
+    .where(qqProfileEq(users.id, canonicalUserId))
     .limit(1);
   const qq = legacyDefault(user?.qqId);
   return {
@@ -238,13 +296,31 @@ export async function getUserQqProfile(userId: number): Promise<UserQqProfileVie
     defaultQq: qq,
     isPublic: true,
     version: 1,
-    ...(qqSharedScope ? { scope: qqSharedScopeToken(qqSharedScope) } : {}),
+    ...(scope ? { scope: qqSharedScopeToken(scope) } : {}),
   };
 }
 
-/** Public projection for already-authorized queries. No caller can use this to bypass eligibility. */
+/** Read only the authenticated actor's profile; absent rows intentionally fall back to old users.qqId. */
+export async function getUserQqProfile(userId: number): Promise<UserQqProfileView> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const qqSharedSelected = await qqSharedSelectedEnterprise(userId);
+  const qqSharedScope = qqSharedSelected
+    ? await qqSharedResolveScope(db, userId, qqSharedSelected.enterpriseId)
+    : null;
+  qqSharedRequireActive(qqSharedScope);
+  return qqSharedReadCanonicalProfile(db, qqSharedScope?.dataOwnerUserId ?? userId, qqSharedScope);
+}
+
+/**
+ * Public/authorized search callers already choose and authorize their target
+ * user. Do not inherit the requesting actor's selected enterprise here, or a
+ * cross-enterprise request could project the wrong owner's QQ.
+ */
 export async function getPublicUserQqProfile(userId: number): Promise<string[]> {
-  const profile = await getUserQqProfile(userId);
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const profile = await qqSharedReadCanonicalProfile(db, userId, null);
   return profile.defaultQq ? profile.numbers : [];
 }
 
@@ -262,13 +338,26 @@ export async function updateUserProfileWithQq(userId: number, data: UpdateUserPr
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const qqSharedHasQqMutation = data.qqProfile !== undefined || data.qqId !== undefined;
+  // Resolve the actor-bound request scope before entering the transaction, then
+  // resolve it under lock below before any profile/user write.
+  const qqSharedSelected = qqSharedHasQqMutation ? await qqSharedSelectedEnterprise(userId) : null;
+  const qqSharedInitialScope = qqSharedSelected
+    ? await qqSharedResolveScope(db, userId, qqSharedSelected.enterpriseId)
+    : null;
+  qqSharedRequireActive(qqSharedInitialScope);
   return db.transaction(async tx => {
     // Do not look up enterprise membership for an ordinary account-details save:
     // suspended users retain the ability to change their own non-QQ details.
-    const qqSharedScope = qqSharedHasQqMutation
-      ? await qqSharedResolveScope(tx, userId, true)
+    const qqSharedScope = qqSharedSelected
+      ? await qqSharedResolveScope(tx, userId, qqSharedSelected.enterpriseId, true)
       : null;
     qqSharedRequireActive(qqSharedScope);
+    if (
+      qqSharedInitialScope
+      && (!qqSharedScope || qqSharedScopeToken(qqSharedInitialScope) !== qqSharedScopeToken(qqSharedScope))
+    ) {
+      throw new UserQqProfileError("conflict", "企业QQ归属已变化，请刷新后重试");
+    }
     const qqSharedCanonicalUserId = qqSharedScope?.dataOwnerUserId ?? userId;
     const qqSharedLockedUserIds = Array.from(new Set([userId, qqSharedCanonicalUserId]))
       .sort((left, right) => left - right);
@@ -299,6 +388,9 @@ export async function updateUserProfileWithQq(userId: number, data: UpdateUserPr
     let qqSharedCanonicalQqId: string | null | undefined = data.qqId;
     if (data.qqProfile !== undefined) {
       const profile = validateUserQqProfile(data.qqProfile);
+      // A damaged row is a support/repair case, never a reason to silently
+      // replace it with a client-side draft that could discard unknown data.
+      if (existing) persistedProfile(existing);
       if (qqSharedScope) {
         if (profile.scope !== qqSharedScopeToken(qqSharedScope)) {
           throw new UserQqProfileError("conflict", "企业QQ归属已变化，请刷新后重试");
@@ -361,6 +453,18 @@ export async function updateUserProfileWithQq(userId: number, data: UpdateUserPr
       }
       // Legacy qqId from enterprise members may only acknowledge the canonical value.
       qqSharedCanonicalQqId = undefined;
+    } else if (qqSharedCanonicalQqId !== undefined) {
+      const requested = qqSharedCanonicalQqId?.trim() || null;
+      const currentQqId = qqSharedCanonicalUser.qqId?.trim() || null;
+      // Preserve unchanged historic values (including zero-prefixed and long QQs)
+      // for old clients, but require every actual new value to meet the new rule.
+      if (requested === currentQqId) {
+        qqSharedCanonicalQqId = undefined;
+      } else if (requested !== null && !normalizeNewProfileQq(requested)) {
+        throw new UserQqProfileError("bad_request", "QQ号需为5-12位数字，且不能以0开头");
+      } else {
+        qqSharedCanonicalQqId = requested;
+      }
     }
     const qqSharedActorUpdateData: Record<string, unknown> = {};
     for (const field of ["name", "jobTitle", "wechatId"] as const) {
