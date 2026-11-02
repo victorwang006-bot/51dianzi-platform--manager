@@ -45,7 +45,7 @@ describe("BusinessWorkbenchPage native migration contract", () => {
     );
     expectCodeToContain(
       page,
-      "return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} />"
+      "return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} scopeRevalidating={merchantList.isFetching} />"
     );
     expect(page).not.toContain("merchants[0]");
     expect(page).not.toContain("MerchantSelection");

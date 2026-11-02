@@ -209,6 +209,33 @@ function customerEntryPermissionFingerprint(
 }
 
 /**
+ * A capability projection is authorization state, not merely route metadata.
+ * Canonicalize arrays so a reordered identical BFF response keeps the live
+ * tree, while every effective read/write projection change gets a fresh
+ * provider tree and QueryClient instead of rendering against prior scope data.
+ */
+function capabilityProjectionFingerprint(value: unknown): string {
+  if (!Array.isArray(value)) return "[]";
+  return JSON.stringify(
+    Array.from(
+      new Set(
+        value.filter((capability): capability is string =>
+          typeof capability === "string"
+        )
+      )
+    ).sort()
+  );
+}
+
+function businessAccessFingerprint(rawContext: BusinessContextContract): string {
+  const sessionCapabilities = Object.entries(contextCapabilities(rawContext))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([capability, enabled]) => `${capability}:${Number(enabled)}`)
+    .join(",");
+  return `${customerEntryPermissionFingerprint(rawContext)}:workbench:${capabilityProjectionFingerprint(rawContext.workbenchCapabilities)}:write:${capabilityProjectionFingerprint(rawContext.writeCapabilities)}:session:${sessionCapabilities}`;
+}
+
+/**
  * A response is usable only after all of its identity dimensions and its
  * selected-merchant proof agree. `domainScope` is the public, UI-only identity
  * marker for imported front pages; it is never an authorization substitute.
@@ -225,9 +252,10 @@ function verifiedBusinessContext(
   ) {
     return null;
   }
+  const domainScope = businessDomainScope(merchantId, principal);
   return {
-    domainScope: businessDomainScope(merchantId, principal),
-    verifiedBranchKey: `${businessDomainScope(merchantId, principal)}:${customerEntryPermissionFingerprint(rawContext)}`,
+    domainScope,
+    verifiedBranchKey: `${domainScope}:${businessAccessFingerprint(rawContext)}`,
     principal,
     capabilities: contextCapabilities(rawContext),
     rawContext,
@@ -618,9 +646,12 @@ function VerifiedBusinessWorkbench({
 function BusinessContextGate({
   merchantId,
   routeBase,
+  scopeRevalidating = false,
 }: {
   merchantId: number;
   routeBase: string;
+  /** The merchant-scope BFF is rechecking an already verified selection. */
+  scopeRevalidating?: boolean;
 }) {
   const contextQuery = businessScopeTrpc.context.useQuery(undefined, {
     retry: false,
@@ -642,13 +673,14 @@ function BusinessContextGate({
     void contextQuery.refetch({ cancelRefetch: true });
   }, [contextQuery.refetch]);
   useFocusContextRevalidation(revalidate);
+  const verificationInFlight = contextQuery.isFetching || scopeRevalidating;
 
   const completedAuthorization =
     currentVerifiedContext?.verifiedBranchKey ?? null;
   useLayoutEffect(() => {
     if (
       !contextQuery.isError &&
-      (contextQuery.isLoading || contextQuery.isFetching)
+      (contextQuery.isLoading || verificationInFlight)
     )
       return;
     const confirmed = contextQuery.isError ? null : completedAuthorization;
@@ -665,12 +697,13 @@ function BusinessContextGate({
     contextQuery.isError,
     contextQuery.isFetching,
     contextQuery.isLoading,
+    verificationInFlight,
   ]);
 
   // This ref update is derived only from a settled request, so it remains
   // idempotent under Strict Mode while allowing focus to arrive immediately
   // after the successful commit.
-  if (!contextQuery.isFetching) {
+  if (!verificationInFlight) {
     lastVerifiedContext.current =
       contextQuery.isError || !currentVerifiedContext
         ? null
@@ -685,11 +718,12 @@ function BusinessContextGate({
       />
     );
   }
-  if (contextQuery.isFetching) {
+  if (verificationInFlight) {
     const retainedContext = lastVerifiedContext.current;
     // Cached data can be present during an error/retry or before the first
-    // verified commit. Render it only if it still proves the exact same bound
-    // staff, admin account, enterprise, merchant and binding revision.
+    // verified commit. The scope list can also be revalidating. In both cases,
+    // render only if it still proves the exact same bound staff, admin account,
+    // enterprise, merchant and binding revision, and freeze all controls.
     if (
       !contextQuery.isError &&
       retainedContext &&
@@ -721,7 +755,7 @@ function BusinessContextGate({
         detail={
           contextQuery.error.message || "当前商户和工作人员会话未能通过核验。"
         }
-        retrying={contextQuery.isFetching}
+        retrying={verificationInFlight}
         onRetry={revalidate}
       />
     );
@@ -770,9 +804,11 @@ function BusinessContextGate({
 function ScopedBusinessWorkbench({
   merchantId,
   routeBase,
+  scopeRevalidating,
 }: {
   merchantId: number;
   routeBase: string;
+  scopeRevalidating: boolean;
 }) {
   const queryClient = useMemo(
     () =>
@@ -802,7 +838,11 @@ function ScopedBusinessWorkbench({
       queryClient={queryClient}
     >
       <QueryClientProvider client={queryClient}>
-        <BusinessContextGate merchantId={merchantId} routeBase={routeBase} />
+        <BusinessContextGate
+          merchantId={merchantId}
+          routeBase={routeBase}
+          scopeRevalidating={scopeRevalidating}
+        />
       </QueryClientProvider>
     </businessScopeTrpc.Provider>
   );
@@ -839,9 +879,33 @@ function BusinessWorkbenchDiscovery({
     void merchantList.refetch({ cancelRefetch: true });
   }, [merchantList.refetch]);
 
+  useLayoutEffect(() => {
+    // A completed denied/error discovery must not leave prior customer drafts
+    // eligible for a later render. Ordinary revalidation remains covered by
+    // the in-flight boundary below and does not invalidate the same identity.
+    if (merchantList.isLoading || merchantList.isFetching) return;
+    const isUnavailable =
+      merchantList.isError ||
+      !officialMerchant ||
+      (hasExplicitMerchant && requestedId !== OFFICIAL_ZHIJIE_MERCHANT_ID);
+    if (isUnavailable && lastCompletedBusinessAuthorization !== null) {
+      window.dispatchEvent(new Event(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT));
+      lastCompletedBusinessAuthorization = null;
+    }
+  }, [
+    hasExplicitMerchant,
+    merchantList.isError,
+    merchantList.isFetching,
+    merchantList.isLoading,
+    officialMerchant,
+    requestedId,
+  ]);
+
   // A refetch can retain the previous list. As with context, it has no
-  // rendering authority until its current BFF verification settles.
-  if (merchantList.isLoading || merchantList.isFetching) {
+  // rendering authority before an initial BFF verification settles. Once a
+  // verified selection exists, retain it under the same inert boundary while
+  // a fresh scope response is pending rather than blanking the whole page.
+  if (merchantList.isLoading || (merchantList.isFetching && !merchantList.data)) {
     return (
       <BusinessLoadingState
         label="正在核验授权商户…"
@@ -885,6 +949,7 @@ function BusinessWorkbenchDiscovery({
     <ScopedBusinessWorkbench
       merchantId={officialMerchant.id}
       routeBase={base}
+      scopeRevalidating={merchantList.isFetching}
     />
   );
 }

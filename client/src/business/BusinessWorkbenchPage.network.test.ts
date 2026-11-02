@@ -1193,6 +1193,64 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
   });
 
+  it("rebuilds the verified workbench branch when a same-identity focus check changes another BFF workbench capability", async () => {
+    const focusContext = deferred<Response>();
+    const draftInvalidated = vi.fn();
+    let contextAttempts = 0;
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") {
+        contextAttempts += 1;
+        if (contextAttempts === 2) return focusContext.promise;
+      }
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("客户列表")
+    );
+    const initialCustomerTitle = Array.from(
+      mounted.container.querySelectorAll("h1")
+    ).find(title => title.textContent === "客户列表");
+    expect(initialCustomerTitle).toBeTruthy();
+    const initialDomainCallCount = domainCalls(network.calls).length;
+    window.addEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
+
+    await act(async () => {
+      window.dispatchEvent(new window.Event("focus"));
+    });
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain(
+        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+      )
+    );
+    focusContext.resolve(
+      trpcResult({
+        ...verifiedContext,
+        workbenchCapabilities: ["customers.manage", "inventory.read"],
+      })
+    );
+
+    await waitFor(() => {
+      const currentCustomerTitle = Array.from(
+        mounted?.container.querySelectorAll("h1") ?? []
+      ).find(title => title.textContent === "客户列表");
+      expect(currentCustomerTitle).toBeTruthy();
+      expect(currentCustomerTitle).not.toBe(initialCustomerTitle);
+    });
+    expect(contextAttempts).toBe(2);
+    expect(domainCalls(network.calls).length).toBeGreaterThan(
+      initialDomainCallCount
+    );
+    expect(draftInvalidated).toHaveBeenCalledTimes(1);
+    window.removeEventListener(
+      CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
+      draftInvalidated
+    );
+  });
+
   it("cancels a live customer-domain request and clears its storage scope when the workbench unmounts", async () => {
     let customerContextSignal: AbortSignal | null | undefined;
     installNetwork(call => {

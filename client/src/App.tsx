@@ -223,11 +223,6 @@ function BusinessWorkbenchRoute() {
   );
 }
 
-const BusinessInventoryRoute = () => <BusinessWorkbenchRoute />;
-const BusinessCustomersRoute = () => <BusinessWorkbenchRoute />;
-const BusinessOrdersRoute = () => <BusinessWorkbenchRoute />;
-const BusinessProcurementRoute = () => <BusinessWorkbenchRoute />;
-const BusinessUsersRoute = () => <BusinessWorkbenchRoute />;
 const NotFoundRoute = () => (
   <LazyScreen>
     <LazyNotFound />
@@ -260,66 +255,72 @@ function AppRoutes() {
         <Route path={"/workbench"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/inventory"}
-          component={BusinessInventoryRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/publish/:id/edit"}
-          component={BusinessInventoryRoute}
+          component={BusinessWorkbenchRoute}
         />
-        <Route path={"/workbench/publish"} component={BusinessInventoryRoute} />
-        <Route path={"/workbench/inbound"} component={BusinessInventoryRoute} />
+        <Route path={"/workbench/publish"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/inbound"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/channel-inventory"}
-          component={BusinessInventoryRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/customers/:id"}
-          component={BusinessCustomersRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/customers"}
-          component={BusinessCustomersRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/customer-demands"}
-          component={BusinessCustomersRoute}
+          component={BusinessWorkbenchRoute}
         />
-        <Route path={"/workbench/orders"} component={BusinessOrdersRoute} />
-        <Route path={"/workbench/outbound"} component={BusinessOrdersRoute} />
+        <Route path={"/workbench/orders"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/outbound"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/inquiries"}
-          component={BusinessCustomersRoute}
+          component={BusinessWorkbenchRoute}
         />
-        <Route path={"/workbench/chat"} component={BusinessCustomersRoute} />
+        <Route path={"/workbench/chat"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/procurement-demands"}
-          component={BusinessProcurementRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/procurement-orders/quote"}
-          component={BusinessProcurementRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/procurement-orders/accepted"}
-          component={BusinessProcurementRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/procurement-orders/create"}
-          component={BusinessProcurementRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/procurement-orders"}
-          component={BusinessProcurementRoute}
+          component={BusinessWorkbenchRoute}
         />
-        <Route path={"/workbench/add-user"} component={BusinessUsersRoute} />
+        <Route path={"/workbench/add-user"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/user-records"}
-          component={BusinessUsersRoute}
+          component={BusinessWorkbenchRoute}
         />
         <Route
           path={"/workbench/company-info"}
-          component={BusinessUsersRoute}
+          component={BusinessWorkbenchRoute}
         />
+        <Route path={"/workbench/customers/new/:id"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/sales-orders"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/procurement/demands"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/procurement/orders"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/demand-quotes"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/company"} component={BusinessWorkbenchRoute} />
         <Route path={"/404"} component={NotFoundRoute} />
         <Route component={NotFoundRoute} />
       </Switch>

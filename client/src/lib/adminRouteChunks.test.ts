@@ -46,26 +46,26 @@ describe("后台首屏分片契约", () => {
     const normalizedAppSource = appSource.replace(/\s+/g, "");
     const workbenchRoutes = [
       ["/workbench", "BusinessWorkbenchRoute"],
-      ["/workbench/inventory", "BusinessInventoryRoute"],
-      ["/workbench/publish/:id/edit", "BusinessInventoryRoute"],
-      ["/workbench/publish", "BusinessInventoryRoute"],
-      ["/workbench/inbound", "BusinessInventoryRoute"],
-      ["/workbench/channel-inventory", "BusinessInventoryRoute"],
-      ["/workbench/customers/:id", "BusinessCustomersRoute"],
-      ["/workbench/customers", "BusinessCustomersRoute"],
-      ["/workbench/customer-demands", "BusinessCustomersRoute"],
-      ["/workbench/orders", "BusinessOrdersRoute"],
-      ["/workbench/outbound", "BusinessOrdersRoute"],
-      ["/workbench/inquiries", "BusinessCustomersRoute"],
-      ["/workbench/chat", "BusinessCustomersRoute"],
-      ["/workbench/procurement-demands", "BusinessProcurementRoute"],
-      ["/workbench/procurement-orders/quote", "BusinessProcurementRoute"],
-      ["/workbench/procurement-orders/accepted", "BusinessProcurementRoute"],
-      ["/workbench/procurement-orders/create", "BusinessProcurementRoute"],
-      ["/workbench/procurement-orders", "BusinessProcurementRoute"],
-      ["/workbench/add-user", "BusinessUsersRoute"],
-      ["/workbench/user-records", "BusinessUsersRoute"],
-      ["/workbench/company-info", "BusinessUsersRoute"],
+      ["/workbench/inventory", "BusinessWorkbenchRoute"],
+      ["/workbench/publish/:id/edit", "BusinessWorkbenchRoute"],
+      ["/workbench/publish", "BusinessWorkbenchRoute"],
+      ["/workbench/inbound", "BusinessWorkbenchRoute"],
+      ["/workbench/channel-inventory", "BusinessWorkbenchRoute"],
+      ["/workbench/customers/:id", "BusinessWorkbenchRoute"],
+      ["/workbench/customers", "BusinessWorkbenchRoute"],
+      ["/workbench/customer-demands", "BusinessWorkbenchRoute"],
+      ["/workbench/orders", "BusinessWorkbenchRoute"],
+      ["/workbench/outbound", "BusinessWorkbenchRoute"],
+      ["/workbench/inquiries", "BusinessWorkbenchRoute"],
+      ["/workbench/chat", "BusinessWorkbenchRoute"],
+      ["/workbench/procurement-demands", "BusinessWorkbenchRoute"],
+      ["/workbench/procurement-orders/quote", "BusinessWorkbenchRoute"],
+      ["/workbench/procurement-orders/accepted", "BusinessWorkbenchRoute"],
+      ["/workbench/procurement-orders/create", "BusinessWorkbenchRoute"],
+      ["/workbench/procurement-orders", "BusinessWorkbenchRoute"],
+      ["/workbench/add-user", "BusinessWorkbenchRoute"],
+      ["/workbench/user-records", "BusinessWorkbenchRoute"],
+      ["/workbench/company-info", "BusinessWorkbenchRoute"],
     ] as const;
 
     for (const [path, component] of workbenchRoutes) {
@@ -80,6 +80,11 @@ describe("后台首屏分片契约", () => {
     // native key, while a native super_admin with no scope still fails in BFF.
     expect(appSource).toContain("function BusinessWorkbenchRoute()");
     expect(appSource).toContain("selected merchant's scope/binding/context");
+    expect(appSource).not.toContain("BusinessInventoryRoute");
+    expect(appSource).not.toContain("BusinessCustomersRoute");
+    expect(appSource).not.toContain("BusinessOrdersRoute");
+    expect(appSource).not.toContain("BusinessProcurementRoute");
+    expect(appSource).not.toContain("BusinessUsersRoute");
     expect(appSource).not.toContain('permission="business.inventory.read"');
     expect(appSource).not.toContain('permission="business.customers.read"');
     expect(appSource).not.toContain('permission="business.orders.read"');
@@ -91,7 +96,7 @@ describe("后台首屏分片契约", () => {
       '<PermissionGate permission="officialInventory.read">'
     );
     expect(normalizedAppSource).toContain(
-      'path={"/workbench/channel-inventory"}component={BusinessInventoryRoute}'
+      'path={"/workbench/channel-inventory"}component={BusinessWorkbenchRoute}'
     );
     expect(normalizedAppSource).not.toContain(
       'path={"/workbench/channel-inventory"}component={OfficialChannelInventoryRoute}'
