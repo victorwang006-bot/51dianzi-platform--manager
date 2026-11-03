@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getDb } from "../db";
+import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
 import { createCrmPermissionProcedure, router } from "../_core/trpc";
 import {
   CHANNEL_INVENTORY_TYPES,
@@ -131,8 +132,25 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const procedure = createCrmPermissionProcedure("inventory.manage");
   const service = createChannelInventoryService({ getDb, registerTeamRecord });
   const notes = createChannelNotesService({ getDb });
+  const team = createChannelTeamInventoryService({ getDb });
 
   return router({
+    listTeamMaterials: procedure
+      .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
+      .query(async ({ ctx, input }) => {
+        try {
+          assertExpectedContext(ctx, input);
+          return await team.listTeamMaterials(scopeFromContext(ctx), input);
+        } catch (error) { return asTrpcError(error); }
+      }),
+    listTeamSourceOptions: procedure
+      .input(z.object({ ...expectedContextSchema }).strict())
+      .query(async ({ ctx, input }) => {
+        try {
+          assertExpectedContext(ctx, input);
+          return await team.listTeamSourceOptions(scopeFromContext(ctx), input);
+        } catch (error) { return asTrpcError(error); }
+      }),
     listChannels: procedure
       .input(z.object({ ...expectedContextSchema, name: z.string().trim().max(128).optional(), type: channelTypes.optional(), active: z.boolean().optional(), page: pageSchema, pageSize: pageSizeSchema }).strict())
       .query(async ({ ctx, input }) => {

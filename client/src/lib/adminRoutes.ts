@@ -1,11 +1,11 @@
-const DEFAULT_ADMIN_PATH = "/";
+export const DEFAULT_ADMIN_PATH = "/workbench/channel-inventory";
 
-/** 仅允许站内绝对路径，阻止 //host 与登录页循环回跳。 */
+/** 仅允许站内绝对路径，阻止外部地址与登录页循环回跳。 */
 export function normalizeAdminReturnPath(rawPath: string | null | undefined): string {
   const value = (rawPath ?? "").trim();
-  if (!value.startsWith("/") || value.startsWith("//")) return DEFAULT_ADMIN_PATH;
-  const pathname = value.split("?")[0];
-  if (pathname === "/login") return DEFAULT_ADMIN_PATH;
+  if (!value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) return DEFAULT_ADMIN_PATH;
+  const pathname = value.split(/[?#]/)[0];
+  if (pathname === "/login" || pathname === "/") return DEFAULT_ADMIN_PATH;
   return value;
 }
 

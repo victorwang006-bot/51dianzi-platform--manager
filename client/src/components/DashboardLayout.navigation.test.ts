@@ -19,7 +19,7 @@ const runtime = vi.hoisted(() => ({
     permissions: ["materials.read", "messages.read"],
   } as Record<string, unknown>,
   capabilities: [] as string[],
-  location: "/",
+  location: "/materials",
   status: "ready",
   refetch: vi.fn(async () => ({})),
 }));
@@ -100,12 +100,12 @@ const shellCss = readFileSync(
 
 describe("正式后台顶部布局集成", () => {
   beforeEach(() => {
-    runtime.location = "/";
+    runtime.location = "/materials";
     runtime.status = "ready";
     runtime.refetch.mockClear();
   });
 
-  it.each(["/", "/workbench", "/staff"])(
+  it.each(["/", "/materials", "/workbench", "/staff"])(
     "retains a working global retry at %s and removes only the error after recovery",
     async location => {
       runtime.location = location;
@@ -158,6 +158,8 @@ describe("正式后台顶部布局集成", () => {
     const html = renderLayout();
     expect(html).toContain("平台运营");
     expect(html).toContain("物料数据库");
+    expect(html).toContain('data-workspace-nav-target="/materials"');
+    expect(html).not.toContain('data-workspace-nav-target="/"');
     expect(html).not.toContain(">业务工作台<");
     expect(html).not.toContain(">组织与权限<");
     expect(html).not.toContain(">员工与权限<");

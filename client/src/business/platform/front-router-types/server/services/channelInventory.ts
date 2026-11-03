@@ -720,6 +720,14 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
             return { item, idempotent: true } as const;
           }
           await lockActiveChannel(tx, scope, input.channelId);
+          const memberships = rows(await tx.execute(sql`
+            SELECT tm.id, tm.teamId FROM enterprise_team_members tm
+            INNER JOIN enterprise_teams t ON t.id = tm.teamId AND t.enterpriseId = tm.enterpriseId AND t.status = 'active'
+             WHERE tm.enterpriseId = ${scope.enterpriseId} AND tm.userId = ${scope.actorUserId}
+               AND tm.teamRole IN ('leader', 'member') FOR UPDATE
+          `));
+          if (memberships.length !== 1) appError("PRECONDITION_FAILED", "请先加入当前有效业务团队，再新增库存");
+          const membership = memberships[0];
           await tx.execute(sql`
             INSERT INTO channel_inventory_materials (
               channel_id, enterprise_id, data_owner_user_id, responsible_user_id,
@@ -743,7 +751,35 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
             actorUserId: scope.actorUserId, currentOwnerUserId: scope.actorUserId,
             parent: { recordType: "channel", recordKey: input.channelId },
           });
-          return { item: materialFrom(created), idempotent: false } as const;
+          // Registration inherits a trusted creation-team snapshot. Do not turn
+          // a stale parent assignment into a grant to the actor's new team.
+          const assignment = rows(await tx.execute(sql`
+            SELECT id, teamId, currentOwnerUserId, revision FROM enterprise_team_record_assignments
+             WHERE enterpriseId = ${scope.enterpriseId} AND recordType = 'channel_material' AND recordId = ${Number(created.id)}
+             LIMIT 1 FOR UPDATE
+          `))[0];
+          if (!assignment || Number(assignment.currentOwnerUserId) !== scope.actorUserId
+            || Number(assignment.teamId) !== Number(membership.teamId)
+            || !Number.isSafeInteger(Number(assignment.revision)) || Number(assignment.revision) < 1) {
+            appError("PRECONDITION_FAILED", "渠道团队归属已变化，请在当前团队渠道下新增库存");
+          }
+          const materialId = Number(created.id);
+          const shareTeamId = Number(assignment.teamId);
+          const assignmentRevision = Number(assignment.revision);
+          const ownerMembershipId = Number(membership.id);
+          await tx.execute(sql`
+            INSERT INTO channel_inventory_material_shares
+              (enterprise_id, material_id, owner_user_id, enabled, share_team_id, assignment_revision, owner_membership_id, revision)
+            VALUES (${scope.enterpriseId}, ${materialId}, ${scope.actorUserId}, 1, ${shareTeamId}, ${assignmentRevision}, ${ownerMembershipId}, 1)
+          `);
+          const auditHash = channelInventoryPayloadHash({ action: "createDefaultShare", materialId, createPayloadHash: payloadHash });
+          await tx.execute(sql`
+            INSERT INTO channel_inventory_material_share_audits
+              (enterprise_id, material_id, actor_user_id, request_id, payload_hash, before_data, after_data)
+            VALUES (${scope.enterpriseId}, ${materialId}, ${scope.actorUserId}, ${input.requestId}, ${auditHash}, ${JSON.stringify(null)},
+              ${JSON.stringify({ action: "createDefaultShare", materialId, enabled: true, revision: Number(created.revision), shareTeamId, assignmentRevision, ownerMembershipId })})
+          `);
+          return { item: materialFrom({ ...created, shareEnabled: true }), idempotent: false } as const;
         });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;

@@ -76,7 +76,7 @@ describe("正式后台顶部工作区菜单", () => {
     ]);
     expect(groups[1].items.map(item => item.path)).toEqual([
       "/merchants",
-      "/",
+      "/materials",
       "/orders",
       "/messages",
       "/reviews",
@@ -160,7 +160,7 @@ describe("正式后台顶部工作区菜单", () => {
 
 describe("实际路由驱动两级选中态", () => {
   it.each([
-    ["/", "operations", "/"],
+    ["/materials", "operations", "/materials"],
     ["/orders/42", "operations", "/orders"],
     ["/merchants/8", "operations", "/merchants"],
     ["/exception-logs/9", "operations", "/exception-logs"],
@@ -236,6 +236,8 @@ describe("实际路由驱动两级选中态", () => {
   });
 
   it.each([
+    "/",
+    "/?merchantId=8",
     "/not-a-menu",
     "/unregistered-team-demo",
     "/orders-extra",
@@ -247,9 +249,14 @@ describe("实际路由驱动两级选中态", () => {
     expect(
       getAdminWorkspaceNavigationState(items, location).activeWorkspace
     ).toBeNull();
+    expect(
+      getAdminWorkspaceNavigationState(items, location).activeItem
+    ).toBeNull();
   });
 
   it("查询、hash、末尾斜杠不影响上下文，不修改回调目标的任何 query", () => {
+    expect(getAdminWorkspacePathname("/")).toBe("/");
+    expect(getAdminWorkspacePathname("/?merchantId=8#content")).toBe("/");
     expect(
       getAdminWorkspacePathname(
         "/workbench/publish/42/edit/?merchantId=8#content"
@@ -261,8 +268,8 @@ describe("实际路由驱动两级选中态", () => {
     );
     expect(state.activeItem?.path).toBe("/workbench/publish");
     expect(
-      getAdminWorkspaceNavigationState(items, "/?merchantId=8").activeItem?.path
-    ).toBe("/");
+      getAdminWorkspaceNavigationState(items, "/materials?merchantId=8").activeItem?.path
+    ).toBe("/materials");
     const target = getAdminWorkspaceNavigationTarget(items, "business");
     expect(target).toBe(items.find(item => item.path === "/workbench/channel-inventory"));
     expect(target?.path).toBe("/workbench/channel-inventory");

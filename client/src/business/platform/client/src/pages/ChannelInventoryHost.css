@@ -419,7 +419,7 @@
 .ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-price-col { width: 12%; }
 .ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-lead-col { width: 8%; }
 .ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-date-col { width: 14%; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-notes-col { width: 16%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-source-col { width: 16%; }
 .ci-page.ci-host .ci-table.ci-compact-stock-table .ci-col-actions { width: 10%; }
 .ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-part-col { width: 30%; }
 .ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-qty-col,
@@ -521,3 +521,7 @@
     width: 100%;
   }
 }
+
+.ci-page.ci-host .ci-sort-button { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ci-page.ci-host .ci-sort-button:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+.ci-page.ci-host .ci-sort-arrow { margin-left: 4px; font-size: 11px; }

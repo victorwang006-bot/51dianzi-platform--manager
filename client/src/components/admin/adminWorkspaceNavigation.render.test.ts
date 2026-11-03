@@ -121,6 +121,23 @@ describe("两行正式导航组件", () => {
     expect(host.querySelectorAll("nav, button")).toHaveLength(0);
   });
 
+  it("物料数据库仅在真实运营路径选中，旧根地址不伪造当前模块", async () => {
+    await render("/materials?merchantId=8");
+    expect(button("operations").getAttribute("aria-current")).toBe("location");
+    expect(button("/materials").getAttribute("aria-current")).toBe("page");
+    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    await act(async () => button("/materials").click());
+    expect(onNavigate).toHaveBeenCalledWith(
+      items.find(item => item.path === "/materials")
+    );
+    await render("/");
+    expect(host.querySelector("[aria-current]")).toBeNull();
+    expect(host.querySelector('[data-workspace-nav-target="/"]')).toBeNull();
+    await render("/materials", items.filter(item => item.path === "/staff"));
+    expect(host.querySelector("[aria-current]")).toBeNull();
+    expect(host.querySelector('[data-workspace-nav-target="/materials"]')).toBeNull();
+  });
+
   it("深层真实业务路由更新选中态；组织别名和个人资料不创建假模块", async () => {
     await render("/workbench/procurement-orders/accepted?merchantId=3");
     expect(

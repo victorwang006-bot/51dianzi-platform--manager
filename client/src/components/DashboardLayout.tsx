@@ -188,7 +188,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
       {
         icon: Database,
         label: "物料数据库",
-        path: "/",
+        path: "/materials",
         permission: "materials.read",
         chunk: "materials",
         nested: false,

@@ -86,7 +86,7 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
       label: "运营管理",
       paths: [
         "/merchants",
-        "/",
+        "/materials",
         "/orders",
         "/messages",
         "/reviews",
@@ -155,7 +155,7 @@ const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
   "/workbench/procurement-demands": "采购需求",
   "/workbench/procurement-orders": "采购订单",
   "/merchants": "商户管理",
-  "/": "物料数据库",
+  "/materials": "物料数据库",
   "/orders": "平台订单",
   "/messages": "消息中心",
   "/reviews": "评价管理",

@@ -13,7 +13,12 @@ const hostStyles = readFileSync(
 
 const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
+  const getMaterial = vi.fn();
   return {
+    getMaterial,
+    teamQuery: null as unknown,
+    sourceQuery: null as unknown,
+    sourceInputs: [] as unknown[],
     channelInputs: [] as unknown[],
     materialInputs: [] as unknown[],
     sharedInputs: [] as unknown[],
@@ -34,6 +39,9 @@ const runtime = vi.hoisted(() => {
     notesQuery: null as unknown,
     utils: {
       channelInventory: {
+        getMaterial: { fetch: getMaterial },
+        listTeamMaterials: { invalidate },
+        listTeamSourceOptions: { invalidate },
         listChannels: { invalidate },
         listSharedMaterials: { invalidate },
         listMaterials: { invalidate },
@@ -50,6 +58,18 @@ vi.mock("../../../../api/business-trpc", () => ({
       me: { useQuery: () => runtime.enterpriseMe },
     },
     channelInventory: {
+      listTeamMaterials: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) => {
+          if (options?.enabled) runtime.materialInputs.push(input);
+          return runtime.teamQuery;
+        },
+      },
+      listTeamSourceOptions: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) => {
+          if (options?.enabled) runtime.sourceInputs.push(input);
+          return runtime.sourceQuery;
+        },
+      },
       listChannels: {
         useQuery: (input: unknown, options?: { enabled?: boolean }) => {
           if (options?.enabled) {
@@ -175,6 +195,7 @@ function renderHost() {
 
 function configureFixtures() {
   runtime.channelInputs = [];
+  runtime.sourceInputs = [];
   runtime.materialInputs = [];
   runtime.sharedInputs = [];
   runtime.optionInputs = [];
@@ -278,6 +299,15 @@ function configureFixtures() {
     pageSize: 20,
     canWrite: true,
   });
+  const own = (runtime.materialQuery as { data: { items: Record<string, unknown>[] } }).data.items[0];
+  runtime.getMaterial.mockReset().mockResolvedValue({ ...own, revision: 9 });
+  runtime.sourceQuery = query({ canFilterSource: false, items: [] });
+  runtime.teamQuery = query({
+    items: [
+      { id: 101, partNumber: "LM358DR", brand: "TI", qty: null, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, revision: 6, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", isMine: true, canEdit: true, readOnly: false, channelSource: { id: 11, name: "深圳代理" }, canViewSource: true },
+      { id: 202, partNumber: "TEAM-SN74", brand: "NXP", qty: 100, dateCode: "2601", price: "1.20", currency: "CNY", taxIncluded: true, leadTime: "3天", revision: 2, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", isMine: false, canEdit: false, readOnly: true, channelSource: null, canViewSource: false },
+    ], total: 40, page: 1, pageSize: 20, pageCount: 2, canWrite: true, canFilterSource: false,
+  });
   runtime.notesQuery = query({
     material: {
       id: 101,
@@ -327,50 +357,54 @@ afterEach(async () => {
 });
 
 describe("ChannelInventoryHost new equivalent reconstruction", () => {
-  it("defaults to own inventory with inventory before archives and removes persistent policy prose", () => {
+  it("defaults to unified inventory without old tabs, share buttons or private row DOM", () => {
     renderHost();
     const tabs = document.querySelector('[aria-label="渠道库存内容"]');
     expect(Array.from(tabs!.querySelectorAll('[role="tab"]')).map(item => item.textContent)).toEqual(["渠道库存", "渠道档案"]);
     expect(tabs!.querySelector('[aria-selected="true"]')?.textContent).toBe("渠道库存");
-    expect(document.querySelector('[aria-label="库存可见范围"] [aria-selected="true"]')?.textContent).toBe("本人库存");
+    expect(document.querySelector('[aria-label="库存可见范围"]')).toBeNull();
     expect(document.body.textContent).toContain("LM358DR");
-    expect(document.querySelector(".ci-heading")).toBeNull();
+    expect(document.body.textContent).toContain("TEAM-SN74");
     expect(document.querySelector("h1")).toBeNull();
-    expect(document.querySelector(".ci-tabbar .ci-heading-actions")?.textContent).toContain("表格上传单条上传");
-    expect(Array.from(document.querySelectorAll("th")).some(item => item.textContent === "可见范围")).toBe(false);
-    expect(document.body.textContent).not.toContain("渠道档案仅当前负责人可见");
-    expect(document.body.textContent).not.toContain("本人负责的库存；默认不共享");
-    expect(runtime.channelInputs).toHaveLength(0);
+    expect(document.querySelector(".ci-heading-actions")?.textContent).toContain("表格上传单条上传");
+    expect(document.body.textContent).not.toContain("共享给同队");
+    expect(document.body.textContent).not.toContain("撤销共享");
+    expect(document.body.innerHTML).not.toContain("已核对交期");
+    expect(document.body.innerHTML).not.toContain("历史库存备注");
+    expect(document.body.innerHTML).not.toContain("渠道联系人");
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1 });
     expect(runtime.sharedInputs).toHaveLength(0);
-    click(button("团队共享（只读）"));
-    expect(document.body.textContent).toContain("TEAM-SN74");
-    expect(document.querySelector(".ci-shared-stock-table")).not.toBeNull();
-    expect(Array.from(document.querySelectorAll("th")).map(item => item.textContent)).not.toContain("本人私有备注");
-    expect(document.querySelectorAll(".ci-shared-stock-table th")).toHaveLength(7);
-    expect(runtime.createMaterial).not.toHaveBeenCalled();
-    expect(runtime.updateMaterial).not.toHaveBeenCalled();
+    const rows = document.querySelectorAll("tbody tr");
+    expect(rows[0].textContent).toContain("深圳代理");
+    expect(rows[1].textContent).toContain("无权查看");
+    expect(rows[1].querySelector("button, [title], [hidden], input")).toBeNull();
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
-    expect(document.body.textContent).not.toContain("LM358DR");
-    expect(document.body.textContent).not.toContain("深圳代理");
-    expect(document.body.textContent).not.toContain("已核对交期");
-    expect(document.body.textContent).not.toContain("仅展示同队负责人显式共享且当前仍有效的库存");
-    expect(document.querySelector('[aria-label="筛选库存渠道范围"]')).toBeNull();
-    expect(document.querySelector('[aria-label="打开库存 101 的备注"]')).toBeNull();
-    expect(runtime.sharedInputs.at(-1)).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, partNumber: undefined, brand: undefined, page: 1, pageSize: 20 });
-    expect(Array.from(document.querySelectorAll("button")).some(item => ["编辑", "单条上传", "表格上传", "共享给同队"].includes(item.textContent ?? ""))).toBe(false);
   });
 
-  it("keeps explicit sharing confirmation and the original mutation DTO", async () => {
+  it("denies source filtering without exposing own upload options", () => {
     renderHost();
-    vi.mocked(window.confirm).mockReturnValueOnce(false);
-    click(button("共享给同队"));
-    await settle();
-    expect(runtime.setMaterialShare).not.toHaveBeenCalled();
-    click(button("共享给同队"));
-    await settle();
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("不包含渠道来源和任何备注"));
-    expect(runtime.setMaterialShare).toHaveBeenCalledWith({ materialId: 101, enabled: true, expectedRevision: 6, requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) });
+    const filter = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter");
+    expect(filter.disabled).toBe(true);
+    expect(filter.textContent).toBe("无权查看");
+    expect(filter.innerHTML).not.toContain("深圳代理");
+    expect(filter.querySelectorAll("option")).toHaveLength(1);
+    click(button("单条上传"));
+    const upload = required(document.querySelector<HTMLSelectElement>('[aria-label="关联渠道"]'), "missing upload channel");
+    expect(upload.textContent).toContain("深圳代理");
+    expect(filter.innerHTML).not.toContain("深圳代理");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined });
+  });
+
+  it("shows leader-visible peer source but never peer editor or private detail", () => {
+    const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query({ ...result.data, canFilterSource: true, items: result.data.items.map(row => row.id === 202 ? { ...row, channelSource: { id: 22, name: "团队来源" }, canViewSource: true } : row) });
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
+    renderHost();
+    const peer = document.querySelectorAll("tbody tr")[1];
+    expect(peer.textContent).toContain("团队来源");
+    expect(peer.querySelector("button, [title], [hidden], input")).toBeNull();
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
 
   it("shows channel timestamps in Beijing even when the visitor timezone is UTC", () => {
@@ -460,50 +494,182 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     });
   });
 
-  it("validates the channel range before querying materials and returns to page one through the channel-table inventory action", async () => {
+  it("uses dedicated leader source options and fails closed when source permission changes", async () => {
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
+    const result = runtime.teamQuery as { data: object };
+    runtime.teamQuery = query({ ...result.data, canFilterSource: true });
     renderHost();
-    click(button("渠道库存"));
+    const filter = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter");
+    expect(filter.disabled).toBe(false);
+    expect(filter.textContent).not.toContain("深圳代理");
+    change(filter, "22");
     await settle();
-    expect(document.body.textContent).toContain("LM358DR");
-    expect(document.body.textContent).toContain("待确认");
-    expect(document.body.textContent).toContain("面议");
-    expect(runtime.materialInputs.at(-1)).toMatchObject({
-      expectedEnterpriseId: 31,
-      expectedActorUserId: 7,
-      page: 1,
-      pageSize: 20,
-    });
-
-    const rangeFilter = required(
-      document.querySelector('select[aria-label="筛选库存渠道范围"]'),
-      "missing material channel range filter",
-    ) as HTMLSelectElement;
-    change(rangeFilter, "11");
-    await settle();
-    expect(runtime.getChannelInputs.at(-1)).toMatchObject({
-      expectedEnterpriseId: 31,
-      expectedActorUserId: 7,
-      id: 11,
-    });
-    expect(runtime.materialInputs.at(-1)).toMatchObject({
-      expectedEnterpriseId: 31,
-      expectedActorUserId: 7,
-      channelId: 11,
-      page: 1,
-      pageSize: 20,
-    });
-
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22, page: 1 });
     click(button("下一页"));
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22, page: 2 });
+    runtime.sourceQuery = query({ canFilterSource: false, items: [] });
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await settle();
-    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 11, page: 2 });
+    expect(filter.disabled).toBe(true);
+    expect(filter.value).toBe("");
+    expect(filter.textContent).toBe("无权查看");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
+    expect(runtime.sharedInputs).toHaveLength(0);
+    expect(runtime.getChannelInputs).toHaveLength(0);
+  });
 
+  it("cycles server sort none asc desc none, resets page and preserves server ordering/page count", async () => {
+    renderHost();
+    const qty = required(document.querySelector<HTMLButtonElement>('[aria-label="按可供数量排序"]'), "missing qty sort");
+    const dc = required(document.querySelector<HTMLButtonElement>('[aria-label="按 Date Code 排序"]'), "missing date sort");
+    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("none");
+    click(button("下一页"));
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ page: 2 });
+    click(qty);
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "asc", page: 1 });
+    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("ascending");
+    // Null quantity stays first exactly as the server returned, not a client-page sort.
+    expect(document.querySelector("tbody tr")?.textContent).toContain("LM358DR");
+    expect(document.querySelectorAll(".ci-sort-arrow")).toHaveLength(1);
+    click(qty);
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "desc", page: 1 });
+    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("descending");
+    click(qty);
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: undefined, sortDirection: undefined });
+    expect(document.querySelectorAll(".ci-sort-arrow")).toHaveLength(0);
+    click(dc);
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "dateCode", sortDirection: "asc" });
+    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("none");
+    expect(dc.closest("th")?.getAttribute("aria-sort")).toBe("ascending");
+    expect(document.body.textContent).toContain("第 1 / 2 页");
+    click(button("下一页"));
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "dateCode", sortDirection: "asc", page: 2 });
+  });
+
+  it("retains selected source and authoritative totals while a new server page is loading", async () => {
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
+    const previous = runtime.teamQuery as { data: object };
+    runtime.teamQuery = query({ ...previous.data, canFilterSource: true, total: 100, pageCount: 5 });
+    renderHost();
+    const source = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter");
+    change(source, "22");
+    runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    await settle();
+    expect(source.disabled).toBe(false);
+    expect(source.value).toBe("22");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22 });
+    expect(document.body.textContent).toContain("共 100 条，第 1 / 5 页");
+    expect(document.querySelector("tbody")?.textContent).toContain("正在加载渠道库存");
+    expect(document.querySelector("tbody")?.textContent).not.toContain("LM358DR");
+  });
+
+  it("does not show stale peer source when source permission is revoked", async () => {
+    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
+    runtime.teamQuery = query({ ...previous.data, canFilterSource: true, items: previous.data.items.map(row => row.id === 202 ? { ...row, canViewSource: true, channelSource: { id: 22, name: "团队来源" } } : row) });
+    renderHost();
+    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("团队来源");
+    runtime.sourceQuery = query({ canFilterSource: false, items: [] });
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    await settle();
+    expect(document.body.innerHTML).not.toContain("团队来源");
+    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("无权查看");
+  });
+
+  it("does not open an owner detail response arriving after permission revocation", async () => {
+    let finish!: (value: unknown) => void;
+    const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
+    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost();
+    click(button("编辑"));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    const previous = runtime.teamQuery as { data: object };
+    runtime.teamQuery = query({ ...previous.data, canWrite: false });
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    await act(async () => { finish(detail); await Promise.resolve(); });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.innerHTML).not.toContain("历史库存备注");
+  });
+
+  it.each([false, true])("invalidates pending owner detail on archive navigation (return=%s)", async returnToInventory => {
+    let finish!: (value: unknown) => void;
+    const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
+    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost();
+    click(button("编辑"));
+    expect(runtime.getMaterial).toHaveBeenCalledTimes(1);
     click(button("渠道档案"));
+    if (returnToInventory) click(button("渠道库存"));
+    await act(async () => { finish(detail); await Promise.resolve(); });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.innerHTML).not.toContain("历史库存备注");
+    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe(returnToInventory ? "渠道库存" : "渠道档案");
+  });
+
+  it("preserves the new upload title and typed model when old owner detail resolves", async () => {
+    let finish!: (value: unknown) => void;
+    const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
+    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost();
+    click(button("编辑"));
+    click(button("单条上传"));
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing new upload");
+    change(control(dialog, "型号"), "NEW-DRAFT-MODEL");
+    await act(async () => { finish(detail); await Promise.resolve(); });
+    expect(dialog.querySelector("h2")?.textContent).toBe("单条上传");
+    expect(control(dialog, "型号").value).toBe("NEW-DRAFT-MODEL");
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.innerHTML).not.toContain("历史库存备注");
+    expect(button("上传库存")).toBeTruthy();
+    expect(runtime.updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it("suppresses a late detail error after opening and closing a new upload", async () => {
+    let reject!: (error: Error) => void;
+    runtime.getMaterial.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
+    renderHost();
+    click(button("编辑"));
+    click(button("单条上传"));
+    click(required(document.querySelector('[aria-label="关闭库存编辑"]'), "missing close"));
+    await act(async () => { reject(new Error("STALE-DETAIL-ERROR")); await Promise.resolve(); });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("STALE-DETAIL-ERROR");
+  });
+
+  it("keeps batch upload active when an older owner detail resolves", async () => {
+    let finish!: (value: unknown) => void;
+    const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
+    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost();
+    click(button("编辑"));
+    click(button("表格上传"));
+    await act(async () => { finish(detail); await Promise.resolve(); });
+    expect(document.querySelector('[aria-label="上传库存表格"]')).not.toBeNull();
+    expect(document.querySelector('#ci-material-editor-title')).toBeNull();
+    expect(document.body.innerHTML).not.toContain("历史库存备注");
+  });
+
+  it("fails closed on unified query errors without falling back to legacy lists", () => {
+    runtime.teamQuery = query(undefined, { isError: true, isSuccess: false });
+    renderHost();
+    expect(document.body.textContent).not.toContain("TEAM-SN74");
+    expect(document.body.textContent).not.toContain("LM358DR");
+    expect(runtime.sharedInputs).toHaveLength(0);
+    expect(button("单条上传").disabled).toBe(true);
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
+  });
+
+  it("clears filters, sort and editors when the authenticated context changes", async () => {
+    renderHost();
+    change(required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存型号"]'), "missing part filter"), "FILTER");
+    click(required(document.querySelector('[aria-label="按可供数量排序"]'), "missing sort"));
+    click(button("单条上传"));
+    runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await settle();
-    click(button("查看库存"));
-    await settle();
-    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("渠道库存");
-    expect(runtime.getChannelInputs.at(-1)).toMatchObject({ id: 11 });
-    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 11, page: 1, pageSize: 20 });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 32, expectedActorUserId: 8, partNumber: undefined, channelId: undefined, sortBy: undefined, page: 1 });
   });
 
   it("applies the compact archive table constraints to native th and td elements", async () => {
@@ -538,7 +704,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(cellStyle.lineHeight).toBe("18px");
   });
 
-  it("renders materials with explicit unknown quantity/tax/price, submits a real create DTO and opens the existing shared-notes panel", async () => {
+  it("creates with the original DTO and reads private notes only inside the owner editor", async () => {
     renderHost();
     click(button("渠道库存"));
     await settle();
@@ -568,11 +734,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
     }));
 
-    const notesButton = required(
-      document.querySelector('button[aria-label="打开库存 101 的备注"]'),
-      "missing shared notes summary",
-    );
-    click(notesButton);
+    click(button("编辑"));
+    await settle();
+    expect(runtime.getMaterial).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 101 }, { staleTime: 0 });
+    click(button("本人备注历史"));
     await settle();
     expect(document.body.textContent).toContain("库存备注");
     expect(document.body.textContent).toContain("已核对交期");
@@ -685,7 +850,7 @@ describe("channel inventory upload entrypoints", () => {
     expect(sessionStorage.getItem("d51-channel-inventory-batch-v1:7:31")).toBeNull();
   });
 
-  it.each(["enterprise", "permission", "channel"])("stops the next batch write after %s access changes during a request", async kind => {
+  it.each(["enterprise", "permission", "channel", "write"])("stops the next batch write after %s access changes during a request", async kind => {
     let finish!: () => void;
     runtime.createMaterial.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
     renderHost();
@@ -697,6 +862,10 @@ describe("channel inventory upload entrypoints", () => {
     expect(runtime.createMaterial).toHaveBeenCalledTimes(1);
     if (kind === "enterprise") runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
     if (kind === "permission") runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: [] });
+    if (kind === "write") {
+      const previous = runtime.teamQuery as { data: object };
+      runtime.teamQuery = query({ ...previous.data, canWrite: false });
+    }
     if (kind === "channel") {
       const previous = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
       runtime.channelQuery = query({ ...previous.data, items: previous.data.items.map(channel => ({ ...channel, active: false })) });
@@ -727,12 +896,13 @@ describe("channel inventory upload entrypoints", () => {
     await settle();
     expect(runtime.createMaterial).toHaveBeenCalledWith(expect.objectContaining({ channelId: 11, qty: 0, price: "123456789012345.123456789012", taxIncluded: null }));
     click(button("编辑"));
+    await settle();
     dialog = required(document.querySelector('[role="dialog"]'), "missing edit inventory");
     expect(dialog.querySelector("h2")?.textContent).toBe("编辑渠道库存");
     expect((control(dialog, "关联渠道") as HTMLSelectElement).disabled).toBe(true);
     change(control(dialog, "型号"), "EDITED");
     click(button("保存修改"));
     await settle();
-    expect(runtime.updateMaterial).toHaveBeenCalledWith(expect.objectContaining({ id: 101, expectedRevision: 6, partNumber: "EDITED", expectedEnterpriseId: 31, expectedActorUserId: 7 }));
+    expect(runtime.updateMaterial).toHaveBeenCalledWith(expect.objectContaining({ id: 101, expectedRevision: 9, partNumber: "EDITED", expectedEnterpriseId: 31, expectedActorUserId: 7 }));
   });
 });

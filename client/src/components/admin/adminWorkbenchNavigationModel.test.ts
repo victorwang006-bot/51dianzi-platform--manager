@@ -53,7 +53,7 @@ const navigationItems: TestItem[] = [
     label: "客户需求",
     permission: "business.customers.read",
   },
-  { path: "/", label: "物料数据库", permission: "materials.read" },
+  { path: "/materials", label: "物料数据库", permission: "materials.read" },
   { path: "/staff", label: "员工与权限", permission: "admins.manage" },
   {
     path: "/workbench/company-info",
@@ -165,7 +165,7 @@ describe("后台工作台导航分组", () => {
         label: "运营管理",
         items: [
           item("/merchants"),
-          item("/"),
+          item("/materials"),
           item("/orders"),
           item("/messages"),
           item("/reviews"),
@@ -212,7 +212,14 @@ describe("后台工作台导航分组", () => {
   });
 
   it("详情、编辑和创建路径打开所属组，根路径不吞掉其他路由", () => {
-    expect(findAdminWorkbenchNavigationGroupId("/")).toBe("operations");
+    expect(findAdminWorkbenchNavigationGroupId("/")).toBeNull();
+    expect(getAdminWorkbenchNavigationRoute("/")).toBeNull();
+    expect(findAdminWorkbenchNavigationGroupId("/materials")).toBe("operations");
+    expect(getAdminWorkbenchNavigationRoute("/materials")).toMatchObject({
+      canonicalPath: "/materials",
+      label: "物料数据库",
+      isAlias: false,
+    });
     expect(findAdminWorkbenchNavigationGroupId("/merchants/merchant-240")).toBe(
       "operations"
     );

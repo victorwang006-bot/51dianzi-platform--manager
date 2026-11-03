@@ -32,12 +32,21 @@ import {
 } from "@shared/adminPermissions";
 import { Suspense, useEffect } from "react";
 import {
+  DEFAULT_ADMIN_PATH,
   createAdminLoginPath,
   readAdminLoginReturnPath,
 } from "./lib/adminRoutes";
 
 function RouteFallback() {
   return <DashboardLayoutSkeleton />;
+}
+
+function DefaultAdminRoute() {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    setLocation(DEFAULT_ADMIN_PATH, { replace: true });
+  }, [setLocation]);
+  return <RouteFallback />;
 }
 
 function LazyScreen({ children }: { children: React.ReactNode }) {
@@ -245,7 +254,8 @@ function AppRoutes() {
   return (
     <AuthGate>
       <Switch>
-        <Route path={"/"} component={MaterialsRoute} />
+        <Route path={"/"} component={DefaultAdminRoute} />
+        <Route path={"/materials"} component={MaterialsRoute} />
         <Route path={"/merchants"} component={MerchantsRoute} />
         <Route path={"/merchants/:id"} component={MerchantDetailRoute} />
         <Route path={"/messages"} component={MessagesRoute} />
