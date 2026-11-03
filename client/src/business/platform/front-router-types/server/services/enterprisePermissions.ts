@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { BusinessFailureCause } from "../../../shared/businessFailure";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   enterpriseMemberPermissions,
@@ -121,10 +122,10 @@ export async function resolveEnterprisePermissionScope(
 export async function requireActiveEnterpriseScope(userId: number) {
   const scope = await resolveEnterprisePermissionScope(userId);
   if (!scope) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号尚未加入企业" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号尚未加入企业", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   if (scope.member.status !== "active") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "企业成员身份已暂停" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "企业成员身份已暂停", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   return scope;
 }

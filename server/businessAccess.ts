@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { Merchant } from "../drizzle/schema";
 import { hasAdminPermission, type AdminPermission } from "../shared/adminPermissions";
+import { BusinessFailureCause } from "../shared/businessFailure";
 import type { TrpcContext } from "./_core/context";
 import * as db from "./db";
 import type { BusinessWorkbenchProjection } from "./businessWorkbenchProjection";
@@ -69,10 +70,11 @@ export function requireBusinessAdminAccount(ctx: TrpcContext) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "请使用有效的后台工作人员账号登录后访问业务服务",
+      cause: new BusinessFailureCause("AUTH_SESSION_INVALID"),
     });
   }
   if (ctx.adminAccount.status !== "active") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "后台工作人员账号已不可用" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "后台工作人员账号已不可用", cause: new BusinessFailureCause("AUTH_SESSION_INVALID") });
   }
   return ctx.adminAccount;
 }
@@ -149,9 +151,12 @@ export async function assertBusinessMerchantAccess(
   const account = requireBusinessAdminAccount(ctx);
   const allowedMerchantIds = getBusinessWorkbenchMerchantIds();
   if (!allowedMerchantIds.includes(merchantId)) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在或不在工作台允许范围内" });
+    throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在或不在工作台允许范围内", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);
+  if (!scope) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
+  }
   if (!businessScopeAllows(scope, module, mode)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权" });
   }

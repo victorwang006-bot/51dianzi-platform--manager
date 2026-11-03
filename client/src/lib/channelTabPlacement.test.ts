@@ -116,8 +116,13 @@ describe("channel tabs change placement, not their functions", () => {
     expect(legacy).not.toMatch(/material\.channelSource|row\.channelSource/);
     expect(legacy).toContain("sourceDetail.scopeKey === sourceScopeKey");
     expect(legacy).toContain(
-      "onDenied={unauthorized => { setSourceDetail(null);"
+      "onAuthorizationError={businessScope.onAuthorizationError}"
     );
+    expect(legacy).not.toContain("toast.error(");
+    expect(legacy).toContain("active={sourceContextVerified}");
+    const authorityKey = legacy.slice(legacy.indexOf("const sourceAuthorityKey ="), legacy.indexOf("const sourceAuthorityRef ="));
+    expect(authorityKey).toContain("businessScope.contextVerification.readVersion");
+    expect(authorityKey).not.toContain("businessScope.contextVerification.state");
     expect(sourcePanel).toContain(
       "utils.client.channelInventory.getTeamMaterialSource.query(input, { signal: controller.signal })"
     );
@@ -132,8 +137,11 @@ describe("channel tabs change placement, not their functions", () => {
       /\.useQuery\(|\.getMaterial\.|localStorage|sessionStorage/
     );
     expect(sourcePanel).toContain(
-      'code === "FORBIDDEN" || code === "UNAUTHORIZED"'
+      'data?.businessFailure === "BUSINESS_RESOURCE_FORBIDDEN"'
     );
+    expect(sourcePanel).toContain('setDetail({ status: "denied" })');
+    expect(sourcePanel).toContain("暂无权限查看");
+    expect(sourcePanel).toContain("live.current.onAuthorizationError?.(error)");
   });
 
   it("keeps source options and upload channels lazy without changing existing edits or private-note ownership", () => {

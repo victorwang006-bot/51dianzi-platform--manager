@@ -25,7 +25,7 @@ const runtime = vi.hoisted(() => {
   return {
     getMaterial, getTeamMaterialSource, listTeamSourceOptions,
     toastError: vi.fn(),
-    scope: { storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope" } },
+    scope: { storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() },
     getTeamMaterialForEdit, collaborationAdd, collaborationEdit,
     collaborationQuery: null as unknown,
     collaborationInputs: [] as unknown[],
@@ -216,7 +216,7 @@ function renderHost() {
 function configureFixtures() {
   vi.mocked(XLSX.writeFile).mockClear();
   runtime.toastError.mockClear();
-  runtime.scope = { storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope" } };
+  runtime.scope = { storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() };
   runtime.getTeamMaterialSource.mockReset().mockResolvedValue({ name: "实时核验来源" });
   runtime.listTeamSourceOptions.mockReset().mockImplementation((input: unknown) => { runtime.sourceInputs.push(input); return Promise.resolve((runtime.sourceQuery as { data: unknown }).data); });
   runtime.exportChannelMaterials.mockReset().mockResolvedValue(exportFixture());
@@ -424,7 +424,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     renderHost();
     const filter = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter");
     expect(filter.disabled).toBe(true);
-    expect(filter.textContent).toBe("无权查看");
+    expect(filter.textContent).toBe("全部可见库存");
     expect(filter.innerHTML).not.toContain("深圳代理");
     expect(filter.querySelectorAll("option")).toHaveLength(1);
     click(button("单条上传"));
@@ -562,7 +562,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     await settle();
     expect(filter.disabled).toBe(true);
     expect(filter.value).toBe("");
-    expect(filter.textContent).toBe("无权查看");
+    expect(filter.textContent).toBe("全部可见库存");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
     expect(runtime.sharedInputs).toHaveLength(0);
     expect(runtime.getChannelInputs).toHaveLength(0);
@@ -625,6 +625,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("团队来源");
     runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => ({ ...row, canViewSource: false })), canFilterSource: false });
     runtime.sourceQuery = query({ canFilterSource: false, items: [] });
+    runtime.scope.contextVerification.readVersion = "source-role-revoked-v2";
     act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await settle();
     expect(document.body.innerHTML).not.toContain("团队来源");
@@ -1257,20 +1258,106 @@ describe("v9 public inventory and collaboration integration", () => {
 });
 
 
-describe("v10 real Host source authorization lifecycle", () => {
+describe("v11 real Host source authorization lifecycle", () => {
   const link = (index = 0) => required(document.querySelectorAll("tbody tr")[index]?.querySelector<HTMLButtonElement>(".ci-source-link"), "missing clickable source link");
   const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
 
-  it("keeps negative-hint links clickable and lets the fresh server denial give the exact toast without granting edit or hiding collaboration", async () => {
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+  it("keeps the actual dialog and focus through same-identity revalidation, masks old name and reads afresh on resume", async () => {
+    renderHost(); click(link()); await settle();
+    const dialog = document.querySelector(".ci-source-dialog"); const focused = document.activeElement;
+    runtime.scope.contextVerification = { ...runtime.scope.contextVerification, state: "revalidating" };
+    rerender(); await settle();
+    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
+    expect(document.activeElement).toBe(focused);
+    expect(document.querySelector(".ci-source-name")).toBeNull();
+    expect(dialog?.textContent).toContain("正在核验来源查看权限");
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(1);
+    runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "复核后实时来源" });
+    runtime.scope.contextVerification = { ...runtime.scope.contextVerification, state: "verified" };
+    rerender(); await settle();
+    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
+    expect(document.querySelector(".ci-source-name")?.textContent).toBe("复核后实时来源");
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2);
+    expect(runtime.toastError).not.toHaveBeenCalled();
+  });
+
+  it("does not use list refresh snapshots, metadata timestamps or negative row hints as source authorization", async () => {
+    renderHost(); click(link()); await settle();
+    const dialog = document.querySelector(".ci-source-dialog");
+    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
+    rerender(); await settle(); expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
+    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => ({ ...row, canViewSource: false })) });
+    (runtime.enterpriseMe as { data: { member: Record<string, unknown> } }).data.member.updatedAt = "2026-11-03T12:00:00Z";
+    rerender(); await settle();
+    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
+    expect(document.querySelector(".ci-source-name")?.textContent).toBe("实时核验来源");
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["authorizationVersion", "readVersion"] as const)("clears and aborts on a real changed %s even if identity stays the same", async field => {
+    let finish!: (value: { name: string }) => void;
+    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    renderHost(); click(link());
+    const signal = runtime.getTeamMaterialSource.mock.calls[0][1].signal as AbortSignal;
+    runtime.scope.contextVerification[field] = "changed-effective-authorization"; rerender(); await settle();
+    expect(signal.aborted).toBe(true); expect(document.querySelector(".ci-source-dialog")).toBeNull();
+    await act(async () => finish({ name: "STALE-AUTHORITY-SOURCE" }));
+    expect(document.body.textContent).not.toContain("STALE-AUTHORITY-SOURCE");
+  });
+
+  it("keeps exactly one denied state after NOT_FOUND and rerenders, then makes a new query on the next legal click", async () => {
+    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "NOT_FOUND", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
+    renderHost(); click(link()); await settle();
+    const dialog = document.querySelector(".ci-source-dialog");
+    rerender(); await settle(); rerender(); await settle();
+    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
+    expect(dialog?.textContent?.match(/暂无权限查看/g)).toHaveLength(1);
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(1); expect(runtime.toastError).not.toHaveBeenCalled();
+    click(required(document.querySelector('[aria-label="关闭渠道来源"]'), "missing close"));
+    click(link()); await settle();
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2);
+    expect(document.querySelector(".ci-source-name")?.textContent).toBe("实时核验来源");
+  });
+
+  it("coalesces focus bursts, masks the ready value, and rejects a late response from before revalidation", async () => {
+    renderHost(); click(link()); await settle();
+    let oldFinish!: (value: { name: string }) => void;
+    let newFinish!: (value: { name: string }) => void;
+    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { oldFinish = resolve; }))
+      .mockReturnValueOnce(new Promise(resolve => { newFinish = resolve; }));
+    await act(async () => { window.dispatchEvent(new Event("focus")); window.dispatchEvent(new Event("focus")); });
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2); expect(document.querySelector(".ci-source-name")).toBeNull();
+    const oldSignal = runtime.getTeamMaterialSource.mock.calls[1][1].signal as AbortSignal;
+    runtime.scope.contextVerification.state = "revalidating"; rerender(); await settle(); expect(oldSignal.aborted).toBe(true);
+    runtime.scope.contextVerification.state = "verified"; rerender(); await settle();
+    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(3);
+    await act(async () => newFinish({ name: "NEW-FOCUS-PROOF" }));
+    await act(async () => oldFinish({ name: "LATE-OLD-FOCUS-PROOF" }));
+    expect(document.querySelector(".ci-source-name")?.textContent).toBe("NEW-FOCUS-PROOF");
+  });
+
+  it.each(["AUTH_SESSION_INVALID", "STAFF_BINDING_INVALID", "TENANT_ACCESS_REVOKED"])("reports direct-read %s to the real session boundary and never retains old name", async businessFailure => {
+    renderHost(); click(link()); await settle();
+    const error = { data: { code: "FORBIDDEN", businessFailure } };
+    runtime.getTeamMaterialSource.mockRejectedValueOnce(error);
+    await act(async () => window.dispatchEvent(new Event("focus")));
+    expect(runtime.scope.onAuthorizationError).toHaveBeenCalledWith(error);
+    expect(document.querySelector(".ci-source-name")).toBeNull();
+    expect(document.querySelector(".ci-source-dialog")?.textContent).not.toContain("暂无权限查看");
+  });
+
+  it("keeps negative-hint links clickable and shows one stable in-dialog denial without granting edit or hiding collaboration", async () => {
+    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
     renderHost();
     const denied = link(1);
     expect(denied.disabled).toBe(false);
     expect(denied.classList.contains("ci-source-link-muted")).toBe(true);
     click(denied); await settle();
-    expect(runtime.toastError).toHaveBeenCalledWith("暂无权限查看");
+    expect(runtime.toastError).not.toHaveBeenCalled();
+    expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
+    expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
     expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("新增备注备注（0）");
     expect(document.querySelectorAll("tbody tr")[1].textContent).not.toContain("编辑");
   });
@@ -1286,11 +1373,12 @@ describe("v10 real Host source authorization lifecycle", () => {
   });
 
   it("handles fresh server denial despite an old positive row hint and never displays a stale name", async () => {
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
     renderHost(); click(link()); await settle();
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 101, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
-    expect(runtime.toastError).toHaveBeenCalledWith("暂无权限查看");
+    expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
+    expect(runtime.toastError).not.toHaveBeenCalled();
+    expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
     expect(document.body.innerHTML).not.toContain("实时核验来源");
     expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
@@ -1303,15 +1391,16 @@ describe("v10 real Host source authorization lifecycle", () => {
     click(link()); await settle();
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2);
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("再次实时核验");
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
     await act(async () => window.dispatchEvent(new Event("focus")));
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(3);
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
+    expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
     expect(document.body.innerHTML).not.toContain("再次实时核验");
-    expect(runtime.toastError).toHaveBeenCalledWith("暂无权限查看");
+    expect(runtime.toastError).not.toHaveBeenCalled();
+    expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
   });
 
-  it.each(["actor", "enterprise", "binding", "team", "role", "read", "revalidating", "list-denial", "row-revocation", "archive"])("aborts and clears source on %s, ignoring a late response", async change => {
+  it.each(["actor", "enterprise", "binding", "team", "role", "read", "list-denial", "archive"])("aborts and clears source on %s, ignoring a late response", async change => {
     let finish!: (value: { name: string }) => void;
     runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
     renderHost(); click(link());
@@ -1321,7 +1410,7 @@ describe("v10 real Host source authorization lifecycle", () => {
     if (change === "actor") enterprise.data.currentUserId = 8;
     if (change === "enterprise") enterprise.data.enterprise = { id: 32 };
     if (change === "binding") runtime.scope.storageScope = "new-binding";
-    if (change === "team") enterprise.data.member = { teamId: 44, teamRole: "member" };
+    if (change === "team") runtime.scope.contextVerification.readVersion = "team-revoked-v2";
     if (change === "role") runtime.scope.frontUser.role = "changed-role";
     if (change === "read") enterprise.data.permissionKeys = [];
     if (change === "revalidating") runtime.scope.contextVerification.state = "revalidating";
@@ -1360,7 +1449,7 @@ describe("v10 real Host source authorization lifecycle", () => {
     renderHost(); expect(runtime.sourceInputs).toHaveLength(0);
     act(() => required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing filter").focus());
     const signal = runtime.listTeamSourceOptions.mock.calls[0][1].signal as AbortSignal;
-    runtime.scope.contextVerification.state = "revalidating"; rerender(); await settle();
+    runtime.scope.storageScope = "revoked-binding"; rerender(); await settle();
     expect(signal.aborted).toBe(true);
     await act(async () => { finish({ canFilterSource: true, items: [{ id: 888, name: "LATE-OPTION" }] }); await Promise.resolve(); });
     expect(document.body.innerHTML).not.toContain("LATE-OPTION");

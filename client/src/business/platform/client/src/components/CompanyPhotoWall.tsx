@@ -9,6 +9,7 @@ import {
   type CompanyAvatarDisplayMode,
 } from "../lib/companyPhotoImage";
 import { trpc } from "../../../../api/business-trpc";
+import { classifyBusinessFailure } from "../../../../BusinessWorkbenchSession";
 
 const CATEGORY_OPTIONS = [
   { value: "storefront", label: "公司门头" },
@@ -246,7 +247,9 @@ export default function CompanyPhotoWall() {
 
       {photosQuery.isError ? (
         <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          企业资料审核通过后才可管理公司信息墙。
+          <p>{classifyBusinessFailure(photosQuery.error) === "resource-denied" ? "暂无权限管理公司信息墙" : "公司信息墙加载失败"}</p>
+          <p className="mt-2">{photosQuery.error.message}</p>
+          <button type="button" className="crm-btn mt-3" onClick={() => void photosQuery.refetch()}>重新加载</button>
         </div>
       ) : (
         <>
@@ -475,7 +478,7 @@ export default function CompanyPhotoWall() {
         </>
       )}
 
-      {editorPhoto && (
+      {!photosQuery.isError && editorPhoto && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/55 p-4" onClick={closeEditor}>
           <div className="max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl bg-white p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="display-editor-title" onClick={event => event.stopPropagation()}>
             <div className="flex items-center justify-between">

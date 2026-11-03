@@ -2,6 +2,7 @@ import { ANON_LIMIT_ERR_MSG, NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '../../.
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { BusinessFailureCause, businessFailureForError } from "../../../shared/businessFailure";
 import { anonViewExceeded, clientIp } from "../antiScrape";
 import { DAILY_QUOTA_ERR_MSG, sharedDailyQuotaExceeded } from "../dailyQuota";
 import { requireCrmEnterpriseAccess } from "../services/enterpriseAccess";
@@ -25,7 +26,7 @@ const t = initTRPC.context<TrpcContext>().create({
         data: { ...shape.data, stack: undefined },
       };
     }
-    return shape;
+    return { ...shape, data: { ...shape.data, businessFailure: businessFailureForError(error) } };
   },
 });
 
@@ -42,7 +43,7 @@ const requireUser = t.middleware(async opts => {
   const user = ctx.user;
   const delegation = ctx.staffDelegation;
   if (delegation && delegation.staffUserId !== user.id) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "内部员工委派主体不一致" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "内部员工委派主体不一致", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
   }
   // Only the service-key internal path can construct staffDelegation. It is more
   // authoritative than a header and has no relationship to the user's browser

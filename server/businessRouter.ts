@@ -1,6 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { BusinessFailureCause } from "../shared/businessFailure";
 import { router, publicProcedure } from "./_core/trpc";
 import { readonlyQueryCorrelation } from "./_core/readonlyQueryTiming";
 import {
@@ -160,6 +161,7 @@ async function requireCurrentBusinessStaffBinding(adminUserId: number) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
       message: "当前后台账号尚未绑定有效的前台业务员工主体",
+      cause: new BusinessFailureCause("STAFF_BINDING_INVALID"),
     });
   }
   return staffBinding;
@@ -256,11 +258,36 @@ async function withCurrentBusinessAuthorization<T>(
     // This read occurs while the fence is held and supplies the actual scope
     // version persisted in the generic audit record for a forwarded command.
     const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);
-    if (!scope || !businessScopeAllows(scope, capability.module, capability.mode)) {
+    if (!scope) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
+    }
+    if (!businessScopeAllows(scope, capability.module, capability.mode)) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权" });
     }
     return operation({ account, staffBinding, scope, merchant });
   });
+}
+
+/** Result identity is server-derived. Only the original action's request key is
+ * admitted from params; never persist arbitrary DTOs or expected actor fields. */
+function channelCommandResource(method: string, params: unknown, result: unknown) {
+  const types: Record<string, "channel" | "channel_material" | "channel_note"> = {
+    "channelInventory.createChannel": "channel", "channelInventory.updateChannel": "channel",
+    "channelInventory.setChannelActive": "channel", "channelInventory.createMaterial": "channel_material",
+    "channelInventory.updateMaterial": "channel_material", "channelInventory.updateTeamMaterial": "channel_material",
+    "channelInventory.setMaterialShare": "channel_material", "channelInventory.notesAdd": "channel_note",
+    "channelInventory.notesEdit": "channel_note", "channelInventory.collaborationNotesAdd": "channel_note",
+    "channelInventory.collaborationNotesEdit": "channel_note",
+  };
+  const resourceType = types[method];
+  if (!resourceType || !result || typeof result !== "object") return undefined;
+  const outer = result as Record<string, unknown>;
+  const item = outer.item && typeof outer.item === "object" ? outer.item as Record<string, unknown> : outer;
+  const resourceId = item.id ?? item.materialId;
+  // Do not invent creator/owner identities or coerce browser-like string IDs.
+  if (typeof resourceId !== "number" || !Number.isSafeInteger(resourceId) || resourceId <= 0) return undefined;
+  const key = params && typeof params === "object" ? (params as Record<string, unknown>).requestId : undefined;
+  return { schemaVersion: 1 as const, resourceType, resourceId, actionRequestId: typeof key === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(key) ? key : null };
 }
 
 async function forwardBusinessMethod(
@@ -291,7 +318,7 @@ async function forwardBusinessMethod(
       if (error instanceof PlatformBusinessPublicError) {
         // The platform client admits only explicitly allow-listed domain codes and
         // a bounded message; preserve original zod/CAS/permission feedback.
-        throw new TRPCError({ code: error.code, message: error.message });
+        throw new TRPCError({ code: error.code, message: error.message, cause: error });
       }
       console.error("[businessBff] fixed business command unavailable", {
         method: capability.method,
@@ -311,6 +338,7 @@ async function forwardBusinessMethod(
       method: capability.method,
       requestId,
       actor,
+      resourceCorrelation: channelCommandResource(capability.method, params, result),
     });
     return result;
   });
@@ -718,13 +746,13 @@ export const businessRouter = router({
             bindingVersion: staffBinding.bindingVersion,
           });
           if (context.staffPrincipal.status !== "ready") {
-            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台业务员工主体当前不可用" });
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台业务员工主体当前不可用", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
           }
           return context.staffPrincipal.user;
         } catch (error) {
           if (error instanceof TRPCError) throw error;
           if (error instanceof PlatformBusinessPublicError) {
-            throw new TRPCError({ code: error.code, message: error.message });
+            throw new TRPCError({ code: error.code, message: error.message, cause: error });
           }
           throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务员工资料暂不可用，请稍后重试" });
         }
@@ -872,7 +900,7 @@ export const businessRouter = router({
         );
       } catch (error) {
         if (error instanceof PlatformBusinessPublicError) {
-          throw new TRPCError({ code: error.code, message: error.message });
+          throw new TRPCError({ code: error.code, message: error.message, cause: error });
         }
         console.error("[businessBff] internal business context unavailable", {
           merchantId: merchant.id,
@@ -885,7 +913,7 @@ export const businessRouter = router({
         frontWorkbenchCapabilities: context.workbenchCapabilities,
       });
       if (!merchantCanEnterWorkbench(context, projection)) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台业务员工主体当前不可用" });
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台业务员工主体当前不可用", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
       }
       const requestId = randomUUID();
       await db.recordBusinessContextAccess(merchant.id, businessAuditActor(ctx), {
@@ -901,6 +929,14 @@ export const businessRouter = router({
           dataOwnerUserId: context.dataOwnerUserId,
         },
         staffPrincipal: context.staffPrincipal,
+        authorizationVersion: context.authorizationVersion === undefined ? undefined : `business-bff-auth-v1:${createHash("sha256").update(JSON.stringify({
+          front: context.authorizationVersion,
+          merchantId: merchant.id,
+          staffUserId: staffBinding.frontUserId,
+          bindingVersion: staffBinding.bindingVersion,
+          scopeVersion: scope.scopeVersion,
+          modulePermissions: Array.from(new Set(scope.modulePermissions)).sort(),
+        })).digest("hex")}`,
         enabledModules: projection.workbenchCapabilities,
         sessionCapabilities: projectBusinessSessionCapabilities({
           frontReceptionReady: context.sessionCapabilities.receptionReady,
@@ -942,5 +978,5 @@ export const businessRouter = router({
   chat: chatBusinessRouter,
   cart: cartBusinessRouter,
 });
-
 export type BusinessRouter = typeof businessRouter;
+export const businessRouterTestUtils = { channelCommandResource };

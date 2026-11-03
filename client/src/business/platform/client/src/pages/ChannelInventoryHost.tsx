@@ -4,7 +4,6 @@ import type { AppRouter } from "../../../front-router-types/server/routers";
 import { formatBeijingDateTime, formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
 import { trpc } from "../../../../api/business-trpc";
 import { useBusinessScope } from "../../../../BusinessScope";
-import { toast } from "sonner";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
 import { CollaborationNotesPanel } from "../components/channelInventory/CollaborationNotesPanel";
 import { ChannelInventorySourcePanel } from "../components/channelInventory/ChannelInventorySourcePanel";
@@ -382,10 +381,18 @@ export default function ChannelInventoryHost() {
     && hasInventoryManage;
   const sourceContextVerified = businessScope.contextVerification.state === "verified"
     && businessScope.contextVerification.identity === businessScope.storageScope;
+  const sourceIdentityCurrent = businessScope.contextVerification.identity === businessScope.storageScope;
+  // Polling state is not authority. Only stable server-proven identity and
+  // effective authorization versions may invalidate an open source dialog.
   const sourceAuthorityKey = JSON.stringify({ domain: businessScope.storageScope, role: businessScope.frontUser.role,
-    verification: businessScope.contextVerification,
-    enterpriseId, actorUserId, member: summary?.member, permissionVersion: summary?.permissionVersion,
-    permissions: [...permissionKeys].sort(), owner: summary?.isOwner, readable: sourceContextVerified && ready && !enterpriseQuery.isError });
+    identity: businessScope.contextVerification.identity,
+    authorizationVersion: businessScope.contextVerification.authorizationVersion,
+    readVersion: businessScope.contextVerification.readVersion,
+    enterpriseId, actorUserId, member: summary?.member ? {
+      id: summary.member.id, role: summary.member.role, status: summary.member.status,
+      inventoryDataScope: summary.member.inventoryDataScope, permissionVersion: summary.member.permissionVersion,
+    } : null, permissionVersion: summary?.permissionVersion,
+    permissions: [...permissionKeys].sort(), owner: summary?.isOwner, readable: sourceIdentityCurrent && ready && !enterpriseQuery.isError });
   const sourceAuthorityRef = useRef(sourceAuthorityKey);
   sourceAuthorityRef.current = sourceAuthorityKey;
   const identity = ready ? `${enterpriseId}:${actorUserId}:${summary?.isOwner ? "owner" : [...permissionKeys].sort().join(",")}` : "";
@@ -517,7 +524,7 @@ export default function ChannelInventoryHost() {
     setSourcesState({ scope: sourceAuthorityKey, isLoading: true, isError: false });
     void utils.client.channelInventory.listTeamSourceOptions.query({ expectedEnterpriseId: enterpriseId!, expectedActorUserId: actorUserId! }, { signal: controller.signal })
       .then(data => { if (current()) setSourcesState({ scope: sourceAuthorityKey, data, isLoading: false, isError: false }); })
-      .catch(() => { if (current()) setSourcesState({ scope: sourceAuthorityKey, isLoading: false, isError: true }); });
+      .catch(error => { if (current()) { setSourcesState({ scope: sourceAuthorityKey, isLoading: false, isError: true }); businessScope.onAuthorizationError(error); } });
     return () => { alive = false; controller.abort(); };
   }, [sourceRequested, sourceRequestScope, sourceOptionsRevision, sourceAuthorityKey, ready, sourceFilterHint, tab, utils, enterpriseId, actorUserId]);
   useEffect(() => {
@@ -899,12 +906,11 @@ export default function ChannelInventoryHost() {
   const channelResult = contextCurrent && !channelsQuery.isError ? channelsQuery.data : undefined;
   const materialResult = !materialsQuery.isError && contextCurrent ? materialsQuery.data : undefined;
   const materialRows = materialResult?.items ?? [];
-  // UI lifecycle only, never authorization. The existing BFF tree remounts on
-  // account/merchant/enterprise/binding/read projection changes. Include the
-  // live enterprise member/team/role proof and visible row hints as well.
+  // Row hints and list refresh snapshots are never authorization or a reason to
+  // destroy an independently reauthorized source dialog.
   const sourceScopeKey = JSON.stringify({
-    authority: sourceAuthorityKey, readable: sourceContextVerified && ready && !enterpriseQuery.isError && !materialsQuery.isError && contextCurrent,
-    tab, filters: materialInput, rows: materialRows.map(row => [row.id, row.canViewSource]),
+    authority: sourceAuthorityKey, readable: sourceIdentityCurrent && ready && !enterpriseQuery.isError && !materialsQuery.isError && contextCurrent,
+    tab,
   });
   const sourceScopeRef = useRef(sourceScopeKey);
   sourceScopeRef.current = sourceScopeKey;
@@ -1050,8 +1056,8 @@ export default function ChannelInventoryHost() {
       ) : (
         <section className="ci-panel" aria-label="渠道库存列表">
           <div className="ci-toolbar">
-            <label className="ci-field ci-channel-select"><span className="ci-filter-label">渠道来源</span><select aria-label="筛选库存渠道来源" disabled={!sourceFilterHint || sourceFilterDenied} onFocus={requestSourceOptions} onPointerDown={requestSourceOptions} value={canFilterSource ? materialFilters.channelId : ""} onChange={event => { if (!canFilterSource) return; setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}>
-              {sourceFilterHint && !sourceFilterDenied ? <><option value="">{sourceRequested && sourcesQuery.isLoading ? "正在读取渠道…" : "全部渠道"}</option>{sourceOptions.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}</> : <option value="">{sourcesQuery.isError ? "来源读取失败" : "无权查看"}</option>}
+            <label className="ci-field ci-channel-select" title={!sourceFilterHint || sourceFilterDenied ? "仅来源筛选受限；库存仍按当前可见范围展示" : undefined}><span className="ci-filter-label">渠道来源</span><select aria-label="筛选库存渠道来源" disabled={!sourceFilterHint || sourceFilterDenied} onFocus={requestSourceOptions} onPointerDown={requestSourceOptions} value={canFilterSource ? materialFilters.channelId : ""} onChange={event => { if (!canFilterSource) return; setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}>
+              {sourceFilterHint && !sourceFilterDenied ? <><option value="">{sourceRequested && sourcesQuery.isLoading ? "正在读取渠道…" : "全部可见库存"}</option>{sourceOptions.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}</> : <option value="">全部可见库存</option>}
             </select></label>
             <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>
             <label className="ci-field ci-brand-input"><span className="ci-filter-label">品牌</span><input aria-label="筛选库存品牌" value={materialFilters.brand} onChange={event => { setMaterialFilters(current => ({ ...current, brand: event.target.value })); setMaterialPage(1); }} placeholder="搜索品牌" /></label>
@@ -1139,7 +1145,7 @@ export default function ChannelInventoryHost() {
       {batchOpen && canWriteMaterials ? <BatchUpload channels={optionChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={undefined} onClose={() => { invalidateEditSession(); setBatchOpen(false); }} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { void refreshMaterials(); }} isCurrent={isCurrent} /> : null}
       {notesMaterial && materialEditor?.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(notesMaterial.id)?.isMine && canWriteMaterials ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={() => isCurrent() && collaborationRowsRef.current.get(notesMaterial.id)?.isMine === true && editableRowsRef.current.has(notesMaterial.id)} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
       {collaboration && contextCurrent && tab === "materials" && collaborationRowsRef.current.has(collaboration.material.id) ? <CollaborationNotesPanel key={`${identity}:${collaboration.material.id}:${collaboration.session}`} materialId={collaboration.material.id} partNumber={collaboration.material.partNumber} brand={collaboration.material.brand} enterpriseId={enterpriseId!} actorUserId={actorUserId!} startAdding={collaboration.adding} canAddNote={collaborationRowsRef.current.get(collaboration.material.id)?.canAddNote === true} isCurrent={() => isCurrent() && collaborationSessionRef.current === collaboration.session && collaborationRowsRef.current.has(collaboration.material.id)} onClose={() => { collaborationSessionRef.current += 1; setCollaboration(null); }} onComplete={() => void refreshMaterials()} /> : null}
-      {sourceDetail && sourceContextVerified && sourceDetail.scopeKey === sourceScopeKey && contextCurrent && tab === "materials" && materialRows.some(row => row.id === sourceDetail.materialId) ? <ChannelInventorySourcePanel key={`${sourceScopeKey}:${sourceDetail.materialId}`} materialId={sourceDetail.materialId} enterpriseId={enterpriseId!} actorUserId={actorUserId!} scopeKey={sourceScopeKey} isCurrent={() => isCurrent() && sourceScopeRef.current === sourceDetail.scopeKey} onClose={() => setSourceDetail(null)} onDenied={unauthorized => { setSourceDetail(null); toast.error(unauthorized ? "登录状态已失效，请重新登录" : "暂无权限查看"); }} /> : null}
+      {sourceDetail && sourceIdentityCurrent && sourceDetail.scopeKey === sourceScopeKey && contextCurrent && tab === "materials" ? <ChannelInventorySourcePanel key={`${sourceScopeKey}:${sourceDetail.materialId}`} materialId={sourceDetail.materialId} enterpriseId={enterpriseId!} actorUserId={actorUserId!} scopeKey={sourceScopeKey} active={sourceContextVerified} isCurrent={() => isCurrent() && sourceScopeRef.current === sourceDetail.scopeKey} onClose={() => setSourceDetail(null)} onAuthorizationError={businessScope.onAuthorizationError} /> : null}
     </section>
   );
 }

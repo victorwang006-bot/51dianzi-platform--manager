@@ -3,9 +3,13 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import { traceReadonlyQuery } from "./readonlyQueryTiming";
+import { businessFailureForError } from "../../shared/businessFailure";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    return { ...shape, data: { ...shape.data, businessFailure: businessFailureForError(error) } };
+  },
 });
 
 export const router = t.router;

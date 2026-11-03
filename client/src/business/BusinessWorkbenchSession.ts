@@ -34,16 +34,44 @@ export function createBusinessRequestCancellation(
   return { controller, cleanup };
 }
 
-export function isBusinessAuthorizationError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const data = (error as { data?: { code?: unknown; httpStatus?: unknown } })
-    .data;
-  return (
+export type BusinessFailure =
+  | "session-invalid"
+  | "resource-denied"
+  | "security-unclassified"
+  | "other";
+/** Only server-owned closed markers classify a refusal. Never infer scope from
+ * a message or procedure name. Unknown 403 stays fail-closed, not confirmed revoked. */
+export function classifyBusinessFailure(error: unknown): BusinessFailure {
+  if (!error || typeof error !== "object") return "other";
+  const data = (
+    error as {
+      data?: {
+        code?: unknown;
+        httpStatus?: unknown;
+        businessFailure?: unknown;
+      };
+    }
+  ).data;
+  if (
+    data?.businessFailure === "AUTH_SESSION_INVALID" ||
+    data?.businessFailure === "STAFF_BINDING_INVALID" ||
+    data?.businessFailure === "TENANT_ACCESS_REVOKED" ||
     data?.code === "UNAUTHORIZED" ||
-    data?.code === "FORBIDDEN" ||
-    data?.httpStatus === 401 ||
-    data?.httpStatus === 403
-  );
+    data?.httpStatus === 401
+  )
+    return "session-invalid";
+  if (data?.businessFailure === "BUSINESS_RESOURCE_FORBIDDEN")
+    return "resource-denied";
+  if (data?.code === "FORBIDDEN" || data?.httpStatus === 403)
+    return "security-unclassified";
+  return "other";
+}
+export function isBusinessAuthorizationError(error: unknown): boolean {
+  return classifyBusinessFailure(error) === "session-invalid";
+}
+export function isBusinessSecurityError(error: unknown): boolean {
+  const failure = classifyBusinessFailure(error);
+  return failure === "session-invalid" || failure === "security-unclassified";
 }
 
 function newQueryClient() {
@@ -64,6 +92,8 @@ export class BusinessWorkbenchSession {
   readonly context = newQueryClient();
   authorization: string | null = null;
   denied = false;
+  denialKind: "session-invalid" | "security-unclassified" | null = null;
+  private lastFocus = -Infinity;
   private domain: {
     key: string;
     client: QueryClient;
@@ -80,16 +110,20 @@ export class BusinessWorkbenchSession {
       this.clearDomain();
       const client = newQueryClient();
       const revokeOnError = (error: unknown) => {
-        if (
-          this.domain?.client === client &&
-          !this.denied &&
-          isBusinessAuthorizationError(error)
-        )
-          this.revoke();
+        if (this.domain?.client === client && !this.denied)
+          this.onAuthorizationError(error);
       };
       client.getQueryCache().subscribe(event => {
-        if (event.type === "updated" && event.action.type === "error")
+        if (event.type === "updated" && event.action.type === "error") {
+          // React Query retains old successful data after a refetch refusal.
+          // Clear that one resource, not the other pages or their drafts.
+          if (
+            classifyBusinessFailure(event.query.state.error) ===
+            "resource-denied"
+          )
+            event.query.setState({ data: undefined });
           revokeOnError(event.query.state.error);
+        }
       });
       client.getMutationCache().subscribe(event => {
         if (event.type === "updated" && event.action.type === "error")
@@ -126,8 +160,40 @@ export class BusinessWorkbenchSession {
     this.authorization = key;
   }
 
-  revoke() {
+  /** Capture both revision and domain generation. Even A -> B -> A must not
+   * let an old request's error revoke the newly established A domain. */
+  authorizationErrorReporter(key: string) {
+    const domain = this.domain;
+    return (error: unknown) => {
+      if (domain && this.domain === domain && this.authorization === key)
+        this.onAuthorizationError(error);
+    };
+  }
+
+  /** Direct tRPC reads do not pass through QueryCache; use this same handler. */
+  readonly onAuthorizationError = (error: unknown) => {
+    const failure = classifyBusinessFailure(error);
+    if (failure === "session-invalid" || failure === "security-unclassified")
+      this.revoke(failure);
+  };
+
+  revalidate(trigger: "focus" | "restore" | "interval") {
+    if (this.denied) return;
+    const now = Date.now();
+    if (now - this.lastFocus < BUSINESS_FOCUS_DEBOUNCE_MS) return;
+    this.lastFocus = now;
+    // One trigger fans out to two distinct proof procedures; join an already
+    // running query instead of aborting and restarting it.
+    for (const client of [this.discovery, this.context])
+      void client.refetchQueries({ type: "active" }, { cancelRefetch: false });
+  }
+
+  revoke(
+    kind: "session-invalid" | "security-unclassified" = "session-invalid"
+  ) {
+    if (this.denied) return;
     this.denied = true;
+    this.denialKind = kind;
     this.invalidateAuthorization();
     discard(this.context);
     discard(this.discovery);

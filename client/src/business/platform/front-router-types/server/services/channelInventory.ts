@@ -4,6 +4,8 @@ import { TRPCError } from "@trpc/server";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
+import { officialCreationEvidence } from "./channelInventoryOriginalActor";
+import type { BusinessFailure } from "../../../shared/businessFailure";
 
 export const CHANNEL_INVENTORY_TYPES = ["factory", "agent", "trade", "other"] as const;
 export type ChannelInventoryType = (typeof CHANNEL_INVENTORY_TYPES)[number];
@@ -19,7 +21,7 @@ export type ChannelInventoryErrorCode =
 export class ChannelInventoryError extends Error {
   readonly code: ChannelInventoryErrorCode;
 
-  constructor(code: ChannelInventoryErrorCode, message: string) {
+  constructor(code: ChannelInventoryErrorCode, message: string, readonly businessFailure?: BusinessFailure) {
     super(message);
     this.name = "ChannelInventoryError";
     this.code = code;
@@ -38,6 +40,8 @@ export type ChannelInventoryScope = {
   enterpriseId: number;
   dataOwnerUserId: number;
   actorUserId: number;
+  /** Authenticated BFF context only, never expectedActorUserId or a browser header. */
+  officialActor?: { adminAccountId: number; bindingVersion: number; requestId: string };
   isOwner: boolean;
   inventoryDataScope: "own" | "enterprise";
   /** Server-derived snapshot only; it is rechecked under locks for every write. */
@@ -205,8 +209,8 @@ const MATERIAL_WITH_CHANNEL_FROM = sql`
 `;
 const MAX_PAGE_SIZE = 100;
 
-function appError(code: ChannelInventoryErrorCode, message: string): never {
-  throw new ChannelInventoryError(code, message);
+function appError(code: ChannelInventoryErrorCode, message: string, businessFailure?: BusinessFailure): never {
+  throw new ChannelInventoryError(code, message, businessFailure);
 }
 
 function requireIndustryCode(value: unknown): BusinessIndustryCode {
@@ -413,7 +417,7 @@ export async function resolveChannelInventoryAuthority(
      WHERE id = ${scope.enterpriseId} LIMIT 1${suffix}
   `))[0];
   if (!enterprise || Number(enterprise.crmDataOwnerUserId) !== scope.dataOwnerUserId) {
-    appError("FORBIDDEN", "企业数据归属已变化，请重新登录");
+    appError("FORBIDDEN", "企业数据归属已变化，请重新登录", "TENANT_ACCESS_REVOKED");
   }
   const actor = rows(await tx.execute(sql`
     SELECT em.id, em.userId, em.role, em.status, u.loginDisabled
@@ -422,7 +426,7 @@ export async function resolveChannelInventoryAuthority(
      LIMIT 1${suffix}
   `))[0];
   if (!actor || String(actor.status) !== "active" || bool(actor.loginDisabled)) {
-    appError("FORBIDDEN", "企业成员状态已变化，请重新登录");
+    appError("FORBIDDEN", "企业成员状态已变化，请重新登录", "TENANT_ACCESS_REVOKED");
   }
   const permissions = rows(await tx.execute(sql`
     SELECT permissionKey FROM enterprise_member_permissions
@@ -799,7 +803,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
             INSERT INTO channel_inventory_material_share_audits
               (enterprise_id, material_id, actor_user_id, request_id, payload_hash, before_data, after_data)
             VALUES (${scope.enterpriseId}, ${materialId}, ${scope.actorUserId}, ${input.requestId}, ${auditHash}, ${JSON.stringify(null)},
-              ${JSON.stringify({ action: "createDefaultShare", materialId, enabled: true, revision: Number(created.revision), shareTeamId, assignmentRevision, ownerMembershipId })})
+              ${JSON.stringify({ action: "createDefaultShare", materialId, enabled: true, revision: Number(created.revision), shareTeamId, assignmentRevision, ownerMembershipId, ...officialCreationEvidence(scope) })})
           `);
           // Projection must use the recorded immutable creator, never infer it
           // from currentOwner or trust registration to justify a forced grant.

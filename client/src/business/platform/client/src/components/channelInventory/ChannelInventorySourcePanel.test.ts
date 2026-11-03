@@ -16,9 +16,9 @@ let host: HTMLDivElement;
 let trigger: HTMLButtonElement;
 let current: boolean;
 const onClose = vi.fn();
-const onDenied = vi.fn();
+const onAuthorizationError = vi.fn();
 type Props = React.ComponentProps<typeof ChannelInventorySourcePanel>;
-const props = (overrides: Partial<Props> = {}): Props => ({ materialId: 101, enterpriseId: 31, actorUserId: 7, scopeKey: "bound-team-v1", isCurrent: () => current, onClose, onDenied, ...overrides });
+const props = (overrides: Partial<Props> = {}): Props => ({ materialId: 101, enterpriseId: 31, actorUserId: 7, scopeKey: "bound-team-v1", isCurrent: () => current, onClose, onAuthorizationError, ...overrides });
 async function render(overrides: Partial<Props> = {}) { await act(async () => root.render(React.createElement(ChannelInventorySourcePanel, props(overrides)))); }
 async function settle() { await act(async () => { await Promise.resolve(); }); }
 function deferred() {
@@ -35,7 +35,7 @@ function button(label: string) {
 }
 beforeEach(() => {
   current = true;
-  onClose.mockReset(); onDenied.mockReset();
+  onClose.mockReset(); onAuthorizationError.mockReset();
   runtime.query.mockReset().mockResolvedValue({ name: "真实服务名称" });
   host = document.createElement("div"); trigger = document.createElement("button");
   trigger.textContent = "查看来源";
@@ -56,12 +56,18 @@ describe("真实渠道来源 Panel：只读实时鉴权与生命周期", () => {
     expect(document.activeElement).toBe(button("关闭渠道来源"));
   });
 
-  it.each(["FORBIDDEN", "UNAUTHORIZED"])("fails closed on %s and reports the accurate denial category", async code => {
-    runtime.query.mockRejectedValueOnce({ data: { code } });
+  it.each(["FORBIDDEN", "NOT_FOUND"])("keeps one stable denied dialog on resource %s without closing or retrying", async code => {
+    const failure = { data: { code, businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } };
+    runtime.query.mockRejectedValueOnce(failure);
     await render();
     expect(name()).toBeUndefined();
-    expect(onDenied).toHaveBeenCalledWith(code === "UNAUTHORIZED");
-    expect(onDenied).toHaveBeenCalledTimes(1);
+    expect(onAuthorizationError).toHaveBeenCalledWith(failure);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(host.textContent).toContain("暂无权限查看");
+    await render(); await settle();
+    expect(runtime.query).toHaveBeenCalledTimes(1);
+    expect(onAuthorizationError).toHaveBeenCalledTimes(1);
     expect(host.textContent).not.toContain("真实服务名称");
   });
 
@@ -69,7 +75,7 @@ describe("真实渠道来源 Panel：只读实时鉴权与生命周期", () => {
     runtime.query.mockRejectedValueOnce(new Error("connection lost"));
     await render();
     expect(name()).toBeUndefined();
-    expect(onDenied).not.toHaveBeenCalled();
+    expect(onAuthorizationError).toHaveBeenCalledWith(expect.any(Error));
     expect(host.querySelector('[role="alert"]')?.textContent).toBe("来源读取暂时失败，请重试。");
     await act(async () => button("重试读取来源").click());
     expect(runtime.query).toHaveBeenCalledTimes(2);
@@ -82,17 +88,19 @@ describe("真实渠道来源 Panel：只读实时鉴权与生命周期", () => {
     await act(async () => window.dispatchEvent(new Event("focus")));
     expect(name()).toBeUndefined();
     expect(runtime.query).toHaveBeenCalledTimes(2);
-    await act(async () => later.reject({ data: { code: "FORBIDDEN" } }));
-    expect(name()).toBeUndefined(); expect(onDenied).toHaveBeenCalledWith(false);
+    await act(async () => later.reject({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } }));
+    expect(name()).toBeUndefined(); expect(onAuthorizationError).toHaveBeenCalledWith({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
+    expect(host.textContent).toContain("暂无权限查看");
   });
 
   it("does not recover stale cached authorization on each reopening", async () => {
     await render(); expect(name()).toBe("真实服务名称");
     await act(async () => root.render(null));
-    runtime.query.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+    runtime.query.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
     await render();
     expect(runtime.query).toHaveBeenCalledTimes(2);
-    expect(name()).toBeUndefined(); expect(onDenied).toHaveBeenCalledWith(false);
+    expect(name()).toBeUndefined(); expect(onAuthorizationError).toHaveBeenCalledWith({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
+    expect(host.textContent).toContain("暂无权限查看");
   });
 
   it("aborts on close/unmount and ignores a late success even if transport ignores abort", async () => {
@@ -102,7 +110,7 @@ describe("真实渠道来源 Panel：只读实时鉴权与生命周期", () => {
     await act(async () => root.render(null)); expect(signal.aborted).toBe(true);
     await act(async () => late.resolve({ name: "STALE-CLOSED-NAME" }));
     expect(host.textContent).not.toContain("STALE-CLOSED-NAME");
-    expect(onDenied).not.toHaveBeenCalled();
+    expect(onAuthorizationError).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(trigger);
   });
 
@@ -129,15 +137,65 @@ describe("真实渠道来源 Panel：只读实时鉴权与生命周期", () => {
     expect(host.innerHTML).not.toContain("STALE-REVOKED-NAME");
   });
 
-  it("gives only the newest focus response authority to populate the name", async () => {
-    const first = deferred(); const last = deferred();
-    runtime.query.mockReturnValueOnce(first.promise).mockReturnValueOnce(last.promise);
+  it("coalesces a burst of focus events with an already-pending opening read", async () => {
+    const first = deferred(); runtime.query.mockReturnValueOnce(first.promise);
     await render();
-    const oldSignal = runtime.query.mock.calls[0][1].signal as AbortSignal;
+    const signal = runtime.query.mock.calls[0][1].signal as AbortSignal;
+    await act(async () => { window.dispatchEvent(new Event("focus")); window.dispatchEvent(new Event("focus")); });
+    expect(runtime.query).toHaveBeenCalledTimes(1); expect(signal.aborted).toBe(false);
+    await act(async () => first.resolve({ name: "ONLY-REQUEST" })); expect(name()).toBe("ONLY-REQUEST");
+    const refresh = deferred(); runtime.query.mockReturnValueOnce(refresh.promise);
+    await act(async () => { window.dispatchEvent(new Event("focus")); window.dispatchEvent(new Event("focus")); });
+    expect(runtime.query).toHaveBeenCalledTimes(2); expect(name()).toBeUndefined();
+    await act(async () => refresh.resolve({ name: "REFRESHED" })); expect(name()).toBe("REFRESHED");
+  });
+
+  it("keeps the same dialog and focus while a normal same-identity check masks and resumes the read", async () => {
+    await render(); expect(name()).toBe("真实服务名称");
+    const dialog = host.querySelector('[role="dialog"]'); const focused = document.activeElement;
+    await render({ active: false });
+    expect(host.querySelector('[role="dialog"]')).toBe(dialog); expect(document.activeElement).toBe(focused);
+    expect(name()).toBeUndefined(); expect(host.textContent).toContain("正在核验来源查看权限");
+    await act(async () => window.dispatchEvent(new Event("focus"))); expect(runtime.query).toHaveBeenCalledTimes(1);
+    await render({ active: true });
+    expect(host.querySelector('[role="dialog"]')).toBe(dialog); expect(name()).toBe("真实服务名称");
+    expect(runtime.query).toHaveBeenCalledTimes(2); expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("rejects a late pre-revalidation response after the same identity resumes", async () => {
+    const first = deferred(); const second = deferred();
+    runtime.query.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    await render(); const signal = runtime.query.mock.calls[0][1].signal as AbortSignal;
+    await render({ active: false }); expect(signal.aborted).toBe(true);
+    await render({ active: true });
+    await act(async () => second.resolve({ name: "NEW-AUTHORIZATION" }));
+    await act(async () => first.resolve({ name: "LATE-OLD-AUTHORIZATION" }));
+    expect(name()).toBe("NEW-AUTHORIZATION"); expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["UNAUTHORIZED", undefined], ["FORBIDDEN", "AUTH_SESSION_INVALID"],
+    ["PRECONDITION_FAILED", "STAFF_BINDING_INVALID"], ["FORBIDDEN", "TENANT_ACCESS_REVOKED"],
+  ])("clears sensitive data and reports real session failure %s/%s instead of local denial", async (code, businessFailure) => {
+    await render();
+    const error = { data: { code, businessFailure } }; runtime.query.mockRejectedValueOnce(error);
     await act(async () => window.dispatchEvent(new Event("focus")));
-    expect(oldSignal.aborted).toBe(true);
-    await act(async () => last.resolve({ name: "NEWEST" })); expect(name()).toBe("NEWEST");
-    await act(async () => first.resolve({ name: "OLDER" })); expect(name()).toBe("NEWEST");
+    expect(onAuthorizationError).toHaveBeenCalledWith(error); expect(name()).toBeUndefined();
+    expect(host.textContent).not.toContain("暂无权限查看"); expect(host.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it("clears a previously successful name on an unknown error without inventing permission denial", async () => {
+    await render(); runtime.query.mockRejectedValueOnce(new Error("unknown transport"));
+    await act(async () => window.dispatchEvent(new Event("focus")));
+    expect(name()).toBeUndefined(); expect(host.textContent).not.toContain("暂无权限查看");
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe("来源读取暂时失败，请重试。");
+  });
+
+  it.each([{ code: "FORBIDDEN" }, { httpStatus: 403 }, { httpStatus: 401 }])("never treats an unclassified security refusal %j as a resource permission fact", async data => {
+    await render(); const error = { data }; runtime.query.mockRejectedValueOnce(error);
+    await act(async () => window.dispatchEvent(new Event("focus")));
+    expect(name()).toBeUndefined(); expect(host.textContent).not.toContain("暂无权限查看");
+    expect(onAuthorizationError).toHaveBeenCalledWith(error); expect(host.querySelector('[role="alert"]')).not.toBeNull();
   });
 
   it.each(["escape", "outside", "close"])("supports %s close without writes", async action => {

@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { BusinessFailureCause } from "../../../shared/businessFailure";
+import { and, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 import { enterpriseMembers, enterprises, type User } from "../../drizzle/schema";
 import type { ErpPermissionKey } from "../../../shared/erpPermissions";
@@ -22,6 +23,9 @@ import { listPurchaseOrders } from "./purchaseOrders";
 import { listSalesOrders } from "./crmSalesOrders";
 import { normalizeEnterpriseCreditCode } from "./enterpriseAccess";
 import { normalizeHkEnterpriseRegistrationIdentifier } from "./enterpriseRegistrationIdentity";
+import { BUSINESS_MODULES } from "../../../shared/businessOrganization";
+import { businessRows, resolveBusinessModuleAccess } from "./businessModuleAccess";
+import { effectiveBusinessTeam, internalBusinessAuthorizationVersion } from "./internalBusinessAuthorization";
 import {
   BUSINESS_CHAT_METHOD_IDS,
   BUSINESS_CHAT_METHOD_POLICIES,
@@ -72,6 +76,8 @@ export type InternalBusinessWorkbenchCapability =
 
 export type InternalBusinessContextDto = Omit<InternalBusinessEnterpriseContext, "identity"> & {
   staffPrincipal: InternalBusinessStaffPrincipalDto;
+  /** Stable server authorization fingerprint; not a clock or a browser revision. */
+  authorizationVersion: string;
   /** Compatibility projection; authoritative only for conservative UI display. */
   enabledModules: readonly InternalBusinessWorkbenchCapability[];
   /** Derived from the current real staff membership and original front permissions. */
@@ -125,7 +131,7 @@ async function requireCurrentErpAuthority(
       ? await getAdminCrmAccess({ creditCode: identity.creditCode, portalUserId: String(ownerUserId) })
       : await getAdminHkCrmAccess({ registrationIdentifier: identity.registrationIdentifier, portalUserId: String(ownerUserId) });
     if (!access.allowed) {
-      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业ERP当前未开通或已停用" });
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业ERP当前未开通或已停用", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
     }
   } catch (error) {
     if (error instanceof TRPCError) throw error;
@@ -157,9 +163,9 @@ export async function resolveInternalBusinessEnterprise(
           eq(enterprises.registrationIdentifier, identity.registrationIdentifier),
         ))
     .limit(1))[0];
-  if (!enterprise) throw new TRPCError({ code: "NOT_FOUND", message: "企业不存在" });
+  if (!enterprise) throw new TRPCError({ code: "NOT_FOUND", message: "企业不存在", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   if (enterprise.superAdminUserId !== input.expectedOwnerUserId) {
-    throw new TRPCError({ code: "CONFLICT", message: "企业所有者已变化，请刷新后重试" });
+    throw new TRPCError({ code: "CONFLICT", message: "企业所有者已变化，请刷新后重试", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
 
   const ownerMember = (await db
@@ -171,7 +177,7 @@ export async function resolveInternalBusinessEnterprise(
     ))
     .limit(1))[0];
   if (!ownerMember || ownerMember.status !== "active") {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业所有者成员身份不可用" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业所有者成员身份不可用", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
 
   await requireCurrentErpAuthority(identity, enterprise.superAdminUserId);
@@ -187,11 +193,11 @@ export async function resolveInternalBusinessEnterprise(
 /** A binding candidate must be a real, enabled front account with a login record. */
 async function requireEnabledFrontStaffUser(staffUserId: number): Promise<User> {
   if (!Number.isSafeInteger(staffUserId) || staffUserId <= 0) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "缺少经授权的企业员工业务主体" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "缺少经授权的企业员工业务主体", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
   }
   const user = await getUserById(staffUserId);
   if (!user || user.loginDisabled || !user.lastSignedIn) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "绑定的前台员工账号不存在、已停用或未完成登录" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "绑定的前台员工账号不存在、已停用或未完成登录", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
   }
   return user;
 }
@@ -254,7 +260,7 @@ export async function requireInternalBusinessStaffPrincipal(input: {
       || permissionScope.dataOwnerUserId !== enterprise.dataOwnerUserId
       || crmAccess.dataOwnerUserId !== enterprise.dataOwnerUserId
     ) {
-      throw new TRPCError({ code: "CONFLICT", message: "企业成员归属或数据所有者已变化，请刷新后重试" });
+      throw new TRPCError({ code: "CONFLICT", message: "企业成员归属或数据所有者已变化，请刷新后重试", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
     }
     return {
       enterprise,
@@ -281,7 +287,7 @@ async function requireInternalBusinessContextPrincipal(input: {
       || scope.dataOwnerUserId !== enterprise.dataOwnerUserId
       || crmAccess.dataOwnerUserId !== enterprise.dataOwnerUserId
     ) {
-      throw new TRPCError({ code: "CONFLICT", message: "绑定员工不再属于所选企业或数据所有者已变化" });
+      throw new TRPCError({ code: "CONFLICT", message: "绑定员工不再属于所选企业或数据所有者已变化", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
     }
     return { enterprise, user, scope };
   }});
@@ -348,18 +354,37 @@ export async function getInternalBusinessContext(
   input: InternalBusinessBinding,
   trustedBinding: InternalBusinessTrustedBinding,
 ): Promise<InternalBusinessContextDto> {
-  const enterprise = await resolveInternalBusinessEnterprise(input);
   if (!Number.isSafeInteger(trustedBinding.adminAccountId) || trustedBinding.adminAccountId <= 0
     || !Number.isSafeInteger(trustedBinding.bindingVersion) || trustedBinding.bindingVersion <= 0) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "后台员工绑定元数据无效" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "后台员工绑定元数据无效", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
   }
   const principal = await requireInternalBusinessContextPrincipal({ binding: input, trustedBinding });
+  const { enterprise } = principal;
+  const db = await requireDb();
+  const memberships = businessRows(await db.execute(sql`SELECT tm.teamId, tm.teamRole
+    FROM enterprise_team_members tm INNER JOIN enterprise_teams t
+      ON t.enterpriseId = tm.enterpriseId AND t.id = tm.teamId AND t.status = 'active'
+    WHERE tm.enterpriseId = ${enterprise.enterpriseId} AND tm.userId = ${principal.user.id}`));
+  const team = effectiveBusinessTeam(memberships);
+  const modules = await Promise.all(BUSINESS_MODULES.map(async module => {
+    try {
+      return { module, access: await resolveBusinessModuleAccess(principal.user.id, enterprise.enterpriseId, module, db) };
+    } catch (error) {
+      // Arguments are already validated server identities and a compiled module;
+      // this helper's FORBIDDEN here means real membership/account loss, not a row denial.
+      if (error instanceof TRPCError && error.code === "FORBIDDEN") {
+        throw new TRPCError({ code: error.code, message: error.message, cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
+      }
+      throw error;
+    }
+  }));
   const workbenchCapabilities = await workbenchCapabilitiesForPrincipal({ principal });
   return {
     enterpriseId: enterprise.enterpriseId,
     companyName: enterprise.companyName,
     dataOwnerUserId: enterprise.dataOwnerUserId,
     ownerUserId: enterprise.ownerUserId,
+    authorizationVersion: internalBusinessAuthorizationVersion({ scope: principal.scope, team, modules }),
     staffPrincipal: {
       status: "ready",
       frontendUserId: principal.user.id,

@@ -88,6 +88,7 @@ const materialUpdateKeys = Object.keys(materialUpdateFields) as (keyof typeof ma
 
 type AuthoritativeChannelContext = {
   user: { id: number };
+  staffDelegation?: import("../_core/context").StaffDelegation;
   enterprisePermissionScope: {
     enterprise: { id: number };
     dataOwnerUserId: number;
@@ -108,6 +109,7 @@ function scopeFromContext(ctx: AuthoritativeChannelContext): ChannelInventorySco
     enterpriseId: permissionScope.enterprise.id,
     dataOwnerUserId: permissionScope.dataOwnerUserId,
     actorUserId: ctx.user.id,
+    ...(ctx.staffDelegation ? { officialActor: { adminAccountId: ctx.staffDelegation.adminAccountId, bindingVersion: ctx.staffDelegation.bindingVersion, requestId: ctx.staffDelegation.requestId } } : {}),
     isOwner: permissionScope.isOwner,
     inventoryDataScope: permissionScope.member.inventoryDataScope,
     permissionSnapshot: permissionScope.isOwner || permissionScope.permissionKeys.includes("inventory.manage"),
@@ -126,7 +128,7 @@ function assertExpectedContext(ctx: AuthoritativeChannelContext, input: ContextA
 function asTrpcError(error: unknown): never {
   if (error instanceof TRPCError) throw error;
   if (error instanceof ChannelInventoryError || error instanceof ChannelNotesError) {
-    throw new TRPCError({ code: error.code, message: error.message });
+    throw new TRPCError({ code: error.code, message: error.message, cause: error });
   }
   throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "渠道库存服务暂不可用，请稍后重试" });
 }
@@ -151,7 +153,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
         assertExpectedContext(ctx, input);
         return await source.getTeamMaterialSource(scopeFromContext(ctx), input);
       } catch (error) {
-        if (error instanceof TRPCError && error.code === "FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: SOURCE_FORBIDDEN_MESSAGE });
+        if (error instanceof TRPCError && error.code === "FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: SOURCE_FORBIDDEN_MESSAGE, cause: error });
         return asTrpcError(error);
       }
     }),

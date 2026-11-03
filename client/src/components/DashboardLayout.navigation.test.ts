@@ -103,6 +103,8 @@ describe("正式后台顶部布局集成", () => {
     runtime.location = "/materials";
     runtime.status = "ready";
     runtime.refetch.mockClear();
+    runtime.capabilities = [];
+    runtime.user = { id: 6001, role: "admin", name: "真实员工", adminRole: "operation", hasNativeAdminAccount: true, permissions: ["materials.read", "messages.read"] };
   });
 
   it.each(["/", "/materials", "/workbench", "/staff"])(
@@ -168,6 +170,36 @@ describe("正式后台顶部布局集成", () => {
   it("keeps real notification badges", () => {
     expect(renderLayout()).toContain("7 条未读");
     expect(renderLayout()).toContain("消息中心");
+  });
+
+  it("shows native staff channel entry from the exact route read capability without platform inventory permissions", () => {
+    runtime.location = "/workbench/channel-inventory";
+    runtime.capabilities = ["inventory.channel"];
+    const html = renderLayout();
+    expect(html).toContain("渠道库存");
+    expect(html).toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+    expect(runtime.user.permissions).toEqual(["materials.read", "messages.read"]);
+    expect(source).toMatch(/path: "\/workbench\/channel-inventory",\s*workbenchCapability: "inventory.channel"/);
+    expect(source).not.toContain('permission: "officialInventory.write"');
+  });
+
+  it.each([[], ["inventory.read"], ["inventory.publish"]])("does not substitute another business capability %j for inventory.channel", capabilities => {
+    runtime.location = "/workbench/channel-inventory";
+    runtime.capabilities = capabilities;
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+  });
+
+  it("does not treat a platform official inventory permission as a bound business capability", () => {
+    runtime.location = "/workbench/channel-inventory";
+    runtime.user.permissions = ["officialInventory.read", "officialInventory.write"];
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+  });
+
+  it("still requires a native active backend login before displaying the staff channel entry", () => {
+    runtime.location = "/workbench/channel-inventory";
+    runtime.capabilities = ["inventory.channel"];
+    runtime.user.hasNativeAdminAccount = false;
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
   });
 
   it("retains native admin and staff capability filtering rather than demo authorization", () => {

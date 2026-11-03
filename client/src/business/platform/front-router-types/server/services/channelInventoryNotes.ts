@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
 import { resolveChannelInventoryAuthority, ChannelInventoryError, type ChannelInventoryScope } from "./channelInventory";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
+import type { BusinessFailure } from "../../../shared/businessFailure";
 
 export type ChannelNotesErrorCode =
   | "BAD_REQUEST"
@@ -15,7 +16,7 @@ export type ChannelNotesErrorCode =
 export class ChannelNotesError extends Error {
   readonly code: ChannelNotesErrorCode;
 
-  constructor(code: ChannelNotesErrorCode, message: string) {
+  constructor(code: ChannelNotesErrorCode, message: string, readonly businessFailure?: BusinessFailure) {
     super(message);
     this.name = "ChannelNotesError";
     this.code = code;
@@ -183,7 +184,7 @@ async function currentAuthority(executor: SqlExecutor, scope: ChannelInventorySc
     const access = await resolveChannelInventoryAuthority(executor, scope, "stocks", options.mutation === true, options.lock === true);
     return { ...scope, ...access };
   } catch (error) {
-    if (error instanceof ChannelInventoryError) fail(error.code, error.message);
+    if (error instanceof ChannelInventoryError) throw new ChannelNotesError(error.code, error.message, error.businessFailure);
     throw error;
   }
 }

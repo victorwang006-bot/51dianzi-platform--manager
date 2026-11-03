@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDown, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "../../../../api/business-trpc";
+import { classifyBusinessFailure } from "../../../../BusinessWorkbenchSession";
 
 const emptyForm = {
   id: undefined as number | undefined,
@@ -22,8 +23,12 @@ export default function PickupPointManager({
   approved: boolean;
 }) {
   const utils = trpc.useUtils();
-  const { data: points = [], isLoading } = trpc.pickupPoint.mine.useQuery();
   const [isOpen, setIsOpen] = useState(false);
+  const pointsQuery = trpc.pickupPoint.mine.useQuery(undefined, {
+    enabled: approved && isOpen, retry: false,
+  });
+  const { isLoading } = pointsQuery;
+  const points = approved && !pointsQuery.isError ? pointsQuery.data ?? [] : [];
   const [editing, setEditing] = useState<FormState | null>(null);
   const save = trpc.pickupPoint.save.useMutation({
     onSuccess: () => {
@@ -89,7 +94,7 @@ export default function PickupPointManager({
         <div className="flex justify-end">
         <button
           type="button"
-          disabled={!approved || editing !== null}
+          disabled={!approved || editing !== null || pointsQuery.isError || !pointsQuery.isSuccess}
           className="crm-btn crm-btn-primary h-9 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={() => setEditing({ ...emptyForm })}
         >
@@ -103,7 +108,13 @@ export default function PickupPointManager({
         </div>
       )}
 
-      {isLoading ? (
+      {!approved ? null : pointsQuery.isError ? (
+        <div className="mt-4 text-sm text-red-700" role="status">
+          <p>{classifyBusinessFailure(pointsQuery.error) === "resource-denied" ? "暂无权限查看自提点" : "自提点加载失败"}</p>
+          <p>{pointsQuery.error.message}</p>
+          <button type="button" className="crm-btn mt-3" onClick={() => void pointsQuery.refetch()}>重新加载</button>
+        </div>
+      ) : isLoading ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
           加载中…
         </div>
@@ -157,7 +168,7 @@ export default function PickupPointManager({
         </div>
       )}
 
-      {editing && (
+      {approved && !pointsQuery.isError && editing && (
         <div className="mt-4 rounded-md border bg-slate-50 p-4">
           <div className="grid gap-3 md:grid-cols-2">
             <label className="text-[13px] text-[#233548]">

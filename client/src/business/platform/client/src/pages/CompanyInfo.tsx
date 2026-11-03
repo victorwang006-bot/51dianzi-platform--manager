@@ -14,10 +14,12 @@ import "./CompanyInfo.css";
  */
 export default function CompanyInfo() {
   const [companyFormOpen, setCompanyFormOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
   const {
     data: company,
     isLoading,
     isError,
+    error,
     refetch,
   } = trpc.company.get.useQuery();
   const certBadge = useCertBadge(company?.certLevel || "pending");
@@ -37,6 +39,7 @@ export default function CompanyInfo() {
       <PlatformLayout>
         <div className="company-info-page rounded-lg border border-red-200 bg-red-50 p-8 text-center">
           <p className="text-sm font-medium text-red-700">企业资料加载失败</p>
+          <p className="mt-2 text-sm text-red-700">{error?.message}</p>
           <button
             type="button"
             className="company-info-retry mt-3 rounded-md border border-red-200 bg-white px-4 text-red-700"
@@ -90,12 +93,22 @@ export default function CompanyInfo() {
             </div>
           ) : null}
         </section>
-        <CompanyReviewInbox />
+        <CompanyReviewInbox approved={company?.reviewStatus === "approved"} />
         <div className="company-info-pickup">
           <PickupPointManager approved={company?.reviewStatus === "approved"} />
         </div>
         <div className="company-info-photos">
-          <CompanyPhotoWall />
+          <section className="mt-4 overflow-hidden rounded-lg border bg-white">
+            <button type="button" data-testid="company-photos-toggle"
+              aria-expanded={photosOpen} onClick={() => setPhotosOpen(value => !value)}
+              className="flex w-full items-center justify-between gap-4 px-5 py-3 text-left hover:bg-slate-50">
+              <span className="text-[13px] font-medium text-[#233548]">公司信息墙</span>
+              <ChevronDown size={18} className={`text-slate-400 transition-transform ${photosOpen ? "rotate-180" : ""}`} />
+            </button>
+            {photosOpen ? company?.reviewStatus === "approved" ? <CompanyPhotoWall />
+              : <p className="p-5 text-sm text-muted-foreground">企业资料审核通过后才可管理公司信息墙。</p>
+              : null}
+          </section>
         </div>
       </div>
     </PlatformLayout>

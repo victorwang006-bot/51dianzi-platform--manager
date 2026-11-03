@@ -141,7 +141,7 @@ function trpcBatchResult(...values: unknown[]): Response {
   );
 }
 
-function trpcError(status: number, code: string, message: string): Response {
+function trpcError(status: number, code: string, message: string, businessFailure?: string): Response {
   return new Response(
     JSON.stringify([
       {
@@ -149,7 +149,7 @@ function trpcError(status: number, code: string, message: string): Response {
           json: {
             message,
             code: -32003,
-            data: { code, httpStatus: status, path: "merchants" },
+            data: { code, httpStatus: status, path: "merchants", businessFailure },
           },
         },
       },
@@ -2055,7 +2055,8 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         trpcError(
           status,
           status === 401 ? "UNAUTHORIZED" : "FORBIDDEN",
-          "服务端已撤销业务访问"
+          "服务端已撤销业务访问",
+          "STAFF_BINDING_INVALID"
         )
       );
       await waitFor(() =>
@@ -2085,7 +2086,8 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
           ? trpcError(
               status,
               status === 401 ? "UNAUTHORIZED" : "FORBIDDEN",
-              "实时业务读取被拒绝"
+              "实时业务读取被拒绝",
+              "STAFF_BINDING_INVALID"
             )
           : successfulWorkbenchResponse(call)
       );
@@ -2260,7 +2262,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
           members: [{ userId: 7002, name: "合成员工" }],
         });
       if (call.pathname === "/api/business-trpc/customer.createMulti")
-        return trpcError(403, "FORBIDDEN", "实时写入鉴权拒绝");
+        return trpcError(403, "FORBIDDEN", "实时写入鉴权拒绝", "TENANT_ACCESS_REVOKED");
       return successfulWorkbenchResponse(call);
     });
     mounted = await mountWorkbench();
@@ -2490,5 +2492,150 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       expect(mounted?.container.textContent).toContain("业务上下文不可用")
     );
     expect(domainCalls(network.calls)).toHaveLength(0);
+  });
+
+  it.each([
+    ["review", "company-review-toggle", "publicReview.inbox", "暂无权限查看企业评论"],
+    ["pickup", "pickup-point-toggle", "pickupPoint.mine", "暂无权限查看自提点"],
+    ["photos", "company-photos-toggle", "company.profilePhotos", "暂无权限管理公司信息墙"],
+  ])("keeps %s resource 403 local after an explicit module open and permits another route without a revoked banner", async (_label, toggle, procedure, message) => {
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") return trpcResult({
+        ...verifiedContext, workbenchCapabilities: ["company.read", "customers.manage"],
+      });
+      if (call.pathname === "/api/business-trpc/company.get") return trpcResult({
+        id: 601, companyName: "合成已认证企业", certLevel: "normal", reviewStatus: "approved",
+      });
+      if (call.pathname === `/api/business-trpc/${procedure}`)
+        return trpcError(403, "FORBIDDEN", "服务端明确的局部业务拒绝", "BUSINESS_RESOURCE_FORBIDDEN");
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench("/workbench/company-info");
+    await waitFor(() => expect(mounted?.container.textContent).toContain("企业信息"));
+    const optionalCalls = () => network.calls.filter(call => /publicReview\.inbox|pickupPoint\.mine|company\.profilePhotos/.test(call.pathname));
+    expect(optionalCalls()).toHaveLength(0);
+    const invalidated = vi.fn();
+    window.addEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+    await act(async () => mounted!.container.querySelector<HTMLButtonElement>(`[data-testid="${toggle}"]`)!.click());
+    await waitFor(() => expect(mounted?.container.textContent).toContain(message));
+    expect(mounted.container.textContent).toContain("服务端明确的局部业务拒绝");
+    expect(optionalCalls()).toHaveLength(1);
+    expect(invalidated).not.toHaveBeenCalled();
+    await mounted.navigate("/workbench/customers");
+    await waitFor(() => expect(mounted?.container.textContent).toContain("暂无匹配客户"));
+    expect(mounted.container.textContent).not.toContain("业务访问授权已失效");
+    expect(mounted.container.textContent).not.toContain("业务请求安全核验未通过");
+    expect(network.calls.filter(call => call.pathname === "/api/business-trpc/context")).toHaveLength(1);
+    expect(invalidated).not.toHaveBeenCalled();
+    window.removeEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+  });
+
+  it("does not request any optional company module when certification is not approved, even when opened", async () => {
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") return trpcResult({
+        ...verifiedContext, workbenchCapabilities: ["company.read"],
+      });
+      if (call.pathname === "/api/business-trpc/company.get") return trpcResult({
+        id: 602, companyName: "合成待审核企业", certLevel: "pending", reviewStatus: "pending",
+      });
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench("/workbench/company-info");
+    await waitFor(() => expect(mounted?.container.textContent).toContain("企业信息"));
+    for (const toggle of ["company-review-toggle", "pickup-point-toggle", "company-photos-toggle"])
+      await act(async () => mounted!.container.querySelector<HTMLButtonElement>(`[data-testid="${toggle}"]`)!.click());
+    expect(mounted.container.textContent).toContain("企业审核通过后");
+    expect(network.calls.some(call => /publicReview\.inbox|pickupPoint\.mine|company\.profilePhotos/.test(call.pathname))).toBe(false);
+  });
+
+  it("fails closed for an unclassified domain 403 without claiming a proven session revocation across routes", async () => {
+    installNetwork(call => call.pathname === "/api/business-trpc/customer.list"
+      ? trpcError(403, "FORBIDDEN", "未知安全拒绝") : successfulWorkbenchResponse(call));
+    mounted = await mountWorkbench();
+    await waitFor(() => expect(mounted?.container.textContent).toContain("业务请求安全核验未通过"));
+    expect(mounted.container.textContent).not.toContain("业务访问授权已失效");
+    expect(businessStorageScope()).toBeNull();
+    await mounted.navigate("/workbench/company-info");
+    expect(mounted.container.textContent).toContain("业务请求安全核验未通过");
+    expect(mounted.container.textContent).not.toContain("企业信息");
+  });
+
+  it("destroys a domain on a marked binding failure even when its TRPC code is PRECONDITION_FAILED", async () => {
+    installNetwork(call => call.pathname === "/api/business-trpc/customer.list"
+      ? trpcError(412, "PRECONDITION_FAILED", "绑定已撤销", "STAFF_BINDING_INVALID") : successfulWorkbenchResponse(call));
+    mounted = await mountWorkbench();
+    await waitFor(() => expect(mounted?.container.textContent).toContain("业务访问授权已失效"));
+    expect(businessStorageScope()).toBeNull();
+    expect(mounted.container.textContent).not.toContain("客户列表");
+    await mounted.leaveWorkbench();
+    await mounted.returnToWorkbench();
+    expect(mounted.container.textContent).toContain("业务访问授权已失效");
+  });
+
+  it.each(["same", "reordered-capabilities", "server-permission-revision", "native-role"] as const)(
+    "uses a stable authorization version through a %s context recheck", async change => {
+      let checks = 0;
+      let lists = 0;
+      const initial = { ...verifiedContext, authorizationVersion: "team-7:member:read-v1",
+        workbenchCapabilities: ["customers.manage", "company.read"] };
+      const refreshed = {
+        ...initial,
+        authorizationVersion: change === "server-permission-revision" ? "team-8:member:read-v2" : initial.authorizationVersion,
+        workbenchCapabilities: change === "reordered-capabilities" ? ["company.read", "customers.manage"] : initial.workbenchCapabilities,
+        staffPrincipal: { ...initial.staffPrincipal, user: { ...initial.staffPrincipal.user,
+          role: change === "native-role" ? "admin" : "user" } },
+      };
+      installNetwork(call => {
+        if (call.pathname === "/api/business-trpc/context") return trpcResult(++checks === 1 ? initial : refreshed);
+        if (call.pathname === "/api/business-trpc/customer.list") return trpcResult({
+          items: [customerRecord(++lists, lists === 1 ? "初始权限客户" : "新授权版本客户")], total: 1,
+        });
+        return successfulWorkbenchResponse(call);
+      });
+      mounted = await mountWorkbench();
+      await waitFor(() => expect(mounted?.container.textContent).toContain("初始权限客户"));
+      const title = mounted.container.querySelector("h1");
+      const scope = businessStorageScope();
+      const invalidated = vi.fn();
+      window.addEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+      await act(async () => window.dispatchEvent(new window.Event("focus")));
+      await waitFor(() => expect(checks).toBe(2));
+      await waitFor(() => expect(mounted?.container.querySelector('[data-business-context-verification="verified"]')).not.toBeNull());
+      const changed = change === "server-permission-revision" || change === "native-role";
+      expect(businessStorageScope()).toBe(scope);
+      if (changed) {
+        await waitFor(() => expect(mounted?.container.textContent).toContain("新授权版本客户"));
+        expect(mounted.container.querySelector("h1")).not.toBe(title);
+        expect(mounted.container.textContent).not.toContain("初始权限客户");
+        expect(invalidated).toHaveBeenCalledTimes(1);
+      } else {
+        expect(mounted.container.querySelector("h1")).toBe(title);
+        expect(lists).toBe(1);
+        expect(invalidated).not.toHaveBeenCalled();
+      }
+      window.removeEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+    },
+  );
+
+  it("merges rapid focus, restored-pageshow and route re-entry into one pair of proof requests", async () => {
+    const network = installNetwork(successfulWorkbenchResponse);
+    mounted = await mountWorkbench();
+    await waitFor(() => expect(mounted?.container.textContent).toContain("暂无匹配客户"));
+    const fireFocus = async () => act(async () => {
+      window.dispatchEvent(new window.Event("focus"));
+      const restore = new window.Event("pageshow");
+      Object.defineProperty(restore, "persisted", { value: true });
+      window.dispatchEvent(restore);
+      window.dispatchEvent(new window.Event("focus"));
+    });
+    await fireFocus();
+    await waitFor(() => expect(network.calls.filter(call => call.pathname === "/api/business-trpc/context")).toHaveLength(2));
+    await mounted.leaveWorkbench();
+    await mounted.returnToWorkbench();
+    await fireFocus();
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    for (const procedure of ["merchants", "context"])
+      expect(network.calls.filter(call => call.pathname === `/api/business-trpc/${procedure}`)).toHaveLength(2);
+    expect(mounted.container.textContent).toContain("客户列表");
   });
 });

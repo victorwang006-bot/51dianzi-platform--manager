@@ -38,9 +38,9 @@ import {
 import type { BusinessWorkbenchCapability } from "../lib/businessWorkbenchCapabilities";
 import {
   BUSINESS_CONTEXT_FRESH_MS,
-  BUSINESS_FOCUS_DEBOUNCE_MS,
   createBusinessRequestCancellation,
   isBusinessAuthorizationError,
+  isBusinessSecurityError,
   resetBusinessWorkbenchSessionsForTests,
   useBusinessWorkbenchSession,
   type BusinessWorkbenchSession,
@@ -98,6 +98,8 @@ type BusinessContextContract = {
   workbenchCapabilities?: unknown;
   /** Current merchant's BFF scope-write + real-front-capability intersection. */
   writeCapabilities?: unknown;
+  /** Optional server-owned effective team/member/permission revision. */
+  authorizationVersion?: unknown;
 };
 
 type VerifiedBusinessContext = {
@@ -240,7 +242,20 @@ function businessAccessFingerprint(
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([capability, enabled]) => `${capability}:${Number(enabled)}`)
     .join(",");
-  return `${customerEntryPermissionFingerprint(rawContext)}:workbench:${capabilityProjectionFingerprint(rawContext.workbenchCapabilities)}:write:${capabilityProjectionFingerprint(rawContext.writeCapabilities)}:session:${sessionCapabilities}`;
+  const user =
+    rawContext.staffPrincipal.status === "ready"
+      ? rawContext.staffPrincipal.user
+      : null;
+  const actorAccess = JSON.stringify([
+    user?.role,
+    user?.loginDisabled,
+    user?.crmAccess,
+    typeof rawContext.authorizationVersion === "string" ||
+    typeof rawContext.authorizationVersion === "number"
+      ? rawContext.authorizationVersion
+      : null,
+  ]);
+  return `${customerEntryPermissionFingerprint(rawContext)}:workbench:${capabilityProjectionFingerprint(rawContext.workbenchCapabilities)}:write:${capabilityProjectionFingerprint(rawContext.writeCapabilities)}:session:${sessionCapabilities}:actor:${actorAccess}`;
 }
 
 /**
@@ -492,33 +507,26 @@ function BusinessRoutes() {
   );
 }
 
-function useFocusContextRevalidation(revalidate: () => void) {
-  const current = useRef(revalidate);
-  current.current = revalidate;
-
+function useSessionContextRevalidation(session: BusinessWorkbenchSession) {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    let lastFocus = -Infinity;
-    const onFocus = () => {
-      const now = Date.now();
-      if (now - lastFocus < BUSINESS_FOCUS_DEBOUNCE_MS) return;
-      lastFocus = now;
-      current.current();
-    };
+    const onFocus = () => session.revalidate("focus");
     const onPageShow = (event: PageTransitionEvent) => {
       // A normal first-load pageshow follows the initial query. Only a bfcache
       // restore is a re-entry that could otherwise retain an old context.
-      if (event.persisted) current.current();
+      if (event.persisted) session.revalidate("restore");
     };
-    // `pageshow` covers a restored workbench document; `focus` covers an
-    // already mounted tab. Both transitions must not reuse an old UI gate.
     window.addEventListener("focus", onFocus);
     window.addEventListener("pageshow", onPageShow);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "hidden") session.revalidate("interval");
+    }, BUSINESS_CONTEXT_FRESH_MS);
     return () => {
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("pageshow", onPageShow);
+      window.clearInterval(timer);
     };
-  }, []);
+  }, [session]);
 }
 
 /** A background proof refresh is not a global editing lock. Every command is
@@ -571,6 +579,10 @@ function VerifiedBusinessWorkbench({
   const domainScope = businessDomainScope(merchantId, principal);
   const resources = session.domainResources(authorization);
   const queryClient = resources.client;
+  const reportAuthorizationError = useMemo(
+    () => session.authorizationErrorReporter(authorization),
+    [session, authorization, resources]
+  );
   const domainClient = useMemo(
     () =>
       trpc.createClient({
@@ -637,6 +649,8 @@ function VerifiedBusinessWorkbench({
           staffPrincipal={principal}
           sessionCapabilities={capabilities}
           contextVerificationState={verificationState}
+          authorizationVersion={authorization}
+          onAuthorizationError={reportAuthorizationError}
         >
           <BusinessContextVerificationBoundary
             verificationState={verificationState}
@@ -677,7 +691,6 @@ function BusinessContextGate({
 }) {
   const contextQuery = businessScopeTrpc.context.useQuery(undefined, {
     staleTime: BUSINESS_CONTEXT_FRESH_MS,
-    refetchInterval: BUSINESS_CONTEXT_FRESH_MS,
     retry: false,
     refetchOnWindowFocus: false,
     trpc: { abortOnUnmount: true },
@@ -701,7 +714,6 @@ function BusinessContextGate({
   const revalidate = useCallback(() => {
     void contextQuery.refetch({ cancelRefetch: false });
   }, [contextQuery.refetch]);
-  useFocusContextRevalidation(revalidate);
   const verificationInFlight = contextQuery.isFetching || scopeRevalidating;
 
   const completedAuthorization =
@@ -713,13 +725,16 @@ function BusinessContextGate({
     )
       return;
     const confirmed = contextQuery.isError ? null : completedAuthorization;
+    if (contextQuery.isError && isBusinessSecurityError(contextQuery.error)) {
+      session.onAuthorizationError(contextQuery.error);
+      return;
+    }
     if (!confirmed) {
       // Transport failure is not permission revocation. Still close the domain
       // conservatively, but preserve local drafts until the identity is proved
       // again (or a later auth/permission change explicitly invalidates them).
       session.invalidateAuthorization(
-        !contextQuery.isError ||
-          isBusinessAuthorizationError(contextQuery.error)
+        !contextQuery.isError || isBusinessSecurityError(contextQuery.error)
       );
     } else session.confirmAuthorization(confirmed);
   }, [
@@ -789,7 +804,9 @@ function BusinessContextGate({
         title={
           isBusinessAuthorizationError(contextQuery.error)
             ? "业务访问授权已失效"
-            : "业务上下文暂时无法核验"
+            : isBusinessSecurityError(contextQuery.error)
+              ? "业务请求安全核验未通过"
+              : "业务上下文暂时无法核验"
         }
         detail={
           contextQuery.error.message || "当前商户和工作人员会话未能通过核验。"
@@ -900,7 +917,6 @@ function BusinessWorkbenchDiscovery({
     { page: 1, pageSize: 100 },
     {
       staleTime: BUSINESS_CONTEXT_FRESH_MS,
-      refetchInterval: BUSINESS_CONTEXT_FRESH_MS,
       retry: false,
       refetchOnWindowFocus: false,
       trpc: { abortOnUnmount: true },
@@ -921,8 +937,6 @@ function BusinessWorkbenchDiscovery({
     void merchantList.refetch({ cancelRefetch: false });
   }, [merchantList.refetch]);
 
-  useFocusContextRevalidation(retryDiscovery);
-
   useLayoutEffect(() => {
     // A completed denied/error discovery must not leave prior customer drafts
     // eligible for a later render. Ordinary revalidation remains covered by
@@ -934,14 +948,20 @@ function BusinessWorkbenchDiscovery({
       return;
     }
     if (merchantList.isLoading || merchantList.isFetching) return;
+    if (
+      merchantList.isError &&
+      isBusinessAuthorizationError(merchantList.error)
+    ) {
+      session.onAuthorizationError(merchantList.error);
+      return;
+    }
     const isUnavailable =
       merchantList.isError ||
       !officialMerchant ||
       (hasExplicitMerchant && requestedId !== OFFICIAL_ZHIJIE_MERCHANT_ID);
     if (isUnavailable) {
       session.invalidateAuthorization(
-        !merchantList.isError ||
-          isBusinessAuthorizationError(merchantList.error)
+        !merchantList.isError || isBusinessSecurityError(merchantList.error)
       );
       void session.context.cancelQueries();
       session.context.clear();
@@ -1024,8 +1044,16 @@ function BusinessWorkbenchContent({
     <BusinessLoadingState label="正在加载工作区…" testId="business-session" />
   ) : session.denied ? (
     <AccessState
-      title="业务访问授权已失效"
-      detail="服务端已拒绝当前业务请求，旧主体数据已清理。请重新核验。"
+      title={
+        session.denialKind === "session-invalid"
+          ? "业务访问授权已失效"
+          : "业务请求安全核验未通过"
+      }
+      detail={
+        session.denialKind === "session-invalid"
+          ? "服务端已确认当前登录、员工绑定或企业授权失效，旧主体数据已清理。请重新核验。"
+          : "服务端拒绝了当前安全核验，但未提供可识别的失效分类；工作区已保守关闭并清理旧数据，请重新核验。"
+      }
       onRetry={retrySession}
     />
   ) : (
@@ -1045,6 +1073,7 @@ function SessionBusinessWorkbenchContent({
 }: BusinessWorkbenchPageProps & { session: BusinessWorkbenchSession }) {
   const queryClient = session.discovery;
   const discoveryClient = useMemo(() => createBusinessScopeTrpcClient(), []);
+  useSessionContextRevalidation(session);
 
   useEffect(
     () => () => {

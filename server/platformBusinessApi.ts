@@ -1,3 +1,5 @@
+import { isBusinessFailure, type BusinessFailure } from "../shared/businessFailure";
+
 export type PlatformBusinessBinding = {
   creditCode?: string;
   registrationIdentifier?: string;
@@ -34,6 +36,8 @@ export type PlatformBusinessContext = {
   companyName: string;
   dataOwnerUserId: number;
   ownerUserId: number;
+  /** Opaque front-server authorization state, forwarded without browser influence. */
+  authorizationVersion?: string;
   staffPrincipal: PlatformBusinessStaffPrincipal | {
     status: "required";
     reason: "ADMIN_STAFF_PRINCIPAL_NOT_BOUND";
@@ -67,12 +71,13 @@ export type PlatformBusinessCommand = {
 
 type TrpcEnvelope<T> = {
   result?: { data?: { json?: T } | T };
-  error?: { json?: { message?: string; data?: { code?: string; message?: string } }; message?: string };
+  error?: { json?: { message?: string; data?: { code?: string; message?: string; businessFailure?: unknown } }; message?: string };
 };
 
 /** Only domain-safe codes may cross the service-to-service error boundary. */
 export const PLATFORM_BUSINESS_PUBLIC_ERROR_CODES = [
   "BAD_REQUEST",
+  "UNAUTHORIZED",
   "FORBIDDEN",
   "NOT_FOUND",
   "CONFLICT",
@@ -84,7 +89,7 @@ export const PLATFORM_BUSINESS_PUBLIC_ERROR_CODES = [
 export type PlatformBusinessPublicErrorCode = (typeof PLATFORM_BUSINESS_PUBLIC_ERROR_CODES)[number];
 
 export class PlatformBusinessPublicError extends Error {
-  constructor(readonly code: PlatformBusinessPublicErrorCode, message: string) {
+  constructor(readonly code: PlatformBusinessPublicErrorCode, message: string, readonly businessFailure?: BusinessFailure) {
     super(message);
     this.name = "PlatformBusinessPublicError";
   }
@@ -189,7 +194,11 @@ function publicUpstreamError(error: TrpcEnvelope<unknown>["error"]) {
   // implementation traces or configuration fragments even when an upstream
   // procedure mislabels the error code.
   if (!safeMessage || /(?:stack|password|secret|token|portal[_ -]?key|sql|select\s)/i.test(safeMessage)) return null;
-  return new PlatformBusinessPublicError(code as PlatformBusinessPublicErrorCode, safeMessage);
+  const failure = error?.json?.data?.businessFailure;
+  // Only an authenticated internalBusiness request may report a real login
+  // failure. A service-key denial is deliberately unmarked by the front router.
+  if (code === "UNAUTHORIZED" && failure !== "AUTH_SESSION_INVALID") return null;
+  return new PlatformBusinessPublicError(code as PlatformBusinessPublicErrorCode, safeMessage, isBusinessFailure(failure) ? failure : undefined);
 }
 
 function trpcInput(input: unknown) {

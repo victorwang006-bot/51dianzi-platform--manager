@@ -108,7 +108,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         icon: Archive,
         label: "渠道库存",
         path: "/workbench/channel-inventory",
-        permission: "officialInventory.read",
+        workbenchCapability: "inventory.channel",
         chunk: "officialChannelInventory",
         nested: false,
       },

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { BusinessServiceAuthenticationCause } from "../../../shared/businessFailure";
 import { customerListSchema } from "../../../shared/crmCustomers";
 import { purchaseOrderListSchema } from "../../../shared/purchaseOrders";
 import { salesOrderListSchema } from "../../../shared/crmSalesOrders";
@@ -41,7 +43,14 @@ const adminActorInput = z.object({
 });
 
 function requirePortalKey(headers: Record<string, unknown> | undefined) {
-  requireInternalEnterprisePortalKey(headers);
+  try {
+    requireInternalEnterprisePortalKey(headers);
+  } catch (error) {
+    if (error instanceof TRPCError && error.code === "UNAUTHORIZED") {
+      throw new TRPCError({ code: error.code, message: error.message, cause: new BusinessServiceAuthenticationCause() });
+    }
+    throw error;
+  }
 }
 
 /**

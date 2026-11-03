@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "../../../../api/business-trpc";
+import { classifyBusinessFailure } from "../../../../BusinessWorkbenchSession";
 import { formatBeijingDateTime } from "../../../shared/beijingTime";
 
 const PAGE_SIZE = 10;
@@ -18,7 +19,7 @@ function pageWindow(current: number, total: number) {
   return Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
 }
 
-export default function CompanyReviewInbox() {
+export default function CompanyReviewInbox({ approved = false }: { approved?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [replyingId, setReplyingId] = useState<number | null>(null);
@@ -29,15 +30,14 @@ export default function CompanyReviewInbox() {
   const inboxQuery = trpc.publicReview.inbox.useQuery(
     { page, pageSize: PAGE_SIZE },
     {
-      refetchInterval: 60_000,
-      refetchOnWindowFocus: true,
+      enabled: approved && isOpen,
+      refetchInterval: approved && isOpen ? 60_000 : false,
+      refetchOnWindowFocus: approved && isOpen,
       retry: false,
-      placeholderData: previous => previous,
     },
   );
   const markReadMutation = trpc.publicReview.markInboxRead.useMutation({
-    retry: 1,
-    retryDelay: 1_000,
+    retry: false,
   });
   const replyMutation = trpc.publicReview.reply.useMutation({
     onSuccess: () => {
@@ -50,7 +50,7 @@ export default function CompanyReviewInbox() {
     onError: error => toast.error(error.message),
   });
 
-  const inbox = inboxQuery.data;
+  const inbox = approved && !inboxQuery.isError ? inboxQuery.data : undefined;
   const visiblePages = useMemo(
     () => pageWindow(inbox?.page ?? 1, inbox?.totalPages ?? 1),
     [inbox?.page, inbox?.totalPages],
@@ -114,14 +114,17 @@ export default function CompanyReviewInbox() {
         </span>
       </button>
 
-      {isOpen ? <>{inboxQuery.isLoading && !inbox ? (
+      {isOpen ? <>{!approved ? (
+        <p className="p-5 text-sm text-muted-foreground">企业审核通过后可查看企业评论。</p>
+      ) : inboxQuery.isLoading && !inbox ? (
         <div className="space-y-3 p-5">
           <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
           <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
         </div>
       ) : inboxQuery.isError ? (
         <div className="p-8 text-center text-sm text-slate-500">
-          <p>企业评论加载失败</p>
+          <p>{classifyBusinessFailure(inboxQuery.error) === "resource-denied" ? "暂无权限查看企业评论" : "企业评论加载失败"}</p>
+          <p className="mt-2">{inboxQuery.error.message}</p>
           <button
             type="button"
             onClick={() => void inboxQuery.refetch()}

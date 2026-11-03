@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { BusinessFailureCause } from "../../../shared/businessFailure";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   companies,
@@ -653,7 +654,7 @@ export async function resolveCrmTargetForUser(userId: number) {
   }
 
   if (request?.enterpriseId) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不是所选企业成员" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不是所选企业成员", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   const legacyCompanies = await db.select().from(companies)
     .where(and(eq(companies.userId, userId), isNull(companies.enterpriseId))).limit(2);
@@ -999,11 +1000,11 @@ export async function requireCrmEnterpriseAccess(ctx: SessionContext) {
   const request = getEnterpriseBusinessRequestContext(ctx.user.id);
   let scope = await resolveEnterpriseScope(ctx);
   if (request?.enterpriseId && !scope) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不是所选企业成员" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不是所选企业成员", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   if (scope?.member?.status === "suspended") {
     await setCrmAccess(ctx.user.id, false);
-    throw new TRPCError({ code: "FORBIDDEN", message: "企业成员身份已暂停" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "企业成员身份已暂停", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
 
   const db = await requireDb();
@@ -1029,7 +1030,7 @@ export async function requireCrmEnterpriseAccess(ctx: SessionContext) {
           : null);
   if (!identity) {
     await setCrmAccess(ctx.user.id, false);
-    throw new TRPCError({ code: "FORBIDDEN", message: "请先提交企业 ERP 开通申请" });
+    throw new TRPCError({ code: "FORBIDDEN", message: "请先提交企业 ERP 开通申请", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
 
   let status;
@@ -1073,6 +1074,7 @@ export async function requireCrmEnterpriseAccess(ctx: SessionContext) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: status.message || "企业 ERP 权限当前不可用",
+      cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED"),
     });
   }
   if (scope) await linkLegacyEnterpriseRows(scope.enterprise);

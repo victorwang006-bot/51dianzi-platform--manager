@@ -15,6 +15,7 @@ import {
   withCrmDuplicateRegistrationLock,
 } from "./services/crmDuplicateRegistration";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { validateBusinessCommandResourceCorrelation, type BusinessCommandResourceCorrelation } from "./businessCommandAudit";
 import {
   and,
   asc,
@@ -3120,6 +3121,8 @@ export async function recordBusinessCommandAccess(input: {
   method: string;
   requestId: string;
   actor: BusinessStaffBindingActor;
+  /** Versioned narrow resource correlation; never raw browser params/results. */
+  resourceCorrelation?: BusinessCommandResourceCorrelation;
 }) {
   if (
     !Number.isSafeInteger(input.merchantId) ||
@@ -3136,6 +3139,8 @@ export async function recordBusinessCommandAccess(input: {
   ) {
     throw new Error("BUSINESS_COMMAND_AUDIT_INPUT_INVALID");
   }
+  const resourceCorrelation = input.resourceCorrelation === undefined ? undefined
+    : validateBusinessCommandResourceCorrelation(input.resourceCorrelation);
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
   const actor = bindingActor(input.actor);
@@ -3154,6 +3159,8 @@ export async function recordBusinessCommandAccess(input: {
       scopeVersion: input.scopeVersion ?? null,
       requestId: input.requestId,
       authorizationFence: input.scopeVersion === undefined ? "legacy" : "held",
+      canonicalActor: { kind: "admin_account", adminAccountId: actor.operatorId },
+      ...(resourceCorrelation ? { resourceCorrelation } : {}),
     },
     ipAddress: actor.ipAddress,
     userAgent: actor.userAgent,

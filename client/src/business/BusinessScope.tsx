@@ -48,6 +48,8 @@ export type BusinessSessionCapabilities = Readonly<{
 export type BusinessContextVerification = Readonly<{
   state: "verified" | "revalidating";
   identity: string;
+  authorizationVersion: string;
+  readVersion: string;
 }>;
 
 type BusinessScopeValue = {
@@ -58,8 +60,10 @@ type BusinessScopeValue = {
   sessionCapabilities: BusinessSessionCapabilities;
   /** UI-only cache/draft namespace. Authorization stays exclusively in the BFF. */
   storageScope: string;
-  /** A current BFF recheck temporarily freezes imported business write controls. */
+  /** A background recheck is not an identity or permission change. */
   contextVerification: BusinessContextVerification;
+  /** Direct reads must report security failures, just like QueryCache reads. */
+  onAuthorizationError: (error: unknown) => void;
 };
 
 const BusinessScopeContext = createContext<BusinessScopeValue | null>(null);
@@ -67,6 +71,7 @@ const BusinessScopeContext = createContext<BusinessScopeValue | null>(null);
 export const CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT =
   "d51:customer-entry-drafts-invalidated";
 let activeStorageScope: string | null = null;
+const ignoreAuthorizationError = (_error: unknown) => {};
 
 export function businessStorageScope(): string | null {
   return activeStorageScope;
@@ -87,12 +92,16 @@ export function BusinessScopeProvider({
   staffPrincipal,
   sessionCapabilities,
   contextVerificationState,
+  authorizationVersion,
+  onAuthorizationError = ignoreAuthorizationError,
   children,
 }: {
   merchantId: number;
   staffPrincipal: ReadyBusinessStaffPrincipal;
   sessionCapabilities?: BusinessSessionCapabilities;
   contextVerificationState: BusinessContextVerification["state"];
+  authorizationVersion?: string;
+  onAuthorizationError?: (error: unknown) => void;
   children: ReactNode;
 }) {
   const frontUser = staffPrincipal.user;
@@ -101,9 +110,11 @@ export function BusinessScopeProvider({
   // restore another customer workspace's remembered filters/position.
   const storageScope = `business-domain:v1:staff:${frontUser.id}:admin:${staffPrincipal.adminAccountId}:enterprise:${staffPrincipal.enterpriseId}:merchant:${merchantId}:binding:${staffPrincipal.bindingVersion}`;
   const capabilities = sessionCapabilities ?? {};
+  const effectiveVersion = authorizationVersion ?? storageScope;
   const contextVerification = useMemo<BusinessContextVerification>(
-    () => ({ state: contextVerificationState, identity: storageScope }),
-    [contextVerificationState, storageScope]
+    () => ({ state: contextVerificationState, identity: storageScope,
+      authorizationVersion: effectiveVersion, readVersion: effectiveVersion }),
+    [contextVerificationState, storageScope, effectiveVersion]
   );
   const value = useMemo<BusinessScopeValue>(
     () => ({
@@ -113,6 +124,7 @@ export function BusinessScopeProvider({
       sessionCapabilities: capabilities,
       storageScope,
       contextVerification,
+      onAuthorizationError,
     }),
     [
       merchantId,
@@ -121,6 +133,7 @@ export function BusinessScopeProvider({
       capabilities,
       storageScope,
       contextVerification,
+      onAuthorizationError,
     ]
   );
 
