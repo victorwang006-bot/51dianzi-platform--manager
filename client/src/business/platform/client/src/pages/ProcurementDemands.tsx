@@ -85,7 +85,7 @@ function ProcurementDemandDetailDialog({
       >
         <div className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <div className="min-w-0">
-            <DialogTitle className="admin-section-title">
+            <DialogTitle>
               采购需求详情
             </DialogTitle>
             <DialogDescription className="admin-cell-secondary mt-1">

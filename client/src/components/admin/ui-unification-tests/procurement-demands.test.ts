@@ -36,7 +36,10 @@ vi.mock("sonner", () => ({ toast: { error: runtime.toastError } }));
 vi.mock("@/business/api/business-trpc", () => ({
   trpc: {
     enterprise: { me: { useQuery: () => ({ data: runtime.enterprise }) } },
-    customerDemand: { procurementList: { useQuery: runtime.list } },
+    customerDemand: {
+      procurementList: { useQuery: runtime.list },
+      procurementGet: { useQuery: () => ({ data: undefined, isLoading: true, error: null }) },
+    },
   },
 }));
 vi.mock("@/business/platform/client/src/components/customerDemands/DemandQuoteDialog", () => ({
@@ -196,6 +199,18 @@ describe("procurement-demands unified page", () => {
     click(button("报价"));
     expect(control("[data-test-quote-demand]").getAttribute("data-test-quote-demand")).toBe("41");
     expect(control("[data-test-quote-demand]").hasAttribute("data-test-quote-id")).toBe(false);
+  });
+
+  it("uses the dialog title role rather than the smaller important section role", () => {
+    render();
+    click(button("查看"));
+    const title = document.querySelector<HTMLElement>('[data-slot="dialog-title"]');
+    expect(title?.textContent?.trim()).toBe("采购需求详情");
+    expect(title?.classList.contains("admin-section-title")).toBe(false);
+    const close = document.querySelector<HTMLButtonElement>('[aria-label="关闭采购需求详情"]');
+    expect(close).not.toBeNull();
+    click(close!);
+    expect(document.querySelector('[data-slot="dialog-title"]')).toBeNull();
   });
 
   it("keeps original links, current-page semantics and internal permission gate in common tabs", () => {
