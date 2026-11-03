@@ -24,7 +24,7 @@ it("exposes the exact UI release and Beijing timezone without changing navigatio
       );
     });
     const nav = host.querySelector("nav");
-    expect(ADMIN_SYSTEM_RELEASE).toBe("20261103-channel-team-v5");
+    expect(ADMIN_SYSTEM_RELEASE).toBe("20261103-home-quotes-download-v6");
     expect(nav?.dataset.systemVersion).toBe(ADMIN_SYSTEM_RELEASE);
     expect(nav?.dataset.displayTimeZone).toBe("Asia/Shanghai");
     expect(nav?.title).toContain(`系统版本：${ADMIN_SYSTEM_RELEASE}`);

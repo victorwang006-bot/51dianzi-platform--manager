@@ -170,6 +170,7 @@ export async function acceptedQuoteOptions(scope: PurchaseOrderScope, input: { k
       INNER JOIN crm_customer_demand_quote_acceptance_items ai ON ai.enterpriseId=acc.enterpriseId AND ai.acceptanceId=acc.id
       INNER JOIN crm_customer_demand_quote_audit_items ai_snapshot ON ai_snapshot.enterpriseId=acc.enterpriseId
         AND ai_snapshot.auditId=qa.id AND ai_snapshot.demandItemId=ai.demandItemId
+        AND ai_snapshot.alternateNo=ai.alternateNo
       LEFT JOIN crm_purchase_orders po ON po.enterpriseId=acc.enterpriseId AND po.sourceAcceptanceId=acc.id
      WHERE acc.enterpriseId=${scope.enterpriseId} AND po.id IS NULL AND ${crmProcurementDemandWhere(scope, policy)}
        AND (${match}='' OR LOCATE(${match}, qa.supplierName)>0 OR LOCATE(${match}, ai_snapshot.partNumber)>0
@@ -230,6 +231,7 @@ async function verifiedQuoteSource(tx: Executor, scope: PurchaseOrderScope, acce
       FROM crm_customer_demand_quote_acceptance_items ai
       INNER JOIN crm_customer_demand_quote_audit_items source ON source.enterpriseId=ai.enterpriseId
         AND source.auditId=${Number(accepted.auditId)} AND source.demandItemId=ai.demandItemId
+        AND source.alternateNo=ai.alternateNo
      WHERE ai.enterpriseId=${scope.enterpriseId} AND ai.acceptanceId=${acceptanceId}
      ORDER BY source.sortOrder ASC, ai.id ASC FOR UPDATE
   `));

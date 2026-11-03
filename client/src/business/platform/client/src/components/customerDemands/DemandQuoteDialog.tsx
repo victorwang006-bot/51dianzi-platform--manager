@@ -32,6 +32,11 @@ type QuoteLineForm = {
   qtyUnit: string;
   demandQty: number | null;
   include: boolean;
+  options: QuoteOptionForm[];
+};
+type QuoteOptionForm = {
+  alternateNo: number;
+  persisted: boolean;
   qty: string;
   unitPrice: string;
   leadTime: string;
@@ -61,12 +66,17 @@ function fingerprint(form: QuoteForm, meta: QuoteMeta) {
     note: form.note,
     items: form.items
       .filter(item => item.include)
-      .map(({ demandItemId, qty, unitPrice, leadTime, note }) => ({
+      .map(({ demandItemId, options }) => ({
         demandItemId,
-        qty,
-        unitPrice,
-        leadTime,
-        note,
+        options: options.map(
+          ({ alternateNo, qty, unitPrice, leadTime, note }) => ({
+            alternateNo,
+            qty,
+            unitPrice,
+            leadTime,
+            note,
+          })
+        ),
       })),
   });
 }
@@ -75,9 +85,12 @@ function emptyForm(
   items: QuotableDemandItem[],
   quote?: DemandQuote
 ): QuoteForm {
-  const existing = new Map(
-    (quote?.items ?? []).map(item => [item.demandItemId, item])
-  );
+  const existing = new Map<number, DemandQuote["items"]>();
+  for (const item of quote?.items ?? [])
+    existing.set(item.demandItemId, [
+      ...(existing.get(item.demandItemId) ?? []),
+      item,
+    ]);
   return {
     supplierName: quote?.supplierName ?? "",
     note: quote?.note ?? "",
@@ -90,14 +103,36 @@ function emptyForm(
         pkg: item.pkg || "",
         qtyUnit: item.qtyUnit || "",
         demandQty: item.qty ?? null,
-        include: Boolean(saved),
-        qty: saved ? String(saved.qty) : "",
-        unitPrice: saved?.unitPrice ?? "",
-        leadTime: saved?.leadTime ?? "",
-        note: saved?.note ?? "",
+        include: Boolean(saved?.length),
+        options: saved?.length
+          ? saved.map(option => ({
+              alternateNo: option.alternateNo ?? 1,
+              persisted: true,
+              qty: String(option.qty),
+              unitPrice: option.unitPrice,
+              leadTime: option.leadTime,
+              note: option.note,
+            }))
+          : [blankOption(1)],
       };
     }),
   };
+}
+
+function blankOption(alternateNo: number): QuoteOptionForm {
+  return {
+    alternateNo,
+    persisted: false,
+    qty: "",
+    unitPrice: "",
+    leadTime: "",
+    note: "",
+  };
+}
+function isBlankOption(option: QuoteOptionForm) {
+  return [option.qty, option.unitPrice, option.leadTime, option.note].every(
+    value => !value.trim()
+  );
 }
 
 function fieldError(errors: FieldErrors, path: string) {
@@ -106,7 +141,8 @@ function fieldError(errors: FieldErrors, path: string) {
 function isConflict(error: unknown) {
   const code = trpcErrorCode(error);
   return (
-    code === "CONFLICT" || /版本|冲突|conflict|version/i.test(errorMessage(error))
+    code === "CONFLICT" ||
+    /版本|冲突|conflict|version/i.test(errorMessage(error))
   );
 }
 function isAmbiguousNetworkFailure(error: unknown) {
@@ -114,14 +150,18 @@ function isAmbiguousNetworkFailure(error: unknown) {
   // An explicitly typed application rejection is safe to surface for editing.
   // Anything without a typed rejection may have reached the server, including a
   // proxy/response failure after a successful idempotent write.
-  if (["BAD_REQUEST", "FORBIDDEN", "NOT_FOUND", "CONFLICT"].includes(code ?? "")) {
+  if (
+    ["BAD_REQUEST", "FORBIDDEN", "NOT_FOUND", "CONFLICT"].includes(code ?? "")
+  ) {
     return false;
   }
   return (
     !code ||
     code === "INTERNAL_SERVER_ERROR" ||
     code === "TIMEOUT" ||
-    /网络|network|fetch|timeout|timed out|连接|connection/i.test(errorMessage(error))
+    /网络|network|fetch|timeout|timed out|连接|connection/i.test(
+      errorMessage(error)
+    )
   );
 }
 
@@ -140,14 +180,19 @@ export function DemandQuoteDialog({
   onClose,
   onSaved,
 }: DemandQuoteDialogProps) {
-  const detailQuery = trpc.customerDemand.procurementGet.useQuery({ id: demandId });
-  const ownQuotesQuery = trpc.customerDemand.quoteList.useQuery({
-    demandId,
-    ...(quoteId == null ? {} : { quoteId }),
-    audience: "procurement",
-    page: 1,
-    pageSize: 20,
-  }, { enabled: quoteId != null });
+  const detailQuery = trpc.customerDemand.procurementGet.useQuery({
+    id: demandId,
+  });
+  const ownQuotesQuery = trpc.customerDemand.quoteList.useQuery(
+    {
+      demandId,
+      ...(quoteId == null ? {} : { quoteId }),
+      audience: "procurement",
+      page: 1,
+      pageSize: 20,
+    },
+    { enabled: quoteId != null }
+  );
   const saveMutation = trpc.customerDemand.quoteSave.useMutation();
   const utils = trpc.useUtils();
   const [form, setForm] = useState<QuoteForm>({
@@ -171,26 +216,37 @@ export function DemandQuoteDialog({
   const [awaitingReplay, setAwaitingReplay] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmExcess, setConfirmExcess] = useState(false);
   const loadedRef = useRef<string | null>(null);
   const requestKeysRef = useRef(new Map<string, string>());
 
-  const ownQuote = quoteId == null
-    ? undefined
-    : ownQuotesQuery.data?.items?.find(quote => quote.id === quoteId);
+  const ownQuote =
+    quoteId == null
+      ? undefined
+      : ownQuotesQuery.data?.items?.find(quote => quote.id === quoteId);
   const detail = detailQuery.data;
-  const loadingOwnQuote = quoteId != null && Boolean(
-    ownQuotesQuery.isLoading ||
-      (ownQuotesQuery.isFetching && !ownQuotesQuery.data)
-  );
+  const loadingOwnQuote =
+    quoteId != null &&
+    Boolean(
+      ownQuotesQuery.isLoading ||
+        (ownQuotesQuery.isFetching && !ownQuotesQuery.data)
+    );
   const formReady =
     Boolean(detail?.id) &&
     !detailQuery.isLoading &&
     !loadingOwnQuote &&
     !ownQuotesQuery.error &&
     (quoteId == null || Boolean(ownQuote));
-  const revisionChanged = Boolean(detail && (detail.revision ?? 1) !== loadedDemandRevision);
-  const needsReconfirmation = Boolean(ownQuote && (ownQuote.demandRevision ?? 1) < (detail?.revision ?? 1) && ownQuote.version >= (quoteMeta?.version ?? ownQuote.version));
-  const editingLocked = saving || awaitingReplay || !formReady || revisionChanged;
+  const revisionChanged = Boolean(
+    detail && (detail.revision ?? 1) !== loadedDemandRevision
+  );
+  const needsReconfirmation = Boolean(
+    ownQuote &&
+      (ownQuote.demandRevision ?? 1) < (detail?.revision ?? 1) &&
+      ownQuote.version >= (quoteMeta?.version ?? ownQuote.version)
+  );
+  const editingLocked =
+    saving || awaitingReplay || !formReady || revisionChanged;
 
   const replaceForm = (updater: (current: QuoteForm) => QuoteForm) => {
     if (editingLocked) return;
@@ -226,7 +282,13 @@ export function DemandQuoteDialog({
     )
       return;
     const recordKey = `${detail.id}:${detail.revision ?? 1}:${incomingMeta?.id ?? "new"}:${incomingMeta?.version ?? 0}`;
-    if (loadedRef.current === recordKey || dirtyRef.current || savingRef.current || awaitingReplay) return;
+    if (
+      loadedRef.current === recordKey ||
+      dirtyRef.current ||
+      savingRef.current ||
+      awaitingReplay
+    )
+      return;
     const loaded = emptyForm(detail.items, ownQuote);
     demandRevisionRef.current = detail.revision ?? 1;
     setLoadedDemandRevision(detail.revision ?? 1);
@@ -277,13 +339,21 @@ export function DemandQuoteDialog({
     replaceForm(current => ({ ...current, [key]: value }));
   const updateLine = (
     index: number,
+    optionIndex: number,
     key: "qty" | "unitPrice" | "leadTime" | "note",
     value: string
   ) =>
     replaceForm(current => ({
       ...current,
       items: current.items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item
+        itemIndex === index
+          ? {
+              ...item,
+              options: item.options.map((option, i) =>
+                i === optionIndex ? { ...option, [key]: value } : option
+              ),
+            }
+          : item
       ),
     }));
   const updateIncluded = (index: number, include: boolean) =>
@@ -291,30 +361,83 @@ export function DemandQuoteDialog({
       ...current,
       items: current.items.map((item, itemIndex) => {
         if (itemIndex !== index) return item;
-        // Selection is explicit. A suggested demand quantity does not make an
-        // unselected line part of the payload, and negative quantities are never normalized.
-        const suggestedQty =
-          item.qty ||
-          (item.demandQty && item.demandQty > 0 ? String(item.demandQty) : "");
-        return { ...item, include, qty: include ? suggestedQty : item.qty };
+        const options = item.options.length ? item.options : [blankOption(1)];
+        return {
+          ...item,
+          include,
+          options: options.map((option, i) =>
+            i === 0 && include && !option.qty
+              ? {
+                  ...option,
+                  qty:
+                    item.demandQty && item.demandQty > 0
+                      ? String(item.demandQty)
+                      : "",
+                }
+              : option
+          ),
+        };
       }),
+    }));
+
+  const addOption = (index: number) =>
+    replaceForm(current => ({
+      ...current,
+      items: current.items.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              options: [
+                ...item.options,
+                blankOption(
+                  Math.max(
+                    0,
+                    ...item.options.map(option => option.alternateNo)
+                  ) + 1
+                ),
+              ],
+            }
+          : item
+      ),
+    }));
+  const removeOption = (index: number, optionIndex: number) =>
+    replaceForm(current => ({
+      ...current,
+      items: current.items.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              options: item.options.filter(
+                (option, j) => j !== optionIndex || option.persisted
+              ),
+            }
+          : item
+      ),
     }));
 
   const buildPayload = () => {
     const current = formRef.current;
     const currentMeta = quoteMetaRef.current;
-    const selected = current.items
-      .map((item, formIndex) => ({ item, formIndex }))
-      .filter(({ item }) => item.include);
-    const items = selected.map(({ item }) => ({
-        demandItemId: item.demandItemId,
-        qty: item.qty === "" ? Number.NaN : Number(item.qty),
-        // Price intentionally remains a string: CNY values are not converted to
-        // binary floating point before the shared contract validates them.
-        unitPrice: item.unitPrice.trim(),
-        leadTime: item.leadTime.trim(),
-        note: item.note.trim(),
-      }));
+    const selected = current.items.flatMap((item, formIndex) =>
+      !item.include
+        ? []
+        : item.options.flatMap((option, optionIndex) =>
+            isBlankOption(option)
+              ? []
+              : [{ item, option, formIndex, optionIndex }]
+          )
+    );
+    const items = selected.map(({ item, option }) => ({
+      demandItemId: item.demandItemId,
+      alternateNo: option.alternateNo,
+      qty: /^\d+$/.test(option.qty.trim())
+        ? Number(option.qty.trim())
+        : Number.NaN,
+      // Prices stay decimal strings; blank is never converted to zero.
+      unitPrice: option.unitPrice.trim(),
+      leadTime: option.leadTime.trim(),
+      note: option.note.trim(),
+    }));
     const candidate = {
       demandId,
       demandRevision: demandRevisionRef.current,
@@ -335,20 +458,51 @@ export function DemandQuoteDialog({
         // errors back onto the corresponding source-table row for partial quotes.
         if (path[0] === "items" && typeof path[1] === "number") {
           const selectedRow = selected[path[1]];
-          if (selectedRow) path[1] = selectedRow.formIndex;
+          if (selectedRow)
+            path.splice(
+              1,
+              1,
+              selectedRow.formIndex,
+              "options",
+              selectedRow.optionIndex
+            );
         }
         nextErrors[path.join(".")] = issue.message;
       });
+    current.items.forEach((item, index) => {
+      if (item.include && !selected.some(row => row.formIndex === index))
+        nextErrors[`items.${index}`] = "勾选物料至少填写一个完整报价方案";
+    });
     setErrors(nextErrors);
     return { current, items, errors: nextErrors };
   };
 
-  const save = async () => {
+  const save = async (excessConfirmed = false) => {
     if (savingRef.current || !formReady) return;
-    if (!awaitingReplay && revisionChanged) { setConflict(true); setSaveError("需求已更新，请重新加载并核对最新物料后报价。"); return; }
-    if (needsReconfirmation && !revisionConfirmed) { setSaveError("请先勾选确认已核对最新需求版本。"); return; }
+    if (!awaitingReplay && revisionChanged) {
+      setConflict(true);
+      setSaveError("需求已更新，请重新加载并核对最新物料后报价。");
+      return;
+    }
+    if (needsReconfirmation && !revisionConfirmed) {
+      setSaveError("请先勾选确认已核对最新需求版本。");
+      return;
+    }
     const built = buildPayload();
     if (Object.keys(built.errors).length) return;
+    if (
+      !awaitingReplay &&
+      !excessConfirmed &&
+      built.items.some(option => {
+        const item = built.current.items.find(
+          line => line.demandItemId === option.demandItemId
+        );
+        return item?.demandQty != null && option.qty > item.demandQty;
+      })
+    ) {
+      setConfirmExcess(true);
+      return;
+    }
     const meta = quoteMetaRef.current;
     const keyFingerprint = `${demandRevisionRef.current}:${fingerprint(built.current, meta)}`;
     let requestId = requestKeysRef.current.get(keyFingerprint);
@@ -374,7 +528,24 @@ export function DemandQuoteDialog({
       const nextMeta = { id: result.id, version: result.version };
       quoteMetaRef.current = nextMeta;
       setQuoteMeta(nextMeta);
-      baselineRef.current = fingerprint(formRef.current, nextMeta);
+      const committed = {
+        ...formRef.current,
+        items: formRef.current.items.map(item =>
+          !item.include
+            ? item
+            : {
+                ...item,
+                options: item.options.map(option =>
+                  isBlankOption(option)
+                    ? option
+                    : { ...option, persisted: true }
+                ),
+              }
+        ),
+      };
+      formRef.current = committed;
+      setForm(committed);
+      baselineRef.current = fingerprint(committed, nextMeta);
       dirtyRef.current = false;
       setDirty(false);
       loadedRef.current = `${demandId}:${demandRevisionRef.current}:${result.id}:${result.version}`;
@@ -439,8 +610,9 @@ export function DemandQuoteDialog({
 
   const errorForLine = (
     index: number,
+    optionIndex: number,
     key: "qty" | "unitPrice" | "leadTime" | "note"
-  ) => fieldError(errors, `items.${index}.${key}`);
+  ) => fieldError(errors, `items.${index}.options.${optionIndex}.${key}`);
 
   return (
     <>
@@ -465,10 +637,14 @@ export function DemandQuoteDialog({
           <div className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
             <div className="min-w-0">
               <DialogTitle className="text-base font-semibold text-slate-800">
-                {quoteMeta ? `修改报价 · 第${quoteMeta.version + 1}轮` : "新增供应商报价"}
+                {quoteMeta
+                  ? `修改报价 · 第${quoteMeta.version + 1}轮`
+                  : "新增供应商报价"}
               </DialogTitle>
               <DialogDescription className="mt-1 truncate text-xs text-slate-500">
-                {detail?.demandNo ? `${detail.demandNo} · V${detail.revision ?? 1} · ` : ""}
+                {detail?.demandNo
+                  ? `${detail.demandNo} · V${detail.revision ?? 1} · `
+                  : ""}
                 可选择部分物料报价；保存修改会生成新一轮并保留历史
               </DialogDescription>
             </div>
@@ -506,13 +682,50 @@ export function DemandQuoteDialog({
                 {errorMessage(ownQuotesQuery.error)}
               </p>
             )}
-            {!loadingOwnQuote && !ownQuotesQuery.error && quoteId != null && !ownQuote && (
-              <p role="alert" className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                报价不存在、已被更新或不属于当前采购人员，请关闭后刷新。
+            {!loadingOwnQuote &&
+              !ownQuotesQuery.error &&
+              quoteId != null &&
+              !ownQuote && (
+                <p
+                  role="alert"
+                  className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                  报价不存在、已被更新或不属于当前采购人员，请关闭后刷新。
+                </p>
+              )}
+            {revisionChanged && (
+              <p
+                role="alert"
+                className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+              >
+                需求已变更为 V{detail?.revision ?? 1}。本次填写仍基于 V
+                {loadedDemandRevision}
+                ，请重新加载后核对；旧输入不会静默覆盖新需求。
               </p>
             )}
-            {revisionChanged && <p role="alert" className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">需求已变更为 V{detail?.revision ?? 1}。本次填写仍基于 V{loadedDemandRevision}，请重新加载后核对；旧输入不会静默覆盖新需求。</p>}
-            {needsReconfirmation && !revisionChanged && <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><p>原报价基于 V{ownQuote?.demandRevision ?? 1}，当前需求为 V{loadedDemandRevision}。以下按最新需求展示，沿用的旧报价数值仅供核对；请重新确认后保存。</p><label className="mt-2 flex items-start gap-2"><input type="checkbox" className="mt-0.5" checked={revisionConfirmed} disabled={saving || awaitingReplay} onChange={event => setRevisionConfirmed(event.target.checked)} /><span>我已核对最新需求，确认本次报价适用于 V{loadedDemandRevision}</span></label></div>}
+            {needsReconfirmation && !revisionChanged && (
+              <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <p>
+                  原报价基于 V{ownQuote?.demandRevision ?? 1}，当前需求为 V
+                  {loadedDemandRevision}
+                  。以下按最新需求展示，沿用的旧报价数值仅供核对；请重新确认后保存。
+                </p>
+                <label className="mt-2 flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={revisionConfirmed}
+                    disabled={saving || awaitingReplay}
+                    onChange={event =>
+                      setRevisionConfirmed(event.target.checked)
+                    }
+                  />
+                  <span>
+                    我已核对最新需求，确认本次报价适用于 V{loadedDemandRevision}
+                  </span>
+                </label>
+              </div>
+            )}
             {formReady && (
               <>
                 <div className="grid gap-2 border-b border-slate-100 pb-3 sm:grid-cols-3">
@@ -531,7 +744,9 @@ export function DemandQuoteDialog({
                       className={`${compactInput} w-full`}
                     />
                     {fieldError(errors, "supplierName") && (
-                      <p className="mt-1 text-[11px] text-red-600">{fieldError(errors, "supplierName")}</p>
+                      <p className="mt-1 text-[11px] text-red-600">
+                        {fieldError(errors, "supplierName")}
+                      </p>
                     )}
                   </div>
                   <div className="sm:col-span-2">
@@ -556,7 +771,7 @@ export function DemandQuoteDialog({
                       报价明细
                     </h3>
                     <p className="mt-0.5 text-[11px] text-slate-500">
-                      勾选要报价的物料；每个已勾选行须填写数量、含税单价和交期。
+                      勾选物料后可添加多个备选方案；每行至少一个完整方案，空白新增不提交。备选方案不累计为采购金额。
                     </p>
                   </div>
                   {fieldError(errors, "items") && (
@@ -564,139 +779,171 @@ export function DemandQuoteDialog({
                       {fieldError(errors, "items")}
                     </p>
                   )}
-                  <div className="overflow-x-auto rounded border border-slate-200">
-                    <table className="min-w-[960px] w-full table-fixed text-xs">
-                      <colgroup>
-                        <col className="w-[6%]" />
-                        <col className="w-[14%]" />
-                        <col className="w-[9%]" />
-                        <col className="w-[9%]" />
-                        <col className="w-[11%]" />
-                        <col className="w-[13%]" />
-                        <col className="w-[13%]" />
-                        <col className="w-[14%]" />
-                        <col className="w-[11%]" />
-                      </colgroup>
-                      <thead>
-                        <tr className="h-8 bg-slate-50 text-left text-[11px] font-medium text-slate-500">
-                          <th className="px-2 text-center">报价</th>
-                          <th className="px-2">型号</th>
-                          <th className="px-2">品牌</th>
-                          <th className="px-2">封装</th>
-                          <th className="px-2">需求数量</th>
-                          <th className="px-2">报价数量</th>
-                          <th className="px-2">含税单价（元）</th>
-                          <th className="px-2">交期</th>
-                          <th className="px-2">行备注</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {form.items.map((item, index) => (
-                          <tr
-                            key={item.demandItemId}
-                            className="border-t border-slate-100 align-top"
+                  <div className="space-y-2">
+                    {form.items.map((item, index) => (
+                      <section
+                        key={item.demandItemId}
+                        className="rounded border border-slate-200"
+                        aria-label={`需求行${index + 1}`}
+                      >
+                        <div className="flex flex-wrap items-center gap-3 bg-slate-50 px-3 py-2 text-xs">
+                          <input
+                            type="checkbox"
+                            aria-label={`选择第${index + 1}行报价`}
+                            checked={item.include}
+                            disabled={editingLocked}
+                            onChange={event =>
+                              updateIncluded(index, event.target.checked)
+                            }
+                          />
+                          <strong className="text-slate-800">
+                            {item.partNumber || "—"}
+                          </strong>
+                          <span className="text-slate-600">
+                            {item.brand || "—"} · {item.pkg || "—"}
+                          </span>
+                          <span className="text-slate-500">
+                            需求数量：{item.demandQty ?? "—"} {item.qtyUnit}
+                          </span>
+                        </div>
+                        {fieldError(errors, `items.${index}`) && (
+                          <p
+                            role="alert"
+                            className="px-3 pt-2 text-xs text-red-600"
                           >
-                            <td className="px-2 py-2 text-center">
-                              <input
-                                type="checkbox"
-                                aria-label={`选择第${index + 1}行报价`}
-                                checked={item.include}
-                                disabled={editingLocked}
-                                onChange={event =>
-                                  updateIncluded(index, event.target.checked)
-                                }
-                              />
-                            </td>
-                            <td className="px-2 py-2 font-medium text-slate-800">
-                              {item.partNumber || "—"}
-                            </td>
-                            <td className="px-2 py-2 text-slate-600">
-                              {item.brand || "—"}
-                            </td>
-                            <td className="px-2 py-2 text-slate-600">
-                              {item.pkg || "—"}
-                            </td>
-                            <td className="px-2 py-2 tabular-nums text-slate-600">
-                              {item.demandQty ?? "—"} {item.qtyUnit}
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                data-testid={`quote-item-${index}-qty`}
-                                aria-label={`第${index + 1}行报价数量`}
-                                inputMode="numeric"
-                                value={item.qty}
-                                disabled={editingLocked || !item.include}
-                                onChange={event =>
-                                  updateLine(index, "qty", event.target.value)
-                                }
-                                className={`${compactInput} w-full`}
-                              />
-                              {errorForLine(index, "qty") && (
-                                <p className="mt-1 text-[11px] text-red-600">
-                                  {errorForLine(index, "qty")}
-                                </p>
-                              )}
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                data-testid={`quote-item-${index}-unitPrice`}
-                                aria-label={`第${index + 1}行含税单价`}
-                                inputMode="decimal"
-                                value={item.unitPrice}
-                                disabled={editingLocked || !item.include}
-                                onChange={event =>
-                                  updateLine(
-                                    index,
-                                    "unitPrice",
-                                    event.target.value
-                                  )
-                                }
-                                className={`${compactInput} w-full`}
-                              />
-                              {errorForLine(index, "unitPrice") && (
-                                <p className="mt-1 text-[11px] text-red-600">
-                                  {errorForLine(index, "unitPrice")}
-                                </p>
-                              )}
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                data-testid={`quote-item-${index}-leadTime`}
-                                aria-label={`第${index + 1}行交期`}
-                                maxLength={80}
-                                value={item.leadTime}
-                                disabled={editingLocked || !item.include}
-                                onChange={event =>
-                                  updateLine(
-                                    index,
-                                    "leadTime",
-                                    event.target.value
-                                  )
-                                }
-                                className={`${compactInput} w-full`}
-                              />
-                              {errorForLine(index, "leadTime") && (
-                                <p className="mt-1 text-[11px] text-red-600">
-                                  {errorForLine(index, "leadTime")}
-                                </p>
-                              )}
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                aria-label={`第${index + 1}行报价备注`}
-                                maxLength={500}
-                                value={item.note}
-                                disabled={editingLocked || !item.include}
-                                onChange={event =>
-                                  updateLine(index, "note", event.target.value)
-                                }
-                                className={`${compactInput} w-full`}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            {fieldError(errors, `items.${index}`)}
+                          </p>
+                        )}
+                        <div className="overflow-x-auto px-2">
+                          <table className="min-w-[720px] w-full table-fixed text-xs">
+                            <thead>
+                              <tr className="h-8 text-left text-[11px] text-slate-500">
+                                <th className="w-16 px-1">方案</th>
+                                <th className="px-1">报价数量</th>
+                                <th className="px-1">含税单价（元）</th>
+                                <th className="px-1">交期</th>
+                                <th className="px-1">备注</th>
+                                <th className="w-16 px-1">操作</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {item.options.map((option, optionIndex) => (
+                                <tr
+                                  key={option.alternateNo}
+                                  className="border-t border-slate-100 align-top"
+                                >
+                                  <td className="px-1 py-2 text-slate-600">
+                                    方案{option.alternateNo}
+                                  </td>
+                                  {(
+                                    [
+                                      "qty",
+                                      "unitPrice",
+                                      "leadTime",
+                                      "note",
+                                    ] as const
+                                  ).map(key => {
+                                    const label = {
+                                      qty: "报价数量",
+                                      unitPrice: "含税单价",
+                                      leadTime: "交期",
+                                      note: "报价备注",
+                                    }[key];
+                                    const error = errorForLine(
+                                      index,
+                                      optionIndex,
+                                      key
+                                    );
+                                    return (
+                                      <td key={key} className="p-1">
+                                        <input
+                                          data-testid={`quote-item-${index}-${optionIndex === 0 ? "" : `option-${optionIndex}-`}${key}`}
+                                          aria-label={`第${index + 1}行${optionIndex === 0 ? "" : `方案${option.alternateNo}`}${label}`}
+                                          inputMode={
+                                            key === "qty"
+                                              ? "numeric"
+                                              : key === "unitPrice"
+                                                ? "decimal"
+                                                : "text"
+                                          }
+                                          maxLength={
+                                            key === "leadTime"
+                                              ? 80
+                                              : key === "note"
+                                                ? 500
+                                                : undefined
+                                          }
+                                          placeholder={
+                                            key === "leadTime"
+                                              ? "现货 / 7天到货"
+                                              : undefined
+                                          }
+                                          value={option[key]}
+                                          disabled={
+                                            editingLocked || !item.include
+                                          }
+                                          onChange={event =>
+                                            updateLine(
+                                              index,
+                                              optionIndex,
+                                              key,
+                                              event.target.value
+                                            )
+                                          }
+                                          className={`${compactInput} w-full`}
+                                        />
+                                        {error && (
+                                          <p className="mt-1 text-[11px] text-red-600">
+                                            {error}
+                                          </p>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="px-1 py-1">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 px-2 text-[11px] text-red-600"
+                                      aria-label={`删除第${index + 1}行方案${option.alternateNo}`}
+                                      disabled={
+                                        editingLocked ||
+                                        !item.include ||
+                                        option.persisted
+                                      }
+                                      onClick={() =>
+                                        removeOption(index, optionIndex)
+                                      }
+                                    >
+                                      {option.persisted ? "已提交" : "删除"}
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="m-1 h-7 text-[11px] text-[#185FA5]"
+                          aria-label={`第${index + 1}行添加报价方案`}
+                          disabled={
+                            editingLocked ||
+                            !item.include ||
+                            Math.max(
+                              0,
+                              ...item.options.map(option => option.alternateNo)
+                            ) >= 100
+                          }
+                          onClick={() => addOption(index)}
+                        >
+                          ＋添加报价方案
+                        </Button>
+                      </section>
+                    ))}
                   </div>
                   <p className="mt-1 text-[11px] text-slate-500 sm:hidden">
                     左右滑动可填写报价数量、价格和交期。
@@ -739,7 +986,9 @@ export function DemandQuoteDialog({
             <Button
               type="button"
               size="sm"
-              disabled={saving || !formReady || (!awaitingReplay && revisionChanged)}
+              disabled={
+                saving || !formReady || (!awaitingReplay && revisionChanged)
+              }
               onClick={() => void save()}
               className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]"
             >
@@ -749,12 +998,24 @@ export function DemandQuoteDialog({
                 : needsReconfirmation
                   ? "确认并保存报价"
                   : quoteMeta
-                  ? "保存为新一轮"
-                  : "提交报价"}
+                    ? "保存为新一轮"
+                    : "提交报价"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+      {confirmExcess && (
+        <ConfirmDialog
+          title="报价数量超过需求数量"
+          description="部分方案数量超过需求，可能涉及整包或MOQ，确认继续提交？"
+          confirmLabel="确认并提交"
+          onCancel={() => setConfirmExcess(false)}
+          onConfirm={() => {
+            setConfirmExcess(false);
+            void save(true);
+          }}
+        />
+      )}
       {confirmDiscard && (
         <ConfirmDialog
           title="放弃未保存的报价？"

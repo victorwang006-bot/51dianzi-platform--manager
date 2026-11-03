@@ -20,10 +20,89 @@ export type AdminWorkspace<T extends AdminWorkspaceNavigationItem> = {
   items: T[];
 };
 
+export type AdminBusinessNavigationGroupId =
+  | "customers"
+  | "inventory"
+  | "procurement";
+
+export type AdminBusinessNavigationEntry<
+  T extends AdminWorkspaceNavigationItem,
+> =
+  | { kind: "direct"; item: T }
+  | {
+      kind: "group";
+      id: AdminBusinessNavigationGroupId;
+      label: string;
+      items: T[];
+    };
+
 function pathsForGroup(id: string): readonly string[] {
   return (
     ADMIN_WORKBENCH_NAVIGATION_GROUPS.find(group => group.id === id)?.paths ??
     []
+  );
+}
+
+/** Second-row presentation only; canonical routes and first-row targets stay unchanged. */
+const BUSINESS_MODULE_ENTRIES = [
+  { kind: "direct", path: "/workbench/channel-inventory" },
+  {
+    kind: "group",
+    id: "customers",
+    label: "客户与销售",
+    paths: [
+      "/workbench/customers",
+      "/workbench/customer-demands",
+      "/workbench/inquiries",
+      "/workbench/orders",
+    ],
+  },
+  {
+    kind: "group",
+    id: "inventory",
+    label: "库存管理",
+    paths: [
+      "/workbench/inventory",
+      "/workbench/publish",
+      "/workbench/inbound",
+      "/workbench/outbound",
+    ],
+  },
+  {
+    kind: "group",
+    id: "procurement",
+    label: "采购管理",
+    paths: pathsForGroup("procurement"),
+  },
+  { kind: "direct", path: "/workbench/company-info" },
+] as const;
+
+/** Only intersect with parent-authorized items. Never synthesize a menu or a fallback. */
+export function groupAdminBusinessNavigationItems<
+  T extends AdminWorkspaceNavigationItem,
+>(items: readonly T[]): AdminBusinessNavigationEntry<T>[] {
+  const itemByPath = new Map(items.map(item => [item.path, item]));
+  return BUSINESS_MODULE_ENTRIES.flatMap<AdminBusinessNavigationEntry<T>>(
+    entry => {
+      if (entry.kind === "direct") {
+        const item = itemByPath.get(entry.path);
+        return item ? [{ kind: "direct", item }] : [];
+      }
+      const visibleItems = entry.paths.flatMap(path => {
+        const item = itemByPath.get(path);
+        return item ? [item] : [];
+      });
+      return visibleItems.length
+        ? [
+            {
+              kind: "group",
+              id: entry.id,
+              label: entry.label,
+              items: visibleItems,
+            },
+          ]
+        : [];
+    }
   );
 }
 
@@ -55,7 +134,13 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
     {
       id: "organization",
       label: "组织与权限",
-      paths: ["/staff", "/teams", "/role-templates", "/permission-audit", "/workbench/user-records"],
+      paths: [
+        "/staff",
+        "/teams",
+        "/role-templates",
+        "/permission-audit",
+        "/workbench/user-records",
+      ],
     },
   ];
 

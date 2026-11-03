@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getDb } from "../db";
 import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
+import { createChannelInventoryExportService } from "../services/channelInventoryExport";
 import { createCrmPermissionProcedure, router } from "../_core/trpc";
 import {
   CHANNEL_INVENTORY_TYPES,
@@ -133,8 +134,17 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const service = createChannelInventoryService({ getDb, registerTeamRecord });
   const notes = createChannelNotesService({ getDb });
   const team = createChannelTeamInventoryService({ getDb });
+  const exporter = createChannelInventoryExportService({ getDb });
 
   return router({
+    exportChannelMaterials: procedure
+      .input(z.object({ channelId: positiveInt, expectedEnterpriseId: positiveInt, expectedActorUserId: positiveInt }).strict())
+      .query(async ({ ctx, input }) => {
+        try {
+          assertExpectedContext(ctx, input);
+          return await exporter.exportChannelMaterials(scopeFromContext(ctx), input);
+        } catch (error) { return asTrpcError(error); }
+      }),
     listTeamMaterials: procedure
       .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
       .query(async ({ ctx, input }) => {

@@ -6,6 +6,8 @@ import { resolve } from "node:path";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("xlsx", async importOriginal => ({ ...await importOriginal<typeof import("xlsx")>(), writeFile: vi.fn() }));
+
 const hostStyles = readFileSync(
   resolve(process.cwd(), "client/src/business/platform/client/src/pages/ChannelInventoryHost.css"),
   "utf8",
@@ -14,8 +16,10 @@ const hostStyles = readFileSync(
 const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   const getMaterial = vi.fn();
+  const exportChannelMaterials = vi.fn();
   return {
     getMaterial,
+    exportChannelMaterials,
     teamQuery: null as unknown,
     sourceQuery: null as unknown,
     sourceInputs: [] as unknown[],
@@ -38,6 +42,7 @@ const runtime = vi.hoisted(() => {
     sharedQuery: null as unknown,
     notesQuery: null as unknown,
     utils: {
+      client: { channelInventory: { exportChannelMaterials: { query: exportChannelMaterials } } },
       channelInventory: {
         getMaterial: { fetch: getMaterial },
         listTeamMaterials: { invalidate },
@@ -194,6 +199,8 @@ function renderHost() {
 }
 
 function configureFixtures() {
+  vi.mocked(XLSX.writeFile).mockClear();
+  runtime.exportChannelMaterials.mockReset().mockResolvedValue(exportFixture());
   runtime.channelInputs = [];
   runtime.sourceInputs = [];
   runtime.materialInputs = [];
@@ -219,6 +226,7 @@ function configureFixtures() {
     member: { inventoryDataScope: "enterprise" },
     permissions: { manageMembers: false, inviteAdmins: false },
   });
+  (runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn>; data: unknown }).refetch.mockResolvedValue(runtime.enterpriseMe);
   runtime.channelQuery = query({
     items: [
       {
@@ -904,5 +912,126 @@ describe("channel inventory upload entrypoints", () => {
     click(button("保存修改"));
     await settle();
     expect(runtime.updateMaterial).toHaveBeenCalledWith(expect.objectContaining({ id: 101, expectedRevision: 9, partNumber: "EDITED", expectedEnterpriseId: 31, expectedActorUserId: 7 }));
+  });
+});
+
+function exportFixture() {
+  return {
+    channel: { id: 11, name: "深圳代理", type: "agent" as const, active: true },
+    enterpriseId: 31, actorUserId: 7, exportedAt: "2026-11-03T04:15:16.000Z", total: 23,
+    items: Array.from({ length: 23 }, (_, n) => ({
+      partNumber: n === 0 ? "000123456789012345678901234567890" : n === 1 ? "  =HYPERLINK(\"https://invalid.test\")" : `PART-${n}`,
+      brand: n === 1 ? "\t+CMD" : "TI", qty: n === 0 ? null : 0,
+      dateCode: n === 1 ? "@SUM(1,2)" : "002601000000000000000000000001",
+      price: n === 0 ? null : n === 1 ? "0" : "123456789012345.123456789012",
+      currency: "CNY" as const, taxIncluded: n === 0 ? null : n === 1, leadTime: n === 1 ? "-EVIL" : null,
+      updatedAt: "2026-11-03T04:00:01.000Z",
+      note: "SECRET-NEVER-EXPORT", contactName: "SECRET-CONTACT", // adversarial extra keys must be ignored
+    })),
+  };
+}
+async function settleExport() {
+  await act(async () => { await vi.dynamicImportSettled(); await Promise.resolve(); });
+}
+function exportedBook() {
+  const book = vi.mocked(XLSX.writeFile).mock.calls[0]?.[0];
+  if (!book) throw new Error("missing exported workbook");
+  // Serialize and read an actual XLSX archive, not only an object shape assertion.
+  return XLSX.read(XLSX.write(book, { type: "array", bookType: "xlsx" }), { type: "array", cellStyles: true });
+}
+
+describe("v6 channel archive complete inventory download", () => {
+  it("places download before view and permits read-only channels without leader source privileges", async () => {
+    const old = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.channelQuery = query({ ...old.data, canWrite: false, items: old.data.items.map(item => ({ ...item, canEdit: false, readOnly: true })) });
+    renderHost(); click(button("渠道档案"));
+    const actions = document.querySelector(".ci-row-actions")!;
+    expect(Array.from(actions.querySelectorAll("button")).map(item => item.textContent)).toEqual(["下载库存", "查看库存", "编辑", "停用"]);
+    expect(button("下载库存").disabled).toBe(false); expect(button("编辑").disabled).toBe(true);
+    click(button("下载库存"));
+    expect(button("下载中…").disabled).toBe(true);
+    click(button("下载中…"));
+    await settleExport();
+    expect(runtime.exportChannelMaterials).toHaveBeenCalledTimes(1);
+    expect(runtime.exportChannelMaterials).toHaveBeenCalledWith({ channelId: 11, expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(vi.mocked(XLSX.writeFile)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(XLSX.writeFile).mock.calls[0][1]).toBe("深圳代理_渠道库存_20261103121516_北京时间.xlsx");
+    expect(document.body.textContent).toContain("全部 23 条可读库存");
+    const sheet = exportedBook().Sheets["渠道库存"];
+    expect(XLSX.utils.sheet_to_json(sheet)).toHaveLength(23);
+    expect(sheet.A2).toMatchObject({ t: "s", v: "000123456789012345678901234567890", z: "@" });
+    expect(sheet.D2).toMatchObject({ t: "s", v: "002601000000000000000000000001", z: "@" });
+    expect(sheet.C2.v).toBe("待确认"); expect(sheet.E2.v).toBe("面议"); expect(sheet.G2.v).toBe("待确认");
+    expect(sheet.C3).toMatchObject({ t: "n", v: 0 }); expect(sheet.E3).toMatchObject({ t: "s", v: "0" });
+    expect(sheet.E4).toMatchObject({ t: "s", v: "123456789012345.123456789012" });
+    expect(sheet.G3.v).toBe("含税"); expect(sheet.G4.v).toBe("未税");
+    expect(sheet.I2.v).toBe("2026-11-03 12:00:01");
+    expect(JSON.stringify(exportedBook())).not.toMatch(/SECRET|contactName|note/);
+  });
+  it("neutralizes spreadsheet formulas in every text column without converting identifiers to numbers", async () => {
+    runtime.exportChannelMaterials.mockResolvedValue({ ...exportFixture(), channel: { id: 11, name: "=EVIL/CHANNEL", type: "agent", active: true } });
+    renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
+    const book = exportedBook(); const sheet = book.Sheets["渠道库存"];
+    for (const address of ["A3", "B3", "D3", "H3"]) {
+      expect(sheet[address].t).toBe("s"); expect(sheet[address].f).toBeUndefined(); expect(String(sheet[address].v).startsWith("'")).toBe(true);
+    }
+    expect(book.Sheets["导出说明"].B1).toMatchObject({ t: "s", v: "'=EVIL/CHANNEL" });
+    expect(vi.mocked(XLSX.writeFile).mock.calls[0][1]).not.toContain("/");
+  });
+  it("exports an empty inactive channel as a header-only workbook", async () => {
+    runtime.exportChannelMaterials.mockResolvedValue({ ...exportFixture(), channel: { id: 11, name: "停用", type: "agent", active: false }, total: 0, items: [] });
+    renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
+    expect(exportedBook().Sheets["渠道库存"]["!ref"]).toBe("A1:I1");
+    expect(document.body.textContent).toContain("含表头的空表");
+  });
+  it.each(["企业", "账号", "权限", "切走再切回"])("drops an old export when %s changes during the request", async kind => {
+    let finish!: (value: unknown) => void;
+    runtime.exportChannelMaterials.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost(); click(button("渠道档案")); click(button("下载库存"));
+    const original = runtime.enterpriseMe as { data: Record<string, any> };
+    const changed = kind === "企业" ? { ...original.data, enterprise: { id: 32 } }
+      : kind === "权限" ? { ...original.data, permissionKeys: [] }
+      : { ...original.data, currentUserId: 8 };
+    runtime.enterpriseMe = query(changed);
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    if (kind === "切走再切回") { runtime.enterpriseMe = original; act(() => root?.render(React.createElement(ChannelInventoryHost))); }
+    await act(async () => { finish(exportFixture()); await Promise.resolve(); }); await settleExport();
+    expect(XLSX.writeFile).not.toHaveBeenCalled();
+  });
+  it("drops a response after unmount", async () => {
+    let finish!: (value: unknown) => void;
+    runtime.exportChannelMaterials.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost(); click(button("渠道档案")); click(button("下载库存"));
+    await act(async () => { root?.unmount(); }); root = null;
+    await act(async () => { finish(exportFixture()); await Promise.resolve(); }); await settleExport();
+    expect(XLSX.writeFile).not.toHaveBeenCalled();
+  });
+  it("rechecks the authenticated subject before saving even if the page has not rerendered", async () => {
+    const me = runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn>; data: object };
+    me.refetch.mockResolvedValue(query({ ...me.data, currentUserId: 8 }));
+    renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
+    expect(me.refetch).toHaveBeenCalledTimes(1); expect(XLSX.writeFile).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("未生成文件");
+  });
+  it("does not save if the context changes while the final identity recheck is pending", async () => {
+    let finish!: (value: unknown) => void;
+    const me = runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn>; data: object };
+    me.refetch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
+    expect(me.refetch).toHaveBeenCalled();
+    runtime.enterpriseMe = query({ ...me.data, currentUserId: 8 }); act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    await act(async () => { finish(me); await Promise.resolve(); }); await settleExport();
+    expect(XLSX.writeFile).not.toHaveBeenCalled();
+  });
+  it("shows a clear server limit error without downloading a partial current page", async () => {
+    runtime.exportChannelMaterials.mockRejectedValueOnce(new Error("该渠道库存超过 10,000 条导出上限，未生成文件"));
+    renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
+    expect(document.body.textContent).toContain("10,000 条导出上限"); expect(XLSX.writeFile).not.toHaveBeenCalled();
+    expect(button("下载库存").disabled).toBe(false);
+  });
+  it("rejects a mismatched DTO instead of saving it", async () => {
+    runtime.exportChannelMaterials.mockResolvedValueOnce({ ...exportFixture(), actorUserId: 8 });
+    renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
+    expect(XLSX.writeFile).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("上下文不匹配");
   });
 });

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../front-router-types/server/routers";
-import { formatBeijingDateTime } from "../../../shared/beijingTime";
+import { formatBeijingDateTime, formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
 import { trpc } from "../../../../api/business-trpc";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
@@ -107,6 +107,38 @@ function toNullable(value: string) {
 
 function displayDate(value: Date | string | null | undefined) {
   return formatBeijingDateTime(value) || "—";
+}
+
+/** Explicit cells prevent formula execution and numeric identifier/price coercion. */
+export function createChannelInventoryExportWorkbook(xlsx: typeof import("xlsx"), result: ChannelInventoryOutputs["exportChannelMaterials"]) {
+  const text = (value: string): import("xlsx").CellObject => ({
+    t: "s", z: "@", v: /^[\s\u0000-\u001f\u007f]*[=+\-@]/.test(value) ? `'${value}` : value,
+  });
+  const sheet = xlsx.utils.aoa_to_sheet([
+    ["型号", "品牌", "可供数量", "Date Code", "报价（人民币元）", "币种", "税制", "交期", "更新时间（北京时间）"].map(text),
+    ...result.items.map(item => [
+      text(item.partNumber), text(item.brand), item.qty === null ? text("待确认") : { t: "n" as const, v: item.qty },
+      text(item.dateCode ?? ""), text(item.price === null ? "面议" : item.price), text(item.currency),
+      text(item.taxIncluded === null ? "待确认" : item.taxIncluded ? "含税" : "未税"),
+      text(item.leadTime ?? ""), text(formatBeijingDateTimeWithSeconds(item.updatedAt)),
+    ]),
+  ]);
+  sheet["!cols"] = [30, 18, 14, 24, 32, 10, 12, 20, 24].map(wch => ({ wch }));
+  sheet["!autofilter"] = { ref: sheet["!ref"]! };
+  const workbook = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(workbook, sheet, "渠道库存");
+  const metadata = xlsx.utils.aoa_to_sheet([
+    ["渠道", result.channel.name], ["类型", channelTypeLabel(result.channel.type)],
+    ["渠道状态", activeLabel(result.channel.active)], ["导出时间（北京时间）", formatBeijingDateTimeWithSeconds(result.exportedAt)],
+    ["导出条数", String(result.total)], ["范围", "该渠道本人有权读取的全部库存；不含联系人和私有备注"],
+    ["业务口径", "数量空值为待确认，0 为实际零；报价空值为面议，0 为零价；报价文本保留原精度；税制未知为待确认"],
+    ["文本安全", "型号及 Date Code 为文本；以公式字符开头的文本增加单引号保护"],
+  ].map(row => row.map(text)));
+  metadata["!cols"] = [{ wch: 26 }, { wch: 110 }];
+  xlsx.utils.book_append_sheet(workbook, metadata, "导出说明");
+  const name = result.channel.name.replace(/[\\/:*?"<>|\u0000-\u001f\u007f]/g, "_").slice(0, 60).replace(/^[. ]+|[. ]+$/g, "") || "渠道";
+  const stamp = formatBeijingDateTimeWithSeconds(result.exportedAt).replace(/[- :]/g, "");
+  return { workbook, fileName: `${name}_渠道库存_${stamp}_北京时间.xlsx` };
 }
 
 function errorCode(error: unknown) {
@@ -335,6 +367,14 @@ export default function ChannelInventoryHost() {
   const identity = ready ? `${enterpriseId}:${actorUserId}:${summary?.isOwner ? "owner" : [...permissionKeys].sort().join(",")}` : "";
   const identityRef = useRef(identity);
   identityRef.current = identity;
+  const exportSessionRef = useRef({ identity, generation: 0 });
+  if (exportSessionRef.current.identity !== identity) {
+    exportSessionRef.current = { identity, generation: exportSessionRef.current.generation + 1 };
+  }
+  const exportRequestRef = useRef(0);
+  const exportPendingRef = useRef(false);
+  const [downloadingChannelId, setDownloadingChannelId] = useState<number | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState("");
 
   const [tab, setTab] = useState<"channels" | "materials">("materials");
   const [channelFilters, setChannelFilters] = useState<ChannelFilters>({
@@ -453,6 +493,10 @@ export default function ChannelInventoryHost() {
     setMaterialSort(null);
     editRequestRef.current += 1;
     setBusy(null);
+    exportRequestRef.current += 1;
+    exportPendingRef.current = false;
+    setDownloadingChannelId(null);
+    setDownloadStatus("");
     setOptionPage(1);
     setOptionChannels([]);
     setChannelEditor(null);
@@ -463,6 +507,8 @@ export default function ChannelInventoryHost() {
     channelCreateRef.current = null;
     materialCreateRef.current = null;
   }, [identity]);
+
+  useEffect(() => () => { exportRequestRef.current += 1; }, []);
 
   useEffect(() => {
     const result = channelOptionsQuery.data;
@@ -522,6 +568,37 @@ export default function ChannelInventoryHost() {
     setMaterialFilters(current => ({ ...current, channelId: canFilterSource ? String(channel.id) : "" }));
     setMaterialPage(1);
     setTab("materials");
+  };
+
+  const downloadChannelMaterials = async (channel: Channel) => {
+    if (!expectedContext || !contextCurrent || !isCurrent() || channelsQuery.isError || exportPendingRef.current) return;
+    const generation = exportSessionRef.current.generation;
+    const request = ++exportRequestRef.current;
+    const current = () => isCurrent() && generation === exportSessionRef.current.generation && request === exportRequestRef.current;
+    exportPendingRef.current = true;
+    setDownloadingChannelId(channel.id); setMessage(""); setDownloadStatus("");
+    try {
+      // A direct query bypasses the query cache and never exports the visible page.
+      const [xlsx, result] = await Promise.all([
+        import("xlsx"),
+        utils.client.channelInventory.exportChannelMaterials.query({ ...expectedContext, channelId: channel.id }),
+      ]);
+      if (!current()) return;
+      if (result.enterpriseId !== enterpriseId || result.actorUserId !== actorUserId || result.channel.id !== channel.id || result.total !== result.items.length || result.total > 10_000) throw new Error("导出结果上下文不匹配，未生成文件，请刷新后重试。");
+      const { workbook, fileName } = createChannelInventoryExportWorkbook(xlsx, result);
+      // Recheck the live authenticated subject immediately before creating a file.
+      const fresh = await enterpriseQuery.refetch();
+      if (!current()) return;
+      const freshPermissions: readonly string[] = fresh.data?.permissionKeys ?? [];
+      if (fresh.isError || fresh.data?.enterprise?.id !== enterpriseId || fresh.data?.currentUserId !== actorUserId || !(fresh.data?.isOwner || freshPermissions.includes("inventory.manage"))) throw new Error("企业或账号权限已变化，未生成文件，请刷新后重新下载。");
+      if (!current()) return;
+      xlsx.writeFile(workbook, fileName, { bookType: "xlsx", compression: true });
+      setDownloadStatus(result.total ? `已下载该渠道全部 ${result.total} 条可读库存。` : "该渠道暂无可读库存，已下载含表头的空表。");
+    } catch (error) {
+      if (current()) setMessage(errorMessage(error, "渠道库存下载失败，未生成文件，请重试。"));
+    } finally {
+      if (current()) { exportPendingRef.current = false; setDownloadingChannelId(null); }
+    }
   };
 
   const submitChannel = async () => {
@@ -701,7 +778,7 @@ export default function ChannelInventoryHost() {
   };
 
   const activeChannels = optionChannels.filter(channel => channel.active && channel.canEdit && !channel.readOnly);
-  const channelResult = channelsQuery.data;
+  const channelResult = contextCurrent && !channelsQuery.isError ? channelsQuery.data : undefined;
   const materialResult = !materialsQuery.isError && contextCurrent ? materialsQuery.data : undefined;
   const materialRows = materialResult?.items ?? [];
   const canWriteChannels = channelsQuery.data?.canWrite === true;
@@ -789,6 +866,7 @@ export default function ChannelInventoryHost() {
       </div>
 
       {message && !materialEditor ? <p className="ci-error" role="alert">{message}</p> : null}
+      {downloadStatus && contextCurrent ? <p className="ci-export-status" role="status">{downloadStatus}</p> : null}
 
       {tab === "channels" ? (
         <section className="ci-panel" aria-label="渠道管理列表">
@@ -829,7 +907,7 @@ export default function ChannelInventoryHost() {
                     <td><div>{channel.contactName || "—"}</div><small className="ci-subtext">{[channel.phone, channel.wechat ? `微信 ${channel.wechat}` : null, channel.qq ? `QQ ${channel.qq}` : null].filter(Boolean).join(" · ") || "未填写联系方式"}</small></td>
                     <td><span className={channel.active ? "ci-status ci-status-active" : "ci-status ci-status-inactive"}>{activeLabel(channel.active)}</span></td>
                     <td className="ci-date">{displayDate(channel.updatedAt)}</td>
-                    <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link" onClick={() => viewChannelMaterials(channel)} disabled={busy !== null}>查看库存</button><button type="button" className="ci-inline-link" onClick={() => openChannelEdit(channel)} disabled={busy !== null || !channel.canEdit}>编辑</button><button type="button" className={channel.active ? "ci-inline-link ci-danger-link" : "ci-inline-link"} onClick={() => void toggleChannel(channel)} disabled={busy !== null || !channel.canEdit}>{channel.active ? "停用" : "启用"}</button></div></td>
+                    <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link" onClick={() => void downloadChannelMaterials(channel)} disabled={busy !== null || downloadingChannelId !== null || !contextCurrent} aria-busy={downloadingChannelId === channel.id}>{downloadingChannelId === channel.id ? "下载中…" : "下载库存"}</button><button type="button" className="ci-inline-link" onClick={() => viewChannelMaterials(channel)} disabled={busy !== null}>查看库存</button><button type="button" className="ci-inline-link" onClick={() => openChannelEdit(channel)} disabled={busy !== null || !channel.canEdit}>编辑</button><button type="button" className={channel.active ? "ci-inline-link ci-danger-link" : "ci-inline-link"} onClick={() => void toggleChannel(channel)} disabled={busy !== null || !channel.canEdit}>{channel.active ? "停用" : "启用"}</button></div></td>
                   </tr>
                 ))}
               </tbody>

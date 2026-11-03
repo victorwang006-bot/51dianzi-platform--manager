@@ -525,3 +525,10 @@
 .ci-page.ci-host .ci-sort-button { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .ci-page.ci-host .ci-sort-button:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 .ci-page.ci-host .ci-sort-arrow { margin-left: 4px; font-size: 11px; }
+
+/* Four archive actions stay on one line, including the new read-only download. */
+.ci-page.ci-host .ci-channel-table th.ci-col-actions,
+.ci-page.ci-host .ci-channel-table td.ci-col-actions { width: 220px; }
+.ci-page.ci-host .ci-channel-table .ci-row-actions { flex-wrap: nowrap; gap: 10px; }
+.ci-page.ci-host .ci-channel-table .ci-row-actions .ci-inline-link { flex: 0 0 auto; white-space: nowrap; }
+.ci-export-status { margin: 0 0 12px; color: #437e5d; font-size: 12px; line-height: 20px; }

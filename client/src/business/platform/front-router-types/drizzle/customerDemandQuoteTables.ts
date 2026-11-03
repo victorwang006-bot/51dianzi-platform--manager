@@ -21,7 +21,9 @@ export const crmCustomerDemandQuotes = mysqlTable(
     customerId: int("customerId").notNull(),
     demandId: int("demandId").notNull(),
     procurementUserId: int("procurementUserId").notNull(),
-    supplierName: varchar("supplierName", { length: 128 }).notNull().default(""),
+    supplierName: varchar("supplierName", { length: 128 })
+      .notNull()
+      .default(""),
     note: varchar("note", { length: 1000 }).notNull().default(""),
     version: int("version").notNull().default(1),
     /** The demand business revision this quote was last confirmed against. */
@@ -30,24 +32,24 @@ export const crmCustomerDemandQuotes = mysqlTable(
     updatedAt: datetime("updatedAt", { mode: "string" }).notNull(),
   },
   table => ({
-    demandProcurementUnique: uniqueIndex("crm_customer_demand_quotes_demand_procurement_unique").on(
-      table.enterpriseId,
-      table.demandId,
-      table.procurementUserId,
-    ),
+    demandProcurementUnique: uniqueIndex(
+      "crm_customer_demand_quotes_demand_procurement_unique"
+    ).on(table.enterpriseId, table.demandId, table.procurementUserId),
     demandUpdatedIdx: index("crm_customer_demand_quotes_demand_updated_idx").on(
       table.enterpriseId,
       table.demandId,
       table.updatedAt,
-      table.id,
+      table.id
     ),
-    procurementUpdatedIdx: index("crm_customer_demand_quotes_procurement_updated_idx").on(
+    procurementUpdatedIdx: index(
+      "crm_customer_demand_quotes_procurement_updated_idx"
+    ).on(
       table.enterpriseId,
       table.procurementUserId,
       table.updatedAt,
-      table.id,
+      table.id
     ),
-  }),
+  })
 );
 
 export const crmCustomerDemandQuoteItems = mysqlTable(
@@ -58,6 +60,7 @@ export const crmCustomerDemandQuoteItems = mysqlTable(
     demandId: int("demandId").notNull(),
     quoteId: int("quoteId").notNull(),
     demandItemId: int("demandItemId").notNull(),
+    alternateNo: int("alternateNo").notNull().default(1),
     sortOrder: int("sortOrder").notNull(),
     partNumber: varchar("partNumber", { length: 128 }).notNull().default(""),
     brand: varchar("brand", { length: 64 }).notNull().default(""),
@@ -70,17 +73,13 @@ export const crmCustomerDemandQuoteItems = mysqlTable(
     createdAt: datetime("createdAt", { mode: "string" }).notNull(),
   },
   table => ({
-    quoteDemandItemUnique: uniqueIndex("crm_customer_demand_quote_items_quote_item_unique").on(
-      table.quoteId,
-      table.demandItemId,
-    ),
-    demandQuoteIdx: index("crm_customer_demand_quote_items_demand_quote_idx").on(
-      table.enterpriseId,
-      table.demandId,
-      table.quoteId,
-      table.id,
-    ),
-  }),
+    quoteDemandItemUnique: uniqueIndex(
+      "crm_customer_demand_quote_items_quote_item_unique"
+    ).on(table.quoteId, table.demandItemId, table.alternateNo),
+    demandQuoteIdx: index(
+      "crm_customer_demand_quote_items_demand_quote_idx"
+    ).on(table.enterpriseId, table.demandId, table.quoteId, table.id),
+  })
 );
 
 /** Each audit row is a complete immutable header snapshot for one quote version. */
@@ -97,23 +96,20 @@ export const crmCustomerDemandQuoteAudits = mysqlTable(
     demandRevision: int("demandRevision").notNull().default(1),
     action: varchar("action", { length: 32 }).notNull(),
     requestId: varchar("requestId", { length: 80 }).notNull(),
-    supplierName: varchar("supplierName", { length: 128 }).notNull().default(""),
+    supplierName: varchar("supplierName", { length: 128 })
+      .notNull()
+      .default(""),
     note: varchar("note", { length: 1000 }).notNull().default(""),
     createdAt: datetime("createdAt", { mode: "string" }).notNull(),
   },
   table => ({
-    quoteVersionUnique: uniqueIndex("crm_customer_demand_quote_audits_quote_version_unique").on(
-      table.enterpriseId,
-      table.quoteId,
-      table.version,
-    ),
-    demandCreatedIdx: index("crm_customer_demand_quote_audits_demand_created_idx").on(
-      table.enterpriseId,
-      table.demandId,
-      table.createdAt,
-      table.id,
-    ),
-  }),
+    quoteVersionUnique: uniqueIndex(
+      "crm_customer_demand_quote_audits_quote_version_unique"
+    ).on(table.enterpriseId, table.quoteId, table.version),
+    demandCreatedIdx: index(
+      "crm_customer_demand_quote_audits_demand_created_idx"
+    ).on(table.enterpriseId, table.demandId, table.createdAt, table.id),
+  })
 );
 
 export const crmCustomerDemandQuoteAuditItems = mysqlTable(
@@ -123,6 +119,7 @@ export const crmCustomerDemandQuoteAuditItems = mysqlTable(
     enterpriseId: int("enterpriseId").notNull(),
     auditId: int("auditId").notNull(),
     demandItemId: int("demandItemId").notNull(),
+    alternateNo: int("alternateNo").notNull().default(1),
     sortOrder: int("sortOrder").notNull(),
     partNumber: varchar("partNumber", { length: 128 }).notNull().default(""),
     brand: varchar("brand", { length: 64 }).notNull().default(""),
@@ -135,11 +132,10 @@ export const crmCustomerDemandQuoteAuditItems = mysqlTable(
     createdAt: datetime("createdAt", { mode: "string" }).notNull(),
   },
   table => ({
-    auditDemandItemUnique: uniqueIndex("crm_customer_demand_quote_audit_items_audit_item_unique").on(
-      table.auditId,
-      table.demandItemId,
-    ),
-  }),
+    auditDemandItemUnique: uniqueIndex(
+      "crm_customer_demand_quote_audit_items_audit_item_unique"
+    ).on(table.auditId, table.demandItemId, table.alternateNo),
+  })
 );
 
 /** Request IDs are actor-scoped and preserve successful mutation results for safe retries. */
@@ -156,16 +152,19 @@ export const crmCustomerDemandQuoteRequests = mysqlTable(
     createdAt: datetime("createdAt", { mode: "string" }).notNull(),
   },
   table => ({
-    actorRequestUnique: uniqueIndex("crm_customer_demand_quote_requests_actor_request_unique").on(
-      table.enterpriseId,
-      table.actorUserId,
-      table.requestId,
-    ),
-  }),
+    actorRequestUnique: uniqueIndex(
+      "crm_customer_demand_quote_requests_actor_request_unique"
+    ).on(table.enterpriseId, table.actorUserId, table.requestId),
+  })
 );
 
-export type CustomerDemandQuoteRow = typeof crmCustomerDemandQuotes.$inferSelect;
-export type CustomerDemandQuoteItemRow = typeof crmCustomerDemandQuoteItems.$inferSelect;
-export type CustomerDemandQuoteAuditRow = typeof crmCustomerDemandQuoteAudits.$inferSelect;
-export type CustomerDemandQuoteAuditItemRow = typeof crmCustomerDemandQuoteAuditItems.$inferSelect;
-export type CustomerDemandQuoteRequestRow = typeof crmCustomerDemandQuoteRequests.$inferSelect;
+export type CustomerDemandQuoteRow =
+  typeof crmCustomerDemandQuotes.$inferSelect;
+export type CustomerDemandQuoteItemRow =
+  typeof crmCustomerDemandQuoteItems.$inferSelect;
+export type CustomerDemandQuoteAuditRow =
+  typeof crmCustomerDemandQuoteAudits.$inferSelect;
+export type CustomerDemandQuoteAuditItemRow =
+  typeof crmCustomerDemandQuoteAuditItems.$inferSelect;
+export type CustomerDemandQuoteRequestRow =
+  typeof crmCustomerDemandQuoteRequests.$inferSelect;

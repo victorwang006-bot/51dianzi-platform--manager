@@ -7,6 +7,7 @@ import {
   getAdminWorkspaceNavigationState,
   getAdminWorkspaceNavigationTarget,
   getAdminWorkspacePathname,
+  groupAdminBusinessNavigationItems,
   groupAdminWorkspaceNavigationItems,
 } from "./adminWorkspaceNavigationModel";
 
@@ -23,6 +24,78 @@ const items = officialPaths.map(path => ({
 }));
 const visible = (...paths: string[]) =>
   items.filter(item => paths.includes(item.path));
+
+describe("业务第二行展示分组（不更改canonical和工作区首个目标）", () => {
+  it("五入口完整覆盖现有业务菜单且子项只出现一次", () => {
+    const entries = groupAdminBusinessNavigationItems([...items].reverse());
+    expect(
+      entries.map(entry =>
+        entry.kind === "direct" ? entry.item.path : entry.label
+      )
+    ).toEqual([
+      "/workbench/channel-inventory",
+      "客户与销售",
+      "库存管理",
+      "采购管理",
+      "/workbench/company-info",
+    ]);
+    const groupedPaths = entries.flatMap(entry =>
+      entry.kind === "direct"
+        ? [entry.item.path]
+        : entry.items.map(item => item.path)
+    );
+    expect(groupedPaths).toEqual([
+      "/workbench/channel-inventory",
+      "/workbench/customers",
+      "/workbench/customer-demands",
+      "/workbench/inquiries",
+      "/workbench/orders",
+      "/workbench/inventory",
+      "/workbench/publish",
+      "/workbench/inbound",
+      "/workbench/outbound",
+      "/workbench/procurement-demands",
+      "/workbench/procurement-orders",
+      "/workbench/company-info",
+    ]);
+    expect([...groupedPaths].sort()).toEqual(
+      [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].sort()
+    );
+    expect(new Set(groupedPaths).size).toBe(groupedPaths.length);
+    for (const entry of entries) {
+      for (const item of entry.kind === "direct" ? [entry.item] : entry.items) {
+        expect(item).toBe(items.find(original => original.path === item.path));
+      }
+    }
+  });
+
+  it("仅显示父授权原条目，空组及未知路径隐藏，不创建别名或运营菜单", () => {
+    const authorized = Object.freeze(
+      visible("/workbench/inquiries", "/workbench/outbound", "/analytics")
+    );
+    const entries = groupAdminBusinessNavigationItems(authorized);
+    expect(
+      entries.map(entry =>
+        entry.kind === "group" ? entry.id : entry.item.path
+      )
+    ).toEqual(["customers", "inventory"]);
+    expect(
+      entries.flatMap(entry =>
+        entry.kind === "group" ? entry.items : [entry.item]
+      )
+    ).toEqual([
+      authorized.find(item => item.path === "/workbench/inquiries"),
+      authorized.find(item => item.path === "/workbench/outbound"),
+    ]);
+    expect(groupAdminBusinessNavigationItems([])).toEqual([]);
+    expect(
+      groupAdminBusinessNavigationItems([
+        { path: "/workbench/chat", label: "别名不是可授权菜单" },
+        { path: "/not-registered", label: "未知" },
+      ])
+    ).toEqual([]);
+  });
+});
 
 describe("正式后台顶部工作区菜单", () => {
   it("完整保留正式菜单且每条恰好出现一次，没有未注册路径或别名假入口", () => {
@@ -268,10 +341,13 @@ describe("实际路由驱动两级选中态", () => {
     );
     expect(state.activeItem?.path).toBe("/workbench/publish");
     expect(
-      getAdminWorkspaceNavigationState(items, "/materials?merchantId=8").activeItem?.path
+      getAdminWorkspaceNavigationState(items, "/materials?merchantId=8")
+        .activeItem?.path
     ).toBe("/materials");
     const target = getAdminWorkspaceNavigationTarget(items, "business");
-    expect(target).toBe(items.find(item => item.path === "/workbench/channel-inventory"));
+    expect(target).toBe(
+      items.find(item => item.path === "/workbench/channel-inventory")
+    );
     expect(target?.path).toBe("/workbench/channel-inventory");
   });
 

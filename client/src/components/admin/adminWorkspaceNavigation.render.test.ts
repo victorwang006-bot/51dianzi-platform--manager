@@ -9,11 +9,22 @@ import {
   AdminWorkspaceNavigation,
   AdminWorkspaceTabs,
 } from "./AdminWorkspaceNavigation";
-import { ADMIN_WORKBENCH_NAVIGATION_GROUPS } from "./adminWorkbenchNavigationModel";
+import {
+  ADMIN_WORKBENCH_NAVIGATION_GROUPS,
+  getAdminWorkbenchNavigationRoute,
+} from "./adminWorkbenchNavigationModel";
 
 const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(
   group => group.paths
-).map(path => ({ path, label: path }));
+).map(path =>
+  Object.freeze({
+    path,
+    label: getAdminWorkbenchNavigationRoute(path)?.label ?? path,
+    permission: `permission:${path}`,
+    chunk: `chunk:${path}`,
+    merchantContext: { merchantId: 31, returnTo: "/orders" },
+  })
+);
 let host: HTMLDivElement;
 let root: Root;
 const onNavigate = vi.fn();
@@ -54,25 +65,75 @@ function button(target: string) {
   return result;
 }
 
+async function click(target: string) {
+  await act(async () => button(target).click());
+}
+
+async function key(target: string, value: string) {
+  await act(async () =>
+    button(target).dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: value,
+        bubbles: true,
+        cancelable: true,
+      })
+    )
+  );
+}
+
+function modulePaths() {
+  return Array.from(
+    host.querySelectorAll<HTMLButtonElement>(
+      '[data-admin-navigation="module-tabs"] button'
+    )
+  ).map(node => node.dataset.workspaceNavTarget);
+}
+
 describe("两行正式导航组件", () => {
-  it("业务二级按新顺序展示，库存三项位于销售订单后且复用原导航和预加载条目", async () => {
+  it("业务第二行五入口按方案分组，别名跟随canonical高亮并复用原条目", async () => {
     await render("/workbench/sales-orders?merchantId=31&returnTo=%2Forders");
-    const paths = () => Array.from(host.querySelectorAll<HTMLButtonElement>('[data-admin-navigation="module-tabs"] button')).map(node => node.dataset.workspaceNavTarget);
-    expect(paths()).toEqual([
+    expect(modulePaths()).toEqual([
       "/workbench/channel-inventory",
+      "group:customers",
+      "group:inventory",
+      "group:procurement",
+      "/workbench/company-info",
+    ]);
+    expect(button("group:customers").dataset.active).toBe("true");
+    expect(button("group:customers").getAttribute("aria-expanded")).toBe(
+      "false"
+    );
+    expect(host.querySelector("[data-workspace-nav-child]")).toBeNull();
+    await click("group:customers");
+    expect(modulePaths()).toEqual([
+      "/workbench/channel-inventory",
+      "group:customers",
       "/workbench/customers",
       "/workbench/customer-demands",
+      "/workbench/inquiries",
       "/workbench/orders",
+      "group:inventory",
+      "group:procurement",
+      "/workbench/company-info",
+    ]);
+    expect(button("/workbench/orders").getAttribute("aria-current")).toBe(
+      "page"
+    );
+    expect(onNavigate).not.toHaveBeenCalled();
+    await click("group:inventory");
+    expect(button("group:customers").getAttribute("aria-expanded")).toBe(
+      "false"
+    );
+    expect(
+      Array.from(
+        host.querySelectorAll<HTMLButtonElement>("[data-workspace-nav-child]")
+      ).map(node => node.dataset.workspaceNavTarget)
+    ).toEqual([
       "/workbench/inventory",
       "/workbench/publish",
       "/workbench/inbound",
       "/workbench/outbound",
-      "/workbench/inquiries",
-      "/workbench/procurement-demands",
-      "/workbench/procurement-orders",
-      "/workbench/company-info",
     ]);
-    expect(button("/workbench/orders").getAttribute("aria-current")).toBe("page");
     await act(async () => {
       button("/workbench/inventory").focus();
       button("/workbench/inventory").click();
@@ -80,10 +141,297 @@ describe("两行正式导航组件", () => {
     const original = items.find(item => item.path === "/workbench/inventory");
     expect(onNavigate.mock.calls[0][0]).toBe(original);
     expect(onPreload.mock.calls[0][0]).toBe(original);
-    const subset = items.filter(item => ["/workbench/inventory", "/workbench/orders", "/workbench/company-info"].includes(item.path));
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(onNavigate.mock.calls[0][0].merchantContext).toBe(
+      original?.merchantContext
+    );
+    expect(host.querySelector("[data-workspace-nav-child]")).toBeNull();
+    const subset = items.filter(item =>
+      [
+        "/workbench/inventory",
+        "/workbench/orders",
+        "/workbench/company-info",
+      ].includes(item.path)
+    );
     await render("/workbench/inventory?merchantId=31", subset);
-    expect(paths()).toEqual(["/workbench/orders", "/workbench/inventory", "/workbench/company-info"]);
-    expect(button("/workbench/inventory").getAttribute("aria-current")).toBe("page");
+    expect(modulePaths()).toEqual([
+      "group:customers",
+      "group:inventory",
+      "/workbench/company-info",
+    ]);
+    expect(button("group:inventory").dataset.active).toBe("true");
+    await click("group:inventory");
+    expect(button("/workbench/inventory").getAttribute("aria-current")).toBe(
+      "page"
+    );
+  });
+
+  it("仅点击展开且一次只有一组，重复点击及外部点击关闭", async () => {
+    await render("/workbench/orders");
+    await act(async () =>
+      button("group:customers").dispatchEvent(
+        new MouseEvent("pointerover", { bubbles: true })
+      )
+    );
+    expect(button("group:customers").getAttribute("aria-expanded")).toBe(
+      "false"
+    );
+    await click("group:customers");
+    const controls = button("group:customers").getAttribute("aria-controls");
+    expect(host.querySelector('[role="group"]')?.id).toBe(controls);
+    await click("group:inventory");
+    expect(host.querySelectorAll('[aria-expanded="true"]')).toHaveLength(1);
+    expect(host.querySelectorAll('[role="group"]')).toHaveLength(1);
+    await click("group:inventory");
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    await click("group:procurement");
+    await act(async () => document.body.click());
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("触屏原生按钮可点击，触屏外点关闭，不依赖悬停", async () => {
+    await render("/workbench/inventory");
+    await act(async () => {
+      button("group:inventory").dispatchEvent(
+        new Event("pointerdown", { bubbles: true })
+      );
+      button("group:inventory").click();
+    });
+    expect(button("group:inventory").getAttribute("aria-expanded")).toBe(
+      "true"
+    );
+    await act(async () =>
+      document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))
+    );
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("键盘可展开并在子项循环，Escape关闭恢复父焦点，方向键不导航", async () => {
+    await render("/workbench/chat?merchantId=31");
+    await act(async () => button("group:customers").focus());
+    await key("group:customers", "ArrowDown");
+    expect(document.activeElement).toBe(button("/workbench/customers"));
+    await key("/workbench/customers", "ArrowDown");
+    expect(document.activeElement).toBe(button("/workbench/customer-demands"));
+    await key("/workbench/customer-demands", "End");
+    expect(document.activeElement).toBe(button("/workbench/orders"));
+    await key("/workbench/orders", "ArrowDown");
+    expect(document.activeElement).toBe(button("/workbench/customers"));
+    await key("/workbench/customers", "ArrowUp");
+    expect(document.activeElement).toBe(button("/workbench/orders"));
+    await key("/workbench/orders", "Home");
+    expect(document.activeElement).toBe(button("/workbench/customers"));
+    await key("/workbench/customers", "Escape");
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    expect(document.activeElement).toBe(button("group:customers"));
+    await key("group:customers", "ArrowUp");
+    expect(document.activeElement).toBe(button("/workbench/orders"));
+    await key("/workbench/orders", "Escape");
+    await key("group:customers", " ");
+    expect(document.activeElement).toBe(button("/workbench/customers"));
+    await key("/workbench/customers", "Escape");
+    await key("group:customers", "Enter");
+    expect(document.activeElement).toBe(button("/workbench/customers"));
+    await key("/workbench/customers", "Escape");
+    await key("group:customers", "ArrowRight");
+    expect(document.activeElement).toBe(button("group:inventory"));
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("Tab保持原生按钮可达，焦点离开导航关闭，不设置键盘陷阱", async () => {
+    await render("/workbench/orders");
+    await key("group:customers", "ArrowDown");
+    expect(button("/workbench/customers").tabIndex).toBe(0);
+    const tab = new KeyboardEvent("keydown", {
+      key: "Tab",
+      bubbles: true,
+      cancelable: true,
+    });
+    await act(async () => button("/workbench/customers").dispatchEvent(tab));
+    expect(tab.defaultPrevented).toBe(false);
+    const outside = document.createElement("button");
+    document.body.append(outside);
+    try {
+      await act(async () => outside.focus());
+      expect(host.querySelector('[role="group"]')).toBeNull();
+      expect(document.activeElement).toBe(outside);
+    } finally {
+      outside.remove();
+    }
+  });
+
+  it("空组隐藏，隐藏canonical子项的别名不高亮父组或添加授权fallback", async () => {
+    const subset = items.filter(item =>
+      ["/workbench/inbound", "/workbench/company-info", "/analytics"].includes(
+        item.path
+      )
+    );
+    await render("/workbench/chat?merchantId=31", subset);
+    expect(modulePaths()).toEqual([
+      "group:inventory",
+      "/workbench/company-info",
+    ]);
+    expect(
+      host.querySelector(
+        '[data-active="true"][data-workspace-nav-target^="group:"]'
+      )
+    ).toBeNull();
+    expect(host.querySelector('[aria-current="page"]')).toBeNull();
+    await click("group:inventory");
+    expect(host.querySelectorAll("[data-workspace-nav-child]")).toHaveLength(1);
+    expect(button("/workbench/inbound").disabled).toBe(false);
+    await render(
+      "/workbench/inbound",
+      subset.filter(item => item.path !== "/workbench/inbound")
+    );
+    expect(modulePaths()).toEqual(["/workbench/company-info"]);
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    expect(host.querySelector('[aria-current="page"]')).toBeNull();
+    await render("/workbench/chat", []);
+    expect(host.querySelectorAll("nav, button")).toHaveLength(0);
+  });
+
+  it.each([
+    ["/workbench/chat/88", "customers", "/workbench/inquiries"],
+    ["/workbench/sales-orders/88", "customers", "/workbench/orders"],
+    ["/workbench", "inventory", "/workbench/inventory"],
+    [
+      "/workbench/procurement/demands/8",
+      "procurement",
+      "/workbench/procurement-demands",
+    ],
+    [
+      "/workbench/procurement/orders/8",
+      "procurement",
+      "/workbench/procurement-orders",
+    ],
+    [
+      "/workbench/demand-quotes/8",
+      "procurement",
+      "/workbench/procurement-demands",
+    ],
+  ])("别名%s严格选中父组%s和原canonical子项", async (location, group, path) => {
+    await render(`${location}?merchantId=31#detail`);
+    expect(button(`group:${group}`).dataset.active).toBe("true");
+    expect(
+      host.querySelectorAll(
+        '[data-active="true"][data-workspace-nav-target^="group:"]'
+      )
+    ).toHaveLength(1);
+    await click(`group:${group}`);
+    expect(button(path).getAttribute("aria-current")).toBe("page");
+    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+  });
+
+  it("渠道库存和公司信息仍直达原回调，采购两项各只回传父原对象", async () => {
+    await render("/workbench/company?merchantId=31");
+    expect(button("/workbench/company-info").getAttribute("aria-current")).toBe(
+      "page"
+    );
+    await click("/workbench/channel-inventory");
+    await click("/workbench/company-info");
+    await click("group:procurement");
+    expect(host.querySelectorAll("[data-workspace-nav-child]")).toHaveLength(2);
+    await click("/workbench/procurement-demands");
+    await click("group:procurement");
+    await click("/workbench/procurement-orders");
+    expect(onNavigate).toHaveBeenCalledTimes(4);
+    [
+      "/workbench/channel-inventory",
+      "/workbench/company-info",
+      "/workbench/procurement-demands",
+      "/workbench/procurement-orders",
+    ].forEach((path, index) => {
+      expect(onNavigate.mock.calls[index][0]).toBe(
+        items.find(item => item.path === path)
+      );
+    });
+  });
+
+  it.each([
+    ["customers", "/workbench/customers"],
+    ["customers", "/workbench/customer-demands"],
+    ["customers", "/workbench/inquiries"],
+    ["customers", "/workbench/orders"],
+    ["inventory", "/workbench/inventory"],
+    ["inventory", "/workbench/publish"],
+    ["inventory", "/workbench/inbound"],
+    ["inventory", "/workbench/outbound"],
+    ["procurement", "/workbench/procurement-demands"],
+    ["procurement", "/workbench/procurement-orders"],
+  ])(
+    "分组%s中的%s严格回调父原对象一次，保留预加载且不自行拼URL",
+    async (group, path) => {
+      await render("/workbench/orders?merchantId=31&returnTo=%2Forders");
+      await click(`group:${group}`);
+      await act(async () => button(path).focus());
+      await click(path);
+      const original = items.find(item => item.path === path);
+      expect(onNavigate).toHaveBeenCalledTimes(1);
+      expect(onNavigate.mock.calls[0][0]).toBe(original);
+      expect(onPreload.mock.calls[0][0]).toBe(original);
+      expect(button("group:customers").dataset.active).toBe("true");
+      expect(button(`group:${group}`).getAttribute("aria-expanded")).toBe(
+        "false"
+      );
+    }
+  );
+
+  it("业务子菜单保留renderItem、徽标和内容状态，没有嵌套交互控件", async () => {
+    await act(async () =>
+      root.render(
+        createElement(AdminModuleTabs, {
+          items,
+          location: "/workbench/chat?merchantId=31",
+          onNavigate,
+          onItemIntent: onPreload,
+          renderItem: (item, state) =>
+            createElement(
+              "span",
+              { "data-label-active": String(state.isActive) },
+              item.label
+            ),
+          renderBadge: item =>
+            item.path === "/workbench/inquiries"
+              ? createElement("span", { "data-business-unread": true }, "3")
+              : null,
+        })
+      )
+    );
+    await click("group:customers");
+    const inquiry = button("/workbench/inquiries");
+    expect(inquiry.querySelector("[data-business-unread]")?.textContent).toBe(
+      "3"
+    );
+    expect(
+      inquiry
+        .querySelector("[data-label-active]")
+        ?.getAttribute("data-label-active")
+    ).toBe("true");
+    expect(inquiry.querySelector("button, a")).toBeNull();
+    await act(async () => inquiry.focus());
+    expect(onPreload.mock.calls[0][0]).toBe(
+      items.find(item => item.path === "/workbench/inquiries")
+    );
+  });
+
+  it("路由与query变化关闭原下拉，窗口resize和导航滚动安全关闭", async () => {
+    await render("/workbench/orders?merchantId=31");
+    await click("group:customers");
+    await render("/workbench/orders?merchantId=32");
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    await click("group:customers");
+    await act(async () => window.dispatchEvent(new Event("resize")));
+    expect(host.querySelector('[role="group"]')).toBeNull();
+    await click("group:inventory");
+    await act(async () =>
+      host
+        .querySelector('[data-admin-navigation="module-tabs"]')!
+        .dispatchEvent(new Event("scroll"))
+    );
+    expect(host.querySelector('[role="group"]')).toBeNull();
   });
 
   it("顶层切换只调用父导航首个可见条目，不先修改本地选中态", async () => {
@@ -133,13 +481,20 @@ describe("两行正式导航组件", () => {
     await render("/");
     expect(host.querySelector("[aria-current]")).toBeNull();
     expect(host.querySelector('[data-workspace-nav-target="/"]')).toBeNull();
-    await render("/materials", items.filter(item => item.path === "/staff"));
+    await render(
+      "/materials",
+      items.filter(item => item.path === "/staff")
+    );
     expect(host.querySelector("[aria-current]")).toBeNull();
-    expect(host.querySelector('[data-workspace-nav-target="/materials"]')).toBeNull();
+    expect(
+      host.querySelector('[data-workspace-nav-target="/materials"]')
+    ).toBeNull();
   });
 
   it("深层真实业务路由更新选中态；组织别名和个人资料不创建假模块", async () => {
     await render("/workbench/procurement-orders/accepted?merchantId=3");
+    expect(button("group:procurement").dataset.active).toBe("true");
+    await click("group:procurement");
     expect(
       button("/workbench/procurement-orders").getAttribute("aria-current")
     ).toBe("page");
@@ -213,6 +568,7 @@ describe("两行正式导航组件", () => {
         })
       )
     );
+    await click("group:customers");
     expect(
       button("/workbench/customers")
         .querySelector("[data-is-module-active]")
@@ -330,6 +686,8 @@ describe("两行正式导航组件", () => {
     await render("/workbench/customers/88?merchantId=3");
     await act(async () => button("business").click());
     expect(onNavigate).not.toHaveBeenCalled();
+    expect(button("group:customers").dataset.active).toBe("true");
+    await click("group:customers");
     expect(button("/workbench/customers").getAttribute("aria-current")).toBe(
       "page"
     );

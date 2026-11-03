@@ -1,15 +1,24 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { BEIJING_TIME_ZONE } from "@shared/beijingTime";
 import {
   getAdminWorkspaceNavigationState,
   getAdminWorkspaceNavigationTarget,
+  groupAdminBusinessNavigationItems,
+  type AdminBusinessNavigationGroupId,
   type AdminWorkspaceId,
   type AdminWorkspaceNavigationItem,
 } from "./adminWorkspaceNavigationModel";
 import "./AdminWorkspaceNavigation.css";
 
 /** UI release only; native/business authorization versions remain independent. */
-export const ADMIN_SYSTEM_RELEASE = "20261103-channel-team-v5";
+export const ADMIN_SYSTEM_RELEASE = "20261103-home-quotes-download-v6";
 
 export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   /** Already filtered by the existing native-admin/BFF capability checks. */
@@ -53,12 +62,12 @@ function handleNavigationKeys(event: KeyboardEvent<HTMLElement>) {
   if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
   const target = event.target as HTMLElement;
   const button = target.closest<HTMLButtonElement>(
-    "button[data-workspace-nav-target]"
+    "button[data-workspace-nav-target]:not([data-workspace-nav-child])"
   );
   if (!button || !event.currentTarget.contains(button)) return;
   const buttons = Array.from(
     event.currentTarget.querySelectorAll<HTMLButtonElement>(
-      "button[data-workspace-nav-target]"
+      "button[data-workspace-nav-target]:not([data-workspace-nav-child])"
     )
   );
   const index = buttons.indexOf(button);
@@ -144,37 +153,243 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
     items,
     location
   );
+  const navRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRefs = useRef(
+    new Map<AdminBusinessNavigationGroupId, HTMLButtonElement>()
+  );
+  const pendingFocus = useRef<"first" | "last" | null>(null);
+  const instanceId = useId();
+  const [open, setOpen] = useState<{
+    id: AdminBusinessNavigationGroupId;
+    location: string;
+    top: number;
+    left: number;
+    maxHeight: number;
+  } | null>(null);
+  const entries =
+    activeWorkspace?.id === "business"
+      ? groupAdminBusinessNavigationItems(activeWorkspace.items)
+      : [];
+  // A location or permission change must not preserve a stale popup or selection.
+  const openEntry =
+    open?.location === location
+      ? entries.find(entry => entry.kind === "group" && entry.id === open.id)
+      : undefined;
+  const openId = openEntry?.kind === "group" ? openEntry.id : null;
+
+  function closeGroup(restoreFocus = false) {
+    if (restoreFocus && openId) triggerRefs.current.get(openId)?.focus();
+    pendingFocus.current = null;
+    setOpen(null);
+  }
+
+  function openGroup(
+    id: AdminBusinessNavigationGroupId,
+    focus?: "first" | "last"
+  ) {
+    const trigger = triggerRefs.current.get(id);
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    pendingFocus.current = focus ?? null;
+    setOpen({
+      id,
+      location,
+      top: rect.bottom,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 188)),
+      maxHeight: Math.max(80, window.innerHeight - rect.bottom - 12),
+    });
+  }
+
+  useEffect(() => {
+    if (open && !openId) setOpen(null);
+    if (!pendingFocus.current || !openId) return;
+    const buttons =
+      panelRef.current?.querySelectorAll<HTMLButtonElement>("button");
+    const target =
+      pendingFocus.current === "last"
+        ? buttons?.[buttons.length - 1]
+        : buttons?.[0];
+    pendingFocus.current = null;
+    target?.focus({ preventScroll: true });
+  });
+
+  useEffect(() => {
+    if (!openId) return;
+    const dismissOutside = (event: Event) => {
+      if (!navRef.current?.contains(event.target as Node)) closeGroup();
+    };
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeGroup(navRef.current?.contains(event.target as Node));
+    };
+    const dismissMoved = (event: Event) => {
+      if (
+        event.target instanceof Node &&
+        panelRef.current?.contains(event.target)
+      )
+        return;
+      closeGroup();
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("click", dismissOutside);
+    document.addEventListener("focusin", dismissOutside);
+    document.addEventListener("keydown", escape);
+    window.addEventListener("resize", dismissMoved);
+    window.addEventListener("scroll", dismissMoved, true);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("click", dismissOutside);
+      document.removeEventListener("focusin", dismissOutside);
+      document.removeEventListener("keydown", escape);
+      window.removeEventListener("resize", dismissMoved);
+      window.removeEventListener("scroll", dismissMoved, true);
+    };
+  }, [openId]);
+
   if (!activeWorkspace) return null;
+
+  function renderModule(item: T, child = false) {
+    const isActive = item.path === activeItem?.path;
+    return (
+      <button
+        key={item.path}
+        type="button"
+        className={`admin-workspace-nav__tab admin-workspace-nav__module${child ? " admin-workspace-nav__dropdown-item" : ""}`}
+        data-workspace-nav-target={item.path}
+        data-workspace-nav-child={child ? "true" : undefined}
+        data-active={isActive ? "true" : "false"}
+        aria-current={isActive ? "page" : undefined}
+        onClick={() => {
+          closeGroup(child);
+          onNavigate(item);
+        }}
+        onPointerEnter={() => (onPreload ?? onItemIntent)?.(item)}
+        onFocus={() => (onPreload ?? onItemIntent)?.(item)}
+      >
+        {renderItem
+          ? renderItem(item, { isActive, workspaceId: activeWorkspace!.id })
+          : item.label}
+        {renderBadge?.(item)}
+      </button>
+    );
+  }
 
   return (
     <nav
+      ref={navRef}
       className={`admin-workspace-nav__tabs admin-workspace-nav__tabs--modules${className ? ` ${className}` : ""}`}
       aria-label={`${activeWorkspace.label}模块菜单`}
       data-admin-navigation="module-tabs"
       data-workspace={activeWorkspace.id}
       onKeyDown={handleNavigationKeys}
     >
-      {activeWorkspace.items.map(item => {
-        const isActive = item.path === activeItem?.path;
-        return (
-          <button
-            key={item.path}
-            type="button"
-            className="admin-workspace-nav__tab admin-workspace-nav__module"
-            data-workspace-nav-target={item.path}
-            data-active={isActive ? "true" : "false"}
-            aria-current={isActive ? "page" : undefined}
-            onClick={() => onNavigate(item)}
-            onPointerEnter={() => (onPreload ?? onItemIntent)?.(item)}
-            onFocus={() => (onPreload ?? onItemIntent)?.(item)}
-          >
-            {renderItem
-              ? renderItem(item, { isActive, workspaceId: activeWorkspace.id })
-              : item.label}
-            {renderBadge?.(item)}
-          </button>
-        );
-      })}
+      {activeWorkspace.id !== "business"
+        ? activeWorkspace.items.map(item => renderModule(item))
+        : entries.map(entry => {
+            if (entry.kind === "direct") return renderModule(entry.item);
+            const expanded = openId === entry.id;
+            const isActive = entry.items.some(
+              item => item.path === activeItem?.path
+            );
+            const panelId = `${instanceId}-${entry.id}`;
+            return (
+              <div key={entry.id} className="admin-workspace-nav__group">
+                <button
+                  ref={node => {
+                    if (node) triggerRefs.current.set(entry.id, node);
+                    else triggerRefs.current.delete(entry.id);
+                  }}
+                  id={`${panelId}-trigger`}
+                  type="button"
+                  className="admin-workspace-nav__tab admin-workspace-nav__module admin-workspace-nav__group-trigger"
+                  data-workspace-nav-target={`group:${entry.id}`}
+                  data-active={isActive ? "true" : "false"}
+                  aria-current={isActive ? "location" : undefined}
+                  aria-expanded={expanded}
+                  aria-controls={expanded ? panelId : undefined}
+                  onClick={() =>
+                    expanded ? closeGroup() : openGroup(entry.id)
+                  }
+                  onKeyDown={event => {
+                    if (event.altKey || event.ctrlKey || event.metaKey) return;
+                    if (
+                      ["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)
+                    ) {
+                      event.preventDefault();
+                      if (expanded && ["Enter", " "].includes(event.key))
+                        closeGroup();
+                      else
+                        openGroup(
+                          entry.id,
+                          event.key === "ArrowUp" ? "last" : "first"
+                        );
+                    }
+                  }}
+                >
+                  {entry.label}
+                  <span
+                    className="admin-workspace-nav__chevron"
+                    aria-hidden="true"
+                  >
+                    ▾
+                  </span>
+                </button>
+                {expanded && open ? (
+                  <div
+                    ref={panelRef}
+                    id={panelId}
+                    role="group"
+                    aria-labelledby={`${panelId}-trigger`}
+                    className="admin-workspace-nav__dropdown"
+                    style={{
+                      top: open.top,
+                      left: open.left,
+                      maxHeight: open.maxHeight,
+                    }}
+                    onKeyDown={event => {
+                      if (
+                        event.altKey ||
+                        event.ctrlKey ||
+                        event.metaKey ||
+                        event.shiftKey
+                      )
+                        return;
+                      if (
+                        !["ArrowDown", "ArrowUp", "Home", "End"].includes(
+                          event.key
+                        )
+                      )
+                        return;
+                      const buttons = Array.from(
+                        event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                          "button"
+                        )
+                      );
+                      const index = buttons.indexOf(
+                        event.target as HTMLButtonElement
+                      );
+                      const next =
+                        event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? buttons.length - 1
+                            : (index +
+                                (event.key === "ArrowDown" ? 1 : -1) +
+                                buttons.length) %
+                              buttons.length;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      buttons[next]?.focus({ preventScroll: true });
+                    }}
+                  >
+                    {entry.items.map(item => renderModule(item, true))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
     </nav>
   );
 }
