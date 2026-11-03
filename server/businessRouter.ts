@@ -113,6 +113,13 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.notesList", module: "inventory", mode: "read" },
   { method: "channelInventory.notesAdd", module: "inventory", mode: "write" },
   { method: "channelInventory.notesEdit", module: "inventory", mode: "write" },
+  { method: "channelInventory.setMaterialShare", module: "inventory", mode: "write" },
+  { method: "organization.overview", module: "context", mode: "read" },
+  { method: "organization.audit", module: "users", mode: "read" },
+  { method: "organization.createTeam", module: "users", mode: "write" },
+  { method: "organization.updateTeam", module: "users", mode: "write" },
+  { method: "organization.setMember", module: "users", mode: "write" },
+  { method: "organization.updateMemberAccess", module: "users", mode: "write" },
   { method: "importInventory.*", module: "inventory", mode: "write" },
   { method: "inbound.*", module: "inventory", mode: "write" },
   { method: "customer.*", module: "customers", mode: "write" },
@@ -378,6 +385,7 @@ const channelInventoryBusinessRouter = router({
   notesList: businessQuery("channelInventory.notesList", "inventory"),
   notesAdd: businessMutation("channelInventory.notesAdd", "inventory"),
   notesEdit: businessMutation("channelInventory.notesEdit", "inventory"),
+  setMaterialShare: businessMutation("channelInventory.setMaterialShare", "inventory"),
 });
 
 const importInventoryBusinessRouter = router({
@@ -866,6 +874,14 @@ export const businessRouter = router({
     });
   }),
 
+  organization: router({
+    overview: businessQuery("organization.overview", "context"),
+    audit: businessQuery("organization.audit", "users"),
+    createTeam: businessMutation("organization.createTeam", "users"),
+    updateTeam: businessMutation("organization.updateTeam", "users"),
+    setMember: businessMutation("organization.setMember", "users"),
+    updateMemberAccess: businessMutation("organization.updateMemberAccess", "users"),
+  }),
   staffBindings: staffBindingsRouter,
   merchantScopes: merchantScopesRouter,
   inventory: inventoryBusinessRouter,

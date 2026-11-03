@@ -1,3 +1,4 @@
+import { LazyOrganization } from "./lib/adminRouteChunks";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Router as WouterRouter, Switch, useLocation } from "wouter";
@@ -160,6 +161,11 @@ const StaffRoute = () => (
     <LazyStaff />
   </LazyScreen>
 );
+const OrganizationRoute = () => (
+  <PermissionGate permission="admins.manage">
+    <LazyScreen><LazyOrganization /></LazyScreen>
+  </PermissionGate>
+);
 const OrdersRoute = () => (
   <PermissionGate permission="orders.read">
     <LazyScreen>
@@ -248,6 +254,9 @@ function AppRoutes() {
         <Route path={"/orders/:id"} component={OrdersRoute} />
         <Route path={"/admins"} component={AdminsRoute} />
         <Route path={"/staff"} component={StaffRoute} />
+        <Route path={"/teams"} component={OrganizationRoute} />
+        <Route path={"/role-templates"} component={OrganizationRoute} />
+        <Route path={"/permission-audit"} component={OrganizationRoute} />
         <Route path={"/reviews"} component={ReviewsRoute} />
         <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
         <Route path={"/analytics"} component={AnalyticsRoute} />

@@ -13,6 +13,7 @@ const pageLoaders = {
   portalUsers: () => import("@/pages/PortalUsers"),
   admins: () => import("@/pages/Admins"),
   staff: () => import("@/pages/Staff"),
+  organization: () => import("@/pages/Organization"),
   orders: () => import("@/pages/Orders"),
   profile: () => import("@/pages/Profile"),
   exceptionLogs: () => import("@/pages/ExceptionLogs"),
@@ -32,6 +33,7 @@ export const LazyMessages = lazy(pageLoaders.messages);
 export const LazyPortalUsers = lazy(pageLoaders.portalUsers);
 export const LazyAdmins = lazy(pageLoaders.admins);
 export const LazyStaff = lazy(pageLoaders.staff);
+export const LazyOrganization = lazy(pageLoaders.organization);
 export const LazyOrders = lazy(pageLoaders.orders);
 export const LazyProfile = lazy(pageLoaders.profile);
 export const LazyExceptionLogs = lazy(pageLoaders.exceptionLogs);
@@ -51,6 +53,7 @@ export type AdminNavigationChunk =
   | "portalUsers"
   | "admins"
   | "staff"
+  | "organization"
   | "orders"
   | "profile"
   | "exceptionLogs"

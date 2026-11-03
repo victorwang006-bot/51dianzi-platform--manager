@@ -1,3 +1,4 @@
+import { staffOrganizationRouter } from "./routers/staffOrganization";
 import { businessRouter } from "./businessRouter";
 import { officialTeamsRouter } from "./routers/officialTeams";
 import { officialChannelInventoryRouter } from "./routers/officialChannelInventory";
@@ -692,6 +693,7 @@ export const materialInput = z.object({
 
 export const appRouter = router({
   business: businessRouter,
+  staffOrganization: staffOrganizationRouter,
   officialTeams: officialTeamsRouter,
   officialChannelInventory: officialChannelInventoryRouter,
   officialChannelLegacy: officialChannelLegacyRouter,

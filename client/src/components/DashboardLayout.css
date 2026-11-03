@@ -1,0 +1,63 @@
+.admin-workspace-shell {
+  display: flex;
+  min-width: 0;
+  min-height: 100svh;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+.admin-workspace-shell__navigation {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+  min-width: 0;
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-workspace-shell__header {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  min-height: 64px;
+  gap: 32px;
+  padding: 0 24px;
+}
+
+.admin-workspace-shell__brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-workspace-shell__main {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 24px;
+}
+
+@media (max-width: 767px) {
+  .admin-workspace-shell__header {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .admin-workspace-shell__brand > div {
+    display: none;
+  }
+
+  .admin-workspace-shell__main {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-workspace-shell__navigation *,
+  .admin-workspace-shell__navigation *::after {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

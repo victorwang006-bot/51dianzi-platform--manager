@@ -1622,3 +1622,40 @@ export async function readGeneratedImageDictionaryRows(
   // A truncated candidate set must never be mistaken for a unique identity.
   return rows.length >= 10001 ? [] : rows;
 }
+
+/**
+ * A deliberately narrow raw row for the factory-channel public projection.
+ * The snapshot stays internal to the server: factoryChannelPublic validates and
+ * maps it to its explicit public DTO, never returning this object to callers.
+ */
+export type OfficialChannelPublicationReadRow = {
+  publicId: string;
+  snapshot: unknown;
+  publishedAt: Date | string;
+};
+
+/**
+ * Read only currently eligible official factory-channel publications.
+ *
+ * This query intentionally has no caller-selected SQL, columns, joins, or
+ * predicates. In particular it never reads regular merchant inventories and
+ * selects neither stock/source IDs nor any source, owner, contact, note, or
+ * attachment field. The public service must still validate the fixed snapshot
+ * before exposing an allow-listed DTO.
+ */
+export async function readOfficialChannelPublications(): Promise<OfficialChannelPublicationReadRow[]> {
+  const rows = await adminQuery<OfficialChannelPublicationReadRow[]>(
+    `SELECT /*+ MAX_EXECUTION_TIME(2000) */ p.publicId AS publicId, p.snapshot AS snapshot, p.publishedAt AS publishedAt
+       FROM official_channel_publications p
+       INNER JOIN official_channel_stocks s ON p.stockId = s.id
+       INNER JOIN official_channel_sources c ON s.sourceId = c.id
+      WHERE s.status = 'published'
+        AND c.active = 1
+        AND c.publicationApproved = 1
+      ORDER BY p.publishedAt DESC, p.publicId ASC
+      LIMIT 10001`,
+    [],
+  );
+  if (rows.length >= 10001) throw new Error("OFFICIAL_PUBLICATION_READ_CAP_EXCEEDED");
+  return rows;
+}

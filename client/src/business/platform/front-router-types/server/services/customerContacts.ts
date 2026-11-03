@@ -26,6 +26,7 @@ import {
 import {
   CRM_NOW,
   createCustomer,
+  crmCustomerPolicyWhere,
   crmCustomerDuplicateState,
   displayName,
   insertCrmCustomerContactAudit,
@@ -158,9 +159,9 @@ function mapMethod(row: ContactMethodRow): CustomerContactMethod {
 
 function canManageCustomerContact(
   scope: CustomerServerScope,
-  context: Pick<CrmCustomerContactTransaction, "customer" | "canManageAll">,
+  context: Pick<CrmCustomerContactTransaction, "customer" | "canWrite">,
 ) {
-  return context.canManageAll || Number(context.customer.assignedUserId) === scope.actorUserId;
+  return context.canWrite;
 }
 
 /** The customer ownership boundary remains primary; author identity only narrows a future non-owner path. */
@@ -170,7 +171,6 @@ function assertCanWriteProfile(
   profile: Pick<ContactProfileRow, "createdByUserId">,
 ) {
   if (canManageCustomerContact(scope, context)) return;
-  if (profile.createdByUserId != null && Number(profile.createdByUserId) === scope.actorUserId) return;
   fail("FORBIDDEN", "只能修改本人录入的联系人");
 }
 
@@ -326,8 +326,7 @@ function mapProfile(
     updatedAt: iso(profile.updatedAt),
     version: Number(profile.version),
     stoppedAt: iso(profile.stoppedAt),
-    canEdit: !profile.stoppedAt && (canManageCustomerContact(scope, context)
-      || (authorUserId != null && authorUserId === scope.actorUserId)),
+    canEdit: !profile.stoppedAt && canManageCustomerContact(scope, context),
   };
 }
 
@@ -682,17 +681,15 @@ export async function contactsList(scope: CustomerServerScope, rawInput: unknown
       contacts,
       canAdd: canManageCustomerContact(scope, context) && !context.customer.archivedAt,
     };
-  });
+  }, false);
 }
 
 export async function contactsSummary(scope: CustomerServerScope, rawInput: unknown): Promise<{ items: ContactSummary[] }> {
   const input = contactsSummarySchema.parse(rawInput);
   assertExpectedIdentity(scope, input);
-  return withCrmCustomerContactRead(scope, async ({ tx, canManageAll }) => {
+  return withCrmCustomerContactRead(scope, async ({ tx, policy }) => {
     const ids = input.customerIds;
-    const ownership = canManageAll
-      ? sql`c.enterpriseId = ${scope.enterpriseId}`
-      : sql`c.enterpriseId = ${scope.enterpriseId} AND c.assignedUserId = ${scope.actorUserId}`;
+    const ownership = crmCustomerPolicyWhere(scope, policy);
     const customers = rows<CustomerSummaryRow>(await tx.execute(sql`
       SELECT c.id, cc.id AS legacyRowId, cc.contactName, cc.phone, cc.email, cp.primaryContactId, cp.legacyContactPresent
         FROM crm_customers c

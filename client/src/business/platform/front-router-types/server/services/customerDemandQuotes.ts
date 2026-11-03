@@ -19,11 +19,12 @@ import {
   type DemandQuoteWithdrawInput,
   type DemandQuoteWithdrawResult,
 } from "../../../shared/customerDemandQuotes";
-import type { CustomerDemandScope } from "./customerDemands";
+import { assertCrmDemandCustomer, assertCrmProcurementDemand, crmDemandCustomerWhere, crmProcurementDemandWhere,
+  resolveCrmDemandPolicy, type CrmDemandPolicy, type CustomerDemandScope } from "./customerDemands";
 import { getDb } from "../db";
 
 /** Quote authorization is deliberately implemented here rather than trusting router/UI state. */
-type SqlExecutor = { execute: (query: string | SQLWrapper) => Promise<unknown> };
+type SqlExecutor = { execute: (query: SQLWrapper) => Promise<unknown> };
 type MembershipRow = { id: number; userId: number; role: "super_admin" | "admin" | "member"; status: "active" | "suspended"; loginDisabled: number | boolean };
 type AccessState = { actor: MembershipRow; owner: boolean; ownerUserId: number };
 type DemandIdentity = { id: number; customerId: number; status: "draft" | "submitted" | "processing"; procurementUserId: number | null; revision: number };
@@ -121,7 +122,7 @@ async function lockedEnterpriseMembers(tx: SqlExecutor, scope: CustomerDemandSco
   if (!actor || actor.status !== "active" || Boolean(actor.loginDisabled)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前企业成员不可用" });
   }
-  return { actor, owner: actor.role === "super_admin" || Number(enterprise.superAdminUserId) === scope.actorUserId, ownerUserId: Number(enterprise.superAdminUserId) };
+  return { actor, owner: actor.role === "super_admin" && Number(enterprise.superAdminUserId) === scope.actorUserId, ownerUserId: Number(enterprise.superAdminUserId) };
 }
 
 async function freshMembership(executor: SqlExecutor, scope: CustomerDemandScope): Promise<AccessState> {
@@ -132,7 +133,7 @@ async function freshMembership(executor: SqlExecutor, scope: CustomerDemandScope
      WHERE e.id = ${scope.enterpriseId} AND em.userId = ${scope.actorUserId} LIMIT 1
   `))[0];
   if (!row || row.status !== "active" || Boolean(row.loginDisabled)) throw new TRPCError({ code: "FORBIDDEN", message: "当前企业成员不可用" });
-  return { actor: row, owner: row.role === "super_admin" || Number(row.superAdminUserId) === scope.actorUserId, ownerUserId: Number(row.superAdminUserId) };
+  return { actor: row, owner: row.role === "super_admin" && Number(row.superAdminUserId) === scope.actorUserId, ownerUserId: Number(row.superAdminUserId) };
 }
 
 async function permissionKeys(executor: SqlExecutor, memberId: number, lock: boolean) {
@@ -152,12 +153,8 @@ async function requireProcurementAccess(executor: SqlExecutor, scope: CustomerDe
 
 async function requireSalesAccess(executor: SqlExecutor, scope: CustomerDemandScope, lock: boolean) {
   const state = lock ? await lockedEnterpriseMembers(executor, scope) : await freshMembership(executor, scope);
-  const permissions = state.owner ? [] : await permissionKeys(executor, state.actor.id, lock);
-  const canManageAll = state.owner || permissions.includes(CUSTOMER_ALL_PERMISSION);
-  if (!canManageAll && !permissions.includes(CUSTOMER_PERMISSION)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "您没有客户管理权限" });
-  }
-  return { ...state, canManageAll };
+  const policy = await resolveCrmDemandPolicy(executor, scope, lock);
+  return { ...state, canManageAll: policy.customers.scope === "enterprise" && policy.demands.scope === "enterprise", policy };
 }
 
 async function quoteDemandIdentity(executor: SqlExecutor, scope: CustomerDemandScope, demandId: number, lock = false) {
@@ -185,10 +182,11 @@ async function accessibleSalesDemand(executor: SqlExecutor, scope: CustomerDeman
       FROM crm_customer_demands d INNER JOIN crm_customers c ON c.id = d.customerId AND c.enterpriseId = d.enterpriseId
      WHERE d.enterpriseId = ${scope.enterpriseId} AND d.id = ${demandId} LIMIT 1
   `))[0];
-  if (!row || (!access.canManageAll && Number(row.assignedUserId) !== scope.actorUserId)) {
+  if (!row) {
     throw new TRPCError({ code: "NOT_FOUND", message: "需求不存在" });
   }
-  return { ...row, canManageAll: access.canManageAll };
+  await assertCrmDemandCustomer(executor, scope, access.policy, Number(row.customerId));
+  return { ...row, canManageAll: access.canManageAll, policy: access.policy };
 }
 
 async function reserveRequest(tx: SqlExecutor, scope: CustomerDemandScope, requestId: string, payloadHash: string) {
@@ -278,6 +276,7 @@ export async function saveDemandQuote(scope: CustomerDemandScope, rawInput: Dema
   return db.transaction(async tx => {
     // Lock order: enterprise/members -> customer -> demand -> caller's quote.
     await requireProcurementAccess(tx, scope, true);
+    await assertCrmProcurementDemand(tx, scope, input.demandId, true);
     const looseIdentity = await quoteDemandIdentity(tx, scope, input.demandId);
     const customer = await lockedCustomer(tx, scope, Number(looseIdentity.customerId));
     const demand = await quoteDemandIdentity(tx, scope, input.demandId, true);
@@ -395,6 +394,14 @@ export async function withdrawDemandQuote(scope: CustomerDemandScope, rawInput: 
   const db = await requireDb();
   return db.transaction(async tx => {
     await requireProcurementAccess(tx, scope, true);
+    const identity = resultRows<{ customerId: number; demandId: number }>(await tx.execute(sql`
+      SELECT customerId, demandId FROM crm_customer_demand_quotes
+       WHERE enterpriseId = ${scope.enterpriseId} AND procurementUserId = ${scope.actorUserId} AND id = ${input.quoteId} LIMIT 1
+    `))[0];
+    if (!identity) throw new TRPCError({ code: "NOT_FOUND", message: "报价不存在" });
+    await assertCrmProcurementDemand(tx, scope, Number(identity.demandId), true);
+    await lockedCustomer(tx, scope, Number(identity.customerId));
+    await quoteDemandIdentity(tx, scope, Number(identity.demandId), true);
     const quote = resultRows<QuoteRow>(await tx.execute(sql`
       SELECT id, enterpriseId, customerId, demandId, procurementUserId, supplierName, note, status, withdrawnAt, version,
              demandRevision, createdAt, updatedAt
@@ -429,23 +436,25 @@ export async function listDemandQuoteHistory(scope: CustomerDemandScope, rawInpu
      WHERE enterpriseId = ${scope.enterpriseId} AND id = ${input.quoteId} LIMIT 1
   `))[0];
   if (!quote) throw new TRPCError({ code: "NOT_FOUND", message: "报价不存在" });
-  let salesCanManageAll = false;
+  let demandPolicy: CrmDemandPolicy;
   if (input.audience === "procurement") {
     await requireProcurementAccess(db, scope, false);
+    demandPolicy = await assertCrmProcurementDemand(db, scope, Number(quote.demandId));
     if (Number(quote.procurementUserId) !== scope.actorUserId) throw new TRPCError({ code: "NOT_FOUND", message: "报价不存在" });
   } else {
-    salesCanManageAll = (await accessibleSalesDemand(db, scope, Number(quote.demandId))).canManageAll;
+    demandPolicy = (await accessibleSalesDemand(db, scope, Number(quote.demandId))).policy;
   }
-  const historyOwnerJoin = input.audience === "sales" ? sql`
+  const historyOwnerJoin = sql`
     INNER JOIN crm_customer_demand_quotes guarded_quote
       ON guarded_quote.enterpriseId = qa.enterpriseId AND guarded_quote.id = qa.quoteId
     INNER JOIN crm_customer_demands guarded_demand
       ON guarded_demand.enterpriseId = guarded_quote.enterpriseId AND guarded_demand.id = guarded_quote.demandId
     INNER JOIN crm_customers guarded_customer
       ON guarded_customer.enterpriseId = guarded_demand.enterpriseId AND guarded_customer.id = guarded_demand.customerId
-  ` : sql``;
-  const historyOwnerGuard = input.audience === "sales" && !salesCanManageAll
-    ? sql` AND guarded_customer.assignedUserId = ${scope.actorUserId}` : sql``;
+  `;
+  const historyOwnerGuard = input.audience === "sales"
+    ? sql` AND ${crmDemandCustomerWhere(scope, demandPolicy, "guarded_customer")}`
+    : sql` AND ${crmProcurementDemandWhere(scope, demandPolicy, "guarded_demand")}`;
   const count = resultRows<{ total: number | string }>(await db.execute(sql`
     SELECT COUNT(*) AS total FROM crm_customer_demand_quote_audits qa ${historyOwnerJoin}
      WHERE qa.enterpriseId = ${scope.enterpriseId} AND qa.quoteId = ${input.quoteId} ${historyOwnerGuard}
@@ -501,9 +510,7 @@ export async function acceptDemandQuote(scope: CustomerDemandScope, rawInput: De
     const access = await requireSalesAccess(tx, scope, true);
     const looseDemand = await quoteDemandIdentity(tx, scope, input.demandId);
     const customer = await lockedCustomer(tx, scope, Number(looseDemand.customerId));
-    if (!access.canManageAll && Number(customer.assignedUserId) !== scope.actorUserId) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "需求不存在" });
-    }
+    await assertCrmDemandCustomer(tx, scope, access.policy, Number(customer.id), true);
     const demand = await quoteDemandIdentity(tx, scope, input.demandId, true);
     if (Number(demand.customerId) !== Number(customer.id)) throw new TRPCError({ code: "NOT_FOUND", message: "需求不存在" });
     if (customer.archivedAt) throw new TRPCError({ code: "CONFLICT", message: "已归档客户不可采用报价" });
@@ -635,11 +642,12 @@ export async function acceptDemandQuote(scope: CustomerDemandScope, rawInput: De
 export async function listDemandQuotes(scope: CustomerDemandScope, rawInput: DemandQuoteListInput): Promise<DemandQuotePage> {
   const input = checkedList(rawInput);
   const db = await requireDb();
-  let salesCanManageAll = false;
+  let demandPolicy: CrmDemandPolicy;
   if (input.audience === "sales") {
-    salesCanManageAll = (await accessibleSalesDemand(db, scope, input.demandId)).canManageAll;
+    demandPolicy = (await accessibleSalesDemand(db, scope, input.demandId)).policy;
   } else {
     await requireProcurementAccess(db, scope, false);
+    demandPolicy = await assertCrmProcurementDemand(db, scope, input.demandId);
     const demand = await quoteDemandIdentity(db, scope, input.demandId);
     if (demand.status === "draft") throw new TRPCError({ code: "NOT_FOUND", message: "采购需求不存在" });
     const verifiedCustomer = resultRows<{ id: number }>(await db.execute(sql`
@@ -651,11 +659,10 @@ export async function listDemandQuotes(scope: CustomerDemandScope, rawInput: Dem
   const activeGuard = input.audience === "sales" ? sql` AND q.status = 'active'` : sql``;
   const quoteGuard = input.quoteId ? sql` AND q.id = ${input.quoteId}` : sql``;
   // Repeat tenant/current-owner enforcement on the final reads: a transfer after preflight cannot leak quotes.
-  const salesJoin = input.audience === "sales" ? sql`
-    INNER JOIN crm_customers c ON c.id = q.customerId AND c.enterpriseId = q.enterpriseId
-  ` : sql``;
-  const salesOwnerGuard = input.audience === "sales" && !salesCanManageAll
-    ? sql` AND c.assignedUserId = ${scope.actorUserId}` : sql``;
+  const salesJoin = sql`INNER JOIN crm_customers c ON c.id = q.customerId AND c.enterpriseId = q.enterpriseId AND c.id = d.customerId`;
+  const salesOwnerGuard = input.audience === "sales"
+    ? sql` AND ${crmDemandCustomerWhere(scope, demandPolicy, "c")}`
+    : sql` AND ${crmProcurementDemandWhere(scope, demandPolicy, "d")}`;
   const acceptanceSelect = sql`,
     accepted.id AS acceptanceId, accepted.createdAt AS acceptedAt,
     COALESCE(accepted_user.name, accepted_user.username, CONCAT('用户', accepted_user.id)) AS acceptedByName,
@@ -716,7 +723,8 @@ export async function listDemandQuotes(scope: CustomerDemandScope, rawInput: Dem
       INNER JOIN crm_customer_demand_quotes q ON q.enterpriseId = qi.enterpriseId AND q.id = qi.quoteId
       INNER JOIN crm_customer_demands d ON d.enterpriseId = q.enterpriseId AND d.id = q.demandId
       INNER JOIN crm_customer_demand_items di ON di.enterpriseId = qi.enterpriseId AND di.demandId = qi.demandId AND di.id = qi.demandItemId
-     WHERE qi.enterpriseId = ${scope.enterpriseId} AND qi.quoteId IN (${placeholders})
+      ${salesJoin}
+     WHERE qi.enterpriseId = ${scope.enterpriseId} AND qi.quoteId IN (${placeholders}) ${salesOwnerGuard} ${ownGuard}
      ORDER BY qi.quoteId ASC, qi.sortOrder ASC, qi.id ASC
   `)) as (QuoteItemRow & { quoteId: number })[];
   const itemGroups = new Map<number, QuoteItemRow[]>();

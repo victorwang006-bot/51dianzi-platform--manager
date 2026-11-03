@@ -313,6 +313,47 @@ function successfulWorkbenchResponse(call: FetchCall): Response {
   throw new Error(`UNEXPECTED_NETWORK_STUB_PATH:${call.pathname}`);
 }
 
+const privateChannelMaterial = {
+  id: 501,
+  channelId: 201,
+  channelName: "本人私有来源",
+  channelType: "trade",
+  channelActive: true,
+  enterpriseId: 1,
+  dataOwnerUserId: 397751,
+  responsibleUserId: 397751,
+  partNumber: "PRIVATE-TEST-501",
+  brand: "测试品牌",
+  qty: 10,
+  dateCode: null,
+  price: null,
+  currency: "CNY",
+  taxIncluded: null,
+  leadTime: null,
+  note: "本人私有备注不可共享",
+  shareEnabled: false,
+  canEdit: false,
+  readOnly: true,
+  revision: 1,
+  createdAt: "2026-11-02T00:00:00.000Z",
+  updatedAt: "2026-11-02T00:00:00.000Z",
+};
+const sharedChannelMaterial = {
+  id: 502,
+  partNumber: "SHARED-TEST-502",
+  brand: "测试品牌",
+  qty: 20,
+  dateCode: null,
+  price: null,
+  currency: "CNY",
+  taxIncluded: null,
+  leadTime: null,
+  revision: 1,
+  updatedAt: "2026-11-02T00:00:00.000Z",
+  canEdit: false,
+  readOnly: true,
+};
+
 function legacyChannelInventoryResponse(call: FetchCall): Response {
   if (call.pathname === "/api/business-trpc/merchants") {
     return trpcResult({
@@ -337,20 +378,74 @@ function legacyChannelInventoryResponse(call: FetchCall): Response {
   }
   if (
     call.pathname ===
-    "/api/business-trpc/channelInventory.listSharedMaterials,channelInventory.listChannels"
+    "/api/business-trpc/channelInventory.listMaterials,channelInventory.listChannels"
   ) {
     return trpcBatchResult(
-      { items: [], total: 33, page: 1, pageSize: 20 },
-      { items: [], total: 5, page: 1, pageCount: 1 }
+      {
+        items: [privateChannelMaterial],
+        total: 33,
+        page: 1,
+        pageSize: 20,
+        pageCount: 2,
+        canWrite: false,
+      },
+      {
+        items: [],
+        total: 5,
+        page: 1,
+        pageSize: 100,
+        pageCount: 1,
+        canWrite: false,
+      }
     );
+  }
+  if (call.pathname === "/api/business-trpc/channelInventory.listMaterials") {
+    return trpcResult({
+      items: [privateChannelMaterial],
+      total: 33,
+      page: 1,
+      pageSize: 20,
+      pageCount: 2,
+      canWrite: false,
+    });
   }
   if (
     call.pathname === "/api/business-trpc/channelInventory.listSharedMaterials"
   ) {
-    return trpcResult({ items: [], total: 33, page: 1, pageSize: 20 });
+    return trpcResult({
+      items: [sharedChannelMaterial],
+      total: 7,
+      page: 1,
+      pageSize: 20,
+    });
+  }
+  if (call.pathname === "/api/business-trpc/channelInventory.notesList") {
+    return trpcResult({
+      material: {
+        id: 501,
+        partNumber: "PRIVATE-TEST-501",
+        brand: "测试品牌",
+        channelType: "trade",
+        updatedAt: "2026-11-02T00:00:00.000Z",
+      },
+      legacyNote: "本人私有备注不可共享",
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 50,
+      canEdit: false,
+      readOnly: true,
+    });
   }
   if (call.pathname === "/api/business-trpc/channelInventory.listChannels") {
-    return trpcResult({ items: [], total: 5, page: 1, pageCount: 1 });
+    return trpcResult({
+      items: [],
+      total: 5,
+      page: 1,
+      pageSize: 100,
+      pageCount: 1,
+      canWrite: false,
+    });
   }
   throw new Error(
     `UNEXPECTED_LEGACY_CHANNEL_NETWORK_STUB_PATH:${call.pathname}`
@@ -455,12 +550,149 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(true);
     expect(
       network.calls.some(call =>
+        call.pathname.includes("channelInventory.listMaterials")
+      )
+    ).toBe(true);
+    const batch = network.calls.find(
+      call =>
+        call.pathname ===
+        "/api/business-trpc/channelInventory.listMaterials,channelInventory.listChannels"
+    );
+    expect(batch).toBeTruthy();
+    const input = JSON.parse(
+      new URL(batch!.url, "http://workbench.test").searchParams.get("input")!
+    );
+    expect(input["0"].json).toMatchObject({
+      expectedEnterpriseId: 1,
+      expectedActorUserId: 397751,
+      page: 1,
+      pageSize: 20,
+    });
+    expect(input["1"].json).toMatchObject({
+      expectedEnterpriseId: 1,
+      expectedActorUserId: 397751,
+      page: 1,
+      pageSize: 100,
+    });
+    expect(
+      network.calls.some(call =>
         call.pathname.includes("channelInventory.listSharedMaterials")
+      )
+    ).toBe(false);
+    expect(
+      Array.from(
+        mounted.container.querySelectorAll('[role="tab"][aria-selected="true"]')
+      ).map(tab => tab.textContent)
+    ).toEqual(["渠道库存", "本人库存"]);
+    const addMaterial = Array.from(
+      mounted.container.querySelectorAll<HTMLButtonElement>("button")
+    ).find(button => button.textContent === "+ 新增库存");
+    expect(addMaterial?.disabled).toBe(true);
+    for (const call of network.calls) {
+      expect(call.pathname.startsWith("/api/business-trpc/")).toBe(true);
+      expect(call.headers.get("cookie")).toBeNull();
+      expect(call.headers.get("x-admin-id")).toBeNull();
+      expect(call.credentials).toBe("include");
+      if (call.pathname !== "/api/business-trpc/merchants") {
+        expect(call.headers.get("x-business-merchant-id")).toBe("30061");
+      }
+    }
+    expect(
+      network.calls.some(call =>
+        call.pathname.includes("officialChannelInventory")
+      )
+    ).toBe(false);
+  });
+
+  it("keeps private notes read-only and starts the closed team DTO query only after selecting team sharing", async () => {
+    const network = installNetwork(legacyChannelInventoryResponse);
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("PRIVATE-TEST-501")
+    );
+    const notes = mounted.container.querySelector<HTMLButtonElement>(
+      '[aria-label="打开库存 501 的备注"]'
+    );
+    expect(notes).toBeTruthy();
+    await act(async () => notes!.click());
+    await waitFor(() =>
+      expect(
+        mounted?.container.querySelector('[role="dialog"]')?.textContent
+      ).toContain("当前库存为只读，不能新增或修改备注。")
+    );
+    expect(
+      mounted.container.querySelector('[role="dialog"] textarea')
+    ).toBeNull();
+    const notesCall = network.calls.find(call =>
+      call.pathname.endsWith("/channelInventory.notesList")
+    );
+    expect(notesCall?.headers.get("x-business-merchant-id")).toBe("30061");
+    const notesInput = JSON.parse(
+      new URL(notesCall!.url, "http://workbench.test").searchParams.get(
+        "input"
+      )!
+    );
+    expect(notesInput["0"].json).toEqual({
+      expectedEnterpriseId: 1,
+      expectedActorUserId: 397751,
+      materialId: 501,
+      page: 1,
+      pageSize: 50,
+    });
+    const close = mounted.container.querySelector<HTMLButtonElement>(
+      '[aria-label="关闭本人备注"]'
+    );
+    await act(async () => close!.click());
+    const teamTab = Array.from(
+      mounted.container.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    ).find(tab => tab.textContent === "团队共享（只读）");
+    expect(teamTab?.getAttribute("aria-selected")).toBe("false");
+    await act(async () => teamTab!.click());
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("SHARED-TEST-502")
+    );
+    expect(teamTab?.getAttribute("aria-selected")).toBe("true");
+    expect(mounted.container.textContent).toContain("7 条库存");
+    expect(mounted.container.textContent).toContain("不共享任何备注");
+    expect(mounted.container.textContent).not.toContain("本人私有备注不可共享");
+    expect(mounted.container.textContent).not.toContain("本人私有来源");
+    expect(
+      mounted.container.querySelector('[aria-label="打开库存 502 的备注"]')
+    ).toBeNull();
+    const sharedCall = network.calls.find(call =>
+      call.pathname.endsWith("/channelInventory.listSharedMaterials")
+    );
+    const sharedInput = JSON.parse(
+      new URL(sharedCall!.url, "http://workbench.test").searchParams.get(
+        "input"
+      )!
+    );
+    expect(sharedInput["0"].json).toEqual({
+      expectedEnterpriseId: 1,
+      expectedActorUserId: 397751,
+      partNumber: null,
+      brand: null,
+      page: 1,
+      pageSize: 20,
+    });
+    expect(sharedInput["0"].meta.values).toEqual({
+      partNumber: ["undefined"],
+      brand: ["undefined"],
+    });
+    expect(
+      network.calls.every(
+        call =>
+          call.pathname.startsWith("/api/business-trpc/") &&
+          call.credentials === "include" &&
+          !call.headers.has("cookie") &&
+          !call.headers.has("x-admin-id")
       )
     ).toBe(true);
     expect(
       network.calls.some(call =>
-        call.pathname.includes("officialChannelInventory")
+        /notesAdd|notesEdit|setMaterialShare|officialChannelInventory/.test(
+          call.pathname
+        )
       )
     ).toBe(false);
   });

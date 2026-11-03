@@ -6,6 +6,7 @@ import {
   type PurchaseOrderCreateInput, type PurchaseOrderListInput, type PurchaseOrderShippingInput,
 } from "../../../shared/purchaseOrders";
 import { currentBeijingDate, getDb } from "../db";
+import { assertCrmProcurementDemand, crmProcurementDemandWhere, resolveCrmDemandPolicy } from "./customerDemands";
 import {
   centsString, decimalUnits, invoiceProgress, normalizePurchasePartNumber,
   normalizePurchaseSupplierName, progressStatus, purchaseOrderTotal, receiptProgress,
@@ -151,6 +152,7 @@ async function audit(tx: Executor, scope: PurchaseOrderScope, id: number, reques
 /** 仅展示当前、有效且尚未生成采购单的已采用报价。无权人员不可调用。 */
 export async function acceptedQuoteOptions(scope: PurchaseOrderScope, input: { keyword: string; limit: number }) {
   const db = await dbOrFail();
+  const policy = await resolveCrmDemandPolicy(db, scope);
   const match = input.keyword.trim();
   const result = rows<{ acceptanceId: number; supplierName: string; demandId: number;
     quoteId: number; quoteVersion: number; demandRevision: number; partSummary: string;
@@ -169,7 +171,7 @@ export async function acceptedQuoteOptions(scope: PurchaseOrderScope, input: { k
       INNER JOIN crm_customer_demand_quote_audit_items ai_snapshot ON ai_snapshot.enterpriseId=acc.enterpriseId
         AND ai_snapshot.auditId=qa.id AND ai_snapshot.demandItemId=ai.demandItemId
       LEFT JOIN crm_purchase_orders po ON po.enterpriseId=acc.enterpriseId AND po.sourceAcceptanceId=acc.id
-     WHERE acc.enterpriseId=${scope.enterpriseId} AND po.id IS NULL
+     WHERE acc.enterpriseId=${scope.enterpriseId} AND po.id IS NULL AND ${crmProcurementDemandWhere(scope, policy)}
        AND (${match}='' OR LOCATE(${match}, qa.supplierName)>0 OR LOCATE(${match}, ai_snapshot.partNumber)>0
          OR LOCATE(${match}, d.demandNo)>0)
      GROUP BY acc.id, qa.supplierName, acc.demandId, acc.quoteId, acc.quoteVersion, acc.demandRevision, acc.createdAt
@@ -186,6 +188,16 @@ export async function acceptedQuoteOptions(scope: PurchaseOrderScope, input: { k
 type QuoteSource = { acceptanceId: number; quoteVersion: number; supplierName: string;
   items: ReturnType<typeof normalizeItem>[] };
 async function verifiedQuoteSource(tx: Executor, scope: PurchaseOrderScope, acceptanceId: number): Promise<QuoteSource> {
+  const identity = rows<{ customerId: number; demandId: number; quoteId: number }>(await tx.execute(sql`
+    SELECT d.customerId, acc.demandId, acc.quoteId FROM crm_customer_demand_quote_acceptances acc
+    INNER JOIN crm_customer_demands d ON d.enterpriseId = acc.enterpriseId AND d.id = acc.demandId
+    WHERE acc.enterpriseId = ${scope.enterpriseId} AND acc.id = ${acceptanceId} LIMIT 1`))[0];
+  if (!identity) missing();
+  await assertCrmProcurementDemand(tx, scope, Number(identity.demandId));
+  await tx.execute(sql`SELECT id FROM crm_customers WHERE enterpriseId = ${scope.enterpriseId} AND id = ${Number(identity.customerId)} LIMIT 1 FOR UPDATE`);
+  await tx.execute(sql`SELECT id FROM crm_customer_demands WHERE enterpriseId = ${scope.enterpriseId} AND id = ${Number(identity.demandId)} LIMIT 1 FOR UPDATE`);
+  await tx.execute(sql`SELECT id FROM crm_customer_demand_quotes WHERE enterpriseId = ${scope.enterpriseId} AND id = ${Number(identity.quoteId)} LIMIT 1 FOR UPDATE`);
+  const policy = await assertCrmProcurementDemand(tx, scope, Number(identity.demandId));
   const accepted = rows<{ id: number; demandId: number; quoteId: number; quoteVersion: number;
     demandRevision: number; currentDemandRevision: number; currentQuoteVersion: number;
     currentQuoteRevision: number; quoteStatus: string; demandStatus: string;
@@ -200,7 +212,7 @@ async function verifiedQuoteSource(tx: Executor, scope: PurchaseOrderScope, acce
       INNER JOIN crm_customer_demands d ON d.enterpriseId=acc.enterpriseId AND d.id=acc.demandId
       INNER JOIN crm_customer_demand_quote_audits qa ON qa.enterpriseId=acc.enterpriseId
         AND qa.quoteId=acc.quoteId AND qa.version=acc.quoteVersion AND qa.demandRevision=acc.demandRevision
-     WHERE acc.enterpriseId=${scope.enterpriseId} AND acc.id=${acceptanceId}
+     WHERE acc.enterpriseId=${scope.enterpriseId} AND acc.id=${acceptanceId} AND ${crmProcurementDemandWhere(scope, policy)}
      LIMIT 1 FOR UPDATE
   `))[0];
   if (!accepted) missing();
@@ -238,6 +250,15 @@ export async function createPurchaseOrder(scope: PurchaseOrderScope, input: Purc
   const payloadHash = hash(input);
   try {
     return await db.transaction(async tx => {
+      if (input.source === "accepted_quote") {
+        // Same enterprise -> ordered members -> customer -> demand -> quote -> acceptance lock order as CRM writers.
+        await tx.execute(sql`SELECT id FROM enterprises WHERE id = ${scope.enterpriseId} LIMIT 1 FOR UPDATE`);
+        await tx.execute(sql`SELECT userId FROM enterprise_members WHERE enterpriseId = ${scope.enterpriseId} ORDER BY userId FOR UPDATE`);
+        const identity = rows<{ demandId: number }>(await tx.execute(sql`SELECT demandId FROM crm_customer_demand_quote_acceptances
+          WHERE enterpriseId = ${scope.enterpriseId} AND id = ${input.acceptanceId} LIMIT 1`))[0];
+        if (!identity) missing();
+        await assertCrmProcurementDemand(tx, scope, Number(identity.demandId));
+      }
       const previous = rows<{ id: number; orderNo: string; createPayloadHash: string; version: number }>(await tx.execute(sql`
         SELECT id, orderNo, createPayloadHash, version FROM crm_purchase_orders
          WHERE enterpriseId=${scope.enterpriseId} AND createdByUserId=${scope.actorUserId}

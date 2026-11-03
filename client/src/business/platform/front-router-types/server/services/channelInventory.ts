@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 
 export const CHANNEL_INVENTORY_TYPES = ["factory", "agent", "trade", "other"] as const;
 export type ChannelInventoryType = (typeof CHANNEL_INVENTORY_TYPES)[number];
@@ -9,6 +11,7 @@ export type ChannelInventoryErrorCode =
   | "CONFLICT"
   | "FORBIDDEN"
   | "PRECONDITION_FAILED"
+  | "SERVICE_UNAVAILABLE"
   | "INTERNAL_SERVER_ERROR";
 
 export class ChannelInventoryError extends Error {
@@ -21,11 +24,11 @@ export class ChannelInventoryError extends Error {
   }
 }
 
-type SqlResultRow = Record<string, unknown>;
-type SqlExecutor = {
+export type SqlResultRow = Record<string, unknown>;
+export type SqlExecutor = {
   execute(statement: SQL): Promise<unknown>;
 };
-type SqlDatabase = SqlExecutor & {
+export type SqlDatabase = SqlExecutor & {
   transaction<T>(operation: (tx: SqlExecutor) => Promise<T>): Promise<T>;
 };
 
@@ -55,6 +58,8 @@ export type ChannelRecord = {
   revision: number;
   createdAt: Date | string;
   updatedAt: Date | string;
+  canEdit: boolean;
+  readOnly: boolean;
 };
 
 export type ChannelMaterialRecord = {
@@ -75,6 +80,9 @@ export type ChannelMaterialRecord = {
   taxIncluded: boolean | null;
   leadTime: string | null;
   note: string | null;
+  shareEnabled: boolean;
+  canEdit: boolean;
+  readOnly: boolean;
   revision: number;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -168,7 +176,20 @@ const MATERIAL_COLUMNS = sql`
   m.responsible_user_id AS responsibleUserId, m.part_number AS partNumber,
   m.brand, m.qty, m.date_code AS dateCode, m.price, m.currency,
   m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.note, m.revision,
-  m.created_at AS createdAt, m.updated_at AS updatedAt
+  m.created_at AS createdAt, m.updated_at AS updatedAt,
+  EXISTS (SELECT 1 FROM channel_inventory_material_shares own_share
+    INNER JOIN enterprise_team_record_assignments own_assignment
+      ON own_assignment.enterpriseId = m.enterprise_id AND own_assignment.recordType = 'channel_material'
+     AND own_assignment.recordId = m.id AND own_assignment.currentOwnerUserId = m.responsible_user_id
+     AND own_assignment.teamId = own_share.share_team_id AND own_assignment.revision = own_share.assignment_revision
+    INNER JOIN enterprise_team_members own_member
+      ON own_member.enterpriseId = m.enterprise_id AND own_member.userId = m.responsible_user_id
+     AND own_member.teamId = own_share.share_team_id AND own_member.id = own_share.owner_membership_id
+    INNER JOIN enterprise_teams own_team ON own_team.id = own_member.teamId
+     AND own_team.enterpriseId = m.enterprise_id AND own_team.status = 'active'
+    WHERE own_share.enterprise_id = m.enterprise_id AND own_share.material_id = m.id
+      AND own_share.enabled = 1 AND own_share.owner_user_id = m.responsible_user_id
+      AND c.responsible_user_id = m.responsible_user_id) AS shareEnabled
 `;
 const MATERIAL_WITH_CHANNEL_FROM = sql`
   FROM channel_inventory_materials m
@@ -247,6 +268,7 @@ function channelFrom(row: SqlResultRow): ChannelRecord {
     revision: Number(row.revision),
     createdAt: row.createdAt as Date | string,
     updatedAt: row.updatedAt as Date | string,
+    canEdit: true, readOnly: false,
   };
 }
 
@@ -272,6 +294,8 @@ function materialFrom(row: SqlResultRow): ChannelMaterialRecord {
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded),
     leadTime: nullableString(row.leadTime),
     note: nullableString(row.note),
+    shareEnabled: bool(row.shareEnabled),
+    canEdit: true, readOnly: false,
     revision: Number(row.revision),
     createdAt: row.createdAt as Date | string,
     updatedAt: row.updatedAt as Date | string,
@@ -301,7 +325,8 @@ export function channelInventoryPayloadHash(value: unknown): string {
 }
 
 function ownScope(scope: ChannelInventoryScope): boolean {
-  return !scope.isOwner && scope.inventoryDataScope === "own";
+  // Profiles and their source-bearing materials are ALWAYS current-responsible private.
+  return true;
 }
 
 function channelScopePredicates(scope: ChannelInventoryScope, extra: SQL[] = []): SQL[] {
@@ -365,46 +390,53 @@ async function requiredDatabase(getDb: ChannelInventoryServiceDependencies["getD
   }
 }
 
-async function lockAndRevalidateMutationScope(tx: SqlExecutor, scope: ChannelInventoryScope): Promise<void> {
+/** Recheck real enterprise membership and the module gate, never a client scope. */
+export async function resolveChannelInventoryAuthority(
+  tx: SqlExecutor, scope: ChannelInventoryScope,
+  module: "channels" | "stocks", write = false, lock = false,
+) {
+  const suffix = lock ? sql` FOR UPDATE` : sql``;
   const enterprise = rows(await tx.execute(sql`
-    SELECT id, superAdminUserId, crmDataOwnerUserId
-      FROM enterprises
-     WHERE id = ${scope.enterpriseId}
-     LIMIT 1
-     FOR UPDATE
+    SELECT id, superAdminUserId, crmDataOwnerUserId FROM enterprises
+     WHERE id = ${scope.enterpriseId} LIMIT 1${suffix}
   `))[0];
   if (!enterprise || Number(enterprise.crmDataOwnerUserId) !== scope.dataOwnerUserId) {
-    appError("CONFLICT", "企业数据归属已变化，请重新登录");
+    appError("FORBIDDEN", "企业数据归属已变化，请重新登录");
   }
   const actor = rows(await tx.execute(sql`
-    SELECT em.id, em.userId, em.role, em.status, em.inventoryDataScope, u.loginDisabled
-      FROM enterprise_members em
-      INNER JOIN users u ON u.id = em.userId
-     WHERE em.enterpriseId = ${scope.enterpriseId}
-       AND em.userId = ${scope.actorUserId}
-     LIMIT 1
-     FOR UPDATE
+    SELECT em.id, em.userId, em.role, em.status, u.loginDisabled
+      FROM enterprise_members em INNER JOIN users u ON u.id = em.userId
+     WHERE em.enterpriseId = ${scope.enterpriseId} AND em.userId = ${scope.actorUserId}
+     LIMIT 1${suffix}
   `))[0];
   if (!actor || String(actor.status) !== "active" || bool(actor.loginDisabled)) {
-    appError("CONFLICT", "企业成员状态已变化，请重新登录");
-  }
-  if (String(actor.inventoryDataScope) !== scope.inventoryDataScope) {
-    appError("CONFLICT", "库存数据范围已变化，请刷新后重试");
-  }
-  const currentOwner = String(actor.role) === "super_admin" && Number(enterprise.superAdminUserId) === scope.actorUserId;
-  if (currentOwner !== scope.isOwner) {
-    appError("CONFLICT", "企业权限状态已变化，请重新登录");
+    appError("FORBIDDEN", "企业成员状态已变化，请重新登录");
   }
   const permissions = rows(await tx.execute(sql`
-    SELECT permissionKey
-      FROM enterprise_member_permissions
-     WHERE enterpriseMemberId = ${Number(actor.id)}
-     FOR UPDATE
+    SELECT permissionKey FROM enterprise_member_permissions
+     WHERE enterpriseMemberId = ${Number(actor.id)}${suffix}
   `));
-  const hasCurrentPermission = currentOwner || permissions.some(permission => String(permission.permissionKey) === "inventory.manage");
-  if (!scope.permissionSnapshot || !hasCurrentPermission) {
-    appError("CONFLICT", "企业权限状态已变化，请重新登录");
+  const isOwner = String(actor.role) === "super_admin" && Number(enterprise.superAdminUserId) === scope.actorUserId;
+  if (!(isOwner || permissions.some(p => String(p.permissionKey) === "inventory.manage"))) {
+    appError("FORBIDDEN", "当前账号没有渠道库存管理权限");
   }
+  // The helper owns all unconfigured compatibility defaults. A team/enterprise
+  // module scope never broadens channel profile/source visibility.
+  let access;
+  try {
+    access = await resolveBusinessModuleAccess(scope.actorUserId, scope.enterpriseId, module, tx);
+  } catch (error) {
+    if (error instanceof TRPCError) {
+      appError(error.code === "FORBIDDEN" ? "FORBIDDEN" : "SERVICE_UNAVAILABLE", error.message);
+    }
+    throw databaseFailure();
+  }
+  if (!access.read || (write && !access.write)) appError("FORBIDDEN", "当前账号没有此模块的操作权限");
+  return { ...access, isOwner };
+}
+
+async function lockAndRevalidateMutationScope(tx: SqlExecutor, scope: ChannelInventoryScope, module: "channels" | "stocks" = "channels"): Promise<void> {
+  await resolveChannelInventoryAuthority(tx, scope, module, true, true);
 }
 
 async function findChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: number, lock = false): Promise<ChannelRecord | null> {
@@ -441,6 +473,7 @@ function duplicateKey(error: unknown): boolean {
 }
 
 async function reconcileChannelCreate(db: SqlExecutor, scope: ChannelInventoryScope, requestId: string, payloadHash: string) {
+  await resolveChannelInventoryAuthority(db, scope, "channels", true);
   const row = rows(await db.execute(sql`
     SELECT ${CHANNEL_COLUMNS}, create_payload_hash AS createPayloadHash
       FROM channel_inventory_channels
@@ -457,6 +490,7 @@ async function reconcileChannelCreate(db: SqlExecutor, scope: ChannelInventorySc
 }
 
 async function reconcileMaterialCreate(db: SqlExecutor, scope: ChannelInventoryScope, requestId: string, payloadHash: string) {
+  await resolveChannelInventoryAuthority(db, scope, "stocks", true);
   const row = rows(await db.execute(sql`
     SELECT ${MATERIAL_COLUMNS}, m.create_payload_hash AS createPayloadHash
       ${MATERIAL_WITH_CHANNEL_FROM}
@@ -473,11 +507,11 @@ async function reconcileMaterialCreate(db: SqlExecutor, scope: ChannelInventoryS
 export function createChannelInventoryService(dependencies: ChannelInventoryServiceDependencies) {
   const { getDb, registerTeamRecord } = dependencies;
 
-  async function transactional<T>(scope: ChannelInventoryScope, operation: (tx: SqlExecutor) => Promise<T>): Promise<T> {
+  async function transactional<T>(scope: ChannelInventoryScope, operation: (tx: SqlExecutor) => Promise<T>, module: "channels" | "stocks" = "channels"): Promise<T> {
     const db = await requiredDatabase(getDb);
     try {
       return await db.transaction(async tx => {
-        await lockAndRevalidateMutationScope(tx, scope);
+        await lockAndRevalidateMutationScope(tx, scope, module);
         return operation(tx);
       });
     } catch (error) {
@@ -490,6 +524,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     async listChannels(scope: ChannelInventoryScope, input: { name?: string; type?: ChannelInventoryType; active?: boolean; page: number; pageSize: number }) {
       assertPage(input);
       const db = await requiredDatabase(getDb);
+      const access = await resolveChannelInventoryAuthority(db, scope, "channels");
       const predicates = channelScopePredicates(scope);
       if (input.name) predicates.push(sql`name LIKE ${literalSearch(input.name)} ESCAPE '='`);
       if (input.type) predicates.push(sql`channel_type = ${input.type}`);
@@ -502,8 +537,8 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
            WHERE ${where}
            ORDER BY id DESC
            LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
-        `)).map(channelFrom);
-        return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize) };
+        `)).map(row => ({ ...channelFrom(row), canEdit: access.write, readOnly: !access.write }));
+        return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -513,9 +548,10 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     async getChannel(scope: ChannelInventoryScope, id: number) {
       const db = await requiredDatabase(getDb);
       try {
+        const access = await resolveChannelInventoryAuthority(db, scope, "channels");
         const item = await findChannel(db, scope, id);
         if (!item) appError("NOT_FOUND", "渠道不存在或无权访问");
-        return item;
+        return { ...item, canEdit: access.write, readOnly: !access.write };
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -627,6 +663,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     async listMaterials(scope: ChannelInventoryScope, input: { channelId?: number; partNumber?: string; brand?: string; page: number; pageSize: number }) {
       assertPage(input);
       const db = await requiredDatabase(getDb);
+      const access = await resolveChannelInventoryAuthority(db, scope, "stocks");
       const predicates = materialWithChannelScopePredicates(scope);
       if (input.channelId !== undefined) predicates.push(sql`m.channel_id = ${input.channelId}`);
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literalSearch(input.partNumber)} ESCAPE '='`);
@@ -639,8 +676,8 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
            WHERE ${where}
            ORDER BY m.id DESC
            LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
-        `)).map(materialFrom);
-        return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize) };
+        `)).map(row => ({ ...materialFrom(row), shareEnabled: access.write && bool(row.shareEnabled), canEdit: access.write, readOnly: !access.write }));
+        return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -650,9 +687,10 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     async getMaterial(scope: ChannelInventoryScope, id: number) {
       const db = await requiredDatabase(getDb);
       try {
+        const access = await resolveChannelInventoryAuthority(db, scope, "stocks");
         const item = await findMaterial(db, scope, id);
         if (!item) appError("NOT_FOUND", "库存条目不存在或无权访问");
-        return item;
+        return { ...item, shareEnabled: access.write && item.shareEnabled, canEdit: access.write, readOnly: !access.write };
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -668,7 +706,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       const db = await requiredDatabase(getDb);
       try {
         return await db.transaction(async tx => {
-          await lockAndRevalidateMutationScope(tx, scope);
+          await lockAndRevalidateMutationScope(tx, scope, "stocks");
           const existing = rows(await tx.execute(sql`
             SELECT ${MATERIAL_COLUMNS}, m.create_payload_hash AS createPayloadHash
               ${MATERIAL_WITH_CHANNEL_FROM}
@@ -726,7 +764,10 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         const current = await findMaterial(tx, scope, input.id, true);
         if (!current) appError("NOT_FOUND", "库存条目不存在或无权访问");
         if (current.revision !== input.expectedRevision) appError("CONFLICT", "库存条目已被其他人更新，请刷新后重试");
-        await lockActiveChannel(tx, scope, input.channelId ?? current.channelId);
+        if (input.channelId !== undefined && input.channelId !== current.channelId) {
+          appError("BAD_REQUEST", "库存创建后不能更换关联渠道；请在正确渠道新建库存以保留团队归属快照");
+        }
+        await lockActiveChannel(tx, scope, current.channelId);
         const assignments: SQL[] = [sql`revision = revision + 1`, sql`updated_at = CURRENT_TIMESTAMP(3)`];
         if (input.channelId !== undefined) assignments.push(sql`channel_id = ${input.channelId}`);
         if (input.partNumber !== undefined) assignments.push(sql`part_number = ${input.partNumber}`);
@@ -746,7 +787,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         const updated = await findMaterial(tx, scope, input.id);
         if (!updated) throw databaseFailure();
         return updated;
-      });
+      }, "stocks");
     },
   };
 }

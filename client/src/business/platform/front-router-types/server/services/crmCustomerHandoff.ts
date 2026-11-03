@@ -1,5 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
+import { crmCustomerPolicyWhere, resolveCrmCustomerPolicy, syncCrmCustomerAssignmentOwner } from "./crmCustomers";
+import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 
 export const MAX_HANDOFF_CUSTOMERS = 5000;
 export type HandoffCustomerRow = { id: number; version: number; archivedAt: Date | string | null };
@@ -43,6 +45,14 @@ export async function transferHandoffCustomers(db: Executor, input: {
   requestId: string; customers: HandoffCustomerRow[];
 }): Promise<number> {
   if (!input.customers.length) return 0;
+  const policy = await resolveCrmCustomerPolicy(db, input, true);
+  const targetPolicy = await resolveBusinessModuleAccess(input.nextUserId, input.enterpriseId, "customers", db);
+  if (!targetPolicy.read || !targetPolicy.write) throw new TRPCError({ code: "FORBIDDEN", message: "接收人没有客户读写权限" });
+  const ids = input.customers.map(row => Number(row.id)).sort((a, b) => a - b);
+  const visible = rowsOf<{ id: number }>(await db.execute(sql`SELECT c.id FROM crm_customers c
+    WHERE c.id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
+      AND c.assignedUserId = ${input.previousUserId} AND ${crmCustomerPolicyWhere(input, policy, "c", true)} ORDER BY c.id FOR UPDATE`));
+  if (visible.length !== ids.length) throw new TRPCError({ code: "FORBIDDEN", message: "交接客户超出当前授权范围" });
   const note = `成员业务交接：负责人 ${input.previousUserId} → ${input.nextUserId}`;
   await db.execute(sql`
     INSERT INTO crm_customer_audits (customerId, enterpriseId, actorUserId, action, note, requestId, createdAt)
@@ -56,5 +66,6 @@ export async function transferHandoffCustomers(db: Executor, input: {
   `);
   const count = Number((changed as [{ affectedRows?: number }, unknown])[0]?.affectedRows ?? 0);
   if (count !== input.customers.length) throw new TRPCError({ code: "CONFLICT", message: "客户归属在交接期间发生变化，请重新盘点" });
+  for (const id of ids) await syncCrmCustomerAssignmentOwner(db, input.enterpriseId, id, input.nextUserId);
   return count;
 }

@@ -9,6 +9,56 @@ import type {
   CustomerRecord,
 } from "../../../shared/crmCustomers";
 import { getDb } from "../db";
+import { resolveBusinessModuleAccess } from "./businessModuleAccess";
+import { createRuntimeTeamBusinessAdapter } from "../teamManagement/businessRuntime.mjs";
+
+export type CrmModulePolicy = Awaited<ReturnType<typeof resolveBusinessModuleAccess>>;
+export type CrmAccessIdentity = { enterpriseId: number; actorUserId: number };
+/** A service-local policy: caller-supplied canManageAll is never an authorization input. */
+export async function resolveCrmCustomerPolicy(executor: CrmSqlExecutor, scope: CrmAccessIdentity, write = false) {
+  const policy = await resolveBusinessModuleAccess(scope.actorUserId, scope.enterpriseId, "customers", executor);
+  if (!policy.read || (write && !policy.write)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: write ? "您没有客户写入权限" : "您没有客户读取权限" });
+  }
+  return policy;
+}
+/** Self means current native assignee only, never original creator or a guessed historical team. */
+export function crmCustomerPolicyWhere(scope: CrmAccessIdentity, policy: CrmModulePolicy, alias = "c", write = false) {
+  const c = sql.raw(alias);
+  if (!policy.read || (write && !policy.write)) return sql`FALSE`;
+  const own = sql`${c}.assignedUserId = ${scope.actorUserId}`;
+  if (policy.scope === "enterprise") return sql`${c}.enterpriseId = ${scope.enterpriseId}`;
+  if (policy.scope !== "team" || !policy.explicit || policy.teamRole !== "leader" || !policy.teamId) {
+    return sql`${c}.enterpriseId = ${scope.enterpriseId} AND ${own}`;
+  }
+  return sql`${c}.enterpriseId = ${scope.enterpriseId} AND (${own} OR EXISTS (
+    SELECT 1 FROM enterprise_team_record_assignments crm_assignment
+    INNER JOIN enterprise_teams crm_team ON crm_team.id = crm_assignment.teamId
+      AND crm_team.enterpriseId = crm_assignment.enterpriseId AND crm_team.status = 'active'
+    INNER JOIN enterprise_team_members crm_team_member ON crm_team_member.enterpriseId = crm_assignment.enterpriseId
+      AND crm_team_member.teamId = crm_assignment.teamId AND crm_team_member.userId = ${scope.actorUserId}
+      AND crm_team_member.teamRole = 'leader'
+    WHERE crm_assignment.enterpriseId = ${c}.enterpriseId AND crm_assignment.recordType = 'customer'
+      AND crm_assignment.recordId = ${c}.id AND crm_assignment.teamId = ${policy.teamId}
+  ))`;
+}
+export async function assertCrmCustomerPolicy(executor: CrmSqlExecutor, scope: CrmAccessIdentity, customerId: number,
+  policy: CrmModulePolicy, write = false) {
+  const found = resultRows<{ id: number }>(await executor.execute(sql`
+    SELECT c.id FROM crm_customers c WHERE c.id = ${customerId} AND ${crmCustomerPolicyWhere(scope, policy, "c", write)} LIMIT 1
+  `))[0];
+  if (!found) throw new TRPCError({ code: "NOT_FOUND", message: "客户不存在" });
+}
+// The runtime declaration was originally narrowed to channel writers; the actual adapter registers customer roots too.
+const registerCustomerRecord = createRuntimeTeamBusinessAdapter(getDb).registerInsertedRecord as unknown as
+  (tx: CrmSqlExecutor, record: { enterpriseId: number; recordType: "customer"; recordKey: number; actorUserId: number; currentOwnerUserId: number }) => Promise<unknown>;
+
+/** Transfer never rewrites the frozen team or original creator. Missing legacy assignments remain unshared. */
+export async function syncCrmCustomerAssignmentOwner(tx: CrmSqlExecutor, enterpriseId: number, customerId: number, ownerUserId: number) {
+  await tx.execute(sql`UPDATE enterprise_team_record_assignments
+    SET currentOwnerUserId = ${ownerUserId}, revision = revision + 1
+    WHERE enterpriseId = ${enterpriseId} AND recordType = 'customer' AND recordId = ${customerId}`);
+}
 import { customerOwnershipQuerySchema, type CustomerOwnershipQuery, type CustomerOwnershipResult } from "../../../shared/customerOwnership";
 import { consumeCustomerOwnershipQuota } from "../customerOwnershipQuota";
 import { customerDataSchema } from "../../../shared/crmCustomers";
@@ -19,7 +69,7 @@ function validateWriteData(data: CustomerData): CustomerData {
 }
 
 /** Minimal SQL surface deliberately exposed to the additive customer-contacts service. */
-export type CrmSqlExecutor = { execute: (query: string | SQLWrapper) => Promise<unknown> };
+export type CrmSqlExecutor = { execute: (query: SQLWrapper) => Promise<unknown> };
 
 /** This scope is constructed only by the router from enterprisePermissionScope and ctx.user.id. */
 export type CustomerServerScope = {
@@ -70,6 +120,7 @@ type LockedAccess = {
   actor: MembershipRow;
   members: Map<number, MembershipRow>;
   enterpriseOwnerUserId: number;
+  policy: CrmModulePolicy;
 };
 
 const CUSTOMER_PERMISSION = "customers.manage";
@@ -247,15 +298,10 @@ function customerSelect() {
   `;
 }
 
-function scopeWhere(scope: CustomerServerScope, alias = "c") {
-  return scope.canManageAll
-    ? sql`${sql.raw(alias)}.enterpriseId = ${scope.enterpriseId}`
-    : sql`${sql.raw(alias)}.enterpriseId = ${scope.enterpriseId} AND ${sql.raw(alias)}.assignedUserId = ${scope.actorUserId}`;
-}
-
 async function lockEnterpriseAndMembers(
   tx: CrmSqlExecutor,
   scope: CustomerServerScope,
+  write = true,
 ): Promise<LockedAccess> {
   const enterprise = resultRows<{ id: number; superAdminUserId: number }>(await tx.execute(sql`
     SELECT id, superAdminUserId FROM enterprises WHERE id = ${scope.enterpriseId} LIMIT 1 FOR UPDATE
@@ -281,7 +327,7 @@ async function lockEnterpriseAndMembers(
     throw new TRPCError({ code: "FORBIDDEN", message: "企业成员身份已暂停" });
   }
 
-  const owner = actor.role === "super_admin" || Number(enterprise.superAdminUserId) === scope.actorUserId;
+  const owner = actor.role === "super_admin" && Number(enterprise.superAdminUserId) === scope.actorUserId;
   const permissions = owner ? [CUSTOMER_PERMISSION, CUSTOMER_ALL_PERMISSION] : resultRows<{ permissionKey: string }>(
     await tx.execute(sql`
       SELECT permissionKey FROM enterprise_member_permissions
@@ -289,20 +335,20 @@ async function lockEnterpriseAndMembers(
        FOR UPDATE
     `),
   ).map(row => row.permissionKey);
-  const canManage = owner || permissions.includes(CUSTOMER_PERMISSION) || permissions.includes(CUSTOMER_ALL_PERMISSION);
-  if (!canManage) throw new TRPCError({ code: "FORBIDDEN", message: "您没有客户管理权限" });
+  const policy = await resolveCrmCustomerPolicy(tx, scope, write);
 
   return {
     canManageAll: owner || permissions.includes(CUSTOMER_ALL_PERMISSION),
     actor,
     members: memberByUserId,
     enterpriseOwnerUserId: Number(enterprise.superAdminUserId),
+    policy,
   };
 }
 
 function assertTargetCanOwn(access: LockedAccess, targetUserId: number, enterpriseOwnerUserId?: number) {
   const target = access.members.get(targetUserId);
-  const owner = target?.role === "super_admin" || targetUserId === enterpriseOwnerUserId;
+  const owner = target?.role === "super_admin" && targetUserId === enterpriseOwnerUserId;
   if (!target || target.status !== "active" || Boolean(target.loginDisabled)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "负责人必须是本企业可登录的活跃成员" });
   }
@@ -318,17 +364,8 @@ async function assertTargetHasCustomerPermission(
   targetUserId: number,
 ) {
   assertTargetCanOwn(access, targetUserId, access.enterpriseOwnerUserId);
-  const target = access.members.get(targetUserId)!;
-  const owner = target.role === "super_admin" || targetUserId === access.enterpriseOwnerUserId;
-  if (owner) return;
-  const permissions = resultRows<{ permissionKey: string }>(await tx.execute(sql`
-    SELECT permissionKey FROM enterprise_member_permissions
-     WHERE enterpriseMemberId = ${target.id}
-     FOR UPDATE
-  `)).map(row => row.permissionKey);
-  if (!permissions.includes(CUSTOMER_PERMISSION) && !permissions.includes(CUSTOMER_ALL_PERMISSION)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "负责人必须拥有客户管理权限" });
-  }
+  const policy = await resolveBusinessModuleAccess(targetUserId, scope.enterpriseId, "customers", tx);
+  if (!policy.read || !policy.write) throw new TRPCError({ code: "BAD_REQUEST", message: "负责人必须拥有客户读写权限" });
 }
 
 async function lockCustomer(tx: CrmSqlExecutor, enterpriseId: number, id: number) {
@@ -357,6 +394,7 @@ export type CrmCustomerContactTransaction = {
   tx: CrmSqlExecutor;
   customer: CrmCustomerContactCustomer;
   canManageAll: boolean;
+  canWrite: boolean;
 };
 
 /**
@@ -367,16 +405,18 @@ export async function withCrmCustomerContactTransaction<T>(
   scope: CustomerServerScope,
   customerId: number,
   run: (context: CrmCustomerContactTransaction) => Promise<T>,
+  write = true,
 ): Promise<T> {
   const db = await requireDb();
   return db.transaction(async tx => {
-    const access = await lockEnterpriseAndMembers(tx, scope);
-    const customer = assertCustomerAccess(
-      await lockCustomer(tx, scope.enterpriseId, customerId),
-      scope,
-      access.canManageAll,
-    );
-    return run({ tx, customer, canManageAll: access.canManageAll });
+    const access = await lockEnterpriseAndMembers(tx, scope, write);
+    const customer = await lockCustomer(tx, scope.enterpriseId, customerId);
+    if (!customer) throw new TRPCError({ code: "NOT_FOUND", message: "客户不存在" });
+    await assertCrmCustomerPolicy(tx, scope, customerId, access.policy, write);
+    const canWrite = access.policy.write && Boolean(resultRows<{ id: number }>(await tx.execute(sql`
+      SELECT c.id FROM crm_customers c WHERE c.id = ${customerId} AND ${crmCustomerPolicyWhere(scope, access.policy, "c", true)} LIMIT 1
+    `))[0]);
+    return run({ tx, customer, canManageAll: access.canManageAll, canWrite });
   });
 }
 
@@ -386,12 +426,12 @@ export async function withCrmCustomerContactTransaction<T>(
  */
 export async function withCrmCustomerContactRead<T>(
   scope: CustomerServerScope,
-  run: (context: { tx: CrmSqlExecutor; canManageAll: boolean }) => Promise<T>,
+  run: (context: { tx: CrmSqlExecutor; canManageAll: boolean; policy: CrmModulePolicy }) => Promise<T>,
 ): Promise<T> {
   const db = await requireDb();
   return db.transaction(async tx => {
-    const access = await lockEnterpriseAndMembers(tx, scope);
-    return run({ tx, canManageAll: access.canManageAll });
+    const access = await lockEnterpriseAndMembers(tx, scope, false);
+    return run({ tx, canManageAll: access.canManageAll, policy: access.policy });
   });
 }
 
@@ -453,18 +493,15 @@ async function duplicateRows(
   if (normalizedPhone) comparisons.push(sql`cc.phoneNormalized = ${normalizedPhone}`);
   if (normalizedEmail) comparisons.push(sql`cc.emailNormalized = ${normalizedEmail}`);
   const match = sql.join(comparisons.map(part => sql`(${part})`), sql` OR `);
-  const exclude = input.excludeId
-    ? (canManageAll
-      ? sql`AND c.id <> ${input.excludeId}`
-      : sql`AND (c.id <> ${input.excludeId} OR c.assignedUserId <> ${scope.actorUserId})`)
-    : sql``;
+  const policy = await resolveCrmCustomerPolicy(executor, scope);
+  const exclude = input.excludeId ? sql`AND c.id <> ${input.excludeId}` : sql``;
   return resultRows<DuplicateMatchRow>(await executor.execute(sql`
     SELECT c.id, c.name, c.assignedUserId, c.archivedAt,
            COALESCE(assigned.name, assigned.username, CONCAT('用户', assigned.id)) AS assignedName
       FROM crm_customers c
       LEFT JOIN crm_customer_contacts cc ON cc.customerId = c.id AND cc.isPrimary = 1
       LEFT JOIN users assigned ON assigned.id = c.assignedUserId
-     WHERE c.enterpriseId = ${scope.enterpriseId}
+     WHERE ${crmCustomerPolicyWhere(scope, policy)}
        AND (${match})
        ${exclude}
      ORDER BY c.updatedAt DESC, c.id DESC
@@ -479,8 +516,7 @@ async function duplicateState(
   canManageAll: boolean,
 ) {
   const rows = await duplicateRows(executor, scope, input, canManageAll);
-  const visible = canManageAll ? rows : rows.filter(row => Number(row.assignedUserId) === scope.actorUserId);
-  return { rows, visible, restricted: rows.length > visible.length };
+  return { rows, visible: rows, restricted: false };
 }
 
 function throwDuplicate(restricted: boolean): never {
@@ -548,13 +584,12 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
   if (!actor || actor.status !== "active" || Boolean(actor.loginDisabled)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前企业成员不可用" });
   }
-  const owner = actor.role === "super_admin" || Number(actor.superAdminUserId) === scope.actorUserId;
+  const owner = actor.role === "super_admin" && Number(actor.superAdminUserId) === scope.actorUserId;
+  const policy = await resolveCrmCustomerPolicy(db, scope);
   const permissionRows = owner ? [{ permissionKey: CUSTOMER_ALL_PERMISSION }] : resultRows<{ permissionKey: string }>(await db.execute(sql`
     SELECT p.permissionKey FROM enterprise_member_permissions p WHERE p.enterpriseMemberId = ${actor.id}
   `));
-  const canManageAll = owner || permissionRows.some(row => row.permissionKey === CUSTOMER_ALL_PERMISSION);
-  const canManage = canManageAll || permissionRows.some(row => row.permissionKey === CUSTOMER_PERMISSION);
-  if (!canManage) throw new TRPCError({ code: "FORBIDDEN", message: "您没有客户管理权限" });
+  const canManageAll = policy.write && policy.scope === "enterprise" && (owner || permissionRows.some(row => row.permissionKey === CUSTOMER_ALL_PERMISSION));
   if (!canManageAll) {
     return { actorUserId: scope.actorUserId, canManageAll: false, members: [{ userId: scope.actorUserId, name: displayName(actor.name, scope.actorUserId) }] };
   }
@@ -565,7 +600,7 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
      WHERE em.enterpriseId = ${scope.enterpriseId}
        AND em.status = 'active' AND u.loginDisabled = 0
        AND (
-         em.role = 'super_admin' OR em.userId = e.superAdminUserId
+         (em.role = 'super_admin' AND em.userId = e.superAdminUserId)
          OR EXISTS (
            SELECT 1 FROM enterprise_member_permissions p
             WHERE p.enterpriseMemberId = em.id
@@ -583,8 +618,9 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   page: number; pageSize: number;
 }) {
   const db = await requireDb();
-  const conditions = [sql`c.enterpriseId = ${scope.enterpriseId}`];
-  const effectiveAll = scope.canManageAll && input.scope === "all";
+  const policy = await resolveCrmCustomerPolicy(db, scope);
+  const conditions = [crmCustomerPolicyWhere(scope, policy)];
+  const effectiveAll = input.scope === "all";
   if (!effectiveAll) conditions.push(sql`c.assignedUserId = ${scope.actorUserId}`);
   if (input.assignedUserId && effectiveAll) conditions.push(sql`c.assignedUserId = ${input.assignedUserId}`);
   conditions.push(input.archived ? sql`c.archivedAt IS NOT NULL` : sql`c.archivedAt IS NULL`);
@@ -632,9 +668,10 @@ export async function listCustomers(scope: CustomerServerScope, input: {
 
 export async function getCustomer(scope: CustomerServerScope, id: number) {
   const db = await requireDb();
+  const policy = await resolveCrmCustomerPolicy(db, scope);
   const customer = resultRows<CustomerRow>(await db.execute(sql`
     ${customerSelect()}
-     WHERE ${scopeWhere(scope)} AND c.id = ${id}
+     WHERE ${crmCustomerPolicyWhere(scope, policy)} AND c.id = ${id}
      LIMIT 1
   `))[0];
   if (!customer) throw new TRPCError({ code: "NOT_FOUND", message: "客户不存在" });
@@ -663,7 +700,7 @@ export async function getCustomer(scope: CustomerServerScope, id: number) {
     customer: mapCustomer(customer),
     followUps: followUps.map(row => ({ ...row, id: Number(row.id), customerId: Number(row.customerId), authorUserId: Number(row.authorUserId), authorName: displayName(row.authorName, Number(row.authorUserId)), occurredAt: iso(row.occurredAt)!, createdAt: iso(row.createdAt)!, correctionOfId: row.correctionOfId == null ? null : Number(row.correctionOfId) })),
     audits: audits.map(row => ({ ...row, id: Number(row.id), actorUserId: Number(row.actorUserId), actorName: displayName(row.actorName, Number(row.actorUserId)), createdAt: iso(row.createdAt)! })),
-    canManageAll: scope.canManageAll,
+    canManageAll: policy.write && policy.scope === "enterprise",
   };
 }
 
@@ -676,14 +713,14 @@ export async function searchCustomerOwnership(scope: CustomerServerScope, input:
   return db.transaction(async tx => {
     // Same lock order as member removal/permission changes and customer transfers.
     // Re-read permissions instead of trusting a stale scope.canManageAll flag.
-    const access = await lockEnterpriseAndMembers(tx, scope);
+    const access = await lockEnterpriseAndMembers(tx, scope, false);
     await consumeCustomerOwnershipQuota(scope);
     const rows = resultRows<DuplicateMatchRow>(await tx.execute(sql`
       SELECT c.id, c.name, c.assignedUserId, c.archivedAt,
              COALESCE(assigned.name, assigned.username, CONCAT('用户', assigned.id)) AS assignedName
         FROM crm_customers c
         LEFT JOIN users assigned ON assigned.id = c.assignedUserId
-       WHERE c.enterpriseId = ${scope.enterpriseId}
+       WHERE ${crmCustomerPolicyWhere(scope, access.policy)}
          AND INSTR(c.nameNormalized, ${normalized}) > 0
        ORDER BY (c.nameNormalized = ${normalized}) DESC, (c.archivedAt IS NULL) DESC, c.updatedAt DESC, c.id DESC
        LIMIT 21
@@ -697,7 +734,7 @@ export async function searchCustomerOwnership(scope: CustomerServerScope, input:
         ownership: Number(row.assignedUserId) === scope.actorUserId ? "mine" as const : "colleague" as const,
         archived: Boolean(row.archivedAt),
         matchType: normalizeCustomerName(row.name) === normalized ? "exact" as const : "similar" as const,
-        viewableCustomerId: access.canManageAll || Number(row.assignedUserId) === scope.actorUserId ? Number(row.id) : null,
+        viewableCustomerId: Number(row.id),
       })),
     };
   });
@@ -705,7 +742,8 @@ export async function searchCustomerOwnership(scope: CustomerServerScope, input:
 
 export async function checkCustomerDuplicate(scope: CustomerServerScope, input: { name: string; phone?: string; email?: string; excludeId?: number }) {
   const db = await requireDb();
-  const state = await duplicateState(db, scope, input, scope.canManageAll);
+  await resolveCrmCustomerPolicy(db, scope);
+  const state = await duplicateState(db, scope, input, false);
   return {
     hasDuplicate: state.rows.length > 0,
     restricted: state.restricted,
@@ -727,14 +765,17 @@ export async function createCustomer(
   return db.transaction(async tx => {
     const assignedUserId = input.data.assignedUserId ?? scope.actorUserId;
     const access = await lockEnterpriseAndMembers(tx, scope);
-    if (!access.canManageAll && assignedUserId !== scope.actorUserId) {
+    if ((!access.canManageAll || access.policy.scope !== "enterprise") && assignedUserId !== scope.actorUserId) {
       throw new TRPCError({ code: "FORBIDDEN", message: "只能创建并负责本人客户" });
     }
     await assertTargetHasCustomerPermission(tx, scope, access, assignedUserId);
     const reservation = await reserveRequest(tx, {
       enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, requestId: input.requestId, action: "create", payloadHash,
     });
-    if (reservation.replayed) return { id: reservation.customerId, replayed: true };
+    if (reservation.replayed) {
+      await assertCrmCustomerPolicy(tx, scope, reservation.customerId, access.policy, true);
+      return { id: reservation.customerId, replayed: true };
+    }
     const duplicates = await duplicateState(tx, scope, { name: input.data.name, phone: input.data.phone, email: input.data.email }, access.canManageAll);
     if (duplicates.rows.length && !input.confirmDuplicate) throwDuplicate(duplicates.restricted);
     const data = canonicalData(input.data);
@@ -749,6 +790,7 @@ export async function createCustomer(
     `));
     const customerId = Number(inserted.insertId ?? 0);
     if (!customerId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "客户创建失败" });
+    await registerCustomerRecord(tx, { enterpriseId: scope.enterpriseId, recordType: "customer", recordKey: customerId, actorUserId: scope.actorUserId, currentOwnerUserId: assignedUserId });
     await tx.execute(sql`
       INSERT INTO crm_customer_contacts (customerId, contactName, phone, phoneNormalized, email, emailNormalized, isPrimary, createdAt, updatedAt)
       VALUES (${customerId}, ${nullableText(data.contactName)}, ${nullableText(data.phone)}, ${normalizeCustomerPhone(data.phone)}, ${nullableText(data.email)}, ${normalizeCustomerEmail(data.email)}, 1, ${CRM_NOW}, ${CRM_NOW})
@@ -778,7 +820,8 @@ export async function updateCustomer(scope: CustomerServerScope, input: { id: nu
   const db = await requireDb();
   return db.transaction(async tx => {
     const access = await lockEnterpriseAndMembers(tx, scope);
-    const customer = assertCustomerAccess(await lockCustomer(tx, scope.enterpriseId, input.id), scope, access.canManageAll);
+    const customer = assertCustomerAccess(await lockCustomer(tx, scope.enterpriseId, input.id), scope, true);
+    await assertCrmCustomerPolicy(tx, scope, input.id, access.policy, true);
     if (Number(customer.version) !== input.version) throw new TRPCError({ code: "CONFLICT", message: "客户已被其他人更新，请刷新后重试" });
     const requestedAssignee = input.data.assignedUserId ?? Number(customer.assignedUserId);
     if (requestedAssignee !== Number(customer.assignedUserId)) {
@@ -832,7 +875,8 @@ export async function addCustomerFollowUp(scope: CustomerServerScope, input: {
   const payloadHash = customerFollowUpPayloadHash(input);
   return db.transaction(async tx => {
     const access = await lockEnterpriseAndMembers(tx, scope);
-    const customer = assertCustomerAccess(await lockCustomer(tx, scope.enterpriseId, input.customerId), scope, access.canManageAll);
+    const customer = assertCustomerAccess(await lockCustomer(tx, scope.enterpriseId, input.customerId), scope, true);
+    await assertCrmCustomerPolicy(tx, scope, input.customerId, access.policy, true);
     if (customer.archivedAt) throw new TRPCError({ code: "CONFLICT", message: "已归档客户不可追加跟进，请先恢复" });
     const reservation = await reserveRequest(tx, {
       enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, requestId: input.requestId, action: "followup", payloadHash,
@@ -881,6 +925,7 @@ async function adminCustomerMutation(
     const access = await lockEnterpriseAndMembers(tx, scope);
     if (!access.canManageAll) throw new TRPCError({ code: "FORBIDDEN", message: "需要全部客户管理权限" });
     const customer = assertCustomerAccess(await lockCustomer(tx, scope.enterpriseId, input.id), scope, true);
+    await assertCrmCustomerPolicy(tx, scope, input.id, access.policy, true);
     if (Number(customer.version) !== input.version) throw new TRPCError({ code: "CONFLICT", message: "客户已被其他人更新，请刷新后重试" });
     await mutate(tx, access, customer);
     return { success: true as const };
@@ -920,6 +965,7 @@ export async function transferCustomer(scope: CustomerServerScope, input: { id: 
     if (!access.canManageAll) throw new TRPCError({ code: "FORBIDDEN", message: "需要全部客户管理权限" });
     await assertTargetHasCustomerPermission(tx, scope, access, input.assignedUserId);
     const customer = assertCustomerAccess(await lockCustomer(tx, scope.enterpriseId, input.id), scope, true);
+    await assertCrmCustomerPolicy(tx, scope, input.id, access.policy, true);
     if (Number(customer.version) !== input.version) throw new TRPCError({ code: "CONFLICT", message: "客户已被其他人更新，请刷新后重试" });
     if (customer.archivedAt) throw new TRPCError({ code: "CONFLICT", message: "已归档客户不可转移，请先恢复" });
     if (Number(customer.assignedUserId) === input.assignedUserId) return { success: true as const };
@@ -928,6 +974,7 @@ export async function transferCustomer(scope: CustomerServerScope, input: { id: 
           updatedByUserId = ${scope.actorUserId}, updatedAt = ${CRM_NOW}
        WHERE enterpriseId = ${scope.enterpriseId} AND id = ${input.id}
     `);
+    await syncCrmCustomerAssignmentOwner(tx, scope.enterpriseId, input.id, input.assignedUserId);
     await insertAudit(tx, { enterpriseId: scope.enterpriseId, customerId: input.id, actorUserId: scope.actorUserId, action: "transferred", note: `负责人 ${customer.assignedUserId}→${input.assignedUserId}；${input.reason.trim()}` });
     return { success: true as const };
   });

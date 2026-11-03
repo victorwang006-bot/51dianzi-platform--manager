@@ -13,7 +13,6 @@ import {
 import {
   ChannelNotesError,
   createChannelNotesService,
-  type SharedChannelMaterial,
 } from "../services/channelInventoryNotes";
 
 const channelTypes = z.enum(CHANNEL_INVENTORY_TYPES);
@@ -226,11 +225,20 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
         }
       }),
     listSharedMaterials: procedure
-      .input(z.object({ ...expectedContextSchema, partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128, "料号不能超过 128 个字符")).optional(), brand: z.string().trim().max(64, "品牌不能超过 64 个字符").optional(), channelId: positiveInt.optional(), type: z.enum(CHANNEL_INVENTORY_TYPES).optional(), page: pageSchema, pageSize: pageSizeSchema.default(20) }).strict())
+      .input(z.object({ ...expectedContextSchema, partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128, "料号不能超过 128 个字符")).optional(), brand: z.string().trim().max(64, "品牌不能超过 64 个字符").optional(), page: pageSchema, pageSize: pageSizeSchema.default(20) }).strict())
       .query(async ({ ctx, input }) => {
         try {
           assertExpectedContext(ctx, input);
-          return await notes.listSharedMaterials(scopeFromContext(ctx), input as { partNumber?: string; brand?: string; channelId?: number; type?: SharedChannelMaterial["channelType"]; page?: number; pageSize?: number });
+          return await notes.listSharedMaterials(scopeFromContext(ctx), input);
+        } catch (error) {
+          return asTrpcError(error);
+        }
+      }),
+    setMaterialShare: procedure
+      .input(z.object({ materialId: positiveInt, enabled: z.boolean(), expectedRevision: positiveInt, requestId: z.string().uuid("请求号无效") }).strict())
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await notes.setMaterialShare(scopeFromContext(ctx), input);
         } catch (error) {
           return asTrpcError(error);
         }

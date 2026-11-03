@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
-import type { ChannelInventoryScope } from "./channelInventory";
+import { resolveChannelInventoryAuthority, ChannelInventoryError, type ChannelInventoryScope } from "./channelInventory";
+import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 
 export type ChannelNotesErrorCode =
   | "BAD_REQUEST"
@@ -8,6 +9,7 @@ export type ChannelNotesErrorCode =
   | "CONFLICT"
   | "FORBIDDEN"
   | "PRECONDITION_FAILED"
+  | "SERVICE_UNAVAILABLE"
   | "INTERNAL_SERVER_ERROR";
 
 export class ChannelNotesError extends Error {
@@ -24,6 +26,7 @@ type SqlResultRow = Record<string, unknown>;
 type SqlExecutor = { execute(statement: SQL): Promise<unknown> };
 type SqlDatabase = SqlExecutor & { transaction<T>(operation: (tx: SqlExecutor) => Promise<T>): Promise<T> };
 
+/** Explicit allowlist: no source identifiers, channel facts, contacts or notes. */
 export type SharedChannelMaterial = {
   id: number;
   partNumber: string;
@@ -36,14 +39,8 @@ export type SharedChannelMaterial = {
   leadTime: string | null;
   revision: number;
   updatedAt: Date | string;
-  channelType: "factory" | "agent" | "trade" | "other";
-  channelActive: boolean;
-  /** Null for a colleague's shared row, so it cannot become a private-channel probe. */
-  channelId: number | null;
-  /** Historical material note; it is read-only and has no fabricated author. */
-  note: string | null;
-  noteCount: number;
-  latestNote: null | { id: number; content: string; authorName: string; updatedAt: Date | string };
+  canEdit: false;
+  readOnly: true;
 };
 
 export type ChannelNote = {
@@ -60,7 +57,6 @@ export type ChannelNotesServiceDependencies = {
   getDb: () => Promise<SqlDatabase | null>;
 };
 
-const CHANNEL_TYPES = ["factory", "agent", "trade", "other"] as const;
 const MAX_PAGE_SIZE = 100;
 const NOT_FOUND_MESSAGE = "资源不存在或无权访问";
 
@@ -181,89 +177,68 @@ async function requiredDatabase(getDb: ChannelNotesServiceDependencies["getDb"])
   }
 }
 
-function scopeValues(scope: ChannelInventoryScope) {
-  return {
-    enterpriseId: positiveId(scope.enterpriseId, "企业"),
-    dataOwnerUserId: positiveId(scope.dataOwnerUserId, "企业数据归属"),
-    actorUserId: positiveId(scope.actorUserId, "当前账号"),
-    isOwner: scope.isOwner === true,
-    inventoryDataScope: String(scope.inventoryDataScope),
-    permissionSnapshot: scope.permissionSnapshot === true,
-  };
-}
-
-/** Context scope is only a snapshot. Every read checks actual membership; every write repeats this under locks. */
-async function currentAuthority(executor: SqlExecutor, rawScope: ChannelInventoryScope, options: { lock?: boolean; mutation?: boolean } = {}) {
-  const scope = scopeValues(rawScope);
-  const suffix = options.lock ? sql` FOR UPDATE` : sql``;
-  const row = rows(await executor.execute(sql`
-    SELECT e.id AS enterpriseId, e.superAdminUserId, e.crmDataOwnerUserId,
-           em.id AS memberId, em.role AS memberRole, em.status AS memberStatus,
-           em.inventoryDataScope, u.loginDisabled
-      FROM enterprises e
-      INNER JOIN enterprise_members em ON em.enterpriseId = e.id AND em.userId = ${scope.actorUserId}
-      INNER JOIN users u ON u.id = em.userId
-     WHERE e.id = ${scope.enterpriseId}
-     LIMIT 1${suffix}
-  `))[0];
-  const staleCode: ChannelNotesErrorCode = options.mutation ? "CONFLICT" : "FORBIDDEN";
-  const staleMessage = options.mutation ? "企业权限状态已变化，请刷新后重试" : "当前企业权限已变化，请刷新后重试";
-  if (!row || Number(row.crmDataOwnerUserId) !== scope.dataOwnerUserId) fail(staleCode, staleMessage);
-  if (String(row.memberStatus) !== "active" || bool(row.loginDisabled)) fail(staleCode, staleMessage);
-  const permissions = rows(await executor.execute(sql`
-    SELECT permissionKey FROM enterprise_member_permissions
-     WHERE enterpriseMemberId = ${Number(row.memberId)}${suffix}
-  `));
-  const isOwner = String(row.memberRole) === "super_admin" && Number(row.superAdminUserId) === scope.actorUserId;
-  const hasInventoryManage = isOwner || permissions.some(permission => String(permission.permissionKey) === "inventory.manage");
-  if (!scope.permissionSnapshot || !hasInventoryManage) fail("FORBIDDEN", "当前账号没有渠道库存管理权限");
-  if (options.mutation && String(row.inventoryDataScope ?? "") !== scope.inventoryDataScope) fail("CONFLICT", "库存数据范围已变化，请刷新后重试");
-  if (options.mutation && isOwner !== scope.isOwner) fail("CONFLICT", "企业权限状态已变化，请刷新后重试");
-  return {
-    enterpriseId: scope.enterpriseId,
-    dataOwnerUserId: Number(row.crmDataOwnerUserId),
-    actorUserId: scope.actorUserId,
-    isOwner,
-    inventoryDataScope: String(row.inventoryDataScope ?? ""),
-  };
+/** Every entrypoint resolves actual membership, permission and stocks module access. */
+async function currentAuthority(executor: SqlExecutor, scope: ChannelInventoryScope, options: { lock?: boolean; mutation?: boolean } = {}) {
+  try {
+    const access = await resolveChannelInventoryAuthority(executor, scope, "stocks", options.mutation === true, options.lock === true);
+    return { ...scope, ...access };
+  } catch (error) {
+    if (error instanceof ChannelInventoryError) fail(error.code, error.message);
+    throw error;
+  }
 }
 
 type Authority = Awaited<ReturnType<typeof currentAuthority>>;
 
+/** Notes, including legacy text, are exclusively current-responsible private. */
 function materialPredicates(authority: Authority): SQL[] {
-  const predicates = [
+  return [
     sql`m.enterprise_id = ${authority.enterpriseId}`,
     sql`m.data_owner_user_id = ${authority.dataOwnerUserId}`,
     sql`c.enterprise_id = ${authority.enterpriseId}`,
     sql`c.data_owner_user_id = ${authority.dataOwnerUserId}`,
+    sql`m.responsible_user_id = ${authority.actorUserId}`,
+    sql`c.responsible_user_id = ${authority.actorUserId}`,
   ];
-  if (!authority.isOwner) {
-    predicates.push(sql`(
-      m.responsible_user_id = ${authority.actorUserId}
-      OR EXISTS (
-        SELECT 1 FROM enterprise_team_record_assignments own_record
-         WHERE own_record.enterpriseId = m.enterprise_id
-           AND own_record.recordType = 'channel_material'
-           AND own_record.recordId = m.id
-           AND (own_record.createdByUserId = ${authority.actorUserId} OR own_record.currentOwnerUserId = ${authority.actorUserId})
-      )
-      OR EXISTS (
-        SELECT 1 FROM enterprise_team_record_assignments a
-        INNER JOIN enterprise_team_members tm ON tm.enterpriseId = a.enterpriseId AND tm.userId = ${authority.actorUserId}
-        INNER JOIN enterprise_teams t ON t.id = tm.teamId AND t.enterpriseId = tm.enterpriseId AND t.status = 'active'
-         WHERE a.enterpriseId = m.enterprise_id
-           AND a.recordType = 'channel_material'
-           AND a.recordId = m.id
-           AND a.teamId = tm.teamId
-      )
-    )`);
-  }
-  return predicates;
 }
 
-function visibleChannelIdExpression(authority: Authority): SQL {
-  if (authority.isOwner) return sql`TRUE`;
-  return sql`m.responsible_user_id = ${authority.actorUserId} AND c.responsible_user_id = ${authority.actorUserId}`;
+// Live joins are mandatory. Assignment revision and membership identity fence
+// old grants even after a transfer-away/return or leave/rejoin of the owner.
+const SHARED_FROM = sql`
+  FROM channel_inventory_materials m
+  INNER JOIN channel_inventory_channels c ON c.id = m.channel_id
+   AND c.enterprise_id = m.enterprise_id AND c.data_owner_user_id = m.data_owner_user_id
+   AND c.responsible_user_id = m.responsible_user_id
+  INNER JOIN channel_inventory_material_shares s ON s.enterprise_id = m.enterprise_id
+   AND s.material_id = m.id AND s.enabled = 1 AND s.owner_user_id = m.responsible_user_id
+  INNER JOIN enterprise_team_record_assignments a ON a.enterpriseId = m.enterprise_id
+   AND a.recordType = 'channel_material' AND a.recordId = m.id
+   AND a.currentOwnerUserId = s.owner_user_id AND a.teamId = s.share_team_id
+   AND a.revision = s.assignment_revision
+  INNER JOIN enterprise_team_members owner_tm ON owner_tm.enterpriseId = m.enterprise_id
+   AND owner_tm.userId = s.owner_user_id AND owner_tm.teamId = s.share_team_id
+   AND owner_tm.id = s.owner_membership_id
+  INNER JOIN enterprise_teams t ON t.id = s.share_team_id
+   AND t.enterpriseId = m.enterprise_id AND t.status = 'active'
+  INNER JOIN enterprise_team_members reader_tm ON reader_tm.enterpriseId = m.enterprise_id
+   AND reader_tm.teamId = s.share_team_id
+  INNER JOIN enterprise_members owner_em ON owner_em.enterpriseId = m.enterprise_id
+   AND owner_em.userId = s.owner_user_id AND owner_em.status = 'active'
+  INNER JOIN users owner_u ON owner_u.id = owner_em.userId AND owner_u.loginDisabled = 0
+`;
+
+function sharedPredicates(authority: Authority): SQL[] {
+  return [
+    sql`m.enterprise_id = ${authority.enterpriseId}`,
+    sql`m.data_owner_user_id = ${authority.dataOwnerUserId}`,
+    sql`reader_tm.userId = ${authority.actorUserId}`,
+    sql`reader_tm.teamId = ${authority.teamId}`,
+    sql`m.responsible_user_id <> ${authority.actorUserId}`,
+    sql`(EXISTS (SELECT 1 FROM enterprise_member_permissions owner_perm
+      WHERE owner_perm.enterpriseMemberId = owner_em.id AND owner_perm.permissionKey = 'inventory.manage')
+      OR (owner_em.role = 'super_admin' AND EXISTS (SELECT 1 FROM enterprises owner_e
+        WHERE owner_e.id = m.enterprise_id AND owner_e.superAdminUserId = owner_em.userId)))`,
+  ];
 }
 
 function noteFrom(row: SqlResultRow): ChannelNote {
@@ -275,22 +250,14 @@ function noteFrom(row: SqlResultRow): ChannelNote {
   };
 }
 
-function sharedMaterialFrom(row: SqlResultRow): SharedChannelMaterial {
-  const channelType = String(row.channelType);
-  if (!(CHANNEL_TYPES as readonly string[]).includes(channelType)) throw unavailable();
-  const latestNote = row.latestNoteId == null ? null : {
-    id: Number(row.latestNoteId), content: String(row.latestNoteContent),
-    authorName: row.latestNoteAuthorName == null ? "未知用户" : String(row.latestNoteAuthorName),
-    updatedAt: row.latestNoteUpdatedAt as Date | string,
-  };
+export function sharedMaterialFrom(row: SqlResultRow): SharedChannelMaterial {
+  if (String(row.currency) !== "CNY") throw unavailable();
   return {
     id: Number(row.id), partNumber: String(row.partNumber), brand: String(row.brand),
     qty: row.qty == null ? null : Number(row.qty), dateCode: nullableString(row.dateCode),
     price: nullableString(row.price), currency: "CNY", taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded),
     leadTime: nullableString(row.leadTime), revision: Number(row.revision), updatedAt: row.updatedAt as Date | string,
-    channelType: channelType as SharedChannelMaterial["channelType"], channelActive: bool(row.channelActive),
-    channelId: row.channelId == null ? null : Number(row.channelId), note: nullableString(row.note),
-    noteCount: Number(row.noteCount ?? 0), latestNote,
+    canEdit: false, readOnly: true,
   };
 }
 
@@ -310,34 +277,13 @@ async function findReadableMaterial(executor: SqlExecutor, authority: Authority,
 
 async function lockReadableMaterial(tx: SqlExecutor, authority: Authority, materialId: number): Promise<number> {
   const base = rows(await tx.execute(sql`
-    SELECT m.id AS id, m.responsible_user_id AS responsibleUserId
-      FROM channel_inventory_materials m
-      INNER JOIN channel_inventory_channels c ON c.id = m.channel_id
-       AND c.enterprise_id = m.enterprise_id AND c.data_owner_user_id = m.data_owner_user_id
-     WHERE m.id = ${materialId}
-       AND m.enterprise_id = ${authority.enterpriseId} AND m.data_owner_user_id = ${authority.dataOwnerUserId}
-       AND c.enterprise_id = ${authority.enterpriseId} AND c.data_owner_user_id = ${authority.dataOwnerUserId}
-     LIMIT 1 FOR UPDATE
+    SELECT m.id AS id FROM channel_inventory_materials m
+    INNER JOIN channel_inventory_channels c ON c.id = m.channel_id
+     AND c.enterprise_id = m.enterprise_id AND c.data_owner_user_id = m.data_owner_user_id
+    WHERE ${whereAll([...materialPredicates(authority), sql`m.id = ${materialId}`])}
+    LIMIT 1 FOR UPDATE
   `))[0];
   if (!base) fail("NOT_FOUND", NOT_FOUND_MESSAGE);
-  if (authority.isOwner || Number(base.responsibleUserId) === authority.actorUserId) return Number(base.id);
-  const team = rows(await tx.execute(sql`
-    SELECT tm.teamId FROM enterprise_team_members tm
-    INNER JOIN enterprise_teams t ON t.id = tm.teamId AND t.enterpriseId = tm.enterpriseId AND t.status = 'active'
-     WHERE tm.enterpriseId = ${authority.enterpriseId} AND tm.userId = ${authority.actorUserId}
-     LIMIT 1 FOR UPDATE
-  `))[0];
-  const assignment = rows(await tx.execute(sql`
-    SELECT a.teamId, a.createdByUserId, a.currentOwnerUserId
-      FROM enterprise_team_record_assignments a
-     WHERE a.enterpriseId = ${authority.enterpriseId} AND a.recordType = 'channel_material' AND a.recordId = ${materialId}
-     LIMIT 1 FOR UPDATE
-  `))[0];
-  if (!assignment) fail("NOT_FOUND", NOT_FOUND_MESSAGE);
-  const readable = Number(assignment.createdByUserId) === authority.actorUserId
-    || Number(assignment.currentOwnerUserId) === authority.actorUserId
-    || (team !== undefined && Number(assignment.teamId) === Number(team.teamId));
-  if (!readable) fail("NOT_FOUND", NOT_FOUND_MESSAGE);
   return Number(base.id);
 }
 
@@ -444,59 +390,121 @@ export function createChannelNotesService({ getDb }: ChannelNotesServiceDependen
   }
 
   return {
+    /** Team-only list. Own inventory is returned by listMaterials, never mixed into this DTO. */
     async listSharedMaterials(scope: ChannelInventoryScope, input: {
-      partNumber?: string; brand?: string; channelId?: number; type?: SharedChannelMaterial["channelType"]; page?: number; pageSize?: number;
+      partNumber?: string; brand?: string; page?: number; pageSize?: number;
     } = {}) {
+      // Service-level rejection also protects callers that bypass Zod/BFF.
+      const allowed = new Set(["partNumber", "brand", "page", "pageSize", "expectedEnterpriseId", "expectedActorUserId"]);
+      if (Object.keys(input).some(key => !allowed.has(key))) fail("BAD_REQUEST", "团队共享库存不支持渠道来源筛选");
       const { page, pageSize } = assertPage(input, 20);
       const db = await requiredDatabase(getDb);
       try {
         const authority = await currentAuthority(db, scope);
-        const predicates = materialPredicates(authority);
+        if (authority.scope === "self" || authority.teamId == null) return { items: [] as SharedChannelMaterial[], total: 0, page, pageSize };
+        const predicates = sharedPredicates(authority);
         if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literalSearch(input.partNumber)} ESCAPE '='`);
         if (input.brand) predicates.push(sql`m.brand LIKE ${literalSearch(input.brand)} ESCAPE '='`);
-        if (input.type !== undefined) {
-          if (!(CHANNEL_TYPES as readonly string[]).includes(input.type)) fail("BAD_REQUEST", "渠道类型无效");
-          predicates.push(sql`c.channel_type = ${input.type}`);
+        // Resolve each distinct sharer's LIVE module grant through the one policy
+        // helper before COUNT/pagination. Revoking stocks access invalidates sharing.
+        const owners = rows(await db.execute(sql`SELECT DISTINCT s.owner_user_id AS ownerUserId ${SHARED_FROM} WHERE ${whereAll(predicates)}`));
+        const eligible: number[] = [];
+        for (const owner of owners) {
+          const ownerId = Number(owner.ownerUserId);
+          const access = await resolveBusinessModuleAccess(ownerId, scope.enterpriseId, "stocks", db);
+          if (access.read && access.write) eligible.push(ownerId);
         }
-        if (input.channelId !== undefined) {
-          const channelId = positiveId(input.channelId, "渠道");
-          if (!authority.isOwner) {
-            predicates.push(sql`m.responsible_user_id = ${authority.actorUserId}`);
-            predicates.push(sql`c.responsible_user_id = ${authority.actorUserId}`);
-          }
-          predicates.push(sql`m.channel_id = ${channelId}`);
-        }
+        if (!eligible.length) return { items: [] as SharedChannelMaterial[], total: 0, page, pageSize };
+        predicates.push(sql`m.responsible_user_id IN (${sql.join(eligible.map(id => sql`${id}`), sql`, `)})`);
         const where = whereAll(predicates);
-        const total = Number(rows(await db.execute(sql`
-          SELECT COUNT(*) AS total FROM channel_inventory_materials m
-          INNER JOIN channel_inventory_channels c ON c.id = m.channel_id
-           AND c.enterprise_id = m.enterprise_id AND c.data_owner_user_id = m.data_owner_user_id
-          WHERE ${where}
-        `))[0]?.total ?? 0);
-        const visibleChannelId = visibleChannelIdExpression(authority);
+        const total = Number(rows(await db.execute(sql`SELECT COUNT(*) AS total ${SHARED_FROM} WHERE ${where}`))[0]?.total ?? 0);
         const items = rows(await db.execute(sql`
           SELECT m.id AS id, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
-                 m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.note,
-                 m.revision, m.updated_at AS updatedAt, c.channel_type AS channelType, c.active AS channelActive,
-                 CASE WHEN ${visibleChannelId} THEN m.channel_id ELSE NULL END AS channelId,
-                 (SELECT COUNT(*) FROM channel_inventory_notes note_count
-                   WHERE note_count.enterpriseId = m.enterprise_id AND note_count.materialId = m.id) AS noteCount,
-                 latest.id AS latestNoteId, latest.content AS latestNoteContent, latest.updatedAt AS latestNoteUpdatedAt,
-                 COALESCE(NULLIF(latest_user.name, ''), CONCAT('用户#', latest.authorUserId)) AS latestNoteAuthorName
-            FROM channel_inventory_materials m
-            INNER JOIN channel_inventory_channels c ON c.id = m.channel_id
-             AND c.enterprise_id = m.enterprise_id AND c.data_owner_user_id = m.data_owner_user_id
-            LEFT JOIN channel_inventory_notes latest ON latest.id = (
-              SELECT newest.id FROM channel_inventory_notes newest
-               WHERE newest.enterpriseId = m.enterprise_id AND newest.materialId = m.id
-               ORDER BY newest.updatedAt DESC, newest.id DESC LIMIT 1
-            )
-            LEFT JOIN users latest_user ON latest_user.id = latest.authorUserId
-           WHERE ${where}
-           ORDER BY m.updated_at DESC, m.id DESC
-           LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
+                 m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime,
+                 m.revision, m.updated_at AS updatedAt
+            ${SHARED_FROM} WHERE ${where}
+           ORDER BY m.updated_at DESC, m.id DESC LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
         `)).map(sharedMaterialFrom);
         return { items, total, page, pageSize };
+      } catch (error) {
+        if (error instanceof ChannelNotesError) throw error;
+        throw unavailable();
+      }
+    },
+
+    async setMaterialShare(scope: ChannelInventoryScope, rawInput: { materialId: unknown; enabled: unknown; expectedRevision: unknown; requestId: unknown }) {
+      const materialId = positiveId(rawInput.materialId, "库存");
+      const expectedRevision = positiveId(rawInput.expectedRevision, "库存版本");
+      if (typeof rawInput.enabled !== "boolean" || !isUuid(rawInput.requestId)) fail("BAD_REQUEST", "共享设置或请求号无效");
+      const enabled = rawInput.enabled;
+      const requestId = rawInput.requestId;
+      const hash = channelNotePayloadHash({ materialId, enabled, expectedRevision });
+      const db = await requiredDatabase(getDb);
+      try {
+        return await db.transaction(async tx => {
+          // Must run INSIDE this transaction; a preflight router check is insufficient.
+          const authority = await currentAuthority(tx, scope, { lock: true, mutation: true });
+          await lockReadableMaterial(tx, authority, materialId);
+          const material = rows(await tx.execute(sql`SELECT revision FROM channel_inventory_materials WHERE id = ${materialId} AND enterprise_id = ${scope.enterpriseId} FOR UPDATE`))[0];
+          if (!material) fail("NOT_FOUND", NOT_FOUND_MESSAGE);
+          const assignment = rows(await tx.execute(sql`
+            SELECT id, teamId, currentOwnerUserId, revision FROM enterprise_team_record_assignments
+             WHERE enterpriseId = ${scope.enterpriseId} AND recordType = 'channel_material' AND recordId = ${materialId}
+             LIMIT 1 FOR UPDATE
+          `))[0];
+          const member = rows(await tx.execute(sql`
+            SELECT tm.id, tm.teamId FROM enterprise_team_members tm
+            INNER JOIN enterprise_teams t ON t.id = tm.teamId AND t.enterpriseId = tm.enterpriseId AND t.status = 'active'
+             WHERE tm.enterpriseId = ${scope.enterpriseId} AND tm.userId = ${scope.actorUserId} LIMIT 1 FOR UPDATE
+          `))[0];
+          const previous = rows(await tx.execute(sql`
+            SELECT enabled, share_team_id AS shareTeamId, owner_user_id AS ownerUserId,
+                   assignment_revision AS assignmentRevision, owner_membership_id AS ownerMembershipId
+              FROM channel_inventory_material_shares WHERE enterprise_id = ${scope.enterpriseId} AND material_id = ${materialId} LIMIT 1 FOR UPDATE
+          `))[0];
+          const prior = rows(await tx.execute(sql`
+            SELECT material_id AS materialId, payload_hash AS payloadHash, after_data AS afterData
+              FROM channel_inventory_material_share_audits
+             WHERE enterprise_id = ${scope.enterpriseId} AND actor_user_id = ${scope.actorUserId} AND request_id = ${requestId} LIMIT 1 FOR UPDATE
+          `))[0];
+          if (prior) {
+            if (Number(prior.materialId) !== materialId || String(prior.payloadHash) !== hash) fail("CONFLICT", "该请求号已用于不同的共享设置");
+            const stillValid = bool(previous?.enabled) && Number(previous?.ownerUserId) === scope.actorUserId
+              && member != null && assignment != null && Number(assignment.currentOwnerUserId) === scope.actorUserId
+              && Number(previous?.shareTeamId) === Number(member.teamId) && Number(assignment.teamId) === Number(member.teamId)
+              && Number(previous?.assignmentRevision) === Number(assignment.revision) && Number(previous?.ownerMembershipId) === Number(member.id);
+            return { item: { materialId, enabled: stillValid, revision: Number(material.revision) }, idempotent: true };
+          }
+          if (Number(material.revision) !== expectedRevision) fail("CONFLICT", "库存已被其他人更新，请刷新后重试");
+          if (enabled && (!assignment || !member || assignment.teamId == null
+            || Number(assignment.currentOwnerUserId) !== scope.actorUserId
+            || Number(assignment.teamId) !== Number(member.teamId))) {
+            fail("FORBIDDEN", "仅当前负责人可向库存创建时归属且本人仍在的团队共享");
+          }
+          const shareTeamId = enabled ? Number(assignment!.teamId) : null;
+          const assignmentRevision = enabled ? Number(assignment!.revision) : null;
+          const membershipId = enabled ? Number(member!.id) : null;
+          await tx.execute(sql`
+            INSERT INTO channel_inventory_material_shares
+              (enterprise_id, material_id, owner_user_id, enabled, share_team_id, assignment_revision, owner_membership_id, revision)
+            VALUES (${scope.enterpriseId}, ${materialId}, ${scope.actorUserId}, ${enabled}, ${shareTeamId}, ${assignmentRevision}, ${membershipId}, 1)
+            ON DUPLICATE KEY UPDATE owner_user_id = ${scope.actorUserId}, enabled = ${enabled}, share_team_id = ${shareTeamId},
+              assignment_revision = ${assignmentRevision}, owner_membership_id = ${membershipId}, revision = revision + 1, updated_at = CURRENT_TIMESTAMP(3)
+          `);
+          const changed = await tx.execute(sql`
+            UPDATE channel_inventory_materials SET revision = revision + 1, updated_at = CURRENT_TIMESTAMP(3)
+             WHERE id = ${materialId} AND enterprise_id = ${scope.enterpriseId} AND responsible_user_id = ${scope.actorUserId} AND revision = ${expectedRevision}
+          `);
+          if (affectedRows(changed) !== 1) fail("CONFLICT", "库存已被其他人更新，请刷新后重试");
+          const item = { materialId, enabled, revision: expectedRevision + 1 };
+          await tx.execute(sql`
+            INSERT INTO channel_inventory_material_share_audits
+              (enterprise_id, material_id, actor_user_id, request_id, payload_hash, before_data, after_data)
+            VALUES (${scope.enterpriseId}, ${materialId}, ${scope.actorUserId}, ${requestId}, ${hash}, ${JSON.stringify(previous ?? null)},
+              ${JSON.stringify({ ...item, shareTeamId, assignmentRevision, ownerMembershipId: membershipId })})
+          `);
+          return { item, idempotent: false };
+        });
       } catch (error) {
         if (error instanceof ChannelNotesError) throw error;
         throw unavailable();
@@ -531,10 +539,11 @@ export function createChannelNotesService({ getDb }: ChannelNotesServiceDependen
            WHERE ${noteWhere}
            ORDER BY n.updatedAt DESC, n.id DESC
            LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
-        `)).map(row => ({ ...noteFrom(row), canEdit: Number(row.authorUserId) === authority.actorUserId }));
+        `)).map(row => ({ ...noteFrom(row), canEdit: authority.write && Number(row.authorUserId) === authority.actorUserId }));
         return {
           material: { id: Number(material.id), partNumber: String(material.partNumber), brand: String(material.brand), channelType: String(material.channelType), updatedAt: material.updatedAt as Date | string },
           legacyNote: nullableString(material.legacyNote), items, total, page, pageSize,
+          canEdit: authority.write, readOnly: !authority.write,
         };
       } catch (error) {
         if (error instanceof ChannelNotesError) throw error;

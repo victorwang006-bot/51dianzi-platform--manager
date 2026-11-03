@@ -99,6 +99,9 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
       label: "系统设置",
       paths: [
         "/staff",
+        "/teams",
+        "/role-templates",
+        "/permission-audit",
         "/workbench/company-info",
         "/workbench/user-records",
         "/exception-logs",

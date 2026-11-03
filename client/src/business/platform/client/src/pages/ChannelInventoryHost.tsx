@@ -3,7 +3,6 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../front-router-types/server/routers";
 import { trpc } from "../../../../api/business-trpc";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
-import { NotesPanel } from "../components/channelInventory/NotesPanel";
 import { NotesSummaryCompact } from "../components/channelInventory/NotesSummaryCompact";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import "../components/channelInventory/layout.css";
@@ -15,6 +14,7 @@ type ChannelInventoryInputs = inferRouterInputs<AppRouter>["channelInventory"];
 type ChannelInventoryOutputs = inferRouterOutputs<AppRouter>["channelInventory"];
 type Channel = ChannelInventoryOutputs["listChannels"]["items"][number];
 type SharedMaterial = ChannelInventoryOutputs["listSharedMaterials"]["items"][number];
+type PrivateMaterial = ChannelInventoryOutputs["listMaterials"]["items"][number];
 type ChannelType = ChannelInventoryInputs["createChannel"]["type"];
 type MaterialCreateInput = ChannelInventoryInputs["createMaterial"];
 type MaterialUpdateInput = ChannelInventoryInputs["updateMaterial"];
@@ -60,7 +60,7 @@ type ChannelEditor =
 
 type MaterialEditor =
   | { mode: "create" }
-  | { mode: "edit"; material: SharedMaterial };
+  | { mode: "edit"; material: PrivateMaterial };
 
 type FrozenCreate<T> = {
   fingerprint: string;
@@ -145,10 +145,6 @@ function activeLabel(active: boolean) {
   return active ? "启用" : "已停用";
 }
 
-function noteTime(value: Date | string) {
-  return value instanceof Date ? value.toISOString() : value;
-}
-
 function channelFormFrom(channel: Channel): ChannelForm {
   return {
     name: channel.name,
@@ -161,7 +157,7 @@ function channelFormFrom(channel: Channel): ChannelForm {
   };
 }
 
-function materialFormFrom(material: SharedMaterial): MaterialForm {
+function materialFormFrom(material: PrivateMaterial): MaterialForm {
   return {
     channelId: material.channelId === null ? "" : String(material.channelId),
     partNumber: material.partNumber,
@@ -248,6 +244,83 @@ function Pagination({
   );
 }
 
+/** Private notes never share their content, author or metadata with teammates. */
+function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, onClose, onComplete }: {
+  materialId: number; enterpriseId: number; actorUserId: number;
+  isCurrent: () => boolean; onClose: () => void; onComplete: () => void;
+}) {
+  const [page, setPage] = useState(1);
+  const [draft, setDraft] = useState("");
+  const [editing, setEditing] = useState<{ id: number; revision: number; content: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [retryLocked, setRetryLocked] = useState(false);
+  const [message, setMessage] = useState("");
+  const frozen = useRef<{ mode: "add" | "edit"; content: string; requestId: string; noteId?: number; expectedRevision?: number } | null>(null);
+  const context = { expectedEnterpriseId: enterpriseId, expectedActorUserId: actorUserId };
+  const query = trpc.channelInventory.notesList.useQuery({ ...context, materialId, page, pageSize: 50 }, { enabled: isCurrent(), retry: false, refetchOnWindowFocus: true });
+  const add = trpc.channelInventory.notesAdd.useMutation();
+  const edit = trpc.channelInventory.notesEdit.useMutation();
+  const result = isCurrent() ? query.data : undefined;
+  const canWrite = result?.canEdit === true && result.readOnly === false;
+  const pageCount = Math.max(1, Math.ceil((result?.total ?? 0) / 50));
+
+  const submit = async () => {
+    if (!isCurrent() || busy || !canWrite) return;
+    const content = (editing ? editing.content : draft).trim();
+    if (!content || content.length > 2000) { setMessage("请输入 1 到 2000 字的备注内容。"); return; }
+    let payload = frozen.current;
+    if (!payload || !retryLocked) {
+      payload = { mode: editing ? "edit" : "add", content, requestId: createRequestId(),
+        ...(editing ? { noteId: editing.id, expectedRevision: editing.revision } : {}) };
+      frozen.current = payload;
+    }
+    setBusy(true); setMessage("");
+    try {
+      if (payload.mode === "edit") {
+        await edit.mutateAsync({ ...context, noteId: payload.noteId!, expectedRevision: payload.expectedRevision!, content: payload.content, requestId: payload.requestId });
+      } else {
+        await add.mutateAsync({ ...context, materialId, content: payload.content, requestId: payload.requestId });
+      }
+      if (!isCurrent()) return;
+      frozen.current = null; setRetryLocked(false); setDraft(""); setEditing(null);
+      await query.refetch(); if (isCurrent()) onComplete();
+    } catch (error) {
+      if (!isCurrent()) return;
+      if (definitiveWriteFailure(error)) {
+        frozen.current = null; setRetryLocked(false);
+        setMessage(errorMessage(error, "备注保存失败，请刷新后重试。"));
+        void query.refetch();
+      } else {
+        setRetryLocked(true);
+        setMessage("保存结果未确认。内容已锁定，请按原请求重试，系统不会重复追加或覆盖备注。");
+      }
+    } finally { if (isCurrent()) setBusy(false); }
+  };
+
+  return <div className="ci-modal-backdrop" role="presentation">
+    <section className="ci-host-dialog ci-notes-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-private-notes-title">
+      <header><div><h2 id="ci-private-notes-title">本人库存备注（私有）</h2><p>仅当前负责人可见和维护；任何备注、作者和备注时间都不会随库存共享给团队。</p></div><button type="button" className="ci-icon-close" aria-label="关闭本人备注" disabled={busy || retryLocked} onClick={onClose}>×</button></header>
+      {query.isLoading ? <p className="ci-empty">正在读取本人私有备注…</p> : null}
+      {query.isError ? <p className="ci-error" role="alert">{errorMessage(query.error, "备注读取失败。")}</p> : null}
+      {result ? <>
+        <p><strong>{result.material.partNumber}</strong> · {result.material.brand}</p>
+        {result.legacyNote ? <article className="ci-note-entry ci-note-legacy"><strong>原库存备注</strong><p>{result.legacyNote}</p><small>原作者和填写时间未记录；可在本人库存编辑页维护。</small></article> : null}
+        <section className="ci-notes-history" aria-label="本人备注历史">
+          {result.items.map(note => <article className="ci-note-entry" key={note.id}><div className="ci-note-entry-meta"><strong>{note.authorName}</strong><span>{displayDate(note.updatedAt)}</span></div><p>{note.content}</p>{canWrite && note.canEdit ? <button type="button" className="ci-inline-link" disabled={busy || retryLocked} onClick={() => { frozen.current = null; setEditing({ id: note.id, revision: note.revision, content: note.content }); setMessage(""); }}>修改我的备注</button> : null}</article>)}
+          {!result.items.length && !result.legacyNote ? <p>暂无本人私有备注。</p> : null}
+        </section>
+        {pageCount > 1 ? <Pagination page={page} pageCount={pageCount} total={result.total} onPage={next => { if (!busy && !retryLocked) { setEditing(null); setPage(next); } }} label="本人备注" /> : null}
+        {canWrite ? <section className="ci-note-add" aria-label={editing ? "编辑本人备注" : "新增本人备注"}>
+          <label className="ci-field"><span>{editing ? "编辑本人备注" : "新增本人备注"}</span><textarea rows={3} maxLength={2000} disabled={busy || retryLocked} value={editing ? editing.content : draft} placeholder="仅本人可见，不共享给团队" onChange={event => { const value = event.target.value; frozen.current = null; if (editing) setEditing({ ...editing, content: value }); else setDraft(value); }} /></label>
+          <div className="ci-note-add-meta">{editing ? <button type="button" className="ci-button" disabled={busy || retryLocked} onClick={() => { frozen.current = null; setEditing(null); }}>取消编辑</button> : null}<button type="button" className="ci-button ci-primary" disabled={busy || !(editing ? editing.content : draft).trim()} onClick={() => void submit()}>{busy ? "保存中…" : retryLocked ? "按原请求重试" : editing ? "保存备注修改" : "保存本人备注"}</button></div>
+        </section> : <p className="ci-readonly">当前库存为只读，不能新增或修改备注。</p>}
+      </> : null}
+      {message ? <p className="ci-error" role="alert">{message}</p> : null}
+      <footer><button type="button" className="ci-button" disabled={busy || retryLocked} onClick={() => void query.refetch()}>刷新</button><button type="button" className="ci-button" disabled={busy || retryLocked} onClick={onClose}>关闭</button></footer>
+    </section>
+  </div>;
+}
+
 /**
  * New equivalent reconstruction of the missing channel-inventory Host.
  * It deliberately obtains identity only from the authenticated BFF response and
@@ -285,6 +358,7 @@ export default function ChannelInventoryHost() {
     type: "all",
   });
   const [materialPage, setMaterialPage] = useState(1);
+  const [materialVisibility, setMaterialVisibility] = useState<"own" | "team">("own");
   const [optionPage, setOptionPage] = useState(1);
   const [optionChannels, setOptionChannels] = useState<Channel[]>([]);
   const [channelEditor, setChannelEditor] = useState<ChannelEditor | null>(null);
@@ -302,9 +376,9 @@ export default function ChannelInventoryHost() {
     note: "",
   });
   const [batchOpen, setBatchOpen] = useState(false);
-  const [notesMaterial, setNotesMaterial] = useState<SharedMaterial | null>(null);
+  const [notesMaterial, setNotesMaterial] = useState<PrivateMaterial | null>(null);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState<"channel" | "material" | "status" | null>(null);
+  const [busy, setBusy] = useState<"channel" | "material" | "status" | "share" | null>(null);
   const channelCreateRef = useRef<FrozenCreate<ChannelInventoryInputs["createChannel"]> | null>(null);
   const materialCreateRef = useRef<FrozenCreate<MaterialCreateInput> | null>(null);
 
@@ -342,7 +416,7 @@ export default function ChannelInventoryHost() {
     id: materialChannelId ?? 1,
   };
   const materialScopeQuery = trpc.channelInventory.getChannel.useQuery(materialScopeInput, {
-    enabled: ready && tab === "materials" && materialChannelId !== undefined,
+    enabled: ready && tab === "materials" && materialVisibility === "own" && materialChannelId !== undefined,
     retry: false,
   });
   const materialScopeReady = materialChannelId === undefined
@@ -351,19 +425,21 @@ export default function ChannelInventoryHost() {
   const materialInput: ChannelInventoryInputs["listSharedMaterials"] = {
     expectedEnterpriseId: enterpriseId ?? undefined,
     expectedActorUserId: actorUserId ?? undefined,
-    channelId: materialChannelId,
     partNumber: materialFilters.partNumber.normalize("NFKC").trim() || undefined,
     brand: materialFilters.brand.trim() || undefined,
-    type: materialFilters.type === "all" ? undefined : materialFilters.type,
     page: materialPage,
     pageSize: PAGE_SIZE,
   };
   const materialsQuery = trpc.channelInventory.listSharedMaterials.useQuery(materialInput, {
-    // A selected range is never trusted from the DOM. It must first resolve via
-    // getChannel in the current BFF scope before it can constrain the list query.
-    enabled: ready && tab === "materials" && materialScopeReady,
+    enabled: ready && tab === "materials" && materialVisibility === "team",
     retry: false,
   });
+
+  const ownMaterialsQuery = trpc.channelInventory.listMaterials.useQuery({
+    ...expectedContext, channelId: materialChannelId,
+    partNumber: materialFilters.partNumber.normalize("NFKC").trim() || undefined,
+    brand: materialFilters.brand.trim() || undefined, page: materialPage, pageSize: PAGE_SIZE,
+  }, { enabled: ready && tab === "materials" && materialVisibility === "own" && materialScopeReady, retry: false });
 
   const optionQueryInput: ChannelInventoryInputs["listChannels"] = {
     expectedEnterpriseId: enterpriseId ?? undefined,
@@ -372,7 +448,7 @@ export default function ChannelInventoryHost() {
     pageSize: 100,
   };
   const channelOptionsQuery = trpc.channelInventory.listChannels.useQuery(optionQueryInput, {
-    enabled: ready && (tab === "materials" || Boolean(materialEditor) || batchOpen),
+    enabled: ready && ((tab === "materials" && materialVisibility === "own") || Boolean(materialEditor) || batchOpen),
     retry: false,
   });
 
@@ -381,11 +457,15 @@ export default function ChannelInventoryHost() {
   const setChannelActive = trpc.channelInventory.setChannelActive.useMutation();
   const createMaterial = trpc.channelInventory.createMaterial.useMutation();
   const updateMaterial = trpc.channelInventory.updateMaterial.useMutation();
+  const setMaterialShare = trpc.channelInventory.setMaterialShare.useMutation();
+  const shareRequestRef = useRef<{ fingerprint: string; requestId: string } | null>(null);
 
   useEffect(() => {
     identityRef.current = identity;
     setChannelPage(1);
     setMaterialPage(1);
+    setMaterialVisibility("own");
+    shareRequestRef.current = null;
     setOptionPage(1);
     setOptionChannels([]);
     setChannelEditor(null);
@@ -401,7 +481,7 @@ export default function ChannelInventoryHost() {
     const result = channelOptionsQuery.data;
     if (!result || !ready) return;
     setOptionChannels(current => {
-      const next = new Map(current.map(channel => [channel.id, channel]));
+      const next = new Map((result.page === 1 ? [] : current).map(channel => [channel.id, channel]));
       for (const channel of result.items) next.set(channel.id, channel);
       return Array.from(next.values()).sort((left, right) => right.id - left.id);
     });
@@ -410,6 +490,7 @@ export default function ChannelInventoryHost() {
   const isCurrent = useCallback(() => identityRef.current === identity && Boolean(identity), [identity]);
 
   const refreshChannels = useCallback(async () => {
+    setOptionPage(1); setOptionChannels([]);
     await Promise.allSettled([
       utils.channelInventory.listChannels.invalidate(),
       utils.channelInventory.listSharedMaterials.invalidate(),
@@ -433,6 +514,7 @@ export default function ChannelInventoryHost() {
   };
 
   const openChannelEdit = (channel: Channel) => {
+    if (!channel.canEdit || channel.readOnly) return;
     setChannelForm(channelFormFrom(channel));
     setMessage("");
     setChannelEditor({ mode: "edit", channel });
@@ -440,6 +522,7 @@ export default function ChannelInventoryHost() {
 
   const viewChannelMaterials = (channel: Channel) => {
     setMessage("");
+    setMaterialVisibility("own");
     setMaterialFilters(current => ({ ...current, channelId: String(channel.id) }));
     setMaterialPage(1);
     setTab("materials");
@@ -507,7 +590,7 @@ export default function ChannelInventoryHost() {
   };
 
   const toggleChannel = async (channel: Channel) => {
-    if (!expectedContext || busy) return;
+    if (!expectedContext || busy || !channel.canEdit || channel.readOnly) return;
     const action = channel.active ? "停用" : "启用";
     if (!window.confirm(`确认${action}渠道“${channel.name}”吗？${channel.active ? "停用后不能新增或修改其库存。" : ""}`)) return;
     setBusy("status");
@@ -545,8 +628,8 @@ export default function ChannelInventoryHost() {
     setMaterialEditor({ mode: "create" });
   };
 
-  const openMaterialEdit = (material: SharedMaterial) => {
-    if (material.channelId === null) return;
+  const openMaterialEdit = (material: PrivateMaterial) => {
+    if (!material.canEdit || material.readOnly) return;
     setMaterialForm(materialFormFrom(material));
     setMessage("");
     setMaterialEditor({ mode: "edit", material });
@@ -599,6 +682,28 @@ export default function ChannelInventoryHost() {
     }
   };
 
+  const toggleMaterialShare = async (material: PrivateMaterial) => {
+    if (!expectedContext || busy || !material.canEdit || material.readOnly) return;
+    const enabled = !material.shareEnabled;
+    if (!window.confirm(enabled
+      ? "确认共享此库存给其归属团队？只公开型号、品牌、数量、报价、税务、批次与交期，不包含渠道来源和任何备注。"
+      : "确认撤销团队共享？撤销后同队成员将不能再查看此库存。")) return;
+    const payload = { materialId: material.id, enabled, expectedRevision: material.revision };
+    const fingerprint = `${identity}:${JSON.stringify(payload)}`;
+    if (shareRequestRef.current?.fingerprint !== fingerprint) shareRequestRef.current = { fingerprint, requestId: createRequestId() };
+    setBusy("share"); setMessage("");
+    try {
+      await setMaterialShare.mutateAsync({ ...payload, requestId: shareRequestRef.current.requestId });
+      shareRequestRef.current = null;
+      if (isCurrent()) await refreshMaterials();
+    } catch (error) {
+      if (isCurrent()) {
+        if (definitiveWriteFailure(error)) shareRequestRef.current = null;
+        setMessage(errorMessage(error, "共享设置结果未确认，请按原设置重试。"));
+      }
+    } finally { if (isCurrent()) setBusy(null); }
+  };
+
   const submitBatchMaterial = async (payload: BatchMaterialPayload, requestId: string) => {
     if (!expectedContext || !isCurrent()) throw new Error("当前企业或账号已变化，请重新打开批量上传。");
     return createMaterial.mutateAsync({ ...expectedContext, ...payload, requestId });
@@ -606,7 +711,12 @@ export default function ChannelInventoryHost() {
 
   const activeChannels = optionChannels.filter(channel => channel.active);
   const channelResult = channelsQuery.data;
-  const materialResult = materialsQuery.data;
+  const selectedMaterialsQuery = materialVisibility === "own" ? ownMaterialsQuery : materialsQuery;
+  const materialResult = selectedMaterialsQuery.data;
+  const materialRows: (PrivateMaterial | SharedMaterial)[] = materialResult?.items ?? [];
+  const materialsReady = materialVisibility === "team" || materialScopeReady;
+  const canWriteChannels = channelsQuery.data?.canWrite === true;
+  const canWriteMaterials = ownMaterialsQuery.data?.canWrite === true;
   const channelPageCount = Math.max(1, channelResult?.pageCount ?? 1);
   const materialPageCount = Math.max(1, Math.ceil((materialResult?.total ?? 0) / PAGE_SIZE));
 
@@ -629,22 +739,23 @@ export default function ChannelInventoryHost() {
       <header className="ci-heading">
         <div className="ci-title-line">
           <h1>渠道库存</h1>
+          <p>渠道档案仅当前负责人可见。库存默认私有，需负责人显式共享给归属团队；团队共享只读，不公开来源或任何备注。</p>
         </div>
         <div className="ci-heading-actions">
           {tab === "channels" ? (
-            <button type="button" className="ci-button ci-primary" onClick={openChannelCreate}>+ 新增渠道</button>
-          ) : (
+            <button type="button" className="ci-button ci-primary" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
+          ) : materialVisibility === "own" ? (
             <>
-              <button type="button" className="ci-button" onClick={() => setBatchOpen(true)}>批量上传</button>
-              <button type="button" className="ci-button ci-primary" onClick={openMaterialCreate}>+ 新增库存</button>
+              <button type="button" className="ci-button" disabled={!canWriteMaterials} onClick={() => setBatchOpen(true)}>批量上传</button>
+              <button type="button" className="ci-button ci-primary" disabled={!canWriteMaterials} onClick={openMaterialCreate}>+ 新增库存</button>
             </>
-          )}
+          ) : null}
         </div>
       </header>
 
       <div className="ci-tabs" role="tablist" aria-label="渠道库存内容">
+        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>本人渠道档案</button>
         <button type="button" role="tab" aria-selected={tab === "materials"} onClick={() => setTab("materials")}>渠道库存</button>
-        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>渠道管理</button>
       </div>
 
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
@@ -688,7 +799,7 @@ export default function ChannelInventoryHost() {
                     <td><div>{channel.contactName || "—"}</div><small className="ci-subtext">{[channel.phone, channel.wechat ? `微信 ${channel.wechat}` : null, channel.qq ? `QQ ${channel.qq}` : null].filter(Boolean).join(" · ") || "未填写联系方式"}</small></td>
                     <td><span className={channel.active ? "ci-status ci-status-active" : "ci-status ci-status-inactive"}>{activeLabel(channel.active)}</span></td>
                     <td className="ci-date">{displayDate(channel.updatedAt)}</td>
-                    <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link" onClick={() => viewChannelMaterials(channel)} disabled={busy !== null}>查看库存</button><button type="button" className="ci-inline-link" onClick={() => openChannelEdit(channel)} disabled={busy !== null}>编辑</button><button type="button" className={channel.active ? "ci-inline-link ci-danger-link" : "ci-inline-link"} onClick={() => void toggleChannel(channel)} disabled={busy !== null}>{channel.active ? "停用" : "启用"}</button></div></td>
+                    <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link" onClick={() => viewChannelMaterials(channel)} disabled={busy !== null}>查看库存</button><button type="button" className="ci-inline-link" onClick={() => openChannelEdit(channel)} disabled={busy !== null || !channel.canEdit}>编辑</button><button type="button" className={channel.active ? "ci-inline-link ci-danger-link" : "ci-inline-link"} onClick={() => void toggleChannel(channel)} disabled={busy !== null || !channel.canEdit}>{channel.active ? "停用" : "启用"}</button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -698,34 +809,38 @@ export default function ChannelInventoryHost() {
         </section>
       ) : (
         <section className="ci-panel" aria-label="渠道库存列表">
+          <div className="ci-tabs" role="tablist" aria-label="库存可见范围">
+            <button type="button" role="tab" aria-selected={materialVisibility === "own"} onClick={() => { setMaterialVisibility("own"); setMaterialPage(1); setNotesMaterial(null); }}>本人库存</button>
+            <button type="button" role="tab" aria-selected={materialVisibility === "team"} onClick={() => { setMaterialVisibility("team"); setMaterialPage(1); setNotesMaterial(null); setMaterialEditor(null); setBatchOpen(false); }}>团队共享（只读）</button>
+          </div>
+          <p className="ci-subtext">{materialVisibility === "own" ? "本人负责的库存；默认不共享。共享按钮仅授权创建时归属且本人仍在的团队，离组、转交或撤权后自动失效。" : "仅展示同队负责人显式共享且当前仍有效的库存；不展示渠道来源和任何备注，不可编辑。"}</p>
           <div className="ci-toolbar">
-            <label className="ci-field ci-channel-select"><span>渠道范围</span><select aria-label="筛选库存渠道范围" value={materialFilters.channelId} onChange={event => { setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}><option value="">全部渠道</option>{optionChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}{channel.active ? "" : "（已停用）"}</option>)}</select></label>
+            {materialVisibility === "own" ? <label className="ci-field ci-channel-select"><span>渠道范围</span><select aria-label="筛选库存渠道范围" value={materialFilters.channelId} onChange={event => { setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}><option value="">全部渠道</option>{optionChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}{channel.active ? "" : "（已停用）"}</option>)}</select></label> : null}
             <label className="ci-field ci-toolbar-search"><span>型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>
             <label className="ci-field ci-brand-input"><span>品牌</span><input aria-label="筛选库存品牌" value={materialFilters.brand} onChange={event => { setMaterialFilters(current => ({ ...current, brand: event.target.value })); setMaterialPage(1); }} placeholder="搜索品牌" /></label>
-            <label className="ci-field ci-notes-type-filter"><span>渠道类型</span><select aria-label="筛选库存渠道类型" value={materialFilters.type} onChange={event => { setMaterialFilters(current => ({ ...current, type: event.target.value as MaterialFilters["type"] })); setMaterialPage(1); }}><option value="all">全部类型</option>{CHANNEL_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
             <button type="button" className="ci-button" onClick={() => { setMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" }); setMaterialPage(1); setMessage(""); }}>重置</button>
             <span className="ci-filter-count">{materialResult?.total ?? 0} 条库存</span>
           </div>
           <div className="ci-tablewrap ci-compact-tablewrap">
             <table className="ci-table ci-compact-stock-table ci-stock-edit-table">
-              <thead><tr><th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-type-col">渠道类型</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col">Date Code / 更新</th><th className="ci-material-notes-col">共享备注</th><th className="ci-col-actions">操作</th></tr></thead>
+              <thead><tr><th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-type-col">可见范围</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col">Date Code / 更新</th><th className="ci-material-notes-col">本人私有备注</th><th className="ci-col-actions">操作</th></tr></thead>
               <tbody>
-                {!materialScopeReady && !materialScopeQuery.isError ? <tr><td colSpan={9} className="ci-empty">正在验证渠道范围…</td></tr> : null}
-                {materialScopeQuery.isError ? <tr><td colSpan={9} className="ci-empty ci-host-error">{errorMessage(materialScopeQuery.error, "渠道范围不可访问，请重新选择。")}</td></tr> : null}
-                {materialScopeReady && materialsQuery.isLoading ? <tr><td colSpan={9} className="ci-empty">正在加载渠道库存…</td></tr> : null}
-                {materialScopeReady && materialsQuery.isError ? <tr><td colSpan={9} className="ci-empty ci-host-error">{errorMessage(materialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
-                {materialScopeReady && !materialsQuery.isLoading && !materialsQuery.isError && !(materialResult?.items.length) ? <tr><td colSpan={9} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
-                {materialScopeReady ? materialResult?.items.map((material, index) => (
+                {materialVisibility === "own" && !materialScopeReady && !materialScopeQuery.isError ? <tr><td colSpan={9} className="ci-empty">正在验证渠道范围…</td></tr> : null}
+                {materialVisibility === "own" && materialScopeQuery.isError ? <tr><td colSpan={9} className="ci-empty ci-host-error">{errorMessage(materialScopeQuery.error, "渠道范围不可访问，请重新选择。")}</td></tr> : null}
+                {materialsReady && selectedMaterialsQuery.isLoading ? <tr><td colSpan={9} className="ci-empty">正在加载渠道库存…</td></tr> : null}
+                {materialsReady && selectedMaterialsQuery.isError ? <tr><td colSpan={9} className="ci-empty ci-host-error">{errorMessage(selectedMaterialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
+                {materialsReady && !selectedMaterialsQuery.isLoading && !selectedMaterialsQuery.isError && !(materialResult?.items.length) ? <tr><td colSpan={9} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
+                {materialsReady ? materialRows.map((material, index) => (
                   <tr key={material.id}>
-                    <td className="ci-number">{(materialResult.page - 1) * materialResult.pageSize + index + 1}</td>
+                    <td className="ci-number">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td>
                     <td><div className="ci-part-with-type"><strong className="ci-cell-title">{material.partNumber}</strong></div><small className="ci-subtext">{material.brand}</small></td>
-                    <td><span className="ci-channel-type-tag">{channelTypeLabel(material.channelType)}</span>{!material.channelActive ? <small className="ci-subtext">渠道已停用</small> : null}</td>
+                    <td><span className="ci-channel-type-tag">{"channelId" in material ? (material.shareEnabled ? "本人 · 已共享" : "本人 · 私有") : "团队共享 · 只读"}</span></td>
                     <td className="ci-number">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td>
                     <td className="ci-price">{material.price === null ? "面议" : `¥${material.price}`}<small className="ci-subtext">{material.taxIncluded === null ? "税务待确认" : material.taxIncluded ? "含税" : "未税"}</small></td>
                     <td>{material.leadTime || "待确认"}</td>
                     <td className="ci-date"><div>{material.dateCode || "—"}</div><small className="ci-subtext">{displayDate(material.updatedAt)}</small></td>
-                    <td><NotesSummaryCompact row={{ ...material, latestNote: material.latestNote ? { ...material.latestNote, updatedAt: noteTime(material.latestNote.updatedAt) } : null }} onOpen={() => { setMessage(""); setNotesMaterial(material); }} disabled={busy !== null} /></td>
-                    <td className="ci-col-actions"><div className="ci-row-actions">{material.channelId === null ? <span className="ci-readonly">团队共享</span> : <button type="button" className="ci-inline-link" onClick={() => openMaterialEdit(material)} disabled={busy !== null}>编辑</button>}</div></td>
+                    <td>{"channelId" in material ? <NotesSummaryCompact row={material} onOpen={() => { setMessage(""); setNotesMaterial(material); }} disabled={busy !== null} /> : <span className="ci-readonly">不共享任何备注</span>}</td>
+                    <td className="ci-col-actions"><div className="ci-row-actions">{"channelId" in material && material.canEdit && !material.readOnly ? <><button type="button" className="ci-inline-link" onClick={() => openMaterialEdit(material)} disabled={busy !== null}>编辑</button><button type="button" className="ci-inline-link" onClick={() => void toggleMaterialShare(material)} disabled={busy !== null}>{material.shareEnabled ? "撤销共享" : "共享给同队"}</button></> : <span className="ci-readonly">只读</span>}</div></td>
                   </tr>
                 )) : null}
               </tbody>
@@ -759,7 +874,7 @@ export default function ChannelInventoryHost() {
             <header><div><h2 id="ci-material-editor-title">{materialEditor.mode === "create" ? "新增渠道库存" : "编辑渠道库存"}</h2><p>空数量记为待确认，空价格记为面议；只支持 CNY，税务口径必须明确选择或保留待确认。</p></div><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" disabled={busy === "material"} onClick={() => setMaterialEditor(null)}>×</button></header>
             {!activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
             <div className="ci-form-grid">
-              <label className="ci-field ci-form-wide"><span>关联渠道 *</span><select aria-label="关联渠道" value={materialForm.channelId} disabled={materialEditor.mode === "edit" && materialEditor.material.channelId === null} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label>
+              <label className="ci-field ci-form-wide"><span>关联渠道 *</span><select aria-label="关联渠道" value={materialForm.channelId} disabled={materialEditor.mode === "edit"} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label>
               <label className="ci-field"><span>型号 *</span><input value={materialForm.partNumber} maxLength={128} onChange={event => setMaterialForm(current => ({ ...current, partNumber: event.target.value }))} /></label>
               <label className="ci-field"><span>品牌 *</span><input value={materialForm.brand} maxLength={64} onChange={event => setMaterialForm(current => ({ ...current, brand: event.target.value }))} /></label>
               <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="留空为待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
@@ -767,7 +882,7 @@ export default function ChannelInventoryHost() {
               <label className="ci-field"><span>报价 CNY</span><input inputMode="decimal" placeholder="留空为面议" value={materialForm.price} onChange={event => setMaterialForm(current => ({ ...current, price: event.target.value }))} /></label>
               <label className="ci-field"><span>税务口径</span><select value={materialForm.taxIncluded} onChange={event => setMaterialForm(current => ({ ...current, taxIncluded: event.target.value as MaterialForm["taxIncluded"] }))}><option value="unknown">待确认</option><option value="included">含税</option><option value="excluded">未税</option></select></label>
               <label className="ci-field ci-form-wide"><span>交期</span><input maxLength={64} placeholder="留空为待确认" value={materialForm.leadTime} onChange={event => setMaterialForm(current => ({ ...current, leadTime: event.target.value }))} /></label>
-              <label className="ci-field ci-form-wide"><span>历史库存备注</span><textarea value={materialForm.note} maxLength={2000} rows={3} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /><small>团队协作请使用列表中的“共享备注”；这里的历史库存备注不伪造作者或时间。</small></label>
+              <label className="ci-field ci-form-wide"><span>历史库存备注</span><textarea value={materialForm.note} maxLength={2000} rows={3} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /><small>备注仅本人维护，绝不随库存共享给团队；关联渠道创建后不可更换。</small></label>
             </div>
             <footer><button type="button" className="ci-button" disabled={busy === "material"} onClick={() => setMaterialEditor(null)}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "material" || !activeChannels.length} onClick={() => void submitMaterial()}>{busy === "material" ? "保存中…" : materialEditor.mode === "create" ? "保存库存" : "保存修改"}</button></footer>
           </section>
@@ -775,7 +890,7 @@ export default function ChannelInventoryHost() {
       ) : null}
 
       {batchOpen ? <BatchUpload channels={optionChannels.map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} onClose={() => setBatchOpen(false)} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { void refreshMaterials(); }} isCurrent={isCurrent} /> : null}
-      {notesMaterial ? <NotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={isCurrent} onClose={() => setNotesMaterial(null)} onDirtyChange={() => undefined} onBusyChange={() => undefined} onComplete={() => { void refreshMaterials(); }} /> : null}
+      {notesMaterial ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={isCurrent} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
     </section>
   );
 }

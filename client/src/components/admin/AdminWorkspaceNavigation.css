@@ -1,0 +1,113 @@
+/* Scoped navigation only: never alter html/body, content typography or Sidebar. */
+.admin-workspace-nav {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-workspace-nav__tabs {
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 0%;
+  gap: 24px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scroll-padding-inline: 4px;
+  background: #ffffff;
+  font-family:
+    "Microsoft YaHei",
+    "微软雅黑",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.admin-workspace-nav__tabs--workspaces {
+  min-height: 56px;
+  font-family: inherit;
+}
+
+.admin-workspace-nav__tabs--modules {
+  width: 100%;
+  min-height: 42px;
+  gap: 20px;
+  border-top: 1px solid #e5eaf0;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.admin-workspace-nav__tab {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #536273;
+  font-family: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Primary-navigation reference, module rows from AdminWorkbenchNavigation.css. */
+.admin-workspace-nav__workspace {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.admin-workspace-nav__module {
+  min-height: 40px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 40px;
+}
+
+.admin-workspace-nav__tab:hover {
+  color: #274f78;
+  background: #f5f8fc;
+}
+
+.admin-workspace-nav__tab[data-active="true"] {
+  color: #185fa5;
+  border-bottom-color: #185fa5;
+}
+
+.admin-workspace-nav__module[data-active="true"] {
+  font-weight: 500;
+}
+
+.admin-workspace-nav__tab:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: -3px;
+}
+
+.admin-workspace-nav__tab:active {
+  transform: none;
+}
+
+@media (max-width: 700px) {
+  .admin-workspace-nav__tabs {
+    gap: 16px;
+  }
+
+  .admin-workspace-nav__tabs--workspaces {
+    min-height: 48px;
+  }
+}

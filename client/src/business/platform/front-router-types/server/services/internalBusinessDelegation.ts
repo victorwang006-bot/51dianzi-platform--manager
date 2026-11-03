@@ -19,6 +19,7 @@ import { materialRouter } from "../routers/material";
 import { demandRouter } from "../routers/demand";
 import { chatRouter } from "../routers/chat";
 import { cartRouter } from "../routers/cart";
+import { businessOrganizationRouter } from "../routers/businessOrganization";
 import {
   requireBusinessConversation,
 } from "./businessConversationScope";
@@ -73,7 +74,7 @@ export const BUSINESS_METHOD_IDS = [
   "inbound.markPaymentUnpaid", "inbound.recordPayment", "inbound.voidPayment", "inbound.receive", "inbound.cancelPreview",
   "inbound.cancelMany", "inbound.cancel", "inbound.remove",
   "customer.context", "customer.list", "customer.get", "customer.ownershipSearch", "customer.checkDuplicate",
-  "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer",
+  "customerDemand.quoteAccept", "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer",
   "customer.createMulti", "customer.contactsList", "customer.contactsSummary", "customer.contactsAdd",
   "customer.contactsEdit", "customer.contactsStop", "customer.contactsSetPrimary", "customer.updateBasic",
   "customerDemand.suggestPartNumbers", "customerDemand.quoteSave", "customerDemand.quoteWithdraw", "customerDemand.quoteList",
@@ -101,6 +102,8 @@ export const BUSINESS_METHOD_IDS = [
   ...BUSINESS_CHAT_METHOD_IDS,
   "publicReview.state", "publicReview.create",
   "cart.count",
+  "organization.overview", "organization.audit", "organization.createTeam", "organization.updateTeam",
+  "organization.setMember", "organization.updateMemberAccess",
 ] as const;
 
 export type BusinessMethodId = (typeof BUSINESS_METHOD_IDS)[number];
@@ -123,6 +126,7 @@ const PROCUREMENT_ORDER_READ: BusinessMethodCapability = { mode: "read", permiss
 const PROCUREMENT_ORDER: BusinessMethodCapability = { mode: "write", permission: "procurement.orders" };
 const MEMBER_MANAGE_READ: BusinessMethodCapability = { mode: "read", permission: "enterprise.members.manage" };
 const MEMBER_MANAGE: BusinessMethodCapability = { mode: "write", permission: "enterprise.members.manage" };
+
 const INQUIRY_RECEIVE_READ: BusinessMethodCapability = { mode: "read", permission: "inquiry.receive" };
 const INQUIRY_RECEIVE: BusinessMethodCapability = { mode: "write", permission: "inquiry.receive" };
 
@@ -163,10 +167,10 @@ for (const method of [
 for (const method of [
   "customer.context", "customer.list", "customer.get", "customer.ownershipSearch", "customer.checkDuplicate", "customerDemand.suggestPartNumbers",
   "customer.contactsList", "customer.contactsSummary",
-  "customerDemand.quoteAccept", "customerDemand.list", "customerDemand.salesList", "customerDemand.get", "customerDemand.revisionHistory",
+  "customerDemand.list", "customerDemand.salesList", "customerDemand.get", "customerDemand.revisionHistory",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = CUSTOMER_READ;
 for (const method of [
-  "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer", "customerDemand.save",
+  "customerDemand.quoteAccept", "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer", "customerDemand.save",
   "customer.createMulti", "customer.contactsAdd", "customer.contactsEdit", "customer.contactsStop",
   "customer.contactsSetPrimary", "customer.updateBasic",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = CUSTOMER;
@@ -199,6 +203,12 @@ for (const method of [
   "enterprise.transferOwnership",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = MEMBER_MANAGE;
 BUSINESS_METHOD_CAPABILITIES["enterprise.inquiryInbox"] = INQUIRY_RECEIVE_READ;
+BUSINESS_METHOD_CAPABILITIES["organization.overview"] = READ;
+BUSINESS_METHOD_CAPABILITIES["organization.audit"] = MEMBER_MANAGE_READ;
+for (const method of ["organization.createTeam", "organization.updateTeam", "organization.setMember", "organization.updateMemberAccess"] as const) {
+  BUSINESS_METHOD_CAPABILITIES[method] = MEMBER_MANAGE;
+}
+
 // Marketplace seller orders are not ERP outbound orders. The original order
 // router authorizes each read/mutation with order.sellerId === ctx.user.id;
 // therefore this bridge must not invent a sales_orders.manage prerequisite or
@@ -248,6 +258,7 @@ type DelegatedBusinessCallers = {
   material: Record<string, RawBusinessProcedure>;
   demand: Record<string, RawBusinessProcedure>;
   channelInventory: Record<string, RawBusinessProcedure>;
+  organization: Record<string, RawBusinessProcedure>;
   chat: Record<string, RawBusinessProcedure>;
 };
 
@@ -273,6 +284,7 @@ function buildCallers(context: TrpcContext): DelegatedBusinessCallers {
     material: asFixedCaller(materialRouter.createCaller(context)),
     demand: asFixedCaller(demandRouter.createCaller(context)),
     channelInventory: asFixedCaller(channelInventoryRouter.createCaller(context)),
+    organization: asFixedCaller(businessOrganizationRouter.createCaller(context)),
     chat: asFixedCaller(chatRouter.createCaller(context)),
   };
 }

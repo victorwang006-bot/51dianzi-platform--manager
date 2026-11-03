@@ -27,15 +27,16 @@ import {
   type SalesOrderDemandCandidate,
 } from "../../../shared/crmSalesOrders";
 import { getDb } from "../db";
+import { assertCrmDemandCustomer, crmDemandCustomerWhere, resolveCrmDemandPolicy, type CrmDemandPolicy } from "./customerDemands";
 
 /** Identity is always the independently authenticated employee, never effectiveUserId. */
 export type CrmSalesOrderScope = { enterpriseId: number; actorUserId: number };
-type SqlExecutor = { execute: (query: string | SQLWrapper) => Promise<unknown> };
+type SqlExecutor = { execute: (query: SQLWrapper) => Promise<unknown> };
 type MembershipRow = {
   id: number; userId: number; role: "super_admin" | "admin" | "member";
   status: "active" | "suspended"; loginDisabled: number | boolean;
 };
-type SalesAccess = { canManageAll: boolean; actor: MembershipRow };
+type SalesAccess = { canManageAll: boolean; actor: MembershipRow; policy: CrmDemandPolicy };
 type CustomerRow = { id: number; assignedUserId: number; name: string; archivedAt: Date | string | null };
 type DemandRow = {
   id: number; customerId: number; demandNo: string; projectName: string; status: "draft" | "submitted" | "processing";
@@ -111,7 +112,7 @@ async function actorMembership(executor: SqlExecutor, scope: CrmSalesOrderScope,
   if (!actor || actor.status !== "active" || Boolean(actor.loginDisabled)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前企业成员不可用" });
   }
-  return { actor, owner: actor.role === "super_admin" || Number(actor.superAdminUserId) === scope.actorUserId };
+  return { actor, owner: actor.role === "super_admin" && Number(actor.superAdminUserId) === scope.actorUserId };
 }
 
 /** Member locks precede customer/demand/order locks, matching customer transfer and demand writes. */
@@ -130,7 +131,7 @@ async function lockedEnterpriseMembers(tx: SqlExecutor, scope: CrmSalesOrderScop
   if (!actor || actor.status !== "active" || Boolean(actor.loginDisabled)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前企业成员不可用" });
   }
-  return { actor, owner: actor.role === "super_admin" || Number(enterprise.superAdminUserId) === scope.actorUserId };
+  return { actor, owner: actor.role === "super_admin" && Number(enterprise.superAdminUserId) === scope.actorUserId };
 }
 async function permissionKeys(executor: SqlExecutor, memberId: number, lock: boolean) {
   return resultRows<{ permissionKey: string }>(await executor.execute(sql`
@@ -142,16 +143,12 @@ async function permissionKeys(executor: SqlExecutor, memberId: number, lock: boo
 /** Every call checks both permissions fresh; router permission middleware is defense in depth only. */
 async function requireSalesOrderAccess(executor: SqlExecutor, scope: CrmSalesOrderScope, lock = false): Promise<SalesAccess> {
   const state = lock ? await lockedEnterpriseMembers(executor, scope) : await actorMembership(executor, scope, false);
-  if (state.owner) return { canManageAll: true, actor: state.actor };
-  const permissions = await permissionKeys(executor, state.actor.id, lock);
-  if (!permissions.includes(SALES_ORDER_PERMISSION)) {
+  const permissions = state.owner ? [] : await permissionKeys(executor, state.actor.id, lock);
+  if (!state.owner && !permissions.includes(SALES_ORDER_PERMISSION)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "您没有销售订单权限" });
   }
-  const canManageAll = permissions.includes(CUSTOMER_ALL_PERMISSION);
-  if (!canManageAll && !permissions.includes(CUSTOMER_PERMISSION)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "需要客户管理权限后才能查看或录入销售订单" });
-  }
-  return { canManageAll, actor: state.actor };
+  const policy = await resolveCrmDemandPolicy(executor, scope, lock);
+  return { canManageAll: policy.customers.scope === "enterprise" && policy.demands.scope === "enterprise", actor: state.actor, policy };
 }
 
 async function accessibleCustomer(executor: SqlExecutor, scope: CrmSalesOrderScope, canManageAll: boolean, customerId: number, lock = false) {
@@ -160,9 +157,11 @@ async function accessibleCustomer(executor: SqlExecutor, scope: CrmSalesOrderSco
      WHERE enterpriseId = ${scope.enterpriseId} AND id = ${customerId}
      LIMIT 1 ${lock ? sql`FOR UPDATE` : sql``}
   `))[0];
-  if (!customer || (!canManageAll && Number(customer.assignedUserId) !== scope.actorUserId)) {
+  if (!customer) {
     throw new TRPCError({ code: "NOT_FOUND", message: "客户不存在" });
   }
+  const policy = await resolveCrmDemandPolicy(executor, scope, lock);
+  await assertCrmDemandCustomer(executor, scope, policy, customerId, lock);
   return customer;
 }
 async function lockDemand(tx: SqlExecutor, scope: CrmSalesOrderScope, customerId: number, demandId: number) {
@@ -257,12 +256,9 @@ const FULFILLMENT_SELECT = sql`
   COALESCE((SELECT SUM(soi.orderedQty) FROM crm_sales_order_items soi WHERE soi.enterpriseId = o.enterpriseId AND soi.orderId = o.id), 0) AS orderedQty,
   COALESCE((SELECT SUM(si.qty) FROM crm_sales_order_shipment_items si WHERE si.enterpriseId = o.enterpriseId AND si.orderId = o.id), 0) AS shippedQty
 `;
-function orderScopeWhere(scope: CrmSalesOrderScope, canManageAll: boolean) {
-  return canManageAll
-    ? sql`o.enterpriseId = ${scope.enterpriseId}`
-    : sql`o.enterpriseId = ${scope.enterpriseId} AND c.assignedUserId = ${scope.actorUserId}`;
+function orderScopeWhere(scope: CrmSalesOrderScope, policy: CrmDemandPolicy) {
+  return sql`o.enterpriseId = ${scope.enterpriseId} AND ${crmDemandCustomerWhere(scope, policy)}`;
 }
-
 /** Eligible submitted demand candidates include customer identity only after dual sales+customer authorization. */
 export async function listSalesOrderCandidates(scope: CrmSalesOrderScope, rawInput: SalesOrderCandidateListInput): Promise<SalesOrderPage<SalesOrderDemandCandidate>> {
   const parsed = salesOrderCandidateListSchema.safeParse(rawInput);
@@ -284,7 +280,7 @@ export async function listSalesOrderCandidates(scope: CrmSalesOrderScope, rawInp
          AND accepted.demandRevision = d.revision
     )`,
   ];
-  if (!access.canManageAll) conditions.push(sql`c.assignedUserId = ${scope.actorUserId}`);
+  conditions.push(crmDemandCustomerWhere(scope, access.policy));
   if (input.keyword) {
     const keyword = `%${input.keyword}%`;
     conditions.push(sql`(d.demandNo LIKE ${keyword} OR d.projectName LIKE ${keyword} OR EXISTS (
@@ -478,7 +474,7 @@ export async function listSalesOrders(scope: CrmSalesOrderScope, rawInput: Sales
   const input = parsed.data;
   const db = await requireDb();
   const access = await requireSalesOrderAccess(db, scope);
-  const conditions = [orderScopeWhere(scope, access.canManageAll)];
+  const conditions = [orderScopeWhere(scope, access.policy)];
   if (input.status) conditions.push(sql`o.status = ${input.status}`);
   if (input.keyword) {
     const keyword = `%${input.keyword}%`;
@@ -521,7 +517,7 @@ export async function getSalesOrder(scope: CrmSalesOrderScope, rawInput: { id: n
   const row = resultRows<OrderRow>(await db.execute(sql`
     ${orderSelect()}
       INNER JOIN crm_customers c ON c.enterpriseId = o.enterpriseId AND c.id = o.customerId
-     WHERE ${orderScopeWhere(scope, access.canManageAll)} AND o.id = ${parsed.data.id}
+     WHERE ${orderScopeWhere(scope, access.policy)} AND o.id = ${parsed.data.id}
      LIMIT 1
   `))[0];
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
@@ -641,7 +637,7 @@ async function listStockCandidates(executor: SqlExecutor, scope: CrmSalesOrderSc
     SELECT i.id, i.partNumber, i.brand, i.pkg, i.qtyStock, i.qtyOnSale, i.ownerUserId,
            COALESCE(u.name, u.username, CONCAT('用户', u.id)) AS ownerName
       FROM inventories i LEFT JOIN users u ON u.id = i.ownerUserId
-     WHERE i.enterpriseId = ${scope.enterpriseId}
+     WHERE i.enterpriseId = ${scope.enterpriseId} AND i.ownerUserId = ${scope.actorUserId}
        AND UPPER(TRIM(i.partNumber)) IN (${sql.join(partNumbers.map(partNumber => sql`${partNumber.toUpperCase()}`), sql`, `)})
        AND i.qtyStock > 0
      ORDER BY i.partNumber ASC, i.id ASC
@@ -673,6 +669,7 @@ export async function recordSalesOrderPayment(scope: CrmSalesOrderScope, rawInpu
   const db = await requireDb();
   const hash = payloadHashFor({ id: input.id, method: input.method, amount: scaledToDecimal(decimalToScaled(input.amount)), paymentDate: input.paymentDate, note: input.note.trim() });
   return db.transaction(async tx => {
+    await requireSalesOrderAccess(tx, scope, true);
     const reservation = await reserveRequest(tx, {
       enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, requestId: input.requestId, payloadHash: hash, action: "payment",
     });
@@ -720,6 +717,7 @@ export async function shipSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesO
     note: input.note.trim(), items: [...input.items].sort((a, b) => a.orderItemId - b.orderItemId || a.inventoryId - b.inventoryId),
   });
   return db.transaction(async tx => {
+    await requireSalesOrderAccess(tx, scope, true);
     const reservation = await reserveRequest(tx, {
       enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, requestId: input.requestId, payloadHash: hash, action: "shipment",
     });
@@ -747,7 +745,7 @@ export async function shipSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesO
     const inventoryIds = Array.from(new Set(input.items.map(item => item.inventoryId))).sort((a, b) => a - b);
     const inventories = resultRows<{ id: number; partNumber: string; qtyStock: number | string; qtyOnSale: number | string; status: string }>(await tx.execute(sql`
       SELECT id, partNumber, qtyStock, qtyOnSale, status FROM inventories
-       WHERE enterpriseId = ${scope.enterpriseId} AND id IN (${sql.join(inventoryIds.map(id => sql`${id}`), sql`, `)})
+       WHERE enterpriseId = ${scope.enterpriseId} AND ownerUserId = ${scope.actorUserId} AND id IN (${sql.join(inventoryIds.map(id => sql`${id}`), sql`, `)})
        ORDER BY id ASC FOR UPDATE
     `));
     if (inventories.length !== inventoryIds.length) throw new TRPCError({ code: "NOT_FOUND", message: "所选库存不存在或不属于当前企业" });
@@ -774,7 +772,7 @@ export async function shipSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesO
                publishedAt = IF(qtyOnSale <= ${qty} AND status = 'published', NULL, publishedAt),
                offshelfBy = IF(qtyOnSale <= ${qty} AND status = 'published', 'system', offshelfBy),
                offshelfReason = IF(qtyOnSale <= ${qty} AND status = 'published', 'sold_out', offshelfReason)
-         WHERE id = ${inventoryId} AND enterpriseId = ${scope.enterpriseId} AND qtyStock >= ${qty}
+         WHERE id = ${inventoryId} AND enterpriseId = ${scope.enterpriseId} AND ownerUserId = ${scope.actorUserId} AND qtyStock >= ${qty}
       `);
       if (Number(resultHeader(result).affectedRows ?? 0) !== 1) {
         throw new TRPCError({ code: "CONFLICT", message: `型号 ${inventory.partNumber} 当前可出不足，请刷新后重试` });

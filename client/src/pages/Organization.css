@@ -1,0 +1,180 @@
+[data-organization-page] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+[data-organization-page] .org-domain-tabs,
+[data-organization-page] .org-heading,
+[data-organization-page] .org-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+[data-organization-page] .org-heading {
+  justify-content: space-between;
+}
+[data-organization-page] .org-section-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--border);
+}
+[data-organization-page] .org-section-tabs a {
+  padding: 8px 0 12px;
+  color: var(--muted-foreground);
+  border-bottom: 2px solid transparent;
+}
+[data-organization-page] .org-section-tabs a[aria-current="page"] {
+  color: var(--foreground);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+[data-organization-page] .org-panel {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  min-width: 0;
+}
+[data-organization-page] h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+[data-organization-page] h3,
+.org-dialog h3 {
+  font-weight: 600;
+  margin: 8px 0;
+}
+[data-organization-page] th,
+[data-organization-page] td {
+  vertical-align: top;
+}
+[data-organization-page] .org-template {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+[data-organization-page] .org-template:last-child {
+  border-bottom: 0;
+}
+[data-organization-page] .org-muted,
+.org-dialog .org-muted {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.7;
+}
+[data-organization-page] .org-notice,
+.org-dialog .org-notice {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+[data-organization-page] .org-error,
+.org-dialog .org-error {
+  padding: 12px;
+  border: 1px solid var(--destructive);
+  color: var(--destructive);
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.7;
+}
+[data-organization-page] .org-error button {
+  margin-top: 8px;
+}
+[data-organization-page] .org-key-list,
+.org-dialog .org-key-list {
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  max-width: 650px;
+}
+[data-organization-page] .org-pagination {
+  justify-content: flex-end;
+  padding-top: 16px;
+  font-size: 13px;
+}
+[data-organization-page] .org-field,
+.org-dialog .org-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+[data-organization-page] .org-field {
+  max-width: 520px;
+}
+[data-organization-page] select,
+.org-dialog select,
+.org-dialog textarea {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+.org-dialog {
+  width: min(860px, calc(100vw - 32px));
+  max-width: 860px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.org-dialog .org-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.org-dialog textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.org-dialog .org-preview {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.org-dialog .org-preview ul {
+  list-style: disc;
+  padding-left: 18px;
+}
+.org-dialog .org-preview li {
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+.org-dialog input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+[data-organization-page] details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+[data-organization-page] pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  max-width: 680px;
+}
+@media (max-width: 640px) {
+  [data-organization-page] .org-panel {
+    padding: 12px;
+  }
+  [data-organization-page] .org-section-tabs {
+    gap: 16px;
+    font-size: 13px;
+  }
+  .org-dialog {
+    padding: 16px;
+  }
+}

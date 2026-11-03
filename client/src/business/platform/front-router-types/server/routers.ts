@@ -1,3 +1,4 @@
+import { businessOrganizationRouter } from "./routers/businessOrganization";
 import { clearAllSessionCookies, getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -47,8 +48,10 @@ import { siteAnalyticsRouter } from "./routers/siteAnalytics";
 import { toPublicAuthUser } from "./publicAuthUser";
 import { reconcileCrmAccessForUser } from "./services/crmAccessSync";
 import { channelInventoryRouter } from "./routers/channelInventoryRuntime";
+import { factoryChannelRouter } from "./routers/factoryChannel";
 
 export const appRouter = router({
+  organization: businessOrganizationRouter,
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
@@ -79,6 +82,7 @@ export const appRouter = router({
   companyReview: companyReviewRouter,
   coffeeVoucher: coffeeVoucherRouter,
   channelInventory: channelInventoryRouter,
+  factoryChannel: factoryChannelRouter,
   inventory: inventoryRouter,
   search: searchRouter,
   guestQuery: guestQueryRouter,

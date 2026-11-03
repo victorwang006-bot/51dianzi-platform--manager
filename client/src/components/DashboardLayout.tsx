@@ -7,19 +7,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import { useIsMobile } from "@/hooks/useMobile";
-import {
   Archive,
   Database,
   BarChart3,
@@ -28,7 +15,6 @@ import {
   Contact,
   LogOut,
   PackagePlus,
-  PanelLeft,
   ReceiptText,
   MessagesSquare,
   ShieldAlert,
@@ -38,17 +24,20 @@ import {
   User,
   UserCog,
   Users,
+  Settings2,
   Warehouse,
 } from "lucide-react";
 import { MessageSquare } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { buildBusinessNavigationTarget } from "@/lib/businessNavigation";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
-import { AdminWorkbenchNavigation } from "./admin/AdminWorkbenchNavigation";
-import { getAdminWorkbenchNavigationRoute } from "./admin/adminWorkbenchNavigationModel";
+import {
+  AdminWorkspaceTabs,
+  AdminModuleTabs,
+} from "./admin/AdminWorkspaceNavigation";
 import {
   preloadAdminRoute,
   type AdminNavigationChunk,
@@ -73,6 +62,7 @@ import {
   type AdminNotificationModule,
 } from "@shared/adminModuleNotifications";
 import { useQuery } from "@tanstack/react-query";
+import "./DashboardLayout.css";
 
 type MenuItem = {
   icon: typeof Database;
@@ -286,14 +276,14 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
   },
 ];
 
-const allMenuItems = menuGroups.flatMap(g => g.items);
+menuGroups[menuGroups.length - 1].items.push(
+  { icon: Users, label: "团队管理", path: "/teams", permission: "admins.manage", chunk: "organization", nested: false },
+  { icon: Settings2, label: "角色模板", path: "/role-templates", permission: "admins.manage", chunk: "organization", nested: false },
+  { icon: ClipboardList, label: "授权审计", path: "/permission-audit", permission: "admins.manage", chunk: "organization", nested: false },
+);
+
 const isMenuPathActive = (location: string, path: string) =>
   location === path || (path !== "/" && location.startsWith(`${path}/`));
-
-const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 220;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 400;
 
 const adminRoleLabels: Record<string, string> = {
   super_admin: "超级管理员",
@@ -310,15 +300,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
-  });
   const { loading, user } = useAuth();
-
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
-  }, [sidebarWidth]);
 
   if (loading) {
     return <DashboardLayoutSkeleton />;
@@ -344,25 +326,10 @@ export default function DashboardLayout({
     );
   }
 
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": `${sidebarWidth}px`,
-        } as CSSProperties
-      }
-    >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
-        {children}
-      </DashboardLayoutContent>
-    </SidebarProvider>
-  );
+  return <DashboardLayoutContent>{children}</DashboardLayoutContent>;
 }
 
-type DashboardLayoutContentProps = {
-  children: React.ReactNode;
-  setSidebarWidth: (width: number) => void;
-};
+type DashboardLayoutContentProps = { children: React.ReactNode };
 
 function BusinessNavigationStatus({
   state,
@@ -425,18 +392,9 @@ function BusinessNavigationStatus({
   );
 }
 
-function DashboardLayoutContent({
-  children,
-  setSidebarWidth,
-}: DashboardLayoutContentProps) {
+function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
-  const isCollapsed = state === "collapsed";
-  const [isResizing, setIsResizing] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeNavigationRoute = getAdminWorkbenchNavigationRoute(location);
-  const isMobile = useIsMobile();
   const adminRole = (user as { adminRole?: AdminRole } | null)?.adminRole ?? "";
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
@@ -575,186 +533,61 @@ function DashboardLayoutContent({
     markModuleSeen.mutate({ module: activeNotificationModule });
   }, [activeNotificationModule]);
 
-  useEffect(() => {
-    if (isCollapsed) {
-      setIsResizing(false);
+  const navigateToItem = (item: MenuItem) => {
+    if (item.notificationModule) {
+      lastMarkedModuleRef.current = item.notificationModule;
+      markModuleSeen.mutate({ module: item.notificationModule });
     }
-  }, [isCollapsed]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - sidebarLeft;
-      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-        setSidebarWidth(newWidth);
-      }
-    };
-    const handleMouseUp = () => setIsResizing(false);
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-  }, [isResizing, setSidebarWidth]);
+    const navigationTarget =
+      item.path === "/workbench/channel-inventory"
+        ? item.path
+        : buildBusinessNavigationTarget(
+            `${window.location.pathname}${window.location.search}`,
+            item.path
+          );
+    if (navigationTarget !== null) setLocation(navigationTarget);
+  };
+  const preloadItem = (item: MenuItem) => {
+    if (item.chunk) preloadAdminRoute(item.chunk);
+  };
+  const renderBadge = (item: MenuItem) => {
+    const count =
+      item.path === "/messages"
+        ? unreadTotal
+        : item.notificationModule
+          ? moduleNotificationCounts[item.notificationModule]
+          : 0;
+    return count > 0 ? (
+      <span
+        className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white"
+        aria-label={`${count} 条未读`}
+      >
+        {count > 99 ? "99+" : count}
+      </span>
+    ) : null;
+  };
 
   return (
-    <>
-      <div className="relative" ref={sidebarRef}>
-        <Sidebar
-          collapsible="icon"
-          className="border-r-0"
-          disableTransition={isResizing}
-        >
-          <SidebarHeader className="h-16 justify-center border-b border-sidebar-border">
-            <div className="flex items-center gap-2 px-2 transition-all w-full">
-              <button
-                onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="切换导航"
-              >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
-              </button>
-              {!isCollapsed ? (
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Logo className="h-9 w-auto shrink-0 object-contain" />
-                  <div className="flex flex-col min-w-0 gap-0.5">
-                    <span className="font-bold tracking-tight truncate text-base text-primary leading-none">
-                      51电子网
-                    </span>
-                    <span className="text-[11px] text-muted-foreground truncate leading-none">
-                      后台管理系统
-                    </span>
-                  </div>
-                </div>
-              ) : null}
+    <div className="admin-workspace-shell" data-admin-layout="top-two-level-v1">
+      <div className="admin-workspace-shell__navigation">
+        <header className="admin-workspace-shell__header">
+          <div className="admin-workspace-shell__brand">
+            <Logo className="h-9 w-auto shrink-0 object-contain" />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="truncate text-base font-bold leading-none tracking-tight text-primary">
+                51电子网
+              </span>
+              <span className="truncate text-[11px] leading-none text-muted-foreground">
+                后台管理系统
+              </span>
             </div>
-          </SidebarHeader>
-
-          <SidebarContent className="gap-0 py-2">
-            <BusinessNavigationStatus
-              state={businessNavigationState}
-              isRetrying={businessNavigationQuery.isFetching}
-              onRetry={() => {
-                void businessNavigationQuery.refetch();
-              }}
-            />
-            <AdminWorkbenchNavigation
-              items={visibleMenuItems}
-              renderItem={item => {
-                const isActive =
-                  activeNavigationRoute?.canonicalPath === item.path;
-                const badgeCount =
-                  item.path === "/messages"
-                    ? unreadTotal
-                    : item.notificationModule
-                      ? moduleNotificationCounts[item.notificationModule]
-                      : 0;
-                const showUnread = badgeCount > 0;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => {
-                        if (item.notificationModule) {
-                          lastMarkedModuleRef.current = item.notificationModule;
-                          markModuleSeen.mutate({
-                            module: item.notificationModule,
-                          });
-                        }
-                        const navigationTarget =
-                          item.path === "/workbench/channel-inventory"
-                            ? item.path
-                            : buildBusinessNavigationTarget(
-                                `${window.location.pathname}${window.location.search}`,
-                                item.path
-                              );
-                        if (navigationTarget !== null)
-                          setLocation(navigationTarget);
-                      }}
-                      onPointerEnter={() => {
-                        if (item.chunk) preloadAdminRoute(item.chunk);
-                      }}
-                      onFocus={() => {
-                        if (item.chunk) preloadAdminRoute(item.chunk);
-                      }}
-                      tooltip={item.label}
-                      className={`h-9 transition-all sidebar-menu-item ${item.nested ? "ml-6 w-[calc(100%-1.5rem)] border-l border-sidebar-border pl-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:w-auto" : ""} ${isActive ? "sidebar-item-active" : "font-normal"}`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                      {showUnread && (
-                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-medium text-white">
-                          {badgeCount > 99 ? "99+" : badgeCount}
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              }}
-              location={location}
-              accountId={accountId ?? "signed-out"}
-              collapsed={isCollapsed && !isMobile}
-            />
-          </SidebarContent>
-
-          <SidebarFooter className="p-3 border-t border-sidebar-border">
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              title={isCollapsed ? "展开导航" : "收起导航"}
-              aria-label={isCollapsed ? "展开导航" : "收起导航"}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:justify-center"
-            >
-              <PanelLeft
-                className={`h-4 w-4 shrink-0 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
-              />
-              <span className="group-data-[collapsible=icon]:hidden">
-                {isCollapsed ? "展开导航" : "收起导航"}
-              </span>
-            </button>
-          </SidebarFooter>
-        </Sidebar>
-        <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
-          style={{ zIndex: 50 }}
-        />
-      </div>
-
-      <SidebarInset>
-        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            {isMobile ? (
-              <SidebarTrigger className="h-9 w-9 shrink-0 rounded-lg bg-background" />
-            ) : null}
-            <nav
-              aria-label="当前位置"
-              className="flex min-w-0 items-center gap-2 text-sm"
-            >
-              <span className="truncate font-medium text-foreground">
-                {activeNavigationRoute?.groupLabel ?? "后台管理"}
-              </span>
-              <span aria-hidden="true" className="text-muted-foreground">
-                /
-              </span>
-              <span className="truncate text-muted-foreground">
-                {activeNavigationRoute?.label ?? "概览"}
-              </span>
-            </nav>
           </div>
+          <AdminWorkspaceTabs
+            items={visibleMenuItems}
+            location={location}
+            onNavigate={navigateToItem}
+            onPreload={preloadItem}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -802,10 +635,26 @@ function DashboardLayoutContent({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="min-h-[calc(100svh-3.5rem)] flex-1 bg-background p-6">
-          {children}
-        </main>
-      </SidebarInset>
-    </>
+        <AdminModuleTabs
+          items={visibleMenuItems}
+          location={location}
+          onNavigate={navigateToItem}
+          onPreload={preloadItem}
+          renderBadge={renderBadge}
+        />
+      </div>
+      <main className="admin-workspace-shell__main">
+        {businessNavigationState.status === "error" ? (
+          <BusinessNavigationStatus
+            state={businessNavigationState}
+            isRetrying={businessNavigationQuery.isFetching}
+            onRetry={() => {
+              void businessNavigationQuery.refetch();
+            }}
+          />
+        ) : null}
+        {children}
+      </main>
+    </div>
   );
 }
