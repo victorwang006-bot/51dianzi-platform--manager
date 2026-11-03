@@ -1,7 +1,20 @@
+// @vitest-environment jsdom
 import { createRequire } from "node:module";
 import { act, createElement, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import BusinessWorkbenchPage from "./BusinessWorkbenchPage";
+import BusinessWorkbenchPage, {
+  __resetBusinessAuthorizationMemoryForTests,
+} from "./BusinessWorkbenchPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getQueryKey } from "@trpc/react-query";
+import { httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
+import { trpc as adminTrpc } from "../lib/trpc";
+import { AUTH_SESSION_CLEARED_EVENT } from "./platform/client/src/lib/authSessionEvents";
+import {
+  BUSINESS_CONTEXT_FRESH_MS,
+  createBusinessRequestCancellation,
+} from "./BusinessWorkbenchSession";
 import {
   businessStorageScope,
   CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
@@ -81,6 +94,7 @@ const legacyChannelInventoryContext = {
   staffPrincipal: {
     ...verifiedContext.staffPrincipal,
     frontendUserId: 397751,
+    enterpriseId: 1,
     user: {
       ...verifiedContext.staffPrincipal.user,
       id: 397751,
@@ -103,6 +117,9 @@ type NetworkResponder = (call: FetchCall) => Promise<Response> | Response;
 
 type MountedWorkbench = {
   container: HTMLElement;
+  refreshAuth(): Promise<void>;
+  clearAuth(): Promise<void>;
+  navigate(path: string): Promise<void>;
   leaveWorkbench(): Promise<void>;
   returnToWorkbench(): Promise<void>;
   unmount(): Promise<void>;
@@ -203,6 +220,14 @@ async function mountWorkbench(
     location: dom.window.location,
     history: dom.window.history,
     HTMLElement: dom.window.HTMLElement,
+    Element: dom.window.Element,
+    HTMLInputElement: dom.window.HTMLInputElement,
+    HTMLSelectElement: dom.window.HTMLSelectElement,
+    DocumentFragment: dom.window.DocumentFragment,
+    MutationObserver: dom.window.MutationObserver,
+    CustomEvent: dom.window.CustomEvent,
+    KeyboardEvent: dom.window.KeyboardEvent,
+    getComputedStyle: dom.window.getComputedStyle.bind(dom.window),
     Node: dom.window.Node,
     Event: dom.window.Event,
     MouseEvent: dom.window.MouseEvent,
@@ -216,6 +241,7 @@ async function mountWorkbench(
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
   });
   dom.window.scrollTo = () => undefined;
+  dom.window.HTMLElement.prototype.scrollIntoView = () => undefined;
   (
     globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true;
@@ -227,31 +253,84 @@ async function mountWorkbench(
   const container = dom.window.document.getElementById("root");
   if (!container) throw new Error("WORKBENCH_NETWORK_TEST_ROOT_MISSING");
   const root = createRoot(container);
+  const rootQueryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+  });
+  const rootTrpcClient = adminTrpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        fetch: (input, init) =>
+          globalThis.fetch(input, { ...init, credentials: "include" }),
+      }),
+    ],
+  });
+  function AuthBootstrap({ children }: { children: ReactNode }) {
+    adminTrpc.auth.me.useQuery(undefined, {
+      retry: false,
+      refetchOnWindowFocus: false,
+    });
+    return children;
+  }
+  const render = (children: ReactNode) =>
+    root.render(
+      createElement(
+        adminTrpc.Provider,
+        { client: rootTrpcClient, queryClient: rootQueryClient },
+        createElement(
+          QueryClientProvider,
+          { client: rootQueryClient },
+          createElement(AuthBootstrap, null, children)
+        )
+      )
+    );
 
   await act(async () => {
-    root.render(
-      createElement(BusinessWorkbenchPage, { routeBase: "/workbench" })
-    );
+    render(createElement(BusinessWorkbenchPage, { routeBase: "/workbench" }));
   });
 
   return {
     container,
+    async refreshAuth() {
+      await act(async () => {
+        await rootQueryClient.refetchQueries({
+          queryKey: getQueryKey(adminTrpc.auth.me, undefined, "query"),
+          exact: true,
+        });
+      });
+    },
+    async clearAuth() {
+      await act(async () =>
+        window.dispatchEvent(new window.Event(AUTH_SESSION_CLEARED_EVENT))
+      );
+    },
+    async navigate(path: string) {
+      await act(async () => {
+        history.pushState({}, "", path);
+        window.dispatchEvent(new window.Event("popstate"));
+      });
+    },
     async leaveWorkbench() {
       await act(async () => {
         history.pushState({}, "", "/users");
-        root.render(createElement("h1", null, "其它后台页面"));
+        render(createElement("h1", null, "其它后台页面"));
       });
     },
     async returnToWorkbench() {
       await act(async () => {
         history.pushState({}, "", "/workbench/customers");
-        root.render(
+        render(
           createElement(BusinessWorkbenchPage, { routeBase: "/workbench" })
         );
       });
     },
     async unmount() {
-      await act(async () => root.unmount());
+      await act(async () => {
+        root.unmount();
+        __resetBusinessAuthorizationMemoryForTests();
+        rootQueryClient.clear();
+      });
       dom.window.close();
     },
   };
@@ -277,7 +356,10 @@ async function waitFor(
   throw lastError;
 }
 
-function installNetwork(responder: NetworkResponder) {
+function installNetwork(
+  responder: NetworkResponder,
+  authResponder: NetworkResponder = () => trpcResult({ id: 6001 })
+) {
   const calls: FetchCall[] = [];
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const call = {
@@ -288,7 +370,9 @@ function installNetwork(responder: NetworkResponder) {
       signal: init?.signal,
     };
     calls.push(call);
-    return responder(call);
+    return call.pathname === "/api/trpc/auth.me"
+      ? authResponder(call)
+      : responder(call);
   });
   vi.stubGlobal("fetch", fetch);
   return { calls, fetch };
@@ -375,6 +459,53 @@ function legacyChannelInventoryResponse(call: FetchCall): Response {
       isOwner: true,
       permissionKeys: ["inventory.manage"],
     });
+  }
+  if (call.pathname.includes("channelInventory.listTeam")) {
+    const teamRows = [
+      {
+        ...privateChannelMaterial,
+        note: undefined,
+        channelName: undefined,
+        isMine: true,
+        canViewSource: true,
+        channelSource: { id: 201, name: "本人私有来源" },
+      },
+      {
+        ...sharedChannelMaterial,
+        isMine: false,
+        canViewSource: false,
+        channelSource: null,
+      },
+    ];
+    const results = call.pathname
+      .split("/")
+      .at(-1)!
+      .split(",")
+      .map(method => {
+        if (method === "channelInventory.listTeamMaterials")
+          return {
+            items: teamRows,
+            total: 33,
+            page: 1,
+            pageSize: 20,
+            pageCount: 2,
+            canWrite: false,
+            canFilterSource: false,
+          };
+        if (method === "channelInventory.listTeamSourceOptions")
+          return { items: [], canFilterSource: false };
+        if (method === "channelInventory.listChannels")
+          return {
+            items: [],
+            total: 5,
+            page: 1,
+            pageSize: 100,
+            pageCount: 1,
+            canWrite: false,
+          };
+        throw new Error(`UNEXPECTED_TEAM_METHOD:${method}`);
+      });
+    return trpcBatchResult(...results);
   }
   if (
     call.pathname ===
@@ -484,6 +615,62 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     vi.unstubAllGlobals();
   });
 
+  it.each(["domain", "upstream"] as const)(
+    "cancels requests from %s without AbortSignal.any and releases both listeners",
+    source => {
+      const domain = new AbortController();
+      const upstream = new AbortController();
+      const domainRemove = vi.spyOn(domain.signal, "removeEventListener");
+      const upstreamRemove = vi.spyOn(upstream.signal, "removeEventListener");
+      const { controller } = createBusinessRequestCancellation(
+        domain,
+        upstream.signal
+      );
+      (source === "domain" ? domain : upstream).abort("revoked");
+      expect(controller.signal.aborted).toBe(true);
+      expect(controller.signal.reason).toBe("revoked");
+      expect(domainRemove).toHaveBeenCalledTimes(1);
+      expect(upstreamRemove).toHaveBeenCalledTimes(1);
+      expect((source === "domain" ? upstream : domain).signal.aborted).toBe(
+        false
+      );
+    }
+  );
+
+  it("reuses an uncombined domain controller and cleans completed request listeners", () => {
+    const domain = new AbortController();
+    expect(createBusinessRequestCancellation(domain).controller).toBe(domain);
+    const upstream = new AbortController();
+    const domainRemove = vi.spyOn(domain.signal, "removeEventListener");
+    const upstreamRemove = vi.spyOn(upstream.signal, "removeEventListener");
+    const { controller, cleanup } = createBusinessRequestCancellation(
+      domain,
+      upstream.signal
+    );
+    cleanup();
+    expect(domainRemove).toHaveBeenCalledTimes(1);
+    expect(upstreamRemove).toHaveBeenCalledTimes(1);
+    domain.abort();
+    upstream.abort();
+    expect(controller.signal.aborted).toBe(false);
+  });
+
+  it("does not attach listeners for an already canceled request", () => {
+    const domain = new AbortController();
+    const upstream = new AbortController();
+    upstream.abort("already canceled");
+    const domainAdd = vi.spyOn(domain.signal, "addEventListener");
+    const upstreamAdd = vi.spyOn(upstream.signal, "addEventListener");
+    const { controller } = createBusinessRequestCancellation(
+      domain,
+      upstream.signal
+    );
+    expect(controller.signal.aborted).toBe(true);
+    expect(controller.signal.reason).toBe("already canceled");
+    expect(domainAdd).not.toHaveBeenCalled();
+    expect(upstreamAdd).not.toHaveBeenCalled();
+  });
+
   it("uses the real bounded BFF merchants bootstrap and opens the original customer list only after an exact ready binding", async () => {
     const network = installNetwork(successfulWorkbenchResponse);
     mounted = await mountWorkbench();
@@ -550,25 +737,25 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(true);
     expect(
       network.calls.some(call =>
-        call.pathname.includes("channelInventory.listMaterials")
+        call.pathname.includes("channelInventory.listTeamMaterials")
       )
     ).toBe(true);
     const batch = network.calls.find(
       call =>
         call.pathname ===
-        "/api/business-trpc/channelInventory.listMaterials,channelInventory.listChannels"
+        "/api/business-trpc/channelInventory.listTeamSourceOptions,channelInventory.listTeamMaterials,channelInventory.listChannels"
     );
     expect(batch).toBeTruthy();
     const input = JSON.parse(
       new URL(batch!.url, "http://workbench.test").searchParams.get("input")!
     );
-    expect(input["0"].json).toMatchObject({
+    expect(input["1"].json).toMatchObject({
       expectedEnterpriseId: 1,
       expectedActorUserId: 397751,
       page: 1,
       pageSize: 20,
     });
-    expect(input["1"].json).toMatchObject({
+    expect(input["2"].json).toMatchObject({
       expectedEnterpriseId: 1,
       expectedActorUserId: 397751,
       page: 1,
@@ -583,12 +770,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       Array.from(
         mounted.container.querySelectorAll('[role="tab"][aria-selected="true"]')
       ).map(tab => tab.textContent)
-    ).toEqual(["渠道库存", "本人库存"]);
+    ).toEqual(["渠道库存"]);
     const addMaterial = Array.from(
       mounted.container.querySelectorAll<HTMLButtonElement>("button")
-    ).find(button => button.textContent === "+ 新增库存");
+    ).find(button => button.textContent === "单条上传");
     expect(addMaterial?.disabled).toBe(true);
-    for (const call of network.calls) {
+    for (const call of network.calls.filter(
+      call => call.pathname !== "/api/trpc/auth.me"
+    )) {
       expect(call.pathname.startsWith("/api/business-trpc/")).toBe(true);
       expect(call.headers.get("cookie")).toBeNull();
       expect(call.headers.get("x-admin-id")).toBeNull();
@@ -604,97 +793,52 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(false);
   });
 
-  it("keeps private notes read-only and starts the closed team DTO query only after selecting team sharing", async () => {
+  it("uses the closed team DTO without exposing private notes or enabling read-only inventory writes", async () => {
     const network = installNetwork(legacyChannelInventoryResponse);
     mounted = await mountWorkbench("/workbench/channel-inventory");
-    await waitFor(() =>
-      expect(mounted?.container.textContent).toContain("PRIVATE-TEST-501")
-    );
-    const notes = mounted.container.querySelector<HTMLButtonElement>(
-      '[aria-label="打开库存 501 的备注"]'
-    );
-    expect(notes).toBeTruthy();
-    await act(async () => notes!.click());
-    await waitFor(() =>
-      expect(
-        mounted?.container.querySelector('[role="dialog"]')?.textContent
-      ).toContain("当前库存为只读，不能新增或修改备注。")
-    );
-    expect(
-      mounted.container.querySelector('[role="dialog"] textarea')
-    ).toBeNull();
-    const notesCall = network.calls.find(call =>
-      call.pathname.endsWith("/channelInventory.notesList")
-    );
-    expect(notesCall?.headers.get("x-business-merchant-id")).toBe("30061");
-    const notesInput = JSON.parse(
-      new URL(notesCall!.url, "http://workbench.test").searchParams.get(
-        "input"
-      )!
-    );
-    expect(notesInput["0"].json).toEqual({
-      expectedEnterpriseId: 1,
-      expectedActorUserId: 397751,
-      materialId: 501,
-      page: 1,
-      pageSize: 50,
+    await waitFor(() => {
+      expect(mounted?.container.textContent).toContain("PRIVATE-TEST-501");
+      expect(mounted?.container.textContent).toContain("SHARED-TEST-502");
     });
-    const close = mounted.container.querySelector<HTMLButtonElement>(
-      '[aria-label="关闭本人备注"]'
-    );
-    await act(async () => close!.click());
-    const teamTab = Array.from(
-      mounted.container.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-    ).find(tab => tab.textContent === "团队共享（只读）");
-    expect(teamTab?.getAttribute("aria-selected")).toBe("false");
-    await act(async () => teamTab!.click());
-    await waitFor(() =>
-      expect(mounted?.container.textContent).toContain("SHARED-TEST-502")
-    );
-    expect(teamTab?.getAttribute("aria-selected")).toBe("true");
-    expect(mounted.container.textContent).toContain("7 条库存");
-    expect(mounted.container.textContent).toContain("不共享任何备注");
     expect(mounted.container.textContent).not.toContain("本人私有备注不可共享");
-    expect(mounted.container.textContent).not.toContain("本人私有来源");
     expect(
-      mounted.container.querySelector('[aria-label="打开库存 502 的备注"]')
+      mounted.container.querySelector('[aria-label="打开库存 501 的备注"]')
     ).toBeNull();
-    const sharedCall = network.calls.find(call =>
-      call.pathname.endsWith("/channelInventory.listSharedMaterials")
+    expect(
+      mounted.container
+        .querySelector('[aria-label="筛选库存渠道来源"]')
+        ?.hasAttribute("disabled")
+    ).toBe(true);
+    expect(mounted.container.querySelector('[role="dialog"]')).toBeNull();
+    const batch = network.calls.find(call =>
+      call.pathname.includes("channelInventory.listTeamMaterials")
     );
-    const sharedInput = JSON.parse(
-      new URL(sharedCall!.url, "http://workbench.test").searchParams.get(
-        "input"
-      )!
+    const input = JSON.parse(
+      new URL(batch!.url, "http://workbench.test").searchParams.get("input")!
     );
-    expect(sharedInput["0"].json).toEqual({
+    expect(input["1"].json).toMatchObject({
       expectedEnterpriseId: 1,
       expectedActorUserId: 397751,
-      partNumber: null,
-      brand: null,
       page: 1,
       pageSize: 20,
     });
-    expect(sharedInput["0"].meta.values).toEqual({
-      partNumber: ["undefined"],
-      brand: ["undefined"],
-    });
-    expect(
-      network.calls.every(
-        call =>
-          call.pathname.startsWith("/api/business-trpc/") &&
-          call.credentials === "include" &&
-          !call.headers.has("cookie") &&
-          !call.headers.has("x-admin-id")
-      )
-    ).toBe(true);
     expect(
       network.calls.some(call =>
-        /notesAdd|notesEdit|setMaterialShare|officialChannelInventory/.test(
+        /notesList|notesAdd|notesEdit|getMaterial|updateMaterial|setMaterialShare|officialChannelInventory/.test(
           call.pathname
         )
       )
     ).toBe(false);
+    expect(
+      network.calls.every(
+        call =>
+          call.pathname === "/api/trpc/auth.me" ||
+          (call.pathname.startsWith("/api/business-trpc/") &&
+            call.credentials === "include" &&
+            !call.headers.has("cookie") &&
+            !call.headers.has("x-admin-id"))
+      )
+    ).toBe(true);
   });
 
   it("keeps the restored channel address closed without BFF inventory.channel scope", async () => {
@@ -793,7 +937,9 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     mounted = await mountWorkbench();
 
     await waitFor(() => {
-      expect(mounted?.container.textContent).toContain("业务上下文不可用");
+      expect(mounted?.container.textContent).toContain(
+        "业务上下文暂时无法核验"
+      );
       expect(mounted?.container.textContent).toContain(
         "network-stub-context-unavailable"
       );
@@ -1071,7 +1217,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toHaveLength(2);
   });
 
-  it("keeps the same verified customer tree inert during focus revalidation, then closes it when the binding disappears", async () => {
+  it("keeps the same verified customer tree editable during focus revalidation, then closes it when the binding disappears", async () => {
     const focusContext = deferred<Response>();
     const draftInvalidated = vi.fn();
     let contextAttempts = 0;
@@ -1108,9 +1254,9 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         '[data-business-context-verification="revalidating"]'
       );
       expect(boundary?.textContent).toContain(
-        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
       );
-      expect(boundary?.querySelector("[inert]")).not.toBeNull();
+      expect(boundary?.querySelector("[inert]")).toBeNull();
       expect(boundary?.textContent).toContain("客户列表");
       expect(
         Array.from(mounted?.container.querySelectorAll("h1") ?? []).find(
@@ -1165,14 +1311,16 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     });
     await waitFor(() =>
       expect(mounted?.container.textContent).toContain(
-        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
       )
     );
     focusContext.reject(
       new TypeError("focus-context-revalidation-unavailable")
     );
     await waitFor(() => {
-      expect(mounted?.container.textContent).toContain("业务上下文不可用");
+      expect(mounted?.container.textContent).toContain(
+        "业务上下文暂时无法核验"
+      );
       expect(mounted?.container.textContent).toContain(
         "focus-context-revalidation-unavailable"
       );
@@ -1240,7 +1388,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
   });
 
   it("preserves the customer draft and expanded form after visiting another backend page with the same identity", async () => {
-    installNetwork(call => {
+    const network = installNetwork(call => {
       if (call.pathname === "/api/business-trpc/customer.context") {
         return trpcResult({
           canManageAll: false,
@@ -1282,10 +1430,19 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
       invalidated
     );
+    const scopeCount = network.calls.filter(call =>
+      /\/(merchants|context)$/.test(call.pathname)
+    ).length;
     await mounted.leaveWorkbench();
     expect(mounted.container.textContent).toContain("其它后台页面");
     expect(invalidated).not.toHaveBeenCalled();
     await mounted.returnToWorkbench();
+    expect(
+      mounted.container.querySelector("[data-business-loading]")
+    ).toBeNull();
+    expect(
+      network.calls.filter(call => /\/(merchants|context)$/.test(call.pathname))
+    ).toHaveLength(scopeCount);
     await waitFor(() =>
       expect(
         mounted?.container.querySelector<HTMLInputElement>(
@@ -1394,7 +1551,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     });
     await waitFor(() =>
       expect(mounted?.container.textContent).toContain(
-        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
       )
     );
     expect(draftInvalidated).not.toHaveBeenCalled();
@@ -1455,7 +1612,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     });
     await waitFor(() =>
       expect(mounted?.container.textContent).toContain(
-        "正在重新核验业务主体绑定；已暂停编辑和提交。"
+        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
       )
     );
     focusContext.resolve(
@@ -1510,5 +1667,611 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     mounted = undefined;
     expect(customerContextSignal?.aborted).toBe(true);
     expect(businessStorageScope()).toBeNull();
+  });
+  it("keeps a real editable customer input and scroll position through coalesced focus checks and same-identity responses", async () => {
+    const fresh = deferred<Response>();
+    let checks = 0;
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context" && ++checks === 2)
+        return fresh.promise;
+      if (call.pathname === "/api/business-trpc/customer.context")
+        return trpcResult({
+          canManageAll: false,
+          actorUserId: 7002,
+          members: [{ userId: 7002, name: "虚构员工" }],
+        });
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("暂无匹配客户")
+    );
+    const toggle = Array.from(
+      mounted.container.querySelectorAll<HTMLButtonElement>("button")
+    ).find(node => node.textContent?.trim() === "录入客户");
+    await act(async () => toggle!.click());
+    const input = mounted.container.querySelector<HTMLInputElement>(
+      '[data-customer-field="name"]'
+    )!;
+    expect(input).toBeTruthy();
+    const scroll = input.closest("section")!;
+    scroll.scrollTop = 123;
+    await act(async () => {
+      window.dispatchEvent(new window.Event("focus"));
+      window.dispatchEvent(new window.Event("focus"));
+      window.dispatchEvent(new window.Event("focus"));
+    });
+    await waitFor(() => expect(checks).toBe(2));
+    expect(mounted.container.querySelector("[inert]")).toBeNull();
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )!.set!.call(input, "复核中继续输入的虚构客户");
+      input.dispatchEvent(new window.Event("input", { bubbles: true }));
+      input.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    expect(input.value).toBe("复核中继续输入的虚构客户");
+    // A bfcache event is not debounced away, but joins the in-flight request.
+    await act(async () => {
+      const event = new window.Event("pageshow");
+      Object.defineProperty(event, "persisted", { value: true });
+      window.dispatchEvent(event);
+    });
+    expect(checks).toBe(2);
+    fresh.resolve(trpcResult(verifiedContext));
+    await waitFor(() =>
+      expect(
+        mounted?.container.querySelector(
+          '[data-business-context-verification="verified"]'
+        )
+      ).not.toBeNull()
+    );
+    expect(
+      mounted.container.querySelector('[data-customer-field="name"]')
+    ).toBe(input);
+    expect(input.value).toBe("复核中继续输入的虚构客户");
+    expect(scroll.scrollTop).toBe(123);
+    expect(
+      network.calls.filter(
+        call => call.pathname === "/api/business-trpc/context"
+      )
+    ).toHaveLength(2);
+  });
+
+  it("rechecks expired same-session memory without a full-page loading replacement", async () => {
+    const fresh = deferred<Response>();
+    let checks = 0;
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context" && ++checks === 2)
+        return fresh.promise;
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("暂无匹配客户")
+    );
+    await mounted.leaveWorkbench();
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockImplementation(
+      () => now + BUSINESS_CONTEXT_FRESH_MS + 1
+    );
+    await mounted.returnToWorkbench();
+    await waitFor(() => expect(checks).toBe(2));
+    expect(mounted.container.textContent).toContain("客户列表");
+    expect(
+      mounted.container.querySelector("[data-business-loading]")
+    ).toBeNull();
+    expect(
+      network.calls.filter(
+        call => call.pathname === "/api/business-trpc/merchants"
+      )
+    ).toHaveLength(2);
+    fresh.resolve(trpcResult(verifiedContext));
+    await waitFor(() =>
+      expect(
+        mounted?.container.querySelector(
+          '[data-business-context-verification="verified"]'
+        )
+      ).not.toBeNull()
+    );
+  });
+
+  it("does not deserialize persisted ready context into authority while root authentication is UNKNOWN", async () => {
+    const auth = deferred<Response>();
+    const network = installNetwork(
+      successfulWorkbenchResponse,
+      () => auth.promise
+    );
+    mounted = await mountWorkbench();
+    localStorage.setItem(
+      "manus-runtime-user-info",
+      JSON.stringify({ id: 6001 })
+    );
+    localStorage.setItem("business-context", JSON.stringify(verifiedContext));
+    sessionStorage.setItem("business-context", JSON.stringify(verifiedContext));
+    await mounted.leaveWorkbench();
+    await mounted.returnToWorkbench();
+    expect(
+      mounted.container.querySelector(
+        '[data-business-loading="business-session"]'
+      )
+    ).not.toBeNull();
+    expect(mounted.container.textContent).toContain("正在加载工作区");
+    expect(
+      network.calls.filter(call =>
+        call.pathname.startsWith("/api/business-trpc/")
+      )
+    ).toHaveLength(0);
+    auth.resolve(trpcResult({ id: 6001 }));
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("客户列表")
+    );
+    expect(
+      network.calls.filter(
+        call => call.pathname === "/api/business-trpc/context"
+      )
+    ).toHaveLength(1);
+  });
+
+  it.each([401, 403])(
+    "closes a verified context on HTTP %s and cancels a live old-domain request",
+    async status => {
+      const fresh = deferred<Response>();
+      const oldList = deferred<Response>();
+      let checks = 0;
+      let oldSignal: AbortSignal | null | undefined;
+      installNetwork(call => {
+        if (call.pathname === "/api/business-trpc/context" && ++checks === 2)
+          return fresh.promise;
+        if (call.pathname === "/api/business-trpc/customer.list") {
+          oldSignal = call.signal;
+          return oldList.promise;
+        }
+        return successfulWorkbenchResponse(call);
+      });
+      mounted = await mountWorkbench();
+      await waitFor(() => expect(oldSignal).toBeInstanceOf(AbortSignal));
+      await act(async () => window.dispatchEvent(new window.Event("focus")));
+      await waitFor(() => expect(checks).toBe(2));
+      fresh.resolve(
+        trpcError(
+          status,
+          status === 401 ? "UNAUTHORIZED" : "FORBIDDEN",
+          "服务端已撤销业务访问"
+        )
+      );
+      await waitFor(() =>
+        expect(mounted?.container.textContent).toContain("业务访问授权已失效")
+      );
+      expect(oldSignal?.aborted).toBe(true);
+      expect(businessStorageScope()).toBeNull();
+      oldList.resolve(
+        trpcResult({
+          items: [customerRecord(91, "撤销后迟到的旧客户")],
+          total: 1,
+        })
+      );
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      });
+      expect(mounted.container.textContent).not.toContain("撤销后迟到的旧客户");
+      expect(mounted.container.textContent).not.toContain("客户列表");
+    }
+  );
+
+  it.each([401, 403])(
+    "also revokes on a real domain HTTP %s instead of retaining a successful context forever",
+    async status => {
+      const network = installNetwork(call =>
+        call.pathname === "/api/business-trpc/customer.list"
+          ? trpcError(
+              status,
+              status === 401 ? "UNAUTHORIZED" : "FORBIDDEN",
+              "实时业务读取被拒绝"
+            )
+          : successfulWorkbenchResponse(call)
+      );
+      mounted = await mountWorkbench();
+      await waitFor(() =>
+        expect(mounted?.container.textContent).toContain("业务访问授权已失效")
+      );
+      expect(mounted.container.textContent).not.toContain("客户列表");
+      expect(businessStorageScope()).toBeNull();
+      expect(domainCalls(network.calls).length).toBeGreaterThan(0);
+    }
+  );
+
+  it("clears the retained domain when changing merchant while a request is still pending", async () => {
+    let signal: AbortSignal | null | undefined;
+    installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/customer.list") {
+        signal = call.signal;
+        return new Promise<Response>((_resolve, reject) =>
+          call.signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("aborted", "AbortError")),
+            { once: true }
+          )
+        );
+      }
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() => expect(signal).toBeInstanceOf(AbortSignal));
+    await mounted.navigate("/workbench/customers?merchantId=30062");
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("请求的业务商户不可用")
+    );
+    expect(signal?.aborted).toBe(true);
+    expect(businessStorageScope()).toBeNull();
+  });
+
+  it("fences concurrent old requests and never reuses customer data after a real root account switch", async () => {
+    let accountId = 6001;
+    let oldSignal: AbortSignal | null | undefined;
+    const oldList = deferred<Response>();
+    const nextContext = deferred<Response>();
+    const network = installNetwork(
+      call => {
+        if (
+          call.pathname === "/api/business-trpc/context" &&
+          accountId === 6002
+        )
+          return nextContext.promise;
+        if (call.pathname === "/api/business-trpc/customer.list") {
+          if (accountId === 6001) {
+            oldSignal = call.signal;
+            return oldList.promise;
+          }
+          return trpcResult({
+            items: [customerRecord(92, "新账号客户")],
+            total: 1,
+          });
+        }
+        return successfulWorkbenchResponse(call);
+      },
+      () => trpcResult({ id: accountId })
+    );
+    mounted = await mountWorkbench();
+    await waitFor(() => expect(oldSignal).toBeInstanceOf(AbortSignal));
+    accountId = 6002;
+    await mounted.refreshAuth();
+    await waitFor(() =>
+      expect(
+        network.calls.filter(
+          call => call.pathname === "/api/business-trpc/context"
+        )
+      ).toHaveLength(2)
+    );
+    expect(oldSignal?.aborted).toBe(true);
+    expect(mounted.container.textContent).not.toContain("客户列表");
+    oldList.resolve(
+      trpcResult({ items: [customerRecord(93, "旧账号迟到客户")], total: 1 })
+    );
+    nextContext.resolve(
+      trpcResult({
+        ...verifiedContext,
+        staffPrincipal: {
+          ...verifiedContext.staffPrincipal,
+          adminAccountId: 6002,
+          frontendUserId: 7003,
+          user: { ...verifiedContext.staffPrincipal.user, id: 7003 },
+        },
+      })
+    );
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("新账号客户")
+    );
+    expect(mounted.container.textContent).not.toContain("旧账号迟到客户");
+    expect(businessStorageScope()).toContain("staff:7003:admin:6002:");
+  });
+
+  it("observes logout outside the workbench and requires new BFF proofs even for the same account login", async () => {
+    const network = installNetwork(successfulWorkbenchResponse);
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("暂无匹配客户")
+    );
+    await mounted.leaveWorkbench();
+    await mounted.clearAuth();
+    await mounted.returnToWorkbench();
+    expect(mounted.container.textContent).not.toContain("客户列表");
+    expect(
+      mounted.container.querySelector(
+        '[data-business-loading="business-session"]'
+      )
+    ).not.toBeNull();
+    // This is a new live auth.me response, not persisted user JSON.
+    await mounted.refreshAuth();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("暂无匹配客户")
+    );
+    expect(
+      network.calls.filter(
+        call => call.pathname === "/api/business-trpc/merchants"
+      )
+    ).toHaveLength(2);
+    expect(
+      network.calls.filter(
+        call => call.pathname === "/api/business-trpc/context"
+      )
+    ).toHaveLength(2);
+    expect(domainCalls(network.calls)).toHaveLength(4);
+  });
+
+  it("rejects an otherwise ready BFF principal belonging to another root admin account or enterprise", async () => {
+    const network = installNetwork(call =>
+      call.pathname === "/api/business-trpc/context"
+        ? trpcResult({
+            ...verifiedContext,
+            staffPrincipal: {
+              ...verifiedContext.staffPrincipal,
+              adminAccountId: 6999,
+              enterpriseId: 89999,
+            },
+          })
+        : successfulWorkbenchResponse(call)
+    );
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("未绑定前台业务主体")
+    );
+    expect(domainCalls(network.calls)).toHaveLength(0);
+  });
+  it("still sends a real customer command to the BFF during background verification and closes on its 403", async () => {
+    // Restore via afterEach, while exercising the actual BFF transport without any().
+    vi.spyOn(AbortSignal, "any");
+    Object.defineProperty(AbortSignal, "any", {
+      configurable: true,
+      value: undefined,
+    });
+    const focus = deferred<Response>();
+    let checks = 0;
+    const writeContext = {
+      ...verifiedContext,
+      merchant: { id: 30061, canWrite: true },
+      writeCapabilities: ["customers.manage"],
+    };
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context")
+        return ++checks === 1 ? trpcResult(writeContext) : focus.promise;
+      if (call.pathname === "/api/business-trpc/customer.context")
+        return trpcResult({
+          canManageAll: false,
+          actorUserId: 7002,
+          members: [{ userId: 7002, name: "合成员工" }],
+        });
+      if (call.pathname === "/api/business-trpc/customer.createMulti")
+        return trpcError(403, "FORBIDDEN", "实时写入鉴权拒绝");
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("暂无匹配客户")
+    );
+    const toggle = Array.from(
+      mounted.container.querySelectorAll<HTMLButtonElement>("button")
+    ).find(node => node.textContent?.trim() === "录入客户");
+    await act(async () => toggle!.click());
+    expect(
+      mounted.container.querySelector<HTMLInputElement>(
+        '[data-customer-field="name"]'
+      )?.disabled
+    ).toBe(false);
+    const setValue = async (selector: string, value: string) => {
+      const input = mounted!.container.querySelector<
+        HTMLInputElement | HTMLSelectElement
+      >(selector)!;
+      expect(input).toBeTruthy();
+      await act(async () => {
+        const prototype =
+          input.tagName === "SELECT"
+            ? window.HTMLSelectElement.prototype
+            : window.HTMLInputElement.prototype;
+        Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(
+          input,
+          value
+        );
+        input.dispatchEvent(
+          new window.Event(input.tagName === "SELECT" ? "change" : "input", {
+            bubbles: true,
+          })
+        );
+        if (input.tagName !== "SELECT")
+          input.dispatchEvent(new window.Event("change", { bubbles: true }));
+      });
+    };
+    await setValue('[data-customer-field="name"]', "仅本地网络桩虚构客户");
+    await act(async () => {
+      mounted!.container
+        .querySelector('[data-customer-field="industryCode"]')!
+        .dispatchEvent(
+          new window.KeyboardEvent("keydown", {
+            key: "ArrowDown",
+            bubbles: true,
+          })
+        );
+    });
+    const industry = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="option"]')
+    ).find(node => node.textContent === "汽车电子");
+    expect(industry).toBeTruthy();
+    await act(async () => industry!.click());
+    expect(
+      mounted.container.querySelector('[data-customer-field="industryCode"]')
+        ?.textContent
+    ).toContain("汽车电子");
+    await setValue('input[aria-label="联系人1姓名"]', "虚构联系人");
+    await setValue('input[aria-label="联系人1联系方式值"]', "13800138000");
+    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await waitFor(() => expect(checks).toBe(2));
+    expect(
+      mounted.container.querySelector(
+        '[data-business-context-verification="revalidating"]'
+      )
+    ).not.toBeNull();
+    const save = Array.from(
+      mounted.container.querySelectorAll<HTMLButtonElement>("button")
+    ).find(node => node.textContent?.trim() === "保存");
+    expect(save?.disabled).toBe(false);
+    await act(async () => save!.click());
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("业务访问授权已失效")
+    );
+    const command = network.calls.find(
+      call => call.pathname === "/api/business-trpc/customer.createMulti"
+    );
+    expect(command).toBeTruthy();
+    expect(command?.headers.get("x-business-merchant-id")).toBe("30061");
+    expect(command?.credentials).toBe("include");
+    expect(command?.headers.get("cookie")).toBeNull();
+    expect(command?.headers.get("x-admin-id")).toBeNull();
+    expect(
+      network.calls.findLast(
+        call => call.pathname === "/api/business-trpc/context"
+      )?.signal?.aborted
+    ).toBe(true);
+    focus.resolve(trpcResult(writeContext));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(mounted.container.textContent).not.toContain("客户列表");
+    expect(businessStorageScope()).toBeNull();
+  });
+
+  it.each(["empty", "forbidden"] as const)(
+    "requires a new context proof after %s merchant scope is revoked and later restored, even inside the fresh window",
+    async deniedScope => {
+      let discoveryAttempts = 0;
+      const revokedScope = deferred<Response>();
+      const secondContext = deferred<Response>();
+      const restoredContext = deferred<Response>();
+      let contextAttempts = 0;
+      const network = installNetwork(call => {
+        if (
+          call.pathname === "/api/business-trpc/merchants" &&
+          ++discoveryAttempts === 2
+        )
+          return revokedScope.promise;
+        if (call.pathname === "/api/business-trpc/context") {
+          ++contextAttempts;
+          if (contextAttempts === 2) return secondContext.promise;
+          if (contextAttempts === 3) return restoredContext.promise;
+        }
+        return successfulWorkbenchResponse(call);
+      });
+      mounted = await mountWorkbench();
+      await waitFor(() =>
+        expect(mounted?.container.textContent).toContain("暂无匹配客户")
+      );
+      await act(async () => window.dispatchEvent(new window.Event("focus")));
+      await waitFor(() => expect(contextAttempts).toBe(2));
+      revokedScope.resolve(
+        deniedScope === "empty"
+          ? trpcResult({ data: [], pageAvailableCount: 0, sourceTotal: 0 })
+          : trpcError(403, "FORBIDDEN", "商户范围已撤销")
+      );
+      await waitFor(() =>
+        expect(mounted?.container.textContent).toContain(
+          deniedScope === "empty" ? "未取得可用授权" : "无法读取授权商户"
+        )
+      );
+      expect(businessStorageScope()).toBeNull();
+      // The parallel focus context was canceled by discovery revocation.
+      expect(
+        network.calls
+          .filter(call => call.pathname === "/api/business-trpc/context")
+          .at(-1)?.signal?.aborted
+      ).toBe(true);
+      await act(async () =>
+        retryButton(mounted!.container, "business-discovery-retry")!.click()
+      );
+      await waitFor(() => expect(contextAttempts).toBe(3));
+      expect(discoveryAttempts).toBe(3);
+      expect(mounted.container.textContent).not.toContain("客户列表");
+      expect(businessStorageScope()).toBeNull();
+      expect(domainCalls(network.calls)).toHaveLength(2);
+      secondContext.resolve(trpcResult(verifiedContext));
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      });
+      expect(mounted.container.textContent).not.toContain("客户列表");
+      expect(businessStorageScope()).toBeNull();
+      expect(domainCalls(network.calls)).toHaveLength(2);
+      restoredContext.resolve(
+        trpcResult({
+          ...verifiedContext,
+          staffPrincipal: {
+            ...verifiedContext.staffPrincipal,
+            frontendUserId: 7003,
+            bindingVersion: 5,
+            user: { ...verifiedContext.staffPrincipal.user, id: 7003 },
+          },
+        })
+      );
+      await waitFor(() =>
+        expect(mounted?.container.textContent).toContain("暂无匹配客户")
+      );
+      expect(mounted.container.textContent).toContain("客户列表");
+      expect(businessStorageScope()).toContain("staff:7003:");
+      expect(businessStorageScope()).toContain(":binding:5");
+      expect(domainCalls(network.calls)).toHaveLength(4);
+    }
+  );
+
+  it("replaces enterprise cache scope when the same bound account moves to another BFF-proven enterprise", async () => {
+    let checks = 0;
+    let lists = 0;
+    installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context")
+        return trpcResult(
+          ++checks === 1
+            ? verifiedContext
+            : {
+                ...verifiedContext,
+                enterprise: { ...verifiedContext.enterprise, id: 88002 },
+                staffPrincipal: {
+                  ...verifiedContext.staffPrincipal,
+                  enterpriseId: 88002,
+                },
+              }
+        );
+      if (call.pathname === "/api/business-trpc/customer.list")
+        return trpcResult({
+          items: [
+            customerRecord(++lists, lists === 1 ? "原企业客户" : "新企业客户"),
+          ],
+          total: 1,
+        });
+      return successfulWorkbenchResponse(call);
+    });
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("原企业客户")
+    );
+    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("新企业客户")
+    );
+    expect(mounted.container.textContent).not.toContain("原企业客户");
+    expect(businessStorageScope()).toContain(":enterprise:88002:");
+    expect(lists).toBe(2);
+  });
+
+  it("rejects a mismatched enterprise projection even with the exact root account and a ready staff binding", async () => {
+    const network = installNetwork(call =>
+      call.pathname === "/api/business-trpc/context"
+        ? trpcResult({
+            ...verifiedContext,
+            enterprise: { ...verifiedContext.enterprise, id: 89999 },
+          })
+        : successfulWorkbenchResponse(call)
+    );
+    mounted = await mountWorkbench();
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("业务上下文不可用")
+    );
+    expect(domainCalls(network.calls)).toHaveLength(0);
   });
 });

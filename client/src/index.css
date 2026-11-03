@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./styles/AdminReadability.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -75,7 +76,7 @@
 
   html {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
-      "Helvetica Neue", Arial, sans-serif;
+      system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

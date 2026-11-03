@@ -532,3 +532,191 @@
 .ci-page.ci-host .ci-channel-table .ci-row-actions { flex-wrap: nowrap; gap: 10px; }
 .ci-page.ci-host .ci-channel-table .ci-row-actions .ci-inline-link { flex: 0 0 auto; white-space: nowrap; }
 .ci-export-status { margin: 0 0 12px; color: #437e5d; font-size: 12px; line-height: 20px; }
+
+/* Readability v8: Host-only overrides; reusable channelInventory styles stay untouched. */
+.ci-page.ci-host {
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.5;
+}
+
+.ci-page.ci-host-state {
+  border-color: var(--admin-color-border, #e2e8f0);
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.5;
+}
+
+.ci-page.ci-host-error { color: #a54a4a; }
+
+.ci-page.ci-host .ci-tabbar {
+  gap: 10px 16px;
+  margin-bottom: 12px;
+  border-color: var(--admin-color-border, #e2e8f0);
+}
+
+.ci-page.ci-host .ci-tabbar > .ci-tabs { height: 44px; }
+.ci-page.ci-host .ci-tabs button {
+  min-height: var(--admin-control-height, 40px);
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-body, 15px);
+}
+
+.ci-page.ci-host .ci-tabs button[aria-selected="true"] { color: #315c9e; }
+.ci-page.ci-host .ci-tabs button[aria-selected="true"]::after { background: #315c9e; }
+.ci-page.ci-host .ci-tabs button:focus-visible { outline: 2px solid #315c9e; outline-offset: -2px; }
+
+.ci-page.ci-host .ci-panel,
+.ci-page.ci-host .ci-host-dialog,
+.ci-page.ci-host .ci-host-dialog > header,
+.ci-page.ci-host .ci-host-dialog footer,
+.ci-page.ci-host .ci-pagination { border-color: var(--admin-color-border, #e2e8f0); }
+
+.ci-page.ci-host .ci-toolbar {
+  gap: 12px;
+  padding: 14px;
+  border-color: var(--admin-color-border, #e2e8f0);
+  background: #f8fafc;
+}
+
+.ci-page.ci-host .ci-button {
+  min-height: var(--admin-control-height, 40px);
+  border-color: var(--admin-color-border, #e2e8f0);
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-label, 14px);
+  line-height: 20px;
+  padding: 8px 14px;
+}
+
+.ci-page.ci-host .ci-primary { border-color: #315c9e; color: #fff; background: #315c9e; }
+.ci-page.ci-host .ci-button:hover:not(:disabled) { border-color: #315c9e; color: #315c9e; background: #eef4fc; }
+.ci-page.ci-host .ci-primary:hover:not(:disabled) { border-color: #254a83; color: #fff; background: #254a83; }
+
+.ci-page.ci-host .ci-field {
+  gap: 6px;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-label, 14px);
+  line-height: 20px;
+}
+
+.ci-page.ci-host .ci-field :is(input, select, textarea) {
+  min-height: var(--admin-control-height, 40px);
+  border-color: var(--admin-color-border, #e2e8f0);
+  padding: 8px 10px;
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 22px;
+}
+
+.ci-page.ci-host .ci-field :is(input, textarea)::placeholder { color: var(--admin-color-muted, #64748b); opacity: 1; }
+.ci-page.ci-host .ci-field :is(input, select, textarea):disabled { color: var(--admin-color-secondary, #475569); background: #f1f5f9; opacity: 1; }
+.ci-page.ci-host .ci-field small,
+.ci-page.ci-host .ci-filter-count { color: var(--admin-color-muted, #64748b); font-size: var(--admin-font-caption, 13px); line-height: 20px; }
+.ci-page.ci-host .ci-filter-count { padding-bottom: 10px; }
+
+.ci-page.ci-host .ci-table { color: var(--admin-color-text, #1f2937); }
+.ci-page.ci-host .ci-table:is(.ci-channel-table, .ci-compact-stock-table) th {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 10px;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
+  color: var(--admin-color-secondary, #475569);
+  background: #f1f5f9;
+  font-size: var(--admin-font-label, 14px);
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.ci-page.ci-host .ci-table:is(.ci-channel-table, .ci-compact-stock-table) td {
+  box-sizing: border-box;
+  height: 60px;
+  padding: 10px;
+  border-color: var(--admin-color-border, #e2e8f0);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 22px;
+}
+
+.ci-page.ci-host .ci-table tbody tr:hover td,
+.ci-page.ci-host .ci-table tbody tr:focus-within td { background: #eef4fc; }
+
+.ci-page.ci-host .ci-table.ci-compact-stock-table td.ci-date {
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 22px;
+}
+
+.ci-page.ci-host .ci-table .ci-channel-name,
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-cell-title {
+  color: var(--admin-color-text, #1f2937);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.ci-page.ci-host .ci-table .ci-subtext,
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-subtext {
+  margin-top: 3px;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 20px;
+}
+
+.ci-page.ci-host .ci-table:is(.ci-channel-table, .ci-compact-stock-table) td:is(.ci-lead-time, .ci-row-index),
+.ci-page.ci-host .ci-table.ci-channel-table td.ci-date {
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 20px;
+}
+
+.ci-page.ci-host .ci-table .ci-channel-type-tag,
+.ci-page.ci-host .ci-status {
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 20px;
+}
+
+.ci-page.ci-host .ci-table .ci-channel-type-tag { color: var(--admin-color-secondary, #475569); }
+.ci-page.ci-host .ci-status-inactive { color: var(--admin-color-secondary, #475569); }
+.ci-page.ci-host .ci-inline-link { color: #315c9e; font-size: var(--admin-font-label, 14px); line-height: 20px; }
+.ci-page.ci-host .ci-danger-link { color: #a54a4a; }
+.ci-page.ci-host .ci-row-actions .ci-inline-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--admin-row-action-height, 34px);
+  padding: 0 8px;
+  border: 1px solid var(--admin-color-border, #e2e8f0);
+  border-radius: 5px;
+  background: #fff;
+}
+
+.ci-page.ci-host .ci-row-actions .ci-inline-link:hover:not(:disabled) { border-color: #315c9e; background: #eef4fc; text-decoration: none; }
+.ci-page.ci-host .ci-readonly { color: var(--admin-color-secondary, #475569); font-size: var(--admin-font-caption, 13px); }
+
+/* Four 34px actions remain reachable; !important overrides layout.css's existing min-width. */
+.ci-page.ci-host .ci-table.ci-channel-table { min-width: 1040px !important; }
+.ci-page.ci-host .ci-channel-table .ci-channel-name-col { width: 22%; }
+.ci-page.ci-host .ci-channel-table .ci-channel-type-col { width: 78px; }
+.ci-page.ci-host .ci-channel-table .ci-channel-date-col { width: 150px; }
+.ci-page.ci-host .ci-channel-table :is(th, td).ci-col-actions { width: 280px; }
+.ci-page.ci-host .ci-channel-table .ci-row-actions { gap: 8px; }
+
+.ci-page.ci-host .ci-pagination { min-height: 60px; gap: 10px; color: var(--admin-color-secondary, #475569); font-size: var(--admin-font-caption, 13px); }
+.ci-page.ci-host .ci-pagination .ci-button { min-height: var(--admin-row-action-height, 34px); padding: 6px 12px; }
+.ci-page.ci-host .ci-empty { color: var(--admin-color-secondary, #475569); }
+.ci-page.ci-host .ci-empty.ci-host-error { color: #a54a4a; }
+.ci-page.ci-host .ci-error { font-size: var(--admin-font-label, 14px); line-height: 22px; }
+.ci-page.ci-host .ci-export-status { font-size: var(--admin-font-caption, 13px); line-height: 20px; }
+.ci-page.ci-host .ci-host-dialog { color: var(--admin-color-text, #1f2937); font-size: var(--admin-font-body, 15px); }
+.ci-page.ci-host .ci-host-dialog h2 { color: var(--admin-color-text, #1f2937); font-size: 20px; line-height: 28px; }
+.ci-page.ci-host .ci-host-dialog header p { color: var(--admin-color-secondary, #475569); font-size: var(--admin-font-caption, 13px); line-height: 20px; }
+.ci-page.ci-host .ci-icon-close { width: 34px; height: 34px; flex: 0 0 auto; color: var(--admin-color-secondary, #475569); }
+
+@media (max-width: 1023px) {
+  .ci-page.ci-host .ci-table th.ci-col-actions { background: #f1f5f9; }
+  .ci-page.ci-host .ci-table tbody tr:hover td.ci-col-actions,
+  .ci-page.ci-host .ci-table tbody tr:focus-within td.ci-col-actions { background: #eef4fc; }
+}
+
+@media (max-width: 680px) {
+  .ci-page.ci-host .ci-toolbar .ci-field { flex: 1 1 140px; width: auto; }
+}

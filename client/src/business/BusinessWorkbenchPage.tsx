@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
 import {
   useCallback,
   useEffect,
@@ -6,7 +8,6 @@ import {
   useMemo,
   useRef,
   type ReactNode,
-  type SyntheticEvent,
 } from "react";
 import { Route, Router, Switch, useLocation, useSearch } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
@@ -14,7 +15,6 @@ import BusinessUserRecordsPage from "./BusinessUserRecordsPage";
 import BusinessContentFrame from "./BusinessContentFrame";
 import {
   BusinessScopeProvider,
-  CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT,
   useBusinessScope,
   type BusinessSessionCapabilities,
   type BusinessStaffPrincipal,
@@ -23,7 +23,6 @@ import {
 import {
   businessScopeTrpc,
   createBusinessScopeTrpcClient,
-  createBusinessTrpcClient,
   trpc,
 } from "./api/business-trpc";
 import {
@@ -37,6 +36,15 @@ import {
   businessContextMatchesMerchant,
 } from "./BusinessWorkbenchAccessGate";
 import type { BusinessWorkbenchCapability } from "../lib/businessWorkbenchCapabilities";
+import {
+  BUSINESS_CONTEXT_FRESH_MS,
+  BUSINESS_FOCUS_DEBOUNCE_MS,
+  createBusinessRequestCancellation,
+  isBusinessAuthorizationError,
+  resetBusinessWorkbenchSessionsForTests,
+  useBusinessWorkbenchSession,
+  type BusinessWorkbenchSession,
+} from "./BusinessWorkbenchSession";
 import AddUser from "./platform/client/src/pages/AddUser";
 import ChatPage from "./platform/client/src/pages/ChatPage";
 import ChannelInventoryHost from "./platform/client/src/pages/ChannelInventoryHost";
@@ -65,11 +73,8 @@ export type BusinessWorkbenchPageProps = {
 
 const OFFICIAL_ZHIJIE_MERCHANT_ID = 30061;
 
-// Session UI provenance only. Keeping the signature across ordinary route
-// unmounts lets a later verified return invalidate changed permissions safely.
-let lastCompletedBusinessAuthorization: string | null = null;
 export function __resetBusinessAuthorizationMemoryForTests() {
-  lastCompletedBusinessAuthorization = null;
+  resetBusinessWorkbenchSessionsForTests();
 }
 
 type MerchantChoice = {
@@ -84,6 +89,7 @@ type MerchantChoice = {
 type BusinessContextContract = {
   /** Returned for the exact header-selected merchant, never a navigation union. */
   merchant?: { id?: unknown; canWrite?: unknown };
+  enterprise?: { id?: unknown };
   staffPrincipal: BusinessStaffPrincipal;
   /** BFF capability contract; absent/false means the feature is not integrated. */
   sessionCapabilities?: BusinessSessionCapabilities;
@@ -219,15 +225,17 @@ function capabilityProjectionFingerprint(value: unknown): string {
   return JSON.stringify(
     Array.from(
       new Set(
-        value.filter((capability): capability is string =>
-          typeof capability === "string"
+        value.filter(
+          (capability): capability is string => typeof capability === "string"
         )
       )
     ).sort()
   );
 }
 
-function businessAccessFingerprint(rawContext: BusinessContextContract): string {
+function businessAccessFingerprint(
+  rawContext: BusinessContextContract
+): string {
   const sessionCapabilities = Object.entries(contextCapabilities(rawContext))
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([capability, enabled]) => `${capability}:${Number(enabled)}`)
@@ -242,12 +250,16 @@ function businessAccessFingerprint(rawContext: BusinessContextContract): string 
  */
 function verifiedBusinessContext(
   merchantId: number,
-  rawContext: BusinessContextContract | undefined
+  rawContext: BusinessContextContract | undefined,
+  adminAccountId: number
 ): VerifiedBusinessContext | null {
   const principal = readyStaffPrincipal(rawContext?.staffPrincipal);
   if (
     !rawContext ||
     !principal ||
+    principal.adminAccountId !== adminAccountId ||
+    numberFromMerchantInput(rawContext.enterprise?.id) !==
+      principal.enterpriseId ||
     !businessContextMatchesMerchant(merchantId, rawContext.merchant)
   ) {
     return null;
@@ -486,7 +498,13 @@ function useFocusContextRevalidation(revalidate: () => void) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onFocus = () => current.current();
+    let lastFocus = -Infinity;
+    const onFocus = () => {
+      const now = Date.now();
+      if (now - lastFocus < BUSINESS_FOCUS_DEBOUNCE_MS) return;
+      lastFocus = now;
+      current.current();
+    };
     const onPageShow = (event: PageTransitionEvent) => {
       // A normal first-load pageshow follows the initial query. Only a bfcache
       // restore is a re-entry that could otherwise retain an old context.
@@ -503,12 +521,8 @@ function useFocusContextRevalidation(revalidate: () => void) {
   }, []);
 }
 
-/**
- * Keep a previously verified same-identity tree mounted only while a new BFF
- * context request is in flight. `inert` blocks native focus/editing while the
- * capture handlers also cover synthetic/programmatic event dispatch. This is
- * intentionally a UI pause, not a replacement for BFF command authorization.
- */
+/** A background proof refresh is not a global editing lock. Every command is
+ * still authorized by the BFF; a denied/changed proof tears down this domain. */
 export function BusinessContextVerificationBoundary({
   verificationState,
   identity,
@@ -519,25 +533,6 @@ export function BusinessContextVerificationBoundary({
   children: ReactNode;
 }) {
   const revalidating = verificationState === "revalidating";
-  const stopWhileRevalidating = useCallback(
-    (event: SyntheticEvent<HTMLElement>) => {
-      if (!revalidating) return;
-      event.preventDefault();
-      event.stopPropagation();
-    },
-    [revalidating]
-  );
-  const captureProps = revalidating
-    ? {
-        onClickCapture: stopWhileRevalidating,
-        onSubmitCapture: stopWhileRevalidating,
-        onBeforeInputCapture: stopWhileRevalidating,
-        onInputCapture: stopWhileRevalidating,
-        onChangeCapture: stopWhileRevalidating,
-        onKeyDownCapture: stopWhileRevalidating,
-      }
-    : {};
-
   return (
     <section
       aria-busy={revalidating || undefined}
@@ -545,21 +540,11 @@ export function BusinessContextVerificationBoundary({
       data-business-context-identity={identity}
     >
       {revalidating ? (
-        <BusinessLoadingState
-          label="正在重新核验业务主体绑定；已暂停编辑和提交。"
-          testId="business-context-revalidation"
-        />
+        <p className="px-5 py-2 text-sm text-muted-foreground" role="status">
+          正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。
+        </p>
       ) : null}
-      <div
-        {...captureProps}
-        // Keep the live status outside this subtree so assistive technology can
-        // announce the pause even though business controls are inert.
-        inert={revalidating || undefined}
-        className={revalidating ? "pointer-events-none select-none" : undefined}
-        data-business-context-content=""
-      >
-        {children}
-      </div>
+      <div data-business-context-content="">{children}</div>
     </section>
   );
 }
@@ -571,6 +556,8 @@ function VerifiedBusinessWorkbench({
   capabilities,
   rawContext,
   verificationState,
+  session,
+  authorization,
 }: {
   merchantId: number;
   routeBase: string;
@@ -578,29 +565,62 @@ function VerifiedBusinessWorkbench({
   capabilities: BusinessSessionCapabilities;
   rawContext: BusinessContextContract;
   verificationState: "verified" | "revalidating";
+  session: BusinessWorkbenchSession;
+  authorization: string;
 }) {
   const domainScope = businessDomainScope(merchantId, principal);
-  const queryClient = useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: { retry: false, refetchOnWindowFocus: false },
-        },
-      }),
-    [domainScope]
-  );
+  const resources = session.domainResources(authorization);
+  const queryClient = resources.client;
   const domainClient = useMemo(
-    () => createBusinessTrpcClient(merchantId),
-    [domainScope, merchantId]
+    () =>
+      trpc.createClient({
+        links: [
+          httpBatchLink({
+            url: "/api/business-trpc",
+            transformer: superjson,
+            headers: () => ({ "x-business-merchant-id": String(merchantId) }),
+            async fetch(input, init) {
+              const { controller, cleanup } = createBusinessRequestCancellation(
+                resources.abort,
+                init?.signal
+              );
+              try {
+                const response = await globalThis.fetch(input, {
+                  ...(init ?? {}),
+                  credentials: "include",
+                  signal: controller.signal,
+                });
+                // httpBatchLink consumes JSON after fetch resolves headers. Keep
+                // cancellation alive through that body read, not just headers.
+                const readJson = response.json.bind(response);
+                Object.defineProperty(response, "json", {
+                  configurable: true,
+                  value: async () => {
+                    try {
+                      return await readJson();
+                    } finally {
+                      cleanup();
+                    }
+                  },
+                });
+                return response;
+              } catch (error) {
+                cleanup();
+                throw error;
+              }
+            },
+          }),
+        ],
+      }),
+    [resources, merchantId]
   );
 
   useEffect(
     () => () => {
-      // The logout route already unmounts this branch. Cancelling here gives the
-      // same fail-closed behavior when a focus recheck or identity change removes
-      // the branch before an original customer request settles.
+      // An ordinary route unmount cancels live reads, but a retained verified
+      // session may reuse completed domain data. Identity/access loss also aborts
+      // writes and clears the domain through session.invalidateAuthorization().
       void queryClient.cancelQueries();
-      queryClient.clear();
     },
     [queryClient]
   );
@@ -647,13 +667,17 @@ function BusinessContextGate({
   merchantId,
   routeBase,
   scopeRevalidating = false,
+  session,
 }: {
   merchantId: number;
   routeBase: string;
   /** The merchant-scope BFF is rechecking an already verified selection. */
   scopeRevalidating?: boolean;
+  session: BusinessWorkbenchSession;
 }) {
   const contextQuery = businessScopeTrpc.context.useQuery(undefined, {
+    staleTime: BUSINESS_CONTEXT_FRESH_MS,
+    refetchInterval: BUSINESS_CONTEXT_FRESH_MS,
     retry: false,
     refetchOnWindowFocus: false,
     trpc: { abortOnUnmount: true },
@@ -663,14 +687,19 @@ function BusinessContextGate({
   const contextMerchant = rawContext?.merchant;
   const currentVerifiedContext = verifiedBusinessContext(
     merchantId,
-    rawContext
+    rawContext,
+    session.adminAccountId
   );
   // React Query deliberately preserves the last successful `data` on a
   // refetch. Preserve it here only after a completed successful verification;
   // a cache value that never reached this gate has no rendering authority.
-  const lastVerifiedContext = useRef<VerifiedBusinessContext | null>(null);
+  const lastVerifiedContext = useRef<VerifiedBusinessContext | null>(
+    currentVerifiedContext?.verifiedBranchKey === session.authorization
+      ? currentVerifiedContext
+      : null
+  );
   const revalidate = useCallback(() => {
-    void contextQuery.refetch({ cancelRefetch: true });
+    void contextQuery.refetch({ cancelRefetch: false });
   }, [contextQuery.refetch]);
   useFocusContextRevalidation(revalidate);
   const verificationInFlight = contextQuery.isFetching || scopeRevalidating;
@@ -680,24 +709,27 @@ function BusinessContextGate({
   useLayoutEffect(() => {
     if (
       !contextQuery.isError &&
-      (contextQuery.isLoading || verificationInFlight)
+      (contextQuery.isLoading || contextQuery.isFetching)
     )
       return;
     const confirmed = contextQuery.isError ? null : completedAuthorization;
-    if (
-      !confirmed ||
-      (lastCompletedBusinessAuthorization !== null &&
-        lastCompletedBusinessAuthorization !== confirmed)
-    ) {
-      window.dispatchEvent(new Event(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT));
-    }
-    lastCompletedBusinessAuthorization = confirmed;
+    if (!confirmed) {
+      // Transport failure is not permission revocation. Still close the domain
+      // conservatively, but preserve local drafts until the identity is proved
+      // again (or a later auth/permission change explicitly invalidates them).
+      session.invalidateAuthorization(
+        !contextQuery.isError ||
+          isBusinessAuthorizationError(contextQuery.error)
+      );
+    } else session.confirmAuthorization(confirmed);
   }, [
     completedAuthorization,
     contextQuery.isError,
     contextQuery.isFetching,
     contextQuery.isLoading,
     verificationInFlight,
+    session,
+    contextQuery.error,
   ]);
 
   // This ref update is derived only from a settled request, so it remains
@@ -713,7 +745,7 @@ function BusinessContextGate({
   if (contextQuery.isLoading) {
     return (
       <BusinessLoadingState
-        label="正在核验业务主体绑定…"
+        label="正在加载业务工作台…"
         testId="business-context"
       />
     );
@@ -723,11 +755,12 @@ function BusinessContextGate({
     // Cached data can be present during an error/retry or before the first
     // verified commit. The scope list can also be revalidating. In both cases,
     // render only if it still proves the exact same bound staff, admin account,
-    // enterprise, merchant and binding revision, and freeze all controls.
+    // enterprise, merchant and binding revision, without freezing editing controls.
     if (
       !contextQuery.isError &&
       retainedContext &&
-      currentVerifiedContext?.domainScope === retainedContext.domainScope
+      currentVerifiedContext?.verifiedBranchKey ===
+        retainedContext.verifiedBranchKey
     ) {
       return (
         <VerifiedBusinessWorkbench
@@ -737,13 +770,15 @@ function BusinessContextGate({
           principal={retainedContext.principal}
           capabilities={retainedContext.capabilities}
           rawContext={retainedContext.rawContext}
+          session={session}
+          authorization={retainedContext.verifiedBranchKey}
           verificationState="revalidating"
         />
       );
     }
     return (
       <BusinessLoadingState
-        label="正在核验业务主体绑定…"
+        label="正在加载业务工作台…"
         testId="business-context"
       />
     );
@@ -751,7 +786,11 @@ function BusinessContextGate({
   if (contextQuery.isError) {
     return (
       <AccessState
-        title="业务上下文不可用"
+        title={
+          isBusinessAuthorizationError(contextQuery.error)
+            ? "业务访问授权已失效"
+            : "业务上下文暂时无法核验"
+        }
         detail={
           contextQuery.error.message || "当前商户和工作人员会话未能通过核验。"
         }
@@ -760,7 +799,11 @@ function BusinessContextGate({
       />
     );
   }
-  if (!principal || !rawContext) {
+  if (
+    !principal ||
+    !rawContext ||
+    principal.adminAccountId !== session.adminAccountId
+  ) {
     return (
       <AccessState
         title="未绑定前台业务主体"
@@ -796,6 +839,8 @@ function BusinessContextGate({
       principal={currentVerifiedContext.principal}
       capabilities={currentVerifiedContext.capabilities}
       rawContext={currentVerifiedContext.rawContext}
+      session={session}
+      authorization={currentVerifiedContext.verifiedBranchKey}
       verificationState="verified"
     />
   );
@@ -805,20 +850,14 @@ function ScopedBusinessWorkbench({
   merchantId,
   routeBase,
   scopeRevalidating,
+  session,
 }: {
   merchantId: number;
   routeBase: string;
   scopeRevalidating: boolean;
+  session: BusinessWorkbenchSession;
 }) {
-  const queryClient = useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: { retry: false, refetchOnWindowFocus: false },
-        },
-      }),
-    [merchantId]
-  );
+  const queryClient = session.context;
   const contextClient = useMemo(
     () => createBusinessScopeTrpcClient(merchantId),
     [merchantId]
@@ -827,7 +866,6 @@ function ScopedBusinessWorkbench({
   useEffect(
     () => () => {
       void queryClient.cancelQueries();
-      queryClient.clear();
     },
     [queryClient]
   );
@@ -842,6 +880,7 @@ function ScopedBusinessWorkbench({
           merchantId={merchantId}
           routeBase={routeBase}
           scopeRevalidating={scopeRevalidating}
+          session={session}
         />
       </QueryClientProvider>
     </businessScopeTrpc.Provider>
@@ -851,7 +890,8 @@ function ScopedBusinessWorkbench({
 function BusinessWorkbenchDiscovery({
   merchantId,
   routeBase,
-}: BusinessWorkbenchPageProps) {
+  session,
+}: BusinessWorkbenchPageProps & { session: BusinessWorkbenchSession }) {
   const search = useSearch();
   // `merchants` is an explicitly mounted BusinessRouter procedure at
   // /api/business-trpc. This uses the same BFF-only, bounded transport as
@@ -859,6 +899,8 @@ function BusinessWorkbenchDiscovery({
   const merchantList = businessScopeTrpc.merchants.useQuery(
     { page: 1, pageSize: 100 },
     {
+      staleTime: BUSINESS_CONTEXT_FRESH_MS,
+      refetchInterval: BUSINESS_CONTEXT_FRESH_MS,
       retry: false,
       refetchOnWindowFocus: false,
       trpc: { abortOnUnmount: true },
@@ -876,21 +918,33 @@ function BusinessWorkbenchDiscovery({
     null;
   const base = workbenchBase(routeBase);
   const retryDiscovery = useCallback(() => {
-    void merchantList.refetch({ cancelRefetch: true });
+    void merchantList.refetch({ cancelRefetch: false });
   }, [merchantList.refetch]);
+
+  useFocusContextRevalidation(retryDiscovery);
 
   useLayoutEffect(() => {
     // A completed denied/error discovery must not leave prior customer drafts
     // eligible for a later render. Ordinary revalidation remains covered by
     // the in-flight boundary below and does not invalidate the same identity.
+    if (hasExplicitMerchant && requestedId !== OFFICIAL_ZHIJIE_MERCHANT_ID) {
+      session.invalidateAuthorization();
+      void session.context.cancelQueries();
+      session.context.clear();
+      return;
+    }
     if (merchantList.isLoading || merchantList.isFetching) return;
     const isUnavailable =
       merchantList.isError ||
       !officialMerchant ||
       (hasExplicitMerchant && requestedId !== OFFICIAL_ZHIJIE_MERCHANT_ID);
-    if (isUnavailable && lastCompletedBusinessAuthorization !== null) {
-      window.dispatchEvent(new Event(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT));
-      lastCompletedBusinessAuthorization = null;
+    if (isUnavailable) {
+      session.invalidateAuthorization(
+        !merchantList.isError ||
+          isBusinessAuthorizationError(merchantList.error)
+      );
+      void session.context.cancelQueries();
+      session.context.clear();
     }
   }, [
     hasExplicitMerchant,
@@ -899,16 +953,21 @@ function BusinessWorkbenchDiscovery({
     merchantList.isLoading,
     officialMerchant,
     requestedId,
+    session,
+    merchantList.error,
   ]);
 
   // A refetch can retain the previous list. As with context, it has no
   // rendering authority before an initial BFF verification settles. Once a
-  // verified selection exists, retain it under the same inert boundary while
+  // verified selection exists, retain it under the same live boundary while
   // a fresh scope response is pending rather than blanking the whole page.
-  if (merchantList.isLoading || (merchantList.isFetching && !merchantList.data)) {
+  if (
+    merchantList.isLoading ||
+    (merchantList.isFetching && !merchantList.data)
+  ) {
     return (
       <BusinessLoadingState
-        label="正在核验授权商户…"
+        label="正在加载工作区…"
         testId="business-discovery"
       />
     );
@@ -950,6 +1009,7 @@ function BusinessWorkbenchDiscovery({
       merchantId={officialMerchant.id}
       routeBase={base}
       scopeRevalidating={merchantList.isFetching}
+      session={session}
     />
   );
 }
@@ -959,21 +1019,36 @@ function BusinessWorkbenchContent({
   merchantId,
   routeBase,
 }: BusinessWorkbenchPageProps) {
-  const queryClient = useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: { retry: false, refetchOnWindowFocus: false },
-        },
-      }),
-    []
+  const { session, retrySession } = useBusinessWorkbenchSession();
+  return !session ? (
+    <BusinessLoadingState label="正在加载工作区…" testId="business-session" />
+  ) : session.denied ? (
+    <AccessState
+      title="业务访问授权已失效"
+      detail="服务端已拒绝当前业务请求，旧主体数据已清理。请重新核验。"
+      onRetry={retrySession}
+    />
+  ) : (
+    <SessionBusinessWorkbenchContent
+      key={session.adminAccountId}
+      session={session}
+      merchantId={merchantId}
+      routeBase={routeBase}
+    />
   );
+}
+
+function SessionBusinessWorkbenchContent({
+  merchantId,
+  routeBase,
+  session,
+}: BusinessWorkbenchPageProps & { session: BusinessWorkbenchSession }) {
+  const queryClient = session.discovery;
   const discoveryClient = useMemo(() => createBusinessScopeTrpcClient(), []);
 
   useEffect(
     () => () => {
       void queryClient.cancelQueries();
-      queryClient.clear();
     },
     [queryClient]
   );
@@ -987,6 +1062,7 @@ function BusinessWorkbenchContent({
         <BusinessWorkbenchDiscovery
           merchantId={merchantId}
           routeBase={routeBase}
+          session={session}
         />
       </QueryClientProvider>
     </businessScopeTrpc.Provider>

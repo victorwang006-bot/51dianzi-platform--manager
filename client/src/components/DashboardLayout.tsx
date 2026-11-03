@@ -295,12 +295,33 @@ const adminRoleLabels: Record<string, string> = {
   auditor: "审计人员",
 };
 
+// Visual scope only: body-mounted portals from both component libraries must
+// share the shell typography. Reference counting also tolerates nested layouts
+// and React StrictMode without leaking the marker onto the login/public route.
+let adminReadabilityMounts = 0;
+let previousAdminReadability: string | undefined;
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const { loading, user } = useAuth();
+
+  useEffect(() => {
+    if (adminReadabilityMounts++ === 0) {
+      previousAdminReadability = document.body.dataset.adminReadability;
+      document.body.dataset.adminReadability = "true";
+    }
+    return () => {
+      if (--adminReadabilityMounts !== 0) return;
+      if (previousAdminReadability === undefined) {
+        delete document.body.dataset.adminReadability;
+      } else {
+        document.body.dataset.adminReadability = previousAdminReadability;
+      }
+    };
+  }, []);
 
   if (loading) {
     return <DashboardLayoutSkeleton />;

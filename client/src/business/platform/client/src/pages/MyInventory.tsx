@@ -37,9 +37,10 @@ import {
   formatInventoryQuantity,
   inventoryQuantityDisplay,
 } from "../lib/inventoryQuantityDisplay";
+import "./MyInventory.css";
 
 const toolbarActionClass =
-  "h-8 min-w-[60px] border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
+  "inventory-control min-w-[60px] border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
 
 /**
  * 我的库存：在售与已下架库存列表视图，支持搜索筛选、编辑、重新上架、下架和删除。
@@ -437,14 +438,15 @@ export default function MyInventory() {
 
   return (
     <PlatformLayout>
+      <div className="my-inventory-page">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-3">
         <div>
-          <h1 className="text-lg font-semibold">我的库存</h1>
-          <p className="text-xs text-muted-foreground mt-1">
+          <h1 className="admin-page-title">我的库存</h1>
+          <p className="admin-cell-secondary mt-1">
             管理在售与已下架库存；下架后可编辑并重新上架
           </p>
           <p
-            className="text-[11px] text-muted-foreground mt-1"
+            className="inventory-caption mt-1"
             data-testid="inventory-refresh-hint"
           >
             最近刷新：
@@ -456,10 +458,10 @@ export default function MyInventory() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            size="sm"
+            size="default"
             variant="outline"
             data-testid="inventory-refresh-button"
-            className="h-8 bg-white text-[#185FA5] border-[#185FA5]/40 hover:bg-[#f0f4ff] hover:text-[#185FA5]"
+            className="inventory-control bg-white text-[#185FA5] border-[#185FA5]/40 hover:bg-[#f0f4ff] hover:text-[#185FA5]"
             disabled={
               refreshMutation.isPending ||
               refreshStatusQuery.isLoading ||
@@ -498,7 +500,7 @@ export default function MyInventory() {
               clearPageSelection();
             }}
           >
-            <SelectTrigger className="w-[116px] h-8 text-xs bg-white">
+            <SelectTrigger className="inventory-control w-[124px] bg-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -511,10 +513,10 @@ export default function MyInventory() {
             <DropdownMenuTrigger asChild>
               <Button
                 type="button"
-                size="sm"
+                size="default"
                 variant="outline"
                 data-testid="inventory-more-actions"
-                className="h-8 min-w-[104px] justify-between border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50"
+                className="inventory-control min-w-[112px] justify-between border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50"
                 disabled={allOffshelfMutation.isPending}
               >
                 {allOffshelfMutation.isPending ? (
@@ -536,7 +538,7 @@ export default function MyInventory() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/publish">
-            <Button size="sm" className="bg-[#185FA5] hover:bg-[#0C447C] h-8">
+            <Button size="default" className="inventory-control bg-[#185FA5] hover:bg-[#0C447C]">
               发布库存
             </Button>
           </Link>
@@ -550,17 +552,17 @@ export default function MyInventory() {
           value={pnInput}
           onChange={e => setPnInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && applyFilter()}
-          className="w-[150px] h-8 text-xs bg-white"
+          className="inventory-control w-[180px] bg-white"
         />
         <Input
           placeholder="搜索品牌"
           value={brandInput}
           onChange={e => setBrandInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && applyFilter()}
-          className="w-[140px] h-8 text-xs bg-white"
+          className="inventory-control w-[160px] bg-white"
         />
         <Select value={catInput} onValueChange={setCatInput}>
-          <SelectTrigger className="w-[112px] h-8 text-xs bg-white">
+          <SelectTrigger className="inventory-control w-[124px] bg-white">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -576,9 +578,9 @@ export default function MyInventory() {
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
-              size="sm"
+              size="default"
               variant="outline"
-              className="h-8 min-w-[116px] justify-between border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50"
+              className="inventory-control min-w-[124px] justify-between border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50"
               disabled={allVisibilityMutation.isPending}
             >
               {allVisibilityMutation.isPending ? (
@@ -602,7 +604,7 @@ export default function MyInventory() {
           data-testid="inventory-toolbar-actions"
         >
           <Button
-            size="sm"
+            size="default"
             variant="outline"
             className={toolbarActionClass}
             onClick={applyFilter}
@@ -610,7 +612,7 @@ export default function MyInventory() {
             筛选
           </Button>
           <Button
-            size="sm"
+            size="default"
             variant="outline"
             className={toolbarActionClass}
             disabled={!canResetFilter}
@@ -619,13 +621,13 @@ export default function MyInventory() {
             重置
           </Button>
           <Button
-            size="sm"
+            size="default"
             variant="outline"
             data-testid="inventory-multi-select-button"
             aria-pressed={multiSelectMode}
             className={
               multiSelectMode
-                ? "h-8 min-w-[60px] border-[#185FA5] bg-[#185FA5] px-3 text-xs text-white shadow-none hover:bg-[#0C447C] hover:text-white"
+                ? "inventory-control min-w-[60px] border-[#185FA5] bg-[#185FA5] px-3 text-white shadow-none hover:bg-[#0C447C] hover:text-white"
                 : toolbarActionClass
             }
             onClick={toggleMultiSelectMode}
@@ -640,15 +642,15 @@ export default function MyInventory() {
           data-testid="inventory-bulk-action-bar"
           className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#b9d2e8] bg-[#f5f9fd] px-3 py-2"
         >
-          <span className="text-xs font-medium text-[#12324a]">
+          <span className="admin-cell-secondary font-medium text-[#12324a]">
             已选 {selectedIds.size} 条 ·{" "}
             {hasAppliedFilter ? "当前筛选结果本页" : "当前页"}共{" "}
             {currentPageItems.length} 条
           </span>
           <Button
-            size="sm"
+            size="default"
             variant="outline"
-            className="h-7 bg-white text-xs"
+            className="inventory-control bg-white"
             disabled={
               bulkPending ||
               selectedIds.size === 0 ||
@@ -662,9 +664,9 @@ export default function MyInventory() {
             批量下架
           </Button>
           <Button
-            size="sm"
+            size="default"
             variant="outline"
-            className="h-7 bg-white text-xs text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800"
+            className="inventory-control bg-white text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800"
             disabled={
               bulkPending ||
               selectedIds.size === 0 ||
@@ -678,9 +680,9 @@ export default function MyInventory() {
             设为仅搜索可见
           </Button>
           <Button
-            size="sm"
+            size="default"
             variant="outline"
-            className="h-7 bg-white text-xs text-[#185FA5] border-[#b9d2e8] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+            className="inventory-control bg-white text-[#185FA5] border-[#b9d2e8] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
             disabled={
               bulkPending ||
               selectedIds.size === 0 ||
@@ -691,9 +693,9 @@ export default function MyInventory() {
             设为全部可见
           </Button>
           <Button
-            size="sm"
+            size="default"
             variant="outline"
-            className="h-7 bg-white text-xs text-destructive border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
+            className="inventory-control bg-white text-destructive border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
             disabled={bulkPending || selectedIds.size === 0}
             onClick={confirmBulkRemove}
           >
@@ -708,7 +710,7 @@ export default function MyInventory() {
                 value={nextOwnerUserId}
                 onValueChange={setNextOwnerUserId}
               >
-                <SelectTrigger className="h-7 w-[150px] bg-white text-xs">
+                <SelectTrigger className="inventory-control w-[170px] bg-white">
                   <SelectValue placeholder="选择负责人" />
                 </SelectTrigger>
                 <SelectContent>
@@ -723,9 +725,9 @@ export default function MyInventory() {
                 </SelectContent>
               </Select>
               <Button
-                size="sm"
+                size="default"
                 variant="outline"
-                className="h-7 bg-white text-xs text-[#185FA5]"
+                className="inventory-control bg-white text-[#185FA5]"
                 disabled={
                   bulkPending || selectedIds.size === 0 || !nextOwnerUserId
                 }
@@ -755,7 +757,7 @@ export default function MyInventory() {
           {selectedIds.size > 0 && (
             <button
               type="button"
-              className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              className="inventory-control ml-auto px-2 text-slate-600 hover:text-foreground"
               onClick={clearPageSelection}
             >
               取消选择
@@ -764,7 +766,7 @@ export default function MyInventory() {
         </div>
       )}
 
-      <Card className="p-0 overflow-hidden gap-0">
+      <Card className="inventory-card min-w-0 max-w-full p-0 overflow-hidden gap-0">
         {isLoading ? (
           <div className="p-12 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -772,7 +774,7 @@ export default function MyInventory() {
         ) : filtered.length === 0 ? (
           <div className="p-14 text-center">
             <div className="text-2xl">📦</div>
-            <div className="text-sm font-medium mt-2.5">
+            <div className="admin-cell-primary font-medium mt-2.5">
               {hasAppliedFilter
                 ? "无符合筛选条件的库存"
                 : statusFilter === "published"
@@ -781,28 +783,31 @@ export default function MyInventory() {
                     ? "暂无已下架库存"
                     : "暂无库存"}
             </div>
-            <div className="text-xs text-muted-foreground mt-1.5">
+            <div className="admin-cell-secondary mt-1.5">
               {hasAppliedFilter
                 ? "尝试调整筛选条件或点击「重置」"
                 : "前往「发布库存」录入并发布库存条目"}
             </div>
           </div>
         ) : (
-          <Table className="table-fixed min-w-[760px]">
+          <Table
+            className={`admin-table-readable inventory-table table-fixed ${multiSelectMode ? "inventory-table-selectable" : ""}`}
+            containerClassName="inventory-table-scroll"
+          >
             <colgroup>
-              {multiSelectMode && <col className="w-[4%]" />}
-              <col className="w-[28%]" />
-              <col className="w-[15%]" />
-              <col className="w-[15%]" />
-              <col className="w-[13%]" />
-              <col className="w-[12%]" />
-              <col className="w-[14%]" />
-              <col className="w-[14%]" />
+              {multiSelectMode && <col className="inventory-selection-column" />}
+              <col />
+              <col className="inventory-quantity-column" />
+              <col className="inventory-quantity-column" />
+              <col className="inventory-price-column" />
+              <col className="inventory-owner-column" />
+              <col className="inventory-status-column" />
+              <col className="inventory-actions-column" />
             </colgroup>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
                 {multiSelectMode && (
-                  <TableHead className="sticky left-0 z-30 h-8 w-9 bg-slate-50 px-2 shadow-[1px_0_0_#e2e8f0]">
+                  <TableHead className="inventory-selection-cell sticky left-0 z-30 bg-slate-50 shadow-[1px_0_0_#e2e8f0]">
                     <Checkbox
                       aria-label="全选当前页库存"
                       checked={
@@ -819,26 +824,26 @@ export default function MyInventory() {
                   </TableHead>
                 )}
                 <TableHead
-                  className={`sticky z-20 h-8 bg-slate-50 px-2 text-[11px] text-slate-500 shadow-[1px_0_0_#e2e8f0] ${multiSelectMode ? "left-9" : "left-0"}`}
+                  className="inventory-model-cell sticky z-20 bg-slate-50 shadow-[1px_0_0_#e2e8f0]"
                 >
                   型号 / 品牌
                 </TableHead>
-                <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                <TableHead>
                   现货库存
                 </TableHead>
-                <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                <TableHead>
                   订货库存
                 </TableHead>
-                <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                <TableHead>
                   单价
                 </TableHead>
-                <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                <TableHead>
                   负责人
                 </TableHead>
-                <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                <TableHead>
                   状态
                 </TableHead>
-                <TableHead className="h-8 whitespace-nowrap px-2 text-right text-[11px] text-slate-500">
+                <TableHead className="inventory-actions-cell sticky right-0 z-30 bg-slate-50 text-right">
                   操作
                 </TableHead>
               </TableRow>
@@ -849,7 +854,7 @@ export default function MyInventory() {
                 return (
                   <TableRow
                     key={item.id}
-                    className={`h-14 ${
+                    className={`inventory-data-row ${
                       bulkFailures[item.id]
                         ? "bg-red-50/60"
                         : selectedIds.has(item.id)
@@ -859,7 +864,7 @@ export default function MyInventory() {
                   >
                     {multiSelectMode && (
                       <TableCell
-                        className={`sticky left-0 z-20 w-9 px-2 py-1.5 shadow-[1px_0_0_#e2e8f0] ${
+                        className={`inventory-selection-cell sticky left-0 z-20 shadow-[1px_0_0_#e2e8f0] ${
                           bulkFailures[item.id]
                             ? "bg-red-50"
                             : selectedIds.has(item.id)
@@ -877,7 +882,7 @@ export default function MyInventory() {
                       </TableCell>
                     )}
                     <TableCell
-                      className={`sticky z-10 px-2 py-1.5 text-[12px] shadow-[1px_0_0_#e2e8f0] ${multiSelectMode ? "left-9" : "left-0"} ${
+                      className={`inventory-model-cell sticky z-10 shadow-[1px_0_0_#e2e8f0] ${
                         bulkFailures[item.id]
                           ? "bg-red-50"
                           : selectedIds.has(item.id)
@@ -886,45 +891,45 @@ export default function MyInventory() {
                       }`}
                     >
                       <div
-                        className="truncate font-semibold text-slate-800"
+                        className="admin-cell-primary truncate font-medium"
                         title={item.partNumber}
                       >
                         {item.partNumber}
                       </div>
                       <div
-                        className="mt-0.5 truncate text-[11px] text-muted-foreground"
+                        className="admin-cell-secondary mt-0.5 truncate"
                         title={item.brand}
                       >
                         {item.brand || "—"}
                       </div>
                       {bulkFailures[item.id] && (
-                        <div className="mt-1 max-w-[300px] rounded bg-red-100 px-1.5 py-1 text-[11px] font-normal leading-4 text-red-700">
+                        <div className="inventory-failure mt-1 max-w-[300px] whitespace-normal rounded bg-red-100 px-1.5 py-1 font-normal text-red-700">
                           操作失败：{bulkFailures[item.id]}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="px-2 py-1.5 text-[12px]">
-                      <div className="font-medium tabular-nums text-slate-800">
+                    <TableCell>
+                      <div className="admin-cell-primary font-medium tabular-nums">
                         {formatInventoryQuantity(quantityDisplay.spotQuantity)}
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 py-1.5 text-[12px]">
-                      <div className="font-medium tabular-nums text-slate-800">
+                    <TableCell>
+                      <div className="admin-cell-primary font-medium tabular-nums">
                         {formatInventoryQuantity(quantityDisplay.orderQuantity)}
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 py-1.5 text-[12px]">
-                      <div className="font-medium tabular-nums text-slate-800">
+                    <TableCell>
+                      <div className="admin-cell-primary font-medium tabular-nums">
                         {item.priceEx != null ? `¥${item.priceEx}` : "面议"}
                       </div>
                       {item.priceEx != null && (
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                        <div className="admin-cell-secondary mt-0.5">
                           {item.taxIncluded === false ? "未税价" : "含税价"}
                         </div>
                       )}
                     </TableCell>
                     <TableCell
-                      className="truncate px-2 py-1.5 text-[12px] text-muted-foreground"
+                      className="admin-cell-primary truncate"
                       title={
                         ownerNames.get(Number(item.ownerUserId)) ||
                         `用户${item.ownerUserId}`
@@ -933,22 +938,22 @@ export default function MyInventory() {
                       {ownerNames.get(Number(item.ownerUserId)) ||
                         `用户${item.ownerUserId}`}
                     </TableCell>
-                    <TableCell className="px-2 py-1.5">
+                    <TableCell>
                       <div className="flex flex-col items-start gap-1">
-                        <div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-slate-600">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <span
                             className={`text-[10px] ${statusDotClass(item.status)}`}
                             aria-hidden="true"
                           >
                             ●
                           </span>
-                          <span className="font-medium text-slate-700">
+                          <span className="admin-cell-primary font-medium">
                             {statusLabel(item.status)}
                           </span>
                           {item.status === "published" && (
                             <>
                               <span className="text-slate-300">·</span>
-                              <span>
+                              <span className="admin-cell-secondary">
                                 {item.companyCatalogVisible
                                   ? "全部可见"
                                   : "仅搜索可见"}
@@ -959,7 +964,7 @@ export default function MyInventory() {
                         {item.status === "offshelf" &&
                           item.offshelfBy === "admin" && (
                             <span
-                              className="max-w-[190px] truncate text-[11px] text-red-600"
+                              className="inventory-status-note max-w-[210px] truncate text-red-600"
                               title={item.offshelfReason || undefined}
                             >
                               平台下架
@@ -971,13 +976,19 @@ export default function MyInventory() {
                         {item.status === "offshelf" &&
                           item.offshelfBy === "system" &&
                           item.offshelfReason === "sold_out" && (
-                            <span className="max-w-[190px] text-[11px] leading-4 text-amber-700">
+                            <span className="inventory-status-note max-w-[210px] whitespace-normal text-amber-700">
                               库存售罄，请补充数量后重新上架
                             </span>
                           )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className={`inventory-actions-cell sticky right-0 z-20 text-right ${
+                      bulkFailures[item.id]
+                        ? "bg-red-50"
+                        : selectedIds.has(item.id)
+                          ? "bg-[#f5f9fd]"
+                          : "bg-white"
+                    }`}>
                       <div className="inline-flex items-center whitespace-nowrap divide-x divide-slate-200">
                         {/*
                           编辑入口：在售条目可直接修改并重新发布，无需先下架。
@@ -993,7 +1004,7 @@ export default function MyInventory() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 rounded-none px-2 text-[11px] text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                              className="admin-row-action inventory-row-action rounded-none text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                             >
                               编辑
                             </Button>
@@ -1003,7 +1014,7 @@ export default function MyInventory() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 rounded-none px-2 text-[11px] text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                            className="admin-row-action inventory-row-action rounded-none text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                             disabled={offshelfMutation.isPending}
                             onClick={() => {
                               if (
@@ -1022,7 +1033,7 @@ export default function MyInventory() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 rounded-none px-2 text-[11px] text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                            className="admin-row-action inventory-row-action rounded-none text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
                             disabled={publishMutation.isPending}
                             onClick={() => {
                               if (
@@ -1043,7 +1054,7 @@ export default function MyInventory() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 rounded-none px-2 text-[11px] text-destructive hover:bg-destructive/5 hover:text-destructive"
+                          className="admin-row-action inventory-row-action rounded-none text-destructive hover:bg-destructive/5 hover:text-destructive"
                           disabled={removeMutation.isPending}
                           onClick={() => {
                             if (
@@ -1068,16 +1079,16 @@ export default function MyInventory() {
       </Card>
 
       {filtered.length > 0 && (
-        <div className="mt-3 mb-8 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div className="inventory-caption mt-3 mb-8 flex flex-wrap items-center justify-between gap-2">
           <span>
             共 {listResult?.total ?? 0} 条 · 每页最多{" "}
             {INVENTORY_BULK_ACTION_LIMIT} 条
           </span>
           <div className="flex items-center gap-2">
             <Button
-              size="sm"
+              size="default"
               variant="outline"
-              className="h-7 bg-white text-xs"
+              className="inventory-control bg-white"
               disabled={page <= 1 || bulkPending}
               onClick={() => goToPage(page - 1)}
             >
@@ -1087,9 +1098,9 @@ export default function MyInventory() {
               第 {page} / {pageCount} 页
             </span>
             <Button
-              size="sm"
+              size="default"
               variant="outline"
-              className="h-7 bg-white text-xs"
+              className="inventory-control bg-white"
               disabled={page >= pageCount || bulkPending}
               onClick={() => goToPage(page + 1)}
             >
@@ -1098,6 +1109,7 @@ export default function MyInventory() {
           </div>
         </div>
       )}
+      </div>
     </PlatformLayout>
   );
 }

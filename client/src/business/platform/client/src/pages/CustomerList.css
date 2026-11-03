@@ -1,0 +1,123 @@
+.customer-list-page {
+  min-width: 0;
+}
+
+.customer-list-page .customer-list-control {
+  height: var(--admin-control-height, 40px);
+  font-size: var(--admin-font-label, 14px);
+}
+
+.customer-list-page .customer-list-caption {
+  color: var(--admin-color-muted, #64748b);
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 1.5;
+}
+
+.customer-list-page .customer-list-status {
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 18px;
+}
+
+.customer-list-page .customer-list-table-scroll {
+  isolation: isolate;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline-end: 112px;
+}
+
+.customer-list-page .customer-list-table {
+  width: 100%;
+  min-width: 1228px;
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+}
+
+.customer-list-page .customer-list-table th {
+  height: var(--admin-control-height, 40px);
+  padding: 8px 12px;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-label, 14px);
+}
+
+.customer-list-page .customer-list-table tbody tr {
+  height: 64px;
+}
+
+.customer-list-page .customer-list-table td {
+  padding: 8px 12px;
+  font-size: var(--admin-font-body, 15px);
+  line-height: 22px;
+}
+
+.customer-list-page .customer-list-table tr {
+  border-color: var(--admin-color-border, #e2e8f0);
+}
+
+.customer-list-page .customer-list-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.customer-list-page .customer-list-name {
+  color: #185fa5;
+  font-size: var(--admin-font-body, 15px);
+  line-height: 22px;
+}
+
+.customer-list-page .customer-list-secondary-data {
+  color: var(--admin-color-secondary, #475569);
+}
+
+/* Match this page's two-line contact summary without changing its shared component. */
+.customer-list-page .customer-list-contacts-cell > div > div:first-child {
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+}
+
+.customer-list-page .customer-list-contacts-cell > div > div + div {
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 18px;
+}
+
+.customer-list-page .customer-list-followup-cell > div:first-child {
+  font-size: var(--admin-font-caption, 13px);
+}
+
+.customer-list-page .customer-list-row-action,
+.customer-list-page .customer-list-pagination {
+  height: var(--admin-row-action-height, 34px);
+  font-size: var(--admin-font-label, 14px);
+}
+
+.customer-list-page .customer-list-row-action {
+  min-width: 60px;
+  scroll-margin-inline: 8px;
+  border: 1px solid #cbd9eb;
+  background: #f8fbff;
+  color: #185fa5;
+  box-shadow: none;
+}
+
+.customer-list-page .customer-list-row-action:hover:not(:disabled) {
+  border-color: #9ab4d7;
+  background: #edf4fc;
+  color: #0c447c;
+}
+
+/* Keep the follow-up action reachable while other columns scroll underneath. */
+.customer-list-page .customer-list-table .customer-list-actions-column {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  border-left: 1px solid var(--admin-color-border, #e2e8f0);
+  background: #fff;
+  box-shadow: -4px 0 8px -6px #64748b;
+}
+
+.customer-list-page .customer-list-table th.customer-list-actions-column {
+  z-index: 2;
+  background: #f8fafc;
+}
+
+.customer-list-page .customer-list-table tbody tr:hover .customer-list-actions-column {
+  background: #f8fafc;
+}

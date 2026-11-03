@@ -45,7 +45,7 @@ describe("BusinessWorkbenchPage native migration contract", () => {
     );
     expectCodeToContain(
       page,
-      "return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} scopeRevalidating={merchantList.isFetching} />"
+      "return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} scopeRevalidating={merchantList.isFetching} session={session} />"
     );
     expect(page).not.toContain("merchants[0]");
     expect(page).not.toContain("MerchantSelection");
@@ -73,7 +73,10 @@ describe("BusinessWorkbenchPage native migration contract", () => {
     expectCodeToContain(page, 'title="无法读取授权商户"');
     expectCodeToContain(page, "merchantList.error.message ||");
     expectCodeToContain(page, 'retryTestId="business-discovery-retry"');
-    expectCodeToContain(page, "if (!principal || !rawContext)");
+    expectCodeToContain(
+      page,
+      "if (!principal || !rawContext || principal.adminAccountId !== session.adminAccountId)"
+    );
     expectCodeToContain(page, 'title="未绑定前台业务主体"');
   });
 

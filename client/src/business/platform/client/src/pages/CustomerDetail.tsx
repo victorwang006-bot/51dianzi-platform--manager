@@ -19,6 +19,7 @@ import { CustomerContactsManager } from "../components/customers/CustomerContact
 import { BeijingDateTimePicker } from "../components/customers/BeijingDateTimePicker";
 import { CustomerDemandHistory } from "../components/customerDemands/CustomerDemandHistory";
 import "../components/customers/CustomerDetailCompact.css";
+import "./CustomerDetailReadability.css";
 import {
   beijingDateTimeLocalToIso,
   errorMessage,
@@ -360,11 +361,11 @@ export default function CustomerDetail() {
   const actionBusy = transferMutation.isPending || archiveMutation.isPending || restoreMutation.isPending;
 
   return <PlatformLayout>
-    <main className="erp-ui customer-detail-compact mx-auto max-w-6xl p-4 sm:p-5">
+    <main className="erp-ui customer-detail-compact customer-detail-readable mx-auto max-w-6xl p-4 sm:p-5">
       <div className="customer-detail-top-actions mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2"><h1 className="text-lg font-semibold text-slate-800">{customer.name}</h1><span className={`crm-badge ${customer.grade === "A" ? "bg-[#FCEBEB] text-[#A32D2D]" : customer.grade === "B" ? "bg-[#FFF7E6] text-[#B8741A]" : "bg-[#e8f0fe] text-[#185FA5]"}`}>{customer.grade}级</span>{isArchived && <span className="crm-badge bg-slate-100 text-slate-500">已归档</span>}</div>
-          <p className="mt-1 text-xs text-muted-foreground">负责人：{customer.assignedName} · 创建于 {formatCustomerDateTime(customer.createdAt)}</p>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2"><h1 className="admin-page-title customer-detail-name">{customer.name}</h1><span className={`crm-badge ${customer.grade === "A" ? "bg-[#FCEBEB] text-[#A32D2D]" : customer.grade === "B" ? "bg-[#FFF7E6] text-[#B8741A]" : "bg-[#e8f0fe] text-[#185FA5]"}`}>{customer.grade}级</span>{isArchived && <span className="crm-badge bg-slate-100 text-slate-500">已归档</span>}</div>
+          <p className="customer-detail-meta mt-1">负责人：{customer.assignedName} · 创建于 {formatCustomerDateTime(customer.createdAt)}</p>
         </div>
         <div className="flex flex-wrap gap-2"><button type="button" className="crm-btn" title="回到进入详情前的页面，保留筛选、页码与位置" onClick={() => returnToPageSource(navigate, "/customers")}>返回上一页</button>{canManageAll && !isArchived && <button type="button" className="crm-btn crm-btn-up" onClick={() => setActionDialog("transfer")}>转移负责人</button>}{canManageAll && !isArchived && <button type="button" className="crm-btn crm-btn-danger" onClick={() => setActionDialog("archive")}>归档</button>}{canManageAll && isArchived && <button type="button" className="crm-btn crm-btn-primary" onClick={() => setActionDialog("restore")}>恢复客户</button>}</div>
       </div>
@@ -376,15 +377,17 @@ export default function CustomerDetail() {
       <section id="customer-base" className="customer-detail-basic mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h2 className="text-sm font-semibold text-slate-800">基础信息</h2>
-              {basicDirty && <span className="text-xs text-amber-700" role="status">未保存</span>}
-              <span className="text-xs text-slate-600">主联系人：{customer.contactName || "—"}</span>
-              <span className="text-xs text-slate-600">电话：{customer.phone || "—"}</span>
-              <span className="text-xs text-slate-600">所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
-              <span className="text-xs text-slate-600">当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="admin-section-title">基础信息</h2>
+              {basicDirty && <span className="text-[13px] text-amber-700" role="status">未保存</span>}
             </div>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
+            <div className="customer-detail-summary mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              <span>主联系人：{customer.contactName || "—"}</span>
+              <span>电话：{customer.phone || "—"}</span>
+              <span>所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
+              <span>当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
+            </div>
+            <p className="customer-detail-meta mt-1">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {!isArchived && basicExpanded && <button type="button" className="crm-btn crm-btn-primary" disabled={!form || updateMutation.isPending || !contactScope.ready} onClick={() => void submitUpdate()}>{updateMutation.isPending ? "保存中…" : "保存修改"}</button>}
@@ -398,7 +401,7 @@ export default function CustomerDetail() {
 
       <section id="customer-contacts" className="mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div><h2 className="text-sm font-semibold text-slate-800">联系人</h2></div>
+          <div><h2 className="admin-section-title">联系人</h2></div>
           <button type="button" className="crm-btn crm-btn-primary" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
         </div>
       </section>
@@ -410,12 +413,12 @@ export default function CustomerDetail() {
 
       <section id="customer-followups" className="customer-detail-followups mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-          <div><h2 className="text-sm font-semibold text-slate-800">跟进记录</h2><p className="mt-0.5 text-[11px] text-muted-foreground">跟进仅可追加；如需更正，请基于原记录追加一条更正说明。</p></div>
+          <div><h2 className="admin-section-title">跟进记录</h2><p className="customer-detail-meta mt-1">跟进仅可追加；如需更正，请基于原记录追加一条更正说明。</p></div>
           {!isArchived && !followOpen && <button type="button" className="crm-btn crm-btn-primary" onClick={() => openFollowUp()}>新增跟进</button>}
         </div>
         {!isArchived && followOpen && <div className="customer-detail-followup-form border-b border-slate-100 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div><h3 className="text-sm font-medium text-slate-700">{followUp.correctionOfId ? `更正跟进 #${followUp.correctionOfId}` : "新增跟进"}</h3>{followUp.correctionOfId && <p className="mt-0.5 text-[11px] text-amber-700">将追加一条更正记录，原记录不会被修改。</p>}</div>
+            <div><h3 className="text-[15px] font-medium text-slate-800">{followUp.correctionOfId ? `更正跟进 #${followUp.correctionOfId}` : "新增跟进"}</h3>{followUp.correctionOfId && <p className="mt-1 text-[13px] text-amber-700">将追加一条更正记录，原记录不会被修改。</p>}</div>
           </div>
           {followUpError && <div className="mb-3 rounded border border-[#F5C2C2] bg-[#FFF4F4] px-3 py-2 text-xs text-[#A32D2D]" role="alert">{followUpError}</div>}
           <div className="customer-detail-followup-row">
@@ -444,7 +447,7 @@ function FollowUpRow({ item, readOnly, onCorrect }: { item: CustomerFollowUp; re
   const [expanded, setExpanded] = useState(false);
   const canExpand = item.content.length > 160 || item.content.split("\n").length > 3;
   const content = !expanded && canExpand ? `${item.content.slice(0, 160)}…` : item.content;
-  return <article className="px-4 py-3"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="crm-badge bg-[#e8f0fe] text-[#185FA5]">{CUSTOMER_FOLLOW_LABELS[item.method]}</span>{item.correctionOfId && <span className="crm-badge bg-[#FFF7E6] text-[#B8741A]">更正 # {item.correctionOfId}</span>}<span className="text-xs text-slate-500">{item.authorName}</span></div><p className="mt-1.5 whitespace-pre-wrap text-xs leading-5 text-slate-700">{content}</p>{canExpand && <button type="button" className="crm-link mt-1 text-xs" onClick={() => setExpanded(open => !open)}>{expanded ? "收起内容" : "展开内容"}</button>}</div><div className="flex shrink-0 items-center gap-3"><time className="text-xs text-muted-foreground">{formatCustomerDateTime(item.occurredAt)}</time>{!readOnly && <button type="button" className="crm-link text-xs" onClick={onCorrect}>更正此记录</button>}</div></div></article>;
+  return <article className="px-4 py-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="crm-badge bg-[#e8f0fe] text-[#185FA5]">{CUSTOMER_FOLLOW_LABELS[item.method]}</span>{item.correctionOfId && <span className="crm-badge bg-[#FFF7E6] text-[#B8741A]">更正 # {item.correctionOfId}</span>}<span className="customer-detail-meta">{item.authorName}</span></div><p className="customer-detail-followup-body mt-2 whitespace-pre-wrap">{content}</p>{canExpand && <button type="button" className="crm-link admin-row-action customer-detail-history-action mt-1" onClick={() => setExpanded(open => !open)}>{expanded ? "收起内容" : "展开内容"}</button>}</div><div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1"><time className="customer-detail-meta whitespace-nowrap">{formatCustomerDateTime(item.occurredAt)}</time>{!readOnly && <button type="button" className="crm-link admin-row-action customer-detail-history-action" onClick={onCorrect}>更正此记录</button>}</div></div></article>;
 }
 
 function ErrorState({ message, onBack, onRetry }: { message: string; onBack: () => void; onRetry?: () => void }) {

@@ -38,6 +38,7 @@ import {
 } from "../components/ui/table";
 
 import { getBusinessIndustryLabel } from "../../../shared/businessIndustry";
+import "./CustomerList.css";
 
 const PAGE_SIZE = 20;
 type GradeFilter = "" | CustomerData["grade"];
@@ -66,7 +67,7 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 const toolbarActionClass =
-  "h-8 min-w-[60px] border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
+  "customer-list-control min-w-[64px] border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
 
 export default function CustomerList() {
   const d51Ready = usePageMemory();
@@ -287,8 +288,9 @@ export default function CustomerList() {
 
   return (
     <PlatformLayout>
+      <div className="customer-list-page">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="text-lg font-semibold text-slate-800">客户列表</h1>
+        <h1 className="admin-page-title">客户列表</h1>
         <div className="flex flex-wrap items-center gap-2">
           {canManageAll ? (
             <Select
@@ -297,7 +299,7 @@ export default function CustomerList() {
             >
               <SelectTrigger
                 aria-label="客户范围"
-                className="h-8 w-[112px] bg-white text-xs"
+                className="customer-list-control w-[126px] bg-white"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -310,8 +312,7 @@ export default function CustomerList() {
           <Button
             ref={createButtonRef}
             type="button"
-            size="sm"
-            className="h-8 bg-[#185FA5] text-xs hover:bg-[#0C447C]"
+            className="customer-list-control bg-[#185FA5] hover:bg-[#0C447C]"
             aria-expanded={createOpen}
             aria-controls="customer-entry-panel"
             disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
@@ -323,7 +324,7 @@ export default function CustomerList() {
         </div>
       </div>
 
-      <section className="mb-3 rounded-lg border border-slate-200 bg-white p-2">
+      <section className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             placeholder="搜索客户名称、联系人或电话"
@@ -333,7 +334,7 @@ export default function CustomerList() {
             onKeyDown={event => {
               if (event.key === "Enter") applyFilters();
             }}
-            className="h-8 w-full bg-white text-xs sm:w-[230px]"
+            className="customer-list-control w-full bg-white sm:w-[276px]"
           />
           <Select
             value={draftFilters.grade || "all"}
@@ -346,7 +347,7 @@ export default function CustomerList() {
           >
             <SelectTrigger
               aria-label="按客户等级筛选"
-              className="h-8 w-[112px] bg-white text-xs"
+              className="customer-list-control w-[126px] bg-white"
             >
               <SelectValue />
             </SelectTrigger>
@@ -365,7 +366,7 @@ export default function CustomerList() {
           >
             <SelectTrigger
               aria-label="按跟进状态筛选"
-              className="h-8 w-[126px] bg-white text-xs"
+              className="customer-list-control w-[140px] bg-white"
             >
               <SelectValue />
             </SelectTrigger>
@@ -378,7 +379,6 @@ export default function CustomerList() {
           <div className="inline-flex items-center gap-1.5">
             <Button
               type="button"
-              size="sm"
               variant="outline"
               className={toolbarActionClass}
               onClick={applyFilters}
@@ -387,7 +387,6 @@ export default function CustomerList() {
             </Button>
             <Button
               type="button"
-              size="sm"
               variant="outline"
               className={toolbarActionClass}
               disabled={!canResetFilters}
@@ -397,10 +396,9 @@ export default function CustomerList() {
             </Button>
             <Button
               type="button"
-              size="sm"
               variant="outline"
               aria-expanded={moreFiltersOpen}
-              className="h-8 min-w-[88px] justify-between border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900"
+              className="customer-list-control min-w-[110px] justify-between border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900"
               onClick={() => setMoreFiltersOpen(open => !open)}
             >
               更多筛选
@@ -424,7 +422,7 @@ export default function CustomerList() {
             >
               <SelectTrigger
                 aria-label="按客户阶段筛选"
-                className="h-8 w-[126px] bg-white text-xs"
+                className="customer-list-control w-[140px] bg-white"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -446,7 +444,7 @@ export default function CustomerList() {
               >
                 <SelectTrigger
                   aria-label="按负责人筛选"
-                  className="h-8 w-[142px] bg-white text-xs"
+                  className="customer-list-control w-[156px] bg-white"
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -471,7 +469,7 @@ export default function CustomerList() {
             >
               <SelectTrigger
                 aria-label="按归档状态筛选"
-                className="h-8 w-[126px] bg-white text-xs"
+                className="customer-list-control w-[140px] bg-white"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -524,10 +522,10 @@ export default function CustomerList() {
             </div>
           ) : (result?.items.length ?? 0) === 0 ? (
             <div className="p-14 text-center">
-              <p className="text-sm font-medium text-slate-600">
+              <p className="admin-cell-primary font-medium">
                 {emptyMessage}
               </p>
-              <p className="mt-1.5 text-xs text-muted-foreground">
+              <p className="customer-list-caption mt-1.5">
                 {appliedFilters.archived
                   ? "归档客户会保留历史记录，可由管理员恢复。"
                   : "可以新建客户，或调整筛选条件后再试。"}
@@ -537,7 +535,7 @@ export default function CustomerList() {
                   type="button"
                   variant="link"
                   size="sm"
-                  className="mt-2 h-7 px-0 text-xs text-[#185FA5]"
+                  className="admin-row-action mt-2 px-0 text-[#185FA5]"
                   disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
                   onClick={() => {
                     setCreateOpen(true);
@@ -549,41 +547,41 @@ export default function CustomerList() {
               ) : null}
             </div>
           ) : (
-            <Table className="min-w-[1040px] table-fixed">
+            <Table className="admin-table-readable customer-list-table table-fixed" containerClassName="customer-list-table-scroll" aria-label="客户列表，可横向滚动查看全部列">
               <colgroup>
-                <col />
-                <col className="w-[140px]" />
-                <col className="w-[164px]" />
-                <col className="w-[116px]" />
-                <col className="w-[96px]" />
-                <col className="w-[156px]" />
-                <col className="w-[88px]" />
-                <col className="w-[72px]" />
+                <col className="w-[236px]" />
+                <col className="w-[136px]" />
+                <col className="w-[208px]" />
+                <col className="w-[144px]" />
+                <col className="w-[108px]" />
+                <col className="w-[176px]" />
+                <col className="w-[120px]" />
+                <col className="w-[100px]" />
               </colgroup>
               <TableHeader>
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                  <TableHead>
                     客户名称
                   </TableHead>
-                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                  <TableHead>
                     所属行业
                   </TableHead>
-                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                  <TableHead>
                     联系人 / 电话
                   </TableHead>
-                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                  <TableHead>
                     等级 / 阶段
                   </TableHead>
-                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                  <TableHead>
                     负责人
                   </TableHead>
-                  <TableHead className="h-8 px-3 text-center text-[11px] text-slate-500" data-testid="followup-header">
+                  <TableHead className="text-center" data-testid="followup-header">
                     下次跟进
                   </TableHead>
-                  <TableHead className="h-8 px-2 text-center text-[11px] text-slate-500" data-testid="demand-header">
+                  <TableHead className="text-center" data-testid="demand-header">
                     需求
                   </TableHead>
-                  <TableHead className="h-8 whitespace-nowrap border-l border-slate-100 px-3 text-center text-[11px] text-slate-500" data-testid="actions-header">
+                  <TableHead className="customer-list-actions-column text-center" data-testid="actions-header">
                     操作
                   </TableHead>
                 </TableRow>
@@ -593,11 +591,11 @@ export default function CustomerList() {
                   const incomplete = customerNeedsCompletion(customer);
                   const overdue = isFollowUpOverdue(customer.nextFollowUpAt);
                   return (
-                    <TableRow key={customer.id} className="h-14" data-page-memory-row={String(customer.id)}>
-                      <TableCell className="px-2 py-1.5 text-[12px]">
+                    <TableRow key={customer.id} data-page-memory-row={String(customer.id)}>
+                      <TableCell>
                         <button
                           type="button"
-                          className="block max-w-full truncate text-left font-semibold text-[#185FA5] hover:underline"
+                          className="customer-list-name block max-w-full truncate text-left font-medium hover:underline"
                           title={customer.name || "未命名客户"}
                           onClick={() => navigate(`/customers/${customer.id}`)}
                         >
@@ -605,19 +603,19 @@ export default function CustomerList() {
                         </button>
                         <div className="mt-0.5 flex items-center gap-1.5">
                           {incomplete ? (
-                            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                            <span className="customer-list-status rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
                               待补全
                             </span>
                           ) : null}
                           {customer.archivedAt ? (
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+                            <span className="customer-list-status rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
                               已归档
                             </span>
                           ) : null}
                         </div>
                       </TableCell>
-                      <TableCell className="truncate px-2 py-1.5 text-[12px] text-slate-600" title={getBusinessIndustryLabel(customer.industryCode)} data-testid="industry-cell">{getBusinessIndustryLabel(customer.industryCode)}</TableCell>
-                      <TableCell className="px-2 py-1.5 text-[12px]">
+                      <TableCell className="customer-list-secondary-data truncate" title={getBusinessIndustryLabel(customer.industryCode)} data-testid="industry-cell">{getBusinessIndustryLabel(customer.industryCode)}</TableCell>
+                      <TableCell className="customer-list-contacts-cell">
                         <CustomerContactsSummary
                           customerId={customer.id}
                           contactName={contactSummaries.get(customer.id)?.primaryContact?.name ?? customer.contactName}
@@ -628,15 +626,15 @@ export default function CustomerList() {
                           identityKey={contactScope.identityKey}
                         />
                       </TableCell>
-                      <TableCell className="px-2 py-1.5 text-[12px]">
+                      <TableCell>
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${gradeClass(customer.grade)}`}
+                            className={`customer-list-status rounded px-1.5 py-0.5 font-medium ${gradeClass(customer.grade)}`}
                           >
                             {customer.grade}
                           </span>
                           <span
-                            className="truncate text-slate-600"
+                            className="admin-cell-secondary truncate"
                             title={CUSTOMER_STAGE_LABELS[customer.stage]}
                           >
                             {CUSTOMER_STAGE_LABELS[customer.stage]}
@@ -644,12 +642,12 @@ export default function CustomerList() {
                         </div>
                       </TableCell>
                       <TableCell
-                        className="truncate px-2 py-1.5 text-[12px] text-slate-600"
+                        className="customer-list-secondary-data truncate"
                         title={customer.assignedName}
                       >
                         {customer.assignedName || "—"}
                       </TableCell>
-                      <TableCell className="px-3 py-1.5 text-center text-[12px] tabular-nums" data-testid="followup-cell">
+                      <TableCell className="customer-list-followup-cell text-center tabular-nums" data-testid="followup-cell">
                         <div
                           title={formatCustomerDateTime(customer.nextFollowUpAt)}
                           className={
@@ -657,37 +655,37 @@ export default function CustomerList() {
                               ? "truncate text-amber-700"
                               : customer.nextFollowUpAt
                                 ? "truncate text-slate-700"
-                                : "truncate text-muted-foreground"
+                                : "customer-list-caption truncate"
                           }
                         >
                           {formatCustomerDateTime(customer.nextFollowUpAt)}
                         </div>
                         {overdue ? (
-                          <div className="mt-0.5 text-[10px] text-amber-700">
+                          <div className="customer-list-status mt-0.5 text-amber-700">
                             已逾期
                           </div>
                         ) : null}
                       </TableCell>
-                      <TableCell className="px-2 py-1.5 text-center" data-testid="demand-cell">
+                      <TableCell className="text-center" data-testid="demand-cell">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           disabled={Boolean(customer.archivedAt)}
-                          className="h-7 whitespace-nowrap px-1.5 text-[11px] text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                          className="admin-row-action customer-list-row-action whitespace-nowrap px-3"
                           onClick={() => setDemandCustomer({ id: customer.id, name: customer.name, archivedAt: customer.archivedAt })}
                         >
                           需求录入
                         </Button>
                       </TableCell>
-                      <TableCell className="border-l border-slate-100 px-3 py-1.5 text-center" data-testid="actions-cell">
+                      <TableCell className="customer-list-actions-column text-center" data-testid="actions-cell">
                         <div className="flex items-center justify-center gap-1 whitespace-nowrap">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             disabled={Boolean(customer.archivedAt)}
-                            className="h-7 shrink-0 px-1.5 text-[11px] text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                            className="admin-row-action customer-list-row-action shrink-0 px-3"
                             onClick={() =>
                               navigate(`/customers/${customer.id}?follow=1`)
                             }
@@ -703,7 +701,7 @@ export default function CustomerList() {
             </Table>
           )}
 
-          <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-3 py-2 text-xs text-muted-foreground">
+          <div className="customer-list-caption flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-3 py-3">
             <span className="whitespace-nowrap">
               共 {result?.total ?? 0} 条 · 第 {safePage} / {totalPages} 页
             </span>
@@ -712,7 +710,7 @@ export default function CustomerList() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-7 bg-white px-2 text-[11px]"
+                className="admin-row-action customer-list-pagination bg-white px-3"
                 disabled={safePage <= 1 || listQuery.isFetching}
                 onClick={() => setPage(value => Math.max(1, value - 1))}
               >
@@ -722,7 +720,7 @@ export default function CustomerList() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-7 bg-white px-2 text-[11px]"
+                className="admin-row-action customer-list-pagination bg-white px-3"
                 disabled={safePage >= totalPages || listQuery.isFetching}
                 onClick={() =>
                   setPage(value => Math.min(totalPages, value + 1))
@@ -738,6 +736,7 @@ export default function CustomerList() {
         customer={demandCustomer}
         onClose={() => setDemandCustomer(null)}
       />}
+      </div>
     </PlatformLayout>
   );
 }
@@ -782,7 +781,7 @@ function ErrorPanel({
         type="button"
         size="sm"
         variant="outline"
-        className="mt-3 h-8 text-xs"
+        className="customer-list-control mt-3"
         onClick={onRetry}
       >
         重试

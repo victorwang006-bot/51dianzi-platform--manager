@@ -907,7 +907,7 @@ export default function ChannelInventoryHost() {
             <span className="ci-filter-count">{channelResult?.total ?? 0} 条渠道</span>
           </div>
           <div className="ci-tablewrap">
-            <table className="ci-table ci-channel-table">
+            <table className="ci-table ci-channel-table admin-table-readable">
               <thead><tr><th className="ci-channel-name-col">渠道名称</th><th className="ci-channel-type-col">类型</th><th className="ci-channel-contact-col">联系人 / 联系方式</th><th className="ci-channel-status-col">状态</th><th className="ci-channel-date-col">更新时间</th><th className="ci-col-actions">操作</th></tr></thead>
               <tbody>
                 {channelsQuery.isLoading ? <tr><td colSpan={6} className="ci-empty">正在加载渠道…</td></tr> : null}
@@ -915,11 +915,11 @@ export default function ChannelInventoryHost() {
                 {!channelsQuery.isLoading && !channelsQuery.isError && !(channelResult?.items.length) ? <tr><td colSpan={6} className="ci-empty">暂无符合筛选条件的渠道。</td></tr> : null}
                 {channelResult?.items.map(channel => (
                   <tr key={channel.id}>
-                    <td><strong className="ci-channel-name">{channel.name}</strong></td>
+                    <td><strong className="ci-channel-name admin-cell-primary">{channel.name}</strong></td>
                     <td><span className="ci-channel-type-tag">{channelTypeLabel(channel.type)}</span></td>
-                    <td><div>{channel.contactName || "—"}</div><small className="ci-subtext">{[channel.phone, channel.wechat ? `微信 ${channel.wechat}` : null, channel.qq ? `QQ ${channel.qq}` : null].filter(Boolean).join(" · ") || "未填写联系方式"}</small></td>
+                    <td><div className="admin-cell-primary">{channel.contactName || "—"}</div><small className="ci-subtext admin-cell-secondary">{[channel.phone, channel.wechat ? `微信 ${channel.wechat}` : null, channel.qq ? `QQ ${channel.qq}` : null].filter(Boolean).join(" · ") || "未填写联系方式"}</small></td>
                     <td><span className={channel.active ? "ci-status ci-status-active" : "ci-status ci-status-inactive"}>{activeLabel(channel.active)}</span></td>
-                    <td className="ci-date">{displayDate(channel.updatedAt)}</td>
+                    <td className="ci-date admin-cell-secondary">{displayDate(channel.updatedAt)}</td>
                     <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link" onClick={() => void downloadChannelMaterials(channel)} disabled={busy !== null || downloadingChannelId !== null || !contextCurrent} aria-busy={downloadingChannelId === channel.id}>{downloadingChannelId === channel.id ? "下载中…" : "下载库存"}</button><button type="button" className="ci-inline-link" onClick={() => viewChannelMaterials(channel)} disabled={busy !== null}>查看库存</button><button type="button" className="ci-inline-link" onClick={() => openChannelEdit(channel)} disabled={busy !== null || !channel.canEdit}>编辑</button><button type="button" className={channel.active ? "ci-inline-link ci-danger-link" : "ci-inline-link"} onClick={() => void toggleChannel(channel)} disabled={busy !== null || !channel.canEdit}>{channel.active ? "停用" : "启用"}</button></div></td>
                   </tr>
                 ))}
@@ -941,7 +941,7 @@ export default function ChannelInventoryHost() {
             <span className="ci-filter-count">{materialTotal} 条库存</span>
           </div>
           <div className="ci-tablewrap ci-compact-tablewrap">
-            <table className="ci-table ci-compact-stock-table ci-stock-edit-table">
+            <table className="ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable">
               <thead><tr><th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button" aria-label="按可供数量排序" onClick={() => cycleSort("qty")}>可供数量{sortArrow("qty")}</button></th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>Date Code / 更新{sortArrow("dateCode")}</button></th><th className="ci-material-source-col">渠道来源</th><th className="ci-col-actions">操作</th></tr></thead>
               <tbody>
                 {materialsQuery.isLoading ? <tr><td colSpan={8} className="ci-empty">正在加载渠道库存…</td></tr> : null}
@@ -949,13 +949,13 @@ export default function ChannelInventoryHost() {
                 {!materialsQuery.isLoading && !materialsQuery.isError && !materialRows.length ? <tr><td colSpan={8} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
                 {materialRows.map((material, index) => (
                   <tr key={material.id}>
-                    <td className="ci-number">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td>
-                    <td><div className="ci-part-with-type"><strong className="ci-cell-title">{material.partNumber}</strong></div><small className="ci-subtext">{material.brand}</small></td>
-                    <td className="ci-number">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td>
-                    <td className="ci-price">{material.price === null ? "面议" : `¥${material.price}`}<small className="ci-subtext">{material.taxIncluded === null ? "税务待确认" : material.taxIncluded ? "含税" : "未税"}</small></td>
-                    <td>{material.leadTime || "待确认"}</td>
-                    <td className="ci-date"><div>{material.dateCode || "—"}</div><small className="ci-subtext">{displayDate(material.updatedAt)}</small></td>
-                    <td>{material.canViewSource && (material.isMine || canFilterSource) && material.channelSource ? material.channelSource.name : "无权查看"}</td>
+                    <td className="ci-number ci-row-index">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td>
+                    <td><div className="ci-part-with-type"><strong className="ci-cell-title admin-cell-primary">{material.partNumber}</strong></div><small className="ci-subtext admin-cell-secondary">{material.brand}</small></td>
+                    <td className="ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td>
+                    <td className="ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}<small className="ci-subtext admin-cell-secondary">{material.taxIncluded === null ? "税务待确认" : material.taxIncluded ? "含税" : "未税"}</small></td>
+                    <td className="ci-lead-time admin-cell-secondary">{material.leadTime || "待确认"}</td>
+                    <td className="ci-date"><div className="admin-cell-primary">{material.dateCode || "—"}</div><small className="ci-subtext admin-cell-secondary">{displayDate(material.updatedAt)}</small></td>
+                    <td className="admin-cell-primary">{material.canViewSource && (material.isMine || canFilterSource) && material.channelSource ? material.channelSource.name : "无权查看"}</td>
                     <td className="ci-col-actions"><div className="ci-row-actions">{material.isMine && material.canEdit && !material.readOnly ? <button type="button" className="ci-inline-link" onClick={() => void openMaterialEdit(material)} disabled={busy !== null || !canWriteMaterials}>编辑</button> : <span className="ci-readonly">只读</span>}</div></td>
                   </tr>
                 ))}

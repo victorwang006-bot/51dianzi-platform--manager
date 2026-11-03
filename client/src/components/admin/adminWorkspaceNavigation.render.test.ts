@@ -708,12 +708,12 @@ describe("两行正式导航组件", () => {
     expect(css).toContain("max-width: 100%");
     expect(css).toContain("min-width: 0");
     expect(css).toMatch(
-      /\.admin-workspace-nav__module\s*\{[^}]*font-size: 13px;[^}]*font-weight: 400;[^}]*line-height: 40px;/
+      /\.admin-workspace-nav__module\s*\{[^}]*font-size: var\(--admin-font-label\);[^}]*font-weight: 400;[^}]*line-height: 40px;/
     );
     expect(css).toMatch(
       /\.admin-workspace-nav__module\[data-active="true"\]\s*\{\s*font-weight: 500;/
     );
-    expect(css).toContain("border-bottom-color: #185fa5");
+    expect(css).toContain("border-bottom-color: var(--admin-color-brand)");
     expect(css).toContain(":focus-visible");
   });
 });

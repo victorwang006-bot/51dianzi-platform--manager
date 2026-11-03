@@ -1,0 +1,117 @@
+/* Page-only overrides: retain the shared compact layout and business components. */
+.erp-ui.customer-detail-compact.customer-detail-readable {
+  color: var(--admin-color-text, #1F2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.6;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable :is(.customer-detail-top-actions, .customer-detail-basic, .customer-detail-followups) {
+  color: var(--admin-color-text, #1F2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.6;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-name {
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-summary {
+  color: var(--admin-color-text, #1F2937);
+  font-size: var(--admin-font-body, 15px);
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-meta {
+  color: var(--admin-color-muted, #64748B);
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .crm-btn {
+  min-height: var(--admin-control-height, 40px);
+  height: auto;
+  padding: 8px 14px;
+  font-size: var(--admin-font-label, 14px);
+  line-height: 20px;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-basic .customer-fields label,
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-followup-form label > span {
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-label, 14px);
+  line-height: 1.5;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-basic .customer-fields [data-customer-field] {
+  /* Shared CustomerFields uses !h-8 / !text-xs: contain the override to this page. */
+  height: var(--admin-control-height, 40px) !important;
+  font-size: var(--admin-font-body, 15px) !important;
+  color: var(--admin-color-text, #1F2937);
+  line-height: 1.5;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-basic .customer-fields label + div.h-8 {
+  min-height: var(--admin-control-height, 40px);
+  height: auto;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-body, 15px);
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-basic .customer-fields > div {
+  gap: 16px 12px;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-followup-form :is(select.crm-input, .customer-detail-datetime button) {
+  min-height: var(--admin-control-height, 40px);
+  height: var(--admin-control-height, 40px);
+  color: var(--admin-color-text, #1F2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.5;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-followup-row {
+  gap: 16px 12px;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-followup-row > label {
+  min-width: 0;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-followups textarea.customer-detail-followup-content {
+  min-height: 104px;
+  height: auto;
+  padding: 10px 12px;
+  color: var(--admin-color-text, #1F2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.7;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-followup-body {
+  color: var(--admin-color-text, #1F2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-history-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--admin-row-action-height, 34px);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: var(--admin-font-label, 14px);
+  line-height: 20px;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-history-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.erp-ui.customer-detail-compact.customer-detail-readable :is(.customer-detail-basic, .customer-detail-followups) [role="alert"],
+.erp-ui.customer-detail-compact.customer-detail-readable > p,
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-follow-history > p {
+  font-size: var(--admin-font-caption, 13px);
+  line-height: 1.6;
+}

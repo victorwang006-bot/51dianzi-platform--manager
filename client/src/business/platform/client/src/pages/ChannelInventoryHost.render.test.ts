@@ -683,7 +683,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 32, expectedActorUserId: 8, partNumber: undefined, channelId: undefined, sortBy: undefined, page: 1 });
   });
 
-  it("applies the compact archive table constraints to native th and td elements", async () => {
+  it("applies readable archive table constraints to native th and td elements", async () => {
     renderHost();
     click(button("渠道库存"));
     await settle();
@@ -709,10 +709,15 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(headerStyle.width).toBe("24%");
     expect(headerStyle.paddingTop).toBe("10px");
     expect(headerStyle.paddingRight).toBe("10px");
-    expect(headerStyle.lineHeight).toBe("18px");
+    expect(headerStyle.lineHeight).toBe("20px");
     expect(cellStyle.paddingTop).toBe("10px");
     expect(cellStyle.paddingRight).toBe("10px");
-    expect(cellStyle.lineHeight).toBe("18px");
+    // The first cell is an auxiliary ordinal, not the main model text.
+    expect(cellStyle.lineHeight).toBe("20px");
+    expect(getComputedStyle(required(
+      stockTable.querySelector(".ci-cell-title"),
+      "missing primary model text",
+    )).lineHeight).toBe("22px");
   });
 
   it("creates with the original DTO and reads private notes only inside the owner editor", async () => {

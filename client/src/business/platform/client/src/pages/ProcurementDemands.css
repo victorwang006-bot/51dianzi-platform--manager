@@ -1,0 +1,87 @@
+/* Page-owned layout only; shared admin typography and action classes live in AdminReadability.css. */
+.procurement-demands-page,
+.procurement-demands-detail {
+  min-width: 0;
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+  line-height: 1.5;
+}
+
+.procurement-demands-page .procurement-demand-control,
+.procurement-demands-detail .procurement-demand-control {
+  height: var(--admin-control-height, 40px);
+  font-size: var(--admin-font-label, 14px);
+}
+
+.procurement-demands-detail .procurement-demand-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--admin-row-action-height, 34px);
+  height: var(--admin-row-action-height, 34px);
+}
+
+.procurement-demands-page .procurement-demands-table {
+  min-width: 1220px;
+  font-size: var(--admin-font-body, 15px);
+}
+
+.procurement-demands-page .procurement-demands-table th,
+.procurement-demands-detail .procurement-demand-items th {
+  height: 44px;
+  padding: 10px 12px;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-label, 14px);
+  font-weight: 500;
+}
+
+.procurement-demands-page .procurement-demands-table td,
+.procurement-demands-detail .procurement-demand-items td {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+
+.procurement-demands-page .procurement-demand-number,
+.procurement-demands-page .procurement-demand-model,
+.procurement-demands-detail .procurement-demand-model {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.procurement-demands-page .procurement-demand-priority {
+  font-size: var(--admin-font-caption, 13px);
+}
+
+.procurement-demands-page .procurement-demand-secondary-data {
+  color: var(--admin-color-secondary, #475569);
+}
+
+.procurement-demands-page .procurement-demand-actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: white;
+  box-shadow: -1px 0 0 var(--admin-color-border, #e2e8f0);
+}
+
+.procurement-demands-page th.procurement-demand-actions,
+.procurement-demands-page tr:hover td.procurement-demand-actions {
+  background: #f8fafc;
+}
+
+.procurement-demands-detail .procurement-demand-metadata {
+  overflow-wrap: anywhere;
+}
+
+.procurement-demands-detail .procurement-demand-items {
+  min-width: 920px;
+  font-size: var(--admin-font-body, 15px);
+}
+
+.procurement-demands-detail .procurement-demand-items tbody tr {
+  height: 56px;
+}
+
+.procurement-demands-detail .procurement-demand-items td {
+  overflow-wrap: anywhere;
+}

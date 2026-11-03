@@ -1,12 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap");
-
-/* Front source typography, intentionally scoped below the admin Dashboard shell. */
+/* Shared admin system typography; no external font requests. Token values are
+ * owned by styles/AdminReadability.css, not duplicated by business pages. */
 .business-native-content,
 #business-native-portals,
 body[data-business-native-fonts="true"] #business-native-portals *,
 body[data-business-native-fonts="true"] [data-sonner-toaster] {
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+  --font-sans: var(--admin-font-family);
+  font-family: var(--admin-font-family);
 }
 
 #business-native-portals {
@@ -14,10 +13,10 @@ body[data-business-native-fonts="true"] [data-sonner-toaster] {
   z-index: 60;
 }
 
-/* Radix itself puts modal/floating DOM into the dedicated root above. This rule
- * covers a fallback-to-body portal during an initial hydration edge case only. */
+/* Fallback-to-body portals during initial mount use the same system font. */
 body[data-business-native-fonts="true"] [data-radix-popper-content-wrapper],
-body[data-business-native-fonts="true"] [role="dialog"] {
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+body[data-business-native-fonts="true"] [role="dialog"],
+body[data-business-native-fonts="true"] [role="alertdialog"] {
+  --font-sans: var(--admin-font-family);
+  font-family: var(--admin-font-family);
 }

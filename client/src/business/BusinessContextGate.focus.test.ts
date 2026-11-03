@@ -113,7 +113,7 @@ describe("BusinessContextGate focus verification boundary", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps the previously verified tree mounted but blocks click, input, and submit until the same identity is reverified", async () => {
+  it("keeps the previously verified tree mounted and editable during background verification; commands still reach server authorization", async () => {
     const handlers = {
       onClick: vi.fn(),
       onInput: vi.fn(),
@@ -136,9 +136,9 @@ describe("BusinessContextGate focus verification boundary", () => {
     );
     expect(boundary?.getAttribute("aria-busy")).toBe("true");
     expect(boundary?.textContent).toContain(
-      "正在重新核验业务主体绑定；已暂停编辑和提交。"
+      "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
     );
-    expect(content?.hasAttribute("inert")).toBe(true);
+    expect(content?.hasAttribute("inert")).toBe(false);
     expect(form).not.toBeNull();
 
     const click = new window.MouseEvent("click", {
@@ -158,12 +158,12 @@ describe("BusinessContextGate focus verification boundary", () => {
       input?.dispatchEvent(inputEvent);
       form?.dispatchEvent(submit);
     });
-    expect(click.defaultPrevented).toBe(true);
-    expect(inputEvent.defaultPrevented).toBe(true);
-    expect(submit.defaultPrevented).toBe(true);
-    expect(handlers.onClick).not.toHaveBeenCalled();
-    expect(handlers.onInput).not.toHaveBeenCalled();
-    expect(handlers.onSubmit).not.toHaveBeenCalled();
+    expect(click.defaultPrevented).toBe(false);
+    expect(inputEvent.defaultPrevented).toBe(false);
+    expect(submit.defaultPrevented).toBe(false);
+    expect(handlers.onClick).toHaveBeenCalledTimes(1);
+    expect(handlers.onInput).toHaveBeenCalledTimes(1);
+    expect(handlers.onSubmit).toHaveBeenCalledTimes(1);
 
     await mounted.rerender("verified");
     expect(
@@ -197,8 +197,8 @@ describe("BusinessContextGate focus verification boundary", () => {
     expect(resumedClick.defaultPrevented).toBe(false);
     expect(resumedInput.defaultPrevented).toBe(false);
     expect(resumedSubmit.defaultPrevented).toBe(false);
-    expect(handlers.onClick).toHaveBeenCalledTimes(1);
-    expect(handlers.onInput).toHaveBeenCalledTimes(1);
-    expect(handlers.onSubmit).toHaveBeenCalledTimes(1);
+    expect(handlers.onClick).toHaveBeenCalledTimes(2);
+    expect(handlers.onInput).toHaveBeenCalledTimes(2);
+    expect(handlers.onSubmit).toHaveBeenCalledTimes(2);
   });
 });

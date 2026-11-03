@@ -1,0 +1,202 @@
+/* Admin-only visual contract. The body marker is owned by DashboardLayout and
+ * removed on unmount; it deliberately also reaches body-mounted portals.
+ * No auth, visibility, disabled state, icon dimensions or public-front rules. */
+:root {
+  --admin-font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --admin-font-body: 15px;
+  --admin-font-label: 14px;
+  --admin-font-caption: 13px;
+  --admin-control-height: 40px;
+  --admin-row-action-height: 34px;
+  --admin-color-text: #1F2937;
+  --admin-color-secondary: #475569;
+  --admin-color-muted: #64748B;
+  --admin-color-border: #E2E8F0;
+  --admin-color-brand: #315C9E;
+  --admin-color-page: #F5F7FA;
+}
+
+body[data-admin-readability="true"],
+.admin-workspace-shell,
+.business-native-content,
+#business-native-portals {
+  --font-sans: var(--admin-font-family);
+  --color-foreground: var(--admin-color-text);
+  --color-card-foreground: var(--admin-color-text);
+  --color-popover-foreground: var(--admin-color-text);
+  --color-muted-foreground: var(--admin-color-muted);
+  --color-border: var(--admin-color-border);
+  --color-input: var(--admin-color-border);
+  --color-background: var(--admin-color-page);
+  font-family: var(--admin-font-family);
+  font-size: var(--admin-font-body);
+  line-height: 1.6;
+  color: var(--admin-color-text);
+}
+
+body[data-admin-readability="true"] :where(button, input, textarea, select, .erp-ui, .crm-ui, [data-slot], [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-sonner-toaster]) {
+  font-family: var(--admin-font-family);
+}
+
+body[data-admin-readability="true"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [role="dialog"], [role="alertdialog"]) {
+  font-size: var(--admin-font-body);
+  line-height: 1.6;
+  color: var(--admin-color-text);
+}
+body[data-admin-readability="true"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+body[data-admin-readability="true"] :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+  font-size: 20px;
+  line-height: 1.4;
+}
+body[data-admin-readability="true"] :is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
+  font-size: var(--admin-font-label);
+  line-height: 1.6;
+  color: var(--admin-color-secondary);
+}
+body[data-admin-readability="true"] :is([data-slot="select-item"], [data-slot="dropdown-menu-item"], [role="menuitem"], [role="option"]) {
+  min-height: var(--admin-row-action-height);
+  font-size: var(--admin-font-label);
+  line-height: 1.5;
+}
+
+/* Role defaults: low-specificity utilities remain usable for deliberate variants. */
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) {
+  width: 100%;
+  font-size: var(--admin-font-body);
+  color: var(--admin-color-text);
+  border-color: var(--admin-color-border);
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) :is(th, td) {
+  border-color: var(--admin-color-border);
+  vertical-align: middle;
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) th {
+  height: 44px;
+  padding-block: 10px;
+  font-weight: 500;
+  color: var(--admin-color-secondary);
+  background-color: #F8FAFC;
+  line-height: 1.5;
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) tbody tr {
+  height: 60px;
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) td {
+  padding-block: 12px;
+  line-height: 1.6;
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) tbody tr:hover {
+  background-color: #F8FAFC;
+}
+body[data-admin-readability="true"] :is([data-slot="table-container"], .crm-table-wrap, .crm-table-scroll, .admin-table-scroll) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+/* Only a direct table wrapper is repaired, never a card/page/dialog clip.
+ * Existing nested scroll regions and sticky operation columns are preserved. */
+body[data-admin-readability="true"] .overflow-hidden:has(> :is(table.admin-table-readable, table.crm-table, table.admin-table, table[data-slot="table"])) {
+  overflow-x: auto;
+}
+
+/* Concentrated legacy bridge. Old page CSS is injected/lazy-loaded after this
+ * sheet and sometimes uses inline 11/12px or high-specificity compact rules.
+ * !important is confined to typography/role dimensions below, not behavior.
+ * Tiny text utilities map to captions, NOT body size; SVGs and badges are roles
+ * in their own right and are excluded from this fallback. */
+body[data-admin-readability="true"] :is(.text-xs, .text-\[10px\], .text-\[11px\], .text-\[12px\]):not(:where(svg, svg *, [data-slot="badge"], [class*="badge"], [class*="status-dot"], .admin-cell-primary, .admin-cell-secondary)) {
+  font-size: var(--admin-font-caption) !important;
+  line-height: 1.5;
+}
+body[data-admin-readability="true"] :where(.business-native-content, #business-native-portals) .text-sm:not(:where(button, label, th, svg, svg *, [data-slot="button"], [data-slot="badge"], .crm-badge, [role="option"], [role="menuitem"], [data-slot="dialog-description"], [data-slot="alert-dialog-description"])) {
+  font-size: var(--admin-font-body) !important;
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) th {
+  font-size: var(--admin-font-label) !important;
+}
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) td {
+  font-size: var(--admin-font-body) !important;
+}
+body[data-admin-readability="true"] :is([data-slot="input"], [data-slot="select-trigger"], .crm-input, .crm-select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]) {
+  min-height: var(--admin-control-height) !important;
+  font-size: var(--admin-font-body) !important;
+  line-height: 1.5;
+}
+body[data-admin-readability="true"] :is(input[data-slot="input"], input.crm-input, select.crm-input, .crm-select, [data-slot="select-trigger"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]) {
+  height: var(--admin-control-height) !important;
+}
+body[data-admin-readability="true"] :is([data-slot="textarea"], textarea.crm-input) {
+  font-size: var(--admin-font-body) !important;
+  line-height: 1.6;
+}
+body[data-admin-readability="true"] :is(label, [data-slot="label"], .crm-label, .crm-form-label) {
+  font-size: var(--admin-font-label) !important;
+  line-height: 1.5;
+}
+body[data-admin-readability="true"] :is([data-slot="button"], .crm-btn) {
+  font-size: var(--admin-font-label) !important;
+  line-height: 1.5;
+}
+/* Icon-only buttons retain their own width/height utilities. Small buttons and
+ * table actions use 34px rather than expanding every control to 40px. */
+body[data-admin-readability="true"] :is([data-slot="button"], .crm-btn):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, .crm-btn-sm, .h-8, .h-7, .h-6, .admin-row-action, [data-admin-button-size="sm"], [data-admin-button-size^="icon"])) {
+  min-height: var(--admin-control-height) !important;
+}
+body[data-admin-readability="true"] :is(.crm-btn-sm, [data-admin-button-size="sm"], [data-slot="button"].h-8, [data-slot="button"].h-7, [data-slot="button"].h-6),
+body[data-admin-readability="true"] :is(td, .crm-row-actions) :is([data-slot="button"], .crm-btn):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, [data-admin-button-size^="icon"])) {
+  height: var(--admin-row-action-height) !important;
+  min-height: var(--admin-row-action-height) !important;
+  padding-block: 4px;
+}
+body[data-admin-readability="true"] :is(.crm-badge, [data-slot="badge"], .badge-success, .badge-warning, .badge-danger, .badge-info, .badge-gray) {
+  font-size: var(--admin-font-caption) !important;
+  line-height: 1.4;
+}
+
+/* Public semantic class contract shared with page agents. Put the primary class
+ * on the actual text/link, secondary on auxiliary text, row-action on a control.
+ * The table class belongs on <table>, not on the scroll wrapper. */
+body[data-admin-readability="true"] .admin-cell-primary {
+  font-size: var(--admin-font-body) !important;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--admin-color-text) !important;
+}
+body[data-admin-readability="true"] .admin-cell-secondary {
+  font-size: var(--admin-font-caption) !important;
+  line-height: 1.6;
+  color: var(--admin-color-secondary) !important;
+}
+body[data-admin-readability="true"] .admin-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--admin-row-action-height) !important;
+  height: var(--admin-row-action-height) !important;
+  padding: 4px 10px;
+  font-size: var(--admin-font-label) !important;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+body[data-admin-readability="true"] :is(.admin-page-title, .crm-page-title) {
+  font-size: 22px !important;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--admin-color-text);
+}
+body[data-admin-readability="true"] :is(.admin-section-title, .crm-section-title) {
+  font-size: 17px !important;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--admin-color-text);
+}
+body[data-admin-readability="true"] .admin-workspace-shell__brand > div > span:last-child {
+  font-size: var(--admin-font-caption);
+  line-height: 1.4;
+}
+body[data-admin-readability="true"] button:active {
+  transform: none;
+}

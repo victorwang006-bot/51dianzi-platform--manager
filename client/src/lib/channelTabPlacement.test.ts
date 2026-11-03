@@ -43,8 +43,10 @@ describe("channel tabs change placement, not their functions", () => {
       legacy.indexOf('className="ci-tabs"'),
       legacy.indexOf("{message ?", legacy.indexOf('className="ci-tabs"'))
     );
-    expect(tabs.indexOf('setTab("materials")')).toBeLessThan(
-      tabs.indexOf('setTab("channels")')
+    expect(tabs.indexOf('changeTab("materials")')).toBeGreaterThanOrEqual(0);
+    expect(tabs.indexOf('changeTab("channels")')).toBeGreaterThanOrEqual(0);
+    expect(tabs.indexOf('changeTab("materials")')).toBeLessThan(
+      tabs.indexOf('changeTab("channels")')
     );
     expect(legacy).not.toContain(
       "管理渠道资料与渠道库存。数量、价格和税务口径未确认"
@@ -55,7 +57,7 @@ describe("channel tabs change placement, not their functions", () => {
 
   it("keeps private/shared boundaries, source actions and Beijing dates while removing persistent prose", () => {
     expect(legacy).toContain('import { trpc } from "../../../../api/business-trpc"');
-    expect(legacy).toContain('setTab("channels")}>渠道档案</button>');
+    expect(legacy).toContain('changeTab("channels")}>渠道档案</button>');
     expect(legacy).not.toContain("渠道档案仅当前负责人可见");
     expect(legacy).not.toContain("本人负责的库存；默认不共享");
     expect(legacy).not.toContain("仅展示同队负责人显式共享且当前仍有效的库存");
@@ -63,13 +65,15 @@ describe("channel tabs change placement, not their functions", () => {
     expect(legacy).toContain("openChannelCreate");
     expect(legacy).toContain("openChannelEdit(channel)");
     expect(legacy).toContain("toggleChannel(channel)");
-    expect(legacy).toContain("团队共享（只读）");
+    expect(legacy).toContain("!material.canEdit || material.readOnly");
+    expect(legacy).toContain("当前库存为只读，不能新增或修改备注。");
+    expect(legacy).toContain("material.canViewSource && (material.isMine || canFilterSource)");
     expect(legacy).not.toContain("<h1>渠道库存</h1>");
     expect(legacy).not.toContain(">可见范围</th>");
     expect(legacy).toContain(">表格上传</button>");
     expect(legacy).toContain(">单条上传</button>");
     expect(legacy).toContain('className="ci-tabbar"');
-    expect(legacy).toContain("不包含渠道来源和任何备注");
+    expect(legacy).toContain("该渠道本人有权读取的全部库存；不含联系人和私有备注");
     expect(legacy).toContain('return formatBeijingDateTime(value) || "—"');
     expect(legacy).not.toContain("new Intl.DateTimeFormat");
   });
