@@ -395,7 +395,7 @@ export default function CustomerDetail() {
 
       <section id="customer-contacts" className="mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div><h2 className="text-sm font-semibold text-slate-800">联系人</h2><p className="mt-0.5 text-[11px] text-muted-foreground">查看全部联系人及停用历史；新增、编辑、停用和设主均由当前客户权限决定。</p></div>
+          <div><h2 className="text-sm font-semibold text-slate-800">联系人</h2></div>
           <button type="button" className="crm-btn crm-btn-primary" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
         </div>
       </section>

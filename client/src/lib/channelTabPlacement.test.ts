@@ -52,4 +52,22 @@ describe("channel tabs change placement, not their functions", () => {
     expect(legacy).toContain("hasInventoryManage");
     expect(legacy).toContain('aria-label="渠道管理列表"');
   });
+
+  it("keeps private/shared boundaries, source actions and Beijing dates while removing persistent prose", () => {
+    expect(legacy).toContain('import { trpc } from "../../../../api/business-trpc"');
+    expect(legacy).toContain('setTab("channels")}>渠道档案</button>');
+    expect(legacy).not.toContain("渠道档案仅当前负责人可见");
+    expect(legacy).not.toContain("本人负责的库存；默认不共享");
+    expect(legacy).not.toContain("仅展示同队负责人显式共享且当前仍有效的库存");
+    expect(legacy).not.toContain("负责人由服务器按当前业务分工审计");
+    expect(legacy).toContain("openChannelCreate");
+    expect(legacy).toContain("openChannelEdit(channel)");
+    expect(legacy).toContain("toggleChannel(channel)");
+    expect(legacy).toContain("团队共享（只读）");
+    expect(legacy).toContain("本人 · 已共享");
+    expect(legacy).toContain("本人 · 私有");
+    expect(legacy).toContain("不包含渠道来源和任何备注");
+    expect(legacy).toContain('return formatBeijingDateTime(value) || "—"');
+    expect(legacy).not.toContain("new Intl.DateTimeFormat");
+  });
 });

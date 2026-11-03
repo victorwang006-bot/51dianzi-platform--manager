@@ -46,19 +46,19 @@ describe("正式后台顶部工作区菜单", () => {
     );
   });
 
-  it("业务保持库存/客户/采购原顺序并在末尾保留公司信息", () => {
+  it("业务将库存三项移到销售订单后，渠道库存优先且其余项相对顺序不变", () => {
     const workspace = groupAdminWorkspaceNavigationItems(
       [...items].reverse()
     )[0];
     expect(workspace.id).toBe("business");
     expect(workspace.items.map(item => item.path)).toEqual([
-      "/workbench/inventory",
-      "/workbench/publish",
-      "/workbench/inbound",
       "/workbench/channel-inventory",
       "/workbench/customers",
       "/workbench/customer-demands",
       "/workbench/orders",
+      "/workbench/inventory",
+      "/workbench/publish",
+      "/workbench/inbound",
       "/workbench/outbound",
       "/workbench/inquiries",
       "/workbench/procurement-demands",
@@ -264,8 +264,8 @@ describe("实际路由驱动两级选中态", () => {
       getAdminWorkspaceNavigationState(items, "/?merchantId=8").activeItem?.path
     ).toBe("/");
     const target = getAdminWorkspaceNavigationTarget(items, "business");
-    expect(target).toBe(items[0]);
-    expect(target?.path).toBe("/workbench/inventory");
+    expect(target).toBe(items.find(item => item.path === "/workbench/channel-inventory"));
+    expect(target?.path).toBe("/workbench/channel-inventory");
   });
 
   it("隐藏模块及别名不会因路由命中而获得入口或被错误选中", () => {

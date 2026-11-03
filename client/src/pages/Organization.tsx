@@ -567,7 +567,7 @@ export default function Organization() {
       const feedback = await preview.run();
       setEditor(null);
       setPreview(null);
-      setNotice("保存已被服务端确认。正在重新读取实际生效配置…");
+      setNotice("已保存");
       await Promise.all([
         utils.staffOrganization.overview.invalidate(),
         utils.staffOrganization.audit.invalidate(),
@@ -575,8 +575,8 @@ export default function Organization() {
       ]);
       setNotice(
         feedback?.notEntitledModules.length
-          ? `模块策略已保存，但以下模块的业务基础授权未开通，模板未扩大权限：${feedback.notEntitledModules.join("、")}。实际生效：${feedback.effectiveSummary}。`
-          : "保存已确认。列表以重新读取的服务端数据为准；ERP 未授权的模块不会因模板保存而获得授权。"
+          ? `已保存，未开通的模块仍不可用：${feedback.notEntitledModules.join("、")}`
+          : "已保存"
       );
     } catch (error) {
       setSaveError(errorText(error));
@@ -625,7 +625,6 @@ export default function Organization() {
       <main data-organization-page>
         <PageHeader
           title={title}
-          description="业务团队使用真实前台企业身份；运营团队使用独立后台工作人员身份。两域分别保存、分别审计，不是跨库单事务；岗位与模块授权互不替代。"
           actions={
             <Button
               variant="outline"
@@ -641,7 +640,7 @@ export default function Organization() {
                 }
               }}
             >
-              刷新配置
+              刷新
             </Button>
           }
         />
@@ -753,8 +752,8 @@ export default function Organization() {
             {!canManage && (
               <p className="org-notice">
                 {domain === "operations"
-                  ? "仅真实后台超级管理员可编辑运营组织；当前只显示本人配置与所属团队，组长身份不附带系统管理权。"
-                  : "当前真实前台业务员工不是企业所有者，业务组织编辑与企业审计已禁用。后台超级管理员身份不能替代前台企业所有者。"}
+                  ? "仅超级管理员可管理运营团队。"
+                  : "仅企业所有者可管理业务团队。"}
               </p>
             )}
             {section === "teams" && (
@@ -788,48 +787,113 @@ export default function Organization() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {teamRows.map(team => (
-                        <TableRow key={team.id}>
-                          <TableCell>
-                            {team.name}
-                            <span className="org-muted"> #{team.id}</span>
-                          </TableCell>
-                          <TableCell>
-                            {team.status === "active" ? "启用" : "已归档"}
-                          </TableCell>
-                          <TableCell>{team.revision}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={!isEditable}
-                              onClick={() =>
-                                open({
-                                  kind: "team",
-                                  id: team.id,
-                                  name: team.name,
-                                  notes:
-                                    "notes" in team
-                                      ? String(team.notes ?? "")
-                                      : "",
-                                  status:
-                                    team.status === "active"
-                                      ? "active"
-                                      : "archived",
-                                  expectedRevision: team.revision,
-                                })
-                              }
-                            >
-                              编辑团队
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {!teamRows.length && (
+                      {teamRows
+                        .filter(team => team.status === "active")
+                        .map(team => (
+                          <TableRow key={team.id}>
+                            <TableCell>
+                              {team.name}
+                              <span className="org-muted"> #{team.id}</span>
+                            </TableCell>
+                            <TableCell>
+                              {team.status === "active" ? "启用" : "已归档"}
+                            </TableCell>
+                            <TableCell>{team.revision}</TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={!isEditable}
+                                onClick={() =>
+                                  open({
+                                    kind: "team",
+                                    id: team.id,
+                                    name: team.name,
+                                    notes:
+                                      "notes" in team
+                                        ? String(team.notes ?? "")
+                                        : "",
+                                    status:
+                                      team.status === "active"
+                                        ? "active"
+                                        : "archived",
+                                    expectedRevision: team.revision,
+                                  })
+                                }
+                              >
+                                编辑团队
+                              </Button>
+                              {domain === "operations" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  disabled={
+                                    !isEditable ||
+                                    Boolean(
+                                      native?.members.some(
+                                        member => member.teamId === team.id
+                                      )
+                                    )
+                                  }
+                                  title={
+                                    native?.members.some(
+                                      member => member.teamId === team.id
+                                    )
+                                      ? "请先移出团队成员"
+                                      : "删除团队"
+                                  }
+                                  onClick={() => {
+                                    if (
+                                      !isEditable ||
+                                      domain !== "operations" ||
+                                      native?.members.some(
+                                        member => member.teamId === team.id
+                                      )
+                                    )
+                                      return;
+                                    const requestId = newRequestId();
+                                    const notes =
+                                      "notes" in team
+                                        ? String(team.notes ?? "")
+                                        : "";
+                                    open({
+                                      kind: "team",
+                                      id: team.id,
+                                      name: team.name,
+                                      notes,
+                                      status: "archived",
+                                      expectedRevision: team.revision,
+                                    });
+                                    setPreview({
+                                      title: "删除团队",
+                                      changes: [
+                                        `删除“${team.name}”？`,
+                                        "员工与历史业务记录保留。",
+                                      ],
+                                      requestId,
+                                      run: async () => {
+                                        await updateTeam.mutateAsync({
+                                          id: team.id,
+                                          name: team.name,
+                                          notes,
+                                          status: "archived",
+                                          expectedRevision: team.revision,
+                                          requestId,
+                                        });
+                                      },
+                                    });
+                                  }}
+                                >
+                                  删除
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      {!teamRows.some(team => team.status === "active") && (
                         <TableRow>
-                          <TableCell colSpan={4}>
-                            暂无团队；不会自动迁入官方库存团队。
-                          </TableCell>
+                          <TableCell colSpan={4}>暂无团队</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -837,9 +901,6 @@ export default function Organization() {
                 </section>
                 <section className="org-panel">
                   <h2>成员与团队岗位</h2>
-                  <p className="org-muted">
-                    同一团队可设置多位组长。更改岗位不授予模块或系统权限。
-                  </p>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1218,9 +1279,9 @@ export default function Organization() {
                       : "配置模块权限"}
               </DialogTitle>
               <DialogDescription>
-                {domain === "operations"
-                  ? "运营身份来自 admin_users.id，与官方库存团队和业务 ERP 完全分离。"
-                  : "仅当前真实前台企业所有者可保存。岗位不等同于模块权限；模板不新增 ERP 授权。"}
+                {preview?.title === "删除团队"
+                  ? "删除后不可再分配成员。"
+                  : "确认后生效。"}
               </DialogDescription>
             </DialogHeader>
             {preview ? (
@@ -1230,10 +1291,6 @@ export default function Organization() {
                     <li key={index}>{change}</li>
                   ))}
                 </ul>
-                <p className="org-muted">
-                  请求号：{preview.requestId}
-                  。失败重试复用同一请求号，不会重复应用。
-                </p>
               </div>
             ) : editor?.kind === "team" ? (
               <div className="org-fields">
@@ -1275,7 +1332,7 @@ export default function Organization() {
                       }
                     >
                       <option value="active">启用</option>
-                      <option value="archived">归档（须先移出所有成员）</option>
+                      <option value="archived">删除（须先移出成员）</option>
                     </select>
                   </label>
                 )}
@@ -1320,9 +1377,7 @@ export default function Organization() {
                     }
                   >
                     <option value="member">成员</option>
-                    <option value="leader">
-                      组长（不自动附带模块或系统权限）
-                    </option>
+                    <option value="leader">组长</option>
                   </select>
                 </label>
               </div>
@@ -1495,9 +1550,7 @@ export default function Organization() {
             {saveError && (
               <div className="org-error" role="alert">
                 {saveError}
-                <p>
-                  输入已保留。可重试原请求；若版本冲突，请保留需要的变更，关闭并刷新配置后重新预览。
-                </p>
+                <p>输入已保留，可重试；版本冲突时请刷新后重试。</p>
               </div>
             )}
             <DialogFooter>
@@ -1517,11 +1570,17 @@ export default function Organization() {
                     disabled={saving || !canManage}
                     onClick={() => void confirmSave()}
                   >
-                    {saving
-                      ? "正在保存…"
-                      : saveError
-                        ? "重试确认保存"
-                        : "确认保存"}
+                    {preview.title === "删除团队"
+                      ? saving
+                        ? "删除中…"
+                        : saveError
+                          ? "重试删除"
+                          : "确认删除"
+                      : saving
+                        ? "正在保存…"
+                        : saveError
+                          ? "重试确认保存"
+                          : "确认保存"}
                   </Button>
                 </>
               ) : (

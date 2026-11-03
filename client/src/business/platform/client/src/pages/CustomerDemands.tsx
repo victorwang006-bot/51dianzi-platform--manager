@@ -141,7 +141,7 @@ export default function CustomerDemands() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-slate-800">客户需求</h1>
-            <p className="mt-0.5 text-xs text-slate-500">集中管理询价、采购报价和客户确认；客户列表仍可快捷录入。</p>
+
           </div>
           <div className="flex items-center gap-2">
             {canManageAll ? (

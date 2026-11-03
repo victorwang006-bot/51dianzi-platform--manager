@@ -68,7 +68,7 @@ export default function DemandQuotes() {
 
   return (
     <PlatformLayout>
-      <div className="mb-3"><h1 className="text-lg font-semibold text-slate-800">采购工作台</h1><p className="mt-1 text-xs text-muted-foreground">查看公开需求收到的供应商报价</p></div>
+      <div className="mb-3"><h1 className="text-lg font-semibold text-slate-800">采购工作台</h1></div>
       <ProcurementWorkspaceNav active="quotes" />
       <div className="bg-white rounded-lg border border-[#eee]">
         {/* 工具栏 */}

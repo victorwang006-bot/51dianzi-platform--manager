@@ -1,4 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import CreateStaffDialog, {
+  type CreateStaffTeam,
+} from "@/components/admin/CreateStaffDialog";
+import StaffTeamSummary, {
+  readCachedStaffBusinessTeams,
+  readStaffBusinessTeams,
+} from "@/components/admin/StaffTeamSummary";
 import StaffPermissionSheet, {
   type StaffEnterpriseEditorAccess,
   type StaffPermissionSheetSection,
@@ -60,14 +67,11 @@ import {
   type StaffSaveDraft,
   type StaffSaveOutcome,
 } from "@/lib/staffPermissionModel";
-import {
-  officialTeamRoleLabel,
-  readOfficialTeamsOverview,
-} from "@/lib/officialChannelInventoryUi";
+import { readOfficialTeamsOverview } from "@/lib/officialChannelInventoryUi";
 import { trpc } from "@/lib/trpc";
 import { hasAdminPermission } from "@shared/adminPermissions";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Pencil, RefreshCw, Users } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSearch } from "wouter";
@@ -245,6 +249,7 @@ export default function Staff() {
   const [selectedSection, setSelectedSection] =
     useState<StaffPermissionSheetSection>("erp");
   const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -274,16 +279,39 @@ export default function Staff() {
     () => readOfficialTeamsOverview(officialTeamsQuery.data),
     [officialTeamsQuery.data]
   );
-  const officialTeamByAdminUserId = useMemo(
-    () =>
-      new Map(
-        officialTeamsOverview.members.map(member => [
-          member.adminUserId,
-          member,
-        ])
-      ),
-    [officialTeamsOverview.members]
-  );
+  const operationsQuery = trpc.staffOrganization.overview.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const operations =
+    operationsQuery.isSuccess &&
+    operationsQuery.data.actorAdminUserId === accountId
+      ? operationsQuery.data
+      : undefined;
+  const createTeams: CreateStaffTeam[] = [
+    ...(operations?.canManage
+      ? operations.teams
+          .filter(team => team.status === "active")
+          .map(team => ({
+            domain: "operations" as const,
+            id: team.id,
+            name: team.name,
+          }))
+      : []),
+    ...(officialTeamsOverview.available &&
+    officialTeamsOverview.serverScope.isSuperAdmin &&
+    officialTeamsOverview.serverScope.adminUserId === accountId &&
+    !officialTeamsQuery.isError
+      ? officialTeamsOverview.teams
+          .filter(team => team.status === "active")
+          .map(team => ({
+            domain: "official" as const,
+            id: team.id,
+            name: team.name,
+          }))
+      : []),
+  ];
 
   const navigationQuery = useQuery({
     queryKey: staffQueryKey(accountId, null, "navigation"),
@@ -333,6 +361,35 @@ export default function Staff() {
     );
   }, [accountId, contextQuery.data, contextQuery.isSuccess, merchantId]);
   const contextReady = contextValidation.context !== null;
+
+  const businessTeamsQuery = useQuery({
+    queryKey: [
+      ...staffQueryKey(accountId, merchantId, "organization-teams"),
+      contextValidation.context?.frontendUserId ?? null,
+      contextValidation.context?.enterpriseId ?? null,
+    ],
+    queryFn: async () => {
+      if (!scopeClient) throw new Error("业务上下文未就绪");
+      return readStaffBusinessTeams(
+        await scopeClient.organization.overview.query(undefined),
+        contextValidation.context
+      );
+    },
+    enabled: contextReady,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const businessTeams = useMemo(
+    () =>
+      businessTeamsQuery.isSuccess
+        ? readCachedStaffBusinessTeams(
+            businessTeamsQuery.data,
+            contextValidation.context
+          )
+        : undefined,
+    [businessTeamsQuery.data, businessTeamsQuery.isSuccess, contextValidation.context]
+  );
 
   const enterpriseMeQuery = useQuery({
     queryKey: staffQueryKey(accountId, merchantId, "enterprise-me"),
@@ -702,9 +759,10 @@ export default function Staff() {
     await Promise.all([
       canManageAdmin ? adminUsersQuery.refetch() : Promise.resolve(),
       officialTeamsQuery.refetch(),
+      operationsQuery.refetch(),
       queryClient.invalidateQueries({ queryKey: staffQueryPrefix(accountId) }),
     ]);
-    toast.success("已请求刷新当前账号的员工、业务权限与官方团队数据");
+    toast.success("已刷新");
   };
 
   return (
@@ -712,7 +770,6 @@ export default function Staff() {
       <div data-staff-page className="staff-management-page">
         <PageHeader
           title="员工与权限"
-          description="统一管理团队成员、后台角色、ERP 权限与数据范围。"
           actions={
             <div className="flex flex-wrap gap-2">
               <Button
@@ -729,10 +786,9 @@ export default function Staff() {
                 刷新
               </Button>
               {canManageAdmin ? (
-                <Button asChild variant="outline" size="sm">
-                  <a href="/admins">
-                    新建后台账号 <ExternalLink className="ml-1 h-3.5 w-3.5" />
-                  </a>
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  新增员工
                 </Button>
               ) : null}
             </div>
@@ -843,7 +899,7 @@ export default function Staff() {
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       <TableHead className="px-3 text-xs">员工信息</TableHead>
-                      <TableHead className="px-3 text-xs">官方团队</TableHead>
+                      <TableHead className="px-3 text-xs">所属团队</TableHead>
                       <TableHead className="px-3 text-xs">后台角色</TableHead>
                       <TableHead className="px-3 text-xs">ERP 权限</TableHead>
                       <TableHead className="px-3 text-xs">数据范围</TableHead>
@@ -869,18 +925,6 @@ export default function Staff() {
                         row.member &&
                           (row.member.status === "suspended" || !adminStatus)
                       );
-                      const officialMembership = row.admin
-                        ? officialTeamByAdminUserId.get(row.admin.id)
-                        : undefined;
-                      const officialTeamDisplay = !row.admin
-                        ? "—"
-                        : officialTeamsQuery.isPending
-                          ? "正在读取…"
-                          : officialTeamsQuery.isError
-                            ? "不可用"
-                            : officialMembership?.teamName
-                              ? `${officialMembership.teamName} · ${officialTeamRoleLabel(officialMembership.role)}`
-                              : "未分组";
                       return (
                         <TableRow
                           key={row.key}
@@ -916,17 +960,40 @@ export default function Staff() {
                           <TableCell
                             className="py-2.5 text-sm"
                             data-staff-official-team
-                            title={
-                              officialTeamsQuery.isError
-                                ? errorMessage(officialTeamsQuery.error)
-                                : undefined
-                            }
                           >
-                            <span
-                              className={`block truncate ${officialTeamDisplay === "未分组" || officialTeamDisplay === "不可用" || officialTeamDisplay === "正在读取…" ? "text-muted-foreground" : "font-medium"}`}
-                            >
-                              {officialTeamDisplay}
-                            </span>
+                            <StaffTeamSummary
+                              row={row}
+                              operations={operations}
+                              official={officialTeamsOverview}
+                              business={businessTeams}
+                              operationsState={
+                                operationsQuery.isError
+                                  ? "不可用"
+                                  : operationsQuery.isPending
+                                    ? "读取中…"
+                                    : !operations
+                                      ? "不可用"
+                                      : ""
+                              }
+                              officialState={
+                                officialTeamsQuery.isError
+                                  ? "不可用"
+                                  : officialTeamsQuery.isPending
+                                    ? "读取中…"
+                                    : ""
+                              }
+                              businessState={
+                                !contextReady
+                                  ? "未就绪"
+                                  : businessTeamsQuery.isError
+                                    ? "不可用"
+                                    : businessTeamsQuery.isPending
+                                      ? "读取中…"
+                                      : !businessTeams
+                                        ? "不可用"
+                                        : ""
+                              }
+                            />
                           </TableCell>
                           <TableCell className="py-2.5 text-sm" data-staff-role>
                             {row.admin ? (
@@ -1054,6 +1121,30 @@ export default function Staff() {
             ) : null}
           </CardContent>
         </Card>
+
+        <CreateStaffDialog
+          key={`create-staff:${accountId ?? "signed-out"}`}
+          open={createOpen && canManageAdmin}
+          onOpenChange={setCreateOpen}
+          canManageAdmin={canManageAdmin}
+          teams={createTeams}
+          teamNotice={
+            operationsQuery.isError || officialTeamsQuery.isError
+              ? "部分团队不可用，可暂不分组后刷新配置。"
+              : "业务团队需先关联真实业务身份。"
+          }
+          onChanged={async () => {
+            await Promise.all([
+              trpcUtils.adminUser.list.invalidate(),
+              trpcUtils.salesStaff.list.invalidate(),
+              trpcUtils.staffOrganization.overview.invalidate(),
+              trpcUtils.officialTeams.overview.invalidate(),
+              queryClient.invalidateQueries({
+                queryKey: staffQueryPrefix(accountId),
+              }),
+            ]);
+          }}
+        />
 
         <StaffPermissionSheet
           key={`${accountId ?? "signed-out"}:${selectedCurrentRow?.key ?? "none"}`}

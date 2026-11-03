@@ -55,6 +55,37 @@ function button(target: string) {
 }
 
 describe("两行正式导航组件", () => {
+  it("业务二级按新顺序展示，库存三项位于销售订单后且复用原导航和预加载条目", async () => {
+    await render("/workbench/sales-orders?merchantId=31&returnTo=%2Forders");
+    const paths = () => Array.from(host.querySelectorAll<HTMLButtonElement>('[data-admin-navigation="module-tabs"] button')).map(node => node.dataset.workspaceNavTarget);
+    expect(paths()).toEqual([
+      "/workbench/channel-inventory",
+      "/workbench/customers",
+      "/workbench/customer-demands",
+      "/workbench/orders",
+      "/workbench/inventory",
+      "/workbench/publish",
+      "/workbench/inbound",
+      "/workbench/outbound",
+      "/workbench/inquiries",
+      "/workbench/procurement-demands",
+      "/workbench/procurement-orders",
+      "/workbench/company-info",
+    ]);
+    expect(button("/workbench/orders").getAttribute("aria-current")).toBe("page");
+    await act(async () => {
+      button("/workbench/inventory").focus();
+      button("/workbench/inventory").click();
+    });
+    const original = items.find(item => item.path === "/workbench/inventory");
+    expect(onNavigate.mock.calls[0][0]).toBe(original);
+    expect(onPreload.mock.calls[0][0]).toBe(original);
+    const subset = items.filter(item => ["/workbench/inventory", "/workbench/orders", "/workbench/company-info"].includes(item.path));
+    await render("/workbench/inventory?merchantId=31", subset);
+    expect(paths()).toEqual(["/workbench/orders", "/workbench/inventory", "/workbench/company-info"]);
+    expect(button("/workbench/inventory").getAttribute("aria-current")).toBe("page");
+  });
+
   it("顶层切换只调用父导航首个可见条目，不先修改本地选中态", async () => {
     const subset = items.filter(item =>
       ["/workbench/company-info", "/analytics", "/staff"].includes(item.path)

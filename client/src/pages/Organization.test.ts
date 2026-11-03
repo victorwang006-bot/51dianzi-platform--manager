@@ -10,6 +10,13 @@ const state = vi.hoisted(() => ({
   actorId: 30004,
   nativePermissions: ["profile.manage"] as string[],
   nativeAuditRows: [] as Record<string, unknown>[],
+  extraTeams: [] as {
+    id: number;
+    name: string;
+    notes: null;
+    status: "active" | "archived";
+    revision: number;
+  }[],
   create: vi.fn(),
   update: vi.fn(),
   member: vi.fn(),
@@ -88,6 +95,7 @@ vi.mock("@/lib/trpc", () => {
                   status: "active",
                   revision: 1,
                 },
+                ...state.extraTeams,
               ],
               members: [
                 {
@@ -212,6 +220,7 @@ beforeEach(() => {
   state.merchants = [];
   state.nativePermissions = ["profile.manage"];
   state.nativeAuditRows = [];
+  state.extraTeams = [];
   state.create.mockResolvedValue({
     targetId: 2,
     revision: 1,
@@ -283,9 +292,7 @@ describe("Organization UI actual-domain controls", () => {
     await click("重试确认保存");
     expect(state.update.mock.calls[1][0].requestId).toBe(first.requestId);
     expect(state.invalidate).toHaveBeenCalled();
-    expect(document.body.textContent).toContain(
-      "列表以重新读取的服务端数据为准"
-    );
+    expect(document.body.textContent).toContain("已保存");
   });
   it("native non-super cannot edit and stale other-account data is not displayed", async () => {
     state.canManage = false;
@@ -313,7 +320,7 @@ describe("Organization UI actual-domain controls", () => {
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 30));
     });
-    expect(document.body.textContent).toContain("不是企业所有者");
+    expect(document.body.textContent).toContain("仅企业所有者可管理业务团队");
     expect(button("创建团队").disabled).toBe(true);
     expect(document.body.textContent).toContain("真实前台操作者 ID 397751");
   });
@@ -438,12 +445,52 @@ describe("Organization UI actual-domain controls", () => {
     expect(state.businessAccess).not.toHaveBeenCalled();
     await click("确认保存");
     expect(state.businessAccess).toHaveBeenCalledOnce();
-    expect(document.body.textContent).toContain(
-      "业务基础授权未开通，模板未扩大权限"
+    expect(document.body.textContent).toContain("已保存，未开通的模块仍不可用");
+    expect(document.body.textContent).toContain("客户、需求、私有渠道、库存");
+    expect(document.body.textContent).not.toContain("已开通全部模块");
+  });
+});
+describe("Safe operations-team deletion", () => {
+  it("does not allow deleting teams which still contain employees", async () => {
+    await mount();
+    await click("运营团队");
+    expect(button("删除").disabled).toBe(true);
+    expect(button("删除").title).toBe("请先移出团队成员");
+    expect(state.update).not.toHaveBeenCalled();
+  });
+  it("confirms empty-team soft deletion with CAS and replays the same request after response loss", async () => {
+    state.extraTeams = [
+      { id: 2, name: "空团队", notes: null, status: "active", revision: 4 },
+    ];
+    state.update
+      .mockReset()
+      .mockRejectedValueOnce(new Error("响应丢失"))
+      .mockResolvedValue({ targetId: 2, revision: 5 });
+    await mount();
+    await click("运营团队");
+    const row = Array.from(document.querySelectorAll("tr")).find(node =>
+      node.textContent?.includes("空团队")
     );
-    expect(document.body.textContent).toContain(
-      "实际生效：客户：不可读/不可写"
-    );
+    const remove = Array.from(row!.querySelectorAll("button")).find(
+      node => node.textContent === "删除"
+    )!;
+    await act(async () => {
+      remove.click();
+    });
+    expect(state.update).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("员工与历史业务记录保留");
+    await click("确认删除");
+    expect(state.update.mock.calls[0][0]).toMatchObject({
+      id: 2,
+      name: "空团队",
+      status: "archived",
+      expectedRevision: 4,
+    });
+    const first = state.update.mock.calls[0][0];
+    await click("重试删除");
+    expect(state.update.mock.calls[1][0]).toEqual(first);
+    expect(state.invalidate).toHaveBeenCalled();
+    expect(document.body.textContent).toContain("已保存");
   });
 });
 describe("Business response runtime contract", () => {

@@ -731,7 +731,6 @@ export default function ChannelInventoryHost() {
       <header className="ci-heading">
         <div className="ci-title-line">
           <h1>渠道库存</h1>
-          <p>渠道档案仅当前负责人可见。库存默认私有，需负责人显式共享给归属团队；团队共享只读，不公开来源或任何备注。</p>
         </div>
         <div className="ci-heading-actions">
           {tab === "channels" ? (
@@ -746,8 +745,8 @@ export default function ChannelInventoryHost() {
       </header>
 
       <div className="ci-tabs" role="tablist" aria-label="渠道库存内容">
-        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>本人渠道档案</button>
         <button type="button" role="tab" aria-selected={tab === "materials"} onClick={() => setTab("materials")}>渠道库存</button>
+        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>渠道档案</button>
       </div>
 
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
@@ -786,7 +785,7 @@ export default function ChannelInventoryHost() {
                 {!channelsQuery.isLoading && !channelsQuery.isError && !(channelResult?.items.length) ? <tr><td colSpan={6} className="ci-empty">暂无符合筛选条件的渠道。</td></tr> : null}
                 {channelResult?.items.map(channel => (
                   <tr key={channel.id}>
-                    <td><strong className="ci-channel-name">{channel.name}</strong><small className="ci-subtext">负责人由服务器按当前业务分工审计</small></td>
+                    <td><strong className="ci-channel-name">{channel.name}</strong></td>
                     <td><span className="ci-channel-type-tag">{channelTypeLabel(channel.type)}</span></td>
                     <td><div>{channel.contactName || "—"}</div><small className="ci-subtext">{[channel.phone, channel.wechat ? `微信 ${channel.wechat}` : null, channel.qq ? `QQ ${channel.qq}` : null].filter(Boolean).join(" · ") || "未填写联系方式"}</small></td>
                     <td><span className={channel.active ? "ci-status ci-status-active" : "ci-status ci-status-inactive"}>{activeLabel(channel.active)}</span></td>
@@ -805,7 +804,6 @@ export default function ChannelInventoryHost() {
             <button type="button" role="tab" aria-selected={materialVisibility === "own"} onClick={() => { setMaterialVisibility("own"); setMaterialPage(1); setNotesMaterial(null); }}>本人库存</button>
             <button type="button" role="tab" aria-selected={materialVisibility === "team"} onClick={() => { setMaterialVisibility("team"); setMaterialPage(1); setNotesMaterial(null); setMaterialEditor(null); setBatchOpen(false); }}>团队共享（只读）</button>
           </div>
-          <p className="ci-subtext">{materialVisibility === "own" ? "本人负责的库存；默认不共享。共享按钮仅授权创建时归属且本人仍在的团队，离组、转交或撤权后自动失效。" : "仅展示同队负责人显式共享且当前仍有效的库存；不展示渠道来源和任何备注，不可编辑。"}</p>
           <div className="ci-toolbar">
             {materialVisibility === "own" ? <label className="ci-field ci-channel-select"><span>渠道范围</span><select aria-label="筛选库存渠道范围" value={materialFilters.channelId} onChange={event => { setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}><option value="">全部渠道</option>{optionChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}{channel.active ? "" : "（已停用）"}</option>)}</select></label> : null}
             <label className="ci-field ci-toolbar-search"><span>型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>

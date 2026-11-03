@@ -155,12 +155,12 @@ export const adminRoleMap: Record<string, string> = {
 
 // ─── 页头 ─────────────────────────────────────────────────────────────────────
 
-export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
+// description 保留为兼容参数；页头只呈现标题与操作，风险确认和状态提示由原交互承载。
+export function PageHeader({ title, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>

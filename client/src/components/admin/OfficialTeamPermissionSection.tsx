@@ -226,8 +226,11 @@ export default function OfficialTeamPermissionSection({
 
   const archive = async (team: OfficialTeam) => {
     if (!canConfigure || savingTeam) return;
-    if (!window.confirm(`归档“${team.name}”后不能继续分配成员。是否继续？`))
+    if (overview.members.some(item => item.teamId === team.id)) {
+      toast.error("请先移出团队成员");
       return;
+    }
+    if (!window.confirm(`删除团队“${team.name}”？员工和历史资料保留。`)) return;
     setSavingTeam(true);
     try {
       await archiveTeam.mutateAsync({
@@ -235,10 +238,10 @@ export default function OfficialTeamPermissionSection({
         expectedRevision: team.revision,
         requestId: officialRequestId("official_team_archive"),
       });
-      toast.success("官方团队已归档");
+      toast.success("团队已删除");
       onRetryOverview();
     } catch (error) {
-      toast.error("归档失败", {
+      toast.error("删除失败", {
         description: errorMessage(error, "请刷新后重试。"),
       });
     } finally {
@@ -270,9 +273,6 @@ export default function OfficialTeamPermissionSection({
           <h3 id="staff-official-team-title" className="text-sm font-medium">
             官方团队与渠道库存
           </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            独立于商户 ERP 团队和成员关联。
-          </p>
         </div>
         <Button
           type="button"
@@ -424,11 +424,9 @@ export default function OfficialTeamPermissionSection({
         >
           <DialogHeader>
             <DialogTitle>
-              {teamDialog?.mode === "edit" ? "编辑官方团队" : "新建官方团队"}
+              {teamDialog?.mode === "edit" ? "编辑团队" : "团队管理"}
             </DialogTitle>
-            <DialogDescription>
-              团队仅限制官方渠道库存范围，不会变更历史库存归属或后台角色。
-            </DialogDescription>
+            <DialogDescription>不影响员工账号和历史库存。</DialogDescription>
           </DialogHeader>
           <Input
             value={teamName}
@@ -438,7 +436,7 @@ export default function OfficialTeamPermissionSection({
             aria-label="官方团队名称"
             onChange={event => setTeamName(event.target.value)}
           />
-          {teamDialog?.mode === "edit" ? (
+          {activeTeams.length > 0 ? (
             <div className="border-t pt-3">
               <p className="mb-2 text-xs text-muted-foreground">现有团队</p>
               <div className="space-y-1.5">
@@ -470,7 +468,7 @@ export default function OfficialTeamPermissionSection({
                           disabled={savingTeam}
                           onClick={() => void archive(team)}
                         >
-                          归档
+                          删除
                         </Button>
                       </div>
                     </div>
@@ -492,7 +490,11 @@ export default function OfficialTeamPermissionSection({
               disabled={savingTeam}
               onClick={() => void saveTeamDefinition()}
             >
-              {savingTeam ? "保存中…" : "保存团队"}
+              {savingTeam
+                ? "保存中…"
+                : teamDialog?.mode === "edit"
+                  ? "保存"
+                  : "创建团队"}
             </Button>
           </DialogFooter>
         </DialogContent>
