@@ -26,7 +26,7 @@
 
 .customer-list-page .customer-list-table {
   width: 100%;
-  min-width: 1228px;
+  min-width: 1332px;
   color: var(--admin-color-text, #1f2937);
   font-size: var(--admin-font-body, 15px);
 }
@@ -64,18 +64,6 @@
 
 .customer-list-page .customer-list-secondary-data {
   color: var(--admin-color-secondary, #475569);
-}
-
-/* Match this page's two-line contact summary without changing its shared component. */
-.customer-list-page .customer-list-contacts-cell > div > div:first-child {
-  color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
-}
-
-.customer-list-page .customer-list-contacts-cell > div > div + div {
-  color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-caption, 13px);
-  line-height: 18px;
 }
 
 .customer-list-page .customer-list-followup-cell > div:first-child {

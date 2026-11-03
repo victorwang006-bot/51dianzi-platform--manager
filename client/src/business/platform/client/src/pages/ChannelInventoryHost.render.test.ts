@@ -16,9 +16,15 @@ const hostStyles = readFileSync(
 const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   const getMaterial = vi.fn();
+  const getTeamMaterialForEdit = vi.fn();
+  const collaborationAdd = vi.fn();
+  const collaborationEdit = vi.fn();
   const exportChannelMaterials = vi.fn();
   return {
     getMaterial,
+    getTeamMaterialForEdit, collaborationAdd, collaborationEdit,
+    collaborationQuery: null as unknown,
+    collaborationInputs: [] as unknown[],
     exportChannelMaterials,
     teamQuery: null as unknown,
     sourceQuery: null as unknown,
@@ -42,7 +48,7 @@ const runtime = vi.hoisted(() => {
     sharedQuery: null as unknown,
     notesQuery: null as unknown,
     utils: {
-      client: { channelInventory: { exportChannelMaterials: { query: exportChannelMaterials } } },
+      client: { channelInventory: { exportChannelMaterials: { query: exportChannelMaterials }, getTeamMaterialForEdit: { query: getTeamMaterialForEdit }, collaborationNotesAdd: { mutate: collaborationAdd }, collaborationNotesEdit: { mutate: collaborationEdit } } },
       channelInventory: {
         getMaterial: { fetch: getMaterial },
         listTeamMaterials: { invalidate },
@@ -51,6 +57,7 @@ const runtime = vi.hoisted(() => {
         listSharedMaterials: { invalidate },
         listMaterials: { invalidate },
         notesList: { invalidate },
+        collaborationNotesList: { invalidate },
       },
     },
   };
@@ -106,8 +113,9 @@ vi.mock("../../../../api/business-trpc", () => ({
       updateChannel: { useMutation: () => ({ isPending: false, mutateAsync: runtime.updateChannel }) },
       setChannelActive: { useMutation: () => ({ isPending: false, mutateAsync: runtime.setChannelActive }) },
       createMaterial: { useMutation: () => ({ isPending: false, mutateAsync: runtime.createMaterial }) },
-      updateMaterial: { useMutation: () => ({ isPending: false, mutateAsync: runtime.updateMaterial }) },
+      updateTeamMaterial: { useMutation: () => ({ isPending: false, mutateAsync: runtime.updateMaterial }) },
       setMaterialShare: { useMutation: () => ({ isPending: false, mutateAsync: runtime.setMaterialShare }) },
+      collaborationNotesList: { useQuery: (input: unknown) => { runtime.collaborationInputs.push(input); return runtime.collaborationQuery; } },
       notesList: {
         useQuery: (input: unknown) => {
           runtime.notesInputs.push(input);
@@ -208,6 +216,10 @@ function configureFixtures() {
   runtime.optionInputs = [];
   runtime.getChannelInputs = [];
   runtime.notesInputs = [];
+  runtime.collaborationInputs = [];
+  runtime.collaborationAdd.mockReset().mockResolvedValue({});
+  runtime.collaborationEdit.mockReset().mockResolvedValue({});
+  runtime.collaborationQuery = query({ items: [], total: 0, page: 1, pageSize: 20, canAdd: true });
   runtime.createChannel.mockClear();
   runtime.updateChannel.mockClear();
   runtime.setChannelActive.mockClear();
@@ -309,11 +321,12 @@ function configureFixtures() {
   });
   const own = (runtime.materialQuery as { data: { items: Record<string, unknown>[] } }).data.items[0];
   runtime.getMaterial.mockReset().mockResolvedValue({ ...own, revision: 9 });
+  runtime.getTeamMaterialForEdit.mockReset().mockResolvedValue({ id: 101, channelId: 11, channelName: "深圳代理", partNumber: "LM358DR", brand: "TI", qty: null, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, revision: 9, canEdit: true, readOnly: false });
   runtime.sourceQuery = query({ canFilterSource: false, items: [] });
   runtime.teamQuery = query({
     items: [
-      { id: 101, partNumber: "LM358DR", brand: "TI", qty: null, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, revision: 6, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", isMine: true, canEdit: true, readOnly: false, channelSource: { id: 11, name: "深圳代理" }, canViewSource: true },
-      { id: 202, partNumber: "TEAM-SN74", brand: "NXP", qty: 100, dateCode: "2601", price: "1.20", currency: "CNY", taxIncluded: true, leadTime: "3天", revision: 2, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", isMine: false, canEdit: false, readOnly: true, channelSource: null, canViewSource: false },
+      { id: 101, partNumber: "LM358DR", brand: "TI", qty: null, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, revision: 6, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", noteCount: 1, canAddNote: true, isMine: true, canEdit: true, readOnly: false, channelSource: { id: 11, name: "深圳代理" }, canViewSource: true },
+      { id: 202, partNumber: "TEAM-SN74", brand: "NXP", qty: 100, dateCode: "2601", price: "1.20", currency: "CNY", taxIncluded: true, leadTime: "3天", revision: 2, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", noteCount: 0, canAddNote: true, isMine: false, canEdit: false, readOnly: true, channelSource: null, canViewSource: false },
     ], total: 40, page: 1, pageSize: 20, pageCount: 2, canWrite: true, canFilterSource: false,
   });
   runtime.notesQuery = query({
@@ -324,6 +337,7 @@ function configureFixtures() {
       channelType: "agent",
       updatedAt: "2026-10-03T01:00:00.000Z",
     },
+    canEdit: true, readOnly: false,
     legacyNote: "历史库存备注",
     items: [
       {
@@ -386,7 +400,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const rows = document.querySelectorAll("tbody tr");
     expect(rows[0].textContent).toContain("深圳代理");
     expect(rows[1].textContent).toContain("无权查看");
-    expect(rows[1].querySelector("button, [title], [hidden], input")).toBeNull();
+    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["新增备注", "备注（0）"]);
+    expect(rows[1].querySelector("[title], [hidden], input")).toBeNull();
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
   });
 
@@ -411,7 +426,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     renderHost();
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).toContain("团队来源");
-    expect(peer.querySelector("button, [title], [hidden], input")).toBeNull();
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["新增备注", "备注（0）"]);
+    expect(peer.querySelector("[title], [hidden], input")).toBeNull();
     expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
 
@@ -588,10 +604,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("无权查看");
   });
 
-  it("does not open an owner detail response arriving after permission revocation", async () => {
+  it("does not open an public detail response arriving after permission revocation", async () => {
     let finish!: (value: unknown) => void;
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
-    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
     click(button("编辑"));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -603,13 +619,14 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.body.innerHTML).not.toContain("历史库存备注");
   });
 
-  it.each([false, true])("invalidates pending owner detail on archive navigation (return=%s)", async returnToInventory => {
+  it.each([false, true])("invalidates pending public detail on archive navigation (return=%s)", async returnToInventory => {
     let finish!: (value: unknown) => void;
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
-    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
     click(button("编辑"));
-    expect(runtime.getMaterial).toHaveBeenCalledTimes(1);
+    expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledTimes(1);
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
     click(button("渠道档案"));
     if (returnToInventory) click(button("渠道库存"));
     await act(async () => { finish(detail); await Promise.resolve(); });
@@ -618,10 +635,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe(returnToInventory ? "渠道库存" : "渠道档案");
   });
 
-  it("preserves the new upload title and typed model when old owner detail resolves", async () => {
+  it("preserves the new upload title and typed model when old public detail resolves", async () => {
     let finish!: (value: unknown) => void;
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
-    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
     click(button("编辑"));
     click(button("单条上传"));
@@ -638,7 +655,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
 
   it("suppresses a late detail error after opening and closing a new upload", async () => {
     let reject!: (error: Error) => void;
-    runtime.getMaterial.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
+    runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
     renderHost();
     click(button("编辑"));
     click(button("单条上传"));
@@ -648,10 +665,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.body.textContent).not.toContain("STALE-DETAIL-ERROR");
   });
 
-  it("keeps batch upload active when an older owner detail resolves", async () => {
+  it("keeps batch upload active when an older public detail resolves", async () => {
     let finish!: (value: unknown) => void;
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
-    runtime.getMaterial.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
     click(button("编辑"));
     click(button("表格上传"));
@@ -704,23 +721,23 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const headerStyle = getComputedStyle(partHeader);
     const cellStyle = getComputedStyle(firstCell);
 
-    expect(tableStyle.minWidth).toBe("860px");
+    expect(tableStyle.minWidth).toBe("960px");
     expect(tableStyle.tableLayout).toBe("fixed");
-    expect(headerStyle.width).toBe("24%");
-    expect(headerStyle.paddingTop).toBe("10px");
+    expect(getComputedStyle(required(stockTable.querySelector("th.ci-col-actions"), "missing fixed actions")).width).toBe("216px");
+    expect(headerStyle.paddingTop).toBe("6px");
     expect(headerStyle.paddingRight).toBe("10px");
-    expect(headerStyle.lineHeight).toBe("20px");
+    expect(headerStyle.lineHeight).toBe("18px");
     expect(cellStyle.paddingTop).toBe("10px");
     expect(cellStyle.paddingRight).toBe("10px");
     // The first cell is an auxiliary ordinal, not the main model text.
-    expect(cellStyle.lineHeight).toBe("20px");
+    expect(cellStyle.lineHeight).toBe("18px");
     expect(getComputedStyle(required(
       stockTable.querySelector(".ci-cell-title"),
       "missing primary model text",
-    )).lineHeight).toBe("22px");
+    )).lineHeight).toBe("18px");
   });
 
-  it("creates with the original DTO and reads private notes only inside the owner editor", async () => {
+  it("creates with the original DTO and keeps public editing separate from the independent owner private history", async () => {
     renderHost();
     click(button("渠道库存"));
     await settle();
@@ -752,8 +769,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
 
     click(button("编辑"));
     await settle();
-    expect(runtime.getMaterial).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 101 }, { staleTime: 0 });
-    click(button("本人备注历史"));
+    expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 101 }, { signal: expect.any(AbortSignal) });
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
+    expect(document.querySelector("textarea")).toBeNull();
+    click(button("本人备注历史（私有）"));
     await settle();
     expect(document.body.textContent).toContain("库存备注");
     expect(document.body.textContent).toContain("已核对交期");
@@ -1106,7 +1125,104 @@ describe("channel industry required integration", () => {
     click(button("渠道库存"));
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).toContain("无权查看");
-    expect(peer.querySelector("button, select")).toBeNull();
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["新增备注", "备注（0）"]);
+    expect(peer.querySelector("select")).toBeNull();
     expect(document.querySelector("thead")?.textContent).not.toContain("所属行业");
+  });
+});
+
+
+describe("v9 public inventory and collaboration integration", () => {
+  it("allows a live team leader to edit peer public fields without private detail or writable channel options", async () => {
+    const old = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query({ ...old.data, items: old.data.items.map(row => row.id === 202 ? { ...row, canEdit: true, readOnly: false } : row) });
+    runtime.channelQuery = query({ items: [], total: 0, page: 1, pageSize: 100, canWrite: false });
+    runtime.getTeamMaterialForEdit.mockResolvedValueOnce({ id: 202, channelId: 22, channelName: "团队来源", partNumber: "TEAM-SN74", brand: "NXP", qty: 0, dateCode: "2601", price: "0", currency: "CNY", taxIncluded: false, leadTime: null, revision: 12, canEdit: true, readOnly: false });
+    renderHost();
+    const peer = document.querySelectorAll("tbody tr")[1];
+    click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "编辑"), "missing leader public edit"));
+    await settle();
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing public editor");
+    expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledWith({ id: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
+    expect(control(dialog, "关联渠道").value).toBe("团队来源");
+    expect(dialog.querySelector("textarea")).toBeNull();
+    expect(dialog.textContent).not.toContain("本人备注");
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
+    expect(runtime.notesInputs).toHaveLength(0);
+    change(control(dialog, "型号"), "LEADER-PUBLIC-EDIT");
+    click(button("保存修改")); await settle();
+    expect(runtime.updateMaterial).toHaveBeenCalledWith({ id: 202, expectedRevision: 12, partNumber: "LEADER-PUBLIC-EDIT", brand: "NXP", qty: 0, dateCode: "2601", price: "0", taxIncluded: false, leadTime: null, expectedEnterpriseId: 31, expectedActorUserId: 7, requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) });
+    for (const key of ["channelId", "channelName", "currency", "note", "ownerUserId", "responsibleUserId", "teamId"]) expect(runtime.updateMaterial.mock.calls[0][0]).not.toHaveProperty(key);
+  });
+
+  it("lets a stocks.read member add collaboration while inventory and upload stay noneditable", async () => {
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: ["stocks.read"] });
+    const old = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query({ ...old.data, canWrite: false, items: old.data.items.map(row => ({ ...row, canEdit: false, readOnly: true })) });
+    renderHost();
+    expect(button("单条上传").disabled).toBe(true);
+    const peer = document.querySelectorAll("tbody tr")[1];
+    expect(peer.textContent).not.toContain("编辑");
+    click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "新增备注"), "missing readonly note add"));
+    await settle();
+    const textarea = required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing focused collaboration input");
+    expect(document.activeElement).toBe(textarea);
+    change(textarea, "只读成员核实了交期");
+    click(button("保存协作备注")); await settle();
+    expect(runtime.collaborationAdd).toHaveBeenCalledWith({ materialId: 202, content: "只读成员核实了交期", expectedEnterpriseId: 31, expectedActorUserId: 7, requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) }, { signal: expect.any(AbortSignal) });
+    expect(runtime.updateMaterial).not.toHaveBeenCalled();
+    expect(runtime.createMaterial).not.toHaveBeenCalled();
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
+    expect(runtime.notesInputs).toHaveLength(0);
+  });
+
+  it("does not discard a collaboration draft or focus when only inventory write or source rights change", async () => {
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
+    const old = runtime.teamQuery as { data: object };
+    runtime.teamQuery = query({ ...old.data, canFilterSource: true });
+    renderHost(); click(button("新增备注")); await settle();
+    const textarea = required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing collaboration draft");
+    change(textarea, "保持当前草稿与光标"); textarea.setSelectionRange(2, 5);
+    runtime.teamQuery = query({ ...old.data, canWrite: false, canFilterSource: false });
+    runtime.sourceQuery = query({ canFilterSource: false, items: [] });
+    act(() => root?.render(React.createElement(ChannelInventoryHost))); await settle();
+    expect(document.querySelector("textarea")).toBe(textarea);
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.value).toBe("保持当前草稿与光标");
+    expect(textarea.selectionStart).toBe(2);
+    click(button("保存协作备注")); await settle();
+    expect(runtime.collaborationAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts a stale collaboration write and clears its draft on an authenticated context switch", async () => {
+    let finish!: () => void;
+    runtime.collaborationAdd.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    renderHost(); click(button("新增备注")); await settle();
+    change(required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing note draft"), "旧企业备注草稿");
+    click(button("保存协作备注"));
+    const signal = runtime.collaborationAdd.mock.calls[0][1].signal as AbortSignal;
+    runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["stocks.read"] });
+    act(() => root?.render(React.createElement(ChannelInventoryHost))); await settle();
+    expect(signal.aborted).toBe(true);
+    await act(async () => { finish(); await Promise.resolve(); });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.innerHTML).not.toContain("旧企业备注草稿");
+    expect(runtime.notesInputs).toHaveLength(0);
+  });
+
+  it("freezes a public inventory request after an unknown response and retries the same CAS payload", async () => {
+    runtime.updateMaterial.mockRejectedValueOnce(new Error("lost response")).mockResolvedValueOnce({});
+    renderHost(); click(button("编辑")); await settle();
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing public inventory editor");
+    change(control(dialog, "型号"), "FROZEN-PUBLIC");
+    click(button("保存修改")); await settle();
+    const original = runtime.updateMaterial.mock.calls[0][0];
+    expect((dialog.querySelector("fieldset") as HTMLFieldSetElement).disabled).toBe(true);
+    expect(button("取消").disabled).toBe(true);
+    expect(document.querySelector('[aria-label="关闭库存编辑"]')?.hasAttribute("disabled")).toBe(true);
+    click(button("按原请求重试")); await settle();
+    expect(runtime.updateMaterial.mock.calls[1][0]).toEqual(original);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
 });

@@ -276,7 +276,7 @@ describe("customer contacts restore UI", () => {
     expect(runtime.summaryInputs).toEqual([{ customerIds: [801, 802], expectedActorUserId: 7, expectedEnterpriseId: 31 }]);
     expect(runtime.contactsInputs).toHaveLength(0);
     expect(document.body.textContent).toContain("列表主联系人");
-    expect(document.body.textContent).toContain("共 2 位");
+    expect(button("更多")).toBeTruthy();
   });
 
   it("creates one customer with one primary contact through createMulti rather than the legacy create API", async () => {
@@ -302,12 +302,13 @@ describe("customer contacts restore UI", () => {
     expect(payload.data).not.toHaveProperty("email");
   });
 
-  it("only fetches the full contacts list after the user selects 查看更多", async () => {
+  it("only fetches the full contacts list after the user selects 更多", async () => {
     render(<CustomerContactsSummary customerId={701} contactName="主联系人" primaryMethod="手机：13800138000" contactCount={2} scope={scope} scopeReady identityKey="7:31:7:ready" />);
     expect(runtime.contactsInputs).toHaveLength(0);
-    click(button("查看更多"));
+    click(button("更多"));
     await settle();
     expect(runtime.contactsInputs).toEqual([{ customerId: 701, expectedActorUserId: 7, expectedEnterpriseId: 31 }]);
+    expect(document.body.textContent).toContain("共 2 位");
     expect(document.body.textContent).toContain("替代联系人");
     expect(document.body.textContent).not.toContain("历史联系人");
   });

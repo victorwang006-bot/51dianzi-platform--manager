@@ -1,0 +1,65 @@
+/* Keep the existing system-font inheritance and page-owned v8 readability tokens. */
+.customer-contacts-summary {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  line-height: 22px;
+}
+
+.customer-contacts-summary .customer-contacts-summary__name {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-font-body, 15px);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.customer-contacts-summary .customer-contacts-summary__method {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-font-label, 14px);
+  font-variant-numeric: tabular-nums;
+  /* Move the full method to the next line first; break only when it cannot fit. */
+  flex: 0 1 auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.customer-contacts-summary .customer-contacts-summary__more {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--admin-row-action-height, 34px);
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #185fa5;
+  font: inherit;
+  font-size: var(--admin-font-label, 14px);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.customer-contacts-summary .customer-contacts-summary__more:hover:not(:disabled) {
+  background: #edf4fc;
+  text-decoration: underline;
+}
+
+.customer-contacts-summary .customer-contacts-summary__more:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+
+.customer-contacts-summary .customer-contacts-summary__more:disabled {
+  color: var(--admin-color-muted, #64748b);
+  cursor: not-allowed;
+}

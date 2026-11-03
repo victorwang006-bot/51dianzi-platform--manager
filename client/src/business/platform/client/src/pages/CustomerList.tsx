@@ -551,7 +551,7 @@ export default function CustomerList() {
               <colgroup>
                 <col className="w-[236px]" />
                 <col className="w-[136px]" />
-                <col className="w-[208px]" />
+                <col className="w-[312px]" />
                 <col className="w-[144px]" />
                 <col className="w-[108px]" />
                 <col className="w-[176px]" />

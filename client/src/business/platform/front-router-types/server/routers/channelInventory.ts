@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
 import { getDb } from "../db";
+import { createChannelInventoryCollaborationService } from "../services/channelInventoryCollaboration";
+import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
 import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
 import { createChannelInventoryExportService } from "../services/channelInventoryExport";
 import { createCrmPermissionProcedure, router } from "../_core/trpc";
@@ -138,8 +140,39 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const notes = createChannelNotesService({ getDb });
   const team = createChannelTeamInventoryService({ getDb });
   const exporter = createChannelInventoryExportService({ getDb });
+  const collaboration = createChannelInventoryCollaborationService({ getDb });
 
   return router({
+    getTeamMaterialForEdit: procedure.input(teamMaterialForEditSchema).query(async ({ ctx, input }) => {
+      try {
+        assertExpectedContext(ctx, input);
+        return await collaboration.getTeamMaterialForEdit(scopeFromContext(ctx), input);
+      } catch (error) { return asTrpcError(error); }
+    }),
+    updateTeamMaterial: procedure.input(teamMaterialUpdateSchema).mutation(async ({ ctx, input }) => {
+      try {
+        assertExpectedContext(ctx, input);
+        return await collaboration.updateTeamMaterial(scopeFromContext(ctx), input);
+      } catch (error) { return asTrpcError(error); }
+    }),
+    collaborationNotesList: procedure.input(collaborationNotesListSchema).query(async ({ ctx, input }) => {
+      try {
+        assertExpectedContext(ctx, input);
+        return await collaboration.collaborationNotesList(scopeFromContext(ctx), input);
+      } catch (error) { return asTrpcError(error); }
+    }),
+    collaborationNotesAdd: procedure.input(collaborationNotesAddSchema).mutation(async ({ ctx, input }) => {
+      try {
+        assertExpectedContext(ctx, input);
+        return await collaboration.collaborationNotesAdd(scopeFromContext(ctx), input);
+      } catch (error) { return asTrpcError(error); }
+    }),
+    collaborationNotesEdit: procedure.input(collaborationNotesEditSchema).mutation(async ({ ctx, input }) => {
+      try {
+        assertExpectedContext(ctx, input);
+        return await collaboration.collaborationNotesEdit(scopeFromContext(ctx), input);
+      } catch (error) { return asTrpcError(error); }
+    }),
     exportChannelMaterials: procedure
       .input(z.object({ channelId: positiveInt, expectedEnterpriseId: positiveInt, expectedActorUserId: positiveInt }).strict())
       .query(async ({ ctx, input }) => {

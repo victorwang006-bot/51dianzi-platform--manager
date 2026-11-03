@@ -4,6 +4,7 @@ import type { AppRouter } from "../../../front-router-types/server/routers";
 import { formatBeijingDateTime, formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
 import { trpc } from "../../../../api/business-trpc";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
+import { CollaborationNotesPanel } from "../components/channelInventory/CollaborationNotesPanel";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
@@ -16,10 +17,10 @@ type ChannelInventoryInputs = inferRouterInputs<AppRouter>["channelInventory"];
 type ChannelInventoryOutputs = inferRouterOutputs<AppRouter>["channelInventory"];
 type Channel = ChannelInventoryOutputs["listChannels"]["items"][number];
 type TeamMaterial = ChannelInventoryOutputs["listTeamMaterials"]["items"][number];
-type PrivateMaterial = ChannelInventoryOutputs["getMaterial"];
+type PublicMaterial = ChannelInventoryOutputs["getTeamMaterialForEdit"];
 type ChannelType = ChannelInventoryInputs["createChannel"]["type"];
 type MaterialCreateInput = ChannelInventoryInputs["createMaterial"];
-type MaterialUpdateInput = ChannelInventoryInputs["updateMaterial"];
+type MaterialUpdateInput = ChannelInventoryInputs["updateTeamMaterial"];
 
 type ChannelFilters = {
   name: string;
@@ -63,7 +64,7 @@ type ChannelEditor =
 
 type MaterialEditor =
   | { mode: "create" }
-  | { mode: "edit"; material: PrivateMaterial };
+  | { mode: "edit"; material: PublicMaterial; isMine: boolean };
 
 type FrozenCreate<T> = {
   fingerprint: string;
@@ -185,7 +186,7 @@ function channelFormFrom(channel: Channel): ChannelForm {
   };
 }
 
-function materialFormFrom(material: PrivateMaterial): MaterialForm {
+function materialFormFrom(material: PublicMaterial): MaterialForm {
   return {
     channelId: material.channelId === null ? "" : String(material.channelId),
     partNumber: material.partNumber,
@@ -200,7 +201,7 @@ function materialFormFrom(material: PrivateMaterial): MaterialForm {
           ? "included"
           : "excluded",
     leadTime: material.leadTime ?? "",
-    note: material.note ?? "",
+    note: "",
   };
 }
 
@@ -226,12 +227,12 @@ function materialInputFromForm(
   };
 }
 
-function validateMaterialForm(form: MaterialForm) {
+function validateMaterialForm(form: MaterialForm, creating = true) {
   const errors: string[] = [];
   const channelId = Number(form.channelId);
   const quantity = form.qty.trim();
   const price = form.price.trim();
-  if (!Number.isSafeInteger(channelId) || channelId <= 0) errors.push("请选择启用的关联渠道");
+  if (creating && (!Number.isSafeInteger(channelId) || channelId <= 0)) errors.push("请选择启用的关联渠道");
   if (!form.partNumber.normalize("NFKC").trim()) errors.push("请输入型号");
   if (!form.brand.trim()) errors.push("请输入品牌");
   if (quantity && (!/^\d+$/.test(quantity) || Number(quantity) > 2_147_483_647)) {
@@ -277,6 +278,9 @@ function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, o
   materialId: number; enterpriseId: number; actorUserId: number;
   isCurrent: () => boolean; onClose: () => void; onComplete: () => void;
 }) {
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const current = () => mounted.current && isCurrent();
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState<{ id: number; revision: number; content: string } | null>(null);
@@ -285,15 +289,15 @@ function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, o
   const [message, setMessage] = useState("");
   const frozen = useRef<{ mode: "add" | "edit"; content: string; requestId: string; noteId?: number; expectedRevision?: number } | null>(null);
   const context = { expectedEnterpriseId: enterpriseId, expectedActorUserId: actorUserId };
-  const query = trpc.channelInventory.notesList.useQuery({ ...context, materialId, page, pageSize: 50 }, { enabled: isCurrent(), retry: false, refetchOnWindowFocus: true });
+  const query = trpc.channelInventory.notesList.useQuery({ ...context, materialId, page, pageSize: 50 }, { enabled: current(), retry: false, refetchOnWindowFocus: true, trpc: { abortOnUnmount: true } });
   const add = trpc.channelInventory.notesAdd.useMutation();
   const edit = trpc.channelInventory.notesEdit.useMutation();
-  const result = isCurrent() ? query.data : undefined;
+  const result = current() && !query.isError ? query.data : undefined;
   const canWrite = result?.canEdit === true && result.readOnly === false;
   const pageCount = Math.max(1, Math.ceil((result?.total ?? 0) / 50));
 
   const submit = async () => {
-    if (!isCurrent() || busy || !canWrite) return;
+    if (!current() || busy || !canWrite) return;
     const content = (editing ? editing.content : draft).trim();
     if (!content || content.length > 2000) { setMessage("请输入 1 到 2000 字的备注内容。"); return; }
     let payload = frozen.current;
@@ -309,11 +313,11 @@ function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, o
       } else {
         await add.mutateAsync({ ...context, materialId, content: payload.content, requestId: payload.requestId });
       }
-      if (!isCurrent()) return;
+      if (!current()) return;
       frozen.current = null; setRetryLocked(false); setDraft(""); setEditing(null);
-      await query.refetch(); if (isCurrent()) onComplete();
+      await query.refetch(); if (current()) onComplete();
     } catch (error) {
-      if (!isCurrent()) return;
+      if (!current()) return;
       if (definitiveWriteFailure(error)) {
         frozen.current = null; setRetryLocked(false);
         setMessage(errorMessage(error, "备注保存失败，请刷新后重试。"));
@@ -322,17 +326,18 @@ function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, o
         setRetryLocked(true);
         setMessage("保存结果未确认。内容已锁定，请按原请求重试，系统不会重复追加或覆盖备注。");
       }
-    } finally { if (isCurrent()) setBusy(false); }
+    } finally { if (current()) setBusy(false); }
   };
 
   return <div className="ci-modal-backdrop" role="presentation">
-    <section className="ci-host-dialog ci-notes-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-private-notes-title">
+    <section className="ci-host-dialog ci-notes-dialog ci-private-notes-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-private-notes-title">
       <header><div><h2 id="ci-private-notes-title">本人库存备注（私有）</h2><p>仅当前负责人可见和维护；任何备注、作者和备注时间都不会随库存共享给团队。</p></div><button type="button" className="ci-icon-close" aria-label="关闭本人备注" disabled={busy || retryLocked} onClick={onClose}>×</button></header>
+      <div className="ci-dialog-scroll">
       {query.isLoading ? <p className="ci-empty">正在读取本人私有备注…</p> : null}
       {query.isError ? <p className="ci-error" role="alert">{errorMessage(query.error, "备注读取失败。")}</p> : null}
       {result ? <>
         <p><strong>{result.material.partNumber}</strong> · {result.material.brand}</p>
-        {result.legacyNote ? <article className="ci-note-entry ci-note-legacy"><strong>原库存备注</strong><p>{result.legacyNote}</p><small>原作者和填写时间未记录；可在本人库存编辑页维护。</small></article> : null}
+        {result.legacyNote ? <article className="ci-note-entry ci-note-legacy"><strong>原库存备注</strong><p>{result.legacyNote}</p><small>原作者和填写时间未记录；此历史仍仅本人可见，不会加入协作备注。</small></article> : null}
         <section className="ci-notes-history" aria-label="本人备注历史">
           {result.items.map(note => <article className="ci-note-entry" key={note.id}><div className="ci-note-entry-meta"><strong>{note.authorName}</strong><span>{displayDate(note.updatedAt)}</span></div><p>{note.content}</p>{canWrite && note.canEdit ? <button type="button" className="ci-inline-link" disabled={busy || retryLocked} onClick={() => { frozen.current = null; setEditing({ id: note.id, revision: note.revision, content: note.content }); setMessage(""); }}>修改我的备注</button> : null}</article>)}
           {!result.items.length && !result.legacyNote ? <p>暂无本人私有备注。</p> : null}
@@ -344,6 +349,7 @@ function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, o
         </section> : <p className="ci-readonly">当前库存为只读，不能新增或修改备注。</p>}
       </> : null}
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
+      </div>
       <footer><button type="button" className="ci-button" disabled={busy || retryLocked} onClick={() => void query.refetch()}>刷新</button><button type="button" className="ci-button" disabled={busy || retryLocked} onClick={onClose}>关闭</button></footer>
     </section>
   </div>;
@@ -399,12 +405,14 @@ export default function ChannelInventoryHost() {
   const [stateIdentity, setStateIdentity] = useState(identity);
   const contextCurrent = stateIdentity === identity;
   const editRequestRef = useRef(0);
-  const invalidateEditSession = () => { editRequestRef.current += 1; };
+  const editAbortRef = useRef<AbortController | null>(null);
+  const invalidateEditSession = () => { editRequestRef.current += 1; editAbortRef.current?.abort(); };
   const [optionPage, setOptionPage] = useState(1);
   const [optionChannels, setOptionChannels] = useState<Channel[]>([]);
   const [channelEditor, setChannelEditor] = useState<ChannelEditor | null>(null);
   const [channelForm, setChannelForm] = useState<ChannelForm>(EMPTY_CHANNEL_FORM);
   const [materialEditor, setMaterialEditor] = useState<MaterialEditor | null>(null);
+  const materialDialogRef = useRef<HTMLElement>(null);
   const [materialForm, setMaterialForm] = useState<MaterialForm>({
     channelId: "",
     partNumber: "",
@@ -417,11 +425,15 @@ export default function ChannelInventoryHost() {
     note: "",
   });
   const [batchOpen, setBatchOpen] = useState(false);
-  const [notesMaterial, setNotesMaterial] = useState<PrivateMaterial | null>(null);
+  const [notesMaterial, setNotesMaterial] = useState<{ id: number } | null>(null);
+  const [collaboration, setCollaboration] = useState<{ material: TeamMaterial; adding: boolean; session: number } | null>(null);
+  const collaborationSessionRef = useRef(0);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"channel" | "material" | "status" | null>(null);
   const channelCreateRef = useRef<FrozenCreate<ChannelInventoryInputs["createChannel"]> | null>(null);
   const materialCreateRef = useRef<FrozenCreate<MaterialCreateInput> | null>(null);
+  const materialUpdateRef = useRef<MaterialUpdateInput | null>(null);
+  const [materialRetryLocked, setMaterialRetryLocked] = useState(false);
 
   const expectedContext = useMemo(
     () => ready ? { expectedEnterpriseId: enterpriseId!, expectedActorUserId: actorUserId! } : undefined,
@@ -486,7 +498,7 @@ export default function ChannelInventoryHost() {
   const updateChannel = trpc.channelInventory.updateChannel.useMutation();
   const setChannelActive = trpc.channelInventory.setChannelActive.useMutation();
   const createMaterial = trpc.channelInventory.createMaterial.useMutation();
-  const updateMaterial = trpc.channelInventory.updateMaterial.useMutation();
+  const updateMaterial = trpc.channelInventory.updateTeamMaterial.useMutation();
 
   useEffect(() => {
     identityRef.current = identity;
@@ -496,7 +508,7 @@ export default function ChannelInventoryHost() {
     setMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" });
     setChannelFilters({ name: "", type: "all", active: "all" });
     setMaterialSort(null);
-    editRequestRef.current += 1;
+    editRequestRef.current += 1; editAbortRef.current?.abort();
     setBusy(null);
     exportRequestRef.current += 1;
     exportPendingRef.current = false;
@@ -508,12 +520,21 @@ export default function ChannelInventoryHost() {
     setMaterialEditor(null);
     setBatchOpen(false);
     setNotesMaterial(null);
+    setCollaboration(null); collaborationSessionRef.current += 1;
+    materialUpdateRef.current = null; setMaterialRetryLocked(false);
     setMessage("");
     channelCreateRef.current = null;
     materialCreateRef.current = null;
   }, [identity]);
 
-  useEffect(() => () => { exportRequestRef.current += 1; }, []);
+  useEffect(() => () => { exportRequestRef.current += 1; editRequestRef.current += 1; editAbortRef.current?.abort(); }, []);
+
+  useEffect(() => {
+    if (!materialEditor) return;
+    const trigger = document.activeElement as HTMLElement | null;
+    materialDialogRef.current?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled), textarea:not(:disabled)')?.focus();
+    return () => { if (trigger?.isConnected) trigger.focus(); };
+  }, [materialEditor]);
 
   useEffect(() => {
     const result = channelOptionsQuery.data;
@@ -541,12 +562,15 @@ export default function ChannelInventoryHost() {
       utils.channelInventory.listTeamMaterials.invalidate(),
       utils.channelInventory.listTeamSourceOptions.invalidate(),
       utils.channelInventory.notesList.invalidate(),
+      utils.channelInventory.collaborationNotesList.invalidate(),
     ]);
   }, [utils]);
 
   const changeTab = (next: "channels" | "materials") => {
     invalidateEditSession();
     setMaterialEditor(null); setChannelEditor(null); setBatchOpen(false); setNotesMaterial(null);
+    setCollaboration(null); collaborationSessionRef.current += 1;
+    materialUpdateRef.current = null; setMaterialRetryLocked(false);
     setMessage("");
     setTab(next);
   };
@@ -700,6 +724,8 @@ export default function ChannelInventoryHost() {
   const openMaterialCreate = () => {
     invalidateEditSession();
     materialCreateRef.current = null;
+    materialUpdateRef.current = null; setMaterialRetryLocked(false);
+    setNotesMaterial(null); setCollaboration(null);
     const initialChannel = optionChannels.find(channel => channel.active && channel.canEdit && !channel.readOnly);
     setMaterialForm({
       channelId: initialChannel ? String(initialChannel.id) : "",
@@ -717,33 +743,39 @@ export default function ChannelInventoryHost() {
   };
 
   const openMaterialEdit = async (material: TeamMaterial) => {
-    if (!material.isMine || !material.canEdit || material.readOnly || !isCurrent() || !editAllowedRef.current) return;
+    if (!material.canEdit || material.readOnly || !isCurrent() || !editAllowedRef.current) return;
+    invalidateEditSession();
     const request = ++editRequestRef.current;
+    const abort = new AbortController(); editAbortRef.current = abort;
+    materialUpdateRef.current = null; setMaterialRetryLocked(false); setNotesMaterial(null);
     setMessage("");
     try {
-      // Fetch the owner-only detail before rendering any private fields; never
-      // hydrate an editor from the public team DTO or a stale cached detail.
-      const detail = await utils.channelInventory.getMaterial.fetch({ ...expectedContext, id: material.id }, { staleTime: 0 });
-      if (!isCurrent() || !editAllowedRef.current || request !== editRequestRef.current || !detail.canEdit || detail.readOnly || !editableRowsRef.current.has(material.id)) return;
+      // Public-only detail: leader editing must never fetch the legacy private endpoint.
+      const detail = await utils.client.channelInventory.getTeamMaterialForEdit.query({ ...expectedContext, id: material.id }, { signal: abort.signal });
+      if (!isCurrent() || abort.signal.aborted || !editAllowedRef.current || request !== editRequestRef.current || detail.id !== material.id || !detail.canEdit || detail.readOnly || !editableRowsRef.current.has(material.id)) return;
       setMaterialForm(materialFormFrom(detail));
-      setMaterialEditor({ mode: "edit", material: detail });
+      setMaterialEditor({ mode: "edit", material: detail, isMine: material.isMine });
     } catch (error) {
-      if (isCurrent() && editAllowedRef.current && request === editRequestRef.current && editableRowsRef.current.has(material.id)) setMessage(errorMessage(error, "库存详情读取失败。"));
+      if (!abort.signal.aborted && isCurrent() && editAllowedRef.current && request === editRequestRef.current && editableRowsRef.current.has(material.id)) setMessage(errorMessage(error, "库存详情读取失败。"));
     }
   };
 
   const submitMaterial = async () => {
     if (!expectedContext || !isCurrent() || !materialEditor || busy) return;
-    if (!editAllowedRef.current || materialsQuery.data?.canWrite !== true || !optionChannels.some(channel => channel.id === Number(materialForm.channelId) && channel.active && channel.canEdit && !channel.readOnly)) {
+    if (!editAllowedRef.current || materialsQuery.data?.canWrite !== true || (materialEditor.mode === "create"
+      ? !optionChannels.some(channel => channel.id === Number(materialForm.channelId) && channel.active && channel.canEdit && !channel.readOnly)
+      : !editableRowsRef.current.has(materialEditor.material.id) || !materialEditor.material.canEdit || materialEditor.material.readOnly)) {
       setMessage("关联渠道不可写或已停用，请刷新后重试。");
       return;
     }
-    const validation = validateMaterialForm(materialForm);
+    const validation = validateMaterialForm(materialForm, materialEditor.mode === "create");
     if (validation.length) {
       setMessage(validation.join("；"));
       return;
     }
     const body = materialInputFromForm(materialForm);
+    const session = editRequestRef.current;
+    const current = () => isCurrent() && session === editRequestRef.current;
     setBusy("material");
     setMessage("");
     try {
@@ -759,28 +791,36 @@ export default function ChannelInventoryHost() {
         await createMaterial.mutateAsync(frozen.payload);
         materialCreateRef.current = null;
       } else {
-        const input: MaterialUpdateInput = {
+        const input: MaterialUpdateInput = materialUpdateRef.current ?? {
           ...expectedContext,
-          ...body,
+          partNumber: body.partNumber, brand: body.brand, qty: body.qty,
+          dateCode: body.dateCode, price: body.price, taxIncluded: body.taxIncluded, leadTime: body.leadTime,
           id: materialEditor.material.id,
           expectedRevision: materialEditor.material.revision,
+          requestId: createRequestId(),
         };
+        materialUpdateRef.current = input;
         await updateMaterial.mutateAsync(input);
       }
-      if (!isCurrent()) return;
+      if (!current()) return;
+      materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
       invalidateEditSession();
       setMaterialEditor(null);
       await refreshMaterials();
     } catch (error) {
-      if (!isCurrent()) return;
+      if (!current()) return;
       if (materialEditor.mode === "create" && !definitiveWriteFailure(error)) {
         setMessage("保存结果尚未确认。请按原内容重试；系统会使用同一请求号，不会重复创建库存。");
+      } else if (materialEditor.mode === "edit" && !definitiveWriteFailure(error)) {
+        setMaterialRetryLocked(true);
+        setMessage("保存结果未确认。公共资料已锁定，请按原请求重试，不会重复修改库存。");
       } else {
         materialCreateRef.current = null;
+        materialUpdateRef.current = null; setMaterialRetryLocked(false);
         setMessage(errorMessage(error, "库存保存失败，请刷新后重试。"));
       }
     } finally {
-      if (isCurrent()) setBusy(null);
+      if (current()) setBusy(null);
     }
   };
 
@@ -806,7 +846,15 @@ export default function ChannelInventoryHost() {
   const editAllowedRef = useRef(false);
   editAllowedRef.current = canWriteMaterials;
   const editableRowsRef = useRef(new Set<number>());
-  editableRowsRef.current = new Set(materialRows.filter(row => row.isMine && row.canEdit && !row.readOnly).map(row => row.id));
+  editableRowsRef.current = new Set(materialRows.filter(row => row.canEdit && !row.readOnly).map(row => row.id));
+  const collaborationRowsRef = useRef(new Map<number, TeamMaterial>());
+  collaborationRowsRef.current = new Map(materialRows.map(row => [row.id, row]));
+  const openCollaboration = (material: TeamMaterial, adding: boolean) => {
+    if (!isCurrent() || !contextCurrent || materialsQuery.isError || (adding && !material.canAddNote)) return;
+    invalidateEditSession(); setMaterialEditor(null); setNotesMaterial(null); setBatchOpen(false);
+    materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
+    setCollaboration({ material, adding, session: ++collaborationSessionRef.current });
+  };
   const previousSourcePermission = useRef(canFilterSource);
   useEffect(() => {
     if (previousSourcePermission.current && !canFilterSource) {
@@ -885,18 +933,18 @@ export default function ChannelInventoryHost() {
         <section className="ci-panel" aria-label="渠道管理列表">
           <div className="ci-toolbar">
             <label className="ci-field ci-toolbar-search">
-              <span>渠道名称</span>
+              <span className="ci-filter-label">渠道名称</span>
               <input aria-label="筛选渠道名称" value={channelFilters.name} onChange={event => { setChannelFilters(current => ({ ...current, name: event.target.value })); setChannelPage(1); }} placeholder="搜索渠道名称" />
             </label>
             <label className="ci-field ci-short-select">
-              <span>渠道类型</span>
+              <span className="ci-filter-label">渠道类型</span>
               <select aria-label="筛选渠道类型" value={channelFilters.type} onChange={event => { setChannelFilters(current => ({ ...current, type: event.target.value as ChannelFilters["type"] })); setChannelPage(1); }}>
                 <option value="all">全部类型</option>
                 {CHANNEL_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
               </select>
             </label>
             <label className="ci-field ci-short-select">
-              <span>状态</span>
+              <span className="ci-filter-label">状态</span>
               <select aria-label="筛选渠道状态" value={channelFilters.active} onChange={event => { setChannelFilters(current => ({ ...current, active: event.target.value as ChannelFilters["active"] })); setChannelPage(1); }}>
                 <option value="all">全部状态</option>
                 <option value="active">启用</option>
@@ -931,11 +979,11 @@ export default function ChannelInventoryHost() {
       ) : (
         <section className="ci-panel" aria-label="渠道库存列表">
           <div className="ci-toolbar">
-            <label className="ci-field ci-channel-select"><span>渠道来源</span><select aria-label="筛选库存渠道来源" disabled={!canFilterSource} value={canFilterSource ? materialFilters.channelId : ""} onChange={event => { if (!canFilterSource) return; setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}>
+            <label className="ci-field ci-channel-select"><span className="ci-filter-label">渠道来源</span><select aria-label="筛选库存渠道来源" disabled={!canFilterSource} value={canFilterSource ? materialFilters.channelId : ""} onChange={event => { if (!canFilterSource) return; setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}>
               {canFilterSource ? <><option value="">全部渠道</option>{sourceOptions.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}</> : <option value="">无权查看</option>}
             </select></label>
-            <label className="ci-field ci-toolbar-search"><span>型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>
-            <label className="ci-field ci-brand-input"><span>品牌</span><input aria-label="筛选库存品牌" value={materialFilters.brand} onChange={event => { setMaterialFilters(current => ({ ...current, brand: event.target.value })); setMaterialPage(1); }} placeholder="搜索品牌" /></label>
+            <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>
+            <label className="ci-field ci-brand-input"><span className="ci-filter-label">品牌</span><input aria-label="筛选库存品牌" value={materialFilters.brand} onChange={event => { setMaterialFilters(current => ({ ...current, brand: event.target.value })); setMaterialPage(1); }} placeholder="搜索品牌" /></label>
             <button type="button" className="ci-button" onClick={() => { setMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" }); setMaterialPage(1); setMessage(""); }}>重置</button>
             <button type="button" className="ci-button" onClick={() => void refreshMaterials()}>刷新</button>
             <span className="ci-filter-count">{materialTotal} 条库存</span>
@@ -956,7 +1004,7 @@ export default function ChannelInventoryHost() {
                     <td className="ci-lead-time admin-cell-secondary">{material.leadTime || "待确认"}</td>
                     <td className="ci-date"><div className="admin-cell-primary">{material.dateCode || "—"}</div><small className="ci-subtext admin-cell-secondary">{displayDate(material.updatedAt)}</small></td>
                     <td className="admin-cell-primary">{material.canViewSource && (material.isMine || canFilterSource) && material.channelSource ? material.channelSource.name : "无权查看"}</td>
-                    <td className="ci-col-actions"><div className="ci-row-actions">{material.isMine && material.canEdit && !material.readOnly ? <button type="button" className="ci-inline-link" onClick={() => void openMaterialEdit(material)} disabled={busy !== null || !canWriteMaterials}>编辑</button> : <span className="ci-readonly">只读</span>}</div></td>
+                    <td className="ci-col-actions"><div className="ci-row-actions">{material.canEdit && !material.readOnly ? <button type="button" className="ci-inline-link" onClick={() => void openMaterialEdit(material)} disabled={busy !== null || !canWriteMaterials}>编辑</button> : null}{material.canAddNote ? <button type="button" className="ci-inline-link" onClick={() => openCollaboration(material, true)}>新增备注</button> : null}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material, false)}>备注（{material.noteCount}）</button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -987,11 +1035,19 @@ export default function ChannelInventoryHost() {
 
       {materialEditor ? (
         <div className="ci-modal-backdrop" role="presentation">
-          <section className="ci-host-dialog ci-host-material-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-material-editor-title">
-            <header><div><h2 id="ci-material-editor-title">{materialEditor.mode === "create" ? "单条上传" : "编辑渠道库存"}</h2></div><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" disabled={busy === "material"} onClick={() => { invalidateEditSession(); setMaterialEditor(null); }}>×</button></header>
-            {!activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
-            <div className="ci-form-grid">
-              <label className="ci-field"><span>关联渠道 *{materialEditor.mode === "edit" ? "（不可更换）" : ""}</span><select required aria-label="关联渠道" value={materialForm.channelId} disabled={materialEditor.mode === "edit"} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label>
+          <section ref={materialDialogRef} className="ci-host-dialog ci-host-material-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-material-editor-title" onKeyDown={event => {
+            if (event.key === "Escape" && busy !== "material" && !materialRetryLocked) { event.preventDefault(); invalidateEditSession(); setMaterialEditor(null); }
+            if (event.key !== "Tab") return;
+            const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)'));
+            const first = controls[0]; const last = controls.at(-1);
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+          }}>
+            <header><div><h2 id="ci-material-editor-title">{materialEditor.mode === "create" ? "单条上传" : "编辑渠道库存"}</h2></div><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" disabled={busy === "material" || materialRetryLocked} onClick={() => { invalidateEditSession(); setMaterialEditor(null); }}>×</button></header>
+            <div className="ci-dialog-scroll">
+            {materialEditor.mode === "create" && !activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
+            <fieldset className="ci-form-grid" disabled={busy === "material" || materialRetryLocked}>
+              {materialEditor.mode === "create" ? <label className="ci-field"><span>关联渠道 *</span><select required aria-label="关联渠道" value={materialForm.channelId} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label> : <label className="ci-field"><span>关联渠道（不可更换）</span><input aria-label="关联渠道" readOnly disabled value={materialEditor.material.channelName || "未绑定渠道"} /></label>}
               <label className="ci-field"><span>型号 *</span><input required value={materialForm.partNumber} maxLength={128} onChange={event => setMaterialForm(current => ({ ...current, partNumber: event.target.value }))} /></label>
               <label className="ci-field"><span>品牌 *</span><input required value={materialForm.brand} maxLength={64} onChange={event => setMaterialForm(current => ({ ...current, brand: event.target.value }))} /></label>
               <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
@@ -999,17 +1055,19 @@ export default function ChannelInventoryHost() {
               <label className="ci-field"><span>报价 CNY</span><input inputMode="decimal" placeholder="面议" value={materialForm.price} onChange={event => setMaterialForm(current => ({ ...current, price: event.target.value }))} /></label>
               <label className="ci-field"><span>税务口径</span><select value={materialForm.taxIncluded} onChange={event => setMaterialForm(current => ({ ...current, taxIncluded: event.target.value as MaterialForm["taxIncluded"] }))}><option value="unknown">待确认</option><option value="included">含税</option><option value="excluded">未税</option></select></label>
               <label className="ci-field"><span>交期</span><input maxLength={64} placeholder="待确认" value={materialForm.leadTime} onChange={event => setMaterialForm(current => ({ ...current, leadTime: event.target.value }))} /></label>
-              {materialEditor.mode === "edit" ? <button type="button" className="ci-inline-link" onClick={() => { invalidateEditSession(); setNotesMaterial(materialEditor.material); }}>本人备注历史</button> : null}
-              <label className="ci-field ci-form-wide"><span>备注（仅本人）</span><textarea placeholder="仅本人可见，不共享" value={materialForm.note} maxLength={2000} rows={2} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /></label>
-            </div>
+              {materialEditor.mode === "create" ? <label className="ci-field ci-form-wide"><span>备注（仅本人）</span><textarea placeholder="仅本人可见，不共享" value={materialForm.note} maxLength={2000} rows={2} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /></label> : null}
+            </fieldset>
+            {materialEditor.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(materialEditor.material.id)?.isMine ? <div className="ci-private-entry"><button type="button" className="ci-inline-link" disabled={busy === "material" || materialRetryLocked} onClick={() => setNotesMaterial({ id: materialEditor.material.id })}>本人备注历史（私有）</button><small>独立私人历史，不随公共库存共享。</small></div> : null}
             {message ? <p className="ci-error" role="alert">{message}</p> : null}
-            <footer><button type="button" className="ci-button" disabled={busy === "material"} onClick={() => { invalidateEditSession(); setMaterialEditor(null); }}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "material" || !activeChannels.length} onClick={() => void submitMaterial()}>{busy === "material" ? "保存中…" : materialEditor.mode === "create" ? "上传库存" : "保存修改"}</button></footer>
+            </div>
+            <footer><button type="button" className="ci-button" disabled={busy === "material" || materialRetryLocked} onClick={() => { invalidateEditSession(); setMaterialEditor(null); }}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "material" || (materialEditor.mode === "create" && !activeChannels.length)} onClick={() => void submitMaterial()}>{busy === "material" ? "保存中…" : materialRetryLocked ? "按原请求重试" : materialEditor.mode === "create" ? "上传库存" : "保存修改"}</button></footer>
           </section>
         </div>
       ) : null}
 
       {batchOpen && canWriteMaterials ? <BatchUpload channels={optionChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={undefined} onClose={() => { invalidateEditSession(); setBatchOpen(false); }} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { void refreshMaterials(); }} isCurrent={isCurrent} /> : null}
-      {notesMaterial && materialEditor?.mode === "edit" && canWriteMaterials ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={isCurrent} onClose={() => { invalidateEditSession(); setNotesMaterial(null); }} onComplete={() => { void refreshMaterials(); }} /> : null}
+      {notesMaterial && materialEditor?.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(notesMaterial.id)?.isMine && canWriteMaterials ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={() => isCurrent() && collaborationRowsRef.current.get(notesMaterial.id)?.isMine === true && editableRowsRef.current.has(notesMaterial.id)} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
+      {collaboration && contextCurrent && tab === "materials" && collaborationRowsRef.current.has(collaboration.material.id) ? <CollaborationNotesPanel key={`${identity}:${collaboration.material.id}:${collaboration.session}`} materialId={collaboration.material.id} partNumber={collaboration.material.partNumber} brand={collaboration.material.brand} enterpriseId={enterpriseId!} actorUserId={actorUserId!} startAdding={collaboration.adding} canAddNote={collaborationRowsRef.current.get(collaboration.material.id)?.canAddNote === true} isCurrent={() => isCurrent() && collaborationSessionRef.current === collaboration.session && collaborationRowsRef.current.has(collaboration.material.id)} onClose={() => { collaborationSessionRef.current += 1; setCollaboration(null); }} onComplete={() => void refreshMaterials()} /> : null}
     </section>
   );
 }

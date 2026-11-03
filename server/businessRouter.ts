@@ -42,6 +42,8 @@ import {
   updateBasicSchema,
 } from "../client/src/business/platform/shared/customerContacts";
 
+import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../client/src/business/platform/shared/channelInventoryCollaboration";
+
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
@@ -108,6 +110,12 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.listMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.listTeamMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.listTeamSourceOptions", module: "inventory", mode: "read" },
+  { method: "channelInventory.getTeamMaterialForEdit", module: "inventory", mode: "write" },
+  { method: "channelInventory.updateTeamMaterial", module: "inventory", mode: "write" },
+  { method: "channelInventory.collaborationNotesList", module: "inventory", mode: "read" },
+  { method: "channelInventory.collaborationNotesAdd", module: "inventory", mode: "read" },
+  { method: "channelInventory.collaborationNotesEdit", module: "inventory", mode: "read" },
+
   { method: "channelInventory.exportChannelMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.getMaterial", module: "inventory", mode: "read" },
   { method: "channelInventory.createMaterial", module: "inventory", mode: "write" },
@@ -315,8 +323,15 @@ const CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "customer.updateBasic": updateBasicSchema,
 };
 
+const CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  "channelInventory.getTeamMaterialForEdit": teamMaterialForEditSchema,
+  "channelInventory.updateTeamMaterial": teamMaterialUpdateSchema,
+  "channelInventory.collaborationNotesList": collaborationNotesListSchema,
+  "channelInventory.collaborationNotesAdd": collaborationNotesAddSchema,
+  "channelInventory.collaborationNotesEdit": collaborationNotesEditSchema,
+};
 function businessInputSchema(method: string): z.ZodTypeAny {
-  return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? z.unknown();
+  return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method] ?? z.unknown();
 }
 
 function businessQuery(method: string, module: BusinessModule, mode: BusinessAccessMode = "read") {
@@ -327,6 +342,13 @@ function businessQuery(method: string, module: BusinessModule, mode: BusinessAcc
 function businessMutation(method: string, module: BusinessModule) {
   return publicProcedure.input(businessInputSchema(method)).mutation(({ ctx, input }) =>
     forwardBusinessMethod(ctx, input, { method, module, mode: "write" }));
+}
+
+/** Only these two fixed collaboration commands use read authorization, but remain real
+ * tRPC mutations and traverse the unchanged binding/scope fence and command audit. */
+function collaborationMutation(method: "channelInventory.collaborationNotesAdd" | "channelInventory.collaborationNotesEdit") {
+  return publicProcedure.input(businessInputSchema(method)).mutation(({ ctx, input }) =>
+    forwardBusinessMethod(ctx, input, { method, module: "inventory", mode: "read" }));
 }
 
 const inventoryBusinessRouter = router({
@@ -383,6 +405,11 @@ const channelInventoryBusinessRouter = router({
   listMaterials: businessQuery("channelInventory.listMaterials", "inventory"),
   listTeamMaterials: businessQuery("channelInventory.listTeamMaterials", "inventory"),
   listTeamSourceOptions: businessQuery("channelInventory.listTeamSourceOptions", "inventory"),
+  getTeamMaterialForEdit: businessQuery("channelInventory.getTeamMaterialForEdit", "inventory", "write"),
+  updateTeamMaterial: businessMutation("channelInventory.updateTeamMaterial", "inventory"),
+  collaborationNotesList: businessQuery("channelInventory.collaborationNotesList", "inventory"),
+  collaborationNotesAdd: collaborationMutation("channelInventory.collaborationNotesAdd"),
+  collaborationNotesEdit: collaborationMutation("channelInventory.collaborationNotesEdit"),
   exportChannelMaterials: businessQuery("channelInventory.exportChannelMaterials", "inventory"),
   getMaterial: businessQuery("channelInventory.getMaterial", "inventory"),
   createMaterial: businessMutation("channelInventory.createMaterial", "inventory"),
