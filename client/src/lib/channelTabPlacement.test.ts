@@ -12,6 +12,13 @@ const legacy = fs.readFileSync(
   ),
   "utf8"
 );
+const sourcePanel = fs.readFileSync(
+  new URL(
+    "../business/platform/client/src/components/channelInventory/ChannelInventorySourcePanel.tsx",
+    import.meta.url
+  ),
+  "utf8"
+);
 
 describe("channel tabs change placement, not their functions", () => {
   it("starts official inventory on stocks with inventory first", () => {
@@ -56,7 +63,9 @@ describe("channel tabs change placement, not their functions", () => {
   });
 
   it("keeps private/shared boundaries, source actions and Beijing dates while removing persistent prose", () => {
-    expect(legacy).toContain('import { trpc } from "../../../../api/business-trpc"');
+    expect(legacy).toContain(
+      'import { trpc } from "../../../../api/business-trpc"'
+    );
     expect(legacy).toContain('changeTab("channels")}>渠道档案</button>');
     expect(legacy).not.toContain("渠道档案仅当前负责人可见");
     expect(legacy).not.toContain("本人负责的库存；默认不共享");
@@ -67,14 +76,112 @@ describe("channel tabs change placement, not their functions", () => {
     expect(legacy).toContain("toggleChannel(channel)");
     expect(legacy).toContain("!material.canEdit || material.readOnly");
     expect(legacy).toContain("当前库存为只读，不能新增或修改备注。");
-    expect(legacy).toContain("material.canViewSource && (material.isMine || canFilterSource)");
+    expect(legacy).toContain(
+      "onClick={() => openSource(material)}>查看来源</button>"
+    );
+    expect(legacy).toContain(
+      'material.canViewSource ? "" : " ci-source-link-muted"'
+    );
     expect(legacy).not.toContain("<h1>渠道库存</h1>");
     expect(legacy).not.toContain(">可见范围</th>");
     expect(legacy).toContain(">表格上传</button>");
     expect(legacy).toContain(">单条上传</button>");
     expect(legacy).toContain('className="ci-tabbar"');
-    expect(legacy).toContain("该渠道本人有权读取的全部库存；不含联系人和私有备注");
+    expect(legacy).toContain(
+      "该渠道本人有权读取的全部库存；不含联系人和私有备注"
+    );
     expect(legacy).toContain('return formatBeijingDateTime(value) || "—"');
     expect(legacy).not.toContain("new Intl.DateTimeFormat");
+  });
+
+  it("uses row hints only for source styling and reauthorizes every source open without preloading names", () => {
+    const openSource = legacy.slice(
+      legacy.indexOf("const openSource ="),
+      legacy.indexOf("const canWriteChannels =")
+    );
+    expect(openSource).toContain("!sourceContextVerified");
+    expect(openSource).toContain("!isCurrent() || !contextCurrent");
+    expect(openSource).toContain(
+      "materialsQuery.isError || enterpriseQuery.isError"
+    );
+    expect(openSource).toContain(
+      "setSourceDetail({ materialId: material.id, scopeKey: sourceScopeKey })"
+    );
+    expect(openSource).not.toMatch(
+      /canViewSource|canFilterSource|isMine|channelSource/
+    );
+    expect(legacy).not.toContain(
+      "material.canViewSource && (material.isMine || canFilterSource)"
+    );
+    expect(legacy).not.toMatch(/material\.channelSource|row\.channelSource/);
+    expect(legacy).toContain("sourceDetail.scopeKey === sourceScopeKey");
+    expect(legacy).toContain(
+      "onDenied={unauthorized => { setSourceDetail(null);"
+    );
+    expect(sourcePanel).toContain(
+      "utils.client.channelInventory.getTeamMaterialSource.query(input, { signal: controller.signal })"
+    );
+    expect(sourcePanel).toContain(
+      "{ materialId, expectedEnterpriseId: enterpriseId, expectedActorUserId: actorUserId }"
+    );
+    expect(sourcePanel).toContain("void read();");
+    expect(sourcePanel).toContain('window.addEventListener("focus", refresh)');
+    expect(sourcePanel).toContain('setDetail({ status: "loading" })');
+    expect(sourcePanel).toContain("name: result.name, subject");
+    expect(sourcePanel).not.toMatch(
+      /\.useQuery\(|\.getMaterial\.|localStorage|sessionStorage/
+    );
+    expect(sourcePanel).toContain(
+      'code === "FORBIDDEN" || code === "UNAUTHORIZED"'
+    );
+  });
+
+  it("keeps source options and upload channels lazy without changing existing edits or private-note ownership", () => {
+    expect(legacy).toContain(
+      "onFocus={requestSourceOptions} onPointerDown={requestSourceOptions}"
+    );
+    expect(legacy).toContain(
+      'if (!sourceRequested || sourceRequestScope !== sourceAuthorityKey || !ready || !sourceFilterHint || tab !== "materials") return;'
+    );
+    expect(legacy).toContain(
+      "utils.client.channelInventory.listTeamSourceOptions.query("
+    );
+    expect(legacy).not.toContain(
+      "trpc.channelInventory.listTeamSourceOptions.useQuery("
+    );
+    expect(legacy).toContain(
+      'const optionsNeeded = materialEditor?.mode === "create" || batchOpen;'
+    );
+    expect(legacy).toContain(
+      "enabled: ready && contextCurrent && optionsNeeded"
+    );
+
+    const editPayload = legacy.slice(
+      legacy.indexOf(
+        "const input: MaterialUpdateInput = materialUpdateRef.current ?? {"
+      ),
+      legacy.indexOf("materialUpdateRef.current = input;")
+    );
+    expect(editPayload).toContain("...expectedContext");
+    expect(editPayload).toContain("id: materialEditor.material.id");
+    expect(editPayload).toContain(
+      "expectedRevision: materialEditor.material.revision"
+    );
+    expect(editPayload).toContain("requestId: createRequestId()");
+    expect(editPayload).not.toMatch(/channelId:|note:|\.\.\.body/);
+    expect(legacy).toContain("关联渠道（不可更换）");
+    expect(legacy).toContain('readOnly disabled value="关联渠道由服务端保留"');
+    expect(legacy).toContain(
+      "utils.client.channelInventory.getTeamMaterialForEdit.query("
+    );
+    expect(legacy).not.toContain(
+      "utils.client.channelInventory.getMaterial.query("
+    );
+    expect(legacy).toContain(
+      'materialEditor.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(materialEditor.material.id)?.isMine'
+    );
+    expect(legacy).toContain(
+      'notesMaterial && materialEditor?.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(notesMaterial.id)?.isMine && canWriteMaterials'
+    );
   });
 });

@@ -43,6 +43,7 @@ import {
 } from "../client/src/business/platform/shared/customerContacts";
 
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../client/src/business/platform/shared/channelInventoryCollaboration";
+import { teamMaterialSourceSchema } from "../client/src/business/platform/shared/channelInventorySource";
 
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
@@ -110,6 +111,7 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.listMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.listTeamMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.listTeamSourceOptions", module: "inventory", mode: "read" },
+  { method: "channelInventory.getTeamMaterialSource", module: "inventory", mode: "read" },
   { method: "channelInventory.getTeamMaterialForEdit", module: "inventory", mode: "write" },
   { method: "channelInventory.updateTeamMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.collaborationNotesList", module: "inventory", mode: "read" },
@@ -298,6 +300,9 @@ async function forwardBusinessMethod(
       });
       throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务服务暂时不可用，请稍后重试" });
     }
+    // The new logical read-only source query retains the complete binding/scope
+    // fence, but adds no production command-audit DML. Other methods are unchanged.
+    if (capability.method === "channelInventory.getTeamMaterialSource") return result;
     await db.recordBusinessCommandAccess({
       merchantId: merchant.id,
       staffUserId: staffBinding.frontUserId,
@@ -324,6 +329,7 @@ const CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
 };
 
 const CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  "channelInventory.getTeamMaterialSource": teamMaterialSourceSchema,
   "channelInventory.getTeamMaterialForEdit": teamMaterialForEditSchema,
   "channelInventory.updateTeamMaterial": teamMaterialUpdateSchema,
   "channelInventory.collaborationNotesList": collaborationNotesListSchema,
@@ -405,6 +411,7 @@ const channelInventoryBusinessRouter = router({
   listMaterials: businessQuery("channelInventory.listMaterials", "inventory"),
   listTeamMaterials: businessQuery("channelInventory.listTeamMaterials", "inventory"),
   listTeamSourceOptions: businessQuery("channelInventory.listTeamSourceOptions", "inventory"),
+  getTeamMaterialSource: businessQuery("channelInventory.getTeamMaterialSource", "inventory"),
   getTeamMaterialForEdit: businessQuery("channelInventory.getTeamMaterialForEdit", "inventory", "write"),
   updateTeamMaterial: businessMutation("channelInventory.updateTeamMaterial", "inventory"),
   collaborationNotesList: businessQuery("channelInventory.collaborationNotesList", "inventory"),

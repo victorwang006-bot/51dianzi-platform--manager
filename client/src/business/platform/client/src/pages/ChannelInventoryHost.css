@@ -138,3 +138,12 @@
   .ci-page.ci-host .ci-private-entry { padding-right: 14px; padding-left: 14px; }
   .ci-page.ci-host .ci-collaboration-dialog .ci-dialog-scroll { padding: 14px; }
 }
+
+/* v10 source-only addition. All v9 rules above remain byte-for-byte unchanged. */
+.ci-page.ci-host .ci-source-link { min-height: 28px; white-space: nowrap; }
+.ci-page.ci-host .ci-source-link-muted,
+.ci-page.ci-host .ci-source-link-muted:hover { color: #98a2b0; }
+.ci-page.ci-host .ci-source-dialog { width: min(440px, 100%); }
+.ci-page.ci-host .ci-source-content { min-height: 0; overflow-y: auto; padding: 20px; }
+.ci-page.ci-host .ci-source-content p { margin: 0 0 10px; }
+.ci-page.ci-host .ci-source-name { color: #1e293b; font-size: 18px; font-weight: 500; line-height: 28px; overflow-wrap: anywhere; }

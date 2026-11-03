@@ -1,6 +1,7 @@
 import { sql, type SQL } from "drizzle-orm";
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM } from "./channelTeamInventoryAccess";
+import { teamMaterialSourceEligibility } from "./channelInventorySource";
 
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
@@ -27,7 +28,7 @@ const fail = (code: "BAD_REQUEST" | "FORBIDDEN" | "INTERNAL_SERVER_ERROR", messa
 export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: boolean): TeamChannelMaterial {
   if (String(row.currency) !== "CNY") fail("INTERNAL_SERVER_ERROR", "库存币种无效");
   const isMine = bool(row.isMine);
-  const canViewSource = isMine || leader;
+  const canViewSource = bool(row.canViewSource);
   const canEdit = (isMine || leader) && canWrite;
   return {
     id: Number(row.id), partNumber: String(row.partNumber), brand: String(row.brand),
@@ -35,7 +36,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded), leadTime: text(row.leadTime),
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
-    channelSource: canViewSource ? { id: Number(row.sourceId), name: String(row.sourceName) } : null,
+    channelSource: null,
   };
 }
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number }) {
@@ -74,35 +75,40 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       if (!Number.isInteger(input.page) || input.page < 1 || input.page > 1_000_000 || !Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 100) fail("BAD_REQUEST", "分页参数无效");
       const order = teamMaterialOrder(input);
       const db = await database();
-      const { access, leader, predicates } = await visible(db, scope);
+      return db.transaction(async tx => {
+      const { access, leader, predicates } = await visible(tx, scope, { lock: true });
       if (input.channelId !== undefined) {
         if (!leader) fail("FORBIDDEN", "无权查看渠道来源筛选");
         if (!Number.isSafeInteger(input.channelId) || input.channelId < 1) fail("BAD_REQUEST", "渠道来源无效");
         predicates.push(sql`m.channel_id = ${input.channelId}`);
+        predicates.push(teamMaterialSourceEligibility(scope, true, true));
       }
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literal(input.partNumber)} ESCAPE '='`);
       if (input.brand) predicates.push(sql`m.brand LIKE ${literal(input.brand)} ESCAPE '='`);
       const where = all(predicates);
-      const total = Number(rows(await db.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where}`))[0]?.total ?? 0);
-      const items = rows(await db.execute(sql`SELECT m.id, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
+      const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
+      const items = rows(await tx.execute(sql`SELECT m.id, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
         m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision,
         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
-        CASE WHEN m.responsible_user_id = ${scope.actorUserId} OR ${leader} THEN c.id ELSE NULL END AS sourceId,
-        CASE WHEN m.responsible_user_id = ${scope.actorUserId} OR ${leader} THEN c.name ELSE NULL END AS sourceName
-        ${FROM} WHERE ${where} ORDER BY ${order} LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}`))
+        ${teamMaterialSourceEligibility(scope, true)} AS canViewSource
+        ${FROM} WHERE ${where} ORDER BY ${order} LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE`))
         .map(row => teamMaterialFrom(row, access.write, leader));
       return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
+      });
     },
     async listTeamSourceOptions(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number } = {}) {
       expected(scope, input);
       if (Object.keys(input).some(k => !["expectedEnterpriseId", "expectedActorUserId"].includes(k))) fail("BAD_REQUEST", "来源筛选参数无效");
       const db = await database();
-      const { leader, predicates } = await visible(db, scope);
-      if (!leader) return { canFilterSource: false, items: [] as { id: number; name: string }[] };
-      const items = rows(await db.execute(sql`SELECT DISTINCT c.id, c.name ${FROM} WHERE ${all(predicates)} ORDER BY c.name ASC, c.id ASC`))
-        .map(row => ({ id: Number(row.id), name: String(row.name) }));
-      return { canFilterSource: true, items };
+      return db.transaction(async tx => {
+        const { leader, predicates } = await visible(tx, scope, { lock: true });
+        if (!leader) return { canFilterSource: false, items: [] as { id: number; name: string }[] };
+        const items = rows(await tx.execute(sql`SELECT DISTINCT c.id, c.name ${FROM}
+          WHERE ${all([...predicates, teamMaterialSourceEligibility(scope, true, true)])} ORDER BY c.name ASC, c.id ASC FOR UPDATE`))
+          .map(row => ({ id: Number(row.id), name: String(row.name) }));
+        return { canFilterSource: true, items };
+      });
     },
   };
 }

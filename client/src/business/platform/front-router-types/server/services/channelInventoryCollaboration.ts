@@ -4,10 +4,11 @@ import { z } from "zod";
 import { ChannelInventoryError, channelInventoryPayloadHash, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll, teamInventoryRows as rows } from "./channelTeamInventoryAccess";
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
+import { teamMaterialSourceEligibility } from "./channelInventorySource";
 
 /** Closed public projection; private legacy material/note/channel-contact fields are never selected. */
 export type TeamMaterialForEdit = {
-  id: number; channelId: number; channelName: string; partNumber: string; brand: string;
+  id: number; channelId: number | null; channelName: string | null; partNumber: string; brand: string;
   qty: number | null; dateCode: string | null; price: string | null; currency: "CNY";
   taxIncluded: boolean | null; leadTime: string | null; revision: number;
   createdAt: Date | string; updatedAt: Date | string; canEdit: true; readOnly: false;
@@ -32,9 +33,10 @@ function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: 
   if ((input.expectedEnterpriseId !== undefined && input.expectedEnterpriseId !== scope.enterpriseId)
     || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) fail("FORBIDDEN", "企业或账号上下文不匹配，请刷新后重试");
 }
-export function teamMaterialPublicFrom(row: SqlResultRow): TeamMaterialForEdit {
+export function teamMaterialPublicFrom(row: SqlResultRow, canViewSource = bool(row.canViewSource)): TeamMaterialForEdit {
   if (String(row.currency) !== "CNY") fail("INTERNAL_SERVER_ERROR", "库存币种无效");
-  return { id: Number(row.id), channelId: Number(row.channelId), channelName: String(row.channelName),
+  return { id: Number(row.id), channelId: canViewSource && row.channelId != null ? Number(row.channelId) : null,
+    channelName: canViewSource && row.channelName != null ? String(row.channelName) : null,
     partNumber: String(row.partNumber), brand: String(row.brand), qty: row.qty == null ? null : Number(row.qty),
     dateCode: text(row.dateCode), price: text(row.price), currency: "CNY", taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded),
     leadTime: text(row.leadTime), revision: Number(row.revision), createdAt: row.createdAt as Date | string,
@@ -56,7 +58,8 @@ const PUBLIC_COLUMNS = sql`m.id, m.channel_id AS channelId, c.name AS channelNam
  */
 async function authorizedMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, materialId: number, write = false) {
   const visibility = await resolveTeamInventoryVisibility(tx, scope, { lock: true, materialId });
-  const row = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS}, (m.responsible_user_id = ${scope.actorUserId}) AS isMine
+  const row = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS}, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
+    ${teamMaterialSourceEligibility(scope, true)} AS canViewSource
     ${TEAM_MATERIAL_FROM} WHERE ${teamInventoryAll(visibility.predicates)} LIMIT 1 FOR UPDATE`))[0];
   if (!row) notFound();
   if (write && (!visibility.access.write || (!bool(row.isMine) && !visibility.leader))) fail("FORBIDDEN", "仅所属人或本库存团队有效组长且具备库存写权限可编辑");
@@ -75,14 +78,14 @@ async function priorAudit(tx: SqlExecutor, scope: ChannelInventoryScope, request
     FROM channel_inventory_collaboration_audit WHERE enterpriseId = ${scope.enterpriseId}
       AND actorUserId = ${scope.actorUserId} AND requestId = ${requestId} LIMIT 1 FOR UPDATE`))[0];
 }
-function replay<T extends TeamMaterialForEdit | CollaborationNote>(audit: SqlResultRow, action: Action, hash: string, actor: number): { item: T; idempotent: boolean } {
+function replay<T extends TeamMaterialForEdit | CollaborationNote>(audit: SqlResultRow, action: Action, hash: string, actor: number, canViewSource = false): { item: T; idempotent: boolean } {
   if (String(audit.action) !== action || String(audit.payloadHash) !== hash) fail("CONFLICT", "该请求号已用于不同的协作操作");
   let data: SqlResultRow;
   try { data = typeof audit.afterData === "string" ? JSON.parse(audit.afterData) : audit.afterData as SqlResultRow; }
   catch { return fail("INTERNAL_SERVER_ERROR", "审计记录格式无效"); }
   if (!data || !Number.isSafeInteger(Number(data.id))) fail("INTERNAL_SERVER_ERROR", "审计记录格式无效");
   // Even replay is projected from a strict whitelist, never raw JSON/spread.
-  const item = action === "updateTeamMaterial" ? teamMaterialPublicFrom(data) : collaborationNoteFrom(data, actor);
+  const item = action === "updateTeamMaterial" ? teamMaterialPublicFrom(data, canViewSource) : collaborationNoteFrom(data, actor);
   if (action === "collaborationNotesEdit" && (item as CollaborationNote).authorUserId !== actor) fail("FORBIDDEN", "只能修改本人填写的协作备注");
   return { item: item as T, idempotent: true };
 }
@@ -154,7 +157,7 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
       return transaction(async tx => {
         const current = await authorizedMaterial(tx, scope, input.id, true);
         const prior = await priorAudit(tx, scope, requestId);
-        if (prior) return replay<TeamMaterialForEdit>(prior, "updateTeamMaterial", hash, scope.actorUserId);
+        if (prior) return replay<TeamMaterialForEdit>(prior, "updateTeamMaterial", hash, scope.actorUserId, bool(current.canViewSource));
         if (Number(current.revision) !== input.expectedRevision) conflict();
         if (!bool(current.channelActive)) fail("PRECONDITION_FAILED", "关联渠道已停用，不能编辑库存");
         const assignments: SQL[] = [sql`revision = revision + 1`, sql`updated_at = CURRENT_TIMESTAMP(3)`];
@@ -172,7 +175,7 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
         const updated = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS} ${TEAM_MATERIAL_FROM}
           WHERE m.id = ${input.id} AND m.enterprise_id = ${scope.enterpriseId} AND m.data_owner_user_id = ${scope.dataOwnerUserId} LIMIT 1`))[0];
         if (!updated) notFound();
-        const item = teamMaterialPublicFrom(updated);
+        const item = teamMaterialPublicFrom(updated, bool(current.canViewSource));
         await audit(tx, scope, { materialId: input.id, action: "updateTeamMaterial", requestId, payloadHash: hash,
           expectedRevision: input.expectedRevision, beforeData: teamMaterialPublicFrom(current), afterData: item });
         return { item, idempotent: false };

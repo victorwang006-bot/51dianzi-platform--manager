@@ -17,9 +17,9 @@
 }
 
 .admin-workspace-shell__header {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  display: flex;
   align-items: center;
+  min-width: 0;
   min-height: 64px;
   gap: 32px;
   padding: 0 24px;
@@ -27,9 +27,20 @@
 
 .admin-workspace-shell__brand {
   display: flex;
+  flex: 0 0 auto;
   min-width: 0;
   align-items: center;
   gap: 10px;
+}
+
+/* Only primary-menu placement changes: beside the existing Logo, account right. */
+.admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces {
+  flex: 0 1 auto;
+  justify-content: flex-start;
+}
+
+.admin-workspace-shell__account {
+  margin-left: auto;
 }
 
 .admin-workspace-shell__main {

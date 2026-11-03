@@ -3,8 +3,11 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../front-router-types/server/routers";
 import { formatBeijingDateTime, formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
 import { trpc } from "../../../../api/business-trpc";
+import { useBusinessScope } from "../../../../BusinessScope";
+import { toast } from "sonner";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
 import { CollaborationNotesPanel } from "../components/channelInventory/CollaborationNotesPanel";
+import { ChannelInventorySourcePanel } from "../components/channelInventory/ChannelInventorySourcePanel";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
@@ -18,6 +21,7 @@ type ChannelInventoryOutputs = inferRouterOutputs<AppRouter>["channelInventory"]
 type Channel = ChannelInventoryOutputs["listChannels"]["items"][number];
 type TeamMaterial = ChannelInventoryOutputs["listTeamMaterials"]["items"][number];
 type PublicMaterial = ChannelInventoryOutputs["getTeamMaterialForEdit"];
+type SourceOptions = ChannelInventoryOutputs["listTeamSourceOptions"];
 type ChannelType = ChannelInventoryInputs["createChannel"]["type"];
 type MaterialCreateInput = ChannelInventoryInputs["createMaterial"];
 type MaterialUpdateInput = ChannelInventoryInputs["updateTeamMaterial"];
@@ -364,6 +368,7 @@ function PrivateNotesPanel({ materialId, enterpriseId, actorUserId, isCurrent, o
  */
 export default function ChannelInventoryHost() {
   const utils = trpc.useUtils();
+  const businessScope = useBusinessScope();
   const enterpriseQuery = trpc.enterprise.me.useQuery(undefined, { retry: false });
   const summary = enterpriseQuery.data;
   const enterpriseId = summary?.enterprise?.id;
@@ -375,6 +380,14 @@ export default function ChannelInventoryHost() {
   const ready = Number.isSafeInteger(enterpriseId) && (enterpriseId ?? 0) > 0
     && Number.isSafeInteger(actorUserId) && (actorUserId ?? 0) > 0
     && hasInventoryManage;
+  const sourceContextVerified = businessScope.contextVerification.state === "verified"
+    && businessScope.contextVerification.identity === businessScope.storageScope;
+  const sourceAuthorityKey = JSON.stringify({ domain: businessScope.storageScope, role: businessScope.frontUser.role,
+    verification: businessScope.contextVerification,
+    enterpriseId, actorUserId, member: summary?.member, permissionVersion: summary?.permissionVersion,
+    permissions: [...permissionKeys].sort(), owner: summary?.isOwner, readable: sourceContextVerified && ready && !enterpriseQuery.isError });
+  const sourceAuthorityRef = useRef(sourceAuthorityKey);
+  sourceAuthorityRef.current = sourceAuthorityKey;
   const identity = ready ? `${enterpriseId}:${actorUserId}:${summary?.isOwner ? "owner" : [...permissionKeys].sort().join(",")}` : "";
   const identityRef = useRef(identity);
   identityRef.current = identity;
@@ -427,6 +440,11 @@ export default function ChannelInventoryHost() {
   const [batchOpen, setBatchOpen] = useState(false);
   const [notesMaterial, setNotesMaterial] = useState<{ id: number } | null>(null);
   const [collaboration, setCollaboration] = useState<{ material: TeamMaterial; adding: boolean; session: number } | null>(null);
+  const [sourceRequested, setSourceRequested] = useState(false);
+  const [sourceRequestScope, setSourceRequestScope] = useState("");
+  const [sourceOptionsRevision, setSourceOptionsRevision] = useState(0);
+  const [sourcesState, setSourcesState] = useState<{ scope: string; data?: SourceOptions; isLoading: boolean; isError: boolean }>({ scope: "", isLoading: false, isError: false });
+  const [sourceDetail, setSourceDetail] = useState<{ materialId: number; scopeKey: string } | null>(null);
   const collaborationSessionRef = useRef(0);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"channel" | "material" | "status" | null>(null);
@@ -457,11 +475,8 @@ export default function ChannelInventoryHost() {
     retry: false,
   });
 
-  const sourcesQuery = trpc.channelInventory.listTeamSourceOptions.useQuery({
-    expectedEnterpriseId: enterpriseId ?? undefined,
-    expectedActorUserId: actorUserId ?? undefined,
-  }, { enabled: ready && tab === "materials", retry: false, refetchOnWindowFocus: true });
-  const sourceAllowed = contextCurrent && !sourcesQuery.isError && sourcesQuery.data?.canFilterSource === true;
+  const sourcesQuery = sourcesState.scope === sourceAuthorityKey ? sourcesState : { data: undefined, isLoading: false, isError: false };
+  const sourceAllowed = sourceRequested && sourceRequestScope === sourceAuthorityKey && contextCurrent && !sourcesQuery.isError && sourcesQuery.data?.canFilterSource === true;
   const sourceOptions = sourceAllowed ? sourcesQuery.data!.items : [];
   const parsedMaterialChannelId = Number(materialFilters.channelId);
   const materialChannelId = sourceAllowed && sourceOptions.some(source => source.id === parsedMaterialChannelId)
@@ -480,7 +495,47 @@ export default function ChannelInventoryHost() {
   const materialsQuery = trpc.channelInventory.listTeamMaterials.useQuery(materialInput, {
     enabled: ready && tab === "materials", retry: false, refetchOnWindowFocus: true,
   });
-  const canFilterSource = sourceAllowed && !materialsQuery.isError && materialsQuery.data?.canFilterSource !== false;
+  // Retain only a same-authority filter hint during pagination, never across a
+  // denial/context change. It is not sufficient to read any source options.
+  const sourceFilterProof = useRef({ scope: "", allowed: false });
+  if (materialsQuery.data || materialsQuery.isError || sourceFilterProof.current.scope !== sourceAuthorityKey) {
+    sourceFilterProof.current = { scope: sourceAuthorityKey, allowed: !materialsQuery.isError && materialsQuery.data?.canFilterSource === true };
+  }
+  const sourceFilterHint = sourceContextVerified && contextCurrent && !enterpriseQuery.isError && sourceFilterProof.current.allowed;
+  const canFilterSource = sourceAllowed && sourceFilterHint;
+  const sourceFilterDenied = sourceRequested && !sourcesQuery.isLoading && (sourcesQuery.isError || sourcesQuery.data?.canFilterSource === false);
+  const requestSourceOptions = () => {
+    if (!sourceFilterHint) return;
+    setSourceRequestScope(sourceAuthorityKey); setSourceRequested(true);
+    if (sourceFilterDenied) setSourceOptionsRevision(current => current + 1);
+  };
+  useEffect(() => {
+    if (!sourceRequested || sourceRequestScope !== sourceAuthorityKey || !ready || !sourceFilterHint || tab !== "materials") return;
+    const controller = new AbortController();
+    let alive = true;
+    const current = () => alive && !controller.signal.aborted && sourceAuthorityRef.current === sourceAuthorityKey;
+    setSourcesState({ scope: sourceAuthorityKey, isLoading: true, isError: false });
+    void utils.client.channelInventory.listTeamSourceOptions.query({ expectedEnterpriseId: enterpriseId!, expectedActorUserId: actorUserId! }, { signal: controller.signal })
+      .then(data => { if (current()) setSourcesState({ scope: sourceAuthorityKey, data, isLoading: false, isError: false }); })
+      .catch(() => { if (current()) setSourcesState({ scope: sourceAuthorityKey, isLoading: false, isError: true }); });
+    return () => { alive = false; controller.abort(); };
+  }, [sourceRequested, sourceRequestScope, sourceOptionsRevision, sourceAuthorityKey, ready, sourceFilterHint, tab, utils, enterpriseId, actorUserId]);
+  useEffect(() => {
+    if (!sourceRequested || !sourceFilterHint || tab !== "materials") return;
+    const refresh = () => { setSourcesState({ scope: sourceAuthorityKey, isLoading: true, isError: false }); setSourceOptionsRevision(current => current + 1); };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [sourceRequested, sourceFilterHint, sourceAuthorityKey, tab]);
+  useEffect(() => {
+    setSourceRequested(false); setSourceRequestScope("");
+    setSourcesState({ scope: "", isLoading: false, isError: false });
+  }, [sourceAuthorityKey]);
+  useEffect(() => {
+    if (materialsQuery.isError || materialsQuery.data?.canFilterSource === false) {
+      setSourceRequested(false); setSourceRequestScope("");
+      setSourcesState({ scope: "", isLoading: false, isError: false });
+    }
+  }, [materialsQuery.isError, materialsQuery.data?.canFilterSource]);
 
   const optionQueryInput: ChannelInventoryInputs["listChannels"] = {
     expectedEnterpriseId: enterpriseId ?? undefined,
@@ -489,8 +544,9 @@ export default function ChannelInventoryHost() {
     page: optionPage,
     pageSize: 100,
   };
+  const optionsNeeded = materialEditor?.mode === "create" || batchOpen;
   const channelOptionsQuery = trpc.channelInventory.listChannels.useQuery(optionQueryInput, {
-    enabled: ready && (tab === "materials" || Boolean(materialEditor) || batchOpen),
+    enabled: ready && contextCurrent && optionsNeeded,
     retry: false,
   });
 
@@ -521,6 +577,7 @@ export default function ChannelInventoryHost() {
     setBatchOpen(false);
     setNotesMaterial(null);
     setCollaboration(null); collaborationSessionRef.current += 1;
+    setSourceRequested(false); setSourceDetail(null);
     materialUpdateRef.current = null; setMaterialRetryLocked(false);
     setMessage("");
     channelCreateRef.current = null;
@@ -538,13 +595,19 @@ export default function ChannelInventoryHost() {
 
   useEffect(() => {
     const result = channelOptionsQuery.data;
-    if (!result || !ready) return;
+    if (!result || !ready || !contextCurrent || !optionsNeeded || channelOptionsQuery.isError) return;
     setOptionChannels(current => {
       const next = new Map((result.page === 1 ? [] : current).map(channel => [channel.id, channel]));
       for (const channel of result.items) next.set(channel.id, channel);
       return Array.from(next.values()).sort((left, right) => right.id - left.id);
     });
-  }, [channelOptionsQuery.data, ready]);
+  }, [channelOptionsQuery.data, channelOptionsQuery.isError, ready, contextCurrent, optionsNeeded]);
+
+  useEffect(() => {
+    if (materialEditor?.mode !== "create") return;
+    const initial = optionChannels.find(channel => channel.active && channel.canEdit && !channel.readOnly);
+    if (initial) setMaterialForm(current => current.channelId ? current : { ...current, channelId: String(initial.id) });
+  }, [optionChannels, materialEditor?.mode]);
 
   const isCurrent = useCallback(() => identityRef.current === identity && Boolean(identity), [identity]);
 
@@ -570,6 +633,7 @@ export default function ChannelInventoryHost() {
     invalidateEditSession();
     setMaterialEditor(null); setChannelEditor(null); setBatchOpen(false); setNotesMaterial(null);
     setCollaboration(null); collaborationSessionRef.current += 1;
+    setSourceDetail(null);
     materialUpdateRef.current = null; setMaterialRetryLocked(false);
     setMessage("");
     setTab(next);
@@ -594,7 +658,8 @@ export default function ChannelInventoryHost() {
   const viewChannelMaterials = (channel: Channel) => {
     changeTab("materials");
     setMessage("");
-    setMaterialFilters(current => ({ ...current, channelId: canFilterSource ? String(channel.id) : "" }));
+    requestSourceOptions();
+    setMaterialFilters(current => ({ ...current, channelId: sourceFilterHint ? String(channel.id) : "" }));
     setMaterialPage(1);
     setTab("materials");
   };
@@ -834,6 +899,20 @@ export default function ChannelInventoryHost() {
   const channelResult = contextCurrent && !channelsQuery.isError ? channelsQuery.data : undefined;
   const materialResult = !materialsQuery.isError && contextCurrent ? materialsQuery.data : undefined;
   const materialRows = materialResult?.items ?? [];
+  // UI lifecycle only, never authorization. The existing BFF tree remounts on
+  // account/merchant/enterprise/binding/read projection changes. Include the
+  // live enterprise member/team/role proof and visible row hints as well.
+  const sourceScopeKey = JSON.stringify({
+    authority: sourceAuthorityKey, readable: sourceContextVerified && ready && !enterpriseQuery.isError && !materialsQuery.isError && contextCurrent,
+    tab, filters: materialInput, rows: materialRows.map(row => [row.id, row.canViewSource]),
+  });
+  const sourceScopeRef = useRef(sourceScopeKey);
+  sourceScopeRef.current = sourceScopeKey;
+  useEffect(() => { setSourceDetail(null); }, [sourceScopeKey]);
+  const openSource = (material: TeamMaterial) => {
+    if (!sourceContextVerified || !isCurrent() || !contextCurrent || materialsQuery.isError || enterpriseQuery.isError) return;
+    setSourceDetail({ materialId: material.id, scopeKey: sourceScopeKey });
+  };
   const canWriteChannels = channelsQuery.data?.canWrite === true;
   const canWriteMaterials = !materialsQuery.isError && contextCurrent && materialsQuery.data?.canWrite === true;
   const channelPageCount = Math.max(1, channelResult?.pageCount ?? 1);
@@ -855,14 +934,6 @@ export default function ChannelInventoryHost() {
     materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
     setCollaboration({ material, adding, session: ++collaborationSessionRef.current });
   };
-  const previousSourcePermission = useRef(canFilterSource);
-  useEffect(() => {
-    if (previousSourcePermission.current && !canFilterSource) {
-      editRequestRef.current += 1;
-      setBatchOpen(false); setMaterialEditor(null); setNotesMaterial(null);
-    }
-    previousSourcePermission.current = canFilterSource;
-  }, [canFilterSource]);
   useEffect(() => {
     if (materialEditor?.mode === "edit" && materialResult && !editableRowsRef.current.has(materialEditor.material.id)) {
       editRequestRef.current += 1;
@@ -871,11 +942,11 @@ export default function ChannelInventoryHost() {
   }, [materialEditor, materialResult]);
 
   useEffect(() => {
-    if (!canFilterSource && materialFilters.channelId) {
+    if ((!sourceFilterHint || (sourceRequested && !sourcesQuery.isLoading && !canFilterSource)) && materialFilters.channelId) {
       setMaterialFilters(current => ({ ...current, channelId: "" }));
       setMaterialPage(1);
     }
-  }, [canFilterSource, materialFilters.channelId]);
+  }, [sourceFilterHint, sourceRequested, sourcesQuery.isLoading, canFilterSource, materialFilters.channelId]);
   useEffect(() => {
     if (!canWriteMaterials) {
       editRequestRef.current += 1;
@@ -979,8 +1050,8 @@ export default function ChannelInventoryHost() {
       ) : (
         <section className="ci-panel" aria-label="渠道库存列表">
           <div className="ci-toolbar">
-            <label className="ci-field ci-channel-select"><span className="ci-filter-label">渠道来源</span><select aria-label="筛选库存渠道来源" disabled={!canFilterSource} value={canFilterSource ? materialFilters.channelId : ""} onChange={event => { if (!canFilterSource) return; setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}>
-              {canFilterSource ? <><option value="">全部渠道</option>{sourceOptions.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}</> : <option value="">无权查看</option>}
+            <label className="ci-field ci-channel-select"><span className="ci-filter-label">渠道来源</span><select aria-label="筛选库存渠道来源" disabled={!sourceFilterHint || sourceFilterDenied} onFocus={requestSourceOptions} onPointerDown={requestSourceOptions} value={canFilterSource ? materialFilters.channelId : ""} onChange={event => { if (!canFilterSource) return; setMaterialFilters(current => ({ ...current, channelId: event.target.value })); setMaterialPage(1); setMessage(""); }}>
+              {sourceFilterHint && !sourceFilterDenied ? <><option value="">{sourceRequested && sourcesQuery.isLoading ? "正在读取渠道…" : "全部渠道"}</option>{sourceOptions.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}</> : <option value="">{sourcesQuery.isError ? "来源读取失败" : "无权查看"}</option>}
             </select></label>
             <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>
             <label className="ci-field ci-brand-input"><span className="ci-filter-label">品牌</span><input aria-label="筛选库存品牌" value={materialFilters.brand} onChange={event => { setMaterialFilters(current => ({ ...current, brand: event.target.value })); setMaterialPage(1); }} placeholder="搜索品牌" /></label>
@@ -1003,7 +1074,7 @@ export default function ChannelInventoryHost() {
                     <td className="ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}<small className="ci-subtext admin-cell-secondary">{material.taxIncluded === null ? "税务待确认" : material.taxIncluded ? "含税" : "未税"}</small></td>
                     <td className="ci-lead-time admin-cell-secondary">{material.leadTime || "待确认"}</td>
                     <td className="ci-date"><div className="admin-cell-primary">{material.dateCode || "—"}</div><small className="ci-subtext admin-cell-secondary">{displayDate(material.updatedAt)}</small></td>
-                    <td className="admin-cell-primary">{material.canViewSource && (material.isMine || canFilterSource) && material.channelSource ? material.channelSource.name : "无权查看"}</td>
+                    <td className="ci-material-source-col"><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button></td>
                     <td className="ci-col-actions"><div className="ci-row-actions">{material.canEdit && !material.readOnly ? <button type="button" className="ci-inline-link" onClick={() => void openMaterialEdit(material)} disabled={busy !== null || !canWriteMaterials}>编辑</button> : null}{material.canAddNote ? <button type="button" className="ci-inline-link" onClick={() => openCollaboration(material, true)}>新增备注</button> : null}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material, false)}>备注（{material.noteCount}）</button></div></td>
                   </tr>
                 ))}
@@ -1047,7 +1118,7 @@ export default function ChannelInventoryHost() {
             <div className="ci-dialog-scroll">
             {materialEditor.mode === "create" && !activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
             <fieldset className="ci-form-grid" disabled={busy === "material" || materialRetryLocked}>
-              {materialEditor.mode === "create" ? <label className="ci-field"><span>关联渠道 *</span><select required aria-label="关联渠道" value={materialForm.channelId} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label> : <label className="ci-field"><span>关联渠道（不可更换）</span><input aria-label="关联渠道" readOnly disabled value={materialEditor.material.channelName || "未绑定渠道"} /></label>}
+              {materialEditor.mode === "create" ? <label className="ci-field"><span>关联渠道 *</span><select required aria-label="关联渠道" value={materialForm.channelId} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label> : <label className="ci-field"><span>关联渠道（不可更换）</span><input aria-label="关联渠道" readOnly disabled value="关联渠道由服务端保留" /></label>}
               <label className="ci-field"><span>型号 *</span><input required value={materialForm.partNumber} maxLength={128} onChange={event => setMaterialForm(current => ({ ...current, partNumber: event.target.value }))} /></label>
               <label className="ci-field"><span>品牌 *</span><input required value={materialForm.brand} maxLength={64} onChange={event => setMaterialForm(current => ({ ...current, brand: event.target.value }))} /></label>
               <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
@@ -1068,6 +1139,7 @@ export default function ChannelInventoryHost() {
       {batchOpen && canWriteMaterials ? <BatchUpload channels={optionChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={undefined} onClose={() => { invalidateEditSession(); setBatchOpen(false); }} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { void refreshMaterials(); }} isCurrent={isCurrent} /> : null}
       {notesMaterial && materialEditor?.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(notesMaterial.id)?.isMine && canWriteMaterials ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={() => isCurrent() && collaborationRowsRef.current.get(notesMaterial.id)?.isMine === true && editableRowsRef.current.has(notesMaterial.id)} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
       {collaboration && contextCurrent && tab === "materials" && collaborationRowsRef.current.has(collaboration.material.id) ? <CollaborationNotesPanel key={`${identity}:${collaboration.material.id}:${collaboration.session}`} materialId={collaboration.material.id} partNumber={collaboration.material.partNumber} brand={collaboration.material.brand} enterpriseId={enterpriseId!} actorUserId={actorUserId!} startAdding={collaboration.adding} canAddNote={collaborationRowsRef.current.get(collaboration.material.id)?.canAddNote === true} isCurrent={() => isCurrent() && collaborationSessionRef.current === collaboration.session && collaborationRowsRef.current.has(collaboration.material.id)} onClose={() => { collaborationSessionRef.current += 1; setCollaboration(null); }} onComplete={() => void refreshMaterials()} /> : null}
+      {sourceDetail && sourceContextVerified && sourceDetail.scopeKey === sourceScopeKey && contextCurrent && tab === "materials" && materialRows.some(row => row.id === sourceDetail.materialId) ? <ChannelInventorySourcePanel key={`${sourceScopeKey}:${sourceDetail.materialId}`} materialId={sourceDetail.materialId} enterpriseId={enterpriseId!} actorUserId={actorUserId!} scopeKey={sourceScopeKey} isCurrent={() => isCurrent() && sourceScopeRef.current === sourceDetail.scopeKey} onClose={() => setSourceDetail(null)} onDenied={unauthorized => { setSourceDetail(null); toast.error(unauthorized ? "登录状态已失效，请重新登录" : "暂无权限查看"); }} /> : null}
     </section>
   );
 }

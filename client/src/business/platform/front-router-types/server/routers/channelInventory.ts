@@ -3,6 +3,8 @@ import { z } from "zod";
 import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
 import { getDb } from "../db";
 import { createChannelInventoryCollaborationService } from "../services/channelInventoryCollaboration";
+import { createChannelInventorySourceService, SOURCE_FORBIDDEN_MESSAGE } from "../services/channelInventorySource";
+import { teamMaterialSourceSchema } from "../../../shared/channelInventorySource";
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
 import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
 import { createChannelInventoryExportService } from "../services/channelInventoryExport";
@@ -141,8 +143,18 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const team = createChannelTeamInventoryService({ getDb });
   const exporter = createChannelInventoryExportService({ getDb });
   const collaboration = createChannelInventoryCollaborationService({ getDb });
+  const source = createChannelInventorySourceService({ getDb });
 
   return router({
+    getTeamMaterialSource: procedure.input(teamMaterialSourceSchema).query(async ({ ctx, input }) => {
+      try {
+        assertExpectedContext(ctx, input);
+        return await source.getTeamMaterialSource(scopeFromContext(ctx), input);
+      } catch (error) {
+        if (error instanceof TRPCError && error.code === "FORBIDDEN") throw new TRPCError({ code: "FORBIDDEN", message: SOURCE_FORBIDDEN_MESSAGE });
+        return asTrpcError(error);
+      }
+    }),
     getTeamMaterialForEdit: procedure.input(teamMaterialForEditSchema).query(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);

@@ -619,7 +619,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
                 onFocus={() => {
                   if (canManageProfile) preloadAdminRoute("profile");
                 }}
-                className="flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="admin-workspace-shell__account flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Avatar className="h-8 w-8 border shrink-0">
                   <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">

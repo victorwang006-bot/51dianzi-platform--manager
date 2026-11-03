@@ -8,6 +8,7 @@ import {
   type SqlDatabase,
   type SqlResultRow,
 } from "./channelInventory";
+import { teamMaterialSourceEligibility, SOURCE_FORBIDDEN_MESSAGE } from "./channelInventorySource";
 
 export const CHANNEL_INVENTORY_EXPORT_LIMIT = 10_000;
 export type ChannelInventoryExportInput = {
@@ -76,7 +77,7 @@ export function createChannelInventoryExportService({ getDb }: { getDb: () => Pr
                    m.id AS materialId, m.part_number AS partNumber, m.brand,
                    m.qty, m.date_code AS dateCode, m.price, m.currency,
                    m.tax_included AS taxIncluded, m.lead_time AS leadTime,
-                   m.updated_at AS updatedAt
+                   m.updated_at AS updatedAt, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource
               FROM channel_inventory_channels c
               LEFT JOIN channel_inventory_materials m
                 ON m.channel_id = c.id AND m.enterprise_id = c.enterprise_id
@@ -87,9 +88,16 @@ export function createChannelInventoryExportService({ getDb }: { getDb: () => Pr
                AND c.data_owner_user_id = ${scope.dataOwnerUserId}
                AND c.responsible_user_id = ${scope.actorUserId}
              ORDER BY m.id ASC
-             LIMIT ${CHANNEL_INVENTORY_EXPORT_LIMIT + 1}
+             LIMIT ${CHANNEL_INVENTORY_EXPORT_LIMIT + 1} FOR UPDATE
           `));
           if (!found.length) throw new ChannelInventoryError("NOT_FOUND", "渠道不存在或无权访问");
+          // This export is grouped/titled by a real source. Merely redacting its
+          // header would still disclose the material-to-channel link selected by
+          // channelId. Reject the whole file if any included stock lacks source
+          // authority; do not silently omit rows or expand channel-profile access.
+          if (found.some(row => row.materialId != null && !boolean(row.canViewSource))) {
+            throw new ChannelInventoryError("FORBIDDEN", `${SOURCE_FORBIDDEN_MESSAGE}：该渠道包含无来源查看权限的库存，整份导出未生成`);
+          }
           if (found.length > CHANNEL_INVENTORY_EXPORT_LIMIT) {
             throw new ChannelInventoryError("PRECONDITION_FAILED", `该渠道库存超过 ${CHANNEL_INVENTORY_EXPORT_LIMIT.toLocaleString("en-US")} 条导出上限，未生成文件，请联系管理员分批整理后重试`);
           }

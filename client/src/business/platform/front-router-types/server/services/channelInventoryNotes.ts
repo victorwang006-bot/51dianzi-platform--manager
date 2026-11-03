@@ -266,7 +266,7 @@ async function findReadableMaterial(executor: SqlExecutor, authority: Authority,
   predicates.push(sql`m.id = ${materialId}`);
   return rows(await executor.execute(sql`
     SELECT m.id AS id, m.part_number AS partNumber, m.brand AS brand, m.note AS legacyNote,
-           m.updated_at AS updatedAt, c.channel_type AS channelType
+           m.updated_at AS updatedAt
       FROM channel_inventory_materials m
       INNER JOIN channel_inventory_channels c ON c.id = m.channel_id
        AND c.enterprise_id = m.enterprise_id AND c.data_owner_user_id = m.data_owner_user_id
@@ -541,7 +541,7 @@ export function createChannelNotesService({ getDb }: ChannelNotesServiceDependen
            LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
         `)).map(row => ({ ...noteFrom(row), canEdit: authority.write && Number(row.authorUserId) === authority.actorUserId }));
         return {
-          material: { id: Number(material.id), partNumber: String(material.partNumber), brand: String(material.brand), channelType: String(material.channelType), updatedAt: material.updatedAt as Date | string },
+          material: { id: Number(material.id), partNumber: String(material.partNumber), brand: String(material.brand), updatedAt: material.updatedAt as Date | string },
           legacyNote: nullableString(material.legacyNote), items, total, page, pageSize,
           canEdit: authority.write, readOnly: !authority.write,
         };

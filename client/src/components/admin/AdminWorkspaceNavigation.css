@@ -33,6 +33,7 @@
   width: 100%;
   min-height: 42px;
   gap: 20px;
+  padding: 0 24px;
   border-top: 1px solid #e5eaf0;
   border-bottom: 1px solid #e5eaf0;
 }
@@ -145,6 +146,13 @@
 
 .admin-workspace-nav__dropdown-item[data-active="true"] {
   background: #f5f8fc;
+}
+
+/* secondary-navigation-align-logo: same inset as the existing brand container. */
+@media (max-width: 767px) {
+  .admin-workspace-nav__tabs--modules {
+    padding: 0 16px;
+  }
 }
 
 @media (max-width: 700px) {

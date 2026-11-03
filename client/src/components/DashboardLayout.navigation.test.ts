@@ -207,6 +207,25 @@ describe("正式后台顶部布局集成", () => {
     expect(shellCss).toContain("width: 100%");
   });
 
+  it("keeps workspace tabs immediately after the original brand and the account at the far right", () => {
+    const element = document.createElement("div");
+    element.innerHTML = renderLayout();
+    const header = element.querySelector(".admin-workspace-shell__header")!;
+    const brand = header.querySelector(".admin-workspace-shell__brand")!;
+    expect(brand.textContent).toContain("51电子网");
+    expect(brand.textContent).toContain("后台管理系统");
+    expect(brand.nextElementSibling?.classList.contains("admin-workspace-nav__tabs--workspaces")).toBe(true);
+    expect(header.lastElementChild?.classList.contains("admin-workspace-shell__account")).toBe(true);
+    expect(shellCss).toMatch(/\.admin-workspace-shell__header\s*\{[^}]*display: flex;/);
+    expect(shellCss).toMatch(/\.admin-workspace-shell__account\s*\{\s*margin-left: auto;/);
+    expect(shellCss).not.toContain("justify-content: center");
+    const moduleCss = readFileSync(path.resolve(process.cwd(), "client/src/components/admin/AdminWorkspaceNavigation.css"), "utf8");
+    expect(moduleCss).toMatch(/\.admin-workspace-nav__tabs--modules\s*\{[^}]*padding: 0 24px;/);
+    expect(moduleCss).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.admin-workspace-nav__tabs--modules\s*\{\s*padding: 0 16px;/);
+    expect(shellCss).toMatch(/\.admin-workspace-shell__header\s*\{[^}]*padding: 0 24px;/);
+    expect(shellCss).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.admin-workspace-shell__header\s*\{[^}]*padding: 0 16px;/);
+  });
+
   it("uses a top-navigation loading skeleton without a sidebar placeholder", () => {
     const html = renderToStaticMarkup(createElement(DashboardLayoutSkeleton));
     expect(html).toContain("正在加载后台");

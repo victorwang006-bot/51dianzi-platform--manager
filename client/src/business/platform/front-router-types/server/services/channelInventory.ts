@@ -3,6 +3,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
+import { teamMaterialSourceEligibility } from "./channelInventorySource";
 
 export const CHANNEL_INVENTORY_TYPES = ["factory", "agent", "trade", "other"] as const;
 export type ChannelInventoryType = (typeof CHANNEL_INVENTORY_TYPES)[number];
@@ -66,10 +67,10 @@ export type ChannelRecord = {
 
 export type ChannelMaterialRecord = {
   id: number;
-  channelId: number;
-  channelName: string;
-  channelType: ChannelInventoryType;
-  channelActive: boolean;
+  channelId: number | null;
+  channelName: string | null;
+  channelType: ChannelInventoryType | null;
+  channelActive: boolean | null;
   enterpriseId: number;
   dataOwnerUserId: number;
   responsibleUserId: number;
@@ -283,16 +284,16 @@ function channelFrom(row: SqlResultRow): ChannelRecord {
   };
 }
 
-function materialFrom(row: SqlResultRow): ChannelMaterialRecord {
+function materialFrom(row: SqlResultRow, canViewSource = bool(row.canViewSource)): ChannelMaterialRecord {
   if (String(row.currency) !== "CNY") throw databaseFailure();
   const channelType = String(row.channelType);
   if (!isChannelType(channelType)) throw databaseFailure();
   return {
     id: Number(row.id),
-    channelId: Number(row.channelId),
-    channelName: String(row.channelName),
-    channelType,
-    channelActive: bool(row.channelActive),
+    channelId: canViewSource ? Number(row.channelId) : null,
+    channelName: canViewSource ? String(row.channelName) : null,
+    channelType: canViewSource ? channelType : null,
+    channelActive: canViewSource ? bool(row.channelActive) : null,
     enterpriseId: Number(row.enterpriseId),
     dataOwnerUserId: Number(row.dataOwnerUserId),
     responsibleUserId: Number(row.responsibleUserId),
@@ -461,15 +462,15 @@ async function findChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: nu
   return row ? channelFrom(row) : null;
 }
 
-async function findMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, id: number, lock = false): Promise<ChannelMaterialRecord | null> {
+async function findMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, id: number, lock = false, internal = false): Promise<ChannelMaterialRecord | null> {
   const suffix = lock ? sql` FOR UPDATE` : sql``;
   const row = rows(await tx.execute(sql`
-    SELECT ${MATERIAL_COLUMNS}
+    SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, lock)} AS canViewSource
       ${MATERIAL_WITH_CHANNEL_FROM}
      WHERE ${whereAll(materialWithChannelScopePredicates(scope, [sql`m.id = ${id}`]))}
      LIMIT 1${suffix}
   `))[0];
-  return row ? materialFrom(row) : null;
+  return row ? materialFrom(row, internal || bool(row.canViewSource)) : null;
 }
 
 async function lockActiveChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: number): Promise<ChannelRecord> {
@@ -500,19 +501,21 @@ async function reconcileChannelCreate(db: SqlExecutor, scope: ChannelInventorySc
   return { item, idempotent: true } as const;
 }
 
-async function reconcileMaterialCreate(db: SqlExecutor, scope: ChannelInventoryScope, requestId: string, payloadHash: string) {
-  await resolveChannelInventoryAuthority(db, scope, "stocks", true);
-  const row = rows(await db.execute(sql`
-    SELECT ${MATERIAL_COLUMNS}, m.create_payload_hash AS createPayloadHash
+async function reconcileMaterialCreate(db: SqlDatabase, scope: ChannelInventoryScope, requestId: string, payloadHash: string) {
+  return db.transaction(async tx => {
+  await resolveChannelInventoryAuthority(tx, scope, "stocks", true, true);
+  const row = rows(await tx.execute(sql`
+    SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource, m.create_payload_hash AS createPayloadHash
       ${MATERIAL_WITH_CHANNEL_FROM}
      WHERE ${whereAll(materialWithChannelScopePredicates(scope, [sql`m.create_request_id = ${requestId}`]))}
-     LIMIT 1
+     LIMIT 1 FOR UPDATE
   `))[0];
   if (!row) return null;
   if (String(row.createPayloadHash) !== payloadHash) appError("CONFLICT", "请求号已用于不同的库存内容");
   const item = materialFrom(row);
   if (ownScope(scope) && item.responsibleUserId !== scope.actorUserId) appError("NOT_FOUND", "库存条目不存在或无权访问");
   return { item, idempotent: true } as const;
+  });
 }
 
 export function createChannelInventoryService(dependencies: ChannelInventoryServiceDependencies) {
@@ -678,21 +681,23 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     async listMaterials(scope: ChannelInventoryScope, input: { channelId?: number; partNumber?: string; brand?: string; page: number; pageSize: number }) {
       assertPage(input);
       const db = await requiredDatabase(getDb);
-      const access = await resolveChannelInventoryAuthority(db, scope, "stocks");
+      try {
+        return await db.transaction(async tx => {
+      const access = await resolveChannelInventoryAuthority(tx, scope, "stocks", false, true);
       const predicates = materialWithChannelScopePredicates(scope);
-      if (input.channelId !== undefined) predicates.push(sql`m.channel_id = ${input.channelId}`);
+      if (input.channelId !== undefined) predicates.push(sql`m.channel_id = ${input.channelId}`, teamMaterialSourceEligibility(scope, true));
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literalSearch(input.partNumber)} ESCAPE '='`);
       if (input.brand) predicates.push(sql`m.brand LIKE ${literalSearch(input.brand)} ESCAPE '='`);
       const where = whereAll(predicates);
-      try {
-        const total = Number(rows(await db.execute(sql`SELECT COUNT(*) AS total ${MATERIAL_WITH_CHANNEL_FROM} WHERE ${where}`))[0]?.total ?? 0);
-        const items = rows(await db.execute(sql`
-          SELECT ${MATERIAL_COLUMNS} ${MATERIAL_WITH_CHANNEL_FROM}
+        const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${MATERIAL_WITH_CHANNEL_FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
+        const items = rows(await tx.execute(sql`
+          SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource ${MATERIAL_WITH_CHANNEL_FROM}
            WHERE ${where}
            ORDER BY m.id DESC
-           LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
+           LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE
         `)).map(row => ({ ...materialFrom(row), shareEnabled: access.write && bool(row.shareEnabled), canEdit: access.write, readOnly: !access.write }));
         return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
+        });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -702,10 +707,12 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     async getMaterial(scope: ChannelInventoryScope, id: number) {
       const db = await requiredDatabase(getDb);
       try {
-        const access = await resolveChannelInventoryAuthority(db, scope, "stocks");
-        const item = await findMaterial(db, scope, id);
+        return await db.transaction(async tx => {
+        const access = await resolveChannelInventoryAuthority(tx, scope, "stocks", false, true);
+        const item = await findMaterial(tx, scope, id, true);
         if (!item) appError("NOT_FOUND", "库存条目不存在或无权访问");
         return { ...item, shareEnabled: access.write && item.shareEnabled, canEdit: access.write, readOnly: !access.write };
+        });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -723,7 +730,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         return await db.transaction(async tx => {
           await lockAndRevalidateMutationScope(tx, scope, "stocks");
           const existing = rows(await tx.execute(sql`
-            SELECT ${MATERIAL_COLUMNS}, m.create_payload_hash AS createPayloadHash
+            SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource, m.create_payload_hash AS createPayloadHash
               ${MATERIAL_WITH_CHANNEL_FROM}
              WHERE ${whereAll(materialWithChannelScopePredicates(scope, [sql`m.create_request_id = ${input.requestId}`]))}
              LIMIT 1 FOR UPDATE
@@ -794,7 +801,11 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
             VALUES (${scope.enterpriseId}, ${materialId}, ${scope.actorUserId}, ${input.requestId}, ${auditHash}, ${JSON.stringify(null)},
               ${JSON.stringify({ action: "createDefaultShare", materialId, enabled: true, revision: Number(created.revision), shareTeamId, assignmentRevision, ownerMembershipId })})
           `);
-          return { item: materialFrom({ ...created, shareEnabled: true }), idempotent: false } as const;
+          // Projection must use the recorded immutable creator, never infer it
+          // from currentOwner or trust registration to justify a forced grant.
+          const item = await findMaterial(tx, scope, materialId, true);
+          if (!item) throw databaseFailure();
+          return { item, idempotent: false } as const;
         });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
@@ -812,13 +823,20 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
 
     async updateMaterial(scope: ChannelInventoryScope, input: MaterialUpdateInput) {
       return transactional(scope, async tx => {
-        const current = await findMaterial(tx, scope, input.id, true);
+        // Raw source is server-internal only: changing the public projection must
+        // not revoke the original owner's ability to edit ordinary stock fields.
+        const current = await findMaterial(tx, scope, input.id, true, true);
         if (!current) appError("NOT_FOUND", "库存条目不存在或无权访问");
         if (current.revision !== input.expectedRevision) appError("CONFLICT", "库存条目已被其他人更新，请刷新后重试");
+        // Uniform denial before comparing a guessed source ID closes the match/
+        // mismatch oracle, while ordinary stock edits keep original owner+write.
+        if (input.channelId !== undefined && (await findMaterial(tx, scope, input.id, true))?.channelId == null) {
+          appError("FORBIDDEN", "暂无权限查看");
+        }
         if (input.channelId !== undefined && input.channelId !== current.channelId) {
           appError("BAD_REQUEST", "库存创建后不能更换关联渠道；请在正确渠道新建库存以保留团队归属快照");
         }
-        await lockActiveChannel(tx, scope, current.channelId);
+        await lockActiveChannel(tx, scope, current.channelId!);
         const assignments: SQL[] = [sql`revision = revision + 1`, sql`updated_at = CURRENT_TIMESTAMP(3)`];
         if (input.channelId !== undefined) assignments.push(sql`channel_id = ${input.channelId}`);
         if (input.partNumber !== undefined) assignments.push(sql`part_number = ${input.partNumber}`);
@@ -835,7 +853,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
            WHERE ${whereAll(materialScopePredicates(scope, [sql`id = ${input.id}`, sql`revision = ${input.expectedRevision}`]))}
         `);
         if (affectedRows(result) !== 1) appError("CONFLICT", "库存条目已被其他人更新，请刷新后重试");
-        const updated = await findMaterial(tx, scope, input.id);
+        const updated = await findMaterial(tx, scope, input.id, true);
         if (!updated) throw databaseFailure();
         return updated;
       }, "stocks");

@@ -438,16 +438,23 @@ const sharedChannelMaterial = {
   readOnly: true,
 };
 
-function legacyChannelInventoryResponse(call: FetchCall): Response {
+function legacyChannelInventoryResponse(
+  call: FetchCall,
+  { canWrite = false, canFilterSource = false } = {}
+): Response {
   if (call.pathname === "/api/business-trpc/merchants") {
     return trpcResult({
-      data: [officialMerchant],
+      data: [{ ...officialMerchant, canWrite }],
       pageAvailableCount: 1,
       sourceTotal: 1,
     });
   }
   if (call.pathname === "/api/business-trpc/context")
-    return trpcResult(legacyChannelInventoryContext);
+    return trpcResult({
+      ...legacyChannelInventoryContext,
+      merchant: { ...legacyChannelInventoryContext.merchant, canWrite },
+      writeCapabilities: canWrite ? ["inventory.channel"] : [],
+    });
   if (call.pathname === "/api/business-trpc/enterprise.me") {
     return trpcResult({
       enterprise: {
@@ -463,18 +470,23 @@ function legacyChannelInventoryResponse(call: FetchCall): Response {
   if (call.pathname.includes("channelInventory.listTeam")) {
     const teamRows = [
       {
-        ...privateChannelMaterial,
-        note: undefined,
-        channelName: undefined,
+        ...sharedChannelMaterial,
+        id: 501,
+        partNumber: "PRIVATE-TEST-501",
+        qty: 10,
         isMine: true,
         canViewSource: true,
-        channelSource: { id: 201, name: "本人私有来源" },
+        channelSource: null,
+        noteCount: 0,
+        canAddNote: false,
       },
       {
         ...sharedChannelMaterial,
         isMine: false,
         canViewSource: false,
         channelSource: null,
+        noteCount: 0,
+        canAddNote: false,
       },
     ];
     const results = call.pathname
@@ -489,11 +501,16 @@ function legacyChannelInventoryResponse(call: FetchCall): Response {
             page: 1,
             pageSize: 20,
             pageCount: 2,
-            canWrite: false,
-            canFilterSource: false,
+            canWrite,
+            canFilterSource,
           };
         if (method === "channelInventory.listTeamSourceOptions")
-          return { items: [], canFilterSource: false };
+          return {
+            items: canFilterSource
+              ? [{ id: 201, name: "按需读取的团队来源" }]
+              : [],
+            canFilterSource,
+          };
         if (method === "channelInventory.listChannels")
           return {
             items: [],
@@ -575,12 +592,32 @@ function legacyChannelInventoryResponse(call: FetchCall): Response {
       page: 1,
       pageSize: 100,
       pageCount: 1,
-      canWrite: false,
+      canWrite,
     });
+  }
+  if (
+    call.pathname ===
+    "/api/business-trpc/channelInventory.getTeamMaterialSource"
+  ) {
+    return trpcResult({ name: "实时核验的渠道来源" });
   }
   throw new Error(
     `UNEXPECTED_LEGACY_CHANNEL_NETWORK_STUB_PATH:${call.pathname}`
   );
+}
+
+function businessProcedureInput(
+  call: FetchCall | undefined,
+  procedure: string
+) {
+  expect(call).toBeTruthy();
+  expect(call!.pathname.startsWith("/api/business-trpc/")).toBe(true);
+  const index = call!.pathname.split("/").at(-1)!.split(",").indexOf(procedure);
+  expect(index).toBeGreaterThanOrEqual(0);
+  const input = JSON.parse(
+    new URL(call!.url, "http://workbench.test").searchParams.get("input")!
+  );
+  return input[String(index)].json;
 }
 
 function deferred<T>() {
@@ -740,27 +777,27 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         call.pathname.includes("channelInventory.listTeamMaterials")
       )
     ).toBe(true);
-    const batch = network.calls.find(
-      call =>
-        call.pathname ===
-        "/api/business-trpc/channelInventory.listTeamSourceOptions,channelInventory.listTeamMaterials,channelInventory.listChannels"
+    const materialsRequest = network.calls.find(call =>
+      call.pathname.includes("channelInventory.listTeamMaterials")
     );
-    expect(batch).toBeTruthy();
-    const input = JSON.parse(
-      new URL(batch!.url, "http://workbench.test").searchParams.get("input")!
-    );
-    expect(input["1"].json).toMatchObject({
+    expect(
+      businessProcedureInput(
+        materialsRequest,
+        "channelInventory.listTeamMaterials"
+      )
+    ).toMatchObject({
       expectedEnterpriseId: 1,
       expectedActorUserId: 397751,
       page: 1,
       pageSize: 20,
     });
-    expect(input["2"].json).toMatchObject({
-      expectedEnterpriseId: 1,
-      expectedActorUserId: 397751,
-      page: 1,
-      pageSize: 100,
-    });
+    expect(
+      network.calls.some(call =>
+        /channelInventory\.(listTeamSourceOptions|listChannels|getTeamMaterialSource)/.test(
+          call.pathname
+        )
+      )
+    ).toBe(false);
     expect(
       network.calls.some(call =>
         call.pathname.includes("channelInventory.listSharedMaterials")
@@ -810,18 +847,29 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         ?.hasAttribute("disabled")
     ).toBe(true);
     expect(mounted.container.querySelector('[role="dialog"]')).toBeNull();
-    const batch = network.calls.find(call =>
+    const materialsRequest = network.calls.find(call =>
       call.pathname.includes("channelInventory.listTeamMaterials")
     );
-    const input = JSON.parse(
-      new URL(batch!.url, "http://workbench.test").searchParams.get("input")!
-    );
-    expect(input["1"].json).toMatchObject({
+    expect(
+      businessProcedureInput(
+        materialsRequest,
+        "channelInventory.listTeamMaterials"
+      )
+    ).toMatchObject({
       expectedEnterpriseId: 1,
       expectedActorUserId: 397751,
       page: 1,
       pageSize: 20,
     });
+    expect(mounted.container.textContent).not.toContain("本人私有来源");
+    expect(mounted.container.textContent).not.toContain("实时核验的渠道来源");
+    expect(
+      network.calls.some(call =>
+        /channelInventory\.(listTeamSourceOptions|listChannels|getTeamMaterialSource)/.test(
+          call.pathname
+        )
+      )
+    ).toBe(false);
     expect(
       network.calls.some(call =>
         /notesList|notesAdd|notesEdit|getMaterial|updateMaterial|setMaterialShare|officialChannelInventory/.test(
@@ -839,6 +887,175 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
             !call.headers.has("x-admin-id"))
       )
     ).toBe(true);
+  });
+
+  it.each(["单条上传", "表格上传"])(
+    "reads source options only after focus and upload channels only after opening %s through the real BFF",
+    async uploadLabel => {
+      const network = installNetwork(call =>
+        legacyChannelInventoryResponse(call, {
+          canWrite: true,
+          canFilterSource: true,
+        })
+      );
+      mounted = await mountWorkbench("/workbench/channel-inventory");
+      await waitFor(() =>
+        expect(mounted?.container.textContent).toContain("33 条库存")
+      );
+      const sourceFilter = mounted.container.querySelector<HTMLSelectElement>(
+        '[aria-label="筛选库存渠道来源"]'
+      );
+      expect(sourceFilter).toBeTruthy();
+      expect(sourceFilter!.disabled).toBe(false);
+      expect(
+        network.calls.some(call =>
+          /channelInventory\.(listTeamSourceOptions|listChannels|getTeamMaterialSource)/.test(
+            call.pathname
+          )
+        )
+      ).toBe(false);
+      expect(mounted.container.textContent).not.toContain("按需读取的团队来源");
+
+      await act(async () => sourceFilter!.focus());
+      await waitFor(() =>
+        expect(sourceFilter!.textContent).toContain("按需读取的团队来源")
+      );
+      const sourceRequests = network.calls.filter(call =>
+        call.pathname.includes("channelInventory.listTeamSourceOptions")
+      );
+      expect(sourceRequests).toHaveLength(1);
+      expect(
+        businessProcedureInput(
+          sourceRequests[0],
+          "channelInventory.listTeamSourceOptions"
+        )
+      ).toEqual({
+        expectedEnterpriseId: 1,
+        expectedActorUserId: 397751,
+      });
+      expect(
+        network.calls.some(call =>
+          call.pathname.includes("channelInventory.listChannels")
+        )
+      ).toBe(false);
+
+      const upload = Array.from(
+        mounted.container.querySelectorAll<HTMLButtonElement>("button")
+      ).find(button => button.textContent === uploadLabel);
+      expect(upload).toBeTruthy();
+      expect(upload!.disabled).toBe(false);
+      await act(async () => upload!.click());
+      await waitFor(() => {
+        expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+        expect(
+          network.calls.some(call =>
+            call.pathname.includes("channelInventory.listChannels")
+          )
+        ).toBe(true);
+      });
+      const channelRequests = network.calls.filter(call =>
+        call.pathname.includes("channelInventory.listChannels")
+      );
+      expect(channelRequests).toHaveLength(1);
+      expect(
+        businessProcedureInput(
+          channelRequests[0],
+          "channelInventory.listChannels"
+        )
+      ).toEqual({
+        expectedEnterpriseId: 1,
+        expectedActorUserId: 397751,
+        active: true,
+        page: 1,
+        pageSize: 100,
+      });
+      for (const call of network.calls.filter(
+        call => call.pathname !== "/api/trpc/auth.me"
+      )) {
+        expect(call.pathname.startsWith("/api/business-trpc/")).toBe(true);
+        expect(call.credentials).toBe("include");
+        expect(call.headers.get("cookie")).toBeNull();
+        expect(call.headers.get("x-admin-id")).toBeNull();
+        expect(call.signal).toBeInstanceOf(AbortSignal);
+        if (call.pathname !== "/api/business-trpc/merchants") {
+          expect(call.headers.get("x-business-merchant-id")).toBe("30061");
+        }
+      }
+      expect(
+        network.calls.some(call =>
+          /getTeamMaterialSource|notesList|notesAdd|notesEdit|getMaterial|updateMaterial|createMaterial|setMaterialShare|officialChannelInventory/.test(
+            call.pathname
+          )
+        )
+      ).toBe(false);
+    }
+  );
+
+  it("queries the BFF afresh on every source click even with a negative row hint, without enabling edits or private notes", async () => {
+    const network = installNetwork(legacyChannelInventoryResponse);
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+    await waitFor(() =>
+      expect(mounted?.container.textContent).toContain("SHARED-TEST-502")
+    );
+    const row = Array.from(
+      mounted.container.querySelectorAll<HTMLTableRowElement>("tbody tr")
+    ).find(item => item.textContent?.includes("SHARED-TEST-502"));
+    expect(row).toBeTruthy();
+    const source = row!.querySelector<HTMLButtonElement>(".ci-source-link");
+    expect(source).toBeTruthy();
+    expect(source!.disabled).toBe(false);
+    expect(source!.classList.contains("ci-source-link-muted")).toBe(true);
+    expect(
+      network.calls.some(call =>
+        call.pathname.includes("getTeamMaterialSource")
+      )
+    ).toBe(false);
+
+    for (let open = 1; open <= 2; open += 1) {
+      await act(async () => source!.click());
+      await waitFor(() =>
+        expect(document.querySelector(".ci-source-name")?.textContent).toBe(
+          "实时核验的渠道来源"
+        )
+      );
+      const sourceRequests = network.calls.filter(call =>
+        call.pathname.includes("getTeamMaterialSource")
+      );
+      expect(sourceRequests).toHaveLength(open);
+      const request = sourceRequests.at(-1)!;
+      expect(
+        businessProcedureInput(
+          request,
+          "channelInventory.getTeamMaterialSource"
+        )
+      ).toEqual({
+        materialId: 502,
+        expectedEnterpriseId: 1,
+        expectedActorUserId: 397751,
+      });
+      expect(request.headers.get("x-business-merchant-id")).toBe("30061");
+      expect(request.headers.get("cookie")).toBeNull();
+      expect(request.headers.get("x-admin-id")).toBeNull();
+      expect(request.credentials).toBe("include");
+      expect(request.signal).toBeInstanceOf(AbortSignal);
+      const close = document.querySelector<HTMLButtonElement>(
+        '[aria-label="关闭渠道来源"]'
+      );
+      expect(close).toBeTruthy();
+      await act(async () => close!.click());
+      expect(document.querySelector(".ci-source-dialog")).toBeNull();
+      expect(mounted.container.textContent).not.toContain("实时核验的渠道来源");
+    }
+    expect(row!.textContent).toContain("备注（0）");
+    expect(row!.textContent).not.toContain("编辑");
+    expect(mounted.container.textContent).not.toContain("本人私有备注不可共享");
+    expect(
+      network.calls.some(call =>
+        /listTeamSourceOptions|listChannels|notesList|notesAdd|notesEdit|getMaterial|updateMaterial|createMaterial|setMaterialShare|officialChannelInventory/.test(
+          call.pathname
+        )
+      )
+    ).toBe(false);
   });
 
   it("keeps the restored channel address closed without BFF inventory.channel scope", async () => {
