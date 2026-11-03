@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   canManage: true,
   actorId: 30004,
   nativePermissions: ["profile.manage"] as string[],
+  nativeAuditRows: [] as Record<string, unknown>[],
   create: vi.fn(),
   update: vi.fn(),
   member: vi.fn(),
@@ -121,7 +122,11 @@ vi.mock("@/lib/trpc", () => {
         },
         audit: {
           useQuery: () =>
-            query({ actorAdminUserId: state.actorId, data: [], total: 0 }),
+            query({
+              actorAdminUserId: state.actorId,
+              data: state.nativeAuditRows,
+              total: state.nativeAuditRows.length,
+            }),
         },
         createTeam: { useMutation: () => ({ mutateAsync: state.create }) },
         updateTeam: { useMutation: () => ({ mutateAsync: state.update }) },
@@ -206,6 +211,7 @@ beforeEach(() => {
   state.actorId = 30004;
   state.merchants = [];
   state.nativePermissions = ["profile.manage"];
+  state.nativeAuditRows = [];
   state.create.mockResolvedValue({
     targetId: 2,
     revision: 1,
@@ -221,6 +227,35 @@ afterEach(async () => {
   document.body.innerHTML = "";
 });
 describe("Organization UI actual-domain controls", () => {
+  it("shows audit instants in Beijing across midnight, independent of visitor timezone", async () => {
+    const previous = process.env.TZ;
+    process.env.TZ = "America/Los_Angeles";
+    try {
+      state.location = "/permission-audit";
+      state.nativeAuditRows = [
+        {
+          id: 21,
+          action: "staff.member.set",
+          actorAdminUserId: 30004,
+          targetType: "staff_member",
+          targetId: 30009,
+          requestId: "timezone-check-001",
+          payloadHash: "a".repeat(64),
+          beforeData: { role: "member" },
+          afterData: { role: "leader" },
+          createdAt: "2026-11-02T16:12:13.000Z",
+        },
+      ];
+      await mount();
+      await click("运营团队");
+      expect(document.body.textContent).toContain("北京时间 / 操作");
+      expect(document.body.textContent).toContain("2026-11-03 00:12:13");
+      expect(document.body.textContent).not.toContain("2026-11-02 08:12:13");
+    } finally {
+      if (previous === undefined) delete process.env.TZ;
+      else process.env.TZ = previous;
+    }
+  });
   it("no business binding/merchant disables that domain without blocking operations", async () => {
     await mount();
     expect(document.body.textContent).toContain("业务编辑已禁用");
@@ -295,58 +330,120 @@ describe("Organization UI actual-domain controls", () => {
   });
   it("previews effective native permissions and submits the overview target session CAS unchanged on retry", async () => {
     state.location = "/role-templates";
-    state.nativePermissions = ["profile.manage", "materials.write", "business.inventory.write"];
-    state.template.mockRejectedValueOnce(new Error("员工权限或会话版本已变化，请刷新后重新预览")).mockResolvedValue({ targetId: 30009, revision: 2 });
+    state.nativePermissions = [
+      "profile.manage",
+      "materials.write",
+      "business.inventory.write",
+    ];
+    state.template
+      .mockRejectedValueOnce(
+        new Error("员工权限或会话版本已变化，请刷新后重新预览")
+      )
+      .mockResolvedValue({ targetId: 30009, revision: 2 });
     await mount();
     await click("运营团队");
-    const apply = Array.from(document.querySelectorAll("button")).find(node => node.textContent === "应用模板" && !node.disabled);
+    const apply = Array.from(document.querySelectorAll("button")).find(
+      node => node.textContent === "应用模板" && !node.disabled
+    );
     expect(apply).toBeDefined();
-    await act(async () => { apply!.click(); });
+    await act(async () => {
+      apply!.click();
+    });
     await click("预览变更");
     expect(state.template).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("移除：materials.write");
-    expect(document.body.textContent).not.toContain("移除：business.inventory.write");
+    expect(document.body.textContent).not.toContain(
+      "移除：business.inventory.write"
+    );
     await click("确认保存");
-    expect(state.template.mock.calls[0][0]).toMatchObject({ adminUserId: 30009, templateId: "operations-view", expectedRevision: 1, expectedSessionVersion: 7 });
+    expect(state.template.mock.calls[0][0]).toMatchObject({
+      adminUserId: 30009,
+      templateId: "operations-view",
+      expectedRevision: 1,
+      expectedSessionVersion: 7,
+    });
     expect(document.body.textContent).toContain("输入已保留");
     await click("重试确认保存");
-    expect(state.template.mock.calls[1][0]).toEqual(state.template.mock.calls[0][0]);
+    expect(state.template.mock.calls[1][0]).toEqual(
+      state.template.mock.calls[0][0]
+    );
   });
   it("disables business module editing for the real enterprise owner's fixed rights", async () => {
     state.location = "/role-templates";
-    state.merchants = [{ id: 30061, companyName: "真实商户", merchantNo: "M30061" }];
+    state.merchants = [
+      { id: 30061, companyName: "真实商户", merchantNo: "M30061" },
+    ];
     state.businessOverview.mockResolvedValue(business(true));
     await mount();
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
     expect(button("配置模块").disabled).toBe(true);
     expect(document.body.textContent).toContain("企业所有者权利固定，不可更改");
     expect(state.businessAccess).not.toHaveBeenCalled();
   });
   it("reports actual ERP-denied modules after a confirmed business save, without claiming a new grant", async () => {
     state.location = "/role-templates";
-    state.merchants = [{ id: 30061, companyName: "真实商户", merchantNo: "M30061" }];
+    state.merchants = [
+      { id: 30061, companyName: "真实商户", merchantNo: "M30061" },
+    ];
     const value = business(true);
-    value.members[0] = { ...value.members[0], userId: 409506, username: "ocean", name: "Ocean", enterpriseRole: "member" };
+    value.members[0] = {
+      ...value.members[0],
+      userId: 409506,
+      username: "ocean",
+      name: "Ocean",
+      enterpriseRole: "member",
+    };
     state.businessOverview.mockResolvedValue(value);
     state.businessAccess.mockImplementation(async input => ({
-      success: true, idempotent: false, erpGrantsChanged: false,
-      modules: input.modules.map(({ expectedRevision, ...setting }: { expectedRevision: number; module: string; read: boolean; write: boolean; scope: string }) => ({
-        ...setting, read: false, write: false, revision: expectedRevision + 1, explicit: true,
-        entitled: false, requested: setting, notEntitled: true,
-      })),
+      success: true,
+      idempotent: false,
+      erpGrantsChanged: false,
+      modules: input.modules.map(
+        ({
+          expectedRevision,
+          ...setting
+        }: {
+          expectedRevision: number;
+          module: string;
+          read: boolean;
+          write: boolean;
+          scope: string;
+        }) => ({
+          ...setting,
+          read: false,
+          write: false,
+          revision: expectedRevision + 1,
+          explicit: true,
+          entitled: false,
+          requested: setting,
+          notEntitled: true,
+        })
+      ),
     }));
     await mount();
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
     await click("配置模块");
-    const checkbox = document.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    const checkbox = document.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]'
+    );
     expect(checkbox).not.toBeNull();
-    await act(async () => { checkbox!.click(); });
+    await act(async () => {
+      checkbox!.click();
+    });
     await click("预览变更");
     expect(state.businessAccess).not.toHaveBeenCalled();
     await click("确认保存");
     expect(state.businessAccess).toHaveBeenCalledOnce();
-    expect(document.body.textContent).toContain("业务基础授权未开通，模板未扩大权限");
-    expect(document.body.textContent).toContain("实际生效：客户：不可读/不可写");
+    expect(document.body.textContent).toContain(
+      "业务基础授权未开通，模板未扩大权限"
+    );
+    expect(document.body.textContent).toContain(
+      "实际生效：客户：不可读/不可写"
+    );
   });
 });
 describe("Business response runtime contract", () => {
@@ -373,9 +470,36 @@ describe("Business response runtime contract", () => {
     );
   });
   it("requires the full effective-access response and proof that ERP grants were unchanged", () => {
-    const result = { success: true, idempotent: false, erpGrantsChanged: false, modules: modules.map(module => ({ ...module, entitled: true, requested: { module: module.module, read: module.read, write: module.write, scope: module.scope }, notEntitled: false })) };
-    expect(businessUpdateAccessResultSchema.safeParse(result).success).toBe(true);
-    expect(businessUpdateAccessResultSchema.safeParse({ success: true, idempotent: false }).success).toBe(false);
-    expect(businessUpdateAccessResultSchema.safeParse({ ...result, erpGrantsChanged: true }).success).toBe(false);
+    const result = {
+      success: true,
+      idempotent: false,
+      erpGrantsChanged: false,
+      modules: modules.map(module => ({
+        ...module,
+        entitled: true,
+        requested: {
+          module: module.module,
+          read: module.read,
+          write: module.write,
+          scope: module.scope,
+        },
+        notEntitled: false,
+      })),
+    };
+    expect(businessUpdateAccessResultSchema.safeParse(result).success).toBe(
+      true
+    );
+    expect(
+      businessUpdateAccessResultSchema.safeParse({
+        success: true,
+        idempotent: false,
+      }).success
+    ).toBe(false);
+    expect(
+      businessUpdateAccessResultSchema.safeParse({
+        ...result,
+        erpGrantsChanged: true,
+      }).success
+    ).toBe(false);
   });
 });

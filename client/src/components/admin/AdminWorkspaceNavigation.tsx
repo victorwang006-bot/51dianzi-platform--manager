@@ -1,4 +1,5 @@
 import type { KeyboardEvent, ReactNode } from "react";
+import { BEIJING_TIME_ZONE } from "@shared/beijingTime";
 import {
   getAdminWorkspaceNavigationState,
   getAdminWorkspaceNavigationTarget,
@@ -6,6 +7,9 @@ import {
   type AdminWorkspaceNavigationItem,
 } from "./adminWorkspaceNavigationModel";
 import "./AdminWorkspaceNavigation.css";
+
+/** UI release only; native/business authorization versions remain independent. */
+export const ADMIN_SYSTEM_RELEASE = "20261103-team-beijing-ui-v2";
 
 export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   /** Already filtered by the existing native-admin/BFF capability checks. */
@@ -91,6 +95,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
       className={`admin-workspace-nav__tabs admin-workspace-nav__tabs--workspaces${className ? ` ${className}` : ""}`}
       aria-label="工作区切换"
       data-admin-navigation="workspace-tabs"
+      data-system-version={ADMIN_SYSTEM_RELEASE}
+      data-display-time-zone={BEIJING_TIME_ZONE}
+      title={`系统版本：${ADMIN_SYSTEM_RELEASE} · 北京时间（UTC+8）`}
       onKeyDown={handleNavigationKeys}
     >
       {workspaces.map(workspace => {

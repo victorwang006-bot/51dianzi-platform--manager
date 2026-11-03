@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { createBusinessScopeTrpcClient } from "@/business/api/business-trpc";
 import { trpc } from "@/lib/trpc";
+import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
 import {
   mergeStaffOperationsTemplate,
   STAFF_OPERATIONS_TEMPLATES,
@@ -117,11 +118,19 @@ const businessSuccessSchema = z.object({
 });
 export const businessUpdateAccessResultSchema = businessSuccessSchema.extend({
   erpGrantsChanged: z.literal(false),
-  modules: z.array(moduleSchema.extend({
-    entitled: z.boolean(),
-    requested: moduleSchema.omit({ revision: true, explicit: true }),
-    notEntitled: z.boolean(),
-  })).length(4).refine(rows => new Set(rows.map(row => row.module)).size === 4, "业务模块结果重复"),
+  modules: z
+    .array(
+      moduleSchema.extend({
+        entitled: z.boolean(),
+        requested: moduleSchema.omit({ revision: true, explicit: true }),
+        notEntitled: z.boolean(),
+      })
+    )
+    .length(4)
+    .refine(
+      rows => new Set(rows.map(row => row.module)).size === 4,
+      "业务模块结果重复"
+    ),
 });
 type BusinessOverview = z.infer<typeof businessOrganizationOverviewSchema>;
 type BusinessMember = BusinessOverview["members"][number];
@@ -157,7 +166,10 @@ type BusinessAccessDraft = {
   templateId?: "sales" | "lead";
 };
 type Editor = TeamDraft | MemberDraft | NativeAccessDraft | BusinessAccessDraft;
-type BusinessAccessSaveNotice = { notEntitledModules: string[]; effectiveSummary: string };
+type BusinessAccessSaveNotice = {
+  notEntitledModules: string[];
+  effectiveSummary: string;
+};
 type Preview = {
   title: string;
   changes: string[];
@@ -487,7 +499,8 @@ export default function Organization() {
         };
       } else {
         const client = ensureBusiness();
-        if (editor.member.enterpriseRole === "super_admin") throw new Error("企业所有者权利固定，不可通过模板修改");
+        if (editor.member.enterpriseRole === "super_admin")
+          throw new Error("企业所有者权利固定，不可通过模板修改");
         for (const module of editor.modules) {
           if (module.write && !module.read)
             throw new Error(`${moduleLabels[module.module]}：写入必须包含读取`);
@@ -529,8 +542,15 @@ export default function Organization() {
             await client.organization.updateMemberAccess.mutate(input)
           );
           return {
-            notEntitledModules: result.modules.filter(module => module.notEntitled).map(module => moduleLabels[module.module]),
-            effectiveSummary: result.modules.map(module => `${moduleLabels[module.module]}：${module.read ? "可读" : "不可读"}/${module.write ? "可写本人数据" : "不可写"}/${scopeLabels[module.scope]}`).join("；"),
+            notEntitledModules: result.modules
+              .filter(module => module.notEntitled)
+              .map(module => moduleLabels[module.module]),
+            effectiveSummary: result.modules
+              .map(
+                module =>
+                  `${moduleLabels[module.module]}：${module.read ? "可读" : "不可读"}/${module.write ? "可写本人数据" : "不可写"}/${scopeLabels[module.scope]}`
+              )
+              .join("；"),
           };
         };
       }
@@ -1036,7 +1056,9 @@ export default function Organization() {
                                   size="sm"
                                   variant="outline"
                                   disabled={
-                                    !isEditable || member.status !== "active" || member.enterpriseRole === "super_admin"
+                                    !isEditable ||
+                                    member.status !== "active" ||
+                                    member.enterpriseRole === "super_admin"
                                   }
                                   onClick={() =>
                                     open({
@@ -1050,7 +1072,11 @@ export default function Organization() {
                                 >
                                   配置模块
                                 </Button>
-                                {member.enterpriseRole === "super_admin" && <p className="org-muted">企业所有者权利固定，不可更改</p>}
+                                {member.enterpriseRole === "super_admin" && (
+                                  <p className="org-muted">
+                                    企业所有者权利固定，不可更改
+                                  </p>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1087,7 +1113,7 @@ export default function Organization() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>时间 / 操作</TableHead>
+                          <TableHead>北京时间 / 操作</TableHead>
                           <TableHead>操作者 / 目标</TableHead>
                           <TableHead>变更明细</TableHead>
                         </TableRow>
@@ -1096,7 +1122,7 @@ export default function Organization() {
                         {auditItems.map(row => (
                           <TableRow key={row.id}>
                             <TableCell>
-                              {new Date(row.createdAt).toLocaleString("zh-CN")}
+                              {formatBeijingDateTimeWithSeconds(row.createdAt)}
                               <div>{row.action}</div>
                             </TableCell>
                             <TableCell>
