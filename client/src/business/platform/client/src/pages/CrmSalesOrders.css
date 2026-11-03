@@ -1,28 +1,54 @@
-/* Only the sales-order page and its own portalled dialogs use these rules. */
+/* Scoped to the sales-order page and its own portalled dialogs. */
 .crm-sales-orders-page,
 .crm-sales-orders-dialog,
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) {
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .crm-sales-orders-control,
 .crm-sales-orders-page .crm-sales-orders-control {
-  height: var(--admin-control-height, 40px);
-  min-height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .crm-sales-orders-page .text-xs,
-.crm-sales-orders-dialog .text-xs {
-  font-size: var(--admin-font-caption, 13px);
+.crm-sales-orders-dialog .text-xs,
+.crm-sales-orders-page .admin-cell-primary,
+.crm-sales-orders-dialog .admin-cell-primary {
+  font-size: 12px;
+}
+
+.crm-sales-orders-page .admin-cell-secondary,
+.crm-sales-orders-dialog .admin-cell-secondary {
+  color: var(--admin-color-muted, #64748b);
+  font-size: 11px;
 }
 
 .crm-sales-orders-page .text-muted-foreground,
 .crm-sales-orders-dialog .text-muted-foreground,
 .crm-sales-orders-dialog .text-slate-500 {
   color: var(--admin-color-muted, #64748b);
+}
+
+.crm-sales-orders-filters > div {
+  min-width: 0;
+  width: 100%;
+}
+
+.crm-sales-orders-candidate-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-sales-orders-candidate-filters input {
+  min-width: 0;
+  flex: 1;
 }
 
 .crm-sales-orders-table-scroll {
@@ -32,69 +58,62 @@
 }
 
 .crm-sales-orders-table {
-  min-width: 1400px;
+  min-width: 1180px;
 }
 
 .crm-sales-orders-page .crm-sales-orders-order-link,
 .crm-sales-orders-dialog .crm-sales-orders-selected-customer {
-  font-size: var(--admin-font-body, 15px);
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .crm-sales-orders-page .crm-sales-orders-table th,
 .crm-sales-orders-dialog .crm-sales-orders-dialog-table th {
-  height: 44px;
-  padding: 10px 12px;
+  height: 32px;
+  padding: 6px 10px;
+  background: #f8fafc;
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-label, 14px);
+  font-size: 11px;
   font-weight: 500;
-}
-
-.crm-sales-orders-page .crm-sales-orders-table tbody tr,
-.crm-sales-orders-dialog .crm-sales-orders-dialog-table tbody tr {
-  height: 60px;
+  line-height: 1.5;
 }
 
 .crm-sales-orders-page .crm-sales-orders-table td,
 .crm-sales-orders-dialog .crm-sales-orders-dialog-table td {
-  padding: 10px 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
+  font-size: 12px;
   line-height: 1.5;
-}
-
-.crm-sales-orders-page .crm-sales-orders-table .admin-cell-secondary,
-.crm-sales-orders-dialog .crm-sales-orders-dialog-table .admin-cell-secondary {
-  color: var(--admin-color-muted, #64748b);
-  font-size: var(--admin-font-caption, 13px);
 }
 
 .crm-sales-orders-page .crm-sales-orders-table .admin-row-action,
 .crm-sales-orders-dialog .crm-sales-orders-dialog-table .admin-row-action {
-  height: var(--admin-row-action-height, 34px);
-  min-height: var(--admin-row-action-height, 34px);
-  font-size: var(--admin-font-label, 14px);
+  height: 32px;
+  min-height: 32px;
+  font-size: 12px;
 }
 
 .crm-sales-orders-pagination {
   color: var(--admin-color-muted, #64748b);
-  font-size: var(--admin-font-caption, 13px);
+  font-size: 11px;
 }
 
 .crm-sales-orders-pagination button {
-  height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .crm-sales-orders-select [data-slot="select-item"] {
-  min-height: 36px;
-  font-size: var(--admin-font-label, 14px);
+  min-height: 32px;
+  font-size: 12px;
 }
 
-/* Keep each dialog's existing width and max-height; align only its inner rhythm. */
+/* Preserve the existing widths, scrolling, stacking and dialog interactions. */
 .crm-sales-orders-dialog,
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) {
-  padding: 24px;
+  padding: 20px;
 }
 
 .crm-sales-orders-dialog [data-slot="dialog-header"],
@@ -108,7 +127,7 @@
   margin: 0;
   padding-right: 24px;
   color: var(--admin-color-text, #1f2937);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -117,22 +136,24 @@
 .crm-sales-orders-dialog [data-slot="label"],
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) label {
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-label, 14px);
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .crm-sales-orders-dialog :is(input, select, [data-slot="select-trigger"]),
 .crm-sales-orders-dialog button:where(:not([data-slot="dialog-close"]):not([role="checkbox"])),
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) button {
-  height: var(--admin-control-height, 40px);
-  min-height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .crm-sales-orders-dialog textarea,
 .crm-sales-orders-cancel-reason textarea {
+  border-radius: 6px;
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -141,8 +162,12 @@
   min-width: 640px;
 }
 
+.crm-sales-orders-dialog .crm-sales-orders-shipment-table {
+  min-width: 480px;
+}
+
 .crm-sales-orders-dialog .crm-sales-orders-model {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
@@ -152,7 +177,23 @@
 }
 
 .crm-sales-orders-dialog .crm-sales-orders-detail .text-slate-500 {
-  font-size: var(--admin-font-caption, 13px);
+  font-size: 11px;
+}
+
+.crm-sales-orders-dialog .crm-sales-orders-detail-summary {
+  background: #f8fafc;
+}
+
+.crm-sales-orders-dialog .crm-sales-orders-selected-demand {
+  border-color: #dbeafe;
+  background: #eff6ff;
+}
+
+.crm-sales-orders-dialog .crm-sales-orders-section-title {
+  margin-bottom: 8px;
+  color: var(--admin-color-text, #1f2937);
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .crm-sales-orders-dialog .crm-input,
@@ -160,7 +201,7 @@
   border: 1px solid var(--admin-color-border, #e2e8f0);
   border-radius: 6px;
   background: #fff;
-  padding: 8px 12px;
+  padding: 6px 10px;
   color: var(--admin-color-text, #1f2937);
 }
 
@@ -169,7 +210,7 @@
   border: 1px solid var(--admin-color-border, #e2e8f0);
   border-radius: 6px;
   background: #fff;
-  padding: 0 14px;
+  padding: 0 12px;
   color: var(--admin-color-secondary, #475569);
 }
 

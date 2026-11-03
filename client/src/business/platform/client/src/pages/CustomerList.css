@@ -3,19 +3,25 @@
 }
 
 .customer-list-page .customer-list-control {
-  height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: var(--admin-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-font-body, 12px);
 }
 
 .customer-list-page .customer-list-caption {
   color: var(--admin-color-muted, #64748b);
-  font-size: var(--admin-font-caption, 13px);
+  font-size: var(--admin-font-caption, 11px);
   line-height: 1.5;
 }
 
 .customer-list-page .customer-list-status {
-  font-size: var(--admin-font-caption, 13px);
+  font-size: var(--admin-font-caption, 11px);
   line-height: 18px;
+}
+
+.customer-list-page .customer-list-error {
+  font-size: var(--admin-font-body, 12px);
+  line-height: 1.5;
 }
 
 .customer-list-page .customer-list-table-scroll {
@@ -28,24 +34,20 @@
   width: 100%;
   min-width: 1332px;
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-font-body, 12px);
 }
 
 .customer-list-page .customer-list-table th {
-  height: var(--admin-control-height, 40px);
+  height: var(--admin-control-height, 32px);
   padding: 8px 12px;
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-label, 14px);
-}
-
-.customer-list-page .customer-list-table tbody tr {
-  height: 64px;
+  font-size: var(--admin-font-caption, 11px);
 }
 
 .customer-list-page .customer-list-table td {
   padding: 8px 12px;
-  font-size: var(--admin-font-body, 15px);
-  line-height: 22px;
+  font-size: var(--admin-font-body, 12px);
+  line-height: 18px;
 }
 
 .customer-list-page .customer-list-table tr {
@@ -58,8 +60,8 @@
 
 .customer-list-page .customer-list-name {
   color: #185fa5;
-  font-size: var(--admin-font-body, 15px);
-  line-height: 22px;
+  font-size: var(--admin-font-body, 12px);
+  line-height: 18px;
 }
 
 .customer-list-page .customer-list-secondary-data {
@@ -67,13 +69,14 @@
 }
 
 .customer-list-page .customer-list-followup-cell > div:first-child {
-  font-size: var(--admin-font-caption, 13px);
+  font-size: var(--admin-font-caption, 11px);
 }
 
 .customer-list-page .customer-list-row-action,
 .customer-list-page .customer-list-pagination {
-  height: var(--admin-row-action-height, 34px);
-  font-size: var(--admin-font-label, 14px);
+  height: var(--admin-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-font-body, 12px);
 }
 
 .customer-list-page .customer-list-row-action {

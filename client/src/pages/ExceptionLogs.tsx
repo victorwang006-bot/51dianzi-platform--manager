@@ -135,9 +135,9 @@ export default function ExceptionLogs() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 aui-page-header">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">异常日志</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 aui-page-title">异常日志</h1>
             <p className="mt-1 text-sm text-slate-500">
               自动记录服务器错误、攻击探测、认证异常与外部服务故障。日志保留 30 天，超期自动清理。
             </p>

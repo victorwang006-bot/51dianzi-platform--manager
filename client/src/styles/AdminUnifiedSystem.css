@@ -1,0 +1,235 @@
+/* Admin content only. The reference ChannelInventoryHost and outer chrome are
+ * deliberately excluded. Existing readability roles consume these scoped tokens;
+ * no new !important rules, scaling, auth selectors or visibility overrides. */
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)),
+body[data-admin-readability="true"] :is(
+  [data-slot="dialog-content"], [data-slot="alert-dialog-content"],
+  [data-slot="select-content"], [data-slot="dropdown-menu-content"],
+  [data-slot="popover-content"], [role="dialog"]:not(.ci-host-dialog)
+) {
+  --admin-font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+  --admin-font-body: 12px;
+  --admin-font-label: 12px;
+  --admin-font-caption: 11px;
+  --admin-font-table-heading: 11px;
+  --admin-control-height: 32px;
+  --admin-row-action-height: 28px;
+  --admin-menu-item-height: 32px;
+  --admin-color-brand: #185fa5;
+  --admin-color-text: #303642;
+  --admin-color-secondary: #475569;
+  --admin-color-muted: #64748b;
+  --admin-color-border: #e2e8f0;
+  --admin-table-head-height: 32px;
+  --admin-table-row-height: auto;
+  --admin-table-head-padding-y: 6px;
+  --admin-table-cell-padding-y: 10px;
+  --admin-table-line-height: 18px;
+  --admin-table-head-line-height: 18px;
+  --admin-page-title-size: 15px;
+  --admin-section-title-size: 15px;
+  --admin-dialog-title-size: 18px;
+  --font-sans: var(--admin-font-family);
+}
+
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) {
+  min-width: 0;
+  font-family: var(--admin-font-family);
+  font-size: var(--admin-font-body);
+  line-height: 1.6;
+  color: var(--admin-color-text);
+}
+
+/* Semantic defaults also cover native platform pages using existing UI controls. */
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(h1, .aui-page-title) {
+  margin: 0;
+  color: #1e293b;
+  font-size: var(--admin-page-title-size);
+  font-weight: 600;
+  line-height: 24px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) h2:not([data-slot="dialog-title"]) {
+  font-size: var(--admin-section-title-size);
+  line-height: 22px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.text-sm, .text-base):not(:where(svg, svg *)) {
+  font-size: var(--admin-font-body);
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) [data-slot="card-title"] {
+  font-size: 15px;
+  line-height: 22px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) [data-slot="card-description"] {
+  color: #64748b;
+  font-size: var(--admin-font-caption);
+  line-height: 16px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) :is(th, td) {
+  padding-inline: 10px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(input, select, textarea) {
+  border-radius: 6px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="submit"]):not([type="button"]), select, textarea) {
+  min-height: 32px;
+  padding: 5px 12px;
+  font-family: var(--admin-font-family);
+  font-size: var(--admin-font-body);
+  line-height: 20px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="submit"]):not([type="button"]), select) {
+  height: 32px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) button {
+  font-size: var(--admin-font-body);
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(input, textarea)::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is([data-slot="button"], .crm-btn) {
+  border-radius: 6px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is([data-slot="button"], .crm-btn):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, [data-admin-button-size^="icon"])) {
+  height: 32px;
+}
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.admin-cell-secondary, .aui-page-description) {
+  color: #64748b;
+}
+
+.aui-page {
+  width: 100%;
+  min-width: 0;
+}
+.aui-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: 40px;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.aui-page-heading { min-width: 0; }
+.aui-page-title { display: flex; align-items: center; gap: 8px; }
+.aui-page-description { margin-top: 3px; font-size: 11px; line-height: 16px; }
+.aui-page-actions { --admin-row-action-height: 32px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+
+.aui-page-tabs {
+  --admin-font-body: 15px;
+  --admin-font-label: 15px;
+  --admin-font-caption: 15px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0 0 12px;
+  padding: 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 15px;
+}
+.aui-page-tabs > :is(a, button) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  color: #64748b;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 20px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.aui-page-tabs > :is([aria-current="page"], [aria-selected="true"], [data-state="active"]) {
+  color: #185fa5;
+  font-weight: 600;
+}
+.aui-page-tabs > :is([aria-current="page"], [aria-selected="true"], [data-state="active"])::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: #185fa5;
+  content: "";
+}
+.aui-page-tabs > :is(a, button):focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+
+.aui-filterbar {
+  --admin-row-action-height: 32px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 12px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+.aui-filterbar > :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+  flex: 0 1 180px;
+  width: 180px;
+  max-width: 100%;
+  min-width: 0;
+}
+.aui-filterbar :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+  box-sizing: border-box;
+  min-height: 32px;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 5px 12px;
+  background: #fff;
+  color: #303642;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 20px;
+}
+.aui-filterbar :is(input, textarea)::placeholder { color: #64748b; opacity: 1; }
+.aui-filterbar .aui-filter-search { flex: 0 1 240px; min-width: 150px; max-width: 100%; }
+.aui-filterbar .aui-filter-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.aui-filter-count { margin-left: auto; color: #64748b; font-size: 11px; line-height: 16px; }
+.aui-data-panel {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .05);
+}
+.aui-data-panel > :is(.crm-table-wrap, .admin-table-scroll, [data-slot="table-container"]) {
+  border-radius: 12px 12px 0 0;
+}
+.aui-data-panel > :is(footer, .aui-pagination) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+}
+@media (max-width: 680px) {
+  .aui-page-actions { width: 100%; margin-left: 0; }
+  .aui-page-tabs { gap: 8px 16px; }
+  .aui-filterbar > :is(input:not([type="checkbox"]):not([type="radio"]), select) { flex: 1 1 140px; width: auto; }
+  .aui-filterbar .aui-filter-search { flex-basis: 100%; }
+  .aui-filter-count { margin-left: 0; }
+}

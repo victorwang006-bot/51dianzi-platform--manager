@@ -1,8 +1,8 @@
-/* Only the inventory page owns these dimensions; shared typography stays in AdminReadability. */
+/* Inventory-only column and interaction geometry; shared typography comes from the admin theme. */
 .my-inventory-page {
   --inventory-selection-width: 44px;
   --inventory-table-min-width: calc(
-    260px + 112px + 112px + 112px + 120px + 236px + 184px
+    240px + 96px + 96px + 96px + 104px + 204px + 160px
   );
   min-width: 0;
   max-width: 100%;
@@ -11,15 +11,24 @@
 }
 
 .my-inventory-page .inventory-control {
-  height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: var(--admin-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-font-body, 12px);
   line-height: 1.4;
 }
 
 .my-inventory-page .inventory-caption {
   color: var(--admin-color-muted, #64748b);
-  font-size: var(--admin-font-caption, 13px);
+  font-size: var(--admin-font-caption, 11px);
   line-height: 1.5;
+}
+
+.my-inventory-page .inventory-header-actions {
+  justify-content: flex-end;
+}
+
+.my-inventory-page .inventory-filterbar {
+  min-width: 0;
 }
 
 .my-inventory-page .inventory-card,
@@ -38,7 +47,7 @@
   width: 100%;
   min-width: var(--inventory-table-min-width);
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-font-body, 12px);
   line-height: 1.5;
 }
 
@@ -49,40 +58,41 @@
 }
 
 .my-inventory-page .inventory-table th {
-  height: 44px;
-  padding: 10px 12px;
+  height: 36px;
+  padding: 6px 10px;
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-label, 14px);
+  font-size: var(--admin-font-caption, 11px);
   font-weight: 500;
 }
 
 .my-inventory-page .inventory-table td {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .my-inventory-page .inventory-table .inventory-data-row {
-  height: 64px;
-}
-
-.my-inventory-page .inventory-table .inventory-data-row > td {
-  padding-block: 8px;
+  height: 56px;
 }
 
 .my-inventory-page .inventory-quantity-column,
 .my-inventory-page .inventory-price-column {
-  width: 112px;
+  width: 96px;
 }
 
 .my-inventory-page .inventory-owner-column {
-  width: 120px;
+  width: 104px;
 }
 
 .my-inventory-page .inventory-status-column {
-  width: 236px;
+  width: 204px;
 }
 
 .my-inventory-page .inventory-actions-column {
-  width: 184px;
+  width: 160px;
+}
+
+.my-inventory-page .inventory-table .inventory-numeric-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .my-inventory-page .inventory-selection-column,
@@ -112,19 +122,21 @@
 }
 
 .my-inventory-page .inventory-actions-cell {
+  text-align: right;
   box-shadow: -1px 0 0 var(--admin-color-border, #e2e8f0);
 }
 
 .my-inventory-page .inventory-row-action {
-  height: var(--admin-row-action-height, 34px);
-  min-width: 48px;
-  padding-inline: 8px;
-  font-size: var(--admin-font-label, 14px);
+  height: var(--admin-row-action-height, 32px);
+  min-width: 40px;
+  padding-inline: 6px;
+  font-size: var(--admin-font-body, 12px);
 }
 
 .my-inventory-page .inventory-status-note,
 .my-inventory-page .inventory-failure {
-  font-size: var(--admin-font-caption, 13px);
+  max-width: 100%;
+  font-size: var(--admin-font-caption, 11px);
   line-height: 1.5;
 }
 

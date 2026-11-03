@@ -201,7 +201,7 @@ export default function Messages() {
     <DashboardLayout>
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">消息中心</h1>
+        <h1 className="text-2xl font-semibold tracking-tight aui-page-title">消息中心</h1>
         <p className="text-sm text-muted-foreground mt-1">
           统一查看并处理快速询价、在线客服、开通消息、合作/订货咨询与举报投诉
         </p>
@@ -222,7 +222,7 @@ export default function Messages() {
             <Search className="h-4 w-4 mr-1" /> 搜索
           </Button>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 aui-filterbar">
           <Select value={typeFilter} onValueChange={v => { setTypeFilter(v as typeof typeFilter); setPage(1); }}>
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -404,8 +404,8 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold">{thread.subject || "（无主题）"}</h1>
+              <div className="flex items-center gap-2 aui-page-header">
+                <h1 className="text-xl font-semibold aui-page-title">{thread.subject || "（无主题）"}</h1>
                 <ThreadTypeBadge type={(thread as { threadType?: string }).threadType} />
                 {isOrderConsultation && (
                   <Badge className="border-transparent bg-orange-100 text-orange-900 hover:bg-orange-100">

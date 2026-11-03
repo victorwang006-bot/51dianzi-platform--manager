@@ -10,15 +10,15 @@ import StaffPermissionSheet, {
   type StaffEnterpriseEditorAccess,
   type StaffPermissionSheetSection,
 } from "@/components/admin/StaffPermissionSheet";
+import { EmptyState, Pagination, StatusBadge } from "@/components/admin/shared";
 import {
-  EmptyState,
-  PageHeader,
-  Pagination,
-  StatusBadge,
-} from "@/components/admin/shared";
+  AdminDataPanel,
+  AdminFilterBar,
+  AdminPage,
+  AdminPageHeader,
+} from "@/components/admin/UnifiedAdminPage";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -767,8 +767,8 @@ export default function Staff() {
 
   return (
     <DashboardLayout>
-      <div data-staff-page className="staff-management-page">
-        <PageHeader
+      <AdminPage data-staff-page className="staff-management-page">
+        <AdminPageHeader
           title="员工与权限"
           actions={
             <div className="flex flex-wrap gap-2">
@@ -797,14 +797,14 @@ export default function Staff() {
 
         {businessNotice ? (
           <div
-            className={`mb-4 rounded-md border p-3 text-sm ${businessNotice.tone === "warn" ? "border-amber-300 bg-amber-50 text-amber-950" : "bg-muted/30 text-muted-foreground"}`}
+            className={`rounded-md border p-3 text-xs ${businessNotice.tone === "warn" ? "border-amber-300 bg-amber-50 text-amber-950" : "bg-muted/30 text-muted-foreground"}`}
           >
             {businessNotice.message}
           </div>
         ) : null}
         {officialTeamsQuery.isError ? (
           <div
-            className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
             role="alert"
           >
             <span>
@@ -823,304 +823,292 @@ export default function Staff() {
           </div>
         ) : null}
 
-        <Card>
-          <CardHeader className="flex flex-col gap-2 space-y-0 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base">员工列表</CardTitle>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <Input
-                value={keyword}
-                onChange={event => setKeyword(event.target.value)}
-                placeholder="搜索姓名、账号或手机"
-                className="h-8 text-sm sm:w-[220px]"
-                aria-label="搜索员工"
-              />
-              <select
-                value={status}
-                onChange={event =>
-                  setStatus(event.target.value as StaffStatusFilter)
-                }
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                aria-label="员工状态筛选"
-              >
-                <option value="all">全部状态</option>
-                <option value="active">正常 / 启用</option>
-                <option value="disabled">后台停用</option>
-                <option value="locked">后台锁定</option>
-                <option value="suspended">企业暂停</option>
-              </select>
-              <select
-                value={role}
-                onChange={event => setRole(event.target.value)}
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                aria-label="后台角色筛选"
-              >
-                <option value="all">全部后台角色</option>
-                {roleOptions.map(option => (
-                  <option key={option} value={option}>
-                    {roleLabel(option)}
-                  </option>
-                ))}
-              </select>
+        <AdminFilterBar role="search" aria-label="员工筛选">
+          <Input
+            value={keyword}
+            onChange={event => setKeyword(event.target.value)}
+            placeholder="搜索姓名、账号或手机"
+            className="h-8 w-full text-xs sm:w-[220px]"
+            aria-label="搜索员工"
+          />
+          <select
+            value={status}
+            onChange={event =>
+              setStatus(event.target.value as StaffStatusFilter)
+            }
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            aria-label="员工状态筛选"
+          >
+            <option value="all">全部状态</option>
+            <option value="active">正常 / 启用</option>
+            <option value="disabled">后台停用</option>
+            <option value="locked">后台锁定</option>
+            <option value="suspended">企业暂停</option>
+          </select>
+          <select
+            value={role}
+            onChange={event => setRole(event.target.value)}
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            aria-label="后台角色筛选"
+          >
+            <option value="all">全部后台角色</option>
+            {roleOptions.map(option => (
+              <option key={option} value={option}>
+                {roleLabel(option)}
+              </option>
+            ))}
+          </select>
+        </AdminFilterBar>
+        <AdminDataPanel aria-label="员工列表">
+          {adminUsersQuery.isLoading ||
+          (enterpriseMembersQuery.isPending &&
+            contextReady &&
+            enterpriseAccess.canManageMembers) ? (
+            <div className="space-y-3 p-6">
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {adminUsersQuery.isLoading ||
-            (enterpriseMembersQuery.isPending &&
-              contextReady &&
-              enterpriseAccess.canManageMembers) ? (
-              <div className="space-y-3 p-6">
-                <Skeleton className="h-12" />
-                <Skeleton className="h-12" />
-                <Skeleton className="h-12" />
-              </div>
-            ) : visibleRows.length === 0 ? (
-              <EmptyState
-                message={
-                  canManageAdmin || enterpriseMembersQuery.isSuccess
-                    ? "当前筛选没有可显示的员工记录。"
-                    : "暂无可显示的员工记录。"
-                }
-              />
-            ) : (
-              <div
-                className="staff-management-table-scroll"
-                data-staff-table-scroll
-              >
-                <Table className="staff-management-table min-w-[980px] table-fixed">
-                  <colgroup>
-                    <col className="w-[21%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[18%]" />
-                    <col className="w-[12%]" />
-                    <col className="w-[10%]" />
-                    <col className="w-[112px]" />
-                  </colgroup>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="px-3 text-xs">员工信息</TableHead>
-                      <TableHead className="px-3 text-xs">所属团队</TableHead>
-                      <TableHead className="px-3 text-xs">后台角色</TableHead>
-                      <TableHead className="px-3 text-xs">ERP 权限</TableHead>
-                      <TableHead className="px-3 text-xs">数据范围</TableHead>
-                      <TableHead className="px-3 text-xs">账号状态</TableHead>
-                      <TableHead className="staff-action-head px-3 text-right text-xs">
-                        操作
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visibleRows.map(row => {
-                      const adminStatus = row.admin
-                        ? accountStatus(row.admin)
-                        : null;
-                      const erpPreview = staffErpPermissionPreview(row);
-                      const needsAssociation = staffRowNeedsAssociation(row);
-                      const displayName =
-                        row.admin?.displayName ||
-                        row.member?.displayName ||
-                        row.admin?.username ||
-                        "未命名员工";
-                      const showEnterpriseStatus = Boolean(
-                        row.member &&
-                          (row.member.status === "suspended" || !adminStatus)
-                      );
-                      return (
-                        <TableRow
-                          key={row.key}
-                          className="h-14 align-middle"
-                          data-staff-row={row.key}
+          ) : visibleRows.length === 0 ? (
+            <EmptyState
+              message={
+                canManageAdmin || enterpriseMembersQuery.isSuccess
+                  ? "当前筛选没有可显示的员工记录。"
+                  : "暂无可显示的员工记录。"
+              }
+            />
+          ) : (
+            <div
+              className="staff-management-table-scroll"
+              data-staff-table-scroll
+            >
+              <Table className="staff-management-table min-w-[980px] table-fixed">
+                <colgroup>
+                  <col className="w-[21%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[112px]" />
+                </colgroup>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="px-3 text-[11px]">员工信息</TableHead>
+                    <TableHead className="px-3 text-[11px]">所属团队</TableHead>
+                    <TableHead className="px-3 text-[11px]">后台角色</TableHead>
+                    <TableHead className="px-3 text-[11px]">ERP 权限</TableHead>
+                    <TableHead className="px-3 text-[11px]">数据范围</TableHead>
+                    <TableHead className="px-3 text-[11px]">账号状态</TableHead>
+                    <TableHead className="staff-action-head px-3 text-right text-[11px]">
+                      操作
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleRows.map(row => {
+                    const adminStatus = row.admin
+                      ? accountStatus(row.admin)
+                      : null;
+                    const erpPreview = staffErpPermissionPreview(row);
+                    const needsAssociation = staffRowNeedsAssociation(row);
+                    const displayName =
+                      row.admin?.displayName ||
+                      row.member?.displayName ||
+                      row.admin?.username ||
+                      "未命名员工";
+                    const showEnterpriseStatus = Boolean(
+                      row.member &&
+                        (row.member.status === "suspended" || !adminStatus)
+                    );
+                    return (
+                      <TableRow
+                        key={row.key}
+                        className="h-14 align-middle"
+                        data-staff-row={row.key}
+                      >
+                        <TableCell
+                          className="min-w-[190px] py-2.5"
+                          data-staff-identity
                         >
-                          <TableCell
-                            className="min-w-[190px] py-2.5"
-                            data-staff-identity
-                          >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="staff-avatar" aria-hidden="true">
+                              {displayName.slice(0, 1)}
+                            </span>
                             <div className="flex min-w-0 items-center gap-2">
-                              <span className="staff-avatar" aria-hidden="true">
-                                {displayName.slice(0, 1)}
+                              <span className="truncate font-medium">
+                                {displayName}
                               </span>
-                              <div className="flex min-w-0 items-center gap-2">
-                                <span className="truncate font-medium">
-                                  {displayName}
-                                </span>
-                                {needsAssociation ? (
-                                  <button
-                                    type="button"
-                                    className="staff-association-action"
-                                    onClick={() =>
-                                      openStaffSheet(row, "member")
-                                    }
-                                  >
-                                    待关联
-                                  </button>
-                                ) : null}
-                              </div>
+                              {needsAssociation ? (
+                                <button
+                                  type="button"
+                                  className="staff-association-action"
+                                  onClick={() => openStaffSheet(row, "member")}
+                                >
+                                  待关联
+                                </button>
+                              ) : null}
                             </div>
-                          </TableCell>
-                          <TableCell
-                            className="py-2.5 text-sm"
-                            data-staff-official-team
-                          >
-                            <StaffTeamSummary
-                              row={row}
-                              operations={operations}
-                              official={officialTeamsOverview}
-                              business={businessTeams}
-                              operationsState={
-                                operationsQuery.isError
+                          </div>
+                        </TableCell>
+                        <TableCell
+                          className="py-2.5 text-xs"
+                          data-staff-official-team
+                        >
+                          <StaffTeamSummary
+                            row={row}
+                            operations={operations}
+                            official={officialTeamsOverview}
+                            business={businessTeams}
+                            operationsState={
+                              operationsQuery.isError
+                                ? "不可用"
+                                : operationsQuery.isPending
+                                  ? "读取中…"
+                                  : !operations
+                                    ? "不可用"
+                                    : ""
+                            }
+                            officialState={
+                              officialTeamsQuery.isError
+                                ? "不可用"
+                                : officialTeamsQuery.isPending
+                                  ? "读取中…"
+                                  : ""
+                            }
+                            businessState={
+                              !contextReady
+                                ? "未就绪"
+                                : businessTeamsQuery.isError
                                   ? "不可用"
-                                  : operationsQuery.isPending
+                                  : businessTeamsQuery.isPending
                                     ? "读取中…"
-                                    : !operations
+                                    : !businessTeams
                                       ? "不可用"
                                       : ""
-                              }
-                              officialState={
-                                officialTeamsQuery.isError
-                                  ? "不可用"
-                                  : officialTeamsQuery.isPending
-                                    ? "读取中…"
-                                    : ""
-                              }
-                              businessState={
-                                !contextReady
-                                  ? "未就绪"
-                                  : businessTeamsQuery.isError
-                                    ? "不可用"
-                                    : businessTeamsQuery.isPending
-                                      ? "读取中…"
-                                      : !businessTeams
-                                        ? "不可用"
-                                        : ""
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="py-2.5 text-sm" data-staff-role>
-                            {row.admin ? (
-                              <span className="block truncate font-medium">
-                                {roleLabel(row.admin.adminRole)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2.5" data-staff-erp-summary>
-                            {erpPreview.total ? (
-                              <div className="staff-erp-tags">
-                                {erpPreview.labels.map(label => (
-                                  <span key={label} className="staff-erp-tag">
-                                    {label}
-                                  </span>
-                                ))}
-                                {erpPreview.remaining ? (
-                                  <button
-                                    type="button"
-                                    className="staff-erp-more"
-                                    onClick={() => openStaffSheet(row, "erp")}
-                                    aria-label={`查看 ${displayName} 的全部 ${erpPreview.total} 项 ERP 权限`}
-                                  >
-                                    +{erpPreview.remaining}
-                                  </button>
-                                ) : null}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell
-                            className="py-2.5 text-sm"
-                            data-staff-scope
-                          >
-                            {row.member ? (
-                              <span className="text-muted-foreground">
-                                {row.member.isOwner ||
-                                row.member.inventoryDataScope === "enterprise"
-                                  ? "全企业业务"
-                                  : "仅本人业务"}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2.5" data-staff-status>
-                            <div className="flex flex-nowrap items-center gap-1">
-                              {adminStatus ? (
-                                <StatusBadge
-                                  label={adminStatus.label}
-                                  style={adminStatus.style}
-                                />
-                              ) : null}
-                              {showEnterpriseStatus ? (
-                                <StatusBadge
-                                  label={
-                                    row.member?.status === "suspended"
-                                      ? "企业暂停"
-                                      : "企业正常"
-                                  }
-                                  style={
-                                    row.member?.status === "suspended"
-                                      ? "warning"
-                                      : "success"
-                                  }
-                                />
-                              ) : null}
-                              {!adminStatus && !row.member ? (
-                                <span className="text-sm text-muted-foreground">
-                                  —
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="py-2.5 text-xs" data-staff-role>
+                          {row.admin ? (
+                            <span className="block truncate font-medium">
+                              {roleLabel(row.admin.adminRole)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2.5" data-staff-erp-summary>
+                          {erpPreview.total ? (
+                            <div className="staff-erp-tags">
+                              {erpPreview.labels.map(label => (
+                                <span key={label} className="staff-erp-tag">
+                                  {label}
                                 </span>
+                              ))}
+                              {erpPreview.remaining ? (
+                                <button
+                                  type="button"
+                                  className="staff-erp-more"
+                                  onClick={() => openStaffSheet(row, "erp")}
+                                  aria-label={`查看 ${displayName} 的全部 ${erpPreview.total} 项 ERP 权限`}
+                                >
+                                  +{erpPreview.remaining}
+                                </button>
                               ) : null}
                             </div>
-                          </TableCell>
-                          <TableCell
-                            className="staff-action-cell w-[112px] min-w-[112px] py-2.5 pr-3 whitespace-nowrap text-right"
-                            data-staff-action-cell
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              —
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2.5 text-xs" data-staff-scope>
+                          {row.member ? (
+                            <span className="text-muted-foreground">
+                              {row.member.isOwner ||
+                              row.member.inventoryDataScope === "enterprise"
+                                ? "全企业业务"
+                                : "仅本人业务"}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2.5" data-staff-status>
+                          <div className="flex flex-nowrap items-center gap-1">
+                            {adminStatus ? (
+                              <StatusBadge
+                                label={adminStatus.label}
+                                style={adminStatus.style}
+                              />
+                            ) : null}
+                            {showEnterpriseStatus ? (
+                              <StatusBadge
+                                label={
+                                  row.member?.status === "suspended"
+                                    ? "企业暂停"
+                                    : "企业正常"
+                                }
+                                style={
+                                  row.member?.status === "suspended"
+                                    ? "warning"
+                                    : "success"
+                                }
+                              />
+                            ) : null}
+                            {!adminStatus && !row.member ? (
+                              <span className="text-xs text-muted-foreground">
+                                —
+                              </span>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell
+                          className="staff-action-cell w-[112px] min-w-[112px] py-2.5 pr-3 whitespace-nowrap text-right"
+                          data-staff-action-cell
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => openStaffSheet(row, "erp")}
                           >
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 px-2 text-xs"
-                              onClick={() => openStaffSheet(row, "erp")}
-                            >
-                              <Pencil className="mr-1 h-3.5 w-3.5" />
-                              配置权限
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-            {canManageAdmin && adminUsersQuery.data ? (
-              <Pagination
-                page={page}
-                pageSize={PAGE_SIZE}
-                total={adminUsersQuery.data.total}
-                onPageChange={setPage}
-              />
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card className="mt-4 border-dashed">
-          <CardContent className="flex flex-col gap-3 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-2">
-              <Users className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>需要邀请员工或交接业务时，可继续使用现有流程。</p>
+                            <Pencil className="mr-1 h-3.5 w-3.5" />
+                            配置权限
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-            {enterpriseAccess.inviteHref ? (
-              <a
-                href={enterpriseAccess.inviteHref}
-                className="shrink-0 text-primary underline-offset-4 hover:underline"
-              >
-                员工邀请与业务交接
-              </a>
-            ) : null}
-          </CardContent>
-        </Card>
+          )}
+          {canManageAdmin && adminUsersQuery.data ? (
+            <Pagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={adminUsersQuery.data.total}
+              onPageChange={setPage}
+            />
+          ) : null}
+        </AdminDataPanel>
+
+        <AdminDataPanel className="flex flex-col gap-3 border-dashed p-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-2">
+            <Users className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>需要邀请员工或交接业务时，可继续使用现有流程。</p>
+          </div>
+          {enterpriseAccess.inviteHref ? (
+            <a
+              href={enterpriseAccess.inviteHref}
+              className="shrink-0 text-primary underline-offset-4 hover:underline"
+            >
+              员工邀请与业务交接
+            </a>
+          ) : null}
+        </AdminDataPanel>
 
         <CreateStaffDialog
           key={`create-staff:${accountId ?? "signed-out"}`}
@@ -1176,7 +1164,7 @@ export default function Staff() {
           }}
           onSave={saveSelected}
         />
-      </div>
+      </AdminPage>
     </DashboardLayout>
   );
 }

@@ -1,37 +1,38 @@
-/* Page-owned layout only; shared admin typography and action classes live in AdminReadability.css. */
+/* Page-owned layout only; shared admin primitives provide the content theme. */
 .procurement-demands-page,
 .procurement-demands-detail {
   min-width: 0;
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-font-body, 12px);
   line-height: 1.5;
 }
 
 .procurement-demands-page .procurement-demand-control,
 .procurement-demands-detail .procurement-demand-control {
-  height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: var(--admin-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-font-body, 12px);
 }
 
 .procurement-demands-detail .procurement-demand-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--admin-row-action-height, 34px);
-  height: var(--admin-row-action-height, 34px);
+  width: var(--admin-control-height, 32px);
+  height: var(--admin-control-height, 32px);
 }
 
 .procurement-demands-page .procurement-demands-table {
   min-width: 1220px;
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-font-body, 12px);
 }
 
 .procurement-demands-page .procurement-demands-table th,
 .procurement-demands-detail .procurement-demand-items th {
-  height: 44px;
-  padding: 10px 12px;
+  height: 36px;
+  padding: 8px 12px;
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-label, 14px);
+  font-size: var(--admin-font-caption, 11px);
   font-weight: 500;
 }
 
@@ -49,7 +50,7 @@
 }
 
 .procurement-demands-page .procurement-demand-priority {
-  font-size: var(--admin-font-caption, 13px);
+  font-size: var(--admin-font-caption, 11px);
 }
 
 .procurement-demands-page .procurement-demand-secondary-data {
@@ -75,7 +76,7 @@
 
 .procurement-demands-detail .procurement-demand-items {
   min-width: 920px;
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-font-body, 12px);
 }
 
 .procurement-demands-detail .procurement-demand-items tbody tr {

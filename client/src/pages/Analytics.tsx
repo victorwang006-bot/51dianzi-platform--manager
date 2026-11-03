@@ -129,9 +129,9 @@ export default function Analytics() {
       <div className="space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 aui-page-header">
               <BarChart3 className="h-6 w-6 text-blue-600" />
-              <h1 className="text-2xl font-semibold text-slate-900">运营数据</h1>
+              <h1 className="text-2xl font-semibold text-slate-900 aui-page-title">运营数据</h1>
             </div>
             <p className="mt-1 text-sm text-slate-500">网站、小程序和用户数据分开统计，仅后台可查看。</p>
           </div>

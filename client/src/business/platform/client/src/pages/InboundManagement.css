@@ -1,0 +1,85 @@
+/* Local compatibility layer for the legacy inbound ERP controls.
+ * Keep the shared native styles and all state/permission styling untouched.
+ * The extra page class deliberately outranks those legacy size declarations.
+ */
+.aui-page.erp-ui.inbound-management-page .inbound-overview-button,
+.aui-page.erp-ui.inbound-management-page .inbound-modal-close {
+  border-radius: 6px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-overview-button strong {
+  font-size: 12px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-row-menu {
+  height: 32px;
+}
+
+.aui-page.erp-ui.inbound-management-page .crm-table .inbound-numeric,
+.aui-page.erp-ui.inbound-management-page .crm-detail-table .inbound-numeric,
+.aui-page.erp-ui.inbound-management-page .crm-table .inbound-actions {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-modal :is(input.crm-input, select.crm-input, [data-slot="input"], [data-slot="select-trigger"]),
+.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-btn,
+.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-btn-sm {
+  height: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-modal textarea.crm-input {
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-modal .erp-field-label,
+.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-detail-table,
+.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-table td {
+  font-size: 12px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-table th,
+.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-detail-table .label-cell,
+.aui-page.erp-ui.inbound-management-page .inbound-modal .erp-helper {
+  font-size: 11px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-modal .erp-segmented.erp-choice-buttons {
+  min-height: 32px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-modal .erp-choice-buttons .erp-segmented-option {
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 30px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-entry-card-title,
+.aui-page.erp-ui.inbound-management-page .inbound-section-title,
+.aui-page.erp-ui.inbound-management-page .erp-section-title {
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-payment-summary strong {
+  align-self: flex-end;
+  font-size: 12px;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-payment-total,
+.aui-page.erp-ui.inbound-management-page .inbound-overview-popover strong {
+  text-align: right;
+}
+
+.aui-page.erp-ui.inbound-management-page .inbound-more-toggle,
+.aui-page.erp-ui.inbound-management-page .erp-menu-item {
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+}

@@ -4,6 +4,11 @@ import { trpc } from "../../../../api/business-trpc";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import ProcurementWorkspaceNav from "../components/customerDemands/ProcurementWorkspaceNav";
 import ChatActionButton from "../components/ChatActionButton";
+import {
+  AdminDataPanel,
+  AdminFilterBar,
+  AdminPage,
+} from "@/components/admin/UnifiedAdminPage";
 
 /**
  * ERP - 采购工作台 - 收到的公开需求报价页
@@ -68,13 +73,13 @@ export default function DemandQuotes() {
 
   return (
     <PlatformLayout>
-      <div className="mb-3"><h1 className="text-lg font-semibold text-slate-800">采购工作台</h1></div>
-      <ProcurementWorkspaceNav active="quotes" />
-      <div className="bg-white rounded-lg border border-[#eee]">
+      <AdminPage aria-label="收到的报价">
+        <ProcurementWorkspaceNav active="quotes" />
         {/* 工具栏 */}
-        <div className="flex flex-wrap items-center gap-2 p-4 border-b border-[#f0f0f0]">
+        <AdminFilterBar>
           <input
-            className="crm-input w-[200px]"
+            className="crm-input w-[200px] max-w-full"
+            aria-label="搜索型号 / 报价供应商"
             placeholder="搜索型号 / 报价供应商"
             value={kwInput}
             onChange={e => setKwInput(e.target.value)}
@@ -90,7 +95,8 @@ export default function DemandQuotes() {
             onClick={() => {
               setKw(kwInput);
               setPage(1);
-            }}>
+            }}
+          >
             筛选
           </button>
           <button
@@ -99,125 +105,170 @@ export default function DemandQuotes() {
               setKwInput("");
               setKw("");
               setPage(1);
-            }}>
+            }}
+          >
             重置
           </button>
-          <div className="ml-auto text-[12px] text-[#888]">
+          <div className="ml-auto text-[11px] text-[#888]">
             共 {filtered.length} 条报价
           </div>
-        </div>
+        </AdminFilterBar>
 
         {/* 报价表格 */}
-        <div className="overflow-x-auto">
-          <table className="crm-table">
-            <thead>
-              <tr>
-                <th>报价时间</th>
-                <th>需求型号</th>
-                <th>品牌</th>
-                <th>需求数量</th>
-                <th>目标单价</th>
-                <th>报价供应商</th>
-                <th>报价单价</th>
-                <th>可供数量</th>
-                <th>交期</th>
-                <th>报价备注</th>
-                <th>需求状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
+        <AdminDataPanel>
+          <div className="overflow-x-auto">
+            <table className="crm-table" aria-label="收到的报价列表">
+              <thead>
                 <tr>
-                  <td colSpan={12} className="text-center text-[#888] py-8">
-                    加载中...
-                  </td>
+                  <th scope="col">报价时间</th>
+                  <th scope="col">需求型号</th>
+                  <th scope="col">品牌</th>
+                  <th scope="col" style={{ textAlign: "right" }}>
+                    需求数量
+                  </th>
+                  <th scope="col" style={{ textAlign: "right" }}>
+                    目标单价
+                  </th>
+                  <th scope="col">报价供应商</th>
+                  <th scope="col" style={{ textAlign: "right" }}>
+                    报价单价
+                  </th>
+                  <th scope="col" style={{ textAlign: "right" }}>
+                    可供数量
+                  </th>
+                  <th scope="col">交期</th>
+                  <th scope="col">报价备注</th>
+                  <th scope="col">需求状态</th>
+                  <th scope="col" style={{ textAlign: "right" }}>
+                    操作
+                  </th>
                 </tr>
-              ) : isError ? (
-                <tr>
-                  <td colSpan={12} className="py-8 text-center">
-                    <p className="text-sm text-red-700">报价数据加载失败：{error.message}</p>
-                    <button
-                      type="button"
-                      className="crm-btn crm-btn-sm mt-3"
-                      onClick={() => void refetch()}
-                    >
-                      重新加载
-                    </button>
-                  </td>
-                </tr>
-              ) : pageRows.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="text-center text-[#888] py-8">
-                    暂无收到的报价，先到「发布需求」发布采购需求
-                  </td>
-                </tr>
-              ) : (
-                pageRows.map(q => (
-                  <tr key={q.id}>
-                    <td className="whitespace-nowrap">{fmtDateTime(q.createdAt)}</td>
-                    <td className="font-medium text-[#185FA5]">{q.partNumber}</td>
-                    <td>{q.brand || "—"}</td>
-                    <td>
-                      {q.demandQty.toLocaleString("zh-CN")} {q.demandQtyUnit}
-                    </td>
-                    <td>
-                      {q.targetPrice
-                        ? `￥${Number(q.targetPrice).toFixed(2)}`
-                        : "面议"}
-                    </td>
-                    {/* 2026-08-17 自营平权：移除自营内联高亮，与其他商家同一渲染 */}
-                    <td>
-                      {q.supplierName}
-                    </td>
-                    <td className="font-medium text-[#A32D2D]">
-                      ￥{Number(q.price).toFixed(2)}
-                    </td>
-                    <td>{q.qtyAvailable.toLocaleString("zh-CN")}</td>
-                    <td>{q.leadTime || "—"}</td>
-                    <td className="max-w-[160px] truncate" title={q.note || ""}>
-                      {q.note || "—"}
-                    </td>
-                    <td>
-                      {q.demandStatus === "open" ? (
-                        <span className="crm-badge crm-badge-on">询价中</span>
-                      ) : (
-                        <span className="crm-badge crm-badge-void">已关闭</span>
-                      )}
-                    </td>
-                    <td>
-                      <ChatActionButton onClick={() => navigate(`/chat?userId=${q.supplierId}`)}>
-                        聊一聊
-                      </ChatActionButton>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={12} className="text-center text-[#888] py-8">
+                      加载中...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 分页 */}
-        {filtered.length > 0 && (
-          <div className="flex items-center justify-end gap-2 p-4">
-            <button
-              className="crm-btn crm-btn-sm"
-              disabled={page <= 1}
-              onClick={() => setPage(p => p - 1)}>
-              上一页
-            </button>
-            <span className="text-[12px] text-[#888]">
-              {page} / {totalPages}
-            </span>
-            <button
-              className="crm-btn crm-btn-sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage(p => p + 1)}>
-              下一页
-            </button>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan={12} className="py-8 text-center">
+                      <p className="text-xs text-red-700">
+                        报价数据加载失败：{error.message}
+                      </p>
+                      <button
+                        type="button"
+                        className="crm-btn crm-btn-sm mt-3"
+                        onClick={() => void refetch()}
+                      >
+                        重新加载
+                      </button>
+                    </td>
+                  </tr>
+                ) : pageRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="text-center text-[#888] py-8">
+                      暂无收到的报价，先到「发布需求」发布采购需求
+                    </td>
+                  </tr>
+                ) : (
+                  pageRows.map(q => (
+                    <tr key={q.id}>
+                      <td className="whitespace-nowrap">
+                        {fmtDateTime(q.createdAt)}
+                      </td>
+                      <td className="font-medium text-[#185FA5]">
+                        {q.partNumber}
+                      </td>
+                      <td>{q.brand || "—"}</td>
+                      <td
+                        className="tabular-nums"
+                        style={{ textAlign: "right" }}
+                      >
+                        {q.demandQty.toLocaleString("zh-CN")} {q.demandQtyUnit}
+                      </td>
+                      <td
+                        className="tabular-nums"
+                        style={{ textAlign: "right" }}
+                      >
+                        {q.targetPrice
+                          ? `￥${Number(q.targetPrice).toFixed(2)}`
+                          : "面议"}
+                      </td>
+                      {/* 2026-08-17 自营平权：移除自营内联高亮，与其他商家同一渲染 */}
+                      <td>{q.supplierName}</td>
+                      <td
+                        className="font-medium tabular-nums text-[#A32D2D]"
+                        style={{ textAlign: "right" }}
+                      >
+                        ￥{Number(q.price).toFixed(2)}
+                      </td>
+                      <td
+                        className="tabular-nums"
+                        style={{ textAlign: "right" }}
+                      >
+                        {q.qtyAvailable.toLocaleString("zh-CN")}
+                      </td>
+                      <td>{q.leadTime || "—"}</td>
+                      <td
+                        className="max-w-[160px] truncate"
+                        title={q.note || ""}
+                      >
+                        {q.note || "—"}
+                      </td>
+                      <td>
+                        {q.demandStatus === "open" ? (
+                          <span className="crm-badge crm-badge-on">询价中</span>
+                        ) : (
+                          <span className="crm-badge crm-badge-void">
+                            已关闭
+                          </span>
+                        )}
+                      </td>
+                      <td
+                        className="whitespace-nowrap"
+                        style={{ textAlign: "right" }}
+                      >
+                        <ChatActionButton
+                          onClick={() =>
+                            navigate(`/chat?userId=${q.supplierId}`)
+                          }
+                        >
+                          聊一聊
+                        </ChatActionButton>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          {/* 分页 */}
+          {filtered.length > 0 && (
+            <div className="aui-pagination flex flex-wrap items-center justify-end gap-2 p-3">
+              <button
+                className="crm-btn crm-btn-sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                上一页
+              </button>
+              <span className="text-[12px] text-[#888]">
+                {page} / {totalPages}
+              </span>
+              <button
+                className="crm-btn crm-btn-sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+              >
+                下一页
+              </button>
+            </div>
+          )}
+        </AdminDataPanel>
+      </AdminPage>
     </PlatformLayout>
   );
 }

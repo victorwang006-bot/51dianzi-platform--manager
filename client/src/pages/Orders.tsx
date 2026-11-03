@@ -88,9 +88,9 @@ function OrderList() {
   return (
     <DashboardLayout>
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">平台订单</h1>
+            <h1 className="text-2xl font-semibold tracking-tight aui-page-title">平台订单</h1>
             <p className="mt-1 text-sm text-muted-foreground">商城用户下单与履约记录；与客户管理中的销售订单、采购管理中的采购订单分开管理。</p>
           </div>
           <Button variant="outline" onClick={() => void Promise.all([query.refetch(), statsQuery.refetch()])} disabled={isRefreshing}>
@@ -230,7 +230,7 @@ function OrderDetail({ orderId }: { orderId: number }) {
         <div>
           <Link href="/orders"><Button variant="ghost" className="-ml-3"><ArrowLeft className="mr-2 h-4 w-4" />返回订单管理</Button></Link>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div><div className="flex flex-wrap items-center gap-2"><h1 className="font-mono text-xl font-semibold">{order.orderNo}</h1><OrderStatus status={order.status} /></div><p className="mt-1 text-sm text-muted-foreground">{order.batchNo ? `父订单 ${order.batchNo} · 第 ${String(order.batchSeq).padStart(2, "0")} 张子订单` : "历史 DZ 订单（无父批次）"}</p></div>
+            <div><div className="flex flex-wrap items-center gap-2 aui-page-header"><h1 className="font-mono text-xl font-semibold aui-page-title">{order.orderNo}</h1><OrderStatus status={order.status} /></div><p className="mt-1 text-sm text-muted-foreground">{order.batchNo ? `父订单 ${order.batchNo} · 第 ${String(order.batchSeq).padStart(2, "0")} 张子订单` : "历史 DZ 订单（无父批次）"}</p></div>
             <div className="text-left sm:text-right"><div className="text-2xl font-semibold">{money(order.totalAmount)}</div><div className="text-xs text-muted-foreground">{dateTime(order.createdAt)}</div></div>
           </div>
         </div>

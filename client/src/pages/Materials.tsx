@@ -166,7 +166,7 @@ function SpecsEditor({
       {entries.length > 0 && (
         <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
           {entries.map(([k, v]) => (
-            <div key={k} className="flex items-center gap-2">
+            <div key={k} className="flex items-center gap-2 aui-filterbar">
               <Input
                 value={k}
                 readOnly
@@ -194,7 +194,7 @@ function SpecsEditor({
           ))}
         </div>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 aui-filterbar">
         <Input
           value={newKey}
           onChange={e => setNewKey(e.target.value)}
@@ -663,7 +663,7 @@ export default function Materials() {
       />
 
       {/* 筛选栏 */}
-      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-white p-4 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-white p-4 sm:flex-row sm:flex-wrap sm:items-center aui-filterbar">
         <div className="flex w-full min-w-0 items-center gap-2 sm:min-w-[260px] sm:flex-1">
           <Input
             value={searchInput}

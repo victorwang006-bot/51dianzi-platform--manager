@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { trpc } from "../../../../api/business-trpc";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
+import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { Checkbox } from "../components/ui/checkbox";
 import {
   DropdownMenu,
@@ -438,25 +438,12 @@ export default function MyInventory() {
 
   return (
     <PlatformLayout>
-      <div className="my-inventory-page">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-3">
-        <div>
-          <h1 className="admin-page-title">我的库存</h1>
-          <p className="admin-cell-secondary mt-1">
-            管理在售与已下架库存；下架后可编辑并重新上架
-          </p>
-          <p
-            className="inventory-caption mt-1"
-            data-testid="inventory-refresh-hint"
-          >
-            最近刷新：
-            {formatBeijingDateTime(refreshStatus?.lastRefreshedAt) || "—"}
-            {refreshStatus && !refreshStatus.canRefresh && nextAllowedText
-              ? ` · 下次可刷新：${nextAllowedText}`
-              : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <AdminPage className="my-inventory-page">
+      <AdminPageHeader
+        title="我的库存"
+        description="管理在售与已下架库存；下架后可编辑并重新上架"
+        actions={
+        <div className="inventory-header-actions flex flex-wrap items-center gap-2">
           <Button
             size="default"
             variant="outline"
@@ -543,10 +530,22 @@ export default function MyInventory() {
             </Button>
           </Link>
         </div>
-      </div>
+        }
+      >
+        <p
+          className="inventory-caption mt-1"
+          data-testid="inventory-refresh-hint"
+        >
+          最近刷新：
+          {formatBeijingDateTime(refreshStatus?.lastRefreshedAt) || "—"}
+          {refreshStatus && !refreshStatus.canRefresh && nextAllowedText
+            ? ` · 下次可刷新：${nextAllowedText}`
+            : ""}
+        </p>
+      </AdminPageHeader>
 
       {/* 搜索与批量操作：同级操作保持统一尺寸和视觉层级 */}
-      <div className="flex flex-wrap items-center gap-2 mb-3 rounded-lg border border-slate-200 bg-white p-2">
+      <AdminFilterBar className="inventory-filterbar">
         <Input
           placeholder="搜索型号"
           value={pnInput}
@@ -635,7 +634,7 @@ export default function MyInventory() {
             {multiSelectMode ? "完成" : "批量设置"}
           </Button>
         </div>
-      </div>
+      </AdminFilterBar>
 
       {multiSelectMode && (
         <div
@@ -766,7 +765,7 @@ export default function MyInventory() {
         </div>
       )}
 
-      <Card className="inventory-card min-w-0 max-w-full p-0 overflow-hidden gap-0">
+      <AdminDataPanel className="inventory-card min-w-0 max-w-full p-0 overflow-hidden">
         {isLoading ? (
           <div className="p-12 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -828,13 +827,13 @@ export default function MyInventory() {
                 >
                   型号 / 品牌
                 </TableHead>
-                <TableHead>
+                <TableHead className="inventory-numeric-cell">
                   现货库存
                 </TableHead>
-                <TableHead>
+                <TableHead className="inventory-numeric-cell">
                   订货库存
                 </TableHead>
-                <TableHead>
+                <TableHead className="inventory-numeric-cell">
                   单价
                 </TableHead>
                 <TableHead>
@@ -908,17 +907,17 @@ export default function MyInventory() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="inventory-numeric-cell">
                       <div className="admin-cell-primary font-medium tabular-nums">
                         {formatInventoryQuantity(quantityDisplay.spotQuantity)}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="inventory-numeric-cell">
                       <div className="admin-cell-primary font-medium tabular-nums">
                         {formatInventoryQuantity(quantityDisplay.orderQuantity)}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="inventory-numeric-cell">
                       <div className="admin-cell-primary font-medium tabular-nums">
                         {item.priceEx != null ? `¥${item.priceEx}` : "面议"}
                       </div>
@@ -1076,10 +1075,10 @@ export default function MyInventory() {
             </TableBody>
           </Table>
         )}
-      </Card>
+      </AdminDataPanel>
 
       {filtered.length > 0 && (
-        <div className="inventory-caption mt-3 mb-8 flex flex-wrap items-center justify-between gap-2">
+        <div className="inventory-caption inventory-pagination flex flex-wrap items-center justify-between gap-2">
           <span>
             共 {listResult?.total ?? 0} 条 · 每页最多{" "}
             {INVENTORY_BULK_ACTION_LIMIT} 条
@@ -1109,7 +1108,7 @@ export default function MyInventory() {
           </div>
         </div>
       )}
-      </div>
+      </AdminPage>
     </PlatformLayout>
   );
 }

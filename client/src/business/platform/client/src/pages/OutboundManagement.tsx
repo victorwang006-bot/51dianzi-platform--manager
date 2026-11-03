@@ -7,6 +7,8 @@ import { ORDER_STATUS_META } from "../../../shared/cartUtils";
 import LogisticsDialog from "../components/LogisticsDialog";
 import WaybillOcrUploader from "../components/WaybillOcrUploader";
 import { formatBeijingDateCompact, formatBeijingDateTime } from "../../../shared/beijingTime";
+import { AdminDataPanel, AdminFilterBar, AdminPage, AdminPageHeader, AdminPageTabs } from "@/components/admin/UnifiedAdminPage";
+import "./OutboundManagement.css";
 
 /**
  * 线上订单 —— 显示买家通过商城下的订单，支持筛选、发货、详情、订单动态
@@ -493,14 +495,11 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
 
   return (
     <PlatformLayout>
-      <div className="erp-ui sales-order-page" data-testid="sales-order-inventory-style">
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">线上订单</h1>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {readOnly ? "查看商城订单、订单动态与物流信息（只读）" : "管理商城订单、收款确认、发货物流与售后处理"}
-            </p>
-          </div>
+      <AdminPage className="erp-ui sales-order-page" data-testid="sales-order-inventory-style">
+        <AdminPageHeader
+          title="线上订单"
+          description={readOnly ? "查看商城订单、订单动态与物流信息（只读）" : "管理商城订单、收款确认、发货物流与售后处理"}
+          actions={
           <button
             type="button"
             className="sales-order-compact-button"
@@ -509,9 +508,10 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
             <Download className="h-3.5 w-3.5" />
             导出选中{selectedIds.size > 0 ? `（${selectedIds.size}）` : ""}
           </button>
-        </div>
+          }
+        />
 
-        <div className="sales-order-status-tabs mb-3" role="tablist" aria-label="线上订单状态">
+        <AdminPageTabs className="sales-order-status-tabs mb-3" role="tablist" ariaLabel="线上订单状态">
           {SALES_ORDER_STATUS_TABS.map(item => {
             const active = filters.status === item.value;
             return <button
@@ -541,10 +541,10 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
               {item.label}<span>{counts[item.value] ?? 0}</span>
             </button>;
           })}
-        </div>
+        </AdminPageTabs>
 
-        <div
-          className="sales-order-toolbar mb-3 rounded-lg border border-slate-200 bg-white p-2"
+        <AdminFilterBar
+          className="sales-order-toolbar mb-3"
           onKeyDown={event => { if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") applyFilters(); }}>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -586,13 +586,13 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
               <input type="date" aria-label="订单结束日期" className="crm-input w-[138px]" value={filterInput.dateTo} onChange={event => setFilterInput(current => ({ ...current, dateTo: event.target.value }))} />
             </div>
           </div>}
-        </div>
+        </AdminFilterBar>
 
-        <div
+        <AdminDataPanel
           id="sales-order-panel"
           role="tabpanel"
           aria-labelledby={`sales-order-tab-${filters.status}`}
-          className="sales-order-table-card overflow-hidden rounded-lg border border-slate-200 bg-white">
+          className="sales-order-table-card overflow-hidden">
           <div className="sales-order-table-viewport overflow-x-auto">
             <table className="crm-table sales-order-table min-w-[1040px] table-fixed">
               <colgroup>
@@ -601,7 +601,7 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
               </colgroup>
               <thead><tr>
                 <th className="text-center"><input type="checkbox" aria-label="选择本页全部订单" checked={pageRows.length > 0 && pageRows.every(row => selectedIds.has(row.id))} onChange={() => toggleSelectAll(pageRows)} /></th>
-                <th>订单 / 日期</th><th>客户 / 收货人</th><th>商品明细</th><th>含税金额</th><th>配送 / 物流</th><th>状态</th><th className="text-right">操作</th>
+                <th>订单 / 日期</th><th>客户 / 收货人</th><th>商品明细</th><th className="sales-order-numeric">含税金额</th><th>配送 / 物流</th><th>状态</th><th className="text-right">操作</th>
               </tr></thead>
               <tbody>
                 {isLoading ? <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">加载中…</td></tr> : pageRows.length === 0 ? <tr><td colSpan={8} className="py-14 text-center text-muted-foreground">暂无匹配订单</td></tr> : pageRows.map(order => {
@@ -621,10 +621,10 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
                     <td><div className="truncate font-medium text-slate-800" title={order.buyerCompanyName ?? order.buyerDisplayName}>{order.buyerCompanyName ?? "个人买家"}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={`${order.receiver} ${order.receiverPhone}`}>{order.receiver} · {order.receiverPhone}</div></td>
                     <td>{order.items.length > 0 ? <div>
                       <div className="flex items-center gap-1"><span className="min-w-0 truncate font-semibold text-slate-800" title={order.items[0].partNumber}>{order.items[0].partNumber}</span>{order.items.length > 1 && <button type="button" className="shrink-0 text-[11px] text-[#185FA5] hover:underline" aria-expanded={itemsExpanded} aria-label={itemsExpanded ? "收起订单商品明细" : "展开订单全部商品"} onClick={() => toggleExpandItems(order.id)}>{itemsExpanded ? "收起" : `+${order.items.length - 1}项`}</button>}</div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">{fmtQty(order.items[0].qty)} 件 · ¥{fmtMoney(num(order.items[0].unitPrice))}/件</div>
+                      <div className="sales-order-numeric mt-0.5 text-[11px] text-muted-foreground">{fmtQty(order.items[0].qty)} 件 · ¥{fmtMoney(num(order.items[0].unitPrice))}/件</div>
                       {itemsExpanded && <div className="mt-1 space-y-1 border-t border-dashed border-slate-200 pt-1 text-[11px] text-slate-600">{order.items.slice(1).map(item => <div key={item.id} className="flex justify-between gap-2"><span className="truncate font-medium">{item.partNumber}</span><span className="shrink-0">{fmtQty(item.qty)} × ¥{fmtMoney(num(item.unitPrice))}</span></div>)}</div>}
                     </div> : <span className="text-muted-foreground">—</span>}</td>
-                    <td><div className="font-medium tabular-nums text-slate-800">¥{fmtMoney(num(order.totalAmount))}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={`含税额 ¥${fmtMoney(num(order.taxAmount))} · ${num(order.shippingFee) === 0 ? "包邮" : `运费 ¥${fmtMoney(num(order.shippingFee))}`}`}>含税额 ¥{fmtMoney(num(order.taxAmount))} · {num(order.shippingFee) === 0 ? "包邮" : `运费 ¥${fmtMoney(num(order.shippingFee))}`}</div></td>
+                    <td className="sales-order-numeric"><div className="font-medium tabular-nums text-slate-800">¥{fmtMoney(num(order.totalAmount))}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={`含税额 ¥${fmtMoney(num(order.taxAmount))} · ${num(order.shippingFee) === 0 ? "包邮" : `运费 ¥${fmtMoney(num(order.shippingFee))}`}`}>含税额 ¥{fmtMoney(num(order.taxAmount))} · {num(order.shippingFee) === 0 ? "包邮" : `运费 ¥${fmtMoney(num(order.shippingFee))}`}</div></td>
                     <td>{order.deliveryMethod === "pickup" || order.expressCo === "自提" ? <><div className="font-medium text-[#185FA5]">上门自提</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={order.pickupAddress || order.receiverAddress}>{order.pickupAddress || order.receiverAddress}</div></> : order.expressNo ? <><div className="truncate font-medium text-slate-700">{order.expressCo || "快递"}</div><button type="button" className="crm-link mt-0.5 block truncate text-[11px]" onClick={() => setLogisticsOrder(order)}>{order.expressNo}</button></> : <><div className="text-slate-700">等待发货</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={order.receiverAddress}>{order.receiverAddress}</div></>}</td>
                     <td><span className={`crm-badge whitespace-nowrap ${STATUS_BADGE[order.status] ?? "bg-[#f5f5f5] text-[#999]"}`}>{statusLabel}</span>{order.statusNote && <div className="mt-1 truncate text-[11px] text-muted-foreground" title={order.statusNote}>{order.statusNote}</div>}</td>
                     <td className="text-right"><button type="button" className="inbound-row-menu" aria-label={`操作 ${order.orderNo}`} aria-haspopup="dialog" aria-controls={`sales-order-actions-${order.id}`} aria-expanded={openMenu?.order.id === order.id} onClick={event => { event.stopPropagation(); toggleMoreMenu(order, event.currentTarget); }}>…</button></td>
@@ -638,7 +638,7 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
             <div className="flex gap-1">{Array.from({ length: totalPages }, (_, index) => index + 1).slice(Math.max(0, safePage - 3), Math.max(0, safePage - 3) + 5).map(value => <button key={value} type="button" onClick={() => setPage(value)} className={value === safePage ? "h-7 w-7 rounded-md bg-[#185FA5] text-white" : "h-7 w-7 rounded-md border bg-white hover:bg-slate-50"}>{value}</button>)}</div>
             <span>第 {safePage} / {totalPages} 页</span>
           </div>
-        </div>
+        </AdminDataPanel>
 
         {openMenu && <><button type="button" aria-label="关闭订单操作" className="fixed inset-0 z-[70] cursor-default bg-transparent" onClick={closeMoreMenu} /><div ref={actionPopoverRef} id={`sales-order-actions-${openMenu.order.id}`} role="dialog" aria-label={`${openMenu.order.orderNo} 操作`} className="fixed z-[80] min-w-[148px] rounded-lg border border-[#e3e3e3] bg-white p-1.5 text-left shadow-xl" style={{ left: openMenu.x, top: openMenu.y, transform: openMenu.placement === "top" ? "translateY(-100%)" : undefined }} onClick={event => event.stopPropagation()}>
           <button type="button" className="erp-menu-item" onClick={() => { setDetailRow(openMenu.order); closeMoreMenu(); }}>查看详情</button>
@@ -658,10 +658,13 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           onClick={() => setDetailRow(null)}
         >
           <div
-            className="bg-white rounded-xl w-[640px] max-w-full max-h-[90vh] overflow-y-auto p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="outbound-detail-title"
+            className="outbound-dialog bg-white rounded-lg w-[640px] max-w-full max-h-[90vh] overflow-y-auto p-6"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-[16px] font-bold text-[#222] mb-4">订单详情</h3>
+            <h3 id="outbound-detail-title" className="text-[18px] font-semibold text-[#222] mb-4">订单详情</h3>
             <table className="crm-detail-table">
               <tbody>
                 <tr>
@@ -696,9 +699,9 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
                   <td className="label-cell">商品明细</td>
                   <td colSpan={3}>
                     {detailRow.items.map(it => (
-                      <div key={it.id}>
-                        {it.partNumber}{" "}
-                        <span className="text-[12px] text-[#888]">
+                      <div key={it.id} className="outbound-detail-item">
+                        <span>{it.partNumber}</span>{" "}
+                        <span className="sales-order-numeric text-[12px] text-[#888]">
                           ￥{fmtMoney(num(it.unitPrice))} × {fmtQty(it.qty)} =
                           ￥{fmtMoney(num(it.unitPrice) * it.qty)}
                         </span>
@@ -708,11 +711,11 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
                 </tr>
                 <tr>
                   <td className="label-cell">订单金额</td>
-                  <td className="text-[#A32D2D] font-bold">
+                  <td className="sales-order-numeric text-[#A32D2D] font-bold">
                     ￥{fmtMoney(num(detailRow.totalAmount))}
                   </td>
                   <td className="label-cell">含税额 / 运费</td>
-                  <td>
+                  <td className="sales-order-numeric">
                     ￥{fmtMoney(num(detailRow.taxAmount))} /{" "}
                     {num(detailRow.shippingFee) === 0
                       ? "包邮"
@@ -814,10 +817,13 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           onClick={() => setShipOrder(null)}
         >
           <div
-            className="bg-white rounded-xl w-[480px] max-w-full p-7"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="outbound-ship-title"
+            className="outbound-dialog bg-white rounded-lg w-[480px] max-w-full max-h-[90vh] overflow-y-auto p-6"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-[17px] font-bold text-[#222]">
+            <h3 id="outbound-ship-title" className="text-[18px] font-semibold text-[#222]">
               {shipOrder.deliveryMethod === "pickup" ? "备货完成" : "订单发货"}
             </h3>
             <p className="text-[12px] text-[#888] mt-1 mb-5">
@@ -906,10 +912,13 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           onClick={() => setTrackOrderId(null)}
         >
           <div
-            className="bg-white rounded-xl w-[480px] max-w-full max-h-[85vh] overflow-y-auto p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="outbound-tracks-title"
+            className="outbound-dialog bg-white rounded-lg w-[480px] max-w-full max-h-[85vh] overflow-y-auto p-6"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-[16px] font-bold text-[#222] mb-2">
+            <h3 id="outbound-tracks-title" className="text-[18px] font-semibold text-[#222] mb-2">
               订单动态 / 物流信息
             </h3>
             <div className="mb-4 rounded-md border border-[#dbe8f3] bg-[#f5f9fd] px-3 py-2 text-[11px] leading-5 text-[#54718a]">
@@ -927,14 +936,14 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
                     {dateStr(t.createdAt)}
                   </div>
                   <div
-                    className={`text-[13px] mt-0.5 ${i === 0 ? "text-[#333]" : "text-[#888]"}`}
+                    className={`text-[12px] mt-0.5 ${i === 0 ? "text-[#333]" : "text-[#888]"}`}
                   >
                     {t.content}
                   </div>
                 </div>
               ))}
               {(tracks ?? []).length === 0 && (
-                <div className="text-[13px] text-[#888] py-4">暂无动态</div>
+                <div className="text-[12px] text-[#888] py-4">暂无动态</div>
               )}
             </div>
             <div className="flex justify-end mt-5">
@@ -1014,10 +1023,13 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           onClick={() => setConfirmPayOrder(null)}
         >
           <div
-            className="bg-white rounded-xl w-[420px] max-w-full p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="outbound-confirm-pay-title"
+            className="outbound-dialog bg-white rounded-lg w-[420px] max-w-full max-h-[90vh] overflow-y-auto p-6"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-[16px] font-bold text-[#222] mb-1">确认到账</h3>
+            <h3 id="outbound-confirm-pay-title" className="text-[18px] font-semibold text-[#222] mb-1">确认到账</h3>
             <div className="text-[12px] text-[#888] mb-4">
               订单 {confirmPayOrder.orderNo}
             </div>
@@ -1084,7 +1096,7 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           </div>
         </div>
       )}
-      </div>
+      </AdminPage>
     </PlatformLayout>
   );
 }
@@ -1137,10 +1149,13 @@ function RefundActionDialog({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl w-[460px] max-w-full max-h-[85vh] overflow-y-auto p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="outbound-refund-title"
+        className="outbound-dialog bg-white rounded-lg w-[460px] max-w-full max-h-[85vh] overflow-y-auto p-6"
         onClick={e => e.stopPropagation()}
       >
-        <h3 className="text-[16px] font-bold text-[#222] mb-1">处理退款申请</h3>
+        <h3 id="outbound-refund-title" className="text-[18px] font-semibold text-[#222] mb-1">处理退款申请</h3>
         <div className="text-[12px] text-[#888] mb-4">订单 {order.orderNo}</div>
 
         {detail.isLoading && (

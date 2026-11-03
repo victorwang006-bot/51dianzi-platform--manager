@@ -426,8 +426,8 @@ export default function MerchantDetail() {
         <header className="rounded-lg border bg-white px-4 py-3" data-merchant-summary-header>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-[16px] font-semibold">{merchant.companyName}</h1>
+              <div className="flex flex-wrap items-center gap-2 aui-page-header">
+                <h1 className="truncate text-[16px] font-semibold aui-page-title">{merchant.companyName}</h1>
                 <StatusBadge {...agreementBadge} />
                 <span className={`rounded-md border px-2 py-0.5 text-xs ${merchant.crmStatus === "enabled" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
                   ERP {merchant.crmStatus === "enabled" ? "已开通" : "未开通"}

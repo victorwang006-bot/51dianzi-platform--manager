@@ -1,70 +1,120 @@
-/* Procurement orders only; shared typography tokens/classes are owned by AdminReadability. */
+/* Procurement-order-specific geometry; shared theme owns the common palette and font stack. */
 .procurement-orders-page {
   min-width: 0;
   color: var(--admin-color-text, #1f2937);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .procurement-orders-page .procurement-order-control {
-  min-height: var(--admin-control-height, 40px);
+  height: 32px;
+  min-height: 32px;
+  border-radius: 6px;
   color: var(--admin-color-text, #1f2937);
   border-color: var(--admin-color-border, #e2e8f0);
-  font-size: var(--admin-font-label, 14px);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.procurement-orders-page textarea.procurement-order-control {
+  height: auto;
+  min-height: 96px;
+  line-height: 1.6;
 }
 
 .procurement-orders-page .procurement-order-control::placeholder {
   color: var(--admin-color-muted, #64748b);
 }
 
+.procurement-orders-page .procurement-order-control.pl-8 {
+  padding-left: 32px;
+}
+
+.procurement-orders-page .procurement-order-inline-filter > .procurement-order-control {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
 .procurement-orders-page .procurement-order-button {
-  min-height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
+  height: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .procurement-orders-page .procurement-order-row-action {
   display: inline-flex;
-  min-width: 34px;
-  height: var(--admin-row-action-height, 34px);
-  min-height: var(--admin-row-action-height, 34px);
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding-inline: 10px;
-  border-radius: 4px;
-  font-size: var(--admin-font-label, 14px);
-  line-height: 20px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 18px;
   white-space: nowrap;
 }
 
-.procurement-orders-page .procurement-order-list-table {
-  min-width: 1420px;
-  table-layout: fixed;
-  color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-caption, 13px);
+.procurement-orders-page .procurement-order-tabs {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 16px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
 }
 
-.procurement-orders-page .procurement-order-col-number { width: 210px; }
-.procurement-orders-page .procurement-order-col-supplier { width: 260px; }
-.procurement-orders-page .procurement-order-col-amount { width: 156px; }
-.procurement-orders-page .procurement-order-col-status { width: 108px; }
-.procurement-orders-page .procurement-order-col-time { width: 184px; }
-.procurement-orders-page .procurement-order-col-action { width: 120px; }
+.procurement-orders-page .procurement-order-tab {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.procurement-orders-page .procurement-order-context,
+.procurement-orders-page .procurement-order-status {
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.procurement-orders-page .procurement-order-field-label {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.procurement-orders-page .procurement-order-list-table {
+  min-width: 1200px;
+  table-layout: fixed;
+  color: var(--admin-color-text, #1f2937);
+  font-size: 12px;
+}
+
+.procurement-orders-page .procurement-order-col-number { width: 180px; }
+.procurement-orders-page .procurement-order-col-supplier { width: 220px; }
+.procurement-orders-page .procurement-order-col-amount { width: 136px; }
+.procurement-orders-page .procurement-order-col-status { width: 90px; }
+.procurement-orders-page .procurement-order-col-time { width: 168px; }
+.procurement-orders-page .procurement-order-col-action { width: 100px; }
 
 .procurement-orders-page :is(.procurement-order-list-table, .procurement-order-detail-table) th {
-  height: 44px;
+  height: 36px;
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-label, 14px);
-  line-height: 20px;
+  font-size: 11px;
+  line-height: 16px;
   white-space: nowrap;
 }
 
 .procurement-orders-page :is(.procurement-order-list-table, .procurement-order-detail-table) td {
-  height: 62px;
-  line-height: 22px;
+  min-height: 40px;
+  font-size: 12px;
+  line-height: 18px;
   vertical-align: middle;
 }
 
 .procurement-orders-page .procurement-order-list-table td {
-  padding-block: 10px;
+  padding-block: 8px;
 }
 
 .procurement-orders-page .procurement-order-list-table td:nth-child(9) {
@@ -78,7 +128,6 @@
 
 .procurement-orders-page .procurement-order-detail-table td {
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
 }
 
 .procurement-orders-page .procurement-order-detail-table td:first-child {
@@ -87,16 +136,21 @@
   font-weight: 500;
 }
 
-/* Dates, status and read-only reconciliation context remain supporting information. */
 .procurement-orders-page .procurement-order-detail-table .procurement-order-cell-secondary {
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-caption, 13px);
+  font-size: 11px;
 }
 
 .procurement-orders-page .procurement-orders-dialog {
   display: flex;
   flex-direction: column;
   color: var(--admin-color-text, #1f2937);
+  border-radius: 8px;
+}
+
+.procurement-orders-page .procurement-order-dialog-title {
+  font-size: 18px;
+  line-height: 26px;
 }
 
 .procurement-orders-page .procurement-orders-dialog > header,

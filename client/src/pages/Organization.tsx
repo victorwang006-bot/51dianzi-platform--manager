@@ -1,5 +1,12 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import {
+  AdminDataPanel,
+  AdminFilterBar,
+  AdminPage,
+  AdminPageHeader,
+  AdminPageTabs,
+} from "@/components/admin/UnifiedAdminPage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -684,7 +691,7 @@ export default function Organization() {
       : (businessAudit.data?.total ?? 0);
   return (
     <DashboardLayout>
-      <main
+      <AdminPage
         data-organization-page
         data-enterprise-id={
           domain === "business" ? business?.enterprise.id : undefined
@@ -693,28 +700,32 @@ export default function Organization() {
           domain === "business" ? business?.actorUserId : undefined
         }
       >
-        <h1 className="sr-only">{title}</h1>
-        <div className="org-toolbar" aria-label="组织工具栏">
-          <div className="org-domain-tabs" role="tablist" aria-label="组织领域">
-            <Button
-              role="tab"
-              aria-selected={domain === "business"}
-              variant="ghost"
-              disabled={saving}
-              onClick={() => setDomain("business")}
-            >
-              业务团队
-            </Button>
-            <Button
-              role="tab"
-              aria-selected={domain === "operations"}
-              variant="ghost"
-              disabled={saving}
-              onClick={() => setDomain("operations")}
-            >
-              运营团队
-            </Button>
-          </div>
+        <AdminPageHeader title={title} />
+        <AdminPageTabs
+          className="org-domain-tabs"
+          role="tablist"
+          ariaLabel="组织领域"
+        >
+          <Button
+            role="tab"
+            aria-selected={domain === "business"}
+            variant="ghost"
+            disabled={saving}
+            onClick={() => setDomain("business")}
+          >
+            业务团队
+          </Button>
+          <Button
+            role="tab"
+            aria-selected={domain === "operations"}
+            variant="ghost"
+            disabled={saving}
+            onClick={() => setDomain("operations")}
+          >
+            运营团队
+          </Button>
+        </AdminPageTabs>
+        <AdminFilterBar className="org-toolbar" aria-label="组织工具栏">
           {domain === "business" && (
             <label className="org-merchant">
               <span className="sr-only">业务商户</span>
@@ -773,7 +784,7 @@ export default function Organization() {
               刷新
             </Button>
           </div>
-        </div>
+        </AdminFilterBar>
         {domain === "business" && (
           <>
             <LoadingError
@@ -826,8 +837,9 @@ export default function Organization() {
             )}
             {section === "teams" && (
               <div className="org-workspace">
-                <section
+                <AdminDataPanel
                   className="org-panel org-team-panel"
+                  role="region"
                   aria-label="团队列表"
                 >
                   <div className="org-heading">
@@ -836,12 +848,17 @@ export default function Organization() {
                       {canManage ? `${activeTeams.length} 个团队` : "可见团队"}
                     </span>
                   </div>
-                  <Input
-                    aria-label="搜索团队"
-                    placeholder="搜索团队"
-                    value={teamSearch}
-                    onChange={event => setTeamSearch(event.target.value)}
-                  />
+                  <AdminFilterBar
+                    className="org-team-search"
+                    aria-label="团队筛选"
+                  >
+                    <Input
+                      aria-label="搜索团队"
+                      placeholder="搜索团队"
+                      value={teamSearch}
+                      onChange={event => setTeamSearch(event.target.value)}
+                    />
+                  </AdminFilterBar>
                   <div className="org-team-filters">
                     <button
                       type="button"
@@ -991,12 +1008,13 @@ export default function Organization() {
                         .toLocaleLowerCase()
                         .includes(teamSearch.trim().toLocaleLowerCase())
                     ) && <p className="org-empty">没有匹配的团队</p>}
-                </section>
-                <section
+                </AdminDataPanel>
+                <AdminDataPanel
                   className="org-panel org-members-panel"
+                  role="region"
                   aria-label="成员列表"
                 >
-                  <div className="org-heading">
+                  <AdminFilterBar className="org-heading" aria-label="成员筛选">
                     <div className="org-member-heading">
                       <h2>{selectedTeamLabel}</h2>
                       <span className="org-muted">
@@ -1020,8 +1038,8 @@ export default function Organization() {
                       value={memberSearch}
                       onChange={event => setMemberSearch(event.target.value)}
                     />
-                  </div>
-                  <Table>
+                  </AdminFilterBar>
+                  <Table className="org-actions-table">
                     <TableHeader>
                       <TableRow>
                         <TableHead>工作人员</TableHead>
@@ -1126,12 +1144,12 @@ export default function Organization() {
                             : "该团队暂无可见成员"}
                     </p>
                   )}
-                </section>
+                </AdminDataPanel>
               </div>
             )}
             {section === "templates" && (
               <>
-                <section className="org-panel">
+                <AdminDataPanel className="org-panel">
                   <h2>
                     {domain === "operations" ? "原生运营模板" : "业务模块模板"}
                   </h2>
@@ -1159,10 +1177,10 @@ export default function Organization() {
                           </p>
                         </div>
                       ))}
-                </section>
-                <section className="org-panel">
+                </AdminDataPanel>
+                <AdminDataPanel className="org-panel">
                   <h2>成员当前有效配置</h2>
-                  <Table>
+                  <Table className="org-actions-table">
                     <TableHeader>
                       <TableRow>
                         <TableHead>成员</TableHead>
@@ -1270,11 +1288,11 @@ export default function Organization() {
                           ))}
                     </TableBody>
                   </Table>
-                </section>
+                </AdminDataPanel>
               </>
             )}
             {section === "audit" && (
-              <section className="org-panel">
+              <AdminDataPanel className="org-panel">
                 <h2>服务端审计记录</h2>
 
                 {(domain === "operations" || business?.canManage) && (
@@ -1380,7 +1398,7 @@ export default function Organization() {
                     </div>
                   </>
                 )}
-              </section>
+              </AdminDataPanel>
             )}
           </>
         )}
@@ -1729,7 +1747,7 @@ export default function Organization() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </main>
+      </AdminPage>
     </DashboardLayout>
   );
 }

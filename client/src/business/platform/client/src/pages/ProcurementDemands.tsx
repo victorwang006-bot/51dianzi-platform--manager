@@ -1,5 +1,6 @@
 import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
 import { useEffect, useState } from "react";
+import { AdminDataPanel, AdminFilterBar, AdminPage } from "@/components/admin/UnifiedAdminPage";
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,7 +19,6 @@ import { DemandQuoteDialog } from "../components/customerDemands/DemandQuoteDial
 import { DemandQuoteList } from "../components/customerDemands/DemandQuoteList";
 import { ProcurementWorkspaceNav } from "../components/customerDemands/ProcurementWorkspaceNav";
 import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import {
@@ -31,6 +31,12 @@ import { trpc } from "../../../../api/business-trpc";
 import "./ProcurementDemands.css";
 
 type QuoteView = "all" | "unquoted" | "quoted";
+
+const QUOTE_VIEW_OPTIONS = [
+  { value: "all", label: "全部需求" },
+  { value: "unquoted", label: "我未报价" },
+  { value: "quoted", label: "我已报价" },
+] as const satisfies readonly { value: QuoteView; label: string }[];
 
 const PAGE_SIZE = 20;
 const toolbarClass =
@@ -166,7 +172,7 @@ function ProcurementDemandDetailDialog({
                         <th className="px-2">型号</th>
                         <th className="px-2">品牌</th>
                         <th className="px-2">封装</th>
-                        <th className="px-2">数量</th>
+                        <th className="px-2 text-right">数量</th>
                         <th className="px-2">单位</th>
                         <th className="px-2">要求交期</th>
                         <th className="px-2">备注</th>
@@ -183,7 +189,7 @@ function ProcurementDemandDetailDialog({
                           </td>
                           <td className="px-2 py-2">{item.brand || "—"}</td>
                           <td className="px-2 py-2">{item.pkg || "—"}</td>
-                          <td className="admin-cell-primary px-2 py-2 tabular-nums">
+                          <td className="admin-cell-primary px-2 py-2 text-right tabular-nums">
                             {item.qty ?? "—"}
                           </td>
                           <td className="px-2 py-2">
@@ -287,55 +293,25 @@ export default function ProcurementDemands() {
 
   return (
     <PlatformLayout>
-    <div className="procurement-demands-page">
-    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h1 className="admin-page-title">采购工作台</h1>
-        <p className="admin-cell-secondary mt-1">
-          按供应商独立报价，修改自动保留历史轮次
-          </p>
-        </div>
-        <Button
-          type="button"
-          size="default"
-          variant="outline"
-          onClick={() => void manualRefresh()}
-          disabled={Boolean(listQuery.isFetching)}
-          className="procurement-demand-control border-[#185FA5]/40 bg-white text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
-        >
-          <RefreshCw
-            className={`mr-1.5 h-3.5 w-3.5 ${listQuery.isFetching ? "animate-spin" : ""}`}
-          />
-        手动刷新
-      </Button>
-    </div>
+    <AdminPage className="procurement-demands-page" aria-label="采购内部需求">
     <ProcurementWorkspaceNav active="internal" />
-    <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-3">
-        <div
-          role="tablist"
+    <AdminFilterBar className="mb-3 flex flex-wrap items-center gap-2">
+        <label htmlFor="procurement-demand-view" className="admin-cell-secondary">报价状态</label>
+        <select
+          id="procurement-demand-view"
           aria-label="采购报价视图"
-          className="flex max-w-full flex-wrap rounded-md border border-slate-200 p-0.5"
+          value={view}
+          onChange={event => {
+            const nextView = QUOTE_VIEW_OPTIONS.find(option => option.value === event.target.value)?.value;
+            if (nextView) chooseView(nextView);
+          }}
+          className="procurement-demand-control rounded-md border border-slate-300 bg-white px-3 text-slate-700"
         >
-          {(
-            [
-              ["all", "全部需求"],
-              ["unquoted", "我未报价"],
-              ["quoted", "我已报价"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === key}
-              key={key}
-              onClick={() => chooseView(key)}
-              className={`procurement-demand-control rounded px-3 ${view === key ? "bg-[#185FA5] text-white" : "text-slate-600 hover:bg-slate-50"}`}
-            >
-              {label}
-            </button>
+          {QUOTE_VIEW_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
           ))}
-        </div>
-        <div className="ml-auto flex w-full min-w-0 gap-2 sm:w-auto sm:min-w-[280px] sm:max-w-[440px] sm:flex-1">
+        </select>
+        <div className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-1">
           <Input
             aria-label="搜索需求编号或型号"
             value={keywordInput}
@@ -344,7 +320,7 @@ export default function ProcurementDemands() {
               if (event.key === "Enter") search();
             }}
             placeholder="搜索需求编号或型号"
-            className="procurement-demand-control min-w-0 flex-1 bg-white"
+            className="procurement-demand-control min-w-0 flex-1 bg-white sm:max-w-[320px]"
           />
           <Button
             type="button"
@@ -356,9 +332,35 @@ export default function ProcurementDemands() {
             <Search className="mr-1 h-3.5 w-3.5" />
             搜索
           </Button>
+          <Button
+            type="button"
+            size="default"
+            variant="outline"
+            onClick={() => {
+              setKeywordInput("");
+              setKeyword("");
+              chooseView("all");
+            }}
+            className={toolbarClass}
+          >
+            重置
+          </Button>
+          <Button
+            type="button"
+            size="default"
+            variant="outline"
+            onClick={() => void manualRefresh()}
+            disabled={Boolean(listQuery.isFetching)}
+            className="procurement-demand-control border-[#185FA5]/40 bg-white text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+          >
+            <RefreshCw
+              className={`mr-1.5 h-3.5 w-3.5 ${listQuery.isFetching ? "animate-spin" : ""}`}
+            />
+            手动刷新
+          </Button>
         </div>
-      </div>
-      <Card className="gap-0 overflow-hidden p-0">
+      </AdminFilterBar>
+      <AdminDataPanel className="gap-0 overflow-hidden p-0">
         {listQuery.isLoading ? (
           <div className="admin-cell-secondary flex items-center justify-center gap-2 py-12">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -392,7 +394,7 @@ export default function ProcurementDemands() {
                 <TableHead>需求编号</TableHead>
                 <TableHead>型号</TableHead>
                 <TableHead>品牌</TableHead>
-                <TableHead>数量</TableHead>
+                <TableHead className="text-right">数量</TableHead>
                 <TableHead>交期</TableHead>
                 <TableHead>销售</TableHead>
                 <TableHead>报价进度</TableHead>
@@ -417,7 +419,7 @@ export default function ProcurementDemands() {
                     {demand.itemCount > 1 ? <div className="admin-cell-secondary mt-0.5">共{demand.itemCount}项</div> : null}
                   </TableCell>
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstBrand || undefined}>{demand.firstBrand || "—"}</TableCell>
-                  <TableCell className="admin-cell-primary whitespace-nowrap tabular-nums">{formatQty(demand.firstQty, demand.firstQtyUnit)}</TableCell>
+                  <TableCell className="admin-cell-primary whitespace-nowrap text-right tabular-nums">{formatQty(demand.firstQty, demand.firstQtyUnit)}</TableCell>
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstDeliveryRequirement || undefined}>{demand.firstDeliveryRequirement || "待确认"}</TableCell>
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.salesName || undefined}>{demand.salesName || "—"}</TableCell>
                   <TableCell>
@@ -487,7 +489,7 @@ export default function ProcurementDemands() {
           </div>
         </div>
         ) : null}
-      </Card>
+      </AdminDataPanel>
       {openedId !== null && (
         <ProcurementDemandDetailDialog
           id={openedId}
@@ -508,7 +510,7 @@ export default function ProcurementDemands() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
     </PlatformLayout>
   );
 }

@@ -18,8 +18,8 @@ import { formatContactMethod, useCustomerContactScope, withCustomerContactScope,
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
 import { EMPTY_CUSTOMER_FORM, errorMessage, formatCustomerDateTime } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
+import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import {
   Select,
@@ -288,9 +288,8 @@ export default function CustomerList() {
 
   return (
     <PlatformLayout>
-      <div className="customer-list-page">
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="admin-page-title">客户列表</h1>
+      <AdminPage className="customer-list-page">
+      <AdminPageHeader title="客户列表" actions={
         <div className="flex flex-wrap items-center gap-2">
           {canManageAll ? (
             <Select
@@ -322,9 +321,9 @@ export default function CustomerList() {
             {createOpen ? "收起录入" : "录入客户"}
           </Button>
         </div>
-      </div>
+      } />
 
-      <section className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+      <AdminFilterBar className="customer-list-filters mb-3" aria-label="客户筛选">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             placeholder="搜索客户名称、联系人或电话"
@@ -489,7 +488,7 @@ export default function CustomerList() {
             </Button>
           </div>
         ) : null}
-      </section>
+      </AdminFilterBar>
 
       {createOpen && (
         <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">
@@ -515,7 +514,7 @@ export default function CustomerList() {
           onRetry={() => listQuery.refetch()}
         />
       ) : (
-        <Card className="gap-0 overflow-hidden p-0">
+        <AdminDataPanel className="overflow-hidden p-0">
           {listQuery.isPending ? (
             <div className="flex justify-center p-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -581,7 +580,7 @@ export default function CustomerList() {
                   <TableHead className="text-center" data-testid="demand-header">
                     需求
                   </TableHead>
-                  <TableHead className="customer-list-actions-column text-center" data-testid="actions-header">
+                  <TableHead className="customer-list-actions-column text-right" data-testid="actions-header">
                     操作
                   </TableHead>
                 </TableRow>
@@ -678,8 +677,8 @@ export default function CustomerList() {
                           需求录入
                         </Button>
                       </TableCell>
-                      <TableCell className="customer-list-actions-column text-center" data-testid="actions-cell">
-                        <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                      <TableCell className="customer-list-actions-column text-right" data-testid="actions-cell">
+                        <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                           <Button
                             type="button"
                             variant="ghost"
@@ -730,13 +729,13 @@ export default function CustomerList() {
               </Button>
             </div>
           </div>
-        </Card>
+        </AdminDataPanel>
       )}
       {demandCustomer && <CustomerDemandDialog
         customer={demandCustomer}
         onClose={() => setDemandCustomer(null)}
       />}
-      </div>
+      </AdminPage>
     </PlatformLayout>
   );
 }
@@ -775,8 +774,8 @@ function ErrorPanel({
   onRetry: () => void;
 }) {
   return (
-    <section className="rounded-lg border border-[#F5C2C2] bg-[#FFF8F8] p-5 text-center">
-      <p className="text-sm text-[#A32D2D]">加载失败：{message}</p>
+    <AdminDataPanel className="border-[#F5C2C2] bg-[#FFF8F8] p-5 text-center">
+      <p className="customer-list-error text-[#A32D2D]">加载失败：{message}</p>
       <Button
         type="button"
         size="sm"
@@ -786,6 +785,6 @@ function ErrorPanel({
       >
         重试
       </Button>
-    </section>
+    </AdminDataPanel>
   );
 }

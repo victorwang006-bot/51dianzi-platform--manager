@@ -96,7 +96,7 @@ export default function Profile() {
     <DashboardLayout>
       <div className="space-y-4 p-4 sm:p-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">个人信息</h1>
+          <h1 className="text-2xl font-semibold tracking-tight aui-page-title">个人信息</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             维护本人联系方式和登录密码；资料保存后会同步显示在超级管理员的后台用户管理中。
           </p>

@@ -506,7 +506,8 @@ describe("Compact organization workspace", () => {
       expect(document.querySelector('nav[aria-label="组织页面"]')).toBeNull();
       expect(document.querySelectorAll('[role="tablist"]')).toHaveLength(1);
       expect(document.querySelector(".org-toolbar")).not.toBeNull();
-      expect(document.querySelector("h1.sr-only")).not.toBeNull();
+      expect(document.querySelectorAll(".aui-page-header h1.aui-page-title")).toHaveLength(1);
+      expect(document.querySelector(".aui-page-header h1.aui-page-title")?.classList.contains("sr-only")).toBe(false);
       expect(document.body.textContent).not.toMatch(
         /后台 ID|前台 ID|岗位 \/ 版本/
       );

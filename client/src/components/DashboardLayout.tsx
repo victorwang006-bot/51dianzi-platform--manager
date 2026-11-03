@@ -664,7 +664,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
           renderBadge={renderBadge}
         />
       </div>
-      <main className="admin-workspace-shell__main">
+      <main className="admin-workspace-shell__main admin-unified-content" data-admin-ui-system="channel-inventory">
         {businessNavigationState.status === "error" ? (
           <BusinessNavigationStatus
             state={businessNavigationState}

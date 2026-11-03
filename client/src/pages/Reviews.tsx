@@ -144,9 +144,9 @@ export default function Reviews() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 aui-page-header">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">评价管理</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 aui-page-title">评价管理</h1>
             <p className="mt-1 text-sm text-slate-500">
               查看实名评价、用户删除历史及平台处理记录；后台不可修改评价原文。
             </p>

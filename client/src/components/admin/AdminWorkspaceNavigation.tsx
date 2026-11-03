@@ -18,7 +18,7 @@ import {
 import "./AdminWorkspaceNavigation.css";
 
 /** UI release only; native/business authorization versions remain independent. */
-export const ADMIN_SYSTEM_RELEASE = "20261103-official-staff-repair-v11";
+export const ADMIN_SYSTEM_RELEASE = "20261103-admin-ui-unification-v12";
 
 export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   /** Already filtered by the existing native-admin/BFF capability checks. */

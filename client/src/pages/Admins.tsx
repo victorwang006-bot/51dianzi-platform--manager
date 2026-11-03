@@ -1,16 +1,21 @@
 import {
   EmptyState,
-  PageHeader,
   Pagination,
   StatusBadge,
   formatDateTime,
 } from "@/components/admin/shared";
+import {
+  AdminDataPanel,
+  AdminFilterBar,
+  AdminPage,
+  AdminPageHeader,
+} from "@/components/admin/UnifiedAdminPage";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,6 +39,7 @@ import {
 import { LogOut, Pencil, Plus, RefreshCw, ShieldAlert, ShieldCheck, ShieldQuestion, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import "./Admins.css";
 
 type AdminRole =
   | "super_admin"
@@ -391,11 +397,14 @@ export default function Admins() {
 
   return (
     <DashboardLayout>
-      <PageHeader
+      <AdminPage className="admins-page" aria-label="用户管理">
+      <AdminPageHeader
         title="用户管理"
         description="普通用户创建后自动生成销售身份并默认绑定本人；可追加其他普通用户形成主管范围"
-        actions={
-          <div className="flex items-center gap-2">
+      />
+      <AdminFilterBar className="justify-between" aria-label="用户账户工具栏">
+        <h2 className="m-0 text-[15px] font-medium">用户账户列表</h2>
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -410,15 +419,10 @@ export default function Admins() {
               新建用户
             </Button>
           </div>
-        }
-      />
+      </AdminFilterBar>
 
       {/* 用户列表 */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">用户账户列表</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+      <AdminDataPanel aria-label="用户账户列表">
           {isLoading ? (
             <div className="p-6 space-y-3">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-12" />)}
@@ -456,7 +460,7 @@ export default function Admins() {
                       <tr key={a.id}>
                         <td data-label="账号" className="whitespace-normal align-top">
                           <div className="break-all font-mono text-xs font-medium">{a.username}</div>
-                          <div className="mt-1 break-words text-sm">{a.displayName || "未填写名称"}</div>
+                          <div className="mt-1 break-words text-xs">{a.displayName || "未填写名称"}</div>
                           <div className="mt-1"><StatusBadge label={resolveRoleLabel(a.adminRole)} style={roleStyleMap[a.adminRole as AdminRole] ?? "info"} /></div>
                         </td>
                         <td data-label="权限范围" className="whitespace-normal align-top text-xs">
@@ -490,11 +494,11 @@ export default function Admins() {
                           <div className="mt-1"><span className="text-foreground/70">创建</span> {formatDateTime(a.createdAt)}</div>
                         </td>
                         <td data-label="操作" className="whitespace-normal align-top">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Button size="sm" variant="outline" onClick={() => setSecurityTarget(target)} title="登录安全">
+                          <div className="admin-user-actions flex flex-wrap items-center gap-1.5">
+                            <Button size="sm" variant="outline" onClick={() => setSecurityTarget(target)} title="登录安全" aria-label="登录安全">
                               <ShieldCheck className="h-3.5 w-3.5" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => openEdit(a)}>
+                            <Button size="sm" variant="outline" onClick={() => openEdit(a)} aria-label="编辑用户">
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
                             <Button
@@ -508,6 +512,7 @@ export default function Admins() {
                               size="sm"
                               variant="outline"
                               className="text-destructive hover:text-destructive"
+                              aria-label="删除用户"
                               onClick={() => {
                                 if (confirm(`确认删除用户「${a.username}」？此操作不可撤销。`)) {
                                   removeMutation.mutate({ id: a.id });
@@ -526,24 +531,23 @@ export default function Admins() {
               <Pagination page={page} pageSize={20} total={data.total} onPageChange={setPage} />
             </>
           )}
-        </CardContent>
-      </Card>
+      </AdminDataPanel>
 
       <Dialog open={Boolean(securityTarget)} onOpenChange={open => !open && setSecurityTarget(null)}>
-        <DialogContent className="flex max-h-[88vh] w-[min(94vw,900px)] max-w-none flex-col overflow-hidden">
+        <DialogContent className="admins-dialog flex max-h-[88vh] w-[min(94vw,900px)] max-w-none flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-600" />登录安全</DialogTitle>
-            <p className="text-sm text-muted-foreground">
+            <DialogDescription className="text-xs text-muted-foreground">
               {securityTarget?.label}（ID {securityTarget?.id}）最近50条登录事件。IP归属地为网络出口的粗略位置，不代表员工实时位置。
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <div className="min-h-40 flex-1 overflow-y-auto pr-1">
             {loginHistoryQuery.isLoading ? (
               <div className="flex min-h-40 items-center justify-center"><Skeleton className="h-24 w-full" /></div>
             ) : loginHistoryQuery.error ? (
-              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">加载失败：{loginHistoryQuery.error.message}</div>
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-xs text-destructive">加载失败：{loginHistoryQuery.error.message}</div>
             ) : !loginHistoryQuery.data?.length ? (
-              <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-md border border-dashed p-8 text-center text-xs text-muted-foreground">
                 暂无登录安全记录。该员工下一次重新登录后，将开始记录准确时间、IP、归属地与设备信息。
               </div>
             ) : (
@@ -552,7 +556,7 @@ export default function Admins() {
                   const security = securityPresentation(item.riskLevel);
                   const SecurityIcon = security.Icon;
                   return (
-                    <div key={item.id} className="rounded-md border p-3 text-sm">
+                    <div key={item.id} className="rounded-md border p-3 text-xs">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-2">
                           <StatusBadge label={item.success ? "登录成功" : "登录失败"} style={item.success ? "success" : "danger"} />
@@ -594,12 +598,12 @@ export default function Admins() {
       </Dialog>
 
       <Dialog open={Boolean(revokeTarget)} onOpenChange={open => !open && !revokeSessionsMutation.isPending && setRevokeTarget(null)}>
-        <DialogContent className="w-[min(92vw,520px)] max-w-none">
+        <DialogContent className="admins-dialog w-[min(92vw,520px)] max-w-none">
           <DialogHeader>
             <DialogTitle>强制退出全部设备</DialogTitle>
-            <p className="text-sm text-muted-foreground">
+            <DialogDescription className="text-xs text-muted-foreground">
               {revokeTarget?.label} 的全部既有后台会话将立即失效，员工需重新登录。此操作会写入审计日志。
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="revoke-reason">操作原因</Label>
@@ -621,7 +625,7 @@ export default function Admins() {
 
       {/* 新建/编辑用户弹窗 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="flex max-h-[88vh] w-[min(92vw,560px)] max-w-none flex-col gap-0 overflow-hidden p-0">
+        <DialogContent aria-describedby={undefined} className="admins-dialog flex max-h-[88vh] w-[min(92vw,560px)] max-w-none flex-col gap-0 overflow-hidden p-0">
           <DialogHeader className="shrink-0 border-b px-6 py-4">
             <DialogTitle>{editingId !== null ? "编辑用户" : "新建用户"}</DialogTitle>
           </DialogHeader>
@@ -801,58 +805,7 @@ export default function Admins() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <style>{`
-        .admin-user-responsive-table th,
-        .admin-user-responsive-table td {
-          min-width: 0;
-          white-space: normal;
-          vertical-align: top;
-        }
-        .admin-user-responsive-table th {
-          padding-left: 12px;
-          padding-right: 12px;
-        }
-        .admin-user-responsive-table td {
-          padding-left: 12px;
-          padding-right: 12px;
-        }
-        @media (max-width: 1100px) {
-          .admin-user-responsive-table,
-          .admin-user-responsive-table tbody {
-            display: block;
-            width: 100%;
-          }
-          .admin-user-responsive-table colgroup,
-          .admin-user-responsive-table thead {
-            display: none;
-          }
-          .admin-user-responsive-table tbody {
-            display: grid;
-            gap: 12px;
-            padding: 12px;
-          }
-          .admin-user-responsive-table tbody tr {
-            display: grid;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-          }
-          .admin-user-responsive-table tbody td {
-            display: grid;
-            width: auto !important;
-            min-width: 0;
-            grid-template-columns: 7rem minmax(0, 1fr);
-            gap: 12px;
-            white-space: normal;
-          }
-          .admin-user-responsive-table tbody td::before {
-            content: attr(data-label);
-            color: var(--muted-foreground);
-            font-size: 12px;
-            font-weight: 500;
-          }
-        }
-      `}</style>
+      </AdminPage>
     </DashboardLayout>
   );
 }

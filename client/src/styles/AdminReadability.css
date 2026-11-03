@@ -14,6 +14,17 @@
   --admin-color-border: #E2E8F0;
   --admin-color-brand: #315C9E;
   --admin-color-page: #F5F7FA;
+  --admin-table-head-height: 44px;
+  --admin-table-row-height: 60px;
+  --admin-table-head-padding-y: 10px;
+  --admin-table-cell-padding-y: 12px;
+  --admin-table-line-height: 1.6;
+  --admin-table-head-line-height: 1.5;
+  --admin-font-table-heading: var(--admin-font-label);
+  --admin-page-title-size: 22px;
+  --admin-section-title-size: 17px;
+  --admin-dialog-title-size: 20px;
+  --admin-menu-item-height: var(--admin-row-action-height);
 }
 
 body[data-admin-readability="true"],
@@ -48,7 +59,7 @@ body[data-admin-readability="true"] :is([data-slot="dialog-content"], [data-slot
   overflow-y: auto;
 }
 body[data-admin-readability="true"] :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
-  font-size: 20px;
+  font-size: var(--admin-dialog-title-size);
   line-height: 1.4;
 }
 body[data-admin-readability="true"] :is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
@@ -57,7 +68,7 @@ body[data-admin-readability="true"] :is([data-slot="dialog-description"], [data-
   color: var(--admin-color-secondary);
 }
 body[data-admin-readability="true"] :is([data-slot="select-item"], [data-slot="dropdown-menu-item"], [role="menuitem"], [role="option"]) {
-  min-height: var(--admin-row-action-height);
+  min-height: var(--admin-menu-item-height);
   font-size: var(--admin-font-label);
   line-height: 1.5;
 }
@@ -74,19 +85,19 @@ body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .cr
   vertical-align: middle;
 }
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) th {
-  height: 44px;
-  padding-block: 10px;
+  height: var(--admin-table-head-height);
+  padding-block: var(--admin-table-head-padding-y);
   font-weight: 500;
   color: var(--admin-color-secondary);
   background-color: #F8FAFC;
-  line-height: 1.5;
+  line-height: var(--admin-table-head-line-height);
 }
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) tbody tr {
-  height: 60px;
+  height: var(--admin-table-row-height);
 }
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) td {
-  padding-block: 12px;
-  line-height: 1.6;
+  padding-block: var(--admin-table-cell-padding-y);
+  line-height: var(--admin-table-line-height);
 }
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) tbody tr:hover {
   background-color: #F8FAFC;
@@ -115,7 +126,7 @@ body[data-admin-readability="true"] :where(.business-native-content, #business-n
   font-size: var(--admin-font-body) !important;
 }
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) th {
-  font-size: var(--admin-font-label) !important;
+  font-size: var(--admin-font-table-heading) !important;
 }
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) td {
   font-size: var(--admin-font-body) !important;
@@ -182,13 +193,13 @@ body[data-admin-readability="true"] .admin-row-action {
   white-space: nowrap;
 }
 body[data-admin-readability="true"] :is(.admin-page-title, .crm-page-title) {
-  font-size: 22px !important;
+  font-size: var(--admin-page-title-size) !important;
   line-height: 1.4;
   font-weight: 600;
   color: var(--admin-color-text);
 }
 body[data-admin-readability="true"] :is(.admin-section-title, .crm-section-title) {
-  font-size: 17px !important;
+  font-size: var(--admin-section-title-size) !important;
   line-height: 1.5;
   font-weight: 600;
   color: var(--admin-color-text);

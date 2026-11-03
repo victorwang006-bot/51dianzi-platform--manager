@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./styles/AdminReadability.css";
+@import "./styles/AdminUnifiedSystem.css";
 
 @custom-variant dark (&:is(.dark *));
 

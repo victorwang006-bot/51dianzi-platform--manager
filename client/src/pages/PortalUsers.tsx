@@ -242,9 +242,9 @@ export default function PortalUsers() {
   return (
     <DashboardLayout>
       <div className="space-y-4 p-4 sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">用户管理</h1>
+            <h1 className="text-2xl font-semibold tracking-tight aui-page-title">用户管理</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               统计前台注册用户，并按后台权威开通状态区分普通用户与ERP用户。
             </p>

@@ -1,0 +1,21 @@
+/* Outbound-only layout details; typography and controls use the shared admin theme. */
+.aui-page.erp-ui.sales-order-page .sales-order-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.aui-page.erp-ui.sales-order-page .outbound-detail-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.aui-page.erp-ui.sales-order-page .outbound-detail-item > .sales-order-numeric {
+  margin-left: auto;
+}
+
+.aui-page.erp-ui.sales-order-page .outbound-dialog > .flex.justify-end {
+  flex-wrap: wrap;
+}
