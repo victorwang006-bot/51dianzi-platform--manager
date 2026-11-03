@@ -1,10 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { installAuthSessionClearListener } from "@/business/platform/client/src/lib/authSessionEvents";
 import CreateStaffDialog, {
   type CreateStaffTeam,
 } from "@/components/admin/CreateStaffDialog";
 import StaffTeamSummary, {
   readCachedStaffBusinessTeams,
-  readStaffBusinessTeams,
 } from "@/components/admin/StaffTeamSummary";
 import StaffPermissionSheet, {
   type StaffEnterpriseEditorAccess,
@@ -47,12 +47,17 @@ import {
   parseStaffBinding,
   positiveInteger,
   protectedStaffErpKeys,
+  readStaffBusinessOrganization,
+  staffBusinessTeamGuard,
+  type StaffBusinessTeamDraft,
+  type StaffBusinessTeamSaveResult,
   readStaffMerchantSelection,
   runGuardedStaffErpMutation,
   sameStringSet,
   selectOfficialStaffMerchant,
   staffErpMutationGuard,
   staffErpPermissionPreview,
+  staffDraftFromRow,
   staffQueryKey,
   staffQueryPrefix,
   staffRowNeedsAssociation,
@@ -72,7 +77,7 @@ import { trpc } from "@/lib/trpc";
 import { hasAdminPermission } from "@shared/adminPermissions";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, RefreshCw, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSearch } from "wouter";
 import "./Staff.css";
@@ -225,6 +230,10 @@ export default function Staff() {
   const trpcUtils = trpc.useUtils();
   const queryClient = useQueryClient();
   const accountId = positiveInteger(user?.id);
+  const currentAccount = useRef(accountId);
+  currentAccount.current = accountId;
+  const sessionEpoch = useRef(0);
+  const [sessionGeneration, setSessionGeneration] = useState(0);
   const adminRole =
     typeof (user as { adminRole?: unknown } | null)?.adminRole === "string"
       ? (user as { adminRole: string }).adminRole
@@ -254,6 +263,24 @@ export default function Staff() {
   useEffect(() => {
     setPage(1);
   }, [keyword, role, status]);
+
+  useEffect(() => {
+    setSelectedRow(null);
+    setCreateOpen(false);
+    setSaving(false);
+  }, [accountId]);
+
+  useEffect(
+    () =>
+      installAuthSessionClearListener(() => {
+        sessionEpoch.current += 1;
+        setSessionGeneration(sessionEpoch.current);
+        setSelectedRow(null);
+        setCreateOpen(false);
+        setSaving(false);
+      }),
+    []
+  );
 
   useEffect(
     () => () => {
@@ -370,7 +397,7 @@ export default function Staff() {
     ],
     queryFn: async () => {
       if (!scopeClient) throw new Error("业务上下文未就绪");
-      return readStaffBusinessTeams(
+      return readStaffBusinessOrganization(
         await scopeClient.organization.overview.query(undefined),
         contextValidation.context
       );
@@ -388,8 +415,28 @@ export default function Staff() {
             contextValidation.context
           )
         : undefined,
-    [businessTeamsQuery.data, businessTeamsQuery.isSuccess, contextValidation.context]
+    [
+      businessTeamsQuery.data,
+      businessTeamsQuery.isSuccess,
+      contextValidation.context,
+    ]
   );
+
+  const businessOrganization = useMemo(() => {
+    if (!businessTeamsQuery.isSuccess) return undefined;
+    try {
+      return readStaffBusinessOrganization(
+        businessTeamsQuery.data,
+        contextValidation.context
+      );
+    } catch {
+      return undefined;
+    }
+  }, [
+    businessTeamsQuery.data,
+    businessTeamsQuery.isSuccess,
+    contextValidation.context,
+  ]);
 
   const enterpriseMeQuery = useQuery({
     queryKey: staffQueryKey(accountId, merchantId, "enterprise-me"),
@@ -572,11 +619,17 @@ export default function Staff() {
     baseline: StaffSaveBaseline
   ): Promise<StaffSaveOutcome> => {
     const row = selectedRow;
+    const actorId = accountId;
+    const epoch = sessionEpoch.current;
+    const actorIsCurrent = () =>
+      actorId !== null &&
+      currentAccount.current === actorId &&
+      sessionEpoch.current === epoch;
     const outcome: StaffSaveOutcome = {
       completed: { erpPermissions: false, erpScope: false, admin: false },
       errors: {},
     };
-    if (!row) return outcome;
+    if (!row || !actorIsCurrent()) return outcome;
     setSaving(true);
     try {
       // ERP writes use the live merged row rather than the snapshot captured
@@ -643,6 +696,7 @@ export default function Staff() {
             outcome.errors.erpPermissions = execution.reason;
           } else {
             outcome.completed.erpPermissions = true;
+            if (!actorIsCurrent()) return outcome;
             await refreshBusinessMembers();
           }
         } catch (error) {
@@ -650,6 +704,7 @@ export default function Staff() {
         }
       }
       if (canEditErp && currentErpRow?.member && erpScopeChanged) {
+        if (!actorIsCurrent()) return outcome;
         try {
           const execution = await runGuardedStaffErpMutation(
             currentErpRow,
@@ -673,6 +728,7 @@ export default function Staff() {
             outcome.errors.erpScope = execution.reason;
           } else {
             outcome.completed.erpScope = true;
+            if (!actorIsCurrent()) return outcome;
             await refreshBusinessMembers();
           }
         } catch (error) {
@@ -687,17 +743,41 @@ export default function Staff() {
         outcome.errors.admin = "当前账号没有后台账户配置权限，后台角色未保存";
       }
       if (canManageAdmin && row.admin && adminChanged) {
+        if (!actorIsCurrent()) return outcome;
         try {
+          // adminUser.update is a full replacement. Re-read its own native source
+          // so a preceding channel-page save cannot be reverted by a stale list row.
+          const latestList = await trpcUtils.client.adminUser.list.query({
+            page,
+            pageSize: PAGE_SIZE,
+          });
+          const latest = (
+            latestList.data as unknown as StaffAdminAccount[]
+          ).find(account => account.id === row.admin!.id);
+          if (!latest)
+            throw new Error("目标账号已不在当前列表范围，请刷新后核验");
+          if (
+            latest.adminRole !== baseline.adminRole ||
+            !sameStringSet(
+              staffDraftFromRow({ ...row, admin: latest }).adminPermissions,
+              baseline.adminPermissions
+            )
+          )
+            throw new Error(
+              "平台角色或权限已被其他操作修改；草稿保留，请关闭后重新读取核对"
+            );
+          if (!actorIsCurrent()) return outcome;
           await adminUpdate.mutateAsync({
             id: row.admin.id,
             adminRole: draft.adminRole as never,
             permissions: adminPermissionsForUpdate(
-              row.admin.permissions,
+              latest.permissions,
               draft.adminPermissions,
               draft.adminRole
             ),
           });
           outcome.completed.admin = true;
+          if (!actorIsCurrent()) return outcome;
           await trpcUtils.adminUser.list.invalidate();
         } catch (error) {
           outcome.errors.admin = errorMessage(error);
@@ -705,7 +785,7 @@ export default function Staff() {
       }
       return outcome;
     } finally {
-      setSaving(false);
+      if (actorIsCurrent()) setSaving(false);
     }
   };
 
@@ -717,6 +797,105 @@ export default function Staff() {
         : null,
     [selectedRow, staffRows]
   );
+
+  const businessTeamGuard = staffBusinessTeamGuard(
+    selectedCurrentRow,
+    enterpriseAccess,
+    businessOrganization
+  );
+  const saveBusinessTeam = async (
+    draft: StaffBusinessTeamDraft
+  ): Promise<StaffBusinessTeamSaveResult> => {
+    const epoch = sessionEpoch.current;
+    // Use the current merged row, not the sheet-opening snapshot or a guessed front identity.
+    const target = selectedRow
+      ? staffRows.find(candidate => candidate.key === selectedRow.key)
+      : null;
+    const guard = staffBusinessTeamGuard(
+      target,
+      enterpriseAccess,
+      businessOrganization
+    );
+    if (!guard.allowed) throw new Error(guard.reason);
+    if (
+      !scopeClient ||
+      !target?.binding ||
+      !businessOrganization ||
+      businessTeamsQuery.isError
+    )
+      throw new Error("业务团队上下文不可用，请刷新后重试");
+    const userId = target.binding.frontUserId;
+    const original = businessOrganization.members.find(
+      member => member.userId === userId
+    );
+    if (!original || original.revision !== draft.revision)
+      throw new Error("业务团队成员版本已变化，请重新读取后核对");
+    if (
+      draft.teamId !== null &&
+      !businessOrganization.teams.some(
+        team => team.id === draft.teamId && team.status === "active"
+      )
+    )
+      throw new Error("只能选择当前已核验企业中的有效业务团队");
+    if (
+      draft.teamId !== null &&
+      draft.teamRole !== "member" &&
+      draft.teamRole !== "leader"
+    )
+      throw new Error("请选择有效业务团队身份");
+    const result = await scopeClient.organization.setMember.mutate({
+      userId,
+      teamId: draft.teamId,
+      role: draft.teamId === null ? null : draft.teamRole,
+      expectedRevision: draft.revision,
+      requestId: requestId("staff_business_team"),
+    });
+    if (currentAccount.current !== accountId || sessionEpoch.current !== epoch)
+      return {
+        saved: true,
+        member: null,
+        warning: "操作者会话已变化，需在原账号重新核验结果",
+      };
+    if (
+      !result ||
+      typeof result !== "object" ||
+      !("success" in result) ||
+      result.success !== true
+    )
+      throw new Error("业务团队接口未返回可信成功结果，请刷新核验，勿重复提交");
+    try {
+      const latest = readStaffBusinessOrganization(
+        await scopeClient.organization.overview.query(undefined),
+        contextValidation.context
+      );
+      const member = latest.members.find(item => item.userId === userId);
+      queryClient.setQueryData(
+        [
+          ...staffQueryKey(accountId, merchantId, "organization-teams"),
+          contextValidation.context?.frontendUserId ?? null,
+          contextValidation.context?.enterpriseId ?? null,
+        ],
+        latest
+      );
+      if (
+        !member ||
+        member.teamId !== draft.teamId ||
+        member.teamRole !== (draft.teamId === null ? null : draft.teamRole)
+      )
+        return {
+          saved: true,
+          member: null,
+          warning: "回读关系已变化，请刷新核验后再修改",
+        };
+      return { saved: true, member };
+    } catch {
+      return {
+        saved: true,
+        member: null,
+        warning: "保存成功，但新成员版本回读失败；请刷新核验后再修改",
+      };
+    }
+  };
 
   const businessNotice = (() => {
     if (
@@ -1135,7 +1314,7 @@ export default function Staff() {
         />
 
         <StaffPermissionSheet
-          key={`${accountId ?? "signed-out"}:${selectedCurrentRow?.key ?? "none"}`}
+          key={`${accountId ?? "signed-out"}:${sessionGeneration}:${selectedCurrentRow?.key ?? "none"}`}
           open={Boolean(selectedRow)}
           row={selectedCurrentRow}
           initialSection={selectedSection}
@@ -1149,7 +1328,11 @@ export default function Staff() {
               ? errorMessage(loginHistoryQuery.error)
               : null
           }
-          officialTeamsOverview={officialTeamsQuery.data}
+          officialTeamsOverview={
+            officialTeamsOverview.serverScope.adminUserId === accountId
+              ? officialTeamsQuery.data
+              : undefined
+          }
           officialTeamsLoading={officialTeamsQuery.isPending}
           officialTeamsError={
             officialTeamsQuery.isError
@@ -1158,6 +1341,24 @@ export default function Staff() {
           }
           onRetryOfficialTeams={() => {
             void officialTeamsQuery.refetch();
+            void trpcUtils.adminUser.list.invalidate();
+          }}
+          businessTeam={{
+            overview: businessOrganization,
+            frontUserId:
+              selectedCurrentRow?.bindingState === "bound"
+                ? (selectedCurrentRow.binding?.frontUserId ?? null)
+                : null,
+            canEdit: businessTeamGuard.allowed && !businessTeamsQuery.isError,
+            reason: businessTeamGuard.allowed ? null : businessTeamGuard.reason,
+            loading: businessTeamsQuery.isFetching,
+            error: businessTeamsQuery.isError
+              ? errorMessage(businessTeamsQuery.error)
+              : null,
+            onRetry: () => {
+              void businessTeamsQuery.refetch();
+            },
+            onSave: saveBusinessTeam,
           }}
           onOpenChange={open => {
             if (!open && !saving) setSelectedRow(null);

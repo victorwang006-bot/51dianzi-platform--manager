@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { isBusinessFailure, type BusinessFailure } from "../shared/businessFailure";
 
 export type PlatformBusinessBinding = {
@@ -46,6 +47,7 @@ export type PlatformBusinessContext = {
   /** Current portal-derived, display-only workbench projection; never adminPermissions. */
   workbenchCapabilities: readonly string[];
   /** Derived by the front internal service from the ready staff principal and real permission checks. */
+  officialInventoryPermissions?: OfficialInventoryPermissions;
   sessionCapabilities: Readonly<{
     /** Full personal chat remains unavailable to the admin workbench. */
     chat: false;
@@ -59,7 +61,10 @@ export type PlatformBusinessStaffCandidate = {
   user: PlatformBusinessStaffPrincipal["user"];
 };
 
+export type OfficialInventoryPermissions = { read: boolean; write: boolean; note: boolean; authorizationVersion: string };
+
 export type PlatformBusinessCommand = {
+  officialInventoryPermissions?: OfficialInventoryPermissions;
   binding: PlatformBusinessBinding;
   staffUserId: number;
   bindingVersion: number;
@@ -225,7 +230,22 @@ async function callPlatformTrpc<T>(input: {
     throw serviceFailure("CONFIGURATION", timing(), options);
   }
 
-  const encoded = trpcInput(input.payload);
+  let payloadToSend = input.payload;
+  if ((input.procedure === "internalBusiness.context" || input.procedure === "internalBusiness.execute") && input.payload && typeof input.payload === "object") {
+    const { officialInventoryPermissions, ...payload } = input.payload as Record<string, any>;
+    if (officialInventoryPermissions) {
+      const target = {
+        ...(payload.creditCode ? { creditCode: payload.creditCode } : {}),
+        ...(payload.registrationIdentifier ? { registrationIdentifier: payload.registrationIdentifier } : {}),
+        expectedOwnerUserId: payload.expectedOwnerUserId, staffUserId: payload.staffUserId,
+        adminAccountId: payload.adminActor?.id ?? payload.adminAccountId, bindingVersion: payload.bindingVersion,
+        method: input.procedure === "internalBusiness.context" ? "internalBusiness.context" : payload.method,
+        requestId: input.procedure === "internalBusiness.context" ? "context-grant" : payload.requestId,
+      };
+      payloadToSend = { ...payload, officialInventoryGrant: signOfficialInventoryGrant(officialInventoryPermissions, target, config.key) };
+    }
+  }
+  const encoded = trpcInput(payloadToSend);
   const url = `${config.baseUrl}/api/trpc/${input.procedure}?batch=1${input.kind === "query" ? `&input=${encodeURIComponent(encoded)}` : ""}`;
   let response: Response;
   const requestStartedAt = Date.now();
@@ -293,7 +313,7 @@ async function callPlatformTrpc<T>(input: {
 
 export async function getPlatformBusinessContext(
   input: PlatformBusinessBinding,
-  trustedBinding?: { staffUserId: number; adminAccountId: number; bindingVersion: number },
+  trustedBinding?: { staffUserId: number; adminAccountId: number; bindingVersion: number; officialInventoryPermissions?: OfficialInventoryPermissions },
   options?: PlatformBusinessCallOptions,
 ): Promise<PlatformBusinessContext> {
   let upstreamTiming: PlatformBusinessUpstreamTiming = { configMs: 0, requestMs: 0, decodeMs: 0 };
@@ -338,4 +358,13 @@ export async function callPlatformBusinessCommand(command: PlatformBusinessComma
   });
 }
 
+function canonicalOfficialInventoryJson(value: any): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalOfficialInventoryJson).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalOfficialInventoryJson(value[key])}`).join(",")}}`;
+  return JSON.stringify(value);
+}
+export function signOfficialInventoryGrant(permissions: OfficialInventoryPermissions, target: Record<string, unknown>, key: string, issuedAt = Date.now()) {
+  const grant = { schemaVersion: 1 as const, issuedAt, expiresAt: issuedAt + 30_000, permissions };
+  return { ...grant, signature: createHmac("sha256", key).update(canonicalOfficialInventoryJson({ grant, target })).digest("hex") };
+}
 export const platformBusinessApiTestUtils = { publicUpstreamError };

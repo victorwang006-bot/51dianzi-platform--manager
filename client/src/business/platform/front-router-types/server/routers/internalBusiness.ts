@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { signedOfficialInventoryGrantSchema } from "../../../shared/internalBusinessOfficialInventory";
+import { verifyOfficialInventoryGrant } from "../services/internalBusinessOfficialGrant";
 import { TRPCError } from "@trpc/server";
 import { BusinessServiceAuthenticationCause } from "../../../shared/businessFailure";
 import { customerListSchema } from "../../../shared/crmCustomers";
@@ -33,6 +35,7 @@ const trustedStaffBindingInput = z.object({
   staffUserId: z.number().int().positive(),
   adminAccountId: z.number().int().positive(),
   bindingVersion: z.number().int().positive(),
+  officialInventoryGrant: signedOfficialInventoryGrantSchema.optional(),
 });
 const staffBindingInput = bindingInput.safeExtend({ staffUserId: z.number().int().positive() });
 const requestIdSchema = z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/);
@@ -71,8 +74,9 @@ export const internalBusinessRouter = router({
     .input(bindingInput.safeExtend(trustedStaffBindingInput.shape))
     .query(async ({ ctx, input }) => {
       requirePortalKey(ctx.req?.headers as Record<string, unknown> | undefined);
-      const { staffUserId, adminAccountId, bindingVersion, ...binding } = input;
-      const trustedBinding = trustedStaffBindingInput.parse({ staffUserId, adminAccountId, bindingVersion });
+      const { staffUserId, adminAccountId, bindingVersion, officialInventoryGrant, ...binding } = input;
+      const permissions = officialInventoryGrant ? verifyOfficialInventoryGrant(officialInventoryGrant, { ...binding, staffUserId, adminAccountId, bindingVersion, method: "internalBusiness.context", requestId: "context-grant" }) : undefined;
+      const trustedBinding = { staffUserId, adminAccountId, bindingVersion, officialInventoryPermissions: permissions };
       return getInternalBusinessContext(binding, trustedBinding);
     }),
 
@@ -86,16 +90,18 @@ export const internalBusinessRouter = router({
       staffUserId: z.number().int().positive(),
       bindingVersion: z.number().int().positive(),
       adminActor: adminActorInput,
+      officialInventoryGrant: signedOfficialInventoryGrantSchema.optional(),
       requestId: requestIdSchema,
       method: z.enum(BUSINESS_METHOD_IDS),
       params: z.unknown(),
     }))
     .mutation(async ({ ctx, input }) => {
       requirePortalKey(ctx.req?.headers as Record<string, unknown> | undefined);
-      const { staffUserId, bindingVersion, adminActor, requestId, method, params, ...binding } = input;
+      const { staffUserId, bindingVersion, adminActor, requestId, method, params, officialInventoryGrant, ...binding } = input;
       return executeInternalBusinessMethod({
         method,
         params,
+        officialInventoryGrant,
         binding,
         staffUserId,
         adminActor,

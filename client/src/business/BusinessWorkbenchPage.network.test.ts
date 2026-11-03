@@ -103,6 +103,7 @@ const legacyChannelInventoryContext = {
     },
   },
   workbenchCapabilities: ["inventory.channel"],
+  officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-grants-v1" },
 };
 
 type FetchCall = {
@@ -2616,6 +2617,77 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       window.removeEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
     },
   );
+
+  it("v13 allows the real bound channel reader without ERP editing and renders the original recorder DTO", async () => {
+    const network = installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") return trpcResult({
+        ...legacyChannelInventoryContext,
+        merchant: { ...legacyChannelInventoryContext.merchant, canWrite: false },
+        officialInventoryPermissions: { read: true, write: false, note: false, authorizationVersion: "reader-v1" },
+      });
+      if (call.pathname === "/api/business-trpc/enterprise.me") return trpcResult({
+        currentUserId: 397751, enterprise: { id: 1 }, isOwner: false, permissionKeys: ["stocks.read"],
+      });
+      if (call.pathname === "/api/business-trpc/channelInventory.listTeamMaterials") return trpcResult({
+        items: [{ ...sharedChannelMaterial, originalRecorderName: "Jack", noteCount: 0, canAddNote: false, isMine: false }],
+        total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: false, canFilterSource: false,
+      });
+      return legacyChannelInventoryResponse(call);
+    });
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+    await waitFor(() => expect(mounted?.container.textContent).toContain("SHARED-TEST-502"));
+    expect(mounted.container.querySelector("td.ci-material-recorder-col")?.textContent).toBe("Jack");
+    expect(mounted.container.querySelectorAll("thead th")).toHaveLength(9);
+    for (const label of ["单条上传", "表格上传"]) expect(Array.from(mounted.container.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent === label)?.disabled).toBe(true);
+    expect(mounted.container.querySelector("textarea")).toBeNull();
+    expect(network.calls.some(call => /officialChannelInventory|channelInventory\.(getTeamMaterialForEdit|createMaterial|notesList)/.test(call.pathname))).toBe(false);
+  });
+
+  it.each(["version", "read", "write", "note"] as const)("v13 rotates native %s proof without rendering prior cached channel inventory", async change => {
+    let checks = 0;
+    let reads = 0;
+    const pending = deferred<Response>();
+    const first = legacyChannelInventoryContext.officialInventoryPermissions;
+    const second = { ...first,
+      ...(change === "version" ? { authorizationVersion: "native-grants-v2" } : { [change]: false }),
+    };
+    installNetwork(call => {
+      if (call.pathname === "/api/business-trpc/context") return trpcResult({
+        ...legacyChannelInventoryContext,
+        // Deliberately keep the outer version and route capability unchanged:
+        // the dedicated native grant proof must be sufficient to invalidate.
+        authorizationVersion: "outer-team-v1",
+        officialInventoryPermissions: ++checks === 1 ? first : second,
+      });
+      if (call.pathname === "/api/business-trpc/channelInventory.listTeamMaterials" && ++reads > 1) return pending.promise;
+      return legacyChannelInventoryResponse(call);
+    });
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+    await waitFor(() => expect(mounted?.container.textContent).toContain("SHARED-TEST-502"));
+    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await waitFor(() => expect(checks).toBe(2));
+    await waitFor(() => expect(mounted?.container.textContent).not.toContain("SHARED-TEST-502"));
+    if (change === "read") {
+      expect(mounted.container.textContent).toContain("无渠道库存查看权限");
+      expect(reads).toBe(1);
+    } else {
+      await waitFor(() => expect(reads).toBe(2));
+      expect(mounted.container.textContent).toContain("正在加载渠道库存");
+      await act(async () => pending.resolve(trpcResult({ items: [], total: 0, page: 1, pageSize: 20, pageCount: 1, canWrite: false, canFilterSource: false })));
+      await waitFor(() => expect(mounted?.container.textContent).toContain("暂无符合筛选条件的渠道库存"));
+    }
+    expect(mounted.container.querySelector('[role="dialog"]')).toBeNull();
+    expect(mounted.container.textContent).not.toContain("SHARED-TEST-502");
+  });
+
+  it.each([undefined, { read: true, write: true, note: true }, { read: "true", write: true, note: true, authorizationVersion: "native-v1" }])("v13 fails closed for an absent or malformed native proof %j", async proof => {
+    const network = installNetwork(call => call.pathname === "/api/business-trpc/context"
+      ? trpcResult({ ...legacyChannelInventoryContext, officialInventoryPermissions: proof })
+      : legacyChannelInventoryResponse(call));
+    mounted = await mountWorkbench("/workbench/channel-inventory");
+    await waitFor(() => expect(mounted?.container.textContent).toContain("无渠道库存查看权限"));
+    expect(network.calls.some(call => call.pathname.includes("channelInventory."))).toBe(false);
+  });
 
   it("merges rapid focus, restored-pageshow and route re-entry into one pair of proof requests", async () => {
     const network = installNetwork(successfulWorkbenchResponse);

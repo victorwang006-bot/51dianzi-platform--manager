@@ -1,9 +1,23 @@
+import { hasAdminPermission, type AdminRole } from "@shared/adminPermissions";
 import {
   ADMIN_WORKBENCH_NAVIGATION_GROUPS,
   getAdminWorkbenchNavigationRoute,
   isAdminWorkbenchNavigationRouteMatch,
   type AdminWorkbenchNavigationItem,
 } from "./adminWorkbenchNavigationModel";
+
+/** Native auth projection only; BFF binding/enterprise/team checks stay mandatory. */
+export function hasAdminChannelInventoryRead(user: {
+  hasNativeAdminAccount?: unknown;
+  adminRole?: unknown;
+  permissions?: unknown;
+} | null | undefined): boolean {
+  return user?.hasNativeAdminAccount === true && hasAdminPermission(
+    user.adminRole as AdminRole | undefined,
+    "officialInventory.read",
+    Array.isArray(user.permissions) ? user.permissions.filter((key): key is string => typeof key === "string") : undefined,
+  );
+}
 
 export type AdminWorkspaceId = "business" | "operations" | "organization";
 export type AdminWorkspaceNavigationItem = AdminWorkbenchNavigationItem;

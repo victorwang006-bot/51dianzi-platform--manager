@@ -62,6 +62,7 @@ import {
   type AdminNotificationModule,
 } from "@shared/adminModuleNotifications";
 import { useQuery } from "@tanstack/react-query";
+import { hasAdminChannelInventoryRead } from "./admin/adminWorkspaceNavigationModel";
 import "./DashboardLayout.css";
 
 type MenuItem = {
@@ -452,7 +453,8 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     group.items.filter(item => {
       if (
         item.path === "/workbench/channel-inventory" &&
-        user?.hasNativeAdminAccount !== true
+        (user?.hasNativeAdminAccount !== true ||
+          !hasAdminChannelInventoryRead(user))
       )
         return false;
       const hasNativeAdminPermission =

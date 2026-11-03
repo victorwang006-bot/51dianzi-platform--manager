@@ -32,6 +32,7 @@ export function businessModuleEntitled(module: BusinessModule, isOwner: boolean,
  */
 export async function resolveBusinessModuleAccess(
   actorUserId: number, enterpriseId: number, module: BusinessModule, dbOverride?: BusinessSqlExecutor,
+  readProjection?: { officialInventoryRead: boolean },
 ): Promise<BusinessModuleAccess> {
   if (!Number.isSafeInteger(actorUserId) || actorUserId <= 0 || !Number.isSafeInteger(enterpriseId) || enterpriseId <= 0 || !BUSINESS_MODULES.includes(module)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "无效的企业或业务模块" });
@@ -67,8 +68,11 @@ export async function resolveBusinessModuleAccess(
       if (scope === "team" && (!teamId || (crm && teamRole !== "leader"))) scope = "self";
     }
     if (module === "channels") scope = "self";
-    const read = entitled && (!setting || businessBoolean(setting.readAllowed));
-    const write = read && (!setting || businessBoolean(setting.writeAllowed));
+    // Only the trusted channel stocks read chain may omit ERP manage. It cannot
+    // manufacture write, bypass explicit deny, or widen the current team scope.
+    const nativeRead = module === "stocks" && readProjection?.officialInventoryRead === true;
+    const read = (entitled || nativeRead) && (!setting || businessBoolean(setting.readAllowed));
+    const write = entitled && read && (!setting || businessBoolean(setting.writeAllowed));
     return { read, write, scope, teamId, explicit: Boolean(setting), teamRole };
   } catch (error) {
     if (error instanceof TRPCError) throw error;

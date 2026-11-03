@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import {
   adminPermissionsForUpdate,
   evaluateBffReadiness,
+  STAFF_PERMISSION_TABS,
+  staffPermissionTab,
+  staffDraftForPage,
+  readStaffBusinessOrganization,
+  staffBusinessTeamGuard,
+  staffDraftFromRow,
   mergeStaffRows,
   parseStaffBinding,
   protectedStaffErpKeys,
@@ -238,5 +244,147 @@ describe("staff permission model", () => {
     expect(staffRowNeedsAssociation({ admin, member })).toBe(false);
     expect(staffRowNeedsAssociation({ admin })).toBe(true);
     expect(staffRowNeedsAssociation({ member })).toBe(true);
+  });
+});
+
+describe("五页签与同源业务团队模型", () => {
+  const context = {
+    merchantId: 30061,
+    enterpriseId: 15,
+    frontendUserId: 20,
+    capabilities: ["enterprise.members.manage"],
+    writeCapabilities: ["enterprise.members.manage"],
+  };
+  const organization = {
+    enterprise: { id: 15, name: "测试企业" },
+    actorUserId: 20,
+    canManage: true,
+    teams: [{ id: 11, name: "智捷团队1", status: "active", revision: 2 }],
+    members: [
+      {
+        userId: 88,
+        teamId: 11,
+        teamRole: "member" as const,
+        revision: 6,
+        status: "active",
+        enterpriseRole: "member",
+      },
+    ],
+  };
+  const access = {
+    available: true,
+    canManageMembers: true,
+    actorIsOwner: true,
+    currentUserId: 20,
+    grantableKeys: ["inventory.manage"] as const,
+  };
+  const row: StaffRow = {
+    key: "admin:7",
+    admin,
+    member,
+    binding: { adminUserId: 7, frontUserId: 88, bindingVersion: 1 },
+    bindingState: "bound",
+    scopeState: "ready",
+    bff: { state: "ready", missingPermissions: [], detail: "verified" },
+  };
+  it("五个真实页签合并员工资料/成员与ERP/scope，不新增权限键", () => {
+    expect(STAFF_PERMISSION_TABS.map(tab => tab.label)).toEqual([
+      "员工资料",
+      "平台权限",
+      "渠道库存",
+      "业务ERP",
+      "账号与安全",
+    ]);
+    expect(staffPermissionTab("member")).toBe("basic");
+    expect(staffPermissionTab("scope")).toBe("erp");
+  });
+  it("保存当前页时其他页草稿不纳入请求", () => {
+    const baseline = staffDraftFromRow(row);
+    const draft = {
+      ...baseline,
+      adminRole: "super_admin",
+      inventoryDataScope: "enterprise" as const,
+    };
+    expect(staffDraftForPage("admin", draft, baseline)).toEqual({
+      ...baseline,
+      adminRole: "super_admin",
+    });
+    expect(staffDraftForPage("erp", draft, baseline)).toEqual({
+      ...baseline,
+      inventoryDataScope: "enterprise",
+    });
+    expect(staffDraftForPage("official-team", draft, baseline)).toEqual(
+      baseline
+    );
+  });
+  it("业务组织严格校验企业和真实操作者，保留成员revision而非从官方组推导", () => {
+    const result = readStaffBusinessOrganization(organization, context);
+    expect(result.members[0]).toMatchObject({
+      userId: 88,
+      teamId: 11,
+      revision: 6,
+    });
+    expect(() =>
+      readStaffBusinessOrganization(
+        { ...organization, actorUserId: 88 },
+        context
+      )
+    ).toThrow();
+    expect(() =>
+      readStaffBusinessOrganization(organization, {
+        ...context,
+        enterpriseId: 99,
+      })
+    ).toThrow();
+    expect(() =>
+      readStaffBusinessOrganization(
+        {
+          ...organization,
+          members: [{ ...organization.members[0], revision: undefined }],
+        },
+        context
+      )
+    ).toThrow();
+    expect(() => readStaffBusinessOrganization(organization, null)).toThrow();
+  });
+  it("业务团队保存同时要求真实admin↔front绑定、原canManage与BFF前置核验", () => {
+    expect(staffBusinessTeamGuard(row, access, organization).allowed).toBe(
+      true
+    );
+    for (const unsafe of [
+      { ...row, binding: null },
+      { ...row, bindingState: "unbound" as const },
+      {
+        ...row,
+        binding: { adminUserId: 7, frontUserId: 99, bindingVersion: 1 },
+      },
+      {
+        ...row,
+        bff: {
+          state: "scope-incomplete" as const,
+          missingPermissions: [],
+          detail: "missing",
+        },
+      },
+      { ...row, scopeState: "error" as const },
+    ])
+      expect(staffBusinessTeamGuard(unsafe, access, organization).allowed).toBe(
+        false
+      );
+    expect(
+      staffBusinessTeamGuard(row, access, { ...organization, canManage: false })
+        .allowed
+    ).toBe(false);
+    expect(
+      staffBusinessTeamGuard(
+        row,
+        { ...access, currentUserId: 99 },
+        organization
+      ).allowed
+    ).toBe(false);
+    expect(
+      staffBusinessTeamGuard(row, access, { ...organization, members: [] })
+        .allowed
+    ).toBe(false);
   });
 });

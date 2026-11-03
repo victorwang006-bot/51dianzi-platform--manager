@@ -48,7 +48,8 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(access).toContain("businessScopeAllows(scope, module, mode)");
     expect(access).toContain("getBusinessWorkbenchMerchantIds");
     expect(access).not.toContain("getBusinessSalesStaffCodes");
-    expect(router).toContain("assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode)");
+    expect(access).toContain('officialReadProjection && mode === "read" && (module === "context" || module === "inventory")');
+    expect(router).toContain("assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection)");
     expect(router).toContain("listActiveBusinessMerchantScopes(account.id)");
     expect(router).toContain("merchantScopes: merchantScopesRouter");
 
@@ -57,24 +58,39 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(authorization).toContain("const account = requireBusinessAdminAccount(ctx);");
     expect(authorization).toContain("return db.withBusinessAuthorizationFence({ adminUserId: account.id, merchantId }, async () => {");
     expect(authorization).toContain("const staffBinding = await requireCurrentBusinessStaffBinding(account.id);");
-    expect(authorization).toContain("const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode);");
+    const activeBinding = sourceSection(router, "async function requireCurrentBusinessStaffBinding(", "\nfunction intersectOfficialInventoryPermissions(");
+    expect(activeBinding).toContain("const staffBinding = await db.getActiveBusinessStaffBinding(adminUserId);");
+    expect(activeBinding).toContain("if (!staffBinding)");
+    expect(activeBinding).toContain('new BusinessFailureCause("STAFF_BINDING_INVALID")');
+    expect(authorization).toContain('const channel = capability.method?.startsWith("channelInventory.") === true;');
+    expect(authorization).toContain('const contextProjection = capability.module === "context" && capability.method === undefined;');
+    expect(authorization).toContain("channel || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined");
+    expect(authorization).toContain('const requirement = notes ? "note" : capability.mode === "write" ? "write" : "read";');
+    expect(authorization).toContain("if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement])");
+    expect(authorization).toContain('const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"');
+    expect(authorization).toContain('&& (contextProjection || nativeReadMethods.includes(capability.method ?? ""))');
+    expect(authorization).toContain("const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);");
     expect(authorization).toContain("const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);");
-    expect(authorization).toContain("if (!scope || !businessScopeAllows(scope, capability.module, capability.mode))");
-    expect(authorization).toContain("return operation({ account, staffBinding, scope, merchant });");
+    expect(authorization).toContain("if (!scope) {");
+    expect(authorization).toContain('new BusinessFailureCause("TENANT_ACCESS_REVOKED")');
+    expect(authorization).toContain("if (!businessScopeAllows(scope, capability.module, capability.mode) && !officialReadProjection)");
+    expect(authorization).toContain("return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions });");
     expect(authorization.indexOf("const staffBinding = await requireCurrentBusinessStaffBinding(account.id);")).toBeLessThan(
       authorization.indexOf("const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);"),
     );
-    expect(forwarder).toContain("return withCurrentBusinessAuthorization(ctx, merchantId, capability, async ({ staffBinding, scope, merchant }) => {");
+    expect(forwarder).toContain("return withCurrentBusinessAuthorization(ctx, merchantId, capability, async ({ staffBinding, scope, merchant, officialInventoryPermissions }) => {");
     expect(forwarder).toContain("result = await callPlatformBusinessCommand({");
     expect(forwarder).toContain("staffUserId: staffBinding.frontUserId");
     expect(forwarder).toContain("bindingVersion: staffBinding.bindingVersion");
+    expect(forwarder).toContain("method: capability.method");
+    expect(forwarder).toContain('officialInventoryPermissions: officialInventoryPermissions ? { ...officialInventoryPermissions, write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write") } : undefined');
     expect(forwarder).toContain("scopeVersion: scope.scopeVersion");
 
     const directContextEntries = [
       sourceSection(router, "auth: router({", "  /**\n   * Navigation returns exact per-merchant projections."),
       sourceSection(router, "navigation: publicProcedure.query", "  merchants: publicProcedure"),
       sourceSection(router, "merchants: publicProcedure", "\n\n  context: publicProcedure"),
-      sourceSection(router, "context: publicProcedure.query", "\n\n  staffBindings: staffBindingsRouter,"),
+      sourceSection(router, "context: publicProcedure.query", "\n\n  organization: router({"),
     ];
     for (const entry of directContextEntries) {
       expect(entry).toContain('withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }');
@@ -99,7 +115,11 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(frontAccess).toContain("permissionScope.dataOwnerUserId !== enterprise.dataOwnerUserId");
     expect(frontAccess).toContain("actorUserId: user.id");
     expect(delegation).toContain("const capability = BUSINESS_METHOD_CAPABILITIES[input.method];");
-    expect(delegation).toContain("permission: capability.permission");
+    expect(delegation).toContain("const requirement = officialInventoryMethodRequirement(input.method);");
+    expect(delegation).toContain("const grant = requirement ? verifyOfficialInventoryGrant(input.officialInventoryGrant, {");
+    expect(delegation).toContain("bindingVersion: input.bindingVersion, method: input.method, requestId: input.requestId");
+    expect(delegation).toContain("if (grant && (!grant.read || !grant[requirement!]))");
+    expect(delegation).toContain("permission: grant?.read && NATIVE_TEAM_READ_METHODS.includes(input.method) ? undefined : capability.permission");
     expect(delegation).toContain("staffUserId: principal.actorUserId");
     expect(delegation).toContain("bindingVersion: input.bindingVersion");
     expect(delegation).toContain("requestId: input.requestId");

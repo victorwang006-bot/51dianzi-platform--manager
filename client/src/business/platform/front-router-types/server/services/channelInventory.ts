@@ -41,7 +41,7 @@ export type ChannelInventoryScope = {
   dataOwnerUserId: number;
   actorUserId: number;
   /** Authenticated BFF context only, never expectedActorUserId or a browser header. */
-  officialActor?: { adminAccountId: number; bindingVersion: number; requestId: string };
+  officialActor?: { adminAccountId: number; bindingVersion: number; requestId: string; inventoryPermissions?: import("../../../shared/internalBusinessOfficialInventory").OfficialInventoryPermissions };
   isOwner: boolean;
   inventoryDataScope: "own" | "enterprise";
   /** Server-derived snapshot only; it is rechecked under locks for every write. */
@@ -411,6 +411,9 @@ export async function resolveChannelInventoryAuthority(
   tx: SqlExecutor, scope: ChannelInventoryScope,
   module: "channels" | "stocks", write = false, lock = false,
 ) {
+  const native = scope.officialActor?.inventoryPermissions;
+  if (scope.officialActor && native && (!native.read || (write && !native.write))) appError("FORBIDDEN", "未获渠道库存对应官方权限");
+  const nativeRead = module === "stocks" && !write && native?.read === true;
   const suffix = lock ? sql` FOR UPDATE` : sql``;
   const enterprise = rows(await tx.execute(sql`
     SELECT id, superAdminUserId, crmDataOwnerUserId FROM enterprises
@@ -433,14 +436,15 @@ export async function resolveChannelInventoryAuthority(
      WHERE enterpriseMemberId = ${Number(actor.id)}${suffix}
   `));
   const isOwner = String(actor.role) === "super_admin" && Number(enterprise.superAdminUserId) === scope.actorUserId;
-  if (!(isOwner || permissions.some(p => String(p.permissionKey) === "inventory.manage"))) {
+  if (!(nativeRead || isOwner || permissions.some(p => String(p.permissionKey) === "inventory.manage"))) {
     appError("FORBIDDEN", "当前账号没有渠道库存管理权限");
   }
   // The helper owns all unconfigured compatibility defaults. A team/enterprise
   // module scope never broadens channel profile/source visibility.
   let access;
   try {
-    access = await resolveBusinessModuleAccess(scope.actorUserId, scope.enterpriseId, module, tx);
+    access = await resolveBusinessModuleAccess(scope.actorUserId, scope.enterpriseId, module, tx, { officialInventoryRead: nativeRead });
+    if (native && !native.write) access = { ...access, write: false };
   } catch (error) {
     if (error instanceof TRPCError) {
       appError(error.code === "FORBIDDEN" ? "FORBIDDEN" : "SERVICE_UNAVAILABLE", error.message);

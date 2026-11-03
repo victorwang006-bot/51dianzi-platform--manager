@@ -17,6 +17,7 @@ export type BusinessWorkbenchCapability = (typeof BUSINESS_WORKBENCH_CAPABILITIE
 export type BusinessWorkbenchModule = "context" | "inventory" | "customers" | "procurement" | "users" | "orders";
 
 type ScopeLike = { modulePermissions: readonly string[] };
+import type { OfficialInventoryPermissions } from "./platformBusinessApi";
 
 type CapabilityProjectionRule = {
   capability: BusinessWorkbenchCapability;
@@ -66,6 +67,7 @@ export type BusinessWorkbenchProjection = Readonly<{
   moduleAvailability: Readonly<Record<BusinessWorkbenchModule, Readonly<{ read: boolean; write: boolean }>>>;
   /** True only when a current front capability and an exact BFF write mode intersect. */
   canWrite: boolean;
+  officialInventoryPermissions?: OfficialInventoryPermissions;
 }>;
 
 function moduleAvailability(scope: ScopeLike): BusinessWorkbenchProjection["moduleAvailability"] {
@@ -83,12 +85,19 @@ function moduleAvailability(scope: ScopeLike): BusinessWorkbenchProjection["modu
 export function projectBusinessWorkbenchCapabilities(input: {
   scope: ScopeLike;
   frontWorkbenchCapabilities: readonly string[];
+  officialInventoryPermissions?: OfficialInventoryPermissions;
 }): BusinessWorkbenchProjection {
   const front = new Set(input.frontWorkbenchCapabilities);
   const readable: BusinessWorkbenchCapability[] = [];
   const writable: BusinessWorkbenchCapability[] = [];
 
   for (const rule of CAPABILITY_RULES) {
+    if (rule.capability === "inventory.channel" && input.officialInventoryPermissions) {
+      const native = input.officialInventoryPermissions;
+      if (native.read) readable.push(rule.capability);
+      if (native.read && native.write && front.has(rule.capability) && scopeAllows(input.scope, "inventory", "write")) writable.push(rule.capability);
+      continue;
+    }
     if (!front.has(rule.capability)) continue;
     const visible = rule.displayRequiresWrite
       ? scopeAllows(input.scope, rule.readModule, "write")
@@ -105,6 +114,9 @@ export function projectBusinessWorkbenchCapabilities(input: {
     writeCapabilities: writable,
     moduleAvailability: moduleAvailability(input.scope),
     canWrite: writable.length > 0,
+    officialInventoryPermissions: input.officialInventoryPermissions ? { ...input.officialInventoryPermissions,
+      write: input.officialInventoryPermissions.read && input.officialInventoryPermissions.write && scopeAllows(input.scope, "inventory", "write"),
+      note: input.officialInventoryPermissions.read && input.officialInventoryPermissions.note } : undefined,
   };
 }
 

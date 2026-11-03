@@ -25,7 +25,7 @@ const runtime = vi.hoisted(() => {
   return {
     getMaterial, getTeamMaterialSource, listTeamSourceOptions,
     toastError: vi.fn(),
-    scope: { storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() },
+    scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() },
     getTeamMaterialForEdit, collaborationAdd, collaborationEdit,
     collaborationQuery: null as unknown,
     collaborationInputs: [] as unknown[],
@@ -216,7 +216,7 @@ function renderHost() {
 function configureFixtures() {
   vi.mocked(XLSX.writeFile).mockClear();
   runtime.toastError.mockClear();
-  runtime.scope = { storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() };
+  runtime.scope = { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() };
   runtime.getTeamMaterialSource.mockReset().mockResolvedValue({ name: "实时核验来源" });
   runtime.listTeamSourceOptions.mockReset().mockImplementation((input: unknown) => { runtime.sourceInputs.push(input); return Promise.resolve((runtime.sourceQuery as { data: unknown }).data); });
   runtime.exportChannelMaterials.mockReset().mockResolvedValue(exportFixture());
@@ -416,7 +416,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.sourceInputs).toHaveLength(0);
     expect(runtime.optionInputs).toHaveLength(0);
     expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "新增备注", "备注（0）"]);
-    expect(rows[1].querySelector("[title], [hidden], input")).toBeNull();
+    expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col), [hidden], input")).toBeNull();
+    expect(rows[1].querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(rows[1].querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
   });
 
@@ -447,7 +448,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     await settle();
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("团队来源");
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(peer.querySelector("[title], [hidden], input")).toBeNull();
+    expect(peer.querySelector("[title]:not(.ci-material-recorder-col), [hidden], input")).toBeNull();
+    expect(peer.querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(peer.querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
 
@@ -750,7 +752,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const headerStyle = getComputedStyle(partHeader);
     const cellStyle = getComputedStyle(firstCell);
 
-    expect(tableStyle.minWidth).toBe("960px");
+    expect(tableStyle.minWidth).toBe("1056px");
     expect(tableStyle.tableLayout).toBe("fixed");
     expect(getComputedStyle(required(stockTable.querySelector("th.ci-col-actions"), "missing fixed actions")).width).toBe("216px");
     expect(headerStyle.paddingTop).toBe("6px");
@@ -1458,7 +1460,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the original tabs, complete column ordering/type/filter/control contract without demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号 / 品牌", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
     expect(document.querySelector("h1,.ci-page-title,.ci-stats")).toBeNull();
     expect(document.body.textContent).not.toMatch(/库存明细|切换示例身份|leader|creator/);
     expect(getComputedStyle(required(document.querySelector(".ci-filter-label"), "missing original a11y label")).position).toBe("absolute");
@@ -1466,5 +1468,99 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(document.querySelector('input[aria-label="筛选库存型号"]')).not.toBeNull();
     expect(document.querySelector('input[aria-label="筛选库存品牌"]')).not.toBeNull();
     expect(button("刷新")).toBeTruthy(); expect(button("表格上传")).toBeTruthy(); expect(button("单条上传")).toBeTruthy();
+  });
+});
+
+
+describe("v13 native channel read and original recorder contract", () => {
+  const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
+  it("renders only the authoritative original recorder, using 待核实 for null and no actor/editor fallback", () => {
+    const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
+    result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
+    renderHost();
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([9, 9]);
+    expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
+    expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
+    expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).whiteSpace).toBe("nowrap");
+    expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).textOverflow).toBe("ellipsis");
+    expect(getComputedStyle(document.querySelector("th.ci-material-recorder-col")!).width).toBe("96px");
+    expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("11px");
+    expect(getComputedStyle(document.querySelector("tbody td")!).fontSize).toBe("12px");
+    expect(document.body.textContent).not.toMatch(/WRONG-RESPONSIBLE|WRONG-EDITOR/);
+  });
+  it.each(["loading", "error", "empty"])("uses nine-column colspan for %s without misaligning existing table", status => {
+    runtime.teamQuery = status === "loading" ? query(undefined, { isLoading: true }) : status === "error" ? query(undefined, { isError: true }) : query({ items: [], total: 0, pageCount: 1 });
+    renderHost();
+    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("9");
+    expect(document.querySelectorAll("thead th")).toHaveLength(9);
+  });
+  it("allows native read with no ERP edit permission, but cannot open uploads, edit or note forms even from stale writable row hints", async () => {
+    runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-read-only-v1" };
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: ["stocks.read"], isOwner: false });
+    renderHost();
+    expect(document.body.textContent).toContain("TEAM-SN74");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(button("单条上传").disabled).toBe(true);
+    expect(button("表格上传").disabled).toBe(true);
+    expect(button("编辑").disabled).toBe(true);
+    click(button("单条上传")); click(button("表格上传")); click(button("编辑"));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("新增备注");
+    runtime.collaborationQuery = query({ items: [{ id: 99, authorUserId: 7, authorName: "本人", content: "可读协作历史", canEdit: true, createdAt: "2026-11-03T00:00:00Z", updatedAt: "2026-11-03T00:00:00Z" }], total: 1, canAdd: true });
+    click(button("备注（1）")); await settle();
+    expect(document.body.textContent).toContain("可读协作历史");
+    expect(document.body.textContent).not.toContain("修改我的备注");
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
+    expect(runtime.createMaterial).not.toHaveBeenCalled();
+    expect(runtime.collaborationAdd).not.toHaveBeenCalled();
+    expect(runtime.collaborationEdit).not.toHaveBeenCalled();
+  });
+  it("does not mistake ERP inventory.manage for native read and immediately masks cached rows", () => {
+    renderHost();
+    expect(document.body.textContent).toContain("LM358DR");
+    runtime.materialInputs = [];
+    runtime.scope.officialInventoryPermissions = { read: false, write: false, note: false, authorizationVersion: "native-read-revoked-v2" };
+    rerender();
+    expect(document.body.textContent).toContain("没有渠道库存查看权限");
+    expect(document.body.textContent).not.toContain("LM358DR");
+    expect(document.querySelector("table")).toBeNull();
+    expect(runtime.materialInputs).toHaveLength(0);
+  });
+  it.each(["read", "write", "note", "authorizationVersion"] as const)("invalidates an in-flight source on a changed native %s proof", async field => {
+    let finish!: (value: { name: string }) => void;
+    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    renderHost(); click(required(document.querySelector(".ci-source-link"), "missing source"));
+    const signal = runtime.getTeamMaterialSource.mock.calls[0][1].signal as AbortSignal;
+    if (field === "authorizationVersion") runtime.scope.officialInventoryPermissions.authorizationVersion = "native-grants-v2";
+    else runtime.scope.officialInventoryPermissions[field] = false;
+    rerender(); await settle();
+    expect(signal.aborted).toBe(true);
+    expect(document.querySelector(".ci-source-dialog")).toBeNull();
+    await act(async () => finish({ name: "STALE-NATIVE-SOURCE" }));
+    expect(document.body.textContent).not.toContain("STALE-NATIVE-SOURCE");
+  });
+  it("does not open a pending edit response after native write is revoked while read remains", async () => {
+    let finish!: (value: unknown) => void;
+    runtime.getTeamMaterialForEdit.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    renderHost(); click(button("编辑"));
+    runtime.scope.officialInventoryPermissions.write = false; rerender(); await settle();
+    await act(async () => finish({ ...(runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data.items[0], channelId: 11 }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).toContain("TEAM-SN74");
+    expect(button("单条上传").disabled).toBe(true);
+  });
+  it("allows a read-only native reader to export without granting ERP inventory.manage", async () => {
+    runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-reader-v1" };
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, isOwner: false, permissionKeys: ["stocks.read"] });
+    (runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn> }).refetch.mockResolvedValue(runtime.enterpriseMe);
+    renderHost(); click(button("渠道档案"));
+    expect(button("编辑").disabled).toBe(true);
+    click(button("下载库存")); await settleExport();
+    expect(XLSX.writeFile).toHaveBeenCalledTimes(1);
+    expect(runtime.exportChannelMaterials).toHaveBeenCalledTimes(1);
+    expect(runtime.updateMaterial).not.toHaveBeenCalled();
   });
 });

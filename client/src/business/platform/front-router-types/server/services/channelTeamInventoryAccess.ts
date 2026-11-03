@@ -46,7 +46,7 @@ export async function resolveTeamInventoryVisibility(executor: SqlExecutor, scop
 
     // A note reference may already have opened an RR view. Locking the parent
     // SELECT or these rows separately does not make a plain EXISTS current-read.
-    const peer = member ? sql`EXISTS (SELECT 1 FROM channel_inventory_material_shares s
+    const peer = member && (!scope.officialActor?.inventoryPermissions || access.scope === "team") ? sql`EXISTS (SELECT 1 FROM channel_inventory_material_shares s
       INNER JOIN enterprise_team_record_assignments a ON a.enterpriseId = s.enterprise_id
        AND a.recordType = 'channel_material' AND a.recordId = s.material_id
        AND a.currentOwnerUserId = s.owner_user_id AND a.teamId = s.share_team_id AND a.revision = s.assignment_revision

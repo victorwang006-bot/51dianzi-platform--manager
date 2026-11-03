@@ -1,4 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
+import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOriginalActor";
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
@@ -10,6 +11,7 @@ export type TeamChannelMaterial = {
   revision: number; updatedAt: Date | string; createdAt: Date | string;
   isMine: boolean; canEdit: boolean; readOnly: boolean; noteCount: number; canAddNote: boolean;
   channelSource: { id: number; name: string } | null; canViewSource: boolean;
+  originalRecorderName: string | null; recorderAdminAccountId: number | null;
 };
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
@@ -36,7 +38,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded), leadTime: text(row.leadTime),
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
-    channelSource: null,
+    channelSource: null, originalRecorderName: null, recorderAdminAccountId: null,
   };
 }
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number }) {
@@ -91,9 +93,12 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
         m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision,
         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
-        ${teamMaterialSourceEligibility(scope, true)} AS canViewSource
+        ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
+        ${scope.officialActor ? officialMaterialRecorderAdminAccountId(true) : sql`NULL`} AS recorderAdminAccountId
         ${FROM} WHERE ${where} ORDER BY ${order} LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE`))
-        .map(row => teamMaterialFrom(row, access.write, leader));
+        .map(row => ({ ...teamMaterialFrom(row, access.write, leader),
+          recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId),
+          canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true }));
       return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
       });
     },

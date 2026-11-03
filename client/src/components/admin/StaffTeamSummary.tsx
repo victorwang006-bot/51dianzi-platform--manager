@@ -84,9 +84,11 @@ export function staffTeamLabels({
     const member = official.members.find(
       member => member.adminUserId === row.admin!.id
     );
-    labels.push(
-      `官方渠道 · ${officialState || (!official.available ? "不可用" : member ? (member.teamName ? `${member.teamName} · ${roleLabel(member.role)}` : "未分组") : "范围内无记录")}`
-    );
+    if (member || officialState) {
+      labels.push(
+        `历史官方团队（不参与渠道共享） · ${officialState || (member?.teamName ? `${member.teamName} · ${roleLabel(member.role)}` : "未分组")}`
+      );
+    }
   }
   // A current binding is the only link from an admin account to a business user.
   const frontId = row.admin
@@ -109,7 +111,7 @@ export function staffTeamLabels({
         : "未分组"
       : "范围内无记录";
   }
-  labels.push(`业务 · ${businessLabel}`);
+  labels.push(`渠道库存 / 业务 · ${businessLabel}`);
   return labels;
 }
 export default function StaffTeamSummary(

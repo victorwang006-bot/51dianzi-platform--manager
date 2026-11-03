@@ -172,15 +172,23 @@ describe("正式后台顶部布局集成", () => {
     expect(renderLayout()).toContain("消息中心");
   });
 
-  it("shows native staff channel entry from the exact route read capability without platform inventory permissions", () => {
+  it("shows native staff channel entry only with exact native read and the bound route capability", () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = ["inventory.channel"];
+    runtime.user.permissions = ["materials.read", "messages.read", "officialInventory.read"];
     const html = renderLayout();
     expect(html).toContain("渠道库存");
     expect(html).toContain('data-workspace-nav-target="/workbench/channel-inventory"');
-    expect(runtime.user.permissions).toEqual(["materials.read", "messages.read"]);
+    expect(runtime.user.permissions).toEqual(["materials.read", "messages.read", "officialInventory.read"]);
     expect(source).toMatch(/path: "\/workbench\/channel-inventory",\s*workbenchCapability: "inventory.channel"/);
     expect(source).not.toContain('permission: "officialInventory.write"');
+  });
+
+  it.each([{ permissions: ["materials.read"] }, { permissions: ["officialInventory.write"] }])("rejects route capability without independent native read $permissions", ({ permissions }) => {
+    runtime.location = "/workbench/channel-inventory";
+    runtime.capabilities = ["inventory.channel"];
+    runtime.user.permissions = permissions;
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
   });
 
   it.each([[], ["inventory.read"], ["inventory.publish"]])("does not substitute another business capability %j for inventory.channel", capabilities => {

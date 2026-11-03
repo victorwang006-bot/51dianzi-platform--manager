@@ -6,6 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { DashboardLayoutSkeleton } from "./components/DashboardLayoutSkeleton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { getAdminWorkspacePathname, hasAdminChannelInventoryRead } from "./components/admin/adminWorkspaceNavigationModel";
 import {
   LazyAdmins,
   LazyAnalytics,
@@ -223,8 +224,14 @@ const OfficialChannelInventoryRoute = () => (
  * asks the business BFF for the selected merchant's scope/binding/context.
  * Do not put this route behind native adminPermissions: an independently
  * scoped merchant_mgr may correctly have no `business.*` native key.
+ * Channel inventory alone additionally requires the real native read grant.
  */
 function BusinessWorkbenchRoute() {
+  const { user } = useAuth();
+  const [location] = useLocation();
+  if (getAdminWorkspacePathname(location) === "/workbench/channel-inventory" && !hasAdminChannelInventoryRead(user)) {
+    return <LazyScreen><LazyForbidden /></LazyScreen>;
+  }
   return (
     <LazyScreen>
       {/**

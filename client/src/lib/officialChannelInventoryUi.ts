@@ -28,6 +28,22 @@ export type OfficialTeamMember = {
   officialPermissions: OfficialInventoryPermission[];
 };
 
+export type OfficialPermissionTarget = {
+  adminUserId: number;
+  displayName: string;
+  officialPermissions: OfficialInventoryPermission[];
+  accountVersion: number;
+};
+
+export type OfficialTeamMemberMutation = {
+  member: OfficialTeamMember | null;
+  officialPermissions: OfficialInventoryPermission[];
+  accountVersion: number;
+  revision: number;
+  requestId: string;
+  idempotent: boolean;
+};
+
 export type OfficialServerScope = {
   adminUserId: number | null;
   available: boolean;
@@ -41,6 +57,8 @@ export type OfficialTeamsOverview = {
   available: boolean;
   teams: OfficialTeam[];
   members: OfficialTeamMember[];
+  /** Independent native authorization targets; never synthesized from team members. */
+  targets: OfficialPermissionTarget[];
   serverScope: OfficialServerScope;
 };
 
@@ -146,9 +164,14 @@ function asSafePositiveInteger(value: unknown): number | null {
 }
 
 function asRevision(value: unknown): number {
+  return asAccountVersion(value) ?? 0;
+}
+
+/** A missing account version is not the valid version zero. */
+function asAccountVersion(value: unknown): number | null {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
     ? value
-    : 0;
+    : null;
 }
 
 function asNullableBoolean(value: unknown): boolean | null {
@@ -253,6 +276,32 @@ export function readOfficialServerScope(value: unknown): OfficialServerScope {
   };
 }
 
+/** Only a complete server target can supply the CAS version for a new save. */
+export function readOfficialPermissionTarget(
+  value: unknown
+): OfficialPermissionTarget | null {
+  const target = asRecord(value);
+  const adminUserId = asSafePositiveInteger(target?.adminUserId);
+  const accountVersion = asAccountVersion(target?.accountVersion);
+  if (
+    !adminUserId ||
+    accountVersion === null ||
+    !Array.isArray(target?.officialPermissions) ||
+    !target.officialPermissions.every(
+      permission => parseOfficialPermission(permission) !== null
+    )
+  )
+    return null;
+  return {
+    adminUserId,
+    displayName: nonEmptyString(target.displayName) ?? "未命名员工",
+    officialPermissions: normalizeOfficialPermissions(
+      target.officialPermissions
+    ),
+    accountVersion,
+  };
+}
+
 /**
  * Validates the native overview response before use in administration UI.
  * Invalid or partial values become an unavailable/empty view rather than a
@@ -267,6 +316,7 @@ export function readOfficialTeamsOverview(
       available: false,
       teams: [],
       members: [],
+      targets: [],
       serverScope: {
         adminUserId: null,
         available: false,
@@ -325,12 +375,92 @@ export function readOfficialTeamsOverview(
     ];
   });
   const serverScope = readOfficialServerScope(source);
+  const rawTargets: unknown[] = Array.isArray(source.targets)
+    ? source.targets
+    : [];
+  const targets = rawTargets.flatMap(candidate => {
+    const parsed = readOfficialPermissionTarget(candidate);
+    return parsed ? [parsed] : [];
+  });
   const available = serverScope.available && hasTeams && hasMembers;
   return {
     available,
     teams: available ? teams : [],
     members: available ? members : [],
+    targets: available && serverScope.isSuperAdmin ? targets : [],
     serverScope,
+  };
+}
+
+/** Reject incomplete/legacy receipts; callers must refresh instead of inventing a version. */
+export function readOfficialTeamMemberMutation(
+  value: unknown
+): OfficialTeamMemberMutation | null {
+  const source = asRecord(value);
+  const accountVersion = asAccountVersion(source?.accountVersion);
+  const revision = asAccountVersion(source?.revision);
+  if (
+    !source ||
+    accountVersion === null ||
+    revision === null ||
+    typeof source.idempotent !== "boolean" ||
+    typeof source.requestId !== "string" ||
+    !/^[A-Za-z0-9_-]{8,64}$/.test(source.requestId) ||
+    !Array.isArray(source.officialPermissions) ||
+    !source.officialPermissions.every(
+      permission => parseOfficialPermission(permission) !== null
+    )
+  )
+    return null;
+  const officialPermissions = normalizeOfficialPermissions(
+    source.officialPermissions
+  );
+  let member: OfficialTeamMember | null = null;
+  if (source.member !== null) {
+    const candidate = asRecord(source.member);
+    const adminUserId = asSafePositiveInteger(candidate?.adminUserId);
+    const teamId = asSafePositiveInteger(candidate?.teamId);
+    const teamName = nonEmptyString(candidate?.teamName);
+    const role = readRole(candidate?.role);
+    if (
+      !adminUserId ||
+      !teamId ||
+      !teamName ||
+      !role ||
+      revision === 0 ||
+      candidate?.revision !== revision ||
+      !Array.isArray(candidate.officialPermissions) ||
+      !candidate.officialPermissions.every(
+        permission => parseOfficialPermission(permission) !== null
+      )
+    )
+      return null;
+    const memberPermissions = normalizeOfficialPermissions(
+      candidate.officialPermissions
+    );
+    if (
+      JSON.stringify(memberPermissions) !== JSON.stringify(officialPermissions)
+    )
+      return null;
+    member = {
+      adminUserId,
+      displayName: nonEmptyString(candidate.displayName) ?? "未命名员工",
+      teamId,
+      teamName,
+      role,
+      revision,
+      officialPermissions: memberPermissions,
+    };
+  } else if (revision !== 0) {
+    return null;
+  }
+  return {
+    member,
+    officialPermissions,
+    accountVersion,
+    revision,
+    requestId: source.requestId,
+    idempotent: source.idempotent,
   };
 }
 

@@ -61,3 +61,31 @@ describe("后台默认渠道库存入口", () => {
     expect(container.querySelector('[data-screen="BusinessWorkbench"]')).toBeNull();
   });
 });
+
+
+describe("渠道库存独立native read路由门禁", () => {
+  it("ERP业务管理授权不能代替native read挂载渠道工作台", async () => {
+    runtime.user = { id: 6001, adminRole: "merchant_mgr", hasNativeAdminAccount: true, permissions: ["business.inventory.read", "business.inventory.write"] };
+    await renderAt("/workbench/channel-inventory?merchantId=30061");
+    expect(container.querySelector('[data-screen="Forbidden"]')).not.toBeNull();
+    expect(container.querySelector('[data-screen="BusinessWorkbench"]')).toBeNull();
+  });
+  it("仅有真实native read可进入后续BFF绑定验证，不要求ERP编辑权限", async () => {
+    runtime.user = { id: 6001, adminRole: "merchant_mgr", hasNativeAdminAccount: true, permissions: ["officialInventory.read"] };
+    await renderAt("/workbench/channel-inventory");
+    expect(container.querySelector('[data-screen="BusinessWorkbench"]')).not.toBeNull();
+  });
+  it("真实read撤回后立即卸载业务页，OAuth兼容superadmin不能绕过", async () => {
+    await renderAt("/workbench/channel-inventory");
+    runtime.user = { ...runtime.user, hasNativeAdminAccount: false };
+    await renderAt("/workbench/channel-inventory");
+    expect(container.querySelector('[data-screen="BusinessWorkbench"]')).toBeNull();
+    expect(container.querySelector('[data-screen="Forbidden"]')).not.toBeNull();
+  });
+  it("不对其它ERP业务路由强加native库存门禁", async () => {
+    runtime.user = { id: 6001, adminRole: "merchant_mgr", hasNativeAdminAccount: false, permissions: [] };
+    await renderAt("/workbench/customers");
+    expect(container.querySelector('[data-screen="BusinessWorkbench"]')).not.toBeNull();
+    expect(container.querySelector('[data-screen="Forbidden"]')).toBeNull();
+  });
+});

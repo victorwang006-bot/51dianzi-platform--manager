@@ -8,7 +8,10 @@ import { teamMaterialSourceSchema } from "../../../shared/channelInventorySource
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
 import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
 import { createChannelInventoryExportService } from "../services/channelInventoryExport";
-import { createCrmPermissionProcedure, router } from "../_core/trpc";
+import { createCrmPermissionProcedure, protectedProcedure, router } from "../_core/trpc";
+import { requireCrmEnterpriseAccess } from "../services/enterpriseAccess";
+import { requireActiveEnterpriseScope, requireEnterprisePermission } from "../services/enterprisePermissions";
+import { officialInventoryGrantForDelegation } from "../services/internalBusinessOfficialGrant";
 import {
   CHANNEL_INVENTORY_TYPES,
   ChannelInventoryError,
@@ -109,7 +112,7 @@ function scopeFromContext(ctx: AuthoritativeChannelContext): ChannelInventorySco
     enterpriseId: permissionScope.enterprise.id,
     dataOwnerUserId: permissionScope.dataOwnerUserId,
     actorUserId: ctx.user.id,
-    ...(ctx.staffDelegation ? { officialActor: { adminAccountId: ctx.staffDelegation.adminAccountId, bindingVersion: ctx.staffDelegation.bindingVersion, requestId: ctx.staffDelegation.requestId } } : {}),
+    ...(ctx.staffDelegation ? { officialActor: { adminAccountId: ctx.staffDelegation.adminAccountId, bindingVersion: ctx.staffDelegation.bindingVersion, requestId: ctx.staffDelegation.requestId, inventoryPermissions: officialInventoryGrantForDelegation(ctx.staffDelegation) } } : {}),
     isOwner: permissionScope.isOwner,
     inventoryDataScope: permissionScope.member.inventoryDataScope,
     permissionSnapshot: permissionScope.isOwner || permissionScope.permissionKeys.includes("inventory.manage"),
@@ -140,6 +143,13 @@ function asTrpcError(error: unknown): never {
  */
 export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRecord) {
   const procedure = createCrmPermissionProcedure("inventory.manage");
+  const readProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+    const native = officialInventoryGrantForDelegation(ctx.staffDelegation);
+    const crm = await requireCrmEnterpriseAccess({ user: ctx.user });
+    const permissionScope = native?.read ? await requireActiveEnterpriseScope(ctx.user.id) : await requireEnterprisePermission(ctx.user.id, "inventory.manage");
+    if (permissionScope.dataOwnerUserId !== crm.dataOwnerUserId) throw new TRPCError({ code: "CONFLICT", message: "企业数据归属已变化，请重新登录" });
+    return next({ ctx: { ...ctx, enterprisePermissionScope: permissionScope } });
+  });
   const service = createChannelInventoryService({ getDb, registerTeamRecord });
   const notes = createChannelNotesService({ getDb });
   const team = createChannelTeamInventoryService({ getDb });
@@ -148,7 +158,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const source = createChannelInventorySourceService({ getDb });
 
   return router({
-    getTeamMaterialSource: procedure.input(teamMaterialSourceSchema).query(async ({ ctx, input }) => {
+    getTeamMaterialSource: readProcedure.input(teamMaterialSourceSchema).query(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);
         return await source.getTeamMaterialSource(scopeFromContext(ctx), input);
@@ -169,19 +179,19 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
         return await collaboration.updateTeamMaterial(scopeFromContext(ctx), input);
       } catch (error) { return asTrpcError(error); }
     }),
-    collaborationNotesList: procedure.input(collaborationNotesListSchema).query(async ({ ctx, input }) => {
+    collaborationNotesList: readProcedure.input(collaborationNotesListSchema).query(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);
         return await collaboration.collaborationNotesList(scopeFromContext(ctx), input);
       } catch (error) { return asTrpcError(error); }
     }),
-    collaborationNotesAdd: procedure.input(collaborationNotesAddSchema).mutation(async ({ ctx, input }) => {
+    collaborationNotesAdd: readProcedure.input(collaborationNotesAddSchema).mutation(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);
         return await collaboration.collaborationNotesAdd(scopeFromContext(ctx), input);
       } catch (error) { return asTrpcError(error); }
     }),
-    collaborationNotesEdit: procedure.input(collaborationNotesEditSchema).mutation(async ({ ctx, input }) => {
+    collaborationNotesEdit: readProcedure.input(collaborationNotesEditSchema).mutation(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);
         return await collaboration.collaborationNotesEdit(scopeFromContext(ctx), input);
@@ -195,7 +205,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
           return await exporter.exportChannelMaterials(scopeFromContext(ctx), input);
         } catch (error) { return asTrpcError(error); }
       }),
-    listTeamMaterials: procedure
+    listTeamMaterials: readProcedure
       .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
       .query(async ({ ctx, input }) => {
         try {
@@ -203,7 +213,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
           return await team.listTeamMaterials(scopeFromContext(ctx), input);
         } catch (error) { return asTrpcError(error); }
       }),
-    listTeamSourceOptions: procedure
+    listTeamSourceOptions: readProcedure
       .input(z.object({ ...expectedContextSchema }).strict())
       .query(async ({ ctx, input }) => {
         try {

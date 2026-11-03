@@ -1,4 +1,6 @@
 import { TRPCError } from "@trpc/server";
+import { NATIVE_TEAM_READ_METHODS, officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../shared/internalBusinessOfficialInventory";
+import { bindOfficialInventoryGrant, verifyOfficialInventoryGrant } from "./internalBusinessOfficialGrant";
 import type { Request, Response } from "express";
 import type { ErpPermissionKey } from "../../../shared/erpPermissions";
 import type { TrpcContext, StaffDelegation } from "../_core/context";
@@ -355,14 +357,21 @@ export async function executeInternalBusinessMethod(input: {
   adminActor: { id: number; name: string; role: string };
   bindingVersion: number;
   requestId: string;
+  officialInventoryGrant?: SignedOfficialInventoryGrant;
   req: Request;
   res: Response;
 }) {
   const capability = BUSINESS_METHOD_CAPABILITIES[input.method];
+  const requirement = officialInventoryMethodRequirement(input.method);
+  const grant = requirement ? verifyOfficialInventoryGrant(input.officialInventoryGrant, {
+    ...input.binding, staffUserId: input.staffUserId, adminAccountId: input.adminActor.id,
+    bindingVersion: input.bindingVersion, method: input.method, requestId: input.requestId,
+  }) : undefined;
+  if (grant && (!grant.read || !grant[requirement!])) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
   const principal = await requireInternalBusinessStaffPrincipal({
     binding: input.binding,
     staffUserId: input.staffUserId,
-    permission: capability.permission,
+    permission: grant?.read && NATIVE_TEAM_READ_METHODS.includes(input.method) ? undefined : capability.permission,
   });
   return runWithBoundBusinessStaffActor({
     enterpriseId: principal.enterprise.enterpriseId,
@@ -378,6 +387,7 @@ export async function executeInternalBusinessMethod(input: {
         requestId: input.requestId,
         enterpriseId: principal.enterprise.enterpriseId,
       };
+      if (grant) bindOfficialInventoryGrant(delegation, grant);
       const context: TrpcContext = {
         req: input.req,
         res: input.res,

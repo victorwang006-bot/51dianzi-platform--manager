@@ -119,6 +119,8 @@ beforeEach(async () => {
     "customers.manage",
   ]));
   dbMocks = {
+    getAdminUserById: vi.fn().mockResolvedValue({ id:303,status:"active",adminRole:"merchant_mgr",sessionVersion:1 }),
+    getAdminUserPermissions: vi.fn().mockResolvedValue([]),
     withBusinessAuthorizationFence: vi.fn(async (_key: unknown, operation: () => Promise<unknown>) => operation()),
     getActiveBusinessStaffBinding: vi.fn().mockResolvedValue({
       id: 9,
@@ -369,5 +371,50 @@ describe("navigation scope lookup and observability safety", () => {
     vi.spyOn(console, "info").mockImplementation(() => { throw new Error("logging unavailable"); });
     const result = await businessRouter.createCaller(context()).navigation();
     expect(result.workbenchCapabilities).toEqual(["company.read", "inventory.read", "inquiry.receive"]);
+  });
+});
+
+
+describe("v13 native channel read context and revocation", () => {
+  function channelContext() {
+    return {
+      ...frontContext(["company.read", "inventory.channel"]),
+      authorizationVersion: "unchanged-front-version",
+      officialInventoryPermissions: { read: true, write: false, note: false, authorizationVersion: "front-verified-grant" },
+    };
+  }
+  it("native read with a real active binding/scope does not require legacy ERP read/write permissions", async () => {
+    scopePermissions = [];
+    dbMocks.getAdminUserPermissions.mockResolvedValue(["officialInventory.read"]);
+    getPlatformBusinessContext.mockResolvedValue(channelContext());
+    const result = await businessRouter.createCaller(context()).context();
+    expect(result.officialInventoryPermissions).toMatchObject({ read: true, write: false, note: false });
+    expect(result.workbenchCapabilities).toContain("inventory.channel");
+    expect(result.workbenchCapabilities).not.toContain("inventory.read");
+    expect(result.writeCapabilities).toEqual([]);
+    expect(scopePermissions).toEqual([]);
+  });
+  it("native grant/session changes alter context authorization even with an unchanged front version, and revocation wins", async () => {
+    scopePermissions = ["business.context.read"];
+    dbMocks.getAdminUserPermissions.mockResolvedValue(["officialInventory.read"]);
+    getPlatformBusinessContext.mockResolvedValue(channelContext());
+    const caller = businessRouter.createCaller(context());
+    const before = await caller.context();
+    dbMocks.getAdminUserById.mockResolvedValue({ id:303,status:"active",adminRole:"merchant_mgr",sessionVersion:2 });
+    const changed = await caller.context();
+    expect(changed.officialInventoryPermissions?.authorizationVersion).not.toBe(before.officialInventoryPermissions?.authorizationVersion);
+    expect(changed.authorizationVersion).not.toBe(before.authorizationVersion);
+    dbMocks.getAdminUserPermissions.mockResolvedValue([]);
+    const revoked = await caller.context();
+    expect(revoked.officialInventoryPermissions).toMatchObject({ read: false, write: false, note: false });
+    expect(revoked.workbenchCapabilities).not.toContain("inventory.channel");
+    expect(revoked.authorizationVersion).not.toBe(changed.authorizationVersion);
+  });
+  it("native read never replaces a revoked merchant scope or calls the upstream with it", async () => {
+    dbMocks.getAdminUserPermissions.mockResolvedValue(["officialInventory.read"]);
+    dbMocks.getActiveBusinessMerchantScope.mockResolvedValue(null);
+    getPlatformBusinessContext.mockResolvedValue(channelContext());
+    await expect(businessRouter.createCaller(context()).context()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(getPlatformBusinessContext).not.toHaveBeenCalled();
   });
 });

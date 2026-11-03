@@ -6,13 +6,19 @@ import { validateBusinessCommandResourceCorrelation } from "./businessCommandAud
 import type { TrpcContext } from "./_core/context";
 
 const fixture = vi.hoisted(() => ({
-  scope: { id: 10, adminUserId: 303, merchantId: 51, scopeVersion: 3, modulePermissions: ["business.context.read", "business.inventory.read", "business.inventory.write"] },
+  account: { id: 303, username: "fixture", displayName: "fixture", adminRole: "merchant_mgr", status: "active", sessionVersion: 1 },
+  nativePermissions: ["officialInventory.read"],
+  accountLookup: vi.fn(),
+  permissionLookup: vi.fn(),
+  scope: { id: 10, adminUserId: 303, merchantId: 51, status: "active", scopeVersion: 3, modulePermissions: ["business.context.read", "business.inventory.read", "business.inventory.write"] },
   scopeLookup: vi.fn(),
   record: vi.fn(),
 }));
 vi.mock("./db", () => ({
   withBusinessAuthorizationFence: async (_key: unknown, operation: () => Promise<unknown>) => operation(),
-  getActiveBusinessStaffBinding: async () => ({ id: 9, adminUserId: 303, frontUserId: 202, bindingVersion: 7 }),
+  getAdminUserById: (...args: unknown[]) => fixture.accountLookup(...args),
+  getAdminUserPermissions: (...args: unknown[]) => fixture.permissionLookup(...args),
+  getActiveBusinessStaffBinding: async () => ({ id: 9, adminUserId: 303, frontUserId: 202, status: "active", bindingVersion: 7 }),
   getActiveBusinessMerchantScope: (...args: unknown[]) => fixture.scopeLookup(...args),
   getBusinessWorkbenchMerchantById: async () => ({ id: 51, merchantNo: "fixture", companyName: "fixture", crmStatus: "enabled", registrationRegion: "CN", businessLicense: "91310000MAH4E001XX", crmOwnerPortalUserId: "101" }),
   recordBusinessCommandAccess: (...args: unknown[]) => fixture.record(...args),
@@ -23,7 +29,7 @@ import { businessRouter, businessRouterTestUtils } from "./businessRouter";
 import { router as frontRouter, publicProcedure as frontProcedure } from "../client/src/business/platform/front-router-types/server/_core/trpc";
 import { BusinessFailureCause as FrontFailureCause, BusinessServiceAuthenticationCause as FrontServiceAuthenticationCause } from "../client/src/business/platform/shared/businessFailure";
 import type { TrpcContext as FrontContext } from "../client/src/business/platform/front-router-types/server/_core/context";
-import { PlatformBusinessPublicError, PlatformBusinessServiceError, callPlatformBusinessCommand } from "./platformBusinessApi";
+import { PlatformBusinessPublicError, PlatformBusinessServiceError, callPlatformBusinessCommand, type OfficialInventoryPermissions } from "./platformBusinessApi";
 
 const original = { base: process.env.PLATFORM_API_BASE, key: process.env.PORTAL_API_KEY, merchants: process.env.BUSINESS_WORKBENCH_MERCHANT_IDS };
 let upstreamError: TRPCError | undefined;
@@ -33,18 +39,26 @@ const upstream = frontRouter({ internalBusiness: frontRouter({ execute: frontPro
   }
   if (upstreamError) throw upstreamError;
   return { item: { id: 901, responsibleUserId: 909, createdByUserId: 202 } };
-}), context: frontProcedure.input(z.unknown()).query(() => ({
-  enterpriseId: 51, companyName: "fixture", dataOwnerUserId: 404, ownerUserId: 101,
-  authorizationVersion: "business-auth-v1:fixture-server-version",
-  staffPrincipal: { status: "ready", frontendUserId: 202, adminAccountId: 303, bindingVersion: 7, enterpriseId: 51, user: { id: 202 } },
-  workbenchCapabilities: ["company.read", "inventory.read"], enabledModules: ["company.read", "inventory.read"],
-  sessionCapabilities: { chat: false, receptionReady: false },
-})) }) });
+}), context: frontProcedure.input(z.unknown()).query(({ input }) => {
+  const payload = input as { officialInventoryGrant: { permissions: OfficialInventoryPermissions } };
+  expect(input).toMatchObject({
+    staffUserId: 202, adminAccountId: 303, bindingVersion: 7,
+    officialInventoryGrant: { permissions: { read: true, write: false, note: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) } },
+  });
+  return {
+    enterpriseId: 51, companyName: "fixture", dataOwnerUserId: 404, ownerUserId: 101,
+    authorizationVersion: "business-auth-v1:fixture-server-version",
+    staffPrincipal: { status: "ready", frontendUserId: 202, adminAccountId: 303, bindingVersion: 7, enterpriseId: 51, user: { id: 202 } },
+    officialInventoryPermissions: payload.officialInventoryGrant.permissions,
+    workbenchCapabilities: ["company.read", "inventory.read"], enabledModules: ["company.read", "inventory.read"],
+    sessionCapabilities: { chat: false, receptionReady: false },
+  };
+}) }) });
 
 function context(): TrpcContext {
   return {
     user: { id: 303, openId: "local_admin:303", role: "admin" },
-    adminAccount: { id: 303, username: "fixture", displayName: "fixture", adminRole: "merchant_mgr", status: "active" },
+    adminAccount: fixture.account,
     adminPermissions: [], req: { headers: { "x-business-merchant-id": "51" }, ip: "127.0.0.1" }, res: {},
   } as unknown as TrpcContext;
 }
@@ -61,6 +75,9 @@ beforeEach(() => {
   process.env.PORTAL_API_KEY = "fixture-service-key";
   process.env.BUSINESS_WORKBENCH_MERCHANT_IDS = "51";
   upstreamError = undefined;
+  // Live native DB reads, not the stale session permission array, grant read only.
+  fixture.accountLookup.mockReset().mockImplementation(async (id: number) => id === fixture.account.id ? fixture.account : undefined);
+  fixture.permissionLookup.mockReset().mockImplementation(async (id: number) => id === fixture.account.id ? [...fixture.nativePermissions] : []);
   fixture.scopeLookup.mockReset().mockImplementation(async () => fixture.scope);
   fixture.record.mockReset().mockResolvedValue(undefined);
   // In-process HTTP adapters only. No TCP, database or production service exists.
@@ -89,6 +106,9 @@ describe("front formatter -> service client -> admin business router -> admin fo
     const result = await downstream();
     expect(result.status).toBe(status);
     expect(result.body.error.json.data).toMatchObject({ code, businessFailure: expected });
+    expect(fixture.accountLookup).toHaveBeenCalledWith(303);
+    expect(fixture.permissionLookup).toHaveBeenCalledWith(303);
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(fixture.record).not.toHaveBeenCalled();
   });
 
@@ -120,6 +140,8 @@ describe("front formatter -> service client -> admin business router -> admin fo
   it("BFF authorization revision retains server state and is stable across local scope array reorder", async () => {
     const first = await businessRouter.createCaller(context()).context();
     expect(first.authorizationVersion).toMatch(/^business-bff-auth-v1:[a-f0-9]{64}$/);
+    expect(first.staffPrincipal).toMatchObject({ status: "ready", frontendUserId: 202, adminAccountId: 303, bindingVersion: 7, enterpriseId: 51 });
+    expect(first.officialInventoryPermissions).toEqual({ read: true, write: false, note: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
     fixture.scope.modulePermissions.reverse();
     const reordered = await businessRouter.createCaller(context()).context();
     expect(reordered.authorizationVersion).toBe(first.authorizationVersion);

@@ -59,6 +59,14 @@ export type OfficialTeamMemberDto = {
   officialPermissions: OfficialInventoryPermission[];
 };
 
+/** Native active accounts are authorization targets, not fabricated official members. */
+export type OfficialPermissionTargetDto = {
+  adminUserId: number;
+  displayName: string;
+  officialPermissions: OfficialInventoryPermission[];
+  accountVersion: number;
+};
+
 export type OfficialCurrentAccessDto = {
   adminUserId: number;
   isSuperAdmin: boolean;
@@ -70,6 +78,7 @@ export type OfficialCurrentAccessDto = {
 export type OfficialTeamsOverview = {
   teams: OfficialTeamDto[];
   members: OfficialTeamMemberDto[];
+  targets: OfficialPermissionTargetDto[];
   currentAccess: OfficialCurrentAccessDto;
 };
 
@@ -99,6 +108,8 @@ export type SetOfficialTeamMemberInput = {
   role: "member" | "leader" | null;
   /** Current member revision; use 0 when assigning an account with no membership. */
   expectedRevision: number;
+  /** Required for new grant writes; omitted only for legacy replay/team-only requests. */
+  expectedAccountVersion?: number;
   requestId: string;
   /** Complete desired set of only four official module keys; omitted means do not edit grants. */
   officialPermissions?: OfficialInventoryPermission[];
@@ -113,6 +124,7 @@ export type OfficialTeamMutation = {
 export type OfficialTeamMemberMutation = {
   member: OfficialTeamMemberDto | null;
   officialPermissions: OfficialInventoryPermission[];
+  accountVersion: number;
   revision: number;
   requestId: string;
   idempotent: boolean;
@@ -406,7 +418,26 @@ export async function getOfficialTeamsOverview(
         eq(officialChannelTeams.id, officialChannelTeamMembers.teamId)
       )
       .orderBy(asc(officialChannelTeams.name), asc(adminUsers.username));
-    const ids = rows.map((row: { adminUserId: number }) => row.adminUserId);
+    // Query real accounts independently: permission-only targets have no membership row.
+    // The live super-admin gate above must run before any bulk account read.
+    const targets = await tx
+      .select({
+        adminUserId: adminUsers.id,
+        displayName: adminUsers.displayName,
+        username: adminUsers.username,
+        adminRole: adminUsers.adminRole,
+        accountVersion: adminUsers.sessionVersion,
+      })
+      .from(adminUsers)
+      .where(eq(adminUsers.status, "active"))
+      .orderBy(asc(adminUsers.username), asc(adminUsers.id));
+    // Keep existing members compatible, including their grants if now inactive.
+    const ids = Array.from(
+      new Set<number>([
+        ...rows.map((row: { adminUserId: number }) => row.adminUserId),
+        ...targets.map((row: { adminUserId: number }) => row.adminUserId),
+      ])
+    );
     const permissionRows =
       ids.length === 0
         ? []
@@ -451,6 +482,23 @@ export async function getOfficialTeamsOverview(
             row.adminRole,
             permissionsByAdminId.get(row.adminUserId) ?? []
           ),
+        })
+      ),
+      targets: targets.map(
+        (target: {
+          adminUserId: number;
+          displayName: string | null;
+          username: string;
+          adminRole: AdminRole;
+          accountVersion: number;
+        }) => ({
+          adminUserId: target.adminUserId,
+          displayName: target.displayName?.trim() || target.username,
+          officialPermissions: currentOfficialPermissions(
+            target.adminRole,
+            permissionsByAdminId.get(target.adminUserId) ?? []
+          ),
+          accountVersion: target.accountVersion,
         })
       ),
       currentAccess: {
@@ -701,6 +749,13 @@ function validateSetMemberInput(input: SetOfficialTeamMemberInput) {
   );
   assertRevision(input.expectedRevision);
   assertRequestId(input.requestId);
+  if (
+    input.expectedAccountVersion !== undefined &&
+    (!Number.isSafeInteger(input.expectedAccountVersion) ||
+      input.expectedAccountVersion < 0)
+  ) {
+    throw new Error("OFFICIAL_TEAM_ACCOUNT_VERSION_INVALID");
+  }
   if (input.teamId === null) {
     if (input.role !== null)
       throw new Error("OFFICIAL_TEAM_MEMBER_ROLE_INVALID");
@@ -773,6 +828,10 @@ export async function setOfficialTeamMember(
     role: input.role,
     expectedRevision: input.expectedRevision,
     officialPermissions: requestedOfficialPermissions ?? null,
+    // Do not change legacy request hashes: their persisted audit can still replay.
+    ...(input.expectedAccountVersion !== undefined
+      ? { expectedAccountVersion: input.expectedAccountVersion }
+      : {}),
   });
   try {
     return await dbTransaction(async tx => {
@@ -792,6 +851,14 @@ export async function setOfficialTeamMember(
         };
       }
 
+      // Old audited requests may replay, but no new permission write may bypass CAS.
+      if (
+        requestedOfficialPermissions !== undefined &&
+        input.expectedAccountVersion === undefined
+      ) {
+        throw new Error("OFFICIAL_TEAM_ACCOUNT_VERSION_REQUIRED");
+      }
+
       const [target] = await tx
         .select({
           id: adminUsers.id,
@@ -799,6 +866,7 @@ export async function setOfficialTeamMember(
           displayName: adminUsers.displayName,
           adminRole: adminUsers.adminRole,
           status: adminUsers.status,
+          sessionVersion: adminUsers.sessionVersion,
         })
         .from(adminUsers)
         .where(eq(adminUsers.id, input.adminUserId))
@@ -807,6 +875,13 @@ export async function setOfficialTeamMember(
       if (!target) throw new Error("OFFICIAL_TEAM_TARGET_ADMIN_NOT_FOUND");
       if (target.status !== "active")
         throw new Error("OFFICIAL_TEAM_TARGET_ADMIN_INACTIVE");
+      // Replay is checked first, so a successful request remains stable after its bump.
+      if (
+        input.expectedAccountVersion !== undefined &&
+        target.sessionVersion !== input.expectedAccountVersion
+      ) {
+        throw new Error("OFFICIAL_TEAM_ACCOUNT_VERSION_CONFLICT");
+      }
       if (
         target.adminRole === "super_admin" &&
         requestedOfficialPermissions !== undefined
@@ -845,10 +920,10 @@ export async function setOfficialTeamMember(
         if (existingLeader) throw new Error("OFFICIAL_TEAM_LEADER_EXISTS");
       }
 
-      const existingStoredPermissions =
-        requestedOfficialPermissions === undefined
-          ? []
-          : await lockStoredPermissions(tx, target.id);
+      const existingStoredPermissions = await lockStoredPermissions(
+        tx,
+        target.id
+      );
       const permissionPlan =
         requestedOfficialPermissions === undefined
           ? null
@@ -948,11 +1023,13 @@ export async function setOfficialTeamMember(
           .where(eq(adminUsers.id, target.id));
       }
 
+      const accountVersion =
+        target.sessionVersion + (memberChanged || permissionChanged ? 1 : 0);
       const resultingOfficialPermissions = permissionPlan
         ? permissionPlan.officialPermissions
         : currentOfficialPermissions(
             target.adminRole,
-            await lockStoredPermissions(tx, target.id)
+            existingStoredPermissions
           );
       const displayName = target.displayName?.trim() || target.username;
       const member =
@@ -988,6 +1065,7 @@ export async function setOfficialTeamMember(
       const mutation: OfficialTeamMemberMutation = {
         member: finalMember,
         officialPermissions: resultingOfficialPermissions,
+        accountVersion,
         revision: nextMember?.revision ?? 0,
         requestId: input.requestId,
         idempotent: false,
@@ -1011,6 +1089,7 @@ export async function setOfficialTeamMember(
             target.adminRole,
             existingStoredPermissions
           ),
+          accountVersion: target.sessionVersion,
         },
         afterData: {
           result: mutation,

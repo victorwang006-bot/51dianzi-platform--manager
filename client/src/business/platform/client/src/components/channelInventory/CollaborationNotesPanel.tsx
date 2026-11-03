@@ -20,9 +20,9 @@ function requestId() {
 }
 
 /** This panel knows only the new public collaboration DTO, never legacy private notes. */
-export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpriseId, actorUserId, startAdding, canAddNote, isCurrent, onClose, onComplete }: {
+export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpriseId, actorUserId, startAdding, canAddNote, canWriteNote = true, isCurrent, onClose, onComplete }: {
   materialId: number; partNumber: string; brand: string; enterpriseId: number; actorUserId: number;
-  startAdding: boolean; canAddNote: boolean; isCurrent: () => boolean; onClose: () => void; onComplete: () => void;
+  startAdding: boolean; canAddNote: boolean; canWriteNote?: boolean; isCurrent: () => boolean; onClose: () => void; onComplete: () => void;
 }) {
   const utils = trpc.useUtils();
   const [page, setPage] = useState(1);
@@ -46,8 +46,8 @@ export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpr
   const effectiveBusy = busy && !accessDenied;
   const effectiveRetryLocked = retryLocked && !accessDenied;
   const result = isCurrent() && !query.isError ? query.data : undefined;
-  const canAdd = canAddNote && result?.canAdd === true;
-  const editableNote = editing ? result?.items.find((note: Note) => note.id === editing.id && note.canEdit && note.authorUserId === actorUserId) : undefined;
+  const canAdd = canWriteNote && canAddNote && result?.canAdd === true;
+  const editableNote = editing && canWriteNote ? result?.items.find((note: Note) => note.id === editing.id && note.canEdit && note.authorUserId === actorUserId) : undefined;
   const permitted = !accessDenied && (editing ? Boolean(editableNote) : canAdd);
   const live = useRef({ isCurrent, permitted, onClose, busy: effectiveBusy, retryLocked: effectiveRetryLocked, accessDenied });
   live.current = { isCurrent, permitted, onClose, busy: effectiveBusy, retryLocked: effectiveRetryLocked, accessDenied };
@@ -133,7 +133,7 @@ export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpr
           {result?.items.map((note: Note) => <article className="ci-note-entry" key={note.id}>
             <div className="ci-note-entry-meta"><strong>{note.authorName}</strong><time>{formatBeijingDateTime(note.createdAt) || "—"}{String(note.updatedAt) !== String(note.createdAt) ? ` · 修改于 ${formatBeijingDateTime(note.updatedAt)}` : ""}</time></div>
             <p>{note.content}</p>
-            {note.canEdit && note.authorUserId === actorUserId ? <button type="button" className="ci-inline-link" disabled={busy || retryLocked} onClick={() => { frozen.current = null; setEditing({ id: note.id, revision: note.revision, content: note.content }); setMessage(""); }}>修改我的备注</button> : null}
+            {canWriteNote && note.canEdit && note.authorUserId === actorUserId ? <button type="button" className="ci-inline-link" disabled={busy || retryLocked} onClick={() => { frozen.current = null; setEditing({ id: note.id, revision: note.revision, content: note.content }); setMessage(""); }}>修改我的备注</button> : null}
           </article>)}
           {result && !result.items.length ? <p className="ci-note-empty">暂无协作备注。</p> : null}
         </section>}

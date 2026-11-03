@@ -38,6 +38,7 @@ function projectionContext(): TrpcContext {
       passwordHash: null,
       adminRole: "merchant_mgr",
       status: "active",
+      sessionVersion: 1,
       mfaEnabled: false,
       lastLoginAt: now,
       createdAt: now,
@@ -109,8 +110,15 @@ describe("业务 BFF 传输与投影契约", () => {
   });
 
   it("auth.me 是 front staffPrincipal.user 的只读投影，而不是可委托业务 method", async () => {
-    const getActiveBusinessStaffBinding = vi.fn().mockResolvedValue({ frontUserId: 202, bindingVersion: 7 });
+    const nativeAccount = projectionContext().adminAccount!;
+    const getAdminUserById = vi.fn(async (id: number) => id === nativeAccount.id ? nativeAccount : undefined);
+    // Profile projection has no native inventory grant: read/write/note all stay false.
+    const getAdminUserPermissions = vi.fn(async (_id: number) => []);
+    const getActiveBusinessStaffBinding = vi.fn().mockResolvedValue({ adminUserId: 303, frontUserId: 202, status: "active", bindingVersion: 7 });
     const getActiveBusinessMerchantScope = vi.fn().mockResolvedValue({
+      adminUserId: 303,
+      merchantId: 51,
+      status: "active",
       scopeVersion: 3,
       modulePermissions: ["business.context.read"],
     });
@@ -151,18 +159,20 @@ describe("业务 BFF 传输与投影契约", () => {
 
     vi.resetModules();
     vi.doMock("./db", () => ({
+      getAdminUserById,
+      getAdminUserPermissions,
       getActiveBusinessStaffBinding,
       getActiveBusinessMerchantScope,
       withBusinessAuthorizationFence,
     }));
-    vi.doMock("./businessAccess", () => ({
+    vi.doMock("./businessAccess", async (importOriginal) => ({
+      // Keep real active-account validation and live native read/write/note resolution.
+      ...await importOriginal<typeof import("./businessAccess")>(),
       BUSINESS_ADMIN_PERMISSIONS: ["business.context.read"],
       assertBusinessMerchantAccess: vi.fn().mockResolvedValue({ id: 51 }),
       businessEnterpriseBindingFromMerchant: vi.fn().mockReturnValue({ creditCode: "91310000MAH4E001XX", expectedOwnerUserId: 101 }),
       businessMerchantIdFromContext: vi.fn().mockReturnValue(51),
-      businessScopeAllows: vi.fn().mockReturnValue(true),
       getBusinessWorkbenchMerchantIds: vi.fn().mockReturnValue([51]),
-      requireBusinessAdminAccount: vi.fn((ctx: TrpcContext) => ctx.adminAccount),
       requireBusinessBindingManager: vi.fn(),
       toBusinessMerchantChoice: vi.fn(),
     }));
@@ -177,6 +187,10 @@ describe("业务 BFF 传输与投影契约", () => {
     const projection = await businessRouter.createCaller(projectionContext()).auth.me();
 
     expect(projection).toEqual(frontStaffUser);
+    expect(getAdminUserById).toHaveBeenCalledWith(303);
+    expect(getAdminUserPermissions).toHaveBeenCalledWith(303);
+    expect(getActiveBusinessStaffBinding).toHaveBeenCalledWith(303);
+    expect(getActiveBusinessMerchantScope).toHaveBeenCalledWith(303, 51);
     expect(getPlatformBusinessContext).toHaveBeenCalledWith(
       { creditCode: "91310000MAH4E001XX", expectedOwnerUserId: 101 },
       { staffUserId: 202, adminAccountId: 303, bindingVersion: 7 },

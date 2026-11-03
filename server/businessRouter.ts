@@ -6,6 +6,8 @@ import { router, publicProcedure } from "./_core/trpc";
 import { readonlyQueryCorrelation } from "./_core/readonlyQueryTiming";
 import {
   assertBusinessMerchantAccess,
+  currentOfficialInventoryPermissions,
+  officialRecorderNames,
   businessEnterpriseBindingFromMerchant,
   businessMerchantIdFromContext,
   businessScopeAllows,
@@ -24,6 +26,7 @@ import {
   PlatformBusinessPublicError,
   PlatformBusinessServiceError,
   type PlatformBusinessUpstreamTiming,
+  type OfficialInventoryPermissions,
   validatePlatformBusinessStaffCandidate,
 } from "./platformBusinessApi";
 import type { TrpcContext } from "./_core/context";
@@ -167,6 +170,12 @@ async function requireCurrentBusinessStaffBinding(adminUserId: number) {
   return staffBinding;
 }
 
+function intersectOfficialInventoryPermissions(native: OfficialInventoryPermissions | undefined, front: OfficialInventoryPermissions | undefined) {
+  return native ? { ...native, read: native.read && front?.read === true,
+    write: native.read && native.write && front?.write === true,
+    note: native.read && native.note && front?.note === true } : undefined;
+}
+
 function merchantCanEnterWorkbench(
   context: Awaited<ReturnType<typeof getPlatformBusinessContext>>,
   projection: BusinessWorkbenchProjection,
@@ -238,6 +247,7 @@ type CurrentBusinessAuthorization = {
   staffBinding: Awaited<ReturnType<typeof requireCurrentBusinessStaffBinding>>;
   scope: NonNullable<Awaited<ReturnType<typeof db.getActiveBusinessMerchantScope>>>;
   merchant: Awaited<ReturnType<typeof assertBusinessMerchantAccess>>;
+  officialInventoryPermissions?: OfficialInventoryPermissions;
 };
 
 /**
@@ -248,23 +258,34 @@ type CurrentBusinessAuthorization = {
 async function withCurrentBusinessAuthorization<T>(
   ctx: TrpcContext,
   merchantId: number,
-  capability: { module: BusinessModule; mode: BusinessAccessMode },
+  capability: { module: BusinessModule; mode: BusinessAccessMode; method?: string },
   operation: (authorization: CurrentBusinessAuthorization) => Promise<T>,
 ) {
   const account = requireBusinessAdminAccount(ctx);
   return db.withBusinessAuthorizationFence({ adminUserId: account.id, merchantId }, async () => {
     const staffBinding = await requireCurrentBusinessStaffBinding(account.id);
-    const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode);
+    const channel = capability.method?.startsWith("channelInventory.") === true;
+    const contextProjection = capability.module === "context" && capability.method === undefined;
+    const officialInventoryPermissions = channel || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined;
+    if (channel) {
+      const notes = ["channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit"].includes(capability.method!);
+      const requirement = notes ? "note" : capability.mode === "write" ? "write" : "read";
+      if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement]) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
+    }
+    const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit"];
+    const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
+      && (contextProjection || nativeReadMethods.includes(capability.method ?? ""));
+    const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);
     // This read occurs while the fence is held and supplies the actual scope
     // version persisted in the generic audit record for a forwarded command.
     const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);
     if (!scope) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
     }
-    if (!businessScopeAllows(scope, capability.module, capability.mode)) {
+    if (!businessScopeAllows(scope, capability.module, capability.mode) && !officialReadProjection) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权" });
     }
-    return operation({ account, staffBinding, scope, merchant });
+    return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions });
   });
 }
 
@@ -299,7 +320,7 @@ async function forwardBusinessMethod(
   // workbench authorization system. The portal rechecks its original staff
   // permissions for the fixed method below on every request.
   const merchantId = businessMerchantIdFromContext(ctx);
-  return withCurrentBusinessAuthorization(ctx, merchantId, capability, async ({ staffBinding, scope, merchant }) => {
+  return withCurrentBusinessAuthorization(ctx, merchantId, capability, async ({ staffBinding, scope, merchant, officialInventoryPermissions }) => {
     const binding = businessEnterpriseBindingFromMerchant(merchant);
     const actor = businessAuditActor(ctx);
     const requestId = randomUUID();
@@ -313,6 +334,7 @@ async function forwardBusinessMethod(
         requestId,
         method: capability.method,
         params,
+        officialInventoryPermissions: officialInventoryPermissions ? { ...officialInventoryPermissions, write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write") } : undefined,
       });
     } catch (error) {
       if (error instanceof PlatformBusinessPublicError) {
@@ -326,6 +348,13 @@ async function forwardBusinessMethod(
         errorType: error instanceof Error ? error.name : "UnknownError",
       });
       throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务服务暂时不可用，请稍后重试" });
+    }
+    if (capability.method === "channelInventory.listTeamMaterials" && result && typeof result === "object") {
+      const page = result as { items?: Record<string, unknown>[] };
+      if (!Array.isArray(page.items) || page.items.length > 100) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "库存列表结果无效" });
+      const names = await officialRecorderNames(page.items.map(item => item.recorderAdminAccountId).filter((id): id is number => typeof id === "number"));
+      result = { ...page, items: page.items.map(({ recorderAdminAccountId, originalRecorderName: _untrustedName, ...item }) => ({ ...item,
+        originalRecorderName: typeof recorderAdminAccountId === "number" ? names.get(recorderAdminAccountId) ?? null : null })) };
     }
     // The new logical read-only source query retains the complete binding/scope
     // fence, but adds no production command-audit DML. Other methods are unchanged.
@@ -768,11 +797,12 @@ export const businessRouter = router({
     const account = requireBusinessAdminAccount(ctx);
     const correlationId = readonlyQueryCorrelation(ctx.req);
     const scopeLookupStartedAt = Date.now();
+    const navigationNative = await currentOfficialInventoryPermissions(ctx);
     let scopedMerchantIds: number[];
     try {
       const configuredMerchantIds = new Set(getBusinessWorkbenchMerchantIds());
       scopedMerchantIds = (await db.listActiveBusinessMerchantScopes(account.id))
-        .filter(scope => configuredMerchantIds.has(scope.merchantId) && businessScopeAllows(scope, "context", "read"))
+        .filter(scope => configuredMerchantIds.has(scope.merchantId) && (businessScopeAllows(scope, "context", "read") || navigationNative.read))
         .map(scope => scope.merchantId);
     } catch {
       const elapsed = Math.max(0, Date.now() - scopeLookupStartedAt);
@@ -785,11 +815,12 @@ export const businessRouter = router({
       const candidateStartedAt = Date.now();
       let upstreamTiming: PlatformBusinessUpstreamTiming | undefined;
       try {
-        const choice = await withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account: currentAccount, staffBinding, scope, merchant }) => {
+        const choice = await withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account: currentAccount, staffBinding, scope, merchant, officialInventoryPermissions }) => {
           const context = await getPlatformBusinessContext(businessEnterpriseBindingFromMerchant(merchant), {
             staffUserId: staffBinding.frontUserId,
             adminAccountId: currentAccount.id,
             bindingVersion: staffBinding.bindingVersion,
+            officialInventoryPermissions,
           }, {
             onUpstreamTiming: timing => {
               upstreamTiming = timing;
@@ -798,6 +829,7 @@ export const businessRouter = router({
           const projection = projectBusinessWorkbenchCapabilities({
             scope,
             frontWorkbenchCapabilities: context.workbenchCapabilities,
+            officialInventoryPermissions: intersectOfficialInventoryPermissions(officialInventoryPermissions, context.officialInventoryPermissions),
           });
           return merchantCanEnterWorkbench(context, projection)
             ? toBusinessMerchantChoice(merchant, projection)
@@ -851,9 +883,10 @@ export const businessRouter = router({
   }),
   merchants: publicProcedure.input(merchantListInput).query(async ({ ctx, input }) => {
     const account = requireBusinessAdminAccount(ctx);
+    const navigationNative = await currentOfficialInventoryPermissions(ctx);
     const configuredMerchantIds = new Set(getBusinessWorkbenchMerchantIds());
     const merchantIds = (await db.listActiveBusinessMerchantScopes(account.id))
-      .filter(scope => configuredMerchantIds.has(scope.merchantId) && businessScopeAllows(scope, "context", "read"))
+      .filter(scope => configuredMerchantIds.has(scope.merchantId) && (businessScopeAllows(scope, "context", "read") || navigationNative.read))
       .map(scope => scope.merchantId);
     const result = await db.getBusinessWorkbenchMerchants(
       { page: input.page, pageSize: input.pageSize, search: input.search },
@@ -861,15 +894,17 @@ export const businessRouter = router({
     );
     const data = (await Promise.all(result.data.map(async ({ id: merchantId }) => {
       try {
-        return await withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account: currentAccount, staffBinding, scope, merchant }) => {
+        return await withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account: currentAccount, staffBinding, scope, merchant, officialInventoryPermissions }) => {
           const context = await getPlatformBusinessContext(businessEnterpriseBindingFromMerchant(merchant), {
             staffUserId: staffBinding.frontUserId,
             adminAccountId: currentAccount.id,
             bindingVersion: staffBinding.bindingVersion,
+            officialInventoryPermissions,
           });
           const projection = projectBusinessWorkbenchCapabilities({
             scope,
             frontWorkbenchCapabilities: context.workbenchCapabilities,
+            officialInventoryPermissions: intersectOfficialInventoryPermissions(officialInventoryPermissions, context.officialInventoryPermissions),
           });
           return merchantCanEnterWorkbench(context, projection)
             ? toBusinessMerchantChoice(merchant, projection)
@@ -886,7 +921,7 @@ export const businessRouter = router({
 
   context: publicProcedure.query(async ({ ctx }) => {
     const merchantId = businessMerchantIdFromContext(ctx);
-    return withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account, staffBinding, scope, merchant }) => {
+    return withCurrentBusinessAuthorization(ctx, merchantId, { module: "context", mode: "read" }, async ({ account, staffBinding, scope, merchant, officialInventoryPermissions }) => {
       const binding = businessEnterpriseBindingFromMerchant(merchant);
       let context;
       try {
@@ -896,6 +931,7 @@ export const businessRouter = router({
             staffUserId: staffBinding.frontUserId,
             adminAccountId: account.id,
             bindingVersion: staffBinding.bindingVersion,
+            officialInventoryPermissions,
           },
         );
       } catch (error) {
@@ -911,6 +947,7 @@ export const businessRouter = router({
       const projection = projectBusinessWorkbenchCapabilities({
         scope,
         frontWorkbenchCapabilities: context.workbenchCapabilities,
+            officialInventoryPermissions: intersectOfficialInventoryPermissions(officialInventoryPermissions, context.officialInventoryPermissions),
       });
       if (!merchantCanEnterWorkbench(context, projection)) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "前台业务员工主体当前不可用", cause: new BusinessFailureCause("STAFF_BINDING_INVALID") });
@@ -931,12 +968,14 @@ export const businessRouter = router({
         staffPrincipal: context.staffPrincipal,
         authorizationVersion: context.authorizationVersion === undefined ? undefined : `business-bff-auth-v1:${createHash("sha256").update(JSON.stringify({
           front: context.authorizationVersion,
+          officialInventoryPermissions: intersectOfficialInventoryPermissions(officialInventoryPermissions, context.officialInventoryPermissions),
           merchantId: merchant.id,
           staffUserId: staffBinding.frontUserId,
           bindingVersion: staffBinding.bindingVersion,
           scopeVersion: scope.scopeVersion,
           modulePermissions: Array.from(new Set(scope.modulePermissions)).sort(),
         })).digest("hex")}`,
+        officialInventoryPermissions: projection.officialInventoryPermissions,
         enabledModules: projection.workbenchCapabilities,
         sessionCapabilities: projectBusinessSessionCapabilities({
           frontReceptionReady: context.sessionCapabilities.receptionReady,

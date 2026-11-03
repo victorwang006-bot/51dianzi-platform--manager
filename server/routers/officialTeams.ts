@@ -63,6 +63,14 @@ function mapOfficialTeamError(error: unknown): never {
       code: "BAD_REQUEST",
       message: "版本号无效",
     },
+    OFFICIAL_TEAM_ACCOUNT_VERSION_INVALID: {
+      code: "BAD_REQUEST",
+      message: "员工账号版本无效",
+    },
+    OFFICIAL_TEAM_ACCOUNT_VERSION_REQUIRED: {
+      code: "PRECONDITION_FAILED",
+      message: "缺少员工账号版本，请刷新权限配置后重新保存",
+    },
     OFFICIAL_TEAM_REQUEST_ID_INVALID: {
       code: "BAD_REQUEST",
       message: "请求号无效",
@@ -99,6 +107,10 @@ function mapOfficialTeamError(error: unknown): never {
     OFFICIAL_TEAM_MEMBER_REVISION_CONFLICT: {
       code: "CONFLICT",
       message: "员工团队配置已变化，请刷新后重试",
+    },
+    OFFICIAL_TEAM_ACCOUNT_VERSION_CONFLICT: {
+      code: "CONFLICT",
+      message: "员工账号或权限已变化，请刷新后核对再保存",
     },
     OFFICIAL_TEAM_LEADER_EXISTS: {
       code: "CONFLICT",
@@ -207,6 +219,7 @@ export const officialTeamsRouter = router({
           teamId: teamIdSchema.nullable(),
           role: z.enum(["member", "leader"]).nullable(),
           expectedRevision: revisionSchema,
+          expectedAccountVersion: revisionSchema.optional(),
           requestId: requestIdSchema,
           officialPermissions: officialPermissionsSchema.optional(),
         })

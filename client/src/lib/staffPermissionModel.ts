@@ -2,6 +2,7 @@ import {
   normalizeAssignedAdminPermissions,
   type AdminPermission,
 } from "@shared/adminPermissions";
+import { z } from "zod";
 import {
   ERP_PERMISSION_DEFINITIONS,
   ERP_PERMISSION_GROUPS,
@@ -96,6 +97,147 @@ export type StaffSaveDraft = {
 };
 
 export type StaffSaveBaseline = StaffSaveDraft;
+
+export const STAFF_PERMISSION_TABS = [
+  { id: "basic", label: "员工资料" },
+  { id: "admin", label: "平台权限" },
+  { id: "official-team", label: "渠道库存" },
+  { id: "erp", label: "业务ERP" },
+  { id: "status", label: "账号与安全" },
+] as const;
+export type StaffPermissionTab = (typeof STAFF_PERMISSION_TABS)[number]["id"];
+export function staffPermissionTab(section: string): StaffPermissionTab {
+  if (section === "member") return "basic";
+  if (section === "scope") return "erp";
+  return STAFF_PERMISSION_TABS.some(tab => tab.id === section)
+    ? (section as StaffPermissionTab)
+    : "basic";
+}
+/** Only the active page is submitted; other page drafts remain untouched. */
+export function staffDraftForPage(
+  tab: StaffPermissionTab,
+  draft: StaffSaveDraft,
+  baseline: StaffSaveBaseline
+): StaffSaveDraft {
+  if (tab === "admin")
+    return {
+      ...baseline,
+      adminRole: draft.adminRole,
+      adminPermissions: draft.adminPermissions,
+    };
+  if (tab === "erp")
+    return {
+      ...baseline,
+      erpPermissionKeys: draft.erpPermissionKeys,
+      inventoryDataScope: draft.inventoryDataScope,
+    };
+  return baseline;
+}
+
+/** Same organization.overview business source as Organization.tsx; never official/operations IDs. */
+const staffBusinessOrganizationSchema = z.object({
+  enterprise: z.object({ id: z.number().int().positive(), name: z.string() }),
+  actorUserId: z.number().int().positive(),
+  canManage: z.boolean(),
+  teams: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      name: z.string(),
+      status: z.string(),
+      revision: z.number().int().nonnegative(),
+    })
+  ),
+  members: z.array(
+    z.object({
+      userId: z.number().int().positive(),
+      status: z.string(),
+      enterpriseRole: z.string(),
+      teamId: z.number().int().positive().nullable(),
+      teamRole: z.enum(["member", "leader"]).nullable(),
+      revision: z.number().int().nonnegative(),
+    })
+  ),
+});
+export type StaffBusinessOrganization = z.infer<
+  typeof staffBusinessOrganizationSchema
+>;
+export type StaffBusinessTeamMember =
+  StaffBusinessOrganization["members"][number];
+export type StaffBusinessTeamDraft = Pick<
+  StaffBusinessTeamMember,
+  "teamId" | "teamRole" | "revision"
+>;
+export type StaffBusinessTeamSaveResult = {
+  saved: true;
+  member: StaffBusinessTeamMember | null;
+  warning?: string;
+};
+export function readStaffBusinessOrganization(
+  value: unknown,
+  context: StaffBusinessContext | null
+): StaffBusinessOrganization {
+  const result = staffBusinessOrganizationSchema.parse(value);
+  if (
+    !context ||
+    result.enterprise.id !== context.enterpriseId ||
+    result.actorUserId !== context.frontendUserId
+  )
+    throw new Error("业务团队与当前已核验企业或业务操作者不一致");
+  return result;
+}
+export function staffBusinessTeamGuard(
+  row: StaffRow | null | undefined,
+  access: StaffErpEditorAccess,
+  organization?: StaffBusinessOrganization | null
+): StaffErpMutationGuard {
+  const binding = row?.binding;
+  if (
+    !row?.admin ||
+    !row.member ||
+    row.bindingState !== "bound" ||
+    !binding ||
+    binding.adminUserId !== row.admin.id ||
+    binding.frontUserId !== row.member.userId
+  )
+    return {
+      allowed: false,
+      reason: "尚未完成真实后台账号与业务成员关联，请使用现有邀请／关联流程。",
+    };
+  if (
+    !access.available ||
+    !access.canManageMembers ||
+    !organization?.canManage ||
+    organization.actorUserId !== access.currentUserId
+  )
+    return {
+      allowed: false,
+      reason: "业务团队未安全就绪或当前操作者没有业务组织管理权限。",
+    };
+  if (
+    row.bff.state !== "ready" ||
+    row.scopeState !== "ready" ||
+    row.admin.status !== "active" ||
+    row.member.status !== "active"
+  )
+    return {
+      allowed: false,
+      reason: "目标账号、业务成员或 BFF 前置核验未就绪，团队设置保持禁用。",
+    };
+  const member = organization.members.find(
+    item => item.userId === binding.frontUserId
+  );
+  if (!member || member.status !== "active")
+    return {
+      allowed: false,
+      reason: "该真实业务成员不在当前有效业务组织范围内。",
+    };
+  if (member.enterpriseRole === "super_admin")
+    return {
+      allowed: false,
+      reason: "企业所有者团队身份保持只读，请使用原有组织管理流程。",
+    };
+  return { allowed: true };
+}
 
 export type StaffSaveCompletion = {
   erpPermissions: boolean;

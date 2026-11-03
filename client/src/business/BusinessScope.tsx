@@ -39,6 +39,14 @@ export type BusinessSessionCapabilities = Readonly<{
   receptionReady?: boolean;
 }>;
 
+/** BFF-proven native grants intersected with the current real business scope. */
+export type BusinessOfficialInventoryPermissions = Readonly<{
+  read: boolean;
+  write: boolean;
+  note: boolean;
+  authorizationVersion: string;
+}>;
+
 /**
  * Public UI signal for imported front pages. `identity` is derived locally from
  * the BFF-proven scope below; neither field can grant a permission or select a
@@ -58,6 +66,7 @@ type BusinessScopeValue = {
   frontUser: BusinessFrontUser;
   staffPrincipal: ReadyBusinessStaffPrincipal;
   sessionCapabilities: BusinessSessionCapabilities;
+  officialInventoryPermissions: BusinessOfficialInventoryPermissions;
   /** UI-only cache/draft namespace. Authorization stays exclusively in the BFF. */
   storageScope: string;
   /** A background recheck is not an identity or permission change. */
@@ -91,6 +100,7 @@ export function BusinessScopeProvider({
   merchantId,
   staffPrincipal,
   sessionCapabilities,
+  officialInventoryPermissions,
   contextVerificationState,
   authorizationVersion,
   onAuthorizationError = ignoreAuthorizationError,
@@ -99,6 +109,7 @@ export function BusinessScopeProvider({
   merchantId: number;
   staffPrincipal: ReadyBusinessStaffPrincipal;
   sessionCapabilities?: BusinessSessionCapabilities;
+  officialInventoryPermissions?: BusinessOfficialInventoryPermissions;
   contextVerificationState: BusinessContextVerification["state"];
   authorizationVersion?: string;
   onAuthorizationError?: (error: unknown) => void;
@@ -122,6 +133,7 @@ export function BusinessScopeProvider({
       frontUser,
       staffPrincipal,
       sessionCapabilities: capabilities,
+      officialInventoryPermissions: officialInventoryPermissions ?? { read: false, write: false, note: false, authorizationVersion: "" },
       storageScope,
       contextVerification,
       onAuthorizationError,
@@ -131,6 +143,7 @@ export function BusinessScopeProvider({
       frontUser,
       staffPrincipal,
       capabilities,
+      officialInventoryPermissions,
       storageScope,
       contextVerification,
       onAuthorizationError,

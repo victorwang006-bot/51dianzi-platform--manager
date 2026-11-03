@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ADMIN_WORKBENCH_NAVIGATION_GROUPS } from "./adminWorkbenchNavigationModel";
 import {
   ADMIN_WORKSPACE_DEFINITIONS,
+  hasAdminChannelInventoryRead,
   getAdminWorkspaceForLocation,
   getAdminWorkspaceNavigationRoute,
   getAdminWorkspaceNavigationState,
@@ -384,5 +385,29 @@ describe("实际路由驱动两级选中态", () => {
       getAdminWorkspaceNavigationState(visible("/analytics"), "/staff")
         .activeWorkspace
     ).toBeNull();
+  });
+});
+
+
+describe("渠道库存真实 native read 准入", () => {
+  it("普通 native 员工必须有精确 officialInventory.read，ERP能力和其他native动作不能替代", () => {
+    const account = { hasNativeAdminAccount: true, adminRole: "merchant_mgr" };
+    for (const permissions of [[], ["business.inventory.read"], ["inventory.manage"], ["officialInventory.write"], ["officialInventory.note"]]) {
+      expect(hasAdminChannelInventoryRead({ ...account, permissions })).toBe(false);
+    }
+    expect(hasAdminChannelInventoryRead({ ...account, permissions: ["officialInventory.read"] })).toBe(true);
+  });
+  it("真实超级管理员按角色解析全部权限，但OAuth兼容super_admin不能伪装native账号", () => {
+    expect(hasAdminChannelInventoryRead({ hasNativeAdminAccount: true, adminRole: "super_admin", permissions: [] })).toBe(true);
+    expect(hasAdminChannelInventoryRead({ hasNativeAdminAccount: false, adminRole: "super_admin", permissions: ["officialInventory.read"] })).toBe(false);
+    expect(hasAdminChannelInventoryRead({ adminRole: "super_admin" })).toBe(false);
+    expect(hasAdminChannelInventoryRead(null)).toBe(false);
+  });
+  it("撤回read后不会被菜单原有排序/路由选中状态重新授予", () => {
+    const account = { hasNativeAdminAccount: true, adminRole: "merchant_mgr", permissions: ["officialInventory.read"] };
+    const channel = visible("/workbench/channel-inventory");
+    expect(getAdminWorkspaceNavigationState(hasAdminChannelInventoryRead(account) ? channel : [], "/workbench/channel-inventory").activeItem?.path).toBe("/workbench/channel-inventory");
+    account.permissions = [];
+    expect(getAdminWorkspaceNavigationState(hasAdminChannelInventoryRead(account) ? channel : [], "/workbench/channel-inventory").activeItem).toBeNull();
   });
 });

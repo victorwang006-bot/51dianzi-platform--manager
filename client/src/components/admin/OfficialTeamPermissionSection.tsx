@@ -1,380 +1,506 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
   OFFICIAL_INVENTORY_PERMISSIONS,
   errorMessage,
   normalizeOfficialPermissions,
   officialPermissionLabel,
   officialRequestId,
-  officialTeamRoleLabel,
   readOfficialTeamsOverview,
+  readOfficialTeamMemberMutation,
   type OfficialInventoryPermission,
-  type OfficialTeam,
-  type OfficialTeamMember,
   type OfficialTeamRole,
 } from "@/lib/officialChannelInventoryUi";
+import {
+  sameStringSet,
+  type StaffBusinessOrganization,
+  type StaffBusinessTeamDraft,
+  type StaffBusinessTeamSaveResult,
+} from "@/lib/staffPermissionModel";
 import { trpc } from "@/lib/trpc";
-import { Pencil, RefreshCw, Settings2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import "./OfficialTeamPermissionSection.css";
 
-type TeamDialogState =
-  | { mode: "create" }
-  | { mode: "edit"; team: OfficialTeam }
-  | null;
-
-type TeamDraft = {
+type GrantDraft = {
   teamId: number | null;
   role: OfficialTeamRole | null;
-  permissions: OfficialInventoryPermission[];
   revision: number;
+  accountVersion: number;
+  permissions: OfficialInventoryPermission[];
 };
-
-function samePermissions(
-  left: readonly OfficialInventoryPermission[],
-  right: readonly OfficialInventoryPermission[]
+export type ChannelPermissionState = {
+  dirty: boolean;
+  saving: boolean;
+  canSave: boolean;
+};
+export type OfficialTeamPermissionHandle = { save: () => Promise<void> };
+export type StaffBusinessTeamEditor = {
+  overview?: StaffBusinessOrganization;
+  frontUserId: number | null;
+  canEdit: boolean;
+  reason?: string | null;
+  loading?: boolean;
+  error?: string | null;
+  onRetry: () => void;
+  onSave: (
+    draft: StaffBusinessTeamDraft
+  ) => Promise<StaffBusinessTeamSaveResult>;
+};
+function sameTeam(
+  a: StaffBusinessTeamDraft | null,
+  b: StaffBusinessTeamDraft | null
 ) {
+  return a?.teamId === b?.teamId && a?.teamRole === b?.teamRole;
+}
+function sameGrant(a: GrantDraft | null, b: GrantDraft | null) {
   return (
-    left.length === right.length &&
-    left.every((permission, index) => permission === right[index])
+    a?.teamId === b?.teamId &&
+    a?.role === b?.role &&
+    a?.revision === b?.revision &&
+    a?.accountVersion === b?.accountVersion &&
+    sameStringSet(a?.permissions ?? [], b?.permissions ?? [])
   );
 }
 
-function teamDraftFrom(member: OfficialTeamMember | undefined): TeamDraft {
-  return {
-    teamId: member?.teamId ?? null,
-    role: member?.role ?? null,
-    permissions: member?.officialPermissions ?? [],
-    revision: member?.revision ?? 0,
-  };
-}
-
-export default function OfficialTeamPermissionSection({
-  adminUserId,
-  hasRealAdminAccount,
-  targetIsSuperAdmin,
-  overviewData,
-  overviewLoading,
-  overviewError,
-  onRetryOverview,
-}: {
-  /** The native admin_users.id from Staff row.admin.id, never a portal/front-user id. */
-  adminUserId: number | null;
-  hasRealAdminAccount: boolean;
-  /** Explicit grants cannot be written for super_admin; its native role owns them. */
-  targetIsSuperAdmin: boolean;
-  /** Raw tRPC result is decoded fail-closed by the native UI helper. */
-  overviewData: unknown;
-  overviewLoading: boolean;
-  overviewError: string | null;
-  onRetryOverview: () => void;
-}) {
+/** ERP team assignments never enter officialTeams.setMember. The two services are not atomic. */
+const OfficialTeamPermissionSection = forwardRef<
+  OfficialTeamPermissionHandle,
+  {
+    adminUserId: number | null;
+    hasRealAdminAccount: boolean;
+    targetIsActive?: boolean;
+    targetIsSuperAdmin: boolean;
+    overviewData: unknown;
+    overviewLoading: boolean;
+    overviewError: string | null;
+    onRetryOverview: () => void;
+    businessTeam?: StaffBusinessTeamEditor;
+    onStateChange?: (state: ChannelPermissionState) => void;
+  }
+>(function OfficialTeamPermissionSection(
+  {
+    adminUserId,
+    hasRealAdminAccount,
+    targetIsActive = true,
+    targetIsSuperAdmin,
+    overviewData,
+    overviewLoading,
+    overviewError,
+    onRetryOverview,
+    businessTeam,
+    onStateChange,
+  },
+  ref
+) {
   const overview = useMemo(
     () => readOfficialTeamsOverview(overviewData),
     [overviewData]
   );
-  const member = useMemo(
+  const target = overview.targets.find(
+    item => item.adminUserId === adminUserId
+  );
+  const officialMember = overview.members.find(
+    item => item.adminUserId === adminUserId
+  );
+  const incomingGrant = useMemo<GrantDraft | null>(
     () =>
-      adminUserId === null
-        ? undefined
-        : overview.members.find(item => item.adminUserId === adminUserId),
-    [adminUserId, overview.members]
+      target
+        ? {
+            teamId: officialMember?.teamId ?? null,
+            role: officialMember?.role ?? null,
+            revision: officialMember?.revision ?? 0,
+            accountVersion: target.accountVersion,
+            permissions: target.officialPermissions,
+          }
+        : null,
+    [target, officialMember]
   );
-  const [baseline, setBaseline] = useState<TeamDraft>(() =>
-    teamDraftFrom(member)
+  const businessMember = businessTeam?.overview?.members.find(
+    item => item.userId === businessTeam.frontUserId
   );
-  const [draft, setDraft] = useState<TeamDraft>(() => teamDraftFrom(member));
-  const [teamDialog, setTeamDialog] = useState<TeamDialogState>(null);
-  const [teamName, setTeamName] = useState("");
-  const [savingTeam, setSavingTeam] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
+  const incomingTeam = useMemo<StaffBusinessTeamDraft | null>(
+    () =>
+      businessMember
+        ? {
+            teamId: businessMember.teamId,
+            teamRole: businessMember.teamRole,
+            revision: businessMember.revision,
+          }
+        : null,
+    [businessMember]
+  );
+  const [grantBase, setGrantBase] = useState(incomingGrant);
+  const [grantDraft, setGrantDraft] = useState(incomingGrant);
+  const [teamBase, setTeamBase] = useState(incomingTeam);
+  const [teamDraft, setTeamDraft] = useState(incomingTeam);
+  const [grantConflict, setGrantConflict] = useState(false);
+  const [teamConflict, setTeamConflict] = useState(false);
+  const [teamNeedsRefresh, setTeamNeedsRefresh] = useState(false);
+  const [grantNeedsRefresh, setGrantNeedsRefresh] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [feedback, setFeedback] = useState<string[]>([]);
+  const identity = `${adminUserId ?? "none"}:${businessTeam?.frontUserId ?? "unlinked"}`;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
+  const generation = useRef(0);
   useEffect(() => {
-    const next = teamDraftFrom(member);
-    setBaseline(next);
-    setDraft(next);
-    setSaveError(null);
-  }, [member?.adminUserId, member?.revision, overviewData]);
-
-  const setMember = trpc.officialTeams.setMember.useMutation();
-  const createTeam = trpc.officialTeams.create.useMutation();
-  const updateTeam = trpc.officialTeams.update.useMutation();
-  const archiveTeam = trpc.officialTeams.archive.useMutation();
-
-  const canConfigure =
+    generation.current += 1;
+    setGrantBase(incomingGrant);
+    setGrantDraft(incomingGrant);
+    setTeamBase(incomingTeam);
+    setTeamDraft(incomingTeam);
+    setGrantConflict(false);
+    setTeamConflict(false);
+    setTeamNeedsRefresh(false);
+    setGrantNeedsRefresh(false);
+    setFeedback([]);
+    savingRef.current = false;
+    setSaving(false);
+    // Identity changes explicitly discard, never transfer, another employee's draft.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity]);
+  useEffect(
+    () => () => {
+      generation.current += 1;
+    },
+    []
+  );
+  const grantDirty =
+    !targetIsSuperAdmin &&
+    !sameStringSet(grantBase?.permissions ?? [], grantDraft?.permissions ?? []);
+  const teamDirty = !sameTeam(teamBase, teamDraft);
+  useEffect(() => {
+    if (savingRef.current || !incomingGrant) return;
+    // A refetch started before a successful write cannot roll its receipt back.
+    if (grantBase && incomingGrant.accountVersion < grantBase.accountVersion)
+      return;
+    if (grantDirty && !sameGrant(grantBase, incomingGrant))
+      setGrantConflict(true);
+    else if (!grantDirty) {
+      setGrantBase(incomingGrant);
+      setGrantDraft(incomingGrant);
+      setGrantConflict(false);
+      setGrantNeedsRefresh(false);
+    }
+  }, [incomingGrant, grantBase, grantDirty, saving]);
+  useEffect(() => {
+    if (savingRef.current || !incomingTeam) return;
+    if (teamBase && incomingTeam.revision < teamBase.revision) return;
+    if (
+      teamDirty &&
+      (!sameTeam(teamBase, incomingTeam) ||
+        teamBase?.revision !== incomingTeam.revision)
+    )
+      setTeamConflict(true);
+    else if (
+      !teamDirty &&
+      (!teamNeedsRefresh || sameTeam(teamBase, incomingTeam))
+    ) {
+      setTeamBase(incomingTeam);
+      setTeamDraft(incomingTeam);
+      setTeamConflict(false);
+      setTeamNeedsRefresh(false);
+    }
+  }, [incomingTeam, teamBase, teamDirty, teamNeedsRefresh, saving]);
+  const canGrant =
     overview.available &&
-    overview.serverScope.isSuperAdmin === true &&
+    overview.serverScope.isSuperAdmin &&
     hasRealAdminAccount &&
-    adminUserId !== null;
-  const activeTeams = useMemo(
-    () => overview.teams.filter(team => team.status === "active"),
-    [overview.teams]
-  );
-  const assignmentTeams = useMemo(() => {
-    if (!draft.teamId || activeTeams.some(team => team.id === draft.teamId))
-      return activeTeams;
-    const current = overview.teams.find(team => team.id === draft.teamId);
-    return current ? [...activeTeams, current] : activeTeams;
-  }, [activeTeams, draft.teamId, overview.teams]);
-  const membershipChanged =
-    baseline.teamId !== draft.teamId || baseline.role !== draft.role;
-  const permissionsChanged = !samePermissions(
-    baseline.permissions,
-    draft.permissions
-  );
-  const hasChanges =
-    membershipChanged || (!targetIsSuperAdmin && permissionsChanged);
-  const canEditOfficialPermissions = canConfigure && !targetIsSuperAdmin;
+    targetIsActive &&
+    adminUserId !== null &&
+    Boolean(target) &&
+    !targetIsSuperAdmin &&
+    !overviewLoading &&
+    !overviewError;
+  const canTeam =
+    businessTeam?.canEdit === true &&
+    Boolean(teamDraft) &&
+    !businessTeam.loading &&
+    !businessTeam.error;
+  const conflicted =
+    grantConflict || teamConflict || grantNeedsRefresh || teamNeedsRefresh;
+  const canSave =
+    !conflicted &&
+    (!grantDirty || canGrant) &&
+    (!teamDirty || canTeam) &&
+    (grantDirty || teamDirty);
+  useEffect(() => {
+    onStateChange?.({ dirty: grantDirty || teamDirty, saving, canSave });
+  }, [grantDirty, teamDirty, saving, canSave, onStateChange]);
+  const setMember = trpc.officialTeams.setMember.useMutation();
 
-  const updatePermission = (permission: OfficialInventoryPermission) => {
-    if (!canEditOfficialPermissions || savingTeam) return;
-    setDraft(current => {
-      const set = new Set(current.permissions);
-      if (set.has(permission)) set.delete(permission);
-      else set.add(permission);
-      return {
-        ...current,
-        permissions: normalizeOfficialPermissions(Array.from(set)),
-      };
-    });
-  };
-
-  const saveMembership = async () => {
-    if (!canConfigure || adminUserId === null || savingTeam || !hasChanges)
-      return;
-    if (draft.teamId !== null && draft.role === null) {
-      setSaveError("请选择队员或组长后再保存团队。");
-      return;
-    }
-    setSavingTeam(true);
-    setSaveError(null);
+  async function save() {
+    if (savingRef.current || !canSave) return;
+    const operationIdentity = identity;
+    const operationGeneration = generation.current;
+    const current = () =>
+      identityRef.current === operationIdentity &&
+      generation.current === operationGeneration;
+    savingRef.current = true;
+    setSaving(true);
+    setFeedback([]);
+    const messages: string[] = [];
+    let failed = false;
     try {
-      await setMember.mutateAsync({
-        adminUserId,
-        teamId: draft.teamId,
-        role: draft.teamId ? draft.role : null,
-        expectedRevision: baseline.revision,
-        requestId: officialRequestId("official_team_member"),
-        ...(targetIsSuperAdmin
-          ? {}
-          : { officialPermissions: draft.permissions }),
-      });
-      setBaseline(draft);
-      toast.success("团队与官方渠道库存权限已保存");
-      onRetryOverview();
-    } catch (error) {
-      const message = errorMessage(
-        error,
-        "团队与官方权限保存失败，请刷新后重试。"
-      );
-      setSaveError(message);
-      toast.error("团队与官方权限未保存", { description: message });
-    } finally {
-      setSavingTeam(false);
-    }
-  };
-
-  const openTeamDialog = (state: TeamDialogState) => {
-    setTeamDialog(state);
-    setTeamName(state?.mode === "edit" ? state.team.name : "");
-  };
-
-  const saveTeamDefinition = async () => {
-    if (!canConfigure || !teamDialog || savingTeam) return;
-    const name = teamName.trim();
-    if (!name) {
-      toast.error("请输入团队名称");
-      return;
-    }
-    setSavingTeam(true);
-    try {
-      if (teamDialog.mode === "create") {
-        await createTeam.mutateAsync({
-          name,
-          requestId: officialRequestId("official_team_create"),
-        });
-        toast.success("官方团队已创建");
-      } else {
-        await updateTeam.mutateAsync({
-          id: teamDialog.team.id,
-          name,
-          expectedRevision: teamDialog.team.revision,
-          requestId: officialRequestId("official_team_update"),
-        });
-        toast.success("官方团队名称已更新");
+      if (teamDirty && teamDraft && businessTeam) {
+        try {
+          const result = await businessTeam.onSave(teamDraft);
+          if (!current()) return;
+          const next = result.member
+            ? {
+                teamId: result.member.teamId,
+                teamRole: result.member.teamRole,
+                revision: result.member.revision,
+              }
+            : teamDraft;
+          setTeamBase(next);
+          setTeamDraft(next);
+          setTeamNeedsRefresh(!result.member);
+          messages.push(
+            `业务团队已保存${result.warning ? `；${result.warning}` : ""}`
+          );
+        } catch (error) {
+          if (!current()) return;
+          failed = true;
+          messages.push(
+            `业务团队未保存：${errorMessage(error, "请刷新后重试")}`
+          );
+        }
       }
-      setTeamDialog(null);
-      onRetryOverview();
-    } catch (error) {
-      toast.error("团队保存失败", {
-        description: errorMessage(error, "请刷新后重试。"),
-      });
+      // Native membership is preserved, including null. Never substitute the ERP team ID.
+      if (grantDirty && grantBase && grantDraft && adminUserId !== null) {
+        if (!current()) return;
+        try {
+          const raw = await setMember.mutateAsync({
+            adminUserId,
+            teamId: grantBase.teamId,
+            role: grantBase.role,
+            expectedRevision: grantBase.revision,
+            expectedAccountVersion: grantBase.accountVersion,
+            officialPermissions: grantDraft.permissions,
+            requestId: officialRequestId("official_grants"),
+          });
+          if (!current()) return;
+          const receipt = readOfficialTeamMemberMutation(raw);
+          if (
+            !receipt ||
+            (receipt.member && receipt.member.adminUserId !== adminUserId)
+          ) {
+            setGrantNeedsRefresh(true);
+            messages.push(
+              "渠道库存权限请求已返回，但缺少可信版本回执；请刷新核验，草稿保留，勿重复提交。"
+            );
+          } else {
+            const next: GrantDraft = {
+              teamId: receipt.member?.teamId ?? null,
+              role: receipt.member?.role ?? null,
+              revision: receipt.revision,
+              accountVersion: receipt.accountVersion,
+              permissions: receipt.officialPermissions,
+            };
+            setGrantBase(next);
+            setGrantDraft(next);
+            setGrantConflict(false);
+            messages.push(
+              sameStringSet(grantBase.permissions, receipt.officialPermissions)
+                ? "渠道库存权限已核验，与原授权一致。"
+                : "渠道库存权限已保存。授权已改变，目标员工需重新登录。"
+            );
+          }
+          onRetryOverview();
+        } catch (error) {
+          if (!current()) return;
+          failed = true;
+          messages.push(
+            `渠道库存权限未保存：${errorMessage(error, "请刷新后重试")}`
+          );
+        }
+      }
+      if (current()) {
+        setFeedback(messages);
+        if (failed)
+          toast.error("部分设置未保存", {
+            description: messages.join("；"),
+            duration: 8000,
+          });
+        else toast.info(messages.join("；"), { duration: 8000 });
+      }
     } finally {
-      setSavingTeam(false);
+      if (current()) {
+        savingRef.current = false;
+        setSaving(false);
+      }
     }
-  };
-
-  const archive = async (team: OfficialTeam) => {
-    if (!canConfigure || savingTeam) return;
-    if (overview.members.some(item => item.teamId === team.id)) {
-      toast.error("请先移出团队成员");
-      return;
-    }
-    if (!window.confirm(`删除团队“${team.name}”？员工和历史资料保留。`)) return;
-    setSavingTeam(true);
-    try {
-      await archiveTeam.mutateAsync({
-        id: team.id,
-        expectedRevision: team.revision,
-        requestId: officialRequestId("official_team_archive"),
-      });
-      toast.success("团队已删除");
-      onRetryOverview();
-    } catch (error) {
-      toast.error("删除失败", {
-        description: errorMessage(error, "请刷新后重试。"),
-      });
-    } finally {
-      setSavingTeam(false);
-    }
-  };
-
-  const readonlyReason =
-    !hasRealAdminAccount || adminUserId === null
-      ? "当前员工没有可核验的后台账号，官方团队设置不可用。"
+  }
+  useImperativeHandle(ref, () => ({ save }));
+  const reason = !hasRealAdminAccount
+    ? "当前员工没有可核验的后台账号，权限设置不可用。"
+    : !targetIsActive
+      ? "目标后台账号已停用或锁定，授权设置保持只读；未保存草稿不会自动写入。"
       : overviewLoading
-        ? "正在读取官方团队范围…"
+        ? "正在读取渠道库存授权…"
         : overviewError
-          ? `官方团队读取失败：${overviewError}`
-          : !overview.available
-            ? "官方团队未返回可核验的服务器范围，设置保持只读。"
-            : !overview.serverScope.isSuperAdmin
-              ? "只有真实后台超级管理员可以修改官方团队与渠道库存权限。"
+          ? `渠道库存授权读取失败：${overviewError}`
+          : !overview.available || !overview.serverScope.isSuperAdmin
+            ? "只有服务器核验的真实后台超级管理员可配置渠道库存授权。"
+            : !target
+              ? "概览未返回该账号的可信授权与账号版本，请刷新核验；不会把未分组视为没有权限。"
               : null;
-
+  const selectedTeam = businessTeam?.overview?.teams.find(
+    team => team.id === teamDraft?.teamId
+  );
+  const teams =
+    businessTeam?.overview?.teams.filter(
+      team => team.status === "active" || team.id === teamDraft?.teamId
+    ) ?? [];
+  function reloadDraft() {
+    if (!window.confirm("放弃渠道库存页未保存的草稿，并重新读取？")) return;
+    setGrantBase(incomingGrant);
+    setGrantDraft(incomingGrant);
+    setGrantConflict(false);
+    setGrantNeedsRefresh(false);
+    setTeamBase(incomingTeam);
+    setTeamDraft(incomingTeam);
+    setTeamConflict(false);
+    setTeamNeedsRefresh(false);
+    onRetryOverview();
+    businessTeam?.onRetry();
+  }
   return (
     <section
       className="official-team-settings space-y-3 rounded-md border p-3"
       aria-labelledby="staff-official-team-title"
       data-staff-sheet-section="official-team"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 id="staff-official-team-title" className="text-sm font-medium">
-            官方团队与渠道库存
-          </h3>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-7 px-2 text-xs"
-          disabled={!canConfigure || savingTeam}
-          onClick={() => openTeamDialog({ mode: "create" })}
-        >
-          <Settings2 className="mr-1 h-3.5 w-3.5" />
-          管理团队
-        </Button>
-      </div>
-
-      {readonlyReason ? (
-        <div
-          className={`official-team-settings__notice ${overviewError ? "is-error" : ""}`}
-          role={overviewError ? "alert" : "status"}
-        >
-          <span>{readonlyReason}</span>
-          {overviewError ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              disabled={overviewLoading}
-              onClick={onRetryOverview}
-            >
-              <RefreshCw
-                className={`mr-1 h-3.5 w-3.5 ${overviewLoading ? "animate-spin" : ""}`}
-              />
-              重试
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
+      <h3 id="staff-official-team-title" className="text-sm font-medium">
+        渠道库存
+      </h3>
       <div className="official-team-settings__assignment">
         <div className="official-team-settings__assignment-fields">
           <label>
-            <span>所属官方团队</span>
+            <span>渠道库存团队（业务团队）</span>
             <select
-              value={draft.teamId ?? ""}
-              disabled={!canConfigure || savingTeam}
+              aria-label="渠道库存团队（业务团队）"
+              value={teamDraft?.teamId ?? ""}
+              disabled={!canTeam || saving || teamConflict || teamNeedsRefresh}
               onChange={event => {
-                const teamId = Number(event.target.value) || null;
-                setDraft(current => ({
-                  ...current,
-                  teamId,
-                  role: teamId ? (current.role ?? "member") : null,
-                }));
+                const teamId = event.target.value
+                  ? Number(event.target.value)
+                  : null;
+                setTeamDraft(old =>
+                  old
+                    ? {
+                        ...old,
+                        teamId,
+                        teamRole: teamId ? (old.teamRole ?? "member") : null,
+                      }
+                    : old
+                );
               }}
             >
-              <option value="">未分组</option>
-              {assignmentTeams.map(team => (
+              <option value="">
+                {businessMember ? "未分组" : "成员关联未就绪"}
+              </option>
+              {teams.map(team => (
                 <option key={team.id} value={team.id}>
-                  {team.status === "archived"
-                    ? `${team.name}（已归档）`
-                    : team.name}
+                  {team.name}
+                  {team.status === "active" ? "" : "（已归档）"}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            <span>团队身份</span>
+            <span>业务团队身份</span>
             <select
-              value={draft.role ?? ""}
-              disabled={!canConfigure || savingTeam || draft.teamId === null}
+              aria-label="业务团队身份"
+              value={teamDraft?.teamRole ?? ""}
+              disabled={
+                !canTeam ||
+                saving ||
+                !teamDraft?.teamId ||
+                teamConflict ||
+                teamNeedsRefresh
+              }
               onChange={event =>
-                setDraft(current => ({
-                  ...current,
-                  role:
-                    event.target.value === "leader" ||
-                    event.target.value === "member"
-                      ? event.target.value
-                      : null,
-                }))
+                setTeamDraft(old =>
+                  old
+                    ? {
+                        ...old,
+                        teamRole:
+                          event.target.value === "leader" ? "leader" : "member",
+                      }
+                    : old
+                )
               }
             >
-              <option value="">请选择</option>
+              <option value="">未分组</option>
               <option value="member">队员</option>
               <option value="leader">组长</option>
             </select>
           </label>
         </div>
         <p className="text-xs text-muted-foreground">
-          当前身份：
-          {member?.teamName
-            ? `${member.teamName} · ${officialTeamRoleLabel(member.role)}`
-            : "未分组"}
+          当前业务团队：
+          {businessMember
+            ? (selectedTeam?.name ??
+              (teamDraft?.teamId ? "团队不可见" : "未分组"))
+            : "关联未核验"}
+          。团队身份不自动授予查看或写入权限。
         </p>
+        {!canTeam && (
+          <p className="official-team-settings__notice" role="status">
+            {businessTeam?.loading
+              ? "正在读取业务团队…"
+              : businessTeam?.error ||
+                businessTeam?.reason ||
+                "尚未完成真实业务成员关联，请使用员工资料页的现有邀请／关联流程。"}
+          </p>
+        )}
+        {businessTeam?.error && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={businessTeam.onRetry}
+          >
+            重试业务团队
+          </Button>
+        )}
       </div>
-
+      {reason && (
+        <div
+          className="official-team-settings__notice"
+          role={overviewError ? "alert" : "status"}
+        >
+          <span>{reason}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={saving || overviewLoading}
+            onClick={onRetryOverview}
+          >
+            刷新授权
+          </Button>
+        </div>
+      )}
       {targetIsSuperAdmin ? (
         <p className="official-team-settings__system-grant">
-          该员工是超级管理员，官方渠道库存权限由系统固定授予，不能在此修改。
+          该员工是超级管理员，渠道库存权限由系统固定授予，不能在此修改。
         </p>
       ) : (
         <div
           className="official-team-settings__permissions"
-          aria-label="官方渠道库存权限"
+          aria-label="渠道库存原生权限"
         >
           {OFFICIAL_INVENTORY_PERMISSIONS.map(permission => (
             <label
@@ -382,123 +508,62 @@ export default function OfficialTeamPermissionSection({
               className="official-team-settings__permission"
             >
               <Checkbox
-                checked={draft.permissions.includes(permission)}
-                disabled={!canEditOfficialPermissions || savingTeam}
-                onCheckedChange={() => updatePermission(permission)}
+                checked={grantDraft?.permissions.includes(permission) ?? false}
+                disabled={
+                  !canGrant || saving || grantConflict || grantNeedsRefresh
+                }
                 aria-label={officialPermissionLabel(permission)}
+                onCheckedChange={() =>
+                  setGrantDraft(old => {
+                    if (!old) return old;
+                    const permissions = old.permissions.includes(permission)
+                      ? old.permissions.filter(item => item !== permission)
+                      : [...old.permissions, permission];
+                    return {
+                      ...old,
+                      permissions: normalizeOfficialPermissions(permissions),
+                    };
+                  })
+                }
               />
               <span>{officialPermissionLabel(permission)}</span>
             </label>
           ))}
         </div>
       )}
-
-      {saveError ? (
-        <p className="official-team-settings__save-error" role="alert">
-          {saveError}
+      <p className="text-xs text-muted-foreground">
+        查看不包含录入、编辑、发布、来源联系方式或私人备注。业务团队与原生授权由两个服务分别保存，不保证跨服务原子成功。
+      </p>
+      {(grantDirty || teamDirty) && (
+        <p className="text-xs text-muted-foreground" role="status">
+          本页待保存：
+          {[teamDirty ? "业务团队" : "", grantDirty ? "渠道库存权限" : ""]
+            .filter(Boolean)
+            .join("、")}
         </p>
-      ) : null}
-      <div className="flex justify-end border-t pt-2">
-        <Button
-          type="button"
-          size="sm"
-          className="h-8 px-3 text-xs"
-          disabled={!canConfigure || savingTeam || !hasChanges}
-          onClick={() => void saveMembership()}
-        >
-          {savingTeam && setMember.isPending ? "保存团队中…" : "保存团队"}
-        </Button>
-      </div>
-
-      <Dialog
-        open={teamDialog !== null}
-        onOpenChange={open => {
-          if (!open && !savingTeam) setTeamDialog(null);
-        }}
-      >
-        <DialogContent
-          className="max-w-[520px]"
-          onPointerDownOutside={event => {
-            if (savingTeam) event.preventDefault();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {teamDialog?.mode === "edit" ? "编辑团队" : "团队管理"}
-            </DialogTitle>
-            <DialogDescription>不影响员工账号和历史库存。</DialogDescription>
-          </DialogHeader>
-          <Input
-            value={teamName}
-            maxLength={128}
-            disabled={savingTeam}
-            placeholder="团队名称"
-            aria-label="官方团队名称"
-            onChange={event => setTeamName(event.target.value)}
-          />
-          {activeTeams.length > 0 ? (
-            <div className="border-t pt-3">
-              <p className="mb-2 text-xs text-muted-foreground">现有团队</p>
-              <div className="space-y-1.5">
-                {overview.teams
-                  .filter(team => team.status === "active")
-                  .map(team => (
-                    <div
-                      key={team.id}
-                      className="flex min-h-8 items-center justify-between gap-2 text-sm"
-                    >
-                      <span className="truncate">{team.name}</span>
-                      <div className="flex shrink-0 gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          disabled={savingTeam}
-                          onClick={() => openTeamDialog({ mode: "edit", team })}
-                        >
-                          <Pencil className="mr-1 h-3.5 w-3.5" />
-                          改名
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                          disabled={savingTeam}
-                          onClick={() => void archive(team)}
-                        >
-                          删除
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={savingTeam}
-              onClick={() => setTeamDialog(null)}
-            >
-              取消
-            </Button>
-            <Button
-              type="button"
-              disabled={savingTeam}
-              onClick={() => void saveTeamDefinition()}
-            >
-              {savingTeam
-                ? "保存中…"
-                : teamDialog?.mode === "edit"
-                  ? "保存"
-                  : "创建团队"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )}
+      {conflicted && (
+        <div className="official-team-settings__save-error" role="alert">
+          {grantNeedsRefresh || teamNeedsRefresh
+            ? "保存后的版本尚未核验，请重新读取。"
+            : "服务端版本已变化；未保存草稿已保留，请核对后放弃草稿并重新读取，不能直接覆盖。"}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={saving}
+            onClick={reloadDraft}
+          >
+            放弃本页草稿并重新读取
+          </Button>
+        </div>
+      )}
+      {feedback.map((message, index) => (
+        <p key={index} className="text-xs" role="status">
+          {message}
+        </p>
+      ))}
     </section>
   );
-}
+});
+export default OfficialTeamPermissionSection;

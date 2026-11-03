@@ -41,7 +41,7 @@
 .ci-page.ci-host :is(button, input, select, textarea):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 .ci-page.ci-host .ci-tablewrap { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
 .ci-page.ci-host .ci-table { width: 100%; border-collapse: collapse; color: #1e293b; font-size: 12px; table-layout: fixed; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 960px !important; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 1056px !important; }
 .ci-page.ci-host .ci-table.ci-channel-table { min-width: 1040px !important; }
 .ci-page.ci-host .ci-table th { box-sizing: border-box; height: 32px; padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; background: #f8fafc; font-size: 11px; font-weight: 500; line-height: 18px; text-align: left; vertical-align: middle; white-space: normal; }
 .ci-page.ci-host .ci-table td { box-sizing: border-box; height: auto; padding: 10px; border-top: 1px solid #e2e8f0; font-size: 12px; line-height: 18px; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
@@ -57,12 +57,14 @@
 .ci-page.ci-host .ci-table td:is(.ci-number:not(.ci-row-index), .ci-price) { text-align: right; }
 .ci-page.ci-host .ci-table .ci-row-index { text-align: center; }
 .ci-page.ci-host .ci-table .ci-col-index { width: 36px; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 252px) * .28); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-qty-col { width: calc((100% - 252px) * .13); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: calc((100% - 252px) * .15); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: calc((100% - 252px) * .10); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: calc((100% - 252px) * .18); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-source-col { width: calc((100% - 252px) * .16); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-recorder-col { width: 96px; }
+.ci-page.ci-host .ci-compact-stock-table td.ci-material-recorder-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 348px) * .28); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-qty-col { width: calc((100% - 348px) * .13); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: calc((100% - 348px) * .15); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: calc((100% - 348px) * .10); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: calc((100% - 348px) * .18); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-source-col { width: calc((100% - 348px) * .16); }
 .ci-page.ci-host .ci-compact-stock-table :is(th, td).ci-col-actions { width: 216px; }
 .ci-page.ci-host .ci-table :is(th, td).ci-col-actions { position: sticky; right: 0; z-index: 2; background: #fff; text-align: right; box-shadow: -5px 0 8px -7px #64748b; }
 .ci-page.ci-host .ci-table th.ci-col-actions { z-index: 3; background: #f8fafc; }

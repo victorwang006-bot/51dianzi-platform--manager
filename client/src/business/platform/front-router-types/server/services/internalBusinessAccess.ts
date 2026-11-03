@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import type { OfficialInventoryPermissions } from "../../../shared/internalBusinessOfficialInventory";
 import { BusinessFailureCause } from "../../../shared/businessFailure";
 import { and, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
@@ -76,6 +77,7 @@ export type InternalBusinessWorkbenchCapability =
 
 export type InternalBusinessContextDto = Omit<InternalBusinessEnterpriseContext, "identity"> & {
   staffPrincipal: InternalBusinessStaffPrincipalDto;
+  officialInventoryPermissions?: OfficialInventoryPermissions;
   /** Stable server authorization fingerprint; not a clock or a browser revision. */
   authorizationVersion: string;
   /** Compatibility projection; authoritative only for conservative UI display. */
@@ -91,6 +93,7 @@ export type InternalBusinessContextDto = Omit<InternalBusinessEnterpriseContext,
 };
 
 export type InternalBusinessTrustedBinding = {
+  officialInventoryPermissions?: OfficialInventoryPermissions;
   staffUserId: number;
   adminAccountId: number;
   bindingVersion: number;
@@ -379,11 +382,23 @@ export async function getInternalBusinessContext(
     }
   }));
   const workbenchCapabilities = await workbenchCapabilitiesForPrincipal({ principal });
+  const native = trustedBinding.officialInventoryPermissions;
+  const stockAccess = native ? await resolveBusinessModuleAccess(principal.user.id, enterprise.enterpriseId, "stocks", db, { officialInventoryRead: native.read }) : undefined;
+  const originalStock = modules.find(item => item.module === "stocks")?.access;
+  const officialInventoryPermissions = native ? { ...native, read: native.read && stockAccess?.read === true,
+    write: native.read && native.write && originalStock?.write === true && (principal.scope.isOwner || principal.scope.permissionKeys.includes("inventory.manage")),
+    note: native.read && native.note && stockAccess?.read === true } : undefined;
+  if (native) {
+    const index = workbenchCapabilities.indexOf("inventory.channel");
+    if (index >= 0) workbenchCapabilities.splice(index, 1);
+    if (officialInventoryPermissions?.read) workbenchCapabilities.push("inventory.channel");
+  }
   return {
     enterpriseId: enterprise.enterpriseId,
     companyName: enterprise.companyName,
     dataOwnerUserId: enterprise.dataOwnerUserId,
     ownerUserId: enterprise.ownerUserId,
+    officialInventoryPermissions,
     authorizationVersion: internalBusinessAuthorizationVersion({ scope: principal.scope, team, modules }),
     staffPrincipal: {
       status: "ready",

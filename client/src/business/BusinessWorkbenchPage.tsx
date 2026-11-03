@@ -16,6 +16,7 @@ import BusinessContentFrame from "./BusinessContentFrame";
 import {
   BusinessScopeProvider,
   useBusinessScope,
+  type BusinessOfficialInventoryPermissions,
   type BusinessSessionCapabilities,
   type BusinessStaffPrincipal,
   type ReadyBusinessStaffPrincipal,
@@ -98,6 +99,8 @@ type BusinessContextContract = {
   workbenchCapabilities?: unknown;
   /** Current merchant's BFF scope-write + real-front-capability intersection. */
   writeCapabilities?: unknown;
+  /** Server-derived native grants intersected with this real business scope. */
+  officialInventoryPermissions?: unknown;
   /** Optional server-owned effective team/member/permission revision. */
   authorizationVersion?: unknown;
 };
@@ -175,6 +178,20 @@ function contextCapabilities(value: unknown): BusinessSessionCapabilities {
   return Object.fromEntries(
     Object.entries(raw).filter(([, enabled]) => typeof enabled === "boolean")
   ) as BusinessSessionCapabilities;
+}
+
+/** A partial deployment cannot grant access without a stable native-grant proof. */
+function contextOfficialInventoryPermissions(value: BusinessContextContract): BusinessOfficialInventoryPermissions {
+  const raw = value.officialInventoryPermissions;
+  if (!isRecord(raw) || typeof raw.authorizationVersion !== "string" || !raw.authorizationVersion) {
+    return { read: false, write: false, note: false, authorizationVersion: "" };
+  }
+  return {
+    read: raw.read === true,
+    write: raw.read === true && raw.write === true,
+    note: raw.read === true && raw.note === true,
+    authorizationVersion: raw.authorizationVersion,
+  };
 }
 
 /**
@@ -255,7 +272,7 @@ function businessAccessFingerprint(
       ? rawContext.authorizationVersion
       : null,
   ]);
-  return `${customerEntryPermissionFingerprint(rawContext)}:workbench:${capabilityProjectionFingerprint(rawContext.workbenchCapabilities)}:write:${capabilityProjectionFingerprint(rawContext.writeCapabilities)}:session:${sessionCapabilities}:actor:${actorAccess}`;
+  return `${customerEntryPermissionFingerprint(rawContext)}:workbench:${capabilityProjectionFingerprint(rawContext.workbenchCapabilities)}:write:${capabilityProjectionFingerprint(rawContext.writeCapabilities)}:session:${sessionCapabilities}:actor:${actorAccess}:official-inventory:${JSON.stringify(contextOfficialInventoryPermissions(rawContext))}`;
 }
 
 /**
@@ -352,6 +369,10 @@ function BusinessLoadingState({
 }
 
 function BusinessChannelInventoryRoute() {
+  const { officialInventoryPermissions } = useBusinessScope();
+  if (officialInventoryPermissions.read !== true) {
+    return <AccessState title="当前账号无渠道库存查看权限" detail="渠道库存需要服务端核验的原生查看授权、真实员工绑定及当前企业范围；ERP 编辑权限不能代替查看授权。" />;
+  }
   return (
     <BusinessContentFrame>
       <ChannelInventoryHost />
@@ -648,6 +669,7 @@ function VerifiedBusinessWorkbench({
           merchantId={merchantId}
           staffPrincipal={principal}
           sessionCapabilities={capabilities}
+          officialInventoryPermissions={contextOfficialInventoryPermissions(rawContext)}
           contextVerificationState={verificationState}
           authorizationVersion={authorization}
           onAuthorizationError={reportAuthorizationError}

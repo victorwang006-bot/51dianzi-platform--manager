@@ -1,0 +1,43 @@
+[data-staff-permission-sheet] .staff-permission-panel[hidden] {
+  display: none;
+}
+[data-staff-permission-sheet] [data-slot="sheet-title"] {
+  font-size: var(--admin-dialog-title-size, 18px);
+  line-height: 24px;
+}
+[data-staff-permission-sheet] .staff-permission-footer [data-slot="button"] {
+  height: var(--admin-control-height, 32px);
+  min-height: var(--admin-control-height, 32px);
+  font-size: var(--admin-font-body, 12px);
+}
+[data-staff-permission-sheet] .staff-permission-tabs {
+  min-height: 44px;
+}
+[data-staff-permission-sheet] .staff-permission-identity {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 18px;
+}
+[data-staff-permission-sheet] .staff-permission-footer {
+  margin-top: 0;
+}
+[data-staff-permission-sheet] .staff-platform-matrix > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+[data-staff-permission-sheet] .staff-platform-matrix > div > p {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+[data-staff-permission-sheet] .staff-platform-matrix > div > div {
+  display: flex;
+  gap: 8px;
+}
+[data-staff-permission-sheet] .staff-platform-matrix label {
+  height: 32px;
+  white-space: nowrap;
+  font-size: 12px;
+}

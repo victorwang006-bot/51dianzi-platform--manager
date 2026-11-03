@@ -3,153 +3,369 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const state = vi.hoisted(() => ({
-  archive: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
+import OfficialTeamPermissionSection, {
+  type ChannelPermissionState,
+  type OfficialTeamPermissionHandle,
+  type StaffBusinessTeamEditor,
+} from "./OfficialTeamPermissionSection";
+const mocks = vi.hoisted(() => ({
   member: vi.fn(),
   refresh: vi.fn(),
-  success: vi.fn(),
+  team: vi.fn(),
+  teamRefresh: vi.fn(),
+  info: vi.fn(),
   error: vi.fn(),
-  overview: {
-    available: true,
-    serverScope: { isSuperAdmin: true },
-    teams: [{ id: 2, name: "空团队", status: "active", revision: 5 }],
-    members: [] as {
-      adminUserId: number;
-      teamId: number;
-      role: string;
-      revision: number;
-      officialPermissions: string[];
-    }[],
-  },
 }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     officialTeams: {
-      archive: {
-        useMutation: () => ({ mutateAsync: state.archive, isPending: false }),
-      },
-      create: {
-        useMutation: () => ({ mutateAsync: state.create, isPending: false }),
-      },
-      update: {
-        useMutation: () => ({ mutateAsync: state.update, isPending: false }),
-      },
-      setMember: {
-        useMutation: () => ({ mutateAsync: state.member, isPending: false }),
-      },
+      setMember: { useMutation: () => ({ mutateAsync: mocks.member }) },
     },
   },
 }));
-vi.mock("sonner", () => ({
-  toast: { success: state.success, error: state.error },
-}));
-vi.mock("@/lib/officialChannelInventoryUi", async importOriginal => ({
-  ...(await importOriginal<
-    typeof import("@/lib/officialChannelInventoryUi")
-  >()),
-  readOfficialTeamsOverview: () => state.overview,
-}));
-import OfficialTeamPermissionSection from "./OfficialTeamPermissionSection";
+vi.mock("sonner", () => ({ toast: { info: mocks.info, error: mocks.error } }));
 let root: Root;
 let host: HTMLDivElement;
-function button(label: string) {
-  const result = Array.from(document.querySelectorAll("button")).find(
-    item => item.textContent === label
-  );
-  if (!result) throw new Error(`Button not found: ${label}`);
-  return result;
+let handle: React.RefObject<OfficialTeamPermissionHandle | null>;
+let state: ChannelPermissionState;
+function overview(
+  permissions: string[] = ["officialInventory.read"],
+  version = 8,
+  grouped = false
+) {
+  return {
+    currentAccess: {
+      adminUserId: 1,
+      isSuperAdmin: true,
+      teamId: null,
+      teamRole: null,
+      permissions: [],
+    },
+    teams: grouped
+      ? [{ id: 99, name: "兼容官方组", status: "active", revision: 3 }]
+      : [],
+    members: grouped
+      ? [
+          {
+            adminUserId: 7,
+            displayName: "Jack",
+            teamId: 99,
+            teamName: "兼容官方组",
+            role: "leader",
+            revision: 4,
+            officialPermissions: permissions,
+          },
+        ]
+      : [],
+    targets: [
+      {
+        adminUserId: 7,
+        displayName: "Jack",
+        officialPermissions: permissions,
+        accountVersion: version,
+      },
+    ],
+  };
 }
-async function click(label: string) {
-  await act(async () => {
-    button(label).click();
-    await Promise.resolve();
-  });
+function business(): StaffBusinessTeamEditor {
+  return {
+    overview: {
+      enterprise: { id: 15, name: "测试企业" },
+      actorUserId: 20,
+      canManage: true,
+      teams: [
+        { id: 11, name: "智捷团队1", status: "active", revision: 1 },
+        { id: 12, name: "第二业务队", status: "active", revision: 1 },
+      ],
+      members: [
+        {
+          userId: 88,
+          teamId: 11,
+          teamRole: "member",
+          revision: 6,
+          status: "active",
+          enterpriseRole: "member",
+        },
+      ],
+    },
+    frontUserId: 88,
+    canEdit: true,
+    onSave: mocks.team,
+    onRetry: mocks.teamRefresh,
+  };
 }
-async function render() {
-  await act(async () => {
+let data = overview();
+let businessEditor = business();
+async function render(id = 7, real = true) {
+  await act(async () =>
     root.render(
       React.createElement(OfficialTeamPermissionSection, {
-        adminUserId: 30004,
-        hasRealAdminAccount: true,
-        targetIsSuperAdmin: true,
-        overviewData: {},
+        ref: handle,
+        adminUserId: id,
+        hasRealAdminAccount: real,
+        targetIsSuperAdmin: false,
+        overviewData: data,
         overviewLoading: false,
         overviewError: null,
-        onRetryOverview: state.refresh,
+        onRetryOverview: mocks.refresh,
+        businessTeam: businessEditor,
+        onStateChange: (value: ChannelPermissionState) => {
+          state = value;
+        },
       })
-    );
+    )
+  );
+}
+function checkbox() {
+  const result = host.querySelector<HTMLButtonElement>(
+    '[role="checkbox"][aria-label="查看渠道库存"]'
+  );
+  if (!result) throw new Error("Missing read checkbox");
+  return result;
+}
+async function toggle() {
+  await act(async () => checkbox().click());
+}
+async function save() {
+  await act(async () => {
+    await handle.current!.save();
   });
+}
+async function teamChange() {
+  await act(async () => {
+    const select = host.querySelector<HTMLSelectElement>(
+      '[aria-label="渠道库存团队（业务团队）"]'
+    )!;
+    select.value = "12";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+function receipt(permissions: string[], version = 9, grouped = false) {
+  return {
+    member: grouped
+      ? {
+          adminUserId: 7,
+          displayName: "Jack",
+          teamId: 99,
+          teamName: "兼容官方组",
+          role: "leader",
+          revision: 4,
+          officialPermissions: permissions,
+        }
+      : null,
+    officialPermissions: permissions,
+    revision: grouped ? 4 : 0,
+    accountVersion: version,
+    requestId: "synthetic_receipt_123",
+    idempotent: false,
+  };
 }
 beforeEach(() => {
   Object.assign(globalThis, { React, IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
-  state.overview.serverScope.isSuperAdmin = true;
-  state.overview.members = [];
-  state.archive.mockResolvedValue({ success: true });
+  data = overview();
+  businessEditor = business();
+  state = { dirty: false, saving: false, canSave: false };
+  handle = React.createRef();
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+  mocks.member.mockResolvedValue(receipt([]));
+  mocks.team.mockResolvedValue({
+    saved: true,
+    member: { ...businessEditor.overview!.members[0], teamId: 12, revision: 7 },
+  });
   vi.stubGlobal(
     "confirm",
     vi.fn(() => true)
   );
-  host = document.createElement("div");
-  document.body.append(host);
-  root = createRoot(host);
 });
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.unstubAllGlobals();
 });
-describe("Employee-page existing team management deletion", () => {
-  it("shows existing teams and deletion without assigning this employee first", async () => {
+describe("业务团队复用与原生 grant 回读保存（合成，无真实权限写入）", () => {
+  it("Jack无官方成员行仍回显targets的查看权限，业务团队显示既有智捷团队1，不引导建同名官方组", async () => {
     await render();
-    await click("管理团队");
-    expect(document.body.textContent).toContain("现有团队");
-    expect(button("创建团队")).toBeTruthy();
-    expect(button("删除")).toBeTruthy();
-    await click("删除");
-    expect(window.confirm).toHaveBeenCalledWith(
-      "删除团队“空团队”？员工和历史资料保留。"
-    );
-    expect(state.archive).toHaveBeenCalledOnce();
-    expect(state.archive.mock.calls[0][0]).toMatchObject({
-      id: 2,
-      expectedRevision: 5,
-      requestId: expect.any(String),
+    expect(checkbox().getAttribute("aria-checked")).toBe("true");
+    expect(
+      host.querySelector<HTMLSelectElement>(
+        '[aria-label="渠道库存团队（业务团队）"]'
+      )!.value
+    ).toBe("11");
+    expect(host.textContent).toContain("智捷团队1");
+    expect(host.textContent).not.toContain("管理团队");
+    expect(host.textContent).not.toContain("创建团队");
+    expect(mocks.member).not.toHaveBeenCalled();
+    expect(mocks.team).not.toHaveBeenCalled();
+  });
+  it("只改查看权限不入任何官方组，使用真实target accountVersion和无成员revision0", async () => {
+    await render();
+    await toggle();
+    expect(state).toMatchObject({ dirty: true, canSave: true });
+    await save();
+    expect(mocks.member.mock.calls[0][0]).toMatchObject({
+      adminUserId: 7,
+      teamId: null,
+      role: null,
+      expectedRevision: 0,
+      expectedAccountVersion: 8,
+      officialPermissions: [],
     });
-    expect(state.refresh).toHaveBeenCalledOnce();
-    expect(state.success).toHaveBeenCalledWith("团队已删除");
-    expect(state.create).not.toHaveBeenCalled();
+    expect(mocks.team).not.toHaveBeenCalled();
+    expect(state.dirty).toBe(false);
+    expect(host.textContent).toContain("目标员工需重新登录");
   });
-  it("does not send deletion when confirmation is cancelled", async () => {
-    vi.mocked(window.confirm).mockReturnValue(false);
+  it("只改grant时保留原official teamId/role/member revision而不发送业务teamID", async () => {
+    data = overview(undefined, 8, true);
+    mocks.member.mockResolvedValue(receipt([], 9, true));
     await render();
-    await click("管理团队");
-    await click("删除");
-    expect(state.archive).not.toHaveBeenCalled();
+    await toggle();
+    await save();
+    expect(mocks.member.mock.calls[0][0]).toMatchObject({
+      teamId: 99,
+      role: "leader",
+      expectedRevision: 4,
+      expectedAccountVersion: 8,
+    });
   });
-  it("requires moving existing members out before deletion", async () => {
-    state.overview.members = [
-      {
-        adminUserId: 30009,
-        teamId: 2,
-        role: "member",
-        revision: 1,
-        officialPermissions: [],
+  it("采用mutation的新accountVersion为后续保存基线，旧overview不能冲回旧值", async () => {
+    await render();
+    await toggle();
+    await save();
+    await toggle();
+    mocks.member.mockResolvedValue(receipt(["officialInventory.read"], 10));
+    await save();
+    expect(mocks.member.mock.calls[1][0].expectedAccountVersion).toBe(9);
+    expect(state.dirty).toBe(false);
+  });
+  it("相同版本新overview对象不得覆盖dirty，版本变化提示冲突并禁用覆盖保存", async () => {
+    await render();
+    await toggle();
+    data = overview();
+    await render();
+    expect(checkbox().getAttribute("aria-checked")).toBe("false");
+    expect(state.dirty).toBe(true);
+    data = overview(["officialInventory.read"], 10);
+    await render();
+    expect(checkbox().getAttribute("aria-checked")).toBe("false");
+    expect(state.canSave).toBe(false);
+    expect(host.textContent).toContain("服务端版本已变化");
+    await save();
+    expect(mocks.member).not.toHaveBeenCalled();
+  });
+  it("缺失可信target version不得以0或member grant替代", async () => {
+    data = overview(undefined, 8, true);
+    data.targets = [];
+    await render();
+    expect(checkbox().disabled).toBe(true);
+    expect(state.canSave).toBe(false);
+    expect(host.textContent).toContain("可信授权与账号版本");
+  });
+  it("仅团队修改只调用业务服务并携带其成员revision，不写原生官方成员", async () => {
+    await render();
+    await teamChange();
+    await save();
+    expect(mocks.team).toHaveBeenCalledWith({
+      teamId: 12,
+      teamRole: "member",
+      revision: 6,
+    });
+    expect(mocks.member).not.toHaveBeenCalled();
+    expect(state.dirty).toBe(false);
+  });
+  it("业务关联缺失禁用团队并解释，独立已授权grant仍如实显示", async () => {
+    businessEditor = {
+      ...business(),
+      frontUserId: null,
+      canEdit: false,
+      reason: "尚未完成真实业务成员关联",
+    };
+    await render();
+    expect(
+      host.querySelector<HTMLSelectElement>(
+        '[aria-label="渠道库存团队（业务团队）"]'
+      )!.disabled
+    ).toBe(true);
+    expect(host.textContent).toContain("尚未完成真实业务成员关联");
+    expect(checkbox().getAttribute("aria-checked")).toBe("true");
+  });
+  it("团队成功但grant失败分开反馈，保留失败grant草稿，重试不重复写已成功团队", async () => {
+    mocks.member.mockRejectedValue(new Error("授权冲突"));
+    await render();
+    await teamChange();
+    await toggle();
+    await save();
+    expect(host.textContent).toContain("业务团队已保存");
+    expect(host.textContent).toContain("渠道库存权限未保存：授权冲突");
+    expect(state.dirty).toBe(true);
+    mocks.member.mockResolvedValue(receipt([]));
+    await save();
+    expect(mocks.team).toHaveBeenCalledTimes(1);
+    expect(mocks.member).toHaveBeenCalledTimes(2);
+  });
+  it("团队失败但grant成功不假原子成功，重试不重复写已成功grant", async () => {
+    mocks.team.mockRejectedValue(new Error("业务组版本冲突"));
+    await render();
+    await teamChange();
+    await toggle();
+    await save();
+    expect(host.textContent).toContain("业务团队未保存：业务组版本冲突");
+    expect(host.textContent).toContain("渠道库存权限已保存");
+    expect(state.dirty).toBe(true);
+    mocks.team.mockResolvedValue({
+      saved: true,
+      member: {
+        ...businessEditor.overview!.members[0],
+        teamId: 12,
+        revision: 7,
       },
-    ];
-    await render();
-    await click("管理团队");
-    await click("删除");
-    expect(state.error).toHaveBeenCalledWith("请先移出团队成员");
-    expect(window.confirm).not.toHaveBeenCalled();
-    expect(state.archive).not.toHaveBeenCalled();
+    });
+    await save();
+    expect(mocks.member).toHaveBeenCalledTimes(1);
   });
-  it("does not expose writable management to an unprivileged account", async () => {
-    state.overview.serverScope.isSuperAdmin = false;
+  it("不完整成功回执不冒充可信新基线，保留草稿并要求刷新核验", async () => {
+    mocks.member.mockResolvedValue({ success: true });
     await render();
-    expect(button("管理团队").disabled).toBe(true);
-    expect(state.archive).not.toHaveBeenCalled();
+    await toggle();
+    await save();
+    expect(state).toMatchObject({ dirty: true, canSave: false });
+    expect(host.textContent).toContain("缺少可信版本回执");
+  });
+  it("换员工隔离草稿与迟到回执，不对新员工继续第二服务写入", async () => {
+    let resolveTeam!: (value: unknown) => void;
+    mocks.team.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveTeam = resolve;
+        })
+    );
+    await render();
+    await teamChange();
+    await toggle();
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = handle.current!.save();
+    });
+    data = {
+      ...overview(),
+      targets: [
+        {
+          adminUserId: 9,
+          displayName: "Other",
+          officialPermissions: [],
+          accountVersion: 2,
+        },
+      ],
+    };
+    businessEditor = { ...business(), frontUserId: null, canEdit: false };
+    await render(9);
+    await act(async () => {
+      resolveTeam({ saved: true, member: null });
+      await pending;
+    });
+    expect(mocks.member).not.toHaveBeenCalled();
+    expect(state.dirty).toBe(false);
   });
 });

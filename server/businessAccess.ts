@@ -1,4 +1,8 @@
 import { TRPCError } from "@trpc/server";
+import { createHash } from "node:crypto";
+import { inArray } from "drizzle-orm";
+import { adminUsers } from "../drizzle/schema";
+import type { OfficialInventoryPermissions } from "./platformBusinessApi";
 import type { Merchant } from "../drizzle/schema";
 import { hasAdminPermission, type AdminPermission } from "../shared/adminPermissions";
 import { BusinessFailureCause } from "../shared/businessFailure";
@@ -147,6 +151,7 @@ export async function assertBusinessMerchantAccess(
   merchantId: number,
   module: BusinessModule,
   mode: BusinessAccessMode,
+  officialReadProjection = false,
 ): Promise<Merchant> {
   const account = requireBusinessAdminAccount(ctx);
   const allowedMerchantIds = getBusinessWorkbenchMerchantIds();
@@ -157,7 +162,7 @@ export async function assertBusinessMerchantAccess(
   if (!scope) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
-  if (!businessScopeAllows(scope, module, mode)) {
+  if (!businessScopeAllows(scope, module, mode) && !(officialReadProjection && mode === "read" && (module === "context" || module === "inventory"))) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权" });
   }
   const merchant = await db.getBusinessWorkbenchMerchantById(merchantId);
@@ -217,7 +222,31 @@ export function toBusinessMerchantChoice(
     workbenchCapabilities: projection.workbenchCapabilities,
     writeCapabilities: projection.writeCapabilities,
     moduleAvailability: projection.moduleAvailability,
+    officialInventoryPermissions: projection.officialInventoryPermissions,
   };
+}
+
+/** Live native grants are never inferred from browser permission arrays or ERP manage. */
+export async function currentOfficialInventoryPermissions(ctx: TrpcContext): Promise<OfficialInventoryPermissions> {
+  const session = requireBusinessAdminAccount(ctx);
+  const account = await db.getAdminUserById(session.id);
+  if (!account || account.status !== "active") throw new TRPCError({ code: "UNAUTHORIZED", message: "后台工作人员账号已不可用", cause: new BusinessFailureCause("AUTH_SESSION_INVALID") });
+  const permissions = await db.getAdminUserPermissions(account.id);
+  const has = (key: string) => account.adminRole === "super_admin" || permissions.includes(key);
+  const grant = { read: has("officialInventory.read"), write: has("officialInventory.write"), note: has("officialInventory.note") };
+  return { ...grant, authorizationVersion: `official-inventory-v1:${createHash("sha256").update(JSON.stringify({ id: account.id, role: account.adminRole, status: account.status, sessionVersion: account.sessionVersion, ...grant })).digest("hex")}` };
+}
+/** Only attested creation IDs from the internal list are admitted; no current binding/name inference. */
+export async function officialRecorderNames(ids: readonly number[]) {
+  const unique = Array.from(new Set(ids.filter(id => Number.isSafeInteger(id) && id > 0)));
+  if (unique.length > 100) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "库存负责人结果超出范围" });
+  const names = new Map<number, string | null>();
+  if (!unique.length) return names;
+  const database = await db.getDb();
+  if (!database) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "库存负责人暂时无法核实" });
+  const accounts = await database.select({ id: adminUsers.id, displayName: adminUsers.displayName, username: adminUsers.username }).from(adminUsers).where(inArray(adminUsers.id, unique)).limit(100);
+  for (const account of accounts) names.set(account.id, account.displayName?.trim() || account.username?.trim() || null);
+  return names;
 }
 
 export const businessAccessTestUtils = {

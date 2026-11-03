@@ -5,9 +5,7 @@ import { LEGACY_CONFIRMATION_ACTION, LEGACY_CONFIRMATION_HASH_PATHS } from "./ch
 /** Correlated to material m. Only immutable native evidence or an independently
  * appended, fully attested legacy confirmation qualifies. This is NOT a row,
  * team, enterprise, module-read, write or private-notes authorization fence. */
-export function officialMaterialCreator(scope: ChannelInventoryScope, lock = false): SQL {
-  if (!scope.officialActor || !Number.isSafeInteger(scope.officialActor.adminAccountId) || scope.officialActor.adminAccountId <= 0) return sql`FALSE`;
-  const suffix = lock ? sql` FOR UPDATE` : sql``;
+function originalActorClaims() {
   const event = (alias: string) => {
     const a = sql.raw(alias);
     const json = (path: string) => sql`JSON_EXTRACT(${a}.after_data, ${`$.${path}`})`;
@@ -65,14 +63,32 @@ export function officialMaterialCreator(scope: ChannelInventoryScope, lock = fal
       admin: sql`CASE WHEN ${nativeAction} THEN ${text("officialActor.adminAccountId")} ELSE ${text(`${prefix}.adminAccountId`)} END`,
     };
   };
-  const original = event("original_event");
-  const conflict = event("conflicting_event");
+  return { original: event("original_event"), conflict: event("conflicting_event") };
+}
+/** Existing strict source qualification, now sharing exactly the DTO evidence validator. */
+export function officialMaterialCreator(scope: ChannelInventoryScope, lock = false): SQL {
+  if (!scope.officialActor || !Number.isSafeInteger(scope.officialActor.adminAccountId) || scope.officialActor.adminAccountId <= 0) return sql`FALSE`;
+  const suffix = lock ? sql` FOR UPDATE` : sql``;
+  const { original, conflict } = originalActorClaims();
   return sql`(EXISTS (SELECT 1 FROM channel_inventory_material_share_audits original_event
     WHERE ${original.correlated} AND ${original.valid}
       AND BINARY ${original.admin} = BINARY ${String(scope.officialActor.adminAccountId)}${suffix})
     AND NOT EXISTS (SELECT 1 FROM channel_inventory_material_share_audits conflicting_event
       WHERE ${conflict.correlated} AND ${conflict.candidate}
         AND ((${conflict.valid}) IS NOT TRUE OR BINARY ${conflict.admin} <> BINARY ${String(scope.officialActor.adminAccountId)})${suffix}))`;
+}
+/** Correlated internal-only ID. A malformed/conflicting linked claim yields NULL;
+ * LIMIT is safe only because the anti-conflict predicate requires one identity.
+ * Never derives identity from current responsible/member/binding/import actor. */
+export function officialMaterialRecorderAdminAccountId(lock = false): SQL {
+  const { original, conflict } = originalActorClaims();
+  const suffix = lock ? sql` FOR UPDATE` : sql``;
+  return sql`(SELECT CAST(${original.admin} AS UNSIGNED) FROM channel_inventory_material_share_audits original_event
+    WHERE ${original.correlated} AND ${original.valid}
+      AND NOT EXISTS (SELECT 1 FROM channel_inventory_material_share_audits conflicting_event
+        WHERE ${conflict.correlated} AND ${conflict.candidate}
+          AND ((${conflict.valid}) IS NOT TRUE OR BINARY ${conflict.admin} <> BINARY ${original.admin})${suffix})
+    LIMIT 1${suffix})`;
 }
 
 /** A creation event is enriched only while the material itself is first inserted.

@@ -54,11 +54,17 @@ const props = {
   businessState: "",
 };
 describe("staff team domain display", () => {
-  it("shows real operations, official and bound business teams without combining identical IDs", () => {
+  it("shows real operations, historical official and business channel teams without combining identical IDs", () => {
     expect(staffTeamLabels(props)).toEqual([
       "运营 · 平台运营团队 · 组长",
-      "官方渠道 · 旧官方团队 · 队员",
-      "业务 · 业务团队 · 组长",
+      "历史官方团队（不参与渠道共享） · 旧官方团队 · 队员",
+      "渠道库存 / 业务 · 业务团队 · 组长",
+    ]);
+  });
+  it("does not present an empty historical official team as the current channel team", () => {
+    expect(staffTeamLabels({ ...props, official: { ...official, members: [] } })).toEqual([
+      "运营 · 平台运营团队 · 组长",
+      "渠道库存 / 业务 · 业务团队 · 组长",
     ]);
   });
   it("does not guess a business identity by matching names", () => {
@@ -67,7 +73,7 @@ describe("staff team domain display", () => {
         ...props,
         row: { ...row, binding: null, bindingState: "unbound" },
       })[2]
-    ).toBe("业务 · 待关联");
+    ).toBe("渠道库存 / 业务 · 待关联");
   });
   it("does not present failed, hidden or missing data as ungrouped", () => {
     expect(
@@ -77,7 +83,7 @@ describe("staff team domain display", () => {
         officialState: "不可用",
         businessState: "不可用",
       })
-    ).toEqual(["运营 · 不可用", "官方渠道 · 不可用", "业务 · 不可用"]);
+    ).toEqual(["运营 · 不可用", "历史官方团队（不参与渠道共享） · 不可用", "渠道库存 / 业务 · 不可用"]);
     expect(
       staffTeamLabels({
         ...props,
@@ -86,8 +92,8 @@ describe("staff team domain display", () => {
       })
     ).toEqual([
       "运营 · 范围内无记录",
-      "官方渠道 · 旧官方团队 · 队员",
-      "业务 · 范围内无记录",
+      "历史官方团队（不参与渠道共享） · 旧官方团队 · 队员",
+      "渠道库存 / 业务 · 范围内无记录",
     ]);
   });
   it("only reports ungrouped when a real returned member has no team", () => {
@@ -112,7 +118,7 @@ describe("staff team domain display", () => {
       const business = readCachedStaffBusinessTeams(cachedA, current);
       expect(business).toBeUndefined();
       expect(staffTeamLabels({ ...props, business, businessState: "不可用" })[2])
-        .toBe("业务 · 不可用");
+        .toBe("渠道库存 / 业务 · 不可用");
     }
     expect(readCachedStaffBusinessTeams(undefined, context)).toBeUndefined();
   });
