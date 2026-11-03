@@ -407,7 +407,7 @@ export function BatchUpload(props: Props) {
         onPointerDownOutside={(event: Event) => event.preventDefault()}
       >
         <DialogHeader style={{ flex: "0 0 auto" }}>
-          <DialogTitle>批量上传渠道库存</DialogTitle>
+          <DialogTitle>表格上传渠道库存</DialogTitle>
           <DialogDescription>导入渠道库存，确认后保存。</DialogDescription>
         </DialogHeader>
         <div
@@ -519,6 +519,7 @@ export function BatchUpload(props: Props) {
                 hidden
                 ref={fileInput}
                 type="file"
+                aria-label="上传库存表格"
                 accept=".xlsx,.xls,.csv"
                 onChange={e => {
                   const file = e.target.files?.[0];

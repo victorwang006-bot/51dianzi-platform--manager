@@ -8,6 +8,8 @@ export type Draft = {
   taxIncluded: string;
   leadTime: string;
   note: string;
+  /** Import-only validation issue, excluded from the create DTO. */
+  sourceIssue?: string;
 };
 
 export type Payload = {
@@ -23,6 +25,7 @@ export type Payload = {
   note: string | null;
 };
 
+type DraftField = Exclude<keyof Draft, "sourceIssue">;
 export type Mapping = Record<keyof Draft, number>;
 
 export type MappedRow = {
@@ -32,7 +35,7 @@ export type MappedRow = {
   errors: string[];
 };
 
-export const fields: { key: keyof Draft; label: string; required: boolean }[] =
+export const fields: { key: DraftField; label: string; required: boolean }[] =
   [
     { key: "partNumber", label: "型号", required: true },
     { key: "brand", label: "品牌", required: true },
@@ -57,7 +60,7 @@ export const emptyDraft: Draft = {
   note: "",
 };
 
-const draftKeys = fields.map(({ key }) => key) as (keyof Draft)[];
+const draftKeys = fields.map(({ key }) => key);
 // Equivalent to the archived numeric boundary without requiring an ES2020
 // BigInt literal target in the candidate project's tsconfig.
 const MAX_QTY = BigInt("2147483647");
@@ -65,6 +68,19 @@ const pricePattern = /^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/;
 
 function asText(value: unknown): string {
   return value == null ? "" : String(value);
+}
+
+/** Expand stored numeric exponents as text, without rounding through toFixed. */
+function numericText(value: number): string {
+  const text = String(value);
+  const match = /^(-?)(\d+)(?:\.(\d+))?e([+-]?\d+)$/i.exec(text);
+  if (!match) return text;
+  const [, sign, whole, fraction = "", exponent] = match;
+  const digits = whole + fraction;
+  const point = whole.length + Number(exponent);
+  if (point <= 0) return `${sign}0.${"0".repeat(-point)}${digits}`;
+  if (point >= digits.length) return sign + digits.padEnd(point, "0");
+  return `${sign}${digits.slice(0, point)}.${digits.slice(point)}`;
 }
 
 function trim(value: unknown): string {
@@ -112,6 +128,7 @@ function normalizeTaxIncluded(value: string): string {
 export function normalizeDraft(draft: Draft): Draft {
   const normalized = { ...emptyDraft };
   for (const key of draftKeys) normalized[key] = trim(draft[key]);
+  if (draft.sourceIssue) normalized.sourceIssue = draft.sourceIssue;
   normalized.partNumber = normalized.partNumber.normalize("NFKC").trim();
   normalized.qty = normalizeQuantity(normalized.qty);
   normalized.price = normalizePrice(normalized.price);
@@ -125,6 +142,7 @@ export function validateDraft(draft: Draft): string[] {
   const value = normalizeDraft(draft);
   const errors: string[] = [];
 
+  if (value.sourceIssue) errors.push(value.sourceIssue);
   if (value.partNumber.length === 0) errors.push("型号不能为空");
   else if (value.partNumber.length > 128) errors.push("型号不能超过128个字符");
 
@@ -168,7 +186,7 @@ function headerToken(value: unknown): string {
     .replace(/[\s_\-—–/\\()（）\[\]【】.:：]/g, "");
 }
 
-const aliases: Record<keyof Draft, readonly string[]> = {
+const aliases: Record<DraftField, readonly string[]> = {
   partNumber: [
     "型号",
     "料号",
@@ -238,7 +256,7 @@ export function suggestMapping(headers: readonly unknown[]): Mapping {
 /** Ensures source column selections are usable before mapping rows. */
 export function validateMapping(mapping: Mapping): string[] {
   const errors: string[] = [];
-  const used = new Map<number, keyof Draft>();
+  const used = new Map<number, DraftField>();
 
   for (const field of fields) {
     const column = mapping[field.key];
@@ -287,10 +305,24 @@ export function mapGrid(
       const column = mapping[key];
       if (Number.isInteger(column) && column >= 0) {
         const raw = rawRows?.[sourceIndex]?.[column];
-        // Raw numeric quantity avoids display commas and rounding; other fields
-        // retain their text format, including leading-zero part numbers and DC.
+        if (key === "partNumber" && typeof raw === "number") {
+          const exact = numericText(raw);
+          // Excel guarantees at most 15 numeric digits; lost identifier digits
+          // cannot be recovered, even if the stored JS number is a safe integer.
+          if (!Number.isFinite(raw) || exact.replace(/^-/, "").replace(".", "").replace(/^0+/, "").length > 15) {
+            draft.sourceIssue = "数值型型号超过15位或不可靠，可能已丢失精度；请将型号列设为文本后重新上传";
+          }
+          const display = asText(source[column]);
+          // Preserve explicit zero-padding, but not lossy numeric formatting.
+          draft.partNumber = /^0\d+$/.test(display) && Number(display) === raw
+            ? display
+            : exact;
+          continue;
+        }
+        // Numeric quantities/prices use stored values, never rounded display text.
+        // Text prices remain exact strings; Date Code keeps formatting.
         draft[key] = asText(
-          key === "qty" && typeof raw === "number" ? raw : source[column]
+          (key === "qty" || key === "price") && typeof raw === "number" ? numericText(raw) : source[column]
         );
       }
     }

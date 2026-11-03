@@ -64,8 +64,11 @@ describe("channel tabs change placement, not their functions", () => {
     expect(legacy).toContain("openChannelEdit(channel)");
     expect(legacy).toContain("toggleChannel(channel)");
     expect(legacy).toContain("团队共享（只读）");
-    expect(legacy).toContain("本人 · 已共享");
-    expect(legacy).toContain("本人 · 私有");
+    expect(legacy).not.toContain("<h1>渠道库存</h1>");
+    expect(legacy).not.toContain(">可见范围</th>");
+    expect(legacy).toContain(">表格上传</button>");
+    expect(legacy).toContain(">单条上传</button>");
+    expect(legacy).toContain('className="ci-tabbar"');
     expect(legacy).toContain("不包含渠道来源和任何备注");
     expect(legacy).toContain('return formatBeijingDateTime(value) || "—"');
     expect(legacy).not.toContain("new Intl.DateTimeFormat");

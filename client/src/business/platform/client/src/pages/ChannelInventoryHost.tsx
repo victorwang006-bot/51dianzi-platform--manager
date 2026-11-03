@@ -335,6 +335,7 @@ export default function ChannelInventoryHost() {
     && hasInventoryManage;
   const identity = ready ? `${enterpriseId}:${actorUserId}` : "";
   const identityRef = useRef(identity);
+  identityRef.current = identity;
 
   const [tab, setTab] = useState<"channels" | "materials">("materials");
   const [channelFilters, setChannelFilters] = useState<ChannelFilters>({
@@ -604,7 +605,7 @@ export default function ChannelInventoryHost() {
 
   const openMaterialCreate = () => {
     materialCreateRef.current = null;
-    const initialChannel = optionChannels.find(channel => channel.active);
+    const initialChannel = optionChannels.find(channel => channel.active && channel.canEdit && !channel.readOnly);
     setMaterialForm({
       channelId: initialChannel ? String(initialChannel.id) : "",
       partNumber: "",
@@ -628,7 +629,11 @@ export default function ChannelInventoryHost() {
   };
 
   const submitMaterial = async () => {
-    if (!expectedContext || !materialEditor || busy) return;
+    if (!expectedContext || !isCurrent() || !materialEditor || busy) return;
+    if (ownMaterialsQuery.data?.canWrite !== true || !optionChannels.some(channel => channel.id === Number(materialForm.channelId) && channel.active && channel.canEdit && !channel.readOnly)) {
+      setMessage("关联渠道不可写或已停用，请刷新后重试。");
+      return;
+    }
     const validation = validateMaterialForm(materialForm);
     if (validation.length) {
       setMessage(validation.join("；"));
@@ -698,10 +703,11 @@ export default function ChannelInventoryHost() {
 
   const submitBatchMaterial = async (payload: BatchMaterialPayload, requestId: string) => {
     if (!expectedContext || !isCurrent()) throw new Error("当前企业或账号已变化，请重新打开批量上传。");
+    if (ownMaterialsQuery.data?.canWrite !== true || !optionChannels.some(channel => channel.id === payload.channelId && channel.active && channel.canEdit && !channel.readOnly)) throw new Error("关联渠道不可写或已停用，已停止后续上传。");
     return createMaterial.mutateAsync({ ...expectedContext, ...payload, requestId });
   };
 
-  const activeChannels = optionChannels.filter(channel => channel.active);
+  const activeChannels = optionChannels.filter(channel => channel.active && channel.canEdit && !channel.readOnly);
   const channelResult = channelsQuery.data;
   const selectedMaterialsQuery = materialVisibility === "own" ? ownMaterialsQuery : materialsQuery;
   const materialResult = selectedMaterialsQuery.data;
@@ -728,28 +734,24 @@ export default function ChannelInventoryHost() {
 
   return (
     <section className="ci-page ci-host" aria-label="渠道库存管理" data-channel-inventory-host>
-      <header className="ci-heading">
-        <div className="ci-title-line">
-          <h1>渠道库存</h1>
+      <div className="ci-tabbar">
+        <div className="ci-tabs" role="tablist" aria-label="渠道库存内容">
+          <button type="button" role="tab" aria-selected={tab === "materials"} onClick={() => setTab("materials")}>渠道库存</button>
+          <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>渠道档案</button>
         </div>
-        <div className="ci-heading-actions">
+        <div className="ci-heading-actions" aria-label="渠道库存操作">
           {tab === "channels" ? (
             <button type="button" className="ci-button ci-primary" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
           ) : materialVisibility === "own" ? (
             <>
-              <button type="button" className="ci-button" disabled={!canWriteMaterials} onClick={() => setBatchOpen(true)}>批量上传</button>
-              <button type="button" className="ci-button ci-primary" disabled={!canWriteMaterials} onClick={openMaterialCreate}>+ 新增库存</button>
+              <button type="button" className="ci-button" disabled={!canWriteMaterials} onClick={() => setBatchOpen(true)}>表格上传</button>
+              <button type="button" className="ci-button ci-primary" disabled={!canWriteMaterials} onClick={openMaterialCreate}>单条上传</button>
             </>
           ) : null}
         </div>
-      </header>
-
-      <div className="ci-tabs" role="tablist" aria-label="渠道库存内容">
-        <button type="button" role="tab" aria-selected={tab === "materials"} onClick={() => setTab("materials")}>渠道库存</button>
-        <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => setTab("channels")}>渠道档案</button>
       </div>
 
-      {message ? <p className="ci-error" role="alert">{message}</p> : null}
+      {message && !materialEditor ? <p className="ci-error" role="alert">{message}</p> : null}
 
       {tab === "channels" ? (
         <section className="ci-panel" aria-label="渠道管理列表">
@@ -812,24 +814,23 @@ export default function ChannelInventoryHost() {
             <span className="ci-filter-count">{materialResult?.total ?? 0} 条库存</span>
           </div>
           <div className="ci-tablewrap ci-compact-tablewrap">
-            <table className="ci-table ci-compact-stock-table ci-stock-edit-table">
-              <thead><tr><th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-type-col">可见范围</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col">Date Code / 更新</th><th className="ci-material-notes-col">本人私有备注</th><th className="ci-col-actions">操作</th></tr></thead>
+            <table className={`ci-table ci-compact-stock-table ci-stock-edit-table${materialVisibility === "team" ? " ci-shared-stock-table" : ""}`}>
+              <thead><tr><th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col">Date Code / 更新</th>{materialVisibility === "own" ? <th className="ci-material-notes-col">本人私有备注</th> : null}<th className="ci-col-actions">操作</th></tr></thead>
               <tbody>
-                {materialVisibility === "own" && !materialScopeReady && !materialScopeQuery.isError ? <tr><td colSpan={9} className="ci-empty">正在验证渠道范围…</td></tr> : null}
-                {materialVisibility === "own" && materialScopeQuery.isError ? <tr><td colSpan={9} className="ci-empty ci-host-error">{errorMessage(materialScopeQuery.error, "渠道范围不可访问，请重新选择。")}</td></tr> : null}
-                {materialsReady && selectedMaterialsQuery.isLoading ? <tr><td colSpan={9} className="ci-empty">正在加载渠道库存…</td></tr> : null}
-                {materialsReady && selectedMaterialsQuery.isError ? <tr><td colSpan={9} className="ci-empty ci-host-error">{errorMessage(selectedMaterialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
-                {materialsReady && !selectedMaterialsQuery.isLoading && !selectedMaterialsQuery.isError && !(materialResult?.items.length) ? <tr><td colSpan={9} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
+                {materialVisibility === "own" && !materialScopeReady && !materialScopeQuery.isError ? <tr><td colSpan={materialVisibility === "own" ? 8 : 7} className="ci-empty">正在验证渠道范围…</td></tr> : null}
+                {materialVisibility === "own" && materialScopeQuery.isError ? <tr><td colSpan={materialVisibility === "own" ? 8 : 7} className="ci-empty ci-host-error">{errorMessage(materialScopeQuery.error, "渠道范围不可访问，请重新选择。")}</td></tr> : null}
+                {materialsReady && selectedMaterialsQuery.isLoading ? <tr><td colSpan={materialVisibility === "own" ? 8 : 7} className="ci-empty">正在加载渠道库存…</td></tr> : null}
+                {materialsReady && selectedMaterialsQuery.isError ? <tr><td colSpan={materialVisibility === "own" ? 8 : 7} className="ci-empty ci-host-error">{errorMessage(selectedMaterialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
+                {materialsReady && !selectedMaterialsQuery.isLoading && !selectedMaterialsQuery.isError && !(materialResult?.items.length) ? <tr><td colSpan={materialVisibility === "own" ? 8 : 7} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
                 {materialsReady ? materialRows.map((material, index) => (
                   <tr key={material.id}>
                     <td className="ci-number">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td>
                     <td><div className="ci-part-with-type"><strong className="ci-cell-title">{material.partNumber}</strong></div><small className="ci-subtext">{material.brand}</small></td>
-                    <td><span className="ci-channel-type-tag">{"channelId" in material ? (material.shareEnabled ? "本人 · 已共享" : "本人 · 私有") : "团队共享 · 只读"}</span></td>
                     <td className="ci-number">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td>
                     <td className="ci-price">{material.price === null ? "面议" : `¥${material.price}`}<small className="ci-subtext">{material.taxIncluded === null ? "税务待确认" : material.taxIncluded ? "含税" : "未税"}</small></td>
                     <td>{material.leadTime || "待确认"}</td>
                     <td className="ci-date"><div>{material.dateCode || "—"}</div><small className="ci-subtext">{displayDate(material.updatedAt)}</small></td>
-                    <td>{"channelId" in material ? <NotesSummaryCompact row={material} onOpen={() => { setMessage(""); setNotesMaterial(material); }} disabled={busy !== null} /> : <span className="ci-readonly">不共享任何备注</span>}</td>
+                    {materialVisibility === "own" ? <td>{"channelId" in material ? <NotesSummaryCompact row={material} onOpen={() => { setMessage(""); setNotesMaterial(material); }} disabled={busy !== null} /> : null}</td> : null}
                     <td className="ci-col-actions"><div className="ci-row-actions">{"channelId" in material && material.canEdit && !material.readOnly ? <><button type="button" className="ci-inline-link" onClick={() => openMaterialEdit(material)} disabled={busy !== null}>编辑</button><button type="button" className="ci-inline-link" onClick={() => void toggleMaterialShare(material)} disabled={busy !== null}>{material.shareEnabled ? "撤销共享" : "共享给同队"}</button></> : <span className="ci-readonly">只读</span>}</div></td>
                   </tr>
                 )) : null}
@@ -861,25 +862,26 @@ export default function ChannelInventoryHost() {
       {materialEditor ? (
         <div className="ci-modal-backdrop" role="presentation">
           <section className="ci-host-dialog ci-host-material-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-material-editor-title">
-            <header><div><h2 id="ci-material-editor-title">{materialEditor.mode === "create" ? "新增渠道库存" : "编辑渠道库存"}</h2><p>空数量记为待确认，空价格记为面议；只支持 CNY，税务口径必须明确选择或保留待确认。</p></div><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" disabled={busy === "material"} onClick={() => setMaterialEditor(null)}>×</button></header>
+            <header><div><h2 id="ci-material-editor-title">{materialEditor.mode === "create" ? "单条上传" : "编辑渠道库存"}</h2></div><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" disabled={busy === "material"} onClick={() => setMaterialEditor(null)}>×</button></header>
             {!activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
             <div className="ci-form-grid">
-              <label className="ci-field ci-form-wide"><span>关联渠道 *</span><select aria-label="关联渠道" value={materialForm.channelId} disabled={materialEditor.mode === "edit"} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label>
-              <label className="ci-field"><span>型号 *</span><input value={materialForm.partNumber} maxLength={128} onChange={event => setMaterialForm(current => ({ ...current, partNumber: event.target.value }))} /></label>
-              <label className="ci-field"><span>品牌 *</span><input value={materialForm.brand} maxLength={64} onChange={event => setMaterialForm(current => ({ ...current, brand: event.target.value }))} /></label>
-              <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="留空为待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
+              <label className="ci-field"><span>关联渠道 *{materialEditor.mode === "edit" ? "（不可更换）" : ""}</span><select required aria-label="关联渠道" value={materialForm.channelId} disabled={materialEditor.mode === "edit"} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label>
+              <label className="ci-field"><span>型号 *</span><input required value={materialForm.partNumber} maxLength={128} onChange={event => setMaterialForm(current => ({ ...current, partNumber: event.target.value }))} /></label>
+              <label className="ci-field"><span>品牌 *</span><input required value={materialForm.brand} maxLength={64} onChange={event => setMaterialForm(current => ({ ...current, brand: event.target.value }))} /></label>
+              <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
               <label className="ci-field"><span>Date Code</span><input maxLength={32} value={materialForm.dateCode} onChange={event => setMaterialForm(current => ({ ...current, dateCode: event.target.value }))} /></label>
-              <label className="ci-field"><span>报价 CNY</span><input inputMode="decimal" placeholder="留空为面议" value={materialForm.price} onChange={event => setMaterialForm(current => ({ ...current, price: event.target.value }))} /></label>
+              <label className="ci-field"><span>报价 CNY</span><input inputMode="decimal" placeholder="面议" value={materialForm.price} onChange={event => setMaterialForm(current => ({ ...current, price: event.target.value }))} /></label>
               <label className="ci-field"><span>税务口径</span><select value={materialForm.taxIncluded} onChange={event => setMaterialForm(current => ({ ...current, taxIncluded: event.target.value as MaterialForm["taxIncluded"] }))}><option value="unknown">待确认</option><option value="included">含税</option><option value="excluded">未税</option></select></label>
-              <label className="ci-field ci-form-wide"><span>交期</span><input maxLength={64} placeholder="留空为待确认" value={materialForm.leadTime} onChange={event => setMaterialForm(current => ({ ...current, leadTime: event.target.value }))} /></label>
-              <label className="ci-field ci-form-wide"><span>历史库存备注</span><textarea value={materialForm.note} maxLength={2000} rows={3} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /><small>备注仅本人维护，绝不随库存共享给团队；关联渠道创建后不可更换。</small></label>
+              <label className="ci-field"><span>交期</span><input maxLength={64} placeholder="待确认" value={materialForm.leadTime} onChange={event => setMaterialForm(current => ({ ...current, leadTime: event.target.value }))} /></label>
+              <label className="ci-field ci-form-wide"><span>备注（仅本人）</span><textarea placeholder="仅本人可见，不共享" value={materialForm.note} maxLength={2000} rows={2} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /></label>
             </div>
-            <footer><button type="button" className="ci-button" disabled={busy === "material"} onClick={() => setMaterialEditor(null)}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "material" || !activeChannels.length} onClick={() => void submitMaterial()}>{busy === "material" ? "保存中…" : materialEditor.mode === "create" ? "保存库存" : "保存修改"}</button></footer>
+            {message ? <p className="ci-error" role="alert">{message}</p> : null}
+            <footer><button type="button" className="ci-button" disabled={busy === "material"} onClick={() => setMaterialEditor(null)}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "material" || !activeChannels.length} onClick={() => void submitMaterial()}>{busy === "material" ? "保存中…" : materialEditor.mode === "create" ? "上传库存" : "保存修改"}</button></footer>
           </section>
         </div>
       ) : null}
 
-      {batchOpen ? <BatchUpload channels={optionChannels.map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} onClose={() => setBatchOpen(false)} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { void refreshMaterials(); }} isCurrent={isCurrent} /> : null}
+      {batchOpen ? <BatchUpload channels={optionChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={materialChannelId} onClose={() => setBatchOpen(false)} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { void refreshMaterials(); }} isCurrent={isCurrent} /> : null}
       {notesMaterial ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={isCurrent} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
     </section>
   );

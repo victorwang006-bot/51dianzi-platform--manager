@@ -17,27 +17,32 @@
   color: #a54a4a;
 }
 
-.ci-heading {
+/* Tabs and actions share one compact row; no hidden title/spacer. */
+.ci-page.ci-host .ci-tabbar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #dce5ee;
 }
-
-.ci-title-line h1 {
-  margin: 0;
-  color: #233548;
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 28px;
+.ci-page.ci-host .ci-tabbar > .ci-tabs {
+  height: 38px;
+  margin-bottom: 0;
+  border-bottom: 0;
 }
-
-.ci-title-line p {
-  max-width: 680px;
-  margin: 4px 0 0;
-  color: #74869a;
-  font-size: 12px;
-  line-height: 19px;
+.ci-page.ci-host .ci-tabbar > .ci-heading-actions {
+  width: auto;
+  margin-left: auto;
+  padding: 3px 0;
 }
+.ci-page.ci-host .ci-panel > .ci-tabs { margin-bottom: 0; }
+.ci-page.ci-host .ci-toolbar { padding: 10px 12px; }
+.ci-page.ci-host .ci-host-material-dialog > header { padding: 12px 20px; }
+.ci-page.ci-host .ci-host-material-dialog .ci-form-grid { gap: 10px 14px; padding: 12px 20px; }
+.ci-page.ci-host .ci-host-material-dialog textarea { min-height: 54px; }
+.ci-page.ci-host .ci-host-material-dialog > .ci-error { margin: 0; padding: 0 20px 10px; }
 
 .ci-heading-actions,
 .ci-row-actions,
@@ -404,18 +409,23 @@
 
 .ci-page.ci-host .ci-table.ci-compact-stock-table {
   width: 100%;
-  min-width: 920px !important;
+  min-width: 860px !important;
   table-layout: fixed;
 }
 
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-col-index { width: 3.5%; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-part-col { width: 18%; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-type-col { width: 7%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-col-index { width: 4%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-part-col { width: 24%; }
 .ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-qty-col { width: 12%; }
 .ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-price-col { width: 12%; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-lead-col { width: 7.5%; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-date-col { width: 13%; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-notes-col { width: 27%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-lead-col { width: 8%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-date-col { width: 14%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-material-notes-col { width: 16%; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table .ci-col-actions { width: 10%; }
+.ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-part-col { width: 30%; }
+.ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-qty-col,
+.ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-price-col { width: 15%; }
+.ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-lead-col { width: 10%; }
+.ci-page.ci-host .ci-table.ci-shared-stock-table .ci-material-date-col { width: 16%; }
 
 .ci-page.ci-host .ci-table.ci-compact-stock-table th,
 .ci-page.ci-host .ci-table.ci-compact-stock-table td {
@@ -469,7 +479,7 @@
 
 @media (max-width: 1023px) {
   .ci-page.ci-host .ci-channel-table { min-width: 700px !important; table-layout: fixed; }
-  .ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 920px !important; }
+  .ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 860px !important; }
   .ci-page.ci-host .ci-table th.ci-col-actions,
   .ci-page.ci-host .ci-table td.ci-col-actions {
     position: sticky;

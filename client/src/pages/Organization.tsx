@@ -1,6 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { PageHeader } from "@/components/admin/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,7 +28,7 @@ import {
 } from "@shared/staffOrganization";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import "./Organization.css";
 
@@ -185,8 +184,15 @@ function errorText(error: unknown) {
 function teamRoleLabel(role: string | null) {
   return role === "leader" ? "组长" : role === "member" ? "成员" : "未分组";
 }
+function memberStatusLabel(status: string) {
+  return status === "active"
+    ? "正常"
+    : status === "disabled" || status === "inactive"
+      ? "已停用"
+      : status;
+}
 function memberName(member: BusinessMember) {
-  return member.name || member.username || `前台用户 ${member.userId}`;
+  return member.name || member.username || "未命名员工";
 }
 function jsonText(value: unknown) {
   return JSON.stringify(value, null, 2);
@@ -234,6 +240,11 @@ export default function Organization() {
     null
   );
   const [auditPage, setAuditPage] = useState(1);
+  const [selectedTeam, setSelectedTeam] = useState<
+    number | "all" | "ungrouped"
+  >("all");
+  const [teamSearch, setTeamSearch] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [saving, setSaving] = useState(false);
@@ -328,6 +339,9 @@ export default function Organization() {
     setSaveError(null);
     setNotice(null);
     setAuditPage(1);
+    setSelectedTeam("all");
+    setTeamSearch("");
+    setMemberSearch("");
   }, [domain, merchantId, section, accountId]);
   useEffect(
     () => () => {
@@ -350,9 +364,40 @@ export default function Organization() {
   const ready =
     !dataError &&
     (domain === "operations"
-      ? nativeQuery.isSuccess
+      ? nativeQuery.isSuccess && Boolean(native)
       : businessQuery.isSuccess && merchantId !== null);
   const isEditable = ready && canManage && !saving;
+  const activeTeams = teamRows.filter(team => team.status === "active");
+  const effectiveTeam =
+    typeof selectedTeam === "number" &&
+    !activeTeams.some(team => team.id === selectedTeam)
+      ? "all"
+      : selectedTeam;
+  const matchesMember = (member: { teamId: number | null }, label: string) =>
+    (effectiveTeam === "all" ||
+      (effectiveTeam === "ungrouped"
+        ? member.teamId === null
+        : member.teamId === effectiveTeam)) &&
+    label.toLocaleLowerCase().includes(memberSearch.trim().toLocaleLowerCase());
+  const visibleNativeMembers =
+    native?.members.filter(member =>
+      matchesMember(member, `${member.displayName} ${member.username}`)
+    ) ?? [];
+  const visibleBusinessMembers =
+    business?.members.filter(member =>
+      matchesMember(member, `${memberName(member)} ${member.username ?? ""}`)
+    ) ?? [];
+  const visibleMemberCount =
+    domain === "operations"
+      ? visibleNativeMembers.length
+      : visibleBusinessMembers.length;
+  const selectedTeamLabel =
+    effectiveTeam === "all"
+      ? "全部成员"
+      : effectiveTeam === "ungrouped"
+        ? "未分组"
+        : nameOfTeam(effectiveTeam);
+
   function open(value: Editor) {
     setEditor(value);
     setPreview(null);
@@ -596,6 +641,12 @@ export default function Organization() {
           id: row.id,
           action: row.action,
           actor: row.actorAdminUserId,
+          targetLabel: row.targetType.includes("team")
+            ? (native?.teams.find(team => team.id === row.targetId)?.name ??
+              "团队")
+            : (native?.members.find(
+                member => member.adminUserId === row.targetId
+              )?.displayName ?? "员工"),
           target: `${row.targetType} ${row.targetId}`,
           requestId: row.requestId,
           payloadHash: row.payloadHash,
@@ -607,6 +658,17 @@ export default function Organization() {
           id: row.id,
           action: row.action,
           actor: row.actorUserId,
+          targetLabel: row.targetUserId
+            ? business?.members.find(
+                member => member.userId === row.targetUserId
+              )
+              ? memberName(
+                  business.members.find(
+                    member => member.userId === row.targetUserId
+                  )!
+                )
+              : "员工"
+            : "企业团队",
           target: row.targetUserId
             ? `前台用户 ${row.targetUserId}`
             : "企业团队",
@@ -622,72 +684,40 @@ export default function Organization() {
       : (businessAudit.data?.total ?? 0);
   return (
     <DashboardLayout>
-      <main data-organization-page>
-        <PageHeader
-          title={title}
-          actions={
+      <main
+        data-organization-page
+        data-enterprise-id={
+          domain === "business" ? business?.enterprise.id : undefined
+        }
+        data-actor-user-id={
+          domain === "business" ? business?.actorUserId : undefined
+        }
+      >
+        <h1 className="sr-only">{title}</h1>
+        <div className="org-toolbar" aria-label="组织工具栏">
+          <div className="org-domain-tabs" role="tablist" aria-label="组织领域">
             <Button
-              variant="outline"
+              role="tab"
+              aria-selected={domain === "business"}
+              variant="ghost"
               disabled={saving}
-              onClick={() => {
-                if (domain === "operations") {
-                  void nativeQuery.refetch();
-                  void nativeAudit.refetch();
-                } else {
-                  void merchantsQuery.refetch();
-                  if (scopeClient) void businessQuery.refetch();
-                  if (business?.canManage) void businessAudit.refetch();
-                }
-              }}
+              onClick={() => setDomain("business")}
             >
-              刷新
+              业务团队
             </Button>
-          }
-        />
-        <div className="org-domain-tabs" role="tablist" aria-label="组织领域">
-          <Button
-            role="tab"
-            aria-selected={domain === "business"}
-            variant={domain === "business" ? "default" : "outline"}
-            disabled={saving}
-            onClick={() => setDomain("business")}
-          >
-            业务团队
-          </Button>
-          <Button
-            role="tab"
-            aria-selected={domain === "operations"}
-            variant={domain === "operations" ? "default" : "outline"}
-            disabled={saving}
-            onClick={() => setDomain("operations")}
-          >
-            运营团队
-          </Button>
-        </div>
-        <nav className="org-section-tabs" aria-label="组织页面">
-          <Link
-            href="/teams"
-            aria-current={section === "teams" ? "page" : undefined}
-          >
-            团队与成员
-          </Link>
-          <Link
-            href="/role-templates"
-            aria-current={section === "templates" ? "page" : undefined}
-          >
-            岗位模板
-          </Link>
-          <Link
-            href="/permission-audit"
-            aria-current={section === "audit" ? "page" : undefined}
-          >
-            变更审计
-          </Link>
-        </nav>
-        {domain === "business" && (
-          <section className="org-panel">
-            <label className="org-field">
-              业务商户
+            <Button
+              role="tab"
+              aria-selected={domain === "operations"}
+              variant="ghost"
+              disabled={saving}
+              onClick={() => setDomain("operations")}
+            >
+              运营团队
+            </Button>
+          </div>
+          {domain === "business" && (
+            <label className="org-merchant">
+              <span className="sr-only">业务商户</span>
               <select
                 aria-label="业务商户"
                 value={merchantId ?? ""}
@@ -701,12 +731,51 @@ export default function Organization() {
                 <option value="">请选择业务商户</option>
                 {merchants.map(merchant => (
                   <option value={merchant.id} key={merchant.id}>
-                    {merchant.companyName}（{merchant.merchantNo || merchant.id}
-                    ）
+                    {merchant.companyName}
                   </option>
                 ))}
               </select>
             </label>
+          )}
+          <div className="org-toolbar-actions">
+            {section === "teams" && (ready || domain === "operations") && (
+              <Button
+                disabled={!isEditable}
+                onClick={() =>
+                  open({
+                    kind: "team",
+                    id: null,
+                    name: "",
+                    notes: "",
+                    status: "active",
+                    expectedRevision: 0,
+                  })
+                }
+              >
+                创建团队
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              disabled={saving}
+              onClick={() => {
+                if (domain === "operations") {
+                  void nativeQuery.refetch();
+                  if (section === "audit") void nativeAudit.refetch();
+                } else {
+                  void merchantsQuery.refetch();
+                  if (scopeClient) void businessQuery.refetch();
+                  if (section === "audit" && business?.canManage)
+                    void businessAudit.refetch();
+                }
+              }}
+            >
+              刷新
+            </Button>
+          </div>
+        </div>
+        {domain === "business" && (
+          <>
             <LoadingError
               loading={merchantsQuery.isLoading}
               error={merchantsQuery.error}
@@ -716,22 +785,21 @@ export default function Organization() {
               !merchantsQuery.error &&
               merchants.length === 0 && (
                 <p className="org-notice">
-                  当前后台账号未绑定有效业务员工，或没有可进入的业务商户。业务编辑已禁用；仍可切换至运营团队。
+                  暂无可访问商户，业务编辑已禁用；可切换运营团队。
                 </p>
+              )}
+            {!merchantsQuery.isLoading &&
+              !merchantsQuery.error &&
+              merchants.length > 1 &&
+              !merchantId && (
+                <p className="org-notice">请选择业务商户后查看。</p>
               )}
             {merchantsQuery.data && merchantsQuery.data.sourceTotal > 100 && (
               <p className="org-notice">
-                当前显示前 100 个可访问商户。更多商户请从业务工作台选择。
+                当前显示前 100 个可访问商户，更多请从业务工作台选择。
               </p>
             )}
-            {business && merchantId && (
-              <p className="org-muted">
-                企业：{business.enterprise.name} · 企业 ID{" "}
-                {business.enterprise.id} · 真实前台操作者 ID{" "}
-                {business.actorUserId}
-              </p>
-            )}
-          </section>
+          </>
         )}
         <LoadingError
           loading={loading}
@@ -757,176 +825,228 @@ export default function Organization() {
               </p>
             )}
             {section === "teams" && (
-              <>
-                <section className="org-panel">
+              <div className="org-workspace">
+                <section
+                  className="org-panel org-team-panel"
+                  aria-label="团队列表"
+                >
                   <div className="org-heading">
-                    <h2>{domain === "operations" ? "运营团队" : "业务团队"}</h2>
-                    <Button
-                      disabled={!isEditable}
-                      onClick={() =>
-                        open({
-                          kind: "team",
-                          id: null,
-                          name: "",
-                          notes: "",
-                          status: "active",
-                          expectedRevision: 0,
-                        })
-                      }
-                    >
-                      创建团队
-                    </Button>
+                    <h2>团队</h2>
+                    <span className="org-muted">
+                      {canManage ? `${activeTeams.length} 个团队` : "可见团队"}
+                    </span>
                   </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>团队</TableHead>
-                        <TableHead>状态</TableHead>
-                        <TableHead>版本</TableHead>
-                        <TableHead>操作</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teamRows
-                        .filter(team => team.status === "active")
-                        .map(team => (
-                          <TableRow key={team.id}>
-                            <TableCell>
+                  <Input
+                    aria-label="搜索团队"
+                    placeholder="搜索团队"
+                    value={teamSearch}
+                    onChange={event => setTeamSearch(event.target.value)}
+                  />
+                  <div className="org-team-filters">
+                    <button
+                      type="button"
+                      aria-pressed={effectiveTeam === "all"}
+                      onClick={() => setSelectedTeam("all")}
+                    >
+                      全部成员
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={effectiveTeam === "ungrouped"}
+                      onClick={() => setSelectedTeam("ungrouped")}
+                    >
+                      未分组
+                    </button>
+                  </div>
+                  <ul className="org-team-list">
+                    {teamRows
+                      .filter(
+                        team =>
+                          team.status === "active" &&
+                          team.name
+                            .toLocaleLowerCase()
+                            .includes(teamSearch.trim().toLocaleLowerCase())
+                      )
+                      .map(team => (
+                        <li
+                          key={team.id}
+                          data-team-id={team.id}
+                          data-revision={team.revision}
+                          data-selected={effectiveTeam === team.id}
+                        >
+                          <div>
+                            <button
+                              type="button"
+                              className="org-team-name"
+                              aria-pressed={effectiveTeam === team.id}
+                              onClick={() => setSelectedTeam(team.id)}
+                            >
                               {team.name}
-                              <span className="org-muted"> #{team.id}</span>
-                            </TableCell>
-                            <TableCell>
-                              {team.status === "active" ? "启用" : "已归档"}
-                            </TableCell>
-                            <TableCell>{team.revision}</TableCell>
-                            <TableCell>
+                            </button>
+                          </div>
+                          <div>
+                            {team.status === "active" ? "启用" : "已归档"}
+                          </div>
+                          <div className="org-team-actions">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!isEditable}
+                              onClick={() =>
+                                open({
+                                  kind: "team",
+                                  id: team.id,
+                                  name: team.name,
+                                  notes:
+                                    "notes" in team
+                                      ? String(team.notes ?? "")
+                                      : "",
+                                  status:
+                                    team.status === "active"
+                                      ? "active"
+                                      : "archived",
+                                  expectedRevision: team.revision,
+                                })
+                              }
+                            >
+                              编辑团队
+                            </Button>
+                            {domain === "operations" && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                disabled={!isEditable}
-                                onClick={() =>
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                disabled={
+                                  !isEditable ||
+                                  Boolean(
+                                    native?.members.some(
+                                      member => member.teamId === team.id
+                                    )
+                                  )
+                                }
+                                title={
+                                  native?.members.some(
+                                    member => member.teamId === team.id
+                                  )
+                                    ? "请先移出团队成员"
+                                    : "删除团队"
+                                }
+                                onClick={() => {
+                                  if (
+                                    !isEditable ||
+                                    domain !== "operations" ||
+                                    native?.members.some(
+                                      member => member.teamId === team.id
+                                    )
+                                  )
+                                    return;
+                                  const requestId = newRequestId();
+                                  const notes =
+                                    "notes" in team
+                                      ? String(team.notes ?? "")
+                                      : "";
                                   open({
                                     kind: "team",
                                     id: team.id,
                                     name: team.name,
-                                    notes:
-                                      "notes" in team
-                                        ? String(team.notes ?? "")
-                                        : "",
-                                    status:
-                                      team.status === "active"
-                                        ? "active"
-                                        : "archived",
+                                    notes,
+                                    status: "archived",
                                     expectedRevision: team.revision,
-                                  })
-                                }
+                                  });
+                                  setPreview({
+                                    title: "删除团队",
+                                    changes: [
+                                      `删除“${team.name}”？`,
+                                      "员工与历史业务记录保留。",
+                                    ],
+                                    requestId,
+                                    run: async () => {
+                                      await updateTeam.mutateAsync({
+                                        id: team.id,
+                                        name: team.name,
+                                        notes,
+                                        status: "archived",
+                                        expectedRevision: team.revision,
+                                        requestId,
+                                      });
+                                    },
+                                  });
+                                }}
                               >
-                                编辑团队
+                                删除
                               </Button>
-                              {domain === "operations" && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive hover:text-destructive"
-                                  disabled={
-                                    !isEditable ||
-                                    Boolean(
-                                      native?.members.some(
-                                        member => member.teamId === team.id
-                                      )
-                                    )
-                                  }
-                                  title={
-                                    native?.members.some(
-                                      member => member.teamId === team.id
-                                    )
-                                      ? "请先移出团队成员"
-                                      : "删除团队"
-                                  }
-                                  onClick={() => {
-                                    if (
-                                      !isEditable ||
-                                      domain !== "operations" ||
-                                      native?.members.some(
-                                        member => member.teamId === team.id
-                                      )
-                                    )
-                                      return;
-                                    const requestId = newRequestId();
-                                    const notes =
-                                      "notes" in team
-                                        ? String(team.notes ?? "")
-                                        : "";
-                                    open({
-                                      kind: "team",
-                                      id: team.id,
-                                      name: team.name,
-                                      notes,
-                                      status: "archived",
-                                      expectedRevision: team.revision,
-                                    });
-                                    setPreview({
-                                      title: "删除团队",
-                                      changes: [
-                                        `删除“${team.name}”？`,
-                                        "员工与历史业务记录保留。",
-                                      ],
-                                      requestId,
-                                      run: async () => {
-                                        await updateTeam.mutateAsync({
-                                          id: team.id,
-                                          name: team.name,
-                                          notes,
-                                          status: "archived",
-                                          expectedRevision: team.revision,
-                                          requestId,
-                                        });
-                                      },
-                                    });
-                                  }}
-                                >
-                                  删除
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {!teamRows.some(team => team.status === "active") && (
-                        <TableRow>
-                          <TableCell colSpan={4}>暂无团队</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    {!teamRows.some(team => team.status === "active") && (
+                      <li>
+                        <div className="org-empty">暂无团队</div>
+                      </li>
+                    )}
+                  </ul>
+                  {activeTeams.length > 0 &&
+                    !activeTeams.some(team =>
+                      team.name
+                        .toLocaleLowerCase()
+                        .includes(teamSearch.trim().toLocaleLowerCase())
+                    ) && <p className="org-empty">没有匹配的团队</p>}
                 </section>
-                <section className="org-panel">
-                  <h2>成员与团队岗位</h2>
+                <section
+                  className="org-panel org-members-panel"
+                  aria-label="成员列表"
+                >
+                  <div className="org-heading">
+                    <div className="org-member-heading">
+                      <h2>{selectedTeamLabel}</h2>
+                      <span className="org-muted">
+                        {canManage
+                          ? `${visibleMemberCount} 位成员`
+                          : `当前可见 ${visibleMemberCount} 位，非团队总人数`}
+                      </span>
+                      {effectiveTeam !== "all" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedTeam("all")}
+                        >
+                          清除筛选
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      aria-label="搜索成员"
+                      placeholder="搜索姓名或账号"
+                      value={memberSearch}
+                      onChange={event => setMemberSearch(event.target.value)}
+                    />
+                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>工作人员</TableHead>
                         <TableHead>状态</TableHead>
                         <TableHead>所属团队</TableHead>
-                        <TableHead>岗位 / 版本</TableHead>
+                        <TableHead>团队岗位</TableHead>
                         <TableHead>操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {domain === "operations"
-                        ? native?.members.map(member => (
+                        ? visibleNativeMembers.map(member => (
                             <TableRow key={member.adminUserId}>
                               <TableCell>
                                 {member.displayName}
                                 <div className="org-muted">
-                                  {member.username} · 后台 ID{" "}
-                                  {member.adminUserId}
+                                  {member.username}
                                 </div>
                               </TableCell>
-                              <TableCell>{member.status}</TableCell>
+                              <TableCell>
+                                {memberStatusLabel(member.status)}
+                              </TableCell>
                               <TableCell>{nameOfTeam(member.teamId)}</TableCell>
                               <TableCell>
-                                {teamRoleLabel(member.teamRole)} /{" "}
-                                {member.revision}
+                                {teamRoleLabel(member.teamRole)}
                               </TableCell>
                               <TableCell>
                                 <Button
@@ -953,20 +1073,20 @@ export default function Organization() {
                               </TableCell>
                             </TableRow>
                           ))
-                        : business?.members.map(member => (
+                        : visibleBusinessMembers.map(member => (
                             <TableRow key={member.userId}>
                               <TableCell>
                                 {memberName(member)}
                                 <div className="org-muted">
-                                  {member.username || "—"} · 前台 ID{" "}
-                                  {member.userId}
+                                  {member.username || "—"}
                                 </div>
                               </TableCell>
-                              <TableCell>{member.status}</TableCell>
+                              <TableCell>
+                                {memberStatusLabel(member.status)}
+                              </TableCell>
                               <TableCell>{nameOfTeam(member.teamId)}</TableCell>
                               <TableCell>
-                                {teamRoleLabel(member.teamRole)} /{" "}
-                                {member.revision}
+                                {teamRoleLabel(member.teamRole)}
                               </TableCell>
                               <TableCell>
                                 <Button
@@ -995,8 +1115,19 @@ export default function Organization() {
                           ))}
                     </TableBody>
                   </Table>
+                  {visibleMemberCount === 0 && (
+                    <p className="org-empty">
+                      {memberSearch
+                        ? "没有匹配的成员"
+                        : effectiveTeam === "ungrouped"
+                          ? "暂无未分组成员"
+                          : effectiveTeam === "all"
+                            ? "暂无可见成员"
+                            : "该团队暂无可见成员"}
+                    </p>
+                  )}
                 </section>
-              </>
+              </div>
             )}
             {section === "templates" && (
               <>
@@ -1046,8 +1177,9 @@ export default function Organization() {
                               <TableCell>
                                 {member.displayName}
                                 <div className="org-muted">
-                                  后台 ID {member.adminUserId} ·{" "}
-                                  {member.adminRole}
+                                  {member.adminRole === "super_admin"
+                                    ? "超级管理员"
+                                    : "运营员工"}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -1093,12 +1225,7 @@ export default function Organization() {
                           ))
                         : business?.members.map(member => (
                             <TableRow key={member.userId}>
-                              <TableCell>
-                                {memberName(member)}
-                                <div className="org-muted">
-                                  前台 ID {member.userId}
-                                </div>
-                              </TableCell>
+                              <TableCell>{memberName(member)}</TableCell>
                               <TableCell>
                                 {member.moduleAccess.map(module => (
                                   <div key={module.module}>
@@ -1149,9 +1276,7 @@ export default function Organization() {
             {section === "audit" && (
               <section className="org-panel">
                 <h2>服务端审计记录</h2>
-                <p className="org-muted">
-                  记录请求号、内容摘要与变更前后值。运营与业务审计分域存储。
-                </p>
+
                 {(domain === "operations" || business?.canManage) && (
                   <>
                     <LoadingError
@@ -1187,15 +1312,28 @@ export default function Organization() {
                               <div>{row.action}</div>
                             </TableCell>
                             <TableCell>
-                              {row.actor === null
-                                ? "已授权管理员"
-                                : `ID ${row.actor}`}
-                              <div>{row.target}</div>
+                              {domain === "operations"
+                                ? (native?.members.find(
+                                    member => member.adminUserId === row.actor
+                                  )?.displayName ?? "运营员工")
+                                : business?.members.find(
+                                      member => member.userId === row.actor
+                                    )
+                                  ? memberName(
+                                      business.members.find(
+                                        member => member.userId === row.actor
+                                      )!
+                                    )
+                                  : "业务员工"}
+                              <div className="org-muted">{row.targetLabel}</div>
                             </TableCell>
                             <TableCell>
                               <details>
-                                <summary>查看前后差异与请求摘要</summary>
+                                <summary>查看详情</summary>
                                 <p className="org-key-list">
+                                  操作者：{row.actor ?? "已授权管理员"} · 目标：
+                                  {row.target}
+                                  <br />
                                   请求号：{row.requestId ?? "仅管理员可见"}
                                   <br />
                                   内容摘要：{row.payloadHash ?? "仅管理员可见"}
@@ -1383,10 +1521,7 @@ export default function Organization() {
               </div>
             ) : editor?.kind === "nativeAccess" ? (
               <div className="org-fields">
-                <p>
-                  {editor.member.displayName} · 后台 ID{" "}
-                  {editor.member.adminUserId}
-                </p>
+                <p>{editor.member.displayName}</p>
                 <label className="org-field">
                   运营模板
                   <select
@@ -1414,9 +1549,7 @@ export default function Organization() {
               </div>
             ) : editor?.kind === "businessAccess" ? (
               <div className="org-fields">
-                <p>
-                  {memberName(editor.member)} · 前台 ID {editor.member.userId}
-                </p>
+                <p>{memberName(editor.member)}</p>
                 <label className="org-field">
                   填入岗位模板
                   <select
