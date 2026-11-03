@@ -18,7 +18,7 @@ import {
 import "./AdminWorkspaceNavigation.css";
 
 /** UI release only; native/business authorization versions remain independent. */
-export const ADMIN_SYSTEM_RELEASE = "20261103-home-quotes-download-v6";
+export const ADMIN_SYSTEM_RELEASE = "20261103-business-industry-v7";
 
 export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   /** Already filtered by the existing native-admin/BFF capability checks. */

@@ -8,6 +8,7 @@ import {
   consumeCustomerCreateCompletion,
   customerCreateDraftEntry,
   customerCreateDraftIdentityForNamespace,
+  normalizeCustomerCreateDraft,
   replaceCustomerCreatePendingSave,
   retainOnlyCustomerCreateDraftIdentity,
   subscribeCustomerCreateDrafts,
@@ -77,7 +78,7 @@ export function useCustomerCreateDraft(
     request: fallback.request ? { ...fallback.request } : null,
     pendingSave: fallback.pendingSave ? { ...fallback.pendingSave } : null,
   }), [fallback.contacts, fallback.form, fallback.pendingSave, fallback.request]);
-  const draft = entry.draft ?? transientDraft;
+  const draft = useMemo(() => entry.draft ? normalizeCustomerCreateDraft(entry.draft) : transientDraft, [entry.draft, transientDraft]);
 
   const update = useCallback((change: (current: CustomerCreateDraft) => CustomerCreateDraft) => {
     if (!identity) return null;

@@ -40,6 +40,8 @@ import {
   withCustomerContactScope,
 } from "../components/customers/customerContacts";
 
+import { getBusinessIndustryLabel } from "../../../shared/businessIndustry";
+
 type FollowUpForm = {
   method: typeof CUSTOMER_FOLLOW_METHODS[number];
   content: string;
@@ -367,7 +369,7 @@ export default function CustomerDetail() {
         <div className="flex flex-wrap gap-2"><button type="button" className="crm-btn" title="回到进入详情前的页面，保留筛选、页码与位置" onClick={() => returnToPageSource(navigate, "/customers")}>返回上一页</button>{canManageAll && !isArchived && <button type="button" className="crm-btn crm-btn-up" onClick={() => setActionDialog("transfer")}>转移负责人</button>}{canManageAll && !isArchived && <button type="button" className="crm-btn crm-btn-danger" onClick={() => setActionDialog("archive")}>归档</button>}{canManageAll && isArchived && <button type="button" className="crm-btn crm-btn-primary" onClick={() => setActionDialog("restore")}>恢复客户</button>}</div>
       </div>
 
-      {customerNeedsCompletion(customer) && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">待补全：请补齐客户名称、联系人和电话后保存资料；历史查看和追加跟进不受影响。</p>}
+      {customerNeedsCompletion(customer) && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">待补全：请补齐基本资料后保存；历史查看和追加跟进不受影响。</p>}
       {isArchived && <section className="mb-3 rounded-lg border border-[#F1D3A6] bg-[#FFF9ED] px-4 py-3 text-sm text-[#8A5A16]"><b>该客户已归档，当前为只读状态。</b> {customer.archiveReason ? `归档原因：${customer.archiveReason}` : ""} 仅管理员可恢复。</section>}
       {editError && <section className="mb-3 rounded-lg border border-[#F5C2C2] bg-[#FFF4F4] px-4 py-3 text-sm text-[#A32D2D]" role="alert">{editError}</section>}
 
@@ -379,6 +381,7 @@ export default function CustomerDetail() {
               {basicDirty && <span className="text-xs text-amber-700" role="status">未保存</span>}
               <span className="text-xs text-slate-600">主联系人：{customer.contactName || "—"}</span>
               <span className="text-xs text-slate-600">电话：{customer.phone || "—"}</span>
+              <span className="text-xs text-slate-600">所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
               <span className="text-xs text-slate-600">当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>

@@ -470,6 +470,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const dialog = required(document.querySelector('[role="dialog"]'), "missing channel editor");
     expect(dialog.querySelector('option[value="factory"]')?.textContent).toBe("工厂");
     change(control(dialog, "渠道名称") as HTMLInputElement, "华南原厂");
+    change(control(dialog, "所属行业"), "electronic_components");
     click(button("保存渠道"));
     await settle();
     expect(runtime.createChannel).toHaveBeenCalledTimes(1);
@@ -477,6 +478,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       expectedEnterpriseId: 31,
       expectedActorUserId: 7,
       name: "华南原厂",
+      industryCode: "electronic_components",
       type: "factory",
       active: true,
       requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
@@ -485,10 +487,11 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     click(button("编辑"));
     const editDialog = required(document.querySelector('[role="dialog"]'), "missing channel edit dialog");
     change(control(editDialog, "渠道名称") as HTMLInputElement, "深圳代理更新");
+    change(control(editDialog, "所属行业"), "communications");
     click(button("保存修改"));
     await settle();
     expect(runtime.updateChannel).toHaveBeenCalledWith(expect.objectContaining({
-      expectedEnterpriseId: 31, expectedActorUserId: 7, id: 11, expectedRevision: 4, name: "深圳代理更新",
+      expectedEnterpriseId: 31, expectedActorUserId: 7, id: 11, expectedRevision: 4, name: "深圳代理更新", industryCode: "communications",
     }));
 
     click(button("停用"));
@@ -1033,5 +1036,72 @@ describe("v6 channel archive complete inventory download", () => {
     runtime.exportChannelMaterials.mockResolvedValueOnce({ ...exportFixture(), actorUserId: 8 });
     renderHost(); click(button("渠道档案")); click(button("下载库存")); await settleExport();
     expect(XLSX.writeFile).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("上下文不匹配");
+  });
+});
+
+
+describe("channel industry required integration", () => {
+  it("requires an explicit industry and keeps the same complete dictionary in the compact QQ-right slot", async () => {
+    renderHost();
+    click(button("渠道档案"));
+    click(button("+ 新增渠道"));
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing create dialog");
+    change(control(dialog, "渠道名称"), "行业渠道");
+    const industry = control(dialog, "所属行业") as HTMLSelectElement;
+    expect(industry.value).toBe("");
+    expect(industry.required).toBe(true);
+    expect(industry.options[0].text).toBe("请选择所属行业");
+    expect(Array.from(industry.options).slice(1).map(option => option.value)).toEqual(["semiconductor", "electronic_components", "consumer_electronics", "communications", "computers_servers", "automotive", "industrial_automation", "instrumentation", "medical", "renewable_energy", "power_electronics", "iot_smart_hardware", "security", "lighting", "home_appliances", "aerospace_defense", "rail_transportation", "electronic_manufacturing", "component_distribution", "software_it", "education_research", "other"]);
+    expect(industry.closest("label")?.previousElementSibling?.textContent).toBe("QQ");
+    expect(industry.closest("label")?.classList.contains("ci-form-wide")).toBe(false);
+    click(button("保存渠道"));
+    await settle();
+    expect(runtime.createChannel).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("请选择所属行业。");
+    change(industry, "automotive");
+    click(button("保存渠道"));
+    await settle();
+    expect(runtime.createChannel).toHaveBeenCalledWith(expect.objectContaining({ industryCode: "automotive", expectedEnterpriseId: 31, expectedActorUserId: 7 }));
+  });
+
+  it("requires a missing historical industry for channel editing but not existing inventory uploads", async () => {
+    renderHost();
+    click(button("渠道档案"));
+    click(button("编辑"));
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing edit dialog");
+    expect((control(dialog, "所属行业") as HTMLSelectElement).value).toBe("");
+    click(button("保存修改"));
+    await settle();
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+    change(control(dialog, "所属行业"), "medical");
+    click(button("保存修改"));
+    await settle();
+    expect(runtime.updateChannel).toHaveBeenCalledWith(expect.objectContaining({ industryCode: "medical", id: 11, expectedRevision: 4 }));
+    // A real invalidation returns a fresh query DTO and repopulates upload candidates.
+    runtime.channelQuery = query({ ...(runtime.channelQuery as { data: object }).data });
+    click(button("渠道库存"));
+    click(button("单条上传"));
+    const upload = required(document.querySelector('[role="dialog"]'), "missing upload dialog");
+    expect(upload.querySelector('[aria-label="所属行业"]')).toBeNull();
+    expect(document.querySelector<HTMLSelectElement>('[aria-label="关联渠道"]')?.textContent).toContain("深圳代理");
+  });
+
+  it("echoes an existing channel industry and cannot edit a read-only source", async () => {
+    const result = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0].industryCode = "renewable_energy";
+    renderHost();
+    click(button("渠道档案"));
+    click(button("编辑"));
+    expect(document.querySelector<HTMLSelectElement>('[aria-label="所属行业"]')?.value).toBe("renewable_energy");
+    click(button("取消"));
+    result.data.items[0].readOnly = true;
+    click(button("编辑"));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+    click(button("渠道库存"));
+    const peer = document.querySelectorAll("tbody tr")[1];
+    expect(peer.textContent).toContain("无权查看");
+    expect(peer.querySelector("button, select")).toBeNull();
+    expect(document.querySelector("thead")?.textContent).not.toContain("所属行业");
   });
 });

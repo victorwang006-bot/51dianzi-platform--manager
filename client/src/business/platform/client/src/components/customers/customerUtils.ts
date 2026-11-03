@@ -1,9 +1,12 @@
 import type { CustomerData, CustomerRecord } from "../../../../shared/crmCustomers";
 import { formatBeijingDateTime } from "../../../../shared/beijingTime";
 
+import type { BusinessIndustryCode } from "../../../../shared/businessIndustry";
+
 /** Controlled browser-form representation. datetime-local values are Beijing civil time. */
 export type CustomerFormState = {
   name: string;
+  industryCode: string;
   contactName: string;
   phone: string;
   email: string;
@@ -22,6 +25,7 @@ export type CustomerFormState = {
 
 export const EMPTY_CUSTOMER_FORM: CustomerFormState = {
   name: "",
+  industryCode: "",
   contactName: "",
   phone: "",
   email: "",
@@ -91,6 +95,7 @@ export function beijingDateTimeLocalToIso(value: string): string | null {
 export function recordToCustomerForm(customer: CustomerRecord): CustomerFormState {
   return {
     name: customer.name,
+    industryCode: customer.industryCode ?? "",
     contactName: customer.contactName,
     phone: customer.phone,
     email: customer.email,
@@ -112,6 +117,7 @@ export function customerFormToData(form: CustomerFormState): CustomerData {
   const assignedUserId = Number(form.assignedUserId);
   return {
     name: form.name.trim(),
+    industryCode: form.industryCode as BusinessIndustryCode,
     contactName: form.contactName.trim(),
     phone: form.phone.trim(),
     email: form.email.trim(),

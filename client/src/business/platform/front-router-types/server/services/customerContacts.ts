@@ -637,7 +637,7 @@ export async function createMulti(scope: CustomerServerScope, rawInput: unknown)
         action: "created_multi",
         note: "创建多联系人客户",
         requestId,
-        afterData: { contactCount: ids.length, primaryContactId: primaryId },
+        afterData: { contactCount: ids.length, primaryContactId: primaryId, industryCode: input.data.industryCode },
       });
     },
   });
@@ -673,6 +673,7 @@ export async function contactsList(scope: CustomerServerScope, rawInput: unknown
       customer: {
         id: customerId,
         name: context.customer.name,
+        industryCode: context.customer.industryCode ?? null,
         assignedUserId: Number(context.customer.assignedUserId),
         assignedName: displayName(assigned?.name, Number(context.customer.assignedUserId)),
         version: Number(context.customer.version),
@@ -987,7 +988,7 @@ export async function updateBasic(scope: CustomerServerScope, rawInput: unknown)
     if (!input.confirmDuplicate && duplicates.rows.length) throwCrmCustomerDuplicate(duplicates.restricted);
     const changed = resultHeader(await context.tx.execute(sql`
       UPDATE crm_customers
-         SET name = ${input.data.name.trim()}, nameNormalized = ${normalizeCustomerName(input.data.name)},
+         SET name = ${input.data.name.trim()}, nameNormalized = ${normalizeCustomerName(input.data.name)}, industryCode = ${input.data.industryCode},
              province = ${nullableText(input.data.province)}, city = ${nullableText(input.data.city)},
              district = ${nullableText(input.data.district)}, address = ${nullableText(input.data.address)},
              scale = ${input.data.scale}, grade = ${input.data.grade}, stage = ${input.data.stage},
@@ -1003,7 +1004,7 @@ export async function updateBasic(scope: CustomerServerScope, rawInput: unknown)
       version: input.version + 1,
       replayed: false,
     };
-    await auditContact(context.tx, scope, { customerId: input.customerId, action: "basic_updated", note: "更新客户基本资料", requestId: input.requestId });
+    await auditContact(context.tx, scope, { customerId: input.customerId, action: "basic_updated", note: "更新客户基本资料", requestId: input.requestId, beforeData: { industryCode: context.customer.industryCode ?? null }, afterData: { industryCode: input.data.industryCode } });
     await completeContactRequest(context.tx, scope, input.requestId, response);
     return response;
   });

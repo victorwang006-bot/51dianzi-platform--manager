@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { businessIndustryCodeSchema } from "./businessIndustry";
 import {
   CUSTOMER_GRADES,
   CUSTOMER_SCALES,
@@ -21,6 +22,7 @@ export const customerContactExpectedIdentitySchema = z.object({
 /** Customer fields handled independently of a contact's compatibility projection. */
 export const customerContactBasicDataSchema = z.object({
   name: z.string().trim().min(1, "请输入客户名称").max(128, "客户名称不能超过128字"),
+  industryCode: businessIndustryCodeSchema,
   province: optionalText(64),
   city: optionalText(64),
   district: optionalText(64),
@@ -165,6 +167,7 @@ export type ContactsListResult = {
   customer: {
     id: number;
     name: string;
+    industryCode: string | null;
     assignedUserId: number;
     assignedName: string;
     version: number;

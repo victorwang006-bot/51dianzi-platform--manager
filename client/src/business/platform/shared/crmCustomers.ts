@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { businessIndustryCodeSchema } from "./businessIndustry";
 
 export const CUSTOMER_GRADES = ["A", "B", "C", "D"] as const;
 export const CUSTOMER_STAGES = ["new", "following", "quoted", "won", "paused", "invalid"] as const;
@@ -32,6 +33,7 @@ export function customerNeedsCompletion(record: { name?: string | null; contactN
 
 export const customerDataSchema = z.object({
   name: z.string().trim().min(1, "请输入客户名称").max(128, "客户名称不能超过128字"),
+  industryCode: businessIndustryCodeSchema,
   contactName: z.string({ error: "请输入联系人" }).trim().min(1, "请输入联系人").max(64, "联系人不能超过64字"),
   phone: z.string({ error: "请输入电话" }).trim().min(1, "请输入电话").max(64, "电话不能超过64字").refine(value => !value || isCustomerPhone(value), "请输入有效电话，可填写手机、座机或国际号码"),
   email: z.string().trim().max(254).refine(value => !value || z.string().email().safeParse(value).success, "请输入有效邮箱").default(""),
@@ -44,7 +46,9 @@ export const customerDataSchema = z.object({
   assignedUserId: z.number().int().positive().optional(),
 });
 export type CustomerData = z.infer<typeof customerDataSchema>;
-export type CustomerRecord = Omit<CustomerData, "assignedUserId"> & {
+export type CustomerRecord = Omit<CustomerData, "assignedUserId" | "industryCode"> & {
+  /** Read compatibility only: legacy NULL and unknown historical codes are not guessed. */
+  industryCode: string | null;
   id: number; enterpriseId: number; assignedUserId: number; assignedName: string;
   createdByUserId: number; createdByName: string; createdAt: string; updatedAt: string;
   version: number; archivedAt: string | null; archiveReason: string | null; lastFollowUpAt: string | null;

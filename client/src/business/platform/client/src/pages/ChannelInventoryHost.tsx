@@ -10,6 +10,8 @@ import "../components/channelInventory/batch.css";
 import "../components/channelInventory/notes.css";
 import "./ChannelInventoryHost.css";
 
+import { BUSINESS_INDUSTRY_OPTIONS, businessIndustryCodeSchema } from "../../../shared/businessIndustry";
+
 type ChannelInventoryInputs = inferRouterInputs<AppRouter>["channelInventory"];
 type ChannelInventoryOutputs = inferRouterOutputs<AppRouter>["channelInventory"];
 type Channel = ChannelInventoryOutputs["listChannels"]["items"][number];
@@ -34,6 +36,7 @@ type MaterialFilters = {
 
 type ChannelForm = {
   name: string;
+  industryCode: string;
   type: ChannelType;
   contactName: string;
   phone: string;
@@ -78,6 +81,7 @@ const CHANNEL_TYPES: readonly { value: ChannelType; label: string }[] = [
 
 const EMPTY_CHANNEL_FORM: ChannelForm = {
   name: "",
+  industryCode: "",
   type: "factory",
   contactName: "",
   phone: "",
@@ -171,6 +175,7 @@ function activeLabel(active: boolean) {
 function channelFormFrom(channel: Channel): ChannelForm {
   return {
     name: channel.name,
+    industryCode: channel.industryCode ?? "",
     type: channel.type,
     contactName: channel.contactName ?? "",
     phone: channel.phone ?? "",
@@ -608,6 +613,12 @@ export default function ChannelInventoryHost() {
       setMessage("请输入渠道名称。");
       return;
     }
+    const industry = businessIndustryCodeSchema.safeParse(channelForm.industryCode);
+    if (!industry.success) {
+      setMessage("请选择所属行业。");
+      return;
+    }
+    if (channelEditor.mode === "edit" && (!channelEditor.channel.canEdit || channelEditor.channel.readOnly)) return;
     setBusy("channel");
     setMessage("");
     try {
@@ -615,6 +626,7 @@ export default function ChannelInventoryHost() {
         const candidate: Omit<ChannelInventoryInputs["createChannel"], "requestId"> = {
           ...expectedContext,
           name,
+          industryCode: industry.data,
           type: channelForm.type,
           contactName: toNullable(channelForm.contactName),
           phone: toNullable(channelForm.phone),
@@ -638,6 +650,7 @@ export default function ChannelInventoryHost() {
           id: channelEditor.channel.id,
           expectedRevision: channelEditor.channel.revision,
           name,
+          industryCode: industry.data,
           type: channelForm.type,
           contactName: toNullable(channelForm.contactName),
           phone: toNullable(channelForm.phone),
@@ -964,6 +977,7 @@ export default function ChannelInventoryHost() {
               <label className="ci-field"><span>联系电话</span><input value={channelForm.phone} maxLength={32} onChange={event => setChannelForm(current => ({ ...current, phone: event.target.value }))} /></label>
               <label className="ci-field"><span>微信</span><input value={channelForm.wechat} maxLength={64} onChange={event => setChannelForm(current => ({ ...current, wechat: event.target.value }))} /></label>
               <label className="ci-field"><span>QQ</span><input value={channelForm.qq} maxLength={32} onChange={event => setChannelForm(current => ({ ...current, qq: event.target.value }))} /></label>
+              <label className="ci-field"><span>所属行业 *</span><select required aria-required="true" aria-label="所属行业" value={channelForm.industryCode} onChange={event => setChannelForm(current => ({ ...current, industryCode: event.target.value }))}><option value="">请选择所属行业</option>{BUSINESS_INDUSTRY_OPTIONS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
               <label className="ci-field ci-form-wide"><span>渠道说明</span><textarea value={channelForm.notes} maxLength={2000} rows={4} onChange={event => setChannelForm(current => ({ ...current, notes: event.target.value }))} /></label>
             </div>
             <footer><button type="button" className="ci-button" disabled={busy === "channel"} onClick={() => { invalidateEditSession(); setChannelEditor(null); }}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "channel"} onClick={() => void submitChannel()}>{busy === "channel" ? "保存中…" : channelEditor.mode === "create" ? "保存渠道" : "保存修改"}</button></footer>

@@ -158,6 +158,7 @@ export function CustomerCreateForm({
 
   const save = async (mode: CustomerCreateSaveMode, forced?: CustomerCreatePendingSave) => {
     if (savingRef.current || createMutation.isPending || !scope || !scopeReady || !draftIdentity || contextQuery.isPending || contextQuery.isError) return;
+    if (!forced && pendingSave) return;
     if (!forced && !validate()) return;
     const data = customerContactBaseData(form);
     const contactPayload = contacts.map(contact => ({ ...contactInput(contact), isPrimary: contact.isPrimary }));
@@ -168,8 +169,9 @@ export function CustomerCreateForm({
       initialFollowUp: form.initialFollowUp.trim(),
     });
     if (forced && forced.fingerprint !== fingerprint) {
-      setFormError("内容已变化，不能确认原保存请求。请重新保存。");
-      replacePending(draft.token, null);
+      // A legacy/changed frozen payload may already have committed. Never unlock it
+      // or reuse its requestId with the upgraded form payload.
+      setFormError("请先核对客户保存结果；原请求已保留，勿重复录入。");
       return;
     }
     const persisted = updateDraft(current => {
@@ -290,7 +292,7 @@ export function CustomerCreateForm({
       </div>
     </form>
     {pendingSave?.kind === "duplicate" ? <ConfirmDialog title="确认保留相似联系人或联系方式？" description="确认后会按当前资料保存，不会自动合并或覆盖；无权限的既有客户资料不会展示。" confirmLabel="确认并继续保存" error={formError} busy={saving || createMutation.isPending} onCancel={() => replacePending(draft.token, null)} onConfirm={() => void save(pendingSave.mode, pendingSave)} /> : null}
-    {pendingSave?.kind === "unknown" ? <ConfirmDialog title="正在确认保存结果" description="网络结果未知。为避免重复录入，内容已锁定；请使用同一请求编号确认结果。" confirmLabel="使用相同内容重试" busy={saving || createMutation.isPending} onCancel={() => undefined} onConfirm={() => void save(pendingSave.mode, pendingSave)} /> : null}
+    {pendingSave?.kind === "unknown" ? <ConfirmDialog title="正在确认保存结果" description="网络结果未知。为避免重复录入，内容已锁定；请使用同一请求编号确认结果。" confirmLabel="使用相同内容重试" error={formError} busy={saving || createMutation.isPending} onCancel={() => undefined} onConfirm={() => void save(pendingSave.mode, pendingSave)} /> : null}
     {confirmDiscard ? <ConfirmDialog title="放弃未保存的客户信息？" description="放弃后会明确清空当前客户资料、全部联系人和首次跟进备注。" confirmLabel="放弃填写" onCancel={() => setConfirmDiscard(false)} onConfirm={discard} /> : null}
   </>;
 }

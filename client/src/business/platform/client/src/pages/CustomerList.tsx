@@ -37,6 +37,8 @@ import {
   TableRow,
 } from "../components/ui/table";
 
+import { getBusinessIndustryLabel } from "../../../shared/businessIndustry";
+
 const PAGE_SIZE = 20;
 type GradeFilter = "" | CustomerData["grade"];
 type StageFilter = "" | CustomerData["stage"];
@@ -547,9 +549,10 @@ export default function CustomerList() {
               ) : null}
             </div>
           ) : (
-            <Table className="min-w-[900px] table-fixed">
+            <Table className="min-w-[1040px] table-fixed">
               <colgroup>
                 <col />
+                <col className="w-[140px]" />
                 <col className="w-[164px]" />
                 <col className="w-[116px]" />
                 <col className="w-[96px]" />
@@ -561,6 +564,9 @@ export default function CustomerList() {
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
                   <TableHead className="h-8 px-2 text-[11px] text-slate-500">
                     客户名称
+                  </TableHead>
+                  <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                    所属行业
                   </TableHead>
                   <TableHead className="h-8 px-2 text-[11px] text-slate-500">
                     联系人 / 电话
@@ -610,6 +616,7 @@ export default function CustomerList() {
                           ) : null}
                         </div>
                       </TableCell>
+                      <TableCell className="truncate px-2 py-1.5 text-[12px] text-slate-600" title={getBusinessIndustryLabel(customer.industryCode)} data-testid="industry-cell">{getBusinessIndustryLabel(customer.industryCode)}</TableCell>
                       <TableCell className="px-2 py-1.5 text-[12px]">
                         <CustomerContactsSummary
                           customerId={customer.id}

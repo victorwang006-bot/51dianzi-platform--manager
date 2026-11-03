@@ -20,14 +20,14 @@ const schemas = {
 };
 type Method = keyof typeof schemas;
 const inputs: Record<Method, object> = {
-  createMulti: { ...identity, data: { name: "本地客户" }, contacts: [{ ...contact, isPrimary: true }], requestId },
+  createMulti: { ...identity, data: { name: "本地客户", industryCode: "semiconductor" }, contacts: [{ ...contact, isPrimary: true }], requestId },
   contactsList: { ...identity, customerId: 1 },
   contactsSummary: { ...identity, customerIds: [1, 2] },
   contactsAdd: { ...identity, customerId: 1, contact, requestId },
   contactsEdit: { ...identity, customerId: 1, contactId: "fixture-contact-1", version: 2, contact, requestId },
   contactsStop: { ...identity, customerId: 1, contactId: "fixture-contact-1", version: 2, replacementContactId: "fixture-contact-2", requestId },
   contactsSetPrimary: { ...identity, customerId: 1, contactId: "fixture-contact-2", version: 3, requestId },
-  updateBasic: { ...identity, customerId: 1, version: 4, data: { name: "本地客户" }, confirmDuplicate: true, requestId },
+  updateBasic: { ...identity, customerId: 1, version: 4, data: { name: "本地客户", industryCode: "semiconductor" }, confirmDuplicate: true, requestId },
 };
 function context(role: "merchant_mgr" | "super_admin" = "merchant_mgr"): TrpcContext {
   const now = new Date("2030-01-01T00:00:00Z");

@@ -4547,6 +4547,7 @@ export const crmCustomers = mysqlTable(
     updatedByUserId: int("updatedByUserId").notNull(),
     name: varchar("name", { length: 128 }).notNull(),
     nameNormalized: varchar("nameNormalized", { length: 128 }).notNull(),
+    industryCode: varchar("industryCode", { length: 64 }).default(sql`NULL`),
     province: varchar("province", { length: 64 }),
     city: varchar("city", { length: 64 }),
     district: varchar("district", { length: 64 }),

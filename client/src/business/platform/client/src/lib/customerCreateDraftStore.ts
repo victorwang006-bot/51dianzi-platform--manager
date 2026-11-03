@@ -55,10 +55,11 @@ function cloneContacts(contacts: ContactDraft[]): ContactDraft[] {
   }));
 }
 
-function cloneDraft(draft: CustomerCreateDraft): CustomerCreateDraft {
+/** Only the editable form is upgraded; frozen request fingerprints are never rewritten. */
+export function normalizeCustomerCreateDraft(draft: CustomerCreateDraft): CustomerCreateDraft {
   return {
     ...draft,
-    form: { ...draft.form },
+    form: { ...draft.form, industryCode: draft.form.industryCode ?? "" },
     contacts: cloneContacts(draft.contacts),
     request: draft.request ? { ...draft.request } : null,
     pendingSave: draft.pendingSave ? { ...draft.pendingSave } : null,
@@ -103,9 +104,9 @@ export function updateCustomerCreateDraft(
 ): CustomerCreateDraft {
   const existing = entries.get(identity)?.draft;
   const base: CustomerCreateDraft = existing
-    ? cloneDraft(existing)
-    : { ...fallback, token: token(), form: { ...fallback.form }, contacts: cloneContacts(fallback.contacts) };
-  const next = cloneDraft(update(base));
+    ? normalizeCustomerCreateDraft(existing)
+    : { ...fallback, token: token(), form: { ...fallback.form, industryCode: fallback.form.industryCode ?? "" }, contacts: cloneContacts(fallback.contacts) };
+  const next = normalizeCustomerCreateDraft(update(base));
   // A caller must not accidentally carry a token from another identity/draft.
   next.token = base.token;
   publish(identity, { draft: next, completion: null });
@@ -167,7 +168,7 @@ export function replaceCustomerCreatePendingSave(
   if (!entry?.draft || entry.draft.token !== draftToken) return false;
   publish(identity, {
     draft: {
-      ...cloneDraft(entry.draft),
+      ...normalizeCustomerCreateDraft(entry.draft),
       pendingSave: pendingSave ? { ...pendingSave } : null,
     },
     completion: null,

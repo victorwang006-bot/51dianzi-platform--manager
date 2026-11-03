@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import type { CustomerFormState } from "./customerUtils";
 import type { CustomerFieldErrors } from "./customerValidation";
 
+import { BUSINESS_INDUSTRY_OPTIONS } from "../../../../shared/businessIndustry";
+
 const inputClass = "h-8 !h-8 !text-xs bg-white border-slate-300 shadow-none";
 type Props = {
   value: CustomerFormState; onChange: Dispatch<SetStateAction<CustomerFormState>>;
@@ -70,6 +72,10 @@ export function CustomerFields({ value, onChange, members, canManageAll, allowAs
         <SelectTrigger {...props("assignedUserId", "销售负责人")} className={`${inputClass} w-full`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="self">本人</SelectItem>{members.map(member => <SelectItem key={member.userId} value={String(member.userId)}>{member.name}</SelectItem>)}</SelectContent>
       </Select> : <div className="flex h-8 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-xs text-slate-600">{currentAssigneeName || "本人"}</div>)}
       {field("source", "来源", <Input {...props("source", "来源")} className={inputClass} maxLength={128} placeholder="展会、老客户转介绍等" value={value.source} onChange={e => set("source", e.target.value)} />)}
+      {field("industryCode", "所属行业", <Select value={value.industryCode || ""} disabled={disabled} onValueChange={next => set("industryCode", next)}>
+        <SelectTrigger {...props("industryCode", "所属行业", true)} className={`${inputClass} w-full`}><SelectValue placeholder="请选择所属行业" /></SelectTrigger>
+        <SelectContent>{BUSINESS_INDUSTRY_OPTIONS.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+      </Select>, true)}
       {field("nextFollowUpAt", "下次跟进（北京时间）", <BeijingDateTimePicker {...props("nextFollowUpAt", "下次跟进（北京时间）")} className="max-w-[228px]" value={value.nextFollowUpAt} onChange={next => set("nextFollowUpAt", next)} />, false, "sm:col-span-2")}
     </div>
     <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-6">

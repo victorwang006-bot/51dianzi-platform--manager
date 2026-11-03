@@ -1,11 +1,14 @@
 import { customerDataSchema } from "../../../../shared/crmCustomers";
 import { customerFormToData, type CustomerFormState } from "./customerUtils";
 
+import { businessIndustryCodeSchema } from "../../../../shared/businessIndustry";
+
 export type CustomerFieldErrors = Partial<Record<keyof CustomerFormState, string>>;
 export function validateCustomerForm(form: CustomerFormState) {
   const candidate = customerFormToData(form);
   const parsed = customerDataSchema.safeParse(candidate);
   const errors: CustomerFieldErrors = {};
+  if (!businessIndustryCodeSchema.safeParse(form.industryCode).success) errors.industryCode = "请选择所属行业";
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
       const key = issue.path[0] as keyof CustomerFormState;

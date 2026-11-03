@@ -62,6 +62,7 @@ export async function syncCrmCustomerAssignmentOwner(tx: CrmSqlExecutor, enterpr
 import { customerOwnershipQuerySchema, type CustomerOwnershipQuery, type CustomerOwnershipResult } from "../../../shared/customerOwnership";
 import { consumeCustomerOwnershipQuota } from "../customerOwnershipQuota";
 import { customerDataSchema } from "../../../shared/crmCustomers";
+import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../shared/businessIndustry";
 function validateWriteData(data: CustomerData): CustomerData {
   const checked = customerDataSchema.safeParse(data);
   if (!checked.success) throw new TRPCError({ code: "BAD_REQUEST", message: checked.error.issues[0]?.message ?? "请检查客户信息", cause: checked.error });
@@ -84,6 +85,7 @@ type CustomerRow = {
   assignedUserId: number;
   createdByUserId: number;
   name: string;
+  industryCode: string | null;
   contactName: string | null;
   phone: string | null;
   email: string | null;
@@ -236,6 +238,7 @@ export function customerFollowUpPayloadHash(input: {
 function canonicalData(data: CustomerData) {
   return {
     name: data.name.trim(),
+    industryCode: data.industryCode,
     contactName: data.contactName.trim(),
     phone: data.phone.trim(),
     email: data.email.trim().toLowerCase(),
@@ -261,6 +264,7 @@ function mapCustomer(row: CustomerRow): CustomerRecord {
     createdByUserId: Number(row.createdByUserId),
     createdByName: displayName(row.createdByName, Number(row.createdByUserId)),
     name: row.name,
+    industryCode: row.industryCode ?? null,
     contactName: row.contactName ?? "",
     phone: row.phone ?? "",
     email: row.email ?? "",
@@ -284,7 +288,7 @@ function mapCustomer(row: CustomerRow): CustomerRecord {
 
 function customerSelect() {
   return sql`
-    SELECT c.id, c.enterpriseId, c.assignedUserId, c.createdByUserId, c.name,
+    SELECT c.id, c.enterpriseId, c.assignedUserId, c.createdByUserId, c.name, c.industryCode,
            cc.contactName, cc.phone, cc.email,
            c.province, c.city, c.district, c.address, c.scale, c.grade, c.stage, c.source,
            c.nextFollowUpAt, c.lastFollowUpAt, c.archivedAt, c.archiveReason,
@@ -387,7 +391,7 @@ function assertCustomerAccess(customer: CustomerRow | undefined, scope: Customer
 /** The locked customer shape intentionally exposes only fields required by contacts. */
 export type CrmCustomerContactCustomer = Pick<
   CustomerRow,
-  "id" | "assignedUserId" | "name" | "archivedAt" | "version"
+  "id" | "assignedUserId" | "name" | "industryCode" | "archivedAt" | "version"
 >;
 
 export type CrmCustomerContactTransaction = {
@@ -759,7 +763,10 @@ export async function createCustomer(
   if (extension && !trustedCustomerCreateExtensions.has(extension)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "无效的内部联系人创建能力" });
   }
-  input = extension ? { ...input } : { ...input, data: validateWriteData(input.data) };
+  // Trusted multi-contact creation may have no phone, but cannot bypass industry.
+  const industry = businessIndustryCodeSchema.safeParse(input.data.industryCode);
+  if (!industry.success) throw new TRPCError({ code: "BAD_REQUEST", message: "请选择所属行业", cause: industry.error });
+  input = extension ? { ...input, data: { ...input.data, industryCode: industry.data } } : { ...input, data: validateWriteData(input.data) };
   const db = await requireDb();
   const payloadHash = extension?.payloadHash ?? customerCreatePayloadHash(input);
   return db.transaction(async tx => {
@@ -781,10 +788,10 @@ export async function createCustomer(
     const data = canonicalData(input.data);
     const inserted = resultHeader(await tx.execute(sql`
       INSERT INTO crm_customers
-        (enterpriseId, assignedUserId, createdByUserId, updatedByUserId, name, nameNormalized,
+        (enterpriseId, assignedUserId, createdByUserId, updatedByUserId, name, nameNormalized, industryCode,
          province, city, district, address, scale, grade, stage, source, nextFollowUpAt, createdAt, updatedAt)
       VALUES
-        (${scope.enterpriseId}, ${assignedUserId}, ${scope.actorUserId}, ${scope.actorUserId}, ${data.name}, ${normalizeCustomerName(data.name)},
+        (${scope.enterpriseId}, ${assignedUserId}, ${scope.actorUserId}, ${scope.actorUserId}, ${data.name}, ${normalizeCustomerName(data.name)}, ${data.industryCode},
          ${nullableText(data.province)}, ${nullableText(data.city)}, ${nullableText(data.district)}, ${nullableText(data.address)},
          ${data.scale}, ${data.grade}, ${data.stage}, ${nullableText(data.source)}, ${data.nextFollowUpAt ? toBeijingSqlDate(data.nextFollowUpAt) : null}, ${CRM_NOW}, ${CRM_NOW})
     `));
@@ -810,7 +817,7 @@ export async function createCustomer(
       UPDATE crm_customer_requests SET customerId = ${customerId}, recordId = ${customerId}
        WHERE enterpriseId = ${scope.enterpriseId} AND actorUserId = ${scope.actorUserId} AND requestId = ${input.requestId}
     `);
-    await insertAudit(tx, { enterpriseId: scope.enterpriseId, customerId, actorUserId: scope.actorUserId, action: "created", note: "创建客户", requestId: input.requestId });
+    await insertAudit(tx, { enterpriseId: scope.enterpriseId, customerId, actorUserId: scope.actorUserId, action: "created", note: `创建客户；所属行业：${getBusinessIndustryLabel(data.industryCode)}（${data.industryCode}）`, requestId: input.requestId });
     return { id: customerId, replayed: false };
   });
 }
@@ -833,7 +840,7 @@ export async function updateCustomer(scope: CustomerServerScope, input: { id: nu
     const data = canonicalData(input.data);
     await tx.execute(sql`
       UPDATE crm_customers
-         SET name = ${data.name}, nameNormalized = ${normalizeCustomerName(data.name)},
+         SET name = ${data.name}, nameNormalized = ${normalizeCustomerName(data.name)}, industryCode = ${data.industryCode},
              province = ${nullableText(data.province)}, city = ${nullableText(data.city)}, district = ${nullableText(data.district)}, address = ${nullableText(data.address)},
              scale = ${data.scale}, grade = ${data.grade}, stage = ${data.stage}, source = ${nullableText(data.source)},
              nextFollowUpAt = ${data.nextFollowUpAt ? toBeijingSqlDate(data.nextFollowUpAt) : null},
@@ -856,6 +863,7 @@ export async function updateCustomer(scope: CustomerServerScope, input: { id: nu
          )
     `);
     const changes = [
+      customer.industryCode === data.industryCode ? "" : `所属行业：${getBusinessIndustryLabel(customer.industryCode)}（${customer.industryCode ?? "未设置"}）→${getBusinessIndustryLabel(data.industryCode)}（${data.industryCode}）`,
       customer.grade === data.grade ? "" : `客户等级：${customer.grade}→${data.grade}`,
       customer.stage === data.stage ? "" : `客户阶段：${customer.stage}→${data.stage}`,
     ].filter(Boolean);

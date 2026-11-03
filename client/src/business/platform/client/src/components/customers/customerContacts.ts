@@ -20,6 +20,8 @@ import {
   type CustomerFormState,
 } from "./customerUtils";
 
+import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../../shared/businessIndustry";
+
 export { CONTACT_METHOD_TYPES };
 export type { ContactMethodType };
 export type ContactMethodDraft = CustomerContactMethod;
@@ -129,6 +131,7 @@ export function customerContactBaseData(form: CustomerFormState): CustomerContac
   const assignedUserId = Number(form.assignedUserId);
   return {
     name: form.name.trim(),
+    industryCode: form.industryCode as BusinessIndustryCode,
     grade: form.grade,
     scale: form.scale,
     stage: form.stage,
@@ -144,6 +147,7 @@ export function customerContactBaseData(form: CustomerFormState): CustomerContac
 
 export function validateCustomerContactBase(form: CustomerFormState): Record<string, string> {
   const errors: Record<string, string> = {};
+  if (!businessIndustryCodeSchema.safeParse(form.industryCode).success) errors.industryCode = "请选择所属行业";
   const parsed = customerContactBasicDataSchema.safeParse(customerContactBaseData(form));
   if (!parsed.success) {
     parsed.error.issues.forEach(issue => {

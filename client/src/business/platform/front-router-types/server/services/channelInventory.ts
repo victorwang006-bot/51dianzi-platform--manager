@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
+import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
 
 export const CHANNEL_INVENTORY_TYPES = ["factory", "agent", "trade", "other"] as const;
 export type ChannelInventoryType = (typeof CHANNEL_INVENTORY_TYPES)[number];
@@ -48,6 +49,7 @@ export type ChannelRecord = {
   dataOwnerUserId: number;
   responsibleUserId: number;
   name: string;
+  industryCode: string | null;
   type: ChannelInventoryType;
   contactName: string | null;
   phone: string | null;
@@ -90,6 +92,7 @@ export type ChannelMaterialRecord = {
 
 export type ChannelCreateInput = {
   name: string;
+  industryCode: BusinessIndustryCode;
   type: ChannelInventoryType;
   contactName: string | null;
   phone: string | null;
@@ -104,6 +107,7 @@ export type ChannelUpdateInput = {
   id: number;
   expectedRevision: number;
   name?: string;
+  industryCode?: BusinessIndustryCode;
   type?: ChannelInventoryType;
   contactName?: string | null;
   phone?: string | null;
@@ -165,7 +169,7 @@ export type ChannelInventoryServiceDependencies = {
 
 const CHANNEL_COLUMNS = sql`
   id, enterprise_id AS enterpriseId, data_owner_user_id AS dataOwnerUserId,
-  responsible_user_id AS responsibleUserId, name, channel_type AS type,
+  responsible_user_id AS responsibleUserId, name, industryCode, channel_type AS type,
   contact_name AS contactName, phone, wechat, qq, notes, active, revision,
   created_at AS createdAt, updated_at AS updatedAt
 `;
@@ -202,6 +206,12 @@ const MAX_PAGE_SIZE = 100;
 
 function appError(code: ChannelInventoryErrorCode, message: string): never {
   throw new ChannelInventoryError(code, message);
+}
+
+function requireIndustryCode(value: unknown): BusinessIndustryCode {
+  const industry = businessIndustryCodeSchema.safeParse(value);
+  if (!industry.success) appError("BAD_REQUEST", "请选择所属行业");
+  return industry.data;
 }
 
 function databaseFailure(): ChannelInventoryError {
@@ -258,6 +268,7 @@ function channelFrom(row: SqlResultRow): ChannelRecord {
     dataOwnerUserId: Number(row.dataOwnerUserId),
     responsibleUserId: Number(row.responsibleUserId),
     name: String(row.name),
+    industryCode: nullableString(row.industryCode),
     type,
     contactName: nullableString(row.contactName),
     phone: nullableString(row.phone),
@@ -559,8 +570,9 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     },
 
     async createChannel(scope: ChannelInventoryScope, input: ChannelCreateInput) {
+      const industryCode = requireIndustryCode(input.industryCode);
       const payloadHash = channelInventoryPayloadHash({
-        name: input.name, type: input.type, contactName: input.contactName, phone: input.phone,
+        name: input.name, industryCode, type: input.type, contactName: input.contactName, phone: input.phone,
         wechat: input.wechat, qq: input.qq, notes: input.notes, active: input.active,
       });
       const db = await requiredDatabase(getDb);
@@ -583,10 +595,10 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
           }
           await tx.execute(sql`
             INSERT INTO channel_inventory_channels (
-              enterprise_id, data_owner_user_id, responsible_user_id, name, channel_type,
+              enterprise_id, data_owner_user_id, responsible_user_id, name, channel_type, industryCode,
               contact_name, phone, wechat, qq, notes, active, revision, create_request_id, create_payload_hash
             ) VALUES (
-              ${scope.enterpriseId}, ${scope.dataOwnerUserId}, ${scope.actorUserId}, ${input.name}, ${input.type},
+              ${scope.enterpriseId}, ${scope.dataOwnerUserId}, ${scope.actorUserId}, ${input.name}, ${input.type}, ${industryCode},
               ${input.contactName}, ${input.phone}, ${input.wechat}, ${input.qq}, ${input.notes}, ${input.active}, 1,
               ${input.requestId}, ${payloadHash}
             )
@@ -624,8 +636,11 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         const current = await findChannel(tx, scope, input.id, true);
         if (!current) appError("NOT_FOUND", "渠道不存在或无权访问");
         if (current.revision !== input.expectedRevision) appError("CONFLICT", "渠道已被其他人更新，请刷新后重试");
+        // Preserve valid existing codes for omitted PATCH; incomplete/unknown profiles require explicit replacement.
+        const industryCode = requireIndustryCode(input.industryCode === undefined ? current.industryCode : input.industryCode);
         const assignments: SQL[] = [sql`revision = revision + 1`, sql`updated_at = CURRENT_TIMESTAMP(3)`];
         if (input.name !== undefined) assignments.push(sql`name = ${input.name}`);
+        if (input.industryCode !== undefined) assignments.push(sql`industryCode = ${industryCode}`);
         if (input.type !== undefined) assignments.push(sql`channel_type = ${input.type}`);
         if (input.contactName !== undefined) assignments.push(sql`contact_name = ${input.contactName}`);
         if (input.phone !== undefined) assignments.push(sql`phone = ${input.phone}`);

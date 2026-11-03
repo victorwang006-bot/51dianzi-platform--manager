@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
 import { getDb } from "../db";
 import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
 import { createChannelInventoryExportService } from "../services/channelInventoryExport";
@@ -33,6 +34,7 @@ const priceSchema = z
   .regex(/^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/, "价格格式无效");
 
 const channelCreateFields = {
+  industryCode: businessIndustryCodeSchema,
   name: z.string().trim().min(1, "请输入渠道名称").max(128),
   type: channelTypes,
   contactName: z.string().trim().max(64).nullable().optional().transform(value => value ?? null),
@@ -43,6 +45,7 @@ const channelCreateFields = {
   active: z.boolean().default(true),
 };
 const channelUpdateFields = {
+  industryCode: businessIndustryCodeSchema.optional(),
   name: z.string().trim().min(1, "请输入渠道名称").max(128).optional(),
   type: channelTypes.optional(),
   contactName: nullableOptional(z.string().trim().max(64)),
