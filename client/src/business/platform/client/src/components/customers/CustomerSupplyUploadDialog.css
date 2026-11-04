@@ -1,0 +1,27 @@
+.customer-supply-dialog {
+  width: min(560px, calc(100vw - 24px));
+  max-height: 85dvh;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.customer-supply-dialog .ci-field select {
+  height: 32px;
+  font-size: 12px;
+}
+.customer-supply-profile {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.customer-supply-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.customer-supply-choice input {
+  margin-top: 3px;
+}

@@ -74,7 +74,13 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(authorization).toContain("if (!scope) {");
     expect(authorization).toContain('new BusinessFailureCause("TENANT_ACCESS_REVOKED")');
     expect(authorization).toContain("if (!businessScopeAllows(scope, capability.module, capability.mode) && !officialReadProjection)");
-    expect(authorization).toContain("return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions });");
+    expect(authorization).toContain('customerScopeRead: businessScopeAllows(scope, "customers", "read")');
+    expect(authorization).toContain("return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions: requestOfficialInventoryPermissions });");
+    expect(authorization.indexOf("const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);")).toBeLessThan(
+      authorization.indexOf("const requestOfficialInventoryPermissions ="),
+    );
+    const nativeGrant = sourceSection(access, "export async function currentOfficialInventoryPermissions(", "/** Only attested creation IDs");
+    expect(nativeGrant).not.toContain("customerScopeRead");
     expect(authorization.indexOf("const staffBinding = await requireCurrentBusinessStaffBinding(account.id);")).toBeLessThan(
       authorization.indexOf("const scope = await db.getActiveBusinessMerchantScope(account.id, merchantId);"),
     );

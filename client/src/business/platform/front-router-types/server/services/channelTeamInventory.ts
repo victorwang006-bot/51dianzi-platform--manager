@@ -1,18 +1,20 @@
 import { sql, type SQL } from "drizzle-orm";
+import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
 import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOriginalActor";
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
+import { linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
 
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
   id: number; partNumber: string; brand: string; qty: number | null; dateCode: string | null;
   price: string | null; currency: "CNY"; taxIncluded: boolean | null; leadTime: string | null;
+  industryCode: BusinessIndustryCode | null;
   revision: number; updatedAt: Date | string; createdAt: Date | string;
   isMine: boolean; canEdit: boolean; readOnly: boolean; noteCount: number; canAddNote: boolean;
   channelSource: { id: number; name: string } | null; canViewSource: boolean;
   originalRecorderName: string | null; recorderAdminAccountId: number | null;
-  industryCode: string | null;
 };
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
@@ -33,14 +35,15 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
   const isMine = bool(row.isMine);
   const canViewSource = bool(row.canViewSource);
   const canEdit = (isMine || leader) && canWrite;
+  const industry = businessIndustryCodeSchema.safeParse(row.industryCode);
   return {
     id: Number(row.id), partNumber: String(row.partNumber), brand: String(row.brand),
     qty: row.qty == null ? null : Number(row.qty), dateCode: text(row.dateCode), price: text(row.price), currency: "CNY",
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded), leadTime: text(row.leadTime),
+    industryCode: industry.success ? industry.data : null,
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
     channelSource: null, originalRecorderName: null, recorderAdminAccountId: null,
-    industryCode: text(row.industryCode),
   };
 }
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number }) {
@@ -82,26 +85,35 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       return db.transaction(async tx => {
       const { access, leader, predicates } = await visible(tx, scope, { lock: true });
       if (input.channelId !== undefined) {
-        if (!leader) fail("FORBIDDEN", "无权查看渠道来源筛选");
         if (!Number.isSafeInteger(input.channelId) || input.channelId < 1) fail("BAD_REQUEST", "渠道来源无效");
         predicates.push(sql`m.channel_id = ${input.channelId}`);
-        predicates.push(teamMaterialSourceEligibility(scope, true, true));
+        predicates.push(teamMaterialSourceEligibility(scope, true, leader));
+        predicates.push(await linkedCompanyReadGate(tx, scope));
+        if (!leader) {
+          predicates.push(sql`c.responsible_user_id = ${scope.actorUserId}`, sql`c.data_owner_user_id = ${scope.dataOwnerUserId}`);
+          const ownExact = rows(await tx.execute(sql`SELECT m.id ${FROM} WHERE ${all(predicates)} LIMIT 1 FOR UPDATE`))[0];
+          if (!ownExact) fail("FORBIDDEN", "无权查看该精确渠道来源");
+        }
       }
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literal(input.partNumber)} ESCAPE '='`);
       if (input.brand) predicates.push(sql`m.brand LIKE ${literal(input.brand)} ESCAPE '='`);
       const where = all(predicates);
       const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
       const items = rows(await tx.execute(sql`SELECT m.id, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
-        m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision,
+        m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision, c.industryCode AS industryCode, c.id AS companyChannelId,
         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
         ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
         ${scope.officialActor ? officialMaterialRecorderAdminAccountId(true) : sql`NULL`} AS recorderAdminAccountId
         ${FROM} WHERE ${where} ORDER BY ${order} LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE`))
-        .map(row => ({ ...teamMaterialFrom(row, access.write, leader),
-          recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId),
-          canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true }));
-      return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
+        ;
+      const projected = [];
+      for (const row of items) {
+        const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
+        if (company.linked) { row.industryCode = company.customer?.industryCode ?? null; row.canViewSource = bool(row.canViewSource) && company.customer !== null; }
+        projected.push({ ...teamMaterialFrom(row, access.write, leader), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
+      }
+      return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
       });
     },
     async listTeamSourceOptions(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number } = {}) {
@@ -112,8 +124,10 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
         const { leader, predicates } = await visible(tx, scope, { lock: true });
         if (!leader) return { canFilterSource: false, items: [] as { id: number; name: string }[] };
         const items = rows(await tx.execute(sql`SELECT DISTINCT c.id, c.name ${FROM}
-          WHERE ${all([...predicates, teamMaterialSourceEligibility(scope, true, true)])} ORDER BY c.name ASC, c.id ASC FOR UPDATE`))
+          WHERE ${all([...predicates, teamMaterialSourceEligibility(scope, true, true), await linkedCompanyReadGate(tx, scope)])} ORDER BY c.name ASC, c.id ASC FOR UPDATE`))
           .map(row => ({ id: Number(row.id), name: String(row.name) }));
+        for (const item of items) { const company = await linkedCompany(tx, scope, item.id); if (company.linked) item.name = String(company.customer?.name ?? ""); }
+        items.sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
         return { canFilterSource: true, items };
       });
     },

@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase } from "./channelInventory";
 import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll, teamInventoryRows } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceSchema, type TeamMaterialSourceInput, type TeamMaterialSource } from "../../../shared/channelInventorySource";
+import { linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
 
 export const SOURCE_FORBIDDEN_MESSAGE = "暂无权限查看";
 /** Correlated to m. Caller MUST first enforce existing row visibility and stocks
@@ -59,11 +60,13 @@ export function createChannelInventorySourceService({ getDb }: { getDb: () => Pr
         // Logical read-only transaction. No audit DML or creator backfill.
         return await db.transaction(async tx => {
           const visibility = await resolveTeamInventoryVisibility(tx, scope, { lock: true, materialId: input.materialId });
-          const found = teamInventoryRows(await tx.execute(sql`SELECT c.name ${TEAM_MATERIAL_FROM}
-            WHERE ${teamInventoryAll([...visibility.predicates, teamMaterialSourceEligibility(scope, true)])}
+          const found = teamInventoryRows(await tx.execute(sql`SELECT c.name, c.id AS companyChannelId ${TEAM_MATERIAL_FROM}
+            WHERE ${teamInventoryAll([...visibility.predicates, teamMaterialSourceEligibility(scope, true), await linkedCompanyReadGate(tx, scope)])}
             LIMIT 1 FOR UPDATE`))[0];
           if (!found) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
-          return { name: String(found.name) };
+          const company = await linkedCompany(tx, scope, Number(found.companyChannelId));
+          if (company.linked && !company.customer) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
+          return { name: company.linked ? String(company.customer?.name) : String(found.name) };
         });
       } catch (error) {
         if (businessFailureOf(error) && businessFailureOf(error) !== "BUSINESS_RESOURCE_FORBIDDEN") throw error;

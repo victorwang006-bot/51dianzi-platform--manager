@@ -6,7 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   const reset = vi.fn().mockResolvedValue(undefined);
+  const supplySummary = vi.fn().mockResolvedValue({ items: [], canWrite: false });
   return {
+    supplySummary,
+    supplyNative: { read: false, write: false, note: false, authorizationVersion: "v1" },
     contextQuery: null as unknown,
     detailQuery: null as unknown,
     updateBasic: vi.fn().mockResolvedValue({ replayed: false }),
@@ -24,6 +27,7 @@ const runtime = vi.hoisted(() => {
     contactsSetPrimary: vi.fn().mockResolvedValue({ id: "p", contactId: "p", customerId: 701, replayed: false }),
     popoverChange: null as ((open: boolean) => void) | null,
     utils: {
+      client: { channelInventory: { customerSupplySummary: { query: supplySummary } } },
       customer: {
         contactsList: { invalidate, reset },
         contactsSummary: { invalidate },
@@ -37,6 +41,7 @@ const runtime = vi.hoisted(() => {
 vi.mock("../../../../../api/business-trpc", () => ({
   trpc: {
     useUtils: () => runtime.utils,
+    enterprise: { me: { useQuery: () => query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: ["inventory.manage"] }) } },
     customer: {
       context: { useQuery: () => runtime.contextQuery },
       get: { useQuery: () => runtime.detailQuery },
@@ -78,6 +83,7 @@ vi.mock("../../../../../api/business-trpc", () => ({
   },
 }));
 
+vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({ storageScope: "test-customer-scope", contextVerification: { identity: "test-customer-scope", authorizationVersion: "v1", readVersion: "v1" }, officialInventoryPermissions: runtime.supplyNative, onAuthorizationError: vi.fn() }) }));
 vi.mock("../../../../../api/business-auth", () => ({
   useAuth: () => ({ user: { id: 7 }, loading: false, isAuthenticated: true }),
 }));
@@ -220,6 +226,8 @@ function render(element: React.ReactNode) {
 }
 
 function configureFixtures() {
+  runtime.supplyNative = { read: false, write: false, note: false, authorizationVersion: "v1" };
+  runtime.supplySummary.mockReset().mockResolvedValue({ items: [], canWrite: false });
   __resetCustomerCreateDraftStoreForTests();
   runtime.updateBasic.mockClear();
   runtime.addFollowUp.mockClear();
@@ -273,7 +281,7 @@ describe("customer contacts restore UI", () => {
   it("uses one current-page contactsSummary request without fetching full contacts for each list row", async () => {
     render(<CustomerList />);
     await settle();
-    expect(runtime.summaryInputs).toEqual([{ customerIds: [801, 802], expectedActorUserId: 7, expectedEnterpriseId: 31 }]);
+    expect(Array.from(new Map(runtime.summaryInputs.map(input => [JSON.stringify(input), input])).values())).toEqual([{ customerIds: [801, 802], expectedActorUserId: 7, expectedEnterpriseId: 31 }]);
     expect(runtime.contactsInputs).toHaveLength(0);
     expect(document.body.textContent).toContain("列表主联系人");
     expect(button("更多")).toBeTruthy();
@@ -381,8 +389,8 @@ describe("business industry customer integration", () => {
     const rows = document.querySelectorAll("tbody tr");
     expect(rows[0].children[1].textContent).toBe("汽车电子");
     expect(rows[1].children[1].textContent).toBe("未设置");
-    expect(document.querySelectorAll("col")).toHaveLength(8);
-    expect(rows[0].children).toHaveLength(8);
+    expect(document.querySelectorAll("col")).toHaveLength(9);
+    expect(rows[0].children).toHaveLength(9);
     expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine" });
   });
 
@@ -484,5 +492,37 @@ describe("industry legacy draft identity fences", () => {
     expect(document.querySelector<HTMLSelectElement>('[data-customer-field="industryCode"]')?.value).toBe("");
     expect(customerCreateDraftEntry(draftIdentity).draft).toBeNull();
     expect(runtime.createMulti).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("customer supply list keeps original CRM workflows", () => {
+  function enableSupply() { runtime.supplyNative = { read: true, write: true, note: true, authorizationVersion: "v1" }; }
+  function supply() { return { items: [{ customerId: 801, channelId: 411, materialCount: 3, canUpload: true, canViewStock: true, disabledReason: null }, { customerId: 802, channelId: null, materialCount: null, canUpload: false, canViewStock: false, disabledReason: "请补全所属行业" }], canWrite: true }; }
+  it("places supply after owner/before followup without shrinking contacts or removing demand/follow buttons", async () => {
+    enableSupply(); runtime.supplySummary.mockResolvedValue(supply()); render(<CustomerList />); await settle();
+    expect(Array.from(document.querySelectorAll("thead th")).slice(4).map(node => node.textContent?.trim())).toEqual(["负责人", "供应库存", "下次跟进", "需求", "操作"]);
+    expect(document.querySelectorAll("col")[2].getAttribute("class")).toBe("w-[312px]"); expect(document.querySelectorAll("col")[5].getAttribute("class")).toBe("w-[120px]");
+    const row = document.querySelectorAll("tbody tr")[0];
+    expect(row.querySelector<HTMLButtonElement>('[data-testid="supply-cell"] button')?.disabled).toBe(false);
+    expect(row.querySelector<HTMLButtonElement>('[data-testid="demand-cell"] button')?.disabled).toBe(false);
+    expect(row.querySelector<HTMLButtonElement>('[data-testid="actions-cell"] button')?.disabled).toBe(false);
+    expect(document.body.textContent).toContain("查看库存（3）"); expect(document.body.textContent).toContain("补全客户档案");
+    expect(runtime.supplySummary).toHaveBeenCalledTimes(1); expect(runtime.supplySummary).toHaveBeenCalledWith({ customerIds: [801, 802], expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
+  });
+  it("summary failure disables only supply while retaining real contacts, demand and followup", async () => {
+    enableSupply(); runtime.supplySummary.mockRejectedValue(new Error("supply denied")); render(<CustomerList />); await settle();
+    expect(document.body.textContent).toContain("列表主联系人"); expect(document.body.textContent).not.toContain("查看库存");
+    for (const cell of Array.from(document.querySelectorAll('[data-testid="supply-cell"]'))) expect(cell.querySelector<HTMLButtonElement>("button")?.disabled).toBe(true);
+    for (const cell of Array.from(document.querySelectorAll('[data-testid="demand-cell"], [data-testid="actions-cell"]'))) expect(cell.querySelector<HTMLButtonElement>("button")?.disabled).toBe(false);
+  });
+  it("aborts old summary identity and never paints its late channel/count after revocation", async () => {
+    enableSupply(); let finish!: (value: unknown) => void;
+    runtime.supplySummary.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ items: [], canWrite: false });
+    const view = render(<CustomerList />); const signal = runtime.supplySummary.mock.calls[0][1].signal as AbortSignal;
+    runtime.supplyNative.authorizationVersion = "revoked-v2"; runtime.supplyNative.write = false; view.rerender(<CustomerList />); await settle(); expect(signal.aborted).toBe(true);
+    await act(async () => { finish(supply()); }); expect(document.body.textContent).not.toContain("查看库存（3）");
+    expect(document.querySelector<HTMLButtonElement>('[data-testid="supply-cell"] button')?.disabled).toBe(true);
+    expect(document.body.textContent).toContain("需求录入"); expect(document.body.textContent).toContain("跟进");
   });
 });

@@ -15,6 +15,9 @@ import PlatformLayout from "../../../../BusinessContentFrame";
 import { CustomerCreateForm, type CustomerCreateSaveMode, type CustomerCreateState } from "../components/customers/CustomerCreateForm";
 import { CustomerContactsSummary } from "../components/customers/CustomerContactsSummary";
 import { formatContactMethod, useCustomerContactScope, withCustomerContactScope, type ContactSummary } from "../components/customers/customerContacts";
+import { CustomerSupplyUploadDialog } from "../components/customers/CustomerSupplyUploadDialog";
+import { CustomerSupplyCell } from "../components/customers/CustomerSupplyCell";
+import { useCustomerSupplyAuthority, supplyLocation, type SupplySummary } from "../components/customers/customerSupply";
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
 import { EMPTY_CUSTOMER_FORM, errorMessage, formatCustomerDateTime } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
@@ -37,7 +40,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 
-import { getBusinessIndustryLabel } from "../../../shared/businessIndustry";
+import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../shared/businessIndustry";
 import "./CustomerList.css";
 
 const PAGE_SIZE = 20;
@@ -77,6 +80,10 @@ export default function CustomerList() {
   const utils = trpc.useUtils();
   const contextQuery = trpc.customer.context.useQuery();
   const contactScope = useCustomerContactScope(contextQuery.data);
+  const supplyAuthority = useCustomerSupplyAuthority(contactScope.scope, contactScope.ready);
+  const [supplyCustomer, setSupplyCustomer] = useState<{ id: number; version: number; authorityKey: string } | null>(null);
+  const [supplyRevision, setSupplyRevision] = useState(0);
+  const [supplyState, setSupplyState] = useState<{ key: string; items: SupplySummary[]; canWrite: boolean; loading: boolean; failed: boolean }>({ key: "", items: [], canWrite: false, loading: false, failed: false });
   const createDraftIdentity = useCustomerCreateDraftIdentity(contactScope.scope, contactScope.ready, contextQuery.isPending && !contextQuery.isError);
   const emptyCreateDraft = useMemo(() => ({
     form: EMPTY_CUSTOMER_FORM,
@@ -150,6 +157,43 @@ export default function CustomerList() {
   }, d51Ready)));
   const result = listQuery.data;
   const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
+  const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, pageCustomerIds]);
+  const supplyRequestRef = useRef(supplyRequestKey); supplyRequestRef.current = supplyRequestKey;
+  useEffect(() => {
+    const identity = supplyAuthority.identity;
+    if (!identity || !pageCustomerIds.length) { setSupplyState({ key: supplyRequestKey, items: [], canWrite: false, loading: false, failed: false }); return; }
+    let alive = true;
+    let abort: AbortController | null = null;
+    const refresh = async () => {
+      abort?.abort(); const request = new AbortController(); abort = request;
+      const current = () => alive && !request.signal.aborted && supplyRequestRef.current === supplyRequestKey;
+      try {
+        const data = await utils.client.channelInventory.customerSupplySummary.query({ customerIds: pageCustomerIds,
+          expectedEnterpriseId: identity.enterpriseId, expectedActorUserId: identity.actorUserId }, { signal: request.signal });
+        if (!current()) return;
+        setSupplyState({ key: supplyRequestKey, items: data.items.filter(item => pageCustomerIds.includes(item.customerId)),
+          canWrite: data.canWrite, loading: false, failed: false });
+      } catch (error) {
+        if (!current()) return;
+        supplyAuthority.onAuthorizationError(error);
+        setSupplyState({ key: supplyRequestKey, items: [], canWrite: false, loading: false, failed: true });
+      }
+    };
+    setSupplyState(previous => previous.key === supplyRequestKey ? { ...previous, loading: true } : { key: supplyRequestKey, items: [], canWrite: false, loading: true, failed: false });
+    void refresh(); window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 30_000);
+    return () => { alive = false; abort?.abort(); window.removeEventListener("focus", refresh); window.clearInterval(timer); };
+  }, [supplyRequestKey, supplyRevision, utils]);
+  const supplyResult = supplyState.key === supplyRequestKey ? supplyState : { items: [], canWrite: false, loading: true, failed: false };
+  const supplySummaries = new Map(supplyResult.items.map(item => [item.customerId, item]));
+  const supplyRow = result?.items.find(customer => customer.id === supplyCustomer?.id);
+  const supplyCurrent = Boolean(supplyCustomer && supplyAuthority.identity
+    && supplyCustomer.authorityKey === supplyAuthority.identity.key && supplyAuthority.canWrite
+    && !contextQuery.isError && !listQuery.isError && !supplyResult.failed
+    && supplyResult.canWrite && supplySummaries.get(supplyCustomer.id)?.canUpload
+    && supplyRow && !supplyRow.archivedAt && supplyRow.version === supplyCustomer.version);
+  const supplyCurrentRef = useRef(supplyCurrent); supplyCurrentRef.current = supplyCurrent;
+  useEffect(() => { if (supplyCustomer && !supplyCurrent) setSupplyCustomer(null); }, [supplyCustomer, supplyCurrent]);
   const contactIdentityRef = useRef(contactScope.identityKey);
   useEffect(() => {
     if (contactIdentityRef.current === contactScope.identityKey) return;
@@ -553,6 +597,7 @@ export default function CustomerList() {
                 <col className="w-[312px]" />
                 <col className="w-[144px]" />
                 <col className="w-[108px]" />
+                <col className="w-[120px]" />
                 <col className="w-[176px]" />
                 <col className="w-[120px]" />
                 <col className="w-[100px]" />
@@ -574,6 +619,7 @@ export default function CustomerList() {
                   <TableHead>
                     负责人
                   </TableHead>
+                  <TableHead className="text-center" data-testid="supply-header">供应库存</TableHead>
                   <TableHead className="text-center" data-testid="followup-header">
                     下次跟进
                   </TableHead>
@@ -645,6 +691,16 @@ export default function CustomerList() {
                         title={customer.assignedName}
                       >
                         {customer.assignedName || "—"}
+                      </TableCell>
+                      <TableCell className="text-center" data-testid="supply-cell">
+                        <CustomerSupplyCell summary={supplyAuthority.canRead ? supplySummaries.get(customer.id) : (() => {
+                          const summary = supplySummaries.get(customer.id);
+                          return summary ? { ...summary, canViewStock: false, channelId: null, materialCount: null } : undefined;
+                        })()} canWrite={supplyAuthority.canWrite && supplyResult.canWrite} archived={Boolean(customer.archivedAt)}
+                          loading={supplyResult.loading} failed={supplyResult.failed}
+                          needsIndustry={!businessIndustryCodeSchema.safeParse(customer.industryCode).success} onCompleteProfile={() => navigate(`/customers/${customer.id}`)}
+                          onUpload={() => { if (supplyAuthority.identity) setSupplyCustomer({ id: customer.id, version: customer.version, authorityKey: supplyAuthority.identity.key }); }}
+                          onViewStock={channelId => navigate(supplyLocation(channelId, "materials"))} />
                       </TableCell>
                       <TableCell className="customer-list-followup-cell text-center tabular-nums" data-testid="followup-cell">
                         <div
@@ -731,6 +787,10 @@ export default function CustomerList() {
           </div>
         </AdminDataPanel>
       )}
+      {supplyCustomer && supplyCurrent && supplyAuthority.identity ? <CustomerSupplyUploadDialog
+        key={`${supplyAuthority.identity.key}:${supplyCustomer.id}`} customerId={supplyCustomer.id} identity={supplyAuthority.identity}
+        isCurrent={() => supplyCurrentRef.current} onClose={() => setSupplyCustomer(null)}
+        onComplete={() => setSupplyRevision(value => value + 1)} onAuthorizationError={supplyAuthority.onAuthorizationError} /> : null}
       {demandCustomer && <CustomerDemandDialog
         customer={demandCustomer}
         onClose={() => setDemandCustomer(null)}

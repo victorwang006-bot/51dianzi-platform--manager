@@ -1,11 +1,14 @@
 import type { Payload } from "./import";
 
+export type BatchReceipt = { item: unknown; idempotent: boolean; channelId: number; customerId: number };
+
 export type BatchEntry = {
   row: number;
   requestId: string;
   payload: Payload;
   status: "pending" | "success" | "unknown";
   error?: string;
+  receipt?: BatchReceipt;
 };
 
 export type BatchOptions = {
@@ -13,6 +16,7 @@ export type BatchOptions = {
   isCurrent: () => boolean;
   shouldStop: () => boolean;
   onProgress: (entries: BatchEntry[]) => void;
+  receiptFromResult?: (response: unknown) => BatchReceipt;
 };
 
 function copyEntries(entries: readonly BatchEntry[]): BatchEntry[] {
@@ -53,8 +57,10 @@ export async function runBatch(
     if (!options.isCurrent()) return result(current, false, "context-changed");
     if (options.shouldStop()) return result(current, false, "stopped");
 
+    let receipt: BatchReceipt | undefined;
     try {
-      await options.submit({ ...entry.payload }, entry.requestId);
+      const response = await options.submit({ ...entry.payload }, entry.requestId);
+      if (options.isCurrent()) receipt = options.receiptFromResult?.(response);
     } catch (error) {
       // If context changed while an in-flight request failed, do not claim its outcome.
       if (!options.isCurrent()) return result(current, false, "context-changed");
@@ -69,7 +75,7 @@ export async function runBatch(
     if (!options.isCurrent()) return result(current, false, "context-changed");
 
     const { error: _previousError, ...withoutError } = entry;
-    current[index] = { ...withoutError, status: "success" };
+    current[index] = { ...withoutError, status: "success", ...(receipt ? { receipt } : {}) };
     options.onProgress(copyEntries(current));
   }
 

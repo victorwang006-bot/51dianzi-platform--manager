@@ -6,9 +6,18 @@ import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
 import { officialCreationEvidence } from "./channelInventoryOriginalActor";
 import type { BusinessFailure } from "../../../shared/businessFailure";
-
+import { projectChannelCompany, projectMaterialCompany, linkedCompanyReadGate, customerReadPolicy, linkedCompany, customerSupplyCompletion, hasCustomerScopeRead } from "./customerSupplyCompany";
+import { crmCustomerPolicyWhere } from "./crmCustomers";
 export const CHANNEL_INVENTORY_TYPES = ["factory", "agent", "trade", "other"] as const;
 export type ChannelInventoryType = (typeof CHANNEL_INVENTORY_TYPES)[number];
+export type TrustedCustomerCreationContext = Readonly<{ customerId: number; expectedCustomerVersion: number; sourceType: ChannelInventoryType }>;
+const trustedCustomerCreationContexts = new WeakSet<TrustedCustomerCreationContext>();
+/** Internal service adapter only; the legacy route never parses or passes this argument. */
+export function trustedCustomerCreationContext(context: TrustedCustomerCreationContext): TrustedCustomerCreationContext {
+  const trusted = Object.freeze({ ...context });
+  trustedCustomerCreationContexts.add(trusted);
+  return trusted;
+}
 export type ChannelInventoryErrorCode =
   | "BAD_REQUEST"
   | "NOT_FOUND"
@@ -67,6 +76,8 @@ export type ChannelRecord = {
   updatedAt: Date | string;
   canEdit: boolean;
   readOnly: boolean;
+  customerId?: number;
+  companyReadOnly?: boolean;
 };
 
 export type ChannelMaterialRecord = {
@@ -467,7 +478,7 @@ async function findChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: nu
      WHERE ${whereAll(channelScopePredicates(scope, [sql`id = ${id}`]))}
      LIMIT 1${suffix}
   `))[0];
-  return row ? channelFrom(row) : null;
+  return row ? projectChannelCompany(tx, scope, channelFrom(row)) : null;
 }
 
 async function findMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, id: number, lock = false, internal = false): Promise<ChannelMaterialRecord | null> {
@@ -478,13 +489,25 @@ async function findMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, id: n
      WHERE ${whereAll(materialWithChannelScopePredicates(scope, [sql`m.id = ${id}`]))}
      LIMIT 1${suffix}
   `))[0];
-  return row ? materialFrom(row, internal || bool(row.canViewSource)) : null;
+  return row ? (internal ? materialFrom(row, true) : projectMaterialCompany(tx, scope, materialFrom(row))) : null;
 }
 
-async function lockActiveChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: number): Promise<ChannelRecord> {
+async function assertLinkedCustomerWrite(tx: SqlExecutor, scope: ChannelInventoryScope, id: number) {
+  const company = await linkedCompany(tx, scope, id);
+  if (company.linked && !company.customer) appError("FORBIDDEN", "关联客户不存在或无CRM访问权限");
+}
+
+async function lockActiveChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: number, creatingNewMaterial = false): Promise<ChannelRecord> {
   const channel = await findChannel(tx, scope, id, true);
   if (!channel) appError("NOT_FOUND", "渠道不存在或无权访问");
+  if (channel.companyReadOnly && channel.customerId === undefined) appError("FORBIDDEN", "关联客户不存在或无CRM访问权限");
   if (!channel.active) appError("PRECONDITION_FAILED", "渠道已停用，不能新增或修改库存");
+  if (creatingNewMaterial && channel.companyReadOnly) {
+    const company = await linkedCompany(tx, scope, id);
+    if (!company.customer) appError("FORBIDDEN", "关联客户不存在或无CRM访问权限");
+    const reason = customerSupplyCompletion(company.customer);
+    if (reason) appError("PRECONDITION_FAILED", reason);
+  }
   return channel;
 }
 
@@ -506,7 +529,7 @@ async function reconcileChannelCreate(db: SqlExecutor, scope: ChannelInventorySc
   if (String(row.createPayloadHash) !== payloadHash) appError("CONFLICT", "请求号已用于不同的渠道内容");
   const item = channelFrom(row);
   if (ownScope(scope) && item.responsibleUserId !== scope.actorUserId) appError("NOT_FOUND", "渠道不存在或无权访问");
-  return { item, idempotent: true } as const;
+  return { item: await projectChannelCompany(db, scope, item), idempotent: true } as const;
 }
 
 async function reconcileMaterialCreate(db: SqlDatabase, scope: ChannelInventoryScope, requestId: string, payloadHash: string) {
@@ -522,7 +545,8 @@ async function reconcileMaterialCreate(db: SqlDatabase, scope: ChannelInventoryS
   if (String(row.createPayloadHash) !== payloadHash) appError("CONFLICT", "请求号已用于不同的库存内容");
   const item = materialFrom(row);
   if (ownScope(scope) && item.responsibleUserId !== scope.actorUserId) appError("NOT_FOUND", "库存条目不存在或无权访问");
-  return { item, idempotent: true } as const;
+  await assertLinkedCustomerWrite(tx, scope, Number(row.channelId));
+  return { item: await projectMaterialCompany(tx, scope, item), idempotent: true } as const;
   });
 }
 
@@ -545,10 +569,18 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
   return {
     async listChannels(scope: ChannelInventoryScope, input: { name?: string; type?: ChannelInventoryType; active?: boolean; page: number; pageSize: number }) {
       assertPage(input);
-      const db = await requiredDatabase(getDb);
-      const access = await resolveChannelInventoryAuthority(db, scope, "channels");
+      const database = await requiredDatabase(getDb);
+      return database.transaction(async db => {
+      const access = await resolveChannelInventoryAuthority(db, scope, "channels", false, true);
       const predicates = channelScopePredicates(scope);
-      if (input.name) predicates.push(sql`name LIKE ${literalSearch(input.name)} ESCAPE '='`);
+      if (!hasCustomerScopeRead(scope)) predicates.push(await linkedCompanyReadGate(db, scope, "channel_inventory_channels"));
+      if (input.name) {
+        const policy = await customerReadPolicy(db, scope);
+        predicates.push(sql`((NOT EXISTS (SELECT 1 FROM crm_customer_supply_channels supply_name_link WHERE supply_name_link.enterpriseId = channel_inventory_channels.enterprise_id AND supply_name_link.dataOwnerUserId = channel_inventory_channels.data_owner_user_id AND supply_name_link.channelId = channel_inventory_channels.id) AND name LIKE ${literalSearch(input.name)} ESCAPE '=')
+          OR EXISTS (SELECT 1 FROM crm_customer_supply_channels supply_name_link INNER JOIN crm_customers supply_customer ON supply_customer.enterpriseId = supply_name_link.enterpriseId AND supply_customer.id = supply_name_link.customerId
+            WHERE supply_name_link.enterpriseId = channel_inventory_channels.enterprise_id AND supply_name_link.dataOwnerUserId = channel_inventory_channels.data_owner_user_id AND supply_name_link.channelId = channel_inventory_channels.id
+              AND ${policy ? crmCustomerPolicyWhere(scope, policy, "supply_customer") : sql`FALSE`} AND supply_customer.name LIKE ${literalSearch(input.name)} ESCAPE '='))`);
+      }
       if (input.type) predicates.push(sql`channel_type = ${input.type}`);
       if (input.active !== undefined) predicates.push(sql`active = ${input.active}`);
       const where = whereAll(predicates);
@@ -560,20 +592,25 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
            ORDER BY id DESC
            LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
         `)).map(row => ({ ...channelFrom(row), canEdit: access.write, readOnly: !access.write }));
-        return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
+        const projected = [];
+        for (const item of items) projected.push(await projectChannelCompany(db, scope, item));
+        return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
       }
+      });
     },
 
     async getChannel(scope: ChannelInventoryScope, id: number) {
       const db = await requiredDatabase(getDb);
       try {
-        const access = await resolveChannelInventoryAuthority(db, scope, "channels");
-        const item = await findChannel(db, scope, id);
+        return await db.transaction(async tx => {
+        const access = await resolveChannelInventoryAuthority(tx, scope, "channels", false, true);
+        const item = await findChannel(tx, scope, id, true);
         if (!item) appError("NOT_FOUND", "渠道不存在或无权访问");
         return { ...item, canEdit: access.write, readOnly: !access.write };
+        });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
         throw databaseFailure();
@@ -602,7 +639,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
             if (String(existing.createPayloadHash) !== payloadHash) appError("CONFLICT", "请求号已用于不同的渠道内容");
             const item = channelFrom(existing);
             if (ownScope(scope) && item.responsibleUserId !== scope.actorUserId) appError("NOT_FOUND", "渠道不存在或无权访问");
-            return { item, idempotent: true } as const;
+            return { item: await projectChannelCompany(tx, scope, item), idempotent: true } as const;
           }
           await tx.execute(sql`
             INSERT INTO channel_inventory_channels (
@@ -647,8 +684,10 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         const current = await findChannel(tx, scope, input.id, true);
         if (!current) appError("NOT_FOUND", "渠道不存在或无权访问");
         if (current.revision !== input.expectedRevision) appError("CONFLICT", "渠道已被其他人更新，请刷新后重试");
+        if (current.companyReadOnly && current.customerId === undefined) appError("FORBIDDEN", "关联客户不存在或无CRM访问权限");
+        if (current.companyReadOnly && ["name", "industryCode", "contactName", "phone", "wechat", "qq", "notes"].some(key => input[key as keyof ChannelUpdateInput] !== undefined)) appError("BAD_REQUEST", "关联渠道公司资料请在客户档案维护；这里只能修改供货类型和启停状态");
         // Preserve valid existing codes for omitted PATCH; incomplete/unknown profiles require explicit replacement.
-        const industryCode = requireIndustryCode(input.industryCode === undefined ? current.industryCode : input.industryCode);
+        const industryCode = current.companyReadOnly ? current.industryCode : requireIndustryCode(input.industryCode === undefined ? current.industryCode : input.industryCode);
         const assignments: SQL[] = [sql`revision = revision + 1`, sql`updated_at = CURRENT_TIMESTAMP(3)`];
         if (input.name !== undefined) assignments.push(sql`name = ${input.name}`);
         if (input.industryCode !== undefined) assignments.push(sql`industryCode = ${industryCode}`);
@@ -673,6 +712,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       return transactional(scope, async tx => {
         const current = await findChannel(tx, scope, input.id, true);
         if (!current) appError("NOT_FOUND", "渠道不存在或无权访问");
+        if (current.companyReadOnly && current.customerId === undefined) appError("FORBIDDEN", "关联客户不存在或无CRM访问权限");
         if (current.revision !== input.expectedRevision) appError("CONFLICT", "渠道已被其他人更新，请刷新后重试");
         const result = await tx.execute(sql`
           UPDATE channel_inventory_channels
@@ -693,7 +733,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         return await db.transaction(async tx => {
       const access = await resolveChannelInventoryAuthority(tx, scope, "stocks", false, true);
       const predicates = materialWithChannelScopePredicates(scope);
-      if (input.channelId !== undefined) predicates.push(sql`m.channel_id = ${input.channelId}`, teamMaterialSourceEligibility(scope, true));
+      if (input.channelId !== undefined) predicates.push(sql`m.channel_id = ${input.channelId}`, teamMaterialSourceEligibility(scope, true), await linkedCompanyReadGate(tx, scope));
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literalSearch(input.partNumber)} ESCAPE '='`);
       if (input.brand) predicates.push(sql`m.brand LIKE ${literalSearch(input.brand)} ESCAPE '='`);
       const where = whereAll(predicates);
@@ -704,7 +744,9 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
            ORDER BY m.id DESC
            LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE
         `)).map(row => ({ ...materialFrom(row), shareEnabled: access.write && bool(row.shareEnabled), canEdit: access.write, readOnly: !access.write }));
-        return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
+        const projected = [];
+        for (const item of items) projected.push(await projectMaterialCompany(tx, scope, item));
+        return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
         });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
@@ -727,11 +769,13 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       }
     },
 
-    async createMaterial(scope: ChannelInventoryScope, input: MaterialCreateInput) {
+    async createMaterial(scope: ChannelInventoryScope, input: MaterialCreateInput, customerContext?: TrustedCustomerCreationContext) {
+      if (customerContext && !trustedCustomerCreationContexts.has(customerContext)) appError("FORBIDDEN", "客户创建上下文不可信");
       const payloadHash = channelInventoryPayloadHash({
         channelId: input.channelId, partNumber: input.partNumber, brand: input.brand, qty: input.qty,
         dateCode: input.dateCode, price: input.price, currency: input.currency,
         taxIncluded: input.taxIncluded, leadTime: input.leadTime, note: input.note,
+        ...(customerContext ? { customerSupply: customerContext } : {}),
       });
       const db = await requiredDatabase(getDb);
       try {
@@ -747,9 +791,10 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
             if (String(existing.createPayloadHash) !== payloadHash) appError("CONFLICT", "请求号已用于不同的库存内容");
             const item = materialFrom(existing);
             if (ownScope(scope) && item.responsibleUserId !== scope.actorUserId) appError("NOT_FOUND", "库存条目不存在或无权访问");
-            return { item, idempotent: true } as const;
+            await assertLinkedCustomerWrite(tx, scope, input.channelId);
+            return { item: await projectMaterialCompany(tx, scope, item), idempotent: true } as const;
           }
-          await lockActiveChannel(tx, scope, input.channelId);
+          await lockActiveChannel(tx, scope, input.channelId, true);
           const memberships = rows(await tx.execute(sql`
             SELECT tm.id, tm.teamId FROM enterprise_team_members tm
             INNER JOIN enterprise_teams t ON t.id = tm.teamId AND t.enterpriseId = tm.enterpriseId AND t.status = 'active'

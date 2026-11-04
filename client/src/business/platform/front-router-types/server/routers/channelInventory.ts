@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
+import { channelMaterialCreateFields, customerSupplySummarySchema, customerSupplyContextSchema, createCustomerMaterialSchema } from "../../../shared/customerSupply";
+import { createCustomerSupplyService } from "../services/customerSupply";
 import { getDb } from "../db";
 import { createChannelInventoryCollaborationService } from "../services/channelInventoryCollaboration";
 import { createChannelInventorySourceService, SOURCE_FORBIDDEN_MESSAGE } from "../services/channelInventorySource";
@@ -63,16 +65,7 @@ const channelUpdateFields = {
 };
 const materialCreateFields = {
   channelId: positiveInt,
-  partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().min(1, "请输入型号").max(128)),
-  brand: z.string().trim().min(1, "请输入品牌").max(64),
-  qty: z.number().int().safe().min(0).max(2_147_483_647).nullable(),
-  dateCode: z.string().trim().max(32).nullable().optional().transform(value => value ?? null),
-  price: priceSchema.nullable().optional().transform(value => value ?? null),
-  currency: z.literal("CNY").default("CNY"),
-  /** Must be supplied even when unknown; it must never silently inherit a tax treatment. */
-  taxIncluded: z.boolean().nullable(),
-  leadTime: z.string().trim().max(64).nullable().optional().transform(value => value ?? null),
-  note: z.string().max(2_000).nullable().optional().transform(value => value ?? null),
+  ...channelMaterialCreateFields,
 };
 const materialUpdateFields = {
   channelId: positiveInt.optional(),
@@ -156,8 +149,21 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const exporter = createChannelInventoryExportService({ getDb });
   const collaboration = createChannelInventoryCollaborationService({ getDb });
   const source = createChannelInventorySourceService({ getDb });
+  const supply = createCustomerSupplyService({ getDb, registerTeamRecord });
 
   return router({
+    customerSupplySummary: readProcedure.input(customerSupplySummarySchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await supply.customerSupplySummary(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerSupplyContext: readProcedure.input(customerSupplyContextSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await supply.customerSupplyContext(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    createCustomerMaterial: procedure.input(createCustomerMaterialSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await supply.createCustomerMaterial(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     getTeamMaterialSource: readProcedure.input(teamMaterialSourceSchema).query(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);

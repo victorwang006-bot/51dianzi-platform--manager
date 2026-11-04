@@ -417,4 +417,31 @@ describe("v13 native channel read context and revocation", () => {
     await expect(businessRouter.createCaller(context()).context()).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(getPlatformBusinessContext).not.toHaveBeenCalled();
   });
+  it.each(["context", "navigation", "merchants"] as const)("%s official object carries fresh false after CRM scope is revoked at the final fence read", async entry => {
+    scopePermissions = ["business.context.read", "business.customers.read"];
+    dbMocks.getAdminUserPermissions.mockResolvedValue(["officialInventory.read"]);
+    getPlatformBusinessContext.mockResolvedValue(channelContext());
+    dbMocks.getActiveBusinessMerchantScope
+      .mockResolvedValueOnce({ scopeVersion: 3, modulePermissions: scopePermissions })
+      .mockResolvedValueOnce({ scopeVersion: 4, modulePermissions: ["business.context.read"] });
+    const caller = businessRouter.createCaller(context());
+    if (entry === "merchants") await caller.merchants({}); else await caller[entry]();
+    expect(getPlatformBusinessContext).toHaveBeenCalledTimes(1);
+    expect(getPlatformBusinessContext.mock.calls[0][1].officialInventoryPermissions).toMatchObject({ read: true, customerScopeRead: false });
+    expect(dbMocks.getActiveBusinessMerchantScope).toHaveBeenCalledTimes(2);
+  });
+  it("context refreshes the overlay without altering native authorizationVersion; auth.me remains grant-free", async () => {
+    scopePermissions = ["business.context.read", "business.customers.read"];
+    dbMocks.getAdminUserPermissions.mockResolvedValue(["officialInventory.read"]);
+    getPlatformBusinessContext.mockResolvedValue(channelContext());
+    const caller = businessRouter.createCaller(context());
+    await caller.context();
+    const first = getPlatformBusinessContext.mock.calls[0][1].officialInventoryPermissions;
+    scopePermissions = ["business.context.read"];
+    await caller.context();
+    const second = getPlatformBusinessContext.mock.calls[1][1].officialInventoryPermissions;
+    expect(first.customerScopeRead).toBe(true); expect(second).toEqual({ ...first, customerScopeRead: false });
+    await caller.auth.me();
+    expect(getPlatformBusinessContext.mock.calls[2][1]).not.toHaveProperty("officialInventoryPermissions");
+  });
 });

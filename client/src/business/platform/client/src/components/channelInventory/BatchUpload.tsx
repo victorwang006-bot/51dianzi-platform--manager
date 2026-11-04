@@ -18,7 +18,7 @@ import {
   type Draft,
   type Payload,
 } from "./import";
-import { runBatch, type BatchEntry } from "./queue";
+import { runBatch, type BatchEntry, type BatchReceipt } from "./queue";
 import "./batch.css";
 import "./layout.css";
 
@@ -38,6 +38,16 @@ type Props = {
   onCreate: (payload: Payload, requestId: string) => Promise<unknown>;
   onComplete: () => void;
   isCurrent: () => boolean;
+  sourceLabel?: string;
+  fixedSource?: boolean;
+  sourceDetails?: React.ReactNode;
+  storageKeySuffix?: string;
+  sessionData?: unknown;
+  validateSavedSession?: (data: unknown, entries: BatchEntry[]) => boolean;
+  onRestoreSession?: (data: unknown) => void;
+  receiptFromResult?: (response: unknown) => BatchReceipt;
+  onFinish?: (result: { entries: BatchEntry[]; complete: boolean; reason?: string }) => void;
+  onViewResults?: (entries: BatchEntry[]) => void;
 };
 function Icon({
   kind,
@@ -86,7 +96,7 @@ export function BatchUpload(props: Props) {
     enterpriseId,
     actorUserId,
   } = props;
-  const key = `d51-channel-inventory-batch-v1:${actorUserId}:${enterpriseId}`;
+  const key = `d51-channel-inventory-batch-v1:${actorUserId}:${enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
   const [channelId, setChannelId] = useState(String(initialChannelId ?? ""));
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [grid, setGrid] = useState<Grid>([]);
@@ -101,10 +111,12 @@ export function BatchUpload(props: Props) {
   const [dragging, setDragging] = useState(false);
   const [excluded, setExcluded] = useState<number[]>([]);
   const [entries, setEntries] = useState<BatchEntry[]>([]);
+  const [restoreBlocked, setRestoreBlocked] = useState(false);
   const [saved, setSaved] = useState<{
     channelId: number;
     entries: BatchEntry[];
     name: string;
+    sessionData?: unknown;
   } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
@@ -135,8 +147,15 @@ export function BatchUpload(props: Props) {
               ["pending", "success", "unknown"].includes(r.status) &&
               r.payload.channelId === data.channelId
           )
-        )
-          setSaved(data);
+        ) {
+          if (latest.current.validateSavedSession && !latest.current.validateSavedSession(data.sessionData, data.entries)) {
+            setRestoreBlocked(true);
+            setError("原批次客户版本或回执已变化，不能另起批次重复上传。请核实原上传结果后处理。");
+          } else setSaved(data);
+        } else if (latest.current.storageKeySuffix) {
+          setRestoreBlocked(true);
+          setError("原批次恢复记录无效，已阻止重复导入，请核实原上传结果。");
+        }
       }
     } catch {
       setError("无法读取上次上传记录；请检查浏览器会话存储权限。");
@@ -168,6 +187,7 @@ export function BatchUpload(props: Props) {
           channelId: id,
           name,
           entries: next,
+          ...(latest.current.sessionData === undefined ? {} : { sessionData: latest.current.sessionData }),
         })
       );
       return true;
@@ -279,7 +299,7 @@ export function BatchUpload(props: Props) {
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
   const start = async () => {
-    if (running.current || !current()) return;
+    if (running.current || !current() || restoreBlocked) return;
     if (!selected || !selected.active) {
       setError("请选择有权访问且启用的已加载渠道。");
       return;
@@ -312,6 +332,7 @@ export function BatchUpload(props: Props) {
           latest.current.onCreate(payload, requestId),
         isCurrent: current,
         shouldStop: () => stop.current,
+        receiptFromResult: latest.current.receiptFromResult,
         onProgress: progress => {
           persist(progress, selected.id);
           if (current()) setEntries(progress);
@@ -334,6 +355,12 @@ export function BatchUpload(props: Props) {
                 "有记录的保存结果待确认，请按原批次重试。")
         );
       }
+      // This is an attempt-end callback, never a per-row success callback. Clear
+      // busy before consumers close/navigate, so the original queue isn't torn down.
+      running.current = false;
+      setBusy(false);
+      props.onBusyChange(false);
+      latest.current.onFinish?.(result);
     } catch (e) {
       if (current())
         setError(
@@ -372,6 +399,7 @@ export function BatchUpload(props: Props) {
   };
   const restore = () => {
     if (!saved) return;
+    latest.current.onRestoreSession?.(saved.sessionData);
     setChannelId(String(saved.channelId));
     setEntries(saved.entries);
     setName(saved.name);
@@ -407,8 +435,8 @@ export function BatchUpload(props: Props) {
         onPointerDownOutside={(event: Event) => event.preventDefault()}
       >
         <DialogHeader style={{ flex: "0 0 auto" }}>
-          <DialogTitle>表格上传渠道库存</DialogTitle>
-          <DialogDescription>导入渠道库存，确认后保存。</DialogDescription>
+          <DialogTitle>{props.sourceLabel ? "上传客户物料表" : "表格上传渠道库存"}</DialogTitle>
+          <DialogDescription>{props.sourceLabel ? "复用表格匹配与幂等逐行上传；首次成功才建立客户渠道关联。" : "导入渠道库存，确认后保存。"}</DialogDescription>
         </DialogHeader>
         <div
           data-testid="channel-inventory-batch-scroll"
@@ -431,14 +459,15 @@ export function BatchUpload(props: Props) {
               </span>
             ))}
           </div>
+          {props.sourceDetails}
           <div className="ci-batch-channel" style={{ gap: "12px", paddingBottom: "9px" }}>
             <label className="ci-field">
-              <span>关联渠道 *</span>
+              <span>{props.sourceLabel ? "客户供应来源" : "关联渠道 *"}</span>
               <select
                 className="ci-batch-control"
                 aria-label="批量关联渠道"
                 value={channelId}
-                disabled={hasQueue || busy}
+                disabled={hasQueue || busy || props.fixedSource}
                 onChange={e => setChannelId(e.target.value)}
               >
                 <option value="">请选择渠道</option>
@@ -452,7 +481,7 @@ export function BatchUpload(props: Props) {
             </label>
             <p style={{ paddingBottom: "4px" }}>
               <Icon kind="lock" size={14} />
-              本批使用同一渠道
+              {props.fixedSource ? "客户身份固定，不按名称匹配渠道" : "本批使用同一渠道"}
             </p>
           </div>
           {channelTotal !== null && channels.length < channelTotal && (
@@ -498,14 +527,14 @@ export function BatchUpload(props: Props) {
               style={{ minHeight: "160px", padding: "10px 12px", gap: "5px" }}
               onDragOver={e => {
                 e.preventDefault();
-                if (!saved) setDragging(true);
+                if (!saved && !restoreBlocked) setDragging(true);
               }}
               onDragLeave={() => setDragging(false)}
               onDrop={e => {
                 e.preventDefault();
                 setDragging(false);
                 const file = e.dataTransfer.files[0];
-                if (file && !loading && !saved) void selectFile(file);
+                if (file && !loading && !saved && !restoreBlocked) void selectFile(file);
               }}
             >
               <Icon kind="upload" size={24} />
@@ -530,7 +559,7 @@ export function BatchUpload(props: Props) {
               <Button
                 type="button"
                 className="ci-button ci-primary"
-                disabled={loading || !!saved}
+                disabled={loading || !!saved || restoreBlocked}
                 onClick={() => fileInput.current?.click()}
               >
                 <Icon kind="upload" size={15} />
@@ -840,6 +869,12 @@ export function BatchUpload(props: Props) {
               onClick={() => void start()}
             >
               按原批次继续 / 重试
+            </Button>
+          )}
+          {step === 4 && completed > 0 && props.onViewResults && (
+            <Button type="button" variant="outline" size="sm" className="ci-button" disabled={busy}
+              onClick={() => props.onViewResults?.(entries)}>
+              查看已上传结果 / 完成
             </Button>
           )}
           {busy && (

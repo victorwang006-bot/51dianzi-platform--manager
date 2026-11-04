@@ -43,7 +43,7 @@ const upstream = frontRouter({ internalBusiness: frontRouter({ execute: frontPro
   const payload = input as { officialInventoryGrant: { permissions: OfficialInventoryPermissions } };
   expect(input).toMatchObject({
     staffUserId: 202, adminAccountId: 303, bindingVersion: 7,
-    officialInventoryGrant: { permissions: { read: true, write: false, note: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) } },
+    officialInventoryGrant: { permissions: { read: true, write: false, note: false, customerScopeRead: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) } },
   });
   return {
     enterpriseId: 51, companyName: "fixture", dataOwnerUserId: 404, ownerUserId: 101,
@@ -141,7 +141,7 @@ describe("front formatter -> service client -> admin business router -> admin fo
     const first = await businessRouter.createCaller(context()).context();
     expect(first.authorizationVersion).toMatch(/^business-bff-auth-v1:[a-f0-9]{64}$/);
     expect(first.staffPrincipal).toMatchObject({ status: "ready", frontendUserId: 202, adminAccountId: 303, bindingVersion: 7, enterpriseId: 51 });
-    expect(first.officialInventoryPermissions).toEqual({ read: true, write: false, note: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
+    expect(first.officialInventoryPermissions).toEqual({ read: true, write: false, note: false, customerScopeRead: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
     fixture.scope.modulePermissions.reverse();
     const reordered = await businessRouter.createCaller(context()).context();
     expect(reordered.authorizationVersion).toBe(first.authorizationVersion);

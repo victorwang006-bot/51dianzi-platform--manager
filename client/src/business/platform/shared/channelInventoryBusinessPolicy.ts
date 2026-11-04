@@ -6,6 +6,9 @@
  * procedures rather than accepting a browser supplied procedure name.
  */
 export const CHANNEL_INVENTORY_BUSINESS_METHOD_IDS = [
+  "channelInventory.customerSupplySummary",
+  "channelInventory.customerSupplyContext",
+  "channelInventory.createCustomerMaterial",
   "channelInventory.listChannels",
   "channelInventory.getChannel",
   "channelInventory.createChannel",
@@ -39,6 +42,9 @@ export const CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES: Readonly<Record<
   ChannelInventoryBusinessMethodId,
   Readonly<{ mode: ChannelInventoryBusinessMethodMode; permission: "inventory.manage" }>
 >> = {
+  "channelInventory.customerSupplySummary": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.customerSupplyContext": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.createCustomerMaterial": { mode: "write", permission: "inventory.manage" },
   "channelInventory.listChannels": { mode: "read", permission: "inventory.manage" },
   "channelInventory.getChannel": { mode: "read", permission: "inventory.manage" },
   "channelInventory.createChannel": { mode: "write", permission: "inventory.manage" },

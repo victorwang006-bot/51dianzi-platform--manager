@@ -22,9 +22,10 @@ const runtime = vi.hoisted(() => {
   const exportChannelMaterials = vi.fn();
   const getTeamMaterialSource = vi.fn();
   const listTeamSourceOptions = vi.fn();
+  const listTeamMaterials = vi.fn();
   const getChannel = vi.fn();
   return {
-    getMaterial, getChannel, getTeamMaterialSource, listTeamSourceOptions,
+    getMaterial, getChannel, getTeamMaterialSource, listTeamSourceOptions, listTeamMaterials,
     toastError: vi.fn(),
     scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() },
     getTeamMaterialForEdit, collaborationAdd, collaborationEdit,
@@ -32,10 +33,12 @@ const runtime = vi.hoisted(() => {
     collaborationInputs: [] as unknown[],
     exportChannelMaterials,
     teamQuery: null as unknown,
+    exactTeamQuery: null as unknown,
     sourceQuery: null as unknown,
     sourceInputs: [] as unknown[],
     channelInputs: [] as unknown[],
     materialInputs: [] as unknown[],
+    exactStockInputs: [] as unknown[],
     sharedInputs: [] as unknown[],
     optionInputs: [] as unknown[],
     getChannelInputs: [] as unknown[],
@@ -54,7 +57,7 @@ const runtime = vi.hoisted(() => {
     sharedQuery: null as unknown,
     notesQuery: null as unknown,
     utils: {
-      client: { channelInventory: { getChannel: { query: getChannel }, getTeamMaterialSource: { query: getTeamMaterialSource }, listTeamSourceOptions: { query: listTeamSourceOptions }, exportChannelMaterials: { query: exportChannelMaterials }, getTeamMaterialForEdit: { query: getTeamMaterialForEdit }, collaborationNotesAdd: { mutate: collaborationAdd }, collaborationNotesEdit: { mutate: collaborationEdit } } },
+      client: { channelInventory: { getChannel: { query: getChannel }, listTeamMaterials: { query: listTeamMaterials }, getTeamMaterialSource: { query: getTeamMaterialSource }, listTeamSourceOptions: { query: listTeamSourceOptions }, exportChannelMaterials: { query: exportChannelMaterials }, getTeamMaterialForEdit: { query: getTeamMaterialForEdit }, collaborationNotesAdd: { mutate: collaborationAdd }, collaborationNotesEdit: { mutate: collaborationEdit } } },
       channelInventory: {
         getMaterial: { fetch: getMaterial },
         listTeamMaterials: { invalidate },
@@ -82,7 +85,7 @@ vi.mock("../../../../api/business-trpc", () => ({
       listTeamMaterials: {
         useQuery: (input: unknown, options?: { enabled?: boolean }) => {
           if (options?.enabled) runtime.materialInputs.push(input);
-          return runtime.teamQuery;
+          return (input as { channelId?: number }).channelId && runtime.exactTeamQuery ? runtime.exactTeamQuery : runtime.teamQuery;
         },
       },
       listTeamSourceOptions: {
@@ -212,6 +215,9 @@ function change(
 async function settle() {
   await act(async () => {
     await Promise.resolve();
+    // Radix FocusScope restores focus in a timer after a portalled menu unmounts.
+    // Wait for that real lifecycle, not just the React promise microtask.
+    await new Promise(resolve => setTimeout(resolve, 0));
   });
 }
 
@@ -232,11 +238,14 @@ function configureFixtures() {
   runtime.scope = { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() };
   runtime.getTeamMaterialSource.mockReset().mockResolvedValue({ name: "实时核验来源" });
   runtime.listTeamSourceOptions.mockReset().mockImplementation((input: unknown) => { runtime.sourceInputs.push(input); return Promise.resolve((runtime.sourceQuery as { data: unknown }).data); });
+  runtime.exactTeamQuery = null;
+  runtime.listTeamMaterials.mockReset().mockImplementation((input: unknown) => { runtime.exactStockInputs.push(input); return Promise.resolve(((runtime.exactTeamQuery || runtime.teamQuery) as { data: unknown }).data); });
   runtime.exportChannelMaterials.mockReset().mockResolvedValue(exportFixture());
   runtime.uploadOptionsQuery = null;
   runtime.channelInputs = [];
   runtime.sourceInputs = [];
   runtime.materialInputs = [];
+  runtime.exactStockInputs = [];
   runtime.sharedInputs = [];
   runtime.optionInputs = [];
   runtime.getChannelInputs = [];
@@ -389,6 +398,7 @@ function configureFixtures() {
 }
 
 beforeEach(() => {
+  window.history.replaceState(null, "", "/");
   configureFixtures();
   sessionStorage.clear();
   runtime.createMaterial.mockReset().mockResolvedValue({ idempotent: false });
@@ -1117,6 +1127,158 @@ describe("v6 channel archive complete inventory download", () => {
 });
 
 
+describe("linked company channel editing", () => {
+  function linkedChannel(overrides: Record<string, unknown> = {}) {
+    const result = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0] = {
+      ...result.data.items[0], companyReadOnly: true, customerId: 81,
+      name: "CRM权威公司", industryCode: "automotive", contactName: "CRM联系人",
+      phone: "13900139000", wechat: "crm-wechat", qq: "123456", notes: "CRM公司说明",
+      ...overrides,
+    };
+  }
+
+  it("renders every company field read-only, keeps type editable and links to the real customer", async () => {
+    linkedChannel();
+    renderHost();
+    click(button("渠道档案"));
+    click(menuItem("编辑渠道"));
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing linked editor");
+    expect(dialog.textContent).toContain("来自客户档案，仅可在客户档案维护；此处只修改供货类型");
+    for (const [label, value] of [
+      ["渠道名称", "CRM权威公司"], ["联系人", "CRM联系人"], ["联系电话", "13900139000"],
+      ["微信", "crm-wechat"], ["QQ", "123456"], ["渠道说明", "CRM公司说明"],
+    ]) {
+      const field = control(dialog, label) as HTMLInputElement | HTMLTextAreaElement;
+      expect(field.value).toBe(value);
+      expect(field.disabled).toBe(true);
+      expect(field.readOnly).toBe(true);
+    }
+    const industry = control(dialog, "所属行业") as HTMLSelectElement;
+    expect(industry.value).toBe("automotive");
+    expect(industry.disabled).toBe(true);
+    expect(industry.required).toBe(false);
+    expect(control(dialog, "渠道类型").disabled).toBe(false);
+    click(button("前往客户档案"));
+    await settle();
+    expect(window.location.pathname).toBe("/customers/81");
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+  });
+
+  it.each(["automotive", undefined, null, "", "unknown-industry"])("saves only type and CAS/context when CRM industry is %s", async industryCode => {
+    linkedChannel({ industryCode });
+    renderHost();
+    click(button("渠道档案"));
+    click(menuItem("编辑渠道"));
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing linked editor");
+    change(control(dialog, "渠道类型"), "trade");
+    click(button("保存修改"));
+    await settle();
+    expect(runtime.updateChannel).toHaveBeenCalledTimes(1);
+    expect(runtime.updateChannel).toHaveBeenCalledWith({
+      expectedEnterpriseId: 31, expectedActorUserId: 7, id: 11, expectedRevision: 4, type: "trade",
+    });
+    expect(runtime.createChannel).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("请选择所属行业。");
+  });
+
+  it.each([undefined, null, 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, "81", NaN])("does not enable linked editing or CRM navigation for invalid/missing customer ID %s", async customerId => {
+    linkedChannel({ customerId });
+    renderHost();
+    click(button("渠道档案"));
+    const edit = menuItem("编辑渠道");
+    expect(edit.hasAttribute("data-disabled")).toBe(true);
+    expect(edit.getAttribute("title")).toContain("客户档案不可访问");
+    click(edit);
+    await settle();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("前往客户档案");
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+  });
+
+  it.each([{ canEdit: false }, { readOnly: true }])("keeps server read-only/access denial for linked channels %s", async permission => {
+    linkedChannel(permission);
+    renderHost();
+    click(button("渠道档案"));
+    const edit = menuItem("编辑渠道");
+    expect(edit.hasAttribute("data-disabled")).toBe(true);
+    click(edit);
+    await settle();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+  });
+
+  it("keeps the original confirmation/CAS menu for linked channel enable and disable", async () => {
+    linkedChannel();
+    renderHost();
+    click(button("渠道档案"));
+    click(menuItem("停用"));
+    await settle();
+    expect(window.confirm).toHaveBeenCalledWith("确认停用渠道“CRM权威公司”吗？停用后不能新增或修改其库存。");
+    expect(runtime.setChannelActive).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 11, expectedRevision: 4, active: false });
+    const result = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0].active = false;
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    click(menuItem("启用"));
+    await settle();
+    expect(window.confirm).toHaveBeenLastCalledWith("确认启用渠道“CRM权威公司”吗？");
+    expect(runtime.setChannelActive).toHaveBeenLastCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 11, expectedRevision: 4, active: true });
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+  });
+
+  it("does not infer linked status from customerId or bypass standalone industry validation", async () => {
+    linkedChannel({ companyReadOnly: false, industryCode: null });
+    renderHost();
+    click(button("渠道档案"));
+    click(menuItem("编辑渠道"));
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing standalone editor");
+    for (const label of ["渠道名称", "所属行业", "联系人", "联系电话", "微信", "QQ", "渠道说明"]) {
+      expect(control(dialog, label).disabled).toBe(false);
+    }
+    expect((control(dialog, "所属行业") as HTMLSelectElement).required).toBe(true);
+    expect(dialog.textContent).not.toContain("前往客户档案");
+    change(control(dialog, "渠道类型"), "other");
+    click(button("保存修改"));
+    await settle();
+    expect(runtime.updateChannel).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("请选择所属行业。");
+    change(control(dialog, "所属行业"), "medical");
+    change(control(dialog, "渠道名称"), "独立渠道更新");
+    change(control(dialog, "渠道说明"), "独立说明更新");
+    click(button("保存修改"));
+    await settle();
+    expect(runtime.updateChannel).toHaveBeenCalledWith({
+      expectedEnterpriseId: 31, expectedActorUserId: 7, id: 11, expectedRevision: 4,
+      name: "独立渠道更新", industryCode: "medical", type: "other", contactName: "CRM联系人",
+      phone: "13900139000", wechat: "crm-wechat", qq: "123456", notes: "独立说明更新",
+    });
+  });
+
+  it.each([false, true])("ignores a linked save response after real identity change (rejected=%s)", async rejected => {
+    linkedChannel();
+    let finish!: (value: unknown) => void;
+    let fail!: (error: Error) => void;
+    runtime.updateChannel.mockImplementationOnce(() => new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
+    renderHost();
+    click(button("渠道档案"));
+    click(menuItem("编辑渠道"));
+    click(button("保存修改"));
+    runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
+    act(() => root?.render(React.createElement(ChannelInventoryHost)));
+    await settle();
+    click(button("+ 新增渠道"));
+    const newDialog = required(document.querySelector('[role="dialog"]'), "missing new identity editor");
+    change(control(newDialog, "渠道名称"), "新身份草稿");
+    await act(async () => { if (rejected) fail(new Error("STALE-LINKED-ERROR")); else finish({}); await Promise.resolve(); });
+    expect(document.querySelector('[role="dialog"]')).toBe(newDialog);
+    expect(control(newDialog, "渠道名称").value).toBe("新身份草稿");
+    expect(document.body.textContent).not.toContain("STALE-LINKED-ERROR");
+  });
+});
+
+
 describe("channel industry required integration", () => {
   it("requires an explicit industry and keeps the same complete dictionary in the compact QQ-right slot", async () => {
     renderHost();
@@ -1775,5 +1937,302 @@ describe("v14 industry and channel-row stock upload", () => {
     expect(runtime.createMaterial).toHaveBeenCalledTimes(1);
     expect(batchSelect()).toBeNull();
     expect(sessionStorage.getItem("d51-channel-inventory-batch-v1:7:31")).not.toBeNull();
+  });
+});
+
+
+describe("customer supply exact UI deep links", () => {
+  function link(tab: "channels" | "materials", id = 999) {
+    window.history.replaceState(null, "", `/?supplyChannelId=${id}&supplyTab=${tab}`);
+  }
+  function exactChannel(overrides: Record<string, unknown> = {}) {
+    return { ...(runtime.getChannelQuery as { data: object }).data, id: 999, name: "第100条以外真实渠道", ...overrides };
+  }
+  it("fetches and highlights only the exact real channel outside the first 100 without name matching", async () => {
+    link("channels"); runtime.getChannel.mockResolvedValue(exactChannel()); renderHost(); await settle();
+    expect(runtime.getChannel).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 999 }, { signal: expect.any(AbortSignal) });
+    expect(runtime.channelInputs).toHaveLength(0); expect(runtime.optionInputs).toHaveLength(0);
+    expect(document.querySelectorAll('.ci-channel-table tbody tr')).toHaveLength(1);
+    expect(document.querySelector('.ci-supply-target')?.getAttribute("data-channel-id")).toBe("999");
+    expect(document.body.textContent).toContain("第100条以外真实渠道"); expect(document.body.textContent).not.toContain("深圳代理");
+    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("渠道档案");
+    expect(document.querySelectorAll('[role="tab"]')).toHaveLength(2);
+  });
+  it("does not fall back to an unrelated first-page/same-name channel on a failed exact link", async () => {
+    link("channels"); runtime.getChannel.mockRejectedValueOnce(new Error("FORBIDDEN exact target")); renderHost(); await settle();
+    expect(document.querySelector('.ci-supply-target')).toBeNull(); expect(document.querySelectorAll('.ci-channel-table tbody tr')).toHaveLength(0);
+    expect(document.body.textContent).not.toContain("深圳代理"); expect(document.body.textContent).toContain("FORBIDDEN exact target");
+    expect(runtime.channelInputs).toHaveLength(0); expect(runtime.optionInputs).toHaveLength(0);
+  });
+  it("uses real target plus independent backend source permission before any channel-filtered stock request", async () => {
+    link("materials"); runtime.getChannel.mockResolvedValue(exactChannel());
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 999, name: "第100条以外真实渠道" }] });
+    const data = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
+    runtime.teamQuery = query({ ...data, items: data.items.map(row => ({ ...row, canViewSource: true })), canFilterSource: true });
+    renderHost(); await settle(); await settle();
+    expect(runtime.materialInputs.length).toBeGreaterThan(0);
+    for (const input of runtime.materialInputs) expect(input).toMatchObject({ channelId: 999, expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1 });
+    expect(runtime.getChannel).toHaveBeenCalledTimes(1);
+    expect(runtime.listTeamMaterials).toHaveBeenCalledWith({ channelId: 999, expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1, pageSize: 1 }, { signal: expect.any(AbortSignal) });
+    expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
+    act(() => required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter").focus()); await settle();
+    expect(runtime.listTeamSourceOptions).toHaveBeenCalled();
+    expect(runtime.optionInputs).toHaveLength(0); expect(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')?.value).toBe("999");
+  });
+  it("a write grant cannot bypass denied source-read permission or trigger an unfiltered fallback", async () => {
+    link("materials"); runtime.getChannel.mockResolvedValue(exactChannel()); runtime.sourceQuery = query({ canFilterSource: false, items: [] });
+    const data = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
+    runtime.teamQuery = query({ ...data, items: data.items.map(row => ({ ...row, canViewSource: false })) });
+    renderHost(); await settle();
+    expect(runtime.materialInputs).toHaveLength(0); expect(document.body.textContent).toContain("没有目标渠道库存来源读取权限");
+    expect(document.body.textContent).not.toContain("LM358DR"); expect(document.body.textContent).not.toContain("TEAM-SN74");
+    expect(runtime.createMaterial).not.toHaveBeenCalled(); expect(runtime.optionInputs).toHaveLength(0);
+  });
+  it.each(["id", "enterprise", "inactive"])("rejects a server target with wrong %s rather than trusting URL identity", async kind => {
+    link("channels"); runtime.getChannel.mockResolvedValue(exactChannel(kind === "id" ? { id: 998 } : kind === "enterprise" ? { enterpriseId: 32 } : { active: false }));
+    renderHost(); await settle(); expect(document.querySelector('.ci-supply-target')).toBeNull(); expect(document.body.textContent).toContain("身份不匹配或已停用");
+  });
+  it("aborts and ignores a late exact response on authorization/identity change", async () => {
+    let finish!: (value: unknown) => void; link("channels"); runtime.getChannel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost(); const signal = runtime.getChannel.mock.calls[0][1].signal as AbortSignal;
+    runtime.scope.contextVerification.authorizationVersion = "revoked-v2";
+    act(() => root?.render(React.createElement(ChannelInventoryHost))); await settle(); expect(signal.aborted).toBe(true);
+    await act(async () => { finish(exactChannel()); }); await settle(); expect(document.body.textContent).not.toContain("第100条以外真实渠道"); expect(document.querySelector('.ci-supply-target')).toBeNull();
+  });
+  it("revalidates active status on focus and removes an archived exact target", async () => {
+    link("channels"); runtime.getChannel.mockResolvedValueOnce(exactChannel()).mockResolvedValue(exactChannel({ active: false })); renderHost(); await settle();
+    expect(document.querySelector('.ci-supply-target')).not.toBeNull(); act(() => window.dispatchEvent(new Event("focus"))); await settle();
+    expect(document.querySelector('.ci-supply-target')).toBeNull(); expect(document.body.textContent).toContain("身份不匹配或已停用");
+  });
+});
+
+describe("customer supply independent exact source-readable proof", () => {
+  const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
+  const sourceFilter = () => required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter");
+  function ownSource(leader = false, rowOverrides: Record<string, unknown> = {}) {
+    window.history.replaceState(null, "", "/?supplyChannelId=999&supplyTab=materials");
+    const channel = { ...(runtime.getChannelQuery as { data: object }).data, id: 999, name: "本人精确目标", companyReadOnly: true, customerId: 81 };
+    runtime.getChannel.mockResolvedValue(channel);
+    const data = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
+    const stock = { ...data, items: [{ ...data.items[0], ...rowOverrides }], total: 1, page: 1, pageSize: 20, pageCount: 1, canFilterSource: leader };
+    // The generic mock still contains unrelated peer stock. Only an exact cid
+    // gets this response; the public Team DTO has no channelId/channelSource.
+    runtime.exactTeamQuery = query(stock);
+    runtime.listTeamMaterials.mockImplementation(input => {
+      runtime.exactStockInputs.push(input);
+      return Promise.resolve({ ...stock, pageSize: 1 });
+    });
+    return { channel, stock };
+  }
+  function onlyExactRequests() {
+    expect(runtime.listTeamMaterials).toHaveBeenCalled();
+    for (const [input, options] of runtime.listTeamMaterials.mock.calls) {
+      expect(input).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, channelId: 999, page: 1, pageSize: 1 });
+      expect(options.signal).toBeInstanceOf(AbortSignal);
+    }
+    for (const input of runtime.materialInputs) expect(input).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, channelId: 999, pageSize: 20 });
+    expect(runtime.optionInputs).toHaveLength(0);
+    expect(runtime.channelInputs).toHaveLength(0);
+    expect(runtime.sharedInputs).toHaveLength(0);
+  }
+  function noOtherStocks() {
+    expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
+    expect(runtime.materialInputs).toHaveLength(0);
+    expect(runtime.createChannel).not.toHaveBeenCalled();
+    expect(runtime.createMaterial).not.toHaveBeenCalled();
+    expect(runtime.optionInputs).toHaveLength(0);
+    expect(runtime.sharedInputs).toHaveLength(0);
+  }
+
+  it("allows a member's exact own source with canFilterSource=false and no public row channelId, without opening other customer options", async () => {
+    const { stock } = ownSource();
+    expect(stock.items[0]).not.toHaveProperty("channelId");
+    expect(stock.items[0]).not.toHaveProperty("channelSource");
+    renderHost(); await settle(); await settle();
+    expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+    expect(document.querySelector("tbody")?.textContent).not.toContain("TEAM-SN74");
+    expect(sourceFilter().disabled).toBe(true);
+    expect(sourceFilter().value).toBe("999");
+    expect(sourceFilter().options).toHaveLength(1);
+    expect(sourceFilter().textContent).toContain("本人精确目标");
+    act(() => sourceFilter().focus()); await settle();
+    expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
+    onlyExactRequests();
+  });
+
+  it("does not trust cached channel, write or CRM-profile permission while both fresh read steps are pending", async () => {
+    const { channel, stock } = ownSource();
+    let finishChannel!: (value: unknown) => void;
+    let finishStock!: (value: unknown) => void;
+    runtime.getChannel.mockReturnValueOnce(new Promise(resolve => { finishChannel = resolve; }));
+    runtime.listTeamMaterials.mockReturnValueOnce(new Promise(resolve => { finishStock = resolve; }));
+    renderHost();
+    expect(runtime.listTeamMaterials).not.toHaveBeenCalled();
+    expect(button("单条上传").disabled).toBe(true);
+    noOtherStocks();
+    await act(async () => finishChannel(channel));
+    expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(1);
+    expect(runtime.materialInputs).toHaveLength(0);
+    expect(button("单条上传").disabled).toBe(true);
+    noOtherStocks();
+    await act(async () => finishStock({ ...stock, pageSize: 1 })); await settle();
+    expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+    onlyExactRequests();
+  });
+
+  it("preserves leader lazy dropdown permissions while keeping every stock query on the deep-link cid", async () => {
+    ownSource(true);
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 999, name: "本人精确目标" }, { id: 22, name: "leader合法其他来源" }] });
+    renderHost(); await settle();
+    expect(sourceFilter().disabled).toBe(false);
+    expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
+    act(() => sourceFilter().focus()); await settle();
+    expect(sourceFilter().value).toBe("999");
+    expect(sourceFilter().options).toHaveLength(3);
+    change(sourceFilter(), "22"); await settle();
+    change(sourceFilter(), ""); await settle();
+    expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+    onlyExactRequests();
+  });
+
+  it("a new canFilterSource=false response clears only group options, not the exact own proof or cid", async () => {
+    const { stock } = ownSource(true);
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 999, name: "本人精确目标" }, { id: 22, name: "撤销的其他来源" }] });
+    renderHost(); await settle(); act(() => sourceFilter().focus()); await settle();
+    expect(sourceFilter().textContent).toContain("撤销的其他来源");
+    runtime.exactTeamQuery = query({ ...stock, canFilterSource: false });
+    rerender(); await settle();
+    expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+    expect(sourceFilter().disabled).toBe(true);
+    expect(sourceFilter().value).toBe("999");
+    expect(sourceFilter().textContent).not.toContain("撤销的其他来源");
+    expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(1);
+    onlyExactRequests();
+  });
+
+  it("retains exact own cid through search, reset, sorting and a later empty filtered result", async () => {
+    const { stock } = ownSource(); renderHost(); await settle();
+    change(required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存型号"]'), "missing model"), "NO-MATCH");
+    click(required(document.querySelector('[aria-label="按可供数量排序"]'), "missing sort"));
+    runtime.exactTeamQuery = query({ ...stock, items: [], total: 0 }); rerender(); await settle();
+    expect(document.body.textContent).toContain("暂无目标可读库存");
+    expect(document.querySelector("tbody")?.textContent).not.toContain("TEAM-SN74");
+    click(button("重置")); await settle();
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: undefined, sortBy: "qty", page: 1 });
+    onlyExactRequests();
+  });
+
+  it.each([false, undefined, null, "true"])("requires canViewSource===true, not %s, even with a write/profile/leader-options grant", async canViewSource => {
+    ownSource(true, { canViewSource });
+    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 999, name: "未经库存证明的来源" }] });
+    renderHost(); await settle();
+    expect(document.body.textContent).toContain("没有目标渠道库存来源读取权限");
+    expect(button("单条上传").disabled).toBe(true);
+    click(button("单条上传")); click(button("上传库存"));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
+    noOtherStocks(); onlyExactRequests();
+  });
+
+  it("rejects a mixed readable/unreadable proof response rather than accepting any positive row", async () => {
+    const { stock } = ownSource();
+    runtime.listTeamMaterials.mockResolvedValueOnce({ ...stock, items: [...stock.items, { ...stock.items[0], id: 202, canViewSource: false }] });
+    renderHost(); await settle();
+    expect(document.body.textContent).toContain("没有目标渠道库存来源读取权限");
+    noOtherStocks(); onlyExactRequests();
+  });
+
+  it.each(["empty", "unavailable", "stock-forbidden", "stock-network"])("fails closed with no ALL fallback when exact source proof is %s", async kind => {
+    const { stock } = ownSource();
+    if (kind === "empty") runtime.listTeamMaterials.mockResolvedValueOnce({ ...stock, items: [], total: 0, pageSize: 1 });
+    if (kind === "unavailable") runtime.listTeamMaterials.mockResolvedValueOnce(undefined);
+    if (kind === "stock-forbidden") runtime.listTeamMaterials.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+    if (kind === "stock-network") runtime.listTeamMaterials.mockRejectedValueOnce(new Error("目标库存服务暂不可用"));
+    renderHost(); await settle();
+    expect(document.querySelector(".ci-supply-location")?.textContent).toMatch(/暂无目标可读库存|不可用|权限已改变/);
+    expect(document.querySelector(".ci-supply-location")?.textContent).not.toContain("已精确定位");
+    expect(sourceFilter().disabled).toBe(true);
+    expect(sourceFilter().textContent).not.toContain("全部可见库存");
+    expect(button("单条上传").disabled).toBe(true);
+    expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
+    noOtherStocks(); onlyExactRequests();
+  });
+
+  it("does not probe inventory or fetch upload choices when getChannel denies a foreign target", async () => {
+    ownSource(); runtime.getChannel.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+    renderHost(); await settle();
+    expect(runtime.listTeamMaterials).not.toHaveBeenCalled();
+    expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
+    expect(button("单条上传").disabled).toBe(true);
+    noOtherStocks();
+  });
+
+  it.each(["error", "source-revoked"])("masks fresh exact stock %s, preserves fail-closed intent, and never retries unfiltered", async kind => {
+    const { stock } = ownSource(); renderHost(); await settle();
+    expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+    runtime.exactTeamQuery = kind === "error" ? query(undefined, { isError: true }) : query({ ...stock, items: stock.items.map(row => ({ ...row, canViewSource: false })) });
+    runtime.materialInputs = [];
+    rerender(); await settle();
+    expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
+    expect(document.body.textContent).toContain("来源权限已改变");
+    expect(button("单条上传").disabled).toBe(true);
+    runtime.exactTeamQuery = query(stock); rerender(); await settle();
+    expect(runtime.materialInputs.every(input => (input as { channelId?: number }).channelId === 999)).toBe(true);
+    expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
+    onlyExactRequests();
+  });
+
+  it.each(["actor", "enterprise", "binding", "authorization", "native-grant", "search", "focus", "unmount"])("aborts a pending exact stock proof on %s and ignores its late positive result", async kind => {
+    const { stock } = ownSource();
+    let finish!: (value: unknown) => void;
+    runtime.listTeamMaterials.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    renderHost(); await settle();
+    expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(1);
+    const signal = runtime.listTeamMaterials.mock.calls[0][1].signal as AbortSignal;
+    runtime.getChannel.mockRejectedValue(new Error("新授权目标不可用"));
+    if (kind === "actor") (runtime.enterpriseMe as { data: { currentUserId: number } }).data.currentUserId = 8;
+    if (kind === "enterprise") (runtime.enterpriseMe as { data: { enterprise: { id: number } } }).data.enterprise.id = 32;
+    if (kind === "binding") runtime.scope.storageScope = "new-binding";
+    if (kind === "authorization") runtime.scope.contextVerification.authorizationVersion = "changed-v2";
+    if (kind === "native-grant") runtime.scope.officialInventoryPermissions.authorizationVersion = "changed-v2";
+    if (kind === "search") {
+      act(() => { window.history.replaceState(null, "", "/?supplyChannelId=998&supplyTab=materials"); window.dispatchEvent(new PopStateEvent("popstate")); });
+    } else if (kind === "focus") act(() => window.dispatchEvent(new Event("focus")));
+    else if (kind === "unmount") await act(async () => { root?.unmount(); root = null; });
+    else rerender();
+    await settle(); expect(signal.aborted).toBe(true);
+    await act(async () => finish({ ...stock, pageSize: 1 })); await settle();
+    expect(document.querySelector("tbody")?.textContent ?? "").not.toMatch(/LM358DR|TEAM-SN74/);
+    expect(runtime.materialInputs).toHaveLength(0);
+    expect(runtime.optionInputs).toHaveLength(0);
+    expect(runtime.createMaterial).not.toHaveBeenCalled();
+  });
+
+  it("reprobes both direct reads on focus and removes a now-empty target without an unfiltered request", async () => {
+    const { stock } = ownSource(); renderHost(); await settle();
+    expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+    runtime.listTeamMaterials.mockResolvedValueOnce({ ...stock, items: [], total: 0, pageSize: 1 });
+    act(() => window.dispatchEvent(new Event("focus"))); await settle();
+    expect(runtime.getChannel).toHaveBeenCalledTimes(2);
+    expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).toContain("暂无目标可读库存");
+    expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
+    onlyExactRequests();
+  });
+
+  it("reprobes after 30 seconds and masks a revoked source without relying on canFilterSource", async () => {
+    vi.useFakeTimers();
+    try {
+      ownSource(); renderHost();
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+      runtime.listTeamMaterials.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+      expect(runtime.getChannel).toHaveBeenCalledTimes(2);
+      expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(2);
+      expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
+      expect(document.body.textContent).toContain("权限已改变");
+      onlyExactRequests();
+    } finally { vi.useRealTimers(); }
   });
 });

@@ -51,8 +51,8 @@ describe("customer list unified presentation contract", () => {
 
   it("keeps genuine customer fields and makes only the final action column right-aligned", () => {
     const headers = elements("TableHead");
-    expect(headers).toHaveLength(8);
-    for (const label of ["客户名称", "所属行业", "联系人 / 电话", "等级 / 阶段", "负责人", "下次跟进", "需求", "操作"]) {
+    expect(headers).toHaveLength(9);
+    for (const label of ["客户名称", "所属行业", "联系人 / 电话", "等级 / 阶段", "负责人", "供应库存", "下次跟进", "需求", "操作"]) {
       expect(source).toContain(label);
     }
     for (const tag of ["TableHead", "TableCell"]) {

@@ -9,6 +9,7 @@ import {
   type SqlResultRow,
 } from "./channelInventory";
 import { teamMaterialSourceEligibility, SOURCE_FORBIDDEN_MESSAGE } from "./channelInventorySource";
+import { linkedCompany } from "./customerSupplyCompany";
 
 export const CHANNEL_INVENTORY_EXPORT_LIMIT = 10_000;
 export type ChannelInventoryExportInput = {
@@ -103,6 +104,8 @@ export function createChannelInventoryExportService({ getDb }: { getDb: () => Pr
           }
           const first = found[0];
           const type = String(first.channelType) as ChannelInventoryType;
+          const company = await linkedCompany(tx, scope, Number(first.channelId));
+          if (company.linked && !company.customer) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
           if (!CHANNEL_INVENTORY_TYPES.includes(type)) throw new Error("Invalid channel type");
           const items: ChannelInventoryExport["items"] = found.filter(row => row.materialId != null).map(row => {
             if (String(row.currency) !== "CNY") throw new Error("Invalid currency");
@@ -116,7 +119,7 @@ export function createChannelInventoryExportService({ getDb }: { getDb: () => Pr
             };
           });
           return {
-            channel: { id: Number(first.channelId), name: String(first.channelName), type, active: boolean(first.channelActive) },
+            channel: { id: Number(first.channelId), name: company.linked ? String(company.customer?.name) : String(first.channelName), type, active: boolean(first.channelActive) },
             enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId,
             exportedAt: new Date().toISOString(), total: items.length, items,
           };

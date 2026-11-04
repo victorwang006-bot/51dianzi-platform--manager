@@ -32,7 +32,7 @@
 
 .customer-list-page .customer-list-table {
   width: 100%;
-  min-width: 1332px;
+  min-width: 1452px;
   color: var(--admin-color-text, #1f2937);
   font-size: var(--admin-font-body, 12px);
 }
@@ -112,3 +112,10 @@
 .customer-list-page .customer-list-table tbody tr:hover .customer-list-actions-column {
   background: #f8fafc;
 }
+
+.customer-list-page .customer-list-supply-actions { display: grid; justify-items: center; gap: 3px; }
+.customer-list-page .customer-list-supply-upload, .customer-list-page .customer-list-supply-view { font-size: 12px; line-height: 18px; white-space: nowrap; color: #185fa5; border-radius: 4px; }
+.customer-list-page .customer-list-supply-upload { padding: 3px 6px; border: 1px solid #cbd9eb; background: #f8fbff; box-shadow: none; }
+.customer-list-page .customer-list-supply-upload:disabled { opacity: .5; cursor: not-allowed; }
+.customer-list-page .customer-list-supply-view { padding: 0; border: 0; background: transparent; }
+.customer-list-page .customer-list-supply-view:hover { text-decoration: underline; }

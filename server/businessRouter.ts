@@ -48,6 +48,7 @@ import {
 
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../client/src/business/platform/shared/channelInventoryCollaboration";
 import { teamMaterialSourceSchema } from "../client/src/business/platform/shared/channelInventorySource";
+import { CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS, isCustomerSupplyBusinessMethod } from "./customerSupplyBusinessInput";
 
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
@@ -125,6 +126,9 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.exportChannelMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.getMaterial", module: "inventory", mode: "read" },
   { method: "channelInventory.createMaterial", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerSupplySummary", module: "inventory", mode: "read" },
+  { method: "channelInventory.customerSupplyContext", module: "inventory", mode: "read" },
+  { method: "channelInventory.createCustomerMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.updateMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.listSharedMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.notesList", module: "inventory", mode: "read" },
@@ -285,7 +289,22 @@ async function withCurrentBusinessAuthorization<T>(
     if (!businessScopeAllows(scope, capability.module, capability.mode) && !officialReadProjection) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权" });
     }
-    return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions });
+    // Customer supply is the intersection of current inventory and CRM scope.
+    // It is deliberately absent from nativeReadMethods: an official inventory
+    // read grant never creates a CRM entry point or grants missing local scope.
+    // The front repeats real CRM record visibility checks with the bound staff.
+    if (isCustomerSupplyBusinessMethod(capability.method) && !businessScopeAllows(scope, "customers", "read")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的客户读取范围授权" });
+    }
+    // Request-local merchant overlay, never a native user grant. All channel
+    // commands and signed context projections use this final in-fence snapshot.
+    // Standalone channel rules remain unchanged; front linked-company readers
+    // additionally require this bit AND their actual current CRM record policy.
+    const requestOfficialInventoryPermissions = officialInventoryPermissions ? {
+      ...officialInventoryPermissions,
+      customerScopeRead: businessScopeAllows(scope, "customers", "read"),
+    } : undefined;
+    return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions: requestOfficialInventoryPermissions });
   });
 }
 
@@ -295,6 +314,7 @@ function channelCommandResource(method: string, params: unknown, result: unknown
   const types: Record<string, "channel" | "channel_material" | "channel_note"> = {
     "channelInventory.createChannel": "channel", "channelInventory.updateChannel": "channel",
     "channelInventory.setChannelActive": "channel", "channelInventory.createMaterial": "channel_material",
+    "channelInventory.createCustomerMaterial": "channel_material",
     "channelInventory.updateMaterial": "channel_material", "channelInventory.updateTeamMaterial": "channel_material",
     "channelInventory.setMaterialShare": "channel_material", "channelInventory.notesAdd": "channel_note",
     "channelInventory.notesEdit": "channel_note", "channelInventory.collaborationNotesAdd": "channel_note",
@@ -304,11 +324,15 @@ function channelCommandResource(method: string, params: unknown, result: unknown
   if (!resourceType || !result || typeof result !== "object") return undefined;
   const outer = result as Record<string, unknown>;
   const item = outer.item && typeof outer.item === "object" ? outer.item as Record<string, unknown> : outer;
-  const resourceId = item.id ?? item.materialId;
+  const resourceId = method === "channelInventory.createCustomerMaterial"
+    ? (outer.item && typeof outer.item === "object" ? item.id : undefined)
+    : item.id ?? item.materialId;
   // Do not invent creator/owner identities or coerce browser-like string IDs.
   if (typeof resourceId !== "number" || !Number.isSafeInteger(resourceId) || resourceId <= 0) return undefined;
   const key = params && typeof params === "object" ? (params as Record<string, unknown>).requestId : undefined;
-  return { schemaVersion: 1 as const, resourceType, resourceId, actionRequestId: typeof key === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(key) ? key : null };
+  const actionRequestId = typeof key === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(key) ? key : null;
+  if (method === "channelInventory.createCustomerMaterial" && actionRequestId === null) return undefined;
+  return { schemaVersion: 1 as const, resourceType, resourceId, actionRequestId };
 }
 
 async function forwardBusinessMethod(
@@ -394,7 +418,9 @@ const CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny>
   "channelInventory.collaborationNotesEdit": collaborationNotesEditSchema,
 };
 function businessInputSchema(method: string): z.ZodTypeAny {
-  return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method] ?? z.unknown();
+  if (isCustomerSupplyBusinessMethod(method)) return CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS[method];
+  return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method]
+    ?? z.unknown();
 }
 
 function businessQuery(method: string, module: BusinessModule, mode: BusinessAccessMode = "read") {
@@ -477,6 +503,9 @@ const channelInventoryBusinessRouter = router({
   exportChannelMaterials: businessQuery("channelInventory.exportChannelMaterials", "inventory"),
   getMaterial: businessQuery("channelInventory.getMaterial", "inventory"),
   createMaterial: businessMutation("channelInventory.createMaterial", "inventory"),
+  customerSupplySummary: businessQuery("channelInventory.customerSupplySummary", "inventory"),
+  customerSupplyContext: businessQuery("channelInventory.customerSupplyContext", "inventory"),
+  createCustomerMaterial: businessMutation("channelInventory.createCustomerMaterial", "inventory"),
   updateMaterial: businessMutation("channelInventory.updateMaterial", "inventory"),
   listSharedMaterials: businessQuery("channelInventory.listSharedMaterials", "inventory"),
   notesList: businessQuery("channelInventory.notesList", "inventory"),
