@@ -1,3 +1,5 @@
+import { createChannelInventoryManagementService } from "../services/channelInventoryManagement";
+import * as managementSchemas from "../../../shared/channelInventoryManagement";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
@@ -65,6 +67,7 @@ const channelUpdateFields = {
 };
 const materialCreateFields = {
   channelId: positiveInt,
+  uploadBatchId: positiveInt.optional(),
   ...channelMaterialCreateFields,
 };
 const materialUpdateFields = {
@@ -149,9 +152,42 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const exporter = createChannelInventoryExportService({ getDb });
   const collaboration = createChannelInventoryCollaborationService({ getDb });
   const source = createChannelInventorySourceService({ getDb });
+  const management = createChannelInventoryManagementService({ getDb });
   const supply = createCustomerSupplyService({ getDb, registerTeamRecord });
 
   return router({
+    deleteMaterials: procedure.input(managementSchemas.deleteMaterialsSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.deleteMaterials(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    listDeletedMaterials: readProcedure.input(managementSchemas.listDeletedMaterialsSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.listDeletedMaterials(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    restoreMaterial: procedure.input(managementSchemas.restoreMaterialSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.restoreMaterial(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    createUploadBatch: procedure.input(managementSchemas.createUploadBatchSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.createUploadBatch(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    listUploadBatches: readProcedure.input(managementSchemas.listUploadBatchesSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.listUploadBatches(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    updateUploadBatch: procedure.input(managementSchemas.updateUploadBatchSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.updateUploadBatch(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    previewDeleteUploadBatch: procedure.input(managementSchemas.previewDeleteUploadBatchSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.previewDeleteUploadBatch(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    deleteUploadBatch: procedure.input(managementSchemas.deleteUploadBatchSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await management.deleteUploadBatch(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     customerSupplySummary: readProcedure.input(customerSupplySummarySchema).query(async ({ ctx, input }) => {
       try { assertExpectedContext(ctx, input); return await supply.customerSupplySummary(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }
@@ -212,7 +248,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
         } catch (error) { return asTrpcError(error); }
       }),
     listTeamMaterials: readProcedure
-      .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
+      .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), uploadBatchId: positiveInt.optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
       .query(async ({ ctx, input }) => {
         try {
           assertExpectedContext(ctx, input);

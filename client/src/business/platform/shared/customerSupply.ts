@@ -18,7 +18,7 @@ export const channelMaterialCreateFields = {
 export const createCustomerMaterialSchema = z.object({
   ...expected, customerId: id, expectedCustomerVersion: id,
   sourceProfile: z.object({ type: z.enum(["factory", "agent", "trade", "other"]), existingChannelId: id.optional() }).strict().optional(),
-  ...channelMaterialCreateFields, requestId: z.string().uuid("请求号无效"),
+  ...channelMaterialCreateFields, uploadBatchId: id.optional(), requestId: z.string().uuid("请求号无效"),
 }).strict();
 export type CreateCustomerMaterialInput = z.output<typeof createCustomerMaterialSchema>;
 export type CustomerSupplyContextInput = z.output<typeof customerSupplyContextSchema>;

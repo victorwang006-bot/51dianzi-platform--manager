@@ -51,7 +51,7 @@ import { teamMaterialSourceSchema } from "../client/src/business/platform/shared
 import { CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS, isCustomerSupplyBusinessMethod } from "./customerSupplyBusinessInput";
 import { customerStarContextInputSchema, customerSetStarSchema } from "../client/src/business/platform/shared/customerStars";
 import { customerListSchema } from "../client/src/business/platform/shared/crmCustomers";
-
+import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/business/platform/shared/channelInventoryManagement";
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
@@ -137,6 +137,14 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.notesAdd", module: "inventory", mode: "write" },
   { method: "channelInventory.notesEdit", module: "inventory", mode: "write" },
   { method: "channelInventory.setMaterialShare", module: "inventory", mode: "write" },
+  { method: "channelInventory.deleteMaterials", module: "inventory", mode: "write" },
+  { method: "channelInventory.listDeletedMaterials", module: "inventory", mode: "read" },
+  { method: "channelInventory.restoreMaterial", module: "inventory", mode: "write" },
+  { method: "channelInventory.createUploadBatch", module: "inventory", mode: "write" },
+  { method: "channelInventory.listUploadBatches", module: "inventory", mode: "read" },
+  { method: "channelInventory.updateUploadBatch", module: "inventory", mode: "write" },
+  { method: "channelInventory.previewDeleteUploadBatch", module: "inventory", mode: "write" },
+  { method: "channelInventory.deleteUploadBatch", module: "inventory", mode: "write" },
   { method: "organization.overview", module: "context", mode: "read" },
   { method: "organization.audit", module: "users", mode: "read" },
   { method: "organization.createTeam", module: "users", mode: "write" },
@@ -281,7 +289,7 @@ async function withCurrentBusinessAuthorization<T>(
       const requirement = notes ? "note" : capability.mode === "write" ? "write" : "read";
       if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement]) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
     }
-    const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit"];
+    const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
     const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
       && (contextProjection || nativeReadMethods.includes(capability.method ?? ""));
     const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);
@@ -427,6 +435,7 @@ function businessInputSchema(method: string): z.ZodTypeAny {
   if (method === "customer.setStar") return customerSetStarSchema;
   if (method === "customer.list") return customerListSchema;
   if (isCustomerSupplyBusinessMethod(method)) return CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS[method];
+  if (CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method]) return CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method];
   return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method]
     ?? z.unknown();
 }
@@ -520,6 +529,14 @@ const channelInventoryBusinessRouter = router({
   notesAdd: businessMutation("channelInventory.notesAdd", "inventory"),
   notesEdit: businessMutation("channelInventory.notesEdit", "inventory"),
   setMaterialShare: businessMutation("channelInventory.setMaterialShare", "inventory"),
+  deleteMaterials: businessMutation("channelInventory.deleteMaterials", "inventory"),
+  listDeletedMaterials: businessQuery("channelInventory.listDeletedMaterials", "inventory"),
+  restoreMaterial: businessMutation("channelInventory.restoreMaterial", "inventory"),
+  createUploadBatch: businessMutation("channelInventory.createUploadBatch", "inventory"),
+  listUploadBatches: businessQuery("channelInventory.listUploadBatches", "inventory"),
+  updateUploadBatch: businessMutation("channelInventory.updateUploadBatch", "inventory"),
+  previewDeleteUploadBatch: businessQuery("channelInventory.previewDeleteUploadBatch", "inventory", "write"),
+  deleteUploadBatch: businessMutation("channelInventory.deleteUploadBatch", "inventory"),
 });
 
 const importInventoryBusinessRouter = router({

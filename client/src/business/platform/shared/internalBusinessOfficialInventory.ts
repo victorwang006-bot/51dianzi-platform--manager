@@ -16,6 +16,7 @@ export const signedOfficialInventoryGrantSchema = z.object({
 export type SignedOfficialInventoryGrant = z.infer<typeof signedOfficialInventoryGrantSchema>;
 /** Explicit native-read chains; linked customer methods also recheck native CRM access. */
 export const NATIVE_TEAM_READ_METHODS: readonly string[] = [
+  "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches",
   "channelInventory.customerSupplySummary", "channelInventory.customerSupplyContext",
   "channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource",
   "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit",
@@ -24,7 +25,7 @@ export function officialInventoryMethodRequirement(method: string): "read" | "wr
   if (!isChannelInventoryBusinessMethodId(method)) return null;
   if (["channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit",
     "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit"].includes(method)) return "note";
-  if (["channelInventory.createChannel", "channelInventory.updateChannel", "channelInventory.setChannelActive", "channelInventory.getTeamMaterialForEdit",
+  if (["channelInventory.deleteMaterials", "channelInventory.restoreMaterial", "channelInventory.createUploadBatch", "channelInventory.updateUploadBatch", "channelInventory.previewDeleteUploadBatch", "channelInventory.deleteUploadBatch", "channelInventory.createChannel", "channelInventory.updateChannel", "channelInventory.setChannelActive", "channelInventory.getTeamMaterialForEdit",
     "channelInventory.createCustomerMaterial", "channelInventory.updateTeamMaterial", "channelInventory.createMaterial", "channelInventory.updateMaterial", "channelInventory.setMaterialShare"].includes(method)) return "write";
   return "read";
 }

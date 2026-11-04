@@ -1,3 +1,4 @@
+import { materialUploadBatchId } from "./channelInventoryManagementPersistence";
 import { sql, type SQL } from "drizzle-orm";
 import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
 import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOriginalActor";
@@ -8,7 +9,7 @@ import { linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
 
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
-  id: number; partNumber: string; brand: string; qty: number | null; dateCode: string | null;
+  id: number; uploadBatchId: number | null; canDelete: boolean; partNumber: string; brand: string; qty: number | null; dateCode: string | null;
   price: string | null; currency: "CNY"; taxIncluded: boolean | null; leadTime: string | null;
   industryCode: BusinessIndustryCode | null;
   revision: number; updatedAt: Date | string; createdAt: Date | string;
@@ -18,7 +19,7 @@ export type TeamChannelMaterial = {
 };
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
-  partNumber?: string; brand?: string; channelId?: number; page: number; pageSize: number;
+  partNumber?: string; brand?: string; channelId?: number; uploadBatchId?: number; page: number; pageSize: number;
   sortBy?: "qty" | "dateCode"; sortDirection?: "asc" | "desc";
 };
 const rows = (result: unknown): SqlResultRow[] => {
@@ -37,7 +38,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
   const canEdit = (isMine || leader) && canWrite;
   const industry = businessIndustryCodeSchema.safeParse(row.industryCode);
   return {
-    id: Number(row.id), partNumber: String(row.partNumber), brand: String(row.brand),
+    id: Number(row.id), uploadBatchId: row.uploadBatchId == null ? null : Number(row.uploadBatchId), canDelete: canEdit, partNumber: String(row.partNumber), brand: String(row.brand),
     qty: row.qty == null ? null : Number(row.qty), dateCode: text(row.dateCode), price: text(row.price), currency: "CNY",
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded), leadTime: text(row.leadTime),
     industryCode: industry.success ? industry.data : null,
@@ -77,7 +78,7 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
   return {
     async listTeamMaterials(scope: ChannelInventoryScope, input: TeamMaterialsInput) {
       expected(scope, input);
-      const allowed = new Set(["expectedEnterpriseId", "expectedActorUserId", "partNumber", "brand", "channelId", "page", "pageSize", "sortBy", "sortDirection"]);
+      const allowed = new Set(["expectedEnterpriseId", "expectedActorUserId", "partNumber", "brand", "channelId", "uploadBatchId", "page", "pageSize", "sortBy", "sortDirection"]);
       if (Object.keys(input).some(k => !allowed.has(k))) fail("BAD_REQUEST", "库存筛选字段无效");
       if (!Number.isInteger(input.page) || input.page < 1 || input.page > 1_000_000 || !Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 100) fail("BAD_REQUEST", "分页参数无效");
       const order = teamMaterialOrder(input);
@@ -95,11 +96,15 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
           if (!ownExact) fail("FORBIDDEN", "无权查看该精确渠道来源");
         }
       }
+      if (input.uploadBatchId !== undefined) {
+        if (!Number.isSafeInteger(input.uploadBatchId) || input.uploadBatchId < 1) fail("BAD_REQUEST", "上传批次无效");
+        predicates.push(sql`${materialUploadBatchId} = ${input.uploadBatchId}`);
+      }
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literal(input.partNumber)} ESCAPE '='`);
       if (input.brand) predicates.push(sql`m.brand LIKE ${literal(input.brand)} ESCAPE '='`);
       const where = all(predicates);
       const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
-      const items = rows(await tx.execute(sql`SELECT m.id, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
+      const items = rows(await tx.execute(sql`SELECT m.id, ${materialUploadBatchId} AS uploadBatchId, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
         m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision, c.industryCode AS industryCode, c.id AS companyChannelId,
         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
@@ -111,7 +116,7 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       for (const row of items) {
         const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
         if (company.linked) { row.industryCode = company.customer?.industryCode ?? null; row.canViewSource = bool(row.canViewSource) && company.customer !== null; }
-        projected.push({ ...teamMaterialFrom(row, access.write, leader), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
+        projected.push({ ...teamMaterialFrom(row, access.write, leader), canDelete: access.write && (bool(row.isMine) || leader) && (!company.linked || company.customer !== null), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
       }
       return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
       });

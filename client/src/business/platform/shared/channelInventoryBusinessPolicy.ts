@@ -6,6 +6,14 @@
  * procedures rather than accepting a browser supplied procedure name.
  */
 export const CHANNEL_INVENTORY_BUSINESS_METHOD_IDS = [
+  "channelInventory.deleteMaterials",
+  "channelInventory.listDeletedMaterials",
+  "channelInventory.restoreMaterial",
+  "channelInventory.createUploadBatch",
+  "channelInventory.listUploadBatches",
+  "channelInventory.updateUploadBatch",
+  "channelInventory.previewDeleteUploadBatch",
+  "channelInventory.deleteUploadBatch",
   "channelInventory.customerSupplySummary",
   "channelInventory.customerSupplyContext",
   "channelInventory.createCustomerMaterial",
@@ -42,6 +50,14 @@ export const CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES: Readonly<Record<
   ChannelInventoryBusinessMethodId,
   Readonly<{ mode: ChannelInventoryBusinessMethodMode; permission: "inventory.manage" }>
 >> = {
+  "channelInventory.deleteMaterials": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.listDeletedMaterials": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.restoreMaterial": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.createUploadBatch": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.listUploadBatches": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.updateUploadBatch": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.previewDeleteUploadBatch": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.deleteUploadBatch": { mode: "write", permission: "inventory.manage" },
   "channelInventory.customerSupplySummary": { mode: "read", permission: "inventory.manage" },
   "channelInventory.customerSupplyContext": { mode: "read", permission: "inventory.manage" },
   "channelInventory.createCustomerMaterial": { mode: "write", permission: "inventory.manage" },

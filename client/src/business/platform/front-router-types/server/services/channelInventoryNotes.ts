@@ -1,3 +1,4 @@
+import { activeChannelMaterial, activeUnaliasedChannelMaterial } from "./channelInventoryManagementPersistence";
 import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
 import { resolveChannelInventoryAuthority, ChannelInventoryError, type ChannelInventoryScope } from "./channelInventory";
@@ -194,6 +195,7 @@ type Authority = Awaited<ReturnType<typeof currentAuthority>>;
 /** Notes, including legacy text, are exclusively current-responsible private. */
 function materialPredicates(authority: Authority): SQL[] {
   return [
+    activeChannelMaterial,
     sql`m.enterprise_id = ${authority.enterpriseId}`,
     sql`m.data_owner_user_id = ${authority.dataOwnerUserId}`,
     sql`c.enterprise_id = ${authority.enterpriseId}`,
@@ -230,6 +232,7 @@ const SHARED_FROM = sql`
 
 function sharedPredicates(authority: Authority): SQL[] {
   return [
+    activeChannelMaterial,
     sql`m.enterprise_id = ${authority.enterpriseId}`,
     sql`m.data_owner_user_id = ${authority.dataOwnerUserId}`,
     sql`reader_tm.userId = ${authority.actorUserId}`,
@@ -446,7 +449,7 @@ export function createChannelNotesService({ getDb }: ChannelNotesServiceDependen
           // Must run INSIDE this transaction; a preflight router check is insufficient.
           const authority = await currentAuthority(tx, scope, { lock: true, mutation: true });
           await lockReadableMaterial(tx, authority, materialId);
-          const material = rows(await tx.execute(sql`SELECT revision FROM channel_inventory_materials WHERE id = ${materialId} AND enterprise_id = ${scope.enterpriseId} FOR UPDATE`))[0];
+          const material = rows(await tx.execute(sql`SELECT revision FROM channel_inventory_materials WHERE ${activeUnaliasedChannelMaterial} AND id = ${materialId} AND enterprise_id = ${scope.enterpriseId} FOR UPDATE`))[0];
           if (!material) fail("NOT_FOUND", NOT_FOUND_MESSAGE);
           const assignment = rows(await tx.execute(sql`
             SELECT id, teamId, currentOwnerUserId, revision FROM enterprise_team_record_assignments
@@ -494,7 +497,7 @@ export function createChannelNotesService({ getDb }: ChannelNotesServiceDependen
           `);
           const changed = await tx.execute(sql`
             UPDATE channel_inventory_materials SET revision = revision + 1, updated_at = CURRENT_TIMESTAMP(3)
-             WHERE id = ${materialId} AND enterprise_id = ${scope.enterpriseId} AND responsible_user_id = ${scope.actorUserId} AND revision = ${expectedRevision}
+             WHERE id = ${materialId} AND enterprise_id = ${scope.enterpriseId} AND responsible_user_id = ${scope.actorUserId} AND revision = ${expectedRevision} AND ${activeUnaliasedChannelMaterial}
           `);
           if (affectedRows(changed) !== 1) fail("CONFLICT", "库存已被其他人更新，请刷新后重试");
           const item = { materialId, enabled, revision: expectedRevision + 1 };

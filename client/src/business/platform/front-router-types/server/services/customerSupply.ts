@@ -144,8 +144,8 @@ export function createCustomerSupplyService(deps: ChannelInventoryServiceDepende
         const boundChannel = await writeFence(tx, scope, channelId);
         const sourceType = String(boundChannel!.type) as ChannelInventoryType;
         if (input.sourceProfile && input.sourceProfile.type !== sourceType) fail("CONFLICT", "客户关联渠道类型不匹配，请刷新确认");
-        const { partNumber, brand, qty, dateCode, price, currency, taxIncluded, leadTime, note, requestId } = input;
-        const receipt = await inventory.createMaterial(scope, { channelId, partNumber, brand, qty, dateCode, price, currency, taxIncluded, leadTime, note, requestId },
+        const { partNumber, brand, qty, dateCode, price, currency, taxIncluded, leadTime, note, requestId, uploadBatchId } = input;
+        const receipt = await inventory.createMaterial(scope, { channelId, partNumber, brand, qty, dateCode, price, currency, taxIncluded, leadTime, note, requestId, ...(uploadBatchId === undefined ? {} : { uploadBatchId }) },
           trustedCustomerCreationContext({ customerId: input.customerId, expectedCustomerVersion: input.expectedCustomerVersion, sourceType }));
         return { ...receipt, channelId, customerId: input.customerId };
       }));

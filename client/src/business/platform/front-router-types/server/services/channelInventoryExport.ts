@@ -1,3 +1,4 @@
+import { activeChannelMaterial } from "./channelInventoryManagementPersistence";
 import { sql } from "drizzle-orm";
 import {
   CHANNEL_INVENTORY_TYPES,
@@ -83,7 +84,7 @@ export function createChannelInventoryExportService({ getDb }: { getDb: () => Pr
               LEFT JOIN channel_inventory_materials m
                 ON m.channel_id = c.id AND m.enterprise_id = c.enterprise_id
                AND m.data_owner_user_id = c.data_owner_user_id
-               AND m.responsible_user_id = ${scope.actorUserId}
+               AND m.responsible_user_id = ${scope.actorUserId} AND ${activeChannelMaterial}
              WHERE c.id = ${input.channelId}
                AND c.enterprise_id = ${scope.enterpriseId}
                AND c.data_owner_user_id = ${scope.dataOwnerUserId}

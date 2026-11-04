@@ -1,3 +1,4 @@
+import { activeUnaliasedChannelMaterial } from "./channelInventoryManagementPersistence";
 import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -5,7 +6,7 @@ import { ChannelInventoryError, channelInventoryPayloadHash, type ChannelInvento
 import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll, teamInventoryRows as rows } from "./channelTeamInventoryAccess";
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
-
+import { linkedCompany, projectMaterialCompany } from "./customerSupplyCompany";
 /** Closed public projection; private legacy material/note/channel-contact fields are never selected. */
 export type TeamMaterialForEdit = {
   id: number; channelId: number | null; channelName: string | null; partNumber: string; brand: string;
@@ -62,6 +63,9 @@ async function authorizedMaterial(tx: SqlExecutor, scope: ChannelInventoryScope,
     ${teamMaterialSourceEligibility(scope, true)} AS canViewSource
     ${TEAM_MATERIAL_FROM} WHERE ${teamInventoryAll(visibility.predicates)} LIMIT 1 FOR UPDATE`))[0];
   if (!row) notFound();
+  const company = await linkedCompany(tx, scope, Number(row.channelId));
+  if (write && company.linked && !company.customer) fail("FORBIDDEN", "关联客户不存在或无CRM访问权限");
+  if (company.linked) { row.canViewSource = bool(row.canViewSource) && company.customer !== null; row.channelName = company.customer?.name ?? null; }
   if (write && (!visibility.access.write || (!bool(row.isMine) && !visibility.leader))) fail("FORBIDDEN", "仅所属人或本库存团队有效组长且具备库存写权限可编辑");
   return row;
 }
@@ -157,7 +161,10 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
       return transaction(async tx => {
         const current = await authorizedMaterial(tx, scope, input.id, true);
         const prior = await priorAudit(tx, scope, requestId);
-        if (prior) return replay<TeamMaterialForEdit>(prior, "updateTeamMaterial", hash, scope.actorUserId, bool(current.canViewSource));
+        if (prior) {
+          const receipt = replay<TeamMaterialForEdit>(prior, "updateTeamMaterial", hash, scope.actorUserId, bool(current.canViewSource));
+          return { ...receipt, item: await projectMaterialCompany(tx, scope, receipt.item) };
+        }
         if (Number(current.revision) !== input.expectedRevision) conflict();
         if (!bool(current.channelActive)) fail("PRECONDITION_FAILED", "关联渠道已停用，不能编辑库存");
         const assignments: SQL[] = [sql`revision = revision + 1`, sql`updated_at = CURRENT_TIMESTAMP(3)`];
@@ -170,12 +177,12 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
         if (input.leadTime !== undefined) assignments.push(sql`lead_time = ${input.leadTime}`);
         const changed = await tx.execute(sql`UPDATE channel_inventory_materials SET ${sql.join(assignments, sql`, `)}
           WHERE id = ${input.id} AND enterprise_id = ${scope.enterpriseId} AND data_owner_user_id = ${scope.dataOwnerUserId}
-            AND revision = ${input.expectedRevision}`);
+            AND revision = ${input.expectedRevision} AND ${activeUnaliasedChannelMaterial}`);
         if (Number(header(changed).affectedRows) !== 1) conflict();
         const updated = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS} ${TEAM_MATERIAL_FROM}
           WHERE m.id = ${input.id} AND m.enterprise_id = ${scope.enterpriseId} AND m.data_owner_user_id = ${scope.dataOwnerUserId} LIMIT 1`))[0];
         if (!updated) notFound();
-        const item = teamMaterialPublicFrom(updated, bool(current.canViewSource));
+        const item = await projectMaterialCompany(tx, scope, teamMaterialPublicFrom(updated, bool(current.canViewSource)));
         await audit(tx, scope, { materialId: input.id, action: "updateTeamMaterial", requestId, payloadHash: hash,
           expectedRevision: input.expectedRevision, beforeData: teamMaterialPublicFrom(current), afterData: item });
         return { item, idempotent: false };

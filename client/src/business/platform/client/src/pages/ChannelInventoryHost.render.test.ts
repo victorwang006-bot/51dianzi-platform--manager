@@ -57,7 +57,7 @@ const runtime = vi.hoisted(() => {
     sharedQuery: null as unknown,
     notesQuery: null as unknown,
     utils: {
-      client: { channelInventory: { getChannel: { query: getChannel }, listTeamMaterials: { query: listTeamMaterials }, getTeamMaterialSource: { query: getTeamMaterialSource }, listTeamSourceOptions: { query: listTeamSourceOptions }, exportChannelMaterials: { query: exportChannelMaterials }, getTeamMaterialForEdit: { query: getTeamMaterialForEdit }, collaborationNotesAdd: { mutate: collaborationAdd }, collaborationNotesEdit: { mutate: collaborationEdit } } },
+      client: { channelInventory: { createUploadBatch: { mutate: vi.fn().mockResolvedValue({ id: 501, batchCode: "TEST-BATCH", revision: 1 }) }, getChannel: { query: getChannel }, listTeamMaterials: { query: listTeamMaterials }, getTeamMaterialSource: { query: getTeamMaterialSource }, listTeamSourceOptions: { query: listTeamSourceOptions }, exportChannelMaterials: { query: exportChannelMaterials }, getTeamMaterialForEdit: { query: getTeamMaterialForEdit }, collaborationNotesAdd: { mutate: collaborationAdd }, collaborationNotesEdit: { mutate: collaborationEdit } } },
       channelInventory: {
         getMaterial: { fetch: getMaterial },
         listTeamMaterials: { invalidate },
@@ -423,7 +423,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   it("defaults to unified inventory without old tabs, share buttons or private row DOM", () => {
     renderHost();
     const tabs = document.querySelector('[aria-label="渠道库存内容"]');
-    expect(Array.from(tabs!.querySelectorAll('[role="tab"]')).map(item => item.textContent)).toEqual(["渠道库存", "渠道档案"]);
+    expect(Array.from(tabs!.querySelectorAll('[role="tab"]')).map(item => item.textContent)).toEqual(["渠道库存", "渠道档案", "上传批次", "回收站"]);
     expect(tabs!.querySelector('[aria-selected="true"]')?.textContent).toBe("渠道库存");
     expect(document.querySelector('[aria-label="库存可见范围"]')).toBeNull();
     expect(document.body.textContent).toContain("LM358DR");
@@ -962,7 +962,7 @@ describe("channel inventory upload entrypoints", () => {
     await settle();
     expect(runtime.createMaterial).toHaveBeenCalledTimes(4);
     const dto = runtime.createMaterial.mock.calls.map(call => call[0]);
-    expect(dto[0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, channelId: 11, partNumber: "ZERO", brand: "TI", qty: 0, dateCode: "002601", price: "0", currency: "CNY", taxIncluded: null, leadTime: null, note: "本人私有", requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) });
+    expect(dto[0]).toEqual({ uploadBatchId: 501, expectedEnterpriseId: 31, expectedActorUserId: 7, channelId: 11, partNumber: "ZERO", brand: "TI", qty: 0, dateCode: "002601", price: "0", currency: "CNY", taxIncluded: null, leadTime: null, note: "本人私有", requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) });
     expect(dto[1]).toMatchObject({ partNumber: "123456789012", qty: 4000, dateCode: "002601", price: "1.23456789" });
     expect(dto[2]).toMatchObject({ qty: null, price: "123456789012345.123456789012" });
     expect(dto[3]).toMatchObject({ qty: null, price: null, taxIncluded: null });
@@ -1020,6 +1020,7 @@ describe("channel inventory upload entrypoints", () => {
     await uploadSheet([["型号", "品牌"], ["ONE", "TI"], ["TWO", "TI"]]);
     previewBatch();
     click(button("确认上传 2 条"));
+    await settle();
     expect(runtime.createMaterial).toHaveBeenCalledTimes(1);
     if (kind === "enterprise") runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
     if (kind === "permission") runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: [] });
@@ -1996,7 +1997,7 @@ describe("v14 industry and channel-row stock upload", () => {
     let finish!: () => void;
     runtime.createMaterial.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
     renderHost(); click(button("渠道档案")); click(archiveUpload()); await settle();
-    await uploadSheet([["型号", "品牌"], ["ROW-ONE", "TI"], ["ROW-TWO", "TI"]]); previewBatch(); click(button("确认上传 2 条"));
+    await uploadSheet([["型号", "品牌"], ["ROW-ONE", "TI"], ["ROW-TWO", "TI"]]); previewBatch(); click(button("确认上传 2 条")); await settle();
     expect(runtime.createMaterial).toHaveBeenCalledTimes(1);
     click(button("渠道档案")); click(button("渠道库存"));
     await act(async () => finish());
@@ -2022,7 +2023,7 @@ describe("customer supply exact UI deep links", () => {
     expect(document.querySelector('.ci-supply-target')?.getAttribute("data-channel-id")).toBe("999");
     expect(document.body.textContent).toContain("第100条以外真实渠道"); expect(document.body.textContent).not.toContain("深圳代理");
     expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("渠道档案");
-    expect(document.querySelectorAll('[role="tab"]')).toHaveLength(2);
+    expect(document.querySelectorAll('[role="tab"]')).toHaveLength(4);
   });
   it("does not fall back to an unrelated first-page/same-name channel on a failed exact link", async () => {
     link("channels"); runtime.getChannel.mockRejectedValueOnce(new Error("FORBIDDEN exact target")); renderHost(); await settle();

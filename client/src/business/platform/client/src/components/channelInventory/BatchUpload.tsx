@@ -18,6 +18,7 @@ import {
   type Payload,
 } from "./import";
 import { runBatch, type BatchEntry, type BatchReceipt } from "./queue";
+import { inventoryRequestId, type UploadBatchInput, type UploadBatchReceipt, type PersistentUploadBatch, type ManagedBatchEntry } from "./management";
 import "./batch.css";
 import "./layout.css";
 
@@ -34,7 +35,8 @@ type Props = {
   onBusyChange: (value: boolean) => void;
   onLoadMoreChannels: () => void;
   loadingMoreChannels: boolean;
-  onCreate: (payload: Payload, requestId: string) => Promise<unknown>;
+  onCreate: (payload: Payload, requestId: string, uploadBatchId?: number) => Promise<unknown>;
+  onCreateBatch?: (input: UploadBatchInput) => Promise<UploadBatchReceipt>;
   onComplete: () => void;
   isCurrent: () => boolean;
   sourceLabel?: string;
@@ -59,7 +61,7 @@ export const batchUploadDialogStyle: React.CSSProperties = {
   height: "min(85dvh, 680px)", maxHeight: "85dvh", display: "flex",
   flexDirection: "column", gap: "12px", overflow: "hidden", padding: "18px",
 };
-type SavedBatch = { channelId: number; entries: BatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single" };
+type SavedBatch = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single"; uploadBatch?: PersistentUploadBatch };
 const storageKey = (props: Props) => `d51-channel-inventory-batch-v1:${props.actorUserId}:${props.enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
 function readSavedBatch(props: Props): { saved: SavedBatch | null; error: string; blocked: boolean } {
   const empty = { saved: null, error: "", blocked: false };
@@ -71,14 +73,22 @@ function readSavedBatch(props: Props): { saved: SavedBatch | null; error: string
       && Number.isSafeInteger(data.channelId) && data.channelId > 0 && Array.isArray(data.entries)
       && data.entries.length <= 1000 && data.entries.length > 0 && data.entries.every((r: BatchEntry) =>
         /^[-0-9a-f]{36}$/i.test(r.requestId) && ["pending", "success", "unknown"].includes(r.status) && r.payload.channelId === data.channelId)) {
+      const batch = data.uploadBatch as PersistentUploadBatch | undefined;
+      const validBatch = batch === undefined
+        ? data.entries.every((entry: ManagedBatchEntry) => entry.uploadBatchId === undefined)
+        : /^[-0-9a-f]{36}$/i.test(batch.requestId) && (batch.id === undefined
+          ? data.entries.every((entry: ManagedBatchEntry) => entry.uploadBatchId === undefined)
+          : Number.isSafeInteger(batch.id) && batch.id > 0 && data.entries.every((entry: ManagedBatchEntry) => entry.uploadBatchId === batch.id));
+      if (!validBatch || (batch && !props.onCreateBatch))
+        return { saved: null, blocked: true, error: "原批次归属记录无效或当前入口无法核验批次，已阻止重复上传。请核实原上传结果。" };
       if (props.validateSavedSession && !props.validateSavedSession(data.sessionData, data.entries))
         return { saved: null, blocked: true, error: "原批次客户版本或回执已变化，不能另起批次重复上传。请核实原上传结果后处理。" };
       return { saved: data, error: "", blocked: false };
     }
-    if (props.storageKeySuffix) return { saved: null, blocked: true, error: "原批次恢复记录无效，已阻止重复导入，请核实原上传结果。" };
+    if (props.storageKeySuffix || props.onCreateBatch) return { saved: null, blocked: true, error: "原批次恢复记录无效，已阻止重复导入，请核实原上传结果。" };
     return empty;
   } catch {
-    return { saved: null, blocked: false, error: "无法读取上次上传记录；请检查浏览器会话存储权限。" };
+    return { saved: null, blocked: Boolean(props.onCreateBatch), error: "无法读取上次上传记录；请检查浏览器会话存储权限。" };
   }
 }
 function Icon({
@@ -119,7 +129,7 @@ function Icon({
     </svg>
   );
 }
-const uuid = () => crypto.randomUUID();
+const uuid = inventoryRequestId;
 export function BatchUpload(props: Props) {
   // A changed recovery namespace must not render the previous identity's queue.
   return <BatchUploadSession key={storageKey(props)} {...props} />;
@@ -154,6 +164,7 @@ function BatchUploadSession(props: Props) {
   const [saved, setSaved] = useState<SavedBatch | null>(initial.saved);
   const fileInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
+  const uploadBatch = useRef<PersistentUploadBatch | undefined>(undefined);
   const serial = useRef(0);
   const stop = useRef(false);
   const running = useRef(false);
@@ -189,6 +200,7 @@ function BatchUploadSession(props: Props) {
           channelId: id,
           name,
           entries: next,
+          ...(uploadBatch.current ? { uploadBatch: uploadBatch.current } : {}),
           ...(latest.current.sessionData === undefined ? {} : { sessionData: latest.current.sessionData }),
           ...(latest.current.renderSingleEntry ? { entryMode } : {}),
         })
@@ -318,7 +330,7 @@ function BatchUploadSession(props: Props) {
     setStep(3);
   };
   const start = async () => {
-    if (running.current || !current() || restoreBlocked) return;
+    if (running.current || !current() || restoreBlocked || saved) return;
     if (!selected || !selected.active) {
       setError("请选择有权访问且启用的已加载渠道。");
       return;
@@ -335,6 +347,13 @@ function BatchUploadSession(props: Props) {
         payload: toPayload(r.draft, selected.id),
         status: "pending",
       }));
+      // The batch request is frozen before any network write. Legacy recovered
+      // queues deliberately keep no ID; never invent historical attribution.
+      if (latest.current.onCreateBatch) uploadBatch.current = { requestId: uuid() };
+    }
+    if (uploadBatch.current?.id !== undefined) {
+      const batchId = uploadBatch.current.id;
+      next = next.map(entry => ({ ...entry, uploadBatchId: batchId }));
     }
     if (!persist(next, selected.id)) return;
     stop.current = false;
@@ -346,9 +365,21 @@ function BatchUploadSession(props: Props) {
     props.onBusyChange(true);
     props.onDirtyChange(true);
     try {
+      const batch = uploadBatch.current;
+      if (batch && batch.id === undefined) {
+        if (!latest.current.onCreateBatch) throw new Error("当前入口无法继续原上传批次，请返回原入口重试。");
+        const created = await latest.current.onCreateBatch({ channelId: selected.id, fileName: name, totalRows: next.length, requestId: batch.requestId });
+        if (!current()) return;
+        if (!Number.isSafeInteger(created.id) || created.id <= 0) throw new Error("上传批次回执无效，请按原请求重试。");
+        uploadBatch.current = { ...batch, id: created.id, batchCode: created.batchCode };
+        next = next.map(entry => ({ ...entry, uploadBatchId: created.id }));
+        setEntries(next);
+        if (!persist(next, selected.id)) return;
+      }
       const result = await runBatch(next, {
-        submit: (payload, requestId) =>
-          latest.current.onCreate(payload, requestId),
+        submit: (payload, requestId) => uploadBatch.current?.id === undefined
+          ? latest.current.onCreate(payload, requestId)
+          : latest.current.onCreate(payload, requestId, uploadBatch.current.id),
         isCurrent: current,
         shouldStop: () => stop.current,
         receiptFromResult: latest.current.receiptFromResult,
@@ -422,6 +453,7 @@ function BatchUploadSession(props: Props) {
     setChannelId(String(saved.channelId));
     setEntries(saved.entries);
     setName(saved.name);
+    uploadBatch.current = saved.uploadBatch;
     setEntryMode(saved.entryMode === "single" && latest.current.renderSingleEntry ? "single" : "table");
     setSaved(null);
     setStep(4);
@@ -751,6 +783,7 @@ function BatchUploadSession(props: Props) {
               <p>
                 已确认保存 <strong>{completed}</strong> / {entries.length} 条
               </p>
+              {uploadBatch.current?.id ? <small>上传批次：{uploadBatch.current.batchCode || `#${uploadBatch.current.id}`}</small> : null}
               <progress value={completed} max={entries.length || 1} />
               <small>
                 每行独立保存；暂停不会撤回已保存行。继续时沿用原请求号，未知结果会安全重试确认。

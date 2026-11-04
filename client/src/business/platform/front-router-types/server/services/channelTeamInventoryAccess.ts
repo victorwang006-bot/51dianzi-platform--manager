@@ -2,6 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { ChannelInventoryError, resolveChannelInventoryAuthority, type ChannelInventoryScope, type SqlExecutor, type SqlResultRow } from "./channelInventory";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
+import { activeChannelMaterial } from "./channelInventoryManagementPersistence";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
 
 export const teamInventoryRows = (result: unknown): SqlResultRow[] => {
@@ -17,7 +18,7 @@ export const TEAM_MATERIAL_FROM = sql`FROM channel_inventory_materials m INNER J
  * Scope labels never confer sharing; current assignment revision, owner membership identity,
  * owner account/member/module access and explicit enabled share all remain mandatory.
  */
-export async function resolveTeamInventoryVisibility(executor: SqlExecutor, scope: ChannelInventoryScope, options: { lock?: boolean; materialId?: number } = {}) {
+export async function resolveTeamInventoryVisibility(executor: SqlExecutor, scope: ChannelInventoryScope, options: { lock?: boolean; materialId?: number; includeDeleted?: boolean } = {}) {
     // Force the existing module helper to use current locking reads even through test/adaptor wrappers.
     const db = options.lock ? { execute: (query: SQL) => executor.execute(query), rollback: (): never => { throw new Error("authority-only transaction marker"); } } : executor;
     const suffix = options.lock ? sql` FOR UPDATE` : sql``;
@@ -33,7 +34,7 @@ export async function resolveTeamInventoryVisibility(executor: SqlExecutor, scop
       // the outer EXISTS query alone does not lock its subquery's rows in MySQL.
       const target = teamInventoryRows(await db.execute(sql`SELECT m.id, m.responsible_user_id AS ownerUserId ${TEAM_MATERIAL_FROM}
         WHERE m.id = ${options.materialId} AND m.enterprise_id = ${scope.enterpriseId}
-          AND m.data_owner_user_id = ${scope.dataOwnerUserId} LIMIT 1 FOR UPDATE`))[0];
+          AND m.data_owner_user_id = ${scope.dataOwnerUserId} AND ${options.includeDeleted ? sql`TRUE` : activeChannelMaterial} LIMIT 1 FOR UPDATE`))[0];
       if (!target) throw new ChannelInventoryError("NOT_FOUND", "库存条目不存在或无权访问");
       await db.execute(sql`SELECT material_id FROM channel_inventory_material_shares
         WHERE enterprise_id = ${scope.enterpriseId} AND material_id = ${options.materialId} FOR UPDATE`);
@@ -62,7 +63,7 @@ export async function resolveTeamInventoryVisibility(executor: SqlExecutor, scop
        AND s.owner_user_id = m.responsible_user_id AND s.share_team_id = ${Number(member.teamId)}
        AND (EXISTS (SELECT 1 FROM enterprise_member_permissions p WHERE p.enterpriseMemberId = owner_em.id AND p.permissionKey = 'inventory.manage')
         OR (owner_em.role = 'super_admin' AND EXISTS (SELECT 1 FROM enterprises e WHERE e.id = s.enterprise_id AND e.superAdminUserId = owner_em.userId)))${suffix})` : sql`FALSE`;
-    const base = [sql`m.enterprise_id = ${scope.enterpriseId}`, sql`m.data_owner_user_id = ${scope.dataOwnerUserId}`];
+    const base = [...(options.includeDeleted ? [] : [activeChannelMaterial]), sql`m.enterprise_id = ${scope.enterpriseId}`, sql`m.data_owner_user_id = ${scope.dataOwnerUserId}`];
     if (options.materialId !== undefined) base.push(sql`m.id = ${options.materialId}`);
     const eligible: number[] = [];
     if (member) {
