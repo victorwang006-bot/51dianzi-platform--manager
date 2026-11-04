@@ -50,11 +50,10 @@
 .ci-page.ci-host .ci-table .admin-cell-primary { color: #1e293b; font-size: var(--admin-content-font-body, 12px); font-weight: 500; line-height: var(--admin-content-line-height, 18px); }
 .ci-page.ci-host .ci-table :is(.ci-cell-title, .ci-channel-name) { display: block; padding: 0; color: #1e293b; font-size: var(--admin-content-font-body, 12px); font-weight: 600; line-height: var(--admin-content-line-height, 18px); overflow-wrap: anywhere; }
 .ci-page.ci-host .ci-table .ci-subtext { display: block; margin-top: 2px; color: #64748b; font-size: var(--admin-content-font-caption, 11px); font-weight: 400; line-height: var(--admin-content-caption-line-height, 16px); }
-.ci-page.ci-host .ci-table :is(.ci-lead-time, .ci-row-index, .ci-date, .ci-channel-type-tag) { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 18px); }
+.ci-page.ci-host .ci-table :is(.ci-row-index, .ci-date, .ci-channel-type-tag) { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 18px); }
 .ci-page.ci-host .ci-table :is(.ci-number, .ci-price) { font-variant-numeric: tabular-nums; }
 .ci-page.ci-host .ci-table .ci-material-qty-col,
-.ci-page.ci-host .ci-table .ci-material-price-col,
-.ci-page.ci-host .ci-table td:is(.ci-number:not(.ci-row-index), .ci-price) { text-align: right; }
+.ci-page.ci-host .ci-table td.ci-number:not(.ci-row-index) { text-align: right; }
 .ci-page.ci-host .ci-table .ci-row-index { text-align: center; }
 .ci-page.ci-host .ci-table .ci-col-index { width: 36px; }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-recorder-col { width: 96px; }
@@ -64,8 +63,10 @@
  * table minimum rather than stealing room from the remaining column ratios. */
 .ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 28 / 75); }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-qty-col { width: calc((100% - 698px) * 13 / 75); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: 128px; padding-right: 18px; }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: 128px; padding-right: 18px; text-align: center; }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: 112px; padding-left: 18px; }
+.ci-page.ci-host .ci-compact-stock-table td:is(.ci-material-recorder-col, .ci-material-industry-col, .ci-material-qty-col, .ci-material-price-col, .ci-material-lead-col) { color: #303642; font-size: var(--admin-content-font-body, 12px); font-weight: 400; line-height: var(--admin-content-line-height, 18px); }
+.ci-page.ci-host .ci-compact-stock-table td.ci-date .admin-cell-primary { color: #303642; font-weight: 400; }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: calc((100% - 698px) * 18 / 75); }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-source-col { width: calc((100% - 698px) * 16 / 75); }
 .ci-page.ci-host .ci-compact-stock-table :is(th, td).ci-col-actions { width: 216px; }
@@ -126,7 +127,7 @@
  * as the native Host controls while shell/global defaults remain intact. */
 .ci-page.ci-host .ci-table.admin-table-readable th { font-size: var(--admin-content-font-caption, 11px) !important; }
 .ci-page.ci-host .ci-table.admin-table-readable tbody tr { height: auto; }
-.ci-page.ci-host .ci-table.admin-table-readable td:not(:where(.ci-row-index, .ci-date, .ci-lead-time, .ci-channel-type-tag, .admin-cell-secondary)) { font-size: var(--admin-content-font-body, 12px) !important; }
+.ci-page.ci-host .ci-table.admin-table-readable td:not(:where(.ci-row-index, .ci-date, .ci-channel-type-tag, .admin-cell-secondary)) { font-size: var(--admin-content-font-body, 12px) !important; }
 .ci-page.ci-host .ci-table .admin-cell-primary { font-size: var(--admin-content-font-body, 12px) !important; }
 .ci-page.ci-host .ci-table .admin-cell-secondary { font-size: var(--admin-content-font-caption, 11px) !important; }
 .ci-page.ci-host .ci-host-dialog label.ci-field { font-size: var(--admin-content-font-label, 12px) !important; }

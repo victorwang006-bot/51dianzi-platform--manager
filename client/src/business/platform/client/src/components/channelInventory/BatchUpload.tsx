@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   Button,
 } from "./bridge";
 import {
@@ -50,7 +49,38 @@ type Props = {
   onViewResults?: (entries: BatchEntry[]) => void;
   /** Opt-in customer entry only; both modes submit through this exact queue. */
   renderSingleEntry?: (controls: { onPreview: (draft: Draft) => void; disabled: boolean }) => React.ReactNode;
+  /** The caller owns one stable Dialog/Portal across permission loading and ready. */
+  dialogMode?: "standalone" | "content";
+  dialogControlsRef?: React.Ref<BatchUploadDialogControls>;
 };
+export type BatchUploadDialogControls = { close: () => void; onEscapeKeyDown: (event: KeyboardEvent) => void };
+export const batchUploadDialogStyle: React.CSSProperties = {
+  width: "min(880px, calc(100vw - 24px))", maxWidth: "880px",
+  height: "min(85dvh, 680px)", maxHeight: "85dvh", display: "flex",
+  flexDirection: "column", gap: "12px", overflow: "hidden", padding: "18px",
+};
+type SavedBatch = { channelId: number; entries: BatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single" };
+const storageKey = (props: Props) => `d51-channel-inventory-batch-v1:${props.actorUserId}:${props.enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
+function readSavedBatch(props: Props): { saved: SavedBatch | null; error: string; blocked: boolean } {
+  const empty = { saved: null, error: "", blocked: false };
+  try {
+    const raw = sessionStorage.getItem(storageKey(props));
+    if (!raw) return empty;
+    const data = JSON.parse(raw);
+    if (data.version === 1 && data.actorUserId === props.actorUserId && data.enterpriseId === props.enterpriseId
+      && Number.isSafeInteger(data.channelId) && data.channelId > 0 && Array.isArray(data.entries)
+      && data.entries.length <= 1000 && data.entries.length > 0 && data.entries.every((r: BatchEntry) =>
+        /^[-0-9a-f]{36}$/i.test(r.requestId) && ["pending", "success", "unknown"].includes(r.status) && r.payload.channelId === data.channelId)) {
+      if (props.validateSavedSession && !props.validateSavedSession(data.sessionData, data.entries))
+        return { saved: null, blocked: true, error: "原批次客户版本或回执已变化，不能另起批次重复上传。请核实原上传结果后处理。" };
+      return { saved: data, error: "", blocked: false };
+    }
+    if (props.storageKeySuffix) return { saved: null, blocked: true, error: "原批次恢复记录无效，已阻止重复导入，请核实原上传结果。" };
+    return empty;
+  } catch {
+    return { saved: null, blocked: false, error: "无法读取上次上传记录；请检查浏览器会话存储权限。" };
+  }
+}
 function Icon({
   kind,
   size = 18,
@@ -91,6 +121,10 @@ function Icon({
 }
 const uuid = () => crypto.randomUUID();
 export function BatchUpload(props: Props) {
+  // A changed recovery namespace must not render the previous identity's queue.
+  return <BatchUploadSession key={storageKey(props)} {...props} />;
+}
+function BatchUploadSession(props: Props) {
   const {
     channels,
     channelTotal,
@@ -98,7 +132,9 @@ export function BatchUpload(props: Props) {
     enterpriseId,
     actorUserId,
   } = props;
-  const key = `d51-channel-inventory-batch-v1:${actorUserId}:${enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
+  const key = storageKey(props);
+  // Read synchronously once for this namespace: no post-paint resume-banner jump.
+  const [initial] = useState(() => readSavedBatch(props));
   const [channelId, setChannelId] = useState(String(initialChannelId ?? ""));
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [grid, setGrid] = useState<Grid>([]);
@@ -107,21 +143,15 @@ export function BatchUpload(props: Props) {
     suggestMapping([])
   );
   const [name, setName] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initial.error);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [excluded, setExcluded] = useState<number[]>([]);
   const [entries, setEntries] = useState<BatchEntry[]>([]);
-  const [restoreBlocked, setRestoreBlocked] = useState(false);
+  const restoreBlocked = initial.blocked;
   const [entryMode, setEntryMode] = useState<"table" | "single">("table");
-  const [saved, setSaved] = useState<{
-    channelId: number;
-    entries: BatchEntry[];
-    name: string;
-    sessionData?: unknown;
-    entryMode?: "table" | "single";
-  } | null>(null);
+  const [saved, setSaved] = useState<SavedBatch | null>(initial.saved);
   const fileInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
   const serial = useRef(0);
@@ -132,38 +162,6 @@ export function BatchUpload(props: Props) {
   const current = () => mounted.current && latest.current.isCurrent();
   useEffect(() => {
     mounted.current = true;
-    try {
-      const raw = sessionStorage.getItem(key);
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (
-          data.version === 1 &&
-          data.actorUserId === actorUserId &&
-          data.enterpriseId === enterpriseId &&
-          Number.isSafeInteger(data.channelId) &&
-          data.channelId > 0 &&
-          Array.isArray(data.entries) &&
-          data.entries.length <= 1000 &&
-          data.entries.length > 0 &&
-          data.entries.every(
-            (r: BatchEntry) =>
-              /^[-0-9a-f]{36}$/i.test(r.requestId) &&
-              ["pending", "success", "unknown"].includes(r.status) &&
-              r.payload.channelId === data.channelId
-          )
-        ) {
-          if (latest.current.validateSavedSession && !latest.current.validateSavedSession(data.sessionData, data.entries)) {
-            setRestoreBlocked(true);
-            setError("原批次客户版本或回执已变化，不能另起批次重复上传。请核实原上传结果后处理。");
-          } else setSaved(data);
-        } else if (latest.current.storageKeySuffix) {
-          setRestoreBlocked(true);
-          setError("原批次恢复记录无效，已阻止重复导入，请核实原上传结果。");
-        }
-      }
-    } catch {
-      setError("无法读取上次上传记录；请检查浏览器会话存储权限。");
-    }
     return () => {
       mounted.current = false;
       serial.current += 1;
@@ -432,34 +430,11 @@ export function BatchUpload(props: Props) {
       "已恢复原批次。继续上传将使用原请求号确认未知结果，不会重复创建已保存记录。"
     );
   };
-  return (
-    <Dialog open onOpenChange={(value: boolean) => !value && close()}>
-      <DialogContent
-        className="ci-dialog ci-batch-dialog"
-        data-testid="channel-inventory-batch-dialog"
-        style={{
-          width: "min(880px, calc(100vw - 24px))",
-          maxWidth: "880px",
-          height: "min(85dvh, 680px)",
-          maxHeight: "85dvh",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          overflow: "hidden",
-          padding: "18px",
-        }}
-        onEscapeKeyDown={(event: KeyboardEvent) => {
-          if (busy) {
-            event.preventDefault();
-            stop.current = true;
-          }
-        }}
-        onPointerDownOutside={(event: Event) => event.preventDefault()}
-      >
-        <DialogHeader style={{ flex: "0 0 auto" }}>
-          <DialogTitle>{props.sourceLabel ? "上传客户物料表" : "表格上传渠道库存"}</DialogTitle>
-          <DialogDescription>{props.sourceLabel ? props.renderSingleEntry ? "表格上传或单条录入均先预览确认，沿用幂等逐行上传；首次成功才建立客户渠道关联。" : "复用表格匹配与幂等逐行上传；首次成功才建立客户渠道关联。" : "导入渠道库存，确认后保存。"}</DialogDescription>
-        </DialogHeader>
+  const onEscapeKeyDown = (event: KeyboardEvent) => {
+    if (running.current) { event.preventDefault(); stop.current = true; }
+  };
+  useImperativeHandle(props.dialogControlsRef, () => ({ close, onEscapeKeyDown }));
+  const content = <>
         <div
           data-testid="channel-inventory-batch-scroll"
           style={{
@@ -478,7 +453,7 @@ export function BatchUpload(props: Props) {
               <Button type="button" variant="outline" className={`ci-button${entryMode === "table" ? " ci-primary" : ""}`} aria-pressed={entryMode === "table"} disabled={modeLocked} onClick={() => changeMode("table")}>表格上传</Button>
               <Button type="button" variant="outline" className={`ci-button${entryMode === "single" ? " ci-primary" : ""}`} aria-pressed={entryMode === "single"} disabled={modeLocked} onClick={() => changeMode("single")}>单条上传</Button>
             </div>
-            {modeLocked ? <p className="ci-dialog-note">正在读取、提交或存在原批次记录，暂不能切换方式；请先完成或恢复原请求。</p> : null}
+            {modeLocked ? <p className="ci-dialog-note">请先完成或恢复原批次。</p> : null}
           </div> : null}
           <div className="ci-batch-steps" style={{ padding: "0" }}>
             {(entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
@@ -489,7 +464,7 @@ export function BatchUpload(props: Props) {
             ))}
           </div>
           {props.sourceDetails}
-          <div className="ci-batch-channel" style={{ gap: "12px", paddingBottom: "9px" }}>
+          <div className={`ci-batch-channel${props.fixedSource ? " ci-batch-fixed-source" : ""}`} style={{ gap: "12px", paddingBottom: "9px" }}>
             <label className="ci-field">
               <span>{props.sourceLabel ? "客户供应来源" : "关联渠道 *"}</span>
               <select
@@ -508,10 +483,10 @@ export function BatchUpload(props: Props) {
                 ))}
               </select>
             </label>
-            <p style={{ paddingBottom: "4px" }}>
+            {!props.fixedSource ? <p style={{ paddingBottom: "4px" }}>
               <Icon kind="lock" size={14} />
-              {props.fixedSource ? "客户身份固定，不按名称匹配渠道" : "本批使用同一渠道"}
-            </p>
+              本批使用同一渠道
+            </p> : null}
           </div>
           {channelTotal !== null && channels.length < channelTotal && (
             <p className="ci-dialog-note">
@@ -575,7 +550,6 @@ export function BatchUpload(props: Props) {
                   ? "正在读取本地表格…"
                   : "拖拽库存表格到这里，或选择文件"}
               </strong>
-              <p>Excel / CSV · 5MB以内 · 最多1000行 · 首行为表头</p>
               <input
                 hidden
                 ref={fileInput}
@@ -597,7 +571,6 @@ export function BatchUpload(props: Props) {
                 <Icon kind="upload" size={15} />
                 选择库存表格
               </Button>
-              <small>确认前不提交；仅读首张 sheet。</small>
             </div>
             <button
               className="ci-batch-template"
@@ -610,13 +583,7 @@ export function BatchUpload(props: Props) {
             <details className="ci-batch-note">
               <summary>填写说明</summary>
               <p>
-                料号、品牌必填；数量空白为待确认，价格空白为面议。
-              </p>
-              <p>
-                仅新增，不覆盖已有库存。账号、企业和负责人由服务端校验。
-              </p>
-              <p>
-                金额仅支持 CNY；税务口径为空按待确认记录，不做转换。
+                .xlsx/.xls/.csv，5MB内，最多1000条；首行为表头，仅读首张工作表。
               </p>
             </details>
           </>
@@ -759,8 +726,7 @@ export function BatchUpload(props: Props) {
               </table>
             </div>
             <p className="ci-batch-preview-note">
-              预览展示前100条；确认将添加本批全部 {rows.length}{" "}
-              条记录，不覆盖原库存。渠道：{selected?.name ?? "未选择"}。
+              {entryMode === "single" ? "确认后新增此条物料。" : `预览前100条，确认后新增全部 ${rows.length} 条。`}
             </p>
           </>
         )}
@@ -926,7 +892,14 @@ export function BatchUpload(props: Props) {
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
-  );
+      </>;
+  if (props.dialogMode === "content") return content;
+  return <Dialog open onOpenChange={(value: boolean) => !value && close()}>
+    <DialogContent className="ci-dialog ci-batch-dialog" data-testid="channel-inventory-batch-dialog"
+      aria-describedby={undefined} style={batchUploadDialogStyle} onEscapeKeyDown={onEscapeKeyDown}
+      onPointerDownOutside={(event: Event) => event.preventDefault()}>
+      <DialogHeader style={{ flex: "0 0 auto" }}><DialogTitle>{props.sourceLabel ? "上传客户物料" : "表格上传渠道库存"}</DialogTitle></DialogHeader>
+      {content}
+    </DialogContent>
+  </Dialog>;
 }

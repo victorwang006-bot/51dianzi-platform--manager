@@ -4,6 +4,7 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../client/src/business/platform/front-router-types/server/routers";
 import { createBusinessTrpcClient } from "../client/src/business/api/business-trpc";
 import { customerSetStarSchema, customerStarContextInputSchema } from "../client/src/business/platform/shared/customerStars";
+import { customerListSchema } from "../client/src/business/platform/shared/crmCustomers";
 import type { TrpcContext } from "./_core/context";
 
 const state = vi.hoisted(() => ({ read: true, binding: true, scope: true, paths: [] as string[], forwarded: [] as Record<string, any>[], audit: vi.fn(), fence: vi.fn() }));
@@ -21,7 +22,7 @@ type Outputs = inferRouterOutputs<AppRouter>["customer"];
 const contextInput: Inputs["starContext"] = undefined;
 const setInput: Inputs["setStar"] = { customerId: 11, targetUserId: 202, starred: true, expectedRevision: 0,
   requestId: "00000000-0000-4000-8000-000000000001", expectedEnterpriseId: 501, expectedActorUserId: 202 };
-const listInput: Inputs["list"] = { scope: "all", assignedUserId: 203, starUserId: 203, page: 1, pageSize: 20, keyword: "fixture", due: "overdue" };
+const listInput: Inputs["list"] = { scope: "all", assignedUserId: 203, starUserId: 203, starredOnly: true, page: 1, pageSize: 20, keyword: "fixture", due: "overdue" };
 function closedTypes() {
   // @ts-expect-error Strict star commands cannot select a merchant or grant role.
   const unknown: Inputs["setStar"] = { ...setInput, canManageAll: true };
@@ -87,6 +88,26 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("personal stars fixed BFF preference surface", () => {
+  it("serializes true/false and omitted-false with every original list condition and delegated target intact", async () => {
+    const client = createBusinessTrpcClient(51);
+    for (const starredOnly of [true, false, undefined]) {
+      const params = { ...listInput, starredOnly, grade: "A" as const, stage: "quoted" as const, archived: true, page: 3 };
+      await client.customer.list.query(params);
+      expect(state.forwarded.at(-1)?.params).toEqual(customerListSchema.parse(params));
+      expect(state.forwarded.at(-1)?.params.starredOnly).toBe(starredOnly === true);
+    }
+    expect(state.paths).toEqual(["customer.list", "customer.list", "customer.list"]);
+  });
+
+  it("rejects non-boolean only-star filters before upstream and keeps the legacy input compatible", async () => {
+    expect(customerListSchema.parse({}).starredOnly).toBe(false);
+    const client = createBusinessTrpcClient(51);
+    for (const starredOnly of ["true", "false", 1, 0, null]) {
+      await expect(client.customer.list.query({ ...listInput, starredOnly } as never)).rejects.toMatchObject({ data: { code: "BAD_REQUEST" } });
+    }
+    expect(state.forwarded).toEqual([]);
+  });
+
   it("forwards exact context/list/set methods with current merchant/staff binding; read context adds no audit writes", async () => {
     const client = createBusinessTrpcClient(51);
     const context = await client.customer.starContext.query(contextInput);

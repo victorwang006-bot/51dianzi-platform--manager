@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "../../../../../api/business-trpc";
 import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../../shared/businessIndustry";
-import { BatchUpload } from "../channelInventory/BatchUpload";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Button } from "../channelInventory/bridge";
+import { BatchUpload, batchUploadDialogStyle, type BatchUploadDialogControls } from "../channelInventory/BatchUpload";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from "../channelInventory/bridge";
 import type { BatchEntry } from "../channelInventory/queue";
 import { completedSupplyChannel, customerMaterialInput, customerSupplySessionSuffix, supplyLocation, supplyReceipt,
   type SourceProfile, type SupplyContext, type SupplyIdentity, type SupplyOutputs } from "./customerSupply";
@@ -32,8 +32,12 @@ function initialSession(customerId: number, context: SupplyContext): SessionData
 }
 
 export function CustomerSupplyUploadDialog(props: Props) {
+  return <CustomerSupplyUploadSession key={`${props.identity.enterpriseId}:${props.identity.actorUserId}:${props.identity.key}:${props.customerId}`} {...props} />;
+}
+function CustomerSupplyUploadSession(props: Props) {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
+  const uploadControls = useRef<BatchUploadDialogControls | null>(null);
   const [context, setContext] = useState<SupplyContext | null>(null);
   const [message, setMessage] = useState("");
   const [invalidated, setInvalidated] = useState(false);
@@ -166,8 +170,9 @@ export function CustomerSupplyUploadDialog(props: Props) {
     props.onComplete(); props.onClose(); navigate(supplyLocation(channelId, "channels"));
   };
   if (!currentRef.current || invalidated) return null;
-  if (context && sessionData) return <BatchUpload
+  const upload = context && sessionData ? <BatchUpload
     key={`${props.identity.key}:${props.customerId}`}
+    dialogMode="content" dialogControlsRef={uploadControls}
     channels={[{ id: props.customerId, name: context.customer.name,
       // Cached pre-upload context may not yet contain the first committed link.
       // Keep original-batch retry reachable; onCreate checks the fresh link.
@@ -176,25 +181,20 @@ export function CustomerSupplyUploadDialog(props: Props) {
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
     renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} />}
-    sourceDetails={<div className="customer-supply-details">
-      <p className="customer-supply-profile">客户档案：{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}<br />{context.channel ? "复用已绑定渠道，保留原真实渠道类型"
-        : sessionData.sourceProfile?.existingChannelId ? "已明确选择现有渠道，保留其真实类型；首次实际成功才建立关联"
-        : sessionData.sourceProfile && sessionData.sourceProfile.type !== "factory" ? "已恢复原批次，沿用其已确认来源类型和请求号，不改写恢复资料"
-        : "首次默认工厂渠道；首次实际成功才建立关联，取消或全部失败不会创建空渠道"}</p>
+    sourceDetails={(!context.channel && !sourceLocked) || message ? <div className="customer-supply-details">
       {!context.channel && !sourceLocked ? <details className="customer-supply-existing">
-        <summary>人工关联现有渠道（可选）</summary>
+        <summary>关联现有渠道（可选）</summary>
         <label className="customer-supply-choice"><input type="checkbox" checked={chooseExisting} disabled={settingUp}
-          onChange={event => { resetSource(); setChooseExisting(event.target.checked); if (event.target.checked && !optionPage) void loadOptions(); }} />我要人工选择并确认本人有权的现有渠道，不按名称匹配</label>
+          onChange={event => { resetSource(); setChooseExisting(event.target.checked); if (event.target.checked && !optionPage) void loadOptions(); }} />选择现有渠道</label>
         {chooseExisting ? <>
           <label className="ci-field"><span>人工选择现有渠道</span><select aria-label="人工选择现有渠道" disabled={settingUp || loadingOptions} value={existingId}
-            onChange={event => { resetSource(); setExistingId(event.target.value); }}><option value="">请选择，不会按客户名称猜测</option>{options.map(channel => <option key={channel.id} value={channel.id}>{channel.name} · #{channel.id}</option>)}</select></label>
+            onChange={event => { resetSource(); setExistingId(event.target.value); }}><option value="">请选择渠道</option>{options.map(channel => <option key={channel.id} value={channel.id}>{channel.name} · #{channel.id}</option>)}</select></label>
           {optionPage * 100 < optionTotal || (!optionPage && !loadingOptions) ? <button type="button" className="ci-inline-link" disabled={loadingOptions || settingUp} onClick={() => void loadOptions()}>加载更多现有渠道</button> : null}
           <button type="button" className="ci-inline-link" disabled={!existingId || settingUp || confirmedExisting} onClick={() => void confirmExisting()}>{confirmedExisting ? "已确认关联身份" : settingUp ? "正在核验…" : "确认关联此渠道"}</button>
-          <p className="ci-dialog-note">仅在你明确确认后采用所选渠道的真实类型；仍在首次实际成功的服务端事务中建立关联。</p>
         </> : null}
       </details> : null}
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
-    </div>}
+    </div> : null}
     storageKeySuffix={customerSupplySessionSuffix(props.identity, props.customerId)} sessionData={sessionData}
     validateSavedSession={(data, entries) => validSession(data, props.customerId, context.customer.version)
       && (!entries.some(entry => entry.status === "success") || (completedSupplyChannel(entries, props.customerId) !== null
@@ -238,22 +238,30 @@ export function CustomerSupplyUploadDialog(props: Props) {
     onComplete={() => { if (current()) props.onComplete(); }}
     onFinish={result => { if (result.complete && result.entries.length && current()) viewResults(result.entries); }}
     onViewResults={viewResults}
-  />;
+  /> : null;
   const missingIndustry = context && !businessIndustryCodeSchema.safeParse(context.customer.industryCode).success;
   const disabledReason = context?.customer.archivedAt ? "该客户已归档，不能上传物料表。"
     : missingIndustry ? "客户缺少合法所属行业，请先在客户档案补全资料。"
     : context && !context.canUpload ? context.disabledReason || "当前账号没有客户供应上传权限。"
     : context?.channel && !context.channel.active ? "关联渠道已停用，请核实后再上传。" : "";
-  return <Dialog open onOpenChange={open => { if (!open) props.onClose(); }}>
-    <DialogContent className="ci-dialog customer-supply-dialog" onPointerDownOutside={event => event.preventDefault()}>
-      <DialogHeader><DialogTitle>上传客户物料表</DialogTitle><DialogDescription>正在核验客户档案与上传权限，核验通过后可选择表格上传或单条录入。</DialogDescription></DialogHeader>
-      {!context && !message ? <p role="status">正在核验客户档案与上传权限…</p> : null}
-      {context ? <p className="customer-supply-profile">{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}</p> : null}
-      {disabledReason ? <p className="ci-error" role="alert">{disabledReason}{missingIndustry ? <button type="button" className="ci-inline-link" onClick={() => { props.onClose(); navigate(`/customers/${props.customerId}`); }}>补全客户档案</button> : null}</p> : null}
-      {message ? <p className="ci-error" role="alert">{message}</p> : null}
-      <div className="ci-dialog-footer"><Button type="button" variant="outline" className="ci-button" onClick={props.onClose}>取消</Button>
-        {message || disabledReason ? <Button type="button" className="ci-button" onClick={() => setContextRevision(value => value + 1)}>重试核验</Button> : null}
-      </div>
+  const close = () => { if (uploadControls.current) uploadControls.current.close(); else props.onClose(); };
+  return <Dialog open onOpenChange={open => { if (!open) close(); }}>
+    <DialogContent className="ci-dialog ci-batch-dialog customer-supply-dialog" style={batchUploadDialogStyle}
+      data-testid={upload ? "channel-inventory-batch-dialog" : "customer-supply-loading-dialog"}
+      aria-describedby={undefined} onEscapeKeyDown={event => uploadControls.current?.onEscapeKeyDown(event)}
+      onPointerDownOutside={event => event.preventDefault()}>
+      <DialogHeader style={{ flex: "0 0 auto" }}><DialogTitle>上传客户物料</DialogTitle></DialogHeader>
+      {upload ?? <>
+        <div className="customer-supply-loading-body">
+          {!context && !message ? <p role="status">正在核验上传权限…</p> : null}
+          {context ? <p className="customer-supply-profile">{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}</p> : null}
+          {disabledReason ? <p className="ci-error" role="alert">{disabledReason}{missingIndustry ? <button type="button" className="ci-inline-link" onClick={() => { props.onClose(); navigate(`/customers/${props.customerId}`); }}>补全客户档案</button> : null}</p> : null}
+          {message ? <p className="ci-error" role="alert">{message}</p> : null}
+        </div>
+        <div className="ci-dialog-footer ci-batch-footer"><Button type="button" variant="outline" className="ci-button" onClick={props.onClose}>取消</Button>
+          {message || disabledReason ? <Button type="button" className="ci-button" onClick={() => setContextRevision(value => value + 1)}>重试核验</Button> : null}
+        </div>
+      </>}
     </DialogContent>
   </Dialog>;
 }

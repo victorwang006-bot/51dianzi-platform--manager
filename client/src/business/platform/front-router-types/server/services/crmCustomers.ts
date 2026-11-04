@@ -626,7 +626,7 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
 export async function listCustomers(scope: CustomerServerScope, input: {
   keyword: string; grade?: CustomerRecord["grade"]; stage?: CustomerRecord["stage"];
   scope: "mine" | "all"; assignedUserId?: number; archived: boolean; due: "all" | "today" | "overdue";
-  page: number; pageSize: number; starUserId?: number;
+  page: number; pageSize: number; starUserId?: number; starredOnly?: boolean;
 }) {
   const starUserId = input.starUserId ?? scope.actorUserId;
   return withCustomerStarAccess(scope, starUserId, async (db, access) => {
@@ -668,6 +668,14 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   const beijingToday = sql`DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00'))`;
   if (input.due === "today") conditions.push(sql`c.nextFollowUpAt IS NOT NULL AND DATE(c.nextFollowUpAt) = ${beijingToday}`);
   if (input.due === "overdue") conditions.push(sql`c.nextFollowUpAt IS NOT NULL AND DATE(c.nextFollowUpAt) < ${beijingToday}`);
+  // Same authorized target and tenant as the existing star join. EXISTS keeps count
+  // and page cardinality identical, using the v19 enterprise/user/starred index prefix.
+  if (input.starredOnly === true) conditions.push(sql`EXISTS (
+    SELECT 1 FROM crm_customer_star_preferences star_filter
+     WHERE star_filter.enterpriseId = ${scope.enterpriseId} AND star_filter.userId = ${starUserId}
+       AND star_filter.starred = 1 AND star_filter.customerId = c.id
+       AND star_filter.enterpriseId = c.enterpriseId
+  )`);
   const where = sql.join(conditions, sql` AND `);
   const offset = (input.page - 1) * input.pageSize;
   const count = resultRows<{ total: number | string }>(await db.execute(sql`

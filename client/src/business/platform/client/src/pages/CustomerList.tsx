@@ -59,6 +59,7 @@ type FilterState = {
   assignedUserId: string;
   due: DueFilter;
   archived: boolean;
+  starredOnly: boolean;
 };
 
 const DEFAULT_FILTERS: FilterState = {
@@ -69,6 +70,7 @@ const DEFAULT_FILTERS: FilterState = {
   assignedUserId: "",
   due: "all",
   archived: false,
+  starredOnly: false,
 };
 
 const toolbarActionClass =
@@ -162,14 +164,21 @@ export default function CustomerList() {
       ...(stars.targetUserId > 0 ? { starUserId: stars.targetUserId } : {}),
       archived: appliedFilters.archived,
       due: appliedFilters.due,
+      starredOnly: appliedFilters.starredOnly === true,
       page,
       pageSize: PAGE_SIZE,
     };
   }, [appliedFilters, canManageAll, page, delegatedStars, stars.targetUserId]);
   const listQuery = useRestoringListQuery(trpc.customer.list.useQuery(listInput, freshListOptions({
-    enabled: Boolean(contextQuery.data),
+    enabled: Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
+    placeholderData: undefined,
   }, d51Ready)));
-  const result = listQuery.data;
+  // Never render a previous target/enterprise page (including its old total) as
+  // the new selection. Revoked delegation stays selected but clears old data.
+  const result = !listQuery.isError && (appliedFilters.starredOnly !== true || stars.ready) && (!delegatedStars || stars.ready)
+    && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
+      && (customer.starUserId === undefined ? !delegatedStars : customer.starUserId === stars.targetUserId))
+    ? listQuery.data : undefined;
   const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
   const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, listInput, pageCustomerIds]);
   const supplyRequestRef = useRef(supplyRequestKey); supplyRequestRef.current = supplyRequestKey;
@@ -297,6 +306,7 @@ export default function CustomerList() {
     const next = {
       ...draftFilters,
       keyword: draftFilters.keyword.trim(),
+      starredOnly: appliedFilters.starredOnly === true,
       assignedUserId:
         draftFilters.scope === "all" ? draftFilters.assignedUserId : "",
     };
@@ -309,6 +319,7 @@ export default function CustomerList() {
     // Scope is a header-level view choice, like inventory status, rather than
     // a transient form condition. Resetting filters must not expose another
     // assignee when moving between scope views.
+    // Reset also clears starredOnly; it never changes the personal-star target.
     const scope = canManageAll ? appliedFilters.scope : "mine";
     const next = { ...DEFAULT_FILTERS, scope };
     setDraftFilters(next);
@@ -333,6 +344,15 @@ export default function CustomerList() {
     setPage(1);
   };
 
+  const toggleStarredOnly = () => {
+    // Apply this one condition immediately to the existing server query, not
+    // unapplied drafts. Keep both copies in sync so later Enter/确定 preserves it.
+    const starredOnly = appliedFilters.starredOnly !== true;
+    setDraftFilters(current => ({ ...current, starredOnly }));
+    setAppliedFilters(current => ({ ...current, starredOnly }));
+    setPage(1);
+  };
+
   const canResetFilters = Boolean(
     draftFilters.keyword ||
       draftFilters.grade ||
@@ -340,12 +360,14 @@ export default function CustomerList() {
       draftFilters.assignedUserId ||
       draftFilters.due !== "all" ||
       draftFilters.archived ||
+      draftFilters.starredOnly === true ||
       appliedFilters.keyword ||
       appliedFilters.grade ||
       appliedFilters.stage ||
       appliedFilters.assignedUserId ||
       appliedFilters.due !== "all" ||
-      appliedFilters.archived
+      appliedFilters.archived ||
+      appliedFilters.starredOnly === true
   );
 
   const emptyMessage = appliedFilters.archived
@@ -358,8 +380,8 @@ export default function CustomerList() {
       <AdminPageHeader title="客户列表" actions={
         <div className="flex flex-wrap items-center gap-2">
           {stars.targets.length > 1 ? <label className="customer-list-star-selector customer-list-caption inline-flex items-center gap-1.5">
-            标星列表：
-            <select aria-label="标星列表" className="customer-list-control rounded border border-slate-300 bg-white px-2"
+            星标归属：
+            <select aria-label="星标归属" className="customer-list-control rounded border border-slate-300 bg-white px-2"
               value={String(stars.targetUserId)} disabled={stars.busy || stars.loading}
               onChange={event => { stars.changeTarget(Number(event.target.value)); setPage(1); }}>
               {stars.invalidTarget ? <option value={String(stars.targetUserId)}>组员权限已变化，请重新选择</option> : null}
@@ -401,8 +423,10 @@ export default function CustomerList() {
       } />
 
       {delegatedStars && stars.target ? <p className="customer-list-caption mb-2">正在为{stars.target.name}管理重点客户（用户ID {stars.target.userId}）</p> : null}
+      {appliedFilters.starredOnly === true && !stars.ready && !stars.failed && !stars.invalidTarget ?
+        <p role="status" className="customer-list-caption mb-2">正在核验星标归属；仅标星筛选已保留，暂不读取客户结果。</p> : null}
       {stars.failed || stars.invalidTarget ? <div role="alert" className="customer-list-caption mb-2">
-        {stars.invalidTarget ? "组员星标权限已变化，请重新选择标星列表；未切换为我的星标。" : "星标权限读取失败，其他客户操作仍可使用。"}
+        {stars.invalidTarget ? "组员星标权限已变化，请重新选择星标归属；未切换为我的星标。" : "星标权限读取失败，其他客户操作仍可使用。"}
         <CustomerSupplyAction onClick={stars.refresh}>重新读取星标权限</CustomerSupplyAction>
         {stars.invalidTarget ? <CustomerSupplyAction onClick={() => { stars.changeTarget(stars.actorUserId); setPage(1); }}>选择我的星标</CustomerSupplyAction> : null}
       </div> : null}
@@ -413,16 +437,24 @@ export default function CustomerList() {
 
       <AdminFilterBar className="customer-list-filters mb-3" aria-label="客户筛选">
         <div className="customer-list-filter-row customer-list-basic-filters" role="group" aria-label="基础筛选">
-          <Input
-            placeholder="搜索客户名称、联系人或电话"
-            aria-label="搜索客户名称、联系人或电话"
-            value={draftFilters.keyword}
-            onChange={event => updateDraft("keyword", event.target.value)}
-            onKeyDown={event => {
-              if (event.key === "Enter") applyFilters();
-            }}
-            className="customer-list-control customer-list-search bg-white"
-          />
+          <div className="customer-list-search-group">
+            <Input
+              placeholder="搜索客户名称、联系人或电话"
+              aria-label="搜索客户名称、联系人或电话"
+              value={draftFilters.keyword}
+              onChange={event => updateDraft("keyword", event.target.value)}
+              onKeyDown={event => {
+                if (event.key === "Enter") applyFilters();
+              }}
+              className="customer-list-control customer-list-search bg-white"
+            />
+            <button type="button" className="customer-list-star customer-list-star-filter"
+              aria-label="仅显示标星客户" aria-pressed={appliedFilters.starredOnly === true}
+              title={appliedFilters.starredOnly === true ? "取消仅标星筛选（保留其他条件）" : "仅显示标星客户（叠加已应用条件，不提交筛选草稿）"}
+              onClick={toggleStarredOnly}>
+              <Star size={16} aria-hidden="true" />
+            </button>
+          </div>
           <Select
             value={draftFilters.grade || "all"}
             onValueChange={value =>
@@ -476,6 +508,7 @@ export default function CustomerList() {
               type="button"
               variant="outline"
               className={toolbarActionClass}
+              title="重置筛选（含仅标星），保留客户范围和星标归属"
               disabled={!canResetFilters}
               onClick={resetFilters}
             >

@@ -25,7 +25,6 @@ export function CustomerSupplySingleEntry({ onPreview, disabled }: Props) {
     setErrors(issues);
     if (!issues.length) onPreview(value);
   }}>
-    <p className="ci-dialog-note">手工录入一条客户供应物料，先预览再确认上传。数量留空为待确认，报价留空为面议；仅支持 CNY，不覆盖已有库存。</p>
     <fieldset className="customer-supply-single-fields" disabled={disabled}>
       <label className="ci-field"><span>型号 *</span><input ref={partNumber} aria-label="单条型号" required maxLength={128} value={draft.partNumber} onChange={event => update("partNumber", event.target.value)} /></label>
       <label className="ci-field"><span>品牌 *</span><input aria-label="单条品牌" required maxLength={64} value={draft.brand} onChange={event => update("brand", event.target.value)} /></label>

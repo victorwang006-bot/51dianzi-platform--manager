@@ -2,10 +2,10 @@ import { z } from "zod";
 import { customerOwnershipQuerySchema } from "../../../shared/customerOwnership";
 import { customerStarContextInputSchema, customerStarContextSchema, customerSetStarSchema, customerSetStarResultSchema } from "../../../shared/customerStars";
 import { getCustomerStarContext, setCustomerStar } from "../services/customerStars";
+import { customerListInputSchema } from "../customerListInput";
 import {
   customerCreateSchema,
   customerFollowUpSchema,
-  customerListSchema,
   customerUpdateSchema,
 } from "../../../shared/crmCustomers";
 import {
@@ -93,7 +93,7 @@ export const customerRouter = router({
   setStar: customerProcedure.input(customerSetStarSchema).output(customerSetStarResultSchema).mutation(({ ctx, input }) =>
     setCustomerStar(scopeFor(ctx), input)),
 
-  list: customerProcedure.input(customerListSchema).query(({ ctx, input }) =>
+  list: customerProcedure.input(customerListInputSchema).query(({ ctx, input }) =>
     listCustomers(scopeFor(ctx), input)),
 
   get: customerProcedure.input(idSchema).query(({ ctx, input }) =>

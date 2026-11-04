@@ -810,7 +810,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     }
     for (const selector of ["th.ci-material-price-col", "td.ci-material-price-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing quote cell"));
-      expect(style.width).toBe("128px"); expect(style.paddingRight).toBe("18px"); expect(style.textAlign).toBe("right");
+      expect(style.width).toBe("128px"); expect(style.paddingRight).toBe("18px"); expect(style.textAlign).toBe("center");
     }
     for (const selector of ["th.ci-material-lead-col", "td.ci-material-lead-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing lead cell"));
@@ -821,6 +821,27 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
     const actions = getComputedStyle(required(table.querySelector("td.ci-col-actions"), "missing actions"));
     expect(actions.width).toBe("216px"); expect(actions.position).toBe("sticky"); expect(actions.right).toBe("0px");
+  });
+
+  it("gives industry and delivery the same regular body role while keeping model and supporting data hierarchy", () => {
+    renderHost();
+    const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
+    const industry = required(table.querySelector("td.ci-material-industry-col"), "missing industry cell");
+    const lead = required(table.querySelector("td.ci-material-lead-col"), "missing delivery cell");
+    expect(lead.classList.contains("admin-cell-primary")).toBe(true);
+    expect(lead.classList.contains("admin-cell-secondary")).toBe(false);
+    const industryStyle = getComputedStyle(industry);
+    const leadStyle = getComputedStyle(lead);
+    expect(leadStyle.fontSize).toBe(industryStyle.fontSize);
+    expect(leadStyle.fontWeight).toBe(industryStyle.fontWeight);
+    expect(leadStyle.color).toBe(industryStyle.color);
+    expect(leadStyle.lineHeight).toBe(industryStyle.lineHeight);
+    expect(leadStyle.fontWeight).toBe("400");
+    for (const selector of ["td.ci-material-recorder-col", "td.ci-material-qty-col", "td.ci-material-price-col"]) {
+      expect(getComputedStyle(required(table.querySelector(selector), "missing regular body cell")).fontWeight).toBe("400");
+    }
+    expect(getComputedStyle(required(table.querySelector(".ci-cell-title"), "missing model title")).fontWeight).toBe("600");
+    expect(table.querySelector(".ci-date .ci-subtext")?.classList.contains("admin-cell-secondary")).toBe(true);
   });
 
   it("omits only unknown tax subtext, preserving negotiated/zero/precise prices, known tax flags and real lead-time fallbacks", () => {

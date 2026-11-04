@@ -12,6 +12,7 @@ const runtime = vi.hoisted(() => ({
   authorityRetry: vi.fn(), enterpriseId: 31, actorId: 7,
   starContext: vi.fn(), setStar: vi.fn(), targets: [] as { userId: number; name: string }[],
   listInputs: [] as any[], listPending: false, listFetching: false, customerContextError: false,
+  listOptions: [] as any[],
   remembered: {} as Record<string, unknown>,
   canManageAll: false, members: [] as { userId: number; name: string }[],
 }));
@@ -43,7 +44,7 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   enterprise: { me: { useQuery: () => ({ data: { enterprise: { id: runtime.enterpriseId }, currentUserId: runtime.actorId, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: runtime.enterpriseFailed, refetch: runtime.authorityRetry }) } },
   customer: {
     context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, members: runtime.members }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
-    list: { useQuery: (input: any) => { runtime.listInputs.push(input); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: false, refetch: vi.fn() }; } },
+    list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: false, refetch: vi.fn() }; } },
     contactsSummary: { useQuery: () => ({ data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } }) },
     contactsList: { useQuery: () => ({ data: { contacts: [] }, isPending: false, isError: false, refetch: vi.fn() }) },
   },
@@ -80,7 +81,7 @@ function fixture(path: string) {
   writeFileSync(path, `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Actual CustomerList synthetic v19 render</title></head><body data-admin-readability="true" data-business-native-fonts="true">${host.innerHTML}</body></html>\n`);
 }
 async function selectTarget(userId: number) {
-  const select = host.querySelector<HTMLSelectElement>('select[aria-label="标星列表"]')!;
+  const select = host.querySelector<HTMLSelectElement>('select[aria-label="星标归属"]')!;
   await act(async () => { select.value = String(userId); select.dispatchEvent(new Event("change", { bubbles: true })); });
 }
 
@@ -89,6 +90,7 @@ beforeEach(() => {
   runtime.rows = [row(801, { name: "合成超长客户名称用于检验姓名截断后星标仍完整可达有限公司", isStarred: true, starRevision: 2 }), row(802, { industryCode: null, contactName: "合成补档联系人", nextFollowUpAt: null }), row(803, { archivedAt: "2026-11-01", nextFollowUpAt: "2026-11-02T09:00:00+08:00" })];
   runtime.authVersion = "v1"; runtime.enterpriseFailed = false; runtime.enterpriseId = 31; runtime.actorId = 7;
   runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.listInputs = []; runtime.listPending = false; runtime.listFetching = false; runtime.customerContextError = false;
+  runtime.listOptions = [];
   runtime.remembered = {};
   runtime.canManageAll = false; runtime.members = [];
   runtime.starContext.mockReset().mockImplementation(async () => ({ enterpriseId: runtime.enterpriseId, actorUserId: runtime.actorId, targets: runtime.targets }));
@@ -188,7 +190,12 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
     let finish!: (value: unknown) => void;
     runtime.summary.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await render();
     const old = runtime.summary.mock.calls[0][1].signal as AbortSignal;
-    runtime.enterpriseId = 32; runtime.actorId = 8; await render(); expect(old.aborted).toBe(true);
+    runtime.enterpriseId = 32; runtime.actorId = 8;
+    // A real fresh list belongs to the new tenant/actor. Do not keep the prior
+    // tenant's rows and star target as a supposed newly authorized response.
+    runtime.targets = [{ userId: 8, name: "新身份合成员工" }];
+    runtime.rows = [row(804, { enterpriseId: 32, assignedUserId: 8, starUserId: 8 })];
+    await render(); expect(old.aborted).toBe(true);
     await act(async () => { finish({ items: [{ customerId: 801, channelId: 999, materialCount: 999, canViewStock: true, canUpload: true }], canWrite: true }); });
     expect(host.textContent).not.toContain("查看库存（999）"); expect(runtime.summary.mock.calls[1][0]).toMatchObject({ expectedEnterpriseId: 32, expectedActorUserId: 8 });
   });
@@ -252,7 +259,7 @@ describe("actual CustomerList layered filters v20", () => {
     expect(declarations(".customer-list-page .customer-list-filters")).toMatchObject({ "flex-direction": "column", "align-items": "stretch", gap: "0" });
     expect(declarations(".customer-list-page .customer-list-filter-row")).toMatchObject({ display: "flex", "align-items": "center", "flex-wrap": "wrap", width: "100%", "min-width": "0" });
     expect(declarations(".customer-list-page .customer-list-filter-actions")["flex-wrap"]).toBe("wrap");
-    expect(declarations(".customer-list-page .customer-list-filter-row .customer-list-search")).toMatchObject({ flex: "1 1 360px", "min-width": "min(240px, 100%)", "max-width": "520px" });
+    expect(declarations(".customer-list-page .customer-list-search-group")).toMatchObject({ flex: "1 1 360px", "min-width": "min(240px, 100%)", "max-width": "520px" });
     expect(css).toContain("@media (max-width: 680px)"); expect(css).toContain("flex-basis: 100%");
     expect(declarations(".customer-list-page .customer-list-control")).toMatchObject({ height: "var(--admin-content-control-height, 32px)", "font-size": "var(--admin-content-font-body, 12px)", "border-radius": "6px" });
   });
@@ -264,7 +271,7 @@ describe("actual CustomerList personal stars", () => {
     expect(star().getAttribute("type")).toBe("button"); expect(star().getAttribute("aria-pressed")).toBe("false");
     expect(star().getAttribute("aria-disabled")).toBe("false"); expect(star().getAttribute("aria-label")).toBe(`标星：${runtime.rows[0].name}`);
     expect(star().querySelector("svg")?.getAttribute("width")).toBe("16");
-    expect(host.querySelector('select[aria-label="标星列表"]')).toBeNull();
+    expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull();
     expect(runtime.starContext.mock.calls[0][0]).toBeUndefined(); expect(runtime.setStar).not.toHaveBeenCalled();
   });
 
@@ -300,7 +307,7 @@ describe("actual CustomerList personal stars", () => {
     let finish!: (value: unknown) => void;
     runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await render();
     await click(star(802)); expect(star(802).getAttribute("aria-busy")).toBe("true"); expect(star(802).getAttribute("aria-pressed")).toBe("false");
-    expect(host.querySelector<HTMLSelectElement>('select[aria-label="标星列表"]')!.disabled).toBe(true);
+    expect(host.querySelector<HTMLSelectElement>('select[aria-label="星标归属"]')!.disabled).toBe(true);
     await click(star()); await click(star(802)); await selectTarget(8); expect(runtime.setStar).toHaveBeenCalledTimes(1);
     expect(runtime.listInputs.at(-1).starUserId).toBe(7);
     const input = runtime.setStar.mock.calls[0][0];
@@ -335,7 +342,7 @@ describe("actual CustomerList personal stars", () => {
     expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", assignedUserId: 8, starUserId: 8, page: 1, keyword: "", due: "all", archived: false });
     expect(host.textContent).toContain("正在为合成组员管理重点客户");
     expect(host.querySelector('[aria-label="客户范围"]')).toBeNull();
-    expect(star().getAttribute("aria-disabled")).toBe("true"); await click(star()); expect(runtime.setStar).not.toHaveBeenCalled();
+    expect(host.querySelector("table")).toBeNull(); expect(runtime.setStar).not.toHaveBeenCalled();
     runtime.rows = runtime.rows.map(item => ({ ...item, starUserId: 8 })); await render(); await click(star());
     expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ targetUserId: 8, expectedActorUserId: 7 });
     if (process.env.CUSTOMER_LIST_FIXTURE_PATH) fixture(process.env.CUSTOMER_LIST_FIXTURE_PATH.replace(/\.html$/, "-leader.html"));
@@ -348,7 +355,7 @@ describe("actual CustomerList personal stars", () => {
     runtime.rows = runtime.rows.map(item => ({ ...item, starUserId: 8 }));
     runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.authVersion = "v2"; await render();
     expect(host.textContent).toContain("未切换为我的星标"); expect(runtime.listInputs.at(-1)).toMatchObject({ starUserId: 8, assignedUserId: 8 });
-    await click(star()); expect(runtime.setStar).not.toHaveBeenCalled();
+    expect(host.querySelector("table")).toBeNull(); expect(runtime.setStar).not.toHaveBeenCalled();
     await click(button("选择我的星标")); expect(runtime.listInputs.at(-1).starUserId).toBe(7);
   });
 
@@ -391,7 +398,7 @@ describe("actual CustomerList personal stars", () => {
   it("distinguishes same-name members using authoritative IDs in options, current target and the command", async () => {
     runtime.targets.push({ userId: 8, name: "张三" }, { userId: 9, name: "张三" });
     await render();
-    const selector = host.querySelector('select[aria-label="标星列表"]') as HTMLSelectElement;
+    const selector = host.querySelector('select[aria-label="星标归属"]') as HTMLSelectElement;
     expect(Array.from(selector.options).map(option => option.textContent?.trim())).toEqual([
       "我的", "张三（组员 · ID 8）", "张三（组员 · ID 9）",
     ]);
@@ -413,7 +420,7 @@ describe("actual CustomerList personal stars", () => {
     expect(old[1].signal.aborted).toBe(true); expect(host.textContent).toContain("未切换为我的星标");
     await act(async () => { finish({ customerId: 802, targetUserId: 8, isStarred: true, starRevision: 1, requestId: old[0].requestId, idempotent: false }); });
     expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(runtime.listInputs.at(-1).starUserId).toBe(8);
-    await click(star(802)); expect(runtime.setStar).toHaveBeenCalledTimes(1);
+    expect(host.querySelector("table")).toBeNull(); expect(runtime.setStar).toHaveBeenCalledTimes(1);
   });
 
   it("aborts a stale starContext read on identity switch and admits only the new authoritative targets", async () => {
@@ -423,7 +430,106 @@ describe("actual CustomerList personal stars", () => {
     runtime.actorId = 8; runtime.enterpriseId = 32; runtime.targets = [{ userId: 8, name: "新员工" }]; await render();
     expect(old[1].signal.aborted).toBe(true);
     await act(async () => { finish({ enterpriseId: 31, actorUserId: 7, targets: [{ userId: 7, name: "旧员工" }, { userId: 99, name: "旧组员" }] }); });
-    expect(host.querySelector('select[aria-label="标星列表"]')).toBeNull(); expect(runtime.listInputs.at(-1).starUserId).toBe(8);
+    expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull(); expect(runtime.listInputs.at(-1).starUserId).toBe(8);
     expect(runtime.setStar).not.toHaveBeenCalled();
+  });
+});
+
+// These tests mock all network/database surfaces, while rendering the actual admin page.
+describe("pureUICustomerStars starred-only filter v22", () => {
+  function filterStar() { return host.querySelector<HTMLButtonElement>('button[aria-label="仅显示标星客户"]')!; }
+  const applied = { keyword: " 已应用 ", grade: "A", stage: "quoted", scope: "all", assignedUserId: "8", due: "overdue", archived: true, starredOnly: false };
+  const draft = { ...applied, keyword: "未应用草稿", grade: "B", stage: "following", due: "today", archived: false };
+  function adminFilters() {
+    runtime.canManageAll = true; runtime.members = [{ userId: 8, name: "合成负责人" }];
+    runtime.remembered = { appliedFilters: applied, draftFilters: draft, page: 2 };
+  }
+  it("places the native grey/yellow toggle directly after search and intersects only the applied filters without submitting or clearing drafts", async () => {
+    adminFilters(); await render();
+    const group = host.querySelector(".customer-list-search-group")!;
+    expect(group.children[0].classList.contains("customer-list-search")).toBe(true);
+    expect(group.children[1]).toBe(filterStar()); expect(filterStar().getAttribute("type")).toBe("button");
+    expect(filterStar().getAttribute("aria-pressed")).toBe("false");
+    await click(filterStar());
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "已应用", grade: "A", stage: "quoted", scope: "all", assignedUserId: 8,
+      due: "overdue", archived: true, starredOnly: true, starUserId: 7, page: 1, pageSize: 20 });
+    expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("未应用草稿");
+    expect(filterStar().getAttribute("aria-pressed")).toBe("true");
+    expect(filterStar().title).toContain("保留其他条件");
+    // The UI must not locally remove false rows: mocked server order/data is untouched.
+    expect(tableRows().map(row => row.dataset.pageMemoryRow)).toEqual(["801", "802", "803"]);
+    expect(runtime.setStar).not.toHaveBeenCalled();
+    await click(button("下一页")); expect(runtime.listInputs.at(-1)).toMatchObject({ page: 2, starredOnly: true });
+    await click(filterStar()); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "已应用", grade: "A", stage: "quoted", due: "overdue", archived: true,
+      scope: "all", starredOnly: false, page: 1, assignedUserId: 8 });
+    expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("未应用草稿");
+  });
+  it.each(["搜索", "Enter", "确定"])("retains true when applying later drafts with %s; collapse keeps both copies and reset clears only the filter not star ownership", async mode => {
+    adminFilters(); runtime.targets.push({ userId: 8, name: "合成组员" }); await render();
+    await click(filterStar()); await click(button("更多筛选")); await click(button("更多筛选")); await click(button("更多筛选"));
+    if (mode === "Enter") await act(async () => { host.querySelector(".customer-list-search")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
+    else await click(button(mode));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "未应用草稿", grade: "B", stage: "following", due: "today", archived: false,
+      scope: "all", assignedUserId: 8, starredOnly: true, page: 1 });
+    await selectTarget(8);
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starUserId: 8, assignedUserId: 8, starredOnly: true, page: 1 });
+    await click(button("重置")); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", due: "all", archived: false, starredOnly: false,
+      starUserId: 8, assignedUserId: 8, scope: "all", page: 1 });
+    expect(button("重置").disabled).toBe(true);
+  });
+  it("treats legacy restored state without the field as false and reset remains available when only the star filter is active", async () => {
+    runtime.remembered = { appliedFilters: { keyword: "", grade: "", stage: "", scope: "mine", assignedUserId: "", due: "all", archived: false } };
+    await render(); expect(runtime.listInputs.at(-1).starredOnly).toBe(false); expect(filterStar().getAttribute("aria-pressed")).toBe("false");
+    expect(button("重置").disabled).toBe(true); await click(filterStar()); expect(button("重置").disabled).toBe(false);
+    await click(button("重置")); expect(runtime.listInputs.at(-1).starredOnly).toBe(false); expect(button("重置").disabled).toBe(true);
+  });
+  it("uses the current applied true predicate even if a separately restored old draft has no starredOnly field", async () => {
+    adminFilters(); runtime.remembered = { appliedFilters: { ...applied, starredOnly: true }, draftFilters: { ...draft, starredOnly: undefined } };
+    await render(); await click(button("搜索"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, keyword: "未应用草稿", grade: "B", stage: "following" });
+  });
+  it("keeps the star predicate through valid scope and delegated target changes, clears old target/total, and revoked target fails closed rather than self", async () => {
+    adminFilters(); runtime.targets.push({ userId: 8, name: "合成组员" }); await render(); await click(filterStar());
+    await selectTarget(8);
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 8, assignedUserId: 8, scope: "all", page: 1 });
+    expect(host.querySelector("table")).toBeNull(); expect(host.textContent).not.toContain("共 40");
+    runtime.rows = runtime.rows.map(row => ({ ...row, starUserId: 8 })); await render(); expect(tableRows()).toHaveLength(3);
+    runtime.targets = [{ userId: 7, name: "本人" }]; runtime.authVersion = "revoked-filter-v22"; await render();
+    expect(host.textContent).toContain("未切换为我的星标"); expect(host.querySelector("table")).toBeNull();
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 8, assignedUserId: 8 });
+    expect(runtime.listOptions.at(-1).enabled).toBe(false);
+    await click(button("选择我的星标")); expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 7, assignedUserId: 8, scope: "all", page: 1 });
+    expect(host.querySelector("table")).toBeNull();
+  });
+  it("does not render an old enterprise result or consume its total when account/enterprise switches, even if a late list result has the same target id", async () => {
+    await render(); await click(filterStar()); const previousKey = JSON.stringify(runtime.listInputs.at(-1));
+    runtime.enterpriseId = 32; runtime.actorId = 8; runtime.targets = [{ userId: 8, name: "新员工" }];
+    runtime.rows = runtime.rows.map(row => ({ ...row, starUserId: 8 })); await render();
+    expect(JSON.stringify(runtime.listInputs.at(-1))).not.toBe(previousKey); expect(host.querySelector("table")).toBeNull();
+    expect(runtime.setStar).not.toHaveBeenCalled();
+    runtime.rows = runtime.rows.map(row => ({ ...row, enterpriseId: 32 })); await render(); expect(tableRows()).toHaveLength(3);
+  });
+  it("pauses true-filter reads until star target authority is ready and keeps the predicate/explicit target after a failed read", async () => {
+    let finish!: (value: unknown) => void;
+    runtime.starContext.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await render(); await click(filterStar());
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
+    expect(host.textContent).toContain("仅标星筛选已保留");
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 7 });
+    await act(async () => { finish({ enterpriseId: 31, actorUserId: 7, targets: runtime.targets }); });
+    expect(runtime.listOptions.at(-1).enabled).toBe(true); expect(tableRows()).toHaveLength(3);
+    runtime.starContext.mockRejectedValueOnce(new Error("synthetic unavailable")); await click(button("更多筛选"));
+    runtime.authVersion = "star-read-failed-v22"; await render();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 7 });
+    expect(host.textContent).toContain("星标权限读取失败");
+    await click(filterStar()); expect(runtime.listInputs.at(-1).starredOnly).toBe(false);
+    expect(runtime.listOptions.at(-1).enabled).toBe(true); expect(tableRows()).toHaveLength(3);
+  });
+  it("exports the real v22 search-star and leader selector DOM for parent CSS measurement", async () => {
+    runtime.canManageAll = true; runtime.targets.push({ userId: 8, name: "合成组员" }); await render(); await click(filterStar());
+    expect(host.querySelector('select[aria-label="星标归属"]')).not.toBeNull();
+    expect(filterStar().getAttribute("aria-pressed")).toBe("true");
+    if (process.env.CUSTOMER_V22_FIXTURE_PATH) fixture(process.env.CUSTOMER_V22_FIXTURE_PATH);
   });
 });

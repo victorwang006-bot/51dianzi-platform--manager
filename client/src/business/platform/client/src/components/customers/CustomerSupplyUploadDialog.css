@@ -1,8 +1,13 @@
 .customer-supply-dialog {
-  width: min(560px, calc(100vw - 24px));
+  width: min(880px, calc(100vw - 24px));
   max-height: 85dvh;
-  overflow-y: auto;
+  overflow: hidden;
   font-size: var(--admin-content-font-body, 13px);
+}
+.customer-supply-loading-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .customer-supply-dialog .ci-field select {
   height: var(--admin-content-control-height, 34px);

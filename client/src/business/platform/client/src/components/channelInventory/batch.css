@@ -66,6 +66,9 @@
   padding-bottom: 13px;
   border-bottom: 1px solid #e8edf3;
 }
+.ci-batch-channel.ci-batch-fixed-source {
+  grid-template-columns: minmax(0, 1fr);
+}
 .ci-batch-channel > p {
   margin: 0;
   padding-bottom: 7px;

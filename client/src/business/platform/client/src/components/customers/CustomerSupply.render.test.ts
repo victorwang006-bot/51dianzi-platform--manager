@@ -272,6 +272,123 @@ describe("customer supply real portal and reused importer", () => {
   });
 });
 
+describe("v22 stable customer upload portal and concise copy", () => {
+  it("keeps the exact Dialog and overlay nodes from real permission loading to ready with no duplicate portals", async () => {
+    let finish!: (value: SupplyContext) => void;
+    runtime.readContext.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    render();
+    const dialog = required(document.querySelector('[role="dialog"]'));
+    const overlay = required(document.querySelector('[data-slot="dialog-overlay"]'));
+    const title = required(document.querySelector('[data-slot="dialog-title"]'));
+    const labelledBy = dialog.getAttribute("aria-labelledby");
+    const style = dialog.getAttribute("style");
+    expect(dialog.textContent).toContain("正在核验上传权限");
+    expect(document.querySelector('[aria-label="上传库存表格"]')).toBeNull();
+    const records: MutationRecord[] = [];
+    const observer = new MutationObserver(next => records.push(...next));
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state"] });
+    try {
+      await act(async () => { finish(context()); }); await setupUpload();
+      records.push(...observer.takeRecords());
+      expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+      expect(document.querySelector('[data-slot="dialog-overlay"]')).toBe(overlay);
+      expect(document.querySelector('[data-slot="dialog-title"]')).toBe(title);
+      expect(dialog.getAttribute("aria-labelledby")).toBe(labelledBy);
+      expect(dialog.getAttribute("style")).toBe(style);
+      expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+      expect(document.querySelectorAll('[data-slot="dialog-overlay"]')).toHaveLength(1);
+      for (const record of records) {
+        for (const removed of record.removedNodes) {
+          expect(removed === dialog || removed === overlay || removed.contains(dialog) || removed.contains(overlay)).toBe(false);
+        }
+        for (const added of record.addedNodes) {
+          if (added instanceof Element) expect(added.matches('[role="dialog"], [data-slot="dialog-overlay"]') || added.querySelector('[role="dialog"], [data-slot="dialog-overlay"]')).toBeFalsy();
+        }
+        if (record.type === "attributes") expect(record.target === dialog || record.target === overlay).toBe(false);
+      }
+    } finally { observer.disconnect(); }
+    const fixture = process.env.UPLOAD_DOM_FIXTURE;
+    if (fixture) {
+      mkdirSync(dirname(fixture), { recursive: true });
+      writeFileSync(fixture, `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>${document.body.outerHTML}</html>\n`);
+    }
+    expect(title.textContent).toBe("上传客户物料");
+    expect(dialog.textContent?.split("同名客户")).toHaveLength(2);
+    for (const copy of ["客户档案：", "首次默认工厂", "客户身份固定", "Excel / CSV", "确认前不提交", "首张 sheet", "沿用幂等逐行上传"]) expect(dialog.textContent).not.toContain(copy);
+    const note = required(dialog.querySelector(".ci-batch-note"));
+    expect(note.querySelector("summary")?.textContent).toBe("填写说明");
+    expect(note.textContent).toContain("5MB内，最多1000条");
+    expect(dialog.querySelector(".ci-batch-drop")?.textContent).not.toContain("5MB");
+    click(button("单条上传"));
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(document.querySelector(".customer-supply-single .ci-dialog-note")).toBeNull();
+    expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("keeps the same Dialog through a temporary network failure and explicit successful retry", async () => {
+    const error = new Error("临时网络失败");
+    runtime.readContext.mockRejectedValueOnce(error); render();
+    const dialog = required(document.querySelector('[role="dialog"]'));
+    await settle();
+    expect(document.querySelector('[role="alert"]')?.textContent).toBe(error.message);
+    expect(document.querySelector('[aria-label="上传库存表格"]')).toBeNull();
+    expect(runtime.onAuthorizationError).toHaveBeenCalledWith(error);
+    click(button("重试核验")); await setupUpload();
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(runtime.readContext).toHaveBeenCalledTimes(2);
+    expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("shows the real denied permission instead of mounting usable upload controls", async () => {
+    runtime.context = { ...context(), canUpload: false, disabledReason: "无上传授权" }; render();
+    const dialog = required(document.querySelector('[role="dialog"]')); await settle();
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(document.querySelector('[role="alert"]')?.textContent).toBe("无上传授权");
+    expect(document.querySelector('[aria-label="上传库存表格"]')).toBeNull();
+    expect(document.querySelector('[aria-label="客户物料上传方式"]')).toBeNull();
+    expect(runtime.create).not.toHaveBeenCalled();
+    click(button("取消")); expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+  it("routes the outer close button through the single preview confirmation rather than bypassing it", async () => {
+    await openSingle(); previewSingle();
+    const dialog = required(document.querySelector('[role="dialog"]'));
+    vi.mocked(window.confirm).mockReturnValueOnce(false);
+    click(required(dialog.querySelector('[data-slot="dialog-close"]')));
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(runtime.close).not.toHaveBeenCalled(); expect(runtime.create).not.toHaveBeenCalled();
+    click(required(dialog.querySelector('[data-slot="dialog-close"]')));
+    expect(runtime.close).toHaveBeenCalledTimes(1); expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+  it("outer Escape stops a running queue without closing the Portal or submitting the next row", async () => {
+    let finish!: (value: unknown) => void;
+    runtime.create.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    render(); await setupUpload(); await upload();
+    const dialog = required(document.querySelector('[role="dialog"]'));
+    click(button("确认上传 3 条")); await settle();
+    act(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog); expect(runtime.close).not.toHaveBeenCalled();
+    runtime.context = { ...context(), channel };
+    await act(async () => { finish(receipt()); }); await settle();
+    expect(runtime.create).toHaveBeenCalledTimes(1); expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(button("按原批次继续 / 重试").disabled).toBe(false); expect(runtime.navigate).not.toHaveBeenCalled();
+  });
+  it("isolates a changed actor even when the caller reuses the component without a key", async () => {
+    let oldFinish!: (value: SupplyContext) => void; let newFinish!: (value: SupplyContext) => void;
+    runtime.readContext.mockImplementationOnce(() => new Promise(resolve => { oldFinish = resolve; }))
+      .mockImplementationOnce(() => new Promise(resolve => { newFinish = resolve; }));
+    const props = { customerId: 801, identity, isCurrent: () => runtime.current, onClose: runtime.close, onComplete: runtime.complete, onAuthorizationError: runtime.onAuthorizationError };
+    render(React.createElement(CustomerSupplyUploadDialog, props));
+    const oldSignal = runtime.readContext.mock.calls[0][1].signal as AbortSignal;
+    render(React.createElement(CustomerSupplyUploadDialog, { ...props, identity: { ...identity, actorUserId: 8, key: "actor8-auth2" } }));
+    expect(oldSignal.aborted).toBe(true);
+    expect(runtime.readContext.mock.calls[1][0]).toMatchObject({ expectedActorUserId: 8 });
+    await act(async () => { oldFinish({ ...context(), customer: { ...context().customer, name: "旧身份客户" } }); }); await settle();
+    expect(document.body.textContent).not.toContain("旧身份客户");
+    expect(document.querySelector('[aria-label="上传库存表格"]')).toBeNull();
+    await act(async () => { newFinish({ ...context(), customer: { ...context().customer, name: "新身份客户" } }); }); await setupUpload();
+    expect(document.body.textContent).toContain("新身份客户"); expect(document.body.textContent).not.toContain("旧身份客户");
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1); expect(runtime.create).not.toHaveBeenCalled();
+  });
+});
+
 function singleField(label: string) {
   return required(document.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(`[aria-label="${label}"]`));
 }
