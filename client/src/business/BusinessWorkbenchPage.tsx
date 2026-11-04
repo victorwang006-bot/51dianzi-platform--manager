@@ -38,7 +38,7 @@ import {
 } from "./BusinessWorkbenchAccessGate";
 import type { BusinessWorkbenchCapability } from "../lib/businessWorkbenchCapabilities";
 import {
-  BUSINESS_CONTEXT_FRESH_MS,
+  BUSINESS_CONTEXT_STALE_TIME,
   createBusinessRequestCancellation,
   isBusinessAuthorizationError,
   isBusinessSecurityError,
@@ -531,21 +531,14 @@ function BusinessRoutes() {
 function useSessionContextRevalidation(session: BusinessWorkbenchSession) {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onFocus = () => session.revalidate("focus");
     const onPageShow = (event: PageTransitionEvent) => {
       // A normal first-load pageshow follows the initial query. Only a bfcache
       // restore is a re-entry that could otherwise retain an old context.
-      if (event.persisted) session.revalidate("restore");
+      if (event.persisted) session.revalidateAfterRestore();
     };
-    window.addEventListener("focus", onFocus);
     window.addEventListener("pageshow", onPageShow);
-    const timer = window.setInterval(() => {
-      if (document.visibilityState !== "hidden") session.revalidate("interval");
-    }, BUSINESS_CONTEXT_FRESH_MS);
     return () => {
-      window.removeEventListener("focus", onFocus);
       window.removeEventListener("pageshow", onPageShow);
-      window.clearInterval(timer);
     };
   }, [session]);
 }
@@ -568,11 +561,6 @@ export function BusinessContextVerificationBoundary({
       data-business-context-verification={verificationState}
       data-business-context-identity={identity}
     >
-      {revalidating ? (
-        <p className="px-5 py-2 text-sm text-muted-foreground" role="status">
-          正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。
-        </p>
-      ) : null}
       <div data-business-context-content="">{children}</div>
     </section>
   );
@@ -712,9 +700,11 @@ function BusinessContextGate({
   session: BusinessWorkbenchSession;
 }) {
   const contextQuery = businessScopeTrpc.context.useQuery(undefined, {
-    staleTime: BUSINESS_CONTEXT_FRESH_MS,
+    staleTime: BUSINESS_CONTEXT_STALE_TIME,
+    gcTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     trpc: { abortOnUnmount: true },
   });
   const rawContext = contextQuery.data as BusinessContextContract | undefined;
@@ -770,7 +760,7 @@ function BusinessContextGate({
   ]);
 
   // This ref update is derived only from a settled request, so it remains
-  // idempotent under Strict Mode while allowing focus to arrive immediately
+  // idempotent under Strict Mode while allowing restore to arrive immediately
   // after the successful commit.
   if (!verificationInFlight) {
     lastVerifiedContext.current =
@@ -938,9 +928,11 @@ function BusinessWorkbenchDiscovery({
   const merchantList = businessScopeTrpc.merchants.useQuery(
     { page: 1, pageSize: 100 },
     {
-      staleTime: BUSINESS_CONTEXT_FRESH_MS,
+      staleTime: BUSINESS_CONTEXT_STALE_TIME,
+      gcTime: Infinity,
       retry: false,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
       trpc: { abortOnUnmount: true },
     }
   );

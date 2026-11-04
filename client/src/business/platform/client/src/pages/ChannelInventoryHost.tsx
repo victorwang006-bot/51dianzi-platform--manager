@@ -547,14 +547,6 @@ export default function ChannelInventoryHost() {
     return () => abort.abort();
   }, [supplyLink, supplyLinkKey, identity, ready, contextCurrent, sourceIdentityCurrent, enterpriseQuery.isError, expectedContext, utils]);
 
-  useEffect(() => {
-    if (!supplyLink) return;
-    const refresh = () => setSupplyLinkRevision(value => value + 1);
-    window.addEventListener("focus", refresh);
-    const timer = window.setInterval(refresh, 30_000);
-    return () => { window.removeEventListener("focus", refresh); window.clearInterval(timer); };
-  }, [supplyLink]);
-
   const channelInput: ChannelInventoryInputs["listChannels"] = {
     expectedEnterpriseId: enterpriseId ?? undefined,
     expectedActorUserId: actorUserId ?? undefined,
@@ -1192,6 +1184,7 @@ export default function ChannelInventoryHost() {
           ? <span className="ci-error">{supplyTarget.error}</span> : <span>已精确定位渠道 #{exactTarget?.id}：{exactTarget?.name}</span>}
         {supplyLink.tab === "materials" && exactSourceReadable && !materialsQuery.isLoading && !materialsQuery.isError && materialsQuery.data?.items.length === 0
           ? <span>暂无目标可读库存，未展示其他库存。</span> : null}
+        <button type="button" className="ci-inline-link" disabled={supplyTarget.loading || busy !== null} onClick={() => setSupplyLinkRevision(value => value + 1)}>重新核验目标</button>
         <button type="button" className="ci-inline-link" onClick={() => { setDismissedSupplyLink(search); setMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" }); setChannelPage(1); setMaterialPage(1); }}>清除定位</button>
       </div> : null}
       {message && !materialEditor ? <p className="ci-error" role="alert">{message}</p> : null}

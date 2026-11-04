@@ -13,16 +13,21 @@ type Channel = SupplyOutputs["getChannel"];
 type SessionData = { customerId: number; customerVersion: SupplyContext["customer"]["version"]; sourceProfile?: SourceProfile };
 type Props = { customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void;
   onComplete: () => void; onAuthorizationError: (error: unknown) => void };
-const SOURCE_TYPES = [{ value: "factory", label: "工厂" }, { value: "agent", label: "代理商" },
-  { value: "trade", label: "贸易商" }, { value: "other", label: "其他" }] as const;
+const SOURCE_TYPES = ["factory", "agent", "trade", "other"] as const;
 
 function validSession(value: unknown, customerId: number, version: SessionData["customerVersion"]): value is SessionData {
   if (!value || typeof value !== "object") return false;
   const data = value as Partial<SessionData>;
   const profile = data.sourceProfile;
+  // Historical, explicitly confirmed source types remain valid recovery metadata.
+  // Never rewrite them: the server checks the original request/type against binding.
   return data.customerId === customerId && data.customerVersion === version
-    && (!profile || (SOURCE_TYPES.some(type => type.value === profile.type)
+    && (!profile || (SOURCE_TYPES.includes(profile.type)
       && (profile.existingChannelId === undefined || (Number.isSafeInteger(profile.existingChannelId) && profile.existingChannelId > 0))));
+}
+function initialSession(customerId: number, context: SupplyContext): SessionData {
+  return { customerId, customerVersion: context.customer.version,
+    ...(!context.channel ? { sourceProfile: { type: "factory" as const } } : {}) };
 }
 
 export function CustomerSupplyUploadDialog(props: Props) {
@@ -31,7 +36,7 @@ export function CustomerSupplyUploadDialog(props: Props) {
   const [context, setContext] = useState<SupplyContext | null>(null);
   const [message, setMessage] = useState("");
   const [invalidated, setInvalidated] = useState(false);
-  const [sourceType, setSourceType] = useState<SourceProfile["type"] | "">("");
+  const [contextRevision, setContextRevision] = useState(0);
   const [chooseExisting, setChooseExisting] = useState(false);
   const [existingId, setExistingId] = useState("");
   const [confirmedExisting, setConfirmedExisting] = useState(false);
@@ -40,6 +45,7 @@ export function CustomerSupplyUploadDialog(props: Props) {
   const [optionTotal, setOptionTotal] = useState(0);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [settingUp, setSettingUp] = useState(false);
+  const [sourceLocked, setSourceLocked] = useState(false);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const frozen = useRef<SessionData | null>(null);
   const receiptsChannel = useRef<number | null>(null);
@@ -63,17 +69,18 @@ export function CustomerSupplyUploadDialog(props: Props) {
       return await utils.client.channelInventory.customerSupplyContext.query({ ...expected, customerId: props.customerId }, { signal: abort.signal });
     } finally { requests.current.delete(abort); }
   };
-  const contextAllowed = (fresh: SupplyContext) => fresh.customer.id === props.customerId
+  const contextAllowed = (fresh: SupplyContext, checkReceipt = true) => fresh.customer.id === props.customerId
     && !fresh.customer.archivedAt && fresh.canUpload === true
     && businessIndustryCodeSchema.safeParse(fresh.customer.industryCode).success
     && (!fresh.channel || fresh.channel.active)
     && (!frozen.current || fresh.customer.version === frozen.current.customerVersion)
-    && (!receiptsChannel.current || fresh.channel?.id === receiptsChannel.current);
+    && (!checkReceipt || !receiptsChannel.current || fresh.channel?.id === receiptsChannel.current);
 
   useEffect(() => {
     mounted.current = true;
     let alive = true;
     const refresh = async () => {
+      setMessage("");
       try {
         const fresh = await readContext();
         if (!alive || !current()) return;
@@ -83,6 +90,10 @@ export function CustomerSupplyUploadDialog(props: Props) {
           || (contextRef.current.channel && (fresh.channel?.id !== contextRef.current.channel.id
             || fresh.channel?.revision !== contextRef.current.channel.revision)))) { invalidate(); return; }
         setContext(fresh);
+        if (contextAllowed(fresh) && !frozen.current) {
+          const data = initialSession(props.customerId, fresh);
+          frozen.current = data; setSessionData(data);
+        }
       } catch (error) {
         if (!alive || !current()) return;
         props.onAuthorizationError(error);
@@ -90,19 +101,17 @@ export function CustomerSupplyUploadDialog(props: Props) {
         setMessage(error instanceof Error ? error.message : "无法读取客户供应上传权限。");
       }
     };
+    // Initial/identity read or explicit error retry only. Writes recheck below.
     void refresh();
-    window.addEventListener("focus", refresh);
-    const timer = window.setInterval(refresh, 30_000);
     return () => {
       alive = false; mounted.current = false;
-      window.removeEventListener("focus", refresh); window.clearInterval(timer);
       requests.current.forEach(abort => abort.abort());
       requests.current.clear();
     };
-  }, [props.customerId, props.identity.key]);
+  }, [props.customerId, props.identity.key, contextRevision]);
 
   const loadOptions = async () => {
-    if (!current() || loadingOptions) return;
+    if (!current() || loadingOptions || sourceLocked) return;
     const abort = controller(); setLoadingOptions(true); setMessage("");
     try {
       const result = await utils.client.channelInventory.listChannels.query({ ...expected, active: true, page: optionPage + 1, pageSize: 100 }, { signal: abort.signal });
@@ -123,78 +132,106 @@ export function CustomerSupplyUploadDialog(props: Props) {
       return result;
     } finally { requests.current.delete(abort); }
   };
-  const setup = async () => {
-    if (!context || !current() || settingUp || !contextAllowed(context)) return;
-    if (!context.channel && !sourceType) { setMessage("首次上传必须明确选择渠道类型，不会猜测。"); return; }
+  const confirmExisting = async () => {
+    if (!context || !current() || settingUp || sourceLocked || !chooseExisting || !contextAllowed(context)) return;
     const id = Number(existingId);
-    if (!context.channel && chooseExisting && (!confirmedExisting || !Number.isSafeInteger(id) || id <= 0)) {
-      setMessage("请选择本人有权现有渠道，并人工确认关联。"); return;
-    }
+    if (!Number.isSafeInteger(id) || id <= 0) { setMessage("请选择本人有权现有渠道，并人工确认关联。"); return; }
     setSettingUp(true); setMessage("");
     try {
       const fresh = await readContext();
       if (!current()) return;
-      if (!contextAllowed(fresh) || fresh.customer.version !== context.customer.version
-        || fresh.channel?.id !== context.channel?.id) { invalidate(); return; }
-      if (!fresh.channel && chooseExisting) {
-        const chosen = await verifyExisting(id);
-        if (!current()) return;
-        if (chosen.type !== sourceType) throw new Error("所选渠道类型与首次类型不一致，请核实后选择。");
-      }
+      if (!contextAllowed(fresh) || fresh.customer.version !== context.customer.version || fresh.channel) { invalidate(); return; }
+      const chosen = await verifyExisting(id);
+      if (!current()) return;
+      const type = SOURCE_TYPES.find(value => value === chosen.type);
+      if (!type) throw new Error("现有渠道真实类型无效，请核实后重试。");
       const data: SessionData = { customerId: props.customerId, customerVersion: fresh.customer.version,
-        ...(!fresh.channel && sourceType ? { sourceProfile: { type: sourceType, ...(chooseExisting ? { existingChannelId: id } : {}) } } : {}) };
-      frozen.current = data; setSessionData(data); setContext(fresh);
+        sourceProfile: { type, existingChannelId: id } };
+      frozen.current = data; setSessionData(data); setContext(fresh); setConfirmedExisting(true);
     } catch (error) {
       if (current()) { props.onAuthorizationError(error); setMessage(error instanceof Error ? error.message : "客户来源核验失败。"); }
     } finally { if (current()) setSettingUp(false); }
+  };
+  const resetSource = () => {
+    if (!context || sourceLocked) return;
+    const data = initialSession(props.customerId, context);
+    frozen.current = data; setSessionData(data); setConfirmedExisting(false); setMessage("");
   };
   const viewResults = (entries: BatchEntry[]) => {
     if (!current()) return;
     const channelId = completedSupplyChannel(entries, props.customerId);
     if (!channelId) { setMessage("成功回执渠道不一致，已阻止跳转，请核实原批次。"); return; }
-    // Close the real portal before navigating. No first-success callback may do this.
+    // Close the real portal before navigating, never on the first successful row.
     props.onComplete(); props.onClose(); navigate(supplyLocation(channelId, "channels"));
   };
   if (!currentRef.current || invalidated) return null;
   if (context && sessionData) return <BatchUpload
     key={`${props.identity.key}:${props.customerId}`}
-    channels={[{ id: props.customerId, name: context.customer.name, active: contextAllowed(context) }]}
+    channels={[{ id: props.customerId, name: context.customer.name,
+      // Cached pre-upload context may not yet contain the first committed link.
+      // Keep original-batch retry reachable; onCreate checks the fresh link.
+      active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp }]}
     channelTotal={1} initialChannelId={props.customerId}
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
-    sourceDetails={<p className="customer-supply-profile">客户档案：{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}<br />{context.channel ? "复用已绑定渠道" : "首次实际成功后建立关联；取消或全部失败不会创建空渠道"}</p>}
+    sourceDetails={<div className="customer-supply-details">
+      <p className="customer-supply-profile">客户档案：{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}<br />{context.channel ? "复用已绑定渠道，保留原真实渠道类型"
+        : sessionData.sourceProfile?.existingChannelId ? "已明确选择现有渠道，保留其真实类型；首次实际成功才建立关联"
+        : sessionData.sourceProfile && sessionData.sourceProfile.type !== "factory" ? "已恢复原批次，沿用其已确认来源类型和请求号，不改写恢复资料"
+        : "首次默认工厂渠道；首次实际成功才建立关联，取消或全部失败不会创建空渠道"}</p>
+      {!context.channel && !sourceLocked ? <details className="customer-supply-existing">
+        <summary>人工关联现有渠道（可选）</summary>
+        <label className="customer-supply-choice"><input type="checkbox" checked={chooseExisting} disabled={settingUp}
+          onChange={event => { resetSource(); setChooseExisting(event.target.checked); if (event.target.checked && !optionPage) void loadOptions(); }} />我要人工选择并确认本人有权的现有渠道，不按名称匹配</label>
+        {chooseExisting ? <>
+          <label className="ci-field"><span>人工选择现有渠道</span><select aria-label="人工选择现有渠道" disabled={settingUp || loadingOptions} value={existingId}
+            onChange={event => { resetSource(); setExistingId(event.target.value); }}><option value="">请选择，不会按客户名称猜测</option>{options.map(channel => <option key={channel.id} value={channel.id}>{channel.name} · #{channel.id}</option>)}</select></label>
+          {optionPage * 100 < optionTotal || (!optionPage && !loadingOptions) ? <button type="button" className="ci-inline-link" disabled={loadingOptions || settingUp} onClick={() => void loadOptions()}>加载更多现有渠道</button> : null}
+          <button type="button" className="ci-inline-link" disabled={!existingId || settingUp || confirmedExisting} onClick={() => void confirmExisting()}>{confirmedExisting ? "已确认关联身份" : settingUp ? "正在核验…" : "确认关联此渠道"}</button>
+          <p className="ci-dialog-note">仅在你明确确认后采用所选渠道的真实类型；仍在首次实际成功的服务端事务中建立关联。</p>
+        </> : null}
+      </details> : null}
+      {message ? <p className="ci-error" role="alert">{message}</p> : null}
+    </div>}
     storageKeySuffix={customerSupplySessionSuffix(props.identity, props.customerId)} sessionData={sessionData}
     validateSavedSession={(data, entries) => validSession(data, props.customerId, context.customer.version)
       && (!entries.some(entry => entry.status === "success") || (completedSupplyChannel(entries, props.customerId) !== null
         && context.channel?.id === completedSupplyChannel(entries, props.customerId)))}
     onRestoreSession={data => {
       if (!validSession(data, props.customerId, context.customer.version)) return;
-      frozen.current = data; setSessionData(data);
+      frozen.current = data; setSessionData(data); setSourceLocked(true);
+      setChooseExisting(false); setConfirmedExisting(false);
     }}
-    onClose={props.onClose} onDirtyChange={() => undefined} onBusyChange={() => undefined}
+    onClose={props.onClose} onDirtyChange={() => undefined}
+    onBusyChange={busy => { if (busy) setSourceLocked(true); }}
     onLoadMoreChannels={() => undefined} loadingMoreChannels={false} isCurrent={current}
     receiptFromResult={response => supplyReceipt(response, props.customerId)}
     onCreate={async (payload, requestId) => {
-      const data = frozen.current;
-      if (!current() || !data) throw new Error("客户或授权已变化，已停止上传。");
-      const fresh = await readContext();
-      if (!current()) throw new Error("上传会话已变化。");
-      if (!contextAllowed(fresh) || (context.channel && fresh.channel?.id !== context.channel.id)) {
-        invalidate(); throw new Error("客户版本、归档状态、渠道或上传权限已变化，已停止上传。");
-      }
-      if (data.sourceProfile?.existingChannelId) await verifyExisting(data.sourceProfile.existingChannelId);
-      if (!current()) throw new Error("上传会话已变化。");
-      const abort = controller();
       try {
-        const receipt = await utils.client.channelInventory.createCustomerMaterial.mutate(
-          customerMaterialInput(payload, requestId, props.identity, props.customerId, data.customerVersion, data.sourceProfile), { signal: abort.signal });
-        if (!current()) throw new Error("上传会话已变化，结果待原请求确认。");
-        const checked = supplyReceipt(receipt, props.customerId);
-        if (receiptsChannel.current && receiptsChannel.current !== checked.channelId) throw new Error("回执渠道身份不一致，请核实原请求。");
-        receiptsChannel.current = checked.channelId;
-        return receipt;
+        const data = frozen.current;
+        if (!current() || !data) throw new Error("客户或授权已变化，已停止上传。");
+        if (chooseExisting && !confirmedExisting) throw new Error("请先明确确认所选渠道真实身份。");
+        const fresh = await readContext();
+        if (!current()) throw new Error("上传会话已变化。");
+        if (!contextAllowed(fresh) || (context.channel && fresh.channel?.id !== context.channel.id)) {
+          invalidate(); throw new Error("客户版本、归档状态、渠道或上传权限已变化，已停止上传。");
+        }
+        if (data.sourceProfile?.existingChannelId) {
+          const chosen = await verifyExisting(data.sourceProfile.existingChannelId);
+          if (chosen.type !== data.sourceProfile.type) throw new Error("所选渠道真实类型已变化，请核实原批次。");
+        }
+        if (!current()) throw new Error("上传会话已变化。");
+        const abort = controller();
+        try {
+          const receipt = await utils.client.channelInventory.createCustomerMaterial.mutate(
+            customerMaterialInput(payload, requestId, props.identity, props.customerId, data.customerVersion, data.sourceProfile), { signal: abort.signal });
+          if (!current()) throw new Error("上传会话已变化，结果待原请求确认。");
+          const checked = supplyReceipt(receipt, props.customerId);
+          if (receiptsChannel.current && receiptsChannel.current !== checked.channelId) throw new Error("回执渠道身份不一致，请核实原请求。");
+          receiptsChannel.current = checked.channelId;
+          return receipt;
+        } finally { requests.current.delete(abort); }
       } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
-      finally { requests.current.delete(abort); }
     }}
     onComplete={() => { if (current()) props.onComplete(); }}
     onFinish={result => { if (result.complete && result.entries.length && current()) viewResults(result.entries); }}
@@ -207,23 +244,14 @@ export function CustomerSupplyUploadDialog(props: Props) {
     : context?.channel && !context.channel.active ? "关联渠道已停用，请核实后再上传。" : "";
   return <Dialog open onOpenChange={open => { if (!open) props.onClose(); }}>
     <DialogContent className="ci-dialog customer-supply-dialog" onPointerDownOutside={event => event.preventDefault()}>
-      <DialogHeader><DialogTitle>上传客户物料表</DialogTitle><DialogDescription>沿用客户公司资料，不重复维护名称、行业或联系人，不按同名渠道自动关联。</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle>上传客户物料表</DialogTitle><DialogDescription>正在核验客户档案与上传权限，核验通过后直接选择文件。</DialogDescription></DialogHeader>
       {!context && !message ? <p role="status">正在核验客户档案与上传权限…</p> : null}
-      {context ? <>
-        <p className="customer-supply-profile">{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}</p>
-        {disabledReason ? <p className="ci-error" role="alert">{disabledReason}{missingIndustry ? <button type="button" className="ci-inline-link" onClick={() => { props.onClose(); navigate(`/customers/${props.customerId}`); }}>补全客户档案</button> : null}</p> : context.channel ? <p>将复用已绑定渠道，无需重选类型。</p> : <>
-          <label className="ci-field"><span>首次渠道类型 *</span><select aria-label="首次渠道类型" value={sourceType} disabled={settingUp} onChange={event => { const choice = SOURCE_TYPES.find(type => type.value === event.target.value); setSourceType(choice?.value ?? ""); }}><option value="">请明确选择渠道类型</option>{SOURCE_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
-          <label className="customer-supply-choice"><input type="checkbox" checked={chooseExisting} disabled={settingUp} onChange={event => { setChooseExisting(event.target.checked); setConfirmedExisting(false); if (event.target.checked && !optionPage) void loadOptions(); }} />人工关联本人有权现有渠道（可选）</label>
-          {chooseExisting ? <>
-            <label className="ci-field"><span>人工选择现有渠道</span><select aria-label="人工选择现有渠道" disabled={settingUp || loadingOptions} value={existingId} onChange={event => { setExistingId(event.target.value); setConfirmedExisting(false); }}><option value="">请选择，不会按客户名称猜测</option>{options.map(channel => <option key={channel.id} value={channel.id}>{channel.name} · #{channel.id}</option>)}</select></label>
-            {optionPage * 100 < optionTotal ? <button type="button" className="ci-inline-link" disabled={loadingOptions} onClick={() => void loadOptions()}>加载更多现有渠道</button> : null}
-            <label className="customer-supply-choice"><input type="checkbox" disabled={!existingId || settingUp} checked={confirmedExisting} onChange={event => setConfirmedExisting(event.target.checked)} />我已核实该渠道真实身份，并明确确认关联本客户</label>
-          </> : null}
-          <p className="ci-dialog-note">此处仅确认上传来源；不创建渠道，首次实际成功才由服务端事务建立关联。</p>
-        </>}
-      </> : null}
+      {context ? <p className="customer-supply-profile">{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}</p> : null}
+      {disabledReason ? <p className="ci-error" role="alert">{disabledReason}{missingIndustry ? <button type="button" className="ci-inline-link" onClick={() => { props.onClose(); navigate(`/customers/${props.customerId}`); }}>补全客户档案</button> : null}</p> : null}
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
-      <div className="ci-dialog-footer"><Button type="button" variant="outline" className="ci-button" onClick={props.onClose}>取消</Button><Button type="button" className="ci-button ci-primary" disabled={!context || Boolean(disabledReason) || settingUp || (!context.channel && (!sourceType || (chooseExisting && (!existingId || !confirmedExisting))))} onClick={() => void setup()}>{settingUp ? "正在核验…" : "继续选择物料表"}</Button></div>
+      <div className="ci-dialog-footer"><Button type="button" variant="outline" className="ci-button" onClick={props.onClose}>取消</Button>
+        {message || disabledReason ? <Button type="button" className="ci-button" onClick={() => setContextRevision(value => value + 1)}>重试核验</Button> : null}
+      </div>
     </DialogContent>
   </Dialog>;
 }

@@ -17,6 +17,7 @@ import { CustomerContactsSummary } from "../components/customers/CustomerContact
 import { formatContactMethod, useCustomerContactScope, withCustomerContactScope, type ContactSummary } from "../components/customers/customerContacts";
 import { CustomerSupplyUploadDialog } from "../components/customers/CustomerSupplyUploadDialog";
 import { CustomerSupplyCell } from "../components/customers/CustomerSupplyCell";
+import { CustomerSupplyAction } from "../components/customers/CustomerSupplyAction";
 import { useCustomerSupplyAuthority, supplyLocation, type SupplySummary } from "../components/customers/customerSupply";
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
 import { EMPTY_CUSTOMER_FORM, errorMessage, formatCustomerDateTime } from "../components/customers/customerUtils";
@@ -157,7 +158,7 @@ export default function CustomerList() {
   }, d51Ready)));
   const result = listQuery.data;
   const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
-  const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, pageCustomerIds]);
+  const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, listInput, pageCustomerIds]);
   const supplyRequestRef = useRef(supplyRequestKey); supplyRequestRef.current = supplyRequestKey;
   useEffect(() => {
     const identity = supplyAuthority.identity;
@@ -180,9 +181,10 @@ export default function CustomerList() {
       }
     };
     setSupplyState(previous => previous.key === supplyRequestKey ? { ...previous, loading: true } : { key: supplyRequestKey, items: [], canWrite: false, loading: true, failed: false });
-    void refresh(); window.addEventListener("focus", refresh);
-    const timer = window.setInterval(refresh, 30_000);
-    return () => { alive = false; abort?.abort(); window.removeEventListener("focus", refresh); window.clearInterval(timer); };
+    // One bounded read per identity/page, completed upload or explicit retry.
+    // Each upload command still rechecks the authoritative server context.
+    void refresh();
+    return () => { alive = false; abort?.abort(); };
   }, [supplyRequestKey, supplyRevision, utils]);
   const supplyResult = supplyState.key === supplyRequestKey ? supplyState : { items: [], canWrite: false, loading: true, failed: false };
   const supplySummaries = new Map(supplyResult.items.map(item => [item.customerId, item]));
@@ -559,6 +561,10 @@ export default function CustomerList() {
         />
       ) : (
         <AdminDataPanel className="overflow-hidden p-0">
+          {supplyAuthority.failed ? <div role="alert" className="customer-list-error border-b px-3 py-2">
+            供应库存权限读取失败。
+            <CustomerSupplyAction onClick={() => void supplyAuthority.retry()}>重试供应权限</CustomerSupplyAction>
+          </div> : null}
           {listQuery.isPending ? (
             <div className="flex justify-center p-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -590,17 +596,18 @@ export default function CustomerList() {
               ) : null}
             </div>
           ) : (
-            <Table className="admin-table-readable customer-list-table table-fixed" containerClassName="customer-list-table-scroll" aria-label="客户列表，可横向滚动查看全部列">
+            <div className="customer-list-table-scroll" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
+            <Table className="admin-table-readable customer-list-table" containerClassName="customer-list-table-inner" aria-label="客户列表">
               <colgroup>
-                <col className="w-[236px]" />
-                <col className="w-[136px]" />
-                <col className="w-[312px]" />
-                <col className="w-[144px]" />
-                <col className="w-[108px]" />
-                <col className="w-[120px]" />
-                <col className="w-[176px]" />
-                <col className="w-[120px]" />
-                <col className="w-[100px]" />
+                <col className="customer-list-col-name" />
+                <col className="customer-list-col-industry" />
+                <col className="customer-list-col-contacts" />
+                <col className="customer-list-col-stage" />
+                <col className="customer-list-col-owner" />
+                <col className="customer-list-col-supply" />
+                <col className="customer-list-col-followup" />
+                <col className="customer-list-col-demand" />
+                <col className="customer-list-col-actions" />
               </colgroup>
               <TableHeader>
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
@@ -623,11 +630,11 @@ export default function CustomerList() {
                   <TableHead className="text-center" data-testid="followup-header">
                     下次跟进
                   </TableHead>
-                  <TableHead className="text-center" data-testid="demand-header">
-                    需求
+                  <TableHead className="customer-list-demand-column text-center" data-testid="demand-header">
+                    需求录入
                   </TableHead>
                   <TableHead className="customer-list-actions-column text-right" data-testid="actions-header">
-                    操作
+                    跟进
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -698,6 +705,7 @@ export default function CustomerList() {
                           return summary ? { ...summary, canViewStock: false, channelId: null, materialCount: null } : undefined;
                         })()} canWrite={supplyAuthority.canWrite && supplyResult.canWrite} archived={Boolean(customer.archivedAt)}
                           loading={supplyResult.loading} failed={supplyResult.failed}
+                          onRetry={() => setSupplyRevision(value => value + 1)}
                           needsIndustry={!businessIndustryCodeSchema.safeParse(customer.industryCode).success} onCompleteProfile={() => navigate(`/customers/${customer.id}`)}
                           onUpload={() => { if (supplyAuthority.identity) setSupplyCustomer({ id: customer.id, version: customer.version, authorityKey: supplyAuthority.identity.key }); }}
                           onViewStock={channelId => navigate(supplyLocation(channelId, "materials"))} />
@@ -707,10 +715,10 @@ export default function CustomerList() {
                           title={formatCustomerDateTime(customer.nextFollowUpAt)}
                           className={
                             overdue
-                              ? "truncate text-amber-700"
+                              ? "text-amber-700"
                               : customer.nextFollowUpAt
-                                ? "truncate text-slate-700"
-                                : "customer-list-caption truncate"
+                                ? "text-slate-700"
+                                : "customer-list-caption"
                           }
                         >
                           {formatCustomerDateTime(customer.nextFollowUpAt)}
@@ -721,32 +729,24 @@ export default function CustomerList() {
                           </div>
                         ) : null}
                       </TableCell>
-                      <TableCell className="text-center" data-testid="demand-cell">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={Boolean(customer.archivedAt)}
-                          className="admin-row-action customer-list-row-action whitespace-nowrap px-3"
+                      <TableCell className="customer-list-demand-column text-center" data-testid="demand-cell">
+                        <CustomerSupplyAction
+                          disabledReason={customer.archivedAt ? "该客户已归档，不能录入需求" : undefined}
                           onClick={() => setDemandCustomer({ id: customer.id, name: customer.name, archivedAt: customer.archivedAt })}
                         >
                           需求录入
-                        </Button>
+                        </CustomerSupplyAction>
                       </TableCell>
                       <TableCell className="customer-list-actions-column text-right" data-testid="actions-cell">
                         <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={Boolean(customer.archivedAt)}
-                            className="admin-row-action customer-list-row-action shrink-0 px-3"
+                          <CustomerSupplyAction
+                            disabledReason={customer.archivedAt ? "该客户已归档，不能新增跟进" : undefined}
                             onClick={() =>
                               navigate(`/customers/${customer.id}?follow=1`)
                             }
                           >
                             跟进
-                          </Button>
+                          </CustomerSupplyAction>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -754,6 +754,7 @@ export default function CustomerList() {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
 
           <div className="customer-list-caption flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-3 py-3">

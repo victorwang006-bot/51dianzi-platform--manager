@@ -1999,10 +1999,27 @@ describe("customer supply exact UI deep links", () => {
     act(() => root?.render(React.createElement(ChannelInventoryHost))); await settle(); expect(signal.aborted).toBe(true);
     await act(async () => { finish(exactChannel()); }); await settle(); expect(document.body.textContent).not.toContain("第100条以外真实渠道"); expect(document.querySelector('.ci-supply-target')).toBeNull();
   });
-  it("revalidates active status on focus and removes an archived exact target", async () => {
+  it("revalidates active status on explicit retry and removes an archived exact target", async () => {
     link("channels"); runtime.getChannel.mockResolvedValueOnce(exactChannel()).mockResolvedValue(exactChannel({ active: false })); renderHost(); await settle();
-    expect(document.querySelector('.ci-supply-target')).not.toBeNull(); act(() => window.dispatchEvent(new Event("focus"))); await settle();
+    expect(document.querySelector('.ci-supply-target')).not.toBeNull(); click(button("重新核验目标")); await settle();
     expect(document.querySelector('.ci-supply-target')).toBeNull(); expect(document.body.textContent).toContain("身份不匹配或已停用");
+  });
+  it("keeps an exact target channel edit and draft through ordinary focus and 90 seconds idle", async () => {
+    link("channels"); runtime.getChannel.mockResolvedValue(exactChannel()); renderHost(); await settle();
+    click(menuItem("编辑渠道")); await settle();
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing exact channel editor");
+    const name = control(dialog, "渠道名称") as HTMLInputElement;
+    change(name, "仍在编辑的客户来源");
+    const requests = runtime.getChannel.mock.calls.length;
+    vi.useFakeTimers();
+    try {
+      act(() => window.dispatchEvent(new Event("focus")));
+      await act(async () => { await vi.advanceTimersByTimeAsync(90_000); });
+      expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+      expect(name.value).toBe("仍在编辑的客户来源");
+      expect(runtime.getChannel).toHaveBeenCalledTimes(requests);
+      expect(runtime.updateChannel).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
   });
 });
 
@@ -2182,7 +2199,7 @@ describe("customer supply independent exact source-readable proof", () => {
     onlyExactRequests();
   });
 
-  it.each(["actor", "enterprise", "binding", "authorization", "native-grant", "search", "focus", "unmount"])("aborts a pending exact stock proof on %s and ignores its late positive result", async kind => {
+  it.each(["actor", "enterprise", "binding", "authorization", "native-grant", "search", "unmount"])("aborts a pending exact stock proof on %s and ignores its late positive result", async kind => {
     const { stock } = ownSource();
     let finish!: (value: unknown) => void;
     runtime.listTeamMaterials.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
@@ -2197,8 +2214,7 @@ describe("customer supply independent exact source-readable proof", () => {
     if (kind === "native-grant") runtime.scope.officialInventoryPermissions.authorizationVersion = "changed-v2";
     if (kind === "search") {
       act(() => { window.history.replaceState(null, "", "/?supplyChannelId=998&supplyTab=materials"); window.dispatchEvent(new PopStateEvent("popstate")); });
-    } else if (kind === "focus") act(() => window.dispatchEvent(new Event("focus")));
-    else if (kind === "unmount") await act(async () => { root?.unmount(); root = null; });
+    } else if (kind === "unmount") await act(async () => { root?.unmount(); root = null; });
     else rerender();
     await settle(); expect(signal.aborted).toBe(true);
     await act(async () => finish({ ...stock, pageSize: 1 })); await settle();
@@ -2208,11 +2224,11 @@ describe("customer supply independent exact source-readable proof", () => {
     expect(runtime.createMaterial).not.toHaveBeenCalled();
   });
 
-  it("reprobes both direct reads on focus and removes a now-empty target without an unfiltered request", async () => {
+  it("reprobes both direct reads on explicit retry and removes a now-empty target without an unfiltered request", async () => {
     const { stock } = ownSource(); renderHost(); await settle();
     expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
     runtime.listTeamMaterials.mockResolvedValueOnce({ ...stock, items: [], total: 0, pageSize: 1 });
-    act(() => window.dispatchEvent(new Event("focus"))); await settle();
+    click(button("重新核验目标")); await settle();
     expect(runtime.getChannel).toHaveBeenCalledTimes(2);
     expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(2);
     expect(document.body.textContent).toContain("暂无目标可读库存");
@@ -2220,14 +2236,20 @@ describe("customer supply independent exact source-readable proof", () => {
     onlyExactRequests();
   });
 
-  it("reprobes after 30 seconds and masks a revoked source without relying on canFilterSource", async () => {
+  it("does not reprove on focus or after 90 seconds, while explicit retry still masks revoked source", async () => {
     vi.useFakeTimers();
     try {
       ownSource(); renderHost();
       await act(async () => { await vi.advanceTimersByTimeAsync(0); });
       expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
       runtime.listTeamMaterials.mockRejectedValueOnce({ data: { code: "FORBIDDEN" } });
-      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+      act(() => window.dispatchEvent(new Event("focus")));
+      await act(async () => { await vi.advanceTimersByTimeAsync(90_000); });
+      expect(runtime.getChannel).toHaveBeenCalledTimes(1);
+      expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(1);
+      expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
+      click(button("重新核验目标"));
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
       expect(runtime.getChannel).toHaveBeenCalledTimes(2);
       expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(2);
       expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);

@@ -103,7 +103,7 @@ async function mountBoundary(
   };
 }
 
-describe("BusinessContextGate focus verification boundary", () => {
+describe("BusinessContextGate silent restore verification boundary", () => {
   let mounted: MountedBoundary | undefined;
 
   afterEach(async () => {
@@ -135,9 +135,8 @@ describe("BusinessContextGate focus verification boundary", () => {
       '[data-testid="customer-save"]'
     );
     expect(boundary?.getAttribute("aria-busy")).toBe("true");
-    expect(boundary?.textContent).toContain(
-      "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
-    );
+    expect(boundary?.querySelector('[role="status"]')).toBeNull();
+    expect(boundary?.textContent).not.toContain("正在后台核验业务主体绑定");
     expect(content?.hasAttribute("inert")).toBe(false);
     expect(form).not.toBeNull();
 

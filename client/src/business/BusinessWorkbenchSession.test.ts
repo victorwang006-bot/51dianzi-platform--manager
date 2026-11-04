@@ -170,7 +170,7 @@ describe("BusinessWorkbenchSession structured refusal and real cache lifecycle",
     session.dispose();
   });
 
-  it("uses one trigger for both active proof queries and joins in-flight checks", async () => {
+  it("uses only BFCache restore for both active proof queries and joins in-flight checks", async () => {
     const session = new BusinessWorkbenchSession(6001, vi.fn());
     let finish!: () => void;
     let hold = false;
@@ -195,9 +195,9 @@ describe("BusinessWorkbenchSession structured refusal and real cache lifecycle",
     expect(discovery).toHaveBeenCalledTimes(1);
     expect(context).toHaveBeenCalledTimes(1);
     hold = true;
-    session.revalidate("focus");
-    session.revalidate("focus");
-    session.revalidate("restore");
+    session.revalidateAfterRestore();
+    session.revalidateAfterRestore();
+    session.revalidateAfterRestore();
     expect(discovery).toHaveBeenCalledTimes(2);
     expect(context).toHaveBeenCalledTimes(2);
     finish();

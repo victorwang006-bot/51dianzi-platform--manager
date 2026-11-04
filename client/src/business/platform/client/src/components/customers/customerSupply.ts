@@ -18,7 +18,13 @@ export type SupplyIdentity = { enterpriseId: number; actorUserId: number; key: s
 
 export function useCustomerSupplyAuthority(scope: CustomerContactScope | null, scopeReady: boolean) {
   const business = useBusinessScope();
-  const enterpriseQuery = trpc.enterprise.me.useQuery(undefined, { retry: false, refetchOnWindowFocus: true });
+  // The root session owns identity verification and query-cache isolation. This
+  // consumer must not turn window focus/reconnect/remount into another check.
+  const enterpriseQuery = trpc.enterprise.me.useQuery(undefined, {
+    enabled: scopeReady && Boolean(scope), retry: false, staleTime: Infinity,
+    refetchInterval: false, refetchOnWindowFocus: false,
+    refetchOnReconnect: false, refetchOnMount: false,
+  });
   const summary = enterpriseQuery.data;
   const ready = scopeReady && Boolean(scope)
     && !enterpriseQuery.isError && summary?.enterprise?.id === scope?.enterpriseId
@@ -44,6 +50,7 @@ export function useCustomerSupplyAuthority(scope: CustomerContactScope | null, s
   const identity = useMemo<SupplyIdentity | null>(() => ready && scope
     ? { enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, key } : null, [key, ready, scope]);
   return { identity, canWrite, canRead: ready && business.officialInventoryPermissions.read,
+    failed: enterpriseQuery.isError, retry: () => enterpriseQuery.refetch(),
     onAuthorizationError: business.onAuthorizationError };
 }
 

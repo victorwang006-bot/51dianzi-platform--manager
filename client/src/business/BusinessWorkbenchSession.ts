@@ -5,9 +5,10 @@ import { trpc as adminTrpc } from "../lib/trpc";
 import { CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT } from "./BusinessScope";
 import { AUTH_SESSION_CLEARED_EVENT } from "./platform/client/src/lib/authSessionEvents";
 
-/** A short UI lease, never a server authorization or a persisted login. */
-export const BUSINESS_CONTEXT_FRESH_MS = 30_000;
-export const BUSINESS_FOCUS_DEBOUNCE_MS = 1_000;
+/** Verified once per authenticated identity in memory, never server authority
+ * or a persisted login. Identity changes and explicit refusals discard it. */
+export const BUSINESS_CONTEXT_STALE_TIME = Infinity;
+const BUSINESS_RESTORE_DEBOUNCE_MS = 1_000;
 const authKey = getQueryKey(adminTrpc.auth.me, undefined, "query");
 
 /** AbortSignal.any-compatible composition with explicit request-lifetime cleanup. */
@@ -93,7 +94,7 @@ export class BusinessWorkbenchSession {
   authorization: string | null = null;
   denied = false;
   denialKind: "session-invalid" | "security-unclassified" | null = null;
-  private lastFocus = -Infinity;
+  private lastRestore = -Infinity;
   private domain: {
     key: string;
     client: QueryClient;
@@ -177,11 +178,12 @@ export class BusinessWorkbenchSession {
       this.revoke(failure);
   };
 
-  revalidate(trigger: "focus" | "restore" | "interval") {
+  /** BFCache restore is a security re-entry, not an ordinary window focus. */
+  revalidateAfterRestore() {
     if (this.denied) return;
     const now = Date.now();
-    if (now - this.lastFocus < BUSINESS_FOCUS_DEBOUNCE_MS) return;
-    this.lastFocus = now;
+    if (now - this.lastRestore < BUSINESS_RESTORE_DEBOUNCE_MS) return;
+    this.lastRestore = now;
     // One trigger fans out to two distinct proof procedures; join an already
     // running query instead of aborting and restarting it.
     for (const client of [this.discovery, this.context])

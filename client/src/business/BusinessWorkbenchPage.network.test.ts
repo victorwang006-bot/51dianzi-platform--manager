@@ -12,7 +12,6 @@ import superjson from "superjson";
 import { trpc as adminTrpc } from "../lib/trpc";
 import { AUTH_SESSION_CLEARED_EVENT } from "./platform/client/src/lib/authSessionEvents";
 import {
-  BUSINESS_CONTEXT_FRESH_MS,
   createBusinessRequestCancellation,
 } from "./BusinessWorkbenchSession";
 import {
@@ -125,6 +124,12 @@ type MountedWorkbench = {
   returnToWorkbench(): Promise<void>;
   unmount(): Promise<void>;
 };
+
+function dispatchBusinessRestore() {
+  const event = new window.Event("pageshow");
+  Object.defineProperty(event, "persisted", { value: true });
+  window.dispatchEvent(event);
+}
 
 function trpcResult(value: unknown): Response {
   return new Response(JSON.stringify([{ result: { data: { json: value } } }]), {
@@ -389,6 +394,18 @@ function successfulWorkbenchResponse(call: FetchCall): Response {
   }
   if (call.pathname === "/api/business-trpc/context")
     return trpcResult(verifiedContext);
+  if (call.pathname === "/api/business-trpc/enterprise.me")
+    return trpcResult({
+      currentUserId: 7002,
+      enterprise: { id: 88001 },
+      isOwner: false,
+      permissionKeys: [],
+    });
+  if (call.pathname === "/api/business-trpc/enterprise.me,customer.list")
+    return trpcBatchResult(
+      { currentUserId: 7002, enterprise: { id: 88001 }, isOwner: false, permissionKeys: [] },
+      { items: [], total: 0 }
+    );
   if (call.pathname === "/api/business-trpc/customer.context") {
     return trpcResult({ canManageAll: false, members: [] });
   }
@@ -647,6 +664,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
   let mounted: MountedWorkbench | undefined;
 
   afterEach(async () => {
+    vi.useRealTimers();
     await mounted?.unmount();
     mounted = undefined;
     vi.restoreAllMocks();
@@ -890,8 +908,8 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(true);
   });
 
-  it.each(["单条上传", "表格上传"])(
-    "reads source options only after focus and upload channels only after opening %s through the real BFF",
+  it.each(["单条上传", "上传库存"])(
+    "reads source options only after filter focus and upload channels only after opening %s through the real BFF",
     async uploadLabel => {
       const network = installNetwork(call =>
         legacyChannelInventoryResponse(call, {
@@ -1435,14 +1453,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toHaveLength(2);
   });
 
-  it("keeps the same verified customer tree editable during focus revalidation, then closes it when the binding disappears", async () => {
-    const focusContext = deferred<Response>();
+  it("keeps the same verified customer tree editable during BFCache restore revalidation, then closes it when the binding disappears", async () => {
+    const restoreContext = deferred<Response>();
     const draftInvalidated = vi.fn();
     let contextAttempts = 0;
     const network = installNetwork(call => {
       if (call.pathname === "/api/business-trpc/context") {
         contextAttempts += 1;
-        if (contextAttempts === 2) return focusContext.promise;
+        if (contextAttempts === 2) return restoreContext.promise;
       }
       return successfulWorkbenchResponse(call);
     });
@@ -1465,15 +1483,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
 
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
     await waitFor(() => {
       const boundary = mounted?.container.querySelector(
         '[data-business-context-verification="revalidating"]'
       );
-      expect(boundary?.textContent).toContain(
-        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
-      );
+      expect(boundary?.querySelector('[role="status"]')).toBeNull();
+      expect(boundary?.textContent).not.toContain("正在后台核验业务主体绑定");
       expect(boundary?.querySelector("[inert]")).toBeNull();
       expect(boundary?.textContent).toContain("客户列表");
       expect(
@@ -1483,7 +1500,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       ).toBe(initialCustomerTitle);
     });
     expect(draftInvalidated).not.toHaveBeenCalled();
-    focusContext.resolve(
+    restoreContext.resolve(
       trpcResult({
         ...verifiedContext,
         staffPrincipal: {
@@ -1507,13 +1524,13 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
   });
 
-  it("fails closed after a focus recheck error even though React Query still retains the old successful context data", async () => {
-    const focusContext = deferred<Response>();
+  it("fails closed after a BFCache restore recheck error even though React Query still retains the old successful context data", async () => {
+    const restoreContext = deferred<Response>();
     let contextAttempts = 0;
     const network = installNetwork(call => {
       if (call.pathname === "/api/business-trpc/context") {
         contextAttempts += 1;
-        if (contextAttempts === 2) return focusContext.promise;
+        if (contextAttempts === 2) return restoreContext.promise;
       }
       return successfulWorkbenchResponse(call);
     });
@@ -1525,22 +1542,22 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     const initialDomainCallCount = domainCalls(network.calls).length;
 
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
     await waitFor(() =>
-      expect(mounted?.container.textContent).toContain(
-        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
-      )
+      expect(mounted?.container.querySelector(
+        '[data-business-context-verification="revalidating"]'
+      )).not.toBeNull()
     );
-    focusContext.reject(
-      new TypeError("focus-context-revalidation-unavailable")
+    restoreContext.reject(
+      new TypeError("restore-context-revalidation-unavailable")
     );
     await waitFor(() => {
       expect(mounted?.container.textContent).toContain(
         "业务上下文暂时无法核验"
       );
       expect(mounted?.container.textContent).toContain(
-        "focus-context-revalidation-unavailable"
+        "restore-context-revalidation-unavailable"
       );
     });
     expect(mounted?.container.textContent).not.toContain("客户列表");
@@ -1548,14 +1565,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     expect(businessStorageScope()).toBeNull();
   });
 
-  it("restores the same verified identity after focus without remounting its customer tree or invalidating drafts", async () => {
-    const focusContext = deferred<Response>();
+  it("restores the same verified identity after BFCache restore without remounting its customer tree or invalidating drafts", async () => {
+    const restoreContext = deferred<Response>();
     const draftInvalidated = vi.fn();
     let contextAttempts = 0;
     const network = installNetwork(call => {
       if (call.pathname === "/api/business-trpc/context") {
         contextAttempts += 1;
-        if (contextAttempts === 2) return focusContext.promise;
+        if (contextAttempts === 2) return restoreContext.promise;
       }
       return successfulWorkbenchResponse(call);
     });
@@ -1574,7 +1591,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
 
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
     await waitFor(() =>
       expect(
@@ -1583,7 +1600,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         )
       ).not.toBeNull()
     );
-    focusContext.resolve(trpcResult(verifiedContext));
+    restoreContext.resolve(trpcResult(verifiedContext));
 
     await waitFor(() => {
       expect(
@@ -1675,7 +1692,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
   });
 
-  it("uses a new domain cache and storage namespace when a focus recheck returns a new bindingVersion", async () => {
+  it("uses a new domain cache and storage namespace when a BFCache restore recheck returns a new bindingVersion", async () => {
     let contextAttempts = 0;
     let listAttempts = 0;
     const network = installNetwork(call => {
@@ -1719,7 +1736,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
 
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
 
     await waitFor(() =>
@@ -1733,8 +1750,8 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
   });
 
-  it("invalidates customer-entry drafts and remounts the branch when a successful focus recheck revokes customer write scope without changing identity", async () => {
-    const focusContext = deferred<Response>();
+  it("invalidates customer-entry drafts and remounts the branch when a successful BFCache restore recheck revokes customer write scope without changing identity", async () => {
+    const restoreContext = deferred<Response>();
     const draftInvalidated = vi.fn();
     const customerWriteContext = {
       ...verifiedContext,
@@ -1746,7 +1763,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       if (call.pathname === "/api/business-trpc/context") {
         contextAttempts += 1;
         if (contextAttempts === 1) return trpcResult(customerWriteContext);
-        if (contextAttempts === 2) return focusContext.promise;
+        if (contextAttempts === 2) return restoreContext.promise;
       }
       return successfulWorkbenchResponse(call);
     });
@@ -1765,15 +1782,15 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
 
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
     await waitFor(() =>
-      expect(mounted?.container.textContent).toContain(
-        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
-      )
+      expect(mounted?.container.querySelector(
+        '[data-business-context-verification="revalidating"]'
+      )).not.toBeNull()
     );
     expect(draftInvalidated).not.toHaveBeenCalled();
-    focusContext.resolve(
+    restoreContext.resolve(
       trpcResult({
         ...customerWriteContext,
         merchant: { id: 30061, canWrite: false },
@@ -1800,14 +1817,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
   });
 
-  it("rebuilds the verified workbench branch when a same-identity focus check changes another BFF workbench capability", async () => {
-    const focusContext = deferred<Response>();
+  it("rebuilds the verified workbench branch when a same-identity restore check changes another BFF workbench capability", async () => {
+    const restoreContext = deferred<Response>();
     const draftInvalidated = vi.fn();
     let contextAttempts = 0;
     const network = installNetwork(call => {
       if (call.pathname === "/api/business-trpc/context") {
         contextAttempts += 1;
-        if (contextAttempts === 2) return focusContext.promise;
+        if (contextAttempts === 2) return restoreContext.promise;
       }
       return successfulWorkbenchResponse(call);
     });
@@ -1826,14 +1843,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     );
 
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
     await waitFor(() =>
-      expect(mounted?.container.textContent).toContain(
-        "正在后台核验业务主体绑定，可继续编辑；提交仍由服务端实时鉴权。"
-      )
+      expect(mounted?.container.querySelector(
+        '[data-business-context-verification="revalidating"]'
+      )).not.toBeNull()
     );
-    focusContext.resolve(
+    restoreContext.resolve(
       trpcResult({
         ...verifiedContext,
         workbenchCapabilities: ["customers.manage", "inventory.read"],
@@ -1886,7 +1903,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     expect(customerContextSignal?.aborted).toBe(true);
     expect(businessStorageScope()).toBeNull();
   });
-  it("keeps a real editable customer input and scroll position through coalesced focus checks and same-identity responses", async () => {
+  it("keeps a real editable customer input and scroll position through coalesced restore checks and same-identity responses", async () => {
     const fresh = deferred<Response>();
     let checks = 0;
     const network = installNetwork(call => {
@@ -1915,9 +1932,9 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     const scroll = input.closest("section")!;
     scroll.scrollTop = 123;
     await act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
-      window.dispatchEvent(new window.Event("focus"));
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
+      dispatchBusinessRestore();
+      dispatchBusinessRestore();
     });
     await waitFor(() => expect(checks).toBe(2));
     expect(mounted.container.querySelector("[inert]")).toBeNull();
@@ -1957,42 +1974,30 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toHaveLength(2);
   });
 
-  it("rechecks expired same-session memory without a full-page loading replacement", async () => {
-    const fresh = deferred<Response>();
-    let checks = 0;
-    const network = installNetwork(call => {
-      if (call.pathname === "/api/business-trpc/context" && ++checks === 2)
-        return fresh.promise;
-      return successfulWorkbenchResponse(call);
-    });
+  it("retains a verified authenticated identity after 30 seconds and cache-GC age without another bootstrap read", async () => {
+    const network = installNetwork(successfulWorkbenchResponse);
     mounted = await mountWorkbench();
     await waitFor(() =>
       expect(mounted?.container.textContent).toContain("暂无匹配客户")
     );
+    const scope = businessStorageScope();
+    const invalidated = vi.fn();
+    window.addEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+    vi.useFakeTimers();
     await mounted.leaveWorkbench();
-    const now = Date.now();
-    vi.spyOn(Date, "now").mockImplementation(
-      () => now + BUSINESS_CONTEXT_FRESH_MS + 1
-    );
+    await act(async () => { await vi.advanceTimersByTimeAsync(6 * 60_000); });
     await mounted.returnToWorkbench();
-    await waitFor(() => expect(checks).toBe(2));
+    await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+    vi.useRealTimers();
     expect(mounted.container.textContent).toContain("客户列表");
-    expect(
-      mounted.container.querySelector("[data-business-loading]")
-    ).toBeNull();
-    expect(
-      network.calls.filter(
-        call => call.pathname === "/api/business-trpc/merchants"
-      )
-    ).toHaveLength(2);
-    fresh.resolve(trpcResult(verifiedContext));
-    await waitFor(() =>
-      expect(
-        mounted?.container.querySelector(
-          '[data-business-context-verification="verified"]'
-        )
-      ).not.toBeNull()
-    );
+    expect(mounted.container.querySelector("[data-business-loading]")).toBeNull();
+    expect(mounted.container.querySelector('[data-business-context-verification="verified"]')).not.toBeNull();
+    expect(mounted.container.textContent).not.toContain("正在后台核验业务主体绑定");
+    expect(businessStorageScope()).toBe(scope);
+    expect(invalidated).not.toHaveBeenCalled();
+    for (const procedure of ["merchants", "context"])
+      expect(network.calls.filter(call => call.pathname === `/api/business-trpc/${procedure}`)).toHaveLength(1);
+    window.removeEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
   });
 
   it("does not deserialize persisted ready context into authority while root authentication is UNKNOWN", async () => {
@@ -2050,7 +2055,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       });
       mounted = await mountWorkbench();
       await waitFor(() => expect(oldSignal).toBeInstanceOf(AbortSignal));
-      await act(async () => window.dispatchEvent(new window.Event("focus")));
+      await act(async () => dispatchBusinessRestore());
       await waitFor(() => expect(checks).toBe(2));
       fresh.resolve(
         trpcError(
@@ -2324,7 +2329,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toContain("汽车电子");
     await setValue('input[aria-label="联系人1姓名"]', "虚构联系人");
     await setValue('input[aria-label="联系人1联系方式值"]', "13800138000");
-    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await act(async () => dispatchBusinessRestore());
     await waitFor(() => expect(checks).toBe(2));
     expect(
       mounted.container.querySelector(
@@ -2361,7 +2366,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
   });
 
   it.each(["empty", "forbidden"] as const)(
-    "requires a new context proof after %s merchant scope is revoked and later restored, even inside the fresh window",
+    "requires a new context proof after %s merchant scope is revoked and later restored, without trusting retained identity proofs",
     async deniedScope => {
       let discoveryAttempts = 0;
       const revokedScope = deferred<Response>();
@@ -2385,7 +2390,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       await waitFor(() =>
         expect(mounted?.container.textContent).toContain("暂无匹配客户")
       );
-      await act(async () => window.dispatchEvent(new window.Event("focus")));
+      await act(async () => dispatchBusinessRestore());
       await waitFor(() => expect(contextAttempts).toBe(2));
       revokedScope.resolve(
         deniedScope === "empty"
@@ -2398,7 +2403,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         )
       );
       expect(businessStorageScope()).toBeNull();
-      // The parallel focus context was canceled by discovery revocation.
+      // The parallel restore context was canceled by discovery revocation.
       expect(
         network.calls
           .filter(call => call.pathname === "/api/business-trpc/context")
@@ -2470,7 +2475,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     await waitFor(() =>
       expect(mounted?.container.textContent).toContain("原企业客户")
     );
-    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await act(async () => dispatchBusinessRestore());
     await waitFor(() =>
       expect(mounted?.container.textContent).toContain("新企业客户")
     );
@@ -2599,7 +2604,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       const scope = businessStorageScope();
       const invalidated = vi.fn();
       window.addEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
-      await act(async () => window.dispatchEvent(new window.Event("focus")));
+      await act(async () => dispatchBusinessRestore());
       await waitFor(() => expect(checks).toBe(2));
       await waitFor(() => expect(mounted?.container.querySelector('[data-business-context-verification="verified"]')).not.toBeNull());
       const changed = change === "server-permission-revision" || change === "native-role";
@@ -2637,8 +2642,9 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     mounted = await mountWorkbench("/workbench/channel-inventory");
     await waitFor(() => expect(mounted?.container.textContent).toContain("SHARED-TEST-502"));
     expect(mounted.container.querySelector("td.ci-material-recorder-col")?.textContent).toBe("Jack");
-    expect(mounted.container.querySelectorAll("thead th")).toHaveLength(9);
-    for (const label of ["单条上传", "表格上传"]) expect(Array.from(mounted.container.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent === label)?.disabled).toBe(true);
+    expect(mounted.container.querySelectorAll("thead th")).toHaveLength(10);
+    expect(mounted.container.querySelector("thead")?.textContent).toContain("所属行业");
+    for (const label of ["单条上传", "上传库存"]) expect(Array.from(mounted.container.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent === label)?.disabled).toBe(true);
     expect(mounted.container.querySelector("textarea")).toBeNull();
     expect(network.calls.some(call => /officialChannelInventory|channelInventory\.(getTeamMaterialForEdit|createMaterial|notesList)/.test(call.pathname))).toBe(false);
   });
@@ -2664,7 +2670,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     });
     mounted = await mountWorkbench("/workbench/channel-inventory");
     await waitFor(() => expect(mounted?.container.textContent).toContain("SHARED-TEST-502"));
-    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await act(async () => dispatchBusinessRestore());
     await waitFor(() => expect(checks).toBe(2));
     await waitFor(() => expect(mounted?.container.textContent).not.toContain("SHARED-TEST-502"));
     if (change === "read") {
@@ -2689,22 +2695,80 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     expect(network.calls.some(call => call.pathname.includes("channelInventory."))).toBe(false);
   });
 
-  it("merges rapid focus, restored-pageshow and route re-entry into one pair of proof requests", async () => {
+  it("does not reverify during ordinary focus, visible browsing or same-identity auth refresh after the old 30-second lease", async () => {
+    const network = installNetwork(call => call.pathname === "/api/business-trpc/context"
+      ? trpcResult({
+          ...verifiedContext,
+          merchant: { id: 30061, canWrite: true },
+          writeCapabilities: ["customers.manage"],
+        })
+      : call.pathname === "/api/business-trpc/customer.context"
+        ? trpcResult({
+            canManageAll: false,
+            actorUserId: 7002,
+            members: [{ userId: 7002, name: "虚构员工" }],
+          })
+      : successfulWorkbenchResponse(call));
+    mounted = await mountWorkbench();
+    await waitFor(() => expect(mounted?.container.textContent).toContain("暂无匹配客户"));
+    const toggle = Array.from(mounted.container.querySelectorAll<HTMLButtonElement>("button"))
+      .find(node => node.textContent?.trim() === "录入客户");
+    await act(async () => toggle!.click());
+    const input = mounted.container.querySelector<HTMLInputElement>('[data-customer-field="name"]')!;
+    expect(input).toBeTruthy();
+    await waitFor(() => expect(input.disabled).toBe(false));
+    const scope = businessStorageScope();
+    const scroll = input.closest("section")!;
+    scroll.scrollTop = 123;
+    const invalidated = vi.fn();
+    window.addEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+    vi.useFakeTimers();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(90_000);
+      window.dispatchEvent(new window.Event("focus"));
+      window.dispatchEvent(new window.Event("focus"));
+      window.dispatchEvent(new window.Event("pageshow"));
+      input.focus();
+    });
+    vi.useRealTimers();
+    await mounted.refreshAuth();
+    await mounted.navigate("/workbench/customers?merchantId=30061");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(input, "过旧时限仍可编辑的虚构客户");
+      input.dispatchEvent(new window.Event("input", { bubbles: true }));
+      input.dispatchEvent(new window.Event("change", { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+    expect(mounted.container.querySelector('[data-customer-field="name"]')).toBe(input);
+    expect(input.disabled).toBe(false);
+    expect(input.value).toBe("过旧时限仍可编辑的虚构客户");
+    expect(scroll.scrollTop).toBe(123);
+    expect(businessStorageScope()).toBe(scope);
+    expect(mounted.container.querySelector("[data-business-loading]")).toBeNull();
+    expect(mounted.container.querySelector('[data-business-context-verification="revalidating"]')).toBeNull();
+    expect(mounted.container.textContent).not.toContain("正在后台核验业务主体绑定");
+    expect(invalidated).not.toHaveBeenCalled();
+    for (const procedure of ["merchants", "context"])
+      expect(network.calls.filter(call => call.pathname === `/api/business-trpc/${procedure}`)).toHaveLength(1);
+    window.removeEventListener(CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT, invalidated);
+  });
+
+  it("coalesces rapid BFCache restores and retains proof on ordinary route re-entry", async () => {
     const network = installNetwork(successfulWorkbenchResponse);
     mounted = await mountWorkbench();
     await waitFor(() => expect(mounted?.container.textContent).toContain("暂无匹配客户"));
-    const fireFocus = async () => act(async () => {
-      window.dispatchEvent(new window.Event("focus"));
+    const fireRestore = async () => act(async () => {
+      dispatchBusinessRestore();
       const restore = new window.Event("pageshow");
       Object.defineProperty(restore, "persisted", { value: true });
       window.dispatchEvent(restore);
-      window.dispatchEvent(new window.Event("focus"));
+      dispatchBusinessRestore();
     });
-    await fireFocus();
+    await fireRestore();
     await waitFor(() => expect(network.calls.filter(call => call.pathname === "/api/business-trpc/context")).toHaveLength(2));
     await mounted.leaveWorkbench();
     await mounted.returnToWorkbench();
-    await fireFocus();
+    await fireRestore();
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
     for (const procedure of ["merchants", "context"])
       expect(network.calls.filter(call => call.pathname === `/api/business-trpc/${procedure}`)).toHaveLength(2);
