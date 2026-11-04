@@ -49,6 +49,8 @@ import {
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../client/src/business/platform/shared/channelInventoryCollaboration";
 import { teamMaterialSourceSchema } from "../client/src/business/platform/shared/channelInventorySource";
 import { CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS, isCustomerSupplyBusinessMethod } from "./customerSupplyBusinessInput";
+import { customerStarContextInputSchema, customerSetStarSchema } from "../client/src/business/platform/shared/customerStars";
+import { customerListSchema } from "../client/src/business/platform/shared/crmCustomers";
 
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
@@ -143,6 +145,9 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "organization.updateMemberAccess", module: "users", mode: "write" },
   { method: "importInventory.*", module: "inventory", mode: "write" },
   { method: "inbound.*", module: "inventory", mode: "write" },
+  { method: "customer.starContext", module: "customers", mode: "read" },
+  // A fixed personal-preference command, NOT a grant to all customer writes.
+  { method: "customer.setStar", module: "customers", mode: "read" },
   { method: "customer.*", module: "customers", mode: "write" },
   { method: "customerDemand.sales.*", module: "customers", mode: "write" },
   { method: "customerDemand.procurement.*", module: "procurement", mode: "write" },
@@ -382,7 +387,7 @@ async function forwardBusinessMethod(
     }
     // The new logical read-only source query retains the complete binding/scope
     // fence, but adds no production command-audit DML. Other methods are unchanged.
-    if (capability.method === "channelInventory.getTeamMaterialSource") return result;
+    if (capability.method === "channelInventory.getTeamMaterialSource" || capability.method === "customer.starContext") return result;
     await db.recordBusinessCommandAccess({
       merchantId: merchant.id,
       staffUserId: staffBinding.frontUserId,
@@ -418,6 +423,9 @@ const CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny>
   "channelInventory.collaborationNotesEdit": collaborationNotesEditSchema,
 };
 function businessInputSchema(method: string): z.ZodTypeAny {
+  if (method === "customer.starContext") return customerStarContextInputSchema;
+  if (method === "customer.setStar") return customerSetStarSchema;
+  if (method === "customer.list") return customerListSchema;
   if (isCustomerSupplyBusinessMethod(method)) return CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS[method];
   return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method]
     ?? z.unknown();
@@ -558,6 +566,11 @@ const inboundBusinessRouter = router({
 
 const customerBusinessRouter = router({
   context: businessQuery("customer.context", "customers"),
+  starContext: businessQuery("customer.starContext", "customers"),
+  // Native front resolves current record visibility and valid same-team targets.
+  // Only this closed personal-preference mutation needs read, not module write.
+  setStar: publicProcedure.input(customerSetStarSchema).mutation(({ ctx, input }) =>
+    forwardBusinessMethod(ctx, input, { method: "customer.setStar", module: "customers", mode: "read" })),
   list: businessQuery("customer.list", "customers"),
   get: businessQuery("customer.get", "customers"),
   ownershipSearch: businessQuery("customer.ownershipSearch", "customers"),

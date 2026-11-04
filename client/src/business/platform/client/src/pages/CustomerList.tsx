@@ -1,7 +1,8 @@
 import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
 import { useCustomerCreateDraft, useCustomerCreateDraftIdentity } from "../hooks/useCustomerCreateDraft";
+import { useCustomerStars } from "../hooks/useCustomerStars";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Plus, Star } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import {
@@ -20,7 +21,7 @@ import { CustomerSupplyCell } from "../components/customers/CustomerSupplyCell";
 import { CustomerSupplyAction } from "../components/customers/CustomerSupplyAction";
 import { useCustomerSupplyAuthority, supplyLocation, type SupplySummary } from "../components/customers/customerSupply";
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
-import { EMPTY_CUSTOMER_FORM, errorMessage, formatCustomerDateTime } from "../components/customers/customerUtils";
+import { EMPTY_CUSTOMER_FORM, errorMessage } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
 import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { Button } from "../components/ui/button";
@@ -119,6 +120,17 @@ export default function CustomerList() {
   const [moreFiltersOpen, setMoreFiltersOpen] = useRememberedState("moreFiltersOpen", false);
   const [page, setPage] = useRememberedState("page", 1);
   const canManageAll = contextQuery.data?.canManageAll ?? false;
+  const starFocusId = useRef<number | null>(null);
+  const tableRegionRef = useRef<HTMLDivElement>(null);
+  const stars = useCustomerStars(contactScope.scope, contactScope.ready && !contextQuery.isPending && !contextQuery.isError, async customerId => {
+    // Do not steal focus if the user has moved into a filter or another action.
+    starFocusId.current = document.activeElement?.getAttribute("data-star-customer") === String(customerId) ? customerId : null;
+    setPage(1);
+    // The service sorts the entire authorized filtered set before pagination.
+    // Do not locally reorder the currently loaded twenty records.
+    await utils.customer.list.invalidate();
+  });
+  const delegatedStars = stars.targetUserId > 0 && stars.targetUserId !== stars.actorUserId;
 
   // A non-admin must never retain an all-company scope or another seller's id,
   // including while permissions refresh after the page is already open.
@@ -134,25 +146,26 @@ export default function CustomerList() {
   }, [canManageAll, contextQuery.isLoading, contextQuery.isPending, contextQuery.data]);
 
   const listInput = useMemo(() => {
-    const scope = canManageAll ? appliedFilters.scope : "mine";
+    const scope = delegatedStars ? "all" : canManageAll ? appliedFilters.scope : "mine";
     const assignedUserId = Number(appliedFilters.assignedUserId);
     return {
       keyword: appliedFilters.keyword.trim(),
       ...(appliedFilters.grade ? { grade: appliedFilters.grade } : {}),
       ...(appliedFilters.stage ? { stage: appliedFilters.stage } : {}),
       scope,
-      ...(canManageAll &&
+      ...(delegatedStars ? { assignedUserId: stars.targetUserId } : canManageAll &&
       scope === "all" &&
       Number.isInteger(assignedUserId) &&
       assignedUserId > 0
         ? { assignedUserId }
         : {}),
+      ...(stars.targetUserId > 0 ? { starUserId: stars.targetUserId } : {}),
       archived: appliedFilters.archived,
       due: appliedFilters.due,
       page,
       pageSize: PAGE_SIZE,
     };
-  }, [appliedFilters, canManageAll, page]);
+  }, [appliedFilters, canManageAll, page, delegatedStars, stars.targetUserId]);
   const listQuery = useRestoringListQuery(trpc.customer.list.useQuery(listInput, freshListOptions({
     enabled: Boolean(contextQuery.data),
   }, d51Ready)));
@@ -224,6 +237,13 @@ export default function CustomerList() {
   const safePage = result ? Math.min(page, totalPages) : page;
   const currentListInputRef = useRef(listInput);
   currentListInputRef.current = listInput;
+  useEffect(() => {
+    if (stars.busy || listQuery.isFetching || !result || starFocusId.current === null) return;
+    const id = starFocusId.current; starFocusId.current = null;
+    const star = tableRegionRef.current?.querySelector<HTMLButtonElement>(`button[data-star-customer="${id}"]`);
+    (star ?? tableRegionRef.current ?? createButtonRef.current)?.focus({ preventScroll: true });
+  }, [result, listQuery.isFetching, stars.busy]);
+  useEffect(() => { starFocusId.current = null; }, [contactScope.identityKey, stars.targetUserId]);
 
   const collapseCreate = (force = false) => {
     if (!force && createState.busy) return;
@@ -337,7 +357,18 @@ export default function CustomerList() {
       <AdminPage className="customer-list-page">
       <AdminPageHeader title="客户列表" actions={
         <div className="flex flex-wrap items-center gap-2">
-          {canManageAll ? (
+          {stars.targets.length > 1 ? <label className="customer-list-star-selector customer-list-caption inline-flex items-center gap-1.5">
+            标星列表：
+            <select aria-label="标星列表" className="customer-list-control rounded border border-slate-300 bg-white px-2"
+              value={String(stars.targetUserId)} disabled={stars.busy || stars.loading}
+              onChange={event => { stars.changeTarget(Number(event.target.value)); setPage(1); }}>
+              {stars.invalidTarget ? <option value={String(stars.targetUserId)}>组员权限已变化，请重新选择</option> : null}
+              {stars.targets.map(target => <option key={target.userId} value={String(target.userId)}>
+                {target.userId === stars.actorUserId ? "我的" : `${target.name}（组员 · ID ${target.userId}）`}
+              </option>)}
+            </select>
+          </label> : null}
+          {canManageAll && !delegatedStars ? (
             <Select
               value={appliedFilters.scope}
               onValueChange={value => changeScope(value as ScopeFilter)}
@@ -368,6 +399,17 @@ export default function CustomerList() {
           </Button>
         </div>
       } />
+
+      {delegatedStars && stars.target ? <p className="customer-list-caption mb-2">正在为{stars.target.name}管理重点客户（用户ID {stars.target.userId}）</p> : null}
+      {stars.failed || stars.invalidTarget ? <div role="alert" className="customer-list-caption mb-2">
+        {stars.invalidTarget ? "组员星标权限已变化，请重新选择标星列表；未切换为我的星标。" : "星标权限读取失败，其他客户操作仍可使用。"}
+        <CustomerSupplyAction onClick={stars.refresh}>重新读取星标权限</CustomerSupplyAction>
+        {stars.invalidTarget ? <CustomerSupplyAction onClick={() => { stars.changeTarget(stars.actorUserId); setPage(1); }}>选择我的星标</CustomerSupplyAction> : null}
+      </div> : null}
+      {stars.notice ? <div role={stars.unknown ? "alert" : "status"} aria-live="polite" className="customer-list-caption mb-2">
+        {stars.notice}
+        {stars.unknown ? <CustomerSupplyAction onClick={stars.retry}>重试原星标请求</CustomerSupplyAction> : null}
+      </div> : null}
 
       <AdminFilterBar className="customer-list-filters mb-3" aria-label="客户筛选">
         <div className="flex flex-wrap items-center gap-2">
@@ -480,7 +522,7 @@ export default function CustomerList() {
                 ))}
               </SelectContent>
             </Select>
-            {canManageAll && draftFilters.scope === "all" ? (
+            {canManageAll && !delegatedStars && draftFilters.scope === "all" ? (
               <Select
                 value={draftFilters.assignedUserId || "all"}
                 onValueChange={value =>
@@ -596,7 +638,7 @@ export default function CustomerList() {
               ) : null}
             </div>
           ) : (
-            <div className="customer-list-table-scroll" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
+            <div ref={tableRegionRef} className="customer-list-table-scroll" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
             <Table className="admin-table-readable customer-list-table" containerClassName="customer-list-table-inner" aria-label="客户列表">
               <colgroup>
                 <col className="customer-list-col-name" />
@@ -605,7 +647,6 @@ export default function CustomerList() {
                 <col className="customer-list-col-stage" />
                 <col className="customer-list-col-owner" />
                 <col className="customer-list-col-supply" />
-                <col className="customer-list-col-followup" />
                 <col className="customer-list-col-demand" />
                 <col className="customer-list-col-actions" />
               </colgroup>
@@ -627,9 +668,6 @@ export default function CustomerList() {
                     负责人
                   </TableHead>
                   <TableHead className="text-center" data-testid="supply-header">供应库存</TableHead>
-                  <TableHead className="text-center" data-testid="followup-header">
-                    下次跟进
-                  </TableHead>
                   <TableHead className="customer-list-demand-column text-center" data-testid="demand-header">
                     需求录入
                   </TableHead>
@@ -641,18 +679,31 @@ export default function CustomerList() {
               <TableBody>
                 {result?.items.map(customer => {
                   const incomplete = customerNeedsCompletion(customer);
-                  const overdue = isFollowUpOverdue(customer.nextFollowUpAt);
+                  const rowStarred = customer.starUserId === stars.targetUserId && customer.isStarred === true;
                   return (
                     <TableRow key={customer.id} data-page-memory-row={String(customer.id)}>
                       <TableCell>
+                        <div className="customer-list-name-line">
                         <button
                           type="button"
-                          className="customer-list-name block max-w-full truncate text-left font-medium hover:underline"
+                          className="customer-list-name min-w-0 truncate text-left font-medium hover:underline"
                           title={customer.name || "未命名客户"}
                           onClick={() => navigate(`/customers/${customer.id}`)}
                         >
                           {customer.name?.trim() || "未命名客户"}
                         </button>
+                        <button type="button" className="customer-list-star" data-star-customer={customer.id}
+                          data-star-state={stars.pendingCustomerId === customer.id && stars.busy ? "pending" : rowStarred ? "starred" : "unstarred"}
+                          aria-label={`${rowStarred ? "取消标星" : "标星"}：${customer.name?.trim() || "未命名客户"}`}
+                          aria-pressed={rowStarred}
+                          aria-busy={stars.pendingCustomerId === customer.id && stars.busy}
+                          aria-disabled={!stars.canSet(customer) || stars.blocked || listQuery.isFetching}
+                          title={!stars.ready ? "星标权限尚未核验" : !stars.canSet(customer) ? "当前客户不能设置星标" : rowStarred ? "取消标星" : "标星"}
+                          onClick={event => { event.stopPropagation(); if (!listQuery.isFetching) stars.toggle(customer); }}>
+                          {stars.pendingCustomerId === customer.id && stars.busy ? <Loader2 size={16} aria-hidden="true" className="animate-spin" />
+                            : <Star size={16} aria-hidden="true" />}
+                        </button>
+                        </div>
                         <div className="mt-0.5 flex items-center gap-1.5">
                           {incomplete ? (
                             <span className="customer-list-status rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
@@ -709,25 +760,6 @@ export default function CustomerList() {
                           needsIndustry={!businessIndustryCodeSchema.safeParse(customer.industryCode).success} onCompleteProfile={() => navigate(`/customers/${customer.id}`)}
                           onUpload={() => { if (supplyAuthority.identity) setSupplyCustomer({ id: customer.id, version: customer.version, authorityKey: supplyAuthority.identity.key }); }}
                           onViewStock={channelId => navigate(supplyLocation(channelId, "materials"))} />
-                      </TableCell>
-                      <TableCell className="customer-list-followup-cell text-center tabular-nums" data-testid="followup-cell">
-                        <div
-                          title={formatCustomerDateTime(customer.nextFollowUpAt)}
-                          className={
-                            overdue
-                              ? "text-amber-700"
-                              : customer.nextFollowUpAt
-                                ? "text-slate-700"
-                                : "customer-list-caption"
-                          }
-                        >
-                          {formatCustomerDateTime(customer.nextFollowUpAt)}
-                        </div>
-                        {overdue ? (
-                          <div className="customer-list-status mt-0.5 text-amber-700">
-                            已逾期
-                          </div>
-                        ) : null}
                       </TableCell>
                       <TableCell className="customer-list-demand-column text-center" data-testid="demand-cell">
                         <CustomerSupplyAction
@@ -810,23 +842,6 @@ function gradeClass(grade: CustomerData["grade"]): string {
         ? "bg-[#e8f0fe] text-[#185FA5]"
         : "bg-slate-100 text-slate-500";
 }
-
-function isFollowUpOverdue(value: string | null | undefined): boolean {
-  if (!value || Number.isNaN(new Date(value).getTime())) return false;
-  const dateKey = (date: Date) => {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Shanghai",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(date);
-    const part = (type: Intl.DateTimeFormatPartTypes) =>
-      parts.find(item => item.type === type)?.value ?? "";
-    return `${part("year")}-${part("month")}-${part("day")}`;
-  };
-  return dateKey(new Date(value)) < dateKey(new Date());
-}
-
 function ErrorPanel({
   message,
   onRetry,

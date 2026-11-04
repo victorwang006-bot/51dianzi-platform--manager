@@ -389,8 +389,8 @@ describe("business industry customer integration", () => {
     const rows = document.querySelectorAll("tbody tr");
     expect(rows[0].children[1].textContent).toBe("汽车电子");
     expect(rows[1].children[1].textContent).toBe("未设置");
-    expect(document.querySelectorAll("col")).toHaveLength(9);
-    expect(rows[0].children).toHaveLength(9);
+    expect(document.querySelectorAll("col")).toHaveLength(8);
+    expect(rows[0].children).toHaveLength(8);
     expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine" });
   });
 
@@ -499,10 +499,10 @@ describe("industry legacy draft identity fences", () => {
 describe("customer supply list keeps original CRM workflows", () => {
   function enableSupply() { runtime.supplyNative = { read: true, write: true, note: true, authorizationVersion: "v1" }; }
   function supply() { return { items: [{ customerId: 801, channelId: 411, materialCount: 3, canUpload: true, canViewStock: true, disabledReason: null }, { customerId: 802, channelId: null, materialCount: null, canUpload: false, canViewStock: false, disabledReason: "请补全所属行业" }], canWrite: true }; }
-  it("places supply after owner/before followup without shrinking contacts or removing demand/follow buttons", async () => {
+  it("places supply after owner in the eight-column list without shrinking contacts or removing demand/follow actions", async () => {
     enableSupply(); runtime.supplySummary.mockResolvedValue(supply()); render(<CustomerList />); await settle();
-    expect(Array.from(document.querySelectorAll("thead th")).slice(4).map(node => node.textContent?.trim())).toEqual(["负责人", "供应库存", "下次跟进", "需求", "操作"]);
-    expect(document.querySelectorAll("col")[2].getAttribute("class")).toBe("w-[312px]"); expect(document.querySelectorAll("col")[5].getAttribute("class")).toBe("w-[120px]");
+    expect(Array.from(document.querySelectorAll("thead th")).slice(4).map(node => node.textContent?.trim())).toEqual(["负责人", "供应库存", "需求录入", "跟进"]);
+    expect(document.querySelectorAll("col")[2].getAttribute("class")).toBe("customer-list-col-contacts"); expect(document.querySelectorAll("col")[5].getAttribute("class")).toBe("customer-list-col-supply");
     const row = document.querySelectorAll("tbody tr")[0];
     expect(row.querySelector<HTMLButtonElement>('[data-testid="supply-cell"] button')?.disabled).toBe(false);
     expect(row.querySelector<HTMLButtonElement>('[data-testid="demand-cell"] button')?.disabled).toBe(false);
@@ -513,7 +513,7 @@ describe("customer supply list keeps original CRM workflows", () => {
   it("summary failure disables only supply while retaining real contacts, demand and followup", async () => {
     enableSupply(); runtime.supplySummary.mockRejectedValue(new Error("supply denied")); render(<CustomerList />); await settle();
     expect(document.body.textContent).toContain("列表主联系人"); expect(document.body.textContent).not.toContain("查看库存");
-    for (const cell of Array.from(document.querySelectorAll('[data-testid="supply-cell"]'))) expect(cell.querySelector<HTMLButtonElement>("button")?.disabled).toBe(true);
+    for (const cell of Array.from(document.querySelectorAll('[data-testid="supply-cell"]'))) expect(cell.querySelector<HTMLButtonElement>("button")?.getAttribute("aria-disabled")).toBe("true");
     for (const cell of Array.from(document.querySelectorAll('[data-testid="demand-cell"], [data-testid="actions-cell"]'))) expect(cell.querySelector<HTMLButtonElement>("button")?.disabled).toBe(false);
   });
   it("aborts old summary identity and never paints its late channel/count after revocation", async () => {
@@ -522,7 +522,7 @@ describe("customer supply list keeps original CRM workflows", () => {
     const view = render(<CustomerList />); const signal = runtime.supplySummary.mock.calls[0][1].signal as AbortSignal;
     runtime.supplyNative.authorizationVersion = "revoked-v2"; runtime.supplyNative.write = false; view.rerender(<CustomerList />); await settle(); expect(signal.aborted).toBe(true);
     await act(async () => { finish(supply()); }); expect(document.body.textContent).not.toContain("查看库存（3）");
-    expect(document.querySelector<HTMLButtonElement>('[data-testid="supply-cell"] button')?.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('[data-testid="supply-cell"] button')?.getAttribute("aria-disabled")).toBe("true");
     expect(document.body.textContent).toContain("需求录入"); expect(document.body.textContent).toContain("跟进");
   });
 });

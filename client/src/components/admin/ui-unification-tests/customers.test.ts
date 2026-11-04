@@ -51,8 +51,8 @@ describe("customer list unified presentation contract", () => {
 
   it("keeps genuine customer fields and makes only the final action column right-aligned", () => {
     const headers = elements("TableHead");
-    expect(headers).toHaveLength(9);
-    for (const label of ["客户名称", "所属行业", "联系人 / 电话", "等级 / 阶段", "负责人", "供应库存", "下次跟进", "需求", "操作"]) {
+    expect(headers).toHaveLength(8);
+    for (const label of ["客户名称", "所属行业", "联系人 / 电话", "等级 / 阶段", "负责人", "供应库存", "需求录入", "跟进"]) {
       expect(source).toContain(label);
     }
     for (const tag of ["TableHead", "TableCell"]) {
@@ -61,8 +61,11 @@ describe("customer list unified presentation contract", () => {
       expect(attribute(action!, "className")).toContain("text-right");
     }
     expect(source).toContain("flex items-center justify-end gap-1 whitespace-nowrap");
-    expect(declaration(".customer-list-page .customer-list-table .customer-list-actions-column", "position")).toEqual(["sticky"]);
-    expect(source).toContain('containerClassName="customer-list-table-scroll"');
+    expect(declaration(".customer-list-page .customer-list-table :is(.customer-list-demand-column, .customer-list-actions-column)", "position")).toEqual(["sticky"]);
+    expect(source).toContain('containerClassName="customer-list-table-inner"');
+    expect(source).toContain('className="customer-list-table-scroll"');
+    expect(elements("col")).toHaveLength(8);
+    expect(source).not.toContain('data-testid="followup-header"');
   });
 
   it("retains contact privacy scope and current-page-only summary requests", () => {
@@ -72,13 +75,15 @@ describe("customer list unified presentation contract", () => {
     expect(attribute(summary, "identityKey")).toBe("identityKey={contactScope.identityKey}");
     expect(source).toContain("withCustomerContactScope(contactScope.scope, { customerIds: pageCustomerIds })");
     expect(source).toContain("enabled: contactScope.ready && Boolean(contactScope.scope) && pageCustomerIds.length > 0");
-    expect(source).toContain('const scope = canManageAll ? appliedFilters.scope : "mine"');
+    expect(source).toContain('const scope = delegatedStars ? "all" : canManageAll ? appliedFilters.scope : "mine"');
+    expect(source).toContain('assignedUserId: stars.targetUserId');
   });
 
   it("retains customer navigation, archived restrictions, creation draft and pagination handlers", () => {
     expect(source).toContain("navigate(`/customers/${customer.id}`)");
     expect(source).toContain("navigate(`/customers/${customer.id}?follow=1`)");
-    expect(source).toContain("disabled={Boolean(customer.archivedAt)}");
+    expect(source).toContain('disabledReason={customer.archivedAt ? "该客户已归档，不能新增跟进" : undefined}');
+    expect(source).toContain('disabledReason={customer.archivedAt ? "该客户已归档，不能录入需求" : undefined}');
     expect(source).toContain("onClick={() => createOpen ? collapseCreate() : setCreateOpen(true)}");
     expect(attribute(elements("CustomerCreateForm")[0], "draftIdentity")).toBe("draftIdentity={createDraftIdentity}");
     expect(source).toContain("onClick={() => setPage(value => Math.max(1, value - 1))}");

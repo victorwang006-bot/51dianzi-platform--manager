@@ -11,6 +11,8 @@ import type {
 import { getDb } from "../db";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 import { createRuntimeTeamBusinessAdapter } from "../teamManagement/businessRuntime.mjs";
+import { withCustomerStarAccess } from "./customerStars";
+import type { CustomerListItem } from "../../../shared/customerStars";
 
 export type CrmModulePolicy = Awaited<ReturnType<typeof resolveBusinessModuleAccess>>;
 export type CrmAccessIdentity = { enterpriseId: number; actorUserId: number };
@@ -286,7 +288,10 @@ function mapCustomer(row: CustomerRow): CustomerRecord {
   };
 }
 
-function customerSelect() {
+function customerSelect(starUserId?: number) {
+  const starFields = starUserId === undefined ? sql`` : sql`, COALESCE(star_pref.starred, 0) AS isStarred, COALESCE(star_pref.revision, 0) AS starRevision`;
+  const starJoin = starUserId === undefined ? sql`` : sql`LEFT JOIN crm_customer_star_preferences star_pref
+    ON star_pref.enterpriseId = c.enterpriseId AND star_pref.customerId = c.id AND star_pref.userId = ${starUserId}`;
   return sql`
     SELECT c.id, c.enterpriseId, c.assignedUserId, c.createdByUserId, c.name, c.industryCode,
            cc.contactName, cc.phone, cc.email,
@@ -295,10 +300,12 @@ function customerSelect() {
            c.createdAt, c.updatedAt, c.version,
            COALESCE(assigned.name, assigned.username, CONCAT('用户', assigned.id)) AS assignedName,
            COALESCE(creator.name, creator.username, CONCAT('用户', creator.id)) AS createdByName
+           ${starFields}
       FROM crm_customers c
       LEFT JOIN crm_customer_contacts cc ON cc.customerId = c.id AND cc.isPrimary = 1
       LEFT JOIN users assigned ON assigned.id = c.assignedUserId
       LEFT JOIN users creator ON creator.id = c.createdByUserId
+      ${starJoin}
   `;
 }
 
@@ -619,11 +626,18 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
 export async function listCustomers(scope: CustomerServerScope, input: {
   keyword: string; grade?: CustomerRecord["grade"]; stage?: CustomerRecord["stage"];
   scope: "mine" | "all"; assignedUserId?: number; archived: boolean; due: "all" | "today" | "overdue";
-  page: number; pageSize: number;
+  page: number; pageSize: number; starUserId?: number;
 }) {
-  const db = await requireDb();
-  const policy = await resolveCrmCustomerPolicy(db, scope);
-  const conditions = [crmCustomerPolicyWhere(scope, policy)];
+  const starUserId = input.starUserId ?? scope.actorUserId;
+  return withCustomerStarAccess(scope, starUserId, async (db, access) => {
+  const conditions = [crmCustomerPolicyWhere(scope, access.actorPolicy)];
+  const delegated = starUserId !== scope.actorUserId;
+  if (delegated) {
+    if (input.scope !== "all" || input.assignedUserId !== starUserId) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "组员星标列表须选择对应组员负责人" });
+    }
+    conditions.push(crmCustomerPolicyWhere({ enterpriseId: scope.enterpriseId, actorUserId: starUserId }, access.targetPolicy));
+  }
   const effectiveAll = input.scope === "all";
   if (!effectiveAll) conditions.push(sql`c.assignedUserId = ${scope.actorUserId}`);
   if (input.assignedUserId && effectiveAll) conditions.push(sql`c.assignedUserId = ${input.assignedUserId}`);
@@ -661,13 +675,18 @@ export async function listCustomers(scope: CustomerServerScope, input: {
       LEFT JOIN crm_customer_contacts cc ON cc.customerId = c.id AND cc.isPrimary = 1
      WHERE ${where}
   `))[0];
-  const rows = resultRows<CustomerRow>(await db.execute(sql`
-    ${customerSelect()}
+  const rows = resultRows<CustomerRow & { isStarred: number | boolean | string; starRevision: number }>(await db.execute(sql`
+    ${customerSelect(starUserId)}
      WHERE ${where}
-     ORDER BY c.updatedAt DESC, c.id DESC
+     ORDER BY COALESCE(star_pref.starred, 0) DESC, c.updatedAt DESC, c.id DESC
      LIMIT ${input.pageSize} OFFSET ${offset}
   `));
-  return { items: rows.map(mapCustomer), total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
+  const items: CustomerListItem[] = rows.map(row => ({ ...mapCustomer(row),
+    isStarred: row.isStarred === true || row.isStarred === 1 || row.isStarred === "1",
+    starRevision: Number(row.starRevision ?? 0), starUserId, canSetStar: true,
+  }));
+  return { items, total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
+  });
 }
 
 export async function getCustomer(scope: CustomerServerScope, id: number) {

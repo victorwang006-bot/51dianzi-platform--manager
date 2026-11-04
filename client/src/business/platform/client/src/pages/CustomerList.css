@@ -41,7 +41,7 @@
 
 .customer-list-page .customer-list-table {
   width: 100%;
-  min-width: 1480px;
+  min-width: 1304px;
   table-layout: fixed;
   color: var(--admin-color-text, #303642);
   font-size: var(--admin-content-font-body, 12px);
@@ -56,7 +56,6 @@
 .customer-list-page .customer-list-col-stage { width: 144px; }
 .customer-list-page .customer-list-col-owner { width: 108px; }
 .customer-list-page .customer-list-col-supply { width: 168px; }
-.customer-list-page .customer-list-col-followup { width: 176px; }
 .customer-list-page .customer-list-col-demand { width: var(--customer-list-demand-width); }
 .customer-list-page .customer-list-col-actions { width: var(--customer-list-actions-width); }
 
@@ -91,9 +90,62 @@
   color: var(--admin-color-secondary, #475569);
 }
 
-.customer-list-page .customer-list-followup-cell > div:first-child {
-  font-size: var(--admin-content-font-body, 12px);
+.customer-list-page .customer-list-name-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.customer-list-page .customer-list-name-line .customer-list-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.customer-list-page .customer-list-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 28px;
+  padding: 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.customer-list-page .customer-list-star svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+}
+
+.customer-list-page .customer-list-star[aria-pressed="true"] {
+  color: #eab308;
+}
+
+.customer-list-page .customer-list-star[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+
+.customer-list-page .customer-list-star[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.customer-list-page .customer-list-star[aria-busy="true"] svg {
+  fill: none;
+}
+
+.customer-list-page .customer-list-star-selector select {
+  max-width: 220px;
+  color: var(--admin-color-text, #303642);
 }
 
 /* Pagination and header/filter controls keep the normal rectangular treatment. */
@@ -164,7 +216,7 @@
   text-decoration: underline;
 }
 
-.customer-list-page :is(.customer-list-text-action, .customer-list-name, .customer-list-table-scroll):focus-visible {
+.customer-list-page :is(.customer-list-text-action, .customer-list-name, .customer-list-star, .customer-list-table-scroll):focus-visible {
   outline: 2px solid #185fa5;
   outline-offset: 2px;
 }

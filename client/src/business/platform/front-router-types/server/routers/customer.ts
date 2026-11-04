@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { customerOwnershipQuerySchema } from "../../../shared/customerOwnership";
+import { customerStarContextInputSchema, customerStarContextSchema, customerSetStarSchema, customerSetStarResultSchema } from "../../../shared/customerStars";
+import { getCustomerStarContext, setCustomerStar } from "../services/customerStars";
 import {
   customerCreateSchema,
   customerFollowUpSchema,
@@ -84,6 +86,12 @@ const duplicateSchema = z.object({
 
 export const customerRouter = router({
   context: customerProcedure.query(({ ctx }) => getCustomerContext(scopeFor(ctx))),
+
+  starContext: customerProcedure.input(customerStarContextInputSchema).output(customerStarContextSchema).query(({ ctx }) =>
+    getCustomerStarContext(scopeFor(ctx))),
+  // A personal preference needs customer read, not customer.write; the service rechecks both current readers.
+  setStar: customerProcedure.input(customerSetStarSchema).output(customerSetStarResultSchema).mutation(({ ctx, input }) =>
+    setCustomerStar(scopeFor(ctx), input)),
 
   list: customerProcedure.input(customerListSchema).query(({ ctx, input }) =>
     listCustomers(scopeFor(ctx), input)),
