@@ -1,7 +1,7 @@
 .ci-batch-dialog {
   width: min(900px, calc(100vw - 32px));
   max-width: 900px !important;
-  font-size: 13px !important;
+  font-size: var(--admin-content-font-body, 13px) !important;
 }
 .ci-batch-tabs {
   display: flex;
@@ -10,11 +10,11 @@
   gap: 15px;
   border-bottom: 1px solid #e2e8f0;
   padding: 7px 0 13px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 .ci-batch-tabs > span {
   color: #9aa6b6;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 .ci-batch-tabs > strong {
   display: flex;
@@ -34,7 +34,7 @@
   align-items: center;
   gap: 7px;
   color: #a3afbf;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   white-space: nowrap;
   flex: 1;
 }
@@ -73,8 +73,8 @@
   align-items: flex-start;
   gap: 6px;
   color: #8998ad;
-  font-size: 11px;
-  line-height: 1.8;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 1.8);
 }
 .ci-batch-control {
   display: block;
@@ -86,7 +86,7 @@
   padding: 5px 9px;
   font: inherit;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 .ci-batch-control:disabled {
   background: #f8fafc;
@@ -106,13 +106,13 @@
   flex: 1;
 }
 .ci-batch-resume strong {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
 }
 .ci-batch-resume p {
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   margin: 5px 0 0;
-  line-height: 1.8;
+  line-height: var(--admin-content-caption-line-height, 1.8);
 }
 .ci-batch-drop {
   border: 1.5px dashed #c9d9ee;
@@ -132,19 +132,19 @@
   border-color: #185fa5;
 }
 .ci-batch-drop strong {
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
   font-weight: 500;
   color: #5579a6;
 }
 .ci-batch-drop p {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   color: #95a7bf;
 }
 .ci-batch-drop small {
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   color: #a8b5c6;
-  line-height: 1.8;
+  line-height: var(--admin-content-caption-line-height, 1.8);
 }
 .ci-batch-dialog svg {
   flex-shrink: 0;
@@ -157,7 +157,7 @@
   border: 0;
   background: none;
   color: #185fa5;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   padding: 4px 0;
 }
 .ci-batch-note {
@@ -166,8 +166,8 @@
   background: #f8fafc;
   padding: 13px 15px;
   color: #8899af;
-  font-size: 11px;
-  line-height: 1.8;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 1.8);
 }
 .ci-batch-note strong {
   color: #647d9d;
@@ -187,11 +187,11 @@
   color: #6d8daf;
 }
 .ci-batch-file strong {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
 }
 .ci-batch-file p {
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   margin: 5px 0 0;
   color: #94a5bc;
 }
@@ -201,7 +201,7 @@
   gap: 19px 18px;
 }
 .ci-batch-mapping small {
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   color: #a0aec1;
   white-space: nowrap;
   overflow: hidden;
@@ -216,7 +216,7 @@
   border: 1px solid #e5edf4;
   border-radius: 6px;
   padding: 14px 17px;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   color: #6e9c8e;
 }
 .ci-batch-summary b {
@@ -227,7 +227,7 @@
 .ci-batch-summary small {
   margin-left: auto;
   color: #a0aec0;
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
 }
 .ci-batch-errors {
   display: flex;
@@ -245,7 +245,7 @@
 .ci-batch-preview table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: var(--admin-content-font-body, 11px);
   white-space: nowrap;
 }
 .ci-batch-preview th {
@@ -253,7 +253,7 @@
   text-align: left;
   color: #7e90a8;
   background: #f8fafc;
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   font-weight: 500;
   position: sticky;
   top: 0;
@@ -265,13 +265,13 @@
 }
 .ci-batch-preview td strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
   color: #486285;
 }
 .ci-batch-preview td small {
   display: block;
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   color: #99a8bb;
   margin-top: 4px;
 }
@@ -290,7 +290,7 @@
   min-width: 120px;
   max-width: 230px;
   white-space: normal;
-  line-height: 1.8;
+  line-height: var(--admin-content-line-height, 1.8);
 }
 .ci-batch-red {
   color: #ae7270 !important;
@@ -301,8 +301,8 @@
 .ci-batch-preview-note {
   margin: 0;
   color: #9ba9bc;
-  font-size: 10px;
-  line-height: 1.9;
+  font-size: var(--admin-content-font-caption, 10px);
+  line-height: var(--admin-content-caption-line-height, 1.9);
 }
 .ci-batch-footer {
   margin-top: 5px;
@@ -312,7 +312,7 @@
   align-items: center;
   gap: 5px;
   margin-right: auto;
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   color: #9aabbe;
 }
 .ci-batch-result {
@@ -325,13 +325,13 @@
   color: #7896b8;
 }
 .ci-batch-result h3 {
-  font-size: 15px;
+  font-size: var(--admin-content-section-title-size, 15px);
   font-weight: 500;
   color: #59779e;
   margin: 0;
 }
 .ci-batch-result p {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   color: #889db7;
   margin: 0;
 }
@@ -348,9 +348,9 @@
   accent-color: #185fa5;
 }
 .ci-batch-result small {
-  font-size: 10px;
+  font-size: var(--admin-content-font-caption, 10px);
   color: #a1b0c3;
-  line-height: 1.9;
+  line-height: var(--admin-content-caption-line-height, 1.9);
   max-width: 510px;
 }
 .ci-batch-dialog button:focus-visible,
@@ -380,7 +380,7 @@
     flex-wrap: wrap;
   }
   .ci-batch-steps > span {
-    font-size: 10px;
+    font-size: var(--admin-content-font-caption, 10px);
     gap: 5px;
   }
   .ci-batch-steps b {
@@ -392,7 +392,7 @@
     gap: 9px;
   }
   .ci-batch-channel > p {
-    font-size: 10px;
+    font-size: var(--admin-content-font-caption, 10px);
     padding: 0;
   }
   .ci-batch-mapping {
@@ -411,12 +411,12 @@
     gap: 12px;
   }
   .ci-batch-drop p {
-    font-size: 10px;
-    line-height: 1.9;
+    font-size: var(--admin-content-font-caption, 10px);
+    line-height: var(--admin-content-caption-line-height, 1.9);
   }
   .ci-batch-resume {
     flex-wrap: wrap;
-    font-size: 10px;
+    font-size: var(--admin-content-font-caption, 10px);
   }
   .ci-batch-summary {
     gap: 16px;
@@ -432,14 +432,14 @@
   }
   .ci-batch-errors {
     flex-wrap: wrap;
-    font-size: 11px;
+    font-size: var(--admin-content-font-caption, 11px);
   }
   .ci-batch-tabs > span {
-    font-size: 10px;
+    font-size: var(--admin-content-font-caption, 10px);
     max-width: 150px;
   }
   .ci-batch-tabs > strong {
-    font-size: 11px;
+    font-size: var(--admin-content-font-caption, 11px);
   }
 }
 @media (max-width: 390px) {

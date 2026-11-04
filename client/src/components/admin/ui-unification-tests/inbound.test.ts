@@ -247,9 +247,9 @@ describe("inbound unified presentation and business regression", () => {
         expect(decl.prop).not.toMatch(/^(zoom|transform|scale|pointer-events|opacity)$/);
       });
     });
-    expect(css).toContain("height: 32px;");
-    expect(css).toContain("font-size: 12px;");
-    expect(css).toContain("font-size: 11px;");
+    expect(css).toContain("height: var(--admin-content-control-height, 32px);");
+    expect(css).toContain("font-size: var(--admin-content-font-body, 12px);");
+    expect(css).toContain("font-size: var(--admin-content-font-caption, 11px);");
     expect(css).toContain("text-align: right;");
     expect(source).toContain('onDirtyChange={setBulkDirty} onBusyChange={setBulkBusy}');
     expect(source).toContain('if (!editingRow && bulkDirty) { setConfirmBulkClose(true); return; }');

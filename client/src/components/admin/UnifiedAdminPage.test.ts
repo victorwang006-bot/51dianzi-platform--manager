@@ -59,7 +59,7 @@ describe("content-only reference theme boundaries", () => {
   const layout = readFileSync(resolve(import.meta.dirname, "../DashboardLayout.tsx"), "utf8");
   const primitives = readFileSync(resolve(import.meta.dirname, "UnifiedAdminPage.tsx"), "utf8");
   it("sets compact role tokens instead of page scaling", () => {
-    for (const token of ["--admin-font-body: 12px", "--admin-font-table-heading: 11px", "--admin-font-caption: 11px", "--admin-control-height: 32px", "--admin-dialog-title-size: 18px"]) expect(css).toContain(token);
+    for (const token of ["--admin-font-body: 13px", "--admin-font-table-heading: 12px", "--admin-font-caption: 12px", "--admin-control-height: 34px", "--admin-dialog-title-size: 18px"]) expect(css).toContain(token);
     expect(css).not.toMatch(/(?:^|[;{\s])(?:zoom|transform)\s*:/);
     expect(css).not.toMatch(/!important\s*[;}]/);
   });
@@ -68,10 +68,11 @@ describe("content-only reference theme boundaries", () => {
     expect(css).not.toMatch(/\.admin-workspace-shell__(?:header|brand|account|navigation)\s*[{,]/);
     expect(layout).toContain('className="admin-workspace-shell__main admin-unified-content" data-admin-ui-system="channel-inventory"');
   });
-  it("covers portalled form controls but excludes reference custom dialogs", () => {
+  it("covers body-mounted form controls, sheets and native channel dialogs", () => {
     expect(css).toContain('[data-slot="select-content"]');
     expect(css).toContain('[data-slot="dialog-content"]');
-    expect(css).toContain('[role="dialog"]:not(.ci-host-dialog)');
+    expect(css).toContain('[role="dialog"]');
+    expect(css).toContain('[data-slot="sheet-content"]');
   });
   it("contains no data, permission or router side effects in primitives", () => {
     expect(primitives).not.toMatch(/useQuery|useMutation|useEffect|useState|fetch\(|trpc|useLocation|permissionKeys/);

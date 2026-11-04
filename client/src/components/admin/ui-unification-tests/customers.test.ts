@@ -89,11 +89,11 @@ describe("customer list unified presentation contract", () => {
   });
 
   it("uses compact tokens without fixed row height, forced overrides or scaling", () => {
-    expect(declaration(".customer-list-page .customer-list-control", "height")).toEqual(["var(--admin-control-height, 32px)"]);
-    expect(declaration(".customer-list-page .customer-list-control", "font-size")).toEqual(["var(--admin-font-body, 12px)"]);
+    expect(declaration(".customer-list-page .customer-list-control", "height")).toEqual(["var(--admin-content-control-height, 32px)"]);
+    expect(declaration(".customer-list-page .customer-list-control", "font-size")).toEqual(["var(--admin-content-font-body, 12px)"]);
     expect(declaration(".customer-list-page .customer-list-control", "border-radius")).toEqual(["6px"]);
-    expect(declaration(".customer-list-page .customer-list-table th", "font-size")).toEqual(["var(--admin-font-caption, 11px)"]);
-    expect(declaration(".customer-list-page .customer-list-table td", "font-size")).toEqual(["var(--admin-font-body, 12px)"]);
+    expect(declaration(".customer-list-page .customer-list-table th", "font-size")).toEqual(["var(--admin-content-font-caption, 11px)"]);
+    expect(declaration(".customer-list-page .customer-list-table td", "font-size")).toEqual(["var(--admin-content-font-body, 12px)"]);
     expect(declaration(".customer-list-page .customer-list-table tbody tr", "height")).toEqual([]);
     stylesheet.walkDecls(item => {
       expect(item.important).toBeFalsy();

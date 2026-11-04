@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React, { act } from "react";
 import * as XLSX from "xlsx";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -445,7 +445,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
     expect(runtime.sourceInputs).toHaveLength(0);
     expect(runtime.optionInputs).toHaveLength(0);
-    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "新增备注", "备注（0）"]);
+    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
     expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col), [hidden], input")).toBeNull();
     expect(rows[1].querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(rows[1].querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
@@ -472,7 +472,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     renderHost();
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).not.toContain("团队来源");
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "新增备注", "备注（0）"]);
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
     runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "团队来源" });
     click(required(peer.querySelector(".ci-source-link"), "missing source link"));
     await settle();
@@ -787,15 +787,16 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(getComputedStyle(required(stockTable.querySelector("th.ci-col-actions"), "missing fixed actions")).width).toBe("216px");
     expect(headerStyle.paddingTop).toBe("6px");
     expect(headerStyle.paddingRight).toBe("10px");
-    expect(headerStyle.lineHeight).toBe("18px");
+    // jsdom preserves var() rather than resolving scoped admin tokens.
+    expect(headerStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
     expect(cellStyle.paddingTop).toBe("10px");
     expect(cellStyle.paddingRight).toBe("10px");
     // The first cell is an auxiliary ordinal, not the main model text.
-    expect(cellStyle.lineHeight).toBe("18px");
+    expect(cellStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
     expect(getComputedStyle(required(
       stockTable.querySelector(".ci-cell-title"),
       "missing primary model text",
-    )).lineHeight).toBe("18px");
+    )).lineHeight).toBe("var(--admin-content-line-height, 18px)");
   });
 
   it("creates with the original DTO and keeps public editing separate from the independent owner private history", async () => {
@@ -1341,7 +1342,7 @@ describe("channel industry required integration", () => {
     click(button("渠道库存"));
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).toContain("查看来源");
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "新增备注", "备注（0）"]);
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
     expect(peer.querySelector("select")).toBeNull();
     expect(document.querySelector("thead")?.textContent).toContain("所属行业");
   });
@@ -1380,7 +1381,7 @@ describe("v9 public inventory and collaboration integration", () => {
     expect(button("单条上传").disabled).toBe(true);
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).not.toContain("编辑");
-    click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "新增备注"), "missing readonly note add"));
+    click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "备注（0）"), "missing unified readonly note entry"));
     await settle();
     const textarea = required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing focused collaboration input");
     expect(document.activeElement).toBe(textarea);
@@ -1397,8 +1398,9 @@ describe("v9 public inventory and collaboration integration", () => {
     runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
     const old = runtime.teamQuery as { data: object };
     runtime.teamQuery = query({ ...old.data, canFilterSource: true });
-    renderHost(); click(button("新增备注")); await settle();
+    renderHost(); click(button("备注（1）")); await settle();
     const textarea = required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing collaboration draft");
+    act(() => textarea.focus());
     change(textarea, "保持当前草稿与光标"); textarea.setSelectionRange(2, 5);
     runtime.teamQuery = query({ ...old.data, canWrite: false, canFilterSource: false });
     runtime.sourceQuery = query({ canFilterSource: false, items: [] });
@@ -1414,7 +1416,7 @@ describe("v9 public inventory and collaboration integration", () => {
   it("aborts a stale collaboration write and clears its draft on an authenticated context switch", async () => {
     let finish!: () => void;
     runtime.collaborationAdd.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
-    renderHost(); click(button("新增备注")); await settle();
+    renderHost(); click(button("备注（1）")); await settle();
     change(required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing note draft"), "旧企业备注草稿");
     click(button("保存协作备注"));
     const signal = runtime.collaborationAdd.mock.calls[0][1].signal as AbortSignal;
@@ -1545,7 +1547,7 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
     expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
-    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("新增备注备注（0）");
+    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("备注（0）");
     expect(document.querySelectorAll("tbody tr")[1].textContent).not.toContain("编辑");
   });
 
@@ -1556,7 +1558,7 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("新授予实时来源");
     expect(runtime.toastError).not.toHaveBeenCalled();
     expect(document.querySelectorAll("tbody tr")[1].textContent).not.toContain("编辑");
-    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("新增备注备注（0）");
+    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("备注（0）");
   });
 
   it("handles fresh server denial despite an old positive row hint and never displays a stale name", async () => {
@@ -1671,8 +1673,8 @@ describe("v13 native channel read and original recorder contract", () => {
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).whiteSpace).toBe("nowrap");
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).textOverflow).toBe("ellipsis");
     expect(getComputedStyle(document.querySelector("th.ci-material-recorder-col")!).width).toBe("96px");
-    expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("11px");
-    expect(getComputedStyle(document.querySelector("tbody td")!).fontSize).toBe("12px");
+    expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
+    expect(getComputedStyle(document.querySelector("tbody .ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(document.body.textContent).not.toMatch(/WRONG-RESPONSIBLE|WRONG-EDITOR/);
   });
   it.each(["loading", "error", "empty"])("uses ten-column colspan for %s without misaligning existing table", status => {
@@ -1763,8 +1765,8 @@ describe("v14 industry and channel-row stock upload", () => {
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
     expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
     expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
-    expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("11px");
-    expect(getComputedStyle(table.querySelector("td")!).fontSize).toBe("12px");
+    expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
+    expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(getComputedStyle(table.parentElement!).overflowX).toBe("auto");
     expect(button("上传库存")).toBeTruthy(); expect(button("单条上传")).toBeTruthy();
     click(button("渠道档案"));
@@ -2256,5 +2258,143 @@ describe("customer supply independent exact source-readable proof", () => {
       expect(document.body.textContent).toContain("权限已改变");
       onlyExactRequests();
     } finally { vi.useRealTimers(); }
+  });
+});
+
+
+describe("v18 single collaboration-note entry", () => {
+  const notes = [
+    { id: 501, materialId: 101, authorUserId: 7, authorName: "本人作者", content: "已核实原厂交期与封装，库存状态需要与客户再次确认。", revision: 4, createdAt: "2026-11-03T01:00:00.000Z", updatedAt: "2026-11-03T02:00:00.000Z", canEdit: true },
+    { id: 502, materialId: 101, authorUserId: 8, authorName: "协作同事", content: "团队协作历史：已联系供应商核实库存数量、批次和可交付时间；此处仅显示公共协作信息。", revision: 1, createdAt: "2026-11-03T03:00:00.000Z", updatedAt: "2026-11-03T03:00:00.000Z", canEdit: false },
+  ];
+  const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
+  const writeDOM = (fileName: string) => {
+    const dir = process.env.NOTES_DOM_FIXTURE_DIR;
+    if (!dir) return;
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(resolve(dir, fileName), `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>真实 ChannelInventoryHost DOM</title></head><body>${required(container, "missing rendered host").innerHTML}</body></html>\n`);
+  };
+
+  it("has exactly one native text note button per row and keeps zero clickable", async () => {
+    renderHost();
+    const rows = Array.from(document.querySelectorAll("tbody tr"));
+    for (const row of rows) {
+      const entries = Array.from(row.querySelectorAll<HTMLButtonElement>(".ci-col-actions button")).filter(item => item.textContent?.startsWith("备注（"));
+      expect(entries).toHaveLength(1);
+      expect(entries[0].type).toBe("button");
+      expect(entries[0].className).toBe("ci-inline-link");
+      expect(entries[0].disabled).toBe(false);
+      expect(row.textContent).not.toContain("新增备注");
+    }
+    click(button("备注（0）")); await settle();
+    expect(runtime.collaborationInputs.at(-1)).toMatchObject({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(document.activeElement).toBe(document.querySelector("textarea"));
+    expect(document.querySelector('[aria-label="协作备注历史"]')).not.toBeNull();
+    expect(document.querySelector('[aria-label="新增协作备注"]')).not.toBeNull();
+    expect(runtime.notesInputs).toHaveLength(0);
+  });
+
+  it.each(["row", "server", "native"])("leaves the unique history entry usable with %s add denial", async denial => {
+    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    if (denial === "row") runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => ({ ...row, canAddNote: false })) });
+    if (denial === "native") runtime.scope.officialInventoryPermissions.note = false;
+    runtime.collaborationQuery = query({ items: notes, total: 2, page: 1, pageSize: 20, canAdd: denial !== "server" });
+    renderHost(); click(button("备注（0）")); await settle();
+    expect(document.querySelector('[aria-label="协作备注历史"]')?.textContent).toContain(notes[1].content);
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(document.querySelector('[aria-label="新增协作备注"]')).toBeNull();
+    expect(document.activeElement).toBe(document.querySelector('[role="dialog"]'));
+    expect(runtime.collaborationAdd).not.toHaveBeenCalled();
+    expect(runtime.notesInputs).toHaveLength(0);
+  });
+
+  it("keeps a populated notes dialog mounted through save and background list refresh, updating server history and row count", async () => {
+    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => row.id === 101 ? { ...row, noteCount: 2 } : row) });
+    const saved = { ...notes[0], id: 503, content: "本次新增的库存协作核实记录" };
+    const listRefetch = vi.fn().mockImplementation(async () => {
+      runtime.collaborationQuery = query({ items: [saved, ...notes], total: 3, page: 1, pageSize: 20, canAdd: true });
+      rerender();
+    });
+    runtime.collaborationQuery = query({ items: notes, total: 2, page: 1, pageSize: 20, canAdd: true }, { refetch: listRefetch });
+    renderHost(); click(button("备注（2）")); await settle();
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing collaboration dialog");
+    const input = required(dialog.querySelector<HTMLTextAreaElement>("textarea"), "missing note input");
+    expect(document.activeElement).toBe(dialog);
+    expect(dialog.querySelectorAll(".ci-note-entry")).toHaveLength(2);
+    change(input, saved.content);
+    runtime.utils.channelInventory.listTeamMaterials.invalidate.mockImplementationOnce(async () => {
+      runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => row.id === 101 ? { ...row, noteCount: 3 } : row) }, { isFetching: true });
+      rerender();
+    });
+    click(button("保存协作备注")); await settle();
+    expect(listRefetch).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(dialog.querySelector("textarea")).toBe(input);
+    expect(input.value).toBe("");
+    expect(dialog.querySelectorAll(".ci-note-entry")).toHaveLength(3);
+    expect(dialog.querySelector('[aria-label="协作备注历史"]')?.textContent).toContain(saved.content);
+    expect(button("备注（3）").disabled).toBe(false);
+    expect(runtime.collaborationAdd.mock.calls[0][0]).toMatchObject({ materialId: 101, content: saved.content });
+    expect(runtime.notesInputs).toHaveLength(0);
+  });
+
+  it.each(["actor", "enterprise", "material", "removed", "archive"])("aborts pending notes and fences a late successful write after %s changes", async changeKind => {
+    let finish!: () => void;
+    runtime.collaborationAdd.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    const listRefetch = (runtime.collaborationQuery as { refetch: ReturnType<typeof vi.fn> }).refetch;
+    renderHost(); click(button("备注（1）")); await settle();
+    change(required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing old input"), "V18-STALE-PREVIOUS-CONTEXT-DRAFT");
+    click(button("保存协作备注"));
+    const signal = runtime.collaborationAdd.mock.calls[0][1].signal as AbortSignal;
+    if (changeKind === "actor" || changeKind === "enterprise") {
+      runtime.enterpriseMe = query({ currentUserId: changeKind === "actor" ? 8 : 7, enterprise: { id: changeKind === "enterprise" ? 32 : 31 }, permissionKeys: ["stocks.read"] });
+      rerender();
+    } else if (changeKind === "material") click(button("备注（0）"));
+    else if (changeKind === "archive") click(button("渠道档案"));
+    else {
+      const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+      runtime.teamQuery = query({ ...previous.data, items: previous.data.items.filter(row => row.id !== 101) }); rerender();
+    }
+    await settle();
+    expect(signal.aborted).toBe(true);
+    await act(async () => { finish(); await Promise.resolve(); });
+    expect(document.body.innerHTML).not.toContain("V18-STALE-PREVIOUS-CONTEXT-DRAFT");
+    expect(listRefetch).not.toHaveBeenCalled();
+    if (changeKind === "material") {
+      expect(document.querySelector('[role="dialog"]')?.textContent).toContain("TEAM-SN74");
+      expect(document.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("");
+    } else expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.notesInputs).toHaveLength(0);
+  });
+
+  it("exports real host inventory, channel descriptions and a populated collaboration dialog for CSS measurements", async () => {
+    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map((row, index) => ({ ...row,
+      partNumber: index === 0 ? "TPS7A4701RGWRABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-LONG-ALPHABETIC-MODEL" : "SN74LVC1G125DBVR-ABCDEFGHIJKLMNOPQRSTUVWXYZ-LONG-MODEL",
+      brand: index === 0 ? "TEXAS INSTRUMENTS" : "NEXPERIA",
+      originalRecorderName: index === 0 ? "JackLongRecorderName" : "协作负责人",
+      industryCode: "electronic_components", leadTime: "已核实供应库存，预计三到五个工作日交付", noteCount: index === 0 ? 2 : 0,
+    })) });
+    const channels = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
+    channels.data.items[0] = { ...channels.data.items[0], industryCode: "electronic_components", notes: "渠道说明：长期合作的电子元器件供应渠道，包含原厂库存、批次核实及可交付时间确认；这是一段用于实际组件换行测量的长说明。" };
+    runtime.collaborationQuery = query({ items: notes, total: 2, page: 1, pageSize: 20, canAdd: true });
+    renderHost();
+    expect(document.querySelectorAll(".ci-compact-stock-table tbody tr")).toHaveLength(2);
+    writeDOM("v18-channel-inventory-host.html");
+    click(button("渠道档案")); await settle();
+    expect(document.querySelector(".ci-channel-table")?.textContent).toContain("深圳代理");
+    writeDOM("v18-channel-archive-host.html");
+    click(menuItem("编辑渠道")); await settle();
+    expect(document.querySelector<HTMLTextAreaElement>('[role="dialog"] textarea')?.value).toContain("这是一段用于实际组件换行测量的长说明");
+    writeDOM("v18-channel-description-editor-host.html");
+    click(button("取消"));
+    click(button("渠道库存")); click(button("备注（2）")); await settle();
+    expect(document.querySelectorAll(".ci-collaboration-dialog .ci-note-entry")).toHaveLength(2);
+    expect(document.querySelector('.ci-collaboration-dialog [aria-label="新增协作备注"] textarea')).not.toBeNull();
+    expect(document.body.innerHTML).not.toMatch(/历史库存备注|已核对交期|原渠道备注/);
+    writeDOM("v18-channel-inventory-notes-host.html");
+    expect(runtime.collaborationAdd).not.toHaveBeenCalled();
+    expect(runtime.collaborationEdit).not.toHaveBeenCalled();
   });
 });

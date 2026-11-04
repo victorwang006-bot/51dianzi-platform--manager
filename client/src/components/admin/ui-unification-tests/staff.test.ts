@@ -206,7 +206,7 @@ describe("staff unified presentation", () => {
     expect(attributes("Input", "className")[0]).toContain("h-8");
     expect(attributes("Input", "className")[0]).toContain("text-xs");
     expect(page).not.toContain("text-sm");
-    expect(styles).toContain("font-size: 12px;");
+    expect(styles).toContain("font-size: var(--admin-content-font-body, 12px);");
     expect(styles).toContain("border-radius: 6px;");
     expect(styles).toContain("color: #185fa5;");
     expect(styles).toContain("position: sticky;");

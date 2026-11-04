@@ -8,7 +8,7 @@
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-overview-button strong {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-row-menu {
@@ -25,51 +25,51 @@
 .aui-page.erp-ui.inbound-management-page .inbound-modal :is(input.crm-input, select.crm-input, [data-slot="input"], [data-slot="select-trigger"]),
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-btn,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-btn-sm {
-  height: 32px;
-  min-height: 32px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-modal textarea.crm-input {
   border-radius: 6px;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-modal .erp-field-label,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-detail-table,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-table td {
-  font-size: 12px;
+  font-size: var(--admin-content-font-label, 12px);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-table th,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-detail-table .label-cell,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .erp-helper {
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-modal .erp-segmented.erp-choice-buttons {
-  min-height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-modal .erp-choice-buttons .erp-segmented-option {
-  min-height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   line-height: 30px;
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-entry-card-title,
 .aui-page.erp-ui.inbound-management-page .inbound-section-title,
 .aui-page.erp-ui.inbound-management-page .erp-section-title {
-  font-size: 15px;
+  font-size: var(--admin-content-section-title-size, 15px);
   line-height: 22px;
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-payment-summary strong {
   align-self: flex-end;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-payment-total,
@@ -79,7 +79,7 @@
 
 .aui-page.erp-ui.inbound-management-page .inbound-more-toggle,
 .aui-page.erp-ui.inbound-management-page .erp-menu-item {
-  min-height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }

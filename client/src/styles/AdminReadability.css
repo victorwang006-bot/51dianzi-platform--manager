@@ -41,7 +41,7 @@ body[data-admin-readability="true"],
   --color-background: var(--admin-color-page);
   font-family: var(--admin-font-family);
   font-size: var(--admin-font-body);
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height, 1.6);
   color: var(--admin-color-text);
 }
 
@@ -51,7 +51,7 @@ body[data-admin-readability="true"] :where(button, input, textarea, select, .erp
 
 body[data-admin-readability="true"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [role="dialog"], [role="alertdialog"]) {
   font-size: var(--admin-font-body);
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height, 1.6);
   color: var(--admin-color-text);
 }
 body[data-admin-readability="true"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
@@ -64,13 +64,13 @@ body[data-admin-readability="true"] :is([data-slot="dialog-title"], [data-slot="
 }
 body[data-admin-readability="true"] :is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
   font-size: var(--admin-font-label);
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height, 1.6);
   color: var(--admin-color-secondary);
 }
 body[data-admin-readability="true"] :is([data-slot="select-item"], [data-slot="dropdown-menu-item"], [role="menuitem"], [role="option"]) {
   min-height: var(--admin-menu-item-height);
   font-size: var(--admin-font-label);
-  line-height: 1.5;
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 /* Role defaults: low-specificity utilities remain usable for deliberate variants. */
@@ -118,9 +118,9 @@ body[data-admin-readability="true"] .overflow-hidden:has(> :is(table.admin-table
  * !important is confined to typography/role dimensions below, not behavior.
  * Tiny text utilities map to captions, NOT body size; SVGs and badges are roles
  * in their own right and are excluded from this fallback. */
-body[data-admin-readability="true"] :is(.text-xs, .text-\[10px\], .text-\[11px\], .text-\[12px\]):not(:where(svg, svg *, [data-slot="badge"], [class*="badge"], [class*="status-dot"], .admin-cell-primary, .admin-cell-secondary)) {
+body[data-admin-readability="true"] :is(.text-xs, .text-\[10px\], .text-\[11px\]):not(:where(svg, svg *, [data-slot="badge"], [class*="badge"], [class*="status-dot"], .admin-cell-primary, .admin-cell-secondary)) {
   font-size: var(--admin-font-caption) !important;
-  line-height: 1.5;
+  line-height: var(--admin-content-caption-line-height, 1.5);
 }
 body[data-admin-readability="true"] :where(.business-native-content, #business-native-portals) .text-sm:not(:where(button, label, th, svg, svg *, [data-slot="button"], [data-slot="badge"], .crm-badge, [role="option"], [role="menuitem"], [data-slot="dialog-description"], [data-slot="alert-dialog-description"])) {
   font-size: var(--admin-font-body) !important;
@@ -128,43 +128,43 @@ body[data-admin-readability="true"] :where(.business-native-content, #business-n
 body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) th {
   font-size: var(--admin-font-table-heading) !important;
 }
-body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) td {
+body[data-admin-readability="true"] :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) td:not(:where(.ci-row-index, .ci-date, .ci-lead-time, .ci-channel-type-tag)) {
   font-size: var(--admin-font-body) !important;
 }
-body[data-admin-readability="true"] :is([data-slot="input"], [data-slot="select-trigger"], .crm-input, .crm-select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]) {
+body[data-admin-readability="true"] :is([data-slot="input"], [data-slot="select-trigger"], .crm-input, .crm-select, .admin-unified-content input:is([style*="font-size: 12px"], [style*="font-size:12px"]), .admin-unified-content select:is([style*="font-size: 12px"], [style*="font-size:12px"])):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]) {
   min-height: var(--admin-control-height) !important;
   font-size: var(--admin-font-body) !important;
-  line-height: 1.5;
+  line-height: var(--admin-content-line-height, 1.5);
 }
-body[data-admin-readability="true"] :is(input[data-slot="input"], input.crm-input, select.crm-input, .crm-select, [data-slot="select-trigger"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]) {
+body[data-admin-readability="true"] :is(input[data-slot="input"], input.crm-input, select.crm-input, .crm-select, [data-slot="select-trigger"], .admin-unified-content input:is([style*="font-size: 12px"], [style*="font-size:12px"]), .admin-unified-content select:is([style*="font-size: 12px"], [style*="font-size:12px"])):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]) {
   height: var(--admin-control-height) !important;
 }
 body[data-admin-readability="true"] :is([data-slot="textarea"], textarea.crm-input) {
   font-size: var(--admin-font-body) !important;
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height, 1.6);
 }
 body[data-admin-readability="true"] :is(label, [data-slot="label"], .crm-label, .crm-form-label) {
   font-size: var(--admin-font-label) !important;
-  line-height: 1.5;
+  line-height: var(--admin-content-line-height, 1.5);
 }
-body[data-admin-readability="true"] :is([data-slot="button"], .crm-btn) {
+body[data-admin-readability="true"] :is([data-slot="button"], .crm-btn, .admin-unified-content button:is([style*="font-size: 12px"], [style*="font-size:12px"])) {
   font-size: var(--admin-font-label) !important;
-  line-height: 1.5;
+  line-height: var(--admin-content-line-height, 1.5);
 }
 /* Icon-only buttons retain their own width/height utilities. Small buttons and
  * table actions use 34px rather than expanding every control to 40px. */
-body[data-admin-readability="true"] :is([data-slot="button"], .crm-btn):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, .crm-btn-sm, .h-8, .h-7, .h-6, .admin-row-action, [data-admin-button-size="sm"], [data-admin-button-size^="icon"])) {
+body[data-admin-readability="true"] :is([data-slot="button"], .crm-btn, .admin-unified-content button:is([style*="font-size: 12px"], [style*="font-size:12px"])):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, .crm-btn-sm, .h-8, .h-7, .h-6, .admin-row-action, [data-admin-button-size="sm"], [data-admin-button-size^="icon"])) {
   min-height: var(--admin-control-height) !important;
 }
 body[data-admin-readability="true"] :is(.crm-btn-sm, [data-admin-button-size="sm"], [data-slot="button"].h-8, [data-slot="button"].h-7, [data-slot="button"].h-6),
-body[data-admin-readability="true"] :is(td, .crm-row-actions) :is([data-slot="button"], .crm-btn):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, [data-admin-button-size^="icon"])) {
+body[data-admin-readability="true"] :is(td, .crm-row-actions) :is([data-slot="button"], .crm-btn, .admin-unified-content button:is([style*="font-size: 12px"], [style*="font-size:12px"])):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, [data-admin-button-size^="icon"])) {
   height: var(--admin-row-action-height) !important;
   min-height: var(--admin-row-action-height) !important;
   padding-block: 4px;
 }
 body[data-admin-readability="true"] :is(.crm-badge, [data-slot="badge"], .badge-success, .badge-warning, .badge-danger, .badge-info, .badge-gray) {
   font-size: var(--admin-font-caption) !important;
-  line-height: 1.4;
+  line-height: var(--admin-content-caption-line-height, 1.4);
 }
 
 /* Public semantic class contract shared with page agents. Put the primary class
@@ -173,12 +173,12 @@ body[data-admin-readability="true"] :is(.crm-badge, [data-slot="badge"], .badge-
 body[data-admin-readability="true"] .admin-cell-primary {
   font-size: var(--admin-font-body) !important;
   font-weight: 500;
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height, 1.6);
   color: var(--admin-color-text) !important;
 }
 body[data-admin-readability="true"] .admin-cell-secondary {
   font-size: var(--admin-font-caption) !important;
-  line-height: 1.6;
+  line-height: var(--admin-content-caption-line-height, 1.6);
   color: var(--admin-color-secondary) !important;
 }
 body[data-admin-readability="true"] .admin-row-action {
@@ -189,7 +189,7 @@ body[data-admin-readability="true"] .admin-row-action {
   height: var(--admin-row-action-height) !important;
   padding: 4px 10px;
   font-size: var(--admin-font-label) !important;
-  line-height: 1.5;
+  line-height: var(--admin-content-line-height, 1.5);
   white-space: nowrap;
 }
 body[data-admin-readability="true"] :is(.admin-page-title, .crm-page-title) {

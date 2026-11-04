@@ -26,9 +26,9 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page [data-slot="label"],
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .erp-field-label {
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-label, 14px);
   font-weight: 500;
-  line-height: 20px;
+  line-height: var(--admin-content-line-height, 20px);
 }
 
 /* Original CRM controls used by InboundManagement and its local forms. */
@@ -41,7 +41,7 @@
   padding: 5px 0.875rem;
   background: #fff;
   color: #333;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   cursor: pointer;
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -75,7 +75,7 @@
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-btn-sm {
   padding: 3px 0.625rem;
-  font-size: 11px;
+  font-size: var(--admin-content-font-body, 11px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-input {
@@ -84,7 +84,7 @@
   padding: 6px 0.625rem;
   background: #fff;
   color: #333;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
   outline: none;
 }
 
@@ -96,7 +96,7 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-table th {
@@ -104,7 +104,7 @@
   padding: 10px 12px;
   background: #fafafa;
   color: #888;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
@@ -133,7 +133,7 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-variant-numeric: tabular-nums;
 }
 
@@ -146,7 +146,7 @@
   width: 110px;
   background: #fafafa;
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--admin-content-font-label, 13px);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -158,7 +158,7 @@
   height: 42px;
   border-radius: 8px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page [data-slot="textarea"],
@@ -166,13 +166,13 @@
   border-color: #d9dfe8;
   border-radius: 8px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-input {
   border-color: #d9dfe8;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-input::placeholder,
@@ -183,39 +183,39 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-btn {
   min-height: 40px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 500;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-btn-sm {
   min-height: 34px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-table {
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-variant-numeric: tabular-nums;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-table th {
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--admin-content-font-caption, 13px);
   font-weight: 500;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .crm-table td {
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 400;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-toolbar .crm-input,
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-toolbar [data-slot="input"],
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-toolbar [data-slot="select-trigger"] {
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   border-color: #cbd5e1;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-row-menu:focus-visible {
@@ -225,7 +225,7 @@
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-overview-button {
   display: inline-flex;
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   align-items: center;
   gap: 8px;
   border: 1px solid #d9e2ec;
@@ -233,13 +233,13 @@
   padding: 0 12px;
   background: #fff;
   color: #64748b;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   white-space: nowrap;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-overview-button strong {
   color: #185fa5;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -274,7 +274,7 @@
   justify-content: space-between;
   gap: 12px;
   color: #64748b;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-overview-popover strong {
@@ -285,7 +285,7 @@
 
 /* Original inbound table: shallow header, only horizontal row separators. */
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-list-table {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-variant-numeric: tabular-nums;
 }
 
@@ -293,11 +293,11 @@
   position: sticky;
   z-index: 10;
   top: 0;
-  height: 32px;
+  height: var(--admin-content-table-head-height, 32px);
   padding: 0 8px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   font-weight: 500;
 }
 
@@ -305,7 +305,7 @@
   height: 56px;
   padding: 6px 8px;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 400;
 }
 
@@ -334,7 +334,7 @@
   border-bottom: 1px solid rgb(229 231 235 / 0.8);
   padding-bottom: 6px;
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--admin-content-section-title-size, 13px);
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -342,9 +342,9 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .erp-helper {
   margin-top: 6px;
   color: #8a94a3;
-  font-size: 12px;
+  font-size: var(--admin-content-font-caption, 12px);
   font-weight: 400;
-  line-height: 18px;
+  line-height: var(--admin-content-caption-line-height, 18px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .erp-helper-warning {
@@ -371,7 +371,7 @@
   padding: 0 16px;
   background: #fff;
   color: #4b5563;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 500;
   line-height: 40px;
   transition: background-color 150ms, color 150ms, border-color 150ms;
@@ -423,7 +423,7 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-payment-mode .erp-segmented-option {
   min-width: 0;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
   line-height: 34px;
   white-space: nowrap;
 }
@@ -438,14 +438,14 @@
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-payment-percent.erp-segmented {
-  min-height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-payment-percent .erp-segmented-option {
   min-width: 0;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   line-height: 30px;
   white-space: nowrap;
 }
@@ -467,7 +467,7 @@
   padding: 0 14px;
   background: #fff;
   color: #475569;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 500;
   line-height: 38px;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
@@ -515,7 +515,7 @@
   min-width: 0;
   min-height: 40px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
   line-height: 38px;
 }
 
@@ -524,7 +524,7 @@
   border-radius: 8px;
   background: #fff;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   transition: border-color 150ms, box-shadow 150ms, background-color 150ms;
 }
 
@@ -569,7 +569,7 @@
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-title {
   color: #1f2937;
-  font-size: 18px;
+  font-size: var(--admin-content-dialog-title-size, 18px);
   font-weight: 600;
   line-height: 24px;
 }
@@ -579,7 +579,7 @@
   padding: 7px 10px;
   background: #f7f8fa;
   color: #8a94a3;
-  font-size: 12px;
+  font-size: var(--admin-content-font-caption, 12px);
   white-space: nowrap;
 }
 
@@ -626,9 +626,9 @@
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal .erp-field-label {
   color: #475569;
-  font-size: 12px;
+  font-size: var(--admin-content-font-label, 12px);
   font-weight: 500;
-  line-height: 17px;
+  line-height: var(--admin-content-line-height, 17px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal input.crm-input,
@@ -636,13 +636,13 @@
   height: 36px;
   border-color: #cbd5e1;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal textarea.crm-input {
   border-color: #cbd5e1;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal .inbound-field {
@@ -652,12 +652,12 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal .crm-btn {
   min-height: 34px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal .crm-btn-sm {
   min-height: 30px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-modal .erp-segmented.erp-choice-buttons {
@@ -670,7 +670,7 @@
   min-height: 34px;
   border-radius: 6px;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   line-height: 32px;
   box-shadow: none;
 }
@@ -686,9 +686,9 @@
   border-bottom: 1px solid #edf0f4;
   padding: 9px 12px;
   color: #334155;
-  font-size: 13px;
+  font-size: var(--admin-content-section-title-size, 13px);
   font-weight: 600;
-  line-height: 18px;
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-card-body {
@@ -717,7 +717,7 @@
   padding: 0 12px;
   background: #fff;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
 }
 
@@ -731,7 +731,7 @@
   border-left: 3px solid #185fa5;
   padding-left: 8px;
   color: #303642;
-  font-size: 13px;
+  font-size: var(--admin-content-section-title-size, 13px);
   font-weight: 600;
   line-height: 18px;
 }
@@ -747,19 +747,19 @@
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-bulk-table-scroll .crm-table th {
   background: #f8fafc;
   color: #64748b;
-  font-size: 12px;
+  font-size: var(--admin-content-font-caption, 12px);
   font-weight: 500;
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-bulk-table-scroll .crm-table td {
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-bulk-table-scroll input.crm-input,
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page [data-testid="inbound-bulk-mapping"] select.crm-input {
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-entry-actions {
@@ -802,13 +802,13 @@
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-payment-summary span {
   color: #8a94a3;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 :where(.business-native-content, #business-native-portals) .erp-ui.inbound-management-page .inbound-payment-summary strong {
   margin-top: 2px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -821,7 +821,7 @@
   border-radius: 6px;
   padding: 0 12px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 400 !important;
   text-align: left;
 }

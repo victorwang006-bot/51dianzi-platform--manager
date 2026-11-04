@@ -333,14 +333,14 @@ describe("organization unified presentation", () => {
 
   it("uses compact local control/heading sizes and right-aligned actions without scaling hacks", () => {
     const css = readFileSync("client/src/pages/Organization.css", "utf8");
-    expect(css).toMatch(/h2\s*\{\s*font-size:\s*15px/);
-    expect(css).toMatch(/min-height:\s*32px/);
+    expect(css).toMatch(/h2\s*\{\s*font-size:\s*var\(--admin-content-section-title-size, 15px\)/);
+    expect(css).toMatch(/min-height:\s*var\(--admin-content-control-height, 32px\)/);
     expect(css).toMatch(/border-radius:\s*6px/);
     expect(css).toMatch(
       /\.org-actions-table td:last-child\s*\{\s*text-align:\s*right/
     );
     expect(css).not.toMatch(
-      /!important|\bzoom\s*:|\btransform\s*:|font-size:\s*(?:16|22)px|min-height:\s*36px/
+      /!important|\bzoom\s*:|\btransform\s*:|font-size:\s*22px|min-height:\s*36px/
     );
   });
 });

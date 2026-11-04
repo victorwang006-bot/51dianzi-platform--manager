@@ -2,19 +2,19 @@
 .erp-ui.customer-detail-compact .customer-detail-basic,
 .erp-ui.customer-detail-compact .customer-detail-followups {
   color: #303642;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .erp-ui.customer-detail-compact .customer-detail-top-actions .crm-btn,
 .erp-ui.customer-detail-compact .customer-detail-basic .crm-btn,
 .erp-ui.customer-detail-compact .customer-detail-followups .crm-btn {
-  min-height: 32px;
-  height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
+  height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
   padding: 0 12px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields [data-slot="input"],
@@ -22,18 +22,18 @@
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields input.crm-input,
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields select.crm-input,
 .erp-ui.customer-detail-compact .customer-detail-followups .crm-input {
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields [data-slot="textarea"],
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields textarea.crm-input,
 .erp-ui.customer-detail-compact .customer-detail-followups textarea.crm-input {
   border-radius: 6px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields label,
@@ -41,7 +41,7 @@
 .erp-ui.customer-detail-compact .customer-detail-followups textarea,
 .erp-ui.customer-detail-compact .customer-detail-followups select,
 .erp-ui.customer-detail-compact .customer-detail-followups input {
-  font-size: 12px;
+  font-size: var(--admin-content-font-label, 12px);
 }
 
 .erp-ui.customer-detail-compact .customer-detail-basic .customer-fields > div {
@@ -85,8 +85,8 @@
 }
 
 .erp-ui.customer-detail-compact .customer-detail-follow-history article {
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 @media (max-width: 680px) {

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => ({
@@ -48,7 +50,7 @@ beforeEach(() => {
   runtime.result = fixture(); runtime.inputs = []; runtime.options = [];
   runtime.add.mockReset().mockResolvedValue({ item: own }); runtime.edit.mockReset().mockResolvedValue({ item: own });
   runtime.complete.mockReset(); runtime.close.mockReset(); allowed = true;
-  props = { materialId: 101, partNumber: "LM358DR", brand: "TI", enterpriseId: 31, actorUserId: 7, startAdding: false, canAddNote: true, isCurrent: () => allowed, onClose: runtime.close, onComplete: runtime.complete };
+  props = { materialId: 101, partNumber: "LM358DR", brand: "TI", enterpriseId: 31, actorUserId: 7, canAddNote: true, isCurrent: () => allowed, onClose: runtime.close, onComplete: runtime.complete };
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => { await act(async () => root?.unmount()); root = null; document.body.replaceChildren(); });
@@ -73,19 +75,90 @@ describe("isolated public collaboration notes", () => {
     expect(runtime.edit).not.toHaveBeenCalled();
   });
 
-  it("opens add directly with input focus and does not read private history", async () => {
-    render({ startAdding: true }); await settle();
-    expect(document.activeElement).toBe(textarea());
-    expect(document.querySelector('[aria-label="协作备注历史"]')).toBeNull();
+  it("keeps history and add input together, focuses a populated dialog and stays open after saving", async () => {
+    render(); await settle();
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(document.activeElement).toBe(dialog);
+    expect(document.querySelector('[aria-label="协作备注历史"]')?.textContent).toContain(peer.content);
+    expect(document.querySelector('[aria-label="新增协作备注"]')).not.toBeNull();
+    const saved = { ...own, id: 503, content: "只读成员也能写协作信息" };
+    runtime.result.refetch.mockImplementationOnce(async () => {
+      runtime.result = fixture({ data: { items: [saved, own, peer], total: 3, page: 1, pageSize: 20, canAdd: true } });
+      render();
+    });
     type("只读成员也能写协作信息");
     click(button("保存协作备注")); await settle();
     expect(runtime.add).toHaveBeenCalledWith({ materialId: 101, content: "只读成员也能写协作信息", expectedEnterpriseId: 31, expectedActorUserId: 7, requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) }, { signal: expect.any(AbortSignal) });
     expect(runtime.edit).not.toHaveBeenCalled();
     expect(runtime.complete).toHaveBeenCalledTimes(1);
+    expect(runtime.close).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(document.querySelectorAll(".ci-note-entry")).toHaveLength(3);
+    expect(document.querySelector('[aria-label="协作备注历史"]')?.textContent).toContain(saved.content);
+    expect(textarea().value).toBe("");
+    expect(button("保存协作备注").disabled).toBe(true);
+    expect(document.body.textContent).not.toContain("原库存备注");
+  });
+
+  it("waits for the first successful zero-note load before focusing input, and never refocuses on refresh", async () => {
+    runtime.result = fixture({ data: undefined, isLoading: true });
+    render();
+    expect(document.activeElement).toBe(document.querySelector('[role="dialog"]'));
+    expect(document.querySelector("textarea")).toBeNull();
+    runtime.result = fixture({ data: { items: [], total: 0, page: 1, pageSize: 20, canAdd: true } });
+    render(); await settle();
+    expect(document.activeElement).toBe(textarea());
+    expect(document.querySelector('[aria-label="协作备注历史"]')?.textContent).toContain("暂无协作备注");
+    button("刷新备注").focus();
+    runtime.result = fixture({ data: { items: [], total: 0, page: 1, pageSize: 20, canAdd: true }, isFetching: true });
+    render();
+    expect(document.activeElement).toBe(button("刷新备注"));
+    runtime.result = fixture({ data: { items: [], total: 0, page: 1, pageSize: 20, canAdd: true } });
+    render();
+    expect(document.activeElement).toBe(button("刷新备注"));
+  });
+
+  it("does not take focus when populated history becomes empty later", () => {
+    render();
+    button("刷新备注").focus();
+    runtime.result = fixture({ data: { items: [], total: 0, canAdd: true } }); render();
+    expect(document.activeElement).toBe(button("刷新备注"));
+  });
+
+  it("does not take focus if the user moved before the initial zero-note load completed", () => {
+    runtime.result = fixture({ data: undefined, isLoading: true }); render();
+    button("刷新备注").focus();
+    runtime.result = fixture({ data: { items: [], total: 0, canAdd: true } }); render();
+    expect(document.activeElement).toBe(button("刷新备注"));
+  });
+
+  it.each(["server", "row", "native"])("shows history but no add area when %s denies adding, with no zero-note focus", denial => {
+    runtime.result = fixture({ data: { items: [], total: 0, canAdd: denial !== "server" } });
+    render({ canAddNote: denial !== "row", canWriteNote: denial !== "native" });
+    expect(document.querySelector('[aria-label="协作备注历史"]')).not.toBeNull();
+    expect(document.querySelector('[aria-label="新增协作备注"]')).toBeNull();
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(document.body.textContent).toContain("当前不可新增协作备注");
+    expect(document.activeElement).toBe(document.querySelector('[role="dialog"]'));
+  });
+
+  it("allows only author editing without granting add or somebody else's edit rights", async () => {
+    runtime.result = fixture({ data: { items: [own, { ...peer, canEdit: true }], total: 2, canAdd: false } });
+    render({ canAddNote: false });
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(document.querySelectorAll(".ci-note-entry button")).toHaveLength(1);
+    click(button("修改我的备注"));
+    expect(document.activeElement).toBe(textarea());
+    type("只有作者能改的协作记录"); click(button("保存备注修改")); await settle();
+    expect(runtime.edit).toHaveBeenCalledWith(expect.objectContaining({ noteId: own.id, expectedRevision: own.revision }), { signal: expect.any(AbortSignal) });
+    expect(runtime.add).not.toHaveBeenCalled();
+    expect(document.querySelector('[aria-label="协作备注历史"]')).not.toBeNull();
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(runtime.close).not.toHaveBeenCalled();
   });
 
   it("preserves draft, focus and selection through refetch without taking focus back", () => {
-    render({ startAdding: true });
+    render(); textarea().focus();
     type("未完成的协作草稿"); const input = textarea(); input.setSelectionRange(2, 4);
     runtime.result = fixture(); render();
     expect(textarea()).toBe(input); expect(input.value).toBe("未完成的协作草稿");
@@ -114,7 +187,7 @@ describe("isolated public collaboration notes", () => {
   it.each(["add", "edit"])("freezes %s content and request ID after unknown results", async mode => {
     const mutation = mode === "add" ? runtime.add : runtime.edit;
     mutation.mockRejectedValueOnce(new Error("response unknown")).mockResolvedValueOnce({ item: own });
-    render({ startAdding: mode === "add" });
+    render();
     if (mode === "edit") click(button("修改我的备注"));
     type("未知请求不重复提交");
     click(button(mode === "add" ? "保存协作备注" : "保存备注修改")); await settle();
@@ -137,12 +210,26 @@ describe("isolated public collaboration notes", () => {
     expect(runtime.complete).not.toHaveBeenCalled();
   });
 
+  it("clears a definitive add failure's frozen request before a new save", async () => {
+    runtime.add.mockRejectedValueOnce(Object.assign(new Error("新增条件已变化"), { data: { code: "PRECONDITION_FAILED" } }));
+    render(); type("明确失败的原草稿"); click(button("保存协作备注")); await settle();
+    const original = runtime.add.mock.calls[0][0];
+    expect(textarea().disabled).toBe(false);
+    expect(button("关闭").disabled).toBe(false);
+    expect(runtime.result.refetch).toHaveBeenCalledTimes(1);
+    type("重新核实后的新草稿"); click(button("保存协作备注")); await settle();
+    expect(runtime.add.mock.calls[1][0].requestId).not.toBe(original.requestId);
+    expect(runtime.add.mock.calls[1][0].content).toBe("重新核实后的新草稿");
+    expect(runtime.complete).toHaveBeenCalledTimes(1);
+    expect(runtime.close).not.toHaveBeenCalled();
+  });
+
   it("fails closed when live add or author-edit rights are revoked", async () => {
-    render({ startAdding: true }); type("权限撤销后的草稿");
+    render(); type("权限撤销后的草稿");
     render({ canAddNote: false });
     expect(document.querySelector("textarea")).toBeNull();
     expect(runtime.add).not.toHaveBeenCalled();
-    render({ startAdding: false, canAddNote: true }); click(button("修改我的备注")); type("待保存修改");
+    render({ canAddNote: true }); click(button("修改我的备注")); type("待保存修改");
     runtime.result = fixture({ data: { items: [{ ...own, canEdit: false }], total: 1, canAdd: true } }); render();
     expect(button("保存备注修改").disabled).toBe(true); expect(textarea().disabled).toBe(true);
     click(button("保存备注修改")); await settle(); expect(runtime.edit).not.toHaveBeenCalled();
@@ -151,7 +238,7 @@ describe("isolated public collaboration notes", () => {
   it("aborts pending writes on unmount and suppresses stale completion", async () => {
     let finish!: () => void;
     runtime.add.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
-    render({ startAdding: true }); type("将被清理的旧上下文草稿"); click(button("保存协作备注"));
+    render(); type("将被清理的旧上下文草稿"); click(button("保存协作备注"));
     const signal = runtime.add.mock.calls[0][1].signal as AbortSignal;
     await act(async () => root?.unmount()); root = null; allowed = false;
     expect(signal.aborted).toBe(true);
@@ -163,7 +250,7 @@ describe("isolated public collaboration notes", () => {
 
   it("traps keyboard focus, supports Escape and restores the opening trigger", async () => {
     const trigger = document.createElement("button"); trigger.textContent = "备注入口"; document.body.prepend(trigger); trigger.focus();
-    render({ startAdding: true }); await settle();
+    render(); await settle();
     const last = button("保存协作备注"); type("可保存内容"); last.focus();
     act(() => last.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true })));
     expect(document.activeElement?.getAttribute("aria-label")).toBe("关闭协作备注");
@@ -174,9 +261,19 @@ describe("isolated public collaboration notes", () => {
   });
 
   it("rejects whitespace-only or overlong content without a mutation", async () => {
-    render({ startAdding: true }); type(" "); expect(button("保存协作备注").disabled).toBe(true);
+    render(); type(" "); expect(button("保存协作备注").disabled).toBe(true);
     type("字".repeat(2001)); click(button("保存协作备注")); await settle();
     expect(document.body.textContent).toContain("1 到 2000 字"); expect(runtime.add).not.toHaveBeenCalled();
+  });
+
+  it("exports the real panel DOM with long model, history and input when explicitly requested", () => {
+    render({ partNumber: "TPS7A4701RGWRABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-LONG-ALPHABETIC-MODEL", brand: "TEXAS INSTRUMENTS" });
+    expect(document.querySelectorAll(".ci-note-entry")).toHaveLength(2);
+    expect(document.querySelector('[aria-label="新增协作备注"] textarea')).not.toBeNull();
+    if (process.env.NOTES_DOM_FIXTURE_DIR) {
+      mkdirSync(process.env.NOTES_DOM_FIXTURE_DIR, { recursive: true });
+      writeFileSync(resolve(process.env.NOTES_DOM_FIXTURE_DIR, "v18-collaboration-panel.html"), `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>真实协作备注组件 DOM</title></head><body>${host.innerHTML}</body></html>\n`);
+    }
   });
 });
 

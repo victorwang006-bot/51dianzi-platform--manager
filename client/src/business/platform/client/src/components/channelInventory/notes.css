@@ -51,9 +51,9 @@
   min-width: 0;
   padding: 0;
   color: #1e3a5f;
-  font-size: 13px;
+  font-size: var(--admin-content-font-caption, 13px);
   font-weight: 600;
-  line-height: 18px;
+  line-height: var(--admin-content-caption-line-height, 18px);
 }
 
 .ci-page .ci-channel-type-tag {
@@ -63,16 +63,16 @@
   padding: 0 4px;
   color: #476581;
   background: #f7fafd;
-  font-size: 11px;
-  line-height: 17px;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 17px);
   white-space: nowrap;
 }
 
 .ci-page .ci-notes-summary {
   min-width: 0;
   color: #536b83;
-  font-size: 12px;
-  line-height: 17px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 17px);
 }
 
 .ci-page .ci-notes-summary-open {
@@ -85,9 +85,9 @@
   color: #2563a9;
   background: transparent;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 600;
-  line-height: 17px;
+  line-height: var(--admin-content-line-height, 17px);
   text-align: left;
   text-decoration: none;
   text-overflow: ellipsis;
@@ -117,7 +117,7 @@
 .ci-page .ci-notes-summary-meta {
   overflow: hidden;
   color: #8797aa;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -127,7 +127,7 @@
   max-width: 640px;
   color: #334e68;
   background: #fff;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 .ci-notes-dialog .ci-notes-material {
@@ -139,8 +139,8 @@
   border: 1px solid #dbe6f0;
   border-radius: 5px;
   background: #f8fbfe;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 13px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .ci-notes-dialog .ci-notes-material span {
@@ -182,15 +182,15 @@
   justify-content: space-between;
   gap: 8px;
   color: #6a8197;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 16px);
 }
 
 .ci-note-entry-meta strong {
   min-width: 0;
   overflow: hidden;
   color: #2f577f;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -204,7 +204,7 @@
 .ci-note-entry p {
   margin: 5px 0 0;
   color: #334e68;
-  line-height: 19px;
+  line-height: var(--admin-content-line-height, 19px);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -213,7 +213,7 @@
   min-height: 20px;
   margin-top: 4px;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .ci-note-textarea {
@@ -227,8 +227,8 @@
   color: #334e68;
   background: #fff;
   font: inherit;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 13px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .ci-note-textarea:focus {
@@ -253,7 +253,7 @@
   align-items: center;
   gap: 8px;
   color: #788ba0;
-  font-size: 12px;
+  font-size: var(--admin-content-font-caption, 12px);
 }
 
 .ci-note-edit-actions,
@@ -287,7 +287,7 @@
   display: block;
   margin-bottom: 5px;
   color: #41617f;
-  font-size: 12px;
+  font-size: var(--admin-content-font-label, 12px);
   font-weight: 600;
 }
 
@@ -301,7 +301,7 @@
 
 .ci-notes-dialog .ci-error {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .ci-notes-retry {

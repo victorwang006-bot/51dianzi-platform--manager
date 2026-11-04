@@ -231,9 +231,9 @@ describe("procurement-demands unified page", () => {
 
   it("owns only compact page CSS without blanket important rules or scale hacks", () => {
     const css = readFileSync(resolve(process.cwd(), "client/src/business/platform/client/src/pages/ProcurementDemands.css"), "utf8");
-    expect(css).toContain("height: var(--admin-control-height, 32px)");
-    expect(css).toContain("font-size: var(--admin-font-body, 12px)");
-    expect(css).toContain("font-size: var(--admin-font-caption, 11px)");
+    expect(css).toContain("height: var(--admin-content-control-height, 32px)");
+    expect(css).toContain("font-size: var(--admin-content-font-body, 12px)");
+    expect(css).toContain("font-size: var(--admin-content-font-caption, 11px)");
     expect(css).toContain("border-radius: 6px");
     expect(css).not.toMatch(/!important|\bzoom\s*:|\btransform\s*:/);
   });

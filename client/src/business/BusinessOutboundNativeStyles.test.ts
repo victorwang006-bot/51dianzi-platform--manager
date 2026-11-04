@@ -55,7 +55,7 @@ describe("BusinessOutboundNativeStyles", () => {
     for (const declaration of [
       "gap: 20px;",
       "height: 36px;",
-      "height: 32px;",
+      "height: var(--admin-content-control-height, 32px);",
       "height: 56px;",
       "padding: 6px 8px;",
       "border-bottom-color: #e2e8f0;",

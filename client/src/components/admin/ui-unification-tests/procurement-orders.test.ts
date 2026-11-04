@@ -193,12 +193,12 @@ describe("采购订单统一呈现与业务保留", () => {
     await click("确认取消订单");
     expect(mocks.cancel).toHaveBeenCalledWith({ id: 7, version: 4, reason: "测试取消原因", requestId: expect.any(String) });
   });
-  it("独占样式使用 32px 控件、12px 正文、11px 表头、15px 标签和18px弹层标题，无强制缩放", () => {
+  it("独占样式消费34px控件、13px正文、12px表头、16px标签和18px弹层语义，保留前台fallback", () => {
     const css = readFileSync(cssPath, "utf8");
-    expect(css).toMatch(/\.procurement-order-control \{[^}]*height: 32px;[^}]*font-size: 12px;/);
-    expect(css).toMatch(/\.procurement-order-tab \{[^}]*font-size: 15px;/);
-    expect(css).toMatch(/\) th \{[^}]*font-size: 11px;/);
-    expect(css).toMatch(/\.procurement-order-dialog-title \{[^}]*font-size: 18px;/);
+    expect(css).toMatch(/\.procurement-order-control \{[^}]*height: var\(--admin-content-control-height, 32px\);[^}]*font-size: var\(--admin-content-font-body, 12px\);/);
+    expect(css).toMatch(/\.procurement-order-tab \{[^}]*font-size: var\(--admin-content-section-title-size, 15px\);/);
+    expect(css).toMatch(/\) th \{[^}]*font-size: var\(--admin-content-font-caption, 11px\);/);
+    expect(css).toMatch(/\.procurement-order-dialog-title \{[^}]*font-size: var\(--admin-content-dialog-title-size, 18px\);/);
     expect(css).not.toMatch(/!important|zoom:|transform:/);
     expect(readFileSync(sourcePath, "utf8")).not.toContain("text-[22px]");
   });

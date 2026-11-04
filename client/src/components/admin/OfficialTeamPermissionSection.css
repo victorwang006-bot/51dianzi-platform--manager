@@ -1,5 +1,5 @@
 .official-team-settings {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .official-team-settings__assignment-fields {
@@ -13,18 +13,18 @@
   gap: 0.25rem;
   min-width: 0;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: var(--admin-content-font-label, 11px);
 }
 
 .official-team-settings__assignment-fields select {
-  height: 2rem;
+  height: var(--admin-content-control-height, 2rem);
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   background: var(--background);
   padding: 0 0.5rem;
   color: var(--foreground);
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .official-team-settings__assignment-fields select:disabled {
@@ -46,14 +46,14 @@
 
 .official-team-settings__permission {
   display: flex;
-  min-height: 2rem;
+  min-height: var(--admin-content-control-height, 2rem);
   align-items: center;
   gap: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0 0.5rem;
   color: var(--foreground);
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .official-team-settings__system-grant {
@@ -63,8 +63,8 @@
   background: color-mix(in srgb, var(--muted) 45%, transparent);
   padding: 0.5rem;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1.25rem;
+  font-size: var(--admin-content-font-caption, 0.75rem);
+  line-height: var(--admin-content-caption-line-height, 1.25rem);
 }
 
 .official-team-settings__notice {
@@ -77,8 +77,8 @@
   background: color-mix(in srgb, var(--muted) 45%, transparent);
   padding: 0.5rem 0.625rem;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1.25rem;
+  font-size: var(--admin-content-font-caption, 0.75rem);
+  line-height: var(--admin-content-caption-line-height, 1.25rem);
 }
 
 .official-team-settings__notice.is-error,
@@ -90,8 +90,8 @@
 .official-team-settings__save-error {
   border-left: 2px solid currentColor;
   padding-left: 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1.25rem;
+  font-size: var(--admin-content-font-caption, 0.75rem);
+  line-height: var(--admin-content-caption-line-height, 1.25rem);
 }
 
 @media (max-width: 520px) {

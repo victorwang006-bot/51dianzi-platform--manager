@@ -5,25 +5,25 @@
 }
 
 .customer-list-page .customer-list-control {
-  height: var(--admin-control-height, 32px);
+  height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: var(--admin-font-body, 12px);
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .customer-list-page .customer-list-caption {
   color: var(--admin-color-muted, #64748b);
-  font-size: var(--admin-font-caption, 11px);
-  line-height: 1.5;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 1.5);
 }
 
 .customer-list-page .customer-list-status {
-  font-size: var(--admin-font-caption, 11px);
-  line-height: 18px;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 18px);
 }
 
 .customer-list-page .customer-list-error {
-  font-size: var(--admin-font-body, 12px);
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .customer-list-page .customer-list-table-scroll {
@@ -44,7 +44,7 @@
   min-width: 1480px;
   table-layout: fixed;
   color: var(--admin-color-text, #303642);
-  font-size: var(--admin-font-body, 12px);
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 /* Keep these widths in local CSS rather than depending on utility extraction. */
@@ -61,16 +61,16 @@
 .customer-list-page .customer-list-col-actions { width: var(--customer-list-actions-width); }
 
 .customer-list-page .customer-list-table th {
-  height: var(--admin-control-height, 32px);
+  height: var(--admin-content-control-height, 32px);
   padding: 6px 10px;
   color: var(--admin-color-secondary, #475569);
-  font-size: var(--admin-font-caption, 11px);
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 .customer-list-page .customer-list-table td {
   padding: 10px;
-  font-size: var(--admin-font-body, 12px);
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .customer-list-page .customer-list-table tr {
@@ -83,8 +83,8 @@
 
 .customer-list-page .customer-list-name {
   color: #185fa5;
-  font-size: var(--admin-font-body, 12px);
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .customer-list-page .customer-list-secondary-data {
@@ -92,15 +92,15 @@
 }
 
 .customer-list-page .customer-list-followup-cell > div:first-child {
-  font-size: var(--admin-font-body, 12px);
+  font-size: var(--admin-content-font-body, 12px);
   white-space: nowrap;
 }
 
 /* Pagination and header/filter controls keep the normal rectangular treatment. */
 .customer-list-page .customer-list-pagination {
-  height: var(--admin-control-height, 32px);
+  height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: var(--admin-font-body, 12px);
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 /* Fixed widths/right offsets agree with colgroup, leaving demand visible too. */
@@ -151,9 +151,9 @@
   box-shadow: none;
   color: #185fa5;
   font-family: inherit;
-  font-size: var(--admin-font-body, 12px);
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 400;
-  line-height: 18px;
+  line-height: var(--admin-content-line-height, 18px);
   white-space: nowrap;
   cursor: pointer;
   scroll-margin-inline: 12px;

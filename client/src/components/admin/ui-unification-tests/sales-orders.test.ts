@@ -204,11 +204,11 @@ describe("sales-orders UI unification", () => {
       css.walkRules(rule => { if (rule.selectors.includes(selector)) rule.walkDecls(property, decl => { found.push(decl.value); }); });
       return found;
     };
-    expect(values(".crm-sales-orders-control", "height")).toEqual(["32px"]);
+    expect(values(".crm-sales-orders-control", "height")).toEqual(["var(--admin-content-control-height, 32px)"]);
     expect(values(".crm-sales-orders-control", "border-radius")).toEqual(["6px"]);
-    expect(values(".crm-sales-orders-page .crm-sales-orders-table th", "font-size")).toEqual(["11px"]);
-    expect(values(".crm-sales-orders-page .crm-sales-orders-table td", "font-size")).toEqual(["12px"]);
-    expect(values(".crm-sales-orders-dialog [data-slot=\"dialog-title\"]", "font-size")).toEqual(["18px"]);
+    expect(values(".crm-sales-orders-page .crm-sales-orders-table th", "font-size")).toEqual(["var(--admin-content-font-caption, 11px)"]);
+    expect(values(".crm-sales-orders-page .crm-sales-orders-table td", "font-size")).toEqual(["var(--admin-content-font-body, 12px)"]);
+    expect(values(".crm-sales-orders-dialog [data-slot=\"dialog-title\"]", "font-size")).toEqual(["var(--admin-content-dialog-title-size, 18px)"]);
     expect(cssText).not.toMatch(/!important|\bzoom\s*:|\btransform\s*:|--admin-font-(?:body|label|caption)|\b40px|font-size:\s*(?:14|16|20|22)px/);
   });
 });

@@ -1,5 +1,5 @@
-/* Shared admin system typography; no external font requests. Token values are
- * owned by styles/AdminReadability.css, not duplicated by business pages. */
+/* Shared font ownership remains in AdminReadability/ AdminUnifiedSystem.
+ * No external font requests and no public-front typography overrides. */
 .business-native-content,
 #business-native-portals,
 body[data-business-native-fonts="true"] #business-native-portals *,
@@ -19,4 +19,24 @@ body[data-business-native-fonts="true"] [role="dialog"],
 body[data-business-native-fonts="true"] [role="alertdialog"] {
   --font-sans: var(--admin-font-family);
   font-family: var(--admin-font-family);
+}
+
+/* Only admin-owned content/portals consume v18 roles. These native batch/notes
+ * controls have no UI data-slot and must not fall back to the old front styles. */
+body[data-admin-readability="true"] :is(.business-native-content, #business-native-portals, [role="dialog"], [role="alertdialog"])
+  :is(.ci-batch-control, .ci-field input:not([type="checkbox"]):not([type="radio"]), .ci-field select) {
+  height: var(--admin-control-height);
+  min-height: var(--admin-control-height);
+  font-size: var(--admin-font-body);
+  line-height: var(--admin-content-line-height);
+}
+body[data-admin-readability="true"] :is(.ci-batch-dialog, .ci-notes-dialog, .customer-supply-dialog) .ci-button {
+  min-height: var(--admin-control-height);
+  font-size: var(--admin-font-body);
+  line-height: var(--admin-content-line-height);
+}
+body[data-admin-readability="true"] :is(.business-native-content, #business-native-portals, [role="dialog"], [role="alertdialog"])
+  .text-\[12px\]:not(:where(svg, svg *, [data-slot="badge"], [class*="badge"], [class*="status-dot"])) {
+  font-size: var(--admin-font-body);
+  line-height: var(--admin-content-line-height);
 }

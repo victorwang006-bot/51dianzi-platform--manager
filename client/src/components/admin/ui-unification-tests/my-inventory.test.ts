@@ -120,9 +120,9 @@ describe("my-inventory UI unification", () => {
   });
 
   it("uses compact control and text fallbacks without scaling or broad important overrides", () => {
-    expect(styles).toContain("var(--admin-control-height, 32px)");
-    expect(styles).toContain("var(--admin-font-body, 12px)");
-    expect(styles).toContain("var(--admin-font-caption, 11px)");
+    expect(styles).toContain("var(--admin-content-control-height, 32px)");
+    expect(styles).toContain("var(--admin-content-font-body, 12px)");
+    expect(styles).toContain("var(--admin-content-font-caption, 11px)");
     expect(styles).toContain("border-radius: 6px");
     expect(styles).not.toMatch(/!important|\bzoom\s*:|\btransform\s*:/);
   });

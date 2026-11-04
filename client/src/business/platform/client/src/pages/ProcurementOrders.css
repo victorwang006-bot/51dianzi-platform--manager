@@ -2,24 +2,24 @@
 .procurement-orders-page {
   min-width: 0;
   color: var(--admin-color-text, #1f2937);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .procurement-orders-page .procurement-order-control {
-  height: 32px;
-  min-height: 32px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
   color: var(--admin-color-text, #1f2937);
   border-color: var(--admin-color-border, #e2e8f0);
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .procurement-orders-page textarea.procurement-order-control {
   height: auto;
   min-height: 96px;
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height, 1.6);
 }
 
 .procurement-orders-page .procurement-order-control::placeholder {
@@ -36,25 +36,25 @@
 }
 
 .procurement-orders-page .procurement-order-button {
-  height: 32px;
-  min-height: 32px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .procurement-orders-page .procurement-order-row-action {
   display: inline-flex;
   min-width: 32px;
-  height: 32px;
-  min-height: 32px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding-inline: 10px;
   border-radius: 6px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
   white-space: nowrap;
 }
 
@@ -69,26 +69,26 @@
 
 .procurement-orders-page .procurement-order-tab {
   flex-shrink: 0;
-  font-size: 15px;
-  line-height: 20px;
+  font-size: var(--admin-content-section-title-size, 15px);
+  line-height: var(--admin-content-line-height, 20px);
 }
 
 .procurement-orders-page .procurement-order-context,
 .procurement-orders-page .procurement-order-status {
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 16px);
 }
 
 .procurement-orders-page .procurement-order-field-label {
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-label, 12px);
+  line-height: var(--admin-content-line-height, 18px);
 }
 
 .procurement-orders-page .procurement-order-list-table {
   min-width: 1200px;
   table-layout: fixed;
   color: var(--admin-color-text, #1f2937);
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .procurement-orders-page .procurement-order-col-number { width: 180px; }
@@ -101,15 +101,15 @@
 .procurement-orders-page :is(.procurement-order-list-table, .procurement-order-detail-table) th {
   height: 36px;
   color: var(--admin-color-secondary, #475569);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 16px);
   white-space: nowrap;
 }
 
 .procurement-orders-page :is(.procurement-order-list-table, .procurement-order-detail-table) td {
   min-height: 40px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
   vertical-align: middle;
 }
 
@@ -138,7 +138,7 @@
 
 .procurement-orders-page .procurement-order-detail-table .procurement-order-cell-secondary {
   color: var(--admin-color-secondary, #475569);
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 .procurement-orders-page .procurement-orders-dialog {
@@ -149,7 +149,7 @@
 }
 
 .procurement-orders-page .procurement-order-dialog-title {
-  font-size: 18px;
+  font-size: var(--admin-content-dialog-title-size, 18px);
   line-height: 26px;
 }
 

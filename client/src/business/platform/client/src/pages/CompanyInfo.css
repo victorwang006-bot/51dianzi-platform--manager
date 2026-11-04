@@ -2,17 +2,17 @@
 .company-info-page {
   min-width: 0;
   color: var(--admin-color-text, #1f2937);
-  font-size: var(--admin-font-body, 15px);
-  line-height: 1.6;
+  font-size: var(--admin-content-font-body, 15px);
+  line-height: var(--admin-content-line-height, 1.6);
 }
 
 .company-info-page .company-info-title {
-  font-size: 22px;
+  font-size: var(--admin-content-page-title-size, 22px);
   line-height: 1.4;
 }
 
 .company-info-page .text-sm {
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-content-font-body, 15px);
 }
 
 .company-info-page
@@ -22,8 +22,8 @@
     [class~="text-[11px]"],
     [class~="text-[12px]"]
   ) {
-  font-size: var(--admin-font-caption, 13px);
-  line-height: 1.5;
+  font-size: var(--admin-content-font-caption, 13px);
+  line-height: var(--admin-content-caption-line-height, 1.5);
 }
 
 .company-info-page
@@ -51,7 +51,7 @@
   > button[aria-expanded]
   > span:first-child
   > span:first-child {
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-content-section-title-size, 15px);
   line-height: 1.5;
   color: var(--admin-color-text, #1f2937);
 }
@@ -67,9 +67,9 @@
 }
 
 .company-info-page button[class]:where(:not([role="checkbox"])) {
-  min-height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-label, 14px);
-  line-height: 1.5;
+  min-height: var(--admin-content-control-height, 40px);
+  font-size: var(--admin-content-font-label, 14px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .company-info-page button:focus-visible {
@@ -92,29 +92,29 @@
 
 .company-info-page label[class],
 .company-info-page .company-info-form [data-slot="label"] {
-  font-size: var(--admin-font-label, 14px);
-  line-height: 1.5;
+  font-size: var(--admin-content-font-label, 14px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .company-info-page .company-info-form [data-slot="input"],
 .company-info-page .company-info-form [data-slot="select-trigger"],
 .company-info-page input.crm-input,
 .company-info-page select.crm-input {
-  height: var(--admin-control-height, 40px);
-  min-height: var(--admin-control-height, 40px);
-  font-size: var(--admin-font-body, 15px);
+  height: var(--admin-content-control-height, 40px);
+  min-height: var(--admin-content-control-height, 40px);
+  font-size: var(--admin-content-font-body, 15px);
   color: var(--admin-color-text, #1f2937);
   border-color: var(--admin-color-border, #e2e8f0);
 }
 
 .company-info-page textarea {
-  font-size: var(--admin-font-body, 15px);
-  line-height: 1.6;
+  font-size: var(--admin-content-font-body, 15px);
+  line-height: var(--admin-content-line-height, 1.6);
   color: var(--admin-color-text, #1f2937);
 }
 
 .company-info-page [data-testid="company-review-inbox"] article strong {
-  font-size: var(--admin-font-body, 15px);
+  font-size: var(--admin-content-font-body, 15px);
   font-weight: 500;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -125,7 +125,7 @@
 .company-info-page .company-info-photos article button,
 .company-info-page .company-info-pickup button.p-2,
 .company-info-page button.size-8 {
-  min-height: var(--admin-row-action-height, 34px);
+  min-height: var(--admin-content-row-action-height, 34px);
   min-width: var(--admin-row-action-height, 34px);
 }
 
@@ -138,15 +138,15 @@
 
 .company-info-page .company-info-photos article .line-clamp-2 {
   min-height: 40px;
-  font-size: var(--admin-font-body, 15px);
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 15px);
+  line-height: var(--admin-content-line-height, 1.5);
   color: var(--admin-color-text, #1f2937);
 }
 
 .company-info-page [data-testid="enterprise-agreement-consent"] {
   flex-wrap: wrap;
   row-gap: 4px;
-  min-height: var(--admin-control-height, 40px);
+  min-height: var(--admin-content-control-height, 40px);
 }
 
 @media (max-width: 640px) {

@@ -2,6 +2,8 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import StaffPermissionSheet from "./StaffPermissionSheet";
 import type { StaffRow } from "@/lib/staffPermissionModel";
@@ -173,6 +175,18 @@ describe("员工五页签及统一保存当前页（仅本地合成）", () => {
     await click("账号与安全");
     expect(visiblePanel()[0].textContent).toContain("账号状态");
     expect(visiblePanel()[0].textContent).toContain("登录记录");
+    // Optional inert snapshots of the actual component/body portal, synthetic only.
+    // No production queries, writes, authentication or browser measurements here.
+    if (process.env.STAFF_FONT_FIXTURE_DIR) {
+      mkdirSync(process.env.STAFF_FONT_FIXTURE_DIR, { recursive: true });
+      for (const [label, id] of [["员工资料", "basic"], ["平台权限", "admin"], ["渠道库存", "official-team"], ["业务ERP", "erp"], ["账号与安全", "status"]]) {
+        await click(label);
+        expect(visiblePanel()).toHaveLength(1);
+        expect(visiblePanel()[0].id).toBe(`staff-panel-${id}`);
+        writeFileSync(join(process.env.STAFF_FONT_FIXTURE_DIR, `staff-permission-${id}.html`),
+          `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Actual StaffPermissionSheet synthetic ${id}</title></head><body data-admin-readability="true">${document.body.innerHTML}</body></html>\n`);
+      }
+    }
   });
   it("切tab保留各自草稿且平台页只保存平台修改，不提交ERP草稿也不自动关闭", async () => {
     await render();

@@ -89,7 +89,7 @@
 .ci-page .ci-table [data-slot="table-cell"] {
   height: auto;
   padding: 10px;
-  line-height: 18px;
+  line-height: var(--admin-content-line-height, 18px);
   vertical-align: middle;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -145,7 +145,7 @@
   display: inline-block;
   height: auto;
   min-height: 0;
-  line-height: 18px;
+  line-height: var(--admin-content-line-height, 18px);
 }
 .ci-page .ci-table .ci-row-actions {
   display: flex;

@@ -1,12 +1,12 @@
-/* Host-only v9. Reference: front MyInventory + Card/Input/Select/Table/Button.
- * MyInventory root font stack, 12px primary/11px secondary, 32px controls.
+/* Host-only semantic typography. v18 admin content tokens resolve to 13px body,
+ * 12px captions/headings, 16px tabs and 34px controls; frontend fallbacks remain.
  * No shell/global CSS changes, zoom or transform scaling. */
 .ci-page.ci-host,
 .ci-page.ci-host-state {
   font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
   color: #303642;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: var(--admin-content-font-body, 15px);
+  line-height: var(--admin-content-line-height, 1.6);
   letter-spacing: .02em;
 }
 .ci-page.ci-host-state { padding: 28px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; text-align: center; }
@@ -14,7 +14,7 @@
 .ci-page.ci-host :where(button, input, select, textarea) { font-family: inherit; }
 .ci-page.ci-host .ci-tabbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
 .ci-page.ci-host .ci-tabs { display: flex; height: 40px; gap: 22px; margin: 0; border: 0; }
-.ci-page.ci-host .ci-tabs button { position: relative; padding: 0 2px; border: 0; background: transparent; color: #64748b; font: inherit; font-weight: 500; cursor: pointer; }
+.ci-page.ci-host .ci-tabs button { position: relative; padding: 0 2px; border: 0; background: transparent; color: #64748b; font: inherit; font-weight: 500; cursor: pointer; font-size: var(--admin-content-section-title-size, 15px); }
 .ci-page.ci-host .ci-tabs button[aria-selected="true"] { color: #185fa5; font-weight: 600; }
 .ci-page.ci-host .ci-tabs button[aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; content: ""; background: #185fa5; }
 .ci-page.ci-host .ci-heading-actions { display: flex; align-items: center; width: auto; gap: 8px; margin-left: auto; padding: 4px 0; }
@@ -26,31 +26,31 @@
 .ci-page.ci-host .ci-toolbar .ci-short-select { flex-basis: 112px; width: 112px; }
 /* Accessible names remain visible to assistive technology without stacked labels. */
 .ci-page.ci-host .ci-toolbar .ci-filter-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.ci-page.ci-host .ci-filter-count { margin-left: auto; padding: 0 4px; color: #64748b; font-size: 11px; line-height: 16px; }
-.ci-page.ci-host .ci-field { display: flex; flex-direction: column; min-width: 0; gap: 5px; color: #475569; font-size: 12px; line-height: 18px; }
-.ci-page.ci-host .ci-field :is(input, select, textarea) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 12px; background: #fff; color: #303642; font: inherit; font-size: 12px; line-height: 20px; }
+.ci-page.ci-host .ci-filter-count { margin-left: auto; padding: 0 4px; color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
+.ci-page.ci-host .ci-field { display: flex; flex-direction: column; min-width: 0; gap: 5px; color: #475569; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 18px); }
+.ci-page.ci-host .ci-field :is(input, select, textarea) { box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--admin-content-control-height, 32px); border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 12px; background: #fff; color: #303642; font: inherit; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 20px); }
 .ci-page.ci-host .ci-field textarea { min-height: 80px; resize: vertical; }
 .ci-page.ci-host .ci-field :is(input, textarea)::placeholder { color: #64748b; opacity: 1; }
 .ci-page.ci-host .ci-field :is(input, select, textarea):disabled { background: #f8fafc; color: #64748b; cursor: not-allowed; }
-.ci-page.ci-host .ci-field small { color: #64748b; font-size: 11px; line-height: 16px; }
-.ci-page.ci-host .ci-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 32px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; color: #334155; background: #fff; font: inherit; font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; cursor: pointer; }
+.ci-page.ci-host .ci-field small { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
+.ci-page.ci-host .ci-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: var(--admin-content-control-height, 32px); border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; color: #334155; background: #fff; font: inherit; font-size: var(--admin-content-font-body, 12px); font-weight: 500; line-height: var(--admin-content-line-height, 20px); white-space: nowrap; cursor: pointer; }
 .ci-page.ci-host .ci-button:hover:not(:disabled) { background: #f8fafc; color: #0f172a; }
 .ci-page.ci-host .ci-primary { border-color: #185fa5; color: #fff; background: #185fa5; }
 .ci-page.ci-host .ci-primary:hover:not(:disabled) { border-color: #0c447c; color: #fff; background: #0c447c; }
 .ci-page.ci-host :is(.ci-button, .ci-inline-link):disabled { opacity: .5; cursor: not-allowed; }
 .ci-page.ci-host :is(button, input, select, textarea):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 .ci-page.ci-host .ci-tablewrap { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
-.ci-page.ci-host .ci-table { width: 100%; border-collapse: collapse; color: #1e293b; font-size: 12px; table-layout: fixed; }
+.ci-page.ci-host .ci-table { width: 100%; border-collapse: collapse; color: #1e293b; font-size: var(--admin-content-font-body, 12px); table-layout: fixed; }
 .ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 1056px !important; }
 .ci-page.ci-host .ci-table.ci-channel-table { min-width: 1040px !important; }
-.ci-page.ci-host .ci-table th { box-sizing: border-box; height: 32px; padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; background: #f8fafc; font-size: 11px; font-weight: 500; line-height: 18px; text-align: left; vertical-align: middle; white-space: normal; }
-.ci-page.ci-host .ci-table td { box-sizing: border-box; height: auto; padding: 10px; border-top: 1px solid #e2e8f0; font-size: 12px; line-height: 18px; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-table th { box-sizing: border-box; height: var(--admin-content-table-head-height, 32px); padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; background: #f8fafc; font-size: var(--admin-content-font-caption, 11px); font-weight: 500; line-height: var(--admin-content-caption-line-height, 18px); text-align: left; vertical-align: middle; white-space: normal; }
+.ci-page.ci-host .ci-table td { box-sizing: border-box; height: auto; padding: 10px; border-top: 1px solid #e2e8f0; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 18px); vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
 .ci-page.ci-host .ci-table tbody tr:hover td,
 .ci-page.ci-host .ci-table tbody tr:focus-within td { background: #f8fafc; }
-.ci-page.ci-host .ci-table .admin-cell-primary { color: #1e293b; font-size: 12px; font-weight: 500; line-height: 18px; }
-.ci-page.ci-host .ci-table :is(.ci-cell-title, .ci-channel-name) { display: block; padding: 0; color: #1e293b; font-size: 12px; font-weight: 600; line-height: 18px; overflow-wrap: anywhere; }
-.ci-page.ci-host .ci-table .ci-subtext { display: block; margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 400; line-height: 16px; }
-.ci-page.ci-host .ci-table :is(.ci-lead-time, .ci-row-index, .ci-date, .ci-channel-type-tag) { color: #64748b; font-size: 11px; line-height: 18px; }
+.ci-page.ci-host .ci-table .admin-cell-primary { color: #1e293b; font-size: var(--admin-content-font-body, 12px); font-weight: 500; line-height: var(--admin-content-line-height, 18px); }
+.ci-page.ci-host .ci-table :is(.ci-cell-title, .ci-channel-name) { display: block; padding: 0; color: #1e293b; font-size: var(--admin-content-font-body, 12px); font-weight: 600; line-height: var(--admin-content-line-height, 18px); overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-table .ci-subtext { display: block; margin-top: 2px; color: #64748b; font-size: var(--admin-content-font-caption, 11px); font-weight: 400; line-height: var(--admin-content-caption-line-height, 16px); }
+.ci-page.ci-host .ci-table :is(.ci-lead-time, .ci-row-index, .ci-date, .ci-channel-type-tag) { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 18px); }
 .ci-page.ci-host .ci-table :is(.ci-number, .ci-price) { font-variant-numeric: tabular-nums; }
 .ci-page.ci-host .ci-table .ci-material-qty-col,
 .ci-page.ci-host .ci-table .ci-material-price-col,
@@ -72,7 +72,7 @@
 .ci-page.ci-host .ci-table tbody tr:hover td.ci-col-actions,
 .ci-page.ci-host .ci-table tbody tr:focus-within td.ci-col-actions { background: #f8fafc; }
 .ci-page.ci-host .ci-row-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 0; }
-.ci-page.ci-host .ci-inline-link { border: 0; padding: 0; color: #185fa5; background: transparent; font: inherit; font-size: 12px; font-weight: 400; line-height: 20px; cursor: pointer; }
+.ci-page.ci-host .ci-inline-link { border: 0; padding: 0; color: #185fa5; background: transparent; font: inherit; font-size: var(--admin-content-font-body, 12px); font-weight: 400; line-height: var(--admin-content-line-height, 20px); cursor: pointer; }
 .ci-page.ci-host .ci-row-actions .ci-inline-link { flex: 0 0 auto; min-height: 28px; border: 0; border-radius: 0; padding: 0 7px; background: transparent; white-space: nowrap; }
 .ci-page.ci-host .ci-row-actions .ci-inline-link + .ci-inline-link { border-left: 1px solid #e2e8f0; }
 .ci-page.ci-host .ci-inline-link:hover:not(:disabled) { color: #0c447c; text-decoration: underline; }
@@ -81,24 +81,25 @@
 .ci-page.ci-host .ci-channel-table .ci-channel-type-col { width: 78px; }
 .ci-page.ci-host .ci-channel-table .ci-channel-date-col { width: 150px; }
 .ci-page.ci-host .ci-channel-table :is(th, td).ci-col-actions { width: 172px; }
-.ci-page.ci-host .ci-status { display: inline-flex; align-items: center; min-height: 20px; border: 1px solid; border-radius: 10px; padding: 0 7px; font-size: 11px; line-height: 18px; }
+.ci-page.ci-host .ci-status { display: inline-flex; align-items: center; min-height: 20px; border: 1px solid; border-radius: 10px; padding: 0 7px; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 18px); }
 .ci-page.ci-host .ci-status-active { border-color: #c5e5d3; color: #437e5d; background: #f2fbf5; }
 .ci-page.ci-host .ci-status-inactive { border-color: #e2e8f0; color: #64748b; background: #f8fafc; }
 .ci-page.ci-host .ci-sort-button { border: 0; padding: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .ci-page.ci-host .ci-sort-arrow { margin-left: 4px; font-size: 11px; }
-.ci-page.ci-host .ci-readonly { color: #64748b; font-size: 12px; }
+.ci-page.ci-host .ci-readonly { color: #64748b; font-size: var(--admin-content-font-body, 12px); }
 .ci-page.ci-host .ci-empty { padding: 36px 12px !important; color: #64748b; text-align: center; }
 .ci-page.ci-host .ci-empty.ci-host-error { color: #a54a4a; }
-.ci-page.ci-host .ci-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-height: 48px; gap: 8px; padding: 8px 12px; border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 12px 12px; color: #64748b; background: #fff; font-size: 11px; line-height: 16px; }
+.ci-page.ci-host .ci-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-height: 48px; gap: 8px; padding: 8px 12px; border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 12px 12px; color: #64748b; background: #fff; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
 .ci-page.ci-host .ci-pagination span { margin-right: auto; }
-.ci-page.ci-host .ci-error { margin: 0 0 12px; padding: 8px 10px; border: 1px solid #f0caca; border-radius: 6px; color: #a54949; background: #fff7f7; font-size: 12px; line-height: 20px; }
-.ci-page.ci-host .ci-export-status { margin: 0 0 12px; color: #437e5d; font-size: 12px; line-height: 20px; }
+.ci-page.ci-host .ci-error { margin: 0 0 12px; padding: 8px 10px; border: 1px solid #f0caca; border-radius: 6px; color: #a54949; background: #fff7f7; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 20px); }
+.ci-page.ci-host .ci-export-status { margin: 0 0 12px; color: #437e5d; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 20px); }
 .ci-page.ci-host .ci-modal-backdrop { position: fixed; z-index: 60; inset: 0; display: grid; place-items: center; padding: 24px 14px; background: rgb(30 53 77 / .34); }
 .ci-page.ci-host .ci-host-dialog { display: flex; flex-direction: column; width: min(620px, 100%); max-height: calc(100dvh - 48px); min-height: 0; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #303642; font-family: inherit; box-shadow: 0 18px 52px rgb(35 53 72 / .22); }
 .ci-page.ci-host .ci-host-material-dialog { width: min(720px, 100%); }
 .ci-page.ci-host .ci-host-dialog > header { display: flex; flex: 0 0 auto; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
-.ci-page.ci-host .ci-host-dialog h2 { margin: 0; color: #1e293b; font-size: 18px; font-weight: 600; line-height: 24px; }
-.ci-page.ci-host .ci-host-dialog header p { margin: 5px 0 0; color: #64748b; font-size: 12px; line-height: 18px; }
+.ci-page.ci-host .ci-host-dialog > header > div { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-host-dialog h2 { margin: 0; color: #1e293b; font-size: var(--admin-content-dialog-title-size, 18px); font-weight: 600; line-height: 24px; }
+.ci-page.ci-host .ci-host-dialog header p { margin: 5px 0 0; color: #64748b; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 18px); }
 .ci-page.ci-host .ci-icon-close { flex: 0 0 auto; width: 28px; height: 28px; border: 0; border-radius: 4px; padding: 0; color: #64748b; background: transparent; font-size: 22px; line-height: 26px; cursor: pointer; }
 .ci-page.ci-host .ci-icon-close:hover:not(:disabled) { color: #1e293b; background: #f8fafc; }
 .ci-page.ci-host .ci-dialog-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
@@ -107,26 +108,26 @@
 .ci-page.ci-host .ci-host-dialog > footer { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-top: 1px solid #e2e8f0; background: #fff; }
 .ci-page.ci-host .ci-host-material-dialog .ci-error { margin: 0 20px 12px; }
 .ci-page.ci-host .ci-private-entry { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 20px 16px; }
-.ci-page.ci-host .ci-private-entry small { color: #64748b; font-size: 11px; line-height: 16px; }
+.ci-page.ci-host .ci-private-entry small { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
 .ci-page.ci-host .ci-collaboration-dialog .ci-dialog-scroll { padding: 16px 20px; }
 .ci-page.ci-host .ci-collaboration-dialog .ci-notes-history { display: block; max-height: none; overflow: visible; padding: 0; }
 .ci-page.ci-host .ci-collaboration-dialog .ci-note-entry { margin-bottom: 12px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; padding: 0 0 12px; }
-.ci-page.ci-host .ci-collaboration-dialog .ci-note-entry p { margin: 6px 0; color: #303642; font-size: 13px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.ci-page.ci-host .ci-collaboration-dialog .ci-note-entry-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; color: #64748b; font-size: 11px; line-height: 18px; }
-.ci-page.ci-host .ci-collaboration-dialog .ci-note-entry-meta strong { color: #334155; font-size: 12px; font-weight: 500; }
+.ci-page.ci-host .ci-collaboration-dialog .ci-note-entry p { margin: 6px 0; color: #303642; font-size: var(--admin-content-font-body, 13px); line-height: var(--admin-content-line-height, 20px); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-collaboration-dialog .ci-note-entry-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 18px); }
+.ci-page.ci-host .ci-collaboration-dialog .ci-note-entry-meta strong { color: #334155; font-size: var(--admin-content-font-body, 12px); font-weight: 500; }
 .ci-page.ci-host .ci-collaboration-dialog .ci-note-add { margin-top: 12px; border: 0; padding: 0; }
 .ci-page.ci-host .ci-collaboration-dialog .ci-note-add > .ci-field { display: flex; font-weight: 400; }
-.ci-page.ci-host .ci-collaboration-dialog .ci-note-add-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; color: #64748b; font-size: 11px; }
-.ci-page.ci-host .ci-collaboration-dialog .ci-note-empty { margin: 0 0 16px; color: #64748b; font-size: 12px; }
+.ci-page.ci-host .ci-collaboration-dialog .ci-note-add-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; color: #64748b; font-size: var(--admin-content-font-caption, 11px); }
+.ci-page.ci-host .ci-collaboration-dialog .ci-note-empty { margin: 0 0 16px; color: #64748b; font-size: var(--admin-content-font-body, 12px); }
 .ci-page.ci-host .ci-private-notes-dialog .ci-dialog-scroll { padding: 16px 20px; }
-/* AdminReadability uses !important semantic typography. Confine the reference
- * override to this Host's native table/fields; the shell/global tokens stay intact. */
-.ci-page.ci-host .ci-table.admin-table-readable th { font-size: 11px !important; }
+/* Retain existing important role bridges only; consume the same scoped tokens
+ * as the native Host controls while shell/global defaults remain intact. */
+.ci-page.ci-host .ci-table.admin-table-readable th { font-size: var(--admin-content-font-caption, 11px) !important; }
 .ci-page.ci-host .ci-table.admin-table-readable tbody tr { height: auto; }
-.ci-page.ci-host .ci-table.admin-table-readable td { font-size: 12px !important; }
-.ci-page.ci-host .ci-table .admin-cell-primary { font-size: 12px !important; }
-.ci-page.ci-host .ci-table .admin-cell-secondary { font-size: 11px !important; }
-.ci-page.ci-host .ci-host-dialog label.ci-field { font-size: 12px !important; }
+.ci-page.ci-host .ci-table.admin-table-readable td:not(:where(.ci-row-index, .ci-date, .ci-lead-time, .ci-channel-type-tag, .admin-cell-secondary)) { font-size: var(--admin-content-font-body, 12px) !important; }
+.ci-page.ci-host .ci-table .admin-cell-primary { font-size: var(--admin-content-font-body, 12px) !important; }
+.ci-page.ci-host .ci-table .admin-cell-secondary { font-size: var(--admin-content-font-caption, 11px) !important; }
+.ci-page.ci-host .ci-host-dialog label.ci-field { font-size: var(--admin-content-font-label, 12px) !important; }
 @media (max-width: 680px) {
   .ci-page.ci-host .ci-toolbar .ci-field { flex: 1 1 130px; width: auto; }
   .ci-page.ci-host .ci-filter-count { margin-left: 0; }
@@ -142,7 +143,7 @@
   .ci-page.ci-host .ci-collaboration-dialog .ci-dialog-scroll { padding: 14px; }
 }
 
-/* v10 source-only addition. All v9 rules above remain byte-for-byte unchanged. */
+/* Source-only geometry remains unchanged; typography consumes scoped v18 roles. */
 .ci-page.ci-host .ci-source-link { min-height: 28px; white-space: nowrap; }
 .ci-page.ci-host .ci-source-link-muted,
 .ci-page.ci-host .ci-source-link-muted:hover { color: #98a2b0; }
@@ -154,12 +155,12 @@
 /* The existing Radix content is portalled outside the table/Host. Scope every
  * override to this menu class rather than changing shared/global menu tokens. */
 .ci-channel-actions-menu { z-index: 70; min-width: 144px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; background: #fff; color: #334155; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif; box-shadow: 0 6px 20px rgb(35 53 72 / .15); }
-.ci-channel-actions-menu [role="menuitem"] { min-height: 28px; border-radius: 4px; padding: 4px 8px; font-size: 12px; line-height: 20px; cursor: pointer; }
+.ci-channel-actions-menu [role="menuitem"] { min-height: 28px; border-radius: 4px; padding: 4px 8px; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 20px); cursor: pointer; }
 .ci-channel-actions-menu [role="menuitem"][data-highlighted] { background: #f8fafc; outline: none; }
 .ci-channel-actions-menu [role="menuitem"][data-disabled] { opacity: .5; cursor: not-allowed; }
 .ci-channel-actions-menu [role="menuitem"][data-variant="destructive"] { color: #a54a4a; }
 .ci-channel-actions-menu [role="separator"] { height: 1px; margin: 4px 0; background: #e2e8f0; }
 
-.ci-supply-location { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; font-size: 12px; color: #475569; }
+.ci-supply-location { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; font-size: var(--admin-content-font-body, 12px); color: #475569; }
 .ci-channel-table tbody tr.ci-supply-target > td { background: #eef6ff; }
 .ci-channel-table tbody tr.ci-supply-target > td:first-child { box-shadow: inset 3px 0 #185fa5; }

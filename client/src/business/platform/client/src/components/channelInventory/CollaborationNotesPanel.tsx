@@ -20,9 +20,9 @@ function requestId() {
 }
 
 /** This panel knows only the new public collaboration DTO, never legacy private notes. */
-export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpriseId, actorUserId, startAdding, canAddNote, canWriteNote = true, isCurrent, onClose, onComplete }: {
+export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpriseId, actorUserId, canAddNote, canWriteNote = true, isCurrent, onClose, onComplete }: {
   materialId: number; partNumber: string; brand: string; enterpriseId: number; actorUserId: number;
-  startAdding: boolean; canAddNote: boolean; canWriteNote?: boolean; isCurrent: () => boolean; onClose: () => void; onComplete: () => void;
+  canAddNote: boolean; canWriteNote?: boolean; isCurrent: () => boolean; onClose: () => void; onComplete: () => void;
 }) {
   const utils = trpc.useUtils();
   const [page, setPage] = useState(1);
@@ -57,7 +57,7 @@ export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpr
   useEffect(() => {
     alive.current = true;
     const trigger = document.activeElement as HTMLElement | null;
-    if (!startAdding) dialog.current?.focus();
+    dialog.current?.focus();
     const keydown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !live.current.busy && !live.current.retryLocked) { event.preventDefault(); live.current.onClose(); }
       if (event.key !== "Tab") return;
@@ -75,8 +75,11 @@ export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpr
     };
   }, []);
   useEffect(() => {
-    if (startAdding && !focusStarted.current && textarea.current) { textarea.current.focus(); focusStarted.current = true; }
-  }, [startAdding, canAdd, result]);
+    if (focusStarted.current || query.isLoading || !result || accessDenied) return;
+    // Decide once per opening, not on each refetch, count or permission change.
+    focusStarted.current = true;
+    if (result.total === 0 && canAdd && !editing && document.activeElement === dialog.current) textarea.current?.focus();
+  }, [query.isLoading, result, accessDenied, canAdd, editing]);
   useEffect(() => { if (editing) textarea.current?.focus(); }, [editing?.id]);
   useEffect(() => {
     if (!accessDenied) return;
@@ -129,7 +132,7 @@ export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpr
       <div className="ci-dialog-scroll">
         {query.isLoading ? <p className="ci-empty">正在读取协作备注…</p> : null}
         {query.isError ? <p className="ci-error" role="alert">{query.error.message || "协作备注读取失败。"}</p> : null}
-        {accessDenied || startAdding || editing ? null : <section className="ci-notes-history" aria-label="协作备注历史">
+        {accessDenied || editing ? null : <section className="ci-notes-history" aria-label="协作备注历史">
           {result?.items.map((note: Note) => <article className="ci-note-entry" key={note.id}>
             <div className="ci-note-entry-meta"><strong>{note.authorName}</strong><time>{formatBeijingDateTime(note.createdAt) || "—"}{String(note.updatedAt) !== String(note.createdAt) ? ` · 修改于 ${formatBeijingDateTime(note.updatedAt)}` : ""}</time></div>
             <p>{note.content}</p>
@@ -137,7 +140,7 @@ export function CollaborationNotesPanel({ materialId, partNumber, brand, enterpr
           </article>)}
           {result && !result.items.length ? <p className="ci-note-empty">暂无协作备注。</p> : null}
         </section>}
-        {!accessDenied && !startAdding && !editing && pageCount > 1 ? <nav className="ci-pagination" aria-label="协作备注分页"><span>共 {result?.total ?? 0} 条，第 {page} / {pageCount} 页</span><button type="button" className="ci-button" disabled={busy || retryLocked || page <= 1} onClick={() => setPage(page - 1)}>上一页</button><button type="button" className="ci-button" disabled={busy || retryLocked || page >= pageCount} onClick={() => setPage(page + 1)}>下一页</button></nav> : null}
+        {!accessDenied && !editing && pageCount > 1 ? <nav className="ci-pagination" aria-label="协作备注分页"><span>共 {result?.total ?? 0} 条，第 {page} / {pageCount} 页</span><button type="button" className="ci-button" disabled={busy || retryLocked || page <= 1} onClick={() => setPage(page - 1)}>上一页</button><button type="button" className="ci-button" disabled={busy || retryLocked || page >= pageCount} onClick={() => setPage(page + 1)}>下一页</button></nav> : null}
         {!accessDenied && (canAdd || editing) ? <section className="ci-note-add" aria-label={editing ? "编辑我的协作备注" : "新增协作备注"}>
           <label className="ci-field"><span>{editing ? "编辑我的协作备注" : "新增协作备注"}</span><textarea ref={textarea} rows={4} maxLength={2000} disabled={busy || retryLocked || !permitted} value={editing ? editing.content : draft} placeholder="记录沟通进展、库存核实等协作信息，1–2000 字" onChange={event => {
             frozen.current = null; const value = event.target.value;

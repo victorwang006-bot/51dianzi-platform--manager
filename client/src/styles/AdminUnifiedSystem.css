@@ -1,46 +1,75 @@
-/* Admin content only. The reference ChannelInventoryHost and outer chrome are
- * deliberately excluded. Existing readability roles consume these scoped tokens;
- * no new !important rules, scaling, auth selectors or visibility overrides. */
-.admin-unified-content:not(:has(.ci-host, .ci-host-state)),
+/* v18 content-only typography. The shell/root defaults and outer chrome stay
+ * unchanged. Native ChannelInventoryHost consumes the tokens but keeps its own
+ * selectors/geometry; no new !important rules, scaling or visibility overrides. */
+.admin-unified-content,
+body[data-admin-readability="true"] #business-native-portals,
 body[data-admin-readability="true"] :is(
   [data-slot="dialog-content"], [data-slot="alert-dialog-content"],
-  [data-slot="select-content"], [data-slot="dropdown-menu-content"],
-  [data-slot="popover-content"], [role="dialog"]:not(.ci-host-dialog)
+  [data-slot="sheet-content"], [data-slot="select-content"],
+  [data-slot="dropdown-menu-content"], [data-slot="popover-content"],
+  [data-slot="tooltip-content"], [data-sonner-toaster],
+  [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]
 ) {
   --admin-font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
-  --admin-font-body: 12px;
-  --admin-font-label: 12px;
-  --admin-font-caption: 11px;
-  --admin-font-table-heading: 11px;
-  --admin-control-height: 32px;
+  --admin-font-body: 13px;
+  --admin-font-label: 13px;
+  --admin-font-caption: 12px;
+  --admin-font-table-heading: 12px;
+  --admin-control-height: 34px;
   --admin-row-action-height: 28px;
-  --admin-menu-item-height: 32px;
+  --admin-menu-item-height: 34px;
   --admin-color-brand: #185fa5;
   --admin-color-text: #303642;
   --admin-color-secondary: #475569;
   --admin-color-muted: #64748b;
   --admin-color-border: #e2e8f0;
-  --admin-table-head-height: 32px;
+  --admin-table-head-height: 34px;
   --admin-table-row-height: auto;
   --admin-table-head-padding-y: 6px;
   --admin-table-cell-padding-y: 10px;
-  --admin-table-line-height: 18px;
-  --admin-table-head-line-height: 18px;
-  --admin-page-title-size: 15px;
-  --admin-section-title-size: 15px;
+  --admin-table-line-height: 20px;
+  --admin-table-head-line-height: 20px;
+  --admin-page-title-size: 16px;
+  --admin-section-title-size: 16px;
   --admin-dialog-title-size: 18px;
+  /* These aliases are intentionally absent from :root. Shared platform CSS
+   * retains its original fallback when used outside the admin content scope. */
+  --admin-content-font-body: var(--admin-font-body);
+  --admin-content-font-label: var(--admin-font-label);
+  --admin-content-font-caption: var(--admin-font-caption);
+  --admin-content-font-table-heading: var(--admin-font-table-heading);
+  --admin-content-control-height: var(--admin-control-height);
+  --admin-content-row-action-height: var(--admin-row-action-height);
+  --admin-content-table-head-height: var(--admin-table-head-height);
+  --admin-content-page-title-size: var(--admin-page-title-size);
+  --admin-content-section-title-size: var(--admin-section-title-size);
+  --admin-content-dialog-title-size: var(--admin-dialog-title-size);
+  --admin-content-line-height: 20px;
+  --admin-content-caption-line-height: 18px;
+  --admin-content-control-padding-y: 5px;
   --font-sans: var(--admin-font-family);
 }
 
-.admin-unified-content:not(:has(.ci-host, .ci-host-state)) {
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)),
+body[data-admin-readability="true"] :is(
+  [data-slot="sheet-content"], [data-slot="select-content"],
+  [data-slot="dropdown-menu-content"], [data-slot="popover-content"],
+  [data-slot="tooltip-content"], [data-sonner-toaster]
+) {
   min-width: 0;
   font-family: var(--admin-font-family);
   font-size: var(--admin-font-body);
-  line-height: 1.6;
+  line-height: var(--admin-content-line-height);
   color: var(--admin-color-text);
 }
 
-/* Semantic defaults also cover native platform pages using existing UI controls. */
+body[data-admin-readability="true"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"], [role="dialog"], [role="alertdialog"])
+  :is(.text-sm, .text-base, .text-\[12px\]):not(:where(h1, h2, h3, h4, svg, svg *, [data-slot="badge"], [class*="badge"], [class*="status-dot"], [data-slot="dialog-title"], [data-slot="alert-dialog-title"], [data-slot="sheet-title"])) {
+  font-size: var(--admin-font-body);
+  line-height: var(--admin-content-line-height);
+}
+
+/* Semantic defaults cover native platform pages without touching the chrome. */
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(h1, .aui-page-title) {
   margin: 0;
   color: #1e293b;
@@ -48,21 +77,22 @@ body[data-admin-readability="true"] :is(
   font-weight: 600;
   line-height: 24px;
 }
-.admin-unified-content:not(:has(.ci-host, .ci-host-state)) h2:not([data-slot="dialog-title"]) {
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) h2:not([data-slot="dialog-title"]):not([data-slot="alert-dialog-title"]):not([data-slot="sheet-title"]):not(:where([role="dialog"] h2, [role="alertdialog"] h2)) {
   font-size: var(--admin-section-title-size);
   line-height: 22px;
 }
-.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.text-sm, .text-base):not(:where(svg, svg *)) {
+.admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.text-sm, .text-base, .text-\[12px\]):not(:where(h1, h2, h3, h4, svg, svg *, [data-slot="badge"], [class*="badge"], [class*="status-dot"], [data-slot="dialog-title"], [data-slot="sheet-title"])) {
   font-size: var(--admin-font-body);
+  line-height: var(--admin-content-line-height);
 }
-.admin-unified-content:not(:has(.ci-host, .ci-host-state)) [data-slot="card-title"] {
-  font-size: 15px;
+.admin-unified-content :is(.text-\[15px\], [data-slot="card-title"]):not(:where(svg, svg *, [data-slot="dialog-title"], [data-slot="alert-dialog-title"], [data-slot="sheet-title"])) {
+  font-size: var(--admin-section-title-size);
   line-height: 22px;
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) [data-slot="card-description"] {
   color: #64748b;
   font-size: var(--admin-font-caption);
-  line-height: 16px;
+  line-height: var(--admin-content-caption-line-height);
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.admin-table, .admin-table-readable, .crm-table, [data-slot="table"]) :is(th, td) {
   padding-inline: 10px;
@@ -71,14 +101,14 @@ body[data-admin-readability="true"] :is(
   border-radius: 6px;
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="submit"]):not([type="button"]), select, textarea) {
-  min-height: 32px;
+  min-height: var(--admin-control-height);
   padding: 5px 12px;
   font-family: var(--admin-font-family);
   font-size: var(--admin-font-body);
-  line-height: 20px;
+  line-height: var(--admin-content-line-height);
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="submit"]):not([type="button"]), select) {
-  height: 32px;
+  height: var(--admin-control-height);
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) button {
   font-size: var(--admin-font-body);
@@ -91,7 +121,7 @@ body[data-admin-readability="true"] :is(
   border-radius: 6px;
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is([data-slot="button"], .crm-btn):not(:where(.size-6, .size-7, .size-8, .size-9, .size-10, [data-admin-button-size^="icon"])) {
-  height: 32px;
+  height: var(--admin-control-height);
 }
 .admin-unified-content:not(:has(.ci-host, .ci-host-state)) :is(.admin-cell-secondary, .aui-page-description) {
   color: #64748b;
@@ -114,13 +144,13 @@ body[data-admin-readability="true"] :is(
 }
 .aui-page-heading { min-width: 0; }
 .aui-page-title { display: flex; align-items: center; gap: 8px; }
-.aui-page-description { margin-top: 3px; font-size: 11px; line-height: 16px; }
-.aui-page-actions { --admin-row-action-height: 32px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.aui-page-description { margin-top: 3px; font-size: var(--admin-font-caption); line-height: var(--admin-content-caption-line-height); }
+.aui-page-actions { --admin-row-action-height: var(--admin-control-height); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 
 .aui-page-tabs {
-  --admin-font-body: 15px;
-  --admin-font-label: 15px;
-  --admin-font-caption: 15px;
+  --admin-font-body: var(--admin-section-title-size);
+  --admin-font-label: var(--admin-section-title-size);
+  --admin-font-caption: var(--admin-section-title-size);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -128,7 +158,7 @@ body[data-admin-readability="true"] :is(
   margin: 0 0 12px;
   padding: 0;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 15px;
+  font-size: var(--admin-section-title-size);
 }
 .aui-page-tabs > :is(a, button) {
   position: relative;
@@ -143,7 +173,7 @@ body[data-admin-readability="true"] :is(
   color: #64748b;
   background: transparent;
   font-family: inherit;
-  font-size: 15px;
+  font-size: var(--admin-section-title-size);
   font-weight: 500;
   line-height: 20px;
   text-decoration: none;
@@ -168,7 +198,7 @@ body[data-admin-readability="true"] :is(
 }
 
 .aui-filterbar {
-  --admin-row-action-height: 32px;
+  --admin-row-action-height: var(--admin-control-height);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -188,21 +218,21 @@ body[data-admin-readability="true"] :is(
 }
 .aui-filterbar :is(input:not([type="checkbox"]):not([type="radio"]), select) {
   box-sizing: border-box;
-  min-height: 32px;
-  height: 32px;
+  min-height: var(--admin-control-height);
+  height: var(--admin-control-height);
   border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 5px 12px;
   background: #fff;
   color: #303642;
   font-family: inherit;
-  font-size: 12px;
-  line-height: 20px;
+  font-size: var(--admin-font-body);
+  line-height: var(--admin-content-line-height);
 }
 .aui-filterbar :is(input, textarea)::placeholder { color: #64748b; opacity: 1; }
 .aui-filterbar .aui-filter-search { flex: 0 1 240px; min-width: 150px; max-width: 100%; }
 .aui-filterbar .aui-filter-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.aui-filter-count { margin-left: auto; color: #64748b; font-size: 11px; line-height: 16px; }
+.aui-filter-count { margin-left: auto; color: #64748b; font-size: var(--admin-font-caption); line-height: var(--admin-content-caption-line-height); }
 .aui-data-panel {
   min-width: 0;
   max-width: 100%;
@@ -224,7 +254,7 @@ body[data-admin-readability="true"] :is(
   padding: 8px 12px;
   border-top: 1px solid #e2e8f0;
   color: #64748b;
-  font-size: 11px;
+  font-size: var(--admin-font-caption);
 }
 @media (max-width: 680px) {
   .aui-page-actions { width: 100%; margin-left: 0; }

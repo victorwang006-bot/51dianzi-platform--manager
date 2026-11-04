@@ -24,7 +24,7 @@
 }
 
 [data-organization-page] h2 {
-  font-size: 15px;
+  font-size: var(--admin-content-section-title-size, 15px);
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -35,7 +35,7 @@
 
 [data-organization-page] h3,
 .org-dialog h3 {
-  font-size: 12px;
+  font-size: var(--admin-content-section-title-size, 12px);
   font-weight: 600;
   margin: 8px 0;
 }
@@ -43,8 +43,8 @@
 [data-organization-page] .org-template {
   padding: 12px 0;
   border-bottom: 1px solid var(--color-border);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.7);
 }
 
 [data-organization-page] .org-template:last-child {
@@ -54,8 +54,8 @@
 [data-organization-page] .org-muted,
 .org-dialog .org-muted {
   color: var(--color-muted-foreground);
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 1.7);
 }
 
 [data-organization-page] .org-notice,
@@ -64,8 +64,8 @@
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-muted);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.7);
 }
 
 [data-organization-page] .org-error,
@@ -74,8 +74,8 @@
   border: 1px solid var(--color-destructive);
   color: var(--color-destructive);
   border-radius: 6px;
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.7);
 }
 
 [data-organization-page] .org-error button {
@@ -84,8 +84,8 @@
 
 [data-organization-page] .org-key-list,
 .org-dialog .org-key-list {
-  font-size: 12px;
-  line-height: 1.8;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.8);
   overflow-wrap: anywhere;
   white-space: normal;
   max-width: 650px;
@@ -94,7 +94,7 @@
 [data-organization-page] .org-pagination {
   justify-content: flex-end;
   padding-top: 12px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-caption, 12px);
 }
 
 [data-organization-page] .org-field,
@@ -102,7 +102,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
 }
 
@@ -113,15 +113,15 @@
 [data-organization-page] select,
 .org-dialog select,
 .org-dialog textarea {
-  min-height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-background);
   color: var(--color-foreground);
   font: inherit;
-  font-size: 12px;
-  line-height: 20px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 20px);
 }
 
 .org-dialog {
@@ -146,8 +146,8 @@
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 12px;
-  font-size: 12px;
-  line-height: 1.8;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.8);
 }
 
 .org-dialog .org-preview ul {
@@ -168,14 +168,14 @@
 
 [data-organization-page] details summary {
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   color: var(--color-muted-foreground);
 }
 
 [data-organization-page] pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   max-width: 680px;
 }
 
@@ -234,11 +234,11 @@
 }
 
 [data-organization-page] .org-team-filters button {
-  min-height: 32px;
+  min-height: var(--admin-content-control-height, 32px);
   padding: 5px 10px;
   border: 1px solid var(--color-border, #e3e8ef);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 [data-organization-page] .org-team-filters button[aria-pressed="true"] {
@@ -247,7 +247,7 @@
 }
 
 [data-organization-page] .org-team-name {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
   text-align: left;
   overflow-wrap: anywhere;
@@ -292,7 +292,7 @@
   padding: 10px 12px;
   border: 1px solid var(--color-border, #e3e8ef);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 [data-organization-page] .org-team-list > li[data-selected="true"] {

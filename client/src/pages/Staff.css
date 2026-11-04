@@ -11,7 +11,7 @@
 [data-staff-page] .staff-management-table {
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 [data-staff-page] .staff-management-table th,
@@ -66,9 +66,9 @@
 [data-staff-page] .staff-erp-more {
   flex: 0 0 auto;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: var(--admin-content-font-body, 0.75rem);
   font-weight: 500;
-  line-height: 1.25rem;
+  line-height: var(--admin-content-line-height, 1.25rem);
   white-space: nowrap;
 }
 
@@ -111,8 +111,8 @@
   border-radius: 6px;
   background: #f3f6fa;
   color: #5e6d81;
-  font-size: 11px;
-  line-height: 1.25rem;
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 1.25rem);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

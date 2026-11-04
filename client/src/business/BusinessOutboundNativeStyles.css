@@ -40,7 +40,7 @@
   padding: 5px 0.875rem;
   background: #fff;
   color: #333;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   cursor: pointer;
   transition-property:
     color, background-color, border-color, text-decoration-color, fill, stroke,
@@ -88,7 +88,7 @@
   .erp-ui.sales-order-page
   .crm-btn-sm {
   padding: 3px 0.625rem;
-  font-size: 11px;
+  font-size: var(--admin-content-font-body, 11px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -99,7 +99,7 @@
   padding: 6px 0.625rem;
   background: #fff;
   color: #333;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
   outline: none;
 }
 
@@ -115,7 +115,7 @@
   .crm-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -126,7 +126,7 @@
   padding: 10px 12px;
   background: #fafafa;
   color: #888;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
@@ -156,7 +156,7 @@
   display: inline-block;
   border-radius: 0.25rem;
   padding: 2px 0.5rem;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -177,7 +177,7 @@
   .crm-detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-variant-numeric: tabular-nums;
 }
 
@@ -196,7 +196,7 @@
   width: 110px;
   background: #fafafa;
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--admin-content-font-label, 13px);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -207,7 +207,7 @@
   height: 42px;
   border-radius: 8px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -216,7 +216,7 @@
   height: 42px;
   border-radius: 8px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -225,7 +225,7 @@
   border-color: #d9dfe8;
   border-radius: 8px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -233,7 +233,7 @@
   .crm-input {
   border-color: #d9dfe8;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
 }
 
 :where(.business-native-content, #business-native-portals)
@@ -247,7 +247,7 @@
   .crm-btn {
   min-height: 40px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 500;
 }
 
@@ -255,13 +255,13 @@
   .erp-ui.sales-order-page
   .crm-btn-sm {
   min-height: 34px;
-  font-size: 13px;
+  font-size: var(--admin-content-font-body, 13px);
 }
 
 :where(.business-native-content, #business-native-portals)
   .erp-ui.sales-order-page
   .crm-table {
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-variant-numeric: tabular-nums;
 }
 
@@ -270,7 +270,7 @@
   .crm-table
   th {
   color: #6b7280;
-  font-size: 13px;
+  font-size: var(--admin-content-font-caption, 13px);
   font-weight: 500;
 }
 
@@ -279,7 +279,7 @@
   .crm-table
   td {
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 400;
 }
 
@@ -313,7 +313,7 @@
   border-bottom: 2px solid transparent;
   padding: 0 2px;
   color: #64748b;
-  font-size: 13px;
+  font-size: var(--admin-content-section-title-size, 13px);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -369,19 +369,19 @@
   .erp-ui.sales-order-page
   .sales-order-toolbar
   .crm-input {
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   border-color: #cbd5e1;
   border-radius: 6px;
   padding: 4px 12px;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--admin-content-font-body, 14px);
+  line-height: var(--admin-content-line-height, 20px);
 }
 
 :where(.business-native-content, #business-native-portals)
   .erp-ui.sales-order-page
   .sales-order-compact-button {
   display: inline-flex;
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -390,7 +390,7 @@
   padding: 0 12px;
   background: #fff;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -419,8 +419,8 @@
 :where(.business-native-content, #business-native-portals)
   .erp-ui.sales-order-page
   .sales-order-table {
-  font-size: 12px;
-  line-height: calc(20 / 14);
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, calc(20 / 14));
   font-variant-numeric: tabular-nums;
 }
 
@@ -428,11 +428,11 @@
   .erp-ui.sales-order-page
   .sales-order-table
   th {
-  height: 32px;
+  height: var(--admin-content-table-head-height, 32px);
   padding: 0 8px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   font-weight: 500;
 }
 
@@ -443,7 +443,7 @@
   height: 56px;
   padding: 6px 8px;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 400;
 }
 
@@ -536,7 +536,7 @@
   border-top: 1px solid #e2e8f0;
   padding: 8px 16px;
   color: #64748b;
-  font-size: 12px;
+  font-size: var(--admin-content-font-caption, 12px);
 }
 
 /* The shared row action trigger remains named inbound-row-menu in the source DOM. */
@@ -574,7 +574,7 @@
   border-radius: 6px;
   padding: 0 12px;
   color: #303642;
-  font-size: 14px;
+  font-size: var(--admin-content-font-body, 14px);
   font-weight: 400 !important;
   text-align: left;
 }

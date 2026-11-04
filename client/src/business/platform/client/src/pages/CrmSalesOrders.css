@@ -3,29 +3,29 @@
 .crm-sales-orders-dialog,
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) {
   color: var(--admin-color-text, #1f2937);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .crm-sales-orders-control,
 .crm-sales-orders-page .crm-sales-orders-control {
-  height: 32px;
-  min-height: 32px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .crm-sales-orders-page .text-xs,
 .crm-sales-orders-dialog .text-xs,
 .crm-sales-orders-page .admin-cell-primary,
 .crm-sales-orders-dialog .admin-cell-primary {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .crm-sales-orders-page .admin-cell-secondary,
 .crm-sales-orders-dialog .admin-cell-secondary {
   color: var(--admin-color-muted, #64748b);
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 .crm-sales-orders-page .text-muted-foreground,
@@ -63,19 +63,19 @@
 
 .crm-sales-orders-page .crm-sales-orders-order-link,
 .crm-sales-orders-dialog .crm-sales-orders-selected-customer {
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .crm-sales-orders-page .crm-sales-orders-table th,
 .crm-sales-orders-dialog .crm-sales-orders-dialog-table th {
-  height: 32px;
+  height: var(--admin-content-table-head-height, 32px);
   padding: 6px 10px;
   background: #f8fafc;
   color: var(--admin-color-secondary, #475569);
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: var(--admin-content-caption-line-height, 1.5);
 }
 
 .crm-sales-orders-page .crm-sales-orders-table td,
@@ -83,31 +83,31 @@
   padding: 8px 10px;
   border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
   color: var(--admin-color-text, #1f2937);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .crm-sales-orders-page .crm-sales-orders-table .admin-row-action,
 .crm-sales-orders-dialog .crm-sales-orders-dialog-table .admin-row-action {
-  height: 32px;
-  min-height: 32px;
-  font-size: 12px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .crm-sales-orders-pagination {
   color: var(--admin-color-muted, #64748b);
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 .crm-sales-orders-pagination button {
-  height: 32px;
+  height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .crm-sales-orders-select [data-slot="select-item"] {
-  min-height: 32px;
-  font-size: 12px;
+  min-height: var(--admin-content-control-height, 32px);
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 /* Preserve the existing widths, scrolling, stacking and dialog interactions. */
@@ -127,7 +127,7 @@
   margin: 0;
   padding-right: 24px;
   color: var(--admin-color-text, #1f2937);
-  font-size: 18px;
+  font-size: var(--admin-content-dialog-title-size, 18px);
   font-weight: 600;
   line-height: 1.4;
 }
@@ -136,25 +136,25 @@
 .crm-sales-orders-dialog [data-slot="label"],
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) label {
   color: var(--admin-color-secondary, #475569);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-label, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .crm-sales-orders-dialog :is(input, select, [data-slot="select-trigger"]),
 .crm-sales-orders-dialog button:where(:not([data-slot="dialog-close"]):not([role="checkbox"])),
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) button {
-  height: 32px;
-  min-height: 32px;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
 }
 
 .crm-sales-orders-dialog textarea,
 .crm-sales-orders-cancel-reason textarea {
   border-radius: 6px;
   color: var(--admin-color-text, #1f2937);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
 }
 
 .crm-sales-orders-dialog .crm-sales-orders-dialog-table {
@@ -167,7 +167,7 @@
 }
 
 .crm-sales-orders-dialog .crm-sales-orders-model {
-  font-size: 12px;
+  font-size: var(--admin-content-font-body, 12px);
   font-weight: 500;
   overflow-wrap: anywhere;
 }
@@ -177,7 +177,7 @@
 }
 
 .crm-sales-orders-dialog .crm-sales-orders-detail .text-slate-500 {
-  font-size: 11px;
+  font-size: var(--admin-content-font-caption, 11px);
 }
 
 .crm-sales-orders-dialog .crm-sales-orders-detail-summary {
@@ -192,7 +192,7 @@
 .crm-sales-orders-dialog .crm-sales-orders-section-title {
   margin-bottom: 8px;
   color: var(--admin-color-text, #1f2937);
-  font-size: 15px;
+  font-size: var(--admin-content-section-title-size, 15px);
   font-weight: 500;
 }
 

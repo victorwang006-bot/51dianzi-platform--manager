@@ -52,7 +52,7 @@
   .admins-page .admin-user-responsive-table tbody td::before {
     content: attr(data-label);
     color: var(--muted-foreground);
-    font-size: 11px;
+    font-size: var(--admin-content-font-caption, 11px);
     font-weight: 500;
   }
 }

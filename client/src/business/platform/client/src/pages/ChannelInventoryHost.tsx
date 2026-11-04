@@ -482,7 +482,7 @@ export default function ChannelInventoryHost() {
     setPendingBatch(null); setBatchTarget(null); setBatchOpen(false);
   };
   const [notesMaterial, setNotesMaterial] = useState<{ id: number } | null>(null);
-  const [collaboration, setCollaboration] = useState<{ material: TeamMaterial; adding: boolean; session: number } | null>(null);
+  const [collaboration, setCollaboration] = useState<{ material: TeamMaterial; session: number } | null>(null);
   const [sourceRequested, setSourceRequested] = useState(false);
   const [sourceRequestScope, setSourceRequestScope] = useState("");
   const [sourceOptionsRevision, setSourceOptionsRevision] = useState(0);
@@ -1103,11 +1103,11 @@ export default function ChannelInventoryHost() {
   editableRowsRef.current = new Set(materialRows.filter(row => row.canEdit && !row.readOnly).map(row => row.id));
   const collaborationRowsRef = useRef(new Map<number, TeamMaterial>());
   collaborationRowsRef.current = new Map(materialRows.map(row => [row.id, row]));
-  const openCollaboration = (material: TeamMaterial, adding: boolean) => {
-    if (!isCurrent() || !contextCurrent || materialsQuery.isError || (adding && (!nativeNote || !material.canAddNote))) return;
+  const openCollaboration = (material: TeamMaterial) => {
+    if (!isCurrent() || !contextCurrent || materialsQuery.isError) return;
     invalidateEditSession(); setMaterialEditor(null); setNotesMaterial(null); clearBatch();
     materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
-    setCollaboration({ material, adding, session: ++collaborationSessionRef.current });
+    setCollaboration({ material, session: ++collaborationSessionRef.current });
   };
   useEffect(() => {
     if (materialEditor?.mode === "edit" && materialResult && !editableRowsRef.current.has(materialEditor.material.id)) {
@@ -1280,7 +1280,7 @@ export default function ChannelInventoryHost() {
                     <td className="ci-lead-time admin-cell-secondary">{material.leadTime || "待确认"}</td>
                     <td className="ci-date"><div className="admin-cell-primary">{material.dateCode || "—"}</div><small className="ci-subtext admin-cell-secondary">{displayDate(material.updatedAt)}</small></td>
                     <td className="ci-material-source-col"><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button></td>
-                    <td className="ci-col-actions"><div className="ci-row-actions">{material.canEdit && !material.readOnly ? <button type="button" className="ci-inline-link" onClick={() => void openMaterialEdit(material)} disabled={busy !== null || !canWriteMaterials}>编辑</button> : null}{nativeNote && material.canAddNote ? <button type="button" className="ci-inline-link" onClick={() => openCollaboration(material, true)}>新增备注</button> : null}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material, false)}>备注（{material.noteCount}）</button></div></td>
+                    <td className="ci-col-actions"><div className="ci-row-actions">{material.canEdit && !material.readOnly ? <button type="button" className="ci-inline-link" onClick={() => void openMaterialEdit(material)} disabled={busy !== null || !canWriteMaterials}>编辑</button> : null}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -1344,7 +1344,7 @@ export default function ChannelInventoryHost() {
 
       {batchOpen && canWriteMaterials && contextCurrent && tab === "materials" ? <BatchUpload key={`${identity}:${batchSession}`} channels={batchChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={batchTarget?.id} onClose={() => { invalidateEditSession(); clearBatch(); }} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onComplete={() => { if (batchCurrent()) void refreshMaterials(); }} isCurrent={batchCurrent} /> : null}
       {notesMaterial && materialEditor?.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(notesMaterial.id)?.isMine && canWriteMaterials && nativeNote ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={() => isCurrent() && nativeNote && collaborationRowsRef.current.get(notesMaterial.id)?.isMine === true && editableRowsRef.current.has(notesMaterial.id)} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
-      {collaboration && contextCurrent && tab === "materials" && collaborationRowsRef.current.has(collaboration.material.id) ? <CollaborationNotesPanel key={`${identity}:${collaboration.material.id}:${collaboration.session}`} materialId={collaboration.material.id} partNumber={collaboration.material.partNumber} brand={collaboration.material.brand} enterpriseId={enterpriseId!} actorUserId={actorUserId!} startAdding={collaboration.adding} canWriteNote={nativeNote} canAddNote={nativeNote && collaborationRowsRef.current.get(collaboration.material.id)?.canAddNote === true} isCurrent={() => isCurrent() && collaborationSessionRef.current === collaboration.session && collaborationRowsRef.current.has(collaboration.material.id)} onClose={() => { collaborationSessionRef.current += 1; setCollaboration(null); }} onComplete={() => void refreshMaterials()} /> : null}
+      {collaboration && contextCurrent && tab === "materials" && collaborationRowsRef.current.has(collaboration.material.id) ? <CollaborationNotesPanel key={`${identity}:${collaboration.material.id}:${collaboration.session}`} materialId={collaboration.material.id} partNumber={collaboration.material.partNumber} brand={collaboration.material.brand} enterpriseId={enterpriseId!} actorUserId={actorUserId!} canWriteNote={nativeNote} canAddNote={nativeNote && collaborationRowsRef.current.get(collaboration.material.id)?.canAddNote === true} isCurrent={() => isCurrent() && collaborationSessionRef.current === collaboration.session && collaborationRowsRef.current.has(collaboration.material.id)} onClose={() => { collaborationSessionRef.current += 1; setCollaboration(null); }} onComplete={() => void refreshMaterials()} /> : null}
       {sourceDetail && sourceIdentityCurrent && sourceDetail.scopeKey === sourceScopeKey && contextCurrent && tab === "materials" ? <ChannelInventorySourcePanel key={`${sourceScopeKey}:${sourceDetail.materialId}`} materialId={sourceDetail.materialId} enterpriseId={enterpriseId!} actorUserId={actorUserId!} scopeKey={sourceScopeKey} active={sourceContextVerified} isCurrent={() => isCurrent() && sourceScopeRef.current === sourceDetail.scopeKey} onClose={() => setSourceDetail(null)} onAuthorizationError={businessScope.onAuthorizationError} /> : null}
     </section>
   );
