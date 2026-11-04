@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Bu
 import type { BatchEntry } from "../channelInventory/queue";
 import { completedSupplyChannel, customerMaterialInput, customerSupplySessionSuffix, supplyLocation, supplyReceipt,
   type SourceProfile, type SupplyContext, type SupplyIdentity, type SupplyOutputs } from "./customerSupply";
+import { CustomerSupplySingleEntry } from "./CustomerSupplySingleEntry";
 import "./CustomerSupplyUploadDialog.css";
 
 type Channel = SupplyOutputs["getChannel"];
@@ -174,6 +175,7 @@ export function CustomerSupplyUploadDialog(props: Props) {
     channelTotal={1} initialChannelId={props.customerId}
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
+    renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} />}
     sourceDetails={<div className="customer-supply-details">
       <p className="customer-supply-profile">客户档案：{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}<br />{context.channel ? "复用已绑定渠道，保留原真实渠道类型"
         : sessionData.sourceProfile?.existingChannelId ? "已明确选择现有渠道，保留其真实类型；首次实际成功才建立关联"
@@ -244,7 +246,7 @@ export function CustomerSupplyUploadDialog(props: Props) {
     : context?.channel && !context.channel.active ? "关联渠道已停用，请核实后再上传。" : "";
   return <Dialog open onOpenChange={open => { if (!open) props.onClose(); }}>
     <DialogContent className="ci-dialog customer-supply-dialog" onPointerDownOutside={event => event.preventDefault()}>
-      <DialogHeader><DialogTitle>上传客户物料表</DialogTitle><DialogDescription>正在核验客户档案与上传权限，核验通过后直接选择文件。</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle>上传客户物料表</DialogTitle><DialogDescription>正在核验客户档案与上传权限，核验通过后可选择表格上传或单条录入。</DialogDescription></DialogHeader>
       {!context && !message ? <p role="status">正在核验客户档案与上传权限…</p> : null}
       {context ? <p className="customer-supply-profile">{context.customer.name} · {getBusinessIndustryLabel(context.customer.industryCode)}</p> : null}
       {disabledReason ? <p className="ci-error" role="alert">{disabledReason}{missingIndustry ? <button type="button" className="ci-inline-link" onClick={() => { props.onClose(); navigate(`/customers/${props.customerId}`); }}>补全客户档案</button> : null}</p> : null}

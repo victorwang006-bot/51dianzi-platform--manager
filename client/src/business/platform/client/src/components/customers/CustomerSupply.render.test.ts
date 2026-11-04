@@ -2,6 +2,8 @@
 import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import * as XLSX from "xlsx";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => ({
@@ -267,5 +269,167 @@ describe("customer supply real portal and reused importer", () => {
     render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
     runtime.current = false; act(() => root?.render(React.createElement(Harness))); await act(async () => { finish(receipt()); }); await settle();
     expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+});
+
+function singleField(label: string) {
+  return required(document.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(`[aria-label="${label}"]`));
+}
+function enterSingle(label: string, value: string) {
+  const element = singleField(label);
+  act(() => {
+    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), "value")?.set?.call(element, value);
+    element.dispatchEvent(new Event(element instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
+  });
+}
+async function openSingle(values: Record<string, string> = {}) {
+  render(); await setupUpload(); click(button("单条上传"));
+  enterSingle("单条型号", "ONE"); enterSingle("单条品牌", "TI");
+  for (const [field, value] of Object.entries(values)) enterSingle(field, value);
+}
+function previewSingle() { click(button("预览单条物料")); }
+
+describe("customer single material upload uses the customer batch transaction", () => {
+  it("has explicit accessible table/single switches and defaults to unchanged file upload", async () => {
+    render(); await setupUpload();
+    expect(document.querySelector('[role="group"][aria-label="客户物料上传方式"]')).not.toBeNull();
+    expect(button("表格上传").getAttribute("aria-pressed")).toBe("true");
+    expect(button("单条上传").getAttribute("aria-pressed")).toBe("false");
+    click(button("单条上传"));
+    expect(button("单条上传").getAttribute("aria-pressed")).toBe("true");
+    expect(document.activeElement).toBe(singleField("单条型号"));
+    expect(document.querySelector('[aria-label="上传库存表格"]')).toBeNull();
+    expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("previews all supplied values without writing, then sends exact customer DTO and locates receipt ID", async () => {
+    await openSingle({ "单条型号": "  ＯＮＥ  ", "单条品牌": " TI ", "单条可供数量": "4,000", "单条报价 CNY": "1.123456789012", "单条税务口径": "true", "单条交期": "7天", "单条 Date Code": "0026+", "单条备注（仅本人）": "个人说明" });
+    const fixture = process.env.CUSTOMER_SUPPLY_DOM_FIXTURE;
+    if (fixture) {
+      mkdirSync(dirname(fixture), { recursive: true });
+      writeFileSync(fixture, `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>${document.body.outerHTML}</html>\n`);
+    }
+    previewSingle();
+    expect(runtime.create).not.toHaveBeenCalled(); expect(sessionStorage.length).toBe(0);
+    const preview = required(document.querySelector(".ci-batch-preview"));
+    for (const value of ["ONE", "TI", "4000", "1.123456789012", "含税", "7天", "0026+", "个人说明"]) expect(preview.textContent).toContain(value);
+    click(button("确认上传 1 条")); await settle();
+    expect(runtime.create).toHaveBeenCalledTimes(1);
+    expect(runtime.create.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, expectedCustomerVersion: 4, sourceProfile: { type: "factory" },
+      partNumber: "ONE", brand: "TI", qty: 4000, price: "1.123456789012", currency: "CNY", taxIncluded: true, leadTime: "7天", dateCode: "0026+", note: "个人说明", requestId: expect.stringMatching(/^[-0-9a-f]{36}$/i) });
+    expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
+    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+    expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
+  });
+  it.each(["unknown", "true", "false"])("preserves %s tax including nullable blank qty/price", async tax => {
+    await openSingle({ "单条税务口径": tax }); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ qty: null, price: null, dateCode: null, leadTime: null, note: null, taxIncluded: tax === "unknown" ? null : tax === "true" });
+  });
+  it("preserves zero quantity and zero decimal quote instead of converting them to blanks", async () => {
+    await openSingle({ "单条可供数量": "0", "单条报价 CNY": "0.000000000001" }); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ qty: 0, price: "0.000000000001" });
+  });
+  it.each([
+    ["单条型号", " ", "型号不能为空"], ["单条品牌", " ", "品牌不能为空"],
+    ["单条可供数量", "1.5", "数量格式无效"], ["单条可供数量", "2147483648", "数量不能超过2147483647"],
+    ["单条报价 CNY", "1.1234567890123", "价格格式无效"],
+  ])("rejects invalid %s=%s before preview or any write", async (field, value, error) => {
+    await openSingle({ [field]: value }); previewSingle();
+    expect(document.body.textContent).toContain(error);
+    expect(document.querySelector(".ci-batch-preview")).toBeNull(); expect(runtime.create).not.toHaveBeenCalled(); expect(sessionStorage.length).toBe(0);
+  });
+  it("retains manual draft on unsubmitted mode switches and back from preview", async () => {
+    await openSingle({ "单条交期": "保留草稿" }); click(button("表格上传")); click(button("单条上传"));
+    expect(singleField("单条型号").value).toBe("ONE"); expect(singleField("单条交期").value).toBe("保留草稿");
+    previewSingle(); click(button("上一步")); expect(singleField("单条交期").value).toBe("保留草稿");
+    previewSingle(); vi.mocked(window.confirm).mockReturnValueOnce(false); click(button("表格上传"));
+    expect(button("确认上传 1 条")).toBeTruthy(); expect(button("单条上传").getAttribute("aria-pressed")).toBe("true");
+    click(button("表格上传")); expect(button("选择库存表格")).toBeTruthy();
+    click(button("单条上传")); expect(singleField("单条交期").value).toBe("保留草稿"); expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("cancels manual draft or preview without creating a channel or material", async () => {
+    await openSingle(); click(button("取消")); expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.create).not.toHaveBeenCalled();
+    await openSingle(); previewSingle(); click(button("取消")); expect(runtime.create).not.toHaveBeenCalled(); expect(runtime.navigate).not.toHaveBeenCalled(); expect(sessionStorage.length).toBe(0);
+  });
+  it("locks switching, duplicate preview and duplicate submits while a request is running", async () => {
+    let finish!: (value: unknown) => void; runtime.create.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(button("表格上传").disabled).toBe(true); expect(button("单条上传").disabled).toBe(true); expect(button("预览单条物料").disabled).toBe(true);
+    click(button("表格上传")); click(button("按原批次继续 / 重试")); expect(runtime.create).toHaveBeenCalledTimes(1);
+    expect(runtime.navigate).not.toHaveBeenCalled();
+    await act(async () => { finish(receipt()); }); await settle(); expect(runtime.navigate).toHaveBeenCalledTimes(1);
+  });
+  it("retains a committed-but-lost result, prohibits switching and retries the whole original customer request", async () => {
+    runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.reject(new Error("committed response lost")); });
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    const original = runtime.create.mock.calls[0][0]; const key = required(sessionStorage.key(0)); const saved = JSON.parse(required(sessionStorage.getItem(key)));
+    expect(saved.entryMode).toBe("single"); expect(saved.entries).toHaveLength(1); expect(saved.entries[0].status).toBe("unknown");
+    expect(button("表格上传").disabled).toBe(true); click(button("表格上传"));
+    expect(button("按原批次继续 / 重试").disabled).toBe(false); expect(runtime.navigate).not.toHaveBeenCalled();
+    click(button("按原批次继续 / 重试")); await settle(); expect(runtime.create.mock.calls[1][0]).toEqual(original); expect(runtime.navigate).toHaveBeenCalledTimes(1);
+  });
+  it("restores a single unknown request in the same recovery namespace and keeps modes blocked before restoration", async () => {
+    runtime.create.mockRejectedValueOnce(new Error("unknown"));
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle(); const original = runtime.create.mock.calls[0][0];
+    click(button("取消")); render(); await setupUpload();
+    expect(button("单条上传").disabled).toBe(true); expect(button("表格上传").disabled).toBe(true); expect(button("选择库存表格").disabled).toBe(true);
+    click(button("恢复原批次")); expect(button("单条上传").getAttribute("aria-pressed")).toBe("true");
+    click(button("按原批次继续 / 重试")); await settle(); expect(runtime.create.mock.calls[1][0]).toEqual(original); expect(sessionStorage.length).toBe(0);
+  });
+  it("keeps all-failed requests recoverable without empty channel creation or success navigation", async () => {
+    runtime.create.mockRejectedValueOnce(new Error("FORBIDDEN"));
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect((runtime.context as SupplyContext).channel).toBeNull(); expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.navigate).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("FORBIDDEN"); expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
+  });
+  it.each(["agent", "trade", "other"])("uses a real linked %s channel without overriding factory type", async type => {
+    runtime.context = { ...context(), channel: { ...channel, type } }; await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("sourceProfile"); expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("channelId");
+  });
+  it("uses an explicitly verified existing channel in the same single upload transaction", async () => {
+    await openSingle(); required(document.querySelector<HTMLDetailsElement>(".customer-supply-existing")).open = true;
+    click(required(document.querySelector('input[type="checkbox"]'))); await settle();
+    change(required(document.querySelector<HTMLSelectElement>('[aria-label="人工选择现有渠道"]')), "411");
+    expect(button("预览单条物料").disabled).toBe(true); click(button("确认关联此渠道")); await settle();
+    previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ customerId: 801, sourceProfile: { type: "agent", existingChannelId: 411 } });
+  });
+  it.each(["archive", "version", "permission", "active"])("rechecks fresh %s customer state before the single write", async kind => {
+    await openSingle(); previewSingle(); const data = context();
+    runtime.context = kind === "archive" ? { ...data, customer: { ...data.customer, archivedAt: "2026-11-04" } }
+      : kind === "version" ? { ...data, customer: { ...data.customer, version: 5 } }
+      : kind === "permission" ? { ...data, canUpload: false } : { ...data, channel: { ...channel, active: false } };
+    click(button("确认上传 1 条")); await settle(); expect(runtime.create).not.toHaveBeenCalled(); expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+  it("does not offer manual private notes without the independent note permission", async () => {
+    runtime.native.note = false; await openSingle();
+    expect(document.querySelector('[aria-label="单条备注（仅本人）"]')).toBeNull();
+    previewSingle(); click(button("确认上传 1 条")); await settle(); expect(runtime.create.mock.calls[0][0].note).toBeNull();
+  });
+  it("refuses a mismatched single receipt and keeps its exact original request instead of navigating", async () => {
+    runtime.create.mockResolvedValueOnce(receipt(802)); await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.navigate).not.toHaveBeenCalled(); expect(button("表格上传").disabled).toBe(true);
+    const original = runtime.create.mock.calls[0][0]; click(button("按原批次继续 / 重试")); await settle(); expect(runtime.create.mock.calls[1][0]).toEqual(original);
+  });
+  it("does not leak a single result or navigate after identity/authorization invalidation", async () => {
+    let finish!: (value: unknown) => void; runtime.create.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    const signal = runtime.create.mock.calls[0][1].signal as AbortSignal;
+    runtime.current = false; act(() => root?.render(React.createElement(Harness)));
+    act(() => root?.render(React.createElement("div"))); expect(signal.aborted).toBe(true);
+    await act(async () => { finish(receipt()); }); await settle();
+    expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"]')).toBeNull();
+    const saved = JSON.parse(required(sessionStorage.getItem(required(sessionStorage.key(0)))));
+    expect(saved.entries[0].receipt).toBeUndefined(); expect(saved.entries[0].status).toBe("pending");
+  });
+  it.each(["enterprise", "actor", "customer", "authorization"])("never restores another %s single session", async kind => {
+    runtime.create.mockRejectedValueOnce(new Error("unknown")); await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle(); click(button("取消"));
+    const alternate = kind === "enterprise" ? { ...identity, enterpriseId: 32 } : kind === "actor" ? { ...identity, actorUserId: 8 }
+      : kind === "authorization" ? { ...identity, key: "new-authorization" } : identity;
+    const customerId = kind === "customer" ? 802 : 801;
+    runtime.context = { ...context(), customer: { ...context().customer, id: customerId } };
+    render(React.createElement(CustomerSupplyUploadDialog, { key: String(++generation), customerId, identity: alternate, isCurrent: () => runtime.current,
+      onClose: runtime.close, onComplete: runtime.complete, onAuthorizationError: runtime.onAuthorizationError })); await settle();
+    expect(document.body.textContent).not.toContain("恢复原批次"); expect(button("单条上传").disabled).toBe(false);
+    expect(runtime.create).toHaveBeenCalledTimes(1); expect(sessionStorage.length).toBe(1);
   });
 });

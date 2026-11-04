@@ -594,7 +594,16 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     <div className="admin-workspace-shell" data-admin-layout="top-two-level-v1">
       <div className="admin-workspace-shell__navigation">
         <header className="admin-workspace-shell__header">
-          <div className="admin-workspace-shell__brand">
+          <a
+            className="admin-workspace-shell__brand"
+            href="/workbench/channel-inventory"
+            aria-label="51电子网后台首页：渠道库存"
+            onClick={(event) => {
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              setLocation("/workbench/channel-inventory");
+            }}
+          >
             <Logo className="h-9 w-auto shrink-0 object-contain" />
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="truncate text-base font-bold leading-none tracking-tight text-primary">
@@ -604,7 +613,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
                 后台管理系统
               </span>
             </div>
-          </div>
+          </a>
           <AdminWorkspaceTabs
             items={visibleMenuItems}
             location={location}

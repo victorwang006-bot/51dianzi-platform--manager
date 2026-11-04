@@ -2,26 +2,96 @@
   width: min(560px, calc(100vw - 24px));
   max-height: 85dvh;
   overflow-y: auto;
-  font-size: var(--admin-content-font-body, 12px);
+  font-size: var(--admin-content-font-body, 13px);
 }
 .customer-supply-dialog .ci-field select {
-  height: var(--admin-content-control-height, 32px);
-  font-size: var(--admin-content-font-body, 12px);
+  height: var(--admin-content-control-height, 34px);
+  font-size: var(--admin-content-font-body, 13px);
 }
 .customer-supply-profile {
   margin: 0;
   color: #475569;
-  font-size: var(--admin-content-font-body, 12px);
-  line-height: var(--admin-content-line-height, 18px);
+  font-size: var(--admin-content-font-body, 13px);
+  line-height: var(--admin-content-line-height, 20px);
   overflow-wrap: anywhere;
 }
 .customer-supply-choice {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: var(--admin-content-font-body, 12px);
-  line-height: var(--admin-content-line-height, 18px);
+  font-size: var(--admin-content-font-body, 13px);
+  line-height: var(--admin-content-line-height, 20px);
 }
 .customer-supply-choice input {
   margin-top: 3px;
+}
+.customer-supply-method-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.customer-supply-method-controls .ci-button,
+.customer-supply-single .ci-button {
+  min-height: var(--admin-content-control-height, 34px);
+  border-radius: 6px;
+  font-size: var(--admin-content-font-body, 13px);
+}
+.customer-supply-methods .ci-dialog-note,
+.customer-supply-single .ci-dialog-note {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: var(--admin-content-font-caption, 12px);
+  line-height: 18px;
+}
+.customer-supply-single {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  font-size: var(--admin-content-font-body, 13px);
+}
+.customer-supply-single-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.customer-supply-single .ci-field {
+  min-width: 0;
+}
+.customer-supply-single .ci-field input,
+.customer-supply-single .ci-field select,
+.customer-supply-single .ci-field textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font: inherit;
+  color: #303642;
+  background: #fff;
+}
+.customer-supply-single .ci-field input,
+.customer-supply-single .ci-field select {
+  height: var(--admin-content-control-height, 34px);
+  padding: 0 10px;
+}
+.customer-supply-single .ci-field textarea {
+  min-height: 68px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+.customer-supply-single-wide {
+  grid-column: 1 / -1;
+}
+.customer-supply-single .ci-field :is(input, select, textarea):focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+@media (max-width: 560px) {
+  .customer-supply-single-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

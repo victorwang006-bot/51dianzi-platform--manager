@@ -10,6 +10,57 @@
   font-size: var(--admin-content-font-body, 12px);
 }
 
+/* The shared filter bar is a horizontal flex container. Keep the two groups
+ * full-width and stacked here; their controls can wrap without page overflow. */
+.customer-list-page .customer-list-filters {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.customer-list-page .customer-list-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.customer-list-page .customer-list-filter-row > .customer-list-control {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.customer-list-page .customer-list-filter-row .customer-list-search {
+  flex: 1 1 360px;
+  width: auto;
+  min-width: min(240px, 100%);
+  max-width: 520px;
+}
+
+.customer-list-page .customer-list-filter-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 6px;
+}
+
+.customer-list-page .customer-list-more-filters {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@media (max-width: 680px) {
+  .customer-list-page .customer-list-filter-row .customer-list-search {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 .customer-list-page .customer-list-caption {
   color: var(--admin-color-muted, #64748b);
   font-size: var(--admin-content-font-caption, 11px);

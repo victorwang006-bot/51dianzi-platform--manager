@@ -782,7 +782,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const headerStyle = getComputedStyle(partHeader);
     const cellStyle = getComputedStyle(firstCell);
 
-    expect(tableStyle.minWidth).toBe("1056px");
+    // v20 explicitly widens quote/lead time without shrinking other columns.
+    expect(tableStyle.minWidth).toBe("1160px");
     expect(tableStyle.tableLayout).toBe("fixed");
     expect(getComputedStyle(required(stockTable.querySelector("th.ci-col-actions"), "missing fixed actions")).width).toBe("216px");
     expect(headerStyle.paddingTop).toBe("6px");
@@ -797,6 +798,48 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       stockTable.querySelector(".ci-cell-title"),
       "missing primary model text",
     )).lineHeight).toBe("var(--admin-content-line-height, 18px)");
+  });
+
+  it("separates quote and lead-time headings/values using only local width and padding, leaving actions and all columns intact", () => {
+    renderHost();
+    const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
+    expect(table.querySelectorAll("thead th")).toHaveLength(10);
+    for (const row of table.querySelectorAll("tbody tr")) {
+      expect(row.querySelectorAll("td")).toHaveLength(10);
+      expect(row.querySelector(".ci-col-actions")?.textContent).toContain("备注（");
+    }
+    for (const selector of ["th.ci-material-price-col", "td.ci-material-price-col"]) {
+      const style = getComputedStyle(required(table.querySelector(selector), "missing quote cell"));
+      expect(style.width).toBe("128px"); expect(style.paddingRight).toBe("18px"); expect(style.textAlign).toBe("right");
+    }
+    for (const selector of ["th.ci-material-lead-col", "td.ci-material-lead-col"]) {
+      const style = getComputedStyle(required(table.querySelector(selector), "missing lead cell"));
+      expect(style.width).toBe("112px"); expect(style.paddingLeft).toBe("18px");
+    }
+    expect(getComputedStyle(required(table.closest(".ci-tablewrap"), "missing stock scroller")).overflowX).toBe("auto");
+    expect(getComputedStyle(required(table.querySelector("th.ci-material-recorder-col"), "missing recorder")).width).toBe("96px");
+    expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
+    const actions = getComputedStyle(required(table.querySelector("td.ci-col-actions"), "missing actions"));
+    expect(actions.width).toBe("216px"); expect(actions.position).toBe("sticky"); expect(actions.right).toBe("0px");
+  });
+
+  it("omits only unknown tax subtext, preserving negotiated/zero/precise prices, known tax flags and real lead-time fallbacks", () => {
+    const original = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    const base = original.data.items[0];
+    runtime.teamQuery = query({ ...original.data, items: [
+      { ...base, id: 101, price: null, taxIncluded: null, leadTime: null },
+      { ...base, id: 102, price: "0", taxIncluded: false, leadTime: "现货" },
+      { ...base, id: 103, price: "123.450000000001", taxIncluded: true, leadTime: "7-10个工作日" },
+      { ...base, id: 104, price: null, taxIncluded: true, leadTime: "" },
+    ] });
+    renderHost();
+    const rows = Array.from(document.querySelectorAll(".ci-compact-stock-table tbody tr"));
+    expect(rows.map(row => row.querySelector(".ci-price")?.textContent)).toEqual(["面议", "¥0未税", "¥123.450000000001含税", "面议含税"]);
+    expect(rows[0].querySelector(".ci-price small")).toBeNull();
+    expect(rows.map(row => row.querySelector(".ci-lead-time")?.textContent)).toEqual(["待确认", "现货", "7-10个工作日", "待确认"]);
+    expect(document.body.textContent).not.toContain("税务待确认");
+    if (process.env.CHANNEL_PRICING_FIXTURE_PATH) writeFileSync(process.env.CHANNEL_PRICING_FIXTURE_PATH, `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Actual ChannelInventoryHost synthetic v20 pricing render</title></head><body data-admin-readability="true" data-business-native-fonts="true"><main class="admin-workspace-shell__main admin-unified-content" data-admin-ui-system="channel-inventory">${required(container, "missing rendered host").innerHTML}</main></body></html>\n`);
+    expect(runtime.createMaterial).not.toHaveBeenCalled(); expect(runtime.updateMaterial).not.toHaveBeenCalled();
   });
 
   it("creates with the original DTO and keeps public editing separate from the independent owner private history", async () => {

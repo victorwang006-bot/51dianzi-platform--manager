@@ -13,6 +13,7 @@ const runtime = vi.hoisted(() => ({
   starContext: vi.fn(), setStar: vi.fn(), targets: [] as { userId: number; name: string }[],
   listInputs: [] as any[], listPending: false, listFetching: false, customerContextError: false,
   remembered: {} as Record<string, unknown>,
+  canManageAll: false, members: [] as { userId: number; name: string }[],
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers", runtime.navigate], useSearch: () => "" }));
 vi.mock("sonner", () => ({ toast: { info: vi.fn(), warning: vi.fn() } }));
@@ -41,7 +42,7 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   useUtils: () => runtime.utils,
   enterprise: { me: { useQuery: () => ({ data: { enterprise: { id: runtime.enterpriseId }, currentUserId: runtime.actorId, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: runtime.enterpriseFailed, refetch: runtime.authorityRetry }) } },
   customer: {
-    context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: false, members: [] }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
+    context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, members: runtime.members }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
     list: { useQuery: (input: any) => { runtime.listInputs.push(input); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: false, refetch: vi.fn() }; } },
     contactsSummary: { useQuery: () => ({ data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } }) },
     contactsList: { useQuery: () => ({ data: { contacts: [] }, isPending: false, isError: false, refetch: vi.fn() }) },
@@ -89,6 +90,7 @@ beforeEach(() => {
   runtime.authVersion = "v1"; runtime.enterpriseFailed = false; runtime.enterpriseId = 31; runtime.actorId = 7;
   runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.listInputs = []; runtime.listPending = false; runtime.listFetching = false; runtime.customerContextError = false;
   runtime.remembered = {};
+  runtime.canManageAll = false; runtime.members = [];
   runtime.starContext.mockReset().mockImplementation(async () => ({ enterpriseId: runtime.enterpriseId, actorUserId: runtime.actorId, targets: runtime.targets }));
   runtime.setStar.mockReset().mockImplementation(async (input: any) => {
     runtime.rows = runtime.rows.map(item => item.id === input.customerId ? { ...item, isStarred: input.starred, starRevision: input.expectedRevision + 1, starUserId: input.targetUserId } : item);
@@ -196,6 +198,66 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
   });
 });
 
+describe("actual CustomerList layered filters v20", () => {
+  it("keeps basic and expanded controls in separate full-width groups, preserving drafts on collapse", async () => {
+    const draft = { keyword: "待应用", grade: "B", stage: "quoted", scope: "mine", assignedUserId: "", due: "today", archived: true };
+    runtime.remembered = { draftFilters: draft, page: 2 };
+    await render();
+    const basic = host.querySelector('.customer-list-basic-filters[aria-label="基础筛选"]')!;
+    const moreButton = button("更多筛选", basic);
+    expect(moreButton.getAttribute("aria-controls")).toBe("customer-list-more-filters");
+    expect(moreButton.getAttribute("aria-expanded")).toBe("false");
+    expect(button("搜索", basic)).toBeDefined();
+    await click(moreButton);
+    const expanded = host.querySelector('#customer-list-more-filters[aria-label="更多筛选条件"]')!;
+    expect(expanded.parentElement).toBe(basic.parentElement);
+    expect(basic.contains(expanded)).toBe(false);
+    expect(expanded.querySelector('[aria-label="按客户阶段筛选"]')?.textContent).toBe("报价中");
+    expect(expanded.querySelector('[aria-label="按负责人筛选"]')).toBeNull();
+    expect(expanded.querySelector('[aria-label="按归档状态筛选"]')?.textContent).toBe("已归档客户");
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", page: 2, archived: false, starUserId: 7 });
+    await click(moreButton); await click(moreButton);
+    expect(host.querySelector('[aria-label="按客户阶段筛选"]')?.textContent).toBe("报价中");
+    await click(button("确定"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "待应用", grade: "B", stage: "quoted", due: "today", archived: true, scope: "mine", page: 1, starUserId: 7 });
+  });
+
+  it.each(["搜索按钮", "Enter"])("applies the same complete restored draft with %s and retains legitimate all-company scope on reset", async mode => {
+    runtime.canManageAll = true; runtime.members = [{ userId: 8, name: "合成负责人" }];
+    runtime.targets.push({ userId: 8, name: "合成组员" });
+    const draft = { keyword: "  客户  ", grade: "C", stage: "quoted", scope: "all", assignedUserId: "8", due: "overdue", archived: true };
+    runtime.remembered = { draftFilters: draft, appliedFilters: { ...draft, keyword: "原查询" }, page: 2, moreFiltersOpen: true };
+    await render();
+    expect(host.querySelector('[aria-label="客户范围"]')?.textContent).toBe("全企业");
+    expect(host.querySelector('#customer-list-more-filters [aria-label="按负责人筛选"]')).not.toBeNull();
+    if (mode === "搜索按钮") await click(button("搜索"));
+    else await act(async () => { host.querySelector(".customer-list-search")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "客户", grade: "C", stage: "quoted", scope: "all", assignedUserId: 8, due: "overdue", archived: true, page: 1, pageSize: 20, starUserId: 7 });
+    expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("客户");
+    if (mode === "搜索按钮" && process.env.CUSTOMER_FILTERS_FIXTURE_PATH) fixture(process.env.CUSTOMER_FILTERS_FIXTURE_PATH);
+    await click(button("重置"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", scope: "all", due: "all", archived: false, page: 1, starUserId: 7 });
+    for (const key of ["assignedUserId", "grade", "stage"]) expect(runtime.listInputs.at(-1)).not.toHaveProperty(key);
+    expect(button("重置").disabled).toBe(true);
+  });
+
+  it("stacks the shared flex bar locally and allows both controls and actions to wrap without changing design tokens", () => {
+    const css = readFileSync("client/src/business/platform/client/src/pages/CustomerList.css", "utf8");
+    const parsed = postcss.parse(css);
+    const declarations = (selector: string) => {
+      const result: Record<string, string> = {};
+      parsed.walkRules(rule => { if (rule.selector === selector && rule.parent?.type !== "atrule") rule.walkDecls(decl => { result[decl.prop] = decl.value; }); });
+      return result;
+    };
+    expect(declarations(".customer-list-page .customer-list-filters")).toMatchObject({ "flex-direction": "column", "align-items": "stretch", gap: "0" });
+    expect(declarations(".customer-list-page .customer-list-filter-row")).toMatchObject({ display: "flex", "align-items": "center", "flex-wrap": "wrap", width: "100%", "min-width": "0" });
+    expect(declarations(".customer-list-page .customer-list-filter-actions")["flex-wrap"]).toBe("wrap");
+    expect(declarations(".customer-list-page .customer-list-filter-row .customer-list-search")).toMatchObject({ flex: "1 1 360px", "min-width": "min(240px, 100%)", "max-width": "520px" });
+    expect(css).toContain("@media (max-width: 680px)"); expect(css).toContain("flex-basis: 100%");
+    expect(declarations(".customer-list-page .customer-list-control")).toMatchObject({ height: "var(--admin-content-control-height, 32px)", "font-size": "var(--admin-content-font-body, 12px)", "border-radius": "6px" });
+  });
+});
+
 describe("actual CustomerList personal stars", () => {
   it("renders absent preferences as an enabled grey empty native star, without a self-only selector", async () => {
     runtime.rows = [row(801)]; await render();
@@ -230,7 +292,7 @@ describe("actual CustomerList personal stars", () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "  合成  ");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await click(button("筛选")); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "合成", page: 1, starUserId: 7 });
+    await click(button("搜索")); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "合成", page: 1, starUserId: 7 });
   });
 
   it("shows loader and disables all star commands and target changes during a write, without optimistic toggling", async () => {

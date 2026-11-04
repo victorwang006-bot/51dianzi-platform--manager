@@ -412,7 +412,7 @@ export default function CustomerList() {
       </div> : null}
 
       <AdminFilterBar className="customer-list-filters mb-3" aria-label="客户筛选">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="customer-list-filter-row customer-list-basic-filters" role="group" aria-label="基础筛选">
           <Input
             placeholder="搜索客户名称、联系人或电话"
             aria-label="搜索客户名称、联系人或电话"
@@ -421,7 +421,7 @@ export default function CustomerList() {
             onKeyDown={event => {
               if (event.key === "Enter") applyFilters();
             }}
-            className="customer-list-control w-full bg-white sm:w-[276px]"
+            className="customer-list-control customer-list-search bg-white"
           />
           <Select
             value={draftFilters.grade || "all"}
@@ -463,14 +463,14 @@ export default function CustomerList() {
               <SelectItem value="overdue">已逾期</SelectItem>
             </SelectContent>
           </Select>
-          <div className="inline-flex items-center gap-1.5">
+          <div className="customer-list-filter-actions">
             <Button
               type="button"
               variant="outline"
               className={toolbarActionClass}
               onClick={applyFilters}
             >
-              筛选
+              搜索
             </Button>
             <Button
               type="button"
@@ -485,6 +485,7 @@ export default function CustomerList() {
               type="button"
               variant="outline"
               aria-expanded={moreFiltersOpen}
+              aria-controls="customer-list-more-filters"
               className="customer-list-control min-w-[110px] justify-between border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900"
               onClick={() => setMoreFiltersOpen(open => !open)}
             >
@@ -497,7 +498,7 @@ export default function CustomerList() {
         </div>
 
         {moreFiltersOpen ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+          <div id="customer-list-more-filters" className="customer-list-filter-row customer-list-more-filters" role="group" aria-label="更多筛选条件">
             <Select
               value={draftFilters.stage || "all"}
               onValueChange={value =>

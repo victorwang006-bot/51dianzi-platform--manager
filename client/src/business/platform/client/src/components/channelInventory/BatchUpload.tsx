@@ -48,6 +48,8 @@ type Props = {
   receiptFromResult?: (response: unknown) => BatchReceipt;
   onFinish?: (result: { entries: BatchEntry[]; complete: boolean; reason?: string }) => void;
   onViewResults?: (entries: BatchEntry[]) => void;
+  /** Opt-in customer entry only; both modes submit through this exact queue. */
+  renderSingleEntry?: (controls: { onPreview: (draft: Draft) => void; disabled: boolean }) => React.ReactNode;
 };
 function Icon({
   kind,
@@ -112,11 +114,13 @@ export function BatchUpload(props: Props) {
   const [excluded, setExcluded] = useState<number[]>([]);
   const [entries, setEntries] = useState<BatchEntry[]>([]);
   const [restoreBlocked, setRestoreBlocked] = useState(false);
+  const [entryMode, setEntryMode] = useState<"table" | "single">("table");
   const [saved, setSaved] = useState<{
     channelId: number;
     entries: BatchEntry[];
     name: string;
     sessionData?: unknown;
+    entryMode?: "table" | "single";
   } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
@@ -188,6 +192,7 @@ export function BatchUpload(props: Props) {
           name,
           entries: next,
           ...(latest.current.sessionData === undefined ? {} : { sessionData: latest.current.sessionData }),
+          ...(latest.current.renderSingleEntry ? { entryMode } : {}),
         })
       );
       return true;
@@ -298,6 +303,22 @@ export function BatchUpload(props: Props) {
   const selected = channels.find(c => c.id === Number(channelId));
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
+  const modeLocked = busy || loading || hasQueue || !!saved || restoreBlocked;
+  const changeMode = (mode: "table" | "single") => {
+    if (!current() || running.current || modeLocked || mode === entryMode) return;
+    if (grid.length && !window.confirm("切换上传方式将清除当前未提交的预览；单条录入草稿会保留。是否继续？")) return;
+    serial.current += 1;
+    setEntryMode(mode);
+    setGrid([]); setRawGrid([]); setExcluded([]); setName(""); setError(""); setStep(1);
+  };
+  const previewSingle = (draft: Draft) => {
+    if (!current() || running.current || modeLocked || entryMode !== "single" || !selected?.active) return;
+    const errors = validateDraft(draft);
+    if (errors.length) { setError(errors.join("；")); return; }
+    // Use the same mapping, normalization, DTO and confirmation as file rows.
+    loadGrid([fields.map(field => field.label), fields.map(field => draft[field.key])], "单条手工录入");
+    setStep(3);
+  };
   const start = async () => {
     if (running.current || !current() || restoreBlocked) return;
     if (!selected || !selected.active) {
@@ -390,8 +411,8 @@ export function BatchUpload(props: Props) {
       return;
     if (
       !entries.length &&
-      grid.length &&
-      !window.confirm("尚未提交的表格将被关闭，是否继续？")
+      (grid.length || entryMode === "single") &&
+      !window.confirm(entryMode === "single" ? "尚未提交的单条录入将被关闭，是否继续？" : "尚未提交的表格将被关闭，是否继续？")
     )
       return;
     props.onDirtyChange(false);
@@ -403,6 +424,7 @@ export function BatchUpload(props: Props) {
     setChannelId(String(saved.channelId));
     setEntries(saved.entries);
     setName(saved.name);
+    setEntryMode(saved.entryMode === "single" && latest.current.renderSingleEntry ? "single" : "table");
     setSaved(null);
     setStep(4);
     props.onDirtyChange(true);
@@ -436,7 +458,7 @@ export function BatchUpload(props: Props) {
       >
         <DialogHeader style={{ flex: "0 0 auto" }}>
           <DialogTitle>{props.sourceLabel ? "上传客户物料表" : "表格上传渠道库存"}</DialogTitle>
-          <DialogDescription>{props.sourceLabel ? "复用表格匹配与幂等逐行上传；首次成功才建立客户渠道关联。" : "导入渠道库存，确认后保存。"}</DialogDescription>
+          <DialogDescription>{props.sourceLabel ? props.renderSingleEntry ? "表格上传或单条录入均先预览确认，沿用幂等逐行上传；首次成功才建立客户渠道关联。" : "复用表格匹配与幂等逐行上传；首次成功才建立客户渠道关联。" : "导入渠道库存，确认后保存。"}</DialogDescription>
         </DialogHeader>
         <div
           data-testid="channel-inventory-batch-scroll"
@@ -451,10 +473,17 @@ export function BatchUpload(props: Props) {
             paddingRight: "4px",
           }}
         >
+          {props.renderSingleEntry ? <div className="customer-supply-methods">
+            <div role="group" aria-label="客户物料上传方式" className="customer-supply-method-controls">
+              <Button type="button" variant="outline" className={`ci-button${entryMode === "table" ? " ci-primary" : ""}`} aria-pressed={entryMode === "table"} disabled={modeLocked} onClick={() => changeMode("table")}>表格上传</Button>
+              <Button type="button" variant="outline" className={`ci-button${entryMode === "single" ? " ci-primary" : ""}`} aria-pressed={entryMode === "single"} disabled={modeLocked} onClick={() => changeMode("single")}>单条上传</Button>
+            </div>
+            {modeLocked ? <p className="ci-dialog-note">正在读取、提交或存在原批次记录，暂不能切换方式；请先完成或恢复原请求。</p> : null}
+          </div> : null}
           <div className="ci-batch-steps" style={{ padding: "0" }}>
-            {["选文件", "匹配字段", "确认上传"].map((label, i) => (
-              <span key={label} className={step >= i + 1 ? "is-active" : ""}>
-                <b>{step > i + 1 ? "✓" : i + 1}</b>
+            {(entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
+              <span key={label} className={step >= (entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>
+                <b>{step > (entryMode === "single" && i === 1 ? 3 : i + 1) ? "✓" : i + 1}</b>
                 {label}
               </span>
             ))}
@@ -520,7 +549,10 @@ export function BatchUpload(props: Props) {
               </Button>
             </div>
           )}
-          {step === 1 && (
+          {props.renderSingleEntry ? <div hidden={entryMode !== "single" || step !== 1}>
+            {props.renderSingleEntry({ onPreview: previewSingle, disabled: modeLocked || !selected?.active || step !== 1 || entryMode !== "single" })}
+          </div> : null}
+          {step === 1 && entryMode === "table" && (
           <>
             <div
               className={`ci-batch-drop ${dragging ? "is-dragging" : ""}`}
@@ -676,6 +708,7 @@ export function BatchUpload(props: Props) {
                     <th>可供数量</th>
                     <th>报价 CNY</th>
                     <th>税务口径</th>
+                    {entryMode === "single" ? <><th>交期</th><th>Date Code</th><th>备注（仅本人）</th></> : null}
                     <th>校验</th>
                     <th />
                   </tr>
@@ -700,6 +733,7 @@ export function BatchUpload(props: Props) {
                             ? "未税"
                             : "待确认"}
                       </td>
+                      {entryMode === "single" ? <><td>{r.draft.leadTime || "待确认"}</td><td>{r.draft.dateCode || "—"}</td><td>{r.draft.note || "—"}</td></> : null}
                       <td>
                         {r.errors.length ? (
                           <span className="ci-batch-red">
@@ -810,7 +844,7 @@ export function BatchUpload(props: Props) {
               className="ci-button"
               disabled={loading}
               onClick={() => {
-                setStep(step === 3 ? 2 : 1);
+                setStep(entryMode === "single" ? 1 : step === 3 ? 2 : 1);
                 setError("");
               }}
             >

@@ -22,11 +22,12 @@ const runtime = vi.hoisted(() => ({
   location: "/materials",
   status: "ready",
   refetch: vi.fn(async () => ({})),
+  setLocation: vi.fn(),
 }));
 vi.mock("@/_core/hooks/useAuth", () => ({
   useAuth: () => ({ user: runtime.user, loading: false, logout: () => {} }),
 }));
-vi.mock("wouter", () => ({ useLocation: () => [runtime.location, () => {}] }));
+vi.mock("wouter", () => ({ useLocation: () => [runtime.location, runtime.setLocation] }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
@@ -264,6 +265,28 @@ describe("正式后台顶部布局集成", () => {
     expect(moduleCss).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.admin-workspace-nav__tabs--modules\s*\{\s*padding: 0 16px;/);
     expect(shellCss).toMatch(/\.admin-workspace-shell__header\s*\{[^}]*padding: 0 24px;/);
     expect(shellCss).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.admin-workspace-shell__header\s*\{[^}]*padding: 0 16px;/);
+  });
+
+  it("makes the original Logo a keyboard-accessible home link and navigates to channel inventory", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    runtime.setLocation.mockClear();
+    act(() => root.render(createElement(DashboardLayout, null, createElement("article", null, "业务内容"))));
+    const brand = host.querySelector<HTMLAnchorElement>("a.admin-workspace-shell__brand")!;
+    expect(brand.getAttribute("href")).toBe("/workbench/channel-inventory");
+    expect(brand.getAttribute("aria-label")).toContain("渠道库存");
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    act(() => brand.dispatchEvent(click));
+    expect(click.defaultPrevented).toBe(true);
+    expect(runtime.setLocation).toHaveBeenCalledWith("/workbench/channel-inventory");
+    runtime.setLocation.mockClear();
+    const alternateClick = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+    act(() => brand.dispatchEvent(alternateClick));
+    expect(alternateClick.defaultPrevented).toBe(false);
+    expect(runtime.setLocation).not.toHaveBeenCalled();
+    act(() => root.unmount());
+    host.remove();
   });
 
   it("uses a top-navigation loading skeleton without a sidebar placeholder", () => {
