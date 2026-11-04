@@ -12,6 +12,7 @@ export type TeamChannelMaterial = {
   isMine: boolean; canEdit: boolean; readOnly: boolean; noteCount: number; canAddNote: boolean;
   channelSource: { id: number; name: string } | null; canViewSource: boolean;
   originalRecorderName: string | null; recorderAdminAccountId: number | null;
+  industryCode: string | null;
 };
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
@@ -39,6 +40,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
     channelSource: null, originalRecorderName: null, recorderAdminAccountId: null,
+    industryCode: text(row.industryCode),
   };
 }
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number }) {

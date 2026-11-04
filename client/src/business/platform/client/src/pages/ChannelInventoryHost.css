@@ -59,12 +59,13 @@
 .ci-page.ci-host .ci-table .ci-col-index { width: 36px; }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-recorder-col { width: 96px; }
 .ci-page.ci-host .ci-compact-stock-table td.ci-material-recorder-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 348px) * .28); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-qty-col { width: calc((100% - 348px) * .13); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: calc((100% - 348px) * .15); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: calc((100% - 348px) * .10); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: calc((100% - 348px) * .18); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-source-col { width: calc((100% - 348px) * .16); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-industry-col { width: 110px; }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 458px) * .28); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-qty-col { width: calc((100% - 458px) * .13); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: calc((100% - 458px) * .15); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: calc((100% - 458px) * .10); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: calc((100% - 458px) * .18); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-source-col { width: calc((100% - 458px) * .16); }
 .ci-page.ci-host .ci-compact-stock-table :is(th, td).ci-col-actions { width: 216px; }
 .ci-page.ci-host .ci-table :is(th, td).ci-col-actions { position: sticky; right: 0; z-index: 2; background: #fff; text-align: right; box-shadow: -5px 0 8px -7px #64748b; }
 .ci-page.ci-host .ci-table th.ci-col-actions { z-index: 3; background: #f8fafc; }
@@ -79,7 +80,7 @@
 .ci-page.ci-host .ci-channel-table .ci-channel-name-col { width: 22%; }
 .ci-page.ci-host .ci-channel-table .ci-channel-type-col { width: 78px; }
 .ci-page.ci-host .ci-channel-table .ci-channel-date-col { width: 150px; }
-.ci-page.ci-host .ci-channel-table :is(th, td).ci-col-actions { width: 280px; }
+.ci-page.ci-host .ci-channel-table :is(th, td).ci-col-actions { width: 172px; }
 .ci-page.ci-host .ci-status { display: inline-flex; align-items: center; min-height: 20px; border: 1px solid; border-radius: 10px; padding: 0 7px; font-size: 11px; line-height: 18px; }
 .ci-page.ci-host .ci-status-active { border-color: #c5e5d3; color: #437e5d; background: #f2fbf5; }
 .ci-page.ci-host .ci-status-inactive { border-color: #e2e8f0; color: #64748b; background: #f8fafc; }
@@ -149,3 +150,12 @@
 .ci-page.ci-host .ci-source-content { min-height: 0; overflow-y: auto; padding: 20px; }
 .ci-page.ci-host .ci-source-content p { margin: 0 0 10px; }
 .ci-page.ci-host .ci-source-name { color: #1e293b; font-size: 18px; font-weight: 500; line-height: 28px; overflow-wrap: anywhere; }
+
+/* The existing Radix content is portalled outside the table/Host. Scope every
+ * override to this menu class rather than changing shared/global menu tokens. */
+.ci-channel-actions-menu { z-index: 70; min-width: 144px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; background: #fff; color: #334155; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif; box-shadow: 0 6px 20px rgb(35 53 72 / .15); }
+.ci-channel-actions-menu [role="menuitem"] { min-height: 28px; border-radius: 4px; padding: 4px 8px; font-size: 12px; line-height: 20px; cursor: pointer; }
+.ci-channel-actions-menu [role="menuitem"][data-highlighted] { background: #f8fafc; outline: none; }
+.ci-channel-actions-menu [role="menuitem"][data-disabled] { opacity: .5; cursor: not-allowed; }
+.ci-channel-actions-menu [role="menuitem"][data-variant="destructive"] { color: #a54a4a; }
+.ci-channel-actions-menu [role="separator"] { height: 1px; margin: 4px 0; background: #e2e8f0; }
