@@ -24,6 +24,34 @@
   font-family: var(--admin-font-family);
 }
 
+/* Content context only, not a second menu row; inherit existing content type. */
+.admin-workspace-nav__location {
+  min-width: 0;
+  margin: 0 0 12px;
+  color: var(--admin-color-secondary);
+  font: inherit;
+}
+
+.admin-workspace-nav__location ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-workspace-nav__location li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-workspace-nav__location [aria-current="page"] {
+  color: var(--admin-color-brand);
+}
+
 .admin-workspace-nav__tabs--workspaces {
   min-height: 56px;
   font-family: inherit;
@@ -365,6 +393,7 @@
 
 [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel .admin-workspace-nav__group-trigger .admin-workspace-nav__chevron {
   margin-left: auto;
+  transform: none;
 }
 
 [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-drawer-header,

@@ -58,7 +58,7 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
       const data = customerStarContextSchema.parse(raw);
       if (data.enterpriseId !== scope.enterpriseId || data.actorUserId !== scope.actorUserId
         || !Array.isArray(data.targets) || !data.targets.some(target => target.userId === scope.actorUserId)) {
-        throw new Error("星标身份核验失败");
+        throw new Error("重点客户身份核验失败");
       }
       setRead({ key: readKey, data, loading: false, failed: false });
     }).catch(error => {
@@ -75,7 +75,7 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
   const activeWrite = write?.key === requestKey && currentScope ? write : null;
   const allowedRef = useRef({ ready, targetUserId }); allowedRef.current = { ready, targetUserId };
   const clearWrite = () => { writeRef.current = null; setWrite(null); };
-  const refresh = () => { setRevision(value => value + 1); };
+  const refresh = () => { setRead({ key: readKey, data: null, loading: true, failed: false }); setRevision(value => value + 1); };
   const changeTarget = (userId: number) => {
     if (writeRef.current?.status === "pending" || !data?.targets.some(item => item.userId === userId)) return;
     abortRef.current?.abort(); clearWrite(); setNotice("");
@@ -99,24 +99,24 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
       // A mismatched receipt is an unknown outcome, not permission to toggle again.
       if (result.customerId !== frozen.command.customerId || result.targetUserId !== frozen.command.targetUserId
         || result.requestId !== frozen.command.requestId || result.isStarred !== frozen.command.starred
-        || !Number.isSafeInteger(result.starRevision) || result.starRevision < 0) throw new Error("星标回执无法核验");
+        || !Number.isSafeInteger(result.starRevision) || result.starRevision < 0) throw new Error("重点客户回执无法核验");
       await saveRef.current(result.customerId);
       if (!current()) return;
-      clearWrite(); setNotice(result.isStarred ? "已标星，列表已重新读取" : "已取消星标，列表已重新读取");
+      clearWrite(); setNotice(result.isStarred ? "已标记重点客户" : "已取消重点客户标记");
     } catch (error) {
       if (!current()) return;
       const value = error as { data?: { code?: string }; code?: string; message?: string };
       const code = value.data?.code ?? value.code;
       if (isUnknownContactOutcome(error)) {
-        const unknown: WriteState = { ...frozen, status: "unknown", message: "星标结果未知，请重试原请求，不要重复切换。" };
+        const unknown: WriteState = { ...frozen, status: "unknown", message: "重点客户标记结果未知，请重试原请求，不要重复切换。" };
         writeRef.current = unknown; setWrite(unknown); return;
       }
       clearWrite();
       if (code === "CONFLICT") {
-        setNotice("星标已由其他人更改，请刷新后重新选择；未覆盖最新状态。");
+        setNotice("重点客户标记已由其他人更改，请刷新后重新选择；未覆盖最新状态。");
         refresh(); void utils.customer.list.invalidate();
       } else {
-        setNotice(`星标操作失败：${value.message || "请重新核验权限后再试"}`);
+        setNotice(`重点客户操作失败：${value.message || "请重新核验权限后再试"}`);
         if (["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "PRECONDITION_FAILED"].includes(String(code))) {
           setRead({ key: readKey, data: null, loading: false, failed: true });
           business.onAuthorizationError(error);
@@ -124,13 +124,14 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
       }
     }
   };
-  const toggle = (row: StarRow) => {
-    if (writeRef.current || !canSet(row) || !scope) return;
-    const command: Command = { customerId: row.id, targetUserId, starred: !row.isStarred,
+  const setStar = (row: StarRow, starred: boolean) => {
+    if (writeRef.current || !canSet(row) || !scope || row.isStarred === starred) return;
+    const command: Command = { customerId: row.id, targetUserId, starred,
       expectedRevision: row.starRevision!, requestId: makeCustomerRequestId(),
       expectedEnterpriseId: scope.enterpriseId, expectedActorUserId: scope.actorUserId };
     void send({ key: requestKey, command, status: "pending", message: "" });
   };
+  const toggle = (row: StarRow) => setStar(row, !row.isStarred);
   const retry = () => {
     const frozen = writeRef.current;
     if (frozen?.status === "unknown") void send(frozen);
@@ -139,5 +140,5 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
     ready, loading: currentScope && (read.key !== readKey || read.loading), failed: read.key === readKey && read.failed,
     invalidTarget: Boolean(data && !target), busy: activeWrite?.status === "pending", blocked: Boolean(activeWrite),
     pendingCustomerId: activeWrite?.command.customerId, unknown: activeWrite?.status === "unknown",
-    notice: activeWrite?.message || notice, canSet, toggle, retry, refresh, changeTarget };
+    notice: activeWrite?.message || notice, canSet, toggle, setStar, retry, refresh, changeTarget, requestKey };
 }

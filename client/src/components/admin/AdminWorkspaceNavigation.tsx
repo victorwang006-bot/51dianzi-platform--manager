@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type PointerEvent,
   type ReactNode,
 } from "react";
 import { BEIJING_TIME_ZONE } from "@shared/beijingTime";
@@ -91,8 +92,44 @@ function handleNavigationKeys(event: KeyboardEvent<HTMLElement>) {
 
 type UnifiedWorkspaceId = "channel" | AdminWorkspaceId;
 const WORKSPACE_PANEL_WIDTH = 212;
+const HOVER_CLOSE_DELAY = 180;
 
-/** One header row, one clicked workspace, and at most one clicked business group.
+function channelTabForLocation(location: string) {
+  const query = location.includes("?") ? location.slice(location.indexOf("?") + 1).split("#", 1)[0] : "";
+  return getChannelInventoryNavigationTab(query);
+}
+
+/** Read-only route context. No links, effects, requests or local selection state. */
+export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
+  items,
+  location,
+}: Pick<AdminWorkspaceTabsProps<T>, "items" | "location">) {
+  const { activeWorkspace, activeItem } = getAdminWorkspaceNavigationState(items, location);
+  if (!activeWorkspace || !activeItem) return null;
+  const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
+  const tab = channel ? channelTabForLocation(location) : null;
+  const entry = !channel && activeWorkspace.id === "business"
+    ? groupAdminBusinessNavigationItems(activeWorkspace.items).find(entry =>
+      entry.kind === "group" && entry.items.some(item => item.path === activeItem.path))
+    : null;
+  const labels = channel
+    ? ["渠道库存", ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
+    : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
+  return (
+    <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location">
+      <ol>
+        {labels.map((label, index) => (
+          <li key={`${index}-${label}`}>
+            {index > 0 ? <span className="admin-workspace-nav__location-separator" aria-hidden="true">&gt;</span> : null}
+            <span aria-current={index === labels.length - 1 ? "page" : undefined}>{label}</span>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+/** One header row, one open workspace, and at most one open business group.
  * Permission/location snapshots also guard delayed focus work before effects run.
  */
 export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
@@ -111,13 +148,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE) ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
-  const query = location.includes("?") ? location.slice(location.indexOf("?") + 1).split("#", 1)[0] : "";
-  const channelTab = getChannelInventoryNavigationTab(query);
-  const currentChannelLabel = channelActive && channelTab !== "materials"
-    ? `渠道库存 · ${CHANNEL_INVENTORY_TABS.find(tab => tab.id === channelTab)!.label}`
-    : "渠道库存";
+  const channelTab = channelTabForLocation(location);
   const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] = [
-    ...(channelItem ? [{ id: "channel" as const, label: currentChannelLabel, items: [channelItem] }] : []),
+    ...(channelItem ? [{ id: "channel" as const, label: "渠道库存", items: [channelItem] }] : []),
     ...state.workspaces.flatMap(workspace => workspace.id === "business"
       ? businessEntries.length ? [{ ...workspace, items: filteredBusinessItems }] : []
       : [workspace]),
@@ -130,9 +163,11 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const layerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const childPanelRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const instanceId = useId();
   const [open, setOpen] = useState<{
     id: UnifiedWorkspaceId;
+    source: "hover" | "activation";
     items: readonly T[];
     location: string;
     mobile: boolean;
@@ -141,6 +176,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     maxHeight: number;
     group: null | {
       id: AdminBusinessNavigationGroupId;
+      source: "hover" | "activation";
       top: number;
       left: number;
       maxHeight: number;
@@ -158,7 +194,26 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const panelId = `${instanceId}-${open?.id ?? "workspace"}`;
   const childPanelId = `${panelId}-${group?.id ?? "group"}`;
 
+  function cancelHoverClose() {
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  }
+
+  function isDesktopMouse(event: PointerEvent<HTMLElement>) {
+    return event.pointerType === "mouse" && window.innerWidth > 767;
+  }
+
+  function scheduleHoverClose(event: PointerEvent<HTMLElement>) {
+    if (!isDesktopMouse(event) || !expanded) return;
+    // Fixed panels are still nav descendants. Crossing into either panel is safe,
+    // and a small outside gap gets time to be traversed before dismissal.
+    if (event.relatedTarget instanceof Node && navRef.current?.contains(event.relatedTarget)) return;
+    cancelHoverClose();
+    closeTimer.current = setTimeout(() => closeWorkspace(), HOVER_CLOSE_DELAY);
+  }
+
   function closeWorkspace(restoreFocus = false) {
+    cancelHoverClose();
     // The old layer disappears before a synchronous parent navigation callback.
     if (layerRef.current) layerRef.current.hidden = true;
     if (open) triggerRefs.current.get(open.id)?.setAttribute("aria-expanded", "false");
@@ -166,7 +221,10 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     if (restoreFocus && expanded && open) triggerRefs.current.get(open.id)?.focus({ preventScroll: true });
   }
 
-  function openWorkspaceMenu(id: UnifiedWorkspaceId, focus?: "first" | "last") {
+  function openWorkspaceMenu(id: UnifiedWorkspaceId, focus?: "first" | "last", source: "hover" | "activation" = "activation") {
+    cancelHoverClose();
+    // Re-entering a parent must not reset its selected child or steal focus.
+    if (source === "hover" && expanded && open?.id === id) return;
     const workspace = workspaces.find(entry => entry.id === id);
     const trigger = triggerRefs.current.get(id);
     if (!workspace || !trigger) return;
@@ -174,7 +232,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     const width = Math.min(WORKSPACE_PANEL_WIDTH, window.innerWidth - 16);
     const top = Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 56));
     setOpen({
-      id, items, location, mobile: window.innerWidth <= 767,
+      id, source, items, location, mobile: window.innerWidth <= 767,
       top,
       left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
       maxHeight: Math.max(0, window.innerHeight - top - 8),
@@ -183,7 +241,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     });
   }
 
-  function openBusinessGroup(id: AdminBusinessNavigationGroupId, focus?: "first" | "last") {
+  function openBusinessGroup(id: AdminBusinessNavigationGroupId, focus?: "first" | "last", source: "hover" | "activation" = "activation") {
+    cancelHoverClose();
+    if (source === "hover" && group?.id === id) return;
     const entry = businessEntries.find(entry => entry.kind === "group" && entry.id === id);
     const trigger = groupRefs.current.get(id);
     if (!expanded || !open || entry?.kind !== "group" || !trigger) return;
@@ -194,7 +254,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     setOpen({
       ...open,
       group: {
-        id, top, side,
+        id, source, top, side,
         left: side === "right" ? open.left + WORKSPACE_PANEL_WIDTH
           : Math.max(8, open.left - WORKSPACE_PANEL_WIDTH),
         maxHeight: Math.max(0, window.innerHeight - top - 8),
@@ -204,10 +264,14 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   }
 
   function backToGroups() {
+    cancelHoverClose();
     if (!expanded || !open || !group) return;
     if (childPanelRef.current) childPanelRef.current.hidden = true;
     setOpen({ ...open, group: null, focus: { level: 2, target: group.id } });
   }
+
+  // Cancel delayed work on URL/query, permission snapshot changes and unmount.
+  useEffect(() => () => cancelHoverClose(), [items, location]);
 
   useEffect(() => {
     if (open && !expanded) {
@@ -307,7 +371,13 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
           closeWorkspace();
           onNavigate(item);
         }}
-        onPointerEnter={() => (onPreload ?? onItemIntent)?.(item)}
+        onPointerEnter={event => {
+          cancelHoverClose();
+          if (level === 2 && isDesktopMouse(event) && open?.group) {
+            setOpen({ ...open, group: null, focus: undefined });
+          }
+          (onPreload ?? onItemIntent)?.(item);
+        }}
         onFocus={() => (onPreload ?? onItemIntent)?.(item)}
       >
         {renderItem ? renderItem(item, { isActive, workspaceId }) : item.label}
@@ -328,6 +398,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
       data-display-time-zone={BEIJING_TIME_ZONE}
       title={`系统版本：${ADMIN_SYSTEM_RELEASE} · 北京时间（UTC+8）`}
       onKeyDown={handleNavigationKeys}
+      onPointerLeave={scheduleHoverClose}
     >
       {workspaces.map(workspace => {
         const isActive = workspace.id === activeWorkspaceId;
@@ -350,7 +421,13 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             aria-current={isActive ? "location" : undefined}
             aria-expanded={isExpanded}
             aria-controls={isExpanded ? id : undefined}
-            onClick={() => isExpanded ? closeWorkspace() : openWorkspaceMenu(workspace.id)}
+            onClick={() => {
+              if (isExpanded && open?.source === "activation") closeWorkspace();
+              else if (isExpanded && open) {
+                cancelHoverClose();
+                setOpen({ ...open, source: "activation" });
+              } else openWorkspaceMenu(workspace.id);
+            }}
             onKeyDown={event => {
               if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
               if (!["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) return;
@@ -358,7 +435,12 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
               if (isExpanded && ["Enter", " "].includes(event.key)) closeWorkspace();
               else openWorkspaceMenu(workspace.id, event.key === "ArrowUp" ? "last" : "first");
             }}
-            onPointerEnter={() => (onPreload ?? onItemIntent)?.(workspace.items[0])}
+            onPointerEnter={event => {
+              cancelHoverClose();
+              if (isDesktopMouse(event)) openWorkspaceMenu(workspace.id, undefined, "hover");
+              (onPreload ?? onItemIntent)?.(workspace.items[0]);
+            }}
+            onPointerLeave={scheduleHoverClose}
             onFocus={() => (onPreload ?? onItemIntent)?.(workspace.items[0])}
           >
             {workspace.label}
@@ -393,6 +475,8 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             hidden={open.mobile && !!group}
             style={{ top: open.top, left: open.left, maxHeight: open.maxHeight }}
             onKeyDown={event => handlePanelKeys(event, 2)}
+            onPointerEnter={cancelHoverClose}
+            onPointerLeave={scheduleHoverClose}
           >
             <div className="admin-workspace-nav__workspace-drawer-header">
               <span>{openWorkspace.label}</span>
@@ -430,7 +514,11 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                     aria-current={entry.items.some(item => item.path === state.activeItem?.path) ? "location" : undefined}
                     aria-expanded={group?.id === entry.id}
                     aria-controls={group?.id === entry.id ? childPanelId : undefined}
-                    onClick={() => group?.id === entry.id ? backToGroups() : openBusinessGroup(entry.id)}
+                    onClick={() => group?.id === entry.id && open.group?.source === "activation" ? backToGroups() : openBusinessGroup(entry.id)}
+                    onPointerEnter={event => {
+                      cancelHoverClose();
+                      if (isDesktopMouse(event)) openBusinessGroup(entry.id, undefined, "hover");
+                    }}
                     onKeyDown={event => {
                       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
                       if (!["ArrowRight", "Enter", " "].includes(event.key)) return;
@@ -440,7 +528,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                       else openBusinessGroup(entry.id, "first");
                     }}
                   >
-                    {entry.label}<span className="admin-workspace-nav__chevron" aria-hidden="true">▾</span>
+                    {entry.label}<span className="admin-workspace-nav__chevron" aria-hidden="true">›</span>
                   </button>
                 )) : openWorkspace.items.map(item => renderLeaf(item, open.id as AdminWorkspaceId, 2))}
             </div>
@@ -455,6 +543,8 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
               className="admin-workspace-nav__workspace-panel admin-workspace-nav__workspace-panel--children"
               style={{ top: open.group.top, left: open.group.left, maxHeight: open.group.maxHeight }}
               onKeyDown={event => handlePanelKeys(event, 3)}
+              onPointerEnter={cancelHoverClose}
+              onPointerLeave={scheduleHoverClose}
             >
               <div className="admin-workspace-nav__workspace-drawer-header">
                 <button type="button" className="admin-workspace-nav__workspace-control"

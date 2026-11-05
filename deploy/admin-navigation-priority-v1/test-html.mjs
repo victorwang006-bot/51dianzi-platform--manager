@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import { assembleHtml, BASELINE, RELEASE, sha } from './lib.mjs';
+const baseline = await fs.readFile('/home/ubuntu/backend-optimization/baseline/index.html', 'utf8');
+assert.equal(sha(baseline), BASELINE['index.html']);
+const namespace = `${RELEASE}-0123456789ab`;
+const built = `<html><head><script type="module" crossorigin src="/assets/${namespace}/index-ABC123.js"></script><link rel="modulepreload" crossorigin href="/assets/${namespace}/vendor-DEF.js"><link rel="stylesheet" crossorigin href="/assets/${namespace}/index-CSS.css"></head><body><div id="root"></div></body></html>`;
+const { html, edits, inverseBytePreservationPassed } = assembleHtml(baseline, built, namespace);
+assert.equal(edits.length, 5); assert.equal(inverseBytePreservationPassed, true);
+assert.ok(html.includes(`src="/assets/${namespace}/index-ABC123.js"`));
+assert.ok(!html.includes('type="importmap"')); assert.ok(html.includes('<script id="manus-runtime">'));
+assert.ok(html.includes('ResizeObserver loop')); assert.ok(html.includes('href="/favicon.ico"'));
+for (const marker of ['ci-management-v1:start', 'workspace-hierarchy-nav-v1:start', 'workbench-dropdown-nav-v1:start']) assert.ok(!html.includes(marker));
+assert.throws(() => assembleHtml(baseline + ' ', built, namespace), /baseline drift/);
+assert.throws(() => assembleHtml(baseline, built.replaceAll('/assets/', '/admin/assets/'), namespace), /root subdomain/);
+assert.throws(() => assembleHtml(baseline, built.replace('index-ABC123.js', '../../bad.js'), namespace));
+assert.throws(() => assembleHtml(baseline, built.replace(`/${namespace}/vendor`, '/old/vendor'), namespace), /versioned/);
+assert.throws(() => assembleHtml(baseline, built + `<script type="module" src="/assets/${namespace}/second.js"></script>`, namespace), /single production/);
+assert.throws(() => assembleHtml(baseline, built, `${RELEASE}-bad`));
+console.log(JSON.stringify({ ok: true, offlineOnly: true, cases: 7, inverseBytePreservation: true, noProductionWrites: true }));

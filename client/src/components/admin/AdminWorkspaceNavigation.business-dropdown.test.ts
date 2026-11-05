@@ -41,9 +41,13 @@ function panel(level = 2) { return host.querySelector<HTMLDivElement>(`[data-wor
 function subset(paths: string[]) { return items.filter(item => paths.includes(item.path)); }
 
 describe("业务分级下拉回归：已批准替代上一轮平铺方案", () => {
-  it("业务按钮重复点击仅开关，悬停只预加载，实际route不变化", async () => {
-    await render(); await click("business"); expect(panel()).not.toBeNull(); expect(onNavigate).not.toHaveBeenCalled();
-    await act(async () => button("business").dispatchEvent(new Event("pointerenter", { bubbles: true })));
+  it("桌面业务悬停自动打开，点击确认不闪退，重复点击收起且route不变化", async () => {
+    await render();
+    const hover = new MouseEvent("pointerover", { bubbles: true });
+    Object.defineProperty(hover, "pointerType", { value: "mouse" });
+    await act(async () => button("business").dispatchEvent(hover));
+    expect(panel()).not.toBeNull(); expect(onPreload).toHaveBeenCalledWith(items.find(item => item.path === "/workbench/customers"));
+    await click("business"); expect(panel()).not.toBeNull();
     expect(onNavigate).not.toHaveBeenCalled(); await click("business"); expect(panel()).toBeNull();
   });
   it("二级仅三分组和公司信息，点击后只出现所属三级，无重复渠道", async () => {

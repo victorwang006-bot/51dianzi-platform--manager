@@ -199,6 +199,46 @@ describe("正式后台顶部布局集成", () => {
     });
   });
 
+  it.each([
+    ["materials", ["渠道库存"]],
+    ["channels", ["渠道库存", "渠道档案"]],
+    ["batches", ["渠道库存", "上传批次"]],
+    ["trash", ["渠道库存", "回收站"]],
+  ])("channel %s keeps the fixed top label and a read-only breadcrumb inside main", async (tab, expected) => {
+    runtime.location = `/workbench/channel-inventory?ciTab=${tab}`;
+    runtime.capabilities = ["inventory.channel"];
+    runtime.user.permissions = ["officialInventory.read"];
+    await withMountedLayout(async container => {
+      const main = container.querySelector("main")!;
+      const breadcrumb = main.querySelector('[data-admin-navigation="current-location"]')!;
+      const trigger = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="channel"]')!;
+      expect(trigger.textContent).toBe("渠道库存▾");
+      expect(trigger.getAttribute("aria-current")).toBe("location");
+      expect(trigger.getAttribute("aria-expanded")).toBe("false");
+      expect(Array.from(breadcrumb.querySelectorAll("li")).map(node => node.lastElementChild?.textContent)).toEqual(expected);
+      expect(breadcrumb.querySelectorAll("button, a")).toHaveLength(0);
+      expect(breadcrumb.nextElementSibling).toBe(main.querySelector("[data-real-content]"));
+      expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
+      expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
+      expect(runtime.setLocation).not.toHaveBeenCalled();
+      await act(async () => trigger.click());
+      expect(container.querySelector(`[data-channel-tab="${tab}"]`)?.getAttribute("aria-current")).toBe("page");
+      expect(container.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
+    });
+  });
+
+  it("business module location is shown without opening the menu or replacing the original page", () => {
+    runtime.location = "/workbench/sales-orders/8?merchantId=31";
+    runtime.capabilities = ["crm.sales_orders"];
+    const host = document.createElement("div");
+    host.innerHTML = renderLayout();
+    expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent))
+      .toEqual(["业务工作台", "客户与销售", "销售订单"]);
+    expect(host.querySelector('[data-workspace-nav-target="business"]')?.getAttribute("aria-current")).toBe("location");
+    expect(host.querySelector('[data-workspace-dropdown="panel"]')).toBeNull();
+    expect(host.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
+  });
+
   it("shows native staff channel entry in the dropdown only with exact native read and the bound route capability", async () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = ["inventory.channel"];

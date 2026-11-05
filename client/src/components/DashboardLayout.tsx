@@ -40,6 +40,7 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
 import {
   AdminWorkspaceTabs,
+  AdminWorkspaceLocation,
 } from "./admin/AdminWorkspaceNavigation";
 import {
   preloadAdminRoute,
@@ -687,6 +688,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
             }}
           />
         ) : null}
+        <AdminWorkspaceLocation items={visibleMenuItems} location={navigationLocation} />
         {children}
       </main>
     </div>

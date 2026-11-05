@@ -55,6 +55,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -103,6 +104,12 @@ function bounds(left: number, top: number, width = 80, height = 56) {
     toJSON: () => ({}) } as DOMRect;
 }
 
+async function pointer(node: Element, type: "pointerover" | "pointerout", pointerType = "mouse", relatedTarget: EventTarget | null = null) {
+  const event = new MouseEvent(type, { bubbles: true, relatedTarget });
+  Object.defineProperty(event, "pointerType", { value: pointerType });
+  await act(async () => node.dispatchEvent(event));
+}
+
 describe("统一导航下拉（new focused contract）", () => {
   it("四个一级按 channel/business/operations/organization 排列，均为不导航的点击按钮", async () => {
     await render();
@@ -126,7 +133,162 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(host.querySelector("[data-system-version]")?.getAttribute("data-system-version")).toBe(ADMIN_SYSTEM_RELEASE);
   });
 
-  it("业务二级仅分组和公司信息，三级必须点击，渠道不重复且悬停不展开", async () => {
+  it("进入/切换真实页面不自动展开；仅焦点与预加载也不展开", async () => {
+    for (const location of ["/materials", "/workbench/orders", `${CHANNEL_INVENTORY_ROUTE}?ciTab=channels`, "/staff"]) {
+      await render(location);
+      expect(panel()).toBeNull();
+      await act(async () => button("business").focus());
+      expect(panel()).toBeNull();
+      expect(panel(3)).toBeNull();
+    }
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("桌面所有一级鼠标自动展开，无焦点抢夺且仅当前真实模块保持高亮", async () => {
+    await render("/workbench/orders");
+    await act(async () => button("business").focus());
+    for (const id of topIds) {
+      await pointer(button(id), "pointerover");
+      expect(panel()?.dataset.workspace).toBe(id);
+      expect(panel(3)).toBeNull();
+      expect(activeTop()).toEqual(["business"]);
+      expect(document.activeElement).toBe(button("business"));
+      expect(host.querySelectorAll('[data-navigation-level="1"][aria-expanded="true"]')).toHaveLength(1);
+    }
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(onPreload).toHaveBeenCalled();
+  });
+
+  it.each(["customers", "inventory", "procurement"] as const)("%s 鼠标展开旁侧三级，悬停后一次叶子点击即可导航", async id => {
+    await render();
+    await pointer(button("business"), "pointerover");
+    await pointer(button(`group:${id}`), "pointerover");
+    expect(leaves(3)).toEqual(groupedPaths[id]);
+    expect(panel(3)?.dataset.submenuSide).toBe("right");
+    expect(onNavigate).not.toHaveBeenCalled();
+    await click(`group:${id}`);
+    expect(leaves(3)).toEqual(groupedPaths[id]);
+    expect(button(`group:${id}`).getAttribute("aria-expanded")).toBe("true");
+    expect(onNavigate).not.toHaveBeenCalled();
+    await click(groupedPaths[id][0]);
+    expect(onNavigate.mock.calls).toEqual([[items.find(item => item.path === groupedPaths[id][0])]]);
+    expect(panel()).toBeNull();
+  });
+
+  it("移到同层另一组替换子面板，返回一级不重置子组，移入公司信息清理旧子组", async () => {
+    await render();
+    await pointer(button("business"), "pointerover");
+    await pointer(button("group:customers"), "pointerover");
+    await pointer(button("group:inventory"), "pointerover");
+    expect(leaves(3)).toEqual(groupedPaths.inventory);
+    expect(button("group:customers").getAttribute("aria-expanded")).toBe("false");
+    await pointer(button("business"), "pointerover");
+    expect(leaves(3)).toEqual(groupedPaths.inventory);
+    await pointer(button("/workbench/company-info"), "pointerover");
+    expect(panel(3)).toBeNull();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("鼠标从一级经过短空隙进入二级、再进三级不闪退；真正离开180ms才关闭", async () => {
+    vi.useFakeTimers();
+    await render();
+    await pointer(button("business"), "pointerover");
+    await pointer(button("business"), "pointerout", "mouse", document.body);
+    await act(async () => vi.advanceTimersByTime(179));
+    expect(panel()).not.toBeNull();
+    await pointer(panel()!, "pointerover");
+    await act(async () => vi.advanceTimersByTime(200));
+    expect(panel()).not.toBeNull();
+    await pointer(button("group:customers"), "pointerover");
+    await pointer(panel()!, "pointerout", "mouse", document.body);
+    await act(async () => vi.advanceTimersByTime(100));
+    await pointer(panel(3)!, "pointerover");
+    await act(async () => vi.advanceTimersByTime(200));
+    expect(leaves(3)).toEqual(groupedPaths.customers);
+    // A direct parent-to-child transition is also safe without a timer.
+    await pointer(panel()!, "pointerout", "mouse", panel(3));
+    await act(async () => vi.advanceTimersByTime(200));
+    expect(panel(3)).not.toBeNull();
+    await pointer(panel(3)!, "pointerout", "mouse", document.body);
+    await act(async () => vi.advanceTimersByTime(179));
+    expect(panel(3)).not.toBeNull();
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(panel()).toBeNull();
+    expect(panel(3)).toBeNull();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it.each(["touch", "pen"])("桌面%s不启用鼠标悬停，仍可点击逐级进入", async type => {
+    await render();
+    await pointer(button("business"), "pointerover", type);
+    expect(panel()).toBeNull();
+    await click("business");
+    await pointer(button("group:customers"), "pointerover", type);
+    expect(panel(3)).toBeNull();
+    await click("group:customers");
+    await click("/workbench/customers");
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("移动即使收到mouse事件也不悬停，点击、逐级返回保持可用且不延迟关闭", async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    await render();
+    await pointer(button("business"), "pointerover");
+    expect(panel()).toBeNull();
+    await click("business");
+    await pointer(button("group:customers"), "pointerover");
+    expect(panel(3)).toBeNull();
+    await click("group:customers");
+    await pointer(panel(3)!, "pointerout", "mouse", document.body);
+    await act(async () => vi.advanceTimersByTime(300));
+    expect(panel(3)).not.toBeNull();
+    await act(async () => panel(3)!.querySelector<HTMLButtonElement>('[data-workspace-dropdown="back"]')!.click());
+    expect(panel(3)).toBeNull();
+    expect(panel()?.hidden).toBe(false);
+  });
+
+  it.each(["URL", "items"])("等待关闭时%s变化取消旧计时器，新菜单不被迟到关闭", async change => {
+    vi.useFakeTimers();
+    await render();
+    await pointer(button("business"), "pointerover");
+    await pointer(button("business"), "pointerout", "mouse", document.body);
+    const overrides = change === "items" ? { items: [...items] } : {};
+    const location = change === "URL" ? "/workbench/orders?merchantId=32" : undefined;
+    await render(location, overrides);
+    expect(panel()).toBeNull();
+    await click("operations");
+    await act(async () => vi.advanceTimersByTime(300));
+    expect(panel()?.dataset.workspace).toBe("operations");
+  });
+
+  it.each(["outside", "Escape", "leaf"])("有悬停关闭计时器时%s仍立即关闭所有层", async action => {
+    vi.useFakeTimers();
+    await render();
+    await pointer(button("business"), "pointerover");
+    await pointer(button("group:customers"), "pointerover");
+    await pointer(panel(3)!, "pointerout", "mouse", document.body);
+    if (action === "outside") await act(async () => document.body.click());
+    else if (action === "Escape") await key("/workbench/customers", "Escape");
+    else await click("/workbench/customers");
+    expect(panel()).toBeNull();
+    await click("operations");
+    await act(async () => vi.advanceTimersByTime(300));
+    expect(panel()?.dataset.workspace).toBe("operations");
+    expect(onNavigate).toHaveBeenCalledTimes(action === "leaf" ? 1 : 0);
+  });
+
+  it("卸载取消未到期的悬停工作", async () => {
+    vi.useFakeTimers();
+    await render();
+    await pointer(button("business"), "pointerover");
+    await pointer(button("business"), "pointerout", "mouse", document.body);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    await act(async () => root.render(null));
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("业务二级仅分组和公司信息，桌面悬停自动展开三级且分组不导航", async () => {
     await render("/workbench/sales-orders/8?merchantId=31#detail");
     await click("business");
     expect(Array.from(panel()!.querySelectorAll("button[data-navigation-choice]")).map(node => node.getAttribute("data-workspace-nav-target")))
@@ -134,8 +296,9 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(leaves(2)).toEqual(["/workbench/company-info"]);
     expect(panel(3)).toBeNull();
     expect(host.querySelector(`[data-workspace-nav-target="${CHANNEL_INVENTORY_ROUTE}"]`)).toBeNull();
-    await act(async () => button("group:customers").dispatchEvent(new MouseEvent("pointerover", { bubbles: true })));
-    expect(panel(3)).toBeNull();
+    await pointer(button("group:customers"), "pointerover");
+    expect(leaves(3)).toEqual(groupedPaths.customers);
+    expect(button("group:customers").textContent).toBe("客户与销售›");
     await click("group:customers");
     expect(leaves(3)).toEqual(groupedPaths.customers);
     expect(button("group:customers").getAttribute("data-active")).toBe("true");
@@ -215,7 +378,7 @@ describe("统一导航下拉（new focused contract）", () => {
     await render(`${CHANNEL_INVENTORY_ROUTE}?merchantId=31&ciTab=${tab.id}#detail`);
     expect(activeTop()).toEqual(["channel"]);
     expect(button("business").getAttribute("data-active")).toBe("false");
-    expect(button("channel").textContent).toBe(`${tab.id === "materials" ? "渠道库存" : `渠道库存 · ${tab.label}`}▾`);
+    expect(button("channel").textContent).toBe("渠道库存▾");
     await click("channel");
     expect(Array.from(panel()!.querySelectorAll("[data-channel-tab]")).map(node => node.getAttribute("data-channel-tab")))
       .toEqual(CHANNEL_INVENTORY_TABS.map(entry => entry.id));
@@ -230,13 +393,15 @@ describe("统一导航下拉（new focused contract）", () => {
   });
 
   it.each([
-    ["?ciTab=invalid", "渠道库存"],
-    ["?supplyChannelId=22&supplyTab=materials", "渠道库存"],
-    ["?supplyChannelId=22&supplyTab=details", "渠道库存 · 渠道档案"],
-    ["?supplyChannelId=0&supplyTab=materials", "渠道库存 · 渠道档案"],
-  ])("渠道旧查询 %s 沿用 helper 解析", async (query, label) => {
+    ["?ciTab=invalid", "materials"],
+    ["?supplyChannelId=22&supplyTab=materials", "materials"],
+    ["?supplyChannelId=22&supplyTab=details", "channels"],
+    ["?supplyChannelId=0&supplyTab=materials", "channels"],
+  ])("渠道旧查询 %s 沿用 helper 解析且一级标签不变", async (query, tab) => {
     await render(`${CHANNEL_INVENTORY_ROUTE}${query}`);
-    expect(button("channel").textContent).toBe(`${label}▾`);
+    expect(button("channel").textContent).toBe("渠道库存▾");
+    await click("channel");
+    expect(button(`channel:${tab}`).getAttribute("aria-current")).toBe("page");
   });
 
   it.each([
@@ -281,7 +446,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(host.querySelector('[data-workspace-nav-target="organization"]')).toBeNull();
     await click("business");
     expect(panel()?.querySelectorAll("[data-business-group]")).toHaveLength(1);
-    expect(button("group:inventory").textContent).toBe("库存管理▾");
+    expect(button("group:inventory").textContent).toBe("库存管理›");
     await click("group:inventory");
     expect(leaves(3)).toEqual(["/workbench/inbound"]);
     await render("/workbench/orders", { items: subset([CHANNEL_INVENTORY_ROUTE]) });
