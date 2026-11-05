@@ -30,7 +30,7 @@ export function configSummary(fingerprints) {
 export function bootSummary(unitBytes,showBytes) {
  const props=Object.fromEntries(showBytes.toString().trim().split('\n').filter(Boolean).map(line=>{const i=line.indexOf('=');assert.ok(i>0);return [line.slice(0,i),line.slice(i+1)];}));
  assert.equal(props.LoadState,'loaded');assert.equal(props.UnitFileState,'enabled');assert.equal(props.User,'root');
- for(const k of ['EnvironmentFiles','PassEnvironment','UnsetEnvironment','ExecStartPre','ExecStartPost'])assert.equal(props[k],'','unsupported boot override');
+ for(const k of ['EnvironmentFiles','PassEnvironment','UnsetEnvironment','ExecStartPre','ExecStartPost'])assert.equal(props[k]??'','','unsupported boot override');
  const command='/usr/local/lib/node_modules/pm2/bin/pm2';
  // Check disk content too: effective properties alone miss a pending, un-reloaded boot change.
  let section='';const disk={};
@@ -55,7 +55,7 @@ export function bootSummary(unitBytes,showBytes) {
 function bootCheck() {
  const unit=captured('systemctl',['cat','--no-pager',UNIT]);
  const props=['LoadState','UnitFileState','User','Environment','EnvironmentFiles','PassEnvironment','UnsetEnvironment','ExecStart','ExecStartPre','ExecStartPost'];
- return bootSummary(Buffer.from(unit),Buffer.from(captured('systemctl',['show','--no-pager',...props.map(k=>'--property='+k),UNIT])));
+ return bootSummary(Buffer.from(unit),Buffer.from(captured('systemctl',['show','--all','--no-pager',...props.map(k=>'--property='+k),UNIT])));
 }
 const sideOf=e=>Object.keys(TARGETS).find(s=>TARGETS[s].name===e.name);
 // Only designated APIs may change their entry and unavoidable reload PID/counter fields.
@@ -67,13 +67,13 @@ function normalized(e) {
  assert.ok(allowed.includes(e.pm_exec_path),'unknown target entry');
  if(e.env?.pm_exec_path!==undefined)assert.ok(allowed.includes(e.env.pm_exec_path),'unknown target env entry bookkeeping');
  const norm=scope=>Object.fromEntries(Object.entries(scope).filter(([k])=>!bookkeeping.has(k)).map(([k,v])=>[k,k==='pm_exec_path'?'<'+side+'-target>':v]));
- const out=norm(e);if(e.env)out.env=norm(e.env);return out;
+ const out=norm(e);delete out.axm_monitor;if(e.env)out.env=norm(e.env);return out;
 }
 export function dumpSummary(bytes) {
  const rows=JSON.parse(bytes);assert.ok(Array.isArray(rows));const scripts={},targetRows={};
  const norm=rows.map(e=>{assert.ok(e&&typeof e==='object'&&!Array.isArray(e));const side=sideOf(e);if(side){assert.equal(typeof e.pm_exec_path,'string');(scripts[side]??=[]).push(e.pm_exec_path);const key=e.instance_var||'NODE_APP_INSTANCE';(targetRows[side]??=[]).push({id:e.pm_id??null,instance:e[key]??e.env?.[key]??null,script:e.pm_exec_path});}return normalized(e);}).sort((a,b)=>canonical(a).localeCompare(canonical(b)));
  for(const v of Object.values(scripts))v.sort();for(const v of Object.values(targetRows))v.sort((a,b)=>canonical(a).localeCompare(canonical(b)));
- const content=rows.slice().sort((a,b)=>canonical(a).localeCompare(canonical(b)));
+ const content=rows.map(e=>sideOf(e)?Object.fromEntries(Object.entries(e).filter(([k])=>k!=='axm_monitor')):e).sort((a,b)=>canonical(a).localeCompare(canonical(b)));
  return {sha256:hash(bytes),contentSha256:hash(canonical(content)),semanticSha256:hash(canonical(norm)),scripts,targetRows,rowCount:rows.length};
 }
 export function savedRows(rows) {

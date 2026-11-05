@@ -92,3 +92,7 @@
 ### 20:59 实施收口补充
 
 员工实际删除实现为后台永久归档+当前企业membership软暂停/版本递增及已有模块deny，保留全部身份/历史关系，非物理DELETE用户或业务；主站严格归档审计标记拒绝旧partial成功重放。仅该员工真实活跃采购报价、路由、渠道/物料、团队currentOwner、主组长、目标活跃任务和不可核验legacy候选阻断，企业公开需求键/快询价历史作者不误当员工责任。真实零责任可完成；待交接明确提示而不假成功。启动持久化按只读核实的systemd pm2 resurrect和实际dump，三个原ecosystem文件保持完全原样，不载入动态.env；只保存已确认新API的PM2启动dump，其他worker环境/配置/可执行文件不变。
+
+### 21:38 交付完成
+
+发布static_active已通过最终保护和外网校验。生产只CREATE状态sidecar，不改已有表；指定API4+2生效，原启动配置不载入不改，PM2启动dump验证。全部98资源和HTML通过，其他worker/原前台/NGINX保持；无生产业务测试写入。详细交付和验证边界在docs/releases/20261105-admin-compact-priority-v2-delivered.md。

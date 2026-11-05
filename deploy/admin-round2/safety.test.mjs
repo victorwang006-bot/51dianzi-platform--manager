@@ -47,3 +47,18 @@ test('fresh save rejects stale dump, rogue bookkeeping and late PM2 drift after 
 test('persistence cross-phase guards reject even target path changes not recorded in lastPersistence',()=>{const before=initial(),changed={...before,dump:dump(activated(rawRows(),'front'))};assert.throws(()=>persistenceGuard(changed,before,before));const configDrift=structuredClone(before);configDrift.ecosystem.sha256['/synthetic/ecosystem'].sha256=sha('changed');assert.throws(()=>persistenceGuard(configDrift,before,before));});
 test('boot-check is pure validation, including live launch/ENV projection, before any reload/save',()=>{const before=initial(),live=rawRows(),state={beforePersistence:before,lastPersistence:before,lastProcesses:summarize(live)};const ops={snapshot:()=>before,list:()=>live,summaries:summarize,save:()=>{throw Error('write forbidden');}};assert.deepEqual(checkBoot(state,'front',ops),before);live[6].pm2_env.unknownLaunch.worker='changed';assert.throws(()=>checkBoot(state,'front',ops));assert.equal(live[0].pm2_env.pm_exec_path,OLD+'/front/dist/index.js');});
 test('persistence default help is offline; no legacy ecosystem mutation API remains',async()=>{const r=spawnSync(process.execPath,[new URL('./persist-targets.mjs',import.meta.url).pathname,'--help'],{encoding:'utf8'});assert.equal(r.status,0);assert.match(r.stdout,/validation-only/);const source=await fs.readFile(new URL('./persist-targets.mjs',import.meta.url),'utf8');assert.ok(!source.includes('patchConfig'));assert.ok(!source.includes('vm.run'));assert.ok(!source.includes('fs.writeFile'));});
+
+test('systemd omitted empty array fields are compatible only while disk has no boot overrides',()=>{
+ const optional=['EnvironmentFiles','PassEnvironment','UnsetEnvironment','ExecStartPre','ExecStartPost'];
+ const omitted=Buffer.from(show.toString().split(/\r?\n/).filter(line=>!optional.some(k=>line.startsWith(k+'='))).join('\n')+'\n');
+ assert.equal(bootSummary(unit,omitted).kind,'pm2-resurrect');
+ for(const key of ['EnvironmentFile','ExecStartPre','ExecStartPost'])assert.throws(()=>bootSummary(Buffer.concat([unit,Buffer.from('\n[Service]\n'+key+'=/unsupported-hook\n')]),omitted));
+});
+
+test('only designated API top-level heap telemetry is mutable, never ENV or workers',()=>{
+ const rows=rawRows();rows[0].pm2_env.axm_monitor={heap:{value:1}};
+ const before=dump(rows);rows[0].pm2_env.axm_monitor={heap:{value:2}};
+ assert.equal(dump(rows).semanticSha256,before.semanticSha256);assert.equal(dump(rows).contentSha256,before.contentSha256);
+ rows[0].pm2_env.env.axm_monitor='application-value';assert.notEqual(dump(rows).semanticSha256,before.semanticSha256);
+ delete rows[0].pm2_env.env.axm_monitor;rows[6].pm2_env.axm_monitor={heap:{value:1}};assert.notEqual(dump(rows).semanticSha256,before.semanticSha256);
+});
