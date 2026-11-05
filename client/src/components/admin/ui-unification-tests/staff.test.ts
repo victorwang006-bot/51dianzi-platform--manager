@@ -129,6 +129,7 @@ describe("staff unified presentation", () => {
       '"disabled"',
       '"locked"',
       '"suspended"',
+      '"deleted"',
       '"all"',
       "{option}",
     ]);
@@ -168,7 +169,7 @@ describe("staff unified presentation", () => {
     expect(page).toMatch(
       /useEffect\(\(\) => \{\s*setPage\(1\);\s*\}, \[keyword, role, status\]\)/
     );
-    expect(page).toContain("{ page, pageSize: PAGE_SIZE }");
+    expect(page).toContain('{ page, pageSize: PAGE_SIZE, archiveStatus: status === "deleted" ? "deleted" : "current" }');
     expect(attributes("Pagination", "page")).toEqual(["{page}"]);
     expect(attributes("Pagination", "pageSize")).toEqual(["{PAGE_SIZE}"]);
     expect(attributes("Pagination", "total")).toEqual([
@@ -194,9 +195,9 @@ describe("staff unified presentation", () => {
     expect(page).toContain('openStaffSheet(row, "member")');
   });
 
-  it("keeps all seven data columns and compact right-aligned operations without scaling", () => {
-    expect(attributes("col", "className")).toHaveLength(7);
-    expect(attributes("TableHead", "className")).toHaveLength(7);
+  it("keeps the approved six data columns and compact right-aligned operations without scaling", () => {
+    expect(attributes("col", "className")).toHaveLength(6);
+    expect(attributes("TableHead", "className")).toHaveLength(6);
     expect(
       attributes("TableHead", "className").every(value =>
         value.includes("text-[11px]")

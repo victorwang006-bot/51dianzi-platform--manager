@@ -75,7 +75,9 @@ export const customerListSchema = z.object({
   keyword: optionalText(128), grade: z.enum(CUSTOMER_GRADES).optional(), stage: z.enum(CUSTOMER_STAGES).optional(),
   scope: z.enum(["mine", "all"]).default("mine"), assignedUserId: z.number().int().positive().optional(),
   starUserId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
-  starredOnly: z.boolean().default(false),
+  starMode: z.literal("assignee").optional(),
+  expectedEnterpriseId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
+  expectedActorUserId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   archived: z.boolean().default(false), due: z.enum(["all", "today", "overdue"]).default("all"),
   page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(20),
 });

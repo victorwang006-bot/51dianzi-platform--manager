@@ -10,31 +10,29 @@ import { makeCustomerRequestId } from "../components/customers/customerUtils";
 
 type Context = inferRouterOutputs<AppRouter>["customer"]["starContext"];
 type Command = inferRouterInputs<AppRouter>["customer"]["setStar"];
-export type StarRow = { id: number; isStarred?: boolean; starRevision?: number; starUserId?: number; canSetStar?: boolean };
+export type StarRow = { id: number; enterpriseId: number; assignedUserId: number; isStarred?: boolean; starRevision?: number; starUserId?: number | null; canSetStar?: boolean };
 type ReadState = { key: string; data: Context | null; loading: boolean; failed: boolean };
 type WriteState = { key: string; command: Command; status: "pending" | "unknown"; message: string };
 
-/** Personal preferences are never persisted locally or inferred from canManageAll.
- * A fresh fixed read proves eligible targets; each command repeats server policy.
- * An uncertain write retains its complete command, including its original requestId. */
-export function useCustomerStars(scope: CustomerContactScope | null, contextCurrent: boolean, onSaved: (customerId: number) => Promise<void>) {
+/** One authoritative target per row: its CURRENT native assignee. No local preference,
+ * global star owner selection or silent self fallback. Unknown commands are retried verbatim. */
+export function useCustomerStars(scope: CustomerContactScope | null, contextCurrent: boolean, onSaved: (customerId: number) => Promise<void>, viewKey = "") {
   const business = useBusinessScope();
   const utils = trpc.useUtils();
   const verification = business.contextVerification;
   const identity = `${business.storageScope}:${scope?.enterpriseId ?? 0}:${scope?.actorUserId ?? 0}`;
   const readKey = `${identity}:${verification.authorizationVersion}`;
+  const requestKey = `${readKey}:${viewKey}`;
   const currentScope = Boolean(scope && contextCurrent && verification.state !== "revalidating");
   const [read, setRead] = useState<ReadState>({ key: "", data: null, loading: true, failed: false });
   const [revision, setRevision] = useState(0);
-  const [selection, setSelection] = useState<{ identity: string; userId: number } | null>(null);
   const [write, setWrite] = useState<WriteState | null>(null);
   const [notice, setNotice] = useState("");
   const writeRef = useRef<WriteState | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const alive = useRef(true);
+  const rowsRef = useRef(new Map<number, StarRow>());
   const saveRef = useRef(onSaved); saveRef.current = onSaved;
-  const targetUserId = selection?.identity === identity ? selection.userId : scope?.actorUserId ?? 0;
-  const requestKey = `${readKey}:${targetUserId}`;
   const currentRef = useRef({ readKey, requestKey, currentScope });
   currentRef.current = { readKey, requestKey, currentScope };
 
@@ -51,15 +49,11 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
     const abort = new AbortController();
     let active = true;
     setRead({ key: readKey, data: null, loading: true, failed: false });
-    // Partially deployed/missing APIs fail only this feature, including a missing
-    // client method; never infer a self-write grant from an error fallback.
     void Promise.resolve().then(() => utils.client.customer.starContext.query(undefined, { signal: abort.signal })).then(raw => {
       if (!active || abort.signal.aborted || currentRef.current.readKey !== readKey) return;
       const data = customerStarContextSchema.parse(raw);
       if (data.enterpriseId !== scope.enterpriseId || data.actorUserId !== scope.actorUserId
-        || !Array.isArray(data.targets) || !data.targets.some(target => target.userId === scope.actorUserId)) {
-        throw new Error("重点客户身份核验失败");
-      }
+        || !data.targets.some(target => target.userId === scope.actorUserId)) throw new Error("重点客户身份核验失败");
       setRead({ key: readKey, data, loading: false, failed: false });
     }).catch(error => {
       if (!active || abort.signal.aborted || currentRef.current.readKey !== readKey) return;
@@ -70,36 +64,37 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
   }, [readKey, currentScope, revision, utils]);
 
   const data = currentScope && read.key === readKey && !read.failed && !read.loading ? read.data : null;
-  const target = data?.targets.find(item => item.userId === targetUserId);
-  const ready = Boolean(data && target);
+  const ready = Boolean(data);
   const activeWrite = write?.key === requestKey && currentScope ? write : null;
-  const allowedRef = useRef({ ready, targetUserId }); allowedRef.current = { ready, targetUserId };
+  const allowedRef = useRef({ data, ready }); allowedRef.current = { data, ready };
   const clearWrite = () => { writeRef.current = null; setWrite(null); };
   const refresh = () => { setRead({ key: readKey, data: null, loading: true, failed: false }); setRevision(value => value + 1); };
-  const changeTarget = (userId: number) => {
-    if (writeRef.current?.status === "pending" || !data?.targets.some(item => item.userId === userId)) return;
-    abortRef.current?.abort(); clearWrite(); setNotice("");
-    setSelection({ identity, userId });
+  const canSet = (row: StarRow) => Boolean(ready && scope && row.enterpriseId === scope.enterpriseId
+    && row.canSetStar === true && Number.isSafeInteger(row.assignedUserId) && row.assignedUserId > 0
+    && row.starUserId === row.assignedUserId && data?.targets.some(target => target.userId === row.assignedUserId)
+    && typeof row.isStarred === "boolean" && Number.isSafeInteger(row.starRevision) && row.starRevision! >= 0 && row.starRevision! < 2147483647);
+  const rowCurrent = (command: Command) => {
+    const row = rowsRef.current.get(command.customerId);
+    return Boolean(row && row.enterpriseId === command.expectedEnterpriseId && row.assignedUserId === command.targetUserId
+      && row.starUserId === command.targetUserId && row.canSetStar === true);
   };
-  const canSet = (row: StarRow) => Boolean(ready && row.canSetStar === true
-    && row.starUserId === targetUserId && typeof row.isStarred === "boolean"
-    && Number.isSafeInteger(row.starRevision) && row.starRevision! >= 0);
-
   const send = async (frozen: WriteState) => {
-    if (!currentRef.current.currentScope || !allowedRef.current.ready || frozen.key !== currentRef.current.requestKey) return;
+    if (!currentRef.current.currentScope || !allowedRef.current.ready || frozen.key !== currentRef.current.requestKey
+      || !allowedRef.current.data?.targets.some(target => target.userId === frozen.command.targetUserId) || !rowCurrent(frozen.command)) return;
     abortRef.current?.abort(); const abort = new AbortController(); abortRef.current = abort;
     const pending: WriteState = { ...frozen, status: "pending", message: "" };
     writeRef.current = pending; setWrite(pending); setNotice("");
     const current = () => alive.current && !abort.signal.aborted && currentRef.current.currentScope
-      && currentRef.current.requestKey === frozen.key && writeRef.current?.command.requestId === frozen.command.requestId;
+      && currentRef.current.requestKey === frozen.key && writeRef.current?.command.requestId === frozen.command.requestId
+      && allowedRef.current.ready && allowedRef.current.data?.targets.some(target => target.userId === frozen.command.targetUserId)
+      && rowCurrent(frozen.command);
     try {
       const raw = await utils.client.customer.setStar.mutate(frozen.command, { signal: abort.signal });
       if (!current()) return;
       const result = customerSetStarResultSchema.parse(raw);
-      // A mismatched receipt is an unknown outcome, not permission to toggle again.
       if (result.customerId !== frozen.command.customerId || result.targetUserId !== frozen.command.targetUserId
         || result.requestId !== frozen.command.requestId || result.isStarred !== frozen.command.starred
-        || !Number.isSafeInteger(result.starRevision) || result.starRevision < 0) throw new Error("重点客户回执无法核验");
+        || result.starRevision !== frozen.command.expectedRevision + 1) throw new Error("重点客户回执无法核验");
       await saveRef.current(result.customerId);
       if (!current()) return;
       clearWrite(); setNotice(result.isStarred ? "已标记重点客户" : "已取消重点客户标记");
@@ -126,19 +121,25 @@ export function useCustomerStars(scope: CustomerContactScope | null, contextCurr
   };
   const setStar = (row: StarRow, starred: boolean) => {
     if (writeRef.current || !canSet(row) || !scope || row.isStarred === starred) return;
-    const command: Command = { customerId: row.id, targetUserId, starred,
+    const command: Command = { customerId: row.id, targetUserId: row.assignedUserId, starred, starMode: "assignee",
       expectedRevision: row.starRevision!, requestId: makeCustomerRequestId(),
       expectedEnterpriseId: scope.enterpriseId, expectedActorUserId: scope.actorUserId };
     void send({ key: requestKey, command, status: "pending", message: "" });
   };
   const toggle = (row: StarRow) => setStar(row, !row.isStarred);
-  const retry = () => {
+  const retry = () => { const frozen = writeRef.current; if (frozen?.status === "unknown") void send(frozen); };
+  const observeRows = (rows: StarRow[]) => { rowsRef.current = new Map(rows.map(row => [row.id, row])); };
+  // The page records its CURRENT projection after this hook returns. Read that ref
+  // after every commit, not an earlier render-time snapshot of the old assignee.
+  useEffect(() => {
     const frozen = writeRef.current;
-    if (frozen?.status === "unknown") void send(frozen);
-  };
-  return { targetUserId, actorUserId: scope?.actorUserId ?? 0, target, targets: data?.targets ?? [],
+    if (frozen && frozen.key === currentRef.current.requestKey && !rowCurrent(frozen.command)) {
+      abortRef.current?.abort(); clearWrite(); setNotice("客户负责人或权限已变化，请重新读取重点状态。");
+    }
+  });
+  return { actorUserId: scope?.actorUserId ?? 0, targets: data?.targets ?? [],
     ready, loading: currentScope && (read.key !== readKey || read.loading), failed: read.key === readKey && read.failed,
-    invalidTarget: Boolean(data && !target), busy: activeWrite?.status === "pending", blocked: Boolean(activeWrite),
+    invalidTarget: false, busy: activeWrite?.status === "pending", blocked: Boolean(activeWrite),
     pendingCustomerId: activeWrite?.command.customerId, unknown: activeWrite?.status === "unknown",
-    notice: activeWrite?.message || notice, canSet, toggle, setStar, retry, refresh, changeTarget, requestKey };
+    notice: activeWrite?.message || notice, canSet, toggle, setStar, retry, refresh, observeRows, requestKey };
 }

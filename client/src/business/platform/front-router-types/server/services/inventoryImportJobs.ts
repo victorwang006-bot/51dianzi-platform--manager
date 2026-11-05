@@ -30,6 +30,7 @@ import { importRowSchema } from "../../../shared/inventoryImportValidation";
 import { canPublishInventoryAvailability } from "../../../shared/inventoryAvailability";
 import { hasInventoryLeadTime } from "../../../shared/inventoryLeadTime";
 import { getDb, withInventoryPublisherLock } from "../db";
+import { lockActiveInventoryJobMembers } from "./inventoryJobMemberFence";
 import {
   assertInventoryQuotaDeploymentReady,
   getInventoryQuota,
@@ -266,6 +267,7 @@ export async function createInventoryImportJob(input: CreateJobInput) {
       enterpriseId: input.enterpriseId,
       dataOwnerUserId: input.dataOwnerUserId,
     }, { lockEnterprise: true });
+    await lockActiveInventoryJobMembers(tx, input);
     const existingRequest = (
       await tx
         .select()
@@ -1070,6 +1072,7 @@ export async function retryFailedInventoryImportJob(jobId: string, enterpriseId:
       )[0];
       if (!job) throw new Error("导入任务不存在");
       if (job.status !== "failed") throw new Error("只有处理失败的任务可以重试");
+      await lockActiveInventoryJobMembers(tx, job);
 
       const active = (
         await tx
@@ -1329,10 +1332,12 @@ export async function processInventoryImportBatch(
         .limit(1)
         .for("update")
     )[0];
-    const member = (
+    const jobMemberIds = Array.from(new Set([freshJob.createdByUserId, freshJob.ownerUserId])).sort((a, b) => a - b);
+    const jobMembers = (
       await tx
         .select({
           id: enterpriseMembers.id,
+          userId: enterpriseMembers.userId,
           role: enterpriseMembers.role,
           status: enterpriseMembers.status,
         })
@@ -1340,12 +1345,14 @@ export async function processInventoryImportBatch(
         .where(
           and(
             eq(enterpriseMembers.enterpriseId, freshJob.enterpriseId),
-            eq(enterpriseMembers.userId, freshJob.createdByUserId),
+            inArray(enterpriseMembers.userId, jobMemberIds),
           ),
         )
-        .limit(1)
+        .orderBy(asc(enterpriseMembers.userId))
         .for("update")
-    )[0];
+    );
+    const member = jobMembers.find(row => row.userId === freshJob.createdByUserId);
+    const ownerMember = jobMembers.find(row => row.userId === freshJob.ownerUserId);
     const isOwner = Boolean(
       member
       && (member.role === "super_admin" || enterprise?.superAdminUserId === freshJob.createdByUserId),
@@ -1360,6 +1367,7 @@ export async function processInventoryImportBatch(
     const permissionActive = Boolean(
       member
       && member.status === "active"
+      && ownerMember?.status === "active"
       && (
         isOwner
         || permissionRows.some(row => row.permissionKey === "inventory.publish")
@@ -2118,6 +2126,8 @@ export async function createInventoryImportJobInTransaction(input: CreateJobInpu
       enterpriseId: input.enterpriseId,
       dataOwnerUserId: input.dataOwnerUserId,
     }, { lockEnterprise: true });
+    // Repair passes the immutable source owner, not just the repair actor.
+    await lockActiveInventoryJobMembers(tx, input);
     const existingRequest = (
       await tx
         .select()

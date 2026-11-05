@@ -3,6 +3,8 @@ import { businessRouter } from "./businessRouter";
 import { officialTeamsRouter } from "./routers/officialTeams";
 import { officialChannelInventoryRouter } from "./routers/officialChannelInventory";
 import { officialChannelLegacyRouter } from "./routers/officialChannelLegacy";
+import { archiveStaff, previewStaffArchive } from "./staffArchive";
+import { staffArchiveInput, staffArchivePreviewInput } from "./staffArchiveModel";
 import { COOKIE_NAME } from "@shared/const";
 import {
   ASSIGNABLE_ADMIN_PERMISSIONS,
@@ -629,6 +631,9 @@ function mapAdminLifecycleError(error: unknown): unknown {
   }
   if (message === "ADMIN_SELF_REMOVE_FORBIDDEN") {
     return new TRPCError({ code: "BAD_REQUEST", message: "不能移除当前登录的账号" });
+  }
+  if (message === "ADMIN_USER_ARCHIVED") {
+    return new TRPCError({ code: "PRECONDITION_FAILED", message: "用户已离职归档，不能重新启用或修改历史身份" });
   }
   return error;
 }
@@ -3123,9 +3128,11 @@ export const appRouter = router({
   }),
 
   adminUser: router({
-    list: adminManageProcedure.input(pageInput).query(async ({ input }) => {
+    list: adminManageProcedure.input(pageInput.extend({ archiveStatus: z.enum(["current", "deleted"]).default("current") })).query(async ({ input }) => {
       return db.getAdminUsers(input);
     }),
+    archivePreview: adminManageProcedure.input(staffArchivePreviewInput).query(({ ctx, input }) => previewStaffArchive(ctx, input)),
+    archive: adminManageProcedure.input(staffArchiveInput).mutation(({ ctx, input }) => archiveStaff(ctx, input)),
     loginHistory: adminManageProcedure
       .input(z.object({ id: z.number().int().positive(), limit: z.number().int().min(1).max(100).default(50) }))
       .query(({ input }) => getAdminLoginHistory(input.id, input.limit)),
@@ -3209,12 +3216,8 @@ export const appRouter = router({
       }
       return { success: true } as const;
     }),
-    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
-      try {
-        return await db.deleteAdminUser(input.id, ctx.adminAccount?.id ?? null);
-      } catch (error) {
-        throw mapAdminLifecycleError(error);
-      }
+    remove: adminManageProcedure.input(z.object({ id: z.number() })).mutation(() => {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "物理删除已停用，请在员工列表使用离职归档删除，历史数据保留。" });
     }),
   }),
 

@@ -12,12 +12,17 @@
 .ci-page.ci-host-state { padding: 28px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; text-align: center; }
 .ci-page.ci-host-error { color: #a54a4a; }
 .ci-page.ci-host :where(button, input, select, textarea) { font-family: inherit; }
-.ci-page.ci-host .ci-tabbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
+/* Only a ready channel page replaces the external location row with its own
+ * compact title. Loading/error/batches/trash and every other workspace keep it. */
+.admin-workspace-shell__main:has([data-channel-inventory-host] .ci-tabbar) > [data-admin-navigation="current-location"] { display: none; }
+.ci-page.ci-host .ci-tabbar { box-sizing: border-box; display: flex; align-items: center; flex-wrap: wrap; min-height: 60px; gap: 8px 16px; margin-bottom: 12px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+.ci-page.ci-host .ci-page-title { flex: 0 0 auto; margin: 0; color: #185fa5; font-size: var(--admin-content-section-title-size, 16px); font-weight: 600; line-height: 24px; }
+.ci-page.ci-host .ci-inventory-view-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ci-page.ci-host .ci-tabs { display: flex; height: 40px; gap: 22px; margin: 0; border: 0; }
 .ci-page.ci-host .ci-tabs button { position: relative; padding: 0 2px; border: 0; background: transparent; color: #64748b; font: inherit; font-weight: 500; cursor: pointer; font-size: var(--admin-content-section-title-size, 15px); }
 .ci-page.ci-host .ci-tabs button[aria-selected="true"] { color: #185fa5; font-weight: 600; }
 .ci-page.ci-host .ci-tabs button[aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; content: ""; background: #185fa5; }
-.ci-page.ci-host .ci-heading-actions { display: flex; align-items: center; width: auto; gap: 8px; margin-left: auto; padding: 4px 0; }
+.ci-page.ci-host .ci-heading-actions { display: flex; align-items: center; width: auto; gap: 8px; margin-left: auto; padding: 0; }
 .ci-page.ci-host .ci-panel { border: 0; border-radius: 0; background: transparent; }
 .ci-page.ci-host .ci-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
 .ci-page.ci-host .ci-toolbar .ci-field { flex: 0 1 150px; width: 150px; }
@@ -88,6 +93,11 @@
 .ci-page.ci-host .ci-status-active { border-color: #c5e5d3; color: #437e5d; background: #f2fbf5; }
 .ci-page.ci-host .ci-status-inactive { border-color: #e2e8f0; color: #64748b; background: #f8fafc; }
 .ci-page.ci-host .ci-sort-button { border: 0; padding: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.ci-page.ci-host .ci-quantity-sort-button { display: inline-flex; align-items: center; gap: 4px; }
+.ci-page.ci-host .ci-quantity-sort-icon { flex: 0 0 auto; color: #94a3b8; }
+.ci-page.ci-host .ci-quantity-sort-icon path { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ci-page.ci-host .ci-quantity-sort-icon .ci-sort-active { color: #185fa5; }
+.ci-page.ci-host .ci-sort-status { margin: 0 0 8px; color: #64748b; font-size: var(--admin-content-font-caption, 12px); line-height: var(--admin-content-caption-line-height, 18px); }
 .ci-page.ci-host .ci-sort-arrow { margin-left: 4px; font-size: 11px; }
 .ci-page.ci-host .ci-readonly { color: #64748b; font-size: var(--admin-content-font-body, 12px); }
 .ci-page.ci-host .ci-empty { padding: 36px 12px !important; color: #64748b; text-align: center; }

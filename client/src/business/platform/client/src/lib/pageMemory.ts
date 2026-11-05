@@ -2,10 +2,12 @@
 export type PageScope = string | null;
 type ScrollSnapshot = {
   x: number; y: number; row?: string; offset?: number;
-  containers?: { path: number[]; x: number; y: number }[];
+  containers?: { path: number[]; key?: string; x: number; y: number }[];
 };
 type Entry = {
   id: string; scope: PageScope; url: string; from: string | null;
+  /** Observed immediate predecessor, distinct from a retained logical source. */
+  previous?: string | null;
   state: Record<string, unknown>; scroll?: ScrollSnapshot; at: number;
 };
 type Book = { entries: Record<string, Entry>; latest: Record<string, string> };
@@ -13,6 +15,7 @@ const PREFIX = "51dianzi:page-memory:v1:";
 const META = "__d51PageMemory";
 const MAX_ENTRIES = 60;
 const MAX_BYTES = 180000;
+const MAX_SCOPES = 8;
 const TTL = 12 * 60 * 60 * 1000;
 const UI_SLOTS = new Set([
   "draftFilters", "appliedFilters", "moreFiltersOpen", "page", "statusFilter",
@@ -25,7 +28,7 @@ const UI_SLOTS = new Set([
 ]);
 const UI_FIELDS = new Set([
   "page", "filters", "sort", "status", "owner", "keyword", "grade", "stage", "scope", "assignedUserId",
-  "due", "archived", "pn", "brand", "cat", "partNumber", "type", "name", "active",
+  "due", "archived", "starredOnly", "pn", "brand", "cat", "partNumber", "type", "active",
 ]);
 function uiValue(value: unknown, depth = 0): unknown {
   if (depth > 3) return undefined;
@@ -49,9 +52,12 @@ function validScroll(value: unknown): ScrollSnapshot | undefined {
   return {
     x: s.x, y: s.y,
     ...(typeof s.row === "string" && s.row.length < 100 && position(s.offset) ? { row: s.row, offset: s.offset } : {}),
-    containers: Array.isArray(s.containers) ? s.containers.slice(0, 8).filter(c => c && position(c.x) && position(c.y) && Array.isArray(c.path) && c.path.length <= 20 && c.path.every(n => Number.isSafeInteger(n) && n >= 0 && n <= 10000)) : [],
+    containers: Array.isArray(s.containers) ? s.containers.slice(0, 8)
+      .filter(c => c && position(c.x) && position(c.y) && c.x >= 0 && c.y >= 0 && Array.isArray(c.path) && c.path.length <= 20 && c.path.every(n => Number.isSafeInteger(n) && n >= 0 && n <= 10000))
+      .map(c => ({ path: c.path, x: c.x, y: c.y, ...(stableKey(c.key) ? { key: c.key } : {}) })) : [],
   };
 }
+const stableKey = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9:_-]{1,100}$/.test(value);
 const books = new Map<string, Book>();
 const listeners = new Set<() => void>();
 let scope: PageScope = null;
@@ -64,6 +70,7 @@ let unscoped: Book = { entries: {}, latest: {} };
 let selectedRow: HTMLElement | null = null;
 let popReturn = false;
 let pendingPosition: string | null = null;
+let sourceReplacement: { context: string; entry: Entry } | null = null;
 const uuid = () => globalThis.crypto?.randomUUID?.() ?? `p${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const route = (url: string) => url.split(/[?#]/)[0];
 const currentUrl = () => window.location.pathname + window.location.search + window.location.hash;
@@ -85,30 +92,54 @@ function book(): Book {
         const candidate = JSON.parse(raw);
         if (candidate && candidate.entries && candidate.latest) {
           for (const [id, e] of Object.entries(candidate.entries) as [string, Entry][]) {
-            if (e && e.id === id && /^[A-Za-z0-9-]{1,100}$/.test(id) && e.scope === scope && safePageUrl(e.url) && typeof e.at === "number" && Date.now() - e.at < TTL && e.state && typeof e.state === "object" && !Array.isArray(e.state)) {
+            if (e && e.id === id && /^[A-Za-z0-9-]{1,100}$/.test(id) && e.scope === scope && safePageUrl(e.url) && typeof e.at === "number" && Number.isFinite(e.at) && e.at <= Date.now() && Date.now() - e.at < TTL && e.state && typeof e.state === "object" && !Array.isArray(e.state)) {
               const state: Record<string, unknown> = {};
               for (const [name, value] of Object.entries(e.state)) if (UI_SLOTS.has(name)) {
                 const clean = uiValue(value); if (clean !== undefined) state[name] = clean;
               }
-              parsed.entries[id] = { ...e, state, scroll: validScroll(e.scroll) };
+              parsed.entries[id] = { id, scope, url: safePageUrl(e.url)!,
+                from: stableKey(e.from) ? e.from : null,
+                previous: stableKey(e.previous) ? e.previous : null,
+                at: e.at, state, scroll: validScroll(e.scroll) };
             }
           }
           for (const [url, id] of Object.entries(candidate.latest) as [string, string][]) if (safePageUrl(url) && parsed.entries[id]) parsed.latest[url] = id;
         }
       }
     } catch { /* Disabled or corrupt storage is never fatal. */ }
+    while (books.size >= MAX_SCOPES) books.delete(books.keys().next().value!);
     books.set(scope, parsed);
   }
   return books.get(scope)!;
 }
+function pruneStoredScopes() {
+  const candidates: { key: string; at: number }[] = [];
+  for (let index = 0; index < sessionStorage.length; index++) {
+    const key = sessionStorage.key(index);
+    if (!key?.startsWith(PREFIX) || key === PREFIX + scope) continue;
+    let at = 0;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (raw && raw.length <= MAX_BYTES) {
+        const entries = JSON.parse(raw)?.entries;
+        for (const entry of Object.values(entries ?? {}) as Entry[]) if (Number.isFinite(entry?.at) && entry.at <= Date.now()) at = Math.max(at, entry.at);
+      }
+    } catch { /* Corrupt UI memory expires below. */ }
+    candidates.push({ key, at });
+  }
+  candidates.sort((a, b) => b.at - a.at);
+  candidates.forEach((candidate, index) => {
+    if (index >= MAX_SCOPES - 1 || Date.now() - candidate.at >= TTL) sessionStorage.removeItem(candidate.key);
+  });
+}
 function persist() {
-  if (!scope) return;
   const b = book();
   const all = Object.values(b.entries).sort((a, z) => z.at - a.at);
   const keep = new Set(all.filter(e => Date.now() - e.at < TTL).slice(0, MAX_ENTRIES).map(e => e.id));
   if (activeId) keep.add(activeId);
   for (const id of Object.keys(b.entries)) if (!keep.has(id)) delete b.entries[id];
   for (const [url, id] of Object.entries(b.latest)) if (!b.entries[id]) delete b.latest[url];
+  if (!scope) return;
   try {
     let raw = JSON.stringify(b);
     while (raw.length > MAX_BYTES && all.length > 1) {
@@ -118,7 +149,7 @@ function persist() {
       for (const [url, id] of Object.entries(b.latest)) if (id === e.id) delete b.latest[url];
       raw = JSON.stringify(b);
     }
-    if (raw.length <= MAX_BYTES) sessionStorage.setItem(PREFIX + scope, raw);
+    if (raw.length <= MAX_BYTES) { sessionStorage.setItem(PREFIX + scope, raw); pruneStoredScopes(); }
   } catch { /* Keep this tab's in-memory state if quota is unavailable. */ }
 }
 function metadata() {
@@ -127,7 +158,7 @@ function metadata() {
 }
 function mark(e: Entry, replace: typeof history.replaceState) {
   const old = history.state && typeof history.state === "object" ? history.state : {};
-  replace.call(history, { ...old, [META]: { id: e.id, scope: e.scope } }, "", e.url);
+  replace.call(history, { ...old, [META]: { id: e.id, scope: e.scope, previous: e.previous ?? null } }, "", e.url);
 }
 function notify() { epoch++; listeners.forEach(listener => listener()); }
 export const subscribePageMemory = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
@@ -153,14 +184,14 @@ function previousRouteEntry(url: string): Entry | undefined {
   entries.sort((a, z) => Number(Object.keys(z.state).length > 0) - Number(Object.keys(a.state).length > 0) || z.at - a.at);
   return entries[0];
 }
-function seed(url: string, from: string | null = null): Entry {
+function seed(url: string, from: string | null = null, predecessor: string | null = null): Entry {
   const b = book();
   // Each history entry keeps independent state even for repeated visits to one URL.
   const exact = b.entries[b.latest[url]];
   const previous = exact && Object.keys(exact.state).length ? exact : previousRouteEntry(url) ?? exact;
   const state = newNavigationState(url, previous?.state);
   const explicitIntent = JSON.stringify(state) !== JSON.stringify(previous?.state ?? {});
-  const e: Entry = { id: uuid(), scope, url, from, state, ...(!explicitIntent && previous?.scroll ? { scroll: validScroll(previous.scroll) } : {}), at: Date.now() };
+  const e: Entry = { id: uuid(), scope, url, from, previous: predecessor, state, ...(!explicitIntent && previous?.scroll ? { scroll: validScroll(previous.scroll) } : {}), at: Date.now() };
   b.entries[e.id] = e; b.latest[url] = e.id; activeId = e.id;
   pendingPosition = scope && e.scroll ? pageMemoryContext() : null;
   return e;
@@ -176,6 +207,8 @@ export function setPageMemoryScope(next: PageScope) {
     scope = null;
     activeId = "";
     selectedRow = null;
+    pendingPosition = null;
+    sourceReplacement = null;
     return;
   }
   if (lastConfirmedScope !== null && lastConfirmedScope !== next) {
@@ -213,7 +246,8 @@ export function setPageMemoryScope(next: PageScope) {
 }
 export function readPageSlot<T>(name: string, fallback: T): T {
   if (!scope) return fallback;
-  const value = book().entries[activeId]?.state[name];
+  const entry = book().entries[activeId];
+  let value = entry?.state[name];
   function valid(v: unknown, template: unknown): boolean {
     if (template === null) return v === null || (typeof v === "number" && Number.isSafeInteger(v) && v > 0);
     if (typeof template === "number") return typeof v === "number" && Number.isFinite(v) && v >= 1 && Number.isSafeInteger(v);
@@ -221,6 +255,15 @@ export function readPageSlot<T>(name: string, fallback: T): T {
     if (typeof template === "boolean") return typeof v === "boolean";
     if (template && typeof template === "object" && !Array.isArray(template)) return !!v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === Object.keys(template).length && Object.entries(template).every(([k, x]) => valid((v as Record<string, unknown>)[k], x));
     return false;
+  }
+  // The only known old schema loss is starredOnly in customer filter objects.
+  // Never merge arbitrary partial/corrupt records, nor claim a lost true is recoverable.
+  if ((name === "draftFilters" || name === "appliedFilters") && value && typeof value === "object" && !Array.isArray(value)
+    && fallback && typeof fallback === "object" && !Array.isArray(fallback)
+    && (fallback as Record<string, unknown>).starredOnly === false
+    && !Object.prototype.hasOwnProperty.call(value, "starredOnly")) {
+    const migrated = { ...value, starredOnly: false };
+    if (valid(migrated, fallback)) { value = migrated; if (entry) { entry.state[name] = migrated; persist(); } }
   }
   return value !== undefined && valid(value, fallback) ? value as T : fallback;
 }
@@ -258,21 +301,26 @@ export function flushPagePosition() {
   const row = selectedRow?.isConnected ? selectedRow : null;
   const containers: NonNullable<ScrollSnapshot["containers"]> = [];
   for (const element of Array.from(document.querySelectorAll<HTMLElement>("[data-page-memory-scroll], main [class*='overflow-']"))) {
-    if (!element.scrollLeft && !element.scrollTop) continue;
-    const path = elementPath(element); if (path) containers.push({ path, x: element.scrollLeft, y: element.scrollTop });
+    if (!element.scrollLeft && !element.scrollTop && !element.hasAttribute("data-page-memory-scroll")) continue;
+    const path = elementPath(element), key = element.dataset.pageMemoryScroll;
+    if (path) containers.push({ path, ...(stableKey(key) ? { key } : {}), x: element.scrollLeft, y: element.scrollTop });
     if (containers.length >= 8) break;
   }
-  e.scroll = { x: window.scrollX, y: window.scrollY, ...(row?.dataset.pageMemoryRow ? { row: row.dataset.pageMemoryRow, offset: row.getBoundingClientRect().top } : {}), containers };
+  const rowKey = row?.dataset.customerId ?? row?.dataset.rowKey ?? row?.dataset.pageMemoryRow;
+  e.scroll = { x: window.scrollX, y: window.scrollY, ...(stableKey(rowKey) ? { row: rowKey, offset: row!.getBoundingClientRect().top } : {}), containers };
   e.at = Date.now(); persist();
 }
-export function restorePagePosition(): () => void {
+export function restorePagePosition(onComplete?: () => void): () => void {
   const context = pageMemoryContext();
   const snapshot = book().entries[activeId]?.scroll;
-  if (!snapshot || !scope) return () => {};
+  if (!snapshot || !scope) { onComplete?.(); return () => {}; }
   let stopped = false; let frame = 0; let tries = 0;
   const stop = (release = false) => {
     stopped = true; cancelAnimationFrame(frame); cleanup();
-    if (release && pendingPosition === context) { pendingPosition = null; flushPagePosition(); }
+    if (release && context === pageMemoryContext()) {
+      if (pendingPosition === context) pendingPosition = null;
+      flushPagePosition(); onComplete?.();
+    }
   };
   const cancelEvents = ["wheel", "touchstart", "pointerdown", "keydown"];
   const onKey = (event: Event) => {
@@ -284,8 +332,13 @@ export function restorePagePosition(): () => void {
   function apply() {
     if (stopped || context !== pageMemoryContext()) { stop(); return; }
     tries++;
-    for (const c of snapshot!.containers ?? []) { const element = elementAt(c.path); if (element) { element.scrollLeft = c.x; element.scrollTop = c.y; } }
-    const row = snapshot!.row ? Array.from(document.querySelectorAll<HTMLElement>("[data-page-memory-row]")).find(e => e.dataset.pageMemoryRow === snapshot!.row) : null;
+    for (const c of snapshot!.containers ?? []) {
+      const element = c.key ? Array.from(document.querySelectorAll<HTMLElement>("[data-page-memory-scroll]"))
+        .find(e => e.dataset.pageMemoryScroll === c.key) : elementAt(c.path);
+      if (element) { element.scrollLeft = c.x; element.scrollTop = c.y; }
+    }
+    const row = snapshot!.row ? Array.from(document.querySelectorAll<HTMLElement>("[data-customer-id], [data-row-key], [data-page-memory-row]"))
+      .find(e => (e.dataset.customerId ?? e.dataset.rowKey ?? e.dataset.pageMemoryRow) === snapshot!.row) : null;
     const requested = row ? window.scrollY + row.getBoundingClientRect().top - (snapshot!.offset ?? 0) : snapshot!.y;
     const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     window.scrollTo({ left: snapshot!.x, top: Math.max(0, Math.min(requested, max)), behavior: "instant" as ScrollBehavior });
@@ -294,7 +347,9 @@ export function restorePagePosition(): () => void {
     else {
       if (row && popReturn) {
         const old = row.style.outline; row.style.outline = "2px solid #bfdbfe";
-        window.setTimeout(() => { if (row.style.outline === "rgb(191, 219, 254) solid 2px" || row.style.outline === "2px solid rgb(191, 219, 254)") row.style.outline = old; }, 1600);
+        const highlight = row.style.outline;
+        row.dataset.pageMemoryHighlight = "true";
+        window.setTimeout(() => { if (row.style.outline === highlight) row.style.outline = old; delete row.dataset.pageMemoryHighlight; }, 1600);
       }
       selectedRow = row ?? null;
       popReturn = false; stop(true);
@@ -306,10 +361,21 @@ export function restorePagePosition(): () => void {
 let rawReplace: typeof history.replaceState | null = null;
 export function returnToPageSource(navigate: (url: string, options?: { replace?: boolean }) => void, fallback: string) {
   const b = book(), e = b.entries[activeId], parent = e?.from ? b.entries[e.from] : null;
-  if (scope && parent?.scope === scope && safePageUrl(parent.url) && parent.id !== e.id) {
+  const m = metadata();
+  const source = scope && parent?.scope === scope && safePageUrl(parent.url) && parent.id !== e?.id ? parent : null;
+  if (source && e.previous === source.id && m?.id === e.id && m.scope === scope && m.previous === source.id && currentUrl() === e.url && history.length > 1) {
     flushPagePosition(); history.back(); return;
   }
-  navigate(safePageUrl(fallback) ?? "/customers", { replace: true });
+  // Memory URLs are browser URLs; imported pages navigate relative to /workbench.
+  const base = window.location.pathname.startsWith("/workbench/") ? "/workbench" : "";
+  const safeFallback = safePageUrl(fallback) ?? "/customers";
+  const fallbackUrl = new URL(base && !safeFallback.startsWith(base + "/") ? base + safeFallback : safeFallback, window.location.origin);
+  const merchant = new URLSearchParams(window.location.search).getAll("merchantId");
+  if (base && !fallbackUrl.searchParams.has("merchantId") && merchant.length === 1 && /^\d+$/.test(merchant[0])) fallbackUrl.searchParams.set("merchantId", merchant[0]);
+  const destination = source ?? (scope ? previousRouteEntry(fallbackUrl.pathname) : undefined);
+  const target = destination?.url ?? fallbackUrl.pathname + fallbackUrl.search + fallbackUrl.hash;
+  if (destination) sourceReplacement = { context: pageMemoryContext(), entry: destination };
+  navigate(base && target.startsWith(base + "/") ? target.slice(base.length) : base ? "~" + target : target, { replace: true });
 }
 export function installPageMemory() {
   if (installed || typeof window === "undefined") return;
@@ -327,10 +393,12 @@ export function installPageMemory() {
     flushPagePosition();
     if (!target) return push.call(this, data, title, url);
     const pendingOrigin = !scope ? metadata()?.id : null;
-    const e = seed(target, activeId || pendingOrigin || null);
+    const predecessor = activeId || pendingOrigin || null;
+    const e = seed(target, predecessor, predecessor);
+    sourceReplacement = null;
     selectedRow = null; popReturn = false;
     const state = data && typeof data === "object" ? data : {};
-    push.call(this, { ...state, [META]: { id: e.id, scope: e.scope } }, title, url);
+    push.call(this, { ...state, [META]: { id: e.id, scope: e.scope, previous: e.previous } }, title, url);
     persist(); notify();
   };
   history.replaceState = function (data, title, url) {
@@ -338,22 +406,30 @@ export function installPageMemory() {
     if (target.origin !== window.location.origin) return rawReplace!.call(this, data, title, url);
     const next = target.pathname + target.search + target.hash;
     let e = book().entries[activeId];
-    if (!e || route(e.url) !== route(next)) {
+    const replacement = sourceReplacement?.context === pageMemoryContext() && sourceReplacement.entry.scope === scope && sourceReplacement.entry.url === next ? sourceReplacement.entry : null;
+    sourceReplacement = null;
+    if (replacement) {
+      e = seed(next, replacement.from, e?.previous ?? null);
+      e.state = structuredClone(replacement.state); e.scroll = validScroll(replacement.scroll);
+      pendingPosition = e.scroll ? pageMemoryContext() : null;
+      selectedRow = null; popReturn = true;
+    } else if (!e || route(e.url) !== route(next)) {
       flushPagePosition();
-      e = seed(next, e?.from ?? null);
+      e = seed(next, e?.from ?? null, e?.previous ?? null);
       selectedRow = null;
     }
     // Same-page URL cleanup (create/follow flags) keeps entry identity and source.
     if (e.url !== next && book().latest[e.url] === e.id) delete book().latest[e.url];
     e.url = next; e.at = Date.now(); book().latest[next] = e.id;
     const state = data && typeof data === "object" ? data : {};
-    rawReplace!.call(this, { ...state, [META]: { id: e.id, scope: e.scope } }, title, url);
+    rawReplace!.call(this, { ...state, [META]: { id: e.id, scope: e.scope, previous: e.previous ?? null } }, title, url);
     persist(); notify();
   };
   window.addEventListener("popstate", () => {
     // The old page's hook already saved states synchronously; preserve its last scroll.
     flushPagePosition();
     const m = metadata(), b = book();
+    sourceReplacement = null;
     if (!scope && m?.scope) activeId = "";
     else if (m?.scope === scope && b.entries[m.id]) activeId = m.id;
     else mark(seed(currentUrl()), rawReplace!);
@@ -363,7 +439,7 @@ export function installPageMemory() {
   document.addEventListener("click", event => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    const row = target.closest<HTMLElement>("[data-page-memory-row]");
+    const row = target.closest<HTMLElement>("[data-customer-id], [data-row-key], [data-page-memory-row]");
     if (row) { selectedRow = row; pendingPosition = null; }
     flushPagePosition();
   }, true);

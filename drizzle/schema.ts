@@ -204,6 +204,36 @@ export const adminUsers = mysqlTable("admin_users", {
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 
+/** Permanent retirement receipt and cross-service saga; never purge with ordinary logs. */
+export const adminStaffArchives = mysqlTable("admin_staff_archives", {
+  id: int("id").autoincrement().primaryKey(),
+  adminUserId: int("adminUserId").notNull(),
+  merchantId: int("merchantId"),
+  enterpriseId: int("enterpriseId"),
+  frontUserId: int("frontUserId"),
+  actorAdminUserId: int("actorAdminUserId").notNull(),
+  actorFrontUserId: int("actorFrontUserId"),
+  bindingVersion: int("bindingVersion").notNull(),
+  actorBindingVersion: int("actorBindingVersion"),
+  expectedSessionVersion: int("expectedSessionVersion").notNull(),
+  resultingSessionVersion: int("resultingSessionVersion").notNull(),
+  requestId: varchar("requestId", { length: 64 }).notNull(),
+  expectedRevision: varchar("expectedRevision", { length: 64 }),
+  nextOwnerUserId: int("nextOwnerUserId"),
+  enterpriseBinding: json("enterpriseBinding").$type<{ creditCode?: string; registrationIdentifier?: string; expectedOwnerUserId: number }>(),
+  state: mysqlEnum("state", ["access_closed", "retryable", "completed"]).notNull(),
+  attemptCount: int("attemptCount").default(0).notNull(),
+  lastError: varchar("lastError", { length: 512 }),
+  archivedAt: timestamp("archivedAt").default(DEFAULT_NOW).notNull(),
+  completedAt: timestamp("completedAt"),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+}, table => ({
+  adminUnique: uniqueIndex("admin_staff_archives_admin_unique").on(table.adminUserId),
+  requestUnique: uniqueIndex("admin_staff_archives_request_unique").on(table.requestId),
+  pendingIdx: index("admin_staff_archives_pending_idx").on(table.state, table.updatedAt),
+}));
+export type AdminStaffArchive = typeof adminStaffArchives.$inferSelect;
+
 /**
  * 后台员工到主站真实前台用户的当前业务主体绑定。
  *

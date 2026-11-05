@@ -51,19 +51,19 @@ export function freshListOptions<T extends object>(options: T, ready: boolean) {
   return { ...options, enabled: ready && enabled !== false, staleTime: 0, refetchOnMount: "always" as const };
 }
 
-type ListQuery = {
+export type ListQuery = {
   data?: unknown; dataUpdatedAt?: number; isFetching?: boolean;
   isPending?: boolean; isLoading?: boolean; isError?: boolean; isFetchedAfterMount?: boolean;
 };
+/** active must prove the query's current authorized data is actually rendered. */
 export function useListPositionRestore(query: ListQuery, active = true) {
   const context = pageMemoryContext();
   const restored = useRef("");
-  const latest = useRef(query); latest.current = query;
   useEffect(() => {
     if (!active || !pageMemoryScope() || restored.current === context || query.data === undefined || query.isFetching || query.isLoading || query.isPending || query.isError || query.isFetchedAfterMount === false) return;
-    restored.current = context;
-    const stop = restorePagePosition();
-    return () => { stop(); restored.current = ""; };
+    // Completion, not starting a frame, consumes the pending restore. If fresh
+    // data becomes pending mid-layout, cleanup cancels but leaves it retryable.
+    return restorePagePosition(() => { if (context === pageMemoryContext()) restored.current = context; });
   }, [active, context, query.dataUpdatedAt, query.isFetching, query.isLoading, query.isPending, query.isError, query.isFetchedAfterMount, query.data]);
 }
 

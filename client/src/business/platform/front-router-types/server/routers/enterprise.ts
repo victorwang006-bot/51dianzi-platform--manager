@@ -40,6 +40,7 @@ import {
   getEnterpriseBusinessHandoffState,
   listEnterpriseInquiryInbox,
 } from "../services/enterpriseBusinessHandoff";
+import { previewEnterpriseMemberArchive, archiveEnterpriseMember } from "../services/enterpriseMemberArchive";
 
 const permissionSchema = z.enum(ERP_PERMISSION_KEYS);
 const requestIdSchema = z.string().min(8).max(64).default(() => randomUUID());
@@ -135,6 +136,19 @@ export const enterpriseRouter = router({
 
   members: protectedProcedure.query(({ ctx }) =>
     listEnterpriseMembersWithPermissions(ctx.user.id)),
+
+  archivePreview: protectedProcedure
+    .input(z.object({ userId: z.number().int().positive() }))
+    .query(({ ctx, input }) => previewEnterpriseMemberArchive({ actorUserId: ctx.user.id, targetUserId: input.userId })),
+
+  archiveMember: protectedProcedure
+    .input(z.object({
+      userId: z.number().int().positive(), nextOwnerUserId: z.number().int().positive().optional(),
+      requestId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+      expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+    }))
+    .mutation(({ ctx, input }) => archiveEnterpriseMember({ actorUserId: ctx.user.id, targetUserId: input.userId,
+      nextOwnerUserId: input.nextOwnerUserId, requestId: input.requestId, expectedRevision: input.expectedRevision })),
 
   businessHandoffPreview: protectedProcedure
     .input(businessHandoffScopeSchema.refine(validBusinessHandoffScope, "请选择有效的库存交接范围"))

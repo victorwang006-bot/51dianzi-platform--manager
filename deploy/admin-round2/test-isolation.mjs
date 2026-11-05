@@ -1,0 +1,11 @@
+import { vi } from 'vitest';
+import net from 'node:net';
+import tls from 'node:tls';
+import http from 'node:http';
+import https from 'node:https';
+import dgram from 'node:dgram';
+const deny = () => { throw new Error('OFFLINE SAFETY: network/DB connection forbidden; use an explicit nonDB fixture'); };
+for (const [obj, names] of [[net,['connect','createConnection']],[tls,['connect']],[http,['request','get']],[https,['request','get']],[dgram,['createSocket']]]) for (const name of names) vi.spyOn(obj, name).mockImplementation(deny);
+vi.spyOn(net.Socket.prototype, 'connect').mockImplementation(deny);
+vi.stubGlobal('fetch', deny);
+for (const key of Object.keys(process.env)) if (/(?:DATABASE_URL|MYSQL|STAFF_ORG_MYSQL_TEST|DB_HOST|DB_PASS|DB_PORT|DB_USER|PRODUCTION_ENV|AUTH_SECRET|TOKEN|API_KEY)/i.test(key)) throw new Error('OFFLINE SAFETY: forbidden inherited credential/DB env key');

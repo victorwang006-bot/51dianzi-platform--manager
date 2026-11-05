@@ -248,7 +248,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
         } catch (error) { return asTrpcError(error); }
       }),
     listTeamMaterials: readProcedure
-      .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), uploadBatchId: positiveInt.optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
+      .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), uploadBatchId: positiveInt.optional(), industryCode: z.union([businessIndustryCodeSchema, z.literal("unset")]).optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
       .query(async ({ ctx, input }) => {
         try {
           assertExpectedContext(ctx, input);

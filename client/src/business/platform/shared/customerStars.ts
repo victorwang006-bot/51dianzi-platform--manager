@@ -18,6 +18,8 @@ export const customerSetStarSchema = z.object({
   requestId: customerRequestIdSchema,
   expectedEnterpriseId: positiveId,
   expectedActorUserId: positiveId,
+  /** Opt-in current-assignee fence; omission preserves historical personal preferences. */
+  starMode: z.literal("assignee").optional(),
 }).strict();
 export const customerSetStarResultSchema = z.object({
   customerId: positiveId,
@@ -31,9 +33,24 @@ export const customerSetStarResultSchema = z.object({
 export const customerStarMetadataSchema = z.object({
   isStarred: z.boolean(),
   starRevision: z.number().int().min(0).max(2147483647),
-  starUserId: positiveId,
+  starUserId: positiveId.nullable(),
   canSetStar: z.boolean(),
 }).strict();
+/** One exact authorized customer, no keyword scan or caller-selected target. */
+export const customerStarStateInputSchema = z.object({
+  customerId: positiveId,
+  starMode: z.literal("assignee"),
+  expectedEnterpriseId: positiveId,
+  expectedActorUserId: positiveId,
+}).strict();
+export const customerStarStateSchema = customerStarMetadataSchema.extend({
+  enterpriseId: positiveId,
+  actorUserId: positiveId,
+  customerId: positiveId,
+  assignedUserId: positiveId.nullable(),
+}).strict();
+export type CustomerStarStateInput = z.infer<typeof customerStarStateInputSchema>;
+export type CustomerStarState = z.infer<typeof customerStarStateSchema>;
 export type CustomerStarContextInput = z.infer<typeof customerStarContextInputSchema>;
 export type CustomerStarContext = z.infer<typeof customerStarContextSchema>;
 export type CustomerSetStarInput = z.infer<typeof customerSetStarSchema>;

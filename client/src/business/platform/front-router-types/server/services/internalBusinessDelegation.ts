@@ -76,6 +76,7 @@ export const BUSINESS_METHOD_IDS = [
   "inbound.markPaymentUnpaid", "inbound.recordPayment", "inbound.voidPayment", "inbound.receive", "inbound.cancelPreview",
   "inbound.cancelMany", "inbound.cancel", "inbound.remove",
   "customer.context", "customer.list", "customer.get", "customer.ownershipSearch", "customer.checkDuplicate",
+  "customer.starContext", "customer.starState", "customer.setStar",
   "customerDemand.quoteAccept", "customer.create", "customer.update", "customer.addFollowUp", "customer.archive", "customer.restore", "customer.transfer",
   "customer.createMulti", "customer.contactsList", "customer.contactsSummary", "customer.contactsAdd",
   "customer.contactsEdit", "customer.contactsStop", "customer.contactsSetPrimary", "customer.updateBasic",
@@ -88,6 +89,7 @@ export const BUSINESS_METHOD_IDS = [
   "purchaseOrder.create", "purchaseOrder.updatePayment", "purchaseOrder.updateShipping", "purchaseOrder.linkInbound",
   "purchaseOrder.recordInvoice", "purchaseOrder.voidInvoice", "purchaseOrder.cancel",
   "enterprise.me", "enterprise.members", "enterprise.invitations", "enterprise.myInvitations", "enterprise.userRecords",
+  "enterprise.archivePreview", "enterprise.archiveMember",
   "enterprise.businessHandoffPreview", "enterprise.businessHandoffState", "enterprise.inquiryInbox", "enterprise.handoffPreview",
   "enterprise.invite", "enterprise.revokeInvitation", "enterprise.updatePermissions", "enterprise.updateInventoryScope", "enterprise.setStatus",
   "enterprise.handoffMemberBusiness", "enterprise.businessHandoff", "enterprise.sendOwnershipTransferCode",
@@ -168,6 +170,7 @@ for (const method of [
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = INVENTORY_INBOUND;
 for (const method of [
   "customer.context", "customer.list", "customer.get", "customer.ownershipSearch", "customer.checkDuplicate", "customerDemand.suggestPartNumbers",
+  "customer.starContext", "customer.starState", "customer.setStar",
   "customer.contactsList", "customer.contactsSummary",
   "customerDemand.list", "customerDemand.salesList", "customerDemand.get", "customerDemand.revisionHistory",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = CUSTOMER_READ;
@@ -198,9 +201,11 @@ for (const method of ["purchaseOrder.create", "purchaseOrder.updatePayment", "pu
 for (const method of [
   "enterprise.members", "enterprise.invitations", "enterprise.myInvitations", "enterprise.userRecords", "enterprise.businessHandoffPreview",
   "enterprise.businessHandoffState", "enterprise.handoffPreview",
+  "enterprise.archivePreview",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = MEMBER_MANAGE_READ;
 for (const method of [
   "enterprise.invite", "enterprise.revokeInvitation", "enterprise.updatePermissions", "enterprise.updateInventoryScope", "enterprise.setStatus",
+  "enterprise.archiveMember",
   "enterprise.handoffMemberBusiness", "enterprise.businessHandoff", "enterprise.sendOwnershipTransferCode", "enterprise.verifyOwnershipTransferCode",
   "enterprise.transferOwnership",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = MEMBER_MANAGE;

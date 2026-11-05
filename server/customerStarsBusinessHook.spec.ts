@@ -3,8 +3,8 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../client/src/business/platform/front-router-types/server/routers";
 import { createBusinessTrpcClient } from "../client/src/business/api/business-trpc";
-import { customerSetStarSchema, customerStarContextInputSchema } from "../client/src/business/platform/shared/customerStars";
-import { customerListSchema } from "../client/src/business/platform/shared/crmCustomers";
+import { customerSetStarSchema, customerStarContextInputSchema, customerStarStateInputSchema } from "../client/src/business/platform/shared/customerStars";
+import { customerListInputSchema as customerListSchema } from "../client/src/business/platform/front-router-types/server/customerListInput";
 import type { TrpcContext } from "./_core/context";
 
 const state = vi.hoisted(() => ({ read: true, binding: true, scope: true, paths: [] as string[], forwarded: [] as Record<string, any>[], audit: vi.fn(), fence: vi.fn() }));
@@ -45,7 +45,7 @@ function canonicalOutputs(context: Outputs["starContext"], result: Outputs["setS
   const idempotent: boolean = result.idempotent;
   const rowStarred: boolean = list.items[0].isStarred;
   const rowRevision: number = list.items[0].starRevision;
-  const rowTarget: number = list.items[0].starUserId;
+  const rowTarget: number | null = list.items[0].starUserId;
   const allowed: boolean = list.items[0].canSetStar;
   // @ts-expect-error Output revisions are required numeric metadata, not optional.
   const absentRevision: undefined = list.items[0].starRevision;
@@ -78,6 +78,9 @@ beforeEach(() => {
     const params = payload.params;
     const response = payload.method === "customer.starContext"
       ? { enterpriseId: 501, actorUserId: 202, targets: [{ userId: 202, name: "self" }, { userId: 203, name: "same-team member" }] }
+      : payload.method === "customer.starState"
+        ? { enterpriseId: 501, actorUserId: 202, customerId: params.customerId, assignedUserId: 203,
+          isStarred: true, starRevision: 3, starUserId: 203, canSetStar: true }
       : payload.method === "customer.list"
         ? { items: [{ id: 11, isStarred: false, starRevision: 0, starUserId: 203, canSetStar: true }], total: 1, page: 1, pageSize: 20 }
         : { customerId: params.customerId, targetUserId: params.targetUserId, isStarred: params.starred, starRevision: params.expectedRevision + 1, requestId: params.requestId,
@@ -88,6 +91,29 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("personal stars fixed BFF preference surface", () => {
+  it("forwards exact assignee state under customer read and retains mode on list and explicit writes", async () => {
+    const client = createBusinessTrpcClient(51);
+    const input = { customerId: 11, starMode: "assignee" as const, expectedEnterpriseId: 501, expectedActorUserId: 202 };
+    expect(await client.customer.starState.query(input)).toMatchObject({ customerId: 11, assignedUserId: 203, starUserId: 203, isStarred: true });
+    expect(state.forwarded[0].params).toEqual(customerStarStateInputSchema.parse(input));
+    await client.customer.list.query({ scope: "all", starMode: "assignee", page: 1, pageSize: 20 });
+    expect(state.forwarded[1].params.starMode).toBe("assignee");
+    await client.customer.setStar.mutate({ ...setInput, targetUserId: 203, starMode: "assignee" });
+    expect(state.forwarded[2].params).toMatchObject({ targetUserId: 203, starMode: "assignee", starred: true });
+    expect(BUSINESS_METHOD_CAPABILITIES.find(item => item.method === "customer.starState")).toMatchObject({ mode: "read" });
+  });
+
+  it("rejects caller-selected target and unknown modes on state reads and denies revoked CRM access", async () => {
+    const client = createBusinessTrpcClient(51);
+    const input = { customerId: 11, starMode: "assignee" as const, expectedEnterpriseId: 501, expectedActorUserId: 202 };
+    for (const extra of [{ targetUserId: 999 }, { method: "customer.archive" }, { starMode: "all" }, { customerId: 0 }]) {
+      await expect(client.customer.starState.query({ ...input, ...extra } as never)).rejects.toMatchObject({ data: { code: "BAD_REQUEST" } });
+    }
+    state.read = false;
+    await expect(client.customer.starState.query(input)).rejects.toMatchObject({ data: { code: "FORBIDDEN" } });
+    expect(state.forwarded).toEqual([]);
+  });
+
   it("serializes true/false and omitted-false with every original list condition and delegated target intact", async () => {
     const client = createBusinessTrpcClient(51);
     for (const starredOnly of [true, false, undefined]) {

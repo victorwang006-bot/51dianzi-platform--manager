@@ -1,4 +1,5 @@
-import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
+import { usePageMemory, freshListOptions, returnToPageSource } from "../hooks/usePageMemory";
+import { pageMemoryScope } from "../lib/pageMemory";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams, useSearch } from "wouter";
 import { toast } from "sonner";
@@ -65,18 +66,25 @@ type ActionDialog = "transfer" | "archive" | "restore" | null;
 
 export default function CustomerDetail() {
   const d51Ready = usePageMemory();
+  // Private form bodies stay in React only; a new real binding/account/tenant
+  // cannot reuse the previous identity's detail editor, even for the same id.
+  return <CustomerDetailPage key={pageMemoryScope() ?? "unresolved"} d51Ready={d51Ready} />;
+}
 
+function CustomerDetailPage({ d51Ready }: { d51Ready: boolean }) {
   const { id: idText } = useParams<{ id: string }>();
   const id = Number(idText);
   const validId = Number.isSafeInteger(id) && id > 0;
   const [, navigate] = useLocation();
   const search = useSearch();
   const utils = trpc.useUtils();
-  const contextQuery = trpc.customer.context.useQuery();
+  const contextQuery = trpc.customer.context.useQuery(undefined, freshListOptions({}, d51Ready));
   const contactScope = useCustomerContactScope(contextQuery.data);
-  const detailQuery = trpc.customer.get.useQuery({ id }, { enabled: validId });
-  const detail = detailQuery.data;
-  const customer = detail?.customer;
+  const authorityReady = d51Ready && contactScope.ready && !contextQuery.isError;
+  const detailQuery = trpc.customer.get.useQuery({ id }, freshListOptions({ enabled: validId && authorityReady, placeholderData: undefined }, d51Ready));
+  const detail = authorityReady && !detailQuery.isError && detailQuery.data?.customer.id === id
+    && detailQuery.data.customer.enterpriseId === contactScope.scope?.enterpriseId ? detailQuery.data : undefined;
+  const customer: CustomerRecord | undefined = detail?.customer;
   const isArchived = Boolean(customer?.archivedAt);
   const canManageAll = Boolean(contextQuery.data?.canManageAll);
 
@@ -104,6 +112,18 @@ export default function CustomerDetail() {
   const formVersion = useRef(1);
   const formCustomerId = useRef<number | null>(null);
   const followNextDirty = useRef(false);
+
+  useEffect(() => {
+    if (authorityReady && !detailQuery.isError) return;
+    setForm(null); formDirty.current = false; formCustomerId.current = null;
+    setBasicDirty(false); setBasicExpanded(false); setContactsOpen(false);
+    setFollowUp({ ...EMPTY_FOLLOW_UP, occurredAt: nowBeijingDateTimeLocal() });
+    setFollowOpen(false); setFollowDirty(false); followNextDirty.current = false;
+    followFingerprint.current = null; basicRequestRef.current = null;
+    setActionDialog(null); setActionReason(""); setTransferUserId("");
+    setPendingCorrection(null); setConfirmDiscardFollow(false); setConfirmUpdateDuplicate(false);
+    setEditError(""); setFollowUpError(""); setFieldErrors({});
+  }, [authorityReady, contactScope.identityKey, detailQuery.isError]);
 
   useEffect(() => {
     if (!customer) return;
@@ -354,7 +374,8 @@ export default function CustomerDetail() {
   };
 
   if (!validId) return <PlatformLayout><main className="erp-ui mx-auto max-w-4xl p-5"><ErrorState message="客户编号无效" onBack={() => returnToPageSource(navigate, "/customers")} /></main></PlatformLayout>;
-  if (detailQuery.isPending) return <PlatformLayout><main className="erp-ui mx-auto max-w-4xl p-5"><section className="rounded-lg border border-slate-200 bg-white p-12 text-center text-sm text-muted-foreground">加载客户详情中…</section></main></PlatformLayout>;
+  if (contextQuery.isError) return <PlatformLayout><main className="erp-ui mx-auto max-w-4xl p-5"><ErrorState message={`无法读取客户权限：${errorMessage(contextQuery.error)}`} onBack={() => returnToPageSource(navigate, "/customers")} onRetry={() => contextQuery.refetch()} /></main></PlatformLayout>;
+  if (!authorityReady || contextQuery.isPending || detailQuery.isPending) return <PlatformLayout><main className="erp-ui mx-auto max-w-4xl p-5"><section className="rounded-lg border border-slate-200 bg-white p-12 text-center text-sm text-muted-foreground">加载客户详情中…</section></main></PlatformLayout>;
   if (detailQuery.isError || !customer || !detail) return <PlatformLayout><main className="erp-ui mx-auto max-w-4xl p-5"><ErrorState message={detailQuery.isError ? errorMessage(detailQuery.error) : "未找到客户"} onBack={() => returnToPageSource(navigate, "/customers")} onRetry={() => detailQuery.refetch()} /></main></PlatformLayout>;
 
   const currentAssignee = contextQuery.data?.members.find(member => member.userId === customer.assignedUserId)?.name ?? customer.assignedName;

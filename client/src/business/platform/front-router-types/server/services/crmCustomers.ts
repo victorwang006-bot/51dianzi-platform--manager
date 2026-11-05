@@ -11,7 +11,7 @@ import type {
 import { getDb } from "../db";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 import { createRuntimeTeamBusinessAdapter } from "../teamManagement/businessRuntime.mjs";
-import { withCustomerStarAccess } from "./customerStars";
+import { withCustomerStarAccess, withCustomerAssigneeStarAccess, customerAssigneeStarWhere } from "./customerStars";
 import type { CustomerListItem } from "../../../shared/customerStars";
 
 export type CrmModulePolicy = Awaited<ReturnType<typeof resolveBusinessModuleAccess>>;
@@ -288,9 +288,12 @@ function mapCustomer(row: CustomerRow): CustomerRecord {
   };
 }
 
-function customerSelect(starUserId?: number) {
-  const starFields = starUserId === undefined ? sql`` : sql`, COALESCE(star_pref.starred, 0) AS isStarred, COALESCE(star_pref.revision, 0) AS starRevision`;
-  const starJoin = starUserId === undefined ? sql`` : sql`LEFT JOIN crm_customer_star_preferences star_pref
+function customerSelect(starUserId?: number, assigneeAllowed?: SQLWrapper) {
+  const starFields = starUserId === undefined && !assigneeAllowed ? sql`` : sql`, COALESCE(star_pref.starred, 0) AS isStarred, COALESCE(star_pref.revision, 0) AS starRevision
+    ${assigneeAllowed ? sql`, (${assigneeAllowed}) AS canSetStar` : sql``}`;
+  const starJoin = assigneeAllowed ? sql`LEFT JOIN crm_customer_star_preferences star_pref
+    ON star_pref.enterpriseId = c.enterpriseId AND star_pref.customerId = c.id AND star_pref.userId = c.assignedUserId AND ${assigneeAllowed}`
+    : starUserId === undefined ? sql`` : sql`LEFT JOIN crm_customer_star_preferences star_pref
     ON star_pref.enterpriseId = c.enterpriseId AND star_pref.customerId = c.id AND star_pref.userId = ${starUserId}`;
   return sql`
     SELECT c.id, c.enterpriseId, c.assignedUserId, c.createdByUserId, c.name, c.industryCode,
@@ -580,6 +583,7 @@ export function prepareCrmCustomerCreateExtension(
 export async function getCustomerContext(scope: CustomerServerScope): Promise<{
   actorUserId: number;
   canManageAll: boolean;
+  canReadAll: boolean;
   members: CustomerMember[];
 }> {
   const db = await requireDb();
@@ -601,8 +605,9 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
     SELECT p.permissionKey FROM enterprise_member_permissions p WHERE p.enterpriseMemberId = ${actor.id}
   `));
   const canManageAll = policy.write && policy.scope === "enterprise" && (owner || permissionRows.some(row => row.permissionKey === CUSTOMER_ALL_PERMISSION));
+  const canReadAll = policy.read && (policy.scope === "enterprise" || (policy.scope === "team" && policy.explicit && policy.teamRole === "leader" && Boolean(policy.teamId)));
   if (!canManageAll) {
-    return { actorUserId: scope.actorUserId, canManageAll: false, members: [{ userId: scope.actorUserId, name: displayName(actor.name, scope.actorUserId) }] };
+    return { actorUserId: scope.actorUserId, canManageAll: false, canReadAll, members: [{ userId: scope.actorUserId, name: displayName(actor.name, scope.actorUserId) }] };
   }
   const members = resultRows<{ userId: number; name: string | null }>(await db.execute(sql`
     SELECT em.userId, COALESCE(u.name, u.username, CONCAT('用户', u.id)) AS name
@@ -620,18 +625,25 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
        )
      ORDER BY em.userId
   `));
-  return { actorUserId: scope.actorUserId, canManageAll: true, members: members.map(member => ({ userId: Number(member.userId), name: displayName(member.name, Number(member.userId)) })) };
+  return { actorUserId: scope.actorUserId, canManageAll: true, canReadAll, members: members.map(member => ({ userId: Number(member.userId), name: displayName(member.name, Number(member.userId)) })) };
 }
 
 export async function listCustomers(scope: CustomerServerScope, input: {
   keyword: string; grade?: CustomerRecord["grade"]; stage?: CustomerRecord["stage"];
   scope: "mine" | "all"; assignedUserId?: number; archived: boolean; due: "all" | "today" | "overdue";
-  page: number; pageSize: number; starUserId?: number; starredOnly?: boolean;
+  page: number; pageSize: number; starUserId?: number; starredOnly?: boolean; starMode?: "assignee";
+  expectedEnterpriseId?: number; expectedActorUserId?: number;
 }) {
+  if ((input.expectedEnterpriseId !== undefined && input.expectedEnterpriseId !== scope.enterpriseId)
+    || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "账号或企业已切换，请刷新后重试" });
+  }
+  if (input.starMode === "assignee" && input.starUserId !== undefined) throw new TRPCError({ code: "BAD_REQUEST", message: "负责人口径不能同时选择星标归属" });
   const starUserId = input.starUserId ?? scope.actorUserId;
-  return withCustomerStarAccess(scope, starUserId, async (db, access) => {
+  const assigneeMode = input.starMode === "assignee";
+  const read = async (db: CrmSqlExecutor, access: { actorPolicy: CrmModulePolicy; targetPolicy: CrmModulePolicy; assigneeAllowed?: SQLWrapper }) => {
   const conditions = [crmCustomerPolicyWhere(scope, access.actorPolicy)];
-  const delegated = starUserId !== scope.actorUserId;
+  const delegated = !assigneeMode && starUserId !== scope.actorUserId;
   if (delegated) {
     if (input.scope !== "all" || input.assignedUserId !== starUserId) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "组员星标列表须选择对应组员负责人" });
@@ -672,9 +684,10 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   // and page cardinality identical, using the v19 enterprise/user/starred index prefix.
   if (input.starredOnly === true) conditions.push(sql`EXISTS (
     SELECT 1 FROM crm_customer_star_preferences star_filter
-     WHERE star_filter.enterpriseId = ${scope.enterpriseId} AND star_filter.userId = ${starUserId}
+     WHERE star_filter.enterpriseId = ${scope.enterpriseId} AND star_filter.userId = ${assigneeMode ? sql`c.assignedUserId` : sql`${starUserId}`}
        AND star_filter.starred = 1 AND star_filter.customerId = c.id
        AND star_filter.enterpriseId = c.enterpriseId
+       ${access.assigneeAllowed ? sql`AND ${access.assigneeAllowed}` : sql``}
   )`);
   const where = sql.join(conditions, sql` AND `);
   const offset = (input.page - 1) * input.pageSize;
@@ -683,18 +696,23 @@ export async function listCustomers(scope: CustomerServerScope, input: {
       LEFT JOIN crm_customer_contacts cc ON cc.customerId = c.id AND cc.isPrimary = 1
      WHERE ${where}
   `))[0];
-  const rows = resultRows<CustomerRow & { isStarred: number | boolean | string; starRevision: number }>(await db.execute(sql`
-    ${customerSelect(starUserId)}
+  const rows = resultRows<CustomerRow & { isStarred: number | boolean | string; starRevision: number; canSetStar?: unknown }>(await db.execute(sql`
+    ${customerSelect(assigneeMode ? undefined : starUserId, access.assigneeAllowed)}
      WHERE ${where}
      ORDER BY COALESCE(star_pref.starred, 0) DESC, c.updatedAt DESC, c.id DESC
      LIMIT ${input.pageSize} OFFSET ${offset}
   `));
-  const items: CustomerListItem[] = rows.map(row => ({ ...mapCustomer(row),
-    isStarred: row.isStarred === true || row.isStarred === 1 || row.isStarred === "1",
-    starRevision: Number(row.starRevision ?? 0), starUserId, canSetStar: true,
-  }));
-  return { items, total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
+  const items: CustomerListItem[] = rows.map(row => {
+    const target = assigneeMode ? Number.isSafeInteger(Number(row.assignedUserId)) && Number(row.assignedUserId) > 0 ? Number(row.assignedUserId) : null : starUserId;
+    const canSetStar = !assigneeMode || (target !== null && (row.canSetStar === true || row.canSetStar === 1 || row.canSetStar === "1"));
+    return { ...mapCustomer(row), isStarred: canSetStar && (row.isStarred === true || row.isStarred === 1 || row.isStarred === "1"),
+      starRevision: canSetStar ? Number(row.starRevision ?? 0) : 0, starUserId: target, canSetStar };
   });
+  return { items, total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
+  };
+  return assigneeMode ? withCustomerAssigneeStarAccess(scope, (db, access) => read(db, {
+    actorPolicy: access.actorPolicy, targetPolicy: access.actorPolicy, assigneeAllowed: customerAssigneeStarWhere(scope, access.targets),
+  })) : withCustomerStarAccess(scope, starUserId, read);
 }
 
 export async function getCustomer(scope: CustomerServerScope, id: number) {

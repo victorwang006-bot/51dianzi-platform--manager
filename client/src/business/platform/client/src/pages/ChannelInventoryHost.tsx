@@ -44,6 +44,7 @@ type MaterialFilters = {
   brand: string;
   type: "all" | ChannelType;
   uploadBatchId?: string;
+  industryCode?: "all" | NonNullable<ChannelInventoryInputs["listTeamMaterials"]["industryCode"]>;
 };
 
 type ChannelForm = {
@@ -592,6 +593,7 @@ export default function ChannelInventoryHost() {
     partNumber: contextCurrent ? materialFilters.partNumber.normalize("NFKC").trim() || undefined : undefined,
     brand: contextCurrent ? materialFilters.brand.trim() || undefined : undefined,
     channelId: materialChannelId,
+    industryCode: contextCurrent && materialFilters.industryCode !== "all" ? materialFilters.industryCode : undefined,
     uploadBatchId: uploadBatchFilterValid && rawUploadBatchId ? parsedUploadBatchId : undefined,
     page: contextCurrent ? materialPage : 1,
     pageSize: PAGE_SIZE,
@@ -1079,9 +1081,11 @@ export default function ChannelInventoryHost() {
   const canWriteMaterials = nativeWrite && hasInventoryWrite && ready && !materialsQuery.isError && contextCurrent && materialsQuery.data?.canWrite === true
     && (!supplyLink || (supplyLink.tab === "channels" ? exactReady : exactSourceReadable && Boolean(materialResult)));
   const channelPageCount = supplyLink ? 1 : Math.max(1, channelResult?.pageCount ?? 1);
-  const materialTotalsRef = useRef({ identity: "", total: 0, pageCount: 1 });
-  if (materialResult) materialTotalsRef.current = { identity, total: materialResult.total, pageCount: Math.max(1, materialResult.pageCount) };
-  const materialTotals = !materialsQuery.isError && contextCurrent && (!supplyLink || Boolean(materialResult)) && materialTotalsRef.current.identity === identity
+  const materialTotalsKey = JSON.stringify([identity, materialInput.channelId, materialInput.partNumber, materialInput.brand,
+    materialInput.industryCode, materialInput.uploadBatchId, materialInput.sortBy, materialInput.sortDirection]);
+  const materialTotalsRef = useRef({ key: "", total: 0, pageCount: 1 });
+  if (materialResult) materialTotalsRef.current = { key: materialTotalsKey, total: materialResult.total, pageCount: Math.max(1, materialResult.pageCount) };
+  const materialTotals = !materialsQuery.isError && contextCurrent && (!supplyLink || Boolean(materialResult)) && materialTotalsRef.current.key === materialTotalsKey
     ? materialTotalsRef.current : { total: 0, pageCount: 1 };
   const materialTotal = materialTotals.total;
   const materialPageCount = materialTotals.pageCount;
@@ -1184,14 +1188,23 @@ export default function ChannelInventoryHost() {
   }, [canWriteMaterials, batchOpen, channelOptionsQuery.isError, channelOptionsQuery.data?.canWrite]);
 
   const cycleSort = (field: "qty" | "dateCode") => {
-    setMaterialSort(current => current?.field !== field ? { field, direction: "asc" }
-      : current.direction === "asc" ? { field, direction: "desc" } : null);
+    const first = field === "qty" ? "desc" : "asc";
+    setMaterialSort(current => current?.field !== field ? { field, direction: first }
+      : current.direction === first ? { field, direction: first === "desc" ? "asc" : "desc" } : null);
     setMaterialPage(1);
   };
   const sortAria = (field: "qty" | "dateCode") => materialSort?.field === field
     ? materialSort.direction === "asc" ? "ascending" : "descending" : "none";
   const sortArrow = (field: "qty" | "dateCode") => materialSort?.field === field
     ? <span className="ci-sort-arrow" aria-hidden="true">{materialSort.direction === "asc" ? "↑" : "↓"}</span> : null;
+  const quantitySortLabel = materialSort?.field === "qty"
+    ? materialSort.direction === "desc" ? "数量从多到少" : "数量从少到多" : "数量默认顺序";
+  const quantitySortNext = materialSort?.field !== "qty" ? "点击数量从多到少"
+    : materialSort.direction === "desc" ? "点击数量从少到多" : "点击恢复默认顺序";
+  const quantitySortIcon = <svg className="ci-quantity-sort-icon" width="12" height="18" viewBox="0 0 12 18" aria-hidden="true">
+    <path className={materialSort?.field === "qty" && materialSort.direction === "asc" ? "ci-sort-active" : undefined} d="M2 7 L6 3 L10 7" />
+    <path className={materialSort?.field === "qty" && materialSort.direction === "desc" ? "ci-sort-active" : undefined} d="M2 11 L6 15 L10 11" />
+  </svg>;
 
   const managementCanWrite = canWriteMaterials && sourceContextVerified && sourceIdentityCurrent && !enterpriseQuery.isError && !readableChannelStockDenied;
   const deletion = useMaterialDeletion({ client: managementClient, context: expectedContext,
@@ -1233,7 +1246,8 @@ export default function ChannelInventoryHost() {
   return (
     <section className="ci-page ci-host" aria-label="渠道库存管理" data-channel-inventory-host>
       {tab === "materials" || tab === "channels" ? <div className="ci-tabbar">
-        <span aria-hidden="true" />
+        <h1 className="ci-page-title">{tab === "materials" ? "渠道库存" : "渠道档案"}</h1>
+        {tab === "materials" ? <div className="ci-inventory-view-controls" role="group" aria-label="库存查看方式"><button type="button" className={`ci-button${inventoryView === "flat" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "flat"} onClick={() => changeInventoryView("flat")}>平铺查看</button><button type="button" className={`ci-button${inventoryView === "channels" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "channels"} onClick={() => changeInventoryView("channels")}>按渠道查看</button></div> : null}
         <div className="ci-heading-actions" aria-label="渠道库存操作">
           {tab === "channels" ? (
             <button type="button" className="ci-button ci-primary" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
@@ -1246,7 +1260,7 @@ export default function ChannelInventoryHost() {
         </div>
       </div> : null}
 
-      {tab === "materials" ? <div className="ci-toolbar ci-inventory-view-controls" role="group" aria-label="库存查看方式"><button type="button" className={`ci-button${inventoryView === "flat" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "flat"} onClick={() => changeInventoryView("flat")}>平铺查看</button><button type="button" className={`ci-button${inventoryView === "channels" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "channels"} onClick={() => changeInventoryView("channels")}>按渠道查看</button>{currentReadableChannel ? <><span>当前渠道：{currentReadableChannel.name}</span><button type="button" className="ci-inline-link" onClick={() => changeInventoryView("channels")}>返回渠道列表</button></> : null}</div> : null}
+      {tab === "materials" && currentReadableChannel ? <div className="ci-supply-location"><span>当前渠道：{currentReadableChannel.name}</span><button type="button" className="ci-inline-link" onClick={() => changeInventoryView("channels")}>返回渠道列表</button></div> : null}
       {supplyLink ? <div className="ci-supply-location" role="status">
         {supplyTarget.key !== supplyLinkKey || supplyTarget.loading ? "正在精确核验客户关联渠道…" : supplyTarget.error
           ? <span className="ci-error">{supplyTarget.error}</span> : <span>已精确定位渠道 #{exactTarget?.id}：{exactTarget?.name}</span>}
@@ -1327,17 +1341,19 @@ export default function ChannelInventoryHost() {
             </select></label>
             <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">型号</span><input aria-label="筛选库存型号" value={materialFilters.partNumber} onChange={event => { setMaterialFilters(current => ({ ...current, partNumber: event.target.value })); setMaterialPage(1); }} placeholder="搜索型号" /></label>
             <label className="ci-field ci-brand-input"><span className="ci-filter-label">品牌</span><input aria-label="筛选库存品牌" value={materialFilters.brand} onChange={event => { setMaterialFilters(current => ({ ...current, brand: event.target.value })); setMaterialPage(1); }} placeholder="搜索品牌" /></label>
+            <label className="ci-field ci-industry-select"><span className="ci-filter-label">所属行业</span><select aria-label="筛选库存行业" value={materialFilters.industryCode ?? "all"} onChange={event => { setMaterialFilters(current => ({ ...current, industryCode: event.target.value as MaterialFilters["industryCode"] })); setMaterialPage(1); }}><option value="all">全部行业</option>{BUSINESS_INDUSTRY_OPTIONS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}<option value="unset">未设置</option></select></label>
             <label className="ci-field ci-upload-batch-filter"><span className="ci-filter-label">上传批次 ID</span><input aria-label="筛选上传批次 ID" inputMode="numeric" placeholder="上传批次 ID" value={materialFilters.uploadBatchId ?? ""} onChange={event => { setMaterialFilters(current => ({ ...current, uploadBatchId: event.target.value })); setMaterialPage(1); }} /></label>
             <button type="button" className="ci-button" onClick={() => { setMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" }); setMaterialPage(1); setMessage(""); }}>重置</button>
             <button type="button" className="ci-button" onClick={() => void refreshMaterials()}>刷新</button>
             <span className="ci-filter-count">{materialTotal} 条库存</span>
           </div>
+          <p className="ci-sort-status" id="ci-quantity-sort-status" role="status">{quantitySortLabel}{materialSort?.field === "qty" ? " · 待确认数量排末尾" : ""}</p>
           {!uploadBatchFilterValid ? <p className="ci-error" role="alert">上传批次 ID 须为正整数，未扩大展示其他库存。</p> : null}
           {readableChannelStockDenied ? <p className="ci-error" role="alert">当前渠道库存来源读取失败或权限已改变，未展示其他渠道库存。请返回渠道列表重新核验。</p> : null}
           {deletion.toolbar}{deletion.feedback}
           <div className="ci-tablewrap ci-compact-tablewrap">
             <table className={`ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable${showDeleteSelection ? " ci-stock-managed-table" : ""}`}>
-              <thead><tr>{showDeleteSelection ? <th className="ci-selection-col"><input type="checkbox" className="ci-selection-checkbox" aria-label="全选当前页可删除库存" disabled={!deletion.eligible.length || deletion.busy} checked={Boolean(deletion.eligible.length && deletion.selected.length === deletion.eligible.length)} ref={element => { if (element) element.indeterminate = deletion.selected.length > 0 && deletion.selected.length < deletion.eligible.length; }} onChange={deletion.selectAll} /></th> : null}<th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-recorder-col">负责人</th><th className="ci-material-industry-col">所属行业</th><th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button" aria-label="按可供数量排序" onClick={() => cycleSort("qty")}>可供数量{sortArrow("qty")}</button></th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>Date Code / 更新{sortArrow("dateCode")}</button></th><th className="ci-material-source-col">渠道来源</th><th className="ci-col-actions">操作</th></tr></thead>
+              <thead><tr>{showDeleteSelection ? <th className="ci-selection-col"><input type="checkbox" className="ci-selection-checkbox" aria-label="全选当前页可删除库存" disabled={!deletion.eligible.length || deletion.busy} checked={Boolean(deletion.eligible.length && deletion.selected.length === deletion.eligible.length)} ref={element => { if (element) element.indeterminate = deletion.selected.length > 0 && deletion.selected.length < deletion.eligible.length; }} onChange={deletion.selectAll} /></th> : null}<th className="ci-col-index">#</th><th className="ci-material-part-col">型号 / 品牌</th><th className="ci-material-recorder-col">负责人</th><th className="ci-material-industry-col">所属行业</th><th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button ci-quantity-sort-button" aria-label="按可供数量排序" aria-describedby="ci-quantity-sort-status" title={`${quantitySortLabel}；${quantitySortNext}`} onClick={() => cycleSort("qty")}>可供数量{quantitySortIcon}</button></th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>Date Code / 更新{sortArrow("dateCode")}</button></th><th className="ci-material-source-col">渠道来源</th><th className="ci-col-actions">操作</th></tr></thead>
               <tbody>
                 {materialsQuery.isLoading ? <tr><td colSpan={showDeleteSelection ? 11 : 10} className="ci-empty">正在加载渠道库存…</td></tr> : null}
                 {materialsQuery.isError ? <tr><td colSpan={showDeleteSelection ? 11 : 10} className="ci-empty ci-host-error">{errorMessage(materialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}

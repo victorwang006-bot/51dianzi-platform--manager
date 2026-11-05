@@ -1,4 +1,4 @@
-import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
+import { usePageMemory, useRememberedState, freshListOptions, useListPositionRestore, returnToPageSource } from "../hooks/usePageMemory";
 import { useCustomerCreateDraft, useCustomerCreateDraftIdentity } from "../hooks/useCustomerCreateDraft";
 import { useCustomerStars } from "../hooks/useCustomerStars";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +19,6 @@ import { formatContactMethod, useCustomerContactScope, withCustomerContactScope,
 import { CustomerSupplyUploadDialog } from "../components/customers/CustomerSupplyUploadDialog";
 import { CustomerSupplyCell } from "../components/customers/CustomerSupplyCell";
 import { CustomerSupplyAction } from "../components/customers/CustomerSupplyAction";
-import { CustomerDelegatedStarDialog } from "../components/customers/CustomerDelegatedStarDialog";
 import { useCustomerSupplyAuthority, supplyLocation, type SupplySummary } from "../components/customers/customerSupply";
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
 import { EMPTY_CUSTOMER_FORM, errorMessage } from "../components/customers/customerUtils";
@@ -103,7 +102,6 @@ export default function CustomerList() {
   );
   const [createState, setCreateState] = useState<CustomerCreateState>({ dirty: false, busy: false });
   const [demandCustomer, setDemandCustomer] = useState<{ id: number; name: string; archivedAt: string | null } | null>(null);
-  const [delegatedStarCustomer, setDelegatedStarCustomer] = useState<{ customer: { id: number; name: string; archivedAt: string | null } | null; identityKey: string } | null>(null);
   const mountedRef = useRef(true);
   const createButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -124,6 +122,7 @@ export default function CustomerList() {
   const [moreFiltersOpen, setMoreFiltersOpen] = useRememberedState("moreFiltersOpen", false);
   const [page, setPage] = useRememberedState("page", 1);
   const canManageAll = contextQuery.data?.canManageAll ?? false;
+  const canReadAll = contextQuery.data?.canReadAll ?? canManageAll;
   const starFocusId = useRef<number | null>(null);
   const tableRegionRef = useRef<HTMLDivElement>(null);
   const stars = useCustomerStars(contactScope.scope, contactScope.ready && !contextQuery.isPending && !contextQuery.isError, async customerId => {
@@ -133,54 +132,55 @@ export default function CustomerList() {
     // The service sorts the entire authorized filtered set before pagination.
     // Do not locally reorder the currently loaded twenty records.
     await utils.customer.list.invalidate();
-  });
-  const canDelegateStars = stars.ready && stars.targets.some(target => target.userId !== stars.actorUserId);
-  useEffect(() => { setDelegatedStarCustomer(null); }, [contactScope.identityKey]);
+  }, JSON.stringify([appliedFilters, page]));
 
-  // A non-admin must never retain an all-company scope or another seller's id,
-  // including while permissions refresh after the page is already open.
+  // Read-only team reachability is distinct from enterprise manage/write authority.
   useEffect(() => {
     if (contextQuery.isLoading || contextQuery.isPending || !contextQuery.data) return;
-    if (canManageAll) return;
+    if (canReadAll) return;
     const restrictToMine = (current: FilterState) =>
       current.scope === "mine" && !current.assignedUserId
         ? current
         : { ...current, scope: "mine" as const, assignedUserId: "" };
     setDraftFilters(restrictToMine);
     setAppliedFilters(restrictToMine);
-  }, [canManageAll, contextQuery.isLoading, contextQuery.isPending, contextQuery.data]);
+  }, [canReadAll, contextQuery.isLoading, contextQuery.isPending, contextQuery.data]);
 
   const listInput = useMemo(() => {
-    const scope = canManageAll ? appliedFilters.scope : "mine";
+    const scope = canReadAll ? appliedFilters.scope : "mine";
     const assignedUserId = Number(appliedFilters.assignedUserId);
     return {
       keyword: appliedFilters.keyword.trim(),
       ...(appliedFilters.grade ? { grade: appliedFilters.grade } : {}),
       ...(appliedFilters.stage ? { stage: appliedFilters.stage } : {}),
       scope,
-      ...(canManageAll &&
+      ...(canReadAll &&
       scope === "all" &&
       Number.isInteger(assignedUserId) &&
       assignedUserId > 0
         ? { assignedUserId }
         : {}),
-      ...(stars.targetUserId > 0 ? { starUserId: stars.targetUserId } : {}),
+      starMode: "assignee" as const,
+      ...(contactScope.scope ? { expectedEnterpriseId: contactScope.scope.enterpriseId, expectedActorUserId: contactScope.scope.actorUserId } : {}),
       archived: appliedFilters.archived,
       due: appliedFilters.due,
       starredOnly: appliedFilters.starredOnly === true,
       page,
       pageSize: PAGE_SIZE,
     };
-  }, [appliedFilters, canManageAll, page, stars.targetUserId]);
-  const listQuery = useRestoringListQuery(trpc.customer.list.useQuery(listInput, freshListOptions({
-    enabled: Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
+  }, [appliedFilters, canReadAll, page, contactScope.identityKey]);
+  const listQuery = trpc.customer.list.useQuery(listInput, freshListOptions({
+    enabled: contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
     placeholderData: undefined,
-  }, d51Ready)));
+  }, d51Ready));
   // Never render a previous identity/enterprise page, including its old total.
-  const result = !listQuery.isError && (appliedFilters.starredOnly !== true || stars.ready)
+  const result = d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
+    && !listQuery.isError && (appliedFilters.starredOnly !== true || stars.ready)
     && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
-      && (customer.starUserId === undefined || customer.starUserId === stars.targetUserId))
+      && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
     ? listQuery.data : undefined;
+  useListPositionRestore(listQuery, Boolean(result) && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError);
+  stars.observeRows(result?.items ?? []);
   const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
   const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, listInput, pageCustomerIds]);
   const supplyRequestRef = useRef(supplyRequestKey); supplyRequestRef.current = supplyRequestKey;
@@ -254,7 +254,7 @@ export default function CustomerList() {
     const star = tableRegionRef.current?.querySelector<HTMLButtonElement>(`button[data-star-customer="${id}"]`);
     (star ?? tableRegionRef.current ?? createButtonRef.current)?.focus({ preventScroll: true });
   }, [result, listQuery.isFetching, stars.busy]);
-  useEffect(() => { starFocusId.current = null; }, [contactScope.identityKey, stars.targetUserId]);
+  useEffect(() => { starFocusId.current = null; }, [contactScope.identityKey]);
 
   const collapseCreate = (force = false) => {
     if (!force && createState.busy) return;
@@ -321,8 +321,8 @@ export default function CustomerList() {
     // Scope is a header-level view choice, like inventory status, rather than
     // a transient form condition. Resetting filters must not expose another
     // assignee when moving between scope views.
-    // Reset also clears starredOnly; it never changes the personal-star target.
-    const scope = canManageAll ? appliedFilters.scope : "mine";
+    // Reset also clears starredOnly, without changing the assignee-star semantics.
+    const scope = canReadAll ? appliedFilters.scope : "mine";
     const next = { ...DEFAULT_FILTERS, scope };
     setDraftFilters(next);
     setAppliedFilters(next);
@@ -330,7 +330,7 @@ export default function CustomerList() {
   };
 
   const changeScope = (scope: ScopeFilter) => {
-    const safeScope = canManageAll && scope === "all" ? "all" : "mine";
+    const safeScope = canReadAll && scope === "all" ? "all" : "mine";
     // Clear both draft and applied assignment when scope changes so switching
     // back to all-company cannot silently revive a previous owner filter.
     setDraftFilters(current => ({
@@ -381,11 +381,7 @@ export default function CustomerList() {
       <AdminPage className="customer-list-page">
       <AdminPageHeader title="客户列表" actions={
         <div className="flex flex-wrap items-center gap-2">
-          {canDelegateStars ? <Button type="button" variant="outline" className={toolbarActionClass}
-            onClick={() => setDelegatedStarCustomer({ customer: null, identityKey: contactScope.identityKey })}>
-            替员工标星
-          </Button> : null}
-          {canManageAll ? (
+          {canReadAll ? (
             <Select
               value={appliedFilters.scope}
               onValueChange={value => changeScope(value as ScopeFilter)}
@@ -398,7 +394,7 @@ export default function CustomerList() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="mine">我的客户</SelectItem>
-                <SelectItem value="all">全企业</SelectItem>
+                <SelectItem value="all">{canManageAll ? "全企业" : "授权组员客户"}</SelectItem>
               </SelectContent>
             </Select>
           ) : null}
@@ -549,7 +545,7 @@ export default function CustomerList() {
                 ))}
               </SelectContent>
             </Select>
-            {canManageAll && draftFilters.scope === "all" ? (
+            {canReadAll && draftFilters.scope === "all" ? (
               <Select
                 value={draftFilters.assignedUserId || "all"}
                 onValueChange={value =>
@@ -564,7 +560,7 @@ export default function CustomerList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部负责人</SelectItem>
-                  {contextQuery.data?.members.map(member => (
+                  {(canManageAll ? contextQuery.data?.members ?? [] : stars.targets).map(member => (
                     <SelectItem
                       key={member.userId}
                       value={String(member.userId)}
@@ -665,7 +661,7 @@ export default function CustomerList() {
               ) : null}
             </div>
           ) : (
-            <div ref={tableRegionRef} className="customer-list-table-scroll" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
+            <div ref={tableRegionRef} className="customer-list-table-scroll" data-page-memory-scroll="customer-list-table" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
             <Table className="admin-table-readable customer-list-table" containerClassName="customer-list-table-inner" aria-label="客户列表">
               <colgroup>
                 <col className="customer-list-col-name" />
@@ -706,7 +702,7 @@ export default function CustomerList() {
               <TableBody>
                 {result?.items.map(customer => {
                   const incomplete = customerNeedsCompletion(customer);
-                  const rowStarred = customer.starUserId === stars.targetUserId && customer.isStarred === true;
+                  const rowStarred = customer.starUserId === customer.assignedUserId && customer.isStarred === true;
                   return (
                     <TableRow key={customer.id} data-page-memory-row={String(customer.id)}>
                       <TableCell>
@@ -725,7 +721,8 @@ export default function CustomerList() {
                           aria-pressed={rowStarred}
                           aria-busy={stars.pendingCustomerId === customer.id && stars.busy}
                           aria-disabled={!stars.canSet(customer) || stars.blocked || listQuery.isFetching}
-                          title={!stars.ready ? "重点客户权限尚未核验" : !stars.canSet(customer) ? "当前客户不能设置重点标记" : rowStarred ? "取消重点客户标记" : "标记为重点客户"}
+                          disabled={!stars.canSet(customer) || stars.blocked || listQuery.isFetching}
+                          title={!stars.ready ? "重点客户权限尚未核验" : !Number.isSafeInteger(customer.assignedUserId) || customer.assignedUserId < 1 ? "当前客户没有有效负责人，不能设置重点标记" : !stars.canSet(customer) ? "当前负责人不在合法重点标记范围，不能设置" : rowStarred ? "取消重点客户标记" : "标记为重点客户"}
                           onClick={event => { event.stopPropagation(); if (!listQuery.isFetching) stars.toggle(customer); }}>
                           {stars.pendingCustomerId === customer.id && stars.busy ? <Loader2 size={16} aria-hidden="true" className="animate-spin" />
                             : <Star size={16} aria-hidden="true" />}
@@ -742,11 +739,6 @@ export default function CustomerList() {
                               已归档
                             </span>
                           ) : null}
-                          {canManageAll && canDelegateStars ? <CustomerSupplyAction
-                            disabledReason={listQuery.isFetching ? "客户列表正在刷新" : undefined}
-                            onClick={() => setDelegatedStarCustomer({ customer: { id: customer.id, name: customer.name, archivedAt: customer.archivedAt }, identityKey: contactScope.identityKey })}>
-                            替员工标星
-                          </CustomerSupplyAction> : null}
                         </div>
                       </TableCell>
                       <TableCell className="customer-list-secondary-data truncate" title={getBusinessIndustryLabel(customer.industryCode)} data-testid="industry-cell">{getBusinessIndustryLabel(customer.industryCode)}</TableCell>
@@ -856,10 +848,6 @@ export default function CustomerList() {
         key={`${supplyAuthority.identity.key}:${supplyCustomer.id}`} customerId={supplyCustomer.id} identity={supplyAuthority.identity}
         isCurrent={() => supplyCurrentRef.current} onClose={() => setSupplyCustomer(null)}
         onComplete={() => setSupplyRevision(value => value + 1)} onAuthorizationError={supplyAuthority.onAuthorizationError} /> : null}
-      {delegatedStarCustomer && delegatedStarCustomer.identityKey === contactScope.identityKey && contactScope.scope ? <CustomerDelegatedStarDialog
-        key={`${contactScope.identityKey}:${delegatedStarCustomer.customer?.id ?? "employee-list"}`} customer={delegatedStarCustomer.customer} scope={contactScope.scope}
-        contextCurrent={contactScope.ready && !contextQuery.isPending && !contextQuery.isError}
-        onClose={() => setDelegatedStarCustomer(null)} /> : null}
       {demandCustomer && <CustomerDemandDialog
         customer={demandCustomer}
         onClose={() => setDemandCustomer(null)}

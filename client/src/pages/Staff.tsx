@@ -3,9 +3,10 @@ import { installAuthSessionClearListener } from "@/business/platform/client/src/
 import CreateStaffDialog, {
   type CreateStaffTeam,
 } from "@/components/admin/CreateStaffDialog";
-import StaffTeamSummary, {
+import {
   readCachedStaffBusinessTeams,
 } from "@/components/admin/StaffTeamSummary";
+import StaffArchiveDialog from "@/components/admin/StaffArchiveDialog";
 import StaffPermissionSheet, {
   type StaffEnterpriseEditorAccess,
   type StaffPermissionSheetSection,
@@ -76,7 +77,7 @@ import { readOfficialTeamsOverview } from "@/lib/officialChannelInventoryUi";
 import { trpc } from "@/lib/trpc";
 import { hasAdminPermission } from "@shared/adminPermissions";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, RefreshCw, Users } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSearch } from "wouter";
@@ -84,7 +85,7 @@ import "./Staff.css";
 
 const PAGE_SIZE = 20;
 
-type StaffStatusFilter = "all" | "active" | "disabled" | "locked" | "suspended";
+type StaffStatusFilter = "all" | "active" | "disabled" | "locked" | "suspended" | "deleted";
 type StaffRoleFilter = "all" | string;
 
 function requestId(prefix: string) {
@@ -113,6 +114,7 @@ function roleLabel(role: string | null | undefined) {
 }
 
 function accountStatus(account: StaffAdminAccount) {
+  if (account.archive) return { label: account.archive.state === "completed" ? "已删除" : "离职待处理", style: "gray" as const };
   if (account.status === "active")
     return { label: "启用", style: "success" as const };
   if (account.status === "locked")
@@ -220,6 +222,8 @@ function matchesFilter(
     .toLocaleLowerCase();
   if (normalized && !haystack.includes(normalized)) return false;
   if (role !== "all" && row.admin?.adminRole !== role) return false;
+  if (status === "deleted") return Boolean(row.admin?.archive);
+  if (row.admin?.archive) return false;
   if (status === "all") return true;
   return row.admin?.status === status || row.member?.status === status;
 }
@@ -259,6 +263,7 @@ export default function Staff() {
     useState<StaffPermissionSheetSection>("erp");
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<{ id: number; name: string } | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -266,6 +271,7 @@ export default function Staff() {
 
   useEffect(() => {
     setSelectedRow(null);
+    setArchiveTarget(null);
     setCreateOpen(false);
     setSaving(false);
   }, [accountId]);
@@ -276,6 +282,7 @@ export default function Staff() {
         sessionEpoch.current += 1;
         setSessionGeneration(sessionEpoch.current);
         setSelectedRow(null);
+        setArchiveTarget(null);
         setCreateOpen(false);
         setSaving(false);
       }),
@@ -290,7 +297,7 @@ export default function Staff() {
   );
 
   const adminUsersQuery = trpc.adminUser.list.useQuery(
-    { page, pageSize: PAGE_SIZE },
+    { page, pageSize: PAGE_SIZE, archiveStatus: status === "deleted" ? "deleted" : "current" },
     { enabled: canManageAdmin, retry: false, refetchOnWindowFocus: false }
   );
   const adminAccounts = (adminUsersQuery.data?.data ??
@@ -561,7 +568,7 @@ export default function Staff() {
     });
     return mergeStaffRows({
       admins: adminAccounts,
-      members: enterpriseMembers,
+      members: status === "deleted" ? [] : enterpriseMembers.filter(member => !(adminUsersQuery.data?.archivedFrontUserIds ?? []).includes(member.userId)),
       bindings,
       scopes,
       expectedMerchantId: merchantId,
@@ -573,6 +580,8 @@ export default function Staff() {
     enterpriseMembers,
     merchantId,
     scopeQueries,
+    status,
+    adminUsersQuery.data?.archivedFrontUserIds,
   ]);
   const roleOptions = useMemo(
     () =>
@@ -1023,6 +1032,7 @@ export default function Staff() {
             <option value="disabled">后台停用</option>
             <option value="locked">后台锁定</option>
             <option value="suspended">企业暂停</option>
+            <option value="deleted">已删除</option>
           </select>
           <select
             value={role}
@@ -1061,20 +1071,18 @@ export default function Staff() {
               className="staff-management-table-scroll"
               data-staff-table-scroll
             >
-              <Table className="staff-management-table min-w-[980px] table-fixed">
+              <Table className="staff-management-table min-w-[900px] table-fixed">
                 <colgroup>
-                  <col className="w-[21%]" />
+                  <col className="w-[22%]" />
                   <col className="w-[15%]" />
+                  <col className="w-[20%]" />
                   <col className="w-[14%]" />
-                  <col className="w-[18%]" />
                   <col className="w-[12%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[112px]" />
+                  <col className="w-[200px]" />
                 </colgroup>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <TableHead className="px-3 text-[11px]">员工信息</TableHead>
-                    <TableHead className="px-3 text-[11px]">所属团队</TableHead>
                     <TableHead className="px-3 text-[11px]">后台角色</TableHead>
                     <TableHead className="px-3 text-[11px]">ERP 权限</TableHead>
                     <TableHead className="px-3 text-[11px]">数据范围</TableHead>
@@ -1129,44 +1137,6 @@ export default function Staff() {
                               ) : null}
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell
-                          className="py-2.5 text-xs"
-                          data-staff-official-team
-                        >
-                          <StaffTeamSummary
-                            row={row}
-                            operations={operations}
-                            official={officialTeamsOverview}
-                            business={businessTeams}
-                            operationsState={
-                              operationsQuery.isError
-                                ? "不可用"
-                                : operationsQuery.isPending
-                                  ? "读取中…"
-                                  : !operations
-                                    ? "不可用"
-                                    : ""
-                            }
-                            officialState={
-                              officialTeamsQuery.isError
-                                ? "不可用"
-                                : officialTeamsQuery.isPending
-                                  ? "读取中…"
-                                  : ""
-                            }
-                            businessState={
-                              !contextReady
-                                ? "未就绪"
-                                : businessTeamsQuery.isError
-                                  ? "不可用"
-                                  : businessTeamsQuery.isPending
-                                    ? "读取中…"
-                                    : !businessTeams
-                                      ? "不可用"
-                                      : ""
-                            }
-                          />
                         </TableCell>
                         <TableCell className="py-2.5 text-xs" data-staff-role>
                           {row.admin ? (
@@ -1244,18 +1214,26 @@ export default function Staff() {
                           </div>
                         </TableCell>
                         <TableCell
-                          className="staff-action-cell w-[112px] min-w-[112px] py-2.5 pr-3 whitespace-nowrap text-right"
+                          className="staff-action-cell w-[200px] min-w-[200px] py-2.5 pr-3 whitespace-nowrap text-right"
                           data-staff-action-cell
                         >
                           <Button
                             size="sm"
                             variant="outline"
                             className="h-8 px-2 text-xs"
+                            disabled={Boolean(row.admin?.archive)}
                             onClick={() => openStaffSheet(row, "erp")}
                           >
                             <Pencil className="mr-1 h-3.5 w-3.5" />
                             配置权限
                           </Button>
+                          {canManageAdmin && row.admin && row.admin.id !== accountId && !row.member?.isOwner && row.admin.archive?.state !== "completed" ? (
+                            <Button size="sm" variant="outline" className="ml-1 h-8 px-2 text-xs text-destructive"
+                              onClick={() => setArchiveTarget({ id: row.admin!.id, name: displayName })}>
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              {row.admin.archive ? "重试离职" : "删除用户"}
+                            </Button>
+                          ) : null}
                         </TableCell>
                       </TableRow>
                     );
@@ -1288,6 +1266,22 @@ export default function Staff() {
             </a>
           ) : null}
         </AdminDataPanel>
+
+        <StaffArchiveDialog
+          key={`staff-archive:${accountId}:${sessionGeneration}`}
+          open={Boolean(archiveTarget) && canManageAdmin}
+          actorKey={`${accountId}:${sessionGeneration}`}
+          id={archiveTarget?.id ?? null}
+          merchantId={merchantId}
+          name={archiveTarget?.name ?? ""}
+          onOpenChange={open => { if (!open) setArchiveTarget(null); }}
+          loadPreview={input => trpcUtils.client.adminUser.archivePreview.query(input)}
+          archive={input => trpcUtils.client.adminUser.archive.mutate(input)}
+          onChanged={async () => {
+            await Promise.all([trpcUtils.adminUser.list.invalidate(), trpcUtils.salesStaff.list.invalidate(),
+              queryClient.invalidateQueries({ queryKey: staffQueryPrefix(accountId) })]);
+          }}
+        />
 
         <CreateStaffDialog
           key={`create-staff:${accountId ?? "signed-out"}`}

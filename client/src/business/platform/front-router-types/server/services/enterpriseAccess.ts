@@ -23,7 +23,7 @@ import {
   normalizeHkEnterpriseRegistrationIdentifier,
   type EnterpriseRegistrationIdentity,
 } from "./enterpriseRegistrationIdentity";
-import { selectEnterpriseCompanyRecord } from "./enterpriseCompanySelection";
+import { companyMatchesEnterpriseIdentity, selectEnterpriseCompanyRecord, selectPersonalCompanyRecord } from "./enterpriseCompanySelection";
 export { selectEnterpriseCompanyRecord } from "./enterpriseCompanySelection";
 import { ERP_PERMISSION_KEYS } from "../../../shared/erpPermissions";
 import { requireEnterprisePermissionManager, resolveEnterprisePermissionScope } from "./enterprisePermissions";
@@ -265,19 +265,46 @@ export async function validateEnterpriseRebindTarget(input: {
 
 export async function getEnterpriseCompany(enterprise: Enterprise) {
   const db = await requireDb();
-  const [linked, legacy] = await Promise.all([
+  const [linked, legacy, ownerEnterprises] = await Promise.all([
     db.select().from(companies).where(eq(companies.enterpriseId, enterprise.id)),
     db.select().from(companies).where(eq(companies.userId, enterprise.crmDataOwnerUserId)),
+    db.select({ id: enterprises.id }).from(enterprises)
+      .where(eq(enterprises.crmDataOwnerUserId, enterprise.crmDataOwnerUserId)).limit(2),
   ]);
-  return selectEnterpriseCompanyRecord(enterprise, [...linked, ...legacy]);
+  const candidates = [...linked, ...legacy].filter(company => company.enterpriseId === enterprise.id
+    || ownerEnterprises.length === 1 || companyMatchesEnterpriseIdentity(company, enterprise));
+  return selectEnterpriseCompanyRecord(enterprise, candidates);
 }
 
 async function linkLegacyEnterpriseRows(enterprise: Enterprise) {
   const db = await requireDb();
-  await db
-    .update(companies)
-    .set({ enterpriseId: enterprise.id })
-    .where(eq(companies.userId, enterprise.crmDataOwnerUserId));
+  await linkSelectedCompanyRecord(db, enterprise.crmDataOwnerUserId, enterprise);
+}
+
+async function linkSelectedCompanyRecord(
+  executor: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, "select" | "update">,
+  dataOwnerUserId: number,
+  enterprise: Enterprise,
+  companyId?: number,
+) {
+  const rows = await executor.select().from(companies).where(eq(companies.userId, dataOwnerUserId));
+  let candidates = rows.filter(row => row.id === companyId);
+  if (companyId === undefined) {
+    const ownerEnterprises = await executor.select({ id: enterprises.id }).from(enterprises)
+      .where(eq(enterprises.crmDataOwnerUserId, dataOwnerUserId)).limit(2);
+    // Apply the same legacy attribution rule as reads; a shared owner's blank row has no tenant proof.
+    candidates = rows.filter(row => row.enterpriseId === enterprise.id
+      || ownerEnterprises.length === 1 || companyMatchesEnterpriseIdentity(row, enterprise));
+  }
+  const selected = selectEnterpriseCompanyRecord(enterprise, candidates);
+  if (!selected) {
+    if (companyId !== undefined) throw new TRPCError({ code: "CONFLICT", message: "公司资料不属于当前企业，拒绝关联" });
+    return;
+  }
+  await executor.update(companies).set({ enterpriseId: enterprise.id }).where(and(
+    eq(companies.id, selected.id), eq(companies.userId, dataOwnerUserId),
+    selected.enterpriseId === null ? isNull(companies.enterpriseId) : eq(companies.enterpriseId, enterprise.id),
+  ));
 }
 
 /**
@@ -440,10 +467,7 @@ export async function claimEnterpriseForCrmApplication(input: {
         status: "active",
         inventoryDataScope: "enterprise",
       });
-      await tx
-        .update(companies)
-        .set({ enterpriseId: createdEnterprise.id })
-        .where(eq(companies.userId, input.userId));
+      await linkSelectedCompanyRecord(tx, input.userId, createdEnterprise);
       return { enterprise: createdEnterprise, created: true };
     });
 
@@ -569,7 +593,7 @@ export async function claimHkEnterpriseForCrmApplication(input: {
               inventoryDataScope: "enterprise",
             });
           }
-          await tx.update(companies).set({ enterpriseId: existingEnterprise.id }).where(eq(companies.userId, input.userId));
+          await linkSelectedCompanyRecord(tx, existingEnterprise.crmDataOwnerUserId, existingEnterprise);
           return { enterprise: existingEnterprise, created: false };
         }
 
@@ -599,7 +623,7 @@ export async function claimHkEnterpriseForCrmApplication(input: {
           status: "active",
           inventoryDataScope: "enterprise",
         });
-        await tx.update(companies).set({ enterpriseId: createdEnterprise.id }).where(eq(companies.userId, input.userId));
+        await linkSelectedCompanyRecord(tx, input.userId, createdEnterprise);
         return { enterprise: createdEnterprise, created: true };
       });
       await ensureOwnerPermissions(db, result.enterprise.id, input.userId);
@@ -620,12 +644,18 @@ export async function claimHkEnterpriseForCrmApplication(input: {
   throw duplicateConflict ?? new TRPCError({ code: "CONFLICT", message: "香港企业认领并发冲突，请重试" });
 }
 
-export async function linkCompanyToEnterprise(userId: number, enterpriseId: number) {
+export async function linkCompanyToEnterprise(userId: number, enterpriseId: number, companyId?: number) {
   const db = await requireDb();
-  await db
-    .update(companies)
-    .set({ enterpriseId })
-    .where(eq(companies.userId, userId));
+  const enterprise = (await db.select().from(enterprises).where(eq(enterprises.id, enterpriseId)).limit(1))[0];
+  if (!enterprise || enterprise.superAdminUserId !== userId) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不能关联该企业资料" });
+  }
+  const member = (await db.select().from(enterpriseMembers).where(and(
+    eq(enterpriseMembers.userId, userId), eq(enterpriseMembers.enterpriseId, enterprise.id),
+    eq(enterpriseMembers.status, "active"), eq(enterpriseMembers.role, "super_admin"),
+  )).limit(1))[0];
+  if (!member) throw new TRPCError({ code: "FORBIDDEN", message: "当前账号没有有效企业所有者成员权限" });
+  await linkSelectedCompanyRecord(db, enterprise.crmDataOwnerUserId, enterprise, companyId);
 }
 
 export async function resolveEnterpriseScope(ctx: SessionContext): Promise<EnterpriseScope | null> {
@@ -657,12 +687,11 @@ export async function resolveCrmTargetForUser(userId: number) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不是所选企业成员", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   const legacyCompanies = await db.select().from(companies)
-    .where(and(eq(companies.userId, userId), isNull(companies.enterpriseId))).limit(2);
-  if (legacyCompanies.length > 1) throw enterpriseSelectionRequiredError();
+    .where(and(eq(companies.userId, userId), isNull(companies.enterpriseId)));
   return {
     enterprise: null,
     member: null,
-    company: legacyCompanies[0],
+    company: selectPersonalCompanyRecord(userId, legacyCompanies),
     dataOwnerUserId: userId,
     portalOwnerUserId: userId,
   };
@@ -1003,7 +1032,7 @@ export async function requireCrmEnterpriseAccess(ctx: SessionContext) {
     throw new TRPCError({ code: "FORBIDDEN", message: "当前账号不是所选企业成员", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
   if (scope?.member?.status === "suspended") {
-    await setCrmAccess(ctx.user.id, false);
+    // Suspension revokes only this enterprise, never the user's other memberships.
     throw new TRPCError({ code: "FORBIDDEN", message: "企业成员身份已暂停", cause: new BusinessFailureCause("TENANT_ACCESS_REVOKED") });
   }
 

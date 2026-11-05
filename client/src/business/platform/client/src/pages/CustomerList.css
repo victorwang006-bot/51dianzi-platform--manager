@@ -203,11 +203,6 @@
   fill: none;
 }
 
-.customer-list-page .customer-list-star-selector select {
-  max-width: 220px;
-  color: var(--admin-color-text, #303642);
-}
-
 /* Pagination and header/filter controls keep the normal rectangular treatment. */
 .customer-list-page .customer-list-pagination {
   height: var(--admin-content-control-height, 32px);

@@ -16,6 +16,7 @@ import {
 import { canPublishInventoryAvailability } from "../../../shared/inventoryAvailability";
 import { getDb, withInventoryPublisherLock } from "../db";
 import { availableMemoryBytes } from "./inventoryImportJobs";
+import { lockActiveInventoryJobMembers } from "./inventoryJobMemberFence";
 import {
   assertInventoryQuotaDeploymentReady,
   getInventoryQuota,
@@ -104,6 +105,7 @@ export async function createInventoryPublishJob(input: {
         enterpriseId: input.enterpriseId,
         dataOwnerUserId: input.dataOwnerUserId,
       }, { lockEnterprise: true });
+      await lockActiveInventoryJobMembers(tx, { ...input, ownerUserId: input.scopeOwnerUserId });
       const [publishedSummary] = await tx
         .select({ count: sql<number>`COUNT(*)` })
         .from(inventories)
@@ -330,6 +332,7 @@ export async function retryFailedInventoryPublishJob(jobId: string, enterpriseId
       )[0];
       if (!job) throw new Error("一键发布任务不存在");
       if (job.status !== "failed") throw new Error("只有系统处理失败的任务可以重试");
+      await lockActiveInventoryJobMembers(tx, { ...job, ownerUserId: job.scopeOwnerUserId });
       if (job.processedRows >= job.totalRows) throw new Error("该任务没有剩余待处理库存");
       const active = (
         await tx
@@ -565,10 +568,12 @@ export async function processInventoryPublishBatch(
           .limit(1)
           .for("update")
       )[0];
-      const member = (
+      const jobMemberIds = Array.from(new Set([freshJob.createdByUserId, ...(freshJob.scopeOwnerUserId ? [freshJob.scopeOwnerUserId] : [])])).sort((a, b) => a - b);
+      const jobMembers = (
         await tx
           .select({
             id: enterpriseMembers.id,
+            userId: enterpriseMembers.userId,
             role: enterpriseMembers.role,
             status: enterpriseMembers.status,
             inventoryDataScope: enterpriseMembers.inventoryDataScope,
@@ -577,12 +582,14 @@ export async function processInventoryPublishBatch(
           .where(
             and(
               eq(enterpriseMembers.enterpriseId, freshJob.enterpriseId),
-              eq(enterpriseMembers.userId, freshJob.createdByUserId),
+              inArray(enterpriseMembers.userId, jobMemberIds),
             ),
           )
-          .limit(1)
+          .orderBy(asc(enterpriseMembers.userId))
           .for("update")
-      )[0];
+      );
+      const member = jobMembers.find(row => row.userId === freshJob.createdByUserId);
+      const scopeOwnerActive = !freshJob.scopeOwnerUserId || jobMembers.some(row => row.userId === freshJob.scopeOwnerUserId && row.status === "active");
       const isOwner = Boolean(
         member
         && (member.role === "super_admin" || enterprise?.superAdminUserId === freshJob.createdByUserId),
@@ -597,6 +604,7 @@ export async function processInventoryPublishBatch(
       const permissionActive = Boolean(
         member
         && member.status === "active"
+        && scopeOwnerActive
         && (freshJob.scopeOwnerUserId !== null || isOwner || member.inventoryDataScope === "enterprise")
         && (
           isOwner

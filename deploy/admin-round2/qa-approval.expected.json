@@ -1,0 +1,17 @@
+{
+  "manifestSha256": null,
+  "approvedBy": null,
+  "approvedAt": null,
+  "frozenSourceReviewed": null,
+  "isolatedAuthorizedUiQaPassed": null,
+  "serverApiCompatibilityPassed": null,
+  "ddlReviewApproved": null,
+  "ddlArtifactHashes": {
+    "admin/scripts/apply-admin-staff-archives.mjs": null,
+    "admin/scripts/20261105-admin-staff-archives.sql": null
+  },
+  "uiEvidenceScope": "authorized-react-fixture",
+  "productionBrowserVerified": null,
+  "evidence": [],
+  "notes": "Template only; parent fills approvals after real checks against the newly frozen toolArtifacts/manifest. Old tool hashes, old manifest or prior approvals must not be reused after the root-resurrect/fresh-dump fix. Review opaque three-config preservation and bootAuthority hashes. Synthetic unit/runtime/HTTP tool tests are not production QA or browser verification. This file is not qa-approval.json."
+}

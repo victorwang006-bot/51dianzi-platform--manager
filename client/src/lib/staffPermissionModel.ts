@@ -24,6 +24,8 @@ export type StaffAdminAccount = {
   adminRole: string;
   status: "active" | "disabled" | "locked" | string;
   permissions: readonly string[];
+  accountVersion?: number;
+  archive?: { state: "access_closed" | "retryable" | "completed"; archivedAt: Date | string; merchantId: number | null } | null;
   lastLoginAt?: Date | string | null;
   lastLoginIpAddress?: string | null;
   lastLoginLocation?: string | null;

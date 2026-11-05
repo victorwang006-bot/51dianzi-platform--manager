@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { customerOwnershipQuerySchema } from "../../../shared/customerOwnership";
-import { customerStarContextInputSchema, customerStarContextSchema, customerSetStarSchema, customerSetStarResultSchema } from "../../../shared/customerStars";
-import { getCustomerStarContext, setCustomerStar } from "../services/customerStars";
+import { customerStarContextInputSchema, customerStarContextSchema, customerSetStarSchema, customerSetStarResultSchema, customerStarStateInputSchema, customerStarStateSchema } from "../../../shared/customerStars";
+import { getCustomerStarContext, setCustomerStar, getCustomerStarState } from "../services/customerStars";
 import { customerListInputSchema } from "../customerListInput";
 import {
   customerCreateSchema,
@@ -89,6 +89,8 @@ export const customerRouter = router({
 
   starContext: customerProcedure.input(customerStarContextInputSchema).output(customerStarContextSchema).query(({ ctx }) =>
     getCustomerStarContext(scopeFor(ctx))),
+  starState: customerProcedure.input(customerStarStateInputSchema).output(customerStarStateSchema).query(({ ctx, input }) =>
+    getCustomerStarState(scopeFor(ctx), input)),
   // A personal preference needs customer read, not customer.write; the service rechecks both current readers.
   setStar: customerProcedure.input(customerSetStarSchema).output(customerSetStarResultSchema).mutation(({ ctx, input }) =>
     setCustomerStar(scopeFor(ctx), input)),

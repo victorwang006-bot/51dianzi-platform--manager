@@ -45,6 +45,7 @@ import {
   adminUserPermissionAudits,
   adminUserPermissions,
   adminUsers,
+  adminStaffArchives,
   adminUserSalesScopes,
   auditLogs,
   crmOwnerRebindLogs,
@@ -2494,6 +2495,9 @@ export async function bindBusinessStaffPrincipal(input: {
         .limit(1)
         .for("update");
       if (!targetAccount) throw new Error("BUSINESS_BINDING_ADMIN_NOT_FOUND");
+      const archived = await tx.select({ id: adminStaffArchives.id }).from(adminStaffArchives)
+        .where(eq(adminStaffArchives.adminUserId, input.adminUserId)).limit(1).for("update");
+      if (archived.length) throw new Error("ADMIN_USER_ARCHIVED");
       if (targetAccount.status !== "active")
         throw new Error("BUSINESS_BINDING_ADMIN_INACTIVE");
 
@@ -2685,6 +2689,9 @@ export async function revokeBusinessStaffPrincipal(input: {
         .limit(1)
         .for("update");
       if (!targetAccount) throw new Error("BUSINESS_BINDING_ADMIN_NOT_FOUND");
+      const archived = await tx.select({ id: adminStaffArchives.id }).from(adminStaffArchives)
+        .where(eq(adminStaffArchives.adminUserId, input.adminUserId)).limit(1);
+      if (archived.length) throw new Error("ADMIN_USER_ARCHIVED");
       const [replayed] = await tx
         .select()
         .from(adminBusinessStaffBindingAudits)
@@ -5911,22 +5918,31 @@ export async function getScopedMerchantCreditCodes(salesStaffCodes: string[]) {
  * scope / identity 均按页批量查询并在内存归集，避免 N+1。
  */
 export async function getAdminUsers(
-  params: { page?: number; pageSize?: number } = {}
+  params: { page?: number; pageSize?: number; archiveStatus?: "current" | "deleted" } = {}
 ) {
   const db = await getDb();
   if (!db) return { data: [], total: 0 };
   const { page = 1, pageSize = 20 } = params;
+  const archived = sql`EXISTS (SELECT 1 FROM ${adminStaffArchives} WHERE ${adminStaffArchives.adminUserId} = ${adminUsers.id})`;
+  const archiveFilter = params.archiveStatus === "deleted" ? archived : sql`NOT (${archived})`;
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(adminUsers);
+    .from(adminUsers).where(archiveFilter);
   const data = await db
     .select()
     .from(adminUsers)
+    .where(archiveFilter)
     .orderBy(desc(adminUsers.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
   const userIds = data.map(user => user.id);
+  const archiveRows = userIds.length ? await db.select({ adminUserId: adminStaffArchives.adminUserId, state: adminStaffArchives.state,
+    archivedAt: adminStaffArchives.archivedAt, merchantId: adminStaffArchives.merchantId }).from(adminStaffArchives)
+    .where(inArray(adminStaffArchives.adminUserId, userIds)) : [];
+  const archiveMap = new Map(archiveRows.map(row => [row.adminUserId, row]));
+  const archivedFrontRows = await db.select({ frontUserId: adminStaffArchives.frontUserId }).from(adminStaffArchives)
+    .where(isNotNull(adminStaffArchives.frontUserId));
   const scopeRows =
     userIds.length > 0
       ? await db
@@ -5983,11 +5999,14 @@ export async function getAdminUsers(
     // passwordHash and may gain additional credentials in the future.
     data: data.map(user => ({
       ...toAdminUserDto(user),
+      accountVersion: user.sessionVersion,
+      archive: archiveMap.get(user.id) ?? null,
       salesStaffCodes: scopeMap.get(user.id) ?? [],
       ownSalesStaffCode: identityMap.get(user.id) ?? null,
       permissions: permissionMap.get(user.id) ?? [],
     })),
     total: Number(count),
+    archivedFrontUserIds: archivedFrontRows.map(row => row.frontUserId!),
   };
 }
 
@@ -6440,16 +6459,18 @@ type AdminPermissionAuditInput = {
   userAgent?: string | null;
 };
 
-async function lockActiveSuperAdmins(tx: DbExecutor) {
+export async function lockActiveSuperAdmins(tx: DbExecutor) {
   return tx
     .select({ id: adminUsers.id })
     .from(adminUsers)
     .where(
       and(
         eq(adminUsers.adminRole, "super_admin"),
-        eq(adminUsers.status, "active")
+        eq(adminUsers.status, "active"),
+        sql`NOT EXISTS (SELECT 1 FROM ${adminStaffArchives} WHERE ${adminStaffArchives.adminUserId} = ${adminUsers.id})`
       )
     )
+    .orderBy(asc(adminUsers.id))
     .for("update");
 }
 
@@ -6624,6 +6645,9 @@ export async function updateAdminUser(
       .for("update");
     if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
 
+    const archived = await tx.select({ id: adminStaffArchives.id }).from(adminStaffArchives)
+      .where(eq(adminStaffArchives.adminUserId, id)).limit(1);
+    if (archived.length) throw new Error("ADMIN_USER_ARCHIVED");
     const nextRole = input.adminRole ?? existing.adminRole;
     const nextStatus = input.status ?? existing.status;
     if (input.actorAdminUserId === id) {
@@ -6745,6 +6769,9 @@ export async function deleteAdminUser(
       .for("update");
     if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
     if (actorAdminUserId === id) throw new Error("ADMIN_SELF_REMOVE_FORBIDDEN");
+    const archived = await tx.select({ id: adminStaffArchives.id }).from(adminStaffArchives)
+      .where(eq(adminStaffArchives.adminUserId, id)).limit(1);
+    if (archived.length) throw new Error("ADMIN_USER_ARCHIVED");
     assertSuperAdminContinuity(
       activeSuperAdmins.length,
       existing,

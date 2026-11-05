@@ -7,6 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { selectHostTab, hostNavigate } from "./ChannelInventoryHost.router-test-helper";
 import { getChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
+import { BUSINESS_INDUSTRY_OPTIONS } from "../../../shared/businessIndustry";
 
 vi.mock("wouter", async importOriginal => ({
   ...await importOriginal<typeof import("wouter")>(),
@@ -437,7 +438,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.querySelector('[aria-label="库存可见范围"]')).toBeNull();
     expect(document.body.textContent).toContain("LM358DR");
     expect(document.body.textContent).toContain("TEAM-SN74");
-    expect(document.querySelector("h1")).toBeNull();
+    expect(document.querySelectorAll("h1")).toHaveLength(1);
+    expect(document.querySelector(".ci-tabbar > h1.ci-page-title")?.textContent).toBe("渠道库存");
     expect(document.querySelector(".ci-heading-actions")?.textContent).toContain("上传库存单条上传");
     expect(document.body.textContent).not.toContain("共享给同队");
     expect(document.body.textContent).not.toContain("撤销共享");
@@ -610,25 +612,45 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.getChannelInputs).toHaveLength(0);
   });
 
-  it("cycles server sort none asc desc none, resets page and preserves server ordering/page count", async () => {
+  it("cycles server quantity sort default desc asc default, resets page and preserves server ordering/page count", async () => {
     renderHost();
     const qty = required(document.querySelector<HTMLButtonElement>('[aria-label="按可供数量排序"]'), "missing qty sort");
     const dc = required(document.querySelector<HTMLButtonElement>('[aria-label="按 Date Code 排序"]'), "missing date sort");
     expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("none");
+    expect(qty.querySelectorAll(".ci-quantity-sort-icon path")).toHaveLength(2);
+    expect(qty.querySelectorAll(".ci-sort-active")).toHaveLength(0);
+    expect(qty.getAttribute("title")).toBe("数量默认顺序；点击数量从多到少");
     click(button("下一页"));
     expect(runtime.materialInputs.at(-1)).toMatchObject({ page: 2 });
     click(qty);
-    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "asc", page: 1 });
-    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("ascending");
-    // Null quantity stays first exactly as the server returned, not a client-page sort.
-    expect(document.querySelector("tbody tr")?.textContent).toContain("LM358DR");
-    expect(document.querySelectorAll(".ci-sort-arrow")).toHaveLength(1);
-    click(qty);
     expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "desc", page: 1 });
     expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("descending");
+    expect(qty.querySelectorAll(".ci-quantity-sort-icon path")).toHaveLength(2);
+    expect(qty.querySelectorAll(".ci-sort-active")).toHaveLength(1);
+    expect(qty.getAttribute("title")).toBe("数量从多到少；点击数量从少到多");
+    expect(document.querySelector(".ci-sort-status")?.textContent).toBe("数量从多到少 · 待确认数量排末尾");
+    // Null quantity stays first exactly as the server returned, not a client-page sort.
+    expect(document.querySelector("tbody tr")?.textContent).toContain("LM358DR");
+    click(button("下一页"));
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "desc", page: 2 });
     click(qty);
-    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: undefined, sortDirection: undefined });
-    expect(document.querySelectorAll(".ci-sort-arrow")).toHaveLength(0);
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "asc", page: 1 });
+    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("ascending");
+    expect(qty.querySelectorAll(".ci-quantity-sort-icon path")).toHaveLength(2);
+    expect(qty.querySelectorAll(".ci-sort-active")).toHaveLength(1);
+    expect(qty.getAttribute("title")).toBe("数量从少到多；点击恢复默认顺序");
+    expect(document.querySelector(".ci-sort-status")?.textContent).toBe("数量从少到多 · 待确认数量排末尾");
+    expect(Array.from(document.querySelectorAll("tbody .ci-cell-title")).map(row => row.textContent)).toEqual(["LM358DR", "TEAM-SN74"]);
+    click(button("下一页"));
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "asc", page: 2 });
+    click(qty);
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: undefined, sortDirection: undefined, page: 1 });
+    expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("none");
+    expect(qty.querySelectorAll(".ci-quantity-sort-icon path")).toHaveLength(2);
+    expect(qty.querySelectorAll(".ci-sort-active")).toHaveLength(0);
+    expect(qty.getAttribute("title")).toBe("数量默认顺序；点击数量从多到少");
+    expect(document.querySelector(".ci-sort-status")?.textContent).toBe("数量默认顺序");
+    expect(Array.from(document.querySelectorAll("tbody .ci-cell-title")).map(row => row.textContent)).toEqual(["LM358DR", "TEAM-SN74"]);
     click(dc);
     expect(runtime.materialInputs.at(-1)).toMatchObject({ sortBy: "dateCode", sortDirection: "asc" });
     expect(qty.closest("th")?.getAttribute("aria-sort")).toBe("none");
@@ -1720,10 +1742,14 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined });
   });
 
-  it("retains the original tabs, complete column ordering/type/filter/control contract without demo content", () => {
+  it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
     expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
-    expect(document.querySelector("h1,.ci-page-title,.ci-stats")).toBeNull();
+    expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
+    const header = required(document.querySelector(".ci-tabbar"), "missing compact channel header");
+    expect(header.querySelector("h1.ci-page-title")?.textContent).toBe("渠道库存");
+    for (const name of ["平铺查看", "按渠道查看", "上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
+    expect(document.querySelector(".ci-stats,.ci-toolbar.ci-inventory-view-controls")).toBeNull();
     expect(document.body.textContent).not.toMatch(/库存明细|切换示例身份|leader|creator/);
     expect(getComputedStyle(required(document.querySelector(".ci-filter-label"), "missing original a11y label")).position).toBe("absolute");
     expect(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')?.disabled).toBe(true);
@@ -1857,7 +1883,18 @@ describe("v14 industry and channel-row stock upload", () => {
     (runtime.channelQuery as { data: { items: Record<string, unknown>[] } }).data.items[0].industryCode = "medical";
     renderHost();
     expect(Array.from(document.querySelectorAll("td.ci-material-industry-col")).map(cell => cell.textContent)).toEqual(["汽车电子", "未设置"]);
-    expect(document.body.innerHTML).not.toMatch(/HIDDEN-|unknown-internal-code|医疗电子|深圳代理|渠道联系人/);
+    const industryFilter = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存行业"]'), "missing public industry filter");
+    expect(Array.from(industryFilter.options).map(option => ({ value: option.value, label: option.text }))).toEqual([
+      { value: "all", label: "全部行业" }, ...BUSINESS_INDUSTRY_OPTIONS, { value: "unset", label: "未设置" },
+    ]);
+    expect(document.body.innerHTML).not.toMatch(/HIDDEN-|unknown-internal-code|深圳代理|渠道联系人/);
+    // Only public selector options may contain medical: never allowlist the data-row DOM or its attributes.
+    const rows = document.querySelectorAll(".ci-compact-stock-table tbody tr");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.outerHTML).not.toMatch(/HIDDEN-|unknown-internal-code|医疗电子|medical|深圳代理|渠道联系人/);
+    const pageWithoutIndustryOptions = document.body.cloneNode(true) as HTMLElement;
+    required(pageWithoutIndustryOptions.querySelector('[aria-label="筛选库存行业"]'), "missing cloned industry filter").replaceChildren();
+    expect(pageWithoutIndustryOptions.innerHTML).not.toMatch(/医疗电子|medical/);
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
     expect(runtime.sourceInputs).toHaveLength(0); expect(runtime.optionInputs).toHaveLength(0);
   });

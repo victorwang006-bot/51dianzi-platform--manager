@@ -1,11 +1,12 @@
 import { materialUploadBatchId } from "./channelInventoryManagementPersistence";
 import { sql, type SQL } from "drizzle-orm";
-import { businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
+import { BUSINESS_INDUSTRY_CODES, businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
 import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOriginalActor";
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
-import { linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
+import { customerReadPolicy, linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
+import { crmCustomerPolicyWhere } from "./crmCustomers";
 
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
@@ -20,6 +21,7 @@ export type TeamChannelMaterial = {
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
   partNumber?: string; brand?: string; channelId?: number; uploadBatchId?: number; page: number; pageSize: number;
+  industryCode?: BusinessIndustryCode | "unset";
   sortBy?: "qty" | "dateCode"; sortDirection?: "asc" | "desc";
 };
 const rows = (result: unknown): SqlResultRow[] => {
@@ -78,8 +80,9 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
   return {
     async listTeamMaterials(scope: ChannelInventoryScope, input: TeamMaterialsInput) {
       expected(scope, input);
-      const allowed = new Set(["expectedEnterpriseId", "expectedActorUserId", "partNumber", "brand", "channelId", "uploadBatchId", "page", "pageSize", "sortBy", "sortDirection"]);
+      const allowed = new Set(["expectedEnterpriseId", "expectedActorUserId", "partNumber", "brand", "channelId", "uploadBatchId", "industryCode", "page", "pageSize", "sortBy", "sortDirection"]);
       if (Object.keys(input).some(k => !allowed.has(k))) fail("BAD_REQUEST", "库存筛选字段无效");
+      if (input.industryCode !== undefined && input.industryCode !== "unset" && !businessIndustryCodeSchema.safeParse(input.industryCode).success) fail("BAD_REQUEST", "库存行业筛选无效");
       if (!Number.isInteger(input.page) || input.page < 1 || input.page > 1_000_000 || !Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 100) fail("BAD_REQUEST", "分页参数无效");
       const order = teamMaterialOrder(input);
       const db = await database();
@@ -102,6 +105,23 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       }
       if (input.partNumber) predicates.push(sql`m.part_number LIKE ${literal(input.partNumber)} ESCAPE '='`);
       if (input.brand) predicates.push(sql`m.brand LIKE ${literal(input.brand)} ESCAPE '='`);
+      if (input.industryCode !== undefined) {
+        // Match the existing public projection: linked customer industry is current
+        // and CRM-authorized; never filter on the stale channel copy or private source.
+        const policy = await customerReadPolicy(tx, scope);
+        const link = sql`FROM crm_customer_supply_channels industry_link WHERE industry_link.enterpriseId = c.enterprise_id
+          AND industry_link.dataOwnerUserId = c.data_owner_user_id AND industry_link.channelId = c.id`;
+        const industry = sql`CASE WHEN EXISTS (SELECT 1 ${link} FOR UPDATE) THEN
+          (SELECT industry_customer.industryCode FROM crm_customer_supply_channels industry_link
+            INNER JOIN crm_customers industry_customer ON industry_customer.enterpriseId = industry_link.enterpriseId AND industry_customer.id = industry_link.customerId
+            WHERE industry_link.enterpriseId = c.enterprise_id AND industry_link.dataOwnerUserId = c.data_owner_user_id AND industry_link.channelId = c.id
+              AND ${policy ? crmCustomerPolicyWhere(scope, policy, "industry_customer") : sql`FALSE`} LIMIT 1 FOR UPDATE)
+          ELSE c.industryCode END`;
+        const known = sql`BINARY (${industry}) IN (${sql.join(BUSINESS_INDUSTRY_CODES.map(code => sql`${code}`), sql`, `)})`;
+        predicates.push(input.industryCode === "unset"
+          ? sql`COALESCE((${known}), FALSE) = FALSE`
+          : sql`BINARY (${industry}) = ${input.industryCode}`);
+      }
       const where = all(predicates);
       const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
       const items = rows(await tx.execute(sql`SELECT m.id, ${materialUploadBatchId} AS uploadBatchId, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,

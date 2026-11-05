@@ -15,15 +15,17 @@ const runtime = vi.hoisted(() => ({
   listInputs: [] as any[], listPending: false, listFetching: false, customerContextError: false,
   listOptions: [] as any[],
   remembered: {} as Record<string, unknown>,
-  canManageAll: false, members: [] as { userId: number; name: string }[],
+  canManageAll: false, canReadAll: false, members: [] as { userId: number; name: string }[],
+  identityReady: true, restoreCalls: [] as boolean[],
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers", runtime.navigate], useSearch: () => "" }));
 vi.mock("sonner", () => ({ toast: { info: vi.fn(), warning: vi.fn() } }));
 vi.mock("../hooks/usePageMemory", async () => {
   const { useState } = await import("react");
-  return { usePageMemory: () => true,
+  return { usePageMemory: () => runtime.identityReady,
     useRememberedState: (key: string, value: unknown) => useState(key in runtime.remembered ? runtime.remembered[key] : value),
-    freshListOptions: (options: unknown) => options, useRestoringListQuery: (query: unknown) => query,
+    freshListOptions: (options: any, ready: boolean) => ({ ...options, enabled: ready && options.enabled !== false }),
+    useListPositionRestore: (_query: unknown, active: boolean) => { runtime.restoreCalls.push(active); },
     returnToPageSource: vi.fn() };
 });
 vi.mock("../hooks/useCustomerCreateDraft", () => ({
@@ -44,7 +46,7 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   useUtils: () => runtime.utils,
   enterprise: { me: { useQuery: () => ({ data: { enterprise: { id: runtime.enterpriseId }, currentUserId: runtime.actorId, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: runtime.enterpriseFailed, refetch: runtime.authorityRetry }) } },
   customer: {
-    context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, members: runtime.members }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
+    context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, canReadAll: runtime.canReadAll || runtime.canManageAll, members: runtime.members }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
     list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: false, refetch: vi.fn() }; } },
     contactsSummary: { useQuery: () => ({ data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } }) },
     contactsList: { useQuery: () => ({ data: { contacts: [] }, isPending: false, isError: false, refetch: vi.fn() }) },
@@ -81,23 +83,6 @@ function star(id = 801) { return host.querySelector<HTMLButtonElement>(`button[d
 function fixture(path: string) {
   writeFileSync(path, `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Actual CustomerList synthetic v19 render</title></head><body data-admin-readability="true" data-business-native-fonts="true">${host.innerHTML}</body></html>\n`);
 }
-async function selectTarget(userId: number) {
-  const select = document.querySelector<HTMLSelectElement>('select[aria-label="替员工标星：选择员工"]')!;
-  await act(async () => { select.value = String(userId); select.dispatchEvent(new Event("change", { bubbles: true })); });
-}
-function dialog() { return document.querySelector<HTMLElement>('[role="dialog"]')!; }
-async function openDelegation(id = 801) { await click(button("替员工标星", tableRows().find(row => row.dataset.pageMemoryRow === String(id))!)); }
-async function openEmployeeManagement() { await click(button("替员工标星")); }
-function enableRowDelegation(userId = 8) {
-  runtime.canManageAll = true;
-  // Explicit customer fixtures really belong to this employee. The API mock
-  // never changes a customer's owner to make a requested delegation pass.
-  runtime.rows = runtime.rows.map(item => ({ ...item, assignedUserId: userId }));
-  runtime.delegatedRows[userId] = [...runtime.rows, { ...runtime.rows[0], id: 804 }].map(item => ({ ...item,
-    starUserId: userId, isStarred: false, starRevision: 5 }));
-  runtime.remembered = { appliedFilters: { keyword: "", grade: "", stage: "", scope: "all", assignedUserId: "", due: "all", archived: false, starredOnly: false }, ...runtime.remembered };
-}
-
 beforeEach(() => {
   Object.assign(globalThis, { React, IS_REACT_ACT_ENVIRONMENT: true });
   runtime.rows = [row(801, { name: "合成超长客户名称用于检验姓名截断后星标仍完整可达有限公司", isStarred: true, starRevision: 2 }), row(802, { industryCode: null, contactName: "合成补档联系人", nextFollowUpAt: null }), row(803, { archivedAt: "2026-11-01", nextFollowUpAt: "2026-11-02T09:00:00+08:00" })];
@@ -105,23 +90,15 @@ beforeEach(() => {
   runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.listInputs = []; runtime.listPending = false; runtime.listFetching = false; runtime.customerContextError = false;
   runtime.listOptions = [];
   runtime.remembered = {};
-  runtime.canManageAll = false; runtime.members = [];
+  runtime.canManageAll = false; runtime.canReadAll = false; runtime.members = [];
+  runtime.identityReady = true; runtime.restoreCalls = [];
   runtime.delegatedRows = {};
-  runtime.starList.mockReset().mockImplementation(async (input: any) => {
-    if (input.scope !== "all" || input.assignedUserId !== input.starUserId)
-      throw Object.assign(new Error("组员星标列表须选择对应组员负责人"), { data: { code: "BAD_REQUEST" } });
-    const items = (runtime.delegatedRows[input.starUserId] ?? runtime.rows.map(item => ({ ...item,
-      starUserId: input.starUserId, isStarred: false, starRevision: 0 }))).filter(item =>
-      item.enterpriseId === runtime.enterpriseId && item.assignedUserId === input.assignedUserId
-      && Boolean(item.archivedAt) === input.archived && (!input.keyword || [item.name, item.contactName, item.phone].some(value => value?.includes(input.keyword))));
-    const offset = (input.page - 1) * input.pageSize;
-    return { items: items.slice(offset, offset + input.pageSize), total: items.length, page: input.page, pageSize: input.pageSize };
-  });
   runtime.starContext.mockReset().mockImplementation(async () => ({ enterpriseId: runtime.enterpriseId, actorUserId: runtime.actorId, targets: runtime.targets }));
   runtime.setStar.mockReset().mockImplementation(async (input: any) => {
     const update = (items: any[]) => items.map(item => item.id === input.customerId ? { ...item, isStarred: input.starred, starRevision: input.expectedRevision + 1, starUserId: input.targetUserId } : item);
-    if (input.targetUserId === runtime.actorId) runtime.rows = update(runtime.rows);
-    else runtime.delegatedRows[input.targetUserId] = update(runtime.delegatedRows[input.targetUserId] ?? []);
+    const current = runtime.rows.find(item => item.id === input.customerId);
+    if (current && current.assignedUserId !== input.targetUserId) throw Object.assign(new Error("负责人变化"), { data: { code: "NOT_FOUND" } });
+    runtime.rows = update(runtime.rows);
     return { customerId: input.customerId, targetUserId: input.targetUserId, isStarred: input.starred, starRevision: input.expectedRevision + 1, requestId: input.requestId, idempotent: false };
   });
   runtime.summary.mockReset().mockImplementation(() => Promise.resolve(summaries()));
@@ -162,6 +139,25 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
     expect(css).toContain("flex-shrink: 0"); expect(css).toContain("width: 16px"); expect(css).toContain("fill: currentColor");
     expect(css).toContain("background: transparent"); expect(css).toContain("border: 0"); expect(css).toContain("font-family: inherit"); expect(css).toContain(":focus-visible");
     expect(css).not.toMatch(/!important|scale\(|zoom:/);
+  });
+  it("restores position only after a current authorized list is actually rendered", async () => {
+    runtime.identityReady = false;
+    await render();
+    expect(runtime.restoreCalls).not.toContain(true);
+    expect(runtime.listOptions.at(-1)?.enabled).toBe(false);
+    expect(host.textContent).not.toContain(runtime.rows[0].name);
+    runtime.identityReady = true; runtime.restoreCalls = [];
+    await render();
+    expect(runtime.restoreCalls.at(-1)).toBe(true);
+    expect(tableRows()[0]?.textContent).toContain(runtime.rows[0].name);
+    expect(host.querySelector('[data-page-memory-scroll="customer-list-table"]')).not.toBeNull();
+  });
+  it("does not consume restore or reveal a cached empty-page total when CRM authority is revoked", async () => {
+    runtime.rows = []; runtime.customerContextError = true;
+    await render();
+    expect(runtime.restoreCalls).not.toContain(true);
+    expect(runtime.listOptions.at(-1)?.enabled).toBe(false);
+    expect(host.textContent).not.toMatch(/共\s*40\s*条/);
   });
   it("renders a directly usable original file portal from upload without the first-source confirmation", async () => {
     await render(); await click(button("上传物料表", tableRows()[0]));
@@ -248,11 +244,11 @@ describe("actual CustomerList layered filters v20", () => {
     expect(expanded.querySelector('[aria-label="按客户阶段筛选"]')?.textContent).toBe("报价中");
     expect(expanded.querySelector('[aria-label="按负责人筛选"]')).toBeNull();
     expect(expanded.querySelector('[aria-label="按归档状态筛选"]')?.textContent).toBe("已归档客户");
-    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", page: 2, archived: false, starUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", page: 2, archived: false, starMode: "assignee" });
     await click(moreButton); await click(moreButton);
     expect(host.querySelector('[aria-label="按客户阶段筛选"]')?.textContent).toBe("报价中");
     await click(button("确定"));
-    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "待应用", grade: "B", stage: "quoted", due: "today", archived: true, scope: "mine", page: 1, starUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "待应用", grade: "B", stage: "quoted", due: "today", archived: true, scope: "mine", page: 1, starMode: "assignee" });
   });
 
   it.each(["搜索按钮", "Enter"])("applies the same complete restored draft with %s and retains legitimate all-company scope on reset", async mode => {
@@ -265,11 +261,11 @@ describe("actual CustomerList layered filters v20", () => {
     expect(host.querySelector('#customer-list-more-filters [aria-label="按负责人筛选"]')).not.toBeNull();
     if (mode === "搜索按钮") await click(button("搜索"));
     else await act(async () => { host.querySelector(".customer-list-search")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
-    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "客户", grade: "C", stage: "quoted", scope: "all", assignedUserId: 8, due: "overdue", archived: true, page: 1, pageSize: 20, starUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "客户", grade: "C", stage: "quoted", scope: "all", assignedUserId: 8, due: "overdue", archived: true, page: 1, pageSize: 20, starMode: "assignee" });
     expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("客户");
     if (mode === "搜索按钮" && process.env.CUSTOMER_FILTERS_FIXTURE_PATH) fixture(process.env.CUSTOMER_FILTERS_FIXTURE_PATH);
     await click(button("重置"));
-    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", scope: "all", due: "all", archived: false, page: 1, starUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", scope: "all", due: "all", archived: false, page: 1, starMode: "assignee" });
     for (const key of ["assignedUserId", "grade", "stage"]) expect(runtime.listInputs.at(-1)).not.toHaveProperty(key);
     expect(button("重置").disabled).toBe(true);
   });
@@ -305,7 +301,7 @@ describe("actual CustomerList personal stars", () => {
     runtime.rows = [row(801)]; await render(); star().focus();
     await act(async () => { star().dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 })); });
     expect(runtime.setStar.mock.calls[0][0]).toEqual({ customerId: 801, targetUserId: 7, starred: true, expectedRevision: 0,
-      expectedEnterpriseId: 31, expectedActorUserId: 7, requestId: expect.any(String) });
+      expectedEnterpriseId: 31, expectedActorUserId: 7, starMode: "assignee", requestId: expect.any(String) });
     expect(star().getAttribute("aria-pressed")).toBe("true"); expect(runtime.navigate).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(star());
     await click(star()); expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ starred: false, expectedRevision: 1, targetUserId: 7 });
@@ -319,13 +315,13 @@ describe("actual CustomerList personal stars", () => {
     runtime.rows = [row(801), row(802, { isStarred: true, starRevision: 8 })]; await render();
     expect(tableRows().map(row => row.dataset.pageMemoryRow)).toEqual(["801", "802"]);
     await click(button("下一页")); expect(runtime.listInputs.at(-1).page).toBe(2);
-    await click(star(804)); expect(runtime.listInputs.at(-1)).toMatchObject({ page: 1, due: "all", starUserId: 7 });
+    await click(star(804)); expect(runtime.listInputs.at(-1)).toMatchObject({ page: 1, due: "all", starMode: "assignee" });
     const input = host.querySelector<HTMLInputElement>('input[aria-label="搜索客户名称、联系人或电话"]')!;
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "  合成  ");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await click(button("搜索")); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "合成", page: 1, starUserId: 7 });
+    await click(button("搜索")); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "合成", page: 1, starMode: "assignee" });
   });
 
   it("shows loader and prevents duplicate personal commands without optimistic toggling or a global selector", async () => {
@@ -335,7 +331,7 @@ describe("actual CustomerList personal stars", () => {
     await click(star(802)); expect(star(802).getAttribute("aria-busy")).toBe("true"); expect(star(802).getAttribute("aria-pressed")).toBe("false");
     expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull();
     await click(star()); await click(star(802)); expect(runtime.setStar).toHaveBeenCalledTimes(1);
-    expect(runtime.listInputs.at(-1).starUserId).toBe(7);
+    expect(runtime.listInputs.at(-1).starMode).toBe("assignee"); expect(runtime.listInputs.at(-1)).not.toHaveProperty("starUserId");
     const input = runtime.setStar.mock.calls[0][0];
     await act(async () => { finish({ customerId: 802, targetUserId: 7, isStarred: true, starRevision: 1, requestId: input.requestId, idempotent: false }); });
     expect(star(802).getAttribute("aria-busy")).toBe("false");
@@ -362,365 +358,8 @@ describe("actual CustomerList personal stars", () => {
     await click(star()); expect(host.textContent).toContain("重点客户操作失败"); expect(host.textContent).not.toContain("重试原重点客户请求");
   });
 
-  it("delegates only within the row dialog, reads true employee state and explicitly sets/unsets without changing the main list", async () => {
-    enableRowDelegation(8);
-    runtime.canManageAll = true; runtime.members = [{ userId: 9, name: "原负责人" }];
-    runtime.targets.push({ userId: 8, name: "合成组员" });
-    runtime.remembered = { appliedFilters: { keyword: "合成", scope: "all", assignedUserId: "9", grade: "B", due: "today", archived: false, starredOnly: true }, page: 2, moreFiltersOpen: true };
-    runtime.remembered.draftFilters = runtime.remembered.appliedFilters;
-    await render(); const original = { ...runtime.listInputs.at(-1) }; await openDelegation(804);
-    expect(dialog().textContent).toContain("不改变负责人"); expect(runtime.starList).not.toHaveBeenCalled();
-    await selectTarget(8);
-    expect(runtime.listInputs.at(-1)).toEqual(original);
-    expect(host.querySelector('[aria-label="客户范围"]')?.textContent).toBe("全企业");
-    expect(host.querySelector('[aria-label="按负责人筛选"]')).not.toBeNull();
-    expect(runtime.starList.mock.calls[0][0]).toMatchObject({ scope: "all", assignedUserId: 8, starUserId: 8, starredOnly: false, keyword: runtime.rows[0].name, page: 1, pageSize: 100 });
-    // This page contains id 804, so supply an authoritative employee response for that exact ID.
-    runtime.delegatedRows[8] = [row(804, { name: runtime.rows[0].name, assignedUserId: 8, starUserId: 8, isStarred: false, starRevision: 13 })];
-    await click(button("重新读取重点状态", dialog()));
-    await click(button("标记为重点客户", dialog()));
-    expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ customerId: 804, targetUserId: 8, starred: true, expectedRevision: 13, expectedActorUserId: 7, expectedEnterpriseId: 31 });
-    expect(dialog().textContent).toContain("已标记为重点客户");
-    await click(button("取消重点客户标记", dialog()));
-    expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ customerId: 804, targetUserId: 8, starred: false, expectedRevision: 14 });
-    expect(runtime.listInputs.at(-1)).toEqual(original); expect(runtime.navigate).not.toHaveBeenCalled();
-    await click(button("关闭", dialog())); expect(dialog()).toBeNull();
-    expect(runtime.listInputs.at(-1)).toEqual(original);
-  });
-
-  it("fails closed when a delegated member is revoked while keeping the main list personal", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "合成组员" }); await render(); await openDelegation(); await selectTarget(8);
-    runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.authVersion = "v2"; await render();
-    expect(dialog().textContent).toContain("未切换为本人标记"); expect(runtime.listInputs.at(-1)).toMatchObject({ starUserId: 7, scope: "all" });
-    expect(tableRows()).toHaveLength(3); expect(runtime.setStar).not.toHaveBeenCalled();
-    expect(button("标记为重点客户", dialog()).disabled).toBe(true);
-    expect(host.querySelector("tbody")?.textContent).not.toContain("替员工标星");
-  });
-
-  it("aborts and fences a late write on account/enterprise change and authorization revocation", async () => {
-    let finish!: (value: unknown) => void;
-    runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await render(); await click(star(802));
-    const old = runtime.setStar.mock.calls[0];
-    runtime.enterpriseId = 32; runtime.actorId = 8; runtime.targets = [{ userId: 8, name: "新员工" }]; await render();
-    expect(old[1].signal.aborted).toBe(true); expect(runtime.listInputs.at(-1).starUserId).toBe(8);
-    await act(async () => { finish({ customerId: 802, targetUserId: 7, isStarred: true, starRevision: 1, requestId: old[0].requestId, idempotent: false }); });
-    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(host.textContent).not.toContain("已标记重点客户");
-    runtime.customerContextError = true; await render(); expect(host.textContent).toContain("无法读取客户权限");
-  });
-
-  it("rejects stale/mismatched starContext, missing APIs and absent metadata while preserving other row features", async () => {
-    runtime.starContext.mockResolvedValueOnce({ enterpriseId: 999, actorUserId: 7, targets: runtime.targets }); await render();
-    expect(host.textContent).toContain("重点客户权限读取失败"); await click(star()); expect(runtime.setStar).not.toHaveBeenCalled();
-    await click(button("跟进", tableRows()[0])); expect(runtime.navigate).toHaveBeenLastCalledWith("/customers/801?follow=1");
-    await click(button("重新读取重点客户权限")); expect(star().getAttribute("aria-disabled")).toBe("false");
-    delete runtime.rows[0].canSetStar; await render(); await click(star()); expect(runtime.setStar).not.toHaveBeenCalled();
-    delete runtime.utils.client.customer.starContext; runtime.authVersion = "v3"; await render();
-    expect(host.textContent).toContain("重点客户权限读取失败"); expect(tableRows()).toHaveLength(3);
-  });
-
-  it("renders empty and loading list states without phantom rows, date columns or incorrect colspans", async () => {
-    runtime.rows = []; await render(); expect(host.textContent).toContain("暂无匹配客户"); expect(host.querySelector("table")).toBeNull();
-    runtime.listPending = true; await render(); expect(host.querySelector(".animate-spin")).not.toBeNull();
-    expect(host.querySelectorAll("tbody tr, [colspan], [data-testid=followup-header]")).toHaveLength(0);
-  });
-
-  it("keeps every restored filter and page during independent employee management and never restores an illegal company scope", async () => {
-    const filters = { keyword: " fixture ", grade: "C", stage: "quoted", scope: "all", assignedUserId: "999", due: "overdue", archived: true };
-    runtime.remembered = { draftFilters: filters, appliedFilters: filters, page: 2 }; runtime.targets.push({ userId: 8, name: "合成组员" });
-    await render(); expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", keyword: "fixture", grade: "C", stage: "quoted", archived: true, due: "overdue", page: 2 });
-    const original = { ...runtime.listInputs.at(-1) }; expect(original).not.toHaveProperty("assignedUserId");
-    await openEmployeeManagement(); await selectTarget(8); expect(runtime.listInputs.at(-1)).toEqual(original);
-    expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull();
-  });
-
-  it("distinguishes same-name employees by authoritative IDs and starts every new dialog without a restored target", async () => {
-    enableRowDelegation(9);
-    runtime.targets.push({ userId: 8, name: "张三" }, { userId: 9, name: "张三" }); await render(); await openDelegation(802);
-    const selector = dialog().querySelector('select')!;
-    expect(Array.from(selector.options).map(option => option.textContent?.trim())).toEqual(["请选择员工", "张三（组员 · ID 8）", "张三（组员 · ID 9）"]);
-    await selectTarget(9); expect(dialog().textContent).toContain("用户ID 9");
-    await click(button("标记为重点客户", dialog()));
-    expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ customerId: 802, targetUserId: 9 });
-    expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", starUserId: 7 });
-    await click(button("关闭", dialog())); await openDelegation();
-    expect(dialog().querySelector('select')!.value).toBe("");
-    expect(dialog().textContent).not.toContain("当前状态");
-  });
-
-  it("aborts and fences revoked delegated writes without hiding or retargeting the personal list", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "合成组员" }); await render(); await openDelegation(802); await selectTarget(8);
-    let finish!: (value: unknown) => void;
-    runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await click(button("标记为重点客户", dialog()));
-    const old = runtime.setStar.mock.calls[0];
-    expect(dialog().querySelector('select')!.disabled).toBe(true); expect(button("关闭", dialog()).disabled).toBe(true);
-    runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.authVersion = "revoked-v2"; await render();
-    expect(old[1].signal.aborted).toBe(true); expect(dialog().textContent).toContain("未切换为本人标记");
-    await act(async () => { finish({ customerId: 802, targetUserId: 8, isStarred: true, starRevision: 6, requestId: old[0].requestId, idempotent: false }); });
-    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(runtime.listInputs.at(-1).starUserId).toBe(7);
-    expect(tableRows()).toHaveLength(3); expect(runtime.setStar).toHaveBeenCalledTimes(1);
-  });
-
-  it("aborts a stale starContext read on identity switch and admits only the new authoritative targets", async () => {
-    let finish!: (value: unknown) => void;
-    runtime.starContext.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await render();
-    const old = runtime.starContext.mock.calls[0]; expect(star().getAttribute("aria-disabled")).toBe("true");
-    runtime.actorId = 8; runtime.enterpriseId = 32; runtime.targets = [{ userId: 8, name: "新员工" }]; await render();
-    expect(old[1].signal.aborted).toBe(true);
-    await act(async () => { finish({ enterpriseId: 31, actorUserId: 7, targets: [{ userId: 7, name: "旧员工" }, { userId: 99, name: "旧组员" }] }); });
-    expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull(); expect(runtime.listInputs.at(-1).starUserId).toBe(8);
-    expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-
-  it("does not expose delegation to an admin with no authoritative team-member targets, or change row action availability", async () => {
-    runtime.canManageAll = true; runtime.members = [{ userId: 99, name: "非本组员工" }]; await render();
-    expect(host.textContent).not.toContain("替员工标星"); expect(runtime.starList).not.toHaveBeenCalled();
-    expect(host.textContent).not.toMatch(/收藏|星标归属|仅显示标星/);
-    expect(button("上传物料表", tableRows()[0])).toBeDefined();
-    expect(button("需求录入", tableRows()[0])).toBeDefined(); expect(button("跟进", tableRows()[0])).toBeDefined();
-  });
-
-  it("retains the exact delegated unknown command and blocks close, new commands and selection until the original retry resolves", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员甲" }, { userId: 9, name: "组员乙" });
-    await render(); await openDelegation(802); await selectTarget(8);
-    runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("504 network"), { data: { code: "TIMEOUT" } }));
-    await click(button("标记为重点客户", dialog())); const frozen = runtime.setStar.mock.calls[0][0];
-    expect(frozen).toMatchObject({ targetUserId: 8, customerId: 802, expectedRevision: 5, starred: true });
-    expect(dialog().textContent).toContain("结果未知"); expect(dialog().textContent).toContain("未标记为重点客户");
-    expect(dialog().querySelector('select')!.disabled).toBe(true); expect(button("关闭", dialog()).disabled).toBe(true);
-    await click(button("标记为重点客户", dialog())); await click(button("关闭", dialog()));
-    expect(runtime.setStar).toHaveBeenCalledTimes(1); expect(dialog()).not.toBeNull();
-    await click(button("重试原重点客户请求", dialog()));
-    expect(runtime.setStar.mock.calls[1][0]).toBe(frozen); expect(dialog().textContent).toContain("已标记为重点客户");
-    expect(runtime.listInputs.at(-1).starUserId).toBe(7); expect(star(802).getAttribute("aria-pressed")).toBe("false");
-  });
-
-  it("never treats absent, wrong-target, wrong-enterprise or incomplete delegated metadata as an unstarred preference", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员" }); await render(); await openDelegation();
-    runtime.starList.mockResolvedValueOnce({ items: [], total: 0 }); await selectTarget(8);
-    expect(dialog().textContent).toContain("未能读取"); expect(button("标记为重点客户", dialog()).disabled).toBe(true);
-    for (const changes of [{ starUserId: 9 }, { enterpriseId: 99 }, { starRevision: undefined }, { canSetStar: false }]) {
-      runtime.starList.mockResolvedValueOnce({ items: [row(801, { assignedUserId: 8, starUserId: 8, ...changes })], total: 1 });
-      await click(button("重新读取重点状态", dialog()));
-      expect(button("标记为重点客户", dialog()).disabled).toBe(true);
-      expect(button("取消重点客户标记", dialog()).disabled).toBe(true);
-    }
-    expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-
-  it("aborts and fences delegated reads on employee change, close/reopen and account/enterprise switch", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "甲" }, { userId: 9, name: "乙" }); await render(); await openDelegation(802);
-    let finish!: (value: unknown) => void;
-    runtime.starList.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await selectTarget(8);
-    const old = runtime.starList.mock.calls[0]; expect(button("标记为重点客户", dialog()).disabled).toBe(true);
-    runtime.delegatedRows[9] = [row(802, { assignedUserId: 9, starUserId: 9 })];
-    await selectTarget(9); expect(old[1].signal.aborted).toBe(true);
-    await act(async () => { finish({ items: [row(802, { assignedUserId: 8, starUserId: 8, isStarred: true, starRevision: 99 })], total: 1 }); });
-    expect(dialog().textContent).toContain("用户ID 9"); expect(dialog().textContent).toContain("未标记为重点客户");
-    runtime.starList.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    await click(button("重新读取重点状态", dialog())); const closing = runtime.starList.mock.calls.at(-1)!;
-    await click(button("关闭", dialog())); expect(closing[1].signal.aborted).toBe(true); await openDelegation();
-    await act(async () => { finish({ items: [row(802, { assignedUserId: 9, starUserId: 9, isStarred: true, starRevision: 99 })], total: 1 }); });
-    expect(dialog().querySelector('select')!.value).toBe(""); expect(dialog().textContent).not.toContain("当前状态");
-    await selectTarget(8);
-    runtime.actorId = 10; runtime.enterpriseId = 32; runtime.targets = [{ userId: 10, name: "新身份" }];
-    runtime.rows = [row(805, { enterpriseId: 32, starUserId: 10, assignedUserId: 10 })]; await render();
-    expect(dialog()).toBeNull(); expect(runtime.listInputs.at(-1).starUserId).toBe(10); expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-
-  it("aborts and fences delegated writes on identity switch even while closing is otherwise blocked", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员" }); await render(); await openDelegation(802); await selectTarget(8);
-    let finish!: (value: unknown) => void;
-    runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await click(button("标记为重点客户", dialog()));
-    const old = runtime.setStar.mock.calls[0];
-    runtime.actorId = 10; runtime.enterpriseId = 32; runtime.targets = [{ userId: 10, name: "新身份" }];
-    runtime.rows = [row(805, { enterpriseId: 32, starUserId: 10, assignedUserId: 10 })]; await render();
-    expect(old[1].signal.aborted).toBe(true); expect(dialog()).toBeNull();
-    await act(async () => { finish({ customerId: 802, targetUserId: 8, isStarred: true, starRevision: 6, requestId: old[0].requestId, idempotent: false }); });
-    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(host.textContent).not.toContain("已标记重点客户");
-    expect(runtime.listInputs.at(-1).starUserId).toBe(10);
-  });
-
-  it("handles delegated revision conflict and permission errors without overwriting or falling back to a personal mark", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员" }); await render(); await openDelegation(802); await selectTarget(8);
-    runtime.delegatedRows[8] = [row(802, { assignedUserId: 8, starUserId: 8, isStarred: false, starRevision: 17 })];
-    runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("冲突"), { data: { code: "CONFLICT" } }));
-    await click(button("标记为重点客户", dialog())); expect(dialog().textContent).toContain("未覆盖最新状态");
-    expect(runtime.setStar.mock.calls[0][0].expectedRevision).toBe(5);
-    runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("权限已撤销"), { data: { code: "FORBIDDEN" } }));
-    await click(button("标记为重点客户", dialog()));
-    expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ expectedRevision: 17, targetUserId: 8 });
-    expect(dialog().textContent).toContain("重点客户操作失败"); expect(runtime.authorizationError).toHaveBeenCalled();
-    expect(button("标记为重点客户", dialog()).disabled).toBe(true); expect(runtime.listInputs.at(-1).starUserId).toBe(7);
-  });
-
-  it("matches the exact ID across bounded name-search pages instead of trusting a same-name customer", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员" }); await render(); await openDelegation(802);
-    runtime.starList.mockResolvedValueOnce({ items: Array.from({ length: 100 }, (_, i) => row(1000 + i, { assignedUserId: 8, starUserId: 8, isStarred: true })), total: 101 });
-    runtime.starList.mockResolvedValueOnce({ items: [row(802, { assignedUserId: 8, starUserId: 8, isStarred: false, starRevision: 19 })], total: 101 });
-    await selectTarget(8); expect(runtime.starList.mock.calls.map(call => call[0].page)).toEqual([1, 2]);
-    await click(button("标记为重点客户", dialog()));
-    expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ customerId: 802, expectedRevision: 19, targetUserId: 8, starred: true });
-  });
-
-  it("bounds delegated name reads and refuses empty-name fallback instead of scanning the whole customer set", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员" }); await render(); await openDelegation();
-    runtime.starList.mockResolvedValue({ items: [row(999, { assignedUserId: 8, starUserId: 8 })], total: 1000000 });
-    await selectTarget(8); expect(runtime.starList).toHaveBeenCalledTimes(5);
-    expect(dialog().textContent).toContain("匹配结果过多"); expect(button("标记为重点客户", dialog()).disabled).toBe(true);
-    await click(button("关闭", dialog())); runtime.rows[0].name = ""; await render(); await openDelegation();
-    runtime.starList.mockClear(); await selectTarget(8);
-    expect(runtime.starList).not.toHaveBeenCalled(); expect(dialog().textContent).toContain("客户名称为空");
-    expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-
-  it("treats a mismatched delegated receipt as unknown and retries the unchanged original revision, boolean and identity", async () => {
-    enableRowDelegation(8);
-    runtime.targets.push({ userId: 8, name: "组员" }); await render(); await openDelegation(802); await selectTarget(8);
-    runtime.setStar.mockImplementationOnce(async (input: any) => ({ customerId: input.customerId, targetUserId: 99,
-      isStarred: true, starRevision: 6, requestId: input.requestId, idempotent: false }));
-    await click(button("标记为重点客户", dialog())); const frozen = runtime.setStar.mock.calls[0][0];
-    expect(dialog().textContent).toContain("结果未知"); expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled();
-    await click(button("重试原重点客户请求", dialog())); expect(runtime.setStar.mock.calls[1][0]).toBe(frozen);
-    expect(runtime.listInputs.at(-1).starUserId).toBe(7);
-  });
 });
 
-describe("P1 leader employee-star management without canManageAll", () => {
-  function employee(id: number, userId = 8, changes: Record<string, unknown> = {}) {
-    return row(id, { name: `员工${userId}实际客户${id}`, assignedUserId: userId, starUserId: userId, starRevision: 12, ...changes });
-  }
-  function employeeItem(id: number) { return dialog().querySelector<HTMLElement>(`[data-delegated-customer="${id}"]`)!; }
-  async function employeeSearch(keyword: string) {
-    const input = dialog().querySelector<HTMLInputElement>('[aria-label="搜索员工客户"]')!;
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, keyword);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await click(button("搜索员工客户", dialog()));
-  }
-  it("lets an authorized leader see employee B's real customers and explicitly set/unset them while A's main list stays mine and personal", async () => {
-    runtime.targets.push({ userId: 8, name: "合法组员B" });
-    runtime.members = [{ userId: 7, name: "组长A" }];
-    runtime.remembered = { page: 2 };
-    runtime.delegatedRows[8] = [employee(901), employee(902, 8, { isStarred: true, starRevision: 19 }), row(903)];
-    await render(); const original = { ...runtime.listInputs.at(-1) };
-    expect(original).toMatchObject({ scope: "mine", starUserId: 7, page: 2 });
-    expect(host.querySelector('[aria-label="客户范围"]')).toBeNull();
-    expect(host.querySelector("tbody")?.textContent).not.toContain("替员工标星");
-    expect(Array.from(host.querySelectorAll("button")).filter(item => item.textContent?.trim() === "替员工标星")).toHaveLength(1);
-    await openEmployeeManagement(); expect(runtime.starList).not.toHaveBeenCalled();
-    await selectTarget(8);
-    expect(runtime.starList.mock.calls[0][0]).toEqual({ keyword: "", scope: "all", assignedUserId: 8, starUserId: 8,
-      archived: false, due: "all", starredOnly: false, page: 1, pageSize: 20 });
-    expect(Array.from(dialog().querySelectorAll("[data-delegated-customer]")).map(item => item.getAttribute("data-delegated-customer"))).toEqual(["901", "902"]);
-    expect(employeeItem(901).textContent).toContain("未标记为重点客户");
-    expect(employeeItem(902).textContent).toContain("已标记为重点客户");
-    await click(button("标记为重点客户", employeeItem(901)));
-    expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ customerId: 901, targetUserId: 8, starred: true, expectedRevision: 12, expectedEnterpriseId: 31, expectedActorUserId: 7 });
-    expect(employeeItem(901).textContent).toContain("已标记为重点客户");
-    await click(button("取消重点客户标记", employeeItem(901)));
-    expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ customerId: 901, targetUserId: 8, starred: false, expectedRevision: 13 });
-    await click(button("关闭", dialog()));
-    expect(runtime.listInputs.every(input => JSON.stringify(input) === JSON.stringify(original))).toBe(true);
-    expect(runtime.rows.every(item => item.assignedUserId === 7)).toBe(true);
-    expect(runtime.delegatedRows[8].find(item => item.id === 901).assignedUserId).toBe(8);
-    expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull(); expect(runtime.navigate).not.toHaveBeenCalled();
-  });
-  it("does not fabricate employee ownership when the API has only A's customers", async () => {
-    runtime.targets.push({ userId: 8, name: "组员B" }); await render(); await openEmployeeManagement(); await selectTarget(8);
-    expect(dialog().textContent).toContain("暂无匹配的员工客户");
-    expect(dialog().querySelectorAll("[data-delegated-customer]")).toHaveLength(0);
-    expect(runtime.rows.every(item => item.assignedUserId === 7)).toBe(true); expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-  it("searches and paginates only inside the employee window and resets its local filters on employee change", async () => {
-    runtime.targets.push({ userId: 8, name: "B" }, { userId: 9, name: "C" });
-    const applied = { keyword: "合成", grade: "B", stage: "quoted", scope: "mine", assignedUserId: "", due: "today", archived: false, starredOnly: true };
-    runtime.remembered = { appliedFilters: applied, draftFilters: { ...applied, keyword: "主列表未应用草稿" }, page: 2 };
-    runtime.delegatedRows[8] = Array.from({ length: 43 }, (_, index) => employee(900 + index));
-    runtime.delegatedRows[9] = [employee(999, 9)];
-    await render(); const original = { ...runtime.listInputs.at(-1) };
-    await openEmployeeManagement(); await selectTarget(8);
-    expect(dialog().querySelectorAll("[data-delegated-customer]")).toHaveLength(20);
-    await click(button("下一页", dialog()));
-    expect(runtime.starList.mock.calls.at(-1)![0]).toMatchObject({ page: 2, keyword: "", assignedUserId: 8 });
-    expect(employeeItem(920)).not.toBeNull(); expect(employeeItem(900)).toBeNull();
-    await employeeSearch("  客户942  ");
-    expect(runtime.starList.mock.calls.at(-1)![0]).toMatchObject({ page: 1, keyword: "客户942", assignedUserId: 8 });
-    expect(dialog().querySelectorAll("[data-delegated-customer]")).toHaveLength(1); expect(employeeItem(942)).not.toBeNull();
-    await selectTarget(9);
-    expect(runtime.starList.mock.calls.at(-1)![0]).toMatchObject({ page: 1, keyword: "", assignedUserId: 9, starUserId: 9 });
-    expect(dialog().querySelector<HTMLInputElement>('[aria-label="搜索员工客户"]')!.value).toBe("");
-    expect(employeeItem(999)).not.toBeNull(); expect(runtime.listInputs.at(-1)).toEqual(original);
-    expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("主列表未应用草稿");
-  });
-  it("keeps the original unknown CAS command and blocks search, pagination, target changes and close until retry", async () => {
-    runtime.targets.push({ userId: 8, name: "B" }, { userId: 9, name: "C" });
-    runtime.delegatedRows[8] = Array.from({ length: 21 }, (_, index) => employee(900 + index));
-    await render(); await openEmployeeManagement(); await selectTarget(8);
-    runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("504 network"), { data: { code: "TIMEOUT" } }));
-    await click(button("标记为重点客户", employeeItem(900))); const frozen = runtime.setStar.mock.calls[0][0];
-    expect(dialog().textContent).toContain("结果未知"); expect(employeeItem(900).textContent).toContain("未标记为重点客户");
-    for (const name of ["搜索员工客户", "下一页", "关闭"]) expect(button(name, dialog()).disabled).toBe(true);
-    expect(dialog().querySelector('select')!.disabled).toBe(true);
-    await click(button("标记为重点客户", employeeItem(901))); expect(runtime.setStar).toHaveBeenCalledTimes(1);
-    await click(button("重试原重点客户请求", dialog()));
-    expect(runtime.setStar.mock.calls[1][0]).toBe(frozen);
-    expect(employeeItem(900).textContent).toContain("已标记为重点客户"); expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", starUserId: 7 });
-  });
-  it("aborts old employee-list reads on target change and discards late responses on identity switch", async () => {
-    runtime.targets.push({ userId: 8, name: "B" }, { userId: 9, name: "C" }); runtime.delegatedRows[9] = [employee(999, 9)];
-    await render(); await openEmployeeManagement(); let finish!: (value: unknown) => void;
-    runtime.starList.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await selectTarget(8);
-    const old = runtime.starList.mock.calls[0]; await selectTarget(9); expect(old[1].signal.aborted).toBe(true);
-    await act(async () => { finish({ items: [employee(901)], total: 1 }); });
-    expect(employeeItem(999)).not.toBeNull(); expect(employeeItem(901)).toBeNull();
-    runtime.starList.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    await click(button("重新读取重点状态", dialog())); const latest = runtime.starList.mock.calls.at(-1)!;
-    runtime.actorId = 10; runtime.enterpriseId = 32; runtime.targets = [{ userId: 10, name: "新身份" }];
-    runtime.rows = [row(805, { enterpriseId: 32, assignedUserId: 10, starUserId: 10 })]; await render();
-    expect(latest[1].signal.aborted).toBe(true); expect(dialog()).toBeNull();
-    await act(async () => { finish({ items: [employee(999, 9)], total: 1 }); });
-    expect(host.textContent).not.toContain("员工9实际客户999"); expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-  it("fences revoked employee-window writes and never falls back to a personal mark", async () => {
-    runtime.targets.push({ userId: 8, name: "B" }); runtime.delegatedRows[8] = [employee(901)];
-    await render(); await openEmployeeManagement(); await selectTarget(8); let finish!: (value: unknown) => void;
-    runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    await click(button("标记为重点客户", employeeItem(901))); const old = runtime.setStar.mock.calls[0];
-    runtime.targets = [{ userId: 7, name: "A" }]; runtime.authVersion = "revoked-management"; await render();
-    expect(old[1].signal.aborted).toBe(true); expect(dialog().textContent).toContain("未切换为本人标记");
-    expect(dialog().querySelectorAll("[data-delegated-customer]")).toHaveLength(0);
-    await act(async () => { finish({ customerId: 901, targetUserId: 8, isStarred: true, starRevision: 13, requestId: old[0].requestId, idempotent: false }); });
-    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(runtime.setStar).toHaveBeenCalledTimes(1);
-    expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", starUserId: 7 });
-    expect(Array.from(host.querySelectorAll("button")).filter(item => item.textContent?.trim() === "替员工标星")).toHaveLength(0);
-  });
-  it("rejects wrong assignee, tenant, target or absent metadata in employee-list results", async () => {
-    runtime.targets.push({ userId: 8, name: "B" }); await render(); await openEmployeeManagement();
-    runtime.starList.mockResolvedValueOnce({ items: [employee(901, 8, { assignedUserId: 7 })], total: 1 }); await selectTarget(8);
-    for (const changes of [{ enterpriseId: 99 }, { starUserId: 7 }, { starRevision: undefined }]) {
-      expect(dialog().querySelectorAll("[data-delegated-customer]")).toHaveLength(0);
-      runtime.starList.mockResolvedValueOnce({ items: [employee(901, 8, changes)], total: 1 });
-      await click(button("重新读取重点状态", dialog()));
-    }
-    expect(dialog().querySelectorAll("[data-delegated-customer]")).toHaveLength(0);
-    runtime.starList.mockResolvedValueOnce({ items: [employee(901, 8, { canSetStar: false })], total: 1 });
-    await click(button("重新读取重点状态", dialog()));
-    expect(button("标记为重点客户", employeeItem(901)).disabled).toBe(true);
-    expect(button("取消重点客户标记", employeeItem(901)).disabled).toBe(true); expect(runtime.setStar).not.toHaveBeenCalled();
-  });
-});
-
-// These tests mock all network/database surfaces, while rendering the actual admin page.
 describe("pureUICustomerStars starred-only filter v22", () => {
   function filterStar() { return host.querySelector<HTMLButtonElement>('button[aria-label="仅看重点客户"]')!; }
   const applied = { keyword: " 已应用 ", grade: "A", stage: "quoted", scope: "all", assignedUserId: "8", due: "overdue", archived: true, starredOnly: false };
@@ -737,7 +376,7 @@ describe("pureUICustomerStars starred-only filter v22", () => {
     expect(filterStar().getAttribute("aria-pressed")).toBe("false");
     await click(filterStar());
     expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "已应用", grade: "A", stage: "quoted", scope: "all", assignedUserId: 8,
-      due: "overdue", archived: true, starredOnly: true, starUserId: 7, page: 1, pageSize: 20 });
+      due: "overdue", archived: true, starredOnly: true, starMode: "assignee", page: 1, pageSize: 20 });
     expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("未应用草稿");
     expect(filterStar().getAttribute("aria-pressed")).toBe("true");
     expect(filterStar().title).toContain("保留其他条件");
@@ -749,18 +388,16 @@ describe("pureUICustomerStars starred-only filter v22", () => {
       scope: "all", starredOnly: false, page: 1, assignedUserId: 8 });
     expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("未应用草稿");
   });
-  it.each(["搜索", "Enter", "确定"])("retains true when applying later drafts with %s; collapse keeps both copies and reset clears only the filter not star ownership", async mode => {
+  it.each(["搜索", "Enter", "确定"])("retains true when applying later drafts with %s; collapse keeps both copies and reset clears only the filter not assignee semantics", async mode => {
     adminFilters(); runtime.targets.push({ userId: 8, name: "合成组员" }); await render();
     await click(filterStar()); await click(button("更多筛选")); await click(button("更多筛选")); await click(button("更多筛选"));
     if (mode === "Enter") await act(async () => { host.querySelector(".customer-list-search")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
     else await click(button(mode));
     expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "未应用草稿", grade: "B", stage: "following", due: "today", archived: false,
       scope: "all", assignedUserId: 8, starredOnly: true, page: 1 });
-    await openDelegation(); await selectTarget(8);
-    expect(runtime.listInputs.at(-1)).toMatchObject({ starUserId: 7, assignedUserId: 8, starredOnly: true, page: 1 });
-    await click(button("关闭", dialog()));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starMode: "assignee", assignedUserId: 8, starredOnly: true, page: 1 });
     await click(button("重置")); expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "", due: "all", archived: false, starredOnly: false,
-      starUserId: 7, scope: "all", page: 1 });
+      starMode: "assignee", scope: "all", page: 1 });
     expect(runtime.listInputs.at(-1)).not.toHaveProperty("assignedUserId");
     expect(button("重置").disabled).toBe(true);
   });
@@ -775,24 +412,13 @@ describe("pureUICustomerStars starred-only filter v22", () => {
     await render(); await click(button("搜索"));
     expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, keyword: "未应用草稿", grade: "B", stage: "following" });
   });
-  it("keeps the personal predicate and owner filter during delegated dialog changes and revocation", async () => {
-    enableRowDelegation(8);
-    adminFilters(); runtime.targets.push({ userId: 8, name: "合成组员" }); await render(); await click(filterStar());
-    const original = { ...runtime.listInputs.at(-1) };
-    await openDelegation(); await selectTarget(8);
-    expect(runtime.listInputs.at(-1)).toEqual(original); expect(tableRows()).toHaveLength(3);
-    runtime.targets = [{ userId: 7, name: "本人" }]; runtime.authVersion = "revoked-filter-v22"; await render();
-    expect(dialog().textContent).toContain("未切换为本人标记"); expect(tableRows()).toHaveLength(3);
-    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 7, assignedUserId: 8 });
-    expect(runtime.listOptions.at(-1).enabled).toBe(true);
-  });
   it("does not render an old enterprise result or consume its total when account/enterprise switches, even if a late list result has the same target id", async () => {
     await render(); await click(filterStar()); const previousKey = JSON.stringify(runtime.listInputs.at(-1));
     runtime.enterpriseId = 32; runtime.actorId = 8; runtime.targets = [{ userId: 8, name: "新员工" }];
-    runtime.rows = runtime.rows.map(row => ({ ...row, starUserId: 8 })); await render();
+    await render();
     expect(JSON.stringify(runtime.listInputs.at(-1))).not.toBe(previousKey); expect(host.querySelector("table")).toBeNull();
     expect(runtime.setStar).not.toHaveBeenCalled();
-    runtime.rows = runtime.rows.map(row => ({ ...row, enterpriseId: 32 })); await render(); expect(tableRows()).toHaveLength(3);
+    runtime.rows = [row(805, { enterpriseId: 32, assignedUserId: 8, starUserId: 8 })]; await render(); expect(tableRows()).toHaveLength(1);
   });
   it("pauses true-filter reads until star target authority is ready and keeps the predicate/explicit target after a failed read", async () => {
     let finish!: (value: unknown) => void;
@@ -800,22 +426,129 @@ describe("pureUICustomerStars starred-only filter v22", () => {
     await render(); await click(filterStar());
     expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
     expect(host.textContent).toContain("仅看重点客户筛选已保留");
-    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starMode: "assignee" });
     await act(async () => { finish({ enterpriseId: 31, actorUserId: 7, targets: runtime.targets }); });
     expect(runtime.listOptions.at(-1).enabled).toBe(true); expect(tableRows()).toHaveLength(3);
     runtime.starContext.mockRejectedValueOnce(new Error("synthetic unavailable")); await click(button("更多筛选"));
     runtime.authVersion = "star-read-failed-v22"; await render();
     expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
-    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ starredOnly: true, starMode: "assignee" });
     expect(host.textContent).toContain("重点客户权限读取失败");
     await click(filterStar()); expect(runtime.listInputs.at(-1).starredOnly).toBe(false);
     expect(runtime.listOptions.at(-1).enabled).toBe(true); expect(tableRows()).toHaveLength(3);
   });
-  it("exports the real search-star and row delegation DOM without a global selector", async () => {
+  it("exports only direct row/search stars without any delegation entry or window", async () => {
     runtime.canManageAll = true; runtime.targets.push({ userId: 8, name: "合成组员" }); await render(); await click(filterStar());
     expect(host.querySelector('select[aria-label="星标归属"]')).toBeNull();
-    expect(button("替员工标星", tableRows()[0])).toBeDefined();
+    expect(host.textContent).not.toContain("替员工标星"); expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(filterStar().getAttribute("aria-pressed")).toBe("true");
     if (process.env.CUSTOMER_V22_FIXTURE_PATH) fixture(process.env.CUSTOMER_V22_FIXTURE_PATH);
+  });
+});
+
+describe("direct current-assignee focus stars", () => {
+  const filters = { keyword: "", grade: "", stage: "", scope: "all", assignedUserId: "", due: "all", archived: false, starredOnly: false };
+  function leaderRows() {
+    runtime.canReadAll = true; runtime.canManageAll = false;
+    runtime.targets = [{ userId: 7, name: "组长A" }, { userId: 8, name: "员工B" }, { userId: 9, name: "员工C" }];
+    runtime.rows = [row(801, { assignedUserId: 7, starUserId: 7, isStarred: true, starRevision: 2 }),
+      row(802, { assignedUserId: 8, starUserId: 8, isStarred: false, starRevision: 17 }),
+      row(803, { assignedUserId: 9, starUserId: 9, isStarred: true, starRevision: 5 })];
+    runtime.remembered = { appliedFilters: filters, draftFilters: filters };
+  }
+  it("shows A/B/C actual differing states and directly writes B with B revision, never self", async () => {
+    leaderRows(); await render();
+    expect(runtime.canManageAll).toBe(false);
+    expect(host.querySelector('[aria-label="客户范围"]')?.textContent).toBe("授权组员客户");
+    expect([801, 802, 803].map(id => star(id).getAttribute("aria-pressed"))).toEqual(["true", "false", "true"]);
+    expect(star(802).disabled).toBe(false);
+    expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", starMode: "assignee", expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(runtime.listInputs.at(-1)).not.toHaveProperty("starUserId");
+    await click(star(802)); expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ customerId: 802, targetUserId: 8, expectedRevision: 17, starred: true, starMode: "assignee" });
+    expect(star(802).getAttribute("aria-pressed")).toBe("true");
+    expect(runtime.rows[1].assignedUserId).toBe(8); expect(runtime.rows[0].starRevision).toBe(2); expect(runtime.rows[2].starRevision).toBe(5);
+    expect(host.textContent).not.toContain("替员工标星"); expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(runtime.starList).not.toHaveBeenCalled();
+  });
+  it("employee B reads the same persisted B state and cancels with matching revision", async () => {
+    leaderRows(); await render(); await click(star(802)); const actualB = { ...runtime.rows[1] };
+    runtime.actorId = 8; runtime.canReadAll = false; runtime.targets = [{ userId: 8, name: "员工B" }]; runtime.rows = [actualB]; await render();
+    expect(star(802).getAttribute("aria-pressed")).toBe("true"); expect(star(802).disabled).toBe(false);
+    expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", starMode: "assignee", expectedActorUserId: 8 });
+    await click(star(802)); expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ targetUserId: 8, expectedRevision: 18, starred: false });
+  });
+  it("offers read-only authorized owner filters without calling them enterprise-write permissions", async () => {
+    leaderRows(); runtime.remembered.moreFiltersOpen = true; await render();
+    expect(host.querySelector('[aria-label="按负责人筛选"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="客户范围"]')?.textContent).not.toContain("全企业");
+    expect(runtime.members).toEqual([]); expect(runtime.setStar).not.toHaveBeenCalled();
+    expect(host.querySelector('.customer-list-table-scroll')?.getAttribute("data-page-memory-scroll")).toBe("customer-list-table");
+    expect(tableRows().map(item => item.dataset.pageMemoryRow)).toEqual(["801", "802", "803"]);
+  });
+  it("nonleader's stale employee row is disabled instead of silently writing self even with admin label", async () => {
+    runtime.canManageAll = true;
+    runtime.rows = [row(802, { assignedUserId: 8, starUserId: 8, canSetStar: false })]; await render();
+    expect(star(802).disabled).toBe(true); await click(star(802)); expect(runtime.setStar).not.toHaveBeenCalled();
+    expect(star(802).title).toContain("不在合法重点标记范围");
+  });
+  it.each([{ assignedUserId: 0, starUserId: null }, { assignedUserId: 8, starUserId: 8, canSetStar: false }, { assignedUserId: 7, starUserId: 7, starRevision: undefined }])("missing/invalid/unavailable assignee metadata fails closed: %j", async changes => {
+    runtime.rows = [row(802, changes)]; await render();
+    expect(star(802).disabled).toBe(true); await click(star(802)); expect(runtime.setStar).not.toHaveBeenCalled();
+  });
+  it("does not consume an old self-projected star row as current employee metadata", async () => {
+    leaderRows(); runtime.rows[1] = { ...runtime.rows[1], starUserId: 7, isStarred: true, starRevision: 99 }; await render();
+    expect(host.querySelector("table")).toBeNull(); expect(runtime.setStar).not.toHaveBeenCalled();
+  });
+  it("delegated unknown outcome retries the identical complete command and never toggles another row", async () => {
+    leaderRows(); runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("network timeout"), { data: { code: "TIMEOUT" } })); await render();
+    await click(star(802)); const frozen = runtime.setStar.mock.calls[0][0];
+    expect(frozen).toMatchObject({ customerId: 802, targetUserId: 8, starMode: "assignee", expectedRevision: 17, expectedActorUserId: 7, expectedEnterpriseId: 31 });
+    expect(host.textContent).toContain("结果未知"); await click(star(803)); expect(runtime.setStar).toHaveBeenCalledTimes(1);
+    await click(button("重试原重点客户请求")); expect(runtime.setStar.mock.calls[1][0]).toBe(frozen);
+    expect(star(802).getAttribute("aria-pressed")).toBe("true"); expect(star(803).getAttribute("aria-pressed")).toBe("true");
+  });
+  it("assignment changes fence a late receipt and prohibit retry against the old employee", async () => {
+    leaderRows(); let finish!: (value: unknown) => void;
+    runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await render(); await click(star(802));
+    const command = runtime.setStar.mock.calls[0][0]; const signal = runtime.setStar.mock.calls[0][1].signal;
+    runtime.rows[1] = row(802, { assignedUserId: 9, starUserId: 9, isStarred: false, starRevision: 3 }); await render();
+    await act(async () => { finish({ customerId: 802, targetUserId: 8, requestId: command.requestId, isStarred: true, starRevision: 18, idempotent: false }); });
+    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(star(802).getAttribute("aria-pressed")).toBe("false");
+    expect(signal.aborted).toBe(true); expect(host.textContent).not.toContain("重试原重点客户请求");
+  });
+  it("revocation clears unknown delegated command and does not fallback self", async () => {
+    leaderRows(); runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("timeout"), { data: { code: "TIMEOUT" } })); await render(); await click(star(802));
+    runtime.targets = [{ userId: 7, name: "A" }]; runtime.authVersion = "revoked-assignee"; runtime.canReadAll = false;
+    runtime.rows = [row(801)]; await render();
+    expect(host.textContent).not.toContain("重试原重点客户请求"); expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", starMode: "assignee" });
+    expect(runtime.setStar).toHaveBeenCalledTimes(1);
+  });
+  it("same enterprise account switch has a different list cache key and late receipt cannot invalidate B's current list", async () => {
+    leaderRows(); let finish!: (value: unknown) => void;
+    runtime.setStar.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); await render(); await click(star(802));
+    const original = runtime.listInputs.at(-1); const command = runtime.setStar.mock.calls[0][0];
+    runtime.actorId = 8; runtime.canReadAll = false; runtime.targets = [{ userId: 8, name: "B" }]; runtime.rows = [runtime.rows[1]]; await render();
+    expect(runtime.listInputs.at(-1).expectedActorUserId).toBe(8); expect(runtime.listInputs.at(-1)).not.toEqual(original);
+    await act(async () => { finish({ customerId: 802, targetUserId: 8, requestId: command.requestId, isStarred: true, starRevision: 18, idempotent: false }); });
+    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(star(802).getAttribute("aria-pressed")).toBe("false");
+  });
+});
+
+describe("authorized read-scope entry", () => {
+  it("a non-enterprise leader can choose authorized employee customers through the real scope control", async () => {
+    runtime.canReadAll = true; runtime.canManageAll = false;
+    runtime.targets.push({ userId: 8, name: "员工B" });
+    await render(); expect(runtime.listInputs.at(-1).scope).toBe("mine");
+    const oldScroll = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    try {
+      const control = host.querySelector<HTMLButtonElement>('[aria-label="客户范围"]')!;
+      await act(async () => { control.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
+      const option = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(item => item.textContent?.includes("授权组员客户"))!;
+      expect(option).toBeDefined(); expect(document.body.textContent).not.toContain("替员工标星");
+      await act(async () => { option.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
+      expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", starMode: "assignee", page: 1 });
+      expect(runtime.canManageAll).toBe(false); expect(runtime.setStar).not.toHaveBeenCalled();
+    } finally { HTMLElement.prototype.scrollIntoView = oldScroll; }
   });
 });

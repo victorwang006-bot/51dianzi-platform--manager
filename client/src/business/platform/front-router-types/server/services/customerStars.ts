@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import {
   customerSetStarSchema, customerSetStarResultSchema,
+  customerStarStateInputSchema, customerStarStateSchema,
+  type CustomerStarStateInput, type CustomerStarState,
   type CustomerSetStarInput, type CustomerSetStarResult, type CustomerStarContext,
 } from "../../../shared/customerStars";
 import { getDb } from "../db";
@@ -93,6 +95,50 @@ export async function withCustomerStarAccess<T>(scope: CrmAccessIdentity, target
     return run(tx, await targetAccess(tx, state, scope, targetUserId));
   }));
 }
+/** Eligible target policies in one locked snapshot, never enterprise-write authority. */
+export async function withCustomerAssigneeStarAccess<T>(scope: CrmAccessIdentity,
+  run: (tx: CrmSqlExecutor, access: { actorPolicy: CrmModulePolicy; targets: CustomerStarAccess[] }) => Promise<T>): Promise<T> {
+  return closed(async () => (await database()).transaction(async tx => {
+    const state = await lockState(tx, scope);
+    const targets: CustomerStarAccess[] = [];
+    for (const userId of Array.from(state.members.keys()).sort((a, b) => a - b)) {
+      try { targets.push(await targetAccess(tx, state, scope, userId)); }
+      catch (error) { if (!(error instanceof TRPCError && error.code === "FORBIDDEN")) throw error; }
+    }
+    return run(tx, { actorPolicy: state.actorPolicy, targets });
+  }));
+}
+/** Shared by projection, filtering and exact reads: both people's current read policy. */
+export function customerAssigneeStarWhere(scope: CrmAccessIdentity, targets: CustomerStarAccess[]) {
+  if (!targets.length) return sql`FALSE`;
+  return sql`(${sql.join(targets.map(access => sql`(c.assignedUserId = ${access.targetUserId}
+    AND ${crmCustomerPolicyWhere({ enterpriseId: scope.enterpriseId, actorUserId: access.targetUserId }, access.targetPolicy)})`), sql` OR `)})`;
+}
+export async function getCustomerStarState(scope: CrmAccessIdentity, raw: CustomerStarStateInput): Promise<CustomerStarState> {
+  const checked = customerStarStateInputSchema.safeParse(raw);
+  if (!checked.success) fail("BAD_REQUEST", "重点客户状态请求格式无效");
+  const input = checked.data;
+  if (input.expectedEnterpriseId !== scope.enterpriseId || input.expectedActorUserId !== scope.actorUserId) {
+    fail("FORBIDDEN", "账号或企业已切换，请刷新后重试");
+  }
+  return withCustomerAssigneeStarAccess(scope, async (tx, access) => {
+    const permitted = customerAssigneeStarWhere(scope, access.targets);
+    const row = rows<{ id: number; assignedUserId: number | null; isStarred: unknown; starRevision: number; canSetStar: unknown }>(await tx.execute(sql`
+      SELECT c.id, c.assignedUserId, COALESCE(star_pref.starred, 0) AS isStarred,
+        COALESCE(star_pref.revision, 0) AS starRevision, (${permitted}) AS canSetStar
+      FROM crm_customers c LEFT JOIN crm_customer_star_preferences star_pref
+        ON star_pref.enterpriseId = c.enterpriseId AND star_pref.customerId = c.id
+        AND star_pref.userId = c.assignedUserId AND ${permitted}
+      WHERE c.id = ${input.customerId} AND ${crmCustomerPolicyWhere(scope, access.actorPolicy)} LIMIT 1
+    `))[0];
+    if (!row) fail("NOT_FOUND", "客户不存在");
+    const assignedUserId = Number.isSafeInteger(Number(row.assignedUserId)) && Number(row.assignedUserId) > 0 ? Number(row.assignedUserId) : null;
+    const canSetStar = assignedUserId !== null && businessBoolean(row.canSetStar);
+    return customerStarStateSchema.parse({ enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId,
+      customerId: Number(row.id), assignedUserId, starUserId: assignedUserId,
+      isStarred: canSetStar && businessBoolean(row.isStarred), starRevision: canSetStar ? Number(row.starRevision ?? 0) : 0, canSetStar });
+  });
+}
 export async function getCustomerStarContext(scope: CrmAccessIdentity): Promise<CustomerStarContext> {
   return closed(async () => (await database()).transaction(async tx => {
     const state = await lockState(tx, scope);
@@ -119,6 +165,7 @@ export function customerStarPayloadHash(input: CustomerSetStarInput): string {
     customerId: input.customerId, targetUserId: input.targetUserId, starred: input.starred,
     expectedRevision: input.expectedRevision, requestId: input.requestId,
     expectedEnterpriseId: input.expectedEnterpriseId, expectedActorUserId: input.expectedActorUserId,
+    ...(input.starMode ? { starMode: input.starMode } : {}),
   };
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
@@ -138,6 +185,7 @@ export async function setCustomerStar(scope: CrmAccessIdentity, raw: CustomerSet
       SELECT c.id FROM crm_customers c WHERE c.enterpriseId = ${scope.enterpriseId} AND c.id = ${input.customerId}
         AND ${crmCustomerPolicyWhere(scope, access.actorPolicy)}
         AND ${crmCustomerPolicyWhere({ enterpriseId: scope.enterpriseId, actorUserId: input.targetUserId }, access.targetPolicy)}
+        ${input.starMode === "assignee" ? sql`AND c.assignedUserId = ${input.targetUserId}` : sql``}
       LIMIT 1 FOR UPDATE
     `))[0];
     if (!customer) fail("NOT_FOUND", "客户不存在");

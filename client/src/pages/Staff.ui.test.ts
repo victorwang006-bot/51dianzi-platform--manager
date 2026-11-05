@@ -24,7 +24,7 @@ function cell(marker: string) {
   return page.slice(start, page.indexOf("</TableCell>", markerIndex));
 }
 describe("staff UI contracts", () => {
-  it("keeps the seven-column desktop list compact and identity content limited", () => {
+  it("keeps the approved six-column desktop list compact and identity content limited", () => {
     const tableBody = sourceBetween(page, "<TableBody>", "</TableBody>");
     const table = sourceBetween(
       page,
@@ -33,13 +33,13 @@ describe("staff UI contracts", () => {
     );
     const identityCell = cell("data-staff-identity");
     const roleCell = cell("data-staff-role");
-    expect(table.match(/<col className=/g) ?? []).toHaveLength(7);
+    expect(table.match(/<col className=/g) ?? []).toHaveLength(6);
     expect(table).toContain(
-      'className="staff-management-table min-w-[980px] table-fixed"'
+      'className="staff-management-table min-w-[900px] table-fixed"'
     );
     expect(tableBody).toContain('className="h-14 align-middle"');
     expect(tableBody).toContain(
-      'className="staff-action-cell w-[112px] min-w-[112px] py-2.5'
+      'className="staff-action-cell w-[200px] min-w-[200px] py-2.5'
     );
     expect(tableBody).toContain('className="h-8 px-2 text-xs"');
     expect(identityCell).toContain('className="staff-avatar"');
@@ -70,8 +70,8 @@ describe("staff UI contracts", () => {
       "scopeClient.organization.overview.query(undefined)"
     );
     expect(page).toContain("readStaffBusinessOrganization");
-    expect(page).toContain("<StaffTeamSummary");
-    expect(page).toContain("official={officialTeamsOverview}");
+    expect(page).not.toContain("data-staff-official-team");
+    expect(page).toContain("officialTeamsOverview");
     expect(page.replace(/\s+/g, " ")).toContain(
       "officialTeamsOverview.serverScope.adminUserId === accountId ? officialTeamsQuery.data : undefined"
     );
@@ -100,12 +100,9 @@ describe("staff UI contracts", () => {
       /readCachedStaffBusinessTeams\(\s*businessTeamsQuery.data,\s*contextValidation.context/
     );
     expect(query).toContain("businessTeamsQuery.isSuccess");
-    expect(cell("data-staff-official-team")).toContain(
-      "business={businessTeams}"
-    );
-    expect(cell("data-staff-official-team")).not.toContain(
-      "? businessTeamsQuery.data"
-    );
+    expect(page).toContain("overview: businessOrganization");
+    expect(page).toContain("canEdit: businessTeamGuard.allowed && !businessTeamsQuery.isError");
+    expect(page).not.toContain("data-staff-official-team");
   });
   it("uses the Table scroll wrapper and only makes actions sticky on narrow viewports", () => {
     const desktopStyles = styles.slice(

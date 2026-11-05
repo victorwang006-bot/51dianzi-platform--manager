@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 2,
+  "checkedAt": "2026-11-05T12:57:03.226028+00:00",
+  "release": "20261105-admin-compact-priority-v2",
+  "scope": "synthetic-tool-safety-fixture-only",
+  "productionQaClaimed": false,
+  "testResults": {
+    "node": {
+      "command": [
+        "node",
+        "--test",
+        "--test-reporter=spec",
+        "/home/ubuntu/51dianzi-manager/deploy/admin-round2/safety.test.mjs"
+      ],
+      "exitCode": 0,
+      "log": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/safety-evidence/node-safety.log",
+      "logSha256": "c1b2233d23105742286d78ce7bd3e2eb3ccfa9bb683cd05a6ea669fba801bc3a",
+      "tests": 28,
+      "passed": 28
+    },
+    "python": {
+      "command": [
+        "/usr/bin/python3",
+        "/home/ubuntu/51dianzi-manager/deploy/admin-round2/test_publish.py"
+      ],
+      "exitCode": 0,
+      "log": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/safety-evidence/python-safety.log",
+      "logSha256": "561becab757c9c325413590dda0969335fd94b781b82646317b47bd8b9241cfb",
+      "tests": 26,
+      "passed": 26
+    }
+  },
+  "syntaxChecks": [
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/build-service.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/build.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/lib.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/migrate-sidecar.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/persist-targets.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/reload-target.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/runtime-contract.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/safety.test.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/test-isolation.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/vite-worker.mjs",
+      "kind": "node-syntax",
+      "exitCode": 0
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/publish.py",
+      "kind": "python-ast",
+      "passed": true
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/test_publish.py",
+      "kind": "python-ast",
+      "passed": true
+    }
+  ],
+  "tools": [
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/README.md",
+      "sha256": "e377af62c2718a8d238ecec6f36fb44f1ce28814513de4f113ea83a88006f852",
+      "bytes": 10804
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/build-service.mjs",
+      "sha256": "0ba95ffae2f5b52cf722852dd89a0577b4f480463ef41e5a1697e736e7c343b4",
+      "bytes": 1392
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/build.mjs",
+      "sha256": "ccceec13e61a85edbae12663e9b31eb99792490921c1e4ba4cf4f38c542677e7",
+      "bytes": 17913
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/lib.mjs",
+      "sha256": "325b8ff278efe62530f39706e8a06a379a38ba0835df4d7ff635e92fab06cbdc",
+      "bytes": 5040
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/migrate-sidecar.mjs",
+      "sha256": "f5f4a11ce1a820b496e8faaa3d536e3ccf904bb7b57b7c983546e89aec46dcf9",
+      "bytes": 2437
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/persist-targets.mjs",
+      "sha256": "a1b5b4acd55da6f36e02e040e3339eeb574ddfd0ba5b43985c8c1506fa6610e2",
+      "bytes": 13535
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/publish.py",
+      "sha256": "7f8fe67a065b93e954b493dba6eb48fc2fb918f760e6001fafe80b62886cb82d",
+      "bytes": 29367
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/qa-approval.expected.json",
+      "sha256": "d1ea8a30b47e1165edbba1c93e8c9e30b6f0a708e23334ab939a4c63c7b5d64a",
+      "bytes": 881
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/reload-target.mjs",
+      "sha256": "80fb2de7bbe6e21b66d064d9d55198fec5275a193e808f52a6cfce532b790bc4",
+      "bytes": 4014
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/runtime-contract.mjs",
+      "sha256": "56ec56c0ce941134451739863ff0c344463abaf89a0fb57f8fb9d6a49e79a17b",
+      "bytes": 3273
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/safety.test.mjs",
+      "sha256": "28ab5831467940a68e9bce10508d3c2314f3a177c9b4d7185ad282f90f0fd544",
+      "bytes": 17895
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/test-isolation.mjs",
+      "sha256": "a6b3bbbc97107635aed6d7f6978ead637f52fada1023a79172dc670d62e17790",
+      "bytes": 890
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/test_publish.py",
+      "sha256": "7ac8c64a07ebd3261bad279045a7535b5b85476601bc62337961abcee1b9a139",
+      "bytes": 27092
+    },
+    {
+      "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/vite-worker.mjs",
+      "sha256": "ff73ccbdb5b74c8eea3a61de794eb5452f15bb496e782a7b1efc8265044f11e1",
+      "bytes": 1775
+    }
+  ],
+  "evidenceGenerator": {
+    "path": "/home/ubuntu/51dianzi-manager/deploy/admin-round2/safety-evidence/revalidate.py",
+    "sha256": "c08515b07a095fcdcf1b6792a86ef2874213c4b4b88a1d8cee0e109e2dfc0770"
+  },
+  "capturedReadOnlyBootBaseline": {
+    "/home/ubuntu/backend-optimization/round2/baseline/boot-proof.txt": "56a833398cd0419fabf9ef96c9bc59596ffae8518517d6b4f578573f136cde5e",
+    "/home/ubuntu/backend-optimization/round2/baseline/boot-target-configs.json": "5a76928615add7f9aac9cdafd3b691d668619401c46e1d5b8b30c69d07644c4b"
+  },
+  "parentBuildServiceUnmodifiedSha256": "0ba95ffae2f5b52cf722852dd89a0577b4f480463ef41e5a1697e736e7c343b4",
+  "otherProtectedToolsUnchanged": {
+    "build-service.mjs": "0ba95ffae2f5b52cf722852dd89a0577b4f480463ef41e5a1697e736e7c343b4",
+    "lib.mjs": "325b8ff278efe62530f39706e8a06a379a38ba0835df4d7ff635e92fab06cbdc",
+    "migrate-sidecar.mjs": "f5f4a11ce1a820b496e8faaa3d536e3ccf904bb7b57b7c983546e89aec46dcf9",
+    "reload-target.mjs": "80fb2de7bbe6e21b66d064d9d55198fec5275a193e808f52a6cfce532b790bc4",
+    "runtime-contract.mjs": "56ec56c0ce941134451739863ff0c344463abaf89a0fb57f8fb9d6a49e79a17b",
+    "test-isolation.mjs": "a6b3bbbc97107635aed6d7f6978ead637f52fada1023a79172dc670d62e17790",
+    "vite-worker.mjs": "ff73ccbdb5b74c8eea3a61de794eb5452f15bb496e782a7b1efc8265044f11e1"
+  },
+  "authorizedChangedFiles": [
+    "persist-targets.mjs",
+    "publish.py",
+    "safety.test.mjs",
+    "test_publish.py",
+    "README.md",
+    "qa-approval.expected.json",
+    "build.mjs (parent-authorized exact temporary-name exclusion)"
+  ],
+  "notPerformed": {
+    "finalSourceFreeze": true,
+    "actualApplicationBuildOrTypechecks": true,
+    "productionAccessOrWrites": true,
+    "actualPm2OrSystemctl": true,
+    "actualHttp": true,
+    "databaseOrDdl": true,
+    "finalReactOrBrowserQa": true,
+    "sshOrScp": true,
+    "gitCommitOrPush": true
+  },
+  "caveats": [
+    "Only synthetic unit/jlist/dump/HTTP fixtures were executed. Captured boot baseline files were read offline; this is not new production verification.",
+    "Old tool-evidence hashes are obsolete for modified tools. Parent must freeze/build again and bind a fresh manifest plus QA approval.",
+    "PM2 save projection is guarded against complete current contents; unknown runtime/dump drift fails closed without old-API rollback."
+  ]
+}

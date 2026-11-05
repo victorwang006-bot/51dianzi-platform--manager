@@ -36,6 +36,7 @@ import {
 import { getOrCreateBusinessConversation } from "./businessConversation";
 
 import { MAX_HANDOFF_CUSTOMERS, listHandoffCustomers, replayedHandoffCustomerCount, transferHandoffCustomers, type HandoffCustomerRow } from "./crmCustomerHandoff";
+import { collectArchiveCoverage, assertArchiveCoverage, STRICT_ARCHIVE_VERSION, type ArchiveCoverage } from "./enterpriseMemberArchiveCoverage";
 
 const ACTIVE_INQUIRY_STATUSES = ["open", "replied"] as const;
 const MAX_HANDOFF_INVENTORIES = 20_000;
@@ -60,8 +61,10 @@ function createHandoffRevision(
   inventoryRows: HandoffRevisionInventory[],
   inquiryRows: HandoffRevisionInquiry[],
   customerRows: HandoffCustomerRow[] = [],
+  coverage?: ArchiveCoverage,
 ) {
   const snapshot = {
+    ...(coverage ? { coverage } : {}),
     ...(customerRows.length ? { customers: customerRows.map(row => [row.id, row.version]).sort((a, b) => a[0] - b[0]) } : {}),
     inventories: inventoryRows
       .map(row => [row.id, row.status, Number(row.ownershipVersion ?? 0)] as const)
@@ -155,6 +158,7 @@ export async function previewEnterpriseMemberHandoff(input: {
   actorUserId: number;
   targetUserId: number;
   mode?: HandoffMode;
+  requireCompleteResponsibilityCoverage?: boolean;
 }) {
   const isSelfLeave = input.targetUserId === input.actorUserId && input.mode === "handoff_remove";
   if (input.targetUserId === input.actorUserId && !isSelfLeave) {
@@ -285,10 +289,15 @@ export async function previewEnterpriseMemberHandoff(input: {
   const inventoryCount = inventoryRevisionRows.length;
   const inquiryCount = inquiryRevisionRows.length;
   const customerCount = customerRows.length;
+  const coverage = input.requireCompleteResponsibilityCoverage
+    ? await collectArchiveCoverage(db, actor.enterprise.id, target.userId) : undefined;
 
   return {
-    revision: createHandoffRevision(inventoryRevisionRows, inquiryRevisionRows, customerRows),
+    enterpriseId: actor.enterprise.id,
+    revision: createHandoffRevision(inventoryRevisionRows, inquiryRevisionRows, customerRows, coverage),
+    ...(coverage ? { coverage } : {}),
     target: {
+      memberId: target.memberId,
       userId: target.userId,
       displayName: displayName(target),
       phone: maskPhone(target.phone),
@@ -313,8 +322,9 @@ export async function previewEnterpriseMemberHandoff(input: {
       exceeded: inventoryCount > MAX_HANDOFF_INVENTORIES || inquiryCount > MAX_HANDOFF_INQUIRIES || customerCount > MAX_HANDOFF_CUSTOMERS,
     },
     unsupported: [
-      { key: "demands" as const, label: "发布的采购需求与收到的需求报价", reason: "当前缺少员工级负责人字段" },
-      { key: "quick_inquiries" as const, label: "网站快速询价", reason: "当前由后台消息中心管理，尚未接入员工转派接口" },
+      { key: "demands" as const, label: "发布的采购需求与收到的需求报价", reason: "公开需求归属稳定企业数据键，公开报价供应商为历史参与身份，不改写", blocking: false },
+      { key: "quick_inquiries" as const, label: "网站快速询价", reason: "提交联系人与消息作者是历史身份，不是当前企业员工接待责任", blocking: false },
+      ...(coverage?.checks.filter(check => check.blocking) ?? []),
     ],
     candidates: candidateRows.map(row => {
       const permissionKeys = row.role === "super_admin"
@@ -506,7 +516,12 @@ export async function handoffEnterpriseMemberBusiness(input: {
   mode: HandoffMode;
   requestId: string;
   expectedRevision: string;
+  /** Staff deletion must not misreport a legacy partial handoff as complete retirement. */
+  requireCompleteResponsibilityCoverage?: boolean;
 }) {
+  if (input.requireCompleteResponsibilityCoverage && (input.actorUserId === input.targetUserId || input.mode !== "handoff_remove")) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "严格归档不能删除自己或用于普通业务交接" });
+  }
   const isSelfLeave = input.targetUserId === input.actorUserId && input.mode === "handoff_remove";
   if (input.targetUserId === input.actorUserId && !isSelfLeave) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "不能交接并移除自己" });
@@ -555,7 +570,7 @@ export async function handoffEnterpriseMemberBusiness(input: {
       ...input,
       enterpriseId: actor.enterprise.id,
     });
-    if (requestOperation.status === "completed") return { ...previousResult, customerCount: await replayedHandoffCustomerCount(tx, actor.enterprise.id, input.requestId) };
+    if (requestOperation.status === "completed" && !input.requireCompleteResponsibilityCoverage) return { ...previousResult, enterpriseId: actor.enterprise.id, targetUserId: input.targetUserId, customerCount: await replayedHandoffCustomerCount(tx, actor.enterprise.id, input.requestId) };
 
     // 与超级管理员转让统一采用“企业行 → 成员行 → 权限/业务行”的锁顺序。
     const lockedEnterprise = (
@@ -618,6 +633,24 @@ export async function handoffEnterpriseMemberBusiness(input: {
     if (target.role === "super_admin" || target.userId === lockedEnterprise.superAdminUserId) {
       throw new TRPCError({ code: "FORBIDDEN", message: "企业所有者不能通过成员交接移除" });
     }
+
+    // A legacy completed partial handoff is never a strict archive receipt.
+    // Exact operation identity was checked above; marker and soft revoke commit together.
+    if (requestOperation.status === "completed" && input.requireCompleteResponsibilityCoverage) {
+      const proof = rows<{ id: number }>(await tx.execute(sql`
+        SELECT id FROM enterprise_permission_audit_logs
+         WHERE enterpriseId = ${actor.enterprise.id} AND actorUserId = ${input.actorUserId}
+           AND targetUserId = ${input.targetUserId} AND requestId = ${input.requestId}
+           AND action = 'member_removed' AND result = 'success'
+           AND LEFT(note, ${STRICT_ARCHIVE_VERSION.length + 1}) = ${STRICT_ARCHIVE_VERSION + ":"}
+         LIMIT 1 FOR UPDATE
+      `));
+      if (!proof.length) throw new TRPCError({ code: "CONFLICT", message: "请求号仅有旧版部分交接回执，请重新盘点并使用新的归档请求号" });
+      return { ...previousResult, enterpriseId: actor.enterprise.id, targetUserId: input.targetUserId, customerCount: await replayedHandoffCustomerCount(tx, actor.enterprise.id, input.requestId), enterpriseAccessRevoked: true, responsibilityComplete: true };
+    }
+    const coverage = input.requireCompleteResponsibilityCoverage
+      ? await collectArchiveCoverage(tx, actor.enterprise.id, target.userId, true) : undefined;
+    if (coverage) assertArchiveCoverage(coverage);
 
     // New business-handoff routes are independent of legacy inventory ownership.
     // Refuse before any legacy inventory/inquiry/customer/membership write; the
@@ -725,7 +758,9 @@ export async function handoffEnterpriseMemberBusiness(input: {
         message: `业务量超过单次安全上限（库存${MAX_HANDOFF_INVENTORIES}条、未结询价${MAX_HANDOFF_INQUIRIES}条、客户${MAX_HANDOFF_CUSTOMERS}条），请联系平台管理员分批处理`,
       });
     }
-    const currentRevision = createHandoffRevision(inventoryRows, inquiryRows, customerRows);
+    const currentRevision = coverage
+      ? createHandoffRevision(inventoryRows, inquiryRows, customerRows, coverage)
+      : createHandoffRevision(inventoryRows, inquiryRows, customerRows);
     if (currentRevision !== input.expectedRevision) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
@@ -1025,6 +1060,9 @@ export async function handoffEnterpriseMemberBusiness(input: {
       if (remainingInventory.length > 0 || remainingInquiries.length > 0 || remainingCustomers.length > 0) {
         throw new TRPCError({ code: "CONFLICT", message: "交接期间业务发生变化，请刷新后重试" });
       }
+      if (input.requireCompleteResponsibilityCoverage) {
+        assertArchiveCoverage(await collectArchiveCoverage(tx, actor.enterprise.id, target.userId, true), true);
+      }
 
       const previous = await tx
         .select({ permissionKey: enterpriseMemberPermissions.permissionKey })
@@ -1037,22 +1075,28 @@ export async function handoffEnterpriseMemberBusiness(input: {
         action: lockedSelfLeave ? "member_left" : "member_removed",
         beforePermissions: normalizeErpPermissions(previous.map(row => row.permissionKey)),
         requestId: input.requestId,
-        note: `${lockedSelfLeave ? "主动退出企业" : "业务交接后移除"}：库存${inventoryCount}条，未结询价${inquiryCount}条，客户${customerCount}条`,
+        note: `${input.requireCompleteResponsibilityCoverage ? STRICT_ARCHIVE_VERSION + ":当前企业资格软归档；" : ""}${lockedSelfLeave ? "主动退出企业" : "业务交接后移除"}：库存${inventoryCount}条，未结询价${inquiryCount}条，客户${customerCount}条`,
       });
-      await tx
-        .delete(enterpriseMemberPermissions)
-        .where(eq(enterpriseMemberPermissions.enterpriseMemberId, target.id));
-      await tx.delete(enterpriseMembers).where(eq(enterpriseMembers.id, target.id));
-      await tx
-        .update(companies)
-        .set({ enterpriseId: null })
-        .where(
-          and(
-            eq(companies.userId, target.userId),
-            eq(companies.enterpriseId, actor.enterprise.id),
-          ),
-        );
-      await tx.update(users).set({ crmAccess: false }).where(eq(users.id, target.userId));
+      if (input.requireCompleteResponsibilityCoverage) {
+        const revoked = await tx.update(enterpriseMembers).set({
+          status: "suspended", suspendedAt: new Date(),
+          permissionVersion: sql`${enterpriseMembers.permissionVersion} + 1`,
+        }).where(and(eq(enterpriseMembers.id, target.id), eq(enterpriseMembers.enterpriseId, actor.enterprise.id)));
+        if (affectedRows(revoked) !== 1) throw new TRPCError({ code: "CONFLICT", message: "企业成员资格在归档期间发生变化" });
+        await tx.execute(sql`UPDATE enterprise_member_module_access
+          SET readAllowed = FALSE, writeAllowed = FALSE, revision = revision + 1
+          WHERE enterpriseId = ${actor.enterprise.id} AND userId = ${target.userId}`);
+        // Keep permissions/team membership as history. Every authority resolver
+        // intersects enterprise_members.active; explicit module denies also persist.
+      } else {
+        await tx
+          .delete(enterpriseMemberPermissions)
+          .where(eq(enterpriseMemberPermissions.enterpriseMemberId, target.id));
+        await tx.delete(enterpriseMembers).where(eq(enterpriseMembers.id, target.id));
+      }
+      // Membership/permissions are the current-enterprise access authority.
+      // Preserve company identity/history and the account's other enterprise identities;
+      // do not globally disable crmAccess/loginDisabled or erase company ownership.
     }
 
     await tx
@@ -1062,11 +1106,14 @@ export async function handoffEnterpriseMemberBusiness(input: {
 
     return {
       success: true as const,
+      enterpriseId: actor.enterprise.id,
+      targetUserId: input.targetUserId,
       idempotent: false,
       inventoryCount,
       inquiryCount,
       customerCount,
       removed: input.mode === "handoff_remove",
+      ...(input.requireCompleteResponsibilityCoverage ? { enterpriseAccessRevoked: true, responsibilityComplete: true } : {}),
     };
       }, { isolationLevel: "read committed", accessMode: "read write" });
     } catch (error) {
