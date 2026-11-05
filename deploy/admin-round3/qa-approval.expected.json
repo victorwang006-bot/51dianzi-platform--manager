@@ -1,0 +1,17 @@
+{
+  "release": "20261105-channel-factory-publish-v3",
+  "manifestSha256": null,
+  "frozenSourceReviewed": null,
+  "isolatedAuthorizedUiQaPassed": null,
+  "serverApiCompatibilityPassed": null,
+  "ddlReviewApproved": null,
+  "ddlArtifactHashes": null,
+  "uiEvidenceScope": "authorized-react-fixture",
+  "productionBrowserVerified": false,
+  "evidence": {
+    "sourceAndEightRealChecks": null,
+    "authorizedUiFixture": null,
+    "apiCompatibilityAndProjectionReview": null
+  },
+  "note": "Template only. Null fields cannot approve. One parent manifest/source/tests/API/DDL+UI approval record, no extra repeated gates."
+}

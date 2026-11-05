@@ -112,3 +112,19 @@ describe("业务工作台 scope capability 投影", () => {
     expect(projection.canWrite).toBe(false);
   });
 });
+
+describe("factory publication capability stays independent and scope-bound", () => {
+  it.each([
+    { nativeRead: true, nativeWrite: false, nativePublish: true, scopeWrite: true, allowed: true },
+    { nativeRead: true, nativeWrite: true, nativePublish: false, scopeWrite: true, allowed: false },
+    { nativeRead: true, nativeWrite: true, nativePublish: true, scopeWrite: false, allowed: false },
+    { nativeRead: false, nativeWrite: true, nativePublish: true, scopeWrite: true, allowed: false },
+  ])("projects only explicit publish with live native read and scope write: %s", testCase => {
+    const result = projectBusinessWorkbenchCapabilities({
+      scope: { modulePermissions: ["business.inventory.read", ...(testCase.scopeWrite ? ["business.inventory.write"] : [])] },
+      frontWorkbenchCapabilities: ["inventory.channel"],
+      officialInventoryPermissions: { read: testCase.nativeRead, write: testCase.nativeWrite, note: false, publish: testCase.nativePublish, authorizationVersion: "isolated-fixture-native-version" },
+    });
+    expect(result.officialInventoryPermissions?.publish).toBe(testCase.allowed);
+  });
+});

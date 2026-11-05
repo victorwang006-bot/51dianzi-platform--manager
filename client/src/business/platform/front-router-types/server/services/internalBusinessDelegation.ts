@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { NATIVE_TEAM_READ_METHODS, officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../shared/internalBusinessOfficialInventory";
+import { NATIVE_TEAM_READ_METHODS, NATIVE_FACTORY_PUBLISH_METHODS, officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../shared/internalBusinessOfficialInventory";
 import { bindOfficialInventoryGrant, verifyOfficialInventoryGrant } from "./internalBusinessOfficialGrant";
 import type { Request, Response } from "express";
 import type { ErpPermissionKey } from "../../../shared/erpPermissions";
@@ -366,6 +366,7 @@ export async function executeInternalBusinessMethod(input: {
   req: Request;
   res: Response;
 }) {
+  if (!isBusinessMethodId(input.method)) throw new TRPCError({ code: "BAD_REQUEST", message: "不支持的内部业务方法" });
   const capability = BUSINESS_METHOD_CAPABILITIES[input.method];
   const requirement = officialInventoryMethodRequirement(input.method);
   const grant = requirement ? verifyOfficialInventoryGrant(input.officialInventoryGrant, {
@@ -376,7 +377,10 @@ export async function executeInternalBusinessMethod(input: {
   const principal = await requireInternalBusinessStaffPrincipal({
     binding: input.binding,
     staffUserId: input.staffUserId,
-    permission: grant?.read && NATIVE_TEAM_READ_METHODS.includes(input.method) ? undefined : capability.permission,
+    // Native publish is independent of the legacy seller ERP manage/publish role.
+    // Real enterprise/member/stocks read and current owner/team boundaries remain locked in the route service.
+    permission: grant?.read && (NATIVE_TEAM_READ_METHODS.includes(input.method)
+      || (grant.publish === true && NATIVE_FACTORY_PUBLISH_METHODS.includes(input.method))) ? undefined : capability.permission,
   });
   return runWithBoundBusinessStaffActor({
     enterpriseId: principal.enterprise.enterpriseId,

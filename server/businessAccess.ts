@@ -233,7 +233,7 @@ export async function currentOfficialInventoryPermissions(ctx: TrpcContext): Pro
   if (!account || account.status !== "active") throw new TRPCError({ code: "UNAUTHORIZED", message: "后台工作人员账号已不可用", cause: new BusinessFailureCause("AUTH_SESSION_INVALID") });
   const permissions = await db.getAdminUserPermissions(account.id);
   const has = (key: string) => account.adminRole === "super_admin" || permissions.includes(key);
-  const grant = { read: has("officialInventory.read"), write: has("officialInventory.write"), note: has("officialInventory.note") };
+  const grant = { read: has("officialInventory.read"), write: has("officialInventory.write"), note: has("officialInventory.note"), publish: has("officialInventory.publish") };
   return { ...grant, authorizationVersion: `official-inventory-v1:${createHash("sha256").update(JSON.stringify({ id: account.id, role: account.adminRole, status: account.status, sessionVersion: account.sessionVersion, ...grant })).digest("hex")}` };
 }
 /** Only attested creation IDs from the internal list are admitted; no current binding/name inference. */

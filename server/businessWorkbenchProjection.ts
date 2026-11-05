@@ -116,6 +116,7 @@ export function projectBusinessWorkbenchCapabilities(input: {
     canWrite: writable.length > 0,
     officialInventoryPermissions: input.officialInventoryPermissions ? { ...input.officialInventoryPermissions,
       write: input.officialInventoryPermissions.read && input.officialInventoryPermissions.write && scopeAllows(input.scope, "inventory", "write"),
+      publish: input.officialInventoryPermissions.read && input.officialInventoryPermissions.publish === true && scopeAllows(input.scope, "inventory", "write"),
       note: input.officialInventoryPermissions.read && input.officialInventoryPermissions.note } : undefined,
   };
 }

@@ -177,3 +177,9 @@
 .ci-supply-location { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; font-size: var(--admin-content-font-body, 12px); color: #475569; }
 .ci-channel-table tbody tr.ci-supply-target > td { background: #eef6ff; }
 .ci-channel-table tbody tr.ci-supply-target > td:first-child { box-shadow: inset 3px 0 #185fa5; }
+
+/* Public confirmation contains only the explicitly allow-listed material preview. */
+.ci-page.ci-host .ci-publish-preview { display: grid; gap: 10px; margin: 16px 0; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; }
+.ci-page.ci-host .ci-publish-preview > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; }
+.ci-page.ci-host .ci-publish-preview dt { color: #64748b; }
+.ci-page.ci-host .ci-publish-preview dd { margin: 0; color: #1e293b; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }

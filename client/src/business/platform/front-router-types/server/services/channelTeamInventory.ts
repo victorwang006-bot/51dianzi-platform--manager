@@ -1,4 +1,5 @@
 import { materialUploadBatchId } from "./channelInventoryManagementPersistence";
+import { factoryMaterialPublicationMetadata } from "./channelFactoryPublication";
 import { sql, type SQL } from "drizzle-orm";
 import { BUSINESS_INDUSTRY_CODES, businessIndustryCodeSchema, type BusinessIndustryCode } from "../../../shared/businessIndustry";
 import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOriginalActor";
@@ -17,6 +18,7 @@ export type TeamChannelMaterial = {
   isMine: boolean; canEdit: boolean; readOnly: boolean; noteCount: number; canAddNote: boolean;
   channelSource: { id: number; name: string } | null; canViewSource: boolean;
   originalRecorderName: string | null; recorderAdminAccountId: number | null;
+  canPublish: boolean; publicationStatus: "unpublished" | "published";
 };
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
@@ -47,6 +49,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
     channelSource: null, originalRecorderName: null, recorderAdminAccountId: null,
+    canPublish: false, publicationStatus: "unpublished",
   };
 }
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number }) {
@@ -133,10 +136,13 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
         ${FROM} WHERE ${where} ORDER BY ${order} LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE`))
         ;
       const projected = [];
+      const publications = await factoryMaterialPublicationMetadata(tx, scope, items.map(row => Number(row.id)), access.scope === "team");
       for (const row of items) {
         const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
         if (company.linked) { row.industryCode = company.customer?.industryCode ?? null; row.canViewSource = bool(row.canViewSource) && company.customer !== null; }
-        projected.push({ ...teamMaterialFrom(row, access.write, leader), canDelete: access.write && (bool(row.isMine) || leader) && (!company.linked || company.customer !== null), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
+        projected.push({ ...teamMaterialFrom(row, access.write, leader),
+          ...(publications.get(Number(row.id)) ?? { canPublish: false, publicationStatus: "unpublished" as const }),
+          canDelete: access.write && (bool(row.isMine) || leader) && (!company.linked || company.customer !== null), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
       }
       return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
       });

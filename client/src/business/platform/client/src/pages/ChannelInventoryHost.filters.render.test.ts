@@ -10,7 +10,7 @@ const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   const sources = { items: [{ id: 11, name: "授权渠道", canViewSource: true }], canFilterSource: true };
   const channelResult = { items: [{ id: 11, name: "授权渠道", enterpriseId: 31, active: true, canEdit: true, readOnly: false, type: "factory", revision: 1 }], total: 1, page: 1, pageSize: 100, pageCount: 1, canWrite: true };
-  return { query, inputs: [] as Record<string, unknown>[], denied: false, loading: false,
+  return { query, invalidate, inputs: [] as Record<string, unknown>[], denied: false, loading: false,
     scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "scope-31", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "scope-31", authorizationVersion: "auth-v1", readVersion: "read-v1" }, onAuthorizationError: vi.fn() },
     channels: channelResult,
     utils: { client: { channelInventory: { listChannels: { query: vi.fn().mockResolvedValue(channelResult) }, listTeamSourceOptions: { query: vi.fn().mockResolvedValue(sources) } } }, channelInventory: { listChannels: { invalidate }, listTeamMaterials: { invalidate }, listTeamSourceOptions: { invalidate }, notesList: { invalidate }, collaborationNotesList: { invalidate } } },
@@ -45,8 +45,9 @@ async function settle() { await act(async () => { await new Promise(resolve => s
 beforeEach(() => {
   vi.clearAllMocks(); runtime.inputs = []; runtime.denied = false; runtime.loading = false; runtime.scope.officialInventoryPermissions.read = true;
   window.history.replaceState({}, "", "/channel-inventory"); container = document.createElement("div"); document.body.append(container); root = createRoot(container); act(() => root.render(React.createElement(ChannelInventoryHost)));
+  vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Production network forbidden in filter fixtures"); }));
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); });
+afterEach(() => { act(() => root.unmount()); container.remove(); expect(fetch).not.toHaveBeenCalled(); vi.unstubAllGlobals(); });
 describe("approved channel inventory filters and compact header (real component, mock transport)", () => {
   it("places title, both view controls and both uploads in one header without an empty toolbar", () => {
     const header = required(container.querySelector(".ci-tabbar"));
@@ -54,28 +55,53 @@ describe("approved channel inventory filters and compact header (real component,
     for (const name of ["平铺查看", "按渠道查看", "上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
     expect(container.querySelector(".ci-toolbar.ci-inventory-view-controls")).toBeNull();
     expect(header.querySelector('[aria-hidden="true"]')).toBeNull();
+    expect(Array.from(container.querySelectorAll("button")).find(item => item.textContent === "重置")).toBeUndefined();
     if (process.env.CHANNEL_GEOMETRY_DOM) writeFileSync(process.env.CHANNEL_GEOMETRY_DOM, container.innerHTML);
   });
   it("lists exactly the customer industry enumeration plus all and unset", () => {
     const select = required(container.querySelector<HTMLSelectElement>('[aria-label="筛选库存行业"]'));
     expect(Array.from(select.options).map(option => ({ value: option.value, label: option.text }))).toEqual([{ value: "all", label: "全部行业" }, ...BUSINESS_INDUSTRY_OPTIONS, { value: "unset", label: "未设置" }]);
   });
-  it("intersects industry, model, brand, batch and source and resets page to one", async () => {
+  it("keeps drafts out of applied search, then intersects all filters on Confirm and returns to page one", async () => {
+    click(button("下一页"));
     setControl("筛选库存型号", " ＡＢＣ "); setControl("筛选库存品牌", " TI "); setControl("筛选上传批次 ID", "81");
     const source = required(container.querySelector('[aria-label="筛选库存渠道来源"]'));
     act(() => source.dispatchEvent(new Event("pointerdown", { bubbles: true }))); await settle(); setControl("筛选库存渠道来源", "11");
-    click(button("下一页")); expect(runtime.inputs.at(-1)?.page).toBe(2);
     setControl("筛选库存行业", "automotive");
+    expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: undefined, partNumber: undefined, brand: undefined, uploadBatchId: undefined, channelId: undefined, page: 2 });
+    click(button("确定"));
     expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: "automotive", partNumber: "ABC", brand: "TI", uploadBatchId: 81, channelId: 11, page: 1, pageSize: 20 });
-    setControl("筛选库存行业", "unset"); expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: "unset", channelId: 11, uploadBatchId: 81 });
-    setControl("筛选库存行业", "all"); expect(runtime.inputs.at(-1)?.industryCode).toBeUndefined();
-    click(button("重置")); expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: undefined, uploadBatchId: undefined, channelId: undefined, page: 1 });
+    setControl("筛选库存行业", "unset"); click(button("确定")); expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: "unset", channelId: 11, uploadBatchId: 81 });
+    setControl("筛选库存行业", "all"); click(button("确定")); expect(runtime.inputs.at(-1)?.industryCode).toBeUndefined();
   });
-  it("retains totals only for pagination in the same filter scope, not while a new industry is loading", () => {
+  it("applies input Enter but ignores composition Enter", () => {
+    click(button("下一页")); setControl("筛选库存型号", "ENTER-MODEL");
+    const model = required(container.querySelector('[aria-label="筛选库存型号"]'));
+    act(() => model.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true, cancelable: true })));
+    expect(runtime.inputs.at(-1)).toMatchObject({ partNumber: undefined, page: 2 });
+    act(() => model.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+    expect(runtime.inputs.at(-1)).toMatchObject({ partNumber: "ENTER-MODEL", page: 1 });
+  });
+  it("paginates, sorts and refreshes applied filters while retaining unapplied drafts", async () => {
+    setControl("筛选库存品牌", "APPLIED"); click(button("确定"));
+    setControl("筛选库存品牌", "DRAFT"); click(button("下一页"));
+    expect(runtime.inputs.at(-1)).toMatchObject({ brand: "APPLIED", page: 2 });
+    click(required(container.querySelector('[aria-label="按可供数量排序"]')));
+    expect(runtime.inputs.at(-1)).toMatchObject({ brand: "APPLIED", sortBy: "qty", sortDirection: "desc", page: 1 });
+    click(button("刷新")); await settle(); expect(runtime.invalidate).toHaveBeenCalled();
+    act(() => root.render(React.createElement(ChannelInventoryHost)));
+    expect(runtime.inputs.at(-1)?.brand).toBe("APPLIED"); expect(required(container.querySelector<HTMLInputElement>('[aria-label="筛选库存品牌"]')).value).toBe("DRAFT");
+  });
+  it("does not suppress applied data for an invalid batch draft until Confirm", () => {
+    setControl("筛选上传批次 ID", "invalid"); expect(container.querySelector("tbody")?.textContent).toContain("SERVER-FIRST");
+    click(button("确定")); expect(container.querySelector("tbody")?.textContent).not.toContain("SERVER-FIRST");
+    expect(container.textContent).toContain("上传批次 ID 须为正整数");
+  });
+  it("retains totals for applied pagination and drafts but clears them on a confirmed new loading scope", () => {
     click(button("下一页")); runtime.loading = true; act(() => root.render(React.createElement(ChannelInventoryHost)));
     expect(container.querySelector(".ci-filter-count")?.textContent).toBe("45 条库存");
-    setControl("筛选库存行业", "automotive");
-    expect(container.querySelector(".ci-filter-count")?.textContent).toBe("0 条库存");
+    setControl("筛选库存行业", "automotive"); expect(container.querySelector(".ci-filter-count")?.textContent).toBe("45 条库存");
+    click(button("确定")); expect(container.querySelector(".ci-filter-count")?.textContent).toBe("0 条库存");
     expect(container.querySelector("tbody")?.textContent).not.toContain("SERVER-FIRST");
     expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: "automotive", page: 1 });
   });
@@ -85,18 +111,17 @@ describe("approved channel inventory filters and compact header (real component,
     click(button("下一页")); click(sort);
     expect(runtime.inputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "desc", page: 1 });
     expect(sort.closest("th")?.getAttribute("aria-sort")).toBe("descending"); expect(sort.querySelectorAll(".ci-sort-active")).toHaveLength(1); expect(sort.getAttribute("title")).toContain("点击数量从少到多");
-    expect(container.querySelector(".ci-sort-status")?.textContent).toContain("数量从多到少");
-    expect(container.querySelector("tbody tr")?.textContent).toContain("SERVER-FIRST");
+    expect(container.querySelector(".ci-sort-status")?.textContent).toContain("数量从多到少"); expect(container.querySelector("tbody tr")?.textContent).toContain("SERVER-FIRST");
     click(sort); expect(runtime.inputs.at(-1)).toMatchObject({ sortBy: "qty", sortDirection: "asc", page: 1 }); expect(sort.closest("th")?.getAttribute("aria-sort")).toBe("ascending");
     click(sort); expect(runtime.inputs.at(-1)).toMatchObject({ sortBy: undefined, sortDirection: undefined, page: 1 }); expect(sort.querySelectorAll("svg path")).toHaveLength(2); expect(sort.querySelectorAll(".ci-sort-active")).toHaveLength(0);
   });
-  it("uses the same industry and quantity API inside a server-readable channel", async () => {
+  it("uses the same confirmed industry and quantity API inside a server-readable channel", async () => {
     click(button("按渠道查看")); await settle(); click(button("查看该渠道库存"));
-    setControl("筛选库存行业", "unset"); click(required(container.querySelector('[aria-label="按可供数量排序"]')));
+    setControl("筛选库存行业", "unset"); click(button("确定")); click(required(container.querySelector('[aria-label="按可供数量排序"]')));
     expect(runtime.inputs.at(-1)).toMatchObject({ channelId: 11, industryCode: "unset", sortBy: "qty", sortDirection: "desc", page: 1 });
     expect(required(container.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')).disabled).toBe(true);
   });
-  it("clears current rows on read denial and never treats the filter as authority", () => {
+  it("clears current rows on read denial and never treats a draft as authority", () => {
     setControl("筛选库存行业", "automotive"); runtime.denied = true; act(() => root.render(React.createElement(ChannelInventoryHost)));
     expect(container.querySelector("tbody")?.textContent).not.toContain("SERVER-FIRST");
   });

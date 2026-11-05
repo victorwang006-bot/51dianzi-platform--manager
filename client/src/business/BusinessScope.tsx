@@ -44,6 +44,8 @@ export type BusinessOfficialInventoryPermissions = Readonly<{
   read: boolean;
   write: boolean;
   note: boolean;
+  /** Explicit BFF-proven grant; absent legacy projections cannot publish. */
+  publish?: boolean;
   authorizationVersion: string;
 }>;
 

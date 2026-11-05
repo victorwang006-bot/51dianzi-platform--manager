@@ -1,4 +1,5 @@
 import { activeChannelMaterial, activeUnaliasedChannelMaterial, materialUploadBatchId, lockMaterialUploadBatch, recordMaterialUploadBatch } from "./channelInventoryManagementPersistence";
+import { factoryMaterialPublicationMetadata } from "./channelFactoryPublication";
 import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -103,6 +104,8 @@ export type ChannelMaterialRecord = {
   shareEnabled: boolean;
   canEdit: boolean;
   readOnly: boolean;
+  canPublish: boolean;
+  publicationStatus: "unpublished" | "published";
   revision: number;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -328,6 +331,7 @@ function materialFrom(row: SqlResultRow, canViewSource = bool(row.canViewSource)
     note: nullableString(row.note),
     shareEnabled: bool(row.shareEnabled),
     canEdit: true, readOnly: false,
+    canPublish: false, publicationStatus: "unpublished",
     revision: Number(row.revision),
     createdAt: row.createdAt as Date | string,
     updatedAt: row.updatedAt as Date | string,
@@ -755,7 +759,9 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
            LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE
         `)).map(row => ({ ...materialFrom(row), shareEnabled: access.write && bool(row.shareEnabled), canEdit: access.write, readOnly: !access.write }));
         const projected = [];
-        for (const item of items) projected.push(await projectMaterialCompany(tx, scope, item));
+        const publications = await factoryMaterialPublicationMetadata(tx, scope, items.map(item => item.id), access.scope === "team");
+        for (const item of items) projected.push({ ...await projectMaterialCompany(tx, scope, item),
+          ...(publications.get(item.id) ?? { canPublish: false, publicationStatus: "unpublished" as const }) });
         return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
         });
       } catch (error) {

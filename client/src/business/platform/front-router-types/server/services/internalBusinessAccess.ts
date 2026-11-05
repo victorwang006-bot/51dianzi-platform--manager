@@ -387,6 +387,7 @@ export async function getInternalBusinessContext(
   const originalStock = modules.find(item => item.module === "stocks")?.access;
   const officialInventoryPermissions = native ? { ...native, read: native.read && stockAccess?.read === true,
     write: native.read && native.write && originalStock?.write === true && (principal.scope.isOwner || principal.scope.permissionKeys.includes("inventory.manage")),
+    publish: native.read && native.publish === true && stockAccess?.read === true,
     note: native.read && native.note && stockAccess?.read === true } : undefined;
   if (native) {
     const index = workbenchCapabilities.indexOf("inventory.channel");

@@ -11,7 +11,7 @@ vi.mock("wouter", async importOriginal => ({
 const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   const query = (data: unknown) => ({ data, isLoading: false, isFetching: false, isError: false, refetch: vi.fn().mockResolvedValue(undefined) });
-  const mutations = { createChannel: vi.fn(), updateChannel: vi.fn(), setChannelActive: vi.fn(), createMaterial: vi.fn().mockResolvedValue({}), updateTeamMaterial: vi.fn() };
+  const mutations = { createChannel: vi.fn(), updateChannel: vi.fn(), setChannelActive: vi.fn(), createMaterial: vi.fn().mockResolvedValue({}), updateTeamMaterial: vi.fn(), publishFactoryMaterial: vi.fn() };
   const management = {
     createUploadBatch: { mutate: vi.fn().mockResolvedValue({ id: 81, batchCode: "BATCH-81", revision: 1 }) },
     deleteMaterials: { mutate: vi.fn().mockResolvedValue({ deletedCount: 1, skippedCount: 0, results: [{ id: 1, success: true }] }) },
@@ -20,7 +20,7 @@ const runtime = vi.hoisted(() => {
     updateUploadBatch: { mutate: vi.fn() }, previewDeleteUploadBatch: { query: vi.fn() }, deleteUploadBatch: { mutate: vi.fn() }, restoreMaterial: { mutate: vi.fn() },
   };
   return { query, mutations, management, inventoryInputs: [] as Record<string, unknown>[],
-    scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "scope-31", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "scope-31", authorizationVersion: "auth-v1", readVersion: "read-v1" }, onAuthorizationError: vi.fn() },
+    scope: { officialInventoryPermissions: { read: true, write: true, note: true, publish: true as boolean | undefined, authorizationVersion: "native-v1" }, storageScope: "scope-31", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "scope-31", authorizationVersion: "auth-v1", readVersion: "read-v1" }, onAuthorizationError: vi.fn() },
     enterprise: null as unknown, team: null as unknown, channels: null as unknown,
     utils: { client: { channelInventory: { ...management } }, channelInventory: { listChannels: { invalidate }, listTeamMaterials: { invalidate }, listTeamSourceOptions: { invalidate }, notesList: { invalidate }, collaborationNotesList: { invalidate } } },
   };
@@ -30,6 +30,7 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   useUtils: () => runtime.utils, enterprise: { me: { useQuery: () => runtime.enterprise } }, channelInventory: {
     listChannels: { useQuery: () => runtime.channels }, listTeamMaterials: { useQuery: (input: Record<string, unknown>, options?: { enabled?: boolean }) => { if (options?.enabled) runtime.inventoryInputs.push(input); return runtime.team; } },
     createChannel: { useMutation: () => ({ mutateAsync: runtime.mutations.createChannel }) }, updateChannel: { useMutation: () => ({ mutateAsync: runtime.mutations.updateChannel }) }, setChannelActive: { useMutation: () => ({ mutateAsync: runtime.mutations.setChannelActive }) }, createMaterial: { useMutation: () => ({ mutateAsync: runtime.mutations.createMaterial }) }, updateTeamMaterial: { useMutation: () => ({ mutateAsync: runtime.mutations.updateTeamMaterial }) },
+    publishFactoryMaterial: { useMutation: () => ({ mutateAsync: runtime.mutations.publishFactoryMaterial }) },
   },
 } }));
 import ChannelInventoryHost from "./ChannelInventoryHost";
@@ -42,19 +43,25 @@ function click(element: Element) { act(() => element.dispatchEvent(new MouseEven
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); }
 function renderHost() { act(() => root.render(React.createElement(ChannelInventoryHost))); }
 beforeEach(() => {
-  vi.clearAllMocks(); sessionStorage.clear(); window.history.replaceState({}, "", "/channel-inventory"); runtime.inventoryInputs = []; runtime.scope.officialInventoryPermissions.write = true;
+  vi.clearAllMocks(); sessionStorage.clear(); window.history.replaceState({}, "", "/channel-inventory"); runtime.inventoryInputs = []; runtime.scope.officialInventoryPermissions.write = true; runtime.scope.frontUser.role = "user";
+  runtime.scope.officialInventoryPermissions.publish = true;
+  runtime.mutations.publishFactoryMaterial.mockReset().mockResolvedValue({ materialId: 1, publicId: "ocp_0123456789abcdef0123456789abcdef", status: "published", revision: row.revision });
   runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], isOwner: true });
   runtime.team = runtime.query({ items: [row, { ...row, id: 2, partNumber: "READ-ONLY", canDelete: false, canEdit: false, readOnly: true }], total: 2, page: 1, pageSize: 20, pageCount: 1, canWrite: true, canFilterSource: false });
   runtime.channels = runtime.query({ items: [{ id: 11, name: "授权渠道", enterpriseId: 31, active: true, canEdit: true, readOnly: false, type: "factory", revision: 1 }], total: 1, page: 1, pageSize: 100, pageCount: 1, canWrite: true });
   container = document.createElement("div"); document.body.append(container); root = createRoot(container); vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Production network forbidden in management fixtures"); }));
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); document.body.replaceChildren(); vi.unstubAllGlobals(); });
+afterEach(() => { act(() => root.unmount()); container.remove(); document.body.replaceChildren(); expect(fetch).not.toHaveBeenCalled(); vi.unstubAllGlobals(); });
 describe("manager Host inventory-management bridge", () => {
   it("adds batches/trash without replacing original inventory columns or readonly row actions", () => {
     renderHost(); expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
-    expect(Array.from(document.querySelectorAll("thead th")).slice(1).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
-    expect(document.querySelectorAll("tbody input[type=checkbox]")).toHaveLength(1);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
     expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(1);
+    click(button("选择")); expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
+    expect(document.querySelectorAll("tbody input[type=checkbox]")).toHaveLength(1);
+    expect(document.querySelectorAll("thead th")).toHaveLength(11);
   });
   it("sends single deletion through the existing bridge with the row revision and asserted identity", async () => {
     renderHost(); const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
@@ -65,10 +72,31 @@ describe("manager Host inventory-management bridge", () => {
     expect(runtime.management.deleteMaterials.mutate).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, items: [{ id: 1, expectedRevision: 4 }], requestId: expect.any(String) });
   });
   it("clears current-page selection when a filter changes", () => {
-    renderHost(); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]'))); expect(document.body.textContent).toContain("已选 1 条");
+    renderHost(); click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]'))); expect(document.body.textContent).toContain("已选 1 条");
     const input = required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存品牌"]'));
     act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, "ADI"); input.dispatchEvent(new Event("input", { bubbles: true })); });
     expect(document.querySelector('[aria-label="当前页批量删除"]')).toBeNull();
+    expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
+    expect(runtime.inventoryInputs.at(-1)?.brand).toBeUndefined();
+    act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, ""); input.dispatchEvent(new Event("input", { bubbles: true })); });
+    expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
+  });
+  it("cancel exits selection mode, clears IDs and retains single deletion in More", () => {
+    renderHost(); click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
+    click(button("取消选择")); expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
+    expect(document.querySelector('[aria-label="当前页批量删除"]')).toBeNull();
+    click(button("选择")); expect(required(document.querySelector<HTMLInputElement>('[aria-label="全选当前页可删除库存"]')).checked).toBe(false);
+    const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
+    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑", "删除"]);
+  });
+  it.each(["view", "actor", "enterprise", "permission"])("clears selection mode on %s change", async change => {
+    renderHost(); click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
+    if (change === "view") { click(button("按渠道查看")); await settle(); }
+    if (change === "actor") { runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 8, permissionKeys: ["inventory.manage"], isOwner: true }); renderHost(); }
+    if (change === "enterprise") { runtime.enterprise = runtime.query({ enterprise: { id: 32 }, currentUserId: 7, permissionKeys: ["inventory.manage"], isOwner: true }); renderHost(); }
+    if (change === "permission") { runtime.scope.officialInventoryPermissions.write = false; renderHost(); }
+    expect(document.querySelector('[aria-label="当前页批量删除"]')).toBeNull(); expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
   });
   it("views a batch using exact uploadBatchId without granting source filtering", async () => {
     renderHost(); selectHostTab("batches"); await settle(); click(button("查看库存")); await settle();
@@ -90,7 +118,38 @@ describe("manager Host inventory-management bridge", () => {
   });
   it("never displays the newly added delete/rename/archive/restore write entrances without native write grant", async () => {
     runtime.scope.officialInventoryPermissions.write = false; renderHost();
-    expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull(); expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull();
+    const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
+    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑"]);
+    expect(document.querySelector('[role="menuitem"]')?.getAttribute("data-disabled")).not.toBeNull();
     selectHostTab("batches"); await settle(); expect(document.querySelectorAll(".ci-management-actions button")).toHaveLength(1);
+  });
+  it.each(["user", "admin"])("%s publishes a server-authorized row only after final confirmation, without deriving authority from canEdit", async role => {
+    runtime.scope.frontUser.role = role;
+    runtime.team = runtime.query({ items: [{ ...row, canEdit: false, canDelete: false, readOnly: true, canPublish: true, publicationStatus: "unpublished", price: "2.50", note: "PRIVATE-INTEGRATION-NOTE", channelName: "PRIVATE-SOURCE" }], total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: false, canFilterSource: false });
+    renderHost(); expect(button("发布").disabled).toBe(false); expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toBeNull();
+    click(button("发布")); expect(runtime.mutations.publishFactoryMaterial).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("ONE");
+    expect(document.body.innerHTML).not.toContain("PRIVATE-INTEGRATION-NOTE"); expect(document.body.innerHTML).not.toContain("PRIVATE-SOURCE");
+    click(button("确认发布")); await settle();
+    expect(runtime.mutations.publishFactoryMaterial).toHaveBeenCalledWith({ materialId: 1, expectedRevision: 4, expectedEnterpriseId: 31, expectedActorUserId: 7, requestId: expect.any(String) });
+    expect(button("已发布").disabled).toBe(true);
+  });
+  it.each(["authorized", "invalid-role"])("never enables server publish flags for unsupported business role %s", role => {
+    runtime.scope.frontUser.role = role;
+    runtime.team = runtime.query({ items: [{ ...row, canPublish: true, publicationStatus: "unpublished" }], total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: true, canFilterSource: false });
+    renderHost(); expect(button("发布").disabled).toBe(true); click(button("发布")); expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.mutations.publishFactoryMaterial).not.toHaveBeenCalled();
+  });
+  it.each([false, undefined])("does not substitute native edit permission for native publish=%s", publish => {
+    runtime.scope.frontUser.role = "user"; runtime.scope.officialInventoryPermissions.publish = publish;
+    runtime.team = runtime.query({ items: [{ ...row, canPublish: true, publicationStatus: "unpublished" }], total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: true, canFilterSource: false });
+    renderHost(); expect(button("发布").disabled).toBe(true); click(button("发布")); expect(runtime.mutations.publishFactoryMaterial).not.toHaveBeenCalled();
+  });
+  it("clears a private publish snapshot immediately on native publish revocation", () => {
+    runtime.scope.frontUser.role = "user";
+    runtime.team = runtime.query({ items: [{ ...row, canPublish: true, publicationStatus: "unpublished" }], total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: true, canFilterSource: false });
+    renderHost(); click(button("发布")); expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    runtime.scope.officialInventoryPermissions.publish = false; renderHost(); expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.mutations.publishFactoryMaterial).not.toHaveBeenCalled();
   });
 });

@@ -65,7 +65,8 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(authorization).toContain('const channel = capability.method?.startsWith("channelInventory.") === true;');
     expect(authorization).toContain('const contextProjection = capability.module === "context" && capability.method === undefined;');
     expect(authorization).toContain("channel || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined");
-    expect(authorization).toContain('const requirement = notes ? "note" : capability.mode === "write" ? "write" : "read";');
+    expect(authorization).toContain('const publishing = capability.method === "channelInventory.publishFactoryMaterial";');
+    expect(authorization).toContain('const requirement = publishing ? "publish" : notes ? "note" : capability.mode === "write" ? "write" : "read";');
     expect(authorization).toContain("if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement])");
     expect(authorization).toContain('const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"');
     expect(authorization).toContain('&& (contextProjection || nativeReadMethods.includes(capability.method ?? ""))');
@@ -89,7 +90,8 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(forwarder).toContain("staffUserId: staffBinding.frontUserId");
     expect(forwarder).toContain("bindingVersion: staffBinding.bindingVersion");
     expect(forwarder).toContain("method: capability.method");
-    expect(forwarder).toContain('officialInventoryPermissions: officialInventoryPermissions ? { ...officialInventoryPermissions, write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write") } : undefined');
+    expect(forwarder).toContain('write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write")');
+    expect(forwarder).toContain('publish: officialInventoryPermissions.publish === true && businessScopeAllows(scope, "inventory", "write")');
     expect(forwarder).toContain("scopeVersion: scope.scopeVersion");
 
     const directContextEntries = [
@@ -125,7 +127,8 @@ describe("账号继承 BFF merchant scope 合同", () => {
     expect(delegation).toContain("const grant = requirement ? verifyOfficialInventoryGrant(input.officialInventoryGrant, {");
     expect(delegation).toContain("bindingVersion: input.bindingVersion, method: input.method, requestId: input.requestId");
     expect(delegation).toContain("if (grant && (!grant.read || !grant[requirement!]))");
-    expect(delegation).toContain("permission: grant?.read && NATIVE_TEAM_READ_METHODS.includes(input.method) ? undefined : capability.permission");
+    expect(delegation).toContain("permission: grant?.read && (NATIVE_TEAM_READ_METHODS.includes(input.method)");
+    expect(delegation).toContain("(grant.publish === true && NATIVE_FACTORY_PUBLISH_METHODS.includes(input.method))) ? undefined : capability.permission");
     expect(delegation).toContain("staffUserId: principal.actorUserId");
     expect(delegation).toContain("bindingVersion: input.bindingVersion");
     expect(delegation).toContain("requestId: input.requestId");

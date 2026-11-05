@@ -53,6 +53,7 @@ import { customerStarContextInputSchema, customerSetStarSchema, customerStarStat
 import { customerListInputSchema as customerListSchema } from "../client/src/business/platform/front-router-types/server/customerListInput";
 import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/business/platform/shared/channelInventoryManagement";
 import { channelInventoryListBusinessInputSchema } from "./channelInventoryListBusinessInput";
+import { publishFactoryMaterialInputSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
@@ -192,6 +193,7 @@ async function requireCurrentBusinessStaffBinding(adminUserId: number) {
 function intersectOfficialInventoryPermissions(native: OfficialInventoryPermissions | undefined, front: OfficialInventoryPermissions | undefined) {
   return native ? { ...native, read: native.read && front?.read === true,
     write: native.read && native.write && front?.write === true,
+    publish: native.read && native.publish === true && front?.publish === true,
     note: native.read && native.note && front?.note === true } : undefined;
 }
 
@@ -288,7 +290,8 @@ async function withCurrentBusinessAuthorization<T>(
     const officialInventoryPermissions = channel || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined;
     if (channel) {
       const notes = ["channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit"].includes(capability.method!);
-      const requirement = notes ? "note" : capability.mode === "write" ? "write" : "read";
+      const publishing = capability.method === "channelInventory.publishFactoryMaterial";
+      const requirement = publishing ? "publish" : notes ? "note" : capability.mode === "write" ? "write" : "read";
       if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement]) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
     }
     const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
@@ -373,7 +376,9 @@ async function forwardBusinessMethod(
         requestId,
         method: capability.method,
         params,
-        officialInventoryPermissions: officialInventoryPermissions ? { ...officialInventoryPermissions, write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write") } : undefined,
+        officialInventoryPermissions: officialInventoryPermissions ? { ...officialInventoryPermissions,
+          write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write"),
+          publish: officialInventoryPermissions.publish === true && businessScopeAllows(scope, "inventory", "write") } : undefined,
       });
     } catch (error) {
       if (error instanceof PlatformBusinessPublicError) {
@@ -438,6 +443,7 @@ function businessInputSchema(method: string): z.ZodTypeAny {
   if (method === "customer.starState") return customerStarStateInputSchema;
   if (method === "customer.list") return customerListSchema;
   if (method === "channelInventory.listTeamMaterials") return channelInventoryListBusinessInputSchema;
+  if (method === "channelInventory.publishFactoryMaterial") return publishFactoryMaterialInputSchema;
   if (isCustomerSupplyBusinessMethod(method)) return CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS[method];
   if (CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method]) return CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method];
   return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method]
@@ -507,6 +513,7 @@ const inventoryBusinessRouter = router({
  * idempotency with the bound real staff actor before invoking its CPI service.
  */
 const channelInventoryBusinessRouter = router({
+  publishFactoryMaterial: businessMutation("channelInventory.publishFactoryMaterial", "inventory"),
   listChannels: businessQuery("channelInventory.listChannels", "inventory"),
   getChannel: businessQuery("channelInventory.getChannel", "inventory"),
   createChannel: businessMutation("channelInventory.createChannel", "inventory"),

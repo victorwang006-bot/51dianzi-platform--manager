@@ -6,6 +6,7 @@
  * procedures rather than accepting a browser supplied procedure name.
  */
 export const CHANNEL_INVENTORY_BUSINESS_METHOD_IDS = [
+  "channelInventory.publishFactoryMaterial",
   "channelInventory.deleteMaterials",
   "channelInventory.listDeletedMaterials",
   "channelInventory.restoreMaterial",
@@ -48,8 +49,9 @@ export type ChannelInventoryBusinessMethodMode = "read" | "write";
 
 export const CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES: Readonly<Record<
   ChannelInventoryBusinessMethodId,
-  Readonly<{ mode: ChannelInventoryBusinessMethodMode; permission: "inventory.manage" }>
+  Readonly<{ mode: ChannelInventoryBusinessMethodMode; permission: "inventory.manage" | "inventory.publish" }>
 >> = {
+  "channelInventory.publishFactoryMaterial": { mode: "write", permission: "inventory.publish" },
   "channelInventory.deleteMaterials": { mode: "write", permission: "inventory.manage" },
   "channelInventory.listDeletedMaterials": { mode: "read", permission: "inventory.manage" },
   "channelInventory.restoreMaterial": { mode: "write", permission: "inventory.manage" },

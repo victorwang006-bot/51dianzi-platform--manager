@@ -3,6 +3,8 @@ import { isChannelInventoryBusinessMethodId } from "./channelInventoryBusinessPo
 
 export const officialInventoryPermissionsSchema = z.object({
   read: z.boolean(), write: z.boolean(), note: z.boolean(),
+  /** Optional for old HMACs; missing is NEVER a publish grant. No parser default. */
+  publish: z.boolean().optional(),
   /** Signed server-local CRM scope projection, NOT a native inventory grant. */
   customerScopeRead: z.boolean().optional(),
   authorizationVersion: z.string().min(8).max(160),
@@ -21,8 +23,10 @@ export const NATIVE_TEAM_READ_METHODS: readonly string[] = [
   "channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource",
   "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit",
 ];
-export function officialInventoryMethodRequirement(method: string): "read" | "write" | "note" | null {
+export const NATIVE_FACTORY_PUBLISH_METHODS: readonly string[] = ["channelInventory.publishFactoryMaterial"];
+export function officialInventoryMethodRequirement(method: string): "read" | "write" | "note" | "publish" | null {
   if (!isChannelInventoryBusinessMethodId(method)) return null;
+  if (NATIVE_FACTORY_PUBLISH_METHODS.includes(method)) return "publish";
   if (["channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit",
     "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit"].includes(method)) return "note";
   if (["channelInventory.deleteMaterials", "channelInventory.restoreMaterial", "channelInventory.createUploadBatch", "channelInventory.updateUploadBatch", "channelInventory.previewDeleteUploadBatch", "channelInventory.deleteUploadBatch", "channelInventory.createChannel", "channelInventory.updateChannel", "channelInventory.setChannelActive", "channelInventory.getTeamMaterialForEdit",

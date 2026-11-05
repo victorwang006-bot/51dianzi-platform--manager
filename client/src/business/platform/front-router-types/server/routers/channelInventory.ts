@@ -1,4 +1,6 @@
 import { createChannelInventoryManagementService } from "../services/channelInventoryManagement";
+import { createChannelFactoryPublicationService } from "../services/channelFactoryPublication";
+import { publishFactoryMaterialInputSchema } from "../../../shared/channelFactoryPublication";
 import * as managementSchemas from "../../../shared/channelInventoryManagement";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -146,6 +148,14 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
     if (permissionScope.dataOwnerUserId !== crm.dataOwnerUserId) throw new TRPCError({ code: "CONFLICT", message: "企业数据归属已变化，请重新登录" });
     return next({ ctx: { ...ctx, enterprisePermissionScope: permissionScope } });
   });
+  const publishProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+    const proof = officialInventoryGrantForDelegation(ctx.staffDelegation);
+    if (proof?.read !== true || proof.publish !== true) throw new TRPCError({ code: "FORBIDDEN", message: "未获明确的官方库存发布权限" });
+    const crm = await requireCrmEnterpriseAccess({ user: ctx.user });
+    const permissionScope = await requireActiveEnterpriseScope(ctx.user.id);
+    if (permissionScope.dataOwnerUserId !== crm.dataOwnerUserId) throw new TRPCError({ code: "CONFLICT", message: "企业数据归属已变化，请重新登录" });
+    return next({ ctx: { ...ctx, enterprisePermissionScope: permissionScope } });
+  });
   const service = createChannelInventoryService({ getDb, registerTeamRecord });
   const notes = createChannelNotesService({ getDb });
   const team = createChannelTeamInventoryService({ getDb });
@@ -154,8 +164,13 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const source = createChannelInventorySourceService({ getDb });
   const management = createChannelInventoryManagementService({ getDb });
   const supply = createCustomerSupplyService({ getDb, registerTeamRecord });
+  const publication = createChannelFactoryPublicationService({ getDb });
 
   return router({
+    publishFactoryMaterial: publishProcedure.input(publishFactoryMaterialInputSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await publication.publishFactoryMaterial(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     deleteMaterials: procedure.input(managementSchemas.deleteMaterialsSchema).mutation(async ({ ctx, input }) => {
       try { assertExpectedContext(ctx, input); return await management.deleteMaterials(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }

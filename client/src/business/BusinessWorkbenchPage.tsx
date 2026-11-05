@@ -190,6 +190,7 @@ function contextOfficialInventoryPermissions(value: BusinessContextContract): Bu
     read: raw.read === true,
     write: raw.read === true && raw.write === true,
     note: raw.read === true && raw.note === true,
+    publish: raw.read === true && raw.publish === true,
     authorizationVersion: raw.authorizationVersion,
   };
 }
