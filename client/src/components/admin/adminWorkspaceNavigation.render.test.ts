@@ -47,12 +47,10 @@ afterEach(async () => {
 async function render(location: string, visibleItems = items) {
   await act(async () =>
     root.render(
-      createElement(AdminWorkspaceNavigation, {
-        items: visibleItems,
-        location,
-        onNavigate,
-        onPreload,
-      })
+      createElement(React.Fragment, null,
+        createElement(AdminWorkspaceTabs, { items: visibleItems, location, onNavigate, onPreload }),
+        createElement(AdminModuleTabs, { items: visibleItems, location, onNavigate, onPreload })
+      )
     )
   );
 }
@@ -89,7 +87,7 @@ function modulePaths() {
   ).map(node => node.dataset.workspaceNavTarget);
 }
 
-describe("两行正式导航组件", () => {
+describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载第二行）", () => {
   it("业务第二行五入口按方案分组，别名跟随canonical高亮并复用原条目", async () => {
     await render("/workbench/sales-orders?merchantId=31&returnTo=%2Forders");
     expect(modulePaths()).toEqual([
@@ -464,7 +462,7 @@ describe("两行正式导航组件", () => {
       items.filter(item => item.path === "/analytics")
     );
     expect(
-      host.querySelectorAll('[data-admin-navigation="workspace-tabs"] button')
+      host.querySelectorAll('[data-admin-navigation="unified-dropdown"] button')
     ).toHaveLength(1);
     expect(button("operations").disabled).toBe(false);
     expect(host.textContent).not.toContain("组织与权限");
@@ -657,13 +655,13 @@ describe("两行正式导航组件", () => {
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
       )
     );
-    expect(document.activeElement).toBe(button("business"));
+    expect(document.activeElement).toBe(button("channel"));
     await act(async () =>
       button("business").dispatchEvent(
         new KeyboardEvent("keydown", { key: "Home", bubbles: true })
       )
     );
-    expect(document.activeElement).toBe(button("business"));
+    expect(document.activeElement).toBe(button("channel"));
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -685,7 +683,7 @@ describe("两行正式导航组件", () => {
     expect(host.querySelector("[aria-current]")).toBeNull();
   });
 
-  it("当前工作区点击不重置详情或 query，切换其他工作区才导航首个可见模块", async () => {
+  it("点击工作区只展开不重置详情或query，选择原功能项才导航", async () => {
     await render("/workbench/customers/88?merchantId=3");
     await act(async () => button("business").click());
     expect(onNavigate).not.toHaveBeenCalled();
@@ -695,6 +693,8 @@ describe("两行正式导航组件", () => {
       "page"
     );
     await act(async () => button("operations").click());
+    expect(onNavigate).not.toHaveBeenCalled();
+    await click("/merchants");
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith(
       items.find(item => item.path === "/merchants")

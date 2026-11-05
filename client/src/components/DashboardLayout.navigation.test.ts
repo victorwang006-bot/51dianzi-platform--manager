@@ -27,7 +27,10 @@ const runtime = vi.hoisted(() => ({
 vi.mock("@/_core/hooks/useAuth", () => ({
   useAuth: () => ({ user: runtime.user, loading: false, logout: () => {} }),
 }));
-vi.mock("wouter", () => ({ useLocation: () => [runtime.location, runtime.setLocation] }));
+vi.mock("wouter", () => ({
+  useLocation: () => [runtime.location.split("?", 1)[0], runtime.setLocation],
+  useSearch: () => runtime.location.includes("?") ? runtime.location.slice(runtime.location.indexOf("?") + 1) : "",
+}));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
@@ -90,6 +93,21 @@ function renderLayout() {
   );
 }
 
+async function withMountedLayout(action: (container: HTMLDivElement) => Promise<void>) {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(createElement(DashboardLayout, null,
+      createElement("article", { "data-real-content": "yes" }, "真实业务页面"))));
+    await action(container);
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+}
+
 const source = readFileSync(
   path.resolve(process.cwd(), "client/src/components/DashboardLayout.tsx"),
   "utf8"
@@ -104,6 +122,7 @@ describe("正式后台顶部布局集成", () => {
     runtime.location = "/materials";
     runtime.status = "ready";
     runtime.refetch.mockClear();
+    runtime.setLocation.mockReset();
     runtime.capabilities = [];
     runtime.user = { id: 6001, role: "admin", name: "真实员工", adminRole: "operation", hasNativeAdminAccount: true, permissions: ["materials.read", "messages.read"] };
   });
@@ -160,17 +179,24 @@ describe("正式后台顶部布局集成", () => {
   it("does not invent business or organization access for an operations-only account", () => {
     const html = renderLayout();
     expect(html).toContain("平台运营");
-    expect(html).toContain("物料数据库");
-    expect(html).toContain('data-workspace-nav-target="/materials"');
+    expect(html).toContain('data-workspace-nav-target="operations"');
+    expect(html).not.toContain('data-workspace-nav-target="business"');
+    expect(html).not.toContain('data-workspace-nav-target="channel"');
+    expect(html).not.toContain('data-workspace-nav-target="organization"');
     expect(html).not.toContain('data-workspace-nav-target="/"');
     expect(html).not.toContain(">业务工作台<");
     expect(html).not.toContain(">组织与权限<");
     expect(html).not.toContain(">员工与权限<");
   });
 
-  it("keeps real notification badges", () => {
-    expect(renderLayout()).toContain("7 条未读");
-    expect(renderLayout()).toContain("消息中心");
+  it("keeps real notification badges inside the operations dropdown", async () => {
+    await withMountedLayout(async container => {
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="operations"]')!.click());
+      expect(container.querySelector('[aria-label="7 条未读"]')?.textContent).toBe("7");
+      expect(container.textContent).toContain("消息中心");
+      expect(container.querySelector('[data-workspace-dropdown-item="/materials"]')).not.toBeNull();
+      expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
+    });
   });
 
   it("shows native staff channel entry in the dropdown only with exact native read and the bound route capability", async () => {
@@ -184,12 +210,16 @@ describe("正式后台顶部布局集成", () => {
     try {
       await act(async () => root.render(createElement(DashboardLayout, null, createElement("article", { "data-real-content": "yes" }, "渠道库存与渠道档案"))));
       expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
-      const trigger = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="business"]')!;
+      const trigger = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="channel"]')!;
       expect(trigger.getAttribute("aria-current")).toBe("location");
+      expect(container.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
       await act(async () => trigger.click());
-      const item = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="/workbench/channel-inventory"]')!;
+      const item = container.querySelector<HTMLButtonElement>('[data-channel-tab="materials"]')!;
       expect(item).not.toBeNull();
       expect(item.getAttribute("aria-current")).toBe("page");
+      expect(container.querySelectorAll('[data-channel-tab]')).toHaveLength(4);
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-channel-tab="trash"]')!.click());
+      expect(runtime.setLocation).toHaveBeenCalledWith("/workbench/channel-inventory?ciTab=trash");
       expect(container.querySelector("[data-real-content]")?.textContent).toBe("渠道库存与渠道档案");
     } finally {
       await act(async () => root.unmount());
@@ -204,26 +234,27 @@ describe("正式后台顶部布局集成", () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = ["inventory.channel"];
     runtime.user.permissions = permissions;
-    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
   });
 
   it.each([[], ["inventory.read"], ["inventory.publish"]])("does not substitute another business capability %j for inventory.channel", capabilities => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = capabilities;
-    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+    runtime.user.permissions = ["officialInventory.read"];
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
   });
 
   it("does not treat a platform official inventory permission as a bound business capability", () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.user.permissions = ["officialInventory.read", "officialInventory.write"];
-    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
   });
 
   it("still requires a native active backend login before displaying the staff channel entry", () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = ["inventory.channel"];
     runtime.user.hasNativeAdminAccount = false;
-    expect(renderLayout()).not.toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
   });
 
   it("retains native admin and staff capability filtering rather than demo authorization", () => {

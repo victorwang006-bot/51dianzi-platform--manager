@@ -5,6 +5,13 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { selectHostTab, hostNavigate } from "./ChannelInventoryHost.router-test-helper";
+import { getChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
+
+vi.mock("wouter", async importOriginal => ({
+  ...await importOriginal<typeof import("wouter")>(),
+  ...(await import("./ChannelInventoryHost.router-test-helper")).hostWouterHooks,
+}));
 
 vi.mock("xlsx", async importOriginal => ({ ...await importOriginal<typeof import("xlsx")>(), writeFile: vi.fn() }));
 
@@ -399,6 +406,7 @@ function configureFixtures() {
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
+  hostNavigate.mockClear();
   configureFixtures();
   sessionStorage.clear();
   runtime.createMaterial.mockReset().mockResolvedValue({ idempotent: false });
@@ -423,8 +431,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   it("defaults to unified inventory without old tabs, share buttons or private row DOM", () => {
     renderHost();
     const tabs = document.querySelector('[aria-label="渠道库存内容"]');
-    expect(Array.from(tabs!.querySelectorAll('[role="tab"]')).map(item => item.textContent)).toEqual(["渠道库存", "渠道档案", "上传批次", "回收站"]);
-    expect(tabs!.querySelector('[aria-selected="true"]')?.textContent).toBe("渠道库存");
+    expect(tabs).toBeNull();
+    expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
+    expect(getChannelInventoryNavigationTab(window.location.search)).toBe("materials");
     expect(document.querySelector('[aria-label="库存可见范围"]')).toBeNull();
     expect(document.body.textContent).toContain("LM358DR");
     expect(document.body.textContent).toContain("TEAM-SN74");
@@ -490,7 +499,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       renderHost();
       expect(document.body.textContent).toContain("2026-10-03 09:00");
       expect(document.body.textContent).not.toContain("2026-10-03 01:00");
-      click(button("渠道档案"));
+      selectHostTab("channels");
       expect(document.body.textContent).toContain("2026-10-02 09:00");
       expect(document.body.textContent).not.toContain("2026-10-02 01:00");
     } finally {
@@ -501,8 +510,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
 
   it("renders the authoritative channel table, resets filters, creates a channel and keeps CAS on enable/disable", async () => {
     renderHost();
-    click(button("渠道档案"));
-    expect(document.body.textContent).toContain("渠道库存");
+    selectHostTab("channels");
+    expect(document.querySelector('[aria-label="渠道管理列表"]')).not.toBeNull();
+    expect(getChannelInventoryNavigationTab(window.location.search)).toBe("channels");
     expect(document.body.textContent).toContain("深圳代理");
     expect(document.body.textContent).not.toContain("负责人由服务器按当前业务分工审计");
 
@@ -688,12 +698,12 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     click(button("编辑"));
     expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledTimes(1);
     expect(runtime.getMaterial).not.toHaveBeenCalled();
-    click(button("渠道档案"));
-    if (returnToInventory) click(button("渠道库存"));
+    selectHostTab("channels");
+    if (returnToInventory) selectHostTab("materials");
     await act(async () => { finish(detail); await Promise.resolve(); });
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.innerHTML).not.toContain("历史库存备注");
-    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe(returnToInventory ? "渠道库存" : "渠道档案");
+    expect(getChannelInventoryNavigationTab(window.location.search)).toBe(returnToInventory ? "materials" : "channels");
   });
 
   it("preserves the new upload title and typed model when old public detail resolves", async () => {
@@ -763,7 +773,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
 
   it("applies readable archive table constraints to native th and td elements", async () => {
     renderHost();
-    click(button("渠道库存"));
+    selectHostTab("materials");
     await settle();
 
     const stockTable = required(
@@ -865,7 +875,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
 
   it("creates with the original DTO and keeps public editing separate from the independent owner private history", async () => {
     renderHost();
-    click(button("渠道库存"));
+    selectHostTab("materials");
     await settle();
 
     click(button("单条上传"));
@@ -1098,7 +1108,7 @@ describe("v6 channel archive complete inventory download", () => {
   it("keeps download in the ordered menu and permits read-only channels without leader source privileges", async () => {
     const old = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
     runtime.channelQuery = query({ ...old.data, canWrite: false, items: old.data.items.map(item => ({ ...item, canEdit: false, readOnly: true })) });
-    renderHost(); click(button("渠道档案"));
+    renderHost(); selectHostTab("channels");
     const actions = document.querySelector(".ci-row-actions")!;
     expect(Array.from(actions.querySelectorAll("button")).map(item => item.textContent)).toEqual(["上传库存", "更多操作"]);
     const menu = openMore();
@@ -1126,7 +1136,7 @@ describe("v6 channel archive complete inventory download", () => {
   });
   it("neutralizes spreadsheet formulas in every text column without converting identifiers to numbers", async () => {
     runtime.exportChannelMaterials.mockResolvedValue({ ...exportFixture(), channel: { id: 11, name: "=EVIL/CHANNEL", type: "agent", active: true } });
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存")); await settleExport();
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存")); await settleExport();
     const book = exportedBook(); const sheet = book.Sheets["渠道库存"];
     for (const address of ["A3", "B3", "D3", "H3"]) {
       expect(sheet[address].t).toBe("s"); expect(sheet[address].f).toBeUndefined(); expect(String(sheet[address].v).startsWith("'")).toBe(true);
@@ -1136,14 +1146,14 @@ describe("v6 channel archive complete inventory download", () => {
   });
   it("exports an empty inactive channel as a header-only workbook", async () => {
     runtime.exportChannelMaterials.mockResolvedValue({ ...exportFixture(), channel: { id: 11, name: "停用", type: "agent", active: false }, total: 0, items: [] });
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存")); await settleExport();
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存")); await settleExport();
     expect(exportedBook().Sheets["渠道库存"]["!ref"]).toBe("A1:I1");
     expect(document.body.textContent).toContain("含表头的空表");
   });
   it.each(["企业", "账号", "权限", "切走再切回"])("drops an old export when %s changes during the request", async kind => {
     let finish!: (value: unknown) => void;
     runtime.exportChannelMaterials.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存"));
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存"));
     const original = runtime.enterpriseMe as { data: Record<string, any> };
     const changed = kind === "企业" ? { ...original.data, enterprise: { id: 32 } }
       : kind === "权限" ? { ...original.data, permissionKeys: [] }
@@ -1157,7 +1167,7 @@ describe("v6 channel archive complete inventory download", () => {
   it("drops a response after unmount", async () => {
     let finish!: (value: unknown) => void;
     runtime.exportChannelMaterials.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存"));
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存"));
     await act(async () => { root?.unmount(); }); root = null;
     await act(async () => { finish(exportFixture()); await Promise.resolve(); }); await settleExport();
     expect(XLSX.writeFile).not.toHaveBeenCalled();
@@ -1165,7 +1175,7 @@ describe("v6 channel archive complete inventory download", () => {
   it("rechecks the authenticated subject before saving even if the page has not rerendered", async () => {
     const me = runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn>; data: object };
     me.refetch.mockResolvedValue(query({ ...me.data, currentUserId: 8 }));
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存")); await settleExport();
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存")); await settleExport();
     expect(me.refetch).toHaveBeenCalledTimes(1); expect(XLSX.writeFile).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("未生成文件");
   });
@@ -1173,7 +1183,7 @@ describe("v6 channel archive complete inventory download", () => {
     let finish!: (value: unknown) => void;
     const me = runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn>; data: object };
     me.refetch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存")); await settleExport();
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存")); await settleExport();
     expect(me.refetch).toHaveBeenCalled();
     runtime.enterpriseMe = query({ ...me.data, currentUserId: 8 }); act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await act(async () => { finish(me); await Promise.resolve(); }); await settleExport();
@@ -1181,13 +1191,13 @@ describe("v6 channel archive complete inventory download", () => {
   });
   it("shows a clear server limit error without downloading a partial current page", async () => {
     runtime.exportChannelMaterials.mockRejectedValueOnce(new Error("该渠道库存超过 10,000 条导出上限，未生成文件"));
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存")); await settleExport();
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存")); await settleExport();
     expect(document.body.textContent).toContain("10,000 条导出上限"); expect(XLSX.writeFile).not.toHaveBeenCalled();
     expect(menuItem("下载库存").hasAttribute("data-disabled")).toBe(false);
   });
   it("rejects a mismatched DTO instead of saving it", async () => {
     runtime.exportChannelMaterials.mockResolvedValueOnce({ ...exportFixture(), actorUserId: 8 });
-    renderHost(); click(button("渠道档案")); click(menuItem("下载库存")); await settleExport();
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存")); await settleExport();
     expect(XLSX.writeFile).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("上下文不匹配");
   });
 });
@@ -1207,7 +1217,7 @@ describe("linked company channel editing", () => {
   it("renders every company field read-only, keeps type editable and links to the real customer", async () => {
     linkedChannel();
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("编辑渠道"));
     const dialog = required(document.querySelector('[role="dialog"]'), "missing linked editor");
     expect(dialog.textContent).toContain("来自客户档案，仅可在客户档案维护；此处只修改供货类型");
@@ -1235,7 +1245,7 @@ describe("linked company channel editing", () => {
   it.each(["automotive", undefined, null, "", "unknown-industry"])("saves only type and CAS/context when CRM industry is %s", async industryCode => {
     linkedChannel({ industryCode });
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("编辑渠道"));
     const dialog = required(document.querySelector('[role="dialog"]'), "missing linked editor");
     change(control(dialog, "渠道类型"), "trade");
@@ -1253,7 +1263,7 @@ describe("linked company channel editing", () => {
   it.each([undefined, null, 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, "81", NaN])("does not enable linked editing or CRM navigation for invalid/missing customer ID %s", async customerId => {
     linkedChannel({ customerId });
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     const edit = menuItem("编辑渠道");
     expect(edit.hasAttribute("data-disabled")).toBe(true);
     expect(edit.getAttribute("title")).toContain("客户档案不可访问");
@@ -1267,7 +1277,7 @@ describe("linked company channel editing", () => {
   it.each([{ canEdit: false }, { readOnly: true }])("keeps server read-only/access denial for linked channels %s", async permission => {
     linkedChannel(permission);
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     const edit = menuItem("编辑渠道");
     expect(edit.hasAttribute("data-disabled")).toBe(true);
     click(edit);
@@ -1279,7 +1289,7 @@ describe("linked company channel editing", () => {
   it("keeps the original confirmation/CAS menu for linked channel enable and disable", async () => {
     linkedChannel();
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("停用"));
     await settle();
     expect(window.confirm).toHaveBeenCalledWith("确认停用渠道“CRM权威公司”吗？停用后不能新增或修改其库存。");
@@ -1297,7 +1307,7 @@ describe("linked company channel editing", () => {
   it("does not infer linked status from customerId or bypass standalone industry validation", async () => {
     linkedChannel({ companyReadOnly: false, industryCode: null });
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("编辑渠道"));
     const dialog = required(document.querySelector('[role="dialog"]'), "missing standalone editor");
     for (const label of ["渠道名称", "所属行业", "联系人", "联系电话", "微信", "QQ", "渠道说明"]) {
@@ -1328,7 +1338,7 @@ describe("linked company channel editing", () => {
     let fail!: (error: Error) => void;
     runtime.updateChannel.mockImplementationOnce(() => new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("编辑渠道"));
     click(button("保存修改"));
     runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
@@ -1348,7 +1358,7 @@ describe("linked company channel editing", () => {
 describe("channel industry required integration", () => {
   it("requires an explicit industry and keeps the same complete dictionary in the compact QQ-right slot", async () => {
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(button("+ 新增渠道"));
     const dialog = required(document.querySelector('[role="dialog"]'), "missing create dialog");
     change(control(dialog, "渠道名称"), "行业渠道");
@@ -1371,7 +1381,7 @@ describe("channel industry required integration", () => {
 
   it("requires a missing historical industry for channel editing but not existing inventory uploads", async () => {
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("编辑渠道"));
     const dialog = required(document.querySelector('[role="dialog"]'), "missing edit dialog");
     expect((control(dialog, "所属行业") as HTMLSelectElement).value).toBe("");
@@ -1384,7 +1394,7 @@ describe("channel industry required integration", () => {
     expect(runtime.updateChannel).toHaveBeenCalledWith(expect.objectContaining({ industryCode: "medical", id: 11, expectedRevision: 4 }));
     // A real invalidation returns a fresh query DTO and repopulates upload candidates.
     runtime.channelQuery = query({ ...(runtime.channelQuery as { data: object }).data });
-    click(button("渠道库存"));
+    selectHostTab("materials");
     click(button("单条上传"));
     const upload = required(document.querySelector('[role="dialog"]'), "missing upload dialog");
     expect(upload.querySelector('[aria-label="所属行业"]')).toBeNull();
@@ -1395,7 +1405,7 @@ describe("channel industry required integration", () => {
     const result = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
     result.data.items[0].industryCode = "renewable_energy";
     renderHost();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     click(menuItem("编辑渠道"));
     expect(document.querySelector<HTMLSelectElement>('[aria-label="所属行业"]')?.value).toBe("renewable_energy");
     click(button("取消"));
@@ -1404,7 +1414,7 @@ describe("channel industry required integration", () => {
     click(menuItem("编辑渠道"));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(runtime.updateChannel).not.toHaveBeenCalled();
-    click(button("渠道库存"));
+    selectHostTab("materials");
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).toContain("查看来源");
     expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
@@ -1670,7 +1680,7 @@ describe("v11 real Host source authorization lifecycle", () => {
     if (change === "revalidating") runtime.scope.contextVerification.state = "revalidating";
     if (change === "list-denial") runtime.teamQuery = query(undefined, { isError: true });
     if (change === "row-revocation") runtime.teamQuery = query({ ...material.data, items: material.data.items.map(row => ({ ...row, canViewSource: false })) });
-    if (change === "archive") click(button("渠道档案")); else rerender();
+    if (change === "archive") selectHostTab("channels"); else rerender();
     await settle();
     expect(signal.aborted).toBe(true);
     expect(document.querySelector(".ci-source-dialog")).toBeNull();
@@ -1808,7 +1818,7 @@ describe("v13 native channel read and original recorder contract", () => {
     runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-reader-v1" };
     runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, isOwner: false, permissionKeys: ["stocks.read"] });
     (runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn> }).refetch.mockResolvedValue(runtime.enterpriseMe);
-    renderHost(); click(button("渠道档案"));
+    renderHost(); selectHostTab("channels");
     expect(menuItem("编辑渠道").hasAttribute("data-disabled")).toBe(true);
     click(menuItem("下载库存")); await settleExport();
     expect(XLSX.writeFile).toHaveBeenCalledTimes(1);
@@ -1834,7 +1844,7 @@ describe("v14 industry and channel-row stock upload", () => {
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(getComputedStyle(table.parentElement!).overflowX).toBe("auto");
     expect(button("上传库存")).toBeTruthy(); expect(button("单条上传")).toBeTruthy();
-    click(button("渠道档案"));
+    selectHostTab("channels");
     const actions = required(document.querySelector(".ci-channel-table td.ci-col-actions"), "missing archive actions");
     expect(getComputedStyle(actions).width).toBe("172px");
     expect(Array.from(actions.querySelectorAll("button")).map(item => item.textContent)).toEqual(["上传库存", "更多操作"]);
@@ -1853,7 +1863,7 @@ describe("v14 industry and channel-row stock upload", () => {
   });
 
   it("uses the actual portalled Radix menu in approved order with separator, danger styling and Escape close", async () => {
-    renderHost(); click(button("渠道档案"));
+    renderHost(); selectHostTab("channels");
     const menu = openMore(); await settle();
     expect(menu.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
     expect(Array.from(menu.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["查看库存", "下载库存", "编辑渠道", "停用"]);
@@ -1880,8 +1890,8 @@ describe("v14 industry and channel-row stock upload", () => {
     runtime.channelQuery = options([channelFixture(), target]);
     runtime.uploadOptionsQuery = options([channelFixture(), target]);
     runtime.getChannel.mockResolvedValueOnce(target);
-    renderHost(); click(button("渠道档案")); click(archiveUpload(1)); await settle();
-    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("渠道库存");
+    renderHost(); selectHostTab("channels"); click(archiveUpload(1)); await settle();
+    expect(getChannelInventoryNavigationTab(window.location.search)).toBe("materials");
     expect(batchSelect()?.value).toBe("222");
     expect(runtime.getChannel).toHaveBeenCalledWith({ id: 222, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
     expect(runtime.sourceInputs).toHaveLength(0);
@@ -1896,7 +1906,7 @@ describe("v14 industry and channel-row stock upload", () => {
     runtime.channelQuery = options([target]);
     runtime.uploadOptionsQuery = options([channelFixture()], { total: 201, pageCount: 3 });
     runtime.getChannel.mockResolvedValueOnce(target);
-    renderHost(); click(button("渠道档案")); click(archiveUpload()); await settle();
+    renderHost(); selectHostTab("channels"); click(archiveUpload()); await settle();
     expect(batchSelect()?.value).toBe("555");
     expect(batchSelect()?.textContent).toContain("分页目标");
     click(button("加载更多渠道"));
@@ -1919,7 +1929,7 @@ describe("v14 industry and channel-row stock upload", () => {
       const previous = runtime.teamQuery as { data: object };
       runtime.teamQuery = query({ ...previous.data, canWrite: false });
     }
-    renderHost(); click(button("渠道档案"));
+    renderHost(); selectHostTab("channels");
     const upload = archiveUpload(); expect(upload.disabled).toBe(true); expect(upload.title).not.toBe("");
     click(upload); await settle();
     expect(batchSelect()).toBeNull(); expect(runtime.getChannel).not.toHaveBeenCalled(); expect(runtime.createMaterial).not.toHaveBeenCalled();
@@ -1930,7 +1940,7 @@ describe("v14 industry and channel-row stock upload", () => {
     runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
     let finish!: (value: unknown) => void;
     runtime.getChannel.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(archiveUpload());
+    renderHost(); selectHostTab("channels"); click(archiveUpload());
     expect(batchSelect()).toBeNull();
     runtime.teamQuery = query(stock.data); rerender(); await settle();
     expect(batchSelect()).toBeNull();
@@ -1944,7 +1954,7 @@ describe("v14 industry and channel-row stock upload", () => {
     runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
     let finish!: (value: unknown) => void;
     runtime.getChannel.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(archiveUpload());
+    renderHost(); selectHostTab("channels"); click(archiveUpload());
     const signal = runtime.getChannel.mock.calls[0][1].signal as AbortSignal;
     if (kind === "stock-denial") runtime.teamQuery = query({ ...stock.data, canWrite: false });
     else if (kind === "stock-error") runtime.teamQuery = query(undefined, { isError: true });
@@ -1961,7 +1971,7 @@ describe("v14 industry and channel-row stock upload", () => {
   it.each(["enterprise", "actor", "permission", "native-write", "scope", "tab-return"])("aborts pending and removes the preselection on %s changes", async kind => {
     let finish!: (value: unknown) => void;
     runtime.getChannel.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(archiveUpload());
+    renderHost(); selectHostTab("channels"); click(archiveUpload());
     const signal = runtime.getChannel.mock.calls[0][1].signal as AbortSignal;
     const me = runtime.enterpriseMe as { data: Record<string, unknown> };
     if (kind === "enterprise") runtime.enterpriseMe = query({ ...me.data, enterprise: { id: 32 } });
@@ -1969,7 +1979,7 @@ describe("v14 industry and channel-row stock upload", () => {
     if (kind === "permission") runtime.enterpriseMe = query({ ...me.data, permissionKeys: [] });
     if (kind === "native-write") runtime.scope.officialInventoryPermissions.write = false;
     if (kind === "scope") runtime.scope.storageScope = "changed-binding";
-    if (kind === "tab-return") { click(button("渠道档案")); click(button("渠道库存")); }
+    if (kind === "tab-return") { selectHostTab("channels"); selectHostTab("materials"); }
     else rerender();
     await settle(); expect(signal.aborted).toBe(true);
     await act(async () => finish(channelFixture()));
@@ -1980,14 +1990,14 @@ describe("v14 industry and channel-row stock upload", () => {
   });
 
   it.each(["enterprise", "actor", "permission", "native-write", "tab"])("closes an open row batch and clears its selected target on %s change", async kind => {
-    renderHost(); click(button("渠道档案")); click(archiveUpload()); await settle();
+    renderHost(); selectHostTab("channels"); click(archiveUpload()); await settle();
     expect(batchSelect()?.value).toBe("11");
     const me = runtime.enterpriseMe as { data: Record<string, unknown> };
     if (kind === "enterprise") runtime.enterpriseMe = query({ ...me.data, enterprise: { id: 32 } });
     if (kind === "actor") runtime.enterpriseMe = query({ ...me.data, currentUserId: 8 });
     if (kind === "permission") runtime.enterpriseMe = query({ ...me.data, permissionKeys: [] });
     if (kind === "native-write") runtime.scope.officialInventoryPermissions.write = false;
-    if (kind === "tab") { click(button("渠道档案")); click(button("渠道库存")); }
+    if (kind === "tab") { selectHostTab("channels"); selectHostTab("materials"); }
     else rerender();
     await settle(); expect(batchSelect()).toBeNull();
     if (kind === "tab") { click(button("上传库存")); await settle(); expect(batchSelect()?.value).toBe(""); }
@@ -1996,10 +2006,10 @@ describe("v14 industry and channel-row stock upload", () => {
   it("stops the original per-row queue on tab change even after returning to the same identity", async () => {
     let finish!: () => void;
     runtime.createMaterial.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
-    renderHost(); click(button("渠道档案")); click(archiveUpload()); await settle();
+    renderHost(); selectHostTab("channels"); click(archiveUpload()); await settle();
     await uploadSheet([["型号", "品牌"], ["ROW-ONE", "TI"], ["ROW-TWO", "TI"]]); previewBatch(); click(button("确认上传 2 条")); await settle();
     expect(runtime.createMaterial).toHaveBeenCalledTimes(1);
-    click(button("渠道档案")); click(button("渠道库存"));
+    selectHostTab("channels"); selectHostTab("materials");
     await act(async () => finish());
     expect(runtime.createMaterial).toHaveBeenCalledTimes(1);
     expect(batchSelect()).toBeNull();
@@ -2022,8 +2032,8 @@ describe("customer supply exact UI deep links", () => {
     expect(document.querySelectorAll('.ci-channel-table tbody tr')).toHaveLength(1);
     expect(document.querySelector('.ci-supply-target')?.getAttribute("data-channel-id")).toBe("999");
     expect(document.body.textContent).toContain("第100条以外真实渠道"); expect(document.body.textContent).not.toContain("深圳代理");
-    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("渠道档案");
-    expect(document.querySelectorAll('[role="tab"]')).toHaveLength(4);
+    expect(getChannelInventoryNavigationTab(window.location.search)).toBe("channels");
+    expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
   });
   it("does not fall back to an unrelated first-page/same-name channel on a failed exact link", async () => {
     link("channels"); runtime.getChannel.mockRejectedValueOnce(new Error("FORBIDDEN exact target")); renderHost(); await settle();
@@ -2416,7 +2426,7 @@ describe("v18 single collaboration-note entry", () => {
       runtime.enterpriseMe = query({ currentUserId: changeKind === "actor" ? 8 : 7, enterprise: { id: changeKind === "enterprise" ? 32 : 31 }, permissionKeys: ["stocks.read"] });
       rerender();
     } else if (changeKind === "material") click(button("备注（0）"));
-    else if (changeKind === "archive") click(button("渠道档案"));
+    else if (changeKind === "archive") selectHostTab("channels");
     else {
       const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
       runtime.teamQuery = query({ ...previous.data, items: previous.data.items.filter(row => row.id !== 101) }); rerender();
@@ -2447,14 +2457,14 @@ describe("v18 single collaboration-note entry", () => {
     renderHost();
     expect(document.querySelectorAll(".ci-compact-stock-table tbody tr")).toHaveLength(2);
     writeDOM("v18-channel-inventory-host.html");
-    click(button("渠道档案")); await settle();
+    selectHostTab("channels"); await settle();
     expect(document.querySelector(".ci-channel-table")?.textContent).toContain("深圳代理");
     writeDOM("v18-channel-archive-host.html");
     click(menuItem("编辑渠道")); await settle();
     expect(document.querySelector<HTMLTextAreaElement>('[role="dialog"] textarea')?.value).toContain("这是一段用于实际组件换行测量的长说明");
     writeDOM("v18-channel-description-editor-host.html");
     click(button("取消"));
-    click(button("渠道库存")); click(button("备注（2）")); await settle();
+    selectHostTab("materials"); click(button("备注（2）")); await settle();
     expect(document.querySelectorAll(".ci-collaboration-dialog .ci-note-entry")).toHaveLength(2);
     expect(document.querySelector('.ci-collaboration-dialog [aria-label="新增协作备注"] textarea')).not.toBeNull();
     expect(document.body.innerHTML).not.toMatch(/历史库存备注|已核对交期|原渠道备注/);

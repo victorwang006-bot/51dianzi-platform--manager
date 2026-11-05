@@ -3,6 +3,11 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import * as XLSX from "xlsx";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { selectHostTab } from "./ChannelInventoryHost.router-test-helper";
+vi.mock("wouter", async importOriginal => ({
+  ...await importOriginal<typeof import("wouter")>(),
+  ...(await import("./ChannelInventoryHost.router-test-helper")).hostWouterHooks,
+}));
 const runtime = vi.hoisted(() => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   const query = (data: unknown) => ({ data, isLoading: false, isFetching: false, isError: false, refetch: vi.fn().mockResolvedValue(undefined) });
@@ -46,7 +51,7 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); document.body.replaceChildren(); vi.unstubAllGlobals(); });
 describe("manager Host inventory-management bridge", () => {
   it("adds batches/trash without replacing original inventory columns or readonly row actions", () => {
-    renderHost(); expect(Array.from(document.querySelectorAll('[role="tab"]')).map(tab => tab.textContent)).toEqual(["渠道库存", "渠道档案", "上传批次", "回收站"]);
+    renderHost(); expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
     expect(Array.from(document.querySelectorAll("thead th")).slice(1).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
     expect(document.querySelectorAll("tbody input[type=checkbox]")).toHaveLength(1);
     expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(1);
@@ -66,7 +71,7 @@ describe("manager Host inventory-management bridge", () => {
     expect(document.querySelector('[aria-label="当前页批量删除"]')).toBeNull();
   });
   it("views a batch using exact uploadBatchId without granting source filtering", async () => {
-    renderHost(); click(button("上传批次")); await settle(); click(button("查看库存")); await settle();
+    renderHost(); selectHostTab("batches"); await settle(); click(button("查看库存")); await settle();
     expect(required(document.querySelector<HTMLInputElement>('[aria-label="筛选上传批次 ID"]')).value).toBe("81");
     expect(runtime.inventoryInputs.at(-1)).toMatchObject({ uploadBatchId: 81, page: 1, expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')).disabled).toBe(true);
@@ -86,6 +91,6 @@ describe("manager Host inventory-management bridge", () => {
   it("never displays the newly added delete/rename/archive/restore write entrances without native write grant", async () => {
     runtime.scope.officialInventoryPermissions.write = false; renderHost();
     expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull(); expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toBeNull();
-    click(button("上传批次")); await settle(); expect(document.querySelectorAll(".ci-management-actions button")).toHaveLength(1);
+    selectHostTab("batches"); await settle(); expect(document.querySelectorAll(".ci-management-actions button")).toHaveLength(1);
   });
 });

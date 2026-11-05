@@ -1,5 +1,6 @@
 import { useLocation, useSearch } from "wouter";
 import { parseSupplyLocation, supplyLocation } from "../components/customers/customerSupply";
+import { channelInventoryTabLocation, readChannelInventoryTabIntent } from "../../../../../lib/channelInventoryNavigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../front-router-types/server/routers";
@@ -389,7 +390,8 @@ export default function ChannelInventoryHost() {
   const search = useSearch();
   const [, navigate] = useLocation();
   const [dismissedSupplyLink, setDismissedSupplyLink] = useState<string | null>(null);
-  const supplyLink = useMemo(() => dismissedSupplyLink === search ? null : parseSupplyLocation(search), [search, dismissedSupplyLink]);
+  const supplyLink = useMemo(() => readChannelInventoryTabIntent(search) || dismissedSupplyLink === search
+    ? null : parseSupplyLocation(search), [search, dismissedSupplyLink]);
   const businessScope = useBusinessScope();
   const enterpriseQuery = trpc.enterprise.me.useQuery(undefined, { retry: false });
   const summary = enterpriseQuery.data;
@@ -435,7 +437,7 @@ export default function ChannelInventoryHost() {
   const [downloadingChannelId, setDownloadingChannelId] = useState<number | null>(null);
   const [downloadStatus, setDownloadStatus] = useState("");
 
-  const [tab, setTab] = useState<InventoryTab>(() => parseSupplyLocation(search)?.tab ?? "materials");
+  const [tab, setTab] = useState<InventoryTab>(() => readChannelInventoryTabIntent(search) ?? parseSupplyLocation(search)?.tab ?? "materials");
   const [channelFilters, setChannelFilters] = useState<ChannelFilters>({
     name: "",
     type: "all",
@@ -744,7 +746,7 @@ export default function ChannelInventoryHost() {
     ]);
   }, [utils]);
 
-  const changeTab = (next: InventoryTab) => {
+  const changeTab = (next: InventoryTab, syncLocation = true) => {
     invalidateEditSession();
     setMaterialEditor(null); setChannelEditor(null); clearBatch(); setNotesMaterial(null);
     setCollaboration(null); collaborationSessionRef.current += 1;
@@ -754,7 +756,23 @@ export default function ChannelInventoryHost() {
     setDismissedSupplyLink(search);
     setTab(next);
     if (next === "materials") { setInventoryView("flat"); setReadableChannel(null); }
+    const target = channelInventoryTabLocation(next, true);
+    if (syncLocation && target && typeof window !== "undefined") {
+      const actual = `${window.location.pathname}${window.location.search}`;
+      if (actual !== target && actual !== channelInventoryTabLocation(next)) navigate(target);
+    }
   };
+
+  const tabSearchRef = useRef(search);
+  useEffect(() => {
+    if (tabSearchRef.current === search) return;
+    tabSearchRef.current = search;
+    // Browser/menu navigation must not push another history entry. Legacy
+    // supply targets (including invalid ones) retain their exact proof effect.
+    const next = readChannelInventoryTabIntent(search) ?? (parseSupplyLocation(search) ? null : "materials");
+    if (next && next !== tab) changeTab(next, false);
+    // Only a new search is an intent; internal state changes are not navigation.
+  }, [search]);
 
   const openChannelCreate = () => {
     if (!canWriteChannels || !isCurrent()) return;
@@ -1214,13 +1232,8 @@ export default function ChannelInventoryHost() {
 
   return (
     <section className="ci-page ci-host" aria-label="渠道库存管理" data-channel-inventory-host>
-      <div className="ci-tabbar">
-        <div className="ci-tabs" role="tablist" aria-label="渠道库存内容">
-          <button type="button" role="tab" aria-selected={tab === "materials"} onClick={() => changeTab("materials")}>渠道库存</button>
-          <button type="button" role="tab" aria-selected={tab === "channels"} onClick={() => changeTab("channels")}>渠道档案</button>
-          <button type="button" role="tab" aria-selected={tab === "batches"} onClick={() => changeTab("batches")}>上传批次</button>
-          <button type="button" role="tab" aria-selected={tab === "trash"} onClick={() => changeTab("trash")}>回收站</button>
-        </div>
+      {tab === "materials" || tab === "channels" ? <div className="ci-tabbar">
+        <span aria-hidden="true" />
         <div className="ci-heading-actions" aria-label="渠道库存操作">
           {tab === "channels" ? (
             <button type="button" className="ci-button ci-primary" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
@@ -1231,7 +1244,7 @@ export default function ChannelInventoryHost() {
             </>
           ) : null}
         </div>
-      </div>
+      </div> : null}
 
       {tab === "materials" ? <div className="ci-toolbar ci-inventory-view-controls" role="group" aria-label="库存查看方式"><button type="button" className={`ci-button${inventoryView === "flat" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "flat"} onClick={() => changeInventoryView("flat")}>平铺查看</button><button type="button" className={`ci-button${inventoryView === "channels" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "channels"} onClick={() => changeInventoryView("channels")}>按渠道查看</button>{currentReadableChannel ? <><span>当前渠道：{currentReadableChannel.name}</span><button type="button" className="ci-inline-link" onClick={() => changeInventoryView("channels")}>返回渠道列表</button></> : null}</div> : null}
       {supplyLink ? <div className="ci-supply-location" role="status">

@@ -31,12 +31,15 @@ import { MessageSquare } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { buildBusinessNavigationTarget } from "@/lib/businessNavigation";
 import { useEffect, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
+import {
+  channelInventoryTabLocation,
+  type ChannelInventoryNavigationTab,
+} from "@/lib/channelInventoryNavigation";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
 import {
   AdminWorkspaceTabs,
-  AdminModuleTabs,
 } from "./admin/AdminWorkspaceNavigation";
 import {
   preloadAdminRoute,
@@ -63,7 +66,6 @@ import {
 } from "@shared/adminModuleNotifications";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getAdminWorkspaceForLocation,
   hasAdminChannelInventoryRead,
 } from "./admin/adminWorkspaceNavigationModel";
 import "./DashboardLayout.css";
@@ -420,6 +422,9 @@ function BusinessNavigationStatus({
 function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
+  const search = useSearch();
+  const navigationLocation = location.includes("?")
+    ? location : `${location}${search ? `?${search.replace(/^\?/, "")}` : ""}`;
   const adminRole = (user as { adminRole?: AdminRole } | null)?.adminRole ?? "";
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
@@ -559,14 +564,14 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     markModuleSeen.mutate({ module: activeNotificationModule });
   }, [activeNotificationModule]);
 
-  const navigateToItem = (item: MenuItem) => {
+  const navigateToItem = (item: MenuItem, channelTab?: ChannelInventoryNavigationTab) => {
     if (item.notificationModule) {
       lastMarkedModuleRef.current = item.notificationModule;
       markModuleSeen.mutate({ module: item.notificationModule });
     }
     const navigationTarget =
       item.path === "/workbench/channel-inventory"
-        ? item.path
+        ? channelInventoryTabLocation(channelTab) ?? item.path
         : buildBusinessNavigationTarget(
             `${window.location.pathname}${window.location.search}`,
             item.path
@@ -619,9 +624,10 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
           </a>
           <AdminWorkspaceTabs
             items={visibleMenuItems}
-            location={location}
+            location={navigationLocation}
             onNavigate={navigateToItem}
             onPreload={preloadItem}
+            renderBadge={renderBadge}
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -670,15 +676,6 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        {getAdminWorkspaceForLocation(location)?.id !== "business" ? (
-          <AdminModuleTabs
-            items={visibleMenuItems}
-            location={location}
-            onNavigate={navigateToItem}
-            onPreload={preloadItem}
-            renderBadge={renderBadge}
-          />
-        ) : null}
       </div>
       <main className="admin-workspace-shell__main admin-unified-content" data-admin-ui-system="channel-inventory">
         {businessNavigationState.status === "error" ? (
