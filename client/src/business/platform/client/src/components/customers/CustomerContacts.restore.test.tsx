@@ -151,6 +151,7 @@ vi.mock("../../hooks/usePageMemory", async () => {
     useRememberedState: <T,>(_key: string, initial: T) => react.useState(initial),
     freshListOptions: <T,>(options: T) => options,
     useRestoringListQuery: <T,>(result: T) => result,
+    useListPositionRestore: () => undefined,
     returnToPageSource: () => undefined,
   };
 });
