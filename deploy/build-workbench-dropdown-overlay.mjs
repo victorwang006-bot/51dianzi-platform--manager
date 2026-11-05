@@ -142,7 +142,7 @@ await fs.writeFile(path.join(out,cssName),css);
 await fs.writeFile(path.join(out,'candidate-index.html'),candidateHtml);
 await fs.writeFile(path.join(out,'factory-expression.js'),factory);
 const manifest={
-  schemaVersion:1,release:'20261105-workbench-dropdown-nav-v1',generatedAt:new Date().toISOString(),sourceBase:'d921f31ae62d66d3633477069fa47e91710ec6d7',
+  schemaVersion:1,release:'20261105-workbench-dropdown-nav-v2',generatedAt:new Date().toISOString(),sourceBase:'d921f31ae62d66d3633477069fa47e91710ec6d7',
   baseline,outputs:{js:{name:jsName,sha256:jsHash,bytes:Buffer.byteLength(candidate)},css:{name:cssName,sha256:cssHash,bytes:Buffer.byteLength(css)},html:{name:'candidate-index.html',sha256:sha(candidateHtml)}},
   changes:changes.map(({start,end,newStart,newEnd,old,replacement})=>({start,end,newStart,newEnd,oldSha256:sha(old),replacementSha256:sha(replacement)})),
   aliases,importMapKey:mapKey,previousChannelInventoryOverlayPreserved:true,importsExportsUnchanged:true,allOtherChunkBytesPreserved:true,allOtherHtmlBytesPreserved:true,oldCssBytesPreserved:true,

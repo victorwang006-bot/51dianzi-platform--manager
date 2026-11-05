@@ -14,7 +14,7 @@ import urllib.request
 from datetime import datetime, timezone
 PUBLIC = Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public')
 HTML = PUBLIC / 'index.html'
-RELEASE = Path('/opt/ops/20261105-workbench-dropdown-nav-v1')
+RELEASE = Path('/opt/ops/20261105-workbench-dropdown-nav-v2')
 LOCK = Path('/var/lock/dianzi51-public-deploy.lock')
 COORD = Path('/opt/ops/51-project-release-coordination-20261027.json')
 TASK = 'OAfXZkj03WiC7JtMQKhqm5'
@@ -56,15 +56,24 @@ def inventory_tree():
         if not p.is_file() and not p.is_symlink():continue
         s=p.lstat();rows.append([str(p.relative_to(PUBLIC/'assets')),s.st_size,s.st_mtime_ns,s.st_ctime_ns,s.st_mode,s.st_uid,s.st_gid,s.st_ino,os.readlink(p) if p.is_symlink() else None])
     return rows
+def serving_roots(ps):
+    roots={}
+    for p in ps:
+        if p['name'] not in ['dianzi51','dianzi51-admin']:continue
+        served=(Path(p['script']).parent/'public/index.html').resolve(strict=True)
+        require(served.is_file(),'actual running application public HTML missing')
+        if p['name']=='dianzi51':require(served!=HTML.resolve(),'front must never serve admin HTML')
+        else:require(served==HTML.resolve(),'actual admin static root changed')
+        roots[str(p['id'])]={'name':p['name'],'html':str(served)}
+    require(any(r['name']=='dianzi51' for r in roots.values()),'front serving root missing')
+    require(any(r['name']=='dianzi51-admin' for r in roots.values()),'admin serving root missing')
+    return roots
 def protected_snapshot():
-    ps=processes();paths=set()
+    ps=processes();roots=serving_roots(ps);paths=set()
     for p in ps:
         require(p['script'] and Path(p['script']).is_file(),'running process script missing')
         paths.add(p['script'])
-        if p['name'] in ['dianzi51','dianzi51-admin']:
-            served=(Path(p['script']).parent/'public/index.html').resolve(strict=True)
-            require(served.is_file(),'actual running application public HTML missing')
-            paths.add(str(served))
+    paths.update(r['html'] for r in roots.values())
     paths.update([
         '/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html',
         '/etc/nginx/conf.d/dianzi51-admin-subdomain.conf',
@@ -74,7 +83,7 @@ def protected_snapshot():
     ])
     paths.discard(str(HTML.resolve()))
     for filename in paths:require(Path(filename).is_file(),'required protection file missing')
-    return {'processes':ps,'protectedFiles':{p:sha(p) for p in sorted(paths)}}
+    return {'processes':ps,'servingRoots':roots,'protectedFiles':{p:sha(p) for p in sorted(paths)}}
 def guard(before,names):
     require(sha(RELEASE/'manifest.json')==before['manifestSha256'],'frozen manifest changed; STOP')
     require(protected_snapshot()==before['protected'],'backend/process/config/front drift; STOP')
@@ -91,7 +100,7 @@ def verify_asset(origin,name,digest):
         b=r.read();require(r.status==200 and hashlib.sha256(b).hexdigest()==digest,'asset HTTP/hash verification failed')
 def manifest():
     frozen_manifest=(RELEASE/'manifest.json').read_bytes()
-    m=json.loads(frozen_manifest);require(m['schemaVersion']==1 and m['release']=='20261105-workbench-dropdown-nav-v1','wrong release')
+    m=json.loads(frozen_manifest);require(m['schemaVersion']==1 and m['release']=='20261105-workbench-dropdown-nav-v2','wrong release')
     require(m['baseline']['index.html']==EXPECTED_HTML,'wrong baseline')
     for flag in ['previousChannelInventoryOverlayPreserved','importsExportsUnchanged','allOtherChunkBytesPreserved','allOtherHtmlBytesPreserved','oldCssBytesPreserved','noRuntimeOrServerDependencies']:require(m.get(flag) is True,'missing build guard '+flag)
     for kind in ['js','css','html']:
