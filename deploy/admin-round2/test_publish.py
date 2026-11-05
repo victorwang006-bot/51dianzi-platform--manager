@@ -46,6 +46,11 @@ def fixture(root):
     manifest={'schemaVersion':2,'release':p.VERSION,'kind':'combined-api-manager-static','syntheticFixture':True,'sourceSha256':source_sha,'sources':{s:{'commit':v['commit'],'treeSha256':v['treeSha256']} for s,v in sources.items()},'sourceFreezeSha256':evidence[0]['sha256'],'namespace':namespace,'baseline':p.BASELINE,'publicBaseline':json.loads((BASE/'public-baseline.json').read_bytes()),'assets':assets,'apis':apis,'ddl':ddl,'toolArtifacts':[tool],'evidence':evidence,'checks':checks,'html':h,'rootAssetsMustRemainUnchanged':[],'guard':{k:True for k in ['actualChecksPassed','sourceStable','isolatedNoEnvFiles','networkBlockedInTests','oldHtmlOtherBytesPreserved','oldAssetsNeverDeleted']}}
     manifest['guard'].update({k:False for k in ['productionDeploymentPerformed','productionBrowserVerified','databaseTestsPassed']});write(root,'manifest.json',jsonbytes(manifest));return manifest
 class Safety(unittest.TestCase):
+    def test_locked_dependency_patch_source_name_keeps_artifacts_strict(self):
+        self.assertEqual(p.safe_source_relative('patches/wouter@3.7.1.patch'),'patches/wouter@3.7.1.patch')
+        with self.assertRaises(p.Stop):p.safe_relative('assets/example@file.js')
+        for name in ('../patches/wouter@3.patch','/patches/wouter@3.patch','patches/../wouter@3.patch','patches//wouter@3.patch','patches/wouter@3.patch\n'):
+            with self.assertRaises(p.Stop):p.safe_source_relative(name)
     def setUp(self):self.tmp=tempfile.TemporaryDirectory(prefix='round2-SYNTHETIC-');self.root=Path(self.tmp.name);self.m=fixture(self.root)
     def tearDown(self):self.tmp.cleanup()
     def rewrite(self):write(self.root,'manifest.json',jsonbytes(self.m))

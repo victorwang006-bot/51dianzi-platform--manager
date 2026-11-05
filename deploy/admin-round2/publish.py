@@ -47,6 +47,10 @@ def safe_relative(n):
     require(isinstance(n,str) and re.fullmatch(r'[A-Za-z0-9_./-]+',n),'invalid artifact path')
     require(not PurePosixPath(n).is_absolute() and all(p not in ('','.','..') for p in n.split('/')),'path escape')
     return n
+def safe_source_relative(n):
+    require(isinstance(n,str) and re.fullmatch(r'[A-Za-z0-9_./@-]+',n),'invalid source path')
+    require(not PurePosixPath(n).is_absolute() and all(p not in ('','.','..') for p in n.split('/')),'source path escape')
+    return n
 def regular(root,n):
     root=Path(root);require(not root.is_symlink(),'root symlink forbidden');p=root
     for part in safe_relative(n).split('/'):
@@ -109,7 +113,7 @@ def validate_package(package):
         require(re.fullmatch('[a-f0-9]{40}',v['commit']),'full source commit required')
         require(digest(compact(v['files']).encode())==v['treeSha256'],'frozen file list digest mismatch')
         require(m['sources'][side]=={'commit':v['commit'],'treeSha256':v['treeSha256']},'source manifest mismatch');trees[side]=v['treeSha256']
-        for item in v['files']:safe_relative(item['path']);require(not re.search(r'(^|/)\.env(?:\.|$)|\.(pem|key|p12)$',item['path']),'secret source filename')
+        for item in v['files']:safe_source_relative(item['path']);require(not re.search(r'(^|/)\.env(?:\.|$)|\.(pem|key|p12)$',item['path']),'secret source filename')
     require(digest(compact(trees).encode())==m['sourceSha256'],'combined source digest mismatch')
     expected_tools={'tools/'+a['path']:a['sha256'] for a in f['toolFiles']}
     require({a['path']:a['sha256'] for a in m['toolArtifacts']}==expected_tools,'tools not frozen')
