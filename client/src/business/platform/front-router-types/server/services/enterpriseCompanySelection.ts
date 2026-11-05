@@ -20,7 +20,7 @@ function hasActualHkRegistrationIdentifier(value: string | null | undefined) {
   }
 }
 
-function companyMatchesEnterpriseIdentity(company: Company, enterprise: Enterprise) {
+export function companyMatchesEnterpriseIdentity(company: Company, enterprise: Enterprise) {
   if (enterprise.registrationRegion === "HK") {
     return company.registrationRegion === "HK"
       && hasActualHkRegistrationIdentifier(enterprise.registrationIdentifier)
@@ -78,4 +78,17 @@ export function selectEnterpriseCompanyRecord(enterprise: Enterprise, rows: Comp
     || companySelectionTime(right) - companySelectionTime(left)
     || right.id - left.id,
   )[0];
+}
+
+/** Deterministic personal-draft fallback; a linked row is never another tenant's fallback. */
+export function selectPersonalCompanyRecord(userId: number, rows: Company[]) {
+  const score = (company: Company) =>
+    (company.companyName?.trim() ? 10 : 0)
+    + (company.registrationRegion === "HK"
+      ? (hasActualHkRegistrationIdentifier(company.registrationIdentifier) ? 100 : 0)
+      : (hasActualCnCreditCode(company.creditCode) ? 100 : 0))
+    + (company.submittedAt ? 2 : 0) + (company.reviewStatus === "approved" ? 1 : 0);
+  return rows.filter(row => row.userId === userId && row.enterpriseId === null)
+    .sort((left, right) => score(right) - score(left)
+      || companySelectionTime(right) - companySelectionTime(left) || right.id - left.id)[0];
 }
