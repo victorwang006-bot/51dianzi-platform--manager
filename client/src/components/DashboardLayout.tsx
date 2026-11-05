@@ -62,7 +62,10 @@ import {
   type AdminNotificationModule,
 } from "@shared/adminModuleNotifications";
 import { useQuery } from "@tanstack/react-query";
-import { hasAdminChannelInventoryRead } from "./admin/adminWorkspaceNavigationModel";
+import {
+  getAdminWorkspaceForLocation,
+  hasAdminChannelInventoryRead,
+} from "./admin/adminWorkspaceNavigationModel";
 import "./DashboardLayout.css";
 
 type MenuItem = {
@@ -667,13 +670,15 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <AdminModuleTabs
-          items={visibleMenuItems}
-          location={location}
-          onNavigate={navigateToItem}
-          onPreload={preloadItem}
-          renderBadge={renderBadge}
-        />
+        {getAdminWorkspaceForLocation(location)?.id !== "business" ? (
+          <AdminModuleTabs
+            items={visibleMenuItems}
+            location={location}
+            onNavigate={navigateToItem}
+            onPreload={preloadItem}
+            renderBadge={renderBadge}
+          />
+        ) : null}
       </div>
       <main className="admin-workspace-shell__main admin-unified-content" data-admin-ui-system="channel-inventory">
         {businessNavigationState.status === "error" ? (

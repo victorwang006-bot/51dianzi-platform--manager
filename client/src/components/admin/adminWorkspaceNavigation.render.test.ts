@@ -434,12 +434,15 @@ describe("两行正式导航组件", () => {
     expect(host.querySelector('[role="group"]')).toBeNull();
   });
 
-  it("顶层切换只调用父导航首个可见条目，不先修改本地选中态", async () => {
+  it("业务顶层先展开下拉，选项复用父导航原条目，不先修改本地选中态", async () => {
     const subset = items.filter(item =>
       ["/workbench/company-info", "/analytics", "/staff"].includes(item.path)
     );
     await render("/staff", subset);
     await act(async () => button("business").click());
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(button("business").getAttribute("aria-expanded")).toBe("true");
+    await click("/workbench/company-info");
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith(
       subset.find(item => item.path === "/workbench/company-info")

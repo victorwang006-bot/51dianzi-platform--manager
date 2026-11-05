@@ -91,13 +91,159 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   onNavigate,
   onItemIntent,
   onPreload,
+  renderItem,
+  renderBadge,
   className,
-}: AdminWorkspaceTabsProps<T>) {
-  const { workspaces, activeWorkspace } = getAdminWorkspaceNavigationState(
+}: AdminModuleTabsProps<T>) {
+  const { workspaces, activeWorkspace, activeItem } = getAdminWorkspaceNavigationState(
     items,
     location
   );
+  // Use visible workspaces, not the current workspace: ops URLs can open this too.
+  const business = workspaces.find(workspace => workspace.id === "business");
+  const entries = groupAdminBusinessNavigationItems(business?.items ?? []);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const layerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const instanceId = useId();
+  const panelId = `${instanceId}-business`;
+  const [open, setOpen] = useState<{
+    items: readonly T[];
+    location: string;
+    top: number;
+    left: number;
+    maxHeight: number;
+    focus?: "first" | "last";
+  } | null>(null);
+  // Render-time snapshots prevent a stale/unauthorized panel from flashing while
+  // an effect is pending. No local selection or remembered navigation target.
+  const expanded = !!(
+    open && open.items === items && open.location === location && entries.length
+  );
+
+  function closeBusiness(restoreFocus = false) {
+    // Hide before the parent's potentially synchronous callbacks, without using
+    // react-dom/flushSync or a portal. React then removes the closed layer.
+    if (layerRef.current) layerRef.current.hidden = true;
+    triggerRef.current?.setAttribute("aria-expanded", "false");
+    setOpen(null);
+    if (restoreFocus) triggerRef.current?.focus({ preventScroll: true });
+  }
+
+  function openBusiness(focus?: "first" | "last") {
+    const trigger = triggerRef.current;
+    if (!trigger || !entries.length) return;
+    const rect = trigger.getBoundingClientRect();
+    const width = Math.min(336, window.innerWidth - 16);
+    setOpen({
+      items,
+      location,
+      top: rect.bottom + 4,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      maxHeight: Math.max(80, window.innerHeight - rect.bottom - 16),
+      focus,
+    });
+  }
+
+  useEffect(() => {
+    if (open && !expanded) {
+      setOpen(null);
+      return;
+    }
+    if (!expanded || !open?.focus) return;
+    const buttons = panelRef.current?.querySelectorAll<HTMLButtonElement>(
+      "button[data-workspace-nav-child]"
+    );
+    const target = open.focus === "last" ? buttons?.[buttons.length - 1] : buttons?.[0];
+    target?.focus({ preventScroll: true });
+  }, [open, expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const isInside = (target: EventTarget | null) =>
+      target instanceof Node &&
+      (triggerRef.current?.contains(target) || layerRef.current?.contains(target));
+    const dismissOutside = (event: Event) => {
+      if (!isInside(event.target)) closeBusiness();
+    };
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeBusiness(true);
+    };
+    const dismissMoved = (event: Event) => {
+      if (event.target instanceof Node && panelRef.current?.contains(event.target)) return;
+      closeBusiness();
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("click", dismissOutside);
+    document.addEventListener("focusin", dismissOutside);
+    document.addEventListener("keydown", escape);
+    window.addEventListener("resize", dismissMoved);
+    window.addEventListener("scroll", dismissMoved, true);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("click", dismissOutside);
+      document.removeEventListener("focusin", dismissOutside);
+      document.removeEventListener("keydown", escape);
+      window.removeEventListener("resize", dismissMoved);
+      window.removeEventListener("scroll", dismissMoved, true);
+    };
+  }, [expanded]);
+
+  // Same item/button traversal as ModuleTabs, flattened across static groups;
+  // drawer controls do not participate in the real navigation item sequence.
+  function handleBusinessKeys(event: KeyboardEvent<HTMLElement>) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const buttons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        "button[data-workspace-nav-child]"
+      )
+    );
+    if (!buttons.length) return;
+    const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      "button[data-workspace-nav-child]"
+    );
+    const index = target ? buttons.indexOf(target) : -1;
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? buttons.length - 1
+          : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
+    event.preventDefault();
+    event.stopPropagation();
+    buttons[next]?.focus({ preventScroll: true });
+    buttons[next]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }
+
   if (!workspaces.length) return null;
+
+  function renderBusinessItem(item: T) {
+    const isActive = item.path === activeItem?.path;
+    return (
+      <button
+        key={item.path}
+        type="button"
+        className="admin-workspace-nav__tab admin-workspace-nav__module admin-workspace-nav__dropdown-item"
+        data-workspace-nav-target={item.path}
+        data-workspace-nav-child="true"
+        data-business-dropdown-item={item.path}
+        data-active={isActive ? "true" : "false"}
+        aria-current={isActive ? "page" : undefined}
+        onClick={() => {
+          closeBusiness();
+          onNavigate(item);
+        }}
+        onPointerEnter={() => (onPreload ?? onItemIntent)?.(item)}
+        onFocus={() => (onPreload ?? onItemIntent)?.(item)}
+      >
+        {renderItem ? renderItem(item, { isActive, workspaceId: "business" }) : item.label}
+        {renderBadge?.(item)}
+      </button>
+    );
+  }
 
   return (
     <nav
@@ -112,17 +258,36 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
       {workspaces.map(workspace => {
         const isActive = workspace.id === activeWorkspace?.id;
         const target = getAdminWorkspaceNavigationTarget(items, workspace.id);
+        const isBusiness = workspace.id === "business";
         return (
           <button
             key={workspace.id}
+            ref={isBusiness ? triggerRef : undefined}
+            id={isBusiness ? `${panelId}-trigger` : undefined}
             type="button"
-            className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+            className={`admin-workspace-nav__tab admin-workspace-nav__workspace${isBusiness ? " admin-workspace-nav__business-trigger" : ""}`}
             data-workspace-nav-target={workspace.id}
+            data-business-dropdown-trigger={isBusiness ? "true" : undefined}
             data-active={isActive ? "true" : "false"}
             aria-current={isActive ? "location" : undefined}
+            aria-expanded={isBusiness ? expanded : undefined}
+            aria-controls={isBusiness && expanded ? panelId : undefined}
             onClick={() => {
+              if (isBusiness) {
+                if (expanded) closeBusiness();
+                else openBusiness();
+                return;
+              }
+              closeBusiness();
               if (!isActive && target) onNavigate(target);
             }}
+            onKeyDown={isBusiness ? event => {
+              if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+              if (!["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) return;
+              event.preventDefault();
+              if (expanded && ["Enter", " "].includes(event.key)) closeBusiness();
+              else openBusiness(event.key === "ArrowUp" ? "last" : "first");
+            } : undefined}
             onPointerEnter={() => {
               if (target) (onPreload ?? onItemIntent)?.(target);
             }}
@@ -131,9 +296,61 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             }}
           >
             {workspace.label}
+            {isBusiness ? <span className="admin-workspace-nav__chevron" aria-hidden="true">▾</span> : null}
           </button>
         );
       })}
+      {expanded && open ? (
+        <div ref={layerRef} className="admin-workspace-nav__business-layer" data-business-dropdown="layer">
+          <div
+            className="admin-workspace-nav__business-backdrop"
+            data-business-dropdown="backdrop"
+            aria-hidden="true"
+            onClick={() => closeBusiness(true)}
+          />
+          <div
+            ref={panelRef}
+            id={panelId}
+            role="region"
+            aria-labelledby={`${panelId}-trigger`}
+            data-admin-navigation="business-dropdown"
+            data-business-dropdown="panel"
+            className="admin-workspace-nav__business-panel"
+            style={{ top: open.top, left: open.left, maxHeight: open.maxHeight }}
+            onKeyDown={handleBusinessKeys}
+          >
+            <div className="admin-workspace-nav__business-drawer-header">
+              <span>业务工作台</span>
+              <button
+                type="button"
+                className="admin-workspace-nav__business-close"
+                aria-label="关闭业务工作台菜单"
+                data-business-dropdown="close"
+                onClick={() => closeBusiness(true)}
+              >关闭</button>
+            </div>
+            <div className="admin-workspace-nav__business-content" data-business-dropdown="content">
+              {entries.map(entry => entry.kind === "direct" ? (
+                <div key={entry.item.path} className="admin-workspace-nav__business-direct" data-business-direct={entry.item.path}>
+                  {renderBusinessItem(entry.item)}
+                </div>
+              ) : (
+                <section
+                  key={entry.id}
+                  role="group"
+                  aria-labelledby={`${panelId}-${entry.id}`}
+                  className="admin-workspace-nav__business-section"
+                  data-business-group={entry.id}
+                  data-active={entry.items.some(item => item.path === activeItem?.path) ? "true" : "false"}
+                >
+                  <div id={`${panelId}-${entry.id}`} className="admin-workspace-nav__business-heading">{entry.label}</div>
+                  {entry.items.map(item => renderBusinessItem(item))}
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </nav>
   );
 }

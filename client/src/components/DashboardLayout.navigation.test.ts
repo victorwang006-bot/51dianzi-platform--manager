@@ -173,13 +173,28 @@ describe("正式后台顶部布局集成", () => {
     expect(renderLayout()).toContain("消息中心");
   });
 
-  it("shows native staff channel entry only with exact native read and the bound route capability", () => {
+  it("shows native staff channel entry in the dropdown only with exact native read and the bound route capability", async () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = ["inventory.channel"];
     runtime.user.permissions = ["materials.read", "messages.read", "officialInventory.read"];
-    const html = renderLayout();
-    expect(html).toContain("渠道库存");
-    expect(html).toContain('data-workspace-nav-target="/workbench/channel-inventory"');
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    try {
+      await act(async () => root.render(createElement(DashboardLayout, null, createElement("article", { "data-real-content": "yes" }, "渠道库存与渠道档案"))));
+      expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
+      const trigger = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="business"]')!;
+      expect(trigger.getAttribute("aria-current")).toBe("location");
+      await act(async () => trigger.click());
+      const item = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="/workbench/channel-inventory"]')!;
+      expect(item).not.toBeNull();
+      expect(item.getAttribute("aria-current")).toBe("page");
+      expect(container.querySelector("[data-real-content]")?.textContent).toBe("渠道库存与渠道档案");
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
     expect(runtime.user.permissions).toEqual(["materials.read", "messages.read", "officialInventory.read"]);
     expect(source).toMatch(/path: "\/workbench\/channel-inventory",\s*workbenchCapability: "inventory.channel"/);
     expect(source).not.toContain('permission: "officialInventory.write"');
