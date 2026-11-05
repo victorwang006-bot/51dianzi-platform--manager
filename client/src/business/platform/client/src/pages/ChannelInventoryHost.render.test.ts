@@ -191,6 +191,16 @@ function menuItem(name: string) {
   return required(Array.from(document.querySelectorAll<HTMLElement>('.ci-channel-actions-menu [role="menuitem"]')).find(item => item.textContent?.trim() === name), `missing menu item: ${name}`);
 }
 
+function materialMenuItem(name: string, index = 0) {
+  if (!document.querySelector('.ci-channel-actions-menu[role="menu"]')) {
+    const row = required(document.querySelectorAll('.ci-compact-stock-table tbody tr')[index], "missing inventory row");
+    const trigger = required(row.querySelector<HTMLButtonElement>('[data-slot="dropdown-menu-trigger"]'), "missing inventory more trigger");
+    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+  }
+  const menu = required(document.querySelector<HTMLElement>('.ci-channel-actions-menu[role="menu"]'), "missing portalled inventory menu");
+  return required(Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(item => item.textContent?.trim() === name), `missing inventory menu item: ${name}`);
+}
+
 function control(container: Element, label: string) {
   return required(
     Array.from(container.querySelectorAll("input, select, textarea")).find(item =>
@@ -456,10 +466,25 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
     expect(runtime.sourceInputs).toHaveLength(0);
     expect(runtime.optionInputs).toHaveLength(0);
-    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
-    expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col), [hidden], input")).toBeNull();
+    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    expect(Array.from(rows[0].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "更多"]);
+    for (const row of rows) {
+      const publish = required(row.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing publish action");
+      expect(publish.disabled).toBe(true);
+      expect(publish.title).toBe("当前账号没有该材料的发布权限");
+      click(publish);
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    }
+    expect(rows[1].querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
     expect(rows[1].querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(rows[1].querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
+    const edit = materialMenuItem("编辑");
+    const menu = required(edit.closest('[role="menu"]'), "missing inventory actions menu");
+    expect(menu.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
+    expect(Array.from(menu.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑"]);
+    expect(edit.hasAttribute("data-disabled")).toBe(false);
+    expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
   });
 
   it("denies source filtering without exposing own upload options", () => {
@@ -483,13 +508,18 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     renderHost();
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).not.toContain("团队来源");
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    const publish = required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing peer publish");
+    expect(publish.disabled).toBe(true);
+    expect(publish.title).toBe("当前账号没有该材料的发布权限");
+    expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
     runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "团队来源" });
     click(required(peer.querySelector(".ci-source-link"), "missing source link"));
     await settle();
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("团队来源");
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(peer.querySelector("[title]:not(.ci-material-recorder-col), [hidden], input")).toBeNull();
+    expect(peer.querySelector("[title]:not(.ci-material-recorder-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
+    expect(publish.title).toBe("当前账号没有该材料的发布权限");
     expect(peer.querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(peer.querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
@@ -596,6 +626,8 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.sourceInputs).toHaveLength(0);
     act(() => filter.focus()); await settle();
     change(filter, "22");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
+    click(button("确定"));
     await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22, page: 1 });
     click(button("下一页"));
@@ -668,6 +700,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const source = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing source filter");
     act(() => source.focus()); await settle();
     change(source, "22");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
+    click(button("确定"));
+    await settle();
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22, page: 1 });
     runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
     act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await settle();
@@ -702,7 +738,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     const previous = runtime.teamQuery as { data: object };
     runtime.teamQuery = query({ ...previous.data, canWrite: false });
@@ -717,7 +753,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledTimes(1);
     expect(runtime.getMaterial).not.toHaveBeenCalled();
     selectHostTab("channels");
@@ -733,7 +769,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     click(button("单条上传"));
     const dialog = required(document.querySelector('[role="dialog"]'), "missing new upload");
     change(control(dialog, "型号"), "NEW-DRAFT-MODEL");
@@ -750,7 +786,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     let reject!: (error: Error) => void;
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
     renderHost();
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     click(button("单条上传"));
     click(required(document.querySelector('[aria-label="关闭库存编辑"]'), "missing close"));
     await act(async () => { reject(new Error("STALE-DETAIL-ERROR")); await Promise.resolve(); });
@@ -763,7 +799,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     click(button("上传库存"));
     await act(async () => { finish(detail); await Promise.resolve(); });
     expect(document.querySelector('[aria-label="上传库存表格"]')).not.toBeNull();
@@ -925,7 +961,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
     }));
 
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     await settle();
     expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 101 }, { signal: expect.any(AbortSignal) });
     expect(runtime.getMaterial).not.toHaveBeenCalled();
@@ -1089,7 +1125,7 @@ describe("channel inventory upload entrypoints", () => {
     click(button("上传库存"));
     await settle();
     expect(runtime.createMaterial).toHaveBeenCalledWith(expect.objectContaining({ channelId: 11, qty: 0, price: "123456789012345.123456789012", taxIncluded: null }));
-    click(button("编辑"));
+    click(materialMenuItem("编辑"));
     await settle();
     dialog = required(document.querySelector('[role="dialog"]'), "missing edit inventory");
     expect(dialog.querySelector("h2")?.textContent).toBe("编辑渠道库存");
@@ -1439,7 +1475,9 @@ describe("channel industry required integration", () => {
     selectHostTab("materials");
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).toContain("查看来源");
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "备注（0）"]);
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    expect(required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing readonly publish").disabled).toBe(true);
+    expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
     expect(peer.querySelector("select")).toBeNull();
     expect(document.querySelector("thead")?.textContent).toContain("所属行业");
   });
@@ -1453,8 +1491,7 @@ describe("v9 public inventory and collaboration integration", () => {
     runtime.channelQuery = query({ items: [], total: 0, page: 1, pageSize: 100, canWrite: false });
     runtime.getTeamMaterialForEdit.mockResolvedValueOnce({ id: 202, channelId: 22, channelName: "团队来源", partNumber: "TEAM-SN74", brand: "NXP", qty: 0, dateCode: "2601", price: "0", currency: "CNY", taxIncluded: false, leadTime: null, revision: 12, canEdit: true, readOnly: false });
     renderHost();
-    const peer = document.querySelectorAll("tbody tr")[1];
-    click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "编辑"), "missing leader public edit"));
+    click(materialMenuItem("编辑", 1));
     await settle();
     const dialog = required(document.querySelector('[role="dialog"]'), "missing public editor");
     expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledWith({ id: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
@@ -1528,7 +1565,7 @@ describe("v9 public inventory and collaboration integration", () => {
 
   it("freezes a public inventory request after an unknown response and retries the same CAS payload", async () => {
     runtime.updateMaterial.mockRejectedValueOnce(new Error("lost response")).mockResolvedValueOnce({});
-    renderHost(); click(button("编辑")); await settle();
+    renderHost(); click(materialMenuItem("编辑")); await settle();
     const dialog = required(document.querySelector('[role="dialog"]'), "missing public inventory editor");
     change(control(dialog, "型号"), "FROZEN-PUBLIC");
     click(button("保存修改")); await settle();
@@ -1716,7 +1753,7 @@ describe("v11 real Host source authorization lifecycle", () => {
     runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "leader-only-option" }] });
     renderHost();
     act(() => required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]'), "missing filter").focus()); await settle();
-    click(button("编辑")); await settle();
+    click(materialMenuItem("编辑")); await settle();
     const editor = required(document.querySelector(".ci-host-material-dialog"), "missing edit dialog");
     change(control(editor, "型号"), "KEEP-PUBLIC-EDIT");
     runtime.teamQuery = query({ ...old.data, canFilterSource: false });
@@ -1792,10 +1829,15 @@ describe("v13 native channel read and original recorder contract", () => {
     expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(button("单条上传").disabled).toBe(true);
     expect(button("上传库存").disabled).toBe(true);
-    expect(button("编辑").disabled).toBe(true);
-    click(button("单条上传")); click(button("上传库存")); click(button("编辑"));
+    const edit = materialMenuItem("编辑");
+    expect(edit.hasAttribute("data-disabled")).toBe(true);
+    expect(edit.getAttribute("aria-disabled")).toBe("true");
+    click(button("单条上传")); click(button("上传库存")); click(edit);
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.textContent).not.toContain("新增备注");
+    act(() => edit.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })));
+    await settle();
+    expect(document.querySelector('.ci-channel-actions-menu[role="menu"]')).toBeNull();
     runtime.collaborationQuery = query({ items: [{ id: 99, authorUserId: 7, authorName: "本人", content: "可读协作历史", canEdit: true, createdAt: "2026-11-03T00:00:00Z", updatedAt: "2026-11-03T00:00:00Z" }], total: 1, canAdd: true });
     click(button("备注（1）")); await settle();
     expect(document.body.textContent).toContain("可读协作历史");
@@ -1833,7 +1875,7 @@ describe("v13 native channel read and original recorder contract", () => {
   it("does not open a pending edit response after native write is revoked while read remains", async () => {
     let finish!: (value: unknown) => void;
     runtime.getTeamMaterialForEdit.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(button("编辑"));
+    renderHost(); click(materialMenuItem("编辑"));
     runtime.scope.officialInventoryPermissions.write = false; rerender(); await settle();
     await act(async () => finish({ ...(runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data.items[0], channelId: 11 }));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -2221,7 +2263,12 @@ describe("customer supply independent exact source-readable proof", () => {
     expect(sourceFilter().value).toBe("999");
     expect(sourceFilter().options).toHaveLength(3);
     change(sourceFilter(), "22"); await settle();
+    expect(sourceFilter().value).toBe("22");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999 });
+    click(button("确定")); await settle();
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999 });
     change(sourceFilter(), ""); await settle();
+    click(button("确定")); await settle();
     expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
     onlyExactRequests();
   });
@@ -2241,14 +2288,21 @@ describe("customer supply independent exact source-readable proof", () => {
     onlyExactRequests();
   });
 
-  it("retains exact own cid through search, reset, sorting and a later empty filtered result", async () => {
+  it("retains exact own cid through confirmed search, clearing drafts, sorting and a later empty filtered result", async () => {
     const { stock } = ownSource(); renderHost(); await settle();
-    change(required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存型号"]'), "missing model"), "NO-MATCH");
+    const model = required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存型号"]'), "missing model");
+    expect(Array.from(document.querySelectorAll("button")).some(item => item.textContent?.trim() === "重置")).toBe(false);
+    change(model, "NO-MATCH");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: undefined });
+    click(button("确定")); await settle();
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: "NO-MATCH", page: 1 });
     click(required(document.querySelector('[aria-label="按可供数量排序"]'), "missing sort"));
     runtime.exactTeamQuery = query({ ...stock, items: [], total: 0 }); rerender(); await settle();
     expect(document.body.textContent).toContain("暂无目标可读库存");
     expect(document.querySelector("tbody")?.textContent).not.toContain("TEAM-SN74");
-    click(button("重置")); await settle();
+    change(model, "");
+    expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: "NO-MATCH", sortBy: "qty" });
+    click(button("确定")); await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: undefined, sortBy: "qty", page: 1 });
     onlyExactRequests();
   });

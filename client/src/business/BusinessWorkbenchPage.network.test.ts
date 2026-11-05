@@ -11,6 +11,8 @@ import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import { trpc as adminTrpc } from "../lib/trpc";
 import { AUTH_SESSION_CLEARED_EVENT } from "./platform/client/src/lib/authSessionEvents";
+import { writePageSlot } from "./platform/client/src/lib/pageMemory";
+import { __resetCustomerCreateDraftStoreForTests } from "./platform/client/src/lib/customerCreateDraftStore";
 import {
   createBusinessRequestCancellation,
 } from "./BusinessWorkbenchSession";
@@ -177,10 +179,25 @@ function requestPathname(input: RequestInfo | URL): string {
   return new URL(requestUrl(input), "http://workbench.test").pathname;
 }
 
-function customerRecord(id: number, name: string) {
+type CustomerFixtureScope = { actorUserId: number; enterpriseId: number };
+const verifiedCustomerScope: CustomerFixtureScope = {
+  actorUserId: verifiedContext.staffPrincipal.frontendUserId,
+  enterpriseId: verifiedContext.enterprise.id,
+};
+
+function customerContext(scope = verifiedCustomerScope) {
+  return {
+    actorUserId: scope.actorUserId,
+    canManageAll: false,
+    canReadAll: false,
+    members: [{ userId: scope.actorUserId, name: "已核验业务员工" }],
+  };
+}
+
+function customerRecord(id: number, name: string, scope = verifiedCustomerScope) {
   return {
     id,
-    enterpriseId: 88001,
+    enterpriseId: scope.enterpriseId,
     name,
     contactName: "客户联系人",
     phone: "13800000000",
@@ -194,9 +211,9 @@ function customerRecord(id: number, name: string) {
     stage: "new",
     source: "",
     nextFollowUpAt: null,
-    assignedUserId: 7002,
+    assignedUserId: scope.actorUserId,
     assignedName: "已核验业务员工",
-    createdByUserId: 7002,
+    createdByUserId: scope.actorUserId,
     createdByName: "已核验业务员工",
     createdAt: "2026-11-02T00:00:00.000Z",
     updatedAt: "2026-11-02T00:00:00.000Z",
@@ -204,6 +221,11 @@ function customerRecord(id: number, name: string) {
     archivedAt: null,
     archiveReason: null,
     lastFollowUpAt: null,
+    industryCode: "automotive",
+    isStarred: false,
+    starRevision: 0,
+    starUserId: scope.actorUserId,
+    canSetStar: true,
   };
 }
 
@@ -333,8 +355,12 @@ async function mountWorkbench(
     },
     async unmount() {
       await act(async () => {
+        // Each test is a fresh browser, but module-held UI memory outlives JSDOM.
+        // Reset only at final teardown, never on leave/return or revalidation.
+        writePageSlot("createOpen", false);
         root.unmount();
         __resetBusinessAuthorizationMemoryForTests();
+        __resetCustomerCreateDraftStoreForTests();
         rootQueryClient.clear();
       });
       dom.window.close();
@@ -362,12 +388,48 @@ async function waitFor(
   throw lastError;
 }
 
+function businessProcedures(call: FetchCall) {
+  return call.pathname.startsWith("/api/business-trpc/")
+    ? call.pathname.split("/").at(-1)!.split(",")
+    : [];
+}
+
+// Dispatch fixtures per procedure, not per incidental httpBatchLink grouping.
+// The application still uses its real QueryClient/link and receives an ordered
+// tRPC batch, including each error envelope and the original shared abort signal.
+async function customerBatchResponse(call: FetchCall, responder: NetworkResponder) {
+  const procedures = businessProcedures(call);
+  const url = new URL(call.url, "http://workbench.test");
+  const input = JSON.parse(url.searchParams.get("input") ?? "{}");
+  const responses = await Promise.all(procedures.map((procedure, index) => {
+    const procedureUrl = new URL(url);
+    procedureUrl.pathname = `/api/business-trpc/${procedure}`;
+    procedureUrl.searchParams.set("input", JSON.stringify({ 0: input[String(index)] }));
+    return responder({ ...call, url: procedureUrl.toString(), pathname: procedureUrl.pathname });
+  }));
+  const envelopes = await Promise.all(responses.map(async response => {
+    const body = await response.json();
+    if (!Array.isArray(body) || body.length !== 1)
+      throw new Error("INVALID_SINGLE_PROCEDURE_FIXTURE");
+    return body[0];
+  }));
+  const status = responses.every(response => response.status === responses[0].status)
+    ? responses[0].status : 207;
+  return new Response(JSON.stringify(envelopes), {
+    status, headers: { "content-type": "application/json" },
+  });
+}
+
 function installNetwork(
   responder: NetworkResponder,
   authResponder: NetworkResponder = () => trpcResult({ id: 6001 })
 ) {
   const calls: FetchCall[] = [];
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(requestUrl(input), "http://workbench.test");
+    if (url.origin !== "http://workbench.test" ||
+      (url.pathname !== "/api/trpc/auth.me" && !url.pathname.startsWith("/api/business-trpc/")))
+      throw new Error(`NON_SYNTHETIC_NETWORK_REQUEST_BLOCKED:${url.origin}${url.pathname}`);
     const call = {
       url: requestUrl(input),
       pathname: requestPathname(input),
@@ -376,6 +438,9 @@ function installNetwork(
       signal: init?.signal,
     };
     calls.push(call);
+    const procedures = businessProcedures(call);
+    if (procedures.length > 1 && procedures.some(procedure => procedure.startsWith("customer.")))
+      return customerBatchResponse(call, responder);
     return call.pathname === "/api/trpc/auth.me"
       ? authResponder(call)
       : responder(call);
@@ -384,7 +449,7 @@ function installNetwork(
   return { calls, fetch };
 }
 
-function successfulWorkbenchResponse(call: FetchCall): Response {
+function successfulWorkbenchResponse(call: FetchCall, scope = verifiedCustomerScope): Response {
   if (call.pathname === "/api/business-trpc/merchants") {
     return trpcResult({
       data: [officialMerchant],
@@ -396,22 +461,28 @@ function successfulWorkbenchResponse(call: FetchCall): Response {
     return trpcResult(verifiedContext);
   if (call.pathname === "/api/business-trpc/enterprise.me")
     return trpcResult({
-      currentUserId: 7002,
-      enterprise: { id: 88001 },
+      currentUserId: scope.actorUserId,
+      enterprise: { id: scope.enterpriseId },
       isOwner: false,
       permissionKeys: [],
     });
-  if (call.pathname === "/api/business-trpc/enterprise.me,customer.list")
-    return trpcBatchResult(
-      { currentUserId: 7002, enterprise: { id: 88001 }, isOwner: false, permissionKeys: [] },
-      { items: [], total: 0 }
-    );
   if (call.pathname === "/api/business-trpc/customer.context") {
-    return trpcResult({ canManageAll: false, members: [] });
+    return trpcResult(customerContext(scope));
+  }
+  if (call.pathname === "/api/business-trpc/customer.starContext") {
+    return trpcResult({
+      enterpriseId: scope.enterpriseId,
+      actorUserId: scope.actorUserId,
+      targets: [{ userId: scope.actorUserId, name: "已核验业务员工" }],
+    });
   }
   if (call.pathname === "/api/business-trpc/customer.list") {
     return trpcResult({ items: [], total: 0 });
   }
+  if (call.pathname === "/api/business-trpc/customer.contactsSummary")
+    return trpcResult({ items: [] });
+  if (call.pathname === "/api/business-trpc/channelInventory.customerSupplySummary")
+    return trpcResult({ items: [], canWrite: false });
   throw new Error(`UNEXPECTED_NETWORK_STUB_PATH:${call.pathname}`);
 }
 
@@ -656,7 +727,7 @@ function retryButton(container: HTMLElement, retryId: string) {
 
 function domainCalls(calls: FetchCall[]) {
   return calls.filter(call =>
-    call.pathname.startsWith("/api/business-trpc/customer.")
+    businessProcedures(call).some(procedure => procedure.startsWith("customer."))
   );
 }
 
@@ -769,9 +840,29 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(true);
     expect(
       network.calls.some(
-        call => call.pathname === "/api/business-trpc/customer.list"
+        call => businessProcedures(call).includes("customer.list")
       )
     ).toBe(true);
+    const listRequest = network.calls.find(call =>
+      businessProcedures(call).includes("customer.list")
+    );
+    expect(businessProcedureInput(listRequest, "customer.list")).toEqual({
+      keyword: "",
+      scope: "mine",
+      starMode: "assignee",
+      expectedEnterpriseId: 88001,
+      expectedActorUserId: 7002,
+      archived: false,
+      due: "all",
+      starredOnly: false,
+      page: 1,
+      pageSize: 20,
+    });
+    expect(listRequest?.headers.get("x-business-merchant-id")).toBe("30061");
+    expect(listRequest?.credentials).toBe("include");
+    expect(listRequest?.headers.get("cookie")).toBeNull();
+    expect(listRequest?.headers.get("x-admin-id")).toBeNull();
+    expect(listRequest?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("opens the restored channel address through the BFF-bound legacy host and owner scope", async () => {
@@ -824,8 +915,8 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(false);
     expect(
       Array.from(
-        mounted.container.querySelectorAll('[role="tab"][aria-selected="true"]')
-      ).map(tab => tab.textContent)
+        mounted.container.querySelectorAll("[data-channel-inventory-host] h1")
+      ).map(title => title.textContent)
     ).toEqual(["渠道库存"]);
     const addMaterial = Array.from(
       mounted.container.querySelectorAll<HTMLButtonElement>("button")
@@ -1711,7 +1802,7 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         );
       }
       if (call.pathname === "/api/business-trpc/customer.context") {
-        return trpcResult({ canManageAll: false, members: [] });
+        return trpcResult(customerContext());
       }
       if (call.pathname === "/api/business-trpc/customer.list") {
         listAttempts += 1;
@@ -2150,11 +2241,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
             return oldList.promise;
           }
           return trpcResult({
-            items: [customerRecord(92, "新账号客户")],
+            items: [customerRecord(92, "新账号客户", { actorUserId: 7003, enterpriseId: 88001 })],
             total: 1,
           });
         }
-        return successfulWorkbenchResponse(call);
+        return successfulWorkbenchResponse(call, {
+          actorUserId: accountId === 6002 ? 7003 : 7002,
+          enterpriseId: 88001,
+        });
       },
       () => trpcResult({ id: accountId })
     );
@@ -2384,7 +2478,10 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
           if (contextAttempts === 2) return secondContext.promise;
           if (contextAttempts === 3) return restoredContext.promise;
         }
-        return successfulWorkbenchResponse(call);
+        return successfulWorkbenchResponse(call, {
+          actorUserId: contextAttempts >= 3 ? 7003 : 7002,
+          enterpriseId: 88001,
+        });
       });
       mounted = await mountWorkbench();
       await waitFor(() =>
@@ -2465,11 +2562,17 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       if (call.pathname === "/api/business-trpc/customer.list")
         return trpcResult({
           items: [
-            customerRecord(++lists, lists === 1 ? "原企业客户" : "新企业客户"),
+            customerRecord(++lists, lists === 1 ? "原企业客户" : "新企业客户", {
+              actorUserId: 7002,
+              enterpriseId: checks === 1 ? 88001 : 88002,
+            }),
           ],
           total: 1,
         });
-      return successfulWorkbenchResponse(call);
+      return successfulWorkbenchResponse(call, {
+        actorUserId: 7002,
+        enterpriseId: checks === 1 ? 88001 : 88002,
+      });
     });
     mounted = await mountWorkbench();
     await waitFor(() =>

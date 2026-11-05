@@ -57,6 +57,21 @@ function renderHost() { act(() => root.render(React.createElement(ChannelInvento
 function required<T>(value: T | null | undefined): T { if (value == null) throw new Error("missing control"); return value; }
 function button(name: string) { return required(Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name)); }
 function click(element: Element) { act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))); }
+function materialMenuItem(name: string) {
+  const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
+  act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+  const menu = required(document.querySelector<HTMLElement>('.ci-channel-actions-menu[role="menu"]'));
+  expect(menu.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
+  return required(Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(item => item.textContent?.trim() === name));
+}
+function selectCurrentPageForDeletion() {
+  expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull();
+  const select = button("选择");
+  expect(select.disabled).toBe(false);
+  click(select);
+  expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
+  click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
+}
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); }
 async function historyTravel(direction: "back" | "forward") {
   await act(async () => { window.history[direction](); await new Promise(resolve => setTimeout(resolve, 30)); });
@@ -148,7 +163,7 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
     selectHostTab("materials");
     let finish!: (result: unknown) => void;
     runtime.client.getTeamMaterialForEdit.query.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    click(button("编辑")); const signal = runtime.client.getTeamMaterialForEdit.query.mock.calls[0][1].signal as AbortSignal;
+    click(materialMenuItem("编辑")); const signal = runtime.client.getTeamMaterialForEdit.query.mock.calls[0][1].signal as AbortSignal;
     selectHostTab("trash"); await settle(); expect(signal.aborted).toBe(true);
     await act(async () => { finish({ ...row, channelId: 11 }); });
     expect(document.querySelector('[role="dialog"]')).toBeNull(); assertView("trash");
@@ -224,7 +239,7 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
 
 describe("URL-selected Host deletion/restore retains real management bridge", () => {
   it("deletes with original CAS and identity, then restores via the real trash clientquery and CAS", async () => {
-    renderHost(); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]'))); click(button("批量删除"));
+    renderHost(); selectCurrentPageForDeletion(); click(button("批量删除"));
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain("NAV-ONE");
     click(button("移入回收站 1 条")); await settle();
     expect(runtime.client.deleteMaterials.mutate).toHaveBeenCalledWith({ ...context, items: [{ id: 1, expectedRevision: 4 }], requestId: expect.any(String) });
@@ -249,7 +264,7 @@ describe("URL-selected Host deletion/restore retains real management bridge", ()
   });
 
   it("URL tab change closes delete confirmation and native revocation closes restore confirmation before write", async () => {
-    renderHost(); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]'))); click(button("批量删除"));
+    renderHost(); selectCurrentPageForDeletion(); click(button("批量删除"));
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     selectHostTab("trash"); await settle(); expect(document.querySelector('[role="dialog"]')).toBeNull();
     click(button("恢复")); expect(document.querySelector('[role="dialog"]')).not.toBeNull();

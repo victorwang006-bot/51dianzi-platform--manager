@@ -613,7 +613,7 @@ export default function ChannelInventoryHost() {
     expectedEnterpriseId: enterpriseId ?? undefined, expectedActorUserId: actorUserId ?? undefined, page: 1, pageSize: 1,
   } : materialInput, {
     // Management tabs re-use the server write proof, not cached role guesses.
-    enabled: ready && (managementTab || tab === "materials" && !browsingChannelsOnly && uploadBatchFilterValid) && (!supplyLink || (exactSourceReadable && materialChannelId === supplyLink.channelId)), retry: false, refetchOnWindowFocus: true,
+    enabled: ready && (managementTab || tab === "materials" && !browsingChannelsOnly && uploadBatchFilterValid) && (!supplyLink || (exactSourceReadable && materialChannelId === supplyLink.channelId)), retry: false, staleTime: 0, refetchOnWindowFocus: true,
   });
   const exactStockDenied = materialsQuery.isError || Boolean(materialsQuery.data?.items.some(row => row.canViewSource !== true));
   useEffect(() => {
@@ -1228,7 +1228,26 @@ export default function ChannelInventoryHost() {
     proofReady: Boolean(materialResult), proofVersion: materialsQuery.dataUpdatedAt, isCurrent, onComplete: refreshMaterials, onAuthorizationError: businessScope.onAuthorizationError });
   const confirmMaterialFilters = () => {
     if (!isCurrent() || !contextCurrent) return;
+    const batchText = draftMaterialFilters.uploadBatchId?.trim() ?? "";
+    const batchId = Number(batchText);
+    const validBatch = !batchText || /^\d+$/.test(batchText) && Number.isSafeInteger(batchId) && batchId > 0;
+    const draftChannelId = Number(draftMaterialFilters.channelId);
+    const nextChannelId = supplyLink ? exactSourceReadable ? exactTarget?.id : undefined
+      : currentReadableChannel ? currentReadableChannel.id
+      : sourceAllowed && sourceOptions.some(source => source.id === draftChannelId) ? draftChannelId : undefined;
+    const nextInput = { ...materialInput,
+      partNumber: draftMaterialFilters.partNumber.normalize("NFKC").trim() || undefined,
+      brand: draftMaterialFilters.brand.trim() || undefined, channelId: nextChannelId,
+      industryCode: draftMaterialFilters.industryCode !== "all" ? draftMaterialFilters.industryCode : undefined,
+      uploadBatchId: validBatch && batchText ? batchId : undefined, page: 1 };
+    // A changed key fetches the new filters after render. Only re-fetch here
+    // when the normalized key is unchanged, never with stale/invalid drafts.
+    const repeatSearch = ready && sourceContextVerified && sourceIdentityCurrent && !enterpriseQuery.isError
+      && tab === "materials" && !browsingChannelsOnly && validBatch
+      && (!supplyLink || exactSourceReadable && nextChannelId === supplyLink.channelId)
+      && JSON.stringify(nextInput) === JSON.stringify(materialInput);
     applyMaterialFilters({ ...draftMaterialFilters }); setMaterialPage(1); setMessage("");
+    if (repeatSearch) void materialsQuery.refetch();
   };
   const changeInventoryView = (next: "flat" | "channels") => {
     changeTab("materials"); setInventoryView(next); setReadableChannel(null);
