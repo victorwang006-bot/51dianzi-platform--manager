@@ -8,7 +8,7 @@ import { spawnSync, execFileSync } from 'node:child_process';
 import { assembleHtml, BASELINE, RELEASE, sha, cleanEnv, chooseTests } from './lib.mjs';
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const repos = { admin: path.resolve(toolDir, '../..'), front: '/home/ubuntu/51dianzi-platform' };
-const roots = ['client','shared','server','drizzle','scripts','tests','patches','attached_assets','package.json','pnpm-lock.yaml','pnpm-workspace.yaml','tsconfig.json','vite.config.ts','vitest.config.ts'];
+const roots = ['client','shared','server','drizzle','scripts','tests','patches','attached_assets','package.json','pnpm-lock.yaml','pnpm-workspace.yaml','tsconfig.json','vite.config.ts','vitest.config.ts','deploy/schema-migrations.txt','deploy/ecs-release.sh','deploy/ecs-release-from-git.sh'];
 const treeSha = rows => sha(JSON.stringify(rows));
 const json = async (p, v) => { await fs.mkdir(path.dirname(p), {recursive:true}); await fs.writeFile(p, JSON.stringify(v,null,2)+'\n', {mode:0o600}); };
 const toolOwnedTemporary = new Set(['.round2-vitest.config.mjs','.round2-test-isolation.mjs']);
