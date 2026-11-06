@@ -296,6 +296,12 @@ function platformSelect(plan: TransactionPlan) {
 }
 
 beforeAll(async () => {
+  // Drizzle and the lock connection are hoisted mocks above: this URL is only
+  // an input to the real db.ts guard, never a connection to any database.
+  if (!process.env.DATABASE_URL && process.env.NODE_ENV === "test" && process.env.VITEST) {
+    vi.stubEnv("DATABASE_URL", "mysql://offline:synthetic@127.0.0.1:13307/migration_v2_admin_hk_review_test");
+    vi.stubEnv("PLATFORM_DB_NAME", "migration_v2_admin_hk_review_test");
+  }
   const configuredUrl = process.env.DATABASE_URL;
   if (!configuredUrl) throw new Error("HK_REVIEW_TEST_DATABASE_URL_REQUIRED");
   const parsed = new URL(configuredUrl);
@@ -318,6 +324,8 @@ beforeAll(async () => {
   platformDatabaseName = database;
   dbModule = await import("./db");
 });
+
+afterAll(() => { vi.unstubAllEnvs(); });
 
 beforeEach(() => {
   drizzleMock.mockClear();
