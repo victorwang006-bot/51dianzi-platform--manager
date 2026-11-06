@@ -36,8 +36,10 @@ import * as db from "./db";
 import {
   getCnRegistrationReviewDetail,
   getCnRegistrationReviewQueue,
+  approveCnRegistrationAndEnableCrm,
   reviewCnRegistrationDraft,
 } from "./cnRegistrationReview";
+import { cnReviewCrmError } from "./services/cnReviewCrmError";
 import { storageGetOssSignedUrl, storagePut } from "./storage";
 import { ENV as hkStorageEnv } from "./_core/env";
 import { removeLocalFile, saveLocalFile } from "./localUpload";
@@ -1182,7 +1184,7 @@ export const appRouter = router({
           const message = error instanceof Error ? error.message : "";
           if (message === "MERCHANT_NOT_FOUND") throw new TRPCError({ code: "NOT_FOUND", message: "商户不存在" });
           if (message === "CN_REGISTRATION_REQUIRED") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "该商户不是中国内地注册企业" });
-          if (["CN_REVIEW_SUBJECT_MISMATCH", "CN_REVIEW_OWNER_OR_SUBJECT_INVALID"].includes(message)) {
+          if (["CN_REVIEW_SUBJECT_MISMATCH", "CN_REVIEW_OWNER_OR_SUBJECT_INVALID", "CN_REVIEW_PLATFORM_SUBJECT_NOT_FOUND"].includes(message)) {
             throw new TRPCError({ code: "PRECONDITION_FAILED", message: "企业主体或负责人绑定不一致，请使用既有合法变更流程" });
           }
           if (["CN_REVIEW_CANDIDATE_INVALID", "CN_REVIEW_UNSUPPORTED_DRAFT_FIELD", "CN_REVIEW_DOCUMENT_REFERENCE_INVALID", "CN_REVIEW_DOCUMENT_MIGRATION_REQUIRED"].includes(message)) {
@@ -1986,14 +1988,43 @@ export const appRouter = router({
         // ERP 开通/拒绝/暂停同属商户写操作，需同样的归属校验
         await assertMerchantInSalesScope(ctx, input.id);
         const allowedSalesStaffCodes = await getAdminSalesStaffCodes(ctx);
-        return db.setMerchantCrmStatus({
-          merchantId: input.id,
-          crmStatus: input.crmStatus,
-          portalUserId: input.portalUserId,
-          note: input.note,
-          actor: auditActorFromContext(ctx),
-          allowedSalesStaffCodes,
-        });
+        try {
+          return await db.setMerchantCrmStatus({
+            merchantId: input.id,
+            crmStatus: input.crmStatus,
+            portalUserId: input.portalUserId,
+            note: input.note,
+            actor: auditActorFromContext(ctx),
+            allowedSalesStaffCodes,
+          });
+        } catch (error) {
+          throw cnReviewCrmError(error) ?? error;
+        }
+      }),
+    approveCnRegistrationAndEnableCrm: merchantWriteProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        expectedVersion: z.string().trim().regex(/^[a-f0-9]{64}$/i, "审核版本无效"),
+        confirmed: z.literal(true, { error: "请确认同时审核企业资料并开通 ERP" }),
+        portalUserId: z.string().trim().min(1, "前台用户 ID 不能为空").max(64).optional().nullable(),
+        note: z.string().trim().max(1000).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await assertMerchantInSalesScope(ctx, input.id);
+        const allowedSalesStaffCodes = await getAdminSalesStaffCodes(ctx);
+        try {
+          return await approveCnRegistrationAndEnableCrm({
+            merchantId: input.id,
+            expectedVersion: input.expectedVersion,
+            confirmed: input.confirmed,
+            portalUserId: input.portalUserId,
+            note: input.note,
+            actor: auditActorFromContext(ctx),
+            allowedSalesStaffCodes,
+          });
+        } catch (error) {
+          throw cnReviewCrmError(error) ?? error;
+        }
       }),
     reviewCnRegistrationDraft: merchantWriteProcedure
       .input(z.object({

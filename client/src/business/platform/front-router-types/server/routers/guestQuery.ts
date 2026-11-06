@@ -5,6 +5,7 @@ import { dataViewProcedure, router } from "../_core/trpc";
 import { materialThumbnailUrls } from "../adminDb";
 import { searchPublishedInventories, type RankedInventoryRow } from "../db";
 import { resolveMarketPackagingGroup } from "../../../shared/marketPackaging";
+import { approvedUploadedMaterialFilenameModel, approvedUploadedMaterialImageItemMap, searchApprovedUploadedMaterials } from "../services/approvedUploadedMaterialCatalog";
 import { getMarketDetail } from "../services/marketRecommendation";
 import { searchApprovedVisualOnly } from "../services/searchApprovedVisualOnly";
 import { agencyBrandsForSuppliers } from "../services/agencyCertification";
@@ -31,7 +32,13 @@ const guestOnlyProcedure = dataViewProcedure.use(async ({ ctx, next }) => {
 });
 
 const text = z.string().trim().min(1).max(128).refine(value => !/[\\%_]/.test(value), "查询条件不能包含通配符");
-const model = text.min(2, "请输入至少两个字符");
+// A filename-style complete model may use '_' (e.g. ...ADJ_NOPB).
+// Only exact aliases in the approved file are accepted, and converted to their
+// verified full model before scope binding/search: '_' never reaches stock LIKE.
+const model = z.string().trim().min(2, "请输入至少两个字符").max(128).refine(
+  value => !/[\\%]/.test(value) && (!value.includes("_") || approvedUploadedMaterialFilenameModel(value) !== null),
+  "查询条件不能包含通配符",
+).transform(value => value.includes("_") ? approvedUploadedMaterialFilenameModel(value)! : value);
 const filter = text.max(64).optional();
 const sort = z.enum(["default", "priceAsc", "priceDesc", "stockAsc", "stockDesc", "lead"]).optional();
 
@@ -101,6 +108,7 @@ type GuestSearchItem = Pick<RankedInventoryRow,
   // therefore deliberately always unavailable to an unauthenticated visitor.
   note: null;
   thumbnailUrl: string | null;
+  uploadedMaterialImageUrl: string | null;
   agencyBrands: string[];
 };
 
@@ -108,6 +116,7 @@ function publicSearchItem(
   item: RankedInventoryRow,
   thumbnailUrl: string | null,
   agencyBrands: string[],
+  uploadedMaterialImageUrl: string | null,
 ): GuestSearchItem {
   // This is deliberately a construction whitelist rather than an omission list:
   // note/contact fields and ranking internals must never be added by accident.
@@ -131,6 +140,7 @@ function publicSearchItem(
     note: null,
     photos: item.photos?.map(photo => ({ key: "", url: photo.url, name: "商品图片", mimeType: "", size: 0 })) ?? null,
     thumbnailUrl,
+    uploadedMaterialImageUrl,
     publishedAt: item.publishedAt,
     refreshedAt: item.refreshedAt,
     spotVerifiedAt: item.spotVerifiedAt,
@@ -412,6 +422,7 @@ export function createGuestQueryRouter(deps: GuestQueryDependencies = {}) {
         const { token, ...scope } = input;
         await authorize(ctx, token, guestQueryHash(guestQueryScope({ ...scope, module: "search" })), "primary");
         const result = await search(scope);
+        const uploadedImageMap = approvedUploadedMaterialImageItemMap(result.items);
         const thumbnailMap = thumbnails(result.items.map(item => item.partNumber));
         const [agencyBrandMap, generatedThumbnailMap, visualOnlyMaterial] = await Promise.all([
           agencyBrands(result.items.map(item => item.supplierId)),
@@ -431,8 +442,11 @@ export function createGuestQueryRouter(deps: GuestQueryDependencies = {}) {
               ?? generatedThumbnailMap.get(item)?.url
               ?? null,
             agencyBrandMap.get(item.supplierId) ?? [],
+            uploadedImageMap.get(item) ?? null,
           )),
           visualOnlyMaterial,
+          // authorize() above remains mandatory; these records are not stock rows.
+          uploadedMaterials: searchApprovedUploadedMaterials(scope),
           exposureToken: null,
         };
       }),

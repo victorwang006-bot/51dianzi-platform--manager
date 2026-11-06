@@ -50,6 +50,8 @@ import {
 } from "../services/publicCatalog";
 import { getSearchSupplierQqsMap } from "../services/companyPublicProfile";
 import { readSearchSpotVerificationPhoto } from "../services/searchSpotVerificationPhoto";
+import { approvedUploadedMaterialImageItemMap, searchApprovedUploadedMaterials } from "../services/approvedUploadedMaterialCatalog";
+import { authenticatedSearchItem } from "../services/searchResultProjection";
 
 const safeAnonymousCatalogText = z
   .string()
@@ -125,6 +127,7 @@ export const searchRouter = router({
        * 详细理由见 server/rankingPrivacy.ts 模块注释。
        */
       const safeItems = stripRankingInternalsFromList(result.items);
+      const uploadedImageMap = approvedUploadedMaterialImageItemMap(safeItems);
       let supplierQqsMap = new Map<number, string[]>();
       try {
         supplierQqsMap = await getSearchSupplierQqsMap(
@@ -159,16 +162,25 @@ export const searchRouter = router({
           viewerUserId: ctx.user?.id,
         });
       }
+      const pagination = result as typeof result & { page?: number; pageSize?: number };
       return {
-        ...result,
+        total: result.total,
+        ...(pagination.page !== undefined ? { page: pagination.page } : {}),
+        ...(pagination.pageSize !== undefined ? { pageSize: pagination.pageSize } : {}),
         visualOnlyMaterial,
+        // Documentation is independent of offers/counts, including other-brand offers.
+        uploadedMaterials: searchApprovedUploadedMaterials({
+          ...input,
+          followedOnly: Boolean(followedOnly && ctx.user),
+        }),
         items: safeItems.map(item => {
           const supplierQqs = supplierQqsMap.get(item.supplierId) ?? [];
           return {
-            ...item,
+            ...authenticatedSearchItem(item),
             supplierQq: supplierQqs[0] ?? null,
             supplierQqs,
             agencyBrands: agencyBrandMap.get(item.supplierId ?? 0) ?? [],
+            uploadedMaterialImageUrl: uploadedImageMap.get(item) ?? null,
           // 普通字典封面/供应商图不变；制作图只属于该行核验后的完整身份。
           thumbnailUrl:
             thumbnailMap[item.partNumber] ??

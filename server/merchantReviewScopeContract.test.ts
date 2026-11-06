@@ -126,12 +126,10 @@ describe("角色权限：销售需具备商户写权限才能审核", () => {
      * 若移除该权限，销售将无法审核自己名下的商家，
      * 审核会全部回压到 admin。
      */
-    const line = permissions
-      .split("\n")
-      .find(l => l.trimStart().startsWith("merchant_mgr:"));
-    expect(line, "未找到 merchant_mgr 权限定义").toBeTruthy();
-    expect(line).toContain("merchants.write");
-    expect(line).toContain("merchants.read");
+    const definition = permissions.match(/merchant_mgr:\s*\[([\s\S]*?)\]/)?.[1];
+    expect(definition, "未找到 merchant_mgr 权限定义").toBeTruthy();
+    expect(definition).toContain('"merchants.write"');
+    expect(definition).toContain('"merchants.read"');
   });
 
   it("super_admin 拥有全部权限（无归属商家的兜底审核人）", () => {

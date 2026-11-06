@@ -131,7 +131,11 @@ export default function Merchants() {
   });
 
   const crmMutation = trpc.merchant.setCrmStatus.useMutation({
-    onSuccess: (_d, vars) => {
+    onSuccess: (result, vars) => {
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
       toast.success(
         vars.crmStatus === "enabled" && crmTarget?.currentStatus === "disabled" ? "ERP 已恢复"
           : vars.crmStatus === "enabled" ? "已绑定前台用户并开通 ERP"
@@ -449,6 +453,10 @@ export default function Merchants() {
                                 /* 未开通 / 待开通 / 已暂停 / 已拒绝：通过 / 发信 / 拒绝 */
                                 <>
                                   <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => {
+                                    if (m.registrationRegion === "CN" && (m.status === "pending" || crmStatus === "none" || crmStatus === "pending")) {
+                                      setCnReviewMerchantId(m.id);
+                                      return;
+                                    }
                                     setCrmPortalUserId(crmOwnerPortalUserId);
                                     setCrmTarget({ id: m.id, name: m.companyName, nextStatus: "enabled", currentStatus: crmStatus, currentOwner: crmOwnerPortalUserId });
                                   }}>
@@ -573,9 +581,9 @@ export default function Merchants() {
         </DialogContent>
       </Dialog>
 
-      {/* CN 注册资料审核：仅恢复既有队列入口，不新增路由。 */}
+      {/* CN 列表通过与顶部审核共用一次确认弹窗。 */}
       <Dialog open={cnReviewMerchantId !== null} onOpenChange={open => !open && setCnReviewMerchantId(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>审核操作</DialogTitle>
           </DialogHeader>

@@ -35,12 +35,30 @@ describe("MGR-CN-UI-001 source recovery contract", () => {
     expect(detail).toContain("candidate.expectedVersion !== expectedVersion");
     expect(detail).toContain("setExpectedVersion(candidate.expectedVersion)");
     expect(detail).toContain("expectedVersion,");
-    expect(detail).toContain('confirmed: decision === "approved" ? identityConfirmed : undefined');
-    expect(detail).toContain('decision === "approved" && !identityConfirmed');
-    expect(detail).toContain('decision === "rejected" && !note.trim()');
+    expect(detail).toContain("combinedMutation.mutate({ id: merchantId, expectedVersion, confirmed: true");
+    expect(detail).toContain("onClick={submitApproval}");
+    expect(detail).toContain("!note.trim()");
+    expect(detail).not.toContain("Checkbox");
+    expect(detail).not.toContain("identityConfirmed");
+    expect(detail).toContain("同时审核通过企业资料并开通 ERP");
+    expect(detail).toContain("任一校验失败，两项均不生效");
     expect(detail).toContain("data-review-approve");
     expect(detail).toContain("data-review-reject");
     expect(detail).toContain("data-review-submit");
+  });
+
+  it("shares the list/top modal and preserves already-approved and paused/rejected resubmission behavior", () => {
+    expect(merchants).toContain("setCnReviewMerchantId(m.id)");
+    expect(detail).toContain('detail?.reviewKind === "resubmission" && ["enabled", "disabled", "rejected"].includes(detail.crmStatus)');
+    expect(detail).toContain("if (alreadyReviewed)");
+    expect(detail).toContain("crmMutation.mutate({ id: merchantId");
+    expect(detail).toContain("disabled={busy || Boolean(boundOwner)}");
+    expect(detail).toContain("系统不会猜测或自动改绑");
+  });
+
+  it("never presents API success:false as success", () => {
+    expect(merchants).toMatch(/if \(!result.success\)\s*\{\s*toast.error\(result.message\);\s*return;/);
+    expect(detail).toMatch(/if \(!result.success\)\s*\{ toast.error\(result.message\); return; \}/);
   });
 
   it("shows only DTO summaries/differences and never moves document storage keys into the browser", () => {

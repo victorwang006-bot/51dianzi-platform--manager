@@ -4824,7 +4824,7 @@ export async function reviewHkRegistrationDraft(input: {
 }
 
 /** 后台：设置商户 ERP 开通状态（enabled=通过 rejected=拒绝 disabled=暂停） */
-export async function setMerchantCrmStatus(input: {
+export type MerchantCrmStatusInput = {
   merchantId: number;
   crmStatus: MerchantCrmStatus;
   portalUserId?: string | null;
@@ -4832,9 +4832,12 @@ export async function setMerchantCrmStatus(input: {
   actor?: MaterialAuditActor;
   /** undefined means super-admin; a concrete array is formal-owner scope only. */
   allowedSalesStaffCodes?: string[];
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+};
+
+export type MerchantReviewTransaction = Parameters<Parameters<NonNullable<Awaited<ReturnType<typeof getDb>>>["transaction"]>[0]>[0];
+
+/** Internal composition only: caller owns the transaction and enable carrier lock. */
+export async function setMerchantCrmStatusTx(tx: MerchantReviewTransaction, input: MerchantCrmStatusInput) {
   const normalizedNote = input.note?.trim() || null;
   if (
     (input.crmStatus === "disabled" || input.crmStatus === "rejected") &&
@@ -4847,8 +4850,6 @@ export async function setMerchantCrmStatus(input: {
     );
   }
 
-  const transaction = () =>
-    db.transaction(async tx => {
       const rows = await tx
         .select()
         .from(merchants)
@@ -4905,7 +4906,9 @@ export async function setMerchantCrmStatus(input: {
           const creditCode =
             merchant.businessLicense?.replace(/\s+/g, "").toUpperCase() || "";
           if (merchant.status !== "approved" || !ownerToKeep || !creditCode) {
-            throw new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID");
+            throw Object.assign(new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID"), {
+              reason: merchant.status !== "approved" ? "CN_REGISTRATION_NOT_APPROVED" : "CN_OWNER_OR_SUBJECT_INVALID",
+            });
           }
           const platformCompanies = mysqlRawRows(
             await tx.execute(sql`
@@ -4932,7 +4935,10 @@ export async function setMerchantCrmStatus(input: {
             String(company.dataOwnerUserId ?? "") !== ownerToKeep ||
             String(company.companyUserId ?? "") !== ownerToKeep
           ) {
-            throw new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID");
+            throw Object.assign(new Error("CN_PLATFORM_REVIEW_OR_OWNER_INVALID"), {
+              reason: company && (company.reviewStatus !== "approved" || company.pendingDraft !== null)
+                ? "CN_REGISTRATION_NOT_APPROVED" : "CN_OWNER_OR_SUBJECT_INVALID",
+            });
           }
         }
       }
@@ -5079,7 +5085,12 @@ export async function setMerchantCrmStatus(input: {
       });
 
       return { success: true, crmOwnerPortalUserId: ownerToKeep };
-    });
+}
+
+export async function setMerchantCrmStatus(input: MerchantCrmStatusInput) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const transaction = () => db.transaction(tx => setMerchantCrmStatusTx(tx, input));
   // Only create/open/resume joins the MySQL carrier lock. Reject/disable retain
   // their original behavior and do not acquire a new serialization dependency.
   return input.crmStatus === "enabled"

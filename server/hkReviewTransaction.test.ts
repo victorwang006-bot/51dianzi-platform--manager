@@ -21,7 +21,8 @@ const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
 const DB_SOURCE_PATH = path.join(PROJECT_ROOT, "server", "db.ts");
 // Use the migrated front source that db.ts actually targets. This candidate
 // tree is portable; an historical workstation checkout is not a source input.
-const MAIN_SCHEMA_PATH = path.resolve(PROJECT_ROOT, "..", "front", "drizzle", "schema.ts");
+const MAIN_SCHEMA_PATH = process.env.HK_REVIEW_MAIN_SCHEMA_PATH
+  || path.resolve(PROJECT_ROOT, "..", "front", "drizzle", "schema.ts");
 const dialect = new MySqlDialect();
 
 const REGISTRATION_IDENTIFIER = "HK:12345678";
@@ -785,7 +786,7 @@ describe("HK cross-database SQL source guard", () => {
     };
     const statements = [
       ...platformStatements(dbAst, "reviewHkRegistrationDraft"),
-      ...platformStatements(dbAst, "setMerchantCrmStatus"),
+      ...platformStatements(dbAst, "setMerchantCrmStatusTx"),
     ];
 
     // Review: SELECT + guarded company promotion + enterprise-name sync +

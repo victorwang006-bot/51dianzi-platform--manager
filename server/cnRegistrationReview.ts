@@ -1,6 +1,8 @@
 import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { auditLogs, merchants } from "../drizzle/schema";
-import { getDb, type MaterialAuditActor } from "./db";
+import { getDb, setMerchantCrmStatusTx, type MaterialAuditActor, type MerchantReviewTransaction } from "./db";
+import { withCrmDuplicateRegistrationLock } from "./services/crmDuplicateRegistration";
+import { decideMerchantCrmGrant, isEquivalentEnabledBinding } from "./crmGrantPolicy";
 import {
   cnReviewMerchantStateEligible,
   cnReviewOwnerInScope,
@@ -368,10 +370,12 @@ function companyGuard(identity: string, merchant: MerchantReviewRow, expectedVer
 async function priorDecision(tx: Executor, merchantId: number, expectedVersion: string) {
   const result = await tx.execute(sql`
     SELECT JSON_UNQUOTE(JSON_EXTRACT(afterValue, '$.expectedVersion')) AS expectedVersion,
-           JSON_UNQUOTE(JSON_EXTRACT(afterValue, '$.decision')) AS decision
+           JSON_UNQUOTE(JSON_EXTRACT(afterValue, '$.decision')) AS decision,
+           JSON_UNQUOTE(JSON_EXTRACT(afterValue, '$.erpGranted')) AS erpGranted,
+           JSON_UNQUOTE(JSON_EXTRACT(afterValue, '$.crmOwnerPortalUserId')) AS crmOwnerPortalUserId
       FROM audit_logs WHERE targetType = 'merchant' AND targetId = ${String(merchantId)} AND action = ${AUDIT_ACTION}
      ORDER BY id DESC LIMIT 3 FOR UPDATE
-  `) as [{ expectedVersion: string | null; decision: "approved" | "rejected" | null }[], unknown];
+  `) as [{ expectedVersion: string | null; decision: "approved" | "rejected" | null; erpGranted: string | null; crmOwnerPortalUserId: string | null }[], unknown];
   return (result[0] ?? []).find(row => row.expectedVersion === expectedVersion) ?? null;
 }
 
@@ -388,7 +392,9 @@ export async function getCnRegistrationReviewDetail(merchantId: number) {
     merchantId: merchant.id,
     region: "CN" as const,
     reviewKind: state.reviewKind,
-    effective: state.effective ? summary(state.effective, row) : null,
+    effective: state.effective ? summary(state.effective, row) : row.reviewStatus === "approved" && !state.candidate ? summary(effectiveCandidate(row), row) : null,
+    crmStatus: merchant.crmStatus,
+    crmOwnerPortalUserId: merchant.crmOwnerPortalUserId,
     candidate: state.candidate ? {
       expectedVersion: String(row.expectedVersion),
       submittedAt: row.submittedAt ? new Date(row.submittedAt).toISOString() : null,
@@ -403,7 +409,7 @@ export async function getCnRegistrationReviewDetail(merchantId: number) {
   };
 }
 
-export async function reviewCnRegistrationDraft(input: {
+export type CnRegistrationReviewInput = {
   merchantId: number;
   decision: "approved" | "rejected";
   expectedVersion: string;
@@ -412,13 +418,27 @@ export async function reviewCnRegistrationDraft(input: {
   actor?: MaterialAuditActor;
   /** undefined means super-admin; a concrete array is formal-owner scope only. */
   allowedSalesStaffCodes?: string[];
-}) {
+};
+
+export async function reviewCnRegistrationDraft(input: CnRegistrationReviewInput) {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  return db.transaction(tx => reviewCnRegistrationDraftTx(tx, input));
+}
+
+/** One human confirmation, one cross-schema transaction, original ERP carrier lock. */
+export async function approveCnRegistrationAndEnableCrm(input: Omit<CnRegistrationReviewInput, "decision"> & { portalUserId?: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("DATABASE_NOT_AVAILABLE");
+  return withCrmDuplicateRegistrationLock(() => db.transaction(tx =>
+    reviewCnRegistrationDraftTx(tx, { ...input, decision: "approved" }, { portalUserId: input.portalUserId })
+  ));
+}
+
+async function reviewCnRegistrationDraftTx(tx: MerchantReviewTransaction, input: CnRegistrationReviewInput, grant?: { portalUserId?: string | null }) {
   const note = input.note?.trim() || null;
   if (input.decision === "rejected" && !note) throw new Error("CN_REVIEW_NOTE_REQUIRED");
   if (input.decision === "approved" && input.confirmed !== true) throw new Error("CN_REVIEW_CONFIRMATION_REQUIRED");
-  return db.transaction(async tx => {
     const [merchant] = await tx.select().from(merchants).where(eq(merchants.id, input.merchantId)).limit(1).for("update");
     if (!merchant) throw new Error("MERCHANT_NOT_FOUND");
     if (merchant.registrationRegion !== "CN") throw new Error("CN_REGISTRATION_REQUIRED");
@@ -431,6 +451,13 @@ export async function reviewCnRegistrationDraft(input: {
       const prior = await priorDecision(tx as unknown as Executor, merchant.id, input.expectedVersion);
       if (!prior) throw new Error("CN_REVIEW_CANDIDATE_NOT_FOUND");
       if (prior.decision !== input.decision) throw new Error("CN_REVIEW_ALREADY_DECIDED");
+      if (grant) {
+        assertSubject(merchant, row, effectiveCandidate(row));
+        const owner = decideMerchantCrmGrant(merchant, { crmStatus: "enabled", portalUserId: grant.portalUserId });
+        if (prior.erpGranted !== "true" || row.reviewStatus !== "approved" || row.pendingDraft !== null || merchant.status !== "approved"
+          || owner.kind !== "enable" || owner.ownerToBind !== prior.crmOwnerPortalUserId
+          || !isEquivalentEnabledBinding(merchant, owner.ownerToBind)) throw new Error("CN_REVIEW_COMPLETION_CHANGED");
+      }
       return { success: true as const, decision: input.decision, merchantId: merchant.id, expectedVersion: input.expectedVersion, idempotent: true as const, reviewStatus: row.reviewStatus, retainedEffectiveAccess: true as const };
     }
     if (!cnReviewMerchantStateEligible(merchant.status, state.reviewKind)) {
@@ -506,6 +533,17 @@ export async function reviewCnRegistrationDraft(input: {
       if (Number(merchantUpdate[0]?.affectedRows ?? 0) !== 1) throw new Error("CN_REVIEW_MERCHANT_UPDATE_FAILED");
       reviewStatus = nextStatus;
     }
+    // Never call the public ERP function here: it would open a second transaction.
+    // A business rejection is an exception for composition, so promotion rolls back.
+    const crmGrant = grant ? await setMerchantCrmStatusTx(tx, {
+      merchantId: merchant.id,
+      crmStatus: "enabled",
+      portalUserId: grant.portalUserId,
+      note: input.note,
+      actor: input.actor,
+      allowedSalesStaffCodes: input.allowedSalesStaffCodes,
+    }) : null;
+    if (crmGrant && !crmGrant.success) throw new Error(crmGrant.code);
     await tx.insert(auditLogs).values({
       operatorId: input.actor?.operatorId ?? null,
       operatorName: input.actor?.operatorName ?? "system",
@@ -522,6 +560,8 @@ export async function reviewCnRegistrationDraft(input: {
         merchantStatus: input.decision === "approved" && merchant.status === "pending" ? "approved" : !isResubmission && merchant.status === "pending" ? "supplement" : merchant.status,
         reviewKind: state.reviewKind,
         retainedEffectiveAccess: isResubmission,
+        manualConfirmation: input.decision === "approved" ? true : null,
+        ...(crmGrant ? { erpGranted: true, crmOwnerPortalUserId: crmGrant.crmOwnerPortalUserId } : {}),
       },
       ipAddress: input.actor?.ipAddress ?? null,
       userAgent: input.actor?.userAgent ?? null,
@@ -529,7 +569,6 @@ export async function reviewCnRegistrationDraft(input: {
       note,
     });
     return { success: true as const, decision: input.decision, merchantId: merchant.id, expectedVersion: input.expectedVersion, idempotent: false as const, reviewStatus, retainedEffectiveAccess: isResubmission };
-  });
 }
 
 function readScope(salesStaffCodes?: string[]) {
