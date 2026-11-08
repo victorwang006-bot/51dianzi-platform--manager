@@ -192,11 +192,31 @@ describe("正式后台顶部布局集成", () => {
   it("keeps real notification badges inside the operations dropdown", async () => {
     await withMountedLayout(async container => {
       await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="operations"]')!.click());
+      expect(Array.from(container.querySelectorAll('[data-workspace-group]')).map(node => node.getAttribute('data-workspace-group')))
+        .toEqual(["basic-data", "transactions-services"]);
+      expect(container.querySelector('[data-workspace-group="data-monitoring"]')).toBeNull();
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="group:transactions-services"]')!.click());
       expect(container.querySelector('[aria-label="7 条未读"]')?.textContent).toBe("7");
       expect(container.textContent).toContain("消息中心");
+      expect(container.querySelector('[data-workspace-dropdown-item="/orders"]')).toBeNull();
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="group:basic-data"]')!.click());
       expect(container.querySelector('[data-workspace-dropdown-item="/materials"]')).not.toBeNull();
       expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
     });
+  });
+
+  it("does not synthesize company-info from the still-authorized legacy company capability", async () => {
+    runtime.location = "/workbench/company-info";
+    runtime.capabilities = ["company.read"];
+    await withMountedLayout(async container => {
+      expect(container.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+      expect(container.querySelector('[data-workspace-nav-target="/workbench/company-info"]')).toBeNull();
+      expect(container.querySelector('[data-admin-navigation="current-location"]')).toBeNull();
+      expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");
+      expect(runtime.capabilities).toEqual(["company.read"]);
+      expect(runtime.setLocation).not.toHaveBeenCalled();
+    });
+    expect(source).toContain('workbenchCapability: "company.read"');
   });
 
   it.each([

@@ -5,7 +5,7 @@ import * as managementSchemas from "../../../shared/channelInventoryManagement";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
-import { channelMaterialCreateFields, customerSupplySummarySchema, customerSupplyContextSchema, createCustomerMaterialSchema } from "../../../shared/customerSupply";
+import { createCustomerUploadBatchSchema, channelMaterialCreateFields, customerSupplySummarySchema, customerSupplyContextSchema, createCustomerMaterialSchema } from "../../../shared/customerSupply";
 import { createCustomerSupplyService } from "../services/customerSupply";
 import { getDb } from "../db";
 import { createChannelInventoryCollaborationService } from "../services/channelInventoryCollaboration";
@@ -211,6 +211,10 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
       try { assertExpectedContext(ctx, input); return await supply.customerSupplyContext(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }
     }),
+    createCustomerUploadBatch: procedure.input(createCustomerUploadBatchSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await supply.createCustomerUploadBatch(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     createCustomerMaterial: procedure.input(createCustomerMaterialSchema).mutation(async ({ ctx, input }) => {
       try { assertExpectedContext(ctx, input); return await supply.createCustomerMaterial(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }
@@ -278,7 +282,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
           return await team.listTeamSourceOptions(scopeFromContext(ctx), input);
         } catch (error) { return asTrpcError(error); }
       }),
-    listChannels: procedure
+    listChannels: readProcedure
       .input(z.object({ ...expectedContextSchema, name: z.string().trim().max(128).optional(), type: channelTypes.optional(), active: z.boolean().optional(), page: pageSchema, pageSize: pageSizeSchema }).strict())
       .query(async ({ ctx, input }) => {
         try {
@@ -288,7 +292,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
           return asTrpcError(error);
         }
       }),
-    getChannel: procedure.input(z.object({ ...expectedContextSchema, id: positiveInt }).strict()).query(async ({ ctx, input }) => {
+    getChannel: readProcedure.input(z.object({ ...expectedContextSchema, id: positiveInt }).strict()).query(async ({ ctx, input }) => {
       try {
         assertExpectedContext(ctx, input);
         return await service.getChannel(scopeFromContext(ctx), input.id);

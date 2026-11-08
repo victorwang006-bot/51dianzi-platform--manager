@@ -45,6 +45,8 @@ function renderHost() { act(() => root.render(React.createElement(ChannelInvento
 beforeEach(() => {
   vi.clearAllMocks(); sessionStorage.clear(); window.history.replaceState({}, "", "/channel-inventory"); runtime.inventoryInputs = []; runtime.scope.officialInventoryPermissions.write = true; runtime.scope.frontUser.role = "user";
   runtime.scope.officialInventoryPermissions.publish = true;
+  runtime.mutations.createMaterial.mockReset().mockResolvedValue({});
+  runtime.management.createUploadBatch.mutate.mockReset().mockResolvedValue({ id: 81, batchCode: "BATCH-81", revision: 1 });
   runtime.mutations.publishFactoryMaterial.mockReset().mockResolvedValue({ materialId: 1, publicId: "ocp_0123456789abcdef0123456789abcdef", status: "published", revision: row.revision });
   runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], isOwner: true });
   runtime.team = runtime.query({ items: [row, { ...row, id: 2, partNumber: "READ-ONLY", canDelete: false, canEdit: false, readOnly: true }], total: 2, page: 1, pageSize: 20, pageCount: 1, canWrite: true, canFilterSource: false });
@@ -151,5 +153,50 @@ describe("manager Host inventory-management bridge", () => {
     runtime.team = runtime.query({ items: [{ ...row, canPublish: true, publicationStatus: "unpublished" }], total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: true, canFilterSource: false });
     renderHost(); click(button("发布")); expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     runtime.scope.officialInventoryPermissions.publish = false; renderHost(); expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.mutations.publishFactoryMaterial).not.toHaveBeenCalled();
+  });
+});
+
+async function prepareSingleUpload() {
+  renderHost(); click(button("单条上传")); await settle();
+  const dialog = required(document.querySelector('[role="dialog"]'));
+  for (const [label, value] of [["型号 *", "SINGLE-ONE"], ["品牌 *", "TI"]]) {
+    const field = required(Array.from(dialog.querySelectorAll("label")).find(item => item.querySelector("span")?.textContent === label));
+    const input = required(field.querySelector("input"));
+    act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); });
+  }
+}
+function submitSingleUpload() { click(required(Array.from(document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')).find(item => item.textContent === "上传库存"))); }
+describe("single upload exact batch identity", () => {
+  it("creates the durable single-entry batch before stock, without changing the material DTO", async () => {
+    await prepareSingleUpload(); submitSingleUpload(); await settle();
+    expect(runtime.management.createUploadBatch.mutate).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, channelId: 11, fileName: "单条手工录入", totalRows: 1, requestId: expect.any(String) });
+    expect(runtime.mutations.createMaterial).toHaveBeenCalledWith(expect.objectContaining({ uploadBatchId: 81, channelId: 11, partNumber: "SINGLE-ONE", brand: "TI", requestId: expect.any(String) }));
+    expect(runtime.management.createUploadBatch.mutate.mock.invocationCallOrder[0]).toBeLessThan(runtime.mutations.createMaterial.mock.invocationCallOrder[0]);
+  });
+  it("unknown batch creation reuses its original UUID and submits no row until the batch receipt is known", async () => {
+    runtime.management.createUploadBatch.mutate.mockRejectedValueOnce(new Error("batch response lost"));
+    await prepareSingleUpload(); submitSingleUpload(); await settle();
+    expect(runtime.mutations.createMaterial).not.toHaveBeenCalled();
+    const original = runtime.management.createUploadBatch.mutate.mock.calls[0][0];
+    expect(required(document.querySelector<HTMLFieldSetElement>('[role="dialog"] fieldset')).disabled).toBe(true);
+    click(button("按原请求重试")); await settle();
+    expect(runtime.management.createUploadBatch.mutate.mock.calls[1][0]).toEqual(original);
+    expect(runtime.mutations.createMaterial).toHaveBeenCalledTimes(1);
+  });
+  it("unknown row creation keeps its batch ID and exact row request without creating another batch", async () => {
+    runtime.mutations.createMaterial.mockRejectedValueOnce(new Error("row response lost"));
+    await prepareSingleUpload(); submitSingleUpload(); await settle();
+    const original = { ...runtime.mutations.createMaterial.mock.calls[0][0] };
+    click(button("按原请求重试")); await settle();
+    expect(runtime.management.createUploadBatch.mutate).toHaveBeenCalledTimes(1);
+    expect(runtime.mutations.createMaterial.mock.calls[1][0]).toEqual(original);
+  });
+  it("a stale actor cannot submit stock after an in-flight batch creation resolves", async () => {
+    let finish!: (value: { id: number; batchCode: string; revision: number }) => void;
+    runtime.management.createUploadBatch.mutate.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await prepareSingleUpload(); submitSingleUpload();
+    runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 8, permissionKeys: ["inventory.manage"], isOwner: true }); renderHost();
+    await act(async () => { finish({ id: 81, batchCode: "BATCH-81", revision: 1 }); });
+    expect(runtime.mutations.createMaterial).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 });

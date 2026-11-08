@@ -12,6 +12,7 @@ import { crmCustomerPolicyWhere } from "./crmCustomers";
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
   id: number; uploadBatchId: number | null; canDelete: boolean; partNumber: string; brand: string; qty: number | null; dateCode: string | null;
+  canViewUploadBatch: boolean;
   price: string | null; currency: "CNY"; taxIncluded: boolean | null; leadTime: string | null;
   industryCode: BusinessIndustryCode | null;
   revision: number; updatedAt: Date | string; createdAt: Date | string;
@@ -43,6 +44,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
   const industry = businessIndustryCodeSchema.safeParse(row.industryCode);
   return {
     id: Number(row.id), uploadBatchId: row.uploadBatchId == null ? null : Number(row.uploadBatchId), canDelete: canEdit, partNumber: String(row.partNumber), brand: String(row.brand),
+    canViewUploadBatch: row.uploadBatchId != null && bool(row.canViewUploadBatch),
     qty: row.qty == null ? null : Number(row.qty), dateCode: text(row.dateCode), price: text(row.price), currency: "CNY",
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded), leadTime: text(row.leadTime),
     industryCode: industry.success ? industry.data : null,

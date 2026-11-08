@@ -1,6 +1,6 @@
 import { useLocation, useSearch } from "wouter";
 import { parseSupplyLocation, supplyLocation } from "../components/customers/customerSupply";
-import { channelInventoryTabLocation, readChannelInventoryTabIntent } from "../../../../../lib/channelInventoryNavigation";
+import { channelInventoryTabLocation, readChannelInventoryTabIntent, channelInventoryBatchListLocation, channelInventoryBatchMaterialLocation, readChannelInventoryBatchListState, readChannelInventoryBatchMaterialIntent, positiveInventoryId } from "../../../../../lib/channelInventoryNavigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../front-router-types/server/routers";
@@ -13,6 +13,7 @@ import { ChannelInventorySourcePanel } from "../components/channelInventory/Chan
 import { ChannelInventoryManagementPanel, useMaterialDeletion } from "../components/channelInventory/ChannelInventoryManagementPanel";
 import { ChannelInventoryBrowsePanel } from "../components/channelInventory/ChannelInventoryBrowsePanel";
 import { useFactoryMaterialPublish, type FactoryMaterialPublishRow } from "../components/channelInventory/FactoryMaterialPublish";
+import { materialUploadBatchAssociation, type MaterialUploadBatchProjection } from "../components/channelInventory/management";
 import type { InventoryManagementClient, InventoryTab, ReadableInventoryChannel, UploadBatchInput } from "../components/channelInventory/management";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
@@ -83,6 +84,7 @@ type FrozenCreate<T> = {
   fingerprint: string;
   requestId: string;
   payload: T;
+  batchRequestId?: string;
 };
 
 const PAGE_SIZE = 20;
@@ -443,6 +445,13 @@ export default function ChannelInventoryHost() {
   const [downloadStatus, setDownloadStatus] = useState("");
 
   const [tab, setTab] = useState<InventoryTab>(() => readChannelInventoryTabIntent(search) ?? parseSupplyLocation(search)?.tab ?? "materials");
+  const batchMaterialIntent = useMemo(() => readChannelInventoryBatchMaterialIntent(search), [search]);
+  const [appliedBatchIntentKey, setAppliedBatchIntentKey] = useState("");
+  const batchIntentKey = `${identity}:${search}`;
+  const batchIntentReady = !batchMaterialIntent || batchMaterialIntent.id !== null && appliedBatchIntentKey === batchIntentKey;
+  const [batchListState, setBatchListState] = useState(() => readChannelInventoryBatchListState(search));
+  const focusBatchText = new URLSearchParams(search).get("ciBatchFocusId");
+  const focusBatchId = tab === "batches" && focusBatchText !== null ? positiveInventoryId(focusBatchText) ?? 0 : undefined;
   const [channelFilters, setChannelFilters] = useState<ChannelFilters>({
     name: "",
     type: "all",
@@ -613,7 +622,7 @@ export default function ChannelInventoryHost() {
     expectedEnterpriseId: enterpriseId ?? undefined, expectedActorUserId: actorUserId ?? undefined, page: 1, pageSize: 1,
   } : materialInput, {
     // Management tabs re-use the server write proof, not cached role guesses.
-    enabled: ready && (managementTab || tab === "materials" && !browsingChannelsOnly && uploadBatchFilterValid) && (!supplyLink || (exactSourceReadable && materialChannelId === supplyLink.channelId)), retry: false, staleTime: 0, refetchOnWindowFocus: true,
+    enabled: ready && (managementTab || tab === "materials" && !browsingChannelsOnly && uploadBatchFilterValid && batchIntentReady) && (!supplyLink || (exactSourceReadable && materialChannelId === supplyLink.channelId)), retry: false, staleTime: 0, refetchOnWindowFocus: true,
   });
   const exactStockDenied = materialsQuery.isError || Boolean(materialsQuery.data?.items.some(row => row.canViewSource !== true));
   useEffect(() => {
@@ -710,6 +719,17 @@ export default function ChannelInventoryHost() {
     channelCreateRef.current = null;
     materialCreateRef.current = null;
   }, [identity]);
+
+  useEffect(() => {
+    if (readChannelInventoryTabIntent(search) === "batches") setBatchListState(readChannelInventoryBatchListState(search));
+    if (!batchMaterialIntent) return;
+    // URL state never proves scope/source rights. Keep source-list filters
+    // entirely separate from this exact batch inventory intent.
+    setInventoryView("flat"); setReadableChannel(null);
+    applyMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all", uploadBatchId: batchMaterialIntent.id === null ? "invalid" : String(batchMaterialIntent.id) });
+    setMaterialPage(1); setMaterialSort(null);
+    setAppliedBatchIntentKey(batchIntentKey);
+  }, [search, identity]);
 
   useEffect(() => () => { exportRequestRef.current += 1; editRequestRef.current += 1; editAbortRef.current?.abort(); batchSessionRef.current += 1; batchAbortRef.current?.abort(); }, []);
 
@@ -1006,9 +1026,18 @@ export default function ChannelInventoryHost() {
         const fingerprint = JSON.stringify(candidate);
         let frozen = materialCreateRef.current;
         if (!frozen || frozen.fingerprint !== fingerprint) {
-          frozen = { fingerprint, requestId: createRequestId(), payload: { ...candidate, requestId: createRequestId() } };
+          frozen = { fingerprint, requestId: createRequestId(), batchRequestId: createRequestId(), payload: { ...candidate, requestId: createRequestId() } };
           frozen.payload.requestId = frozen.requestId;
           materialCreateRef.current = frozen;
+        }
+        // File uploads already do this in BatchUpload. The Host's separate
+        // single-entry form previously bypassed it; freeze both requests here.
+        if (frozen.payload.uploadBatchId === undefined) {
+          const batch = await managementClient.createUploadBatch.mutate({ ...expectedContext, channelId: body.channelId,
+            fileName: "单条手工录入", totalRows: 1, requestId: frozen.batchRequestId! });
+          if (!current() || !editAllowedRef.current) return;
+          if (!Number.isSafeInteger(batch.id) || batch.id <= 0) throw new Error("上传批次回执无效，请按原请求重试。");
+          frozen.payload.uploadBatchId = batch.id;
         }
         await createMaterial.mutateAsync(frozen.payload);
         materialCreateRef.current = null;
@@ -1032,6 +1061,7 @@ export default function ChannelInventoryHost() {
     } catch (error) {
       if (!current()) return;
       if (materialEditor.mode === "create" && !definitiveWriteFailure(error)) {
+        setMaterialRetryLocked(true);
         setMessage("保存结果尚未确认。请按原内容重试；系统会使用同一请求号，不会重复创建库存。");
       } else if (materialEditor.mode === "edit" && !definitiveWriteFailure(error)) {
         setMaterialRetryLocked(true);
@@ -1067,7 +1097,7 @@ export default function ChannelInventoryHost() {
   ].map(channel => [channel.id, channel])).values());
   const channelResult = contextCurrent && !channelsQuery.isError ? channelsQuery.data : undefined;
   const readableChannelStockDenied = Boolean(currentReadableChannel && (materialsQuery.isError || materialsQuery.data?.items.some(row => row.canViewSource !== true)));
-  const materialResult = uploadBatchFilterValid && !browsingChannelsOnly && !readableChannelStockDenied && !materialsQuery.isError && contextCurrent && (!supplyLink || (exactSourceReadable && materialChannelId === supplyLink.channelId && !exactStockDenied)) ? materialsQuery.data : undefined;
+  const materialResult = uploadBatchFilterValid && batchIntentReady && !browsingChannelsOnly && !readableChannelStockDenied && !materialsQuery.isError && contextCurrent && (!supplyLink || (exactSourceReadable && materialChannelId === supplyLink.channelId && !exactStockDenied)) ? materialsQuery.data : undefined;
   const displayedChannels = supplyLink ? exactReady && exactTarget ? [exactTarget] : [] : channelResult?.items ?? [];
   const displayedChannelTotal = supplyLink ? displayedChannels.length : channelResult?.total ?? 0;
   const materialRows = materialResult?.items ?? [];
@@ -1097,6 +1127,7 @@ export default function ChannelInventoryHost() {
     ? materialTotalsRef.current : { total: 0, pageCount: 1 };
   const materialTotal = materialTotals.total;
   const materialPageCount = materialTotals.pageCount;
+  const materialTotalKnown = batchIntentReady && contextCurrent && (Boolean(materialResult) || materialTotalsRef.current.key === materialTotalsKey);
   const editAllowedRef = useRef(false);
   editAllowedRef.current = canWriteMaterials;
   batchActiveRef.current = batchOpen && tab === "materials" && canWriteMaterials && sourceIdentityCurrent
@@ -1260,22 +1291,39 @@ export default function ChannelInventoryHost() {
     setMaterialPage(1); setMaterialSort(null);
   };
   const viewUploadBatch = (id: number) => {
-    if (!isCurrent()) return;
-    changeTab("materials");
+    if (!isCurrent() || !Number.isSafeInteger(id) || id <= 0) return;
+    const origin = channelInventoryBatchListLocation(batchListState, false, focusBatchId);
+    const target = channelInventoryBatchMaterialLocation(id, origin, true);
+    if (!target) return;
+    changeTab("materials", false);
     setInventoryView("flat"); setReadableChannel(null);
     applyMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all", uploadBatchId: String(id) });
     setMaterialPage(1); setMaterialSort(null);
+    navigate(target);
   };
+  const returnToUploadBatches = () => {
+    const target = batchMaterialIntent?.returnLocation ?? channelInventoryBatchListLocation(batchListState, true);
+    changeTab("batches", false); navigate(target);
+  };
+  const viewMaterialUploadBatch = (material: TeamMaterial) => {
+    const metadata = material as TeamMaterial & { uploadBatchId?: number | null; canViewUploadBatch?: boolean };
+    if (!isCurrent() || !contextCurrent || !sourceContextVerified || materialsQuery.isError || metadata.canViewUploadBatch !== true
+      || !Number.isSafeInteger(metadata.uploadBatchId) || metadata.uploadBatchId! <= 0) return;
+    changeTab("batches", false);
+    navigate(channelInventoryBatchListLocation({ channelId: "", archived: "all", page: 1 }, true, metadata.uploadBatchId!));
+  };
+  const batchReturn = tab === "materials" && (batchMaterialIntent || rawUploadBatchId) ? <button type="button" className="ci-button" onClick={returnToUploadBatches}>返回上传批次</button> : null;
 
   if (enterpriseQuery.isLoading) {
-    return <section className="ci-page ci-host-state" aria-busy="true">正在核对企业权限…</section>;
+    return <section className="ci-page ci-host-state" aria-busy="true">{batchReturn}正在核对企业权限…</section>;
   }
   if (enterpriseQuery.isError) {
-    return <section className="ci-page ci-host-state ci-host-error" role="alert">企业权限加载失败：{enterpriseQuery.error.message}</section>;
+    return <section className="ci-page ci-host-state ci-host-error" role="alert">{batchReturn}企业权限加载失败：{enterpriseQuery.error.message}</section>;
   }
   if (!ready) {
     return (
       <section className="ci-page ci-host-state ci-host-error" role="alert">
+        {batchReturn}
         当前账号没有渠道库存查看权限，或尚未选择有效企业。请由管理员核实原生查看授权、真实员工绑定及当前企业范围后重试。
       </section>
     );
@@ -1286,6 +1334,7 @@ export default function ChannelInventoryHost() {
       {tab === "materials" || tab === "channels" ? <div className="ci-tabbar">
         <h1 className="ci-page-title">{tab === "materials" ? "渠道库存" : "渠道档案"}</h1>
         {tab === "materials" ? <div className="ci-inventory-view-controls" role="group" aria-label="库存查看方式"><button type="button" className={`ci-button${inventoryView === "flat" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "flat"} onClick={() => changeInventoryView("flat")}>平铺查看</button><button type="button" className={`ci-button${inventoryView === "channels" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "channels"} onClick={() => changeInventoryView("channels")}>按渠道查看</button></div> : null}
+        {batchReturn}
         <div className="ci-heading-actions" aria-label="渠道库存操作">
           {tab === "channels" ? (
             <button type="button" className="ci-button ci-primary" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
@@ -1386,7 +1435,7 @@ export default function ChannelInventoryHost() {
             <button type="submit" className="ci-button ci-primary">确定</button>
             <button type="button" className="ci-button" onClick={() => void refreshMaterials()}>刷新</button>
             {managementCanWrite ? <button type="button" className="ci-button" aria-pressed={selectionMode} disabled={deletion.busy || !selectionMode && !deletion.eligible.length} onClick={() => { deletion.cancelSelection(); setSelectionModeKey(selectionMode ? null : selectionScopeKey); }}>{selectionMode ? "取消选择" : "选择"}</button> : null}
-            <span className="ci-filter-count">{materialTotal} 条库存</span>
+            <span className="ci-filter-count">{materialsQuery.isError || !uploadBatchFilterValid || readableChannelStockDenied ? "库存条数不可用" : materialTotalKnown ? `${materialTotal} 条库存` : "正在读取库存条数…"}</span>
           </form>
           <p className="ci-sort-status" id="ci-quantity-sort-status" role="status">{quantitySortLabel}{materialSort?.field === "qty" ? " · 待确认数量排末尾" : ""}</p>
           {!uploadBatchFilterValid ? <p className="ci-error" role="alert">上传批次 ID 须为正整数，未扩大展示其他库存。</p> : null}
@@ -1399,7 +1448,9 @@ export default function ChannelInventoryHost() {
                 {materialsQuery.isLoading ? <tr><td colSpan={showDeleteSelection ? 11 : 10} className="ci-empty">正在加载渠道库存…</td></tr> : null}
                 {materialsQuery.isError ? <tr><td colSpan={showDeleteSelection ? 11 : 10} className="ci-empty ci-host-error">{errorMessage(materialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
                 {!materialsQuery.isLoading && !materialsQuery.isError && !materialRows.length ? <tr><td colSpan={showDeleteSelection ? 11 : 10} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
-                {materialRows.map((material, index) => (
+                {materialRows.map((material, index) => {
+                  const batchAssociation = materialUploadBatchAssociation(material as TeamMaterial & MaterialUploadBatchProjection);
+                  return (
                   <tr key={material.id}>
                     {showDeleteSelection ? <td className="ci-selection-col">{deletion.eligible.some(row => row.id === material.id) ? <input type="checkbox" className="ci-selection-checkbox" aria-label={`选择删除库存：${material.partNumber}`} disabled={deletion.busy} checked={deletion.selected.some(row => row.id === material.id)} onChange={() => deletion.toggle(material.id)} /> : null}</td> : null}
                     <td className="ci-number ci-row-index">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td>
@@ -1410,16 +1461,17 @@ export default function ChannelInventoryHost() {
                     <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td>
                     <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td>
                     <td className="ci-date"><div className="admin-cell-primary">{material.dateCode || "—"}</div><small className="ci-subtext admin-cell-secondary">{displayDate(material.updatedAt)}</small></td>
-                    <td className="ci-material-source-col"><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button></td>
+                    <td className="ci-material-source-col"><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button><small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unlinked" ? "未关联上传批次" : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small></td>
                     <td className="ci-col-actions"><div className="ci-row-actions">{publishing.action(material)}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button>{material.canEdit && !material.readOnly || deletion.eligible.some(row => row.id === material.id) ? <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger><DropdownMenuContent className="ci-channel-actions-menu" align="end">{material.canEdit && !material.readOnly ? <DropdownMenuItem disabled={busy !== null || !canWriteMaterials} onSelect={() => void openMaterialEdit(material)}>编辑</DropdownMenuItem> : null}{deletion.eligible.some(row => row.id === material.id) ? <DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem> : null}</DropdownMenuContent></DropdownMenu> : null}</div></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <Pagination page={materialPage} pageCount={materialPageCount} total={materialTotal} onPage={setMaterialPage} label="渠道库存" />
+          {!materialsQuery.isError && uploadBatchFilterValid && !readableChannelStockDenied && materialTotalKnown ? <Pagination page={materialPage} pageCount={materialPageCount} total={materialTotal} onPage={setMaterialPage} label="渠道库存" /> : <p className="ci-readonly">{materialsQuery.isLoading ? "正在读取库存分页…" : "库存分页条数不可用。"}</p>}
         </section>
-      ) : expectedContext && contextCurrent && sourceIdentityCurrent ? <ChannelInventoryManagementPanel key={`${identity}:${tab}`} mode={tab} client={managementClient} context={expectedContext} canWrite={managementCanWrite} isCurrent={isCurrent} onViewBatch={viewUploadBatch} onComplete={refreshMaterials} onAuthorizationError={businessScope.onAuthorizationError} /> : null}
+      ) : expectedContext && contextCurrent && sourceIdentityCurrent ? <ChannelInventoryManagementPanel key={`${identity}:${tab}`} mode={tab} client={managementClient} context={expectedContext} canWrite={managementCanWrite} isCurrent={isCurrent} listState={tab === "batches" ? batchListState : undefined} onListStateChange={tab === "batches" ? setBatchListState : undefined} focusBatchId={focusBatchId} onClearBatchFocus={() => navigate(channelInventoryBatchListLocation(batchListState, true))} onViewBatch={viewUploadBatch} onComplete={refreshMaterials} onAuthorizationError={businessScope.onAuthorizationError} /> : null}
       {deletion.dialog}
       {publishing.dialog}
 

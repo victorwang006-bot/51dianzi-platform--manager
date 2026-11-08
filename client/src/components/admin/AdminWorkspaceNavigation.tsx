@@ -17,7 +17,9 @@ import {
 import {
   getAdminWorkspaceNavigationState,
   groupAdminBusinessNavigationItems,
-  type AdminBusinessNavigationGroupId,
+  groupAdminOperationsNavigationItems,
+  groupAdminWorkspaceModuleNavigationItems,
+  type AdminWorkspaceNavigationGroupId,
   type AdminWorkspaceId,
   type AdminWorkspaceNavigationItem,
 } from "./adminWorkspaceNavigationModel";
@@ -108,8 +110,8 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   if (!activeWorkspace || !activeItem) return null;
   const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
   const tab = channel ? channelTabForLocation(location) : null;
-  const entry = !channel && activeWorkspace.id === "business"
-    ? groupAdminBusinessNavigationItems(activeWorkspace.items).find(entry =>
+  const entry = !channel
+    ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id).find(entry =>
       entry.kind === "group" && entry.items.some(item => item.path === activeItem.path))
     : null;
   const labels = channel
@@ -129,7 +131,7 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   );
 }
 
-/** One header row, one open workspace, and at most one open business group.
+/** One header row, one open workspace, and at most one open module group.
  * Permission/location snapshots also guard delayed focus work before effects run.
  */
 export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
@@ -147,6 +149,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const filteredBusinessItems = state.workspaces.find(workspace => workspace.id === "business")
     ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE) ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
+  const operationsEntries = groupAdminOperationsNavigationItems(
+    state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
+  );
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
   const channelTab = channelTabForLocation(location);
   const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] = [
@@ -159,7 +164,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     : state.route?.canonicalPath !== CHANNEL_INVENTORY_ROUTE ? state.activeWorkspace?.id : null;
   const navRef = useRef<HTMLElement>(null);
   const triggerRefs = useRef(new Map<UnifiedWorkspaceId, HTMLButtonElement>());
-  const groupRefs = useRef(new Map<AdminBusinessNavigationGroupId, HTMLButtonElement>());
+  const groupRefs = useRef(new Map<AdminWorkspaceNavigationGroupId, HTMLButtonElement>());
   const layerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const childPanelRef = useRef<HTMLDivElement>(null);
@@ -175,20 +180,22 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     left: number;
     maxHeight: number;
     group: null | {
-      id: AdminBusinessNavigationGroupId;
+      id: AdminWorkspaceNavigationGroupId;
       source: "hover" | "activation";
       top: number;
       left: number;
       maxHeight: number;
       side: "left" | "right";
     };
-    focus?: { level: 2 | 3; target: "first" | "last" | AdminBusinessNavigationGroupId };
+    focus?: { level: 2 | 3; target: "first" | "last" | AdminWorkspaceNavigationGroupId };
   } | null>(null);
   const openWorkspace = open?.items === items && open.location === location
     ? workspaces.find(workspace => workspace.id === open.id) : undefined;
   const expanded = !!openWorkspace;
-  const selectedGroup = expanded && open?.id === "business" && open.group
-    ? businessEntries.find(entry => entry.kind === "group" && entry.id === open.group?.id)
+  const moduleEntries = open?.id === "business" ? businessEntries
+    : open?.id === "operations" ? operationsEntries : [];
+  const selectedGroup = expanded && open?.group
+    ? moduleEntries.find(entry => entry.kind === "group" && entry.id === open.group?.id)
     : undefined;
   const group = selectedGroup?.kind === "group" ? selectedGroup : null;
   const panelId = `${instanceId}-${open?.id ?? "workspace"}`;
@@ -241,10 +248,10 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     });
   }
 
-  function openBusinessGroup(id: AdminBusinessNavigationGroupId, focus?: "first" | "last", source: "hover" | "activation" = "activation") {
+  function openModuleGroup(id: AdminWorkspaceNavigationGroupId, focus?: "first" | "last", source: "hover" | "activation" = "activation") {
     cancelHoverClose();
     if (source === "hover" && group?.id === id) return;
-    const entry = businessEntries.find(entry => entry.kind === "group" && entry.id === id);
+    const entry = moduleEntries.find(entry => entry.kind === "group" && entry.id === id);
     const trigger = groupRefs.current.get(id);
     if (!expanded || !open || entry?.kind !== "group" || !trigger) return;
     const rect = trigger.getBoundingClientRect();
@@ -498,8 +505,8 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                     onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
                   >{tab.label}</button>
                 );
-              }) : open.id === "business" ? businessEntries.map(entry => entry.kind === "direct"
-                ? renderLeaf(entry.item, "business", 2)
+              }) : open.id === "business" || open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
+                ? renderLeaf(entry.item, open.id as AdminWorkspaceId, 2)
                 : (
                   <button key={entry.id}
                     ref={node => {
@@ -509,15 +516,16 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                     id={`${panelId}-${entry.id}-trigger`} type="button"
                     className="admin-workspace-nav__tab admin-workspace-nav__module admin-workspace-nav__dropdown-item admin-workspace-nav__group-trigger"
                     data-workspace-nav-target={`group:${entry.id}`} data-workspace-nav-child="true"
-                    data-navigation-choice="group" data-navigation-level="2" data-business-group={entry.id}
+                    data-navigation-choice="group" data-navigation-level="2" data-workspace-group={entry.id}
+                    data-business-group={open.id === "business" ? entry.id : undefined}
                     data-active={entry.items.some(item => item.path === state.activeItem?.path) ? "true" : "false"}
                     aria-current={entry.items.some(item => item.path === state.activeItem?.path) ? "location" : undefined}
                     aria-expanded={group?.id === entry.id}
                     aria-controls={group?.id === entry.id ? childPanelId : undefined}
-                    onClick={() => group?.id === entry.id && open.group?.source === "activation" ? backToGroups() : openBusinessGroup(entry.id)}
+                    onClick={() => group?.id === entry.id && open.group?.source === "activation" ? backToGroups() : openModuleGroup(entry.id)}
                     onPointerEnter={event => {
                       cancelHoverClose();
-                      if (isDesktopMouse(event)) openBusinessGroup(entry.id, undefined, "hover");
+                      if (isDesktopMouse(event)) openModuleGroup(entry.id, undefined, "hover");
                     }}
                     onKeyDown={event => {
                       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -525,7 +533,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                       event.preventDefault();
                       event.stopPropagation();
                       if (group?.id === entry.id && event.key !== "ArrowRight") backToGroups();
-                      else openBusinessGroup(entry.id, "first");
+                      else openModuleGroup(entry.id, "first");
                     }}
                   >
                     {entry.label}<span className="admin-workspace-nav__chevron" aria-hidden="true">›</span>
@@ -538,7 +546,8 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
               ref={childPanelRef} id={childPanelId} role="region"
               aria-labelledby={`${childPanelId}-trigger`}
               data-admin-navigation="workspace-dropdown" data-workspace-dropdown="panel"
-              data-workspace="business" data-navigation-level="3" data-business-submenu={group.id}
+              data-workspace={open.id} data-navigation-level="3" data-workspace-submenu={group.id}
+              data-business-submenu={open.id === "business" ? group.id : undefined}
               data-submenu-side={open.group.side}
               className="admin-workspace-nav__workspace-panel admin-workspace-nav__workspace-panel--children"
               style={{ top: open.group.top, left: open.group.left, maxHeight: open.group.maxHeight }}
@@ -548,15 +557,15 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             >
               <div className="admin-workspace-nav__workspace-drawer-header">
                 <button type="button" className="admin-workspace-nav__workspace-control"
-                  data-workspace-dropdown="back" aria-label="返回业务工作台菜单"
+                  data-workspace-dropdown="back" aria-label={`返回${openWorkspace.label}菜单`}
                   onClick={backToGroups}>← 返回</button>
                 <span>{group.label}</span>
                 <button type="button" className="admin-workspace-nav__workspace-control"
-                  data-workspace-dropdown="close" aria-label="关闭业务工作台菜单"
+                  data-workspace-dropdown="close" aria-label={`关闭${openWorkspace.label}菜单`}
                   onClick={() => closeWorkspace(true)}>关闭</button>
               </div>
               <div className="admin-workspace-nav__workspace-content" data-workspace-dropdown="content">
-                {group.items.map(item => renderLeaf(item, "business", 3))}
+                {group.items.map(item => renderLeaf(item, open.id as AdminWorkspaceId, 3))}
               </div>
             </div>
           ) : null}
@@ -584,20 +593,20 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
   const navRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRefs = useRef(
-    new Map<AdminBusinessNavigationGroupId, HTMLButtonElement>()
+    new Map<AdminWorkspaceNavigationGroupId, HTMLButtonElement>()
   );
   const pendingFocus = useRef<"first" | "last" | null>(null);
   const instanceId = useId();
   const [open, setOpen] = useState<{
-    id: AdminBusinessNavigationGroupId;
+    id: AdminWorkspaceNavigationGroupId;
     location: string;
     top: number;
     left: number;
     maxHeight: number;
   } | null>(null);
   const entries =
-    activeWorkspace?.id === "business"
-      ? groupAdminBusinessNavigationItems(activeWorkspace.items)
+    activeWorkspace
+      ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id)
       : [];
   // A location or permission change must not preserve a stale popup or selection.
   const openEntry =
@@ -613,7 +622,7 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
   }
 
   function openGroup(
-    id: AdminBusinessNavigationGroupId,
+    id: AdminWorkspaceNavigationGroupId,
     focus?: "first" | "last"
   ) {
     const trigger = triggerRefs.current.get(id);
@@ -713,7 +722,7 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
       data-workspace={activeWorkspace.id}
       onKeyDown={handleNavigationKeys}
     >
-      {activeWorkspace.id !== "business"
+      {activeWorkspace.id === "organization"
         ? activeWorkspace.items.map(item => renderModule(item))
         : entries.map(entry => {
             if (entry.kind === "direct") return renderModule(entry.item);

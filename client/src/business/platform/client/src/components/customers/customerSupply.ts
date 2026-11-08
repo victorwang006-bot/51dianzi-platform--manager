@@ -58,33 +58,46 @@ export function customerSupplySessionSuffix(identity: SupplyIdentity, customerId
   return `customer-supply-v15:${identity.enterpriseId}:${identity.actorUserId}:${customerId}:${encodeURIComponent(identity.key)}`;
 }
 
-/** Explicit allowlist: virtual BatchUpload channelId is local-only and MUST NOT leave the wrapper. */
+/** Exact customer mutation allowlist: channel identity is resolved from the explicit server binding. */
 export function customerMaterialInput(payload: Payload, requestId: string, identity: SupplyIdentity,
-  customerId: number, expectedCustomerVersion: SupplyCreateInput["expectedCustomerVersion"], sourceProfile?: SourceProfile): SupplyCreateInput {
+  customerId: number, expectedCustomerVersion: SupplyCreateInput["expectedCustomerVersion"], sourceProfile?: SourceProfile, uploadBatchId?: number): SupplyCreateInput {
   return {
     customerId, expectedCustomerVersion,
     expectedEnterpriseId: identity.enterpriseId, expectedActorUserId: identity.actorUserId,
     ...(sourceProfile ? { sourceProfile } : {}),
+    ...(uploadBatchId === undefined ? {} : { uploadBatchId }),
     partNumber: payload.partNumber, brand: payload.brand, qty: payload.qty,
     dateCode: payload.dateCode, price: payload.price, currency: payload.currency,
     taxIncluded: payload.taxIncluded, leadTime: payload.leadTime, note: payload.note, requestId,
   };
 }
 
-export function supplyReceipt(value: unknown, customerId: number): BatchReceipt {
+export function supplyReceipt(value: unknown, customerId: number, channelId?: number, uploadBatchId?: number): BatchReceipt {
   if (!value || typeof value !== "object") throw new Error("上传回执未确认，请按原批次重试。");
   const receipt = value as Partial<BatchReceipt>;
   if (receipt.customerId !== customerId || !Number.isSafeInteger(receipt.channelId)
     || (receipt.channelId ?? 0) <= 0 || typeof receipt.idempotent !== "boolean" || !receipt.item) {
     throw new Error("上传回执身份不匹配，请按原请求确认，不会新建批次。");
   }
-  return { item: receipt.item, idempotent: receipt.idempotent, channelId: receipt.channelId!, customerId };
+  const item = receipt.item as { id?: unknown; channelId?: unknown; uploadBatchId?: unknown };
+  if (channelId !== undefined && (receipt.channelId !== channelId || item.channelId !== channelId))
+    throw new Error("物料回执与真实渠道不一致，请按原请求确认。");
+  if (uploadBatchId !== undefined && (item.uploadBatchId !== uploadBatchId || !Number.isSafeInteger(item.id) || Number(item.id) <= 0))
+    throw new Error("物料回执与原上传批次不一致，请按原请求确认。");
+  return { ...(uploadBatchId === undefined ? {} : { uploadBatchId }), item: receipt.item, idempotent: receipt.idempotent, channelId: receipt.channelId!, customerId };
 }
 
 export function completedSupplyChannel(entries: readonly BatchEntry[], customerId: number): number | null {
   const receipts = entries.filter(entry => entry.status === "success").map(entry => entry.receipt);
   if (!receipts.length || receipts.some(receipt => !receipt || receipt.customerId !== customerId
     || !Number.isSafeInteger(receipt.channelId) || receipt.channelId <= 0)) return null;
+  for (const entry of entries) {
+    const batchId = (entry as BatchEntry & { uploadBatchId?: number }).uploadBatchId;
+    if (entry.status !== "success" || batchId === undefined) continue;
+    if (entry.receipt?.uploadBatchId !== batchId || entry.receipt.channelId !== entry.payload.channelId) return null;
+    try { supplyReceipt(entry.receipt, customerId, entry.payload.channelId, batchId); }
+    catch { return null; }
+  }
   const ids = new Set(receipts.map(receipt => receipt!.channelId));
   return ids.size === 1 ? receipts[0]!.channelId : null;
 }

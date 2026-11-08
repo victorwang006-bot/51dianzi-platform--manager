@@ -50,10 +50,10 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     await click("business"); expect(panel()).not.toBeNull();
     expect(onNavigate).not.toHaveBeenCalled(); await click("business"); expect(panel()).toBeNull();
   });
-  it("二级仅三分组和公司信息，点击后只出现所属三级，无重复渠道", async () => {
+  it("二级仅三分组，点击后只出现所属三级，无重复渠道或公司信息", async () => {
     await render(); await click("business");
     expect(Array.from(panel()!.querySelectorAll<HTMLButtonElement>("[data-navigation-choice]")).map(b => b.dataset.workspaceNavTarget))
-      .toEqual(["group:customers", "group:inventory", "group:procurement", "/workbench/company-info"]);
+      .toEqual(["group:customers", "group:inventory", "group:procurement"]);
     expect(panel(3)).toBeNull(); expect(panel()!.textContent).not.toContain("渠道库存");
     await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(4);
     await click("group:inventory"); expect(host.querySelector('[data-business-submenu="customers"]')).toBeNull();
@@ -66,9 +66,10 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     await click(path); expect(onNavigate).toHaveBeenCalledTimes(1); expect(onNavigate).toHaveBeenCalledWith(original);
     expect(onNavigate.mock.calls[0][0]).toBe(original); expect(panel()).toBeNull(); expect(panel(3)).toBeNull();
   });
-  it("公司信息仍直接回传原条目，不增加三级", async () => {
-    await render(); await click("business"); await click("/workbench/company-info");
-    expect(onNavigate).toHaveBeenCalledWith(items.find(item => item.path === "/workbench/company-info")); expect(panel()).toBeNull();
+  it("公司信息不再生成菜单，原条目仍由父菜单授权而非本组件改权", async () => {
+    await render(); await click("business");
+    expect(host.querySelector('[data-workspace-nav-target="/workbench/company-info"]')).toBeNull();
+    expect(panel()!.textContent).not.toContain("公司信息"); expect(onNavigate).not.toHaveBeenCalled();
   });
   it("选项同步隐藏旧layer和expanded后才调用父导航", async () => {
     let hidden = false;
@@ -77,8 +78,9 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
   });
   it("空分组隐藏，授权交集不创建fallback；渠道仅保留独立顶栏", async () => {
     await render("/workbench/orders", { items: subset(["/workbench/channel-inventory", "/workbench/company-info", "/analytics"]) });
-    await click("business"); expect(host.querySelectorAll("[data-business-group]")).toHaveLength(0);
-    expect(panel()!.textContent).toContain("公司信息"); expect(panel()!.textContent).not.toContain("渠道库存");
+    expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+    await click("operations"); expect(host.querySelectorAll("[data-business-group]")).toHaveLength(0);
+    expect(panel()!.textContent).not.toContain("公司信息"); expect(panel()!.textContent).not.toContain("渠道库存");
     expect(host.querySelector("[aria-current=page]")).toBeNull();
   });
   it("只有渠道权限时不制造空业务工作台", async () => {

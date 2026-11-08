@@ -101,7 +101,7 @@ describe("approved channel inventory filters and compact header (real component,
     click(button("下一页")); runtime.loading = true; act(() => root.render(React.createElement(ChannelInventoryHost)));
     expect(container.querySelector(".ci-filter-count")?.textContent).toBe("45 条库存");
     setControl("筛选库存行业", "automotive"); expect(container.querySelector(".ci-filter-count")?.textContent).toBe("45 条库存");
-    click(button("确定")); expect(container.querySelector(".ci-filter-count")?.textContent).toBe("0 条库存");
+    click(button("确定")); expect(container.querySelector(".ci-filter-count")?.textContent).toBe("正在读取库存条数…");
     expect(container.querySelector("tbody")?.textContent).not.toContain("SERVER-FIRST");
     expect(runtime.inputs.at(-1)).toMatchObject({ industryCode: "automotive", page: 1 });
   });

@@ -3,6 +3,14 @@ const id = z.number().int().safe().positive();
 const expected = { expectedEnterpriseId: id, expectedActorUserId: id };
 export const customerSupplySummarySchema = z.object({ ...expected, customerIds: z.array(id).max(100) }).strict();
 export const customerSupplyContextSchema = z.object({ ...expected, customerId: id }).strict();
+/** Creates/links a real source and a new upload batch in the same authorized transaction. */
+export const createCustomerUploadBatchSchema = z.object({
+  ...expected, customerId: id, expectedCustomerVersion: id, expectedChannelId: id.optional(), expectedChannelRevision: id.optional(),
+  sourceProfile: z.object({ type: z.enum(["factory", "agent", "trade", "other"]), existingChannelId: id.optional() }).strict().optional(),
+  fileName: z.string().trim().min(1).max(255), totalRows: z.number().int().safe().min(1).max(1000),
+  requestId: z.string().uuid("请求号无效"),
+}).strict();
+export type CreateCustomerUploadBatchInput = z.output<typeof createCustomerUploadBatchSchema>;
 /** Shared verbatim with createMaterial: no customer mode inference or tax defaults. */
 export const channelMaterialCreateFields = {
   partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().min(1, "请输入型号").max(128)),

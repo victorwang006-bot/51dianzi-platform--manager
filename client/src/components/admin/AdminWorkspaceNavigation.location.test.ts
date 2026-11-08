@@ -52,14 +52,17 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
     ["/workbench", ["业务工作台", "库存管理", "我的库存"]],
     ["/workbench/outbound", ["业务工作台", "库存管理", "出库管理"]],
     ["/workbench/procurement/orders/8", ["业务工作台", "采购管理", "采购订单"]],
-    ["/workbench/company", ["业务工作台", "公司信息"]],
-    ["/materials/8", ["平台运营", "物料数据库"]],
+    ["/materials/8", ["平台运营", "基础资料", "物料数据库"]],
+    ["/portal-users/8", ["平台运营", "基础资料", "平台用户"]],
+    ["/orders/8", ["平台运营", "交易与服务", "平台订单"]],
+    ["/messages", ["平台运营", "交易与服务", "消息中心"]],
+    ["/exception-logs/8", ["平台运营", "数据与监控", "异常日志"]],
     ["/admins/8", ["组织与权限", "员工与权限"]],
   ])("%s由真实canonical授权模块生成位置", (location, expected) => {
     expect(labels(render(location))).toEqual(expected);
   });
 
-  it.each(["/unknown", "/profile", "/workbench/channel-inventory-other?ciTab=trash"])("%s没有合法已授权模块时不编造位置", location => {
+  it.each(["/unknown", "/profile", "/workbench/company", "/workbench/company-info", "/workbench/channel-inventory-other?ciTab=trash"])("%s没有合法已授权可见模块时不编造位置", location => {
     expect(render(location).children).toHaveLength(0);
   });
 

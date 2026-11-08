@@ -54,6 +54,7 @@ import { customerListInputSchema as customerListSchema } from "../client/src/bus
 import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/business/platform/shared/channelInventoryManagement";
 import { channelInventoryListBusinessInputSchema } from "./channelInventoryListBusinessInput";
 import { publishFactoryMaterialInputSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
+import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
@@ -132,6 +133,7 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.createMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.customerSupplySummary", module: "inventory", mode: "read" },
   { method: "channelInventory.customerSupplyContext", module: "inventory", mode: "read" },
+  { method: "channelInventory.createCustomerUploadBatch", module: "inventory", mode: "write" },
   { method: "channelInventory.createCustomerMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.updateMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.listSharedMaterials", module: "inventory", mode: "read" },
@@ -294,9 +296,13 @@ async function withCurrentBusinessAuthorization<T>(
       const requirement = publishing ? "publish" : notes ? "note" : capability.mode === "write" ? "write" : "read";
       if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement]) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
     }
+    const profileRead = ["channelInventory.listChannels", "channelInventory.getChannel"].includes(capability.method ?? "");
+    const withProfileRead = (run: (projection: OfficialInventoryPermissions["channelProfileTeamRead"]) => Promise<T>) =>
+      profileRead ? withOfficialChannelProfileRead(ctx, staffBinding.frontUserId, run) : run(undefined);
+    return withProfileRead(async channelProfileTeamRead => {
     const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
     const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
-      && (contextProjection || nativeReadMethods.includes(capability.method ?? ""));
+      && (contextProjection || Boolean(channelProfileTeamRead) || nativeReadMethods.includes(capability.method ?? ""));
     const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);
     // This read occurs while the fence is held and supplies the actual scope
     // version persisted in the generic audit record for a forwarded command.
@@ -321,8 +327,10 @@ async function withCurrentBusinessAuthorization<T>(
     const requestOfficialInventoryPermissions = officialInventoryPermissions ? {
       ...officialInventoryPermissions,
       customerScopeRead: businessScopeAllows(scope, "customers", "read"),
+      ...(channelProfileTeamRead ? { channelProfileTeamRead } : {}),
     } : undefined;
     return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions: requestOfficialInventoryPermissions });
+    });
   });
 }
 
@@ -533,6 +541,7 @@ const channelInventoryBusinessRouter = router({
   createMaterial: businessMutation("channelInventory.createMaterial", "inventory"),
   customerSupplySummary: businessQuery("channelInventory.customerSupplySummary", "inventory"),
   customerSupplyContext: businessQuery("channelInventory.customerSupplyContext", "inventory"),
+  createCustomerUploadBatch: businessMutation("channelInventory.createCustomerUploadBatch", "inventory"),
   createCustomerMaterial: businessMutation("channelInventory.createCustomerMaterial", "inventory"),
   updateMaterial: businessMutation("channelInventory.updateMaterial", "inventory"),
   listSharedMaterials: businessQuery("channelInventory.listSharedMaterials", "inventory"),

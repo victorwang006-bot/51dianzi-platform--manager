@@ -37,6 +37,9 @@ type Props = {
   loadingMoreChannels: boolean;
   onCreate: (payload: Payload, requestId: string, uploadBatchId?: number) => Promise<unknown>;
   onCreateBatch?: (input: UploadBatchInput) => Promise<UploadBatchReceipt>;
+  /** Customer-only preparation: no virtual channel/placeholder material is ever queued. */
+  onCreateCustomerBatch?: (input: Omit<UploadBatchInput, "channelId">) => Promise<UploadBatchReceipt & { channelId: number }>;
+  customerSourceReady?: boolean;
   onComplete: () => void;
   isCurrent: () => boolean;
   sourceLabel?: string;
@@ -45,7 +48,7 @@ type Props = {
   storageKeySuffix?: string;
   sessionData?: unknown;
   validateSavedSession?: (data: unknown, entries: BatchEntry[]) => boolean;
-  onRestoreSession?: (data: unknown) => void;
+  onRestoreSession?: (data: unknown, entries: ManagedBatchEntry[], batch?: PersistentUploadBatch) => void;
   receiptFromResult?: (response: unknown) => BatchReceipt;
   onFinish?: (result: { entries: BatchEntry[]; complete: boolean; reason?: string }) => void;
   onViewResults?: (entries: BatchEntry[]) => void;
@@ -61,14 +64,28 @@ export const batchUploadDialogStyle: React.CSSProperties = {
   height: "min(85dvh, 680px)", maxHeight: "85dvh", display: "flex",
   flexDirection: "column", gap: "12px", overflow: "hidden", padding: "18px",
 };
+type CustomerPreparation = { rows: { row: number; requestId: string; draft: Draft }[]; requestId: string; name: string; sessionData?: unknown; entryMode: "table" | "single" };
 type SavedBatch = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single"; uploadBatch?: PersistentUploadBatch };
 const storageKey = (props: Props) => `d51-channel-inventory-batch-v1:${props.actorUserId}:${props.enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
-function readSavedBatch(props: Props): { saved: SavedBatch | null; error: string; blocked: boolean } {
+function readSavedBatch(props: Props): { saved: SavedBatch | null; preparation?: CustomerPreparation; error: string; blocked: boolean } {
   const empty = { saved: null, error: "", blocked: false };
   try {
     const raw = sessionStorage.getItem(storageKey(props));
     if (!raw) return empty;
     const data = JSON.parse(raw);
+    if (data.version === 2 && data.phase === "customer-source" && props.onCreateCustomerBatch
+      && data.actorUserId === props.actorUserId && data.enterpriseId === props.enterpriseId) {
+      const preparation = data.preparation as CustomerPreparation;
+      if (preparation && /^[-0-9a-f]{36}$/i.test(preparation.requestId)
+        && typeof preparation.name === "string" && preparation.name.length > 0
+        && ["table", "single"].includes(preparation.entryMode) && Array.isArray(preparation.rows)
+        && preparation.rows.length > 0 && preparation.rows.length <= 1000
+        && preparation.rows.every(row => Number.isSafeInteger(row.row) && row.row > 0
+          && /^[-0-9a-f]{36}$/i.test(row.requestId) && row.draft && validateDraft(row.draft).length === 0)
+        && (!props.validateSavedSession || props.validateSavedSession(preparation.sessionData, [])))
+        return { saved: null, preparation, error: "", blocked: false };
+      return { saved: null, blocked: true, error: "原客户上传准备记录无效，已阻止另起批次，请核实原请求。" };
+    }
     if (data.version === 1 && data.actorUserId === props.actorUserId && data.enterpriseId === props.enterpriseId
       && Number.isSafeInteger(data.channelId) && data.channelId > 0 && Array.isArray(data.entries)
       && data.entries.length <= 1000 && data.entries.length > 0 && data.entries.every((r: BatchEntry) =>
@@ -79,16 +96,16 @@ function readSavedBatch(props: Props): { saved: SavedBatch | null; error: string
         : /^[-0-9a-f]{36}$/i.test(batch.requestId) && (batch.id === undefined
           ? data.entries.every((entry: ManagedBatchEntry) => entry.uploadBatchId === undefined)
           : Number.isSafeInteger(batch.id) && batch.id > 0 && data.entries.every((entry: ManagedBatchEntry) => entry.uploadBatchId === batch.id));
-      if (!validBatch || (batch && !props.onCreateBatch))
+      if (!validBatch || (batch && !props.onCreateBatch && !props.onCreateCustomerBatch))
         return { saved: null, blocked: true, error: "原批次归属记录无效或当前入口无法核验批次，已阻止重复上传。请核实原上传结果。" };
       if (props.validateSavedSession && !props.validateSavedSession(data.sessionData, data.entries))
         return { saved: null, blocked: true, error: "原批次客户版本或回执已变化，不能另起批次重复上传。请核实原上传结果后处理。" };
       return { saved: data, error: "", blocked: false };
     }
-    if (props.storageKeySuffix || props.onCreateBatch) return { saved: null, blocked: true, error: "原批次恢复记录无效，已阻止重复导入，请核实原上传结果。" };
+    if (props.storageKeySuffix || props.onCreateBatch || props.onCreateCustomerBatch) return { saved: null, blocked: true, error: "原批次恢复记录无效，已阻止重复导入，请核实原上传结果。" };
     return empty;
   } catch {
-    return { saved: null, blocked: Boolean(props.onCreateBatch), error: "无法读取上次上传记录；请检查浏览器会话存储权限。" };
+    return { saved: null, blocked: Boolean(props.onCreateBatch || props.onCreateCustomerBatch), error: "无法读取上次上传记录；请检查浏览器会话存储权限。" };
   }
 }
 function Icon({
@@ -162,6 +179,9 @@ function BatchUploadSession(props: Props) {
   const restoreBlocked = initial.blocked;
   const [entryMode, setEntryMode] = useState<"table" | "single">("table");
   const [saved, setSaved] = useState<SavedBatch | null>(initial.saved);
+  const [savedPreparation, setSavedPreparation] = useState(initial.preparation);
+  const [preparing, setPreparing] = useState<CustomerPreparation | undefined>();
+  const resolvedChannel = useRef<Channel | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
   const uploadBatch = useRef<PersistentUploadBatch | undefined>(undefined);
@@ -310,10 +330,12 @@ function BatchUploadSession(props: Props) {
   );
   const bad = rows.filter(r => r.errors.length);
   const mappingErrors = validateMapping(mapping);
-  const selected = channels.find(c => c.id === Number(channelId));
+  const selected = channels.find(c => c.id === Number(channelId))
+    ?? (resolvedChannel.current?.id === Number(channelId) ? resolvedChannel.current : undefined);
+  const sourceReady = selected?.active || (props.onCreateCustomerBatch && props.customerSourceReady);
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
-  const modeLocked = busy || loading || hasQueue || !!saved || restoreBlocked;
+  const modeLocked = busy || loading || hasQueue || !!preparing || !!savedPreparation || !!saved || restoreBlocked;
   const changeMode = (mode: "table" | "single") => {
     if (!current() || running.current || modeLocked || mode === entryMode) return;
     if (grid.length && !window.confirm("切换上传方式将清除当前未提交的预览；单条录入草稿会保留。是否继续？")) return;
@@ -322,7 +344,7 @@ function BatchUploadSession(props: Props) {
     setGrid([]); setRawGrid([]); setExcluded([]); setName(""); setError(""); setStep(1);
   };
   const previewSingle = (draft: Draft) => {
-    if (!current() || running.current || modeLocked || entryMode !== "single" || !selected?.active) return;
+    if (!current() || running.current || modeLocked || entryMode !== "single" || !sourceReady) return;
     const errors = validateDraft(draft);
     if (errors.length) { setError(errors.join("；")); return; }
     // Use the same mapping, normalization, DTO and confirmation as file rows.
@@ -330,51 +352,70 @@ function BatchUploadSession(props: Props) {
     setStep(3);
   };
   const start = async () => {
-    if (running.current || !current() || restoreBlocked || saved) return;
-    if (!selected || !selected.active) {
+    if (running.current || !current() || restoreBlocked || saved || savedPreparation) return;
+    if (!sourceReady) {
       setError("请选择有权访问且启用的已加载渠道。");
       return;
     }
     let next = entries;
-    if (!hasQueue) {
+    let preparation = preparing;
+    let target = selected;
+    if (!hasQueue && !preparation) {
       if (mappingErrors.length || bad.length || !rows.length) {
-        setError("请完成字段匹配并修正错误行。");
-        return;
+        setError("请完成字段匹配并修正错误行。"); return;
       }
-      next = rows.map(r => ({
-        row: r.row,
-        requestId: uuid(),
-        payload: toPayload(r.draft, selected.id),
-        status: "pending",
-      }));
-      // The batch request is frozen before any network write. Legacy recovered
-      // queues deliberately keep no ID; never invent historical attribution.
-      if (latest.current.onCreateBatch) uploadBatch.current = { requestId: uuid() };
+      if (latest.current.onCreateCustomerBatch) {
+        preparation = { requestId: uuid(), name, entryMode, sessionData: latest.current.sessionData,
+          rows: rows.map(r => ({ row: r.row, requestId: uuid(), draft: r.draft })) };
+        setPreparing(preparation);
+      } else {
+        if (!target) return;
+        next = rows.map(r => ({ row: r.row, requestId: uuid(), payload: toPayload(r.draft, target!.id), status: "pending" }));
+        // Legacy recovered queues deliberately keep no ID; never invent historical attribution.
+        if (latest.current.onCreateBatch) uploadBatch.current = { requestId: uuid() };
+      }
     }
     if (uploadBatch.current?.id !== undefined) {
       const batchId = uploadBatch.current.id;
       next = next.map(entry => ({ ...entry, uploadBatchId: batchId }));
     }
-    if (!persist(next, selected.id)) return;
-    stop.current = false;
-    running.current = true;
-    setBusy(true);
-    setError("");
-    setEntries(next);
-    setStep(4);
-    props.onBusyChange(true);
-    props.onDirtyChange(true);
+    if (preparation) {
+      try {
+        // Persist original batch AND row request IDs before any source/batch write.
+        sessionStorage.setItem(key, JSON.stringify({ version: 2, phase: "customer-source", enterpriseId, actorUserId, preparation }));
+      } catch { setError("浏览器无法保存幂等恢复记录，已停止上传，请勿另开批次。"); return; }
+    } else if (!target || !persist(next, target.id)) return;
+    stop.current = false; running.current = true;
+    setBusy(true); setError(""); setEntries(next); setStep(4);
+    props.onBusyChange(true); props.onDirtyChange(true);
     try {
+      if (preparation) {
+        if (!latest.current.onCreateCustomerBatch) throw new Error("当前入口无法核验原客户批次。");
+        const created = await latest.current.onCreateCustomerBatch({ fileName: preparation.name,
+          totalRows: preparation.rows.length, requestId: preparation.requestId });
+        if (!current()) return;
+        if (!Number.isSafeInteger(created.channelId) || created.channelId <= 0 || !Number.isSafeInteger(created.id) || created.id <= 0
+          || (target && created.channelId !== target.id)) throw new Error("客户批次回执渠道或批次无效，请按原请求重试。");
+        target = { id: created.channelId, name: props.sourceLabel || "客户供应来源", active: true };
+        resolvedChannel.current = target; setChannelId(String(target.id));
+        uploadBatch.current = { requestId: preparation.requestId, id: created.id, batchCode: created.batchCode };
+        next = preparation.rows.map(row => ({ row: row.row, requestId: row.requestId,
+          payload: toPayload(row.draft, created.channelId), uploadBatchId: created.id, status: "pending" }));
+        setEntries(next);
+        if (!persist(next, target.id)) return;
+        setPreparing(undefined);
+      }
+      if (!target) throw new Error("真实渠道尚未确认，已停止上传。");
       const batch = uploadBatch.current;
       if (batch && batch.id === undefined) {
         if (!latest.current.onCreateBatch) throw new Error("当前入口无法继续原上传批次，请返回原入口重试。");
-        const created = await latest.current.onCreateBatch({ channelId: selected.id, fileName: name, totalRows: next.length, requestId: batch.requestId });
+        const created = await latest.current.onCreateBatch({ channelId: target.id, fileName: name, totalRows: next.length, requestId: batch.requestId });
         if (!current()) return;
         if (!Number.isSafeInteger(created.id) || created.id <= 0) throw new Error("上传批次回执无效，请按原请求重试。");
         uploadBatch.current = { ...batch, id: created.id, batchCode: created.batchCode };
         next = next.map(entry => ({ ...entry, uploadBatchId: created.id }));
         setEntries(next);
-        if (!persist(next, selected.id)) return;
+        if (!persist(next, target.id)) return;
       }
       const result = await runBatch(next, {
         submit: (payload, requestId) => uploadBatch.current?.id === undefined
@@ -384,7 +425,7 @@ function BatchUploadSession(props: Props) {
         shouldStop: () => stop.current,
         receiptFromResult: latest.current.receiptFromResult,
         onProgress: progress => {
-          persist(progress, selected.id);
+          persist(progress, target!.id);
           if (current()) setEntries(progress);
         },
       });
@@ -430,6 +471,7 @@ function BatchUploadSession(props: Props) {
       setError("正在停止：当前请求完成后不再提交下一行，请稍候。");
       return;
     }
+    if (preparing && !window.confirm("客户渠道/批次结果可能待确认，关闭后请恢复原请求，勿重复上传。是否关闭？")) return;
     if (
       entries.length &&
       completed !== entries.length &&
@@ -448,8 +490,14 @@ function BatchUploadSession(props: Props) {
     props.onClose();
   };
   const restore = () => {
+    if (savedPreparation) {
+      latest.current.onRestoreSession?.(savedPreparation.sessionData, []);
+      setPreparing(savedPreparation); setName(savedPreparation.name); setEntryMode(savedPreparation.entryMode);
+      setSavedPreparation(undefined); setStep(4); props.onDirtyChange(true);
+      setError("已恢复原客户准备请求，将沿用原请求号确认渠道和批次。"); return;
+    }
     if (!saved) return;
-    latest.current.onRestoreSession?.(saved.sessionData);
+    latest.current.onRestoreSession?.(saved.sessionData, saved.entries, saved.uploadBatch);
     setChannelId(String(saved.channelId));
     setEntries(saved.entries);
     setName(saved.name);
@@ -499,6 +547,7 @@ function BatchUploadSession(props: Props) {
           <div className={`ci-batch-channel${props.fixedSource ? " ci-batch-fixed-source" : ""}`} style={{ gap: "12px", paddingBottom: "9px" }}>
             <label className="ci-field">
               <span>{props.sourceLabel ? "客户供应来源" : "关联渠道 *"}</span>
+              {props.onCreateCustomerBatch && !channels.length ? <strong>{props.sourceLabel}</strong> : null}
               <select
                 className="ci-batch-control"
                 aria-label="批量关联渠道"
@@ -535,15 +584,15 @@ function BatchUploadSession(props: Props) {
               </Button>
             </p>
           )}
-          {saved && (
+          {(saved || savedPreparation) && (
             <div className="ci-batch-resume">
               <Icon kind="file" />
               <div>
                 <strong>发现本标签页未完成的上传批次</strong>
                 <p>
                   已确认{" "}
-                  {saved.entries.filter(e => e.status === "success").length} /{" "}
-                  {saved.entries.length} 条。建议恢复原批次，不要重复上传表格。
+                  {saved?.entries.filter(e => e.status === "success").length ?? 0} /{" "}
+                  {saved?.entries.length ?? savedPreparation?.rows.length} 条。建议恢复原批次，不要重复上传表格。
                 </p>
               </div>
               <Button
@@ -557,7 +606,7 @@ function BatchUploadSession(props: Props) {
             </div>
           )}
           {props.renderSingleEntry ? <div hidden={entryMode !== "single" || step !== 1}>
-            {props.renderSingleEntry({ onPreview: previewSingle, disabled: modeLocked || !selected?.active || step !== 1 || entryMode !== "single" })}
+            {props.renderSingleEntry({ onPreview: previewSingle, disabled: modeLocked || !sourceReady || step !== 1 || entryMode !== "single" })}
           </div> : null}
           {step === 1 && entryMode === "table" && (
           <>
@@ -566,14 +615,14 @@ function BatchUploadSession(props: Props) {
               style={{ minHeight: "160px", padding: "10px 12px", gap: "5px" }}
               onDragOver={e => {
                 e.preventDefault();
-                if (!saved && !restoreBlocked) setDragging(true);
+                if (!saved && !savedPreparation && !restoreBlocked) setDragging(true);
               }}
               onDragLeave={() => setDragging(false)}
               onDrop={e => {
                 e.preventDefault();
                 setDragging(false);
                 const file = e.dataTransfer.files[0];
-                if (file && !loading && !saved && !restoreBlocked) void selectFile(file);
+                if (file && !loading && !saved && !savedPreparation && !restoreBlocked) void selectFile(file);
               }}
             >
               <Icon kind="upload" size={24} />
@@ -597,7 +646,7 @@ function BatchUploadSession(props: Props) {
               <Button
                 type="button"
                 className="ci-button ci-primary"
-                disabled={loading || !!saved || restoreBlocked}
+                disabled={loading || !!saved || !!savedPreparation || restoreBlocked}
                 onClick={() => fileInput.current?.click()}
               >
                 <Icon kind="upload" size={15} />
@@ -767,7 +816,7 @@ function BatchUploadSession(props: Props) {
             <div className="ci-batch-result">
               <Icon
                 kind={
-                  completed === entries.length && entries.length
+                  completed === entries.length && entries.length && !preparing
                     ? "check"
                     : "upload"
                 }
@@ -776,12 +825,12 @@ function BatchUploadSession(props: Props) {
               <h3>
                 {busy
                   ? "正在按行上传，请勿重复提交"
-                  : completed === entries.length
+                  : completed === entries.length && !preparing
                     ? "本批渠道库存已保存"
                     : "上传已暂停 / 中断"}
               </h3>
               <p>
-                已确认保存 <strong>{completed}</strong> / {entries.length} 条
+                已确认保存 <strong>{completed}</strong> / {preparing?.rows.length ?? entries.length} 条
               </p>
               {uploadBatch.current?.id ? <small>上传批次：{uploadBatch.current.batchCode || `#${uploadBatch.current.id}`}</small> : null}
               <progress value={completed} max={entries.length || 1} />
@@ -883,7 +932,7 @@ function BatchUploadSession(props: Props) {
               size="sm"
               className="ci-button ci-primary"
               disabled={
-                !selected?.active ||
+                !sourceReady ||
                 !!bad.length ||
                 !rows.length ||
                 !!mappingErrors.length
@@ -893,12 +942,12 @@ function BatchUploadSession(props: Props) {
               确认上传 {rows.length} 条
             </Button>
           )}
-          {step === 4 && completed < entries.length && (
+          {step === 4 && (preparing || completed < entries.length) && (
             <Button
               type="button"
               size="sm"
               className="ci-button ci-primary"
-              disabled={busy || !selected?.active}
+              disabled={busy || !sourceReady}
               onClick={() => void start()}
             >
               按原批次继续 / 重试

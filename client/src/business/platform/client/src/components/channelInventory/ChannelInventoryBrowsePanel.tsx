@@ -85,13 +85,13 @@ export function ChannelInventoryBrowsePanel(props: Props) {
       <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">渠道名称</span><input aria-label="搜索可读库存渠道" placeholder="搜索渠道" maxLength={128} value={name} onChange={event => { setName(event.target.value); setPage(1); }} /></label>
       <button type="button" className="ci-button" onClick={() => { setName(""); setPage(1); }}>重置</button>
       <button type="button" className="ci-button" onClick={() => setRevision(value => value + 1)}>刷新渠道列表</button>
-      <span className="ci-filter-count">{filtered.length} 个渠道</span>
+      <span className="ci-filter-count">{allItems ? `${filtered.length} 个渠道` : loading ? "正在读取渠道条数…" : "渠道条数不可用"}</span>
     </div>
     <p className="ci-readonly">仅列出当前有权查看来源的渠道；点击后查看此渠道库存。</p>
     <div className="ci-tablewrap"><table className="ci-table ci-readable-channels-table admin-table-readable"><thead><tr><th>渠道名称</th><th className="ci-col-actions">操作</th></tr></thead><tbody>
       {!props.active ? <tr><td colSpan={2} className="ci-empty">正在核验当前渠道读取权限…</td></tr> : loading ? <tr><td colSpan={2} className="ci-empty">正在读取渠道…</td></tr> : query.error ? <tr><td colSpan={2} className="ci-empty ci-host-error" role="alert">{query.error}</td></tr> : !allItems ? <tr><td colSpan={2} className="ci-empty">当前账号没有渠道来源查看权限，可使用平铺查看已授权库存。</td></tr> : !items.length ? <tr><td colSpan={2} className="ci-empty">暂无符合条件的渠道。</td></tr> : null}
       {items.map(channel => <tr key={channel.id}><td><strong className="ci-channel-name admin-cell-primary">{channel.name}</strong></td><td className="ci-col-actions"><button type="button" className="ci-inline-link" onClick={() => { if (authorized && latest.current.isCurrent() && liveKey.current === query.key && allItems?.some(item => item.id === channel.id)) props.onSelect(channel); }}>查看该渠道库存</button></td></tr>)}
     </tbody></table></div>
-    <nav className="ci-pagination" aria-label="可读渠道分页"><span>共 {filtered.length} 个渠道，第 {page} / {pageCount} 页</span><button type="button" className="ci-button" disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)}>上一页</button><button type="button" className="ci-button" disabled={loading || page >= pageCount} onClick={() => setPage(value => value + 1)}>下一页</button></nav>
+    <nav className="ci-pagination" aria-label="可读渠道分页"><span>{allItems ? `共 ${filtered.length} 个渠道，第 ${page} / ${pageCount} 页` : loading ? "正在读取渠道分页…" : "渠道分页条数不可用"}</span><button type="button" className="ci-button" disabled={loading || !allItems || page <= 1} onClick={() => setPage(value => value - 1)}>上一页</button><button type="button" className="ci-button" disabled={loading || !allItems || page >= pageCount} onClick={() => setPage(value => value + 1)}>下一页</button></nav>
   </section>;
 }

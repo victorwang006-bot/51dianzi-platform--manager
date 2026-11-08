@@ -29,7 +29,7 @@ it("exposes the exact UI release and Beijing timezone without changing navigatio
     expect(nav?.dataset.displayTimeZone).toBe("Asia/Shanghai");
     expect(nav?.title).toContain(`系统版本：${ADMIN_SYSTEM_RELEASE}`);
     expect(nav?.title).toContain("北京时间（UTC+8）");
-    expect(nav?.textContent).toBe("组织与权限");
+    expect(nav?.querySelector('[data-workspace-nav-target="organization"]')?.firstChild?.textContent).toBe("组织与权限");
   } finally {
     await act(async () => root.unmount());
     host.remove();

@@ -9,6 +9,7 @@ import {
   getAdminWorkspaceNavigationTarget,
   getAdminWorkspacePathname,
   groupAdminBusinessNavigationItems,
+  groupAdminOperationsNavigationItems,
   groupAdminWorkspaceNavigationItems,
 } from "./adminWorkspaceNavigationModel";
 
@@ -27,7 +28,7 @@ const visible = (...paths: string[]) =>
   items.filter(item => paths.includes(item.path));
 
 describe("业务第二行展示分组（不更改canonical和工作区首个目标）", () => {
-  it("五入口完整覆盖现有业务菜单且子项只出现一次", () => {
+  it("四入口保留现有业务菜单但移除公司信息，子项只出现一次", () => {
     const entries = groupAdminBusinessNavigationItems([...items].reverse());
     expect(
       entries.map(entry =>
@@ -38,7 +39,6 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
       "客户与销售",
       "库存管理",
       "采购管理",
-      "/workbench/company-info",
     ]);
     const groupedPaths = entries.flatMap(entry =>
       entry.kind === "direct"
@@ -57,7 +57,6 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
       "/workbench/outbound",
       "/workbench/procurement-demands",
       "/workbench/procurement-orders",
-      "/workbench/company-info",
     ]);
     expect([...groupedPaths].sort()).toEqual(
       [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].sort()
@@ -98,18 +97,57 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
   });
 });
 
+describe("平台运营三级展示分组", () => {
+  it("三组覆盖八个真实叶子且保留原对象，不混入销售订单或重复条目", () => {
+    const entries = groupAdminOperationsNavigationItems([...items, ...items].reverse());
+    expect(entries.map(entry => entry.kind === "group" ? [entry.id, entry.label, entry.items.map(item => item.path)] : []))
+      .toEqual([
+        ["basic-data", "基础资料", ["/merchants", "/materials", "/portal-users"]],
+        ["transactions-services", "交易与服务", ["/orders", "/messages", "/reviews"]],
+        ["data-monitoring", "数据与监控", ["/analytics", "/exception-logs"]],
+      ]);
+    const leaves = entries.flatMap(entry => entry.kind === "group" ? entry.items : [entry.item]);
+    expect(new Set(leaves.map(item => item.path)).size).toBe(8);
+    for (const item of leaves) expect(item).toBe(items.find(original => original.path === item.path));
+    expect(leaves.map(item => item.path)).not.toContain("/workbench/orders");
+  });
+
+  it("先消费原角色可见叶再分组，空组隐藏且不补入同组无权叶", () => {
+    const authorized = Object.freeze(visible("/portal-users", "/orders", "/workbench/orders"));
+    const entries = groupAdminOperationsNavigationItems(authorized);
+    expect(entries.map(entry => entry.kind === "group" ? [entry.id, entry.items.map(item => item.path)] : []))
+      .toEqual([["basic-data", ["/portal-users"]], ["transactions-services", ["/orders"]]]);
+    expect(groupAdminOperationsNavigationItems([])).toEqual([]);
+    expect(groupAdminOperationsNavigationItems([{ path: "/orders-extra", label: "未知" }])).toEqual([]);
+  });
+
+  it("company-info及旧别名保留路由上下文，但不合成菜单、叶子或跳转目标", () => {
+    const company = visible("/workbench/company-info");
+    expect(groupAdminBusinessNavigationItems(company)).toEqual([]);
+    expect(groupAdminWorkspaceNavigationItems(company)).toEqual([]);
+    expect(getAdminWorkspaceNavigationTarget(company, "business")).toBeNull();
+    for (const location of ["/workbench/company-info", "/workbench/company?merchantId=31"]) {
+      const state = getAdminWorkspaceNavigationState(items, location);
+      expect(state.route).toMatchObject({ workspaceId: "business", canonicalPath: "/workbench/company-info" });
+      expect(state.activeItem).toBeNull();
+      expect(state.workspaces.flatMap(workspace => workspace.items.map(item => item.path))).not.toContain("/workbench/company-info");
+    }
+  });
+});
+
 describe("正式后台顶部工作区菜单", () => {
-  it("完整保留正式菜单且每条恰好出现一次，没有未注册路径或别名假入口", () => {
+  it("除公司信息外完整保留正式菜单且每条恰好出现一次，没有别名假入口", () => {
     const paths = ADMIN_WORKSPACE_DEFINITIONS.flatMap(
       workspace => workspace.paths
     );
-    expect([...paths].sort()).toEqual([...officialPaths].sort());
-    expect(new Set(paths).size).toBe(officialPaths.length);
+    const expectedPaths = officialPaths.filter(path => path !== "/workbench/company-info");
+    expect([...paths].sort()).toEqual([...expectedPaths].sort());
+    expect(new Set(paths).size).toBe(expectedPaths.length);
     expect(
       groupAdminWorkspaceNavigationItems([...items].reverse()).flatMap(
         workspace => workspace.items
       )
-    ).toHaveLength(items.length);
+    ).toHaveLength(expectedPaths.length);
     expect(paths).not.toContain("/profile");
     expect(paths).not.toContain("/admins");
     expect(paths).not.toContain("/workbench/add-user");
@@ -137,7 +175,6 @@ describe("正式后台顶部工作区菜单", () => {
       "/workbench/inquiries",
       "/workbench/procurement-demands",
       "/workbench/procurement-orders",
-      "/workbench/company-info",
     ]);
   });
 
@@ -258,7 +295,6 @@ describe("实际路由驱动两级选中态", () => {
       "business",
       "/workbench/procurement-orders",
     ],
-    ["/workbench/company-info", "business", "/workbench/company-info"],
     ["/staff/7", "organization", "/staff"],
     ["/teams", "organization", "/teams"],
     ["/role-templates", "organization", "/role-templates"],
@@ -279,7 +315,6 @@ describe("实际路由驱动两级选中态", () => {
       "/workbench/procurement-orders",
     ],
     ["/workbench/demand-quotes", "business", "/workbench/procurement-demands"],
-    ["/workbench/company", "business", "/workbench/company-info"],
     ["/workbench", "business", "/workbench/inventory"],
   ])("%s 归属 %s 并选中 %s", (location, workspaceId, canonicalPath) => {
     const state = getAdminWorkspaceNavigationState(items, location);
@@ -357,9 +392,7 @@ describe("实际路由驱动两级选中态", () => {
       visible("/workbench/company-info", "/analytics"),
       "/workbench/orders"
     );
-    expect(state.activeWorkspace?.items.map(item => item.path)).toEqual([
-      "/workbench/company-info",
-    ]);
+    expect(state.activeWorkspace).toBeNull();
     expect(state.activeItem).toBeNull();
     const denied = getAdminWorkspaceNavigationState(
       visible("/analytics"),

@@ -7,6 +7,8 @@ import { verifyOfficialInventoryGrant } from "../client/src/business/platform/fr
 import { createCustomerMaterialSchema, customerSupplyContextSchema, customerSupplySummarySchema } from "./customerSupplyBusinessInput";
 import * as canonicalCustomerSupply from "../client/src/business/platform/shared/customerSupply";
 
+vi.mock("./services/officialChannelProfileRead", () => ({ withOfficialChannelProfileRead: async (_ctx: unknown, _staff: unknown, run: (projection: undefined) => unknown) => run(undefined) }));
+
 const state = vi.hoisted(() => ({
   bound: true, scopeActive: true, accountActive: true,
   scope: [] as string[], native: [] as string[], bindingVersion: 7,
@@ -32,8 +34,9 @@ const identity = { expectedEnterpriseId: 501, expectedActorUserId: 202 };
 const summary = { ...identity, customerIds: [11, 12] };
 const contextInput = { ...identity, customerId: 11 };
 const create = { ...identity, customerId: 11, expectedCustomerVersion: 2, sourceProfile: { type: "factory", existingChannelId: 31 }, partNumber: "ＡＢＣ123", brand: "本地测试品牌", qty: 0, dateCode: null, price: "0.00", currency: "CNY", taxIncluded: null, leadTime: null, note: "不应存入 BFF 审计的正文", requestId };
-const methods = ["customerSupplySummary", "customerSupplyContext", "createCustomerMaterial"] as const;
-const methodsInput = { customerSupplySummary: summary, customerSupplyContext: contextInput, createCustomerMaterial: create };
+const batch = { ...identity, customerId: 11, expectedCustomerVersion: 2, sourceProfile: { type: "factory", existingChannelId: 31 }, fileName: "synthetic.xlsx", totalRows: 3, requestId };
+const methods = ["customerSupplySummary", "customerSupplyContext", "createCustomerUploadBatch", "createCustomerMaterial"] as const;
+const methodsInput = { customerSupplySummary: summary, customerSupplyContext: contextInput, createCustomerMaterial: create, createCustomerUploadBatch: batch };
 const ctx = (): TrpcContext => ({ user: { id: 303, role: "admin" }, adminAccount: { id: 303, status: "active", username: "fixture", displayName: "本地员工", adminRole: state.role }, adminPermissions: ["officialInventory.read", "officialInventory.write"], req: { headers: { "x-business-merchant-id": "51" }, ip: "127.0.0.1" }, res: {} } as unknown as TrpcContext);
 
 beforeEach(() => {
@@ -61,11 +64,11 @@ function lastPayload() {
 }
 
 describe("customer-supply closed BFF transport", () => {
-  it("three exact methods retain query/query/mutation and complete fixed capabilities, without wildcard or shortcut", async () => {
+  it("four exact methods retain query/query/mutation and complete fixed capabilities, without wildcard or shortcut", async () => {
     const caller = businessRouter.createCaller(ctx()).channelInventory;
     for (const method of methods) {
       const full = `channelInventory.${method}`;
-      const mode = method === "createCustomerMaterial" ? "write" : "read";
+      const mode = method.startsWith("createCustomer") ? "write" : "read";
       expect(businessRouter._def.procedures[full]._def.type).toBe(mode === "write" ? "mutation" : "query");
       expect(BUSINESS_METHOD_CAPABILITIES.filter(value => value.method === full)).toEqual([{ method: full, module: "inventory", mode }]);
       expect(CHANNEL_INVENTORY_BUSINESS_METHOD_IDS.filter(value => value === full)).toHaveLength(1);
@@ -79,11 +82,11 @@ describe("customer-supply closed BFF transport", () => {
       expect(payload).toMatchObject({ method: full, staffUserId: 202, bindingVersion: 7, expectedOwnerUserId: 101, creditCode: "SYNTHETIC-CREDIT", adminActor: { id: 303, role: "merchant_mgr" } });
       expect(payload).not.toHaveProperty("officialInventoryPermissions");
       const permissions = verifyOfficialInventoryGrant(payload.officialInventoryGrant, { creditCode: payload.creditCode, expectedOwnerUserId: 101, staffUserId: 202, adminAccountId: 303, bindingVersion: 7, method: full, requestId: payload.requestId });
-      expect(permissions).toEqual({ read: true, write: true, note: true, customerScopeRead: true, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
+      expect(permissions).toEqual({ read: true, write: true, note: true, publish: false, customerScopeRead: true, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
       expect(payload.params).toEqual(method === "createCustomerMaterial" ? createCustomerMaterialSchema.parse(create) : methodsInput[method]);
     }
-    expect(state.fence).toHaveBeenCalledTimes(3); expect(state.fence).toHaveBeenCalledWith({ adminUserId: 303, merchantId: 51 });
-    expect(state.livePermissions).toHaveBeenCalledTimes(3); expect(state.audit).toHaveBeenCalledTimes(3);
+    expect(state.fence).toHaveBeenCalledTimes(4); expect(state.fence).toHaveBeenCalledWith({ adminUserId: 303, merchantId: 51 });
+    expect(state.livePermissions).toHaveBeenCalledTimes(4); expect(state.audit).toHaveBeenCalledTimes(4);
     expect(businessRouter._def.procedures["channelInventory.*"]).toBeUndefined();
     expect(officialInventoryMethodRequirement("channelInventory.createCustomerMaterialFake")).toBeNull();
   });
@@ -104,8 +107,8 @@ describe("customer-supply closed BFF transport", () => {
     state.native = ["officialInventory.read", "officialInventory.note"];
     await businessRouter.createCaller(ctx()).channelInventory.customerSupplySummary(summary);
     const payload = lastPayload();
-    expect(payload.officialInventoryGrant.permissions).toEqual({ read: true, write: false, note: true, customerScopeRead: true, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
-    expect(Object.keys(payload.officialInventoryGrant.permissions).sort()).toEqual(["authorizationVersion", "customerScopeRead", "note", "read", "write"]);
+    expect(payload.officialInventoryGrant.permissions).toEqual({ read: true, write: false, note: true, publish: false, customerScopeRead: true, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
+    expect(Object.keys(payload.officialInventoryGrant.permissions).sort()).toEqual(["authorizationVersion", "customerScopeRead", "note", "publish", "read", "write"]);
     await expect(businessRouter.createCaller(ctx()).channelInventory.createCustomerMaterial(create)).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(state.transport).toHaveBeenCalledTimes(1);
   });
@@ -192,7 +195,7 @@ describe("legacy channel commands carry the fresh signed customer-scope overlay"
     const target = { creditCode: payload.creditCode, expectedOwnerUserId: 101, staffUserId: 202,
       adminAccountId: 303, bindingVersion: 7, method: `channelInventory.${method}`, requestId: payload.requestId };
     expect(verifyOfficialInventoryGrant(payload.officialInventoryGrant, target)).toEqual({
-      read: true, write: true, note: true, customerScopeRead: false,
+      read: true, write: true, note: true, publish: false, customerScopeRead: false,
       authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/),
     });
     expect(() => verifyOfficialInventoryGrant({ ...payload.officialInventoryGrant,
@@ -217,7 +220,7 @@ describe("legacy channel commands carry the fresh signed customer-scope overlay"
     state.role = "super_admin"; state.native = [];
     state.scope = ["business.inventory.read", "business.inventory.write"];
     await businessRouter.createCaller(ctx()).channelInventory.createMaterial({ channelId: 31, ...create, customerScopeRead: true });
-    expect(lastPayload().officialInventoryGrant.permissions).toMatchObject({ read: true, write: true, note: true, customerScopeRead: false });
+    expect(lastPayload().officialInventoryGrant.permissions).toMatchObject({ read: true, write: true, note: true, publish: true, customerScopeRead: false });
     await expect(businessRouter.createCaller(ctx()).channelInventory.createCustomerMaterial(create)).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(state.transport).toHaveBeenCalledTimes(1);
   });

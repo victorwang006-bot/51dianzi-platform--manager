@@ -15,7 +15,8 @@
 /* Only a ready channel page replaces the external location row with its own
  * compact title. Loading/error/batches/trash and every other workspace keep it. */
 .admin-workspace-shell__main:has([data-channel-inventory-host] .ci-tabbar) > [data-admin-navigation="current-location"] { display: none; }
-.ci-page.ci-host .ci-tabbar { box-sizing: border-box; display: flex; align-items: center; flex-wrap: wrap; min-height: 60px; gap: 8px 16px; margin-bottom: 12px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+.ci-page.ci-host .ci-tabbar { box-sizing: border-box; display: flex; align-items: center; flex-wrap: nowrap; min-height: 60px; gap: 8px 12px; margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+.ci-page.ci-host .ci-tabbar .ci-button { box-sizing: border-box; height: 34px; min-height: 34px; padding: 4px 12px; line-height: 24px; }
 .ci-page.ci-host .ci-page-title { flex: 0 0 auto; margin: 0; color: #185fa5; font-size: var(--admin-content-section-title-size, 16px); font-weight: 600; line-height: 24px; }
 .ci-page.ci-host .ci-inventory-view-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ci-page.ci-host .ci-tabs { display: flex; height: 40px; gap: 22px; margin: 0; border: 0; }
@@ -141,6 +142,10 @@
 .ci-page.ci-host .ci-table .admin-cell-primary { font-size: var(--admin-content-font-body, 12px) !important; }
 .ci-page.ci-host .ci-table .admin-cell-secondary { font-size: var(--admin-content-font-caption, 11px) !important; }
 .ci-page.ci-host .ci-host-dialog label.ci-field { font-size: var(--admin-content-font-label, 12px) !important; }
+@media (max-width: 900px) {
+  .ci-page.ci-host .ci-tabbar { flex-wrap: wrap; }
+  .ci-page.ci-host .ci-heading-actions { flex-wrap: wrap; }
+}
 @media (max-width: 680px) {
   .ci-page.ci-host .ci-toolbar .ci-field { flex: 1 1 130px; width: auto; }
   .ci-page.ci-host .ci-filter-count { margin-left: 0; }

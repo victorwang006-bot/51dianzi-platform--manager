@@ -36,6 +36,11 @@ const groupedPaths = {
   inventory: ["/workbench/inventory", "/workbench/publish", "/workbench/inbound", "/workbench/outbound"],
   procurement: ["/workbench/procurement-demands", "/workbench/procurement-orders"],
 };
+const operationsPaths = {
+  "basic-data": ["/merchants", "/materials", "/portal-users"],
+  "transactions-services": ["/orders", "/messages", "/reviews"],
+  "data-monitoring": ["/analytics", "/exception-logs"],
+};
 let host: HTMLDivElement;
 let root: Root;
 const onNavigate = vi.fn();
@@ -175,7 +180,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(panel()).toBeNull();
   });
 
-  it("移到同层另一组替换子面板，返回一级不重置子组，移入公司信息清理旧子组", async () => {
+  it("移到同层另一组替换子面板，返回一级不重置子组，切换工作区清理旧子组", async () => {
     await render();
     await pointer(button("business"), "pointerover");
     await pointer(button("group:customers"), "pointerover");
@@ -184,7 +189,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(button("group:customers").getAttribute("aria-expanded")).toBe("false");
     await pointer(button("business"), "pointerover");
     expect(leaves(3)).toEqual(groupedPaths.inventory);
-    await pointer(button("/workbench/company-info"), "pointerover");
+    await pointer(button("operations"), "pointerover");
     expect(panel(3)).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
   });
@@ -288,12 +293,12 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("业务二级仅分组和公司信息，桌面悬停自动展开三级且分组不导航", async () => {
+  it("业务二级仅三分组，桌面悬停自动展开三级且分组不导航", async () => {
     await render("/workbench/sales-orders/8?merchantId=31#detail");
     await click("business");
     expect(Array.from(panel()!.querySelectorAll("button[data-navigation-choice]")).map(node => node.getAttribute("data-workspace-nav-target")))
-      .toEqual(["group:customers", "group:inventory", "group:procurement", "/workbench/company-info"]);
-    expect(leaves(2)).toEqual(["/workbench/company-info"]);
+      .toEqual(["group:customers", "group:inventory", "group:procurement"]);
+    expect(leaves(2)).toEqual([]);
     expect(panel(3)).toBeNull();
     expect(host.querySelector(`[data-workspace-nav-target="${CHANNEL_INVENTORY_ROUTE}"]`)).toBeNull();
     await pointer(button("group:customers"), "pointerover");
@@ -337,11 +342,14 @@ describe("统一导航下拉（new focused contract）", () => {
       expect(panel(3)).toBeNull();
     });
 
-  it("公司信息仍为直接功能，不需要打开三级", async () => {
+  it("公司信息及其别名不显示入口，仅有公司许可时不制造空业务工作区", async () => {
     await render();
     await click("business");
-    await click("/workbench/company-info");
-    expect(onNavigate.mock.calls).toEqual([[items.find(item => item.path === "/workbench/company-info")]]);
+    expect(host.querySelector('[data-workspace-nav-target="/workbench/company-info"]')).toBeNull();
+    expect(panel()?.textContent).not.toContain("公司信息");
+    await render("/workbench/company", { items: subset(["/workbench/company-info"]) });
+    expect(host.querySelector("nav, button")).toBeNull();
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
   it.each(["operations", "organization"] as const)("%s 完整沿用旧 workspace 项目，renderItem/renderBadge/preload 和导航原对象", async id => {
@@ -358,7 +366,15 @@ describe("统一导航下拉（new focused contract）", () => {
         renderBadge: item => createElement("span", { "data-original-badge": item.path }, "3"),
       });
       await click(id);
-      expect(leaves(2)).toEqual(workspace.items.map(item => item.path));
+      if (id === "operations") {
+        expect(leaves(2)).toEqual([]);
+        const groupId = Object.entries(operationsPaths).find(([, paths]) => paths.includes(original.path))![0];
+        await click(`group:${groupId}`);
+        expect(leaves(3)).toEqual(operationsPaths[groupId as keyof typeof operationsPaths]);
+        expect(button(`group:${groupId}`).getAttribute("aria-current")).toBe("location");
+        expect(panel(3)?.dataset.workspace).toBe("operations");
+        expect(panel(3)?.getAttribute("aria-labelledby")).toBe(button(`group:${groupId}`).id);
+      } else expect(leaves(2)).toEqual(workspace.items.map(item => item.path));
       const leaf = button(original.path);
       expect(leaf.querySelector("[data-render-workspace]")?.getAttribute("data-render-workspace")).toBe(id);
       expect(leaf.querySelector("[data-render-active]")?.getAttribute("data-render-active")).toBe("true");
@@ -371,6 +387,74 @@ describe("统一导航下拉（new focused contract）", () => {
       expect(onNavigate.mock.calls).toEqual([[original]]);
       expect(panel()).toBeNull();
     }
+  });
+
+  it("平台运营桌面悬停复用三级菜单，八个叶子各只出现一次且不混业务订单", async () => {
+    await render("/orders/8?tab=details");
+    await pointer(button("operations"), "pointerover");
+    expect(Array.from(panel()!.querySelectorAll('[data-workspace-group]')).map(node => node.textContent))
+      .toEqual(["基础资料›", "交易与服务›", "数据与监控›"]);
+    const seen: string[] = [];
+    for (const [id, paths] of Object.entries(operationsPaths)) {
+      await pointer(button(`group:${id}`), "pointerover");
+      expect(leaves(3)).toEqual(paths);
+      expect(host.querySelectorAll('[data-navigation-level="3"][data-workspace-dropdown="panel"]')).toHaveLength(1);
+      seen.push(...leaves(3) as string[]);
+      expect(activeTop()).toEqual(["operations"]);
+    }
+    expect(new Set(seen).size).toBe(8);
+    expect(seen).not.toContain("/workbench/orders");
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("平台运营键盘进入、循环、返回、Esc及移动抽屉均沿用工作台交互", async () => {
+    await render("/orders/8");
+    await key("operations", "ArrowDown");
+    expect(document.activeElement).toBe(button("group:basic-data"));
+    await key("group:basic-data", "ArrowDown");
+    await key("group:transactions-services", "ArrowRight");
+    expect(document.activeElement).toBe(button("/orders"));
+    expect(button("/orders").getAttribute("aria-current")).toBe("page");
+    await key("/orders", "End");
+    expect(document.activeElement).toBe(button("/reviews"));
+    await key("/reviews", "ArrowDown");
+    expect(document.activeElement).toBe(button("/orders"));
+    await key("/orders", "ArrowLeft");
+    expect(document.activeElement).toBe(button("group:transactions-services"));
+    await key("group:transactions-services", "Escape");
+    expect(panel()).toBeNull();
+    expect(document.activeElement).toBe(button("operations"));
+
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    await click("operations");
+    await click("group:data-monitoring");
+    expect(panel()?.hidden).toBe(true);
+    expect(document.activeElement).toBe(button("/analytics"));
+    const back = panel(3)!.querySelector<HTMLButtonElement>('[data-workspace-dropdown="back"]')!;
+    expect(back.getAttribute("aria-label")).toBe("返回平台运营菜单");
+    await act(async () => back.click());
+    expect(panel(3)).toBeNull();
+    expect(panel()?.hidden).toBe(false);
+    expect(document.activeElement).toBe(button("group:data-monitoring"));
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("平台运营仅分组原角色可见叶，撤权关闭旧三级且不补权限", async () => {
+    await render("/orders/8", { items: subset(["/orders", "/portal-users", "/workbench/orders"]) });
+    await click("operations");
+    expect(Array.from(panel()!.querySelectorAll('[data-workspace-group]')).map(node => node.getAttribute('data-workspace-group')))
+      .toEqual(["basic-data", "transactions-services"]);
+    await click("group:transactions-services");
+    expect(leaves(3)).toEqual(["/orders"]);
+    await render("/orders/8", { items: subset(["/portal-users", "/workbench/orders"]) });
+    expect(panel()).toBeNull();
+    expect(panel(3)).toBeNull();
+    await click("operations");
+    expect(host.querySelector('[data-workspace-group="transactions-services"]')).toBeNull();
+    await click("group:basic-data");
+    expect(leaves(3)).toEqual(["/portal-users"]);
+    expect(panel(3)?.querySelector('[aria-current="page"]')).toBeNull();
+    expect(host.querySelector('[data-workspace-nav-target="/orders"]')).toBeNull();
   });
 
   it.each(CHANNEL_INVENTORY_TABS)("渠道 $id 仅原授权 channel 对象+合法 tab.id，查询来自实际 URL", async tab => {
@@ -493,8 +577,10 @@ describe("统一导航下拉（new focused contract）", () => {
     await click("group:customers");
     await render(undefined, { items: subset(["/workbench/company-info", "/analytics"]) });
     expect(panel()).toBeNull();
-    await click("business");
-    expect(leaves(2)).toEqual(["/workbench/company-info"]);
+    expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+    await click("operations");
+    await click("group:data-monitoring");
+    expect(leaves(3)).toEqual(["/analytics"]);
     expect(panel()?.querySelector("[data-business-group]")).toBeNull();
   });
 
@@ -523,8 +609,8 @@ describe("统一导航下拉（new focused contract）", () => {
     expect((await key("business", "ArrowDown")).defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(button("group:customers"));
     await key("group:customers", "End");
-    expect(document.activeElement).toBe(button("/workbench/company-info"));
-    await key("/workbench/company-info", "Home");
+    expect(document.activeElement).toBe(button("group:procurement"));
+    await key("group:procurement", "Home");
     expect(document.activeElement).toBe(button("group:customers"));
     await key("group:customers", "ArrowRight");
     expect(document.activeElement).toBe(button("/workbench/customers"));
@@ -542,7 +628,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(panel(3)).toBeNull();
     expect(document.activeElement).toBe(button("business"));
     await key("business", "ArrowUp");
-    expect(document.activeElement).toBe(button("/workbench/company-info"));
+    expect(document.activeElement).toBe(button("group:procurement"));
     expect(onNavigate).not.toHaveBeenCalled();
   });
 

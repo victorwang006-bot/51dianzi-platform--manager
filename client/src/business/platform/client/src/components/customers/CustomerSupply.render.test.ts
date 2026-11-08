@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => ({
   context: null as unknown, current: true, navigate: vi.fn(), close: vi.fn(), complete: vi.fn(),
-  readContext: vi.fn(), create: vi.fn(), listChannels: vi.fn(), getChannel: vi.fn(), onAuthorizationError: vi.fn(),
+  readContext: vi.fn(), create: vi.fn(), createBatch: vi.fn(), listChannels: vi.fn(), getChannel: vi.fn(), onAuthorizationError: vi.fn(),
   native: { read: true, write: true, note: true, authorizationVersion: "v1" },
   authorityOptions: vi.fn(),
 }));
@@ -20,7 +20,7 @@ vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({
 vi.mock("../../../../../api/business-trpc", () => ({ trpc: {
   enterprise: { me: { useQuery: (_: unknown, options: unknown) => { runtime.authorityOptions(options); return { data: { enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: false, refetch: vi.fn() }; } } },
   useUtils: () => ({ client: { channelInventory: {
-    customerSupplyContext: { query: runtime.readContext }, createCustomerMaterial: { mutate: runtime.create },
+    customerSupplyContext: { query: runtime.readContext }, createCustomerUploadBatch: { mutate: runtime.createBatch }, createCustomerMaterial: { mutate: runtime.create },
     listChannels: { query: runtime.listChannels }, getChannel: { query: runtime.getChannel },
   } } }),
 } }));
@@ -37,7 +37,7 @@ const channel = { id: 411, enterpriseId: 31, name: "同名渠道", type: "agent"
 function context(): SupplyContext {
   return { customer: { id: 801, name: "同名客户", industryCode: "electronic_components", version: 4, contactName: "联系人", phone: "13800138000", archivedAt: null }, channel: null, canUpload: true, disabledReason: null };
 }
-function receipt(customerId = 801, channelId = 411) { return { item: { id: 901, partNumber: "ONE" }, idempotent: false, channelId, customerId }; }
+function receipt(customerId = 801, channelId = 411) { return { item: { id: 901, partNumber: "ONE", channelId, uploadBatchId: 501 }, idempotent: false, channelId, customerId }; }
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 let generation = 0;
@@ -74,6 +74,10 @@ async function upload(rows = [["型号", "品牌"], ["ONE", "TI"], ["TWO", "TI"]
 beforeEach(() => {
   runtime.current = true; runtime.context = context(); runtime.native = { read: true, write: true, note: true, authorizationVersion: "v1" };
   runtime.readContext.mockReset().mockImplementation(() => Promise.resolve(runtime.context));
+  runtime.createBatch.mockReset().mockImplementation(dto => {
+    runtime.context = { ...(runtime.context as SupplyContext), channel: { ...channel, type: dto.sourceProfile?.type ?? (runtime.context as SupplyContext).channel?.type ?? "factory" } };
+    return Promise.resolve({ id: 501, batchCode: "BATCH-501", revision: 1, channelId: 411, customerId: 801 });
+  });
   runtime.create.mockReset().mockImplementation(() => {
     runtime.context = { ...(runtime.context as SupplyContext), channel };
     return Promise.resolve(receipt());
@@ -432,7 +436,7 @@ describe("customer single material upload uses the customer batch transaction", 
     click(button("确认上传 1 条")); await settle();
     expect(runtime.create).toHaveBeenCalledTimes(1);
     expect(runtime.create.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, expectedCustomerVersion: 4, sourceProfile: { type: "factory" },
-      partNumber: "ONE", brand: "TI", qty: 4000, price: "1.123456789012", currency: "CNY", taxIncluded: true, leadTime: "7天", dateCode: "0026+", note: "个人说明", requestId: expect.stringMatching(/^[-0-9a-f]{36}$/i) });
+      partNumber: "ONE", brand: "TI", qty: 4000, price: "1.123456789012", currency: "CNY", taxIncluded: true, leadTime: "7天", dateCode: "0026+", note: "个人说明", requestId: expect.stringMatching(/^[-0-9a-f]{36}$/i), uploadBatchId: 501 });
     expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
     expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
@@ -492,10 +496,10 @@ describe("customer single material upload uses the customer batch transaction", 
     click(button("恢复原批次")); expect(button("单条上传").getAttribute("aria-pressed")).toBe("true");
     click(button("按原批次继续 / 重试")); await settle(); expect(runtime.create.mock.calls[1][0]).toEqual(original); expect(sessionStorage.length).toBe(0);
   });
-  it("keeps all-failed requests recoverable without empty channel creation or success navigation", async () => {
+  it("keeps all-failed requests recoverable after explicit real source/batch creation without success navigation", async () => {
     runtime.create.mockRejectedValueOnce(new Error("FORBIDDEN"));
     await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
-    expect((runtime.context as SupplyContext).channel).toBeNull(); expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.navigate).not.toHaveBeenCalled();
+    expect((runtime.context as SupplyContext).channel?.id).toBe(411); expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.navigate).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("FORBIDDEN"); expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
   });
   it.each(["agent", "trade", "other"])("uses a real linked %s channel without overriding factory type", async type => {
@@ -548,5 +552,108 @@ describe("customer single material upload uses the customer batch transaction", 
       onClose: runtime.close, onComplete: runtime.complete, onAuthorizationError: runtime.onAuthorizationError })); await settle();
     expect(document.body.textContent).not.toContain("恢复原批次"); expect(button("单条上传").disabled).toBe(false);
     expect(runtime.create).toHaveBeenCalledTimes(1); expect(sessionStorage.length).toBe(1);
+  });
+});
+
+
+describe("IR-01 directly mounted customer upload real batch regression", () => {
+  it("uses the explicitly bound channel (never customer ID), creates one batch, and passes it to every table row", async () => {
+    runtime.context = { ...context(), channel };
+    render(); await setupUpload();
+    expect(required(document.querySelector<HTMLSelectElement>('[aria-label="批量关联渠道"]')).value).toBe("411");
+    await upload(); click(button("确认上传 3 条")); await settle();
+    expect(runtime.createBatch).toHaveBeenCalledTimes(1);
+    expect(runtime.createBatch.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7,
+      customerId: 801, expectedCustomerVersion: 4, expectedChannelId: 411, expectedChannelRevision: 1,
+      fileName: "synthetic-customer.xlsx · synthetic", totalRows: 3, requestId: expect.any(String) });
+    expect(runtime.create).toHaveBeenCalledTimes(3);
+    for (const [dto] of runtime.create.mock.calls) { expect(dto.uploadBatchId).toBe(501); expect(dto).not.toHaveProperty("channelId"); }
+    expect(runtime.createBatch.mock.invocationCallOrder[0]).toBeLessThan(runtime.create.mock.invocationCallOrder[0]);
+  });
+  it("unbound first upload persists no fake channel/placeholder material before confirmed source-and-batch creation", async () => {
+    let finish!: (value: unknown) => void;
+    runtime.createBatch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    render(); await setupUpload();
+    expect(document.querySelector('[aria-label="批量关联渠道"] option[value="801"]')).toBeNull();
+    await upload(); expect(runtime.createBatch).not.toHaveBeenCalled();
+    click(button("确认上传 3 条")); await settle();
+    const pending = JSON.parse(required(sessionStorage.getItem(required(sessionStorage.key(0)))));
+    expect(pending).toMatchObject({ phase: "customer-source", preparation: { rows: expect.any(Array), requestId: expect.any(String) } });
+    expect(pending).not.toHaveProperty("channelId"); expect(pending).not.toHaveProperty("entries");
+    expect(runtime.create).not.toHaveBeenCalled();
+    runtime.context = { ...context(), channel: { ...channel, type: "factory" } };
+    await act(async () => { finish({ id: 501, batchCode: "BATCH-501", revision: 1, channelId: 411, customerId: 801 }); }); await settle();
+    expect(runtime.create).toHaveBeenCalledTimes(3);
+    for (const [dto] of runtime.create.mock.calls) expect(dto).toMatchObject({ uploadBatchId: 501, sourceProfile: { type: "factory" } });
+  });
+  it("batch response loss refresh restores the exact requestId without opening a second batch", async () => {
+    runtime.createBatch.mockImplementationOnce(dto => {
+      runtime.context = { ...context(), channel: { ...channel, type: dto.sourceProfile.type } };
+      return Promise.reject(new Error("batch committed response lost"));
+    });
+    render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
+    const original = runtime.createBatch.mock.calls[0][0];
+    expect(runtime.create).not.toHaveBeenCalled(); expect(button("表格上传").disabled).toBe(true);
+    const pending = JSON.parse(required(sessionStorage.getItem(required(sessionStorage.key(0)))));
+    click(button("取消")); render(); await setupUpload(); click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.createBatch.mock.calls[1][0]).toEqual(original);
+    expect(runtime.create.mock.calls.map(([dto]) => dto.requestId)).toEqual(pending.preparation.rows.map((row: { requestId: string }) => row.requestId));
+    for (const [dto] of runtime.create.mock.calls) expect(dto.uploadBatchId).toBe(501);
+  });
+  it("partial per-row refresh retries retain batch and row request ID without recreating a batch", async () => {
+    runtime.create.mockResolvedValueOnce(receipt()).mockRejectedValueOnce(new Error("row response lost"));
+    render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
+    const original = runtime.create.mock.calls[1][0];
+    const saved = JSON.parse(required(sessionStorage.getItem(required(sessionStorage.key(0)))));
+    expect(saved.channelId).toBe(411); expect(saved.uploadBatch.id).toBe(501);
+    for (const row of saved.entries) expect(row.uploadBatchId).toBe(501);
+    click(button("取消")); render(); await setupUpload(); click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create.mock.calls[2][0]).toEqual(original);
+  });
+  it("single upload uses the same new real batch and ID allowlist", async () => {
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.createBatch).toHaveBeenCalledTimes(1);
+    expect(runtime.createBatch.mock.calls[0][0]).toMatchObject({ fileName: "单条手工录入", totalRows: 1 });
+    expect(runtime.create.mock.calls[0][0].uploadBatchId).toBe(501);
+  });
+  it("bound channel revision changes stop before creating a new batch", async () => {
+    runtime.context = { ...context(), channel }; render(); await setupUpload(); await upload();
+    runtime.context = { ...context(), channel: { ...channel, revision: 2 } };
+    click(button("确认上传 3 条")); await settle();
+    expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("a bound batch-creation response loss cannot restore under a changed channel revision", async () => {
+    runtime.context = { ...context(), channel }; runtime.createBatch.mockRejectedValueOnce(new Error("batch unknown"));
+    render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
+    click(button("取消")); runtime.context = { ...context(), channel: { ...channel, revision: 2 } };
+    render(); await setupUpload(); expect(button("选择库存表格").disabled).toBe(true);
+    expect(document.body.textContent).toContain("阻止另起批次"); expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("saved successful receipts must carry matching material channel and batch evidence", () => {
+    const valid = { ...receipt(), uploadBatchId: 501 };
+    const entry = { row: 2, requestId: "original", payload: { ...payload, channelId: 411 }, uploadBatchId: 501, status: "success" as const, receipt: valid };
+    expect(completedSupplyChannel([entry], 801)).toBe(411);
+    expect(completedSupplyChannel([{ ...entry, receipt: { ...valid, item: { ...valid.item, uploadBatchId: 502 } } }], 801)).toBeNull();
+  });
+  it("lost upload permission fails before any source/batch or row write", async () => {
+    render(); await setupUpload(); await upload(); runtime.context = { ...context(), canUpload: false };
+    click(button("确认上传 3 条")); await settle();
+    expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).not.toHaveBeenCalled(); expect(runtime.close).toHaveBeenCalled();
+  });
+  it.each(["channel", "batch"])("rejects a real material receipt with wrong %s attribution", async kind => {
+    const bad = receipt();
+    runtime.create.mockResolvedValueOnce({ ...bad, item: { ...bad.item, ...(kind === "channel" ? { channelId: 801 } : { uploadBatchId: 502 }) } });
+    await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("回执");
+    const original = runtime.create.mock.calls[0][0]; click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create.mock.calls[1][0]).toEqual(original);
+  });
+  it("does not backfill legacy virtual customer queues with invented batch attribution", async () => {
+    const key = `d51-channel-inventory-batch-v1:7:31:${customerSupplySessionSuffix(identity, 801)}`;
+    sessionStorage.setItem(key, JSON.stringify({ version: 1, enterpriseId: 31, actorUserId: 7, channelId: 801,
+      name: "legacy.xlsx", sessionData: { customerId: 801, customerVersion: 4, sourceProfile: { type: "factory" } },
+      entries: [{ row: 2, requestId: "00000000-0000-4000-8000-000000000001", payload, status: "unknown" }] }));
+    render(); await setupUpload(); expect(button("选择库存表格").disabled).toBe(true);
+    expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).not.toHaveBeenCalled();
   });
 });

@@ -2,12 +2,13 @@ import { sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { businessFailureOf } from "../../../shared/businessFailure";
 import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
-import { createCustomerMaterialSchema, customerSupplyContextSchema, customerSupplySummarySchema, type CreateCustomerMaterialInput, type CustomerSupplyContextInput, type CustomerSupplySummaryInput } from "../../../shared/customerSupply";
+import { createCustomerUploadBatchSchema, type CreateCustomerUploadBatchInput, createCustomerMaterialSchema, customerSupplyContextSchema, customerSupplySummarySchema, type CreateCustomerMaterialInput, type CustomerSupplyContextInput, type CustomerSupplySummaryInput } from "../../../shared/customerSupply";
 import { ChannelInventoryError, createChannelInventoryService, resolveChannelInventoryAuthority, trustedCustomerCreationContext, type ChannelInventoryType, type ChannelInventoryScope, type ChannelInventoryServiceDependencies, type SqlExecutor, type SqlResultRow, type SqlDatabase } from "./channelInventory";
-import { crmCustomerPolicyWhere } from "./crmCustomers";
+import { crmCustomerPolicyWhere, resolveCrmCustomerPolicy, assertCrmCustomerPolicy } from "./crmCustomers";
 import { currentReadExecutor, readCustomerPrimaryContact, resolveCustomerSupplyReadPolicy, customerSupplyCompletion as completion, linkedCompanyReadGate } from "./customerSupplyCompany";
 import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
+import { createChannelInventoryManagementService } from "./channelInventoryManagement";
 const rows = (r: unknown): SqlResultRow[] => Array.isArray(r) ? (Array.isArray(r[0]) ? r[0] : r) as SqlResultRow[] : [];
 const fail = (code: ConstructorParameters<typeof ChannelInventoryError>[0], message: string): never => { throw new ChannelInventoryError(code, message); };
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId: number; expectedActorUserId: number }) {
@@ -71,14 +72,75 @@ export function createCustomerSupplyService(deps: ChannelInventoryServiceDepende
       if (raw) channel = { id: Number(raw.id), name: String(c.name), type: String(raw.type), industryCode: c.industryCode == null ? null : String(c.industryCode), active: raw.active === 1 || raw.active === true || raw.active === "1", revision: Number(raw.revision) };
       else disabledReason ??= "暂无权限读取关联库存来源，请联系有权人员确认";
     }
-    try { await writeFence(tx, scope, link ? Number(link.channelId) : undefined); }
+    try {
+      await assertCrmCustomerPolicy(currentReadExecutor(tx), scope, input.customerId,
+        await resolveCrmCustomerPolicy(currentReadExecutor(tx), scope, true), true);
+      await writeFence(tx, scope, link ? Number(link.channelId) : undefined);
+    }
     catch (error) {
       if (!businessFailureOf(error) && (error instanceof ChannelInventoryError || error instanceof TRPCError) && ["FORBIDDEN", "NOT_FOUND", "PRECONDITION_FAILED"].includes(error.code)) disabledReason ??= error.message;
       else throw error;
     }
     return { customer: { id: Number(c.id), name: String(c.name), industryCode: c.industryCode == null ? null : String(c.industryCode), version: Number(c.version), contactName: c.contactName == null ? null : String(c.contactName), phone: c.phone == null ? null : String(c.phone), archivedAt: c.archivedAt as Date | string | null }, channel, canUpload: disabledReason === null, disabledReason };
   }
+  async function source(tx: SqlExecutor, scope: ChannelInventoryScope, c: SqlResultRow, input: CreateCustomerMaterialInput | CreateCustomerUploadBatchInput) {
+    // Locked version equality is the customer CAS; no customer DML, contact copy
+    // writeback or unrelated version bump is permitted by this upload workflow.
+    let link = await binding(tx, scope, input.customerId);
+    // This adapter joins the TRUE outer transaction, never a nested commit.
+    const adapter: SqlDatabase = { execute: q => tx.execute(q), transaction: fn => fn(tx) };
+    const inventory = createChannelInventoryService({ getDb: async () => adapter, registerTeamRecord: deps.registerTeamRecord });
+    if (!link) {
+      const sourceProfile = input.sourceProfile;
+      if (!sourceProfile) return fail("PRECONDITION_FAILED", "首次上传请明确确认渠道类型，或选择已有渠道");
+      let channelId = sourceProfile.existingChannelId;
+      if (channelId !== undefined) {
+        const chosen = await writeFence(tx, scope, channelId);
+        if (chosen?.type !== sourceProfile.type) fail("CONFLICT", "所选渠道类型已变化，请刷新确认");
+        const occupied = rows(await tx.execute(sql`SELECT customerId FROM crm_customer_supply_channels
+          WHERE enterpriseId = ${scope.enterpriseId} AND dataOwnerUserId = ${scope.dataOwnerUserId} AND channelId = ${channelId} LIMIT 1 FOR UPDATE`))[0];
+        if (occupied) fail("CONFLICT", "所选渠道已关联客户，不能重复绑定");
+      } else {
+        channelId = (await inventory.createChannel(scope, { name: String(c.name), industryCode: businessIndustryCodeSchema.parse(c.industryCode), type: sourceProfile.type,
+          contactName: null, phone: null, wechat: null, qq: null, notes: null, active: true, requestId: input.requestId })).item.id;
+      }
+      await tx.execute(sql`INSERT INTO crm_customer_supply_channels
+        (enterpriseId, dataOwnerUserId, customerId, inventoryResponsibleUserId, channelId, customerVersionAtBind, firstRequestId, schemaVersion)
+        VALUES (${scope.enterpriseId}, ${scope.dataOwnerUserId}, ${input.customerId}, ${scope.actorUserId}, ${channelId}, ${input.expectedCustomerVersion}, ${input.requestId}, 1)`);
+      link = { channelId };
+    }
+    const channelId = Number(link.channelId);
+    if (input.sourceProfile?.existingChannelId !== undefined && input.sourceProfile.existingChannelId !== channelId) fail("CONFLICT", "客户已有供应渠道，不能改绑其他渠道");
+    const boundChannel = await writeFence(tx, scope, channelId);
+    if ("expectedChannelRevision" in input && input.expectedChannelRevision !== undefined && Number(boundChannel!.revision) !== input.expectedChannelRevision)
+      fail("CONFLICT", "客户供应渠道版本已变化，请刷新确认");
+    const sourceType = String(boundChannel!.type) as ChannelInventoryType;
+    if (input.sourceProfile && input.sourceProfile.type !== sourceType) fail("CONFLICT", "客户关联渠道类型不匹配，请刷新确认");
+    return { channelId, inventory, sourceType, adapter };
+  }
   return {
+    async createCustomerUploadBatch(scope: ChannelInventoryScope, raw: CreateCustomerUploadBatchInput) {
+      const input = createCustomerUploadBatchSchema.parse(raw); expected(scope, input);
+      return guarded(async () => (await database()).transaction(async transaction => {
+        const tx = currentReadExecutor(transaction);
+        await writeFence(tx, scope);
+        const c = await customer(tx, scope, input.customerId);
+        await assertCrmCustomerPolicy(currentReadExecutor(tx), scope, input.customerId,
+          await resolveCrmCustomerPolicy(currentReadExecutor(tx), scope, true), true);
+        if (Number(c.version) !== input.expectedCustomerVersion) fail("CONFLICT", "客户档案已变化，请刷新后重试");
+        const reason = completion(c); if (reason) fail("PRECONDITION_FAILED", reason);
+        const priorLink = await binding(tx, scope, input.customerId);
+        if (input.expectedChannelId !== undefined && Number(priorLink?.channelId) !== input.expectedChannelId)
+          fail("CONFLICT", "客户供应渠道已变化，请刷新确认");
+        const { channelId, adapter } = await source(tx, scope, c, input);
+        // Existing batch request persistence supplies replay/hash/membership/receipt fences.
+        // Both source creation and batch creation join this true outer transaction.
+        const batch = await createChannelInventoryManagementService({ getDb: async () => adapter }).createUploadBatch(scope,
+          { expectedEnterpriseId: input.expectedEnterpriseId, expectedActorUserId: input.expectedActorUserId,
+            channelId, fileName: input.fileName, totalRows: input.totalRows, requestId: input.requestId });
+        return { ...batch, channelId, customerId: input.customerId };
+      }));
+    },
     async customerSupplyContext(scope: ChannelInventoryScope, raw: CustomerSupplyContextInput) {
       const input = customerSupplyContextSchema.parse(raw); expected(scope, input);
       return guarded(async () => (await database()).transaction(tx => context(tx, scope, input)));
@@ -112,38 +174,11 @@ export function createCustomerSupplyService(deps: ChannelInventoryServiceDepende
         // Keep enterprise/member/module/team lock order ahead of customer business rows.
         await writeFence(tx, scope);
         const c = await customer(tx, scope, input.customerId);
+        await assertCrmCustomerPolicy(currentReadExecutor(tx), scope, input.customerId,
+          await resolveCrmCustomerPolicy(currentReadExecutor(tx), scope, true), true);
         if (Number(c.version) !== input.expectedCustomerVersion) fail("CONFLICT", "客户档案已变化，请刷新后重试");
         const reason = completion(c); if (reason) fail("PRECONDITION_FAILED", reason);
-        // Locked version equality is the customer CAS; no customer DML, contact copy
-        // writeback or unrelated version bump is permitted by this upload workflow.
-        let link = await binding(tx, scope, input.customerId);
-        // This adapter joins the TRUE outer transaction, never a nested commit.
-        const adapter: SqlDatabase = { execute: q => tx.execute(q), transaction: fn => fn(tx) };
-        const inventory = createChannelInventoryService({ getDb: async () => adapter, registerTeamRecord: deps.registerTeamRecord });
-        if (!link) {
-          const sourceProfile = input.sourceProfile;
-          if (!sourceProfile) return fail("PRECONDITION_FAILED", "首次上传请明确确认渠道类型，或选择已有渠道");
-          let channelId = sourceProfile.existingChannelId;
-          if (channelId !== undefined) {
-            const chosen = await writeFence(tx, scope, channelId);
-            if (chosen?.type !== sourceProfile.type) fail("CONFLICT", "所选渠道类型已变化，请刷新确认");
-            const occupied = rows(await tx.execute(sql`SELECT customerId FROM crm_customer_supply_channels
-              WHERE enterpriseId = ${scope.enterpriseId} AND dataOwnerUserId = ${scope.dataOwnerUserId} AND channelId = ${channelId} LIMIT 1 FOR UPDATE`))[0];
-            if (occupied) fail("CONFLICT", "所选渠道已关联客户，不能重复绑定");
-          } else {
-            channelId = (await inventory.createChannel(scope, { name: String(c.name), industryCode: businessIndustryCodeSchema.parse(c.industryCode), type: sourceProfile.type,
-              contactName: null, phone: null, wechat: null, qq: null, notes: null, active: true, requestId: input.requestId })).item.id;
-          }
-          await tx.execute(sql`INSERT INTO crm_customer_supply_channels
-            (enterpriseId, dataOwnerUserId, customerId, inventoryResponsibleUserId, channelId, customerVersionAtBind, firstRequestId, schemaVersion)
-            VALUES (${scope.enterpriseId}, ${scope.dataOwnerUserId}, ${input.customerId}, ${scope.actorUserId}, ${channelId}, ${input.expectedCustomerVersion}, ${input.requestId}, 1)`);
-          link = { channelId };
-        }
-        const channelId = Number(link.channelId);
-        if (input.sourceProfile?.existingChannelId !== undefined && input.sourceProfile.existingChannelId !== channelId) fail("CONFLICT", "客户已有供应渠道，不能改绑其他渠道");
-        const boundChannel = await writeFence(tx, scope, channelId);
-        const sourceType = String(boundChannel!.type) as ChannelInventoryType;
-        if (input.sourceProfile && input.sourceProfile.type !== sourceType) fail("CONFLICT", "客户关联渠道类型不匹配，请刷新确认");
+        const { channelId, inventory, sourceType } = await source(tx, scope, c, input);
         const { partNumber, brand, qty, dateCode, price, currency, taxIncluded, leadTime, note, requestId, uploadBatchId } = input;
         const receipt = await inventory.createMaterial(scope, { channelId, partNumber, brand, qty, dateCode, price, currency, taxIncluded, leadTime, note, requestId, ...(uploadBatchId === undefined ? {} : { uploadBatchId }) },
           trustedCustomerCreationContext({ customerId: input.customerId, expectedCustomerVersion: input.expectedCustomerVersion, sourceType }));

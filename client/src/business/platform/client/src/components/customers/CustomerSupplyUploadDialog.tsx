@@ -11,7 +11,7 @@ import { CustomerSupplySingleEntry } from "./CustomerSupplySingleEntry";
 import "./CustomerSupplyUploadDialog.css";
 
 type Channel = SupplyOutputs["getChannel"];
-type SessionData = { customerId: number; customerVersion: SupplyContext["customer"]["version"]; sourceProfile?: SourceProfile };
+type SessionData = { customerId: number; customerVersion: SupplyContext["customer"]["version"]; sourceProfile?: SourceProfile; initialChannelId?: number; initialChannelRevision?: number; verifiedChannelRevision?: number };
 type Props = { customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void;
   onComplete: () => void; onAuthorizationError: (error: unknown) => void };
 const SOURCE_TYPES = ["factory", "agent", "trade", "other"] as const;
@@ -23,11 +23,14 @@ function validSession(value: unknown, customerId: number, version: SessionData["
   // Historical, explicitly confirmed source types remain valid recovery metadata.
   // Never rewrite them: the server checks the original request/type against binding.
   return data.customerId === customerId && data.customerVersion === version
+    && (data.initialChannelId === undefined || (Number.isSafeInteger(data.initialChannelId) && data.initialChannelId > 0))
+    && [data.initialChannelRevision, data.verifiedChannelRevision].every(value => value === undefined || (Number.isSafeInteger(value) && value > 0))
     && (!profile || (SOURCE_TYPES.includes(profile.type)
       && (profile.existingChannelId === undefined || (Number.isSafeInteger(profile.existingChannelId) && profile.existingChannelId > 0))));
 }
 function initialSession(customerId: number, context: SupplyContext): SessionData {
   return { customerId, customerVersion: context.customer.version,
+    ...(context.channel ? { initialChannelId: context.channel.id, initialChannelRevision: context.channel.revision } : {}),
     ...(!context.channel ? { sourceProfile: { type: "factory" as const } } : {}) };
 }
 
@@ -54,6 +57,7 @@ function CustomerSupplyUploadSession(props: Props) {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const frozen = useRef<SessionData | null>(null);
   const receiptsChannel = useRef<number | null>(null);
+  const uploadBatch = useRef<{ channelId: number; id: number } | null>(null);
   const mounted = useRef(true);
   const currentRef = useRef(false);
   currentRef.current = props.isCurrent() && !invalidated;
@@ -78,7 +82,9 @@ function CustomerSupplyUploadSession(props: Props) {
     && !fresh.customer.archivedAt && fresh.canUpload === true
     && businessIndustryCodeSchema.safeParse(fresh.customer.industryCode).success
     && (!fresh.channel || fresh.channel.active)
-    && (!frozen.current || fresh.customer.version === frozen.current.customerVersion)
+    && (!frozen.current || (fresh.customer.version === frozen.current.customerVersion
+      && (!frozen.current.initialChannelId || (fresh.channel?.id === frozen.current.initialChannelId && fresh.channel.revision === frozen.current.initialChannelRevision))
+      && (!frozen.current.verifiedChannelRevision || !fresh.channel || fresh.channel.revision === frozen.current.verifiedChannelRevision)))
     && (!checkReceipt || !receiptsChannel.current || fresh.channel?.id === receiptsChannel.current);
 
   useEffect(() => {
@@ -151,7 +157,7 @@ function CustomerSupplyUploadSession(props: Props) {
       const type = SOURCE_TYPES.find(value => value === chosen.type);
       if (!type) throw new Error("现有渠道真实类型无效，请核实后重试。");
       const data: SessionData = { customerId: props.customerId, customerVersion: fresh.customer.version,
-        sourceProfile: { type, existingChannelId: id } };
+        sourceProfile: { type, existingChannelId: id }, verifiedChannelRevision: chosen.revision };
       frozen.current = data; setSessionData(data); setContext(fresh); setConfirmedExisting(true);
     } catch (error) {
       if (current()) { props.onAuthorizationError(error); setMessage(error instanceof Error ? error.message : "客户来源核验失败。"); }
@@ -173,11 +179,10 @@ function CustomerSupplyUploadSession(props: Props) {
   const upload = context && sessionData ? <BatchUpload
     key={`${props.identity.key}:${props.customerId}`}
     dialogMode="content" dialogControlsRef={uploadControls}
-    channels={[{ id: props.customerId, name: context.customer.name,
-      // Cached pre-upload context may not yet contain the first committed link.
-      // Keep original-batch retry reachable; onCreate checks the fresh link.
-      active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp }]}
-    channelTotal={1} initialChannelId={props.customerId}
+    channels={context.channel ? [{ id: context.channel.id, name: context.customer.name,
+      active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp }] : []}
+    channelTotal={context.channel ? 1 : 0} initialChannelId={context.channel?.id}
+    customerSourceReady={contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp}
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
     renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} />}
@@ -197,38 +202,82 @@ function CustomerSupplyUploadSession(props: Props) {
     </div> : null}
     storageKeySuffix={customerSupplySessionSuffix(props.identity, props.customerId)} sessionData={sessionData}
     validateSavedSession={(data, entries) => validSession(data, props.customerId, context.customer.version)
+      && (!(data as SessionData).initialChannelId || ((data as SessionData).initialChannelId === context.channel?.id
+        && (data as SessionData).initialChannelRevision === context.channel?.revision))
+      && (!(data as SessionData).verifiedChannelRevision || !context.channel || (data as SessionData).verifiedChannelRevision === context.channel.revision)
+      // Historical virtual queues have no proven batch association: never backfill them.
+      && (!entries.length || entries.every(entry => Number.isSafeInteger((entry as BatchEntry & { uploadBatchId?: number }).uploadBatchId)
+        && (entry as BatchEntry & { uploadBatchId?: number }).uploadBatchId! > 0 && entry.payload.channelId === context.channel?.id))
       && (!entries.some(entry => entry.status === "success") || (completedSupplyChannel(entries, props.customerId) !== null
         && context.channel?.id === completedSupplyChannel(entries, props.customerId)))}
-    onRestoreSession={data => {
+    onRestoreSession={(data, entries, batch) => {
       if (!validSession(data, props.customerId, context.customer.version)) return;
       frozen.current = data; setSessionData(data); setSourceLocked(true);
+      if (entries.length && batch?.id) uploadBatch.current = { channelId: entries[0].payload.channelId, id: batch.id };
       setChooseExisting(false); setConfirmedExisting(false);
     }}
     onClose={props.onClose} onDirtyChange={() => undefined}
     onBusyChange={busy => { if (busy) setSourceLocked(true); }}
     onLoadMoreChannels={() => undefined} loadingMoreChannels={false} isCurrent={current}
-    receiptFromResult={response => supplyReceipt(response, props.customerId)}
-    onCreate={async (payload, requestId) => {
+    receiptFromResult={response => supplyReceipt(response, props.customerId, uploadBatch.current?.channelId, uploadBatch.current?.id)}
+    onCreateCustomerBatch={async input => {
       try {
         const data = frozen.current;
         if (!current() || !data) throw new Error("客户或授权已变化，已停止上传。");
         if (chooseExisting && !confirmedExisting) throw new Error("请先明确确认所选渠道真实身份。");
         const fresh = await readContext();
         if (!current()) throw new Error("上传会话已变化。");
-        if (!contextAllowed(fresh) || (context.channel && fresh.channel?.id !== context.channel.id)) {
+        if (!contextAllowed(fresh) || (data.initialChannelId && fresh.channel?.id !== data.initialChannelId)) {
+          invalidate(); throw new Error("客户版本、渠道或上传权限已变化，已停止上传。");
+        }
+        if (data.sourceProfile?.existingChannelId) {
+          const chosen = await verifyExisting(data.sourceProfile.existingChannelId);
+          if (chosen.type !== data.sourceProfile.type || (data.verifiedChannelRevision !== undefined && chosen.revision !== data.verifiedChannelRevision)) throw new Error("所选渠道真实类型已变化，请核实原批次。");
+        }
+        if (!current()) throw new Error("上传会话已变化。");
+        const abort = controller();
+        try {
+          const batch = await utils.client.channelInventory.createCustomerUploadBatch.mutate({ ...expected,
+            customerId: props.customerId, expectedCustomerVersion: data.customerVersion,
+            ...(data.initialChannelId ? { expectedChannelId: data.initialChannelId } : {}),
+            ...((data.initialChannelRevision ?? data.verifiedChannelRevision) === undefined ? {} : { expectedChannelRevision: data.initialChannelRevision ?? data.verifiedChannelRevision }),
+            ...(data.sourceProfile ? { sourceProfile: data.sourceProfile } : {}), ...input }, { signal: abort.signal });
+          if (!current()) throw new Error("上传会话已变化，批次待原请求确认。");
+          if (batch.customerId !== props.customerId || !Number.isSafeInteger(batch.channelId) || batch.channelId <= 0
+            || !Number.isSafeInteger(batch.id) || batch.id <= 0
+            || (fresh.channel && batch.channelId !== fresh.channel.id)
+            || (data.sourceProfile?.existingChannelId && batch.channelId !== data.sourceProfile.existingChannelId)
+            || (uploadBatch.current && (uploadBatch.current.id !== batch.id || uploadBatch.current.channelId !== batch.channelId)))
+            throw new Error("客户批次回执身份不匹配，请按原请求确认，不会新建批次。");
+          uploadBatch.current = { channelId: batch.channelId, id: batch.id };
+          return batch;
+        } finally { requests.current.delete(abort); }
+      } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
+    }}
+    onCreate={async (payload, requestId, uploadBatchId) => {
+      try {
+        const data = frozen.current;
+        if (!current() || !data) throw new Error("客户或授权已变化，已停止上传。");
+        if (uploadBatchId === undefined || uploadBatch.current?.id !== uploadBatchId || uploadBatch.current.channelId !== payload.channelId)
+          throw new Error("真实上传批次尚未核验，已阻止无批次提交。");
+        if (chooseExisting && !confirmedExisting) throw new Error("请先明确确认所选渠道真实身份。");
+        const fresh = await readContext();
+        if (!current()) throw new Error("上传会话已变化。");
+        if (!contextAllowed(fresh) || fresh.channel?.id !== uploadBatch.current.channelId
+          || (context.channel && fresh.channel?.id !== context.channel.id)) {
           invalidate(); throw new Error("客户版本、归档状态、渠道或上传权限已变化，已停止上传。");
         }
         if (data.sourceProfile?.existingChannelId) {
           const chosen = await verifyExisting(data.sourceProfile.existingChannelId);
-          if (chosen.type !== data.sourceProfile.type) throw new Error("所选渠道真实类型已变化，请核实原批次。");
+          if (chosen.type !== data.sourceProfile.type || (data.verifiedChannelRevision !== undefined && chosen.revision !== data.verifiedChannelRevision)) throw new Error("所选渠道真实类型已变化，请核实原批次。");
         }
         if (!current()) throw new Error("上传会话已变化。");
         const abort = controller();
         try {
           const receipt = await utils.client.channelInventory.createCustomerMaterial.mutate(
-            customerMaterialInput(payload, requestId, props.identity, props.customerId, data.customerVersion, data.sourceProfile), { signal: abort.signal });
+            customerMaterialInput(payload, requestId, props.identity, props.customerId, data.customerVersion, data.sourceProfile, uploadBatchId), { signal: abort.signal });
           if (!current()) throw new Error("上传会话已变化，结果待原请求确认。");
-          const checked = supplyReceipt(receipt, props.customerId);
+          const checked = supplyReceipt(receipt, props.customerId, uploadBatch.current.channelId, uploadBatchId);
           if (receiptsChannel.current && receiptsChannel.current !== checked.channelId) throw new Error("回执渠道身份不一致，请核实原请求。");
           receiptsChannel.current = checked.channelId;
           return receipt;

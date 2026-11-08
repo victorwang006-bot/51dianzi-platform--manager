@@ -20,6 +20,16 @@ export type InventoryPage<T> = { items: T[]; total: number; page: number; pageSi
 export type UploadBatchInput = { channelId: number; fileName: string; totalRows: number; requestId: string };
 export type UploadBatchReceipt = { id: number; batchCode: string; revision: number };
 export type DeleteMaterialRow = { id: number; revision: number; partNumber: string; qty: number | null; canDelete?: boolean; readOnly?: boolean };
+export type MaterialUploadBatchProjection = { uploadBatchId?: number | null; canViewUploadBatch?: boolean };
+/** Hidden and missing metadata must never be labelled as an unlinked historical row. */
+export function materialUploadBatchAssociation(row: MaterialUploadBatchProjection): { state: "linked"; id: number } | { state: "unlinked" | "unavailable" | "unknown" } {
+  if (row.uploadBatchId === null) return { state: "unlinked" };
+  if (typeof row.uploadBatchId === "number" && Number.isSafeInteger(row.uploadBatchId) && row.uploadBatchId > 0) {
+    if (row.canViewUploadBatch === true) return { state: "linked", id: row.uploadBatchId };
+    if (row.canViewUploadBatch === false) return { state: "unavailable" };
+  }
+  return { state: "unknown" };
+}
 type Query<I, O> = { query: (input: I, options?: { signal?: AbortSignal }) => Promise<O> };
 type Mutation<I, O> = { mutate: (input: I) => Promise<O> };
 /** Temporary local contract over the existing authenticated bridge; no new transport. */

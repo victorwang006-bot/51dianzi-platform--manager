@@ -7,6 +7,10 @@ export const officialInventoryPermissionsSchema = z.object({
   publish: z.boolean().optional(),
   /** Signed server-local CRM scope projection, NOT a native inventory grant. */
   customerScopeRead: z.boolean().optional(),
+  /** Only listChannels/getChannel: live official leader -> explicit bound staff.
+   * ERP team and current channel assignment are independently rechecked. */
+  channelProfileTeamRead: z.object({ ownerUserIds: z.array(z.number().int().safe().positive()).min(1).max(500)
+    .refine(ids => new Set(ids).size === ids.length) }).strict().optional(),
   authorizationVersion: z.string().min(8).max(160),
 }).strict();
 export type OfficialInventoryPermissions = z.infer<typeof officialInventoryPermissionsSchema>;
@@ -18,6 +22,7 @@ export const signedOfficialInventoryGrantSchema = z.object({
 export type SignedOfficialInventoryGrant = z.infer<typeof signedOfficialInventoryGrantSchema>;
 /** Explicit native-read chains; linked customer methods also recheck native CRM access. */
 export const NATIVE_TEAM_READ_METHODS: readonly string[] = [
+  "channelInventory.listChannels", "channelInventory.getChannel",
   "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches",
   "channelInventory.customerSupplySummary", "channelInventory.customerSupplyContext",
   "channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource",
@@ -30,7 +35,7 @@ export function officialInventoryMethodRequirement(method: string): "read" | "wr
   if (["channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit",
     "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit"].includes(method)) return "note";
   if (["channelInventory.deleteMaterials", "channelInventory.restoreMaterial", "channelInventory.createUploadBatch", "channelInventory.updateUploadBatch", "channelInventory.previewDeleteUploadBatch", "channelInventory.deleteUploadBatch", "channelInventory.createChannel", "channelInventory.updateChannel", "channelInventory.setChannelActive", "channelInventory.getTeamMaterialForEdit",
-    "channelInventory.createCustomerMaterial", "channelInventory.updateTeamMaterial", "channelInventory.createMaterial", "channelInventory.updateMaterial", "channelInventory.setMaterialShare"].includes(method)) return "write";
+    "channelInventory.createCustomerUploadBatch", "channelInventory.createCustomerMaterial", "channelInventory.updateTeamMaterial", "channelInventory.createMaterial", "channelInventory.updateMaterial", "channelInventory.setMaterialShare"].includes(method)) return "write";
   return "read";
 }
 /** Stable canonical JSON is shared with the BFF signer (no browser fields participate). */

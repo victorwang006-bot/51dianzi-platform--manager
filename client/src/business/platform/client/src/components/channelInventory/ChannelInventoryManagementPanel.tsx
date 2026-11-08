@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { formatBeijingDateTime } from "../../../../shared/beijingTime";
+import { DEFAULT_BATCH_LIST_STATE, type ChannelInventoryBatchListState } from "../../../../../../lib/channelInventoryNavigation";
 import {
   deletableCurrentPage, inventoryDefinitiveFailure, inventoryError, inventoryRequestId,
   type DeletedMaterial, type DeleteMaterialRow, type InventoryContext,
@@ -108,6 +109,8 @@ export function useMaterialDeletion(props: DeleteProps) {
 type PanelProps = {
   mode: "batches" | "trash"; client: InventoryManagementClient; context: InventoryContext;
   canWrite: boolean; isCurrent: () => boolean; onViewBatch: (id: number) => void;
+  listState?: ChannelInventoryBatchListState; onListStateChange?: (state: ChannelInventoryBatchListState) => void;
+  focusBatchId?: number; onClearBatchFocus?: () => void;
   onComplete: () => Promise<unknown>; onAuthorizationError: (error: unknown) => void;
 };
 type Action =
@@ -116,11 +119,12 @@ type Action =
   | { kind: "deleteBatch"; batch: UploadBatchRecord; preview: { total: number; eligibleCount: number; conflictCount: number; revision: number }; requestId: string }
   | { kind: "restore"; material: DeletedMaterial; requestId: string };
 export function ChannelInventoryManagementPanel(props: PanelProps) {
-  const [page, setPage] = useState(1);
-  const [channelId, setChannelId] = useState("");
-  const [archived, setArchived] = useState<"all" | "active" | "archived">("active");
+  const [localListState, setLocalListState] = useState<ChannelInventoryBatchListState>(DEFAULT_BATCH_LIST_STATE);
+  const listState = props.listState ?? localListState;
+  const { page, channelId, archived } = listState;
+  const updateListState = (next: ChannelInventoryBatchListState) => { setLocalListState(next); props.onListStateChange?.(next); };
   const [reload, setReload] = useState(0);
-  const key = JSON.stringify([props.mode, page, channelId, archived, reload]);
+  const key = JSON.stringify([props.context, props.mode, page, channelId, archived, props.focusBatchId, reload]);
   const [query, setQuery] = useState<{ key: string; loading: boolean; error?: string; batches?: InventoryPage<UploadBatchRecord>; trash?: InventoryPage<DeletedMaterial> }>({ key: "", loading: true });
   const [action, setAction] = useState<Action | null>(null);
   const [busy, setBusy] = useState(false);
@@ -144,8 +148,30 @@ export function ChannelInventoryManagementPanel(props: PanelProps) {
     void (async () => {
       try {
         if (props.mode === "batches") {
-          const result = await props.client.listUploadBatches.query({ ...props.context, page, pageSize: 20, channelId: channelId ? parsed : undefined, archived: archived === "all" ? undefined : archived === "archived" }, { signal: abort.signal });
-          if (valid()) setQuery({ key, loading: false, batches: result });
+          // The deployed router has no get-by-ID endpoint. Search only its
+          // authorized list and expose the exact match, never a same-name batch.
+          // Missing/hidden targets are intentionally indistinguishable.
+          let result: InventoryPage<UploadBatchRecord>;
+          if (props.focusBatchId !== undefined) {
+            if (!Number.isSafeInteger(props.focusBatchId) || props.focusBatchId <= 0) throw new Error("批次 ID 无效，未定位其他批次。");
+            let target: UploadBatchRecord | undefined;
+            let nextPage = 1;
+            let pageCount = 1;
+            do {
+              const found = await props.client.listUploadBatches.query({ ...props.context, page: nextPage, pageSize: 100, archived: undefined, channelId: undefined }, { signal: abort.signal });
+              if (!valid()) return;
+              if (!Array.isArray(found.items) || found.page !== nextPage || !Number.isSafeInteger(found.total) || found.total < 0) throw new Error("批次定位读取失败，未展示其他批次。");
+              pageCount = Math.max(1, Math.ceil(found.total / 100));
+              if (pageCount > 1000) throw new Error("批次定位范围过大，请返回上传批次列表筛选；未猜配历史记录。");
+              target = found.items.find(item => item.id === props.focusBatchId);
+              if (target) { result = { ...found, items: [target], total: 1, page: 1, pageSize: 100, pageCount: 1 }; break; }
+              nextPage += 1;
+            } while (nextPage <= pageCount);
+            if (!target) throw new Error("来源批次不存在或当前不可查看，未定位其他批次。");
+          } else {
+            result = await props.client.listUploadBatches.query({ ...props.context, page, pageSize: 20, channelId: channelId ? parsed : undefined, archived: archived === "all" ? undefined : archived === "archived" }, { signal: abort.signal });
+          }
+          if (valid()) setQuery({ key, loading: false, batches: result! });
         } else {
           const result = await props.client.listDeletedMaterials.query({ ...props.context, page, pageSize: 20 }, { signal: abort.signal });
           if (valid()) setQuery({ key, loading: false, trash: result });
@@ -213,20 +239,21 @@ export function ChannelInventoryManagementPanel(props: PanelProps) {
   const pageCount = Math.max(1, result?.pageCount ?? 1);
   const actionAllowed = action && (action.kind === "restore" ? canRestore(action.material) : action.kind === "deleteBatch" ? canDeleteBatch(action.batch) : canEditBatch(action.batch));
   return <section className="ci-panel" aria-label={`${title}管理列表`}>
+    {props.focusBatchId !== undefined ? <div className="ci-supply-location"><span>精确定位来源批次 #{props.focusBatchId}</span><button type="button" className="ci-button" onClick={props.onClearBatchFocus}>返回上传批次列表</button></div> : null}
     <div className="ci-toolbar">
-      {props.mode === "batches" ? <><label className="ci-field ci-short-select"><span className="ci-filter-label">渠道 ID</span><input aria-label="筛选批次渠道 ID" inputMode="numeric" placeholder="渠道 ID" value={channelId} disabled={busy || locked} onChange={event => { setChannelId(event.target.value); setPage(1); }} /></label><label className="ci-field ci-short-select"><span className="ci-filter-label">归档状态</span><select aria-label="筛选批次归档状态" value={archived} disabled={busy || locked} onChange={event => { setArchived(event.target.value as typeof archived); setPage(1); }}><option value="active">未归档</option><option value="archived">已归档</option><option value="all">全部批次</option></select></label></> : null}
-      <button type="button" className="ci-button" disabled={busy || locked} onClick={() => setReload(value => value + 1)}>刷新</button><span className="ci-filter-count">{result?.total ?? 0} 条{title}</span>
+      {props.mode === "batches" && props.focusBatchId === undefined ? <><label className="ci-field ci-short-select"><span className="ci-filter-label">渠道 ID</span><input aria-label="筛选批次渠道 ID" inputMode="numeric" placeholder="渠道 ID" value={channelId} disabled={busy || locked} onChange={event => updateListState({ ...listState, channelId: event.target.value, page: 1 })} /></label><label className="ci-field ci-short-select"><span className="ci-filter-label">归档状态</span><select aria-label="筛选批次归档状态" value={archived} disabled={busy || locked} onChange={event => updateListState({ ...listState, archived: event.target.value as typeof archived, page: 1 })}><option value="active">未归档</option><option value="archived">已归档</option><option value="all">全部批次</option></select></label></> : null}
+      <button type="button" className="ci-button" disabled={busy || locked} onClick={() => setReload(value => value + 1)}>刷新</button><span className="ci-filter-count">{result ? `${result.total} 条${title}` : loading ? "正在读取条数…" : "条数不可用"}</span>
     </div>
     <p className="ci-readonly">{props.mode === "batches" ? "命名和归档仅整理上传历史，不删除库存；整批删除需先核验当前可删除范围。" : "删除库存不会连带删除渠道；恢复不会自动重新启用原先禁用的共享。"}</p>
     {message ? <p className="ci-readonly" role="status">{message}</p> : null}
     <div className="ci-tablewrap"><table className={`ci-table admin-table-readable ${props.mode === "batches" ? "ci-upload-batches-table" : "ci-trash-table"}`}>
-      <thead>{props.mode === "batches" ? <tr><th>文件 / 批次名称</th><th>批次编号</th><th>渠道</th><th>上传者</th><th>上传时间</th><th>成功 / 剩余</th><th className="ci-col-actions">操作</th></tr> : <tr><th>型号 / 品牌</th><th>上传批次 ID</th><th>删除时间</th><th className="ci-col-actions">操作</th></tr>}</thead>
+      <thead>{props.mode === "batches" ? <tr><th>文件 / 批次名称</th><th>批次编号</th><th>渠道</th><th>上传者</th><th>上传时间</th><th>关联行 / 未删除条数</th><th className="ci-col-actions">操作</th></tr> : <tr><th>型号 / 品牌</th><th>上传批次 ID</th><th>删除时间</th><th className="ci-col-actions">操作</th></tr>}</thead>
       <tbody>
         {loading ? <tr><td colSpan={props.mode === "batches" ? 7 : 4} className="ci-empty">正在读取{title}…</td></tr> : query.error ? <tr><td colSpan={props.mode === "batches" ? 7 : 4} className="ci-empty ci-host-error" role="alert">{query.error}</td></tr> : !result?.items.length ? <tr><td colSpan={props.mode === "batches" ? 7 : 4} className="ci-empty">暂无{title}记录。</td></tr> : null}
         {props.mode === "batches" ? batches.map(batch => <tr key={batch.id}><td><strong className="ci-cell-title admin-cell-primary">{batch.name || batch.fileName}</strong>{batch.name ? <small className="ci-subtext admin-cell-secondary">{batch.fileName}</small> : null}{batch.archived ? <small className="ci-subtext">已归档</small> : null}</td><td>{batch.batchCode}<small className="ci-subtext">ID：{batch.id}</small></td><td>{batch.channelName}</td><td>{batch.uploadedByName}</td><td className="ci-date">{formatBeijingDateTime(batch.createdAt) || "—"}</td><td>{batch.successCount} / {batch.remainingCount}<small className="ci-subtext">计划 {batch.totalRows} 条</small></td><td className="ci-col-actions"><div className="ci-row-actions ci-management-actions"><button type="button" className="ci-inline-link" disabled={busy || locked} onClick={() => props.onViewBatch(batch.id)}>查看库存</button>{canEditBatch(batch) ? <><button type="button" className="ci-inline-link" disabled={busy || locked} onClick={() => openAction({ kind: "rename", batch, name: batch.name ?? "", requestId: inventoryRequestId() })}>命名</button><button type="button" className="ci-inline-link" disabled={busy || locked} onClick={() => openAction({ kind: "archive", batch, requestId: inventoryRequestId() })}>{batch.archived ? "取消归档" : "归档"}</button></> : null}{canDeleteBatch(batch) ? <button type="button" className="ci-inline-link ci-danger-link" disabled={busy || locked} onClick={() => void preview(batch)}>整批删除</button> : null}</div></td></tr>) : trash.map(material => <tr key={material.id}><td><strong className="ci-cell-title admin-cell-primary">{material.partNumber}</strong><small className="ci-subtext admin-cell-secondary">{material.brand}</small></td><td>{material.uploadBatchId ?? "—"}</td><td className="ci-date">{formatBeijingDateTime(material.deletedAt) || "—"}</td><td className="ci-col-actions">{writable && material.canRestore ? <button type="button" className="ci-inline-link" disabled={busy || locked} onClick={() => openAction({ kind: "restore", material, requestId: inventoryRequestId() })}>恢复</button> : <span className="ci-readonly">只读</span>}</td></tr>)}
       </tbody>
     </table></div>
-    <nav className="ci-pagination" aria-label={`${title}分页`}><span>共 {result?.total ?? 0} 条，第 {page} / {pageCount} 页</span><button type="button" className="ci-button" disabled={busy || locked || page <= 1} onClick={() => setPage(value => value - 1)}>上一页</button><button type="button" className="ci-button" disabled={busy || locked || page >= pageCount} onClick={() => setPage(value => value + 1)}>下一页</button></nav>
+    <nav className="ci-pagination" aria-label={`${title}分页`}><span>{result ? `共 ${result.total} 条，第 ${props.focusBatchId === undefined ? page : 1} / ${pageCount} 页` : loading ? "正在读取分页…" : "分页条数不可用"}</span><button type="button" className="ci-button" disabled={busy || locked || !result || props.focusBatchId !== undefined || page <= 1} onClick={() => updateListState({ ...listState, page: page - 1 })}>上一页</button><button type="button" className="ci-button" disabled={busy || locked || !result || props.focusBatchId !== undefined || page >= pageCount} onClick={() => updateListState({ ...listState, page: page + 1 })}>下一页</button></nav>
     {action && actionAllowed ? <InventoryConfirmation title={action.kind === "rename" ? "命名上传批次" : action.kind === "archive" ? action.batch.archived ? "取消归档" : "归档上传批次" : action.kind === "restore" ? "恢复渠道库存" : "整批删除渠道库存"} busy={busy} locked={locked} onCancel={() => { setAction(null); setMessage(""); }} onConfirm={() => void submit()} confirmLabel={action.kind === "deleteBatch" ? "确认整批删除" : action.kind === "restore" ? "确认恢复" : "保存"}>
       {action.kind === "rename" ? <><p>批次 {action.batch.batchCode}；仅修改历史名称，不影响库存。</p><label className="ci-field"><span>批次名称</span><input aria-label="批次名称" maxLength={128} value={action.name} disabled={busy || locked} onChange={event => setAction({ ...action, name: event.target.value })} /></label></> : action.kind === "archive" ? <p>确认{action.batch.archived ? "取消归档" : "归档"}批次“{action.batch.name || action.batch.batchCode}”？仅整理上传历史，不删除库存。</p> : action.kind === "restore" ? <p>确认恢复型号“{action.material.partNumber}”（{action.material.brand}）？不会自动恢复被禁用的共享。</p> : <><p>批次“{action.batch.name || action.batch.batchCode}”当前共 {action.preview.total} 条库存，可删除 {action.preview.eligibleCount} 条，冲突 / 无权删除 {action.preview.conflictCount} 条。</p><p>按本次预览版本确认；仅符合条件的库存进入回收站，不删除渠道，并关闭本批后续上传。提交前发生变化时需重新预览。</p>{!action.preview.eligibleCount ? <p className="ci-error">当前删除 0 条库存；确认后仍将关闭本批后续上传，冲突库存保留。</p> : null}</>}
       {message ? <p className="ci-error" role="alert">{message}</p> : null}

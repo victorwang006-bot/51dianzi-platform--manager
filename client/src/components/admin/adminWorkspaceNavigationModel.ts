@@ -39,16 +39,29 @@ export type AdminBusinessNavigationGroupId =
   | "inventory"
   | "procurement";
 
-export type AdminBusinessNavigationEntry<
+export type AdminOperationsNavigationGroupId =
+  | "basic-data"
+  | "transactions-services"
+  | "data-monitoring";
+
+export type AdminWorkspaceNavigationGroupId =
+  | AdminBusinessNavigationGroupId
+  | AdminOperationsNavigationGroupId;
+
+export type AdminWorkspaceModuleNavigationEntry<
   T extends AdminWorkspaceNavigationItem,
+  Id extends AdminWorkspaceNavigationGroupId = AdminWorkspaceNavigationGroupId,
 > =
   | { kind: "direct"; item: T }
   | {
       kind: "group";
-      id: AdminBusinessNavigationGroupId;
+      id: Id;
       label: string;
       items: T[];
     };
+
+export type AdminBusinessNavigationEntry<T extends AdminWorkspaceNavigationItem> =
+  AdminWorkspaceModuleNavigationEntry<T, AdminBusinessNavigationGroupId>;
 
 function pathsForGroup(id: string): readonly string[] {
   return (
@@ -88,15 +101,39 @@ const BUSINESS_MODULE_ENTRIES = [
     label: "采购管理",
     paths: pathsForGroup("procurement"),
   },
-  { kind: "direct", path: "/workbench/company-info" },
+] as const;
+
+const OPERATIONS_MODULE_ENTRIES = [
+  {
+    kind: "group",
+    id: "basic-data",
+    label: "基础资料",
+    paths: ["/merchants", "/materials", "/portal-users"],
+  },
+  {
+    kind: "group",
+    id: "transactions-services",
+    label: "交易与服务",
+    paths: ["/orders", "/messages", "/reviews"],
+  },
+  {
+    kind: "group",
+    id: "data-monitoring",
+    label: "数据与监控",
+    paths: ["/analytics", "/exception-logs"],
+  },
 ] as const;
 
 /** Only intersect with parent-authorized items. Never synthesize a menu or a fallback. */
-export function groupAdminBusinessNavigationItems<
+function groupNavigationItems<
   T extends AdminWorkspaceNavigationItem,
->(items: readonly T[]): AdminBusinessNavigationEntry<T>[] {
+  Id extends AdminWorkspaceNavigationGroupId,
+>(items: readonly T[], entries: readonly (
+  | { kind: "direct"; path: string }
+  | { kind: "group"; id: Id; label: string; paths: readonly string[] }
+)[]): AdminWorkspaceModuleNavigationEntry<T, Id>[] {
   const itemByPath = new Map(items.map(item => [item.path, item]));
-  return BUSINESS_MODULE_ENTRIES.flatMap<AdminBusinessNavigationEntry<T>>(
+  return entries.flatMap<AdminWorkspaceModuleNavigationEntry<T, Id>>(
     entry => {
       if (entry.kind === "direct") {
         const item = itemByPath.get(entry.path);
@@ -120,6 +157,26 @@ export function groupAdminBusinessNavigationItems<
   );
 }
 
+export function groupAdminBusinessNavigationItems<T extends AdminWorkspaceNavigationItem>(
+  items: readonly T[]
+): AdminBusinessNavigationEntry<T>[] {
+  return groupNavigationItems(items, BUSINESS_MODULE_ENTRIES);
+}
+
+export function groupAdminOperationsNavigationItems<T extends AdminWorkspaceNavigationItem>(
+  items: readonly T[]
+): AdminWorkspaceModuleNavigationEntry<T, AdminOperationsNavigationGroupId>[] {
+  return groupNavigationItems(items, OPERATIONS_MODULE_ENTRIES);
+}
+
+/** Both grouped workspaces share presentation and interaction; organization stays flat. */
+export function groupAdminWorkspaceModuleNavigationItems<T extends AdminWorkspaceNavigationItem>(
+  items: readonly T[], workspaceId: AdminWorkspaceId
+): AdminWorkspaceModuleNavigationEntry<T>[] {
+  return workspaceId === "business" ? groupAdminBusinessNavigationItems(items)
+    : workspaceId === "operations" ? groupAdminOperationsNavigationItems(items) : [];
+}
+
 /** Presentation only. The original menu model remains the canonical menu source. */
 export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
   [
@@ -137,7 +194,6 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
         "/workbench/outbound",
         "/workbench/inquiries",
         ...pathsForGroup("procurement"),
-        "/workbench/company-info",
       ],
     },
     {
@@ -228,6 +284,8 @@ export function getAdminWorkspaceNavigationRoute(
   const workspaceId =
     route.canonicalPath === "/profile"
       ? "organization"
+      : route.canonicalPath === "/workbench/company-info"
+        ? "business" // Legacy route context only; never a visible menu item.
       : ADMIN_WORKSPACE_DEFINITIONS.find(workspace =>
           workspace.paths.includes(route.canonicalPath)
         )?.id;

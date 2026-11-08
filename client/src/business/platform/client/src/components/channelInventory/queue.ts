@@ -1,6 +1,6 @@
 import type { Payload } from "./import";
 
-export type BatchReceipt = { item: unknown; idempotent: boolean; channelId: number; customerId: number };
+export type BatchReceipt = { item: unknown; idempotent: boolean; channelId: number; customerId: number; uploadBatchId?: number };
 
 export type BatchEntry = {
   row: number;

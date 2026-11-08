@@ -3,7 +3,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hostNavigate, selectHostTab, setHostTestLocation } from "./ChannelInventoryHost.router-test-helper";
-import { getChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
+import { getChannelInventoryNavigationTab, channelInventoryBatchMaterialLocation, channelInventoryBatchListLocation, trustedChannelInventoryBatchReturn } from "../../../../../lib/channelInventoryNavigation";
 
 vi.mock("wouter", async importOriginal => ({
   ...await importOriginal<typeof import("wouter")>(),
@@ -172,9 +172,10 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
 
   it("viewBatch enters materials with exact uploadBatchId and emits one workbench-relative callback for top highlight", async () => {
     selectHostTab("batches"); renderHost(); await settle(); click(button("查看库存")); await settle();
-    assertView("materials"); expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials"]]);
+    assertView("materials"); expect(hostNavigate.mock.calls).toEqual([[channelInventoryBatchMaterialLocation(81, undefined, true)]]);
     expect(window.location.pathname).toBe("/workbench/channel-inventory");
-    expect(window.location.search).toBe("?ciTab=materials");
+    expect(new URLSearchParams(window.location.search).get("ciBatchId")).toBe("81");
+    expect(button("返回上传批次").disabled).toBe(false);
     expect(runtime.inputs.at(-1)).toMatchObject({ ...context, uploadBatchId: 81, page: 1 });
     expect(required(document.querySelector<HTMLInputElement>('[aria-label="筛选上传批次 ID"]')).value).toBe("81");
     expect(required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')).disabled).toBe(true);
@@ -271,5 +272,68 @@ describe("URL-selected Host deletion/restore retains real management bridge", ()
     runtime.scope.officialInventoryPermissions.write = false; renderHost(); await settle();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(runtime.client.restoreMaterial.mutate).not.toHaveBeenCalled(); expect(runtime.client.deleteMaterials.mutate).not.toHaveBeenCalled();
+  });
+});
+
+describe("durable exact batch navigation and return", () => {
+  it.each(["all", "active", "archived"] as const)("returns to original channel, archived=%s and page after refresh", async archived => {
+    const origin = channelInventoryBatchListLocation({ channelId: "11", archived, page: 3 });
+    runtime.client.listUploadBatches.query.mockResolvedValue(page([batch], { page: 3, total: 61, pageCount: 4 }));
+    setHostTestLocation(origin, "replace"); renderHost(); await settle();
+    expect(runtime.client.listUploadBatches.query).toHaveBeenLastCalledWith({ ...context, page: 3, pageSize: 20, channelId: 11, archived: archived === "all" ? undefined : archived === "archived" }, { signal: expect.any(AbortSignal) });
+    click(button("查看库存")); await settle();
+    expect(runtime.inputs.at(-1)).toMatchObject({ uploadBatchId: 81, channelId: undefined });
+    // A full Host remount models refresh: no in-memory origin survives.
+    act(() => root.unmount()); root = createRoot(container); runtime.inputs = []; renderHost(); await settle();
+    expect(runtime.inputs.length).toBeGreaterThan(0);
+    expect(runtime.inputs.every(input => input.uploadBatchId === 81)).toBe(true);
+    click(button("返回上传批次")); await settle();
+    expect(window.location.search).toBe(origin.slice(origin.indexOf("?")));
+    expect(required(document.querySelector<HTMLInputElement>('[aria-label="筛选批次渠道 ID"]')).value).toBe("11");
+    expect(required(document.querySelector<HTMLSelectElement>('[aria-label="筛选批次归档状态"]')).value).toBe(archived);
+    expect(runtime.client.listUploadBatches.query).toHaveBeenLastCalledWith({ ...context, page: 3, pageSize: 20, channelId: 11, archived: archived === "all" ? undefined : archived === "archived" }, { signal: expect.any(AbortSignal) });
+  });
+  it.each(["empty", "inventory-error", "enterprise-error", "no-read"])("keeps return available in %s and never turns failure into zero", async state => {
+    setHostTestLocation("/workbench/channel-inventory?ciTab=materials&ciBatchId=81", "replace");
+    if (state === "empty") runtime.team = runtime.query(page([], { canWrite: true, canFilterSource: false }));
+    if (state === "inventory-error") runtime.team = { ...runtime.query(undefined), isError: true, error: new Error("inventory denied") };
+    if (state === "enterprise-error") runtime.enterprise = { ...runtime.query(undefined), isError: true, error: new Error("enterprise denied") };
+    if (state === "no-read") runtime.scope.officialInventoryPermissions.read = false;
+    renderHost(); await settle();
+    expect(button("返回上传批次").disabled).toBe(false);
+    if (state === "inventory-error") { expect(document.body.textContent).toContain("库存条数不可用"); expect(document.body.textContent).not.toContain("共 0 条"); }
+    click(button("返回上传批次")); await settle();
+    expect(window.location.search).toBe("?ciTab=batches");
+  });
+  it.each(["javascript:alert(1)", "https://evil.invalid/workbench/channel-inventory?ciTab=batches", "//evil.invalid?ciTab=batches", "/other?ciTab=batches", "/workbench/channel-inventory?ciTab=batches&expectedEnterpriseId=999", "/workbench/channel-inventory?ciTab=batches&ciBatchPage=-1", "/workbench/channel-inventory?ciTab=batches&ciBatchArchived=unknown", "/workbench/channel-inventory?ciTab=batches&ciBatchPage=1&ciBatchPage=2"])("rejects untrusted return route %s", async raw => {
+    expect(trustedChannelInventoryBatchReturn(raw, true)).toBe("/channel-inventory?ciTab=batches");
+    setHostTestLocation(`/workbench/channel-inventory?ciTab=materials&ciBatchId=81&ciBatchReturn=${encodeURIComponent(raw)}`, "replace"); renderHost(); await settle();
+    click(button("返回上传批次")); await settle(); expect(window.location.pathname).toBe("/workbench/channel-inventory"); expect(window.location.search).toBe("?ciTab=batches");
+  });
+  it.each(["0", "-1", "1.5", "1e2", "9007199254740992", "bad", ""])("invalid direct batch ID %s is fail-closed with return", async raw => {
+    setHostTestLocation(`/workbench/channel-inventory?ciTab=materials&ciBatchId=${encodeURIComponent(raw)}`, "replace"); renderHost(); await settle();
+    expect(runtime.inputs).toHaveLength(0); expect(document.querySelector("tbody")?.textContent).not.toContain("NAV-ONE");
+    expect(document.body.textContent).toContain("上传批次 ID 须为正整数"); expect(button("返回上传批次").disabled).toBe(false);
+  });
+  it("inventory filter refinements never overwrite the source batch-list return state", async () => {
+    const origin = channelInventoryBatchListLocation({ channelId: "11", archived: "all", page: 2 });
+    setHostTestLocation(channelInventoryBatchMaterialLocation(81, origin)!, "replace"); renderHost(); await settle();
+    const input = required(document.querySelector<HTMLInputElement>('[aria-label="筛选上传批次 ID"]'));
+    act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, "82"); input.dispatchEvent(new Event("input", { bubbles: true })); });
+    click(button("确定")); expect(runtime.inputs.at(-1)).toMatchObject({ uploadBatchId: 82, page: 1, channelId: undefined });
+    click(button("返回上传批次")); await settle(); expect(window.location.search).toBe(origin.slice(origin.indexOf("?")));
+  });
+  it("shows only the exact server-readable reverse batch without exposing hidden IDs or guessing missing metadata", async () => {
+    runtime.team = runtime.query(page([{ ...row, uploadBatchId: 81, canViewUploadBatch: true }, { ...row, id: 2, partNumber: "HIDDEN", uploadBatchId: 777777, canViewUploadBatch: false }, { ...row, id: 3, partNumber: "UNLINKED", uploadBatchId: null }, { ...row, id: 4, partNumber: "UNKNOWN" }], { canWrite: true, canFilterSource: false }));
+    renderHost(); expect(document.body.innerHTML).not.toContain("777777"); expect(document.body.textContent).toContain("来源批次当前不可查看"); expect(document.body.textContent).toContain("未关联上传批次"); expect(document.body.textContent).toContain("批次信息不可用");
+    click(button("查看上传批次 #81")); await settle(); expect(new URLSearchParams(window.location.search).get("ciBatchFocusId")).toBe("81");
+    expect(document.querySelector("tbody")?.textContent).toContain("BATCH-81");
+    expect(runtime.client.listUploadBatches.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 100, archived: undefined, channelId: undefined }, { signal: expect.any(AbortSignal) });
+  });
+  it("reverse association absent from authorized list is unavailable, not unlinked or a zero count", async () => {
+    runtime.client.listUploadBatches.query.mockResolvedValue(page([{ ...batch, id: 82, batchCode: "OTHER-BATCH" }]));
+    setHostTestLocation("/workbench/channel-inventory?ciTab=batches&ciBatchFocusId=81", "replace"); renderHost(); await settle();
+    expect(document.body.textContent).toContain("来源批次不存在或当前不可查看"); expect(document.body.innerHTML).not.toContain("OTHER-BATCH"); expect(document.body.textContent).not.toContain("共 0 条");
+    expect(button("返回上传批次列表").disabled).toBe(false);
   });
 });
