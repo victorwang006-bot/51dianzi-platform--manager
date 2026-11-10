@@ -18,6 +18,8 @@ import { materialUploadBatchAssociation, type MaterialUploadBatchProjection } fr
 import type { InventoryManagementClient, InventoryTab, ReadableInventoryChannel, UploadBatchInput } from "../components/channelInventory/management";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
+import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
+import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, type ChannelInventoryColumnId } from "./channelInventoryColumns";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
 import "../components/channelInventory/notes.css";
@@ -130,10 +132,16 @@ function displayDate(value: Date | string | null | undefined) {
   return formatBeijingDateTime(value) || "—";
 }
 
-/** Inventory presentation only: valid Date or YYYY-MM-DDTHH:mm[:ss[.SSS]] with Z/±HH:mm.
- * No whitespace, local-time/date-only strings or year zero; never use compact labels for exports. */
+/** Inventory only: SQL DATETIME literals are Beijing wall time (channelInventoryExport.instant).
+ * Internal delegation preserves strings; manager/platformBusinessApi unwraps JSON without reviving Dates.
+ * Zoned ISO/Date already represent instants. Never apply this contract to other pages or exports. */
 export function channelInventoryUpdatedAt(value: Date | string | null | undefined, now: Date = new Date()) {
   if (typeof value === "string") {
+    // Raw SQL datetime (seconds required, MySQL fractional precision up to 6).
+    const literal = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?$/.exec(value);
+    if (literal && literal[0] === value) {
+      value = `${literal[1]}T${literal[2]}${literal[3] ? `.${literal[3].slice(0, 3)}` : ""}+08:00`;
+    }
     // Match the entire explicit-zone ISO value before Date can normalize invalid fields.
     const calendar = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-](\d{2}):(\d{2}))$/.exec(value);
     if (!calendar || calendar[0] !== value) return null;
@@ -157,7 +165,7 @@ export function channelInventoryUpdatedAt(value: Date | string | null | undefine
 
 /** Presentation only: retain the complete value and escape the table's clipping/sticky context. */
 function ChannelInventoryPartNumber({ partNumber, resetKey, displayValue, kind }: {
-  partNumber: string; resetKey: string; displayValue?: string; kind?: "time";
+  partNumber: string; resetKey: string; displayValue?: string; kind?: "time" | "dc";
 }) {
   const trigger = useRef<HTMLSpanElement>(null);
   const popover = useRef<HTMLDivElement>(null);
@@ -230,7 +238,7 @@ function ChannelInventoryPartNumber({ partNumber, resetKey, displayValue, kind }
   }, [position, close]);
 
   return <>
-    <span ref={trigger} className={kind === "time" ? "ci-updated-at-trigger" : "ci-cell-title admin-cell-primary ci-part-number-trigger"} role="button" tabIndex={0}
+    <span ref={trigger} className={kind === "time" ? "ci-updated-at-trigger" : kind === "dc" ? "ci-dc-trigger" : "ci-cell-title admin-cell-primary ci-part-number-trigger"} role="button" tabIndex={0}
       aria-label={partNumber || "—"} aria-expanded={Boolean(position)}
       onMouseEnter={open} onMouseLeave={leave} onFocus={open}
       onBlur={event => { if (!popover.current?.contains(event.relatedTarget as Node | null)) close(); }}
@@ -238,7 +246,7 @@ function ChannelInventoryPartNumber({ partNumber, resetKey, displayValue, kind }
         if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); }
       }}>{displayValue ?? (partNumber || "—")}</span>
     {position ? createPortal(<div ref={popover} className={kind === "time" ? "ci-updated-at-popover" : "ci-part-number-popover"} role="tooltip" tabIndex={0}
-      aria-label={kind === "time" ? "完整更新时间（北京时间）" : "完整型号"} style={position} onMouseEnter={cancelLeave} onMouseLeave={leave}
+      aria-label={kind === "time" ? "完整更新时间（北京时间）" : kind === "dc" ? "完整 DC" : "完整型号"} style={position} onMouseEnter={cancelLeave} onMouseLeave={leave}
       onBlur={event => { if (event.relatedTarget !== trigger.current && !popover.current?.contains(event.relatedTarget as Node | null)) close(); }}
     >{partNumber || "—"}</div>, document.body) : null}
   </>;
@@ -589,6 +597,25 @@ export default function ChannelInventoryHost() {
   const [materialSort, setMaterialSort] = useState<{ field: "qty" | "dateCode"; direction: "asc" | "desc" } | null>(null);
   const [stateIdentity, setStateIdentity] = useState(identity);
   const contextCurrent = stateIdentity === identity;
+  // A cached enterprise.me from the previous binding must never namespace preferences.
+  const columnsContextVerified = ready && sourceContextVerified && contextCurrent && !enterpriseQuery.isLoading && !enterpriseQuery.isError
+    && businessScope.frontUser.id === actorUserId && businessScope.staffPrincipal?.frontendUserId === actorUserId
+    && businessScope.staffPrincipal?.enterpriseId === enterpriseId;
+  const columnsKey = columnsContextVerified ? channelInventoryColumnsStorageKey(actorUserId, enterpriseId) : null;
+  const [columnPreference, setColumnPreference] = useState<{ key: string | null; columns: readonly ChannelInventoryColumnId[] }>({ key: null, columns: DEFAULT_CHANNEL_INVENTORY_COLUMNS });
+  const visibleColumns = columnsKey && columnPreference.key === columnsKey ? columnPreference.columns : DEFAULT_CHANNEL_INVENTORY_COLUMNS;
+  const columnVisible = (id: ChannelInventoryColumnId) => visibleColumns.includes(id);
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  useEffect(() => {
+    setColumnPreference({ key: columnsKey, columns: columnsKey ? readChannelInventoryColumns(columnsKey) : DEFAULT_CHANNEL_INVENTORY_COLUMNS });
+  }, [columnsKey]);
+  useEffect(() => { setColumnsOpen(false); }, [identity, columnsKey, tab]);
+  const updateColumns = (columns: readonly ChannelInventoryColumnId[]) => {
+    if (!columnsKey || !columnsContextVerified) return;
+    const normalized = normalizeChannelInventoryColumns(columns);
+    setColumnPreference({ key: columnsKey, columns: normalized });
+    saveChannelInventoryColumns(columnsKey, normalized);
+  };
   const editRequestRef = useRef(0);
   const editAbortRef = useRef<AbortController | null>(null);
   const invalidateEditSession = () => { editRequestRef.current += 1; editAbortRef.current?.abort(); };
@@ -1368,7 +1395,9 @@ export default function ChannelInventoryHost() {
   const deletion = useMaterialDeletion({ client: managementClient, context: expectedContext,
     scopeKey: JSON.stringify([selectionScopeKey, selectionMode]), rows: materialRows,
     canWrite: managementCanWrite && tab === "materials", isCurrent, onComplete: refreshMaterials, onAuthorizationError: businessScope.onAuthorizationError });
-  const showDeleteSelection = selectionMode && managementCanWrite && deletion.eligible.length > 0;
+  const showDeleteSelection = selectionMode && managementCanWrite;
+  const columnLayout = channelInventoryColumnLayout(visibleColumns, showDeleteSelection);
+  const presentationScopeKey = JSON.stringify([selectionScopeKey, visibleColumns]);
   const publishing = useFactoryMaterialPublish({ rows: materialRows as readonly FactoryMaterialPublishRow[], context: expectedContext,
     scopeKey: identity, authorized: businessScope.frontUser.role === "user" || businessScope.frontUser.role === "admin", available: nativePublish && ready && contextCurrent && sourceContextVerified && sourceIdentityCurrent && !enterpriseQuery.isError && !materialsQuery.isError && tab === "materials",
     proofReady: Boolean(materialResult), proofVersion: materialsQuery.dataUpdatedAt, isCurrent, onComplete: refreshMaterials, onAuthorizationError: businessScope.onAuthorizationError });
@@ -1548,6 +1577,17 @@ export default function ChannelInventoryHost() {
             <button type="submit" className="ci-button ci-primary">确定</button>
             <button type="button" className="ci-button" onClick={() => void refreshMaterials()}>刷新</button>
             {managementCanWrite ? <button type="button" className="ci-button" aria-pressed={selectionMode} disabled={deletion.busy || !selectionMode && !deletion.eligible.length} onClick={() => { deletion.cancelSelection(); setSelectionModeKey(selectionMode ? null : selectionScopeKey); }}>{selectionMode ? "取消选择" : "选择"}</button> : null}
+            {!browsingChannelsOnly ? <Popover open={columnsOpen && columnsContextVerified} onOpenChange={setColumnsOpen}>
+              <PopoverTrigger asChild><button type="button" className="ci-button" disabled={!columnsContextVerified}>显示列</button></PopoverTrigger>
+              <PopoverContent className="ci-columns-popover" align="end" aria-label="库存显示列" onKeyDown={event => event.stopPropagation()}>
+                <div className="ci-columns-options">{CHANNEL_INVENTORY_COLUMNS.map(column => <label key={column.id}>
+                  <input type="checkbox" checked={columnVisible(column.id)} disabled={"fixed" in column && column.fixed}
+                    onChange={event => updateColumns(event.target.checked ? [...visibleColumns, column.id] : visibleColumns.filter(id => id !== column.id))} />
+                  <span>{column.label}{"fixed" in column && column.fixed ? <small>固定</small> : null}</span>
+                </label>)}</div>
+                <button type="button" className="ci-columns-reset" onClick={() => updateColumns(DEFAULT_CHANNEL_INVENTORY_COLUMNS)}>恢复默认</button>
+              </PopoverContent>
+            </Popover> : null}
             <div className="ci-inventory-view-controls" role="group" aria-label="库存查看方式"><button type="button" className={`ci-button${inventoryView === "flat" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "flat"} onClick={() => changeInventoryView("flat")}>平铺查看</button><button type="button" className={`ci-button${inventoryView === "channels" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "channels"} onClick={() => changeInventoryView("channels")}>按渠道查看</button></div>
             <span className="ci-filter-count">{materialsQuery.isError || !uploadBatchFilterValid || readableChannelStockDenied ? "库存条数不可用" : materialTotalKnown ? `${materialTotal} 条库存` : "正在读取库存条数…"}</span>
           </form>
@@ -1557,28 +1597,47 @@ export default function ChannelInventoryHost() {
           {readableChannelStockDenied ? <p className="ci-error" role="alert">当前渠道库存来源读取失败或权限已改变，未展示其他渠道库存。请返回渠道列表重新核验。</p> : null}
           {showDeleteSelection && deletion.selected.length ? <div className="ci-toolbar ci-selection-toolbar" role="group" aria-label="当前页批量删除"><span>已选 {deletion.selected.length} 条</span><button type="button" className="ci-button ci-danger-link" disabled={deletion.busy} onClick={() => deletion.requestDelete()}>批量删除</button><span className="ci-readonly">仅当前页，不跨页选择</span></div> : null}{deletion.feedback}
           <div className="ci-tablewrap ci-compact-tablewrap">
-            <table className={`ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable${showDeleteSelection ? " ci-stock-managed-table" : ""}`}>
-              <thead><tr>{showDeleteSelection ? <th className="ci-selection-col"><input type="checkbox" className="ci-selection-checkbox" aria-label="全选当前页可删除库存" disabled={!deletion.eligible.length || deletion.busy} checked={Boolean(deletion.eligible.length && deletion.selected.length === deletion.eligible.length)} ref={element => { if (element) element.indeterminate = deletion.selected.length > 0 && deletion.selected.length < deletion.eligible.length; }} onChange={deletion.selectAll} /></th> : null}<th className="ci-col-index">#</th><th className="ci-material-part-col">型号</th><th className="ci-material-brand-col">品牌</th><th className="ci-material-recorder-col">负责人</th><th className="ci-material-industry-col">所属行业</th><th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button ci-quantity-sort-button" aria-label="按可供数量排序" aria-describedby="ci-quantity-sort-status" title={`${quantitySortLabel}；${quantitySortNext}`} onClick={() => cycleSort("qty")}>可供数量{quantitySortIcon}</button></th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col" aria-sort={sortAria("dateCode")} aria-label="Date Code / 更新时间（北京时间）" title="Date Code / 更新时间（北京时间）"><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>DC / 更新{sortArrow("dateCode")}</button></th><th className="ci-material-source-col">渠道来源</th><th className="ci-col-actions">操作</th></tr></thead>
+            <table className={`ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable${showDeleteSelection ? " ci-stock-managed-table" : ""}`} style={{ "--ci-stock-min-width": `${columnLayout.minWidth}px` } as React.CSSProperties}>
+              <colgroup>
+                {showDeleteSelection ? <col style={{ width: 40 }} /> : null}
+                {columnLayout.visible.map(column => <col key={column.id} data-column={column.id} style={column.id === "partNumber" ? undefined : { width: column.width }} />)}
+              </colgroup>
+              <thead><tr>
+                {showDeleteSelection ? <th className="ci-selection-col"><input type="checkbox" className="ci-selection-checkbox" aria-label="全选当前页可删除库存" disabled={!deletion.eligible.length || deletion.busy} checked={Boolean(deletion.eligible.length && deletion.selected.length === deletion.eligible.length)} ref={element => { if (element) element.indeterminate = deletion.selected.length > 0 && deletion.selected.length < deletion.eligible.length; }} onChange={deletion.selectAll} /></th> : null}
+                {columnVisible("index") ? <th className="ci-col-index">#</th> : null}
+                <th className="ci-material-part-col">型号</th>
+                {columnVisible("brand") ? <th className="ci-material-brand-col">品牌</th> : null}
+                {columnVisible("recorder") ? <th className="ci-material-recorder-col">负责人</th> : null}
+                {columnVisible("industry") ? <th className="ci-material-industry-col">所属行业</th> : null}
+                {columnVisible("qty") ? <th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button ci-quantity-sort-button" aria-label="按可供数量排序" aria-describedby="ci-quantity-sort-status" title={`${quantitySortLabel}；${quantitySortNext}`} onClick={() => cycleSort("qty")}>可供数量{quantitySortIcon}</button></th> : null}
+                {columnVisible("price") ? <th className="ci-material-price-col">报价 CNY</th> : null}
+                {columnVisible("leadTime") ? <th className="ci-material-lead-col">交期</th> : null}
+                {columnVisible("dateCode") ? <th className="ci-material-dc-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>DC{sortArrow("dateCode")}</button></th> : null}
+                {columnVisible("updatedAt") ? <th className="ci-material-date-col" title="更新时间（北京时间）">更新时间</th> : null}
+                {columnVisible("source") ? <th className="ci-material-source-col">渠道来源</th> : null}
+                <th className="ci-col-actions">操作</th>
+              </tr></thead>
               <tbody>
-                {materialsQuery.isLoading ? <tr><td colSpan={showDeleteSelection ? 12 : 11} className="ci-empty">正在加载渠道库存…</td></tr> : null}
-                {materialsQuery.isError ? <tr><td colSpan={showDeleteSelection ? 12 : 11} className="ci-empty ci-host-error">{errorMessage(materialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
-                {!materialsQuery.isLoading && !materialsQuery.isError && !materialRows.length ? <tr><td colSpan={showDeleteSelection ? 12 : 11} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
+                {materialsQuery.isLoading ? <tr><td colSpan={columnLayout.count} className="ci-empty">正在加载渠道库存…</td></tr> : null}
+                {materialsQuery.isError ? <tr><td colSpan={columnLayout.count} className="ci-empty ci-host-error">{errorMessage(materialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
+                {!materialsQuery.isLoading && !materialsQuery.isError && !materialRows.length ? <tr><td colSpan={columnLayout.count} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
                 {materialRows.map((material, index) => {
                   const batchAssociation = materialUploadBatchAssociation(material as TeamMaterial & MaterialUploadBatchProjection);
                   const updatedAt = channelInventoryUpdatedAt(material.updatedAt);
                   return (
                   <tr key={material.id}>
                     {showDeleteSelection ? <td className="ci-selection-col">{deletion.eligible.some(row => row.id === material.id) ? <input type="checkbox" className="ci-selection-checkbox" aria-label={`选择删除库存：${material.partNumber}`} disabled={deletion.busy} checked={deletion.selected.some(row => row.id === material.id)} onChange={() => deletion.toggle(material.id)} /> : null}</td> : null}
-                    <td className="ci-number ci-row-index">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td>
-                    <td className="ci-material-part-col"><ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={selectionScopeKey} /></td>
-                    <td className="ci-material-brand-col" title={material.brand}>{material.brand || "—"}</td>
-                    <td className="ci-material-recorder-col admin-cell-primary" title={(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}>{(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}</td>
-                    <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td>
-                    <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td>
-                    <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td>
-                    <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td>
-                    <td className="ci-date ci-material-date-col">{material.dateCode?.trim() ? <div className="admin-cell-primary">{material.dateCode}</div> : null}<small className="ci-updated-at admin-cell-secondary">{updatedAt ? <ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={selectionScopeKey} /> : "—"}</small></td>
-                    <td className="ci-material-source-col"><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button>{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td>
+                    {columnVisible("index") ? <td className="ci-number ci-row-index">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td> : null}
+                    <td className="ci-material-part-col"><ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} /></td>
+                    {columnVisible("brand") ? <td className="ci-material-brand-col" title={material.brand}>{material.brand || "—"}</td> : null}
+                    {columnVisible("recorder") ? <td className="ci-material-recorder-col admin-cell-primary" title={(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}>{(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}</td> : null}
+                    {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
+                    {columnVisible("qty") ? <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td> : null}
+                    {columnVisible("price") ? <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td> : null}
+                    {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
+                    {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
+                    {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}
+                    {columnVisible("source") ? <td className="ci-material-source-col"><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button>{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td> : null}
                     <td className="ci-col-actions"><div className="ci-row-actions">{publishing.action(material)}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button>{material.canEdit && !material.readOnly || deletion.eligible.some(row => row.id === material.id) ? <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger><DropdownMenuContent className="ci-channel-actions-menu" align="end">{material.canEdit && !material.readOnly ? <DropdownMenuItem disabled={busy !== null || !canWriteMaterials} onSelect={() => void openMaterialEdit(material)}>编辑</DropdownMenuItem> : null}{deletion.eligible.some(row => row.id === material.id) ? <DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem> : null}</DropdownMenuContent></DropdownMenu> : null}</div></td>
                   </tr>
                   );

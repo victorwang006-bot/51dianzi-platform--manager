@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { selectHostTab, hostNavigate } from "./ChannelInventoryHost.router-test-helper";
 import { getChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
 import { BUSINESS_INDUSTRY_OPTIONS } from "../../../shared/businessIndustry";
+import { DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, channelInventoryColumnLayout } from "./channelInventoryColumns";
 
 vi.mock("wouter", async importOriginal => ({
   ...await importOriginal<typeof import("wouter")>(),
@@ -35,7 +36,7 @@ const runtime = vi.hoisted(() => {
   return {
     getMaterial, getChannel, getTeamMaterialSource, listTeamSourceOptions, listTeamMaterials,
     toastError: vi.fn(),
-    scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() },
+    scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { id: 7, role: "user" }, staffPrincipal: { frontendUserId: 7, enterpriseId: 31 }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() },
     getTeamMaterialForEdit, collaborationAdd, collaborationEdit,
     collaborationQuery: null as unknown,
     collaborationInputs: [] as unknown[],
@@ -253,7 +254,7 @@ function renderHost() {
 function configureFixtures() {
   vi.mocked(XLSX.writeFile).mockClear();
   runtime.toastError.mockClear();
-  runtime.scope = { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() };
+  runtime.scope = { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "test-bound-scope", frontUser: { id: 7, role: "user" }, staffPrincipal: { frontendUserId: 7, enterpriseId: 31 }, contextVerification: { state: "verified", identity: "test-bound-scope", authorizationVersion: "auth-v1", readVersion: "auth-v1" }, onAuthorizationError: vi.fn() };
   runtime.getTeamMaterialSource.mockReset().mockResolvedValue({ name: "实时核验来源" });
   runtime.listTeamSourceOptions.mockReset().mockImplementation((input: unknown) => { runtime.sourceInputs.push(input); return Promise.resolve((runtime.sourceQuery as { data: unknown }).data); });
   runtime.exactTeamQuery = null;
@@ -420,6 +421,7 @@ beforeEach(() => {
   hostNavigate.mockClear();
   configureFixtures();
   sessionStorage.clear();
+  localStorage.clear();
   runtime.createMaterial.mockReset().mockResolvedValue({ idempotent: false });
   vi.stubGlobal("confirm", vi.fn(() => true));
   hostStyleElement = document.createElement("style");
@@ -855,17 +857,17 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     const cellStyle = getComputedStyle(firstCell);
 
     // v20 explicitly widens quote/lead time without shrinking other columns.
-    expect(tableStyle.minWidth).toBe("1160px");
+    expect((stockTable as HTMLTableElement).style.getPropertyValue("--ci-stock-min-width")).toBe(`${channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false).minWidth}px`);
     expect(tableStyle.tableLayout).toBe("fixed");
-    expect(getComputedStyle(required(stockTable.querySelector("th.ci-col-actions"), "missing fixed actions")).width).toBe("216px");
+    expect((stockTable.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("216px");
     expect(headerStyle.paddingTop).toBe("6px");
     expect(headerStyle.paddingRight).toBe("10px");
     // jsdom preserves var() rather than resolving scoped admin tokens.
     expect(headerStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
     expect(cellStyle.paddingTop).toBe("6px");
     expect(cellStyle.paddingRight).toBe("10px");
-    // The first cell is an auxiliary ordinal, not the main model text.
-    expect(cellStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
+    // Model is the default first column; ordinal remains optional.
+    expect(cellStyle.lineHeight).toBe("var(--admin-content-line-height, 18px)");
     expect(getComputedStyle(required(
       stockTable.querySelector(".ci-cell-title"),
       "missing primary model text",
@@ -873,29 +875,31 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   });
 
   it("separates quote and lead-time headings/values using only local width and padding, leaving actions and all columns intact", () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(table.querySelectorAll("thead th")).toHaveLength(11);
+    expect(table.querySelectorAll("thead th")).toHaveLength(10);
     for (const row of table.querySelectorAll("tbody tr")) {
-      expect(row.querySelectorAll("td")).toHaveLength(11);
+      expect(row.querySelectorAll("td")).toHaveLength(10);
       expect(row.querySelector(".ci-col-actions")?.textContent).toContain("备注（");
     }
     for (const selector of ["th.ci-material-price-col", "td.ci-material-price-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing quote cell"));
-      expect(style.width).toBe("128px"); expect(style.paddingRight).toBe("18px"); expect(style.textAlign).toBe("center");
+      expect((table.querySelector('col[data-column="price"]') as HTMLTableColElement).style.width).toBe("128px"); expect(style.paddingRight).toBe("18px"); expect(style.textAlign).toBe("center");
     }
     for (const selector of ["th.ci-material-lead-col", "td.ci-material-lead-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing lead cell"));
-      expect(style.width).toBe("112px"); expect(style.paddingLeft).toBe("18px");
+      expect((table.querySelector('col[data-column="leadTime"]') as HTMLTableColElement).style.width).toBe("112px"); expect(style.paddingLeft).toBe("18px");
     }
     expect(getComputedStyle(required(table.closest(".ci-tablewrap"), "missing stock scroller")).overflowX).toBe("auto");
-    expect(getComputedStyle(required(table.querySelector("th.ci-material-recorder-col"), "missing recorder")).width).toBe("96px");
-    expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
+    expect((table.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("96px");
+    expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
     const actions = getComputedStyle(required(table.querySelector("td.ci-col-actions"), "missing actions"));
-    expect(actions.width).toBe("216px"); expect(actions.position).toBe("sticky"); expect(actions.right).toBe("0px");
+    expect((table.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("216px"); expect(actions.position).toBe("sticky"); expect(actions.right).toBe("0px");
   });
 
   it("gives industry and delivery the same regular body role while keeping model and supporting data hierarchy", () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
     const industry = required(table.querySelector("td.ci-material-industry-col"), "missing industry cell");
@@ -1785,7 +1789,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     const header = required(document.querySelector(".ci-tabbar"), "missing compact channel header");
     expect(header.querySelector("h1.ci-page-title")?.textContent).toBe("渠道库存");
@@ -1817,22 +1821,22 @@ describe("v13 native channel read and original recorder contract", () => {
     result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
-    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([11, 11]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([9, 9]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).whiteSpace).toBe("nowrap");
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).textOverflow).toBe("ellipsis");
-    expect(getComputedStyle(document.querySelector("th.ci-material-recorder-col")!).width).toBe("96px");
+    expect((document.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("96px");
     expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(document.querySelector("tbody .ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(document.body.textContent).not.toMatch(/WRONG-RESPONSIBLE|WRONG-EDITOR/);
   });
-  it.each(["loading", "error", "empty"])("uses eleven-column colspan for %s without misaligning existing table", status => {
+  it.each(["loading", "error", "empty"])("uses default nine-column colspan for %s without misaligning existing table", status => {
     runtime.teamQuery = status === "loading" ? query(undefined, { isLoading: true }) : status === "error" ? query(undefined, { isError: true }) : query({ items: [], total: 0, pageCount: 1 });
     renderHost();
-    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("11");
-    expect(document.querySelectorAll("thead th")).toHaveLength(11);
+    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("9");
+    expect(document.querySelectorAll("thead th")).toHaveLength(9);
   });
   it("allows native read with no ERP edit permission, but cannot open uploads, edit or note forms even from stale writable row hints", async () => {
     runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-read-only-v1" };
@@ -1917,10 +1921,11 @@ describe("v14 industry and channel-row stock upload", () => {
   const options = (items: unknown[], overrides: Record<string, unknown> = {}) => query({ items, total: items.length, page: 1, pageSize: 100, pageCount: 1, canWrite: true, ...overrides });
 
   it("keeps five layout contracts: industry after recorder, fixed industry width, typography, scrolling and narrower two-action archive", () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
-    expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
+    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
+    expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(getComputedStyle(table.parentElement!).overflowX).toBe("auto");
@@ -1932,6 +1937,7 @@ describe("v14 industry and channel-row stock upload", () => {
   });
 
   it.each([null, undefined, "", "unknown-internal-code"])("shows an unset label for %s without inferring from a hidden channel/source", industryCode => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     const data = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
     data.items[0] = { ...data.items[0], industryCode: "automotive", channelSource: { id: 999, name: "HIDDEN-INDUSTRY-SOURCE" } };
     data.items[1] = { ...data.items[1], industryCode, channelName: "HIDDEN-CHANNEL", channelSource: { id: 888, name: "HIDDEN-SOURCE" } };
@@ -2602,8 +2608,8 @@ describe("approved channel inventory part-number density", () => {
     expect(brandStyle.whiteSpace).toBe("nowrap"); expect(brandStyle.textOverflow).toBe("ellipsis");
     expect(row.querySelector("small.ci-batch-source")).toBeNull();
     expect(row.querySelector(".ci-source-link")?.textContent).toBe("查看来源");
-    expect(row.querySelectorAll("td")).toHaveLength(11);
-    expect(getComputedStyle(required(row.closest("table"), "missing table")).minWidth).toBe("1160px");
+    expect(row.querySelectorAll("td")).toHaveLength(9);
+    expect(required(row.closest("table"), "missing table").style.getPropertyValue("--ci-stock-min-width")).toBe(`${channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false).minWidth}px`);
   });
 
   it("portals complete hover text outside the scroller and sticky layer with unchanged business inputs", async () => {
@@ -2707,7 +2713,7 @@ describe("approved inventory compact time presentation", () => {
 
   it.each([
     null, undefined, "", "  ", "not-a-date", new Date(NaN),
-    "2026-02-30", " 2026-02-30", "2026/02/30", "2026-11-10 12:00:00", "2026-11-10T12:00:00",
+    "2026-02-30", " 2026-02-30", "2026/02/30",
     " 2026-11-10T12:00:00Z", "2026-11-10T12:00:00Z ", "2026-11-10T12:00:00Z\n",
     "2026/11/10T12:00:00Z", "2026-11-10", "2026-11-10 12:00:00Z",
     "0000-01-01T00:00:00Z", "10000-01-01T00:00:00Z", "2026-00-01T00:00:00Z", "2026-13-01T00:00:00Z",
@@ -2727,73 +2733,23 @@ describe("approved inventory compact time presentation", () => {
     }
     setFirst({ updatedAt: value, dateCode: null }); renderHost();
     const cell = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
-    expect(cell.textContent).toBe("—"); expect(cell.querySelector('[role="button"]')).toBeNull();
+    expect(cell.textContent).toBe(""); expect(cell.querySelector('[role="button"]')).toBeNull();
     expect(panel()).toBeNull();
   });
 
-  it.each([null, undefined, "", "  "])("omits absent Date Code %s without a dash or empty first line", dateCode => {
-    setFirst({ dateCode }); renderHost();
-    const cell = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
-    expect(cell.querySelector(".admin-cell-primary")).toBeNull();
-    expect(cell.children).toHaveLength(1); expect(cell.textContent).not.toContain("—");
-    expect(getComputedStyle(required(cell.querySelector(".ci-updated-at"), "missing time line")).marginTop).toBe("0px");
-  });
-
-  it.each(["0", "2601", "  2601 / REV-B  "])("retains true Date Code %s byte-for-byte and natural height", dateCode => {
-    setFirst({ dateCode }); renderHost();
-    const cell = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
-    expect(cell.querySelector(".admin-cell-primary")?.textContent).toBe(dateCode);
-    expect(cell.children).toHaveLength(2);
-    expect(getComputedStyle(required(cell.querySelector(".ci-updated-at"), "missing time line")).marginTop).toBe("2px");
-  });
-
-  it("keeps DC explanation accessible and date single-line without changing table width, fonts or sticky actions", () => {
-    renderHost();
-    const th = required(document.querySelector("th.ci-material-date-col"), "missing date header");
-    expect(th.textContent).toBe("DC / 更新");
-    expect(th.getAttribute("aria-label")).toBe("Date Code / 更新时间（北京时间）");
-    expect(th.getAttribute("title")).toBe("Date Code / 更新时间（北京时间）");
-    expect(getComputedStyle(th).whiteSpace).toBe("nowrap");
-    // jsdom cannot measure container-unit table geometry; bind the actual CSS contract.
-    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: var(--ci-stock-date-width); }");
-    expect(getComputedStyle(required(trigger().closest("small"), "missing time line")).whiteSpace).toBe("nowrap");
-    const td = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
-    expect(getComputedStyle(td).paddingTop).toBe("6px"); expect(getComputedStyle(td).paddingBottom).toBe("6px");
-    expect(getComputedStyle(td).height).toBe("48px");
-    expect(getComputedStyle(required(document.querySelector("td.ci-col-actions"), "missing actions")).position).toBe("sticky");
-    expect(getComputedStyle(required(document.querySelector(".ci-compact-stock-table"), "missing table")).minWidth).toBe("1160px");
-    expect(getComputedStyle(required(document.querySelector(".ci-tablewrap"), "missing scroller")).overflowX).toBe("auto");
-    expect(getComputedStyle(button("平铺查看")).minHeight).toBe("34px");
-  });
-
-  it.each([320, 1024, 1160, 1280, 1440, 1560, 1920])("returns only date savings to model at container W=%s, with the other nine columns and 100%% budget", width => {
-    expect(hostStyles).toContain(".ci-page.ci-host .ci-tablewrap:has(> .ci-compact-stock-table) { container-type: inline-size; }");
-    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table { --ci-stock-flex-base: calc((max(1160px, 100cqw) - 698px) / 5); --ci-stock-date-width: min(128px, calc(var(--ci-stock-flex-base) - 12px)); }");
-    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc(var(--ci-stock-flex-base) * 2 - var(--ci-stock-date-width)); }");
-    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: var(--ci-stock-date-width); }");
-    for (const column of ["brand", "qty", "source"]) {
-      expect(hostStyles).toContain(`.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-${column}-col { width: var(--ci-stock-flex-base); }`);
-    }
-    const tableWidth = Math.max(1160, width);
-    const fixedTotal = [36, 96, 110, 128, 112, 216].reduce((total, column) => total + column, 0);
-    expect(fixedTotal).toBe(698);
-    const base = (tableWidth - fixedTotal) / 5;
-    const oldDate = base, oldModel = base;
-    const date = Math.min(128, base - 12);
-    const model = base * 2 - date;
-    const before = [36, oldModel, base, 96, 110, base, 128, 112, oldDate, base, 216];
-    const after = [36, model, base, 96, 110, base, 128, 112, date, base, 216];
-    expect(date).toBeGreaterThan(0);
-    expect(date).toBeLessThanOrEqual(128);
-    expect(date).toBeLessThan(oldDate);
-    expect(model).toBeGreaterThan(oldModel);
-    expect(model - oldModel).toBeCloseTo(oldDate - date, 10);
-    const otherNine = after.map((column, index) => ({ column, index })).filter(({ index }) => index !== 1 && index !== 8);
-    expect(otherNine).toHaveLength(9);
-    for (const { column, index } of otherNine) expect(column).toBeCloseTo(before[index], 10);
-    expect(before.reduce((total, column) => total + column, 0)).toBeCloseTo(tableWidth, 10);
-    expect(after.reduce((total, column) => total + column, 0)).toBeCloseTo(tableWidth, 10);
-    if (width <= 1160) { expect(date).toBeCloseTo(80.4, 10); expect(oldDate).toBeCloseTo(92.4, 10); }
+  it("renders time independently from optional DC with a semantic complete Beijing timestamp", () => {
+    const key = channelInventoryColumnsStorageKey(7, 31)!;
+    localStorage.setItem(key, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode"]));
+    setFirst({ dateCode: "  2601 / REV-B  " }); renderHost();
+    expect(document.querySelector("th.ci-material-date-col")?.textContent).toBe("更新时间");
+    expect(document.querySelector("td.ci-material-dc-col")?.textContent).toBe("  2601 / REV-B  ");
+    expect(document.querySelector("td.ci-material-date-col")?.textContent).not.toContain("2601");
+    expect(trigger().closest("time")?.getAttribute("datetime")).toMatch(/T\d{2}:\d{2}:\d{2}\+08:00$/);
+    const layout = channelInventoryColumnLayout([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode"], false);
+    const table = required(document.querySelector<HTMLTableElement>(".ci-compact-stock-table"), "missing table");
+    expect(table.style.getPropertyValue("--ci-stock-min-width")).toBe(`${layout.minWidth}px`);
+    expect(table.querySelectorAll("col")).toHaveLength(layout.count);
+    expect(hostStyles).not.toMatch(/ci-stock-flex-base|ci-stock-date-width|100cqw/);
   });
 
   it("keeps a cross-year label single-line/ellipsizable while native tooltip retains every second and timezone", () => {

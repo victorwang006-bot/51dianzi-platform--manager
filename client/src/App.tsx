@@ -1,12 +1,12 @@
 import { LazyOrganization } from "./lib/adminRouteChunks";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Router as WouterRouter, Switch, useLocation } from "wouter";
+import { Route, Router as WouterRouter, Switch, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { DashboardLayoutSkeleton } from "./components/DashboardLayoutSkeleton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { getAdminWorkspacePathname, hasAdminChannelInventoryRead } from "./components/admin/adminWorkspaceNavigationModel";
+import { getClosedAdminEntryNavigationTarget, getAdminWorkspacePathname, hasAdminChannelInventoryRead } from "./components/admin/adminWorkspaceNavigationModel";
 import {
   LazyAdmins,
   LazyAnalytics,
@@ -42,11 +42,11 @@ function RouteFallback() {
   return <DashboardLayoutSkeleton />;
 }
 
-function DefaultAdminRoute() {
+function DefaultAdminRoute({ target = DEFAULT_ADMIN_PATH }: { target?: string }) {
   const [, setLocation] = useLocation();
   useEffect(() => {
-    setLocation(DEFAULT_ADMIN_PATH, { replace: true });
-  }, [setLocation]);
+    setLocation(target, { replace: true });
+  }, [setLocation, target]);
   return <RouteFallback />;
 }
 
@@ -256,12 +256,30 @@ const ROUTER_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function AppRoutes() {
   const [location] = useLocation();
+  const search = useSearch();
   if (location.split("?")[0] === "/login") return <LoginRoute />;
+
+  const closedEntryTarget = getClosedAdminEntryNavigationTarget(
+    location.includes("?") ? location : `${location}${search ? `?${search}` : ""}`
+  );
+  if (closedEntryTarget) {
+    const redirect = <DefaultAdminRoute target={closedEntryTarget} />;
+    const pathname = getAdminWorkspacePathname(location);
+    // Do not mount the former Organization/Workbench screen even for one render:
+    // its query hooks/effects would otherwise issue retired-page requests.
+    return (
+      <AuthGate>
+        {pathname === "/role-templates" || pathname === "/permission-audit"
+          ? <PermissionGate permission="admins.manage">{redirect}</PermissionGate>
+          : redirect}
+      </AuthGate>
+    );
+  }
 
   return (
     <AuthGate>
       <Switch>
-        <Route path={"/"} component={DefaultAdminRoute} />
+        <Route path={"/"}><DefaultAdminRoute /></Route>
         <Route path={"/materials"} component={MaterialsRoute} />
         <Route path={"/merchants"} component={MerchantsRoute} />
         <Route path={"/merchants/:id"} component={MerchantDetailRoute} />
@@ -272,22 +290,10 @@ function AppRoutes() {
         <Route path={"/admins"} component={AdminsRoute} />
         <Route path={"/staff"} component={StaffRoute} />
         <Route path={"/teams"} component={OrganizationRoute} />
-        <Route path={"/role-templates"} component={OrganizationRoute} />
-        <Route path={"/permission-audit"} component={OrganizationRoute} />
         <Route path={"/reviews"} component={ReviewsRoute} />
         <Route path={"/exception-logs"} component={ExceptionLogsRoute} />
         <Route path={"/analytics"} component={AnalyticsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
-        <Route path={"/workbench"} component={BusinessWorkbenchRoute} />
-        <Route
-          path={"/workbench/inventory"}
-          component={BusinessWorkbenchRoute}
-        />
-        <Route
-          path={"/workbench/publish/:id/edit"}
-          component={BusinessWorkbenchRoute}
-        />
-        <Route path={"/workbench/publish"} component={BusinessWorkbenchRoute} />
         <Route path={"/workbench/inbound"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/channel-inventory"}

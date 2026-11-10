@@ -89,8 +89,6 @@ const BUSINESS_MODULE_ENTRIES = [
     id: "inventory",
     label: "库存管理",
     paths: [
-      "/workbench/inventory",
-      "/workbench/publish",
       "/workbench/inbound",
       "/workbench/outbound",
     ],
@@ -188,8 +186,6 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
         "/workbench/customers",
         "/workbench/customer-demands",
         "/workbench/orders",
-        "/workbench/inventory",
-        "/workbench/publish",
         "/workbench/inbound",
         "/workbench/outbound",
         "/workbench/inquiries",
@@ -207,8 +203,6 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
       paths: [
         "/staff",
         "/teams",
-        "/role-templates",
-        "/permission-audit",
         "/workbench/user-records",
       ],
     },
@@ -249,6 +243,27 @@ export function getAdminWorkspacePathname(location: string): string {
   return pathname?.startsWith("/") ? pathname.replace(/\/+$/, "") || "/" : "";
 }
 
+/** Frontend entry retirement only. Targets still enforce their original permissions/BFF scope. */
+export function getClosedAdminEntryNavigationTarget(location: string): string | null {
+  const pathname = getAdminWorkspacePathname(location);
+  const destination = pathname === "/role-templates" || pathname === "/permission-audit"
+    ? "/staff"
+    : pathname === "/workbench" || pathname === "/workbench/inventory" ||
+        pathname === "/workbench/publish" || /^\/workbench\/publish\/[^/]+\/edit$/.test(pathname)
+      ? "/workbench/channel-inventory" : null;
+  if (!destination) return null;
+
+  // Restore only one legal candidate selection, never a query-supplied grant,
+  // returnTo URL, stale page mode or a locally inferred merchant/enterprise.
+  const queryLocation = location.split("#", 1)[0];
+  const search = queryLocation.includes("?") ? queryLocation.slice(queryLocation.indexOf("?") + 1) : "";
+  const merchantIds = new URLSearchParams(search).getAll("merchantId");
+  const merchantId = merchantIds[0];
+  return merchantIds.length === 1 && /^\d+$/.test(merchantId) &&
+      Number.isSafeInteger(Number(merchantId)) && Number(merchantId) > 0
+    ? `${destination}?merchantId=${encodeURIComponent(merchantId)}` : destination;
+}
+
 export function groupAdminWorkspaceNavigationItems<
   T extends AdminWorkspaceNavigationItem,
 >(items: readonly T[]): AdminWorkspace<T>[] {
@@ -273,11 +288,10 @@ export function getAdminWorkspaceNavigationRoute(
   const businessAlias = BUSINESS_ROUTE_ALIASES.find(alias =>
     isAdminWorkbenchNavigationRouteMatch(pathname, alias.path)
   );
-  // /workbench is the existing inventory landing route, not a new menu target.
+  // Retired entries and the legacy landing resolve only to still-open routes.
   const canonicalLocation =
-    pathname === "/workbench"
-      ? "/workbench/inventory"
-      : (businessAlias?.canonicalPath ?? pathname);
+    getClosedAdminEntryNavigationTarget(pathname) ??
+    businessAlias?.canonicalPath ?? pathname;
   const route = getAdminWorkbenchNavigationRoute(canonicalLocation);
   if (!route) return null;
 

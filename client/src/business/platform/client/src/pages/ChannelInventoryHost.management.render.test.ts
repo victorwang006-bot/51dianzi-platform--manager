@@ -58,20 +58,20 @@ afterEach(() => { act(() => root.unmount()); container.remove(); document.body.r
 describe("manager Host inventory-management bridge", () => {
   it("adds batches/trash without replacing original inventory columns or readonly row actions", () => {
     renderHost(); expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
     expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
     expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(1);
     const views = required(document.querySelector('.ci-toolbar[aria-label="材料筛选"] .ci-inventory-view-controls'));
-    expect(views.previousElementSibling?.textContent).toBe("选择");
+    expect(views.previousElementSibling?.textContent).toBe("显示列");
     expect(views.nextElementSibling?.className).toBe("ci-filter-count");
     click(button("选择")); expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
     expect(document.querySelectorAll("tbody input[type=checkbox]")).toHaveLength(1);
-    expect(document.querySelectorAll("thead th")).toHaveLength(12);
-    for (const row of document.querySelectorAll("tbody tr")) expect(row.querySelectorAll("td")).toHaveLength(12);
+    expect(document.querySelectorAll("thead th")).toHaveLength(10);
+    for (const row of document.querySelectorAll("tbody tr")) expect(row.querySelectorAll("td")).toHaveLength(10);
     runtime.team = { ...(runtime.team as object), isLoading: true };
     renderHost();
-    expect(document.querySelectorAll("thead th")).toHaveLength(12);
-    expect(document.querySelector("tbody td.ci-empty")?.getAttribute("colspan")).toBe("12");
+    expect(document.querySelectorAll("thead th")).toHaveLength(10);
+    expect(document.querySelector("tbody td.ci-empty")?.getAttribute("colspan")).toBe("10");
   });
   it("sends single deletion through the existing bridge with the row revision and asserted identity", async () => {
     renderHost(); const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));

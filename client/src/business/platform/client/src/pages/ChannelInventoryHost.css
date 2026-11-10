@@ -53,7 +53,7 @@
 .ci-page.ci-host :is(button, input, select, textarea):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 .ci-page.ci-host .ci-tablewrap { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
 .ci-page.ci-host .ci-table { width: 100%; border-collapse: collapse; color: #1e293b; font-size: var(--admin-content-font-body, 12px); table-layout: fixed; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: 1160px !important; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: var(--ci-stock-min-width) !important; }
 .ci-page.ci-host .ci-table.ci-channel-table { min-width: 1040px !important; }
 .ci-page.ci-host .ci-table th { box-sizing: border-box; height: var(--admin-content-table-head-height, 32px); padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; background: #f8fafc; font-size: var(--admin-content-font-caption, 11px); font-weight: 500; line-height: var(--admin-content-caption-line-height, 18px); text-align: left; vertical-align: middle; white-space: normal; }
 .ci-page.ci-host .ci-table td { box-sizing: border-box; height: auto; padding: 10px; border-top: 1px solid #e2e8f0; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 18px); vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
@@ -69,32 +69,23 @@
 .ci-page.ci-host .ci-table td.ci-number:not(.ci-row-index) { text-align: right; }
 .ci-page.ci-host .ci-table .ci-row-index { text-align: center; }
 .ci-page.ci-host .ci-table .ci-col-index { width: 36px; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-recorder-col { width: 96px; }
 .ci-page.ci-host .ci-compact-stock-table td.ci-material-recorder-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-industry-col { width: 110px; }
-/* Date is narrower even at 1160px; model = old model + old date - new date.
- * Source, brand, quantity, fixed columns and quote/lead-time gaps stay intact. */
-.ci-page.ci-host .ci-tablewrap:has(> .ci-compact-stock-table) { container-type: inline-size; }
-.ci-page.ci-host.ci-host .ci-compact-stock-table { --ci-stock-flex-base: calc((max(1160px, 100cqw) - 698px) / 5); --ci-stock-date-width: min(128px, calc(var(--ci-stock-flex-base) - 12px)); }
-.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc(var(--ci-stock-flex-base) * 2 - var(--ci-stock-date-width)); }
-.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-brand-col { width: var(--ci-stock-flex-base); }
+/* colgroup is the only width authority. Clear inherited first-row percentages;
+ * the single un-sized model col absorbs spare room without allocating hidden columns. */
+.ci-page.ci-host .ci-table.ci-compact-stock-table :is(th, td) { width: auto !important; }
 .ci-page.ci-host .ci-compact-stock-table td.ci-material-brand-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ci-page.ci-host .ci-compact-stock-table .ci-part-number-trigger { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; cursor: pointer; }
-.ci-page.ci-host .ci-compact-stock-table .ci-part-number-trigger:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
-.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-qty-col { width: var(--ci-stock-flex-base); }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { width: 128px; padding-right: 18px; text-align: center; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: 112px; padding-left: 18px; }
+.ci-page.ci-host .ci-compact-stock-table :is(.ci-part-number-trigger, .ci-dc-trigger) { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; cursor: pointer; }
+.ci-page.ci-host .ci-compact-stock-table :is(.ci-part-number-trigger, .ci-dc-trigger):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+.ci-page.ci-host .ci-compact-stock-table .ci-dc-trigger { font-weight: 400; }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-price-col { padding-right: 18px; text-align: center; }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { padding-left: 18px; }
 .ci-page.ci-host .ci-compact-stock-table td:is(.ci-material-recorder-col, .ci-material-industry-col, .ci-material-qty-col, .ci-material-price-col, .ci-material-lead-col) { color: #303642; font-size: var(--admin-content-font-body, 12px); font-weight: 400; line-height: var(--admin-content-line-height, 18px); }
 .ci-page.ci-host .ci-compact-stock-table td.ci-date .admin-cell-primary { color: #303642; font-weight: 400; }
-.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: var(--ci-stock-date-width); }
 .ci-page.ci-host .ci-compact-stock-table th.ci-material-date-col,
 .ci-page.ci-host .ci-compact-stock-table .ci-updated-at { white-space: nowrap; overflow-wrap: normal; }
 .ci-page.ci-host .ci-compact-stock-table .ci-updated-at { display: block; margin-top: 0; }
-.ci-page.ci-host .ci-compact-stock-table .admin-cell-primary + .ci-updated-at { margin-top: 2px; }
 .ci-page.ci-host .ci-compact-stock-table .ci-updated-at-trigger { display: block; max-width: 100%; min-width: 0; min-height: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .ci-page.ci-host .ci-compact-stock-table .ci-updated-at-trigger:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
-.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-source-col { width: var(--ci-stock-flex-base); }
-.ci-page.ci-host .ci-compact-stock-table :is(th, td).ci-col-actions { width: 216px; }
 .ci-page.ci-host .ci-table :is(th, td).ci-col-actions { position: sticky; right: 0; z-index: 2; background: #fff; text-align: right; box-shadow: -5px 0 8px -7px #64748b; }
 .ci-page.ci-host .ci-table th.ci-col-actions { z-index: 3; background: #f8fafc; }
 .ci-page.ci-host .ci-table tbody tr:hover td.ci-col-actions,
@@ -198,6 +189,15 @@
 .ci-channel-actions-menu [role="menuitem"][data-disabled] { opacity: .5; cursor: not-allowed; }
 .ci-channel-actions-menu [role="menuitem"][data-variant="destructive"] { color: #a54a4a; }
 .ci-channel-actions-menu [role="separator"] { height: 1px; margin: 4px 0; background: #e2e8f0; }
+
+/* Reuse Radix collision/focus/outside-dismiss behavior; no full-screen settings dialog. */
+.ci-columns-popover { z-index: 75; box-sizing: border-box; width: 248px; max-width: calc(100vw - 16px); max-height: var(--radix-popover-content-available-height); overflow-y: auto; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #334155; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif; font-size: var(--admin-content-font-body, 12px); line-height: 20px; box-shadow: 0 6px 20px rgb(35 53 72 / .15); }
+.ci-columns-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px; }
+.ci-columns-options label { display: flex; align-items: center; min-height: 30px; gap: 6px; cursor: pointer; }
+.ci-columns-options input { flex: 0 0 auto; width: 14px; height: 14px; accent-color: #185fa5; }
+.ci-columns-options small { margin-left: 4px; color: #94a3b8; font-size: 10px; }
+.ci-columns-reset { display: block; width: 100%; min-height: 32px; margin-top: 8px; padding: 4px 0; border: 0; border-top: 1px solid #e2e8f0; background: #fff; color: #185fa5; font: inherit; cursor: pointer; }
+.ci-columns-popover :is(input, button):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 
 /* Portalled presentation only; no Host ancestor, global scaling or row-height rule. */
 .ci-part-number-popover, .ci-updated-at-popover { position: fixed; z-index: 80; box-sizing: border-box; width: max-content; overflow: auto; overscroll-behavior: contain; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff; color: #1e293b; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 6px 20px rgb(35 53 72 / .18); }
