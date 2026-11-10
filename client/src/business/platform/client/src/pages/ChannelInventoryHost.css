@@ -53,7 +53,7 @@
 .ci-page.ci-host :is(button, input, select, textarea):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 .ci-page.ci-host .ci-tablewrap { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
 .ci-page.ci-host .ci-table { width: 100%; border-collapse: collapse; color: #1e293b; font-size: var(--admin-content-font-body, 12px); table-layout: fixed; }
-.ci-page.ci-host .ci-table.ci-compact-stock-table { min-width: var(--ci-stock-min-width) !important; }
+.ci-page.ci-host .ci-table.ci-compact-stock-table.ci-stock-edit-table { min-width: var(--ci-stock-min-width) !important; }
 .ci-page.ci-host .ci-table.ci-channel-table { min-width: 1040px !important; }
 .ci-page.ci-host .ci-table th { box-sizing: border-box; height: var(--admin-content-table-head-height, 32px); padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; background: #f8fafc; font-size: var(--admin-content-font-caption, 11px); font-weight: 500; line-height: var(--admin-content-caption-line-height, 18px); text-align: left; vertical-align: middle; white-space: normal; }
 .ci-page.ci-host .ci-table td { box-sizing: border-box; height: auto; padding: 10px; border-top: 1px solid #e2e8f0; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 18px); vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
