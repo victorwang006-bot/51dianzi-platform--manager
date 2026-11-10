@@ -325,7 +325,7 @@ describe("durable exact batch navigation and return", () => {
   });
   it("shows only the exact server-readable reverse batch without exposing hidden IDs or guessing missing metadata", async () => {
     runtime.team = runtime.query(page([{ ...row, uploadBatchId: 81, canViewUploadBatch: true }, { ...row, id: 2, partNumber: "HIDDEN", uploadBatchId: 777777, canViewUploadBatch: false }, { ...row, id: 3, partNumber: "UNLINKED", uploadBatchId: null }, { ...row, id: 4, partNumber: "UNKNOWN" }], { canWrite: true, canFilterSource: false }));
-    renderHost(); expect(document.body.innerHTML).not.toContain("777777"); expect(document.body.textContent).toContain("来源批次当前不可查看"); expect(document.body.textContent).toContain("未关联上传批次"); expect(document.body.textContent).toContain("批次信息不可用");
+    renderHost(); expect(document.body.innerHTML).not.toContain("777777"); expect(document.body.textContent).toContain("来源批次当前不可查看"); expect(document.body.textContent).not.toContain("未关联上传批次"); expect(document.querySelectorAll("tbody tr")[2].querySelector("small.ci-batch-source")).toBeNull(); expect(document.body.textContent).toContain("批次信息不可用");
     click(button("查看上传批次 #81")); await settle(); expect(new URLSearchParams(window.location.search).get("ciBatchFocusId")).toBe("81");
     expect(document.querySelector("tbody")?.textContent).toContain("BATCH-81");
     expect(runtime.client.listUploadBatches.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 100, archived: undefined, channelId: undefined }, { signal: expect.any(AbortSignal) });

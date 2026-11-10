@@ -476,7 +476,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       expect(document.querySelector('[role="dialog"]')).toBeNull();
     }
     expect(rows[1].querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
-    expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
+    expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col):not(.ci-material-brand-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
     expect(rows[1].querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(rows[1].querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
     const edit = materialMenuItem("编辑");
@@ -518,7 +518,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     await settle();
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("团队来源");
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(peer.querySelector("[title]:not(.ci-material-recorder-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
+    expect(peer.querySelector("[title]:not(.ci-material-recorder-col):not(.ci-material-brand-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
     expect(publish.title).toBe("当前账号没有该材料的发布权限");
     expect(peer.querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(peer.querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.getMaterial).not.toHaveBeenCalled();
@@ -871,9 +871,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   it("separates quote and lead-time headings/values using only local width and padding, leaving actions and all columns intact", () => {
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(table.querySelectorAll("thead th")).toHaveLength(10);
+    expect(table.querySelectorAll("thead th")).toHaveLength(11);
     for (const row of table.querySelectorAll("tbody tr")) {
-      expect(row.querySelectorAll("td")).toHaveLength(10);
+      expect(row.querySelectorAll("td")).toHaveLength(11);
       expect(row.querySelector(".ci-col-actions")?.textContent).toContain("备注（");
     }
     for (const selector of ["th.ci-material-price-col", "td.ci-material-price-col"]) {
@@ -1781,7 +1781,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     const header = required(document.querySelector(".ci-tabbar"), "missing compact channel header");
     expect(header.querySelector("h1.ci-page-title")?.textContent).toBe("渠道库存");
@@ -1811,8 +1811,8 @@ describe("v13 native channel read and original recorder contract", () => {
     result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
-    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([10, 10]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([11, 11]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).whiteSpace).toBe("nowrap");
@@ -1822,11 +1822,11 @@ describe("v13 native channel read and original recorder contract", () => {
     expect(getComputedStyle(document.querySelector("tbody .ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(document.body.textContent).not.toMatch(/WRONG-RESPONSIBLE|WRONG-EDITOR/);
   });
-  it.each(["loading", "error", "empty"])("uses ten-column colspan for %s without misaligning existing table", status => {
+  it.each(["loading", "error", "empty"])("uses eleven-column colspan for %s without misaligning existing table", status => {
     runtime.teamQuery = status === "loading" ? query(undefined, { isLoading: true }) : status === "error" ? query(undefined, { isError: true }) : query({ items: [], total: 0, pageCount: 1 });
     renderHost();
-    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("10");
-    expect(document.querySelectorAll("thead th")).toHaveLength(10);
+    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("11");
+    expect(document.querySelectorAll("thead th")).toHaveLength(11);
   });
   it("allows native read with no ERP edit permission, but cannot open uploads, edit or note forms even from stale writable row hints", async () => {
     runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-read-only-v1" };
@@ -1913,7 +1913,7 @@ describe("v14 industry and channel-row stock upload", () => {
   it("keeps five layout contracts: industry after recorder, fixed industry width, typography, scrolling and narrower two-action archive", () => {
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["#", "型号 / 品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
     expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
@@ -2569,5 +2569,99 @@ describe("v18 single collaboration-note entry", () => {
     writeDOM("v18-channel-inventory-notes-host.html");
     expect(runtime.collaborationAdd).not.toHaveBeenCalled();
     expect(runtime.collaborationEdit).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("approved channel inventory part-number density", () => {
+  const longPart = "SYNTHETIC-STM32F429ZIT6-TR/REV-B-INDUSTRIAL-EXTENDED-PACKAGE-2601";
+  const partTrigger = () => required(document.querySelector<HTMLSpanElement>(".ci-part-number-trigger"), "missing part-number trigger");
+  const panel = () => document.querySelector<HTMLElement>(".ci-part-number-popover");
+  const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
+
+  it.each(["TI", "SYNTHETIC-BRAND-".repeat(12), ""])("separates original full part data from single-line brand %s", brand => {
+    const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0] = { ...result.data.items[0], partNumber: longPart, brand, uploadBatchId: null };
+    renderHost();
+    const trigger = partTrigger();
+    const row = required(trigger.closest("tr"), "missing inventory row");
+    expect(trigger.textContent).toBe(longPart);
+    expect(trigger.getAttribute("aria-label")).toBe(longPart);
+    expect(trigger.closest("td")?.querySelector("small")).toBeNull();
+    expect(row.querySelector("td.ci-material-brand-col")?.textContent).toBe(brand || "—");
+    expect(row.querySelector("td.ci-material-brand-col")?.getAttribute("title")).toBe(brand);
+    const style = getComputedStyle(trigger);
+    expect(style.whiteSpace).toBe("nowrap"); expect(style.textOverflow).toBe("ellipsis"); expect(style.overflow).toBe("hidden");
+    const brandStyle = getComputedStyle(required(row.querySelector("td.ci-material-brand-col"), "missing brand"));
+    expect(brandStyle.whiteSpace).toBe("nowrap"); expect(brandStyle.textOverflow).toBe("ellipsis");
+    expect(row.querySelector("small.ci-batch-source")).toBeNull();
+    expect(row.querySelector(".ci-source-link")?.textContent).toBe("查看来源");
+    expect(row.querySelectorAll("td")).toHaveLength(11);
+    expect(getComputedStyle(required(row.closest("table"), "missing table")).minWidth).toBe("1160px");
+  });
+
+  it("portals complete hover text outside the scroller and sticky layer with unchanged business inputs", async () => {
+    const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0] = { ...result.data.items[0], partNumber: longPart };
+    renderHost();
+    const inputs = runtime.materialInputs.length;
+    act(() => partTrigger().dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(panel()?.textContent).toBe(longPart);
+    expect(panel()?.parentElement).toBe(document.body);
+    expect(panel()?.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
+    expect(getComputedStyle(required(panel(), "missing portal")).position).toBe("fixed");
+    expect(getComputedStyle(required(panel(), "missing portal")).zIndex).toBe("80");
+    act(() => partTrigger().dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body })));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 150)); });
+    expect(panel()).toBeNull(); expect(runtime.materialInputs.length).toBe(inputs);
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled(); expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
+    expect(runtime.createMaterial).not.toHaveBeenCalled(); expect(runtime.updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it("supports keyboard focus, Escape, Enter/Space toggle and blur without truncating the accessible value", () => {
+    renderHost(); const trigger = partTrigger();
+    act(() => trigger.focus()); expect(panel()?.textContent).toBe(trigger.textContent);
+    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(panel()).toBeNull(); expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+    expect(panel()).not.toBeNull();
+    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true })));
+    expect(panel()).toBeNull();
+    act(() => trigger.blur()); act(() => trigger.focus()); expect(panel()).not.toBeNull();
+    act(() => trigger.blur()); expect(panel()).toBeNull();
+  });
+
+  it("supports touch-style click toggle, outside dismissal and viewport/table-scroll dismissal", () => {
+    renderHost(); const trigger = partTrigger();
+    click(trigger); expect(panel()).not.toBeNull(); click(trigger); expect(panel()).toBeNull();
+    click(trigger); act(() => document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))); expect(panel()).toBeNull();
+    click(trigger); act(() => required(document.querySelector(".ci-tablewrap"), "missing scroller").dispatchEvent(new Event("scroll"))); expect(panel()).toBeNull();
+    click(trigger); act(() => window.dispatchEvent(new Event("resize"))); expect(panel()).toBeNull();
+  });
+
+  it("retains panel scrolling for arbitrarily long full values but closes on data, page, view and identity changes", async () => {
+    renderHost(); click(partTrigger());
+    act(() => required(panel(), "missing portal").dispatchEvent(new Event("scroll"))); expect(panel()).not.toBeNull();
+    const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0] = { ...result.data.items[0], partNumber: longPart }; rerender(); expect(panel()).toBeNull();
+    click(partTrigger()); click(button("下一页")); expect(panel()).toBeNull();
+    click(partTrigger()); runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] }); rerender(); await settle(); expect(panel()).toBeNull();
+    click(partTrigger()); click(button("按渠道查看")); await settle(); expect(panel()).toBeNull();
+  });
+
+  it.each([320, 390, 768, 1024, 1560])("clamps the portal within a synthetic %spx viewport without changing table budgets", width => {
+    vi.stubGlobal("innerWidth", width); Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 700 });
+    const rect = (left: number, top: number, w: number, h: number) => ({ x: left, y: top, left, top, width: w, height: h, right: left + w, bottom: top + h, toJSON: () => ({}) });
+    const spy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function () {
+      return this.classList.contains("ci-part-number-popover") ? rect(0, 0, Math.min(520, width - 16), 96) : rect(width - 30, 660, 22, 20);
+    });
+    renderHost(); click(partTrigger());
+    const popover = required(panel(), "missing positioned portal");
+    const left = Number.parseFloat(popover.style.left); const top = Number.parseFloat(popover.style.top);
+    expect(left).toBeGreaterThanOrEqual(8); expect(left + Math.min(520, width - 16)).toBeLessThanOrEqual(width - 8);
+    expect(top).toBeGreaterThanOrEqual(8); expect(top + 96).toBeLessThanOrEqual(692);
+    expect(Number.parseFloat(popover.style.maxWidth)).toBeLessThanOrEqual(width - 16);
+    spy.mockRestore();
   });
 });
