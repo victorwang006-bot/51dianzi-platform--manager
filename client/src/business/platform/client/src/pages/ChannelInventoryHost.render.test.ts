@@ -1785,8 +1785,12 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     const header = required(document.querySelector(".ci-tabbar"), "missing compact channel header");
     expect(header.querySelector("h1.ci-page-title")?.textContent).toBe("渠道库存");
-    expect(getComputedStyle(header).minHeight).toBe("60px");
+    expect(getComputedStyle(header).minHeight).toBe("54px");
     expect(getComputedStyle(header).paddingTop).toBe("8px");
+    expect(getComputedStyle(header).marginBottom).toBe("6px");
+    expect(getComputedStyle(header).flexWrap).toBe("nowrap");
+    expect(getComputedStyle(required(header.querySelector(".ci-heading-actions"), "missing actions")).flexWrap).toBe("nowrap");
+    expect(getComputedStyle(required(header.querySelector(".ci-inventory-view-controls"), "missing views")).flexWrap).toBe("nowrap");
     expect(getComputedStyle(button("上传库存")).height).toBe("34px");
     for (const name of ["平铺查看", "按渠道查看", "上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
     expect(document.querySelector(".ci-stats,.ci-toolbar.ci-inventory-view-controls")).toBeNull();

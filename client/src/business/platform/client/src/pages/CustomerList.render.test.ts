@@ -166,6 +166,13 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
   });
   it("refreshes the bounded summary after the real importer completion event and locates the real channel", async () => {
     await render(); await click(button("上传物料表", tableRows()[0]));
+    // The protected importer now creates a real customer-bound upload batch
+    // before row writes. Keep this test synthetic but provide that exact DTO.
+    runtime.utils.client.channelInventory.createCustomerUploadBatch = { mutate: vi.fn().mockImplementation(async () => {
+      runtime.context.mockResolvedValue({ customer: { ...runtime.rows[0] }, channel: { id: 411, revision: 1, active: true }, canUpload: true, disabledReason: null });
+      return { id: 501, batchCode: "SYNTHETIC-BATCH", revision: 1, customerId: 801, channelId: 411 };
+    }) };
+    runtime.create.mockResolvedValue({ item: { id: 901, channelId: 411, uploadBatchId: 501 }, idempotent: false, channelId: 411, customerId: 801, uploadBatchId: 501 });
     const sheet = XLSX.utils.aoa_to_sheet([["型号", "品牌"], ["SYNTHETIC", "TI"]]);
     const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, "synthetic");
     const bytes = XLSX.write(book, { type: "array", bookType: "xlsx" }); const file = new File([bytes], "synthetic-only.xlsx");
@@ -203,7 +210,7 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
     expect(runtime.navigate).not.toHaveBeenCalled(); expect(host.querySelector('[data-testid="synthetic-demand-open"]')).toBeNull();
   });
   it("keeps profile completion and exact authorized stock location clickable, and primary create button unchanged", async () => {
-    await render(); await click(button("补全客户档案", tableRows()[1])); expect(runtime.navigate).toHaveBeenLastCalledWith("/customers/802");
+    await render(); await click(button("补全客户档案", tableRows()[1])); expect(runtime.navigate).toHaveBeenLastCalledWith("/customers/802?tab=company");
     await click(button("查看库存（123456）", tableRows()[0])); expect(runtime.navigate).toHaveBeenLastCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
     const create = button("录入客户"); expect(create.className).toContain("customer-list-control"); expect(create.className).not.toContain("customer-list-text-action");
     await click(button("需求录入", tableRows()[0])); expect(host.querySelector('[data-testid="synthetic-demand-open"]')?.textContent).toBe(runtime.rows[0].name);
@@ -306,7 +313,7 @@ describe("actual CustomerList personal stars", () => {
     expect(document.activeElement).toBe(star());
     await click(star()); expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ starred: false, expectedRevision: 1, targetUserId: 7 });
     expect(star().getAttribute("aria-pressed")).toBe("false");
-    await click(host.querySelector(".customer-list-name")!); expect(runtime.navigate).toHaveBeenLastCalledWith("/customers/801");
+    await click(host.querySelector(".customer-list-name")!); expect(runtime.navigate).toHaveBeenLastCalledWith("/customers/801?tab=overview");
     expect(runtime.setStar).toHaveBeenCalledTimes(2); expect(host.querySelector("tbody tr a")).toBeNull();
     expect(runtime.utils.customer.list.invalidate).toHaveBeenCalledTimes(2);
   });

@@ -8,6 +8,8 @@ import {
   decimalToScaled,
   salesOrderCandidateListSchema,
   salesOrderCreateSchema,
+  salesOrderCustomerSummarySchema,
+  salesOrderCustomerMaterialsSchema,
   salesOrderIdSchema,
   salesOrderListSchema,
   salesOrderPaymentSchema,
@@ -17,7 +19,12 @@ import {
   scaledToDecimal,
   type SalesOrderCandidateListInput,
   type SalesOrderCreateInput,
+  type SalesOrderCustomerSummaryInput,
+  type SalesOrderCustomerSummary,
+  type SalesOrderCustomerMaterialsInput,
+  type SalesOrderCustomerMaterial,
   type SalesOrderDetail,
+  type SalesOrderIdInput,
   type SalesOrderItem,
   type SalesOrderListInput,
   type SalesOrderPage,
@@ -266,6 +273,9 @@ export async function listSalesOrderCandidates(scope: CrmSalesOrderScope, rawInp
   const input = parsed.data;
   const db = await requireDb();
   const access = await requireSalesOrderAccess(db, scope);
+  if (input.customerId !== undefined) {
+    await assertCrmDemandCustomer(db, scope, access.policy, input.customerId);
+  }
   const conditions = [
     sql`d.enterpriseId = ${scope.enterpriseId}`,
     sql`d.status IN ('submitted', 'processing')`,
@@ -281,6 +291,7 @@ export async function listSalesOrderCandidates(scope: CrmSalesOrderScope, rawInp
     )`,
   ];
   conditions.push(crmDemandCustomerWhere(scope, access.policy));
+  if (input.customerId !== undefined) conditions.push(sql`d.customerId = ${input.customerId}`);
   if (input.keyword) {
     const keyword = `%${input.keyword}%`;
     conditions.push(sql`(d.demandNo LIKE ${keyword} OR d.projectName LIKE ${keyword} OR EXISTS (
@@ -474,7 +485,11 @@ export async function listSalesOrders(scope: CrmSalesOrderScope, rawInput: Sales
   const input = parsed.data;
   const db = await requireDb();
   const access = await requireSalesOrderAccess(db, scope);
+  if (input.customerId !== undefined) {
+    await assertCrmDemandCustomer(db, scope, access.policy, input.customerId);
+  }
   const conditions = [orderScopeWhere(scope, access.policy)];
+  if (input.customerId !== undefined) conditions.push(sql`o.customerId = ${input.customerId}`);
   if (input.status) conditions.push(sql`o.status = ${input.status}`);
   if (input.keyword) {
     const keyword = `%${input.keyword}%`;
@@ -509,18 +524,100 @@ export async function listSalesOrders(scope: CrmSalesOrderScope, rawInput: Sales
   };
 }
 
-export async function getSalesOrder(scope: CrmSalesOrderScope, rawInput: { id: number }): Promise<SalesOrderDetail> {
+/** Full customer totals are computed in SQL, never from a list page or a keyword match. */
+export async function getSalesOrderCustomerSummary(scope: CrmSalesOrderScope, rawInput: SalesOrderCustomerSummaryInput): Promise<SalesOrderCustomerSummary> {
+  const parsed = salesOrderCustomerSummarySchema.safeParse(rawInput);
+  if (!parsed.success) throw new TRPCError({ code: "BAD_REQUEST", message: "客户订单汇总参数无效" });
+  const { customerId } = parsed.data;
+  const db = await requireDb();
+  const access = await requireSalesOrderAccess(db, scope);
+  await assertCrmDemandCustomer(db, scope, access.policy, customerId);
+  const row = resultRows<Omit<SalesOrderCustomerSummary, "customerId">>(await db.execute(sql`
+    SELECT COUNT(*) AS totalOrders,
+           COALESCE(SUM(CASE WHEN scoped.status = 'confirmed' THEN 1 ELSE 0 END), 0) AS confirmedOrders,
+           COALESCE(SUM(CASE WHEN scoped.status = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelledOrders,
+           COALESCE(SUM(CASE WHEN scoped.status = 'confirmed'
+             AND (scoped.paidAmount + scoped.monthlyAmount <= 0
+               OR scoped.paidAmount + scoped.monthlyAmount < scoped.totalAmount) THEN 1 ELSE 0 END), 0) AS awaitingPaymentOrders,
+           COALESCE(SUM(CASE WHEN scoped.status = 'confirmed'
+             AND scoped.shippedQty < scoped.orderedQty THEN 1 ELSE 0 END), 0) AS awaitingShipmentOrders,
+           COALESCE(SUM(CASE WHEN scoped.status = 'confirmed' AND scoped.monthlyAmount > 0 AND scoped.paidAmount <= 0
+             AND scoped.paidAmount + scoped.monthlyAmount >= scoped.totalAmount THEN 1 ELSE 0 END), 0) AS monthlyOrders
+      FROM (
+        SELECT o.id, o.status, o.totalAmount, ${FULFILLMENT_SELECT}
+          FROM crm_sales_orders o
+          INNER JOIN crm_customers c ON c.enterpriseId = o.enterpriseId AND c.id = o.customerId
+         WHERE ${orderScopeWhere(scope, access.policy)} AND o.customerId = ${customerId}
+      ) scoped
+  `))[0];
+  return {
+    customerId, totalOrders: Number(row?.totalOrders ?? 0), confirmedOrders: Number(row?.confirmedOrders ?? 0),
+    cancelledOrders: Number(row?.cancelledOrders ?? 0), awaitingPaymentOrders: Number(row?.awaitingPaymentOrders ?? 0),
+    awaitingShipmentOrders: Number(row?.awaitingShipmentOrders ?? 0), monthlyOrders: Number(row?.monthlyOrders ?? 0),
+  };
+}
+
+/** Paginated order snapshots do not read or grant access to quote or channel inventory modules. */
+export async function listSalesOrderCustomerMaterials(scope: CrmSalesOrderScope, rawInput: SalesOrderCustomerMaterialsInput): Promise<SalesOrderPage<SalesOrderCustomerMaterial>> {
+  const parsed = salesOrderCustomerMaterialsSchema.safeParse(rawInput);
+  if (!parsed.success) throw new TRPCError({ code: "BAD_REQUEST", message: "客户订单物料参数无效" });
+  const input = parsed.data;
+  const db = await requireDb();
+  const access = await requireSalesOrderAccess(db, scope);
+  await assertCrmDemandCustomer(db, scope, access.policy, input.customerId);
+  const where = sql`${orderScopeWhere(scope, access.policy)} AND o.customerId = ${input.customerId}`;
+  const count = resultRows<{ total: number | string }>(await db.execute(sql`
+    SELECT COUNT(*) AS total FROM crm_sales_order_items i
+      INNER JOIN crm_sales_orders o ON o.enterpriseId = i.enterpriseId AND o.id = i.orderId
+      INNER JOIN crm_customers c ON c.enterpriseId = o.enterpriseId AND c.id = o.customerId
+     WHERE ${where}
+  `))[0];
+  const rows = resultRows<Omit<SalesOrderCustomerMaterial, "remainingQty">>(await db.execute(sql`
+    SELECT i.id, i.sourceDemandItemId, i.partNumber, i.brand, i.pkg, i.qtyUnit, i.demandQty, i.orderedQty,
+           i.unitPrice, i.lineAmount, i.deliveryRequirement, i.note,
+           o.id AS orderId, o.orderNumber, o.customerId, o.demandId, o.demandNo, o.projectName, o.status,
+           DATE_FORMAT(o.dueDate, '%Y-%m-%d') AS dueDate,
+           COALESCE((SELECT SUM(si.qty) FROM crm_sales_order_shipment_items si
+             WHERE si.enterpriseId = i.enterpriseId AND si.orderId = i.orderId AND si.orderItemId = i.id), 0) AS shippedQty
+      FROM crm_sales_order_items i
+      INNER JOIN crm_sales_orders o ON o.enterpriseId = i.enterpriseId AND o.id = i.orderId
+      INNER JOIN crm_customers c ON c.enterpriseId = o.enterpriseId AND c.id = o.customerId
+     WHERE ${where}
+     ORDER BY o.updatedAt DESC, o.id DESC, i.sortOrder ASC, i.id ASC
+     LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
+  `));
+  return {
+    items: rows.map(row => ({
+      ...row, id: Number(row.id), sourceDemandItemId: Number(row.sourceDemandItemId), orderId: Number(row.orderId),
+      customerId: Number(row.customerId), demandId: Number(row.demandId), demandQty: Number(row.demandQty),
+      orderedQty: Number(row.orderedQty), shippedQty: Number(row.shippedQty),
+      remainingQty: row.status === "confirmed" ? Math.max(0, Number(row.orderedQty) - Number(row.shippedQty)) : 0,
+      unitPrice: money(row.unitPrice), lineAmount: money(row.lineAmount), dueDate: row.dueDate ?? null,
+    })),
+    total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize,
+  };
+}
+
+export async function getSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesOrderIdInput): Promise<SalesOrderDetail> {
   const parsed = salesOrderIdSchema.safeParse(rawInput);
   if (!parsed.success) throw new TRPCError({ code: "BAD_REQUEST", message: "订单编号无效" });
   const db = await requireDb();
   const access = await requireSalesOrderAccess(db, scope);
+  const conditions = [orderScopeWhere(scope, access.policy), sql`o.id = ${parsed.data.id}`];
+  if (parsed.data.customerId !== undefined) {
+    await assertCrmDemandCustomer(db, scope, access.policy, parsed.data.customerId);
+    conditions.push(sql`o.customerId = ${parsed.data.customerId}`);
+  }
   const row = resultRows<OrderRow>(await db.execute(sql`
     ${orderSelect()}
       INNER JOIN crm_customers c ON c.enterpriseId = o.enterpriseId AND c.id = o.customerId
-     WHERE ${orderScopeWhere(scope, access.policy)} AND o.id = ${parsed.data.id}
+     WHERE ${sql.join(conditions, sql` AND `)}
      LIMIT 1
   `))[0];
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
+  if (parsed.data.customerId !== undefined && Number(row.customerId) !== parsed.data.customerId) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
+  }
   const items = resultRows<SalesOrderItem>(await db.execute(sql`
     SELECT id, sourceDemandItemId, partNumber, brand, pkg, qtyUnit, demandQty, orderedQty, unitPrice, lineAmount, deliveryRequirement, note,
            COALESCE((SELECT SUM(si.qty) FROM crm_sales_order_shipment_items si WHERE si.enterpriseId = ${scope.enterpriseId} AND si.orderItemId = crm_sales_order_items.id), 0) AS shippedQty

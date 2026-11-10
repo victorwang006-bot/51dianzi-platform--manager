@@ -30,8 +30,8 @@ import {
 import { makeCustomerRequestId } from "./customerUtils";
 
 type EditorState =
-  | { kind: "add"; draft: ContactDraft; requestId: string }
-  | { kind: "edit"; draft: ContactDraft; contact: ContactRecord; requestId: string };
+  | { kind: "add"; draft: ContactDraft; initialFingerprint: string; requestId: string }
+  | { kind: "edit"; draft: ContactDraft; initialFingerprint: string; contact: ContactRecord; requestId: string };
 type PendingAction =
   | { kind: "add"; requestId: string; fingerprint: string; payload: Omit<ContactsAddInput, "expectedActorUserId" | "expectedEnterpriseId" | "requestId" | "confirmDuplicate">; confirmDuplicate?: boolean }
   | { kind: "edit"; requestId: string; fingerprint: string; payload: Omit<ContactsEditInput, "expectedActorUserId" | "expectedEnterpriseId" | "requestId" | "confirmDuplicate">; confirmDuplicate?: boolean }
@@ -40,16 +40,25 @@ type PendingAction =
 
 const secondary = "h-8 border-slate-300 bg-white px-3 text-xs text-slate-700 shadow-none hover:bg-slate-50";
 
-type Props = {
+// Compare raw editor fields, not the trimmed mutation payload: invalid/incomplete
+// fields are still private unsaved work, and returning to the baseline is clean.
+const draftFingerprint = (draft: ContactDraft) => JSON.stringify({ name: draft.name,
+  department: draft.department, position: draft.position,
+  methods: draft.methods.map(method => ({ type: method.type, value: method.value, label: method.label ?? "" })),
+  isPrimary: draft.isPrimary });
+
+export type CustomerContactsManagerProps = {
   customerId: number;
   open: boolean;
   onClose: () => void;
   scope: CustomerContactScope | null;
   scopeReady: boolean;
   identityKey: string;
+  onDirtyChange?: (dirty: boolean) => void;
+  onBusyChange?: (busy: boolean) => void;
 };
 
-export function CustomerContactsManager({ customerId, open, onClose, scope, scopeReady, identityKey }: Props) {
+export function CustomerContactsManager({ customerId, open, onClose, scope, scopeReady, identityKey, onDirtyChange, onBusyChange }: CustomerContactsManagerProps) {
   const utils = trpc.useUtils();
   const queryInput: ContactsListInput = scope
     ? withCustomerContactScope(scope, { customerId })
@@ -72,44 +81,81 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
-  const activeIdentityRef = useRef(identityKey);
-  const previousIdentityRef = useRef(identityKey);
+  const sessionKey = `${identityKey}:${customerId}:${scopeReady && scope ? `${scope.actorUserId}:${scope.enterpriseId}` : "blocked"}`;
+  const activeIdentityRef = useRef(sessionKey);
+  const previousIdentityRef = useRef(sessionKey);
+  const generationRef = useRef({ key: sessionKey, value: 0 });
+  if (generationRef.current.key !== sessionKey) {
+    generationRef.current = { key: sessionKey, value: generationRef.current.value + 1 };
+  }
+  const mutationGenerationRef = useRef(generationRef.current.value);
   const mountedRef = useRef(true);
   const operationRef = useRef(false);
-  activeIdentityRef.current = identityKey;
+  const callbacksRef = useRef({ onDirtyChange, onBusyChange });
+  callbacksRef.current = { onDirtyChange, onBusyChange };
+  activeIdentityRef.current = sessionKey;
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+      callbacksRef.current.onDirtyChange?.(false);
+      callbacksRef.current.onBusyChange?.(false);
+    };
   }, []);
 
   useEffect(() => {
-    if (previousIdentityRef.current === identityKey) return;
-    previousIdentityRef.current = identityKey;
+    if (previousIdentityRef.current === sessionKey) return;
+    previousIdentityRef.current = sessionKey;
     operationRef.current = false;
+    setBusy(false);
     setEditor(null);
+    setEditorErrors({});
     setStopTarget(null);
+    setReplacementContactId("");
     setDuplicateAction(null);
     setUnknownAction(null);
     setError("");
     setNotice("");
+    callbacksRef.current.onDirtyChange?.(false);
+    callbacksRef.current.onBusyChange?.(false);
     // Do not leave another account/enterprise looking at a stale contacts result.
     void utils.customer.contactsList.reset();
     onClose();
-  }, [identityKey, onClose, utils]);
+  }, [sessionKey, onClose, utils]);
 
   const data = listQuery.data;
   const activeContacts = useMemo(() => (data?.contacts ?? []).filter(contact => !contact.stoppedAt), [data?.contacts]);
-  const mutationPending = addMutation.isPending || editMutation.isPending || stopMutation.isPending || primaryMutation.isPending;
+  const mutationPending = mutationGenerationRef.current === generationRef.current.value
+    && (addMutation.isPending || editMutation.isPending || stopMutation.isPending || primaryMutation.isPending);
   const locked = busy || mutationPending || Boolean(duplicateAction) || Boolean(unknownAction);
   const isArchived = Boolean(data?.customer.archivedAt);
   const actionsDisabled = locked || !scopeReady || !scope || isArchived || Boolean(listQuery.isFetching);
+  const validSession = scopeReady && Boolean(scope) && previousIdentityRef.current === sessionKey;
+  const dirty = validSession && Boolean(editor && draftFingerprint(editor.draft) !== editor.initialFingerprint);
 
-  const close = () => {
-    if (!locked) onClose();
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { onBusyChange?.(validSession && locked); }, [validSession, locked, onBusyChange]);
+
+  const requestDiscard = (action: () => void) => {
+    if (operationRef.current || locked) return;
+    if (dirty && !window.confirm("联系人有未保存的修改。确定放弃修改吗？")) return;
+    setEditor(null);
+    setEditorErrors({});
+    setStopTarget(null);
+    setReplacementContactId("");
+    action();
   };
+  const close = () => requestDiscard(onClose);
+  const beginEditor = (contact?: ContactRecord) => requestDiscard(() => {
+    const draft = contact ? draftFromContact(contact) : emptyContact(false);
+    setError(""); setEditorErrors({});
+    const baseline = { draft, initialFingerprint: draftFingerprint(draft), requestId: makeCustomerRequestId() };
+    setEditor(contact ? { ...baseline, kind: "edit", contact } : { ...baseline, kind: "add" });
+  });
 
-  const refresh = async () => {
+  const refresh = async (isCurrent: () => boolean) => {
+    if (!isCurrent()) return;
     try {
       await Promise.all([
         utils.customer.contactsList.invalidate(queryInput),
@@ -117,10 +163,11 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
         utils.customer.list.invalidate(),
         utils.customer.get.invalidate({ id: customerId }),
       ]);
+      if (!isCurrent()) return;
       const refreshed = await listQuery.refetch();
       if (refreshed && typeof refreshed === "object" && "error" in refreshed && refreshed.error) throw refreshed.error;
     } catch {
-      if (mountedRef.current) setNotice("操作已由服务器确认，但刷新失败。请刷新页面确认，不要重复提交。");
+      if (isCurrent()) setNotice("操作已由服务器确认，但刷新失败。请刷新页面确认，不要重复提交。");
     }
   };
 
@@ -130,8 +177,13 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
     const retryingPending = unknownAction?.requestId === action.requestId
       || (duplicateAction?.requestId === action.requestId && duplicateConfirmation);
     if (operationRef.current || locked && !retryingPending || !scope || !scopeReady) return;
-    const scopeAtStart = identityKey;
+    const scopeAtStart = sessionKey;
+    const generationAtStart = generationRef.current.value;
+    const isCurrent = () => mountedRef.current && activeIdentityRef.current === scopeAtStart
+      && generationRef.current.value === generationAtStart;
     operationRef.current = true;
+    mutationGenerationRef.current = generationAtStart;
+    callbacksRef.current.onBusyChange?.(true);
     setBusy(true);
     setError("");
     try {
@@ -159,16 +211,16 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
           requestId: action.requestId,
         }));
       }
-      if (!mountedRef.current || activeIdentityRef.current !== scopeAtStart) return;
+      if (!isCurrent()) return;
       setDuplicateAction(null);
       setUnknownAction(null);
       setEditor(null);
       setStopTarget(null);
       setReplacementContactId("");
       setNotice(result.replayed ? "已确认操作结果。" : "已保存。");
-      await refresh();
+      await refresh(isCurrent);
     } catch (caught) {
-      if (!mountedRef.current || activeIdentityRef.current !== scopeAtStart) return;
+      if (!isCurrent()) return;
       if ((action.kind === "add" || action.kind === "edit") && !action.confirmDuplicate && isDuplicateContactConflict(caught)) {
         setDuplicateAction({ ...action, confirmDuplicate: true });
       } else if (isUnknownContactOutcome(caught)) {
@@ -177,7 +229,7 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
         setError(contactErrorMessage(caught));
       }
     } finally {
-      if (mountedRef.current && activeIdentityRef.current === scopeAtStart) {
+      if (isCurrent()) {
         operationRef.current = false;
         setBusy(false);
       }
@@ -207,9 +259,11 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
   };
 
   const beginStop = (contact: ContactRecord) => {
-    setError("");
-    setStopTarget(contact);
-    setReplacementContactId("");
+    requestDiscard(() => {
+      setError("");
+      setStopTarget(contact);
+      setReplacementContactId("");
+    });
   };
   const submitStop = () => {
     if (!stopTarget || activeContacts.length <= 1) return;
@@ -231,7 +285,7 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
   };
 
   return <Dialog open={open} onOpenChange={next => { if (!next) close(); }}>
-    <DialogContent className="flex max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:w-full" showCloseButton={!locked} onEscapeKeyDown={event => { if (locked) event.preventDefault(); }} onInteractOutside={event => { if (locked) event.preventDefault(); }}>
+    <DialogContent className="flex max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:w-full" showCloseButton={!locked} onEscapeKeyDown={event => { event.preventDefault(); close(); }} onInteractOutside={event => { event.preventDefault(); close(); }}>
       <DialogHeader className="border-b border-slate-100 px-4 py-3 pr-11">
         <DialogTitle className="text-base text-slate-800">客户联系人</DialogTitle>
         <DialogDescription className="text-xs">可查看联系人历史；新增、编辑、停用和设主均由当前客户权限与服务端能力决定。</DialogDescription>
@@ -242,19 +296,19 @@ export function CustomerContactsManager({ customerId, open, onClose, scope, scop
         {notice ? <p className="mb-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-[#185FA5]" role="status">{notice}</p> : null}
         {duplicateAction ? <ActionBanner title="确认保留相似联系人或联系方式？" text="确认后会按当前内容保存，不会自动合并或覆盖。" confirmLabel="确认保存" disabled={busy || mutationPending} onCancel={() => setDuplicateAction(null)} onConfirm={() => void run(duplicateAction)} /> : null}
         {unknownAction ? <ActionBanner title="正在确认操作结果" text="网络结果未知。请使用同一请求编号重试，避免重复写入。" confirmLabel="使用相同请求重试" disabled={busy || mutationPending} hideCancel onConfirm={() => void run(unknownAction)} /> : null}
-        {listQuery.isPending || listQuery.isLoading ? <p className="flex items-center justify-center gap-2 py-10 text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />正在加载联系人…</p> : listQuery.isError ? <div className="py-8 text-center"><p className="text-red-700">读取联系人失败：{contactErrorMessage(listQuery.error)}</p><Button type="button" size="sm" variant="outline" className="mt-3 h-8 text-xs" onClick={() => void listQuery.refetch()}>重试</Button></div> : data && scopeReady ? <>
+        {listQuery.isPending || listQuery.isLoading ? <p className="flex items-center justify-center gap-2 py-10 text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />正在加载联系人…</p> : listQuery.isError ? <div className="py-8 text-center"><p className="text-red-700">读取联系人失败：{contactErrorMessage(listQuery.error)}</p><Button type="button" size="sm" variant="outline" className="mt-3 h-8 text-xs" onClick={() => void listQuery.refetch()}>重试</Button></div> : data && validSession ? <>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div><strong className="text-sm text-slate-800">{data.customer.name}</strong><p className="mt-0.5 text-[11px] text-slate-500">有效联系人 {activeContacts.length} 位{isArchived ? " · 客户已归档，仅可查看历史" : ""}</p></div>
-            {data.canAdd && !isArchived ? <Button type="button" size="sm" className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]" disabled={actionsDisabled} onClick={() => { setError(""); setEditorErrors({}); setEditor({ kind: "add", draft: emptyContact(false), requestId: makeCustomerRequestId() }); }}>＋ 添加联系人</Button> : null}
+            {data.canAdd && !isArchived ? <Button type="button" size="sm" className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]" disabled={actionsDisabled} onClick={() => beginEditor()}>＋ 添加联系人</Button> : null}
           </div>
           {editor ? <section className="mb-3 rounded-md border border-blue-200 bg-blue-50/30 p-3">
-            <div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-xs font-semibold text-slate-800">{editor.kind === "add" ? "添加联系人" : "编辑联系人"}</h3><button type="button" className="text-xs text-[#185FA5] hover:underline disabled:text-slate-400" disabled={locked} onClick={() => setEditor(null)}>取消编辑</button></div>
+            <div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-xs font-semibold text-slate-800">{editor.kind === "add" ? "添加联系人" : "编辑联系人"}</h3><button type="button" className="text-xs text-[#185FA5] hover:underline disabled:text-slate-400" disabled={locked} onClick={() => requestDiscard(() => {})}>取消编辑</button></div>
             <CustomerContactDraftFields contact={editor.draft} disabled={actionsDisabled} errors={editorErrors} onChange={draft => setEditor(current => current ? { ...current, draft } : current)} />
-            <div className="mt-3 flex justify-end gap-2"><Button type="button" size="sm" variant="outline" className={secondary} disabled={locked} onClick={() => setEditor(null)}>取消</Button><Button type="button" size="sm" className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]" disabled={actionsDisabled} onClick={submitEditor}>{busy ? "保存中…" : "保存联系人"}</Button></div>
+            <div className="mt-3 flex justify-end gap-2"><Button type="button" size="sm" variant="outline" className={secondary} disabled={locked} onClick={() => requestDiscard(() => {})}>取消</Button><Button type="button" size="sm" className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]" disabled={actionsDisabled} onClick={submitEditor}>{busy ? "保存中…" : "保存联系人"}</Button></div>
           </section> : null}
           <section className="overflow-hidden rounded-md border border-slate-200">
             <div className="border-b border-slate-100 bg-slate-50 px-3 py-2"><h3 className="text-xs font-semibold text-slate-800">联系人列表</h3></div>
-            {data.contacts.length ? data.contacts.map(contact => <ContactRow key={contact.id} contact={contact} actionsDisabled={actionsDisabled} activeCount={activeContacts.length} onEdit={() => { setError(""); setEditorErrors({}); setEditor({ kind: "edit", contact, draft: draftFromContact(contact), requestId: makeCustomerRequestId() }); }} onSetPrimary={() => void run({ kind: "primary", requestId: makeCustomerRequestId(), fingerprint: `${contact.id}:${contact.version}`, payload: { customerId, contactId: contact.id, version: contact.version } })} onStop={() => beginStop(contact)} />) : <p className="p-5 text-center text-slate-500">暂无联系人</p>}
+            {data.contacts.length ? data.contacts.map(contact => <ContactRow key={contact.id} contact={contact} actionsDisabled={actionsDisabled} activeCount={activeContacts.length} onEdit={() => beginEditor(contact)} onSetPrimary={() => requestDiscard(() => void run({ kind: "primary", requestId: makeCustomerRequestId(), fingerprint: `${contact.id}:${contact.version}`, payload: { customerId, contactId: contact.id, version: contact.version } }))} onStop={() => beginStop(contact)} />) : <p className="p-5 text-center text-slate-500">暂无联系人</p>}
           </section>
           {stopTarget ? <section className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
             <h3 className="text-xs font-semibold text-amber-900">确认停用“{stopTarget.name}”</h3>

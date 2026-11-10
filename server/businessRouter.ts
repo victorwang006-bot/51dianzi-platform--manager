@@ -410,7 +410,8 @@ async function forwardBusinessMethod(
     }
     // The new logical read-only source query retains the complete binding/scope
     // fence, but adds no production command-audit DML. Other methods are unchanged.
-    if (capability.method === "channelInventory.getTeamMaterialSource" || capability.method === "customer.starContext") return result;
+    if (capability.method === "channelInventory.getTeamMaterialSource" || capability.method === "customer.starContext"
+      || capability.method === "crmSalesOrder.customerSummary" || capability.method === "crmSalesOrder.customerMaterials") return result;
     await db.recordBusinessCommandAccess({
       merchantId: merchant.id,
       staffUserId: staffBinding.frontUserId,
@@ -650,6 +651,8 @@ const crmSalesOrderBusinessRouter = router({
   list: businessQuery("crmSalesOrder.list", "orders"),
   candidates: businessQuery("crmSalesOrder.candidates", "orders"),
   get: businessQuery("crmSalesOrder.get", "orders"),
+  customerSummary: businessQuery("crmSalesOrder.customerSummary", "orders"),
+  customerMaterials: businessQuery("crmSalesOrder.customerMaterials", "orders"),
   create: businessMutation("crmSalesOrder.create", "orders"),
   cancel: businessMutation("crmSalesOrder.cancel", "orders"),
   recordPayment: businessMutation("crmSalesOrder.recordPayment", "orders"),

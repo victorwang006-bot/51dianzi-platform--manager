@@ -80,6 +80,7 @@ export const salesOrderCreateSchema = z.object({
 });
 
 export const salesOrderListSchema = z.object({
+  customerId: id.optional(),
   keyword: z.string().trim().max(128).default(""),
   status: z.enum(CRM_SALES_ORDER_STATUSES).optional(),
   page,
@@ -87,12 +88,16 @@ export const salesOrderListSchema = z.object({
 });
 
 export const salesOrderCandidateListSchema = z.object({
+  customerId: id.optional(),
   keyword: z.string().trim().max(128).default(""),
   page,
   pageSize: z.number().int().min(1).max(20).default(10),
 });
 
-export const salesOrderIdSchema = z.object({ id });
+/** Optional context is for read-only get; write schemas deliberately remain unchanged. */
+export const salesOrderIdSchema = z.object({ id, customerId: id.optional() });
+export const salesOrderCustomerSummarySchema = z.object({ customerId: id });
+export const salesOrderCustomerMaterialsSchema = z.object({ customerId: id, page, pageSize });
 export const salesOrderCancelSchema = z.object({
   id,
   version: id,
@@ -139,6 +144,20 @@ export type SalesOrderShipInput = z.infer<typeof salesOrderShipSchema>;
 
 export type SalesOrderListInput = z.infer<typeof salesOrderListSchema>;
 export type SalesOrderCandidateListInput = z.infer<typeof salesOrderCandidateListSchema>;
+
+export type SalesOrderIdInput = z.infer<typeof salesOrderIdSchema>;
+export type SalesOrderCustomerSummaryInput = z.infer<typeof salesOrderCustomerSummarySchema>;
+export type SalesOrderCustomerMaterialsInput = z.infer<typeof salesOrderCustomerMaterialsSchema>;
+/** Counts cover all authorized orders of this customer, not a displayed page. */
+export type SalesOrderCustomerSummary = {
+  customerId: number;
+  totalOrders: number;
+  confirmedOrders: number;
+  cancelledOrders: number;
+  awaitingPaymentOrders: number;
+  awaitingShipmentOrders: number;
+  monthlyOrders: number;
+};
 
 export type SalesOrderDemandItemCandidate = {
   id: number;
@@ -202,6 +221,19 @@ export type SalesOrderItem = {
   deliveryRequirement: string;
   note: string;
   shippedQty: number;
+};
+
+/** Order snapshots only: not procurement quotes or customer supply-channel inventory. */
+export type SalesOrderCustomerMaterial = SalesOrderItem & {
+  orderId: number;
+  orderNumber: string;
+  customerId: number;
+  demandId: number;
+  demandNo: string;
+  projectName: string;
+  status: CrmSalesOrderStatus;
+  dueDate: string | null;
+  remainingQty: number;
 };
 
 export type SalesOrderAudit = {

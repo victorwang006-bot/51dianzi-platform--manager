@@ -85,6 +85,7 @@ export const BUSINESS_METHOD_IDS = [
   "customerDemand.get", "customerDemand.revisionHistory", "customerDemand.procurementList", "customerDemand.procurementGet", "customerDemand.claim",
   "crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.create", "crmSalesOrder.cancel",
   "crmSalesOrder.recordPayment", "crmSalesOrder.ship",
+  "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials",
   "purchaseOrder.list", "purchaseOrder.get", "purchaseOrder.acceptedQuoteOptions", "purchaseOrder.inboundCandidates",
   "purchaseOrder.create", "purchaseOrder.updatePayment", "purchaseOrder.updateShipping", "purchaseOrder.linkInbound",
   "purchaseOrder.recordInvoice", "purchaseOrder.voidInvoice", "purchaseOrder.cancel",
@@ -186,7 +187,7 @@ for (const method of ["customerDemand.quoteSave", "customerDemand.quoteWithdraw"
   BUSINESS_METHOD_CAPABILITIES[method] = PROCUREMENT_DEMAND;
 }
 for (const method of ["customerDemand.quoteList", "customerDemand.quoteHistory"] as const) BUSINESS_METHOD_CAPABILITIES[method] = DEMAND_QUOTE_READ;
-for (const method of ["crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get"] as const) {
+for (const method of ["crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER_READ;
 }
 for (const method of ["crmSalesOrder.create", "crmSalesOrder.cancel", "crmSalesOrder.recordPayment", "crmSalesOrder.ship"] as const) {

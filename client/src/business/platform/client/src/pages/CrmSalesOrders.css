@@ -117,13 +117,15 @@
 }
 
 .crm-sales-orders-dialog [data-slot="dialog-header"],
-[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) [data-slot="dialog-header"] {
+[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason)
+  [data-slot="dialog-header"] {
   text-align: left;
 }
 
 .crm-sales-orders-dialog [data-slot="dialog-title"],
 .crm-sales-orders-dialog > h3,
-[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) [data-slot="dialog-title"] {
+[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason)
+  [data-slot="dialog-title"] {
   margin: 0;
   padding-right: 24px;
   color: var(--admin-color-text, #1f2937);
@@ -141,7 +143,8 @@
 }
 
 .crm-sales-orders-dialog :is(input, select, [data-slot="select-trigger"]),
-.crm-sales-orders-dialog button:where(:not([data-slot="dialog-close"]):not([role="checkbox"])),
+.crm-sales-orders-dialog
+  button:where(:not([data-slot="dialog-close"]):not([role="checkbox"])),
 [data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) button {
   height: var(--admin-content-control-height, 32px);
   min-height: var(--admin-content-control-height, 32px);
@@ -220,14 +223,16 @@
   color: #fff;
 }
 
-[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) .crm-btn-danger {
+[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason)
+  .crm-btn-danger {
   border-color: #fecaca;
   background: #fef2f2;
   color: #b91c1c;
 }
 
 .crm-sales-orders-dialog .crm-btn:disabled,
-[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason) .crm-btn:disabled {
+[data-slot="dialog-content"]:has(.crm-sales-orders-cancel-reason)
+  .crm-btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -241,4 +246,38 @@
   .crm-sales-orders-filters input {
     width: 100%;
   }
+}
+
+/* Customer workbench mode: no outer shell/header or large empty-state spacing. */
+.crm-sales-orders-embedded.aui-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+}
+
+.crm-sales-orders-embedded .crm-sales-orders-filters {
+  padding: 8px;
+}
+
+.crm-sales-orders-embedded .crm-sales-orders-table {
+  min-width: 1000px;
+}
+
+.crm-sales-orders-embedded .aui-data-panel > :is(.p-12, .p-14) {
+  padding: 24px 12px;
+}
+
+.crm-sales-orders-embedded .crm-sales-orders-pagination {
+  margin: 8px 0 0;
+}
+
+.crm-sales-orders-access-note,
+.crm-sales-orders-readonly-note {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  color: #64748b;
+  font-size: var(--admin-content-font-body, 12px);
 }

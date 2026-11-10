@@ -23,6 +23,7 @@ import { useCustomerSupplyAuthority, supplyLocation, type SupplySummary } from "
 import { CustomerDemandDialog } from "../components/customerDemands/CustomerDemandDialog";
 import { EMPTY_CUSTOMER_FORM, errorMessage } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
+import { customerWorkbenchLocation } from "../components/customers/customerWorkbench";
 import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -44,6 +45,7 @@ import {
 
 import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../shared/businessIndustry";
 import "./CustomerList.css";
+import "../components/customers/CustomerWorkbench.css";
 
 const PAGE_SIZE = 20;
 type GradeFilter = "" | CustomerData["grade"];
@@ -635,21 +637,21 @@ export default function CustomerList() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (result?.items.length ?? 0) === 0 ? (
-            <div className="p-14 text-center">
+            <div className="customer-list-empty">
               <p className="admin-cell-primary font-medium">
                 {emptyMessage}
               </p>
-              <p className="customer-list-caption mt-1.5">
+              <p className="customer-list-caption">
                 {appliedFilters.archived
-                  ? "归档客户会保留历史记录，可由管理员恢复。"
-                  : "可以新建客户，或调整筛选条件后再试。"}
+                  ? "历史记录保留，可由管理员恢复。"
+                  : "可录入客户或调整筛选。"}
               </p>
               {!appliedFilters.archived ? (
                 <Button
                   type="button"
                   variant="link"
                   size="sm"
-                  className="admin-row-action mt-2 px-0 text-[#185FA5]"
+                  className="admin-row-action px-0 text-[#185FA5]"
                   disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
                   onClick={() => {
                     setCreateOpen(true);
@@ -710,8 +712,9 @@ export default function CustomerList() {
                         <button
                           type="button"
                           className="customer-list-name min-w-0 truncate text-left font-medium hover:underline"
-                          title={customer.name || "未命名客户"}
-                          onClick={() => navigate(`/customers/${customer.id}`)}
+                          title={`打开客户工作台：${customer.name || "未命名客户"}`}
+                          aria-label={`打开客户工作台：${customer.name || "未命名客户"}`}
+                          onClick={() => navigate(customerWorkbenchLocation(customer.id, "overview"))}
                         >
                           {customer.name?.trim() || "未命名客户"}
                         </button>
@@ -781,7 +784,7 @@ export default function CustomerList() {
                         })()} canWrite={supplyAuthority.canWrite && supplyResult.canWrite} archived={Boolean(customer.archivedAt)}
                           loading={supplyResult.loading} failed={supplyResult.failed}
                           onRetry={() => setSupplyRevision(value => value + 1)}
-                          needsIndustry={!businessIndustryCodeSchema.safeParse(customer.industryCode).success} onCompleteProfile={() => navigate(`/customers/${customer.id}`)}
+                          needsIndustry={!businessIndustryCodeSchema.safeParse(customer.industryCode).success} onCompleteProfile={() => navigate(customerWorkbenchLocation(customer.id, "company"))}
                           onUpload={() => { if (supplyAuthority.identity) setSupplyCustomer({ id: customer.id, version: customer.version, authorityKey: supplyAuthority.identity.key }); }}
                           onViewStock={channelId => navigate(supplyLocation(channelId, "materials"))} />
                       </TableCell>
@@ -798,7 +801,7 @@ export default function CustomerList() {
                           <CustomerSupplyAction
                             disabledReason={customer.archivedAt ? "该客户已归档，不能新增跟进" : undefined}
                             onClick={() =>
-                              navigate(`/customers/${customer.id}?follow=1`)
+                              navigate(customerWorkbenchLocation(customer.id, "followups", "follow=1"))
                             }
                           >
                             跟进

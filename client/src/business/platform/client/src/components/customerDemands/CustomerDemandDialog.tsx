@@ -21,19 +21,32 @@ import { ConfirmDialog } from "../customers/ConfirmDialog";
 import { DemandPartNumberInput, type DemandPartSuggestion } from "./DemandPartNumberInput";
 import { DemandQuoteList } from "./DemandQuoteList";
 import { DemandRevisionHistory } from "./DemandRevisionHistory";
+import { useLocation } from "wouter";
+import { usePageIdentity } from "../../hooks/usePageIdentity";
+import { ReadOnlyDemandQuotes } from "./ReadOnlyDemandQuotes";
+import { customerDemandOrderPath, matchesCustomerDemand, type CustomerDemandCustomer, type CustomerDemandOrderIntent } from "./customerDemandWorkbench";
+import { useDemandQuotePending } from "./useDemandQuotePending";
+import { demandFreshReadOptions, useDemandReceiptGuard, useDemandServerRead } from "./useDemandReadSession";
 
-type CustomerLink = { id: number; name: string; archivedAt?: string | null };
 type FormItem = CustomerDemandItem & { _localKey: string };
 type DemandForm = Omit<CustomerDemandData, "replyDueAt" | "items"> & { replyDueAt: string; items: FormItem[] };
 type FieldErrors = Record<string, string>;
 type SaveIntent = "draft" | "submit" | "update";
 
 export type CustomerDemandDialogProps = {
-  customer: CustomerLink;
+  customer: CustomerDemandCustomer;
   demandId?: number;
   mode?: "view" | "edit";
   onClose: () => void;
   onSaved?: () => void;
+  contextIdentityKey?: string | number | null;
+  canRead?: boolean;
+  readOnly?: boolean;
+  canManageOrders?: boolean;
+  initialSection?: "materials" | "quotes";
+  onCreateOrder?: (intent: CustomerDemandOrderIntent) => void;
+  onViewOrders?: (intent: CustomerDemandOrderIntent) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 const demandApi = trpc.customerDemand;
@@ -72,7 +85,20 @@ function inputError(errors: FieldErrors, path: string) {
  * Wide, customer-linked material-demand form. It is intentionally mounted only
  * while open: no query or mutation is initiated until a parent opens the dialog.
  */
-export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClose, onSaved }: CustomerDemandDialogProps) {
+export function CustomerDemandDialog(props: CustomerDemandDialogProps) {
+  const identity = usePageIdentity();
+  if (props.canRead === false) return null;
+  const sessionKey = JSON.stringify([identity, props.contextIdentityKey, props.customer.id, props.demandId, Boolean(props.readOnly || props.customer.archivedAt)]);
+  return <CustomerDemandDialogSession key={sessionKey} {...props} />;
+}
+
+function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClose, onSaved, contextIdentityKey, readOnly: externalReadOnly = false, canManageOrders, initialSection, onCreateOrder, onViewOrders, onDirtyChange }: CustomerDemandDialogProps) {
+  const [, navigate] = useLocation();
+  const aliveRef = useRef(true);
+  const quoteSessionRef = useRef({});
+  const materialSectionRef = useRef<HTMLDivElement>(null);
+  const quoteSectionRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
   const initiallyEditable = !demandId;
   const [editingMode, setEditingMode] = useState(mode);
   const [changeReason, setChangeReason] = useState("");
@@ -99,15 +125,29 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
   const contextQuery = trpc.customer.context.useQuery();
   const detailQuery = demandApi.get.useQuery(
     { id: activeDemandId ?? 0 },
-    { enabled: Boolean(activeDemandId) },
+    { ...demandFreshReadOptions, enabled: Boolean(activeDemandId) },
   );
   const saveMutation = demandApi.save.useMutation();
   const utils = trpc.useUtils();
-  const detail = detailQuery.data;
+  const wrongCustomer = Boolean(detailQuery.data && !matchesCustomerDemand(detailQuery.data, customer.id, activeDemandId));
+  const detailRead = useDemandServerRead(detailQuery, `${customer.id}:${activeDemandId}`, wrongCustomer);
+  const detail = detailRead.data;
+  // This query reads permission metadata only, never order data. Embedded callers pass their authoritative grant.
+  const enterpriseQuery = trpc.enterprise.me.useQuery(undefined, { enabled: canManageOrders === undefined, retry: false });
+  const canUseOrders = canManageOrders ?? Boolean(!enterpriseQuery.error && (enterpriseQuery.data?.isOwner || (enterpriseQuery.data?.permissionKeys as readonly string[] | undefined)?.includes("sales.business_orders")));
   // A saved record is never editable until its version and status have arrived.
   // This also prevents a brief empty-form save while the detail query is loading.
   const effectiveStatus = status ?? detail?.status ?? null;
-  const readOnly = Boolean(editingMode === "view" || customer.archivedAt || (activeDemandId && (!versionRef.current || detail?.canEdit !== true)));
+  const immutable = Boolean(externalReadOnly || customer.archivedAt);
+  const readOnly = Boolean(immutable || editingMode === "view" || (activeDemandId && (!versionRef.current || detail?.canEdit !== true)));
+  const quoteAuthority = !immutable && detail?.canEdit === true;
+  const quoteAuthorityRef = useRef(quoteAuthority);
+  if (quoteAuthorityRef.current && !quoteAuthority) quoteSessionRef.current = {};
+  quoteAuthorityRef.current = quoteAuthority;
+  const quotePending = useDemandQuotePending(activeDemandId, quoteSessionRef.current);
+  const quotePendingRef = useRef(quotePending);
+  quotePendingRef.current = quotePending;
+  const receiptGuard = useDemandReceiptGuard(`${customer.id}:${activeDemandId}`, !immutable && (!activeDemandId || detail?.canEdit === true));
   const updatingSubmitted = Boolean(activeDemandId && effectiveStatus && effectiveStatus !== "draft");
   const lockedIds = new Set(detail?.lockedItemIds ?? []);
   const itemIsLocked = (item: FormItem) => Boolean(item.id && lockedIds.has(item.id));
@@ -118,7 +158,7 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
   }, [contextQuery.data, detail?.salesName]);
 
   const replaceForm = (updater: (current: DemandForm) => DemandForm) => {
-    if (savingRef.current || awaitingReplay) return;
+    if (readOnly || savingRef.current || awaitingReplay) return;
     setForm(current => {
       const next = updater(current);
       formRef.current = next;
@@ -133,6 +173,29 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
   };
 
   useEffect(() => {
+    if (!activeDemandId || !detailRead.failed) return;
+    // Permission/ownership failure is not a discard-confirmation flow.
+    const empty = formFromData(emptyCustomerDemandData());
+    formRef.current = empty;
+    baselineRef.current = formFingerprint(empty);
+    dirtyRef.current = false;
+    versionRef.current = undefined;
+    loadedRef.current = null;
+    requestKeysRef.current.clear();
+    savingRef.current = false;
+    setForm(empty);
+    setDirty(false);
+    setChangeReason("");
+    setAwaitingReplay(false);
+    setSavingIntent(null);
+    setDemandNo("");
+    setStatus(null);
+    setConfirmDiscard(false);
+    setSaveError("");
+    setSaveHint("");
+  }, [activeDemandId, detailRead.failed]);
+
+  useEffect(() => {
     if (!detail?.id || !detail.items) return;
     if (detail.version < (versionRef.current ?? 0)) return;
     const data: CustomerDemandData = {
@@ -144,7 +207,7 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
     };
     const recordKey = `${detail.id}:${detail.version}`;
     // A refetch may return while the user is editing. Never replace those local values.
-    if (loadedRef.current === recordKey || dirtyRef.current || savingRef.current || awaitingReplay) return;
+    if (detail.canEdit === true && (loadedRef.current === recordKey || dirtyRef.current || savingRef.current || awaitingReplay)) return;
     const loaded = formFromData(data);
     loadedRef.current = recordKey;
     formRef.current = loaded;
@@ -158,11 +221,35 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
     setStatus(detail.status ?? "draft");
     setChangeReason("");
     versionRef.current = detail.version;
-  }, [detail?.id, detail?.version, awaitingReplay]);
+    if (detail.canEdit !== true) {
+      requestKeysRef.current.clear();
+      setAwaitingReplay(false);
+      setSavingIntent(null);
+      savingRef.current = false;
+    }
+  }, [detail?.id, detail?.version, detail?.canEdit, awaitingReplay]);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => { aliveRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty || savingIntent !== null || awaitingReplay || quotePending);
+  }, [dirty, savingIntent, awaitingReplay, quotePending, onDirtyChange]);
+  useEffect(() => () => { onDirtyChange?.(false); }, [onDirtyChange]);
+
+  useEffect(() => {
+    if (!detail || scrolledRef.current || !initialSection) return;
+    const target = initialSection === "quotes" ? quoteSectionRef.current : materialSectionRef.current;
+    if (!target) return;
+    scrolledRef.current = true;
+    target.scrollIntoView?.({ block: "start" });
+  }, [detail, initialSection]);
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirtyRef.current || savingRef.current) return;
+      if (!dirtyRef.current && !savingRef.current && !quotePendingRef.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -171,7 +258,7 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
   }, []);
 
   const requestClose = () => {
-    if (savingRef.current) return;
+    if (savingRef.current || quotePendingRef.current) return;
     if (dirtyRef.current) {
       setConfirmDiscard(true);
       return;
@@ -251,7 +338,8 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
   };
 
   const save = async (intent: SaveIntent) => {
-    if (readOnly || savingRef.current || customer.archivedAt) return;
+    if (!aliveRef.current || !receiptGuard.isCurrent() || readOnly || savingRef.current || customer.archivedAt) return;
+    const isCurrentReceipt = receiptGuard.capture();
     const built = buildInput(intent);
     if (Object.keys(built.errors).length > 0) return;
     const version = activeDemandId ? versionRef.current : undefined;
@@ -278,6 +366,8 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
         ...(intent === "update" ? { changeReason: changeReason.trim() } : {}),
         data: built.data,
       });
+      // A completed save for an unmounted account/customer must not close a new dialog or publish old values.
+      if (!aliveRef.current || !isCurrentReceipt()) return;
       const savedData = formFromData(built.data);
       formRef.current = savedData;
       baselineRef.current = formFingerprint(savedData);
@@ -308,19 +398,31 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
         setSaveHint(`草稿已保存${result.demandNo ? `，编号 ${result.demandNo}` : ""}`);
       }
     } catch (error) {
+      if (!aliveRef.current || !isCurrentReceipt()) return;
       const code = (error as { data?: { code?: string } })?.data?.code;
       const uncertain = (!code || ["INTERNAL_SERVER_ERROR", "TIMEOUT"].includes(code)) && !["CONFLICT", "BAD_REQUEST", "FORBIDDEN", "NOT_FOUND", "UNAUTHORIZED"].includes(code ?? "");
       setAwaitingReplay(uncertain);
       setSaveError(uncertain ? "保存结果尚未确认，内容已锁定。请点击重试保存，系统将使用同一请求编号确认结果。" : errorMessage(error));
     } finally {
-      savingRef.current = false;
-      setSavingIntent(null);
+      if (aliveRef.current && isCurrentReceipt()) {
+        savingRef.current = false;
+        setSavingIntent(null);
+      }
     }
   };
 
-  const pending = savingIntent !== null;
+  const pending = savingIntent !== null || quotePending;
   const fieldDisabled = readOnly || pending || awaitingReplay || Boolean(customer.archivedAt);
   const globalItemsError = inputError(fieldErrors, "data.items");
+  const openOrders = (action: "create" | "view") => {
+    if (!aliveRef.current || !canUseOrders || !detail || (action === "create" && immutable) || pending || awaitingReplay) return;
+    if (dirtyRef.current) { toast.warning("请先保存需求修改，或关闭并放弃修改后再进入订单区。"); return; }
+    const intent = { demandId: detail.id, demandNo: detail.demandNo };
+    const callback = action === "create" ? onCreateOrder : onViewOrders;
+    if (callback) callback(intent);
+    else navigate(customerDemandOrderPath(intent, action));
+    onClose();
+  };
 
   return <>
     <Dialog open onOpenChange={open => { if (!open) requestClose(); }}>
@@ -331,21 +433,23 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
         onInteractOutside={event => { event.preventDefault(); requestClose(); }}>
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1"><DialogTitle className="text-base font-semibold text-slate-800">{editingMode === "view" ? "需求详情" : demandId ? "编辑需求" : "需求录入"}</DialogTitle><span data-testid="demand-number-header" className="text-xs font-normal text-slate-500">单号：{demandNo || "保存后自动生成"}{detail?.revision ? ` · V${detail.revision}` : ""}</span></div>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1"><DialogTitle className="text-base font-semibold text-slate-800">{editingMode === "view" ? "需求详情" : demandId ? "编辑需求" : "需求录入"}</DialogTitle><span data-testid="demand-number-header" className="text-xs font-normal text-slate-500">单号：{activeDemandId && !detail ? "核验中" : demandNo || "保存后自动生成"}{detail?.revision ? ` · V${detail.revision}` : ""}</span></div>
             <DialogDescription className="mt-1 text-xs text-slate-500">
-              内部采购需求，不向客户展示
+              内部采购需求，不向客户展示；采购报价采用不等于客户成交确认
             </DialogDescription>
           </div>
           <div className="flex items-center gap-2">
-            {status && <span className={`rounded border px-2 py-0.5 text-[11px] font-medium ${statusClass(status)}`}>{CUSTOMER_DEMAND_STATUS_LABELS[status]}</span>}
+            {status && (!activeDemandId || detail) && <span className={`rounded border px-2 py-0.5 text-[11px] font-medium ${statusClass(status)}`}>{CUSTOMER_DEMAND_STATUS_LABELS[status]}</span>}
             <button aria-label="关闭需求录入" type="button" disabled={pending} onClick={requestClose} className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
           </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          {detailQuery.isLoading && activeDemandId ? <div className="flex items-center gap-2 py-8 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />正在加载需求…</div> : null}
+          {detailRead.waiting && activeDemandId ? <div className="flex items-center gap-2 py-8 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />正在加载需求…</div> : null}
           {detailQuery.error ? <p role="alert" className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{errorMessage(detailQuery.error)}</p> : null}
           {customer.archivedAt ? <p role="alert" className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">该客户已归档，不能新增或修改需求。</p> : null}
+          {wrongCustomer && <p role="alert" className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">该需求不属于当前客户，不能查看或修改。请关闭后刷新工作台。</p>}
+          {(!activeDemandId || detail) && <>
           {detail?.hasActiveOrders && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">已成单的物料行已锁定，不能修改或删除；新增物料请另建需求，原订单不受影响。</p>}
           {!readOnly && updatingSubmitted && <p className="mb-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-[#185FA5]">保存后形成新版本并同步采购；已有报价保留为旧版本，需采购确认后才能作为当前报价。</p>}
           {detail?.editRestriction && <p className="mb-3 text-xs text-slate-500">{detail.editRestriction}</p>}
@@ -376,7 +480,7 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
             </div>
           </div>
 
-          <div className="mt-3">
+          <div className="mt-3" ref={materialSectionRef}>
             <div className="mb-2 flex items-center justify-between">
               <div><h3 className="text-sm font-semibold text-slate-800">物料明细</h3><p className="mt-0.5 text-[11px] text-slate-500">提交采购时，型号和数量为必填。</p></div>
               {!readOnly && <Button type="button" size="sm" variant="outline" disabled={pending || awaitingReplay || Boolean(customer.archivedAt) || detail?.hasActiveOrders || form.items.length >= CUSTOMER_DEMAND_MAX_ITEMS} onClick={addRow} className="h-8 border-[#185FA5]/40 bg-white px-2 text-xs text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"><Plus className="mr-1 h-3.5 w-3.5" />新增一行</Button>}
@@ -406,15 +510,18 @@ export function CustomerDemandDialog({ customer, demandId, mode = "edit", onClos
             <textarea id="demand-note" value={form.note} disabled={fieldDisabled} onChange={event => updateHeader("note", event.target.value)} placeholder="提供给采购的需求说明，请勿填写客户联系方式" className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5]/25 disabled:bg-slate-50" maxLength={2000} />
           </div>
           {!readOnly && updatingSubmitted && <div className="mt-3"><label htmlFor="demand-change-reason" className={labelClass}>变更说明 <span className="text-red-600">*</span></label><input id="demand-change-reason" maxLength={500} value={changeReason} disabled={fieldDisabled} onChange={event => { setChangeReason(event.target.value); dirtyRef.current = true; setDirty(true); setFieldErrors({}); }} placeholder="说明本次修改原因，便于采购确认" className={`${compactInput} w-full`} /></div>}
-          {activeDemandId && effectiveStatus !== "draft" && <div className="mt-4 border-t border-slate-200 pt-3"><DemandQuoteList demandId={activeDemandId} audience="sales" /></div>}
-          {activeDemandId && <DemandRevisionHistory key={activeDemandId} demandId={activeDemandId} />}
+          {activeDemandId && detail && effectiveStatus !== "draft" && <div ref={quoteSectionRef} className="mt-3 border-t border-slate-200 pt-3"><p className="mb-2 text-[11px] leading-5 text-slate-500">以下为采购报价。销售采用会记录采购报价轮次、方案和数量，不代表已向客户发送或客户已确认销售价格。旧轮次仅供追溯，需求变更后需采购重新确认。</p>{immutable || detail.canEdit !== true ? <ReadOnlyDemandQuotes key={activeDemandId} demandId={activeDemandId} customerId={customer.id} contextIdentityKey={contextIdentityKey} /> : <DemandQuoteList key={activeDemandId} demandId={activeDemandId} customerId={customer.id} contextIdentityKey={contextIdentityKey} canWrite={detail.canEdit === true} mutationSession={quoteSessionRef.current} audience="sales" />}
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2"><p className="min-w-0 flex-1 text-[11px] leading-5 text-slate-500">已采用有效采购报价后，在订单区填写成交数量、销售含税单价、交期和确认说明，明确客户确认后才生成订单。</p>{canUseOrders ? <div className="flex shrink-0 gap-2">{!immutable && <Button type="button" size="sm" className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]" disabled={pending || awaitingReplay || dirty} onClick={() => openOrders("create")}>填写成交报价 / 生成订单</Button>}{detail.hasActiveOrders && <Button type="button" size="sm" variant="outline" className="h-8 bg-white px-3 text-xs" disabled={pending || awaitingReplay || dirty} onClick={() => openOrders("view")}>查看销售订单</Button>}</div> : <span className="text-[11px] text-slate-500">当前账号无销售订单权限</span>}</div>
+          </div>}
+          {activeDemandId && detail && <DemandRevisionHistory key={activeDemandId} demandId={activeDemandId} />}
+          </>}
           {saveError && <p role="alert" className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{saveError}</p>}
           {saveHint && <p role="status" className="mt-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{saveHint}</p>}
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3">
           <Button type="button" size="sm" variant="outline" disabled={pending} onClick={requestClose} className="h-8 bg-white px-3 text-xs">{readOnly ? "关闭" : "取消"}</Button>
-          {editingMode === "view" && detail?.canEdit && !customer.archivedAt && <Button type="button" size="sm" onClick={() => setEditingMode("edit")} className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]">编辑需求</Button>}
+          {editingMode === "view" && detail?.canEdit && !immutable && <Button type="button" size="sm" onClick={() => setEditingMode("edit")} className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]">编辑需求</Button>}
           {!readOnly && (awaitingReplay ? <Button type="button" size="sm" disabled={pending} onClick={() => void save(retryIntentRef.current)} className="h-8 bg-[#185FA5] px-3 text-xs">重试保存</Button> : updatingSubmitted ? <Button type="button" size="sm" disabled={pending || !dirty} onClick={() => void save("update")} className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]">{pending && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}保存变更</Button> : <><Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => void save("draft")} className="h-8 border-slate-300 bg-white px-3 text-xs text-slate-700">{savingIntent === "draft" && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}保存草稿</Button><Button type="button" size="sm" disabled={pending} onClick={() => void save("submit")} className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]">{savingIntent === "submit" && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}提交采购</Button></>)}
         </div>
       </DialogContent>

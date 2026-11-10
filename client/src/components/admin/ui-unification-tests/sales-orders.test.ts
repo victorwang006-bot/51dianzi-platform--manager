@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ts from "typescript";
@@ -69,7 +68,14 @@ const cssText = readFileSync(pagePath.replace(/\.tsx$/, ".css"), "utf8");
 const source = ts.createSourceFile(pagePath, pageText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const printer = ts.createPrinter({ removeComments: true });
 const print = (node: ts.Node) => printer.printNode(ts.EmitHint.Unspecified, node, source);
-const hash = (items: string[]) => createHash("sha256").update(JSON.stringify(items)).digest("hex");
+// Evaluate only a selected AST expression from the real page, with explicit synthetic
+// dependencies. No full-page reimplementation, count/hash snapshot or live transport.
+function evaluate<T = any>(node: ts.Node, dependencies: Record<string, unknown>): T {
+  const code = ts.transpileModule(`const target = (${print(node)});`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None },
+  }).outputText;
+  return new Function(...Object.keys(dependencies), `${code}; return target;`)(...Object.values(dependencies));
+}
 function collect<T extends ts.Node>(predicate: (node: ts.Node) => node is T): T[] {
   const found: T[] = [];
   function visit(node: ts.Node) { if (predicate(node)) found.push(node); ts.forEachChild(node, visit); }
@@ -123,18 +129,163 @@ describe("sales-orders UI unification", () => {
     expect(ts.transpileModule(pageText, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ESNext }, reportDiagnostics: true }).diagnostics).toEqual([]);
   });
 
-  it("preserves all 68 original business statements, queries, route parameters, drafts and amount calculations", () => {
-    const component = source.statements.find((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === "CrmSalesOrders");
-    const logic = component!.body!.statements.filter(node => !ts.isReturnStatement(node)).map(print);
-    expect(logic).toHaveLength(68);
-    // Captured before this presentation-only change; whitespace and comments are ignored.
-    expect(hash(logic)).toBe("e069c4d1c577b33977a4f79cf9e33d7258de4d3bfcd1a864fac8388317821650");
+  it("preserves four original mutation handlers/payloads, canonical precision, request keys and versions after shared-body extraction", async () => {
+    const shared = await import("@/business/platform/shared/crmSalesOrders");
+    const variables = collect(ts.isVariableDeclaration);
+    const expression = (name: string) => variables.find(node => node.name.getText(source) === name)!.initializer!;
+    const calls = collect(ts.isCallExpression).filter(node => /^(createMutation|cancelMutation|paymentMutation|shipMutation)\.mutate$/.test(node.expression.getText(source)));
+    expect(calls.map(node => node.expression.getText(source)).sort()).toEqual([
+      "cancelMutation.mutate", "createMutation.mutate", "paymentMutation.mutate", "shipMutation.mutate",
+    ]);
+    // Exact payload property contracts, independent of source layout/wrapper size.
+    const payloadKeys = (name: string) => {
+      const argument = calls.find(node => node.expression.getText(source) === `${name}.mutate`)!.arguments[0];
+      expect(ts.isObjectLiteralExpression(argument)).toBe(true);
+      return (argument as ts.ObjectLiteralExpression).properties.map(property => ts.isSpreadAssignment(property) ? `...${property.expression.getText(source)}` : property.name!.getText(source)).sort();
+    };
+    expect(payloadKeys("createMutation")).toEqual(["...parsed.data", "requestId"]);
+    expect(payloadKeys("cancelMutation")).toEqual(["id", "reason", "version"]);
+    expect(payloadKeys("paymentMutation")).toEqual(["amount", "id", "method", "note", "paymentDate", "requestId", "version"]);
+    expect(payloadKeys("shipMutation")).toEqual(["deliveryMethod", "expressCo", "expressNo", "id", "items", "note", "requestId", "version"]);
+    const requestKeysRef = { current: new Map<string, string>() };
+    const savingRef = { current: false };
+    const mutate = vi.fn();
+    let sequence = 0;
+    const environment: Record<string, any> = {
+      session: { isWritable: () => true }, savingRef, candidateMismatch: false, embedded: undefined,
+      candidatesQuery: { data: {} }, customerId: undefined, customerMatches: () => true,
+      selectedDemand: { id: 21, demandRevision: 4, items: [{ id: 22, remainingQty: 8 }] },
+      lines: [{ demandItemId: 22, qty: "3", agreedUnitPrice: " 12.3456 " }],
+      customerConfirmed: true, confirmationNote: " 客户确认数量价格与交期 ", dueDate: "2026-12-01",
+      requestIdRef: { current: "synthetic-request-initial" }, requestKeysRef, newRequestId: () => `synthetic-request-${++sequence}`,
+      salesOrderCreateSchema: shared.salesOrderCreateSchema, canonicalSalesOrderCreatePayload: shared.canonicalSalesOrderCreatePayload,
+      toast: { error: vi.fn() }, createMutation: { mutate },
+    };
+    const submit = () => evaluate<() => void>(expression("submitOrder"), environment)();
+    submit();
+    expect(mutate).toHaveBeenCalledWith({ demandId: 21, demandRevision: 4, requestId: "synthetic-request-1",
+      items: [{ demandItemId: 22, qty: 3, agreedUnitPrice: "12.3456" }], dueDate: "2026-12-01",
+      confirmationNote: "客户确认数量价格与交期", customerConfirmed: true });
+    expect(shared.calculateSalesOrderAmounts(mutate.mock.calls[0][0].items).totalAmount).toBe("37.0368");
+    savingRef.current = false; submit(); // An uncertain result retries the canonical request, not a fresh order.
+    expect(mutate.mock.calls[1][0].requestId).toBe("synthetic-request-1");
+    savingRef.current = false; environment.lines[0].agreedUnitPrice = "12.3466"; submit();
+    expect(mutate.mock.calls[2][0].requestId).toBe("synthetic-request-2");
+    const canonicalA = shared.canonicalSalesOrderCreatePayload({ ...mutate.mock.calls[0][0], items: [
+      { demandItemId: 23, qty: 1, agreedUnitPrice: "1.2" }, { demandItemId: 22, qty: 3, agreedUnitPrice: "12.3456" },
+    ] });
+    const canonicalB = shared.canonicalSalesOrderCreatePayload({ ...mutate.mock.calls[0][0], requestId: "another-request", items: [
+      { demandItemId: 22, qty: 3, agreedUnitPrice: "12.3456" }, { demandItemId: 23, qty: 1, agreedUnitPrice: "1.2000" },
+    ] });
+    expect(canonicalA).toEqual(canonicalB);
+    for (const patch of [{ customerConfirmed: false }, { confirmationNote: " " }, { lines: [{ demandItemId: 22, qty: "9", agreedUnitPrice: "12.3456" }] },
+      { lines: [{ demandItemId: 22, qty: "1.5", agreedUnitPrice: "12.3456" }] }, { lines: [{ demandItemId: 22, qty: "3", agreedUnitPrice: "12.34567" }] },
+      { session: { isWritable: () => false } }]) {
+      mutate.mockClear(); savingRef.current = false;
+      evaluate<() => void>(expression("submitOrder"), { ...environment, ...patch })();
+      expect(mutate).not.toHaveBeenCalled();
+    }
+    const detail = { id: 11, version: 7, status: "confirmed", stockCandidates: [{ inventoryId: 41, orderItemId: 31 }] };
+    const cancel = vi.fn();
+    const cancelEnv = { session: { isWritable: () => true }, detailQuery: { data: detail }, cancellingRef: { current: false },
+      cancelReason: " 客户取消 ", setCancelError: vi.fn(), cancelMutation: { mutate: cancel } };
+    evaluate<() => void>(expression("confirmCancel"), cancelEnv)();
+    expect(cancel).toHaveBeenCalledWith({ id: 11, version: 7, reason: "客户取消" });
+    for (const change of [{ cancelReason: " " }, { detailQuery: { data: { ...detail, status: "cancelled" } } }, { session: { isWritable: () => false } }]) {
+      cancel.mockClear(); evaluate<() => void>(expression("confirmCancel"), { ...cancelEnv, cancellingRef: { current: false }, ...change })();
+      expect(cancel).not.toHaveBeenCalled();
+    }
+    const inline = (name: string) => {
+      let node: ts.Node = calls.find(node => node.expression.getText(source) === `${name}.mutate`)!;
+      while (!ts.isArrowFunction(node)) node = node.parent;
+      return node;
+    };
+    const payment = vi.fn();
+    const paymentEnv = { session: { isWritable: () => true }, detailQuery: { data: detail }, paymentMutation: { mutate: payment },
+      payRequestIdRef: { current: "synthetic-payment-key" }, payMethod: "monthly", payAmount: " 12.3456 ", payDate: "2026-12-01", payNote: " 月结登记 " };
+    evaluate<() => void>(inline("paymentMutation"), paymentEnv)();
+    expect(payment).toHaveBeenCalledWith({ id: 11, version: 7, requestId: "synthetic-payment-key", method: "monthly", amount: "12.3456", paymentDate: "2026-12-01", note: "月结登记" });
+    evaluate<() => void>(inline("paymentMutation"), paymentEnv)();
+    expect(payment.mock.calls[1][0].requestId).toBe("synthetic-payment-key");
+    const shipment = vi.fn();
+    const shipEnv = { session: { isWritable: () => true }, detailQuery: { data: detail }, shipMutation: { mutate: shipment },
+      shipRequestIdRef: { current: "synthetic-shipment-key" }, shipQtys: { "31:41": "2", "31:42": "0", "31:43": "1.5" },
+      shipMethod: "express", expressCo: " 顺丰 ", expressNo: " SYNTHETIC-ONLY ", shipNote: " 分批出货 ", toast: { error: vi.fn() } };
+    evaluate<() => void>(inline("shipMutation"), shipEnv)();
+    expect(shipment).toHaveBeenCalledWith({ id: 11, version: 7, requestId: "synthetic-shipment-key", deliveryMethod: "express", expressCo: "顺丰", expressNo: "SYNTHETIC-ONLY", note: "分批出货", items: [{ orderItemId: 31, inventoryId: 41, qty: 2 }] });
+    evaluate<() => void>(inline("shipMutation"), shipEnv)();
+    expect(shipment.mock.calls[1][0].requestId).toBe("synthetic-shipment-key");
+    for (const [name, env, spy] of [["paymentMutation", paymentEnv, payment], ["shipMutation", shipEnv, shipment]] as const) {
+      for (const change of [{ session: { isWritable: () => false } }, { detailQuery: { data: null } }, { detailQuery: { data: { ...detail, status: "cancelled" } } }]) {
+        spy.mockClear(); evaluate<() => void>(inline(name), { ...env, ...change })(); expect(spy).not.toHaveBeenCalled();
+      }
+    }
+    shipment.mockClear(); evaluate<() => void>(inline("shipMutation"), { ...shipEnv, shipQtys: { "31:41": "0", "31:42": "1.5" } })();
+    expect(shipment).not.toHaveBeenCalled();
   });
 
-  it("preserves all 114 original JSX event handlers, field values, validation limits and action availability attributes", () => {
-    const attributes = collect(ts.isJsxAttribute).filter(node => /^(on[A-Z]|disabled$|checked$|value$|open$|showCloseButton$|min$|max$|step$|maxLength$)/.test(node.name.getText(source))).map(print);
-    expect(attributes).toHaveLength(114);
-    expect(hash(attributes)).toBe("34635f5900ac4a8ec6c100b91172902113653fbe65642b8adfc1579a42d9d265");
+  it("preserves semantic field limits/action availability and old route parameters/read filters without brittle JSX hashes", () => {
+    const attributes = collect(ts.isJsxAttribute);
+    const attrExpression = (element: ts.JsxOpeningElement | ts.JsxSelfClosingElement, name: string) => {
+      const attr = element.attributes.properties.find(node => ts.isJsxAttribute(node) && node.name.getText(source) === name) as ts.JsxAttribute;
+      expect(attr).toBeDefined(); expect(ts.isJsxExpression(attr.initializer!)).toBe(true);
+      return (attr.initializer as ts.JsxExpression).expression!;
+    };
+    const openings = collect((node): node is ts.JsxOpeningElement | ts.JsxSelfClosingElement => ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node));
+    const field = (text: string) => openings.find(node => node.attributes.properties.some(attr => ts.isJsxAttribute(attr) && attr.name.getText(source) === "aria-label" && print(attr).includes(text)))!;
+    const quantity = field("确认数量");
+    expect(evaluate(attrExpression(quantity, "min"), {})).toBe(1);
+    expect(evaluate(attrExpression(quantity, "step"), {})).toBe(1);
+    expect(evaluate(attrExpression(quantity, "max"), { item: { remainingQty: 8 } })).toBe(8);
+    expect(evaluate(attrExpression(quantity, "value"), { draft: { qty: "3" } })).toBe("3");
+    const disabled = attrExpression(quantity, "disabled");
+    const enabled = { draft: {}, item: { remainingQty: 8 }, createMutation: { isPending: false }, uncertainSave: false };
+    expect(evaluate(disabled, enabled)).toBe(false);
+    for (const patch of [{ draft: null }, { item: { remainingQty: 0 } }, { createMutation: { isPending: true } }, { uncertainSave: true }]) expect(evaluate(disabled, { ...enabled, ...patch })).toBe(true);
+    expect(evaluate(attrExpression(field("含税单价"), "value"), { draft: { agreedUnitPrice: "12.3456" } })).toBe("12.3456");
+    const confirmation = openings.find(node => node.attributes.properties.some(attr => ts.isJsxAttribute(attr) && attr.name.getText(source) === "id" && print(attr).includes("sales-order-confirmation")))!;
+    expect(evaluate(attrExpression(confirmation, "maxLength"), {})).toBe(500);
+    const cancelDisabled = attributes.find(attr => attr.name.getText(source) === "disabled" && print(attr).includes("monthlyAmount"))!;
+    const cancelExpr = (cancelDisabled.initializer as ts.JsxExpression).expression!;
+    const unpaid = { cancelMutation: { isPending: false }, detailQuery: { data: { paidAmount: "0.0000", monthlyAmount: "0.0000", shippedQty: 0 } } };
+    expect(evaluate(cancelExpr, unpaid)).toBe(false);
+    for (const data of [{ paidAmount: "0.0001", monthlyAmount: "0", shippedQty: 0 }, { paidAmount: "0", monthlyAmount: "120.0000", shippedQty: 0 }, { paidAmount: "0", monthlyAmount: "0", shippedQty: 1 }]) expect(evaluate(cancelExpr, { ...unpaid, detailQuery: { data } })).toBe(true);
+    const payment = attributes.find(attr => attr.name.getText(source) === "onClick" && print(attr).includes("paymentMutation.mutate"))!.parent.parent as ts.JsxOpeningElement;
+    const ship = attributes.find(attr => attr.name.getText(source) === "onClick" && print(attr).includes("shipMutation.mutate"))!.parent.parent as ts.JsxOpeningElement;
+    const transaction = { canWrite: true, paymentMutation: { isPending: false }, shipMutation: { isPending: false }, detailQuery: { data: {
+      status: "confirmed", paidAmount: "0", monthlyAmount: "0", items: [{ id: 31 }], stockCandidates: [{ orderItemId: 31 }],
+    } } };
+    expect(evaluate(attrExpression(payment, "disabled"), transaction)).toBe(false);
+    expect(evaluate(attrExpression(ship, "disabled"), transaction)).toBe(false); // Shipment does not require prior payment.
+    for (const element of [payment, ship]) {
+      expect(evaluate(attrExpression(element, "disabled"), { ...transaction, canWrite: false })).toBe(true);
+      expect(evaluate(attrExpression(element, "disabled"), { ...transaction, detailQuery: { data: { ...transaction.detailQuery.data, status: "cancelled" } } })).toBe(true);
+    }
+    expect(evaluate(attrExpression(ship, "disabled"), { ...transaction, detailQuery: { data: { ...transaction.detailQuery.data, stockCandidates: [] } } })).toBe(true);
+    const calls = collect(ts.isCallExpression);
+    const routeEffect = calls.find(node => node.expression.getText(source) === "useEffect" && print(node.arguments[0]).includes("new URLSearchParams(search)"))!.arguments[0];
+    const navigation = vi.fn();
+    const route = { embedded: undefined, search: "?demandNo=%20D-21%20&keyword=SO-11&keep=1", navigate: navigation,
+      deepLinkedDemandNoRef: { current: "" }, setEntryOpen: vi.fn(), setCandidateKeyword: vi.fn(), setCandidateApplied: vi.fn(), setCandidatePage: vi.fn(),
+      setDraftKeyword: vi.fn(), setKeyword: vi.fn(), setPage: vi.fn() };
+    evaluate<() => void>(routeEffect, route)();
+    expect(route.deepLinkedDemandNoRef.current).toBe("D-21"); expect(route.setCandidateApplied).toHaveBeenCalledWith("D-21");
+    expect(navigation).toHaveBeenCalledWith("/sales-orders?keyword=SO-11&keep=1", { replace: true });
+    expect(route.setKeyword).not.toHaveBeenCalled();
+    navigation.mockClear(); evaluate<() => void>(routeEffect, { ...route, search: "?keyword=%20SO-11%20&keep=1" })();
+    expect(route.setDraftKeyword).toHaveBeenCalledWith("SO-11"); expect(route.setKeyword).toHaveBeenCalledWith("SO-11"); expect(route.setPage).toHaveBeenCalledWith(1);
+    expect(navigation).toHaveBeenCalledWith("/sales-orders?keep=1", { replace: true });
+    navigation.mockClear(); evaluate<() => void>(routeEffect, { ...route, embedded: { customer: { id: 10 } } })(); expect(navigation).not.toHaveBeenCalled();
+    const listMemo = collect(ts.isVariableDeclaration).find(node => node.name.getText(source) === "listInput")!.initializer as ts.CallExpression;
+    const list = (env: Record<string, unknown>) => evaluate<() => unknown>(listMemo.arguments[0], { PAGE_SIZE: 20, keyword: "SO-11", page: 2, status: "cancelled", customerId: undefined, ...env })();
+    expect(list({})).toEqual({ keyword: "SO-11", status: "cancelled", page: 2, pageSize: 20 });
+    expect(list({ status: "all", customerId: 10 })).toEqual({ keyword: "SO-11", customerId: 10, page: 2, pageSize: 20 });
+    const get = calls.find(node => node.expression.getText(source) === "trpc.crmSalesOrder.get.useQuery")!;
+    const candidates = calls.find(node => node.expression.getText(source) === "trpc.crmSalesOrder.candidates.useQuery")!;
+    expect(evaluate(get.arguments[0], { selectedId: 11, customerId: undefined })).toEqual({ id: 11 });
+    expect(evaluate(get.arguments[0], { selectedId: 11, customerId: 10 })).toEqual({ id: 11, customerId: 10 });
+    expect(evaluate(candidates.arguments[0], { candidateApplied: "D-21", candidatePage: 3, customerId: undefined })).toEqual({ keyword: "D-21", page: 3, pageSize: 10 });
+    expect(evaluate(candidates.arguments[0], { candidateApplied: "D-21", candidatePage: 3, customerId: 10 })).toEqual({ keyword: "D-21", customerId: 10, page: 3, pageSize: 10 });
   });
 
   it("renders original state-specific actions, amount values and pagination in the shared skeleton", () => {

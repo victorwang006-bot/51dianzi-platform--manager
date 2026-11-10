@@ -1,0 +1,45 @@
+.erp-ui.customer-workbench {
+  width: 100%; min-width: 0; max-width: 1280px; padding: 12px 16px; margin-inline: auto;
+}
+.erp-ui.customer-workbench .customer-detail-top-actions { align-items: center; margin-bottom: 10px; gap: 8px 12px; }
+.erp-ui.customer-workbench .customer-workbench-top-buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.erp-ui.customer-workbench .customer-workbench-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; border-bottom: 1px solid #e2e8f0; margin: 0 0 12px; padding: 0; }
+.erp-ui.customer-workbench .customer-workbench-tabs button { flex: 0 0 auto; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; background: transparent; color: #64748b; font: inherit; white-space: nowrap; cursor: pointer; }
+.erp-ui.customer-workbench .customer-workbench-tabs button[aria-selected="true"] { border-bottom-color: #185fa5; color: #185fa5; font-weight: 600; }
+.erp-ui.customer-workbench .customer-workbench-tabs button:focus-visible { outline: 2px solid #185fa5; outline-offset: -2px; }
+.erp-ui.customer-workbench [hidden] { display: none; }
+.erp-ui.customer-workbench .customer-workbench-panel { min-width: 0; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 12px 16px; margin-bottom: 12px; }
+.erp-ui.customer-workbench .customer-workbench-panel-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.erp-ui.customer-workbench .customer-workbench-summary { display: flex; flex-wrap: wrap; gap: 10px 24px; margin: 10px 0; }
+.erp-ui.customer-workbench .customer-workbench-summary > div { flex: 1 1 240px; min-width: 0; }
+.erp-ui.customer-workbench .customer-workbench-summary dt { color: #64748b; }
+.erp-ui.customer-workbench .customer-workbench-summary dd { margin: 0; overflow-wrap: anywhere; }
+.erp-ui.customer-workbench .customer-workbench-empty { margin: 0; padding: 10px 0; color: #64748b; }
+.erp-ui.customer-workbench .customer-workbench-contacts { display: flex; flex-wrap: wrap; gap: 0 20px; padding: 0 16px 8px; }
+.erp-ui.customer-workbench .customer-workbench-contacts article { flex: 1 1 300px; min-width: 0; border-top: 1px solid #f1f5f9; padding: 10px 0; overflow-wrap: anywhere; }
+.erp-ui.customer-workbench .customer-workbench-contacts article > div { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.erp-ui.customer-workbench .customer-workbench-contacts p { margin: 4px 0 0; }
+.erp-ui.customer-workbench .customer-workbench-samples { list-style: none; padding: 0; margin: 8px 0; }
+.erp-ui.customer-workbench .customer-workbench-samples li { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid #f1f5f9; padding: 6px 0; overflow-wrap: anywhere; }
+.erp-ui.customer-workbench .customer-workbench-follow-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 100px; overflow: auto; margin: 6px 0 0; }
+.erp-ui.customer-workbench .customer-workbench-table-scroll { width: 100%; min-width: 0; overflow-x: auto; margin-top: 8px; }
+.erp-ui.customer-workbench .customer-workbench-table-scroll table { width: 100%; min-width: 620px; border-collapse: collapse; }
+.erp-ui.customer-workbench .customer-workbench-table-scroll :is(th, td) { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+.erp-ui.customer-workbench .customer-workbench-material-select { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.erp-ui.customer-workbench .customer-workbench-material-select select { min-width: 0; max-width: 100%; }
+.erp-ui.customer-workbench .customer-workbench-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.erp-ui.customer-workbench .customer-workbench-pagination > span { margin-right: auto; }
+.erp-ui.customer-workbench .customer-detail-follow-history > p { padding: 12px 16px; text-align: left; }
+.erp-ui.customer-workbench .customer-detail-follow-history article { padding-block: 12px; }
+@media (max-width: 680px) {
+  .erp-ui.customer-workbench { padding: 12px; }
+  .erp-ui.customer-workbench .customer-workbench-tabs button { padding-inline: 10px; }
+  .erp-ui.customer-workbench .customer-workbench-top-buttons { width: 100%; }
+}
+
+/* The original shell has 24px padding; only these customer pages use 16px. */
+.admin-workspace-shell__main:has(.customer-workbench, .customer-list-page) { padding: 16px; }
+.admin-workspace-shell__main .erp-ui.customer-workbench { padding: 0; max-width: none; }
+@media (max-width: 680px) {
+  .admin-workspace-shell__main:has(.customer-workbench, .customer-list-page) { padding: 12px; }
+}

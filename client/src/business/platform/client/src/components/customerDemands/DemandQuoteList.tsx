@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Check,
   ChevronLeft,
@@ -8,7 +8,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import type { DemandQuote } from "../../../../shared/customerDemandQuotes";
+import type { DemandQuote, DemandQuotePage } from "../../../../shared/customerDemandQuotes";
 import { formatBeijingDateTime } from "../../../../shared/beijingTime";
 import { Button } from "../ui/button";
 import {
@@ -20,12 +20,21 @@ import {
 import { trpc } from "../../../../../api/business-trpc";
 import { ConfirmDialog } from "../customers/ConfirmDialog";
 import { toast } from "sonner";
+import { usePageIdentity } from "../../hooks/usePageIdentity";
+import { demandFreshReadOptions, useDemandReceiptGuard, useDemandServerRead } from "./useDemandReadSession";
+import { registerDemandQuotePending, settleDemandQuotePending } from "./useDemandQuotePending";
 
 export type DemandQuoteListProps = {
   demandId: number;
   audience: "sales" | "procurement";
   onCreate?: () => void;
   onEdit?: (quoteId: number) => void;
+  customerId?: number;
+  contextIdentityKey?: string | number | null;
+  /** UI fence only; get/quoteList and the original mutation retain server authority. */
+  canWrite?: boolean;
+  /** Native observer ownership, never sent as a business mutation variable. */
+  mutationSession?: object;
 };
 
 const PAGE_SIZE = 10;
@@ -47,13 +56,45 @@ function parsePositiveInteger(value: string) {
  * Procurement sees every caller-owned supplier option (including withdrawn history).
  * Sales sees active options and explicitly allocates accepted quantity per material.
  */
-export function DemandQuoteList({
+export function DemandQuoteList(props: DemandQuoteListProps) {
+  const identity = usePageIdentity();
+  const identityKey = JSON.stringify([identity, props.contextIdentityKey, props.customerId, props.demandId, props.audience, props.canWrite !== false]);
+  // Read-only callers use ReadOnlyDemandQuotes, which does not mount writes.
+  if (props.canWrite === false) return null;
+  return <DemandQuoteReadSession key={identityKey} {...props} identityKey={identityKey} />;
+}
+
+function DemandQuoteReadSession(props: DemandQuoteListProps & { identityKey: string }) {
+  const [page, setPage] = useState(1);
+  const query = trpc.customerDemand.quoteList.useQuery({ demandId: props.demandId, audience: props.audience, page, pageSize: PAGE_SIZE }, demandFreshReadOptions);
+  const wrongDemand = Boolean(query.data?.items.some(quote => quote.demandId !== props.demandId));
+  const quoteRead = useDemandServerRead(query, `${props.demandId}:${props.audience}:${page}`, wrongDemand);
+  if (!quoteRead.data) return <section className="mt-3 min-w-0" aria-label={props.audience === "sales" ? "采购报价" : "我的供应商报价"}>
+    <h3 className="text-sm font-semibold text-slate-800">{props.audience === "sales" ? "采购报价" : "我的供应商报价"}</h3>
+    {quoteRead.failed ? <p role="alert" className="text-xs text-red-600">{wrongDemand ? "报价上下文不一致" : query.error?.message || "报价加载失败"}</p> : <p className="py-3 text-xs text-slate-500">正在加载报价…</p>}
+  </section>;
+  // Ordinary background refetch keeps this verified child (and its pending/editor).
+  return <DemandQuoteListSession {...props} result={quoteRead.data} query={query} page={page} setPage={setPage} />;
+}
+
+function DemandQuoteListSession({
   demandId,
   audience,
   onCreate,
   onEdit,
-}: DemandQuoteListProps) {
-  const [page, setPage] = useState(1);
+  mutationSession,
+  identityKey,
+  result,
+  query,
+  page,
+  setPage,
+}: DemandQuoteListProps & {
+  identityKey: string;
+  result: DemandQuotePage;
+  query: { isFetching?: boolean; refetch?: () => unknown };
+  page: number;
+  setPage: Dispatch<SetStateAction<number>>;
+}) {
   const [acceptingQuote, setAcceptingQuote] = useState<DemandQuote | null>(
     null
   );
@@ -69,12 +110,6 @@ export function DemandQuoteList({
   const [historyPage, setHistoryPage] = useState(1);
   const requestKeysRef = useRef(new Map<string, string>());
   const utils = trpc.useUtils();
-  const query = trpc.customerDemand.quoteList.useQuery({
-    demandId,
-    audience,
-    page,
-    pageSize: PAGE_SIZE,
-  });
   const historyQuery = trpc.customerDemand.quoteHistory.useQuery(
     {
       quoteId: historyQuote?.id ?? 1,
@@ -82,16 +117,19 @@ export function DemandQuoteList({
       page: historyPage,
       pageSize: HISTORY_PAGE_SIZE,
     },
-    { enabled: Boolean(historyQuote) }
+    { ...demandFreshReadOptions, enabled: Boolean(historyQuote) }
   );
-  const result = query.data;
+  const wrongHistory = Boolean(historyQuote && historyQuery.data?.items.some(round => round.quoteId !== historyQuote.id));
+  const historyRead = useDemandServerRead(historyQuery, `${historyQuote?.id}:${historyPage}`, wrongHistory);
+  const historyResult = result ? historyRead.data : undefined;
+  const receiptGuard = useDemandReceiptGuard(identityKey, Boolean(result));
   const quotes = result?.items ?? [];
   const currentPage = result?.page ?? page;
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
-  const historyCurrentPage = historyQuery.data?.page ?? historyPage;
+  const historyCurrentPage = historyResult?.page ?? historyPage;
   const historyTotalPages = Math.max(
     1,
-    Math.ceil((historyQuery.data?.total ?? 0) / HISTORY_PAGE_SIZE)
+    Math.ceil((historyResult?.total ?? 0) / HISTORY_PAGE_SIZE)
   );
   const heading = audience === "sales" ? "采购报价" : "我的供应商报价";
 
@@ -105,7 +143,13 @@ export function DemandQuoteList({
     ]);
 
   const acceptMutation = trpc.customerDemand.quoteAccept.useMutation({
-    onSuccess: result => {
+    meta: { customerDemandSession: mutationSession },
+    onMutate: () => ({
+      isCurrent: receiptGuard.capture(),
+      pendingToken: registerDemandQuotePending(demandId, mutationSession),
+    }),
+    onSuccess: (result, _input, context) => {
+      if (!context?.isCurrent()) return;
       setAcceptingQuote(null);
       setAcceptQty({});
       setAcceptError("");
@@ -116,26 +160,41 @@ export function DemandQuoteList({
       );
       void refreshRelated();
     },
-    onError: error => {
+    onError: (error, _input, context) => {
+      if (!context?.isCurrent()) return;
       setAcceptError(error.message || "采用报价失败，请刷新后重试");
       void query.refetch?.();
       void utils.crmSalesOrder?.candidates?.invalidate?.();
     },
+    onSettled: (_result, _error, _input, context) => {
+      settleDemandQuotePending(context?.pendingToken);
+    },
   });
   const withdrawMutation = trpc.customerDemand.quoteWithdraw.useMutation({
-    onSuccess: result => {
+    meta: { customerDemandSession: mutationSession },
+    onMutate: () => ({
+      isCurrent: receiptGuard.capture(),
+      pendingToken: registerDemandQuotePending(demandId, mutationSession),
+    }),
+    onSuccess: (result, _input, context) => {
+      if (!context?.isCurrent()) return;
       setWithdrawingQuote(null);
       toast.success(result.replayed ? "该报价已撤回" : "报价已撤回");
       void refreshRelated();
     },
-    onError: error => {
+    onError: (error, _input, context) => {
+      if (!context?.isCurrent()) return;
       setWithdrawingQuote(null);
       toast.error(error.message || "撤回报价失败，请刷新后重试");
       void query.refetch?.();
     },
+    onSettled: (_result, _error, _input, context) => {
+      settleDemandQuotePending(context?.pendingToken);
+    },
   });
 
   const openAccept = (quote: DemandQuote) => {
+    if (!receiptGuard.isCurrent()) return;
     const initial: Record<number, string> = {};
     const alternates: Record<number, number> = {};
     quote.items.forEach(item => {
@@ -176,7 +235,12 @@ export function DemandQuoteList({
   }, [acceptQty, acceptAlternate, acceptingQuote]);
 
   const confirmAccept = () => {
-    if (!acceptingQuote || acceptMutation.isPending) return;
+    if (!receiptGuard.isCurrent() || !acceptingQuote || acceptMutation.isPending) return;
+    const currentQuote = quotes.find(quote => quote.id === acceptingQuote.id);
+    if (!currentQuote || currentQuote.version !== acceptingQuote.version || currentQuote.needsReconfirmation || currentQuote.status === "withdrawn") {
+      setAcceptError("报价版本已变化，请关闭后重新选择当前报价");
+      return;
+    }
     for (const item of acceptingQuote.items) {
       if ((item.alternateNo ?? 1) !== acceptAlternate[item.demandItemId])
         continue;
@@ -238,7 +302,7 @@ export function DemandQuoteList({
               {result.total} 份
             </span>
           )}
-          {audience === "procurement" && onCreate ? (
+          {result && audience === "procurement" && onCreate ? (
             <Button
               type="button"
               size="sm"
@@ -252,21 +316,7 @@ export function DemandQuoteList({
         </div>
       </div>
 
-      {query.isLoading ? (
-        <div className="flex items-center gap-2 rounded border border-slate-200 px-3 py-5 text-xs text-slate-500">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          正在加载报价…
-        </div>
-      ) : null}
-      {query.error ? (
-        <p
-          role="alert"
-          className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
-        >
-          {query.error.message || "报价加载失败"}
-        </p>
-      ) : null}
-      {!query.isLoading && !query.error && quotes.length === 0 ? (
+      {result && quotes.length === 0 ? (
         <p className="rounded border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-500">
           {audience === "procurement"
             ? "暂无供应商报价，可新增第一份报价"
@@ -318,7 +368,7 @@ export function DemandQuoteList({
         </div>
       )}
 
-      {acceptingQuote ? (
+      {acceptingQuote && result ? (
         <Dialog
           open
           onOpenChange={open => {
@@ -500,7 +550,7 @@ export function DemandQuoteList({
         </Dialog>
       ) : null}
 
-      {historyQuote ? (
+      {historyQuote && result ? (
         <Dialog
           open
           onOpenChange={open => {
@@ -532,7 +582,7 @@ export function DemandQuoteList({
               </button>
             </div>
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
-              {historyQuery.isLoading ? (
+              {historyRead.waiting ? (
                 <p className="flex items-center gap-2 text-xs text-slate-500">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   正在加载历史…
@@ -543,7 +593,8 @@ export function DemandQuoteList({
                   {historyQuery.error.message || "报价历史加载失败"}
                 </p>
               ) : null}
-              {(historyQuery.data?.items ?? []).map(round => (
+              {wrongHistory && <p role="alert" className="text-xs text-red-600">报价历史上下文不一致</p>}
+              {(historyResult?.items ?? []).map(round => (
                 <article
                   key={round.id}
                   className="rounded border border-slate-200"
@@ -560,10 +611,10 @@ export function DemandQuoteList({
                 </article>
               ))}
             </div>
-            {(historyQuery.data?.total ?? 0) > HISTORY_PAGE_SIZE ? (
+            {(historyResult?.total ?? 0) > HISTORY_PAGE_SIZE ? (
               <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-[11px] text-slate-500">
                 <span>
-                  共 {historyQuery.data?.total ?? 0} 轮 · 第{" "}
+                  共 {historyResult?.total ?? 0} 轮 · 第{" "}
                   {historyCurrentPage}/{historyTotalPages} 页
                 </span>
                 <div className="flex items-center gap-2">
@@ -604,7 +655,7 @@ export function DemandQuoteList({
         </Dialog>
       ) : null}
 
-      {withdrawingQuote ? (
+      {withdrawingQuote && result ? (
         <ConfirmDialog
           title="撤回此报价？"
           description={`撤回“${withdrawingQuote.supplierName}”后，销售将不能继续采用；历史轮次仍会保留。`}
@@ -613,12 +664,13 @@ export function DemandQuoteList({
           onCancel={() => {
             if (!withdrawMutation.isPending) setWithdrawingQuote(null);
           }}
-          onConfirm={() =>
+          onConfirm={() => {
+            if (!receiptGuard.isCurrent() || withdrawMutation.isPending) return;
             withdrawMutation.mutate({
               quoteId: withdrawingQuote.id,
               version: withdrawingQuote.version,
-            })
-          }
+            });
+          }}
         />
       ) : null}
     </section>
