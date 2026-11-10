@@ -133,12 +133,20 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
   });
   it("keeps all local CSS scoped, explicit column widths, a single horizontal scroller and unboxed standard text actions", () => {
     const css = readFileSync("client/src/business/platform/client/src/pages/CustomerList.css", "utf8");
-    postcss.parse(css).walkRules(rule => expect(rule.selector).toMatch(/^\.customer-list-page/));
+    postcss.parse(css).walkRules(rule => {
+      expect(rule.selector.startsWith(".customer-list-page") ||
+        (rule.selector.startsWith(".admin-workspace-shell__main:has(") &&
+          rule.selector.includes(".customer-list-page") &&
+          rule.selector.includes('[data-admin-navigation="current-location"]'))).toBe(true);
+    });
     expect(css).toContain("min-width: 1304px"); expect(css).toContain("table-layout: fixed"); expect(css).toContain("right: var(--customer-list-actions-width)");
     expect(css).toContain("width: 168px"); expect(css).not.toContain("176px"); expect(css).not.toContain("col-followup"); expect(css).toContain("overflow-x: auto"); expect(css).toContain("overflow: visible");
     expect(css).toContain("flex-shrink: 0"); expect(css).toContain("width: 16px"); expect(css).toContain("fill: currentColor");
     expect(css).toContain("background: transparent"); expect(css).toContain("border: 0"); expect(css).toContain("font-family: inherit"); expect(css).toContain(":focus-visible");
     expect(css).not.toMatch(/!important|scale\(|zoom:/);
+    postcss.parse(css).walkDecls(decl => {
+      expect(decl.prop === "display" && decl.value === "contents").toBe(false);
+    });
   });
   it("restores position only after a current authorized list is actually rendered", async () => {
     runtime.identityReady = false;

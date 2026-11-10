@@ -32,7 +32,6 @@ export function CustomerWorkbenchOverview({ customer, followUps, canReadOrders, 
         <p className="customer-detail-meta" title="仅展示最近需求，不是全部待办统计">共 {result.total} 笔需求 · 最近 {result.items.length} 笔</p>
         {result.items.length ? <ul className="customer-workbench-samples">{result.items.map(item => <li key={item.id}><span>{item.demandNo} · {item.projectName || "未填写项目"}</span><span>{CUSTOMER_DEMAND_STATUS_LABELS[item.status]}</span></li>)}</ul> : <p className="customer-workbench-empty">暂无客户需求记录</p>}
       </>}
-      <p className="customer-detail-meta">采购报价不等于成交确认；成交价格、数量和交期在订单中确认。</p>
     </section>
     <CustomerWorkbenchOrderSummary customerId={customer.id} canRead={canReadOrders} onOrders={() => onTab("orders")} />
     <section className="customer-workbench-panel">
@@ -57,7 +56,6 @@ function CustomerWorkbenchOrderSummary({ customerId, canRead, onOrders }: { cust
         <div><dt>待出货</dt><dd>{summary.awaitingShipmentOrders}</dd></div>
         <div><dt>月结登记</dt><dd>{summary.monthlyOrders}</dd></div>
       </dl>
-      <p className="customer-detail-meta">仅有效订单计入待办；月结登记不等于实际到账。</p>
     </>}
   </section>;
 }
