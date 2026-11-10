@@ -2754,8 +2754,8 @@ describe("approved inventory compact time presentation", () => {
     expect(th.getAttribute("aria-label")).toBe("Date Code / 更新时间（北京时间）");
     expect(th.getAttribute("title")).toBe("Date Code / 更新时间（北京时间）");
     expect(getComputedStyle(th).whiteSpace).toBe("nowrap");
-    // jsdom cannot measure percentage/min() table geometry; bind the actual CSS contract.
-    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }");
+    // jsdom cannot measure container-unit table geometry; bind the actual CSS contract.
+    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: var(--ci-stock-date-width); }");
     expect(getComputedStyle(required(trigger().closest("small"), "missing time line")).whiteSpace).toBe("nowrap");
     const td = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
     expect(getComputedStyle(td).paddingTop).toBe("6px"); expect(getComputedStyle(td).paddingBottom).toBe("6px");
@@ -2766,18 +2766,34 @@ describe("approved inventory compact time presentation", () => {
     expect(getComputedStyle(button("平铺查看")).minHeight).toBe("34px");
   });
 
-  it.each([1160, 1280, 1440, 1560, 1920])("returns only date savings to model at W=%s, with original source and 100%% budget", width => {
-    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }");
-    expect(hostStyles).toContain(".ci-material-source-col { width: calc((100% - 698px) * 16 / 75); }");
-    const remaining = width - 698;
-    const oldDate = remaining * 18 / 75, oldModel = remaining * 17 / 75;
-    const date = Math.min(128, remaining * 16 / 75);
-    const model = remaining * 35 / 75 - date;
-    const source = remaining * 16 / 75;
+  it.each([320, 1024, 1160, 1280, 1440, 1560, 1920])("returns only date savings to model at container W=%s, with the other nine columns and 100%% budget", width => {
+    expect(hostStyles).toContain(".ci-page.ci-host .ci-tablewrap:has(> .ci-compact-stock-table) { container-type: inline-size; }");
+    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table { --ci-stock-flex-base: calc((max(1160px, 100cqw) - 698px) / 5); --ci-stock-date-width: min(128px, calc(var(--ci-stock-flex-base) - 12px)); }");
+    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc(var(--ci-stock-flex-base) * 2 - var(--ci-stock-date-width)); }");
+    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: var(--ci-stock-date-width); }");
+    for (const column of ["brand", "qty", "source"]) {
+      expect(hostStyles).toContain(`.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-${column}-col { width: var(--ci-stock-flex-base); }`);
+    }
+    const tableWidth = Math.max(1160, width);
+    const fixedTotal = [36, 96, 110, 128, 112, 216].reduce((total, column) => total + column, 0);
+    expect(fixedTotal).toBe(698);
+    const base = (tableWidth - fixedTotal) / 5;
+    const oldDate = base, oldModel = base;
+    const date = Math.min(128, base - 12);
+    const model = base * 2 - date;
+    const before = [36, oldModel, base, 96, 110, base, 128, 112, oldDate, base, 216];
+    const after = [36, model, base, 96, 110, base, 128, 112, date, base, 216];
+    expect(date).toBeGreaterThan(0);
+    expect(date).toBeLessThanOrEqual(128);
     expect(date).toBeLessThan(oldDate);
+    expect(model).toBeGreaterThan(oldModel);
     expect(model - oldModel).toBeCloseTo(oldDate - date, 10);
-    expect(698 + model + remaining * 11 / 75 + remaining * 13 / 75 + date + source).toBeCloseTo(width, 10);
-    if (width === 1160) { expect(date).toBeCloseTo(98.56, 10); expect(oldDate).toBeCloseTo(110.88, 10); }
+    const otherNine = after.map((column, index) => ({ column, index })).filter(({ index }) => index !== 1 && index !== 8);
+    expect(otherNine).toHaveLength(9);
+    for (const { column, index } of otherNine) expect(column).toBeCloseTo(before[index], 10);
+    expect(before.reduce((total, column) => total + column, 0)).toBeCloseTo(tableWidth, 10);
+    expect(after.reduce((total, column) => total + column, 0)).toBeCloseTo(tableWidth, 10);
+    if (width <= 1160) { expect(date).toBeCloseTo(80.4, 10); expect(oldDate).toBeCloseTo(92.4, 10); }
   });
 
   it("keeps a cross-year label single-line/ellipsizable while native tooltip retains every second and timezone", () => {
