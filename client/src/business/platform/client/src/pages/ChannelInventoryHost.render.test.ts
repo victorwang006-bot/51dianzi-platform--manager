@@ -148,7 +148,7 @@ vi.mock("../../../../api/business-trpc", () => ({
   },
 }));
 
-import ChannelInventoryHost from "./ChannelInventoryHost";
+import ChannelInventoryHost, { channelInventoryUpdatedAt } from "./ChannelInventoryHost";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -434,6 +434,7 @@ afterEach(async () => {
   root = null;
   container = null;
   hostStyleElement = null;
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
@@ -527,9 +528,12 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   it("shows channel timestamps in Beijing even when the visitor timezone is UTC", () => {
     const previous = process.env.TZ;
     process.env.TZ = "UTC";
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-10T12:00:00Z"));
     try {
       renderHost();
-      expect(document.body.textContent).toContain("2026-10-03 09:00");
+      expect(document.querySelector(".ci-updated-at-trigger")?.textContent).toBe("10-03 09:00");
+      expect(document.querySelector(".ci-updated-at-trigger")?.getAttribute("aria-label")).toBe("2026-10-03 09:00:00（北京时间）");
       expect(document.body.textContent).not.toContain("2026-10-03 01:00");
       selectHostTab("channels");
       expect(document.body.textContent).toContain("2026-10-02 09:00");
@@ -858,7 +862,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(headerStyle.paddingRight).toBe("10px");
     // jsdom preserves var() rather than resolving scoped admin tokens.
     expect(headerStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
-    expect(cellStyle.paddingTop).toBe("10px");
+    expect(cellStyle.paddingTop).toBe("6px");
     expect(cellStyle.paddingRight).toBe("10px");
     // The first cell is an auxiliary ordinal, not the main model text.
     expect(cellStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
@@ -909,7 +913,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
       expect(getComputedStyle(required(table.querySelector(selector), "missing regular body cell")).fontWeight).toBe("400");
     }
     expect(getComputedStyle(required(table.querySelector(".ci-cell-title"), "missing model title")).fontWeight).toBe("600");
-    expect(table.querySelector(".ci-date .ci-subtext")?.classList.contains("admin-cell-secondary")).toBe(true);
+    expect(table.querySelector(".ci-date .ci-updated-at")?.classList.contains("admin-cell-secondary")).toBe(true);
   });
 
   it("omits only unknown tax subtext, preserving negotiated/zero/precise prices, known tax flags and real lead-time fallbacks", () => {
@@ -1781,7 +1785,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     const header = required(document.querySelector(".ci-tabbar"), "missing compact channel header");
     expect(header.querySelector("h1.ci-page-title")?.textContent).toBe("渠道库存");
@@ -1790,9 +1794,11 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(getComputedStyle(header).marginBottom).toBe("6px");
     expect(getComputedStyle(header).flexWrap).toBe("nowrap");
     expect(getComputedStyle(required(header.querySelector(".ci-heading-actions"), "missing actions")).flexWrap).toBe("nowrap");
-    expect(getComputedStyle(required(header.querySelector(".ci-inventory-view-controls"), "missing views")).flexWrap).toBe("nowrap");
+    const views = required(document.querySelector('.ci-toolbar[aria-label="材料筛选"] .ci-inventory-view-controls'), "missing filter-row views");
+    expect(getComputedStyle(views).flexWrap).toBe("nowrap");
     expect(getComputedStyle(button("上传库存")).height).toBe("34px");
-    for (const name of ["平铺查看", "按渠道查看", "上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
+    for (const name of ["上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
+    for (const name of ["平铺查看", "按渠道查看"]) { expect(header.contains(button(name))).toBe(false); expect(views.contains(button(name))).toBe(true); }
     expect(document.querySelector(".ci-stats,.ci-toolbar.ci-inventory-view-controls")).toBeNull();
     expect(document.body.textContent).not.toMatch(/库存明细|切换示例身份|leader|creator/);
     expect(getComputedStyle(required(document.querySelector(".ci-filter-label"), "missing original a11y label")).position).toBe("absolute");
@@ -1811,7 +1817,7 @@ describe("v13 native channel read and original recorder contract", () => {
     result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
     expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([11, 11]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
@@ -1913,7 +1919,7 @@ describe("v14 industry and channel-row stock upload", () => {
   it("keeps five layout contracts: industry after recorder, fixed industry width, typography, scrolling and narrower two-action archive", () => {
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "Date Code / 更新", "渠道来源", "操作"]);
+    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["#", "型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "DC / 更新", "渠道来源", "操作"]);
     expect(getComputedStyle(required(table.querySelector("th.ci-material-industry-col"), "missing industry")).width).toBe("110px");
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
@@ -2663,5 +2669,161 @@ describe("approved channel inventory part-number density", () => {
     expect(top).toBeGreaterThanOrEqual(8); expect(top + 96).toBeLessThanOrEqual(692);
     expect(Number.parseFloat(popover.style.maxWidth)).toBeLessThanOrEqual(width - 16);
     spy.mockRestore();
+  });
+});
+
+describe("approved inventory compact time presentation", () => {
+  const trigger = () => required(document.querySelector<HTMLSpanElement>(".ci-updated-at-trigger"), "missing updated-at trigger");
+  const panel = () => document.querySelector<HTMLElement>(".ci-updated-at-popover");
+  const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
+  const setFirst = (values: Record<string, unknown>) => {
+    const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    result.data.items[0] = { ...result.data.items[0], ...values };
+  };
+
+  it.each([
+    ["2026-01-01T00:00:01Z", "2026-11-10T00:00:00Z", "01-01 08:00", "2026-01-01 08:00:01（北京时间）"],
+    ["2025-12-31T16:00:59Z", "2025-12-31T16:00:00Z", "01-01 00:00", "2026-01-01 00:00:59（北京时间）"],
+    ["2025-12-31T15:59:59Z", "2025-12-31T16:00:00Z", "2025-12-31 23:59", "2025-12-31 23:59:59（北京时间）"],
+    ["2026-12-31T16:00:01Z", "2026-12-31T15:59:59Z", "2027-01-01 00:00", "2027-01-01 00:00:01（北京时间）"],
+    ["2026-12-31T15:59:59Z", "2026-12-31T16:00:00Z", "2026-12-31 23:59", "2026-12-31 23:59:59（北京时间）"],
+    ["2026-12-31T16:00:00Z", "2026-12-31T16:00:00Z", "01-01 00:00", "2027-01-01 00:00:00（北京时间）"],
+    ["2026-12-31T08:00:00-08:00", "2026-12-31T16:00:00Z", "01-01 00:00", "2027-01-01 00:00:00（北京时间）"],
+    ["2026-11-10T12:34+05:30", "2026-11-10T00:00:00Z", "11-10 15:04", "2026-11-10 15:04:00（北京时间）"],
+    ["2026-11-10T12:34:56.123Z", "2026-11-10T00:00:00Z", "11-10 20:34", "2026-11-10 20:34:56（北京时间）"],
+    ["2024-02-29T23:59:59+08:00", "2024-06-01T00:00:00Z", "02-29 23:59", "2024-02-29 23:59:59（北京时间）"],
+  ])("uses Beijing calendar years and full original seconds for %s", (value, now, compact, full) => {
+    for (const timezone of ["UTC", "America/Los_Angeles", "Asia/Shanghai"]) {
+      const previous = process.env.TZ;
+      process.env.TZ = timezone;
+      try {
+        expect(channelInventoryUpdatedAt(value, new Date(now))).toEqual({ compact, full });
+        expect(channelInventoryUpdatedAt(new Date(value), new Date(now))).toEqual({ compact, full });
+      } finally {
+        if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous;
+      }
+    }
+  });
+
+  it.each([
+    null, undefined, "", "  ", "not-a-date", new Date(NaN),
+    "2026-02-30", " 2026-02-30", "2026/02/30", "2026-11-10 12:00:00", "2026-11-10T12:00:00",
+    " 2026-11-10T12:00:00Z", "2026-11-10T12:00:00Z ", "2026-11-10T12:00:00Z\n",
+    "2026/11/10T12:00:00Z", "2026-11-10", "2026-11-10 12:00:00Z",
+    "0000-01-01T00:00:00Z", "10000-01-01T00:00:00Z", "2026-00-01T00:00:00Z", "2026-13-01T00:00:00Z",
+    "2026-01-00T00:00:00Z", "2026-02-29T00:00:00Z", "1900-02-29T00:00:00Z", "2026-02-30T00:00:00Z", "2026-11-31",
+    "2026-01-01T24:00:00Z", "2026-01-01T12:60:00Z", "2026-01-01T12:00:60Z",
+    "2026-01-01T12:00:00+24:00", "2026-01-01T12:00:00+08:60", "2026-01-01T12:00:00-24:00",
+    "2026-01-01T12:00:00+0800", "2026-01-01T12:00:00+08", "2026-01-01T12:00:00.1234Z",
+  ])("never invents an updated time or tooltip in UTC/LA/Shanghai for %s", value => {
+    const previous = process.env.TZ;
+    try {
+      for (const timezone of ["UTC", "America/Los_Angeles", "Asia/Shanghai"]) {
+        process.env.TZ = timezone;
+        expect(channelInventoryUpdatedAt(value, new Date("2026-12-31T16:00:00Z"))).toBeNull();
+      }
+    } finally {
+      if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous;
+    }
+    setFirst({ updatedAt: value, dateCode: null }); renderHost();
+    const cell = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
+    expect(cell.textContent).toBe("—"); expect(cell.querySelector('[role="button"]')).toBeNull();
+    expect(panel()).toBeNull();
+  });
+
+  it.each([null, undefined, "", "  "])("omits absent Date Code %s without a dash or empty first line", dateCode => {
+    setFirst({ dateCode }); renderHost();
+    const cell = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
+    expect(cell.querySelector(".admin-cell-primary")).toBeNull();
+    expect(cell.children).toHaveLength(1); expect(cell.textContent).not.toContain("—");
+    expect(getComputedStyle(required(cell.querySelector(".ci-updated-at"), "missing time line")).marginTop).toBe("0px");
+  });
+
+  it.each(["0", "2601", "  2601 / REV-B  "])("retains true Date Code %s byte-for-byte and natural height", dateCode => {
+    setFirst({ dateCode }); renderHost();
+    const cell = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
+    expect(cell.querySelector(".admin-cell-primary")?.textContent).toBe(dateCode);
+    expect(cell.children).toHaveLength(2);
+    expect(getComputedStyle(required(cell.querySelector(".ci-updated-at"), "missing time line")).marginTop).toBe("2px");
+  });
+
+  it("keeps DC explanation accessible and date single-line without changing table width, fonts or sticky actions", () => {
+    renderHost();
+    const th = required(document.querySelector("th.ci-material-date-col"), "missing date header");
+    expect(th.textContent).toBe("DC / 更新");
+    expect(th.getAttribute("aria-label")).toBe("Date Code / 更新时间（北京时间）");
+    expect(th.getAttribute("title")).toBe("Date Code / 更新时间（北京时间）");
+    expect(getComputedStyle(th).whiteSpace).toBe("nowrap");
+    // jsdom cannot measure percentage/min() table geometry; bind the actual CSS contract.
+    expect(hostStyles).toContain(".ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }");
+    expect(getComputedStyle(required(trigger().closest("small"), "missing time line")).whiteSpace).toBe("nowrap");
+    const td = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
+    expect(getComputedStyle(td).paddingTop).toBe("6px"); expect(getComputedStyle(td).paddingBottom).toBe("6px");
+    expect(getComputedStyle(td).height).toBe("48px");
+    expect(getComputedStyle(required(document.querySelector("td.ci-col-actions"), "missing actions")).position).toBe("sticky");
+    expect(getComputedStyle(required(document.querySelector(".ci-compact-stock-table"), "missing table")).minWidth).toBe("1160px");
+    expect(getComputedStyle(required(document.querySelector(".ci-tablewrap"), "missing scroller")).overflowX).toBe("auto");
+    expect(getComputedStyle(button("平铺查看")).minHeight).toBe("34px");
+  });
+
+  it.each([1160, 1280, 1440, 1560, 1920])("returns only date savings to model at W=%s, with original source and 100%% budget", width => {
+    expect(hostStyles).toContain(".ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }");
+    expect(hostStyles).toContain(".ci-material-source-col { width: calc((100% - 698px) * 16 / 75); }");
+    const remaining = width - 698;
+    const oldDate = remaining * 18 / 75, oldModel = remaining * 17 / 75;
+    const date = Math.min(128, remaining * 16 / 75);
+    const model = remaining * 35 / 75 - date;
+    const source = remaining * 16 / 75;
+    expect(date).toBeLessThan(oldDate);
+    expect(model - oldModel).toBeCloseTo(oldDate - date, 10);
+    expect(698 + model + remaining * 11 / 75 + remaining * 13 / 75 + date + source).toBeCloseTo(width, 10);
+    if (width === 1160) { expect(date).toBeCloseTo(98.56, 10); expect(oldDate).toBeCloseTo(110.88, 10); }
+  });
+
+  it("keeps a cross-year label single-line/ellipsizable while native tooltip retains every second and timezone", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-31T16:00:00Z"));
+    setFirst({ updatedAt: "2026-12-31T15:59:59Z" }); renderHost();
+    const full = "2026-12-31 23:59:59（北京时间）";
+    expect(trigger().textContent).toBe("2026-12-31 23:59");
+    expect(trigger().getAttribute("aria-label")).toBe(full);
+    const style = getComputedStyle(trigger());
+    expect(style.display).toBe("block"); expect(style.whiteSpace).toBe("nowrap");
+    expect(style.overflow).toBe("hidden"); expect(style.textOverflow).toBe("ellipsis");
+    expect(style.maxWidth).toBe("100%"); expect(style.minHeight).toBe("28px");
+    click(trigger()); expect(panel()?.textContent).toBe(full);
+    expect(panel()?.parentElement).toBe(document.body);
+  });
+
+  it("reuses native Portal for hover, focus, keyboard, phone click and dismissals without business calls", async () => {
+    setFirst({ updatedAt: "2026-11-10T12:34:56Z" }); renderHost();
+    const inputs = runtime.materialInputs.length;
+    const full = "2026-11-10 20:34:56（北京时间）";
+    act(() => trigger().dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(panel()?.textContent).toBe(full); expect(panel()?.parentElement).toBe(document.body);
+    expect(panel()?.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
+    act(() => trigger().dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body })));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 150)); }); expect(panel()).toBeNull();
+    act(() => trigger().focus()); expect(panel()?.textContent).toBe(full);
+    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))); expect(panel()).toBeNull();
+    act(() => trigger().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }))); expect(panel()).not.toBeNull();
+    act(() => trigger().dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }))); expect(panel()).toBeNull();
+    act(() => trigger().blur()); click(trigger()); expect(panel()?.textContent).toBe(full);
+    click(trigger()); expect(panel()).toBeNull();
+    click(trigger()); act(() => document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))); expect(panel()).toBeNull();
+    click(trigger()); act(() => required(document.querySelector(".ci-tablewrap"), "missing scroller").dispatchEvent(new Event("scroll"))); expect(panel()).toBeNull();
+    click(trigger()); act(() => window.dispatchEvent(new Event("resize"))); expect(panel()).toBeNull();
+    expect(runtime.materialInputs.length).toBe(inputs);
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled(); expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
+    expect(runtime.createMaterial).not.toHaveBeenCalled(); expect(runtime.updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it("dismisses time Portal on source time, page, view and identity changes", async () => {
+    renderHost(); click(trigger()); setFirst({ updatedAt: "2026-11-11T00:00:01Z" }); rerender(); expect(panel()).toBeNull();
+    click(trigger()); click(button("下一页")); expect(panel()).toBeNull();
+    click(trigger()); click(button("按渠道查看")); await settle(); expect(panel()).toBeNull();
+    click(button("平铺查看")); await settle(); click(trigger());
+    runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
+    rerender(); await settle(); expect(panel()).toBeNull();
   });
 });

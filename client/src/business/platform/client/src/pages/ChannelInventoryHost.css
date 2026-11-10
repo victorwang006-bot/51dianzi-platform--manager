@@ -30,6 +30,11 @@
 .ci-page.ci-host .ci-toolbar .ci-channel-select { flex-basis: 170px; width: 170px; }
 .ci-page.ci-host .ci-toolbar .ci-brand-input { flex-basis: 140px; width: 140px; }
 .ci-page.ci-host .ci-toolbar .ci-short-select { flex-basis: 112px; width: 112px; }
+/* Reuse the material filter row for views; controls retain their former 34px target. */
+.ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-field { flex: 1 1 112px; width: auto; }
+.ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-channel-select { flex-basis: 136px; }
+.ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-brand-input { flex-basis: 96px; }
+.ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-upload-batch-filter { flex-basis: 100px; }
 /* Accessible names remain visible to assistive technology without stacked labels. */
 .ci-page.ci-host .ci-toolbar .ci-filter-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .ci-page.ci-host .ci-filter-count { margin-left: auto; padding: 0 4px; color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
@@ -40,6 +45,7 @@
 .ci-page.ci-host .ci-field :is(input, select, textarea):disabled { background: #f8fafc; color: #64748b; cursor: not-allowed; }
 .ci-page.ci-host .ci-field small { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
 .ci-page.ci-host .ci-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: var(--admin-content-control-height, 32px); border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; color: #334155; background: #fff; font: inherit; font-size: var(--admin-content-font-body, 12px); font-weight: 500; line-height: var(--admin-content-line-height, 20px); white-space: nowrap; cursor: pointer; }
+.ci-page.ci-host .ci-inventory-view-controls .ci-button { box-sizing: border-box; height: 34px; min-height: 34px; padding: 4px 12px; line-height: 24px; }
 .ci-page.ci-host .ci-button:hover:not(:disabled) { background: #f8fafc; color: #0f172a; }
 .ci-page.ci-host .ci-primary { border-color: #185fa5; color: #fff; background: #185fa5; }
 .ci-page.ci-host .ci-primary:hover:not(:disabled) { border-color: #0c447c; color: #fff; background: #0c447c; }
@@ -51,6 +57,7 @@
 .ci-page.ci-host .ci-table.ci-channel-table { min-width: 1040px !important; }
 .ci-page.ci-host .ci-table th { box-sizing: border-box; height: var(--admin-content-table-head-height, 32px); padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; background: #f8fafc; font-size: var(--admin-content-font-caption, 11px); font-weight: 500; line-height: var(--admin-content-caption-line-height, 18px); text-align: left; vertical-align: middle; white-space: normal; }
 .ci-page.ci-host .ci-table td { box-sizing: border-box; height: auto; padding: 10px; border-top: 1px solid #e2e8f0; font-size: var(--admin-content-font-body, 12px); line-height: var(--admin-content-line-height, 18px); vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-compact-stock-table td { height: 48px; padding-top: 6px; padding-bottom: 6px; }
 .ci-page.ci-host .ci-table tbody tr:hover td,
 .ci-page.ci-host .ci-table tbody tr:focus-within td { background: #f8fafc; }
 .ci-page.ci-host .ci-table .admin-cell-primary { color: #1e293b; font-size: var(--admin-content-font-body, 12px); font-weight: 500; line-height: var(--admin-content-line-height, 18px); }
@@ -65,9 +72,9 @@
 .ci-page.ci-host .ci-compact-stock-table .ci-material-recorder-col { width: 96px; }
 .ci-page.ci-host .ci-compact-stock-table td.ci-material-recorder-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-industry-col { width: 110px; }
-/* Split only the former model/brand share (28/75); preserve the 1160px minimum,
- * every other column budget and the readable quote/lead-time inner text gap. */
-.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 17 / 75); }
+/* Date is narrower even at 1160px; model = old model + old date - new date.
+ * Source, brand, quantity, fixed columns and quote/lead-time gaps stay intact. */
+.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-brand-col { width: calc((100% - 698px) * 11 / 75); }
 .ci-page.ci-host .ci-compact-stock-table td.ci-material-brand-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ci-page.ci-host .ci-compact-stock-table .ci-part-number-trigger { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; cursor: pointer; }
@@ -77,7 +84,13 @@
 .ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: 112px; padding-left: 18px; }
 .ci-page.ci-host .ci-compact-stock-table td:is(.ci-material-recorder-col, .ci-material-industry-col, .ci-material-qty-col, .ci-material-price-col, .ci-material-lead-col) { color: #303642; font-size: var(--admin-content-font-body, 12px); font-weight: 400; line-height: var(--admin-content-line-height, 18px); }
 .ci-page.ci-host .ci-compact-stock-table td.ci-date .admin-cell-primary { color: #303642; font-weight: 400; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: calc((100% - 698px) * 18 / 75); }
+.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }
+.ci-page.ci-host .ci-compact-stock-table th.ci-material-date-col,
+.ci-page.ci-host .ci-compact-stock-table .ci-updated-at { white-space: nowrap; overflow-wrap: normal; }
+.ci-page.ci-host .ci-compact-stock-table .ci-updated-at { display: block; margin-top: 0; }
+.ci-page.ci-host .ci-compact-stock-table .admin-cell-primary + .ci-updated-at { margin-top: 2px; }
+.ci-page.ci-host .ci-compact-stock-table .ci-updated-at-trigger { display: block; max-width: 100%; min-width: 0; min-height: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.ci-page.ci-host .ci-compact-stock-table .ci-updated-at-trigger:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-source-col { width: calc((100% - 698px) * 16 / 75); }
 .ci-page.ci-host .ci-compact-stock-table :is(th, td).ci-col-actions { width: 216px; }
 .ci-page.ci-host .ci-table :is(th, td).ci-col-actions { position: sticky; right: 0; z-index: 2; background: #fff; text-align: right; box-shadow: -5px 0 8px -7px #64748b; }
@@ -185,8 +198,9 @@
 .ci-channel-actions-menu [role="separator"] { height: 1px; margin: 4px 0; background: #e2e8f0; }
 
 /* Portalled presentation only; no Host ancestor, global scaling or row-height rule. */
-.ci-part-number-popover { position: fixed; z-index: 80; box-sizing: border-box; width: max-content; overflow: auto; overscroll-behavior: contain; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff; color: #1e293b; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 6px 20px rgb(35 53 72 / .18); }
-.ci-part-number-popover:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+.ci-part-number-popover, .ci-updated-at-popover { position: fixed; z-index: 80; box-sizing: border-box; width: max-content; overflow: auto; overscroll-behavior: contain; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff; color: #1e293b; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 6px 20px rgb(35 53 72 / .18); }
+.ci-updated-at-popover { font-weight: 400; }
+.ci-part-number-popover:focus-visible, .ci-updated-at-popover:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
 
 .ci-supply-location { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; font-size: var(--admin-content-font-body, 12px); color: #475569; }
 .ci-channel-table tbody tr.ci-supply-target > td { background: #eef6ff; }
