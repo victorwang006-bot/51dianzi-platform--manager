@@ -2755,7 +2755,7 @@ describe("approved inventory compact time presentation", () => {
     expect(th.getAttribute("title")).toBe("Date Code / 更新时间（北京时间）");
     expect(getComputedStyle(th).whiteSpace).toBe("nowrap");
     // jsdom cannot measure percentage/min() table geometry; bind the actual CSS contract.
-    expect(hostStyles).toContain(".ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }");
+    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }");
     expect(getComputedStyle(required(trigger().closest("small"), "missing time line")).whiteSpace).toBe("nowrap");
     const td = required(document.querySelector("td.ci-material-date-col"), "missing date cell");
     expect(getComputedStyle(td).paddingTop).toBe("6px"); expect(getComputedStyle(td).paddingBottom).toBe("6px");
@@ -2767,7 +2767,7 @@ describe("approved inventory compact time presentation", () => {
   });
 
   it.each([1160, 1280, 1440, 1560, 1920])("returns only date savings to model at W=%s, with original source and 100%% budget", width => {
-    expect(hostStyles).toContain(".ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }");
+    expect(hostStyles).toContain(".ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }");
     expect(hostStyles).toContain(".ci-material-source-col { width: calc((100% - 698px) * 16 / 75); }");
     const remaining = width - 698;
     const oldDate = remaining * 18 / 75, oldModel = remaining * 17 / 75;

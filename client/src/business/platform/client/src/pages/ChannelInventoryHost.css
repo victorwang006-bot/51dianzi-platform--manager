@@ -74,7 +74,7 @@
 .ci-page.ci-host .ci-compact-stock-table .ci-material-industry-col { width: 110px; }
 /* Date is narrower even at 1160px; model = old model + old date - new date.
  * Source, brand, quantity, fixed columns and quote/lead-time gaps stay intact. */
-.ci-page.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }
+.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-part-col { width: calc((100% - 698px) * 35 / 75 - min(128px, calc((100% - 698px) * 16 / 75))); }
 .ci-page.ci-host .ci-compact-stock-table .ci-material-brand-col { width: calc((100% - 698px) * 11 / 75); }
 .ci-page.ci-host .ci-compact-stock-table td.ci-material-brand-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ci-page.ci-host .ci-compact-stock-table .ci-part-number-trigger { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; cursor: pointer; }
@@ -84,7 +84,7 @@
 .ci-page.ci-host .ci-compact-stock-table .ci-material-lead-col { width: 112px; padding-left: 18px; }
 .ci-page.ci-host .ci-compact-stock-table td:is(.ci-material-recorder-col, .ci-material-industry-col, .ci-material-qty-col, .ci-material-price-col, .ci-material-lead-col) { color: #303642; font-size: var(--admin-content-font-body, 12px); font-weight: 400; line-height: var(--admin-content-line-height, 18px); }
 .ci-page.ci-host .ci-compact-stock-table td.ci-date .admin-cell-primary { color: #303642; font-weight: 400; }
-.ci-page.ci-host .ci-compact-stock-table .ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }
+.ci-page.ci-host.ci-host .ci-compact-stock-table .ci-material-date-col { width: min(128px, calc((100% - 698px) * 16 / 75)); }
 .ci-page.ci-host .ci-compact-stock-table th.ci-material-date-col,
 .ci-page.ci-host .ci-compact-stock-table .ci-updated-at { white-space: nowrap; overflow-wrap: normal; }
 .ci-page.ci-host .ci-compact-stock-table .ci-updated-at { display: block; margin-top: 0; }
