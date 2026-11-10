@@ -80,3 +80,2284 @@
     transition: none;
   }
 }
+
+/* admin-global-header-v1 BEGIN — append only; preceding bytes immutable */
+/* Geometry only. Natural flow is the fallback; titles, controls, tables and chrome retain their existing contracts. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content {
+  --agh-primary-min: 54px;
+  --agh-primary-pad-y: 8px;
+  --agh-header-filter-gap: 8px;
+  --agh-inline-gap: 12px;
+}
+
+@supports selector(:has(*)) {
+  /* F01 customer-list-grid: Keep existing 54 + 4 reference, 16/12 insets, and mobile 28 + 54 layers. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page > .aui-page-header {
+    box-sizing: border-box;
+    min-height: 54px;
+    padding-block: 8px;
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page > .aui-filterbar.customer-list-filters {
+    margin-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page > .aui-page-header > .aui-page-heading:has(> :not(h1.aui-page-title)) {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    border: 0;
+  }
+
+  @supports (grid-template-columns: subgrid) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page):has(> [data-admin-navigation="current-location"]):has(> [data-business-navigation-state="error"]) > [data-business-navigation-state="error"] {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page):has(> [data-admin-navigation="current-location"]):has(> [data-business-navigation-state="error"]) > [data-admin-navigation="current-location"],
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page):has(> [data-admin-navigation="current-location"]):has(> [data-business-navigation-state="error"]) > section[data-business-context-verification] {
+      grid-row: 2;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page > .aui-page-header > .aui-page-heading:has(> :not(h1.aui-page-title)) {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    @media (max-width: 680px) {
+      .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page):has(> [data-admin-navigation="current-location"]):has(> [data-business-navigation-state="error"]) > section[data-business-context-verification] {
+        grid-row: 3;
+      }
+
+    }
+  }
+  /* F02 channel-native-tabbar: Ready tabbar only. Existing location visibility conditions remain untouched. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host] > .ci-tabbar) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host] > .ci-tabbar) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:has(> .ci-tabbar) > .ci-tabbar {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 6px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:has(> .ci-tabbar) > .ci-tabbar {
+    gap: 6px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:has(> .ci-tabbar) > .ci-tabbar > .ci-heading-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:has(> .ci-tabbar) > .ci-tabbar > .ci-inventory-view-controls {
+    display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+    gap: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:has(> .ci-tabbar) > .ci-panel > .ci-toolbar:first-child > .ci-filter-count {
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:has(> .ci-tabbar) > .ci-supply-location > span {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* F03 channel-management-location-toolbar: Retain full current location and all front-of-panel status/target rows. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host] > .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host] > .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:not(:has(> .ci-tabbar)):has(> .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) > .ci-panel {
+    overflow: visible;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:not(:has(> .ci-tabbar)):has(> .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) > .ci-panel > .ci-toolbar {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 4px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:not(:has(> .ci-tabbar)):has(> .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) > .ci-panel > .ci-toolbar > .ci-filter-count {
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:not(:has(> .ci-tabbar)):has(> .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) > .ci-panel > .ci-supply-location > span {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.ci-page.ci-host[data-channel-inventory-host]:not(:has(> .ci-tabbar)):has(> .ci-panel > .ci-tablewrap > :is(.ci-upload-batches-table, .ci-trash-table)) > .ci-panel > p.ci-readonly {
+    margin-block: 0 6px;
+    overflow-wrap: anywhere;
+  }
+
+  /* F04 inventory-heading-with-refresh-caption: Keep complete refresh/cooldown caption; use existing inline-size container only. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header) > [data-admin-navigation="current-location"] {
+    margin-bottom: 2px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 4px;
+    margin-block: 0 6px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-heading > [data-testid="inventory-refresh-hint"] {
+    flex-basis: 100%;
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-actions > .inventory-header-actions {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .inventory-filterbar {
+    margin-bottom: 8px;
+  }
+
+  @container (max-width: 960px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-heading > .aui-page-description {
+      flex-basis: 100%;
+    }
+
+  }
+  @container (max-width: 600px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .my-inventory-page > .aui-page-header > .aui-page-actions {
+      flex-basis: 100%;
+      margin-left: 0;
+    }
+
+  }
+  /* F05 publish-inline-heading-tabs: Original heading/actions then tabs: no reverse ordering or business-content side column. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > [data-slot="tabs"] > [data-slot="tabs-list"]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > [data-slot="tabs"] > [data-slot="tabs-list"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) > .flex.items-start.justify-between.mb-4:has(> div > h1) {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 4px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) > .flex.items-start.justify-between.mb-4:has(> div > h1) > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) > .flex.items-start.justify-between.mb-4:has(> div > h1) > div > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) > [data-slot="tabs"] {
+    margin: 0;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui:has(> [data-slot="tabs"] > [data-slot="tabs-list"]) > [data-slot="tabs"] > [data-slot="tabs-list"] {
+    margin: 0;
+    height: auto;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  /* F06 edit-inventory-back-heading: Dynamic edit heading and original back button; saves remain at the form end. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > div.mb-4.flex.items-start.gap-3:first-child > button[data-slot="button"]:is([aria-label="返回我的库存"], [aria-label="返回待发布列表"])) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > div.mb-4.flex.items-start.gap-3:first-child > button[data-slot="button"]:is([aria-label="返回我的库存"], [aria-label="返回待发布列表"])) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > div.mb-4.flex.items-start.gap-3:first-child:has(> button[data-slot="button"]:is([aria-label="返回我的库存"], [aria-label="返回待发布列表"])):has(> div > h1 + p) {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 6px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > div.mb-4.flex.items-start.gap-3:first-child:has(> button[data-slot="button"]:is([aria-label="返回我的库存"], [aria-label="返回待发布列表"])):has(> div > h1 + p) > button[data-slot="button"] {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > div.mb-4.flex.items-start.gap-3:first-child:has(> button[data-slot="button"]:is([aria-label="返回我的库存"], [aria-label="返回待发布列表"])):has(> div > h1 + p) > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .erp-ui > div.mb-4.flex.items-start.gap-3:first-child:has(> button[data-slot="button"]:is([aria-label="返回我的库存"], [aria-label="返回待发布列表"])):has(> div > h1 + p) > div > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* F07 customer-detail-workbench-heading: Entity H1 and six tabs retained; notices prevent optional same-row enhancement. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench) {
+    padding-top: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench > .customer-detail-top-actions {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 56px;
+    height: auto;
+    padding-block: 6px;
+    margin-block: 0 4px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench > .customer-detail-top-actions > .min-w-0 {
+    flex: 1 1 18rem;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench > .customer-detail-top-actions > .customer-workbench-top-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench > .customer-detail-top-actions .customer-detail-meta {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench > .customer-workbench-tabs {
+    margin-bottom: 8px;
+    min-width: 0;
+  }
+
+  @supports (grid-template-columns: subgrid) {
+    @media (min-width: 1360px) {
+      .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench:has(> .customer-detail-top-actions + .customer-workbench-tabs) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) max-content max-content;
+        gap: 8px 12px;
+        align-content: start;
+      }
+
+      .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench:has(> .customer-detail-top-actions + .customer-workbench-tabs) > * {
+        grid-column: 1 / -1;
+      }
+
+      .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench:has(> .customer-detail-top-actions + .customer-workbench-tabs) > .customer-detail-top-actions {
+        grid-column: 1 / 3;
+        grid-row: 1;
+        display: grid;
+        grid-template-columns: subgrid;
+        margin-bottom: 0;
+      }
+
+      .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > main.erp-ui.customer-detail-compact.customer-detail-readable.customer-workbench:has(> .customer-detail-top-actions + .customer-workbench-tabs) > .customer-workbench-tabs {
+        grid-column: 3;
+        grid-row: 1;
+        align-self: center;
+        margin-bottom: 0;
+      }
+
+    }
+  }
+  /* F08 embedded-standard-unified-heading: Standalone unified headers only; embedded orders and statistical filter order protected. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox]),
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded)),
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page > .aui-filterbar[aria-label="客户需求筛选"]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox]) > [data-admin-navigation="current-location"],
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded)) > [data-admin-navigation="current-location"],
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page > .aui-filterbar[aria-label="客户需求筛选"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox] > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox] > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox] > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox] > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page[data-enterprise-inquiry-inbox] > .aui-filterbar {
+    margin-block: 0 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded) > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded) > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded) > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded) > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.crm-sales-orders-page:not(.crm-sales-orders-embedded) > .aui-filterbar {
+    margin-block: 0 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page:has(> .aui-filterbar[aria-label="客户需求筛选"]) > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page:has(> .aui-filterbar[aria-label="客户需求筛选"]) > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page:has(> .aui-filterbar[aria-label="客户需求筛选"]) > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page:has(> .aui-filterbar[aria-label="客户需求筛选"]) > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page:has(> .aui-filterbar[aria-label="客户需求筛选"]) > .aui-filterbar {
+    margin-block: 0 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page:has(> .aui-filterbar[aria-label="客户需求筛选"]) > [aria-label="客户需求阶段统计"] {
+    margin-block: 0 8px;
+  }
+
+  /* F09 inbound-unified-overview-actions: Keep H1, full location, amounts and business boundary description. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 6px;
+    margin-block: 0 4px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-filterbar {
+    margin-block: 0 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-actions > div {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-actions > div .inbound-overview-button {
+    white-space: normal;
+    height: auto;
+    min-height: 34px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-actions > div .inbound-overview-button > strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-filterbar.inbound-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 680px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-actions {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.inbound-management-page > .aui-page-header > .aui-page-actions > div > .relative > #inbound-payment-overview.inbound-overview-popover {
+      left: 0;
+      right: auto;
+      width: min(230px, calc(100vw - 32px));
+    }
+
+  }
+  /* F10 outbound-unified-native-status-tabs: Source order is heading/export then status tabs. Existing tab-scroll owner unchanged. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page) {
+    padding-top: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 6px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-filterbar {
+    margin-block: 0 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-tabs.sales-order-status-tabs {
+    min-width: 0;
+    max-width: 100%;
+    margin-block: 0 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-filterbar.sales-order-toolbar {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .sales-order-toolbar > .flex:first-child > .ml-auto.whitespace-nowrap.text-xs.text-muted-foreground {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .sales-order-toolbar > [data-testid="sales-order-advanced-filters"] > .inline-flex {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  @media (min-width: 1024px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: 12px;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > :is(.aui-page-header, .aui-page-tabs, .aui-filterbar, .aui-data-panel, .aui-pagination) {
+      flex: 0 0 100%;
+      min-width: 0;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-header {
+      flex: 1 1 280px;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.erp-ui.sales-order-page > .aui-page-tabs.sales-order-status-tabs {
+      flex: 1 1 600px;
+      width: auto;
+    }
+
+  }
+  /* F11 chat-reception-conversation-heading: No frame or normal H1. Existing h-screen scrolling is not claimed fixed. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > .h-screen > div.flex.flex-1 > aside.w-\[172px\]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > .h-screen > div.flex.flex-1 > aside.w-\[172px\]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > .h-screen:has(> div.flex.flex-1 > aside.w-\[172px\]) > div.flex.flex-1 > div.flex-col:has(input[placeholder="搜索联系人..."]) > div:first-child {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 56px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > .h-screen:has(> div.flex.flex-1 > aside.w-\[172px\]) > div.flex.flex-1 > div.flex-col:has(input[placeholder="搜索联系人..."]) > div:first-child > div.flex:first-child {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    margin-bottom: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > .h-screen:has(> div.flex.flex-1 > aside.w-\[172px\]) > div.flex.flex-1 > div.flex-col:has(input[placeholder="搜索联系人..."]) > div:first-child > div.relative:has(> input[placeholder="搜索联系人..."]) {
+    flex: 1 1 130px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > .h-screen:has(> div.flex.flex-1 > aside.w-\[172px\]) > div.flex.flex-1 > div.relative.flex-1 > div.h-12:has(> button[aria-label="返回会话列表"]):has(+ [data-testid="chat-message-list"]) {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 56px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > .h-screen:has(> div.flex.flex-1 > aside.w-\[172px\]) > div.flex.flex-1 > div.flex-col:has(input[placeholder="搜索联系人..."]) > div:first-child > div.flex:first-child > span > span.truncate,
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > .h-screen:has(> div.flex.flex-1 > aside.w-\[172px\]) > div.flex.flex-1 > div.relative.flex-1 > div.h-12:has(> button[aria-label="返回会话列表"]):has(+ [data-testid="chat-message-list"]) > div.min-w-0 > div.truncate {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  /* F12 procurement-workspace-page-tabs: Real 40px procurement links, full current location; no invented H1. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page:is(.procurement-demands-page[aria-label="采购内部需求"], [aria-label="收到的报价"]) > nav.aui-page-tabs[aria-label="采购工作台功能"]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page:is(.procurement-demands-page[aria-label="采购内部需求"], [aria-label="收到的报价"]) > nav.aui-page-tabs[aria-label="采购工作台功能"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page:is(.procurement-demands-page[aria-label="采购内部需求"], [aria-label="收到的报价"]):has(> nav.aui-page-tabs[aria-label="采购工作台功能"]) > nav.aui-page-tabs[aria-label="采购工作台功能"] {
+    box-sizing: border-box;
+    min-height: 54px;
+    padding-block: 6px;
+    margin-block: 0 4px;
+    gap: 8px 16px;
+    flex-wrap: wrap;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page:is(.procurement-demands-page[aria-label="采购内部需求"], [aria-label="收到的报价"]):has(> nav.aui-page-tabs[aria-label="采购工作台功能"]) > .aui-filterbar {
+    margin-bottom: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page:is(.procurement-demands-page[aria-label="采购内部需求"], [aria-label="收到的报价"]):has(> nav.aui-page-tabs[aria-label="采购工作台功能"]) > .aui-filterbar > div.ml-auto {
+    flex: 1 1 360px;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page:is(.procurement-demands-page[aria-label="采购内部需求"], [aria-label="收到的报价"]):has(> nav.aui-page-tabs[aria-label="采购工作台功能"]) > .aui-filterbar > div.ml-auto > input {
+    flex: 1 1 160px;
+    min-width: 0;
+    max-width: 320px;
+  }
+
+  /* F13 procurement-orders-capped-unified-heading: Original 1480px cap preserved; no detail/dialog tabs moved to page top. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page) {
+    padding-inline: max(24px, calc((100% - 1480px) / 2));
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > .aui-filterbar {
+    margin-block: 0 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page > .aui-page-header {
+    margin-block: 0;
+  }
+
+  @media (max-width: 767px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .aui-page.procurement-orders-page) {
+      padding-inline: 16px;
+    }
+
+  }
+  /* F14 native-unified-direct-root-heading: Direct roots only. Organization source-order siblings genuinely flex together. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page)) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page)) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page) > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 56px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page) > .aui-page-header > .aui-page-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 180px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page) > .aui-page-header > .aui-page-heading > .aui-page-description {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page) > .aui-page-header > .aui-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page:is([data-staff-page], [data-organization-page], .admins-page) > .aui-filterbar {
+    margin-block: 0 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page[data-organization-page] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    column-gap: 12px;
+    row-gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page[data-organization-page] > * {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page[data-organization-page] > .aui-page-header,
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page[data-organization-page] > .org-domain-tabs {
+    flex: 0 1 auto;
+    width: auto;
+    min-height: 56px;
+    padding-block: 8px;
+    margin-block: 0 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section.aui-page[data-organization-page] > .org-toolbar {
+    flex: 1 1 360px;
+    width: auto;
+    min-width: 0;
+    min-height: 56px;
+    padding-block: 8px;
+    margin-block: 0 8px;
+  }
+
+  /* F15 native-shared-pageheader: Shared PageHeader plus exact list filters only; no dialog/SpecsEditor matches. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) {
+    padding-top: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > div.mb-6.flex.flex-col.gap-3:has(> div.min-w-0 > h1) {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 50px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > div.mb-6.flex.flex-col.gap-3:has(> div.min-w-0 > h1) > div.min-w-0 {
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > div.mb-6.flex.flex-col.gap-3:has(> div.min-w-0 > h1) > div.shrink-0 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > [data-slot="card"]:has(> [data-slot="card-content"] > [aria-label="按入驻时间筛选商户"]) {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > [data-slot="card"]:has(> [data-slot="card-content"] > [aria-label="按入驻时间筛选商户"]) > [data-slot="card-content"] {
+    padding: 8px 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > [data-slot="card"]:has(> [data-slot="card-content"] > [aria-label="按入驻时间筛选商户"]) > [data-slot="card-content"] > div:has(> input[data-slot="input"]) {
+    flex: 1 1 240px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > [data-slot="card"]:has(> [data-slot="card-content"] > [aria-label="按入驻时间筛选商户"]) > [data-slot="card-content"] > div > input[data-slot="input"] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > [data-slot="card"][data-cn-registration-review-queue] {
+    padding-block: 0;
+    gap: 0;
+    margin-bottom: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> div.mb-6.flex.flex-col.gap-3 > div.min-w-0 > h1) > .aui-filterbar:has(> div > input[placeholder="搜索型号 / 名称 / 物料编号 / 品牌"]):has(> [data-slot="select-trigger"]) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* F16 merchant-detail-summary-heading: Entity summary is a necessary multi-line exception, not a fixed 54px strip. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > main[data-merchant-detail-tabs]) {
+    padding-top: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > main[data-merchant-detail-tabs]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > button[data-slot="button"]:first-child {
+    justify-self: start;
+    margin-inline: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > header[data-merchant-summary-header] {
+    min-width: 0;
+    min-height: 54px;
+    padding-block: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > header[data-merchant-summary-header] > div > div > .aui-page-header {
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    min-height: 0;
+    margin: 0;
+    padding-block: 0;
+    border-bottom: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > header[data-merchant-summary-header] > div > div > .aui-page-header > h1.aui-page-title {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > [data-merchant-stat-strip] + div:not([data-slot]) {
+    margin-bottom: 0 !important;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > [data-slot="tabs"] {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  @media (min-width: 1024px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] {
+      grid-template-columns: max-content minmax(0, 1fr);
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > * {
+      grid-column: 1 / -1;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > button[data-slot="button"]:first-child {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: start;
+      margin-top: 12px;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > main[data-merchant-detail-tabs] > header[data-merchant-summary-header] {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+  }
+  /* F17 platform-orders-list-inline-heading: Marker contract: header, original filters, summary, status, table, pagination. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > [data-admin-page-family="platform-orders-list"]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > [data-admin-page-family="platform-orders-list"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] {
+    padding: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-header="primary"] {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-header="primary"] > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-header="primary"] > div > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-filterbar="primary"] {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-filterbar="primary"] > [data-slot="card-content"] {
+    padding: 8px 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-filterbar="primary"] > [data-slot="card-content"] > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-filterbar="primary"] > [data-slot="card-content"] > div > input[data-slot="input"] {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-header-region="summary"] > [data-slot="card"] {
+    padding-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-header-region="status"] {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-page-family="platform-orders-list"] > [data-admin-header-region="status"] > [data-slot="card-content"] {
+    padding: 8px 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* F18 platform-order-detail-inline-heading: Order number, status, amount and timestamp remain visible. Existing nested button semantics untouched. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-6 > div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) {
+    padding-top: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-6 > div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) {
+    padding: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 12px;
+    min-height: 56px;
+    padding-block: 4px;
+    margin-block: 0 12px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child > a[href="/orders"] {
+    display: inline-flex;
+    justify-self: start;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child > a[href="/orders"] > [data-slot="button"] {
+    margin-inline: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child > a[href="/orders"] + div {
+    margin-top: 0;
+    min-width: 0;
+    gap: 4px 12px;
+    flex-wrap: wrap;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child > a[href="/orders"] + div > div {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child > a[href="/orders"] + div > div > .aui-page-header {
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    border: 0;
+    flex-wrap: wrap;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  @media (min-width: 768px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> div:first-child > a[href="/orders"] + div > div > .aui-page-header > h1.font-mono) > div:first-child {
+      grid-template-columns: max-content minmax(0, 1fr);
+    }
+
+  }
+  /* F19 messages-list-plain-heading: List signature excludes thread detail. Keep both select widths/heights. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4 > div:first-child > h1.aui-page-title + p):has( > .space-y-4 > div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) {
+    padding-top: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4 > div:first-child > h1.aui-page-title + p):has( > .space-y-4 > div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:first-child {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 52px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) {
+    min-height: 52px;
+    padding-block: 9px;
+    gap: 8px;
+    margin-block: 0 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) > div:first-child {
+    flex: 1 1 24rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) > div:first-child > input[data-slot="input"] {
+    width: auto;
+    flex: 1 1 20rem;
+    min-width: 0;
+    max-width: 20rem;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) > .aui-filterbar {
+    padding: 0;
+    margin-block: 0;
+    border: 0;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 767px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:first-child > p,
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) > div:first-child,
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) > .aui-filterbar {
+      flex-basis: 100%;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > h1.aui-page-title + p):has(> div:nth-child(2) > div > input[data-slot="input"][placeholder="搜索主题 / 联系人 / 电话 / 邮箱 / 会话编号"]) > div:nth-child(2) > .aui-filterbar {
+      margin-left: 0;
+    }
+
+  }
+  /* F20 message-thread-detail-heading: Three-part detail signature. Mobile preserves return before identity/actions without cross-row hit-test wrappers. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4 > div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has( > .space-y-4 > div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has( > .space-y-4 > div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4 > div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has( > .space-y-4 > div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has( > .space-y-4 > div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > [data-admin-navigation="current-location"] {
+    min-height: 28px;
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) > div:first-child {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) > div:first-child > .aui-page-header {
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    border: 0;
+    flex-wrap: wrap;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) > div:first-child > .aui-page-header + div {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  @media (min-width: 768px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      column-gap: 12px;
+      align-content: start;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > * {
+      grid-column: 1 / -1;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:first-child {
+      grid-column: 1;
+      grid-row: 1;
+      min-height: 54px;
+      padding-block: 8px;
+      margin-block: 0;
+      align-items: center;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4:has(> div:first-child > button[data-slot="button"][data-admin-button-size="sm"] > svg.lucide-arrow-left):has(> div:nth-child(2) > div:first-child > .aui-page-header > h1.aui-page-title + span[data-slot="badge"]):has(> div:nth-child(2) > div:first-child > .aui-page-header + div.flex.flex-wrap.mt-1.text-sm.text-muted-foreground > span) > div:nth-child(2) {
+      grid-column: 2;
+      grid-row: 1;
+      margin-block: 0;
+    }
+
+  }
+  /* F21 reviews-inline-heading: Interactive status cards remain before input filter. No summary-before-refresh reversal. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-6 > .aui-page-header > div > h1.aui-page-title):has( > .space-y-6 > .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has( > .space-y-6 > .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) {
+    padding-top: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-6 > .aui-page-header > div > h1.aui-page-title):has( > .space-y-6 > .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has( > .space-y-6 > .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 4px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header > div > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"] {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"] > [data-slot="card-content"] {
+    padding: 8px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] {
+    padding: 8px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > div:has(> input[data-slot="input"]) {
+    flex: 1 1 340px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-6:has(> .aui-page-header > div > h1.aui-page-title):has(> .aui-page-header + .grid.grid-cols-2 > button[type="button"] > [data-slot="card"]):has(> .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > select) > .aui-page-header + .grid.grid-cols-2 + [data-slot="card"] > [data-slot="card-content"] > div > input[data-slot="input"] {
+    width: auto;
+    flex: 1 1 288px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* F22 portal-users-inline-padded-heading: Statistics/ERP/error retain original order before filters. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4.p-4.sm\:p-5 > .aui-page-header + [aria-label="用户统计摘要"]) {
+    padding-top: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4.p-4.sm\:p-5 > .aui-page-header + [aria-label="用户统计摘要"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) {
+    padding: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > .aui-page-header {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 51px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > .aui-page-header > div:first-child {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > .aui-page-header > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > [aria-label="用户统计摘要"] {
+    gap: 4px 12px;
+    padding-block: 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > [aria-label="用户统计摘要"] > div {
+    flex-wrap: wrap;
+    white-space: normal;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > [data-slot="card"]:has(> [data-slot="card-content"] > div > input[data-slot="input"]) {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-5:has(> .aui-page-header + [aria-label="用户统计摘要"]) > [data-slot="card"]:has(> [data-slot="card-content"] > div > input[data-slot="input"]) > [data-slot="card-content"] {
+    padding: 8px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* F23 analytics-icon-nested-heading: Ranges/refresh precede partitions in visual and focus order; later data keeps 20px spacing. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-5 > div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has( > .space-y-5 > div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has( > .space-y-5 > div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) {
+    padding-top: 8px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-5 > div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has( > .space-y-5 > div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has( > .space-y-5 > div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > * {
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > :nth-child(n + 4) {
+    margin-top: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:first-child {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:first-child > div:first-child {
+    flex: 1 1 18rem;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:first-child > div:first-child > .aui-page-header {
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border-bottom: 0;
+    justify-content: flex-start;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:first-child > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:first-child > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:nth-child(2).inline-flex {
+    align-self: flex-start;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  @media (min-width: 681px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: 12px;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > * {
+      flex: 0 0 100%;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:first-child {
+      flex: 1 1 600px;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-5:has(> div:first-child > div:first-child > div.aui-page-header > h1.aui-page-title):has(> div:first-child > div:last-child > button[data-slot="button"][aria-label="刷新"]):has(> div:nth-child(2).inline-flex > button[data-slot="button"]:nth-child(3):last-child) > div:nth-child(2).inline-flex {
+      flex: 0 1 auto;
+      align-self: center;
+    }
+
+  }
+  /* F24 exception-logs-inline-heading: Marker contract keeps full 30-day policy, summaries and attack sources after original filters. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > [data-admin-header-family="exception-logs-inline-heading"]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > [data-admin-header-family="exception-logs-inline-heading"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header="primary"] {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header="primary"] > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header="primary"] > div > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="filters"] {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="filters"] > [data-slot="card-content"] {
+    padding: 8px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="filters"] > [data-slot="card-content"] > div:has(> input[data-slot="input"]) {
+    flex: 1 1 344px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="filters"] > [data-slot="card-content"] > div > input[data-slot="input"] {
+    width: auto;
+    flex: 1 1 256px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="summary"] > [data-slot="card"] {
+    padding-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="summary"] > [data-slot="card"] > [data-slot="card-content"] {
+    padding: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="attack-sources"] {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > [data-admin-header-family="exception-logs-inline-heading"] > [data-admin-header-region="attack-sources"] > [data-slot="card-content"] {
+    padding: 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* F25 profile-plain-padded-heading: Remove repeated top/side inset only; preserve bottom and form-card spacing. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4.p-4.sm\:p-6 > div:first-child > h1.aui-page-title + p.mt-1.text-sm.text-muted-foreground) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > .space-y-4.p-4.sm\:p-6 > div:first-child > h1.aui-page-title + p.mt-1.text-sm.text-muted-foreground) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-6:has(> div:first-child > h1.aui-page-title + p.mt-1.text-sm.text-muted-foreground) {
+    padding-top: 0;
+    padding-inline: 0;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-6:has(> div:first-child > h1.aui-page-title + p.mt-1.text-sm.text-muted-foreground) > div:first-child {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 8px;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-6:has(> div:first-child > h1.aui-page-title + p.mt-1.text-sm.text-muted-foreground) > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 767px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > .space-y-4.p-4.sm\:p-6:has(> div:first-child > h1.aui-page-title + p.mt-1.text-sm.text-muted-foreground) > div:first-child {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+  }
+  /* F26 company-info-plain-heading: Normal success heading only; enterprise summary and 76px form toggle untouched. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .company-info-page > div:first-child > h1.company-info-title) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .company-info-page > div:first-child > h1.company-info-title) > [data-admin-navigation="current-location"] {
+    margin-bottom: 4px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .company-info-page > div:first-child:has(> h1.company-info-title) {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .company-info-page > div:first-child:has(> h1.company-info-title) > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .company-info-page > div:first-child:has(> h1.company-info-title) + section:has(> button[data-testid="company-form-toggle"]) {
+    margin-top: 8px;
+  }
+
+  @media (max-width: 680px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > .company-info-page > div:first-child:has(> h1.company-info-title) {
+      flex-direction: column;
+      align-items: flex-start;
+      padding-block: 6px;
+      gap: 2px;
+    }
+
+  }
+  /* F27 user-records-enterprise-summary-heading: Complete company/code/owner metadata; no table, drawer, handoff-menu or control sizing changes. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel]) {
+    padding-top: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] {
+    box-sizing: border-box;
+    min-height: 56px;
+    padding: 6px 12px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex {
+    gap: 6px 12px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > div:first-child {
+    flex: 1 1 240px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] #enterprise-overview-title,
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] #enterprise-overview-title + p,
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > dl dd {
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > dl {
+    flex: 0 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > dl > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    gap: 2px 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > section:is([aria-labelledby="user-records-title"], [aria-labelledby="members-management-title"]) > div:first-child {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 8px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > section:is([aria-labelledby="user-records-title"], [aria-labelledby="members-management-title"]) > div:first-child {
+    padding-inline: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > section[aria-labelledby="members-management-title"] > div:first-child > div:first-child {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > section[aria-labelledby="members-management-title"] > div:first-child > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > section[aria-labelledby="user-records-title"] > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > section[aria-labelledby="user-records-title"] > [data-user-record-filters] {
+    padding: 8px 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* F28 legacy-add-user-plain-heading: Complete company/code/owner metadata; no table, drawer, handoff-menu or control sizing changes. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"]) {
+    padding-top: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has( > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"]) > [data-admin-navigation="current-location"] {
+    margin-bottom: 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] {
+    box-sizing: border-box;
+    min-height: 56px;
+    padding: 6px 12px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex {
+    gap: 6px 12px;
+    min-width: 0;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > div:first-child {
+    flex: 1 1 240px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] #enterprise-overview-title,
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] #enterprise-overview-title + p,
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > dl dd {
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > dl {
+    flex: 0 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > dl > div {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    gap: 2px 6px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section:is([aria-labelledby="user-records-title"], [aria-labelledby="members-management-title"]) > div:first-child {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    height: auto;
+    padding-block: 6px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section:is([aria-labelledby="user-records-title"], [aria-labelledby="members-management-title"]) > div:first-child {
+    padding-inline: 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section[aria-labelledby="members-management-title"] > div:first-child > div:first-child {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section[aria-labelledby="members-management-title"] > div:first-child > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section[aria-labelledby="user-records-title"] > div:first-child > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section[aria-labelledby="user-records-title"] > [data-user-record-filters] {
+    padding: 6px 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel]:has(> [role="tablist"][aria-label="用户与权限内容"]) {
+      grid-template-columns: minmax(0, 1fr) max-content;
+      column-gap: 12px;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > * {
+      grid-column: 1 / -1;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel]:has(> [role="tablist"][aria-label="用户与权限内容"]) > [data-enterprise-summary] {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > [data-enterprise-members-panel] > [role="tablist"][aria-label="用户与权限内容"] {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+    }
+
+  }
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > header[data-admin-header="primary"] {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 50px;
+    height: auto;
+    padding-block: 5px;
+    margin-block: 0 0;
+    gap: 4px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > header[data-admin-header="primary"] > [data-admin-header-part="heading"] {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 240px;
+    gap: 2px 12px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > header[data-admin-header="primary"] > [data-admin-header-part="heading"] > p {
+    min-width: 0;
+    margin-block: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > header[data-admin-header="primary"] > [role="tablist"][aria-label="用户与权限内容"] {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 20px;
+  }
+
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > header[data-admin-header="primary"] > [data-admin-header-part="actions"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
+  @media (max-width: 639px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > header[data-admin-header="primary"] > [data-admin-header-part="heading"] {
+      flex-basis: 100%;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > [data-enterprise-summary] > .flex > div:first-child {
+      flex-basis: 100%;
+    }
+
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > [data-admin-page-family="legacy-add-user-plain-heading"] > [data-enterprise-members-panel] > section[aria-labelledby="user-records-title"] > [data-user-record-filters] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+  }
+}
+/* admin-global-header-v1 END */

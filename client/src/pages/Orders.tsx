@@ -87,8 +87,8 @@ function OrderList() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header">
+      <div className="space-y-6 p-4 sm:p-6" data-admin-page-family="platform-orders-list">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header" data-admin-header="primary">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight aui-page-title">平台订单</h1>
             <p className="mt-1 text-sm text-muted-foreground">商城用户下单与履约记录；与客户管理中的销售订单、采购管理中的采购订单分开管理。</p>
@@ -98,22 +98,7 @@ function OrderList() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单总数</p><p className="mt-2 text-2xl font-semibold">{stats?.totalOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">今日 {stats?.todayOrders ?? "—"} 单</p></div><div className="rounded-full bg-blue-50 p-3 text-blue-600"><ShoppingCart className="h-5 w-5" /></div></CardContent></Card>
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单金额总计</p><p className="mt-2 text-2xl font-semibold">{stats ? money(stats.grossAmount) : "—"}</p><p className="mt-1 text-xs text-muted-foreground">含取消、退款订单；非实收金额</p></div><div className="rounded-full bg-emerald-50 p-3 text-emerald-600"><CircleDollarSign className="h-5 w-5" /></div></CardContent></Card>
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">近7日订单</p><p className="mt-2 text-2xl font-semibold">{stats?.sevenDayOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">最近7×24小时</p></div><div className="rounded-full bg-violet-50 p-3 text-violet-600"><CalendarDays className="h-5 w-5" /></div></CardContent></Card>
-          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">交易用户</p><p className="mt-2 text-2xl font-semibold">{stats?.buyerCount ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">供应商 {stats?.sellerCount ?? "—"} 家</p></div><div className="rounded-full bg-amber-50 p-3 text-amber-600"><Users className="h-5 w-5" /></div></CardContent></Card>
-        </div>
-
-        <Card><CardContent className="flex flex-wrap items-center gap-2 p-4">
-          <span className="mr-2 text-sm font-medium">订单状态统计</span>
-          <button type="button" className={`rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary ${status === "all" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus("all"); setPage(1); }}>全部状态</button>
-          {Object.entries(statusMeta).map(([value, meta]) => <button key={value} type="button" className={`rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary ${status === value ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus(value as keyof typeof statusMeta); setPage(1); }}>{meta.label} <span className="font-semibold">{stats?.statusCounts[value as keyof typeof statusMeta] ?? "—"}</span></button>)}
-          {statsQuery.error && <span className="text-sm text-destructive">统计暂不可用：{statsQuery.error.message}</span>}
-          <p className="w-full pt-1 text-xs text-muted-foreground">上方为当前账号可见的全量平台订单汇总，不随下方列表筛选条件改变。</p>
-        </CardContent></Card>
-
-        <Card>
+        <Card data-admin-filterbar="primary">
           <CardContent className="flex flex-col gap-3 pt-6 md:flex-row">
             <div className="flex flex-1 gap-2">
               <Input
@@ -136,6 +121,21 @@ function OrderList() {
             <Button variant="outline" onClick={() => { setDraftKeyword(""); setKeyword(""); setStatus("all"); setPage(1); }}>重置筛选</Button>
           </CardContent>
         </Card>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-admin-header-region="summary">
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单总数</p><p className="mt-2 text-2xl font-semibold">{stats?.totalOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">今日 {stats?.todayOrders ?? "—"} 单</p></div><div className="rounded-full bg-blue-50 p-3 text-blue-600"><ShoppingCart className="h-5 w-5" /></div></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">订单金额总计</p><p className="mt-2 text-2xl font-semibold">{stats ? money(stats.grossAmount) : "—"}</p><p className="mt-1 text-xs text-muted-foreground">含取消、退款订单；非实收金额</p></div><div className="rounded-full bg-emerald-50 p-3 text-emerald-600"><CircleDollarSign className="h-5 w-5" /></div></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">近7日订单</p><p className="mt-2 text-2xl font-semibold">{stats?.sevenDayOrders ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">最近7×24小时</p></div><div className="rounded-full bg-violet-50 p-3 text-violet-600"><CalendarDays className="h-5 w-5" /></div></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">交易用户</p><p className="mt-2 text-2xl font-semibold">{stats?.buyerCount ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">供应商 {stats?.sellerCount ?? "—"} 家</p></div><div className="rounded-full bg-amber-50 p-3 text-amber-600"><Users className="h-5 w-5" /></div></CardContent></Card>
+        </div>
+
+        <Card data-admin-header-region="status"><CardContent className="flex flex-wrap items-center gap-2 p-4">
+          <span className="mr-2 text-sm font-medium">订单状态统计</span>
+          <button type="button" className={`rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary ${status === "all" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus("all"); setPage(1); }}>全部状态</button>
+          {Object.entries(statusMeta).map(([value, meta]) => <button key={value} type="button" className={`rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary ${status === value ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => { setStatus(value as keyof typeof statusMeta); setPage(1); }}>{meta.label} <span className="font-semibold">{stats?.statusCounts[value as keyof typeof statusMeta] ?? "—"}</span></button>)}
+          {statsQuery.error && <span className="text-sm text-destructive">统计暂不可用：{statsQuery.error.message}</span>}
+          <p className="w-full pt-1 text-xs text-muted-foreground">上方为当前账号可见的全量平台订单汇总，不随下方列表筛选条件改变。</p>
+        </CardContent></Card>
 
         <Card>
           <CardContent className="p-0">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { trpc } from "../../../../api/business-trpc";
 import { toast } from "sonner";
 import { Badge } from "./ui/badge";
@@ -242,7 +242,7 @@ function OwnerTransferSteps({ step }: { step: 1 | 2 | 3 }) {
 
 export type EnterpriseMembersPanelInitialView = "members" | "records";
 
-export default function EnterpriseMembersPanel({ initialView = "members" }: { initialView?: EnterpriseMembersPanelInitialView }) {
+export default function EnterpriseMembersPanel({ initialView = "members", pageHeading }: { initialView?: EnterpriseMembersPanelInitialView; pageHeading?: ReactNode }) {
   const utils = trpc.useUtils();
   const [activeView, setActiveView] = useState<EnterpriseMembersPanelInitialView>(initialView);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -486,11 +486,34 @@ export default function EnterpriseMembersPanel({ initialView = "members" }: { in
     }
   };
 
-  if (enterpriseQuery.isLoading) return <div className="rounded-xl border border-[#e7edf4] bg-white p-8 text-center text-sm text-[#667788]">正在加载企业权限…</div>;
-  if (enterpriseQuery.isError) return <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">企业权限加载失败：{enterpriseQuery.error.message}</div>;
+  const inviteButton = canManage ? <button type="button" className="crm-btn crm-btn-primary h-9" onClick={() => setInviteOpen(true)}>+ 邀请成员</button> : null;
+  const viewTabs = enterprise && canManage ? (
+    <div className="flex h-10 items-end gap-5 border-b border-[#dfe6ee]" role="tablist" aria-label="用户与权限内容">
+      <button type="button" role="tab" aria-selected={activeView === "members"} className={`relative h-10 px-1 text-[13px] font-medium transition-colors ${activeView === "members" ? "text-[#185FA5] after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:bg-[#185FA5]" : "text-[#667788] hover:text-[#233548]"}`} onClick={() => setActiveView("members")}>成员管理 <span className="ml-1 text-[12px]">{members.length}</span></button>
+      <button type="button" role="tab" aria-selected={activeView === "records"} className={`relative h-10 px-1 text-[13px] font-medium transition-colors ${activeView === "records" ? "text-[#185FA5] after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:bg-[#185FA5]" : "text-[#667788] hover:text-[#233548]"}`} onClick={() => setActiveView("records")}>操作记录</button>
+    </div>
+  ) : null;
+  const pageHeader = pageHeading ? (
+    <header data-admin-header="primary">
+      <div data-admin-header-part="heading">{pageHeading}</div>
+      {!enterpriseQuery.isLoading && !enterpriseQuery.isError && enterprise && canManage ? (
+        <>
+          {viewTabs}
+          <div data-admin-header-part="actions">{inviteButton}</div>
+        </>
+      ) : null}
+    </header>
+  ) : null;
+  const withPageHeading = (status: ReactNode) => pageHeading ? (
+    <div className="space-y-4" data-enterprise-members-panel>{pageHeader}{status}</div>
+  ) : status;
+
+  if (enterpriseQuery.isLoading) return withPageHeading(<div className="rounded-xl border border-[#e7edf4] bg-white p-8 text-center text-sm text-[#667788]">正在加载企业权限…</div>);
+  if (enterpriseQuery.isError) return withPageHeading(<div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">企业权限加载失败：{enterpriseQuery.error.message}</div>);
 
   return (
     <div className="space-y-4" data-enterprise-members-panel>
+      {pageHeader}
       <section className="rounded-lg border border-[#e3eaf2] bg-white px-4 py-3.5" aria-labelledby="enterprise-overview-title" data-enterprise-summary>
         {!enterprise ? (
           <div className="text-[13px] leading-6 text-[#667788]">ERP 申请通过后将自动建立企业归属。</div>
@@ -504,7 +527,7 @@ export default function EnterpriseMembersPanel({ initialView = "members" }: { in
               <div><dt className="text-[#7a8998]">成员</dt><dd className="mt-0.5 font-medium text-[#233548]">{memberCount} 人</dd></div>
               <div className="min-w-[90px]"><dt className="text-[#7a8998]">当前所有者</dt><dd className="mt-0.5 max-w-[140px] truncate font-medium text-[#233548]">{owner?.displayName || (isOwner ? "我" : "企业所有者")}</dd></div>
             </dl>
-            {canManage ? <button type="button" className="crm-btn crm-btn-primary h-9" onClick={() => setInviteOpen(true)}>+ 邀请成员</button> : null}
+            {!pageHeading ? inviteButton : null}
           </div>
         )}
       </section>
@@ -527,10 +550,7 @@ export default function EnterpriseMembersPanel({ initialView = "members" }: { in
         </section>
       ) : (
         <>
-          <div className="flex h-10 items-end gap-5 border-b border-[#dfe6ee]" role="tablist" aria-label="用户与权限内容">
-            <button type="button" role="tab" aria-selected={activeView === "members"} className={`relative h-10 px-1 text-[13px] font-medium transition-colors ${activeView === "members" ? "text-[#185FA5] after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:bg-[#185FA5]" : "text-[#667788] hover:text-[#233548]"}`} onClick={() => setActiveView("members")}>成员管理 <span className="ml-1 text-[12px]">{members.length}</span></button>
-            <button type="button" role="tab" aria-selected={activeView === "records"} className={`relative h-10 px-1 text-[13px] font-medium transition-colors ${activeView === "records" ? "text-[#185FA5] after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:bg-[#185FA5]" : "text-[#667788] hover:text-[#233548]"}`} onClick={() => setActiveView("records")}>操作记录</button>
-          </div>
+          {!pageHeading ? viewTabs : null}
 
           {activeView === "members" ? <section className="overflow-hidden rounded-lg border border-[#e3eaf2] bg-white" aria-labelledby="members-management-title">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf1f5] px-5 py-4">

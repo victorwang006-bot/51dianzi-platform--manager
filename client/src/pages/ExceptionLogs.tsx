@@ -134,11 +134,11 @@ export default function ExceptionLogs() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4 aui-page-header">
-          <div>
+      <div className="space-y-6" data-admin-header-family="exception-logs-inline-heading">
+        <div className="flex items-start justify-between gap-4 aui-page-header" data-admin-header="primary">
+          <div className="aui-page-heading">
             <h1 className="text-2xl font-semibold text-slate-900 aui-page-title">异常日志</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 aui-page-description">
               自动记录服务器错误、攻击探测、认证异常与外部服务故障。日志保留 30 天，超期自动清理。
             </p>
           </div>
@@ -160,59 +160,8 @@ export default function ExceptionLogs() {
           </Button>
         </div>
 
-        {/* 近 24 小时态势 */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          {summary.map(item => (
-            <Card key={item.key}>
-              <CardContent className="p-4">
-                <div className="text-xs text-slate-500">{item.label}</div>
-                <div
-                  className={`mt-1 text-2xl font-semibold ${
-                    item.value > 0 && item.danger ? "text-red-600" : "text-slate-900"
-                  }`}
-                >
-                  {item.value}
-                </div>
-                <div className="mt-0.5 text-[11px] text-slate-400">近 24 小时</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* 高频攻击源 */}
-        {stats?.topIps && stats.topIps.length > 0 && (
-          <Card className="border-red-100 bg-red-50/40">
-            <CardContent className="p-4">
-              <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-red-800">
-                <ShieldAlert className="h-4 w-4" />
-                近 7 天高频攻击来源
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {stats.topIps.map(ip => (
-                  <button
-                    key={ip.ipAddress}
-                    type="button"
-                    onClick={() => {
-                      setIpFilter(ip.ipAddress);
-                      setCategory("");
-                      setWithinHours(24 * 7);
-                      resetToFirstPage();
-                    }}
-                    className="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs text-red-700 transition hover:bg-red-100"
-                    title="点击查看该 IP 的全部行为"
-                  >
-                    <span className="font-mono">{ip.ipAddress}</span>
-                    <span className="ml-1.5 text-red-500">{ip.count} 次</span>
-                    {ip.ipOrigin && <span className="ml-1.5 text-slate-500">{ip.ipOrigin}</span>}
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* 筛选区 */}
-        <Card>
+        <Card data-admin-header-region="filters">
           <CardContent className="flex flex-wrap items-center gap-3 p-4">
             <div className="flex items-center gap-2">
               <Input
@@ -283,6 +232,57 @@ export default function ExceptionLogs() {
             <div className="ml-auto text-sm text-slate-500">共 {total} 条</div>
           </CardContent>
         </Card>
+
+        {/* 近 24 小时态势 */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5" data-admin-header-region="summary">
+          {summary.map(item => (
+            <Card key={item.key}>
+              <CardContent className="p-4">
+                <div className="text-xs text-slate-500">{item.label}</div>
+                <div
+                  className={`mt-1 text-2xl font-semibold ${
+                    item.value > 0 && item.danger ? "text-red-600" : "text-slate-900"
+                  }`}
+                >
+                  {item.value}
+                </div>
+                <div className="mt-0.5 text-[11px] text-slate-400">近 24 小时</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* 高频攻击源 */}
+        {stats?.topIps && stats.topIps.length > 0 && (
+          <Card className="border-red-100 bg-red-50/40" data-admin-header-region="attack-sources">
+            <CardContent className="p-4">
+              <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-red-800">
+                <ShieldAlert className="h-4 w-4" />
+                近 7 天高频攻击来源
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {stats.topIps.map(ip => (
+                  <button
+                    key={ip.ipAddress}
+                    type="button"
+                    onClick={() => {
+                      setIpFilter(ip.ipAddress);
+                      setCategory("");
+                      setWithinHours(24 * 7);
+                      resetToFirstPage();
+                    }}
+                    className="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs text-red-700 transition hover:bg-red-100"
+                    title="点击查看该 IP 的全部行为"
+                  >
+                    <span className="font-mono">{ip.ipAddress}</span>
+                    <span className="ml-1.5 text-red-500">{ip.count} 次</span>
+                    {ip.ipOrigin && <span className="ml-1.5 text-slate-500">{ip.ipOrigin}</span>}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 列表 */}
         <Card>
