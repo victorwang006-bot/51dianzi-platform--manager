@@ -12,25 +12,15 @@
 .ci-page.ci-host-state { padding: 28px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; text-align: center; }
 .ci-page.ci-host-error { color: #a54a4a; }
 .ci-page.ci-host :where(button, input, select, textarea) { font-family: inherit; }
-/* Only a ready channel page replaces the external location row with its own
- * compact title. Loading/error/batches/trash and every other workspace keep it. */
-.admin-workspace-shell__main:has([data-channel-inventory-host] .ci-tabbar) > [data-admin-navigation="current-location"] { display: none; }
-.ci-page.ci-host .ci-tabbar { box-sizing: border-box; display: flex; align-items: center; flex-wrap: nowrap; min-height: 54px; gap: 8px 12px; margin: 0 0 6px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
-.ci-page.ci-host .ci-tabbar .ci-button { box-sizing: border-box; height: 34px; min-height: 34px; padding: 4px 12px; line-height: 24px; }
-.ci-page.ci-host .ci-page-title { flex: 0 0 auto; margin: 0; color: #185fa5; font-size: var(--admin-content-section-title-size, 16px); font-weight: 600; line-height: 24px; }
-.ci-page.ci-host .ci-inventory-view-controls { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 8px; }
-.ci-page.ci-host .ci-tabs { display: flex; height: 40px; gap: 22px; margin: 0; border: 0; }
-.ci-page.ci-host .ci-tabs button { position: relative; padding: 0 2px; border: 0; background: transparent; color: #64748b; font: inherit; font-weight: 500; cursor: pointer; font-size: var(--admin-content-section-title-size, 15px); }
-.ci-page.ci-host .ci-tabs button[aria-selected="true"] { color: #185fa5; font-weight: 600; }
-.ci-page.ci-host .ci-tabs button[aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; content: ""; background: #185fa5; }
-.ci-page.ci-host .ci-heading-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; width: auto; gap: 8px; margin-left: auto; padding: 0; }
+/* Keep the existing shell breadcrumb; an accessible title consumes no row. */
+.ci-page.ci-host .ci-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .ci-page.ci-host .ci-panel { border: 0; border-radius: 0; background: transparent; }
 .ci-page.ci-host .ci-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
 .ci-page.ci-host .ci-toolbar .ci-field { flex: 0 1 150px; width: 150px; }
 .ci-page.ci-host .ci-toolbar .ci-channel-select { flex-basis: 170px; width: 170px; }
 .ci-page.ci-host .ci-toolbar .ci-brand-input { flex-basis: 140px; width: 140px; }
 .ci-page.ci-host .ci-toolbar .ci-short-select { flex-basis: 112px; width: 112px; }
-/* Reuse the material filter row for views; controls retain their former 34px target. */
+/* Filters and historical management entries share the compact material row. */
 .ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-field { flex: 1 1 112px; width: auto; }
 .ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-channel-select { flex-basis: 136px; }
 .ci-page.ci-host .ci-toolbar[aria-label="材料筛选"] .ci-brand-input { flex-basis: 96px; }
@@ -45,7 +35,6 @@
 .ci-page.ci-host .ci-field :is(input, select, textarea):disabled { background: #f8fafc; color: #64748b; cursor: not-allowed; }
 .ci-page.ci-host .ci-field small { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); }
 .ci-page.ci-host .ci-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: var(--admin-content-control-height, 32px); border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; color: #334155; background: #fff; font: inherit; font-size: var(--admin-content-font-body, 12px); font-weight: 500; line-height: var(--admin-content-line-height, 20px); white-space: nowrap; cursor: pointer; }
-.ci-page.ci-host .ci-inventory-view-controls .ci-button { box-sizing: border-box; height: 34px; min-height: 34px; padding: 4px 12px; line-height: 24px; }
 .ci-page.ci-host .ci-button:hover:not(:disabled) { background: #f8fafc; color: #0f172a; }
 .ci-page.ci-host .ci-primary { border-color: #185fa5; color: #fff; background: #185fa5; }
 .ci-page.ci-host .ci-primary:hover:not(:disabled) { border-color: #0c447c; color: #fff; background: #0c447c; }
@@ -152,11 +141,6 @@
 .ci-page.ci-host .ci-table .admin-cell-primary { font-size: var(--admin-content-font-body, 12px) !important; }
 .ci-page.ci-host .ci-table .admin-cell-secondary { font-size: var(--admin-content-font-caption, 11px) !important; }
 .ci-page.ci-host .ci-host-dialog label.ci-field { font-size: var(--admin-content-font-label, 12px) !important; }
-@media (max-width: 900px) {
-  .ci-page.ci-host .ci-tabbar { flex-wrap: wrap; }
-  .ci-page.ci-host .ci-heading-actions { flex: 0 1 auto; flex-wrap: wrap; }
-  .ci-page.ci-host .ci-inventory-view-controls { flex: 0 1 auto; flex-wrap: wrap; }
-}
 @media (max-width: 680px) {
   .ci-page.ci-host .ci-toolbar .ci-field { flex: 1 1 130px; width: auto; }
   .ci-page.ci-host .ci-filter-count { margin-left: 0; }

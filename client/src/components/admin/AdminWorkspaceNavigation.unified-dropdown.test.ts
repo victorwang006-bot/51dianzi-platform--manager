@@ -30,7 +30,8 @@ const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths).ma
   })
 );
 type Item = (typeof items)[number];
-const topIds = ["channel", "business", "operations", "organization"];
+const topIds = ["inventory", "channel", "business", "operations", "organization"];
+const dropdownIds = ["business", "operations", "organization"];
 const groupedPaths = {
   customers: ["/workbench/customers", "/workbench/inquiries", "/workbench/orders"],
   inventory: ["/workbench/inbound", "/workbench/outbound"],
@@ -116,13 +117,15 @@ async function pointer(node: Element, type: "pointerover" | "pointerout", pointe
 }
 
 describe("统一导航下拉（new focused contract）", () => {
-  it("四个一级按 channel/business/operations/organization 排列，均为不导航的点击按钮", async () => {
+  it("五个一级先库存列表/渠道库存，业务/运营/组织保留不导航的下拉按钮", async () => {
     await render();
     expect(Array.from(host.querySelectorAll('[data-navigation-level="1"]')).map(node => node.getAttribute("data-workspace-nav-target")))
       .toEqual(topIds);
+    expect(Array.from(host.querySelectorAll('[data-navigation-level="1"]')).map(node => node.textContent))
+      .toEqual(["库存列表", "渠道库存", "业务工作台▾", "平台运营▾", "组织与权限▾"]);
     expect(host.querySelector("a")).toBeNull();
     expect(host.querySelector('[data-admin-navigation="unified-dropdown"]')).not.toBeNull();
-    for (const id of topIds) {
+    for (const id of dropdownIds) {
       await click(id);
       expect(panel()?.dataset.workspace).toBe(id);
       expect(button(id).getAttribute("aria-expanded")).toBe("true");
@@ -149,16 +152,22 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("桌面所有一级鼠标自动展开，无焦点抢夺且仅当前真实模块保持高亮", async () => {
+  it("桌面业务/运营/组织鼠标自动展开，两个库存入口不展开、不抢焦点", async () => {
     await render("/workbench/orders");
     await act(async () => button("business").focus());
-    for (const id of topIds) {
+    for (const id of dropdownIds) {
       await pointer(button(id), "pointerover");
       expect(panel()?.dataset.workspace).toBe(id);
       expect(panel(3)).toBeNull();
       expect(activeTop()).toEqual(["business"]);
       expect(document.activeElement).toBe(button("business"));
       expect(host.querySelectorAll('[data-navigation-level="1"][aria-expanded="true"]')).toHaveLength(1);
+    }
+    for (const id of ["inventory", "channel"]) {
+      await pointer(button(id), "pointerover");
+      expect(panel()).toBeNull();
+      expect(document.activeElement).toBe(button("business"));
+      expect(button(id).hasAttribute("aria-expanded")).toBe(false);
     }
     expect(onNavigate).not.toHaveBeenCalled();
     expect(onPreload).toHaveBeenCalled();
@@ -457,40 +466,51 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(host.querySelector('[data-workspace-nav-target="/orders"]')).toBeNull();
   });
 
-  it.each(CHANNEL_INVENTORY_TABS)("渠道 $id 仅原授权 channel 对象+合法 tab.id，查询来自实际 URL", async tab => {
+  it.each(CHANNEL_INVENTORY_TABS)("历史 $id 归正确一级，两直接视图仅复用原授权 channel 对象", async tab => {
     const original = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE)!;
     await render(`${CHANNEL_INVENTORY_ROUTE}?merchantId=31&ciTab=${tab.id}#detail`);
-    expect(activeTop()).toEqual(["channel"]);
+    expect(activeTop()).toEqual([tab.id === "channels" ? "channel" : "inventory"]);
     expect(button("business").getAttribute("data-active")).toBe("false");
-    expect(button("channel").textContent).toBe("渠道库存▾");
-    await click("channel");
-    expect(Array.from(panel()!.querySelectorAll("[data-channel-tab]")).map(node => node.getAttribute("data-channel-tab")))
-      .toEqual(CHANNEL_INVENTORY_TABS.map(entry => entry.id));
-    expect(panel()?.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
-    expect(button(`channel:${tab.id}`).getAttribute("aria-current")).toBe("page");
-    onPreload.mockClear();
-    await act(async () => button(`channel:${tab.id}`).focus());
-    expect(onPreload.mock.calls).toEqual([[original]]);
-    await click(`channel:${tab.id}`);
-    expect(onNavigate.mock.calls).toEqual([[original, tab.id]]);
+    expect(button("channel").textContent).toBe("渠道库存");
+    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    for (const [target, view] of [["inventory", "flat"], ["channel", "channels"]]) {
+      onPreload.mockClear();
+      onNavigate.mockClear();
+      await act(async () => button(target).focus());
+      expect(onPreload.mock.calls).toEqual([[original]]);
+      expect(button(target).hasAttribute("aria-expanded")).toBe(false);
+      expect(button(target).hasAttribute("aria-controls")).toBe(false);
+      await click(target);
+      expect(onNavigate.mock.calls).toEqual([[original, "materials", view]]);
+      expect(onNavigate.mock.calls[0][0]).toBe(original);
+      expect(onNavigate.mock.calls[0][0].merchantContext).toBe(original.merchantContext);
+      expect(panel()).toBeNull();
+      expect(host.querySelectorAll('[data-channel-tab]')).toHaveLength(0);
+    }
+  });
+
+  it.each([
+    ["?ciTab=invalid", "inventory"],
+    ["?supplyChannelId=22&supplyTab=materials", "inventory"],
+    ["?supplyChannelId=22&supplyTab=details", "channel"],
+    ["?supplyChannelId=0&supplyTab=materials", "channel"],
+    ["?ciTab=materials&ciView=flat", "inventory"],
+    ["?ciTab=materials&ciView=channels", "channel"],
+    ["?ciTab=materials&ciView=invalid", "inventory"],
+    ["?ciTab=batches&ciView=channels", "inventory"],
+    ["?ciTab=trash&ciView=channels", "inventory"],
+    ["?ciTab=channels&ciView=flat", "channel"],
+  ])("渠道查询 %s 沿用 helper 并唯一高亮 %s", async (query, target) => {
+    await render(`${CHANNEL_INVENTORY_ROUTE}${query}`);
+    expect(button("channel").textContent).toBe("渠道库存");
+    expect(activeTop()).toEqual([target]);
+    expect(button(target).getAttribute("aria-current")).toBe("page");
     expect(panel()).toBeNull();
   });
 
   it.each([
-    ["?ciTab=invalid", "materials"],
-    ["?supplyChannelId=22&supplyTab=materials", "materials"],
-    ["?supplyChannelId=22&supplyTab=details", "channels"],
-    ["?supplyChannelId=0&supplyTab=materials", "channels"],
-  ])("渠道旧查询 %s 沿用 helper 解析且一级标签不变", async (query, tab) => {
-    await render(`${CHANNEL_INVENTORY_ROUTE}${query}`);
-    expect(button("channel").textContent).toBe("渠道库存▾");
-    await click("channel");
-    expect(button(`channel:${tab}`).getAttribute("aria-current")).toBe("page");
-  });
-
-  it.each([
-    [CHANNEL_INVENTORY_ROUTE, "channel"],
-    ["/workbench/inventory", "channel"],
+    [CHANNEL_INVENTORY_ROUTE, "inventory"],
+    ["/workbench/inventory", "inventory"],
     ["/workbench/sales-orders/8", "business"],
     ["/workbench/chat/8", "business"],
     ["/materials/8", "operations"],
@@ -501,7 +521,7 @@ describe("统一导航下拉（new focused contract）", () => {
   ])("%s 的一级 active 唯一且不依赖打开菜单", async (location, expected) => {
     await render(location);
     expect(activeTop()).toEqual(expected ? [expected] : []);
-    for (const id of topIds) {
+    for (const id of dropdownIds) {
       await click(id);
       expect(activeTop()).toEqual(expected ? [expected] : []);
     }
@@ -527,6 +547,7 @@ describe("统一导航下拉（new focused contract）", () => {
     await render(CHANNEL_INVENTORY_ROUTE, { items: visible });
     expect(activeTop()).toEqual([]);
     expect(host.querySelector('[data-workspace-nav-target="channel"]')).toBeNull();
+    expect(host.querySelector('[data-workspace-nav-target="inventory"]')).toBeNull();
     expect(host.querySelector('[data-workspace-nav-target="organization"]')).toBeNull();
     await click("business");
     expect(panel()?.querySelectorAll("[data-business-group]")).toHaveLength(1);
@@ -536,6 +557,7 @@ describe("统一导航下拉（new focused contract）", () => {
     await render("/workbench/orders", { items: subset([CHANNEL_INVENTORY_ROUTE]) });
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     expect(activeTop()).toEqual([]);
+    expect(host.querySelectorAll('[data-navigation-level="1"]')).toHaveLength(2);
     await render(CHANNEL_INVENTORY_ROUTE, { items: [{ ...items[0], path: `${CHANNEL_INVENTORY_ROUTE}?ciTab=trash` }] });
     expect(host.querySelector("nav")).toBeNull();
     await render(undefined, { items: [] });
@@ -603,7 +625,9 @@ describe("统一导航下拉（new focused contract）", () => {
 
   it("键盘一级进入、二级进入三级、上下/Home/End、返回、Esc 与原生 Tab", async () => {
     await render();
-    await act(async () => button("channel").focus());
+    await act(async () => button("inventory").focus());
+    await key("inventory", "ArrowRight");
+    expect(document.activeElement).toBe(button("channel"));
     await key("channel", "ArrowRight");
     expect(document.activeElement).toBe(button("business"));
     expect((await key("business", "ArrowDown")).defaultPrevented).toBe(true);
@@ -652,16 +676,36 @@ describe("统一导航下拉（new focused contract）", () => {
     await act(async () => panel()!.querySelector<HTMLButtonElement>('[data-workspace-dropdown="close"]')!.click());
     expect(panel()).toBeNull();
     expect(document.activeElement).toBe(button("business"));
-    await click("channel");
-    expect(panel()?.querySelectorAll("[data-channel-tab]")).toHaveLength(4);
+    await click("operations");
     await act(async () => host.querySelector<HTMLDivElement>('[data-workspace-dropdown="backdrop"]')!.click());
     expect(panel()).toBeNull();
-    expect(document.activeElement).toBe(button("channel"));
+    expect(document.activeElement).toBe(button("operations"));
     await key("organization", "Enter");
     await key("/staff", "Escape");
     expect(panel()).toBeNull();
     expect(document.activeElement).toBe(button("organization"));
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it.each([1280, 390])("%s 宽度的库存入口原生 Enter/Space 可达，点击关闭旧两层并仅回调一次", async width => {
+    Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
+    await render();
+    const original = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE)!;
+    for (const [target, view] of [["inventory", "flat"], ["channel", "channels"]]) {
+      await click("business");
+      await click("group:customers");
+      const navigate = vi.fn((item: Item) => {
+        expect(item).toBe(original);
+        expect(host.querySelector<HTMLDivElement>('[data-workspace-dropdown="layer"]')?.hidden).toBe(true);
+      });
+      await render(undefined, { onNavigate: navigate });
+      for (const value of ["Enter", " "]) expect((await key(target, value)).defaultPrevented).toBe(false);
+      expect(navigate).not.toHaveBeenCalled();
+      await click(target);
+      expect(navigate.mock.calls).toEqual([[original, "materials", view]]);
+      expect(panel()).toBeNull();
+      expect(panel(3)).toBeNull();
+    }
   });
 
   it.each(["click", "pointerdown", "focus"])("external %s 关闭两层且不抢外部焦点", async action => {

@@ -2,7 +2,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { hostNavigate, selectHostTab, setHostTestLocation } from "./ChannelInventoryHost.router-test-helper";
+import { hostNavigate, selectHostTab, selectHostView, setHostTestLocation } from "./ChannelInventoryHost.router-test-helper";
 import { getChannelInventoryNavigationTab, channelInventoryBatchMaterialLocation, channelInventoryBatchListLocation, trustedChannelInventoryBatchReturn } from "../../../../../lib/channelInventoryNavigation";
 
 vi.mock("wouter", async importOriginal => ({
@@ -14,7 +14,7 @@ const runtime = vi.hoisted(() => {
   const query = (data: unknown) => ({ data, isLoading: false, isFetching: false, isError: false, refetch: vi.fn().mockResolvedValue(undefined) });
   const client = {
     getChannel: { query: vi.fn() }, listTeamMaterials: { query: vi.fn() }, getTeamMaterialForEdit: { query: vi.fn() },
-    listTeamSourceOptions: { query: vi.fn() },
+    listTeamSourceOptions: { query: vi.fn() }, listChannels: { query: vi.fn() },
     listUploadBatches: { query: vi.fn() }, listDeletedMaterials: { query: vi.fn() },
     deleteMaterials: { mutate: vi.fn() }, restoreMaterial: { mutate: vi.fn() },
     createUploadBatch: { mutate: vi.fn() }, updateUploadBatch: { mutate: vi.fn() },
@@ -93,6 +93,7 @@ beforeEach(() => {
   runtime.client.listTeamMaterials.query.mockReset().mockResolvedValue(page([{ ...row, canViewSource: true }], { canWrite: true, canFilterSource: false }));
   runtime.client.getTeamMaterialForEdit.query.mockReset().mockResolvedValue({ ...row, channelId: 11, channelName: "授权渠道" });
   runtime.client.listTeamSourceOptions.query.mockReset().mockResolvedValue({ items: [], canFilterSource: false });
+  runtime.client.listChannels.query.mockReset().mockResolvedValue(page([channel], { pageSize: 100, canWrite: true }));
   runtime.client.listUploadBatches.query.mockReset().mockResolvedValue(page([batch], { canWrite: true }));
   runtime.client.listDeletedMaterials.query.mockReset().mockResolvedValue(page([deleted], { canWrite: true }));
   runtime.client.deleteMaterials.mutate.mockReset().mockResolvedValue({ deletedCount: 1, skippedCount: 0, results: [{ id: 1, success: true }] });
@@ -109,8 +110,10 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
   it.each(["materials", "channels", "batches", "trash"] as const)("initial ciTab=%s mounts the real panel without local tabs or synthetic target", async tab => {
     setHostTestLocation(`/workbench/channel-inventory?ciTab=${tab}`, "replace"); renderHost(); await settle();
     assertView(tab); expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
-    if (tab === "batches" || tab === "trash") expect(document.querySelector(".ci-tabbar, .ci-heading-actions")).toBeNull();
-    else expect(document.querySelector(".ci-heading-actions")?.textContent).toContain(tab === "channels" ? "+ 新增渠道" : "上传库存单条上传");
+    expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
+    expect(document.querySelector("h1.ci-sr-only")).not.toBeNull();
+    if (tab === "channels") expect(button("+ 新增渠道")).toBeTruthy();
+    if (tab === "materials") expect(Array.from(document.querySelectorAll("button")).find(item => item.textContent === "上传库存" || item.textContent === "单条上传")).toBeUndefined();
     expect(hostNavigate).not.toHaveBeenCalled(); expect(runtime.client.getChannel.query).not.toHaveBeenCalled();
     expect(runtime.client.listTeamSourceOptions.query).not.toHaveBeenCalled();
     if (tab === "batches") expect(runtime.client.listUploadBatches.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 20, channelId: undefined, archived: false }, { signal: expect.any(AbortSignal) });
@@ -155,7 +158,7 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
   });
 
   it("does not discard an editor on the same tab intent, but URL tab changes invalidate and abort an old editor request", async () => {
-    selectHostTab("materials"); renderHost(); click(button("单条上传"));
+    selectHostTab("materials"); renderHost(); click(materialMenuItem("编辑")); await settle();
     const editor = required(document.querySelector('[role="dialog"]'));
     setHostTestLocation("/workbench/channel-inventory?ciTab=materials&uiHint=1");
     expect(document.querySelector('[role="dialog"]')).toBe(editor);
@@ -182,10 +185,12 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
     renderHost(); await settle(); expect(hostNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("an internal same-target view action does not push again or lose the newly opened upload", async () => {
-    selectHostTab("materials"); renderHost(); click(button("上传库存")); await settle();
+  it("legacy archive row upload synchronizes flat materials once and retains its exact target", async () => {
+    selectHostTab("channels"); renderHost(); click(button("上传库存")); await settle();
     expect(document.querySelector('[aria-label="上传库存表格"]')).not.toBeNull();
-    expect(hostNavigate).not.toHaveBeenCalled();
+    expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials&ciView=flat"]]);
+    expect(runtime.client.getChannel.query).toHaveBeenCalledWith({ ...context, id: 11 }, { signal: expect.any(AbortSignal) });
+    renderHost(); await settle(); expect(hostNavigate).toHaveBeenCalledTimes(1);
   });
 
   it("generic channel view synchronizes materials but never invents a supply target or source grant", async () => {
@@ -193,7 +198,7 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
     const trigger = required(document.querySelector<HTMLElement>('.ci-channel-table [data-slot="dropdown-menu-trigger"]'));
     act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
     click(required(Array.from(document.querySelectorAll('[role="menuitem"]')).find(item => item.textContent === "查看库存"))); await settle();
-    assertView("materials"); expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials"]]);
+    assertView("materials"); expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials&ciView=flat"]]);
     expect(window.location.search).not.toContain("supply");
     expect(runtime.inputs.at(-1)).toMatchObject({ ...context, channelId: undefined });
     expect(runtime.client.getChannel.query).not.toHaveBeenCalled();
@@ -335,5 +340,97 @@ describe("durable exact batch navigation and return", () => {
     setHostTestLocation("/workbench/channel-inventory?ciTab=batches&ciBatchFocusId=81", "replace"); renderHost(); await settle();
     expect(document.body.textContent).toContain("来源批次不存在或当前不可查看"); expect(document.body.innerHTML).not.toContain("OTHER-BATCH"); expect(document.body.textContent).not.toContain("共 0 条");
     expect(button("返回上传批次列表").disabled).toBe(false);
+  });
+});
+
+function inventoryMoreItem(name: string) {
+  const trigger = required(document.querySelector<HTMLElement>('[aria-label="更多库存管理"]'));
+  act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+  const menu = required(document.querySelector<HTMLElement>('.ci-inventory-more-menu[role="menu"]'));
+  expect(menu.closest("table,.ci-host")).toBeNull();
+  return required(Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(item => item.textContent?.trim() === name));
+}
+
+describe("approved Host ciView and More entry contract", () => {
+  it.each(["flat", "channels"] as const)("initial ciView=%s and a full remount use the explicit URL, not last view memory", async view => {
+    selectHostView(view); renderHost(); await settle();
+    const selector = view === "flat" ? ".ci-stock-edit-table" : '[aria-label="按渠道查看库存"]';
+    expect(document.querySelector(selector)).not.toBeNull();
+    expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
+    expect(document.querySelector("h1.ci-sr-only")?.textContent).toBe(view === "flat" ? "库存列表" : "渠道库存");
+    act(() => root.unmount()); root = createRoot(container); renderHost(); await settle();
+    expect(document.querySelector(selector)).not.toBeNull();
+    expect(hostNavigate).not.toHaveBeenCalled();
+    runtime.scope.contextVerification.authorizationVersion = "auth-view-v2"; renderHost(); await settle();
+    expect(document.querySelector(selector)).not.toBeNull();
+    expect(window.location.search).toBe(`?ciTab=materials&ciView=${view}`);
+  });
+
+  it.each(["", "unknown", "flat"])("missing/invalid ciView=%s returns to flat rather than remembering channels", async view => {
+    selectHostView("channels"); renderHost(); await settle();
+    setHostTestLocation(`/workbench/channel-inventory?ciTab=materials${view ? `&ciView=${view}` : ""}`); await settle();
+    assertView("materials"); expect(document.querySelector('[aria-label="按渠道查看库存"]')).toBeNull();
+    expect(hostNavigate).not.toHaveBeenCalled();
+  });
+
+  it("follows back/forward across explicit views without a second push or stale channel selection", async () => {
+    selectHostView("flat"); renderHost(); selectHostView("channels"); await settle();
+    expect(document.querySelector('[aria-label="按渠道查看库存"]')).not.toBeNull();
+    selectHostView("flat"); await settle(); assertView("materials");
+    await historyTravel("back"); expect(document.querySelector('[aria-label="按渠道查看库存"]')).not.toBeNull();
+    await historyTravel("forward"); assertView("materials");
+    expect(hostNavigate).not.toHaveBeenCalled();
+  });
+
+  it("the current-channel return uses view helper to navigate to channels and re-reads its real list", async () => {
+    runtime.team = runtime.query(page([{ ...row, canViewSource: true }], { canWrite: true, canFilterSource: false }));
+    selectHostView("channels"); renderHost(); await settle(); click(button("查看该渠道库存")); await settle();
+    expect(document.querySelector(".ci-supply-location")?.textContent).toContain("授权渠道");
+    expect(runtime.inputs.at(-1)).toMatchObject({ ...context, channelId: 11 });
+    click(button("返回渠道列表")); await settle();
+    expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials&ciView=channels"]]);
+    expect(document.querySelector(".ci-supply-location")).toBeNull();
+    expect(document.querySelector('[aria-label="按渠道查看库存"]')).not.toBeNull();
+  });
+
+  it.each(["supply", "batch"])("a normal top-entry inventory route clears old %s targeting rather than retaining a prior source", async target => {
+    setHostTestLocation(target === "supply" ? "/workbench/channel-inventory?supplyChannelId=11&supplyTab=channels" : "/workbench/channel-inventory?ciTab=materials&ciBatchId=81", "replace");
+    renderHost(); await settle(); selectHostView("flat"); await settle();
+    assertView("materials"); expect(document.querySelector(".ci-supply-location")).toBeNull();
+    expect(runtime.inputs.at(-1)).toMatchObject({ channelId: undefined, uploadBatchId: undefined, page: 1 });
+    expect(window.location.search).toBe("?ciTab=materials&ciView=flat");
+  });
+
+  it.each(["上传记录", "已删除库存", "历史渠道整理"])("More %s opens the original authorized management panel and preserves old URLs", async label => {
+    renderHost(); click(inventoryMoreItem(label)); await settle();
+    const tab = label === "上传记录" ? "batches" : label === "已删除库存" ? "trash" : "channels";
+    assertView(tab); expect(window.location.search).toBe(`?ciTab=${tab}`);
+    expect(hostNavigate).toHaveBeenCalledTimes(1);
+    expect(runtime.mutations.createMaterial).not.toHaveBeenCalled();
+    if (tab === "trash") expect(runtime.client.listDeletedMaterials.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 20 }, { signal: expect.any(AbortSignal) });
+  });
+
+  it("zero stocks and write denial still keep centralized trash recovery read access without fake customer filtering", async () => {
+    runtime.scope.officialInventoryPermissions.write = false;
+    runtime.team = runtime.query(page([], { canWrite: false, canFilterSource: false }));
+    renderHost(); click(inventoryMoreItem("已删除库存")); await settle(); assertView("trash");
+    expect(runtime.client.listDeletedMaterials.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 20 }, { signal: expect.any(AbortSignal) });
+    expect(Array.from(document.querySelectorAll("button")).find(item => item.textContent === "恢复")).toBeUndefined();
+    expect(runtime.client.restoreMaterial.mutate).not.toHaveBeenCalled();
+  });
+
+  it("More does not introduce profile management grants for a stock-only reader", async () => {
+    runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["stocks.read"], isOwner: false });
+    runtime.team = runtime.query(page([row], { canWrite: false, canFilterSource: false }));
+    renderHost(); inventoryMoreItem("上传记录");
+    expect(Array.from(document.querySelectorAll('.ci-inventory-more-menu [role="menuitem"]')).map(item => item.textContent)).toEqual(["上传记录", "已删除库存"]);
+    expect(runtime.client.getChannel.query).not.toHaveBeenCalled();
+  });
+
+  it("native read revocation removes More and never probes old management lists", async () => {
+    runtime.scope.officialInventoryPermissions.read = false; renderHost(); await settle();
+    expect(document.querySelector('[aria-label="更多库存管理"]')).toBeNull();
+    expect(runtime.client.listUploadBatches.query).not.toHaveBeenCalled();
+    expect(runtime.client.listDeletedMaterials.query).not.toHaveBeenCalled();
   });
 });

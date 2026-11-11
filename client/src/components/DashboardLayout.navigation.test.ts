@@ -182,6 +182,7 @@ describe("正式后台顶部布局集成", () => {
     expect(html).toContain('data-workspace-nav-target="operations"');
     expect(html).not.toContain('data-workspace-nav-target="business"');
     expect(html).not.toContain('data-workspace-nav-target="channel"');
+    expect(html).not.toContain('data-workspace-nav-target="inventory"');
     expect(html).not.toContain('data-workspace-nav-target="organization"');
     expect(html).not.toContain('data-workspace-nav-target="/"');
     expect(html).not.toContain(">业务工作台<");
@@ -239,21 +240,24 @@ describe("正式后台顶部布局集成", () => {
   });
 
   it.each([
-    ["materials", ["渠道库存"]],
-    ["channels", ["渠道库存", "渠道档案"]],
-    ["batches", ["渠道库存", "上传批次"]],
-    ["trash", ["渠道库存", "回收站"]],
-  ])("channel %s keeps the fixed top label and a read-only breadcrumb inside main", async (tab, expected) => {
+    ["materials", ["库存列表"], "inventory", "flat"],
+    ["channels", ["渠道库存", "渠道档案"], "channel", "channels"],
+    ["batches", ["库存列表", "上传批次"], "inventory", "flat"],
+    ["trash", ["库存列表", "回收站"], "inventory", "flat"],
+    ["materials&ciView=flat", ["库存列表"], "inventory", "flat"],
+    ["materials&ciView=channels", ["渠道库存"], "channel", "channels"],
+    ["materials&ciView=invalid", ["库存列表"], "inventory", "flat"],
+  ])("channel %s keeps accurate direct entry and a read-only breadcrumb inside main", async (tab, expected, target, view) => {
     runtime.location = `/workbench/channel-inventory?ciTab=${tab}`;
     runtime.capabilities = ["inventory.channel"];
     runtime.user.permissions = ["officialInventory.read"];
     await withMountedLayout(async container => {
       const main = container.querySelector("main")!;
       const breadcrumb = main.querySelector('[data-admin-navigation="current-location"]')!;
-      const trigger = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="channel"]')!;
-      expect(trigger.textContent).toBe("渠道库存▾");
-      expect(trigger.getAttribute("aria-current")).toBe("location");
-      expect(trigger.getAttribute("aria-expanded")).toBe("false");
+      const trigger = container.querySelector<HTMLButtonElement>(`[data-workspace-nav-target="${target}"]`)!;
+      expect(trigger.textContent).toBe(target === "channel" ? "渠道库存" : "库存列表");
+      expect(trigger.getAttribute("aria-current")).toBe("page");
+      expect(trigger.hasAttribute("aria-expanded")).toBe(false);
       expect(Array.from(breadcrumb.querySelectorAll("li")).map(node => node.lastElementChild?.textContent)).toEqual(expected);
       expect(breadcrumb.querySelectorAll("button, a")).toHaveLength(0);
       expect(breadcrumb.nextElementSibling).toBe(main.querySelector("[data-real-content]"));
@@ -261,7 +265,8 @@ describe("正式后台顶部布局集成", () => {
       expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
       expect(runtime.setLocation).not.toHaveBeenCalled();
       await act(async () => trigger.click());
-      expect(container.querySelector(`[data-channel-tab="${tab}"]`)?.getAttribute("aria-current")).toBe("page");
+      expect(runtime.setLocation).toHaveBeenCalledWith(`/workbench/channel-inventory?ciTab=materials&ciView=${view}`);
+      expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
       expect(container.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
     });
   });
@@ -278,8 +283,8 @@ describe("正式后台顶部布局集成", () => {
     expect(host.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
   });
 
-  it("shows native staff channel entry in the dropdown only with exact native read and the bound route capability", async () => {
-    runtime.location = "/workbench/channel-inventory";
+  it("shows two direct inventory views only with exact native read and the original bound route capability", async () => {
+    runtime.location = "/workbench/channel-inventory?merchantId=31&supplyChannelId=22&supplyTab=details&ciBatchId=8&ciBatchReturn=%2Forders&ciTab=materials";
     runtime.capabilities = ["inventory.channel"];
     runtime.user.permissions = ["materials.read", "messages.read", "officialInventory.read"];
     const container = document.createElement("div");
@@ -289,16 +294,20 @@ describe("正式后台顶部布局集成", () => {
     try {
       await act(async () => root.render(createElement(DashboardLayout, null, createElement("article", { "data-real-content": "yes" }, "渠道库存与渠道档案"))));
       expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
-      const trigger = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="channel"]')!;
-      expect(trigger.getAttribute("aria-current")).toBe("location");
+      const inventory = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="inventory"]')!;
+      const channel = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="channel"]')!;
+      expect(inventory.getAttribute("aria-current")).toBe("page");
+      expect(channel.hasAttribute("aria-current")).toBe(false);
       expect(container.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
-      await act(async () => trigger.click());
-      const item = container.querySelector<HTMLButtonElement>('[data-channel-tab="materials"]')!;
-      expect(item).not.toBeNull();
-      expect(item.getAttribute("aria-current")).toBe("page");
-      expect(container.querySelectorAll('[data-channel-tab]')).toHaveLength(4);
-      await act(async () => container.querySelector<HTMLButtonElement>('[data-channel-tab="trash"]')!.click());
-      expect(runtime.setLocation).toHaveBeenCalledWith("/workbench/channel-inventory?ciTab=trash");
+      await act(async () => inventory.click());
+      await act(async () => channel.click());
+      expect(runtime.setLocation.mock.calls).toEqual([
+        ["/workbench/channel-inventory?ciTab=materials&ciView=flat"],
+        ["/workbench/channel-inventory?ciTab=materials&ciView=channels"],
+      ]);
+      expect(container.querySelectorAll('[data-channel-view]')).toHaveLength(2);
+      expect(container.querySelectorAll('[data-channel-tab]')).toHaveLength(0);
+      expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
       expect(container.querySelector("[data-real-content]")?.textContent).toBe("渠道库存与渠道档案");
     } finally {
       await act(async () => root.unmount());
@@ -309,24 +318,67 @@ describe("正式后台顶部布局集成", () => {
     expect(source).not.toContain('permission: "officialInventory.write"');
   });
 
+  it("query refresh/back changes the active view and compact location without navigation, replacing content or preserving revoked entries", async () => {
+    runtime.capabilities = ["inventory.channel"];
+    runtime.user.permissions = ["officialInventory.read"];
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const content = () => createElement(DashboardLayout, null,
+      createElement("article", { "data-real-content": "yes" }, "真实业务页面"));
+    try {
+      let retained: Element | null = null;
+      for (const [search, target, label] of [
+        ["ciTab=materials&ciView=flat", "inventory", "库存列表"],
+        ["ciTab=materials&ciView=channels", "channel", "渠道库存"],
+        ["ciTab=materials&ciView=flat", "inventory", "库存列表"],
+      ]) {
+        runtime.location = `/workbench/channel-inventory?${search}`;
+        await act(async () => root.render(content()));
+        const active = container.querySelectorAll('[data-navigation-level="1"][data-active="true"]');
+        expect(active).toHaveLength(1);
+        expect(active[0].getAttribute("data-workspace-nav-target")).toBe(target);
+        const location = container.querySelector('[data-admin-navigation="current-location"]')!;
+        expect(Array.from(location.querySelectorAll("li")).map(node => node.textContent)).toEqual([label]);
+        expect(location.querySelectorAll("button, a, h1, h2")).toHaveLength(0);
+        expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
+        retained ??= container.querySelector('[data-real-content]');
+        expect(container.querySelector('[data-real-content]')).toBe(retained);
+      }
+      runtime.user.permissions = [];
+      await act(async () => root.render(content()));
+      expect(container.querySelectorAll('[data-channel-view]')).toHaveLength(0);
+      expect(container.querySelector('[data-admin-navigation="current-location"]')).toBeNull();
+      expect(container.querySelector('[data-real-content]')).toBe(retained);
+      expect(runtime.setLocation).not.toHaveBeenCalled();
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  });
+
   it.each([{ permissions: ["materials.read"] }, { permissions: ["officialInventory.write"] }])("rejects route capability without independent native read $permissions", ({ permissions }) => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = ["inventory.channel"];
     runtime.user.permissions = permissions;
     expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="inventory"');
   });
 
-  it.each([[], ["inventory.read"], ["inventory.publish"]])("does not substitute another business capability %j for inventory.channel", capabilities => {
+  it.each([{ capabilities: [] }, { capabilities: ["inventory.read"] }, { capabilities: ["inventory.publish"] }])("does not substitute another business capability $capabilities for inventory.channel", ({ capabilities }) => {
     runtime.location = "/workbench/channel-inventory";
     runtime.capabilities = capabilities;
     runtime.user.permissions = ["officialInventory.read"];
     expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="inventory"');
   });
 
   it("does not treat a platform official inventory permission as a bound business capability", () => {
     runtime.location = "/workbench/channel-inventory";
     runtime.user.permissions = ["officialInventory.read", "officialInventory.write"];
     expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="inventory"');
   });
 
   it("still requires a native active backend login before displaying the staff channel entry", () => {
@@ -334,6 +386,7 @@ describe("正式后台顶部布局集成", () => {
     runtime.capabilities = ["inventory.channel"];
     runtime.user.hasNativeAdminAccount = false;
     expect(renderLayout()).not.toContain('data-workspace-nav-target="channel"');
+    expect(renderLayout()).not.toContain('data-workspace-nav-target="inventory"');
   });
 
   it("retains native admin and staff capability filtering rather than demo authorization", () => {
@@ -392,7 +445,7 @@ describe("正式后台顶部布局集成", () => {
     expect(shellCss).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.admin-workspace-shell__header\s*\{[^}]*padding: 0 16px;/);
   });
 
-  it("makes the original Logo a keyboard-accessible home link and navigates to channel inventory", () => {
+  it("makes the original Logo a keyboard-accessible home link to the default flat inventory list", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
@@ -400,7 +453,7 @@ describe("正式后台顶部布局集成", () => {
     act(() => root.render(createElement(DashboardLayout, null, createElement("article", null, "业务内容"))));
     const brand = host.querySelector<HTMLAnchorElement>("a.admin-workspace-shell__brand")!;
     expect(brand.getAttribute("href")).toBe("/workbench/channel-inventory");
-    expect(brand.getAttribute("aria-label")).toContain("渠道库存");
+    expect(brand.getAttribute("aria-label")).toContain("库存列表");
     const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
     act(() => brand.dispatchEvent(click));
     expect(click.defaultPrevented).toBe(true);

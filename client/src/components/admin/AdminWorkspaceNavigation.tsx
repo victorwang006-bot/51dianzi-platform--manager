@@ -12,7 +12,9 @@ import {
   CHANNEL_INVENTORY_ROUTE,
   CHANNEL_INVENTORY_TABS,
   getChannelInventoryNavigationTab,
+  getChannelInventoryNavigationView,
   type ChannelInventoryNavigationTab,
+  type ChannelInventoryNavigationView,
 } from "@/lib/channelInventoryNavigation";
 import {
   getAdminWorkspaceNavigationState,
@@ -33,8 +35,8 @@ export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   items: readonly T[];
   /** Actual router location; query/hash may be included. No local selection state. */
   location: string;
-  /** Original authorized item; the second argument is only a channel tab intent. */
-  onNavigate: (item: T, channelTab?: ChannelInventoryNavigationTab) => void;
+  /** Original authorized item; optional channel tab/view arguments are display intents only. */
+  onNavigate: (item: T, channelTab?: ChannelInventoryNavigationTab, channelView?: ChannelInventoryNavigationView) => void;
   /** Optional route-chunk preloading; never invoked as an authorization check. */
   onItemIntent?: (item: T) => void;
   /** Parent-friendly alias for route-chunk preloading. */
@@ -92,13 +94,23 @@ function handleNavigationKeys(event: KeyboardEvent<HTMLElement>) {
   buttons[next].scrollIntoView?.({ block: "nearest", inline: "nearest" });
 }
 
-type UnifiedWorkspaceId = "channel" | AdminWorkspaceId;
+type UnifiedWorkspaceId = AdminWorkspaceId;
 const WORKSPACE_PANEL_WIDTH = 212;
 const HOVER_CLOSE_DELAY = 180;
 
+function channelQueryForLocation(location: string) {
+  return location.includes("?") ? location.slice(location.indexOf("?") + 1).split("#", 1)[0] : "";
+}
+
 function channelTabForLocation(location: string) {
-  const query = location.includes("?") ? location.slice(location.indexOf("?") + 1).split("#", 1)[0] : "";
-  return getChannelInventoryNavigationTab(query);
+  return getChannelInventoryNavigationTab(channelQueryForLocation(location));
+}
+
+function channelViewForLocation(location: string): ChannelInventoryNavigationView {
+  const tab = channelTabForLocation(location);
+  // Historical channel archives belong to the channel entry; batches/trash to the list.
+  return tab === "channels" ? "channels" : tab === "materials"
+    ? getChannelInventoryNavigationView(channelQueryForLocation(location)) : "flat";
 }
 
 /** Read-only route context. No links, effects, requests or local selection state. */
@@ -115,7 +127,8 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
       entry.kind === "group" && entry.items.some(item => item.path === activeItem.path))
     : null;
   const labels = channel
-    ? ["渠道库存", ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
+    ? [channelViewForLocation(location) === "channels" ? "渠道库存" : "库存列表",
+      ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
     : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   return (
     <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location">
@@ -153,15 +166,12 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
   );
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
-  const channelTab = channelTabForLocation(location);
-  const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] = [
-    ...(channelItem ? [{ id: "channel" as const, label: "渠道库存", items: [channelItem] }] : []),
-    ...state.workspaces.flatMap(workspace => workspace.id === "business"
+  const channelView = channelViewForLocation(location);
+  const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] =
+    state.workspaces.flatMap(workspace => workspace.id === "business"
       ? businessEntries.length ? [{ ...workspace, items: filteredBusinessItems }] : []
-      : [workspace]),
-  ];
-  const activeWorkspaceId = channelActive ? "channel"
-    : state.route?.canonicalPath !== CHANNEL_INVENTORY_ROUTE ? state.activeWorkspace?.id : null;
+      : [workspace]);
+  const activeWorkspaceId = state.route?.canonicalPath !== CHANNEL_INVENTORY_ROUTE ? state.activeWorkspace?.id : null;
   const navRef = useRef<HTMLElement>(null);
   const triggerRefs = useRef(new Map<UnifiedWorkspaceId, HTMLButtonElement>());
   const groupRefs = useRef(new Map<AdminWorkspaceNavigationGroupId, HTMLButtonElement>());
@@ -393,7 +403,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     );
   }
 
-  if (!workspaces.length) return null;
+  if (!channelItem && !workspaces.length) return null;
 
   return (
     <nav
@@ -407,6 +417,24 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
       onKeyDown={handleNavigationKeys}
       onPointerLeave={scheduleHoverClose}
     >
+      {channelItem ? (["flat", "channels"] as const).map(view => {
+        const isActive = channelActive && channelView === view;
+        return (
+          <button key={view} type="button"
+            className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+            data-workspace-nav-target={view === "flat" ? "inventory" : "channel"}
+            data-navigation-level="1" data-channel-view={view}
+            data-active={isActive ? "true" : "false"} aria-current={isActive ? "page" : undefined}
+            onClick={() => { closeWorkspace(); onNavigate(channelItem, "materials", view); }}
+            onPointerEnter={event => {
+              cancelHoverClose();
+              if (isDesktopMouse(event) && expanded) closeWorkspace();
+              (onPreload ?? onItemIntent)?.(channelItem);
+            }}
+            onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
+          >{view === "flat" ? "库存列表" : "渠道库存"}</button>
+        );
+      }) : null}
       {workspaces.map(workspace => {
         const isActive = workspace.id === activeWorkspaceId;
         const isExpanded = expanded && open?.id === workspace.id;
@@ -492,20 +520,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                 onClick={() => closeWorkspace(true)}>关闭</button>
             </div>
             <div className="admin-workspace-nav__workspace-content" data-workspace-dropdown="content">
-              {open.id === "channel" && channelItem ? CHANNEL_INVENTORY_TABS.map(tab => {
-                const isActive = channelActive && channelTab === tab.id;
-                return (
-                  <button key={tab.id} type="button"
-                    className="admin-workspace-nav__tab admin-workspace-nav__module admin-workspace-nav__dropdown-item"
-                    data-workspace-nav-target={`channel:${tab.id}`} data-workspace-nav-child="true"
-                    data-navigation-choice="item" data-navigation-level="2" data-channel-tab={tab.id}
-                    data-active={isActive ? "true" : "false"} aria-current={isActive ? "page" : undefined}
-                    onClick={() => { closeWorkspace(); onNavigate(channelItem, tab.id); }}
-                    onPointerEnter={() => (onPreload ?? onItemIntent)?.(channelItem)}
-                    onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
-                  >{tab.label}</button>
-                );
-              }) : open.id === "business" || open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
+              {open.id === "business" || open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
                 ? renderLeaf(entry.item, open.id as AdminWorkspaceId, 2)
                 : (
                   <button key={entry.id}

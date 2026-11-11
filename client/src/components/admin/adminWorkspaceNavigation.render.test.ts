@@ -643,13 +643,13 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
       )
     );
-    expect(document.activeElement).toBe(button("channel"));
+    expect(document.activeElement).toBe(button("inventory"));
     await act(async () =>
       button("business").dispatchEvent(
         new KeyboardEvent("keydown", { key: "Home", bubbles: true })
       )
     );
-    expect(document.activeElement).toBe(button("channel"));
+    expect(document.activeElement).toBe(button("inventory"));
     expect(onNavigate).not.toHaveBeenCalled();
   });
 

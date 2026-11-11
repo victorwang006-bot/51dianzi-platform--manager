@@ -146,6 +146,8 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   const [ordersDirty, setOrdersDirty] = useState(false);
   const [contactsDirty, setContactsDirty] = useState(false);
   const [contactsBusy, setContactsBusy] = useState(false);
+  // Read live during navigation: the importer closes its portal before completion navigation.
+  const supplyOpen = useRef(false);
   const [blockedModuleLeave, setBlockedModuleLeave] = useState(false);
   const [pendingLeaveAction, setPendingLeaveAction] = useState<(() => void) | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -183,6 +185,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
     setFollowOpen(false); setFollowDirty(false); followNextDirty.current = false;
     followFingerprint.current = null; basicRequestRef.current = null;
     setActionDialog(null); setActionReason(""); setTransferUserId("");
+    supplyOpen.current = false;
     setPendingCorrection(null); setConfirmDiscardFollow(false); setConfirmUpdateDuplicate(false);
     setCreateDemandToken(0); setOrderIntent(null); setDemandsDirty(false); setOrdersDirty(false);
     setPendingLeaveAction(null); setBlockedModuleLeave(false); setMoreOpen(false);
@@ -205,7 +208,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
     navigate(customerWorkbenchLocation(id, next, search), { replace: true });
   };
   const guardAction = (action: () => void) => {
-    if (moduleBusyOrDirty || shellBusy || followSubmitting.current) { setBlockedModuleLeave(true); return; }
+    if (supplyOpen.current || moduleBusyOrDirty || shellBusy || followSubmitting.current) { setBlockedModuleLeave(true); return; }
     if (basicDirty || followDirty) { setPendingLeaveAction(() => action); return; }
     runApprovedAction(action);
   };
@@ -224,7 +227,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
       if (!receiptSession.current.active || !receiptSession.current.mounted) return "clean";
       // Module booleans include unknown/pending. Contacts also remain conservative:
       // discard through their own editor, never force-unmount an unknown write.
-      if (moduleBusyOrDirty || shellBusy || followSubmitting.current) return "busy";
+      if (supplyOpen.current || moduleBusyOrDirty || shellBusy || followSubmitting.current) return "busy";
       if (approvedShellAction.current) return "clean";
       return basicDirty || followDirty ? "dirty" : "clean";
     },
@@ -240,7 +243,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
 
   useEffect(() => {
     const protectDraft = (event: BeforeUnloadEvent) => {
-      if (!basicDirty && !followDirty && !moduleBusyOrDirty && !shellBusy && !followSubmitting.current) return;
+      if (!supplyOpen.current && !basicDirty && !followDirty && !moduleBusyOrDirty && !shellBusy && !followSubmitting.current) return;
       event.preventDefault(); event.returnValue = "";
     };
     window.addEventListener("beforeunload", protectDraft);
@@ -589,7 +592,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         {orderAuthority.failed && <p role="alert">订单权限核验失败。<button type="button" className="crm-link" onClick={() => void orderAuthority.refresh()}>重试核验</button></p>}
         <CustomerSalesOrders customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} contextIdentityKey={workbenchIdentity} canRead={canReadOrders} canWrite={canReadOrders && !isArchived} readOnly={isArchived} intent={orderIntent} onIntentHandled={nonce => { if (isCurrentChildReceipt()) setOrderIntent(current => current?.nonce === nonce ? null : current); }} onDirtyChange={setOrdersDirty} onOrderChanged={() => { if (!isCurrentChildReceipt()) return; void utils.crmSalesOrder.customerSummary.invalidate({ customerId: customer.id }); if (isCurrentChildReceipt()) void utils.crmSalesOrder.customerMaterials.invalidate({ customerId: customer.id }); }} />
       </section>}
-      {tab === "materials" && <div id="customer-panel-materials" role="tabpanel" aria-labelledby="customer-tab-materials"><CustomerWorkbenchMaterials key={workbenchIdentity} customerId={customer.id} scope={contactScope.scope} scopeReady={contactScope.ready} canReadOrders={canReadOrders} /></div>}
+      {tab === "materials" && <div id="customer-panel-materials" role="tabpanel" aria-labelledby="customer-tab-materials"><CustomerWorkbenchMaterials key={workbenchIdentity} customerId={customer.id} scope={contactScope.scope} scopeReady={authorityReady} canReadOrders={canReadOrders} supply={{ customerVersion: customer.version, archived: isArchived, isCurrent: isCurrentChildReceipt, onAction: guardAction, onOpenChange: open => { if (isCurrentChildReceipt()) supplyOpen.current = open; } }} /></div>}
 
       <div hidden={tab !== "followups"} role="tabpanel" id="customer-panel-followups" aria-labelledby="customer-tab-followups">
       <section id="customer-followups" className="customer-detail-followups mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -617,7 +620,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
 
     </main>
 
-    {blockedModuleLeave && <ConfirmDialog title="当前需求或订单尚未完成" description="联系人、需求、订单或客户操作尚未完成。请先在当前模块保存，或通过该模块的取消操作确认放弃，再切换页签、返回或操作更多；执行中或结果待确认时不能离开。" confirmLabel="继续当前操作" onCancel={() => setBlockedModuleLeave(false)} onConfirm={() => setBlockedModuleLeave(false)} />}
+    {blockedModuleLeave && <ConfirmDialog title="当前需求或订单尚未完成" description="联系人、需求、订单、供应库存上传或客户操作尚未完成。请先在当前模块保存，或通过该模块的取消操作确认放弃，再切换页签、返回或操作更多；执行中或结果待确认时不能离开。" confirmLabel="继续当前操作" onCancel={() => setBlockedModuleLeave(false)} onConfirm={() => setBlockedModuleLeave(false)} />}
     {pendingLeaveAction && <ConfirmDialog title="放弃未保存的客户修改？" description="公司资料或跟进内容尚未保存。继续切换页签、返回或操作更多将放弃当前未保存内容。" danger confirmLabel="放弃并继续" onCancel={() => setPendingLeaveAction(null)} onConfirm={() => { const action = pendingLeaveAction; setPendingLeaveAction(null); if (moduleBusyOrDirty || shellBusy || followSubmitting.current) { setBlockedModuleLeave(true); return; } formDirty.current = false; setBasicDirty(false); setForm(recordToCustomerForm(customer)); formVersion.current = customer.version; resetFollowUp(); setFollowOpen(false); runApprovedAction(action); }} />}
     {confirmUpdateDuplicate && <ConfirmDialog title="确认保存可能重复的客户？" description="系统发现可能与已有客户重复。确认后将提交当前修改；无权访问的客户资料不会展示。" confirmLabel="确认并保存" error={editError} busy={updateMutation.isPending} onCancel={() => setConfirmUpdateDuplicate(false)} onConfirm={() => void submitUpdate(true)} />}
     {confirmDiscardFollow && <ConfirmDialog title="放弃未保存的跟进？" description="当前跟进备注尚未保存。放弃后内容将无法恢复。" confirmLabel={pendingCorrection ? "放弃并更正原记录" : "放弃未保存内容"} danger onCancel={() => { setConfirmDiscardFollow(false); setPendingCorrection(null); }} onConfirm={discardFollowDraft} />}

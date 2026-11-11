@@ -1,6 +1,6 @@
 import { useLocation, useSearch } from "wouter";
 import { parseSupplyLocation, supplyLocation } from "../components/customers/customerSupply";
-import { channelInventoryTabLocation, readChannelInventoryTabIntent, channelInventoryBatchListLocation, channelInventoryBatchMaterialLocation, readChannelInventoryBatchListState, readChannelInventoryBatchMaterialIntent, positiveInventoryId } from "../../../../../lib/channelInventoryNavigation";
+import { channelInventoryTabLocation, channelInventoryViewLocation, getChannelInventoryNavigationView, readChannelInventoryTabIntent, channelInventoryBatchListLocation, channelInventoryBatchMaterialLocation, readChannelInventoryBatchListState, readChannelInventoryBatchMaterialIntent, positiveInventoryId } from "../../../../../lib/channelInventoryNavigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
@@ -592,8 +592,9 @@ export default function ChannelInventoryHost() {
   // ordinary filter controls change only their draft until Confirm/Enter.
   const applyMaterialFilters = (next: MaterialFilters) => { setMaterialFilters(next); setDraftMaterialFilters(next); };
   const [materialPage, setMaterialPage] = useState(1);
-  const [inventoryView, setInventoryView] = useState<"flat" | "channels">("flat");
-  const [readableChannel, setReadableChannel] = useState<{ scope: string; channel: ReadableInventoryChannel } | null>(null);
+  // A top entry, refresh or history travel must never reuse a remembered view.
+  const inventoryView = getChannelInventoryNavigationView(search);
+  const [readableChannel, setReadableChannel] = useState<{ scope: string; search: string; channel: ReadableInventoryChannel } | null>(null);
   const [materialSort, setMaterialSort] = useState<{ field: "qty" | "dateCode"; direction: "asc" | "desc" } | null>(null);
   const [stateIdentity, setStateIdentity] = useState(identity);
   const contextCurrent = stateIdentity === identity;
@@ -737,7 +738,7 @@ export default function ChannelInventoryHost() {
   const sourceAllowed = sourceRequested && sourceRequestScope === sourceAuthorityKey && contextCurrent && !sourcesQuery.isError && sourcesQuery.data?.canFilterSource === true;
   const sourceOptions = sourceAllowed ? sourcesQuery.data!.items : [];
   const parsedMaterialChannelId = Number(materialFilters.channelId);
-  const currentReadableChannel = inventoryView === "channels" && contextCurrent && readableChannel?.scope === identity ? readableChannel.channel : undefined;
+  const currentReadableChannel = inventoryView === "channels" && contextCurrent && readableChannel?.scope === identity && readableChannel.search === search ? readableChannel.channel : undefined;
   const browsingChannelsOnly = inventoryView === "channels" && !currentReadableChannel && !supplyLink;
   const materialChannelId = supplyLink
     ? exactSourceReadable ? exactTarget?.id : undefined
@@ -840,7 +841,7 @@ export default function ChannelInventoryHost() {
     setStateIdentity(identity);
     applyMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" });
     setChannelFilters({ name: "", type: "all", active: "all" });
-    setReadableChannel(null); setInventoryView("flat");
+    setReadableChannel(null);
     setMaterialSort(null);
     editRequestRef.current += 1; editAbortRef.current?.abort();
     setBusy(null);
@@ -867,7 +868,7 @@ export default function ChannelInventoryHost() {
     if (!batchMaterialIntent) return;
     // URL state never proves scope/source rights. Keep source-list filters
     // entirely separate from this exact batch inventory intent.
-    setInventoryView("flat"); setReadableChannel(null);
+    setReadableChannel(null);
     applyMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all", uploadBatchId: batchMaterialIntent.id === null ? "invalid" : String(batchMaterialIntent.id) });
     setMaterialPage(1); setMaterialSort(null);
     setAppliedBatchIntentKey(batchIntentKey);
@@ -927,22 +928,37 @@ export default function ChannelInventoryHost() {
     setMessage("");
     setDismissedSupplyLink(search);
     setTab(next);
-    if (next === "materials") { setInventoryView("flat"); setReadableChannel(null); }
-    const target = channelInventoryTabLocation(next, true);
+    if (next === "materials") setReadableChannel(null);
+    const target = next === "materials" ? channelInventoryViewLocation("flat", true) : channelInventoryTabLocation(next, true);
     if (syncLocation && target && typeof window !== "undefined") {
       const actual = `${window.location.pathname}${window.location.search}`;
-      if (actual !== target && actual !== channelInventoryTabLocation(next)) navigate(target);
+      const absoluteTarget = next === "materials" ? channelInventoryViewLocation("flat") : channelInventoryTabLocation(next);
+      if (actual !== target && actual !== absoluteTarget) {
+        // changeTab has already invalidated the old UI. Do not destroy a legacy
+        // upload session opened immediately afterwards on its own URL event.
+        tabSearchRef.current = target.slice(target.indexOf("?") + 1);
+        navigate(target);
+      }
     }
   };
 
   const tabSearchRef = useRef(search);
   useEffect(() => {
     if (tabSearchRef.current === search) return;
+    const previousSearch = tabSearchRef.current;
     tabSearchRef.current = search;
     // Browser/menu navigation must not push another history entry. Legacy
     // supply targets (including invalid ones) retain their exact proof effect.
     const next = readChannelInventoryTabIntent(search) ?? (parseSupplyLocation(search) ? null : "materials");
-    if (next && next !== tab) changeTab(next, false);
+    const viewChanged = getChannelInventoryNavigationView(previousSearch) !== inventoryView;
+    const leftExactTarget = !supplyLink && Boolean(parseSupplyLocation(previousSearch) || readChannelInventoryBatchMaterialIntent(previousSearch));
+    if (next && (next !== tab || viewChanged || leftExactTarget)) {
+      changeTab(next, false);
+      if (next === "materials" && !batchMaterialIntent) {
+        applyMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all" });
+        setMaterialPage(1); setMaterialSort(null);
+      }
+    }
     // Only a new search is an intent; internal state changes are not navigation.
   }, [search]);
 
@@ -1105,7 +1121,9 @@ export default function ChannelInventoryHost() {
   const openMaterialCreate = () => {
     if (!canWriteMaterials || !isCurrent()) return;
     clearBatch();
-    setInventoryView("flat"); setReadableChannel(null);
+    // Retained legacy logic: never discard an independently proven supply target.
+    if (!supplyLink && inventoryView !== "flat") changeTab("materials");
+    setReadableChannel(null);
     invalidateEditSession();
     materialCreateRef.current = null;
     materialUpdateRef.current = null; setMaterialRetryLocked(false);
@@ -1425,12 +1443,15 @@ export default function ChannelInventoryHost() {
     if (repeatSearch) void materialsQuery.refetch();
   };
   const changeInventoryView = (next: "flat" | "channels") => {
-    changeTab("materials"); setInventoryView(next); setReadableChannel(null);
+    const target = channelInventoryViewLocation(next, true);
+    if (!target) return;
+    changeTab("materials", false); setReadableChannel(null);
     applyMaterialFilters({ ...materialFilters, channelId: "" }); setMaterialPage(1);
+    navigate(target);
   };
   const selectReadableChannel = (channel: ReadableInventoryChannel) => {
     if (!isCurrent() || !sourceContextVerified || !sourceIdentityCurrent || channel.canViewSource === false) return;
-    setReadableChannel({ scope: identity, channel });
+    setReadableChannel({ scope: identity, search, channel });
     applyMaterialFilters({ channelId: String(channel.id), partNumber: "", brand: "", type: "all" });
     setMaterialPage(1); setMaterialSort(null);
   };
@@ -1440,7 +1461,7 @@ export default function ChannelInventoryHost() {
     const target = channelInventoryBatchMaterialLocation(id, origin, true);
     if (!target) return;
     changeTab("materials", false);
-    setInventoryView("flat"); setReadableChannel(null);
+    setReadableChannel(null);
     applyMaterialFilters({ channelId: "", partNumber: "", brand: "", type: "all", uploadBatchId: String(id) });
     setMaterialPage(1); setMaterialSort(null);
     navigate(target);
@@ -1457,6 +1478,16 @@ export default function ChannelInventoryHost() {
     navigate(channelInventoryBatchListLocation({ channelId: "", archived: "all", page: 1 }, true, metadata.uploadBatchId!));
   };
   const batchReturn = tab === "materials" && (batchMaterialIntent || rawUploadBatchId) ? <button type="button" className="ci-button" onClick={returnToUploadBatches}>返回上传批次</button> : null;
+  // Read access is the existing management-panel contract, not its write grant.
+  const managementCanRead = ready && contextCurrent && sourceIdentityCurrent && !enterpriseQuery.isError;
+  const inventoryMore = managementCanRead ? <DropdownMenu>
+    <DropdownMenuTrigger asChild><button type="button" className="ci-button" aria-label="更多库存管理">更多</button></DropdownMenuTrigger>
+    <DropdownMenuContent className="ci-channel-actions-menu ci-inventory-more-menu" align="end">
+      <DropdownMenuItem onSelect={() => { changeTab("batches", false); navigate(channelInventoryBatchListLocation(undefined, true)); }}>上传记录</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => changeTab("trash")}>已删除库存</DropdownMenuItem>
+      {hasInventoryWrite ? <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => changeTab("channels")}>历史渠道整理</DropdownMenuItem></> : null}
+    </DropdownMenuContent>
+  </DropdownMenu> : null;
 
   if (enterpriseQuery.isLoading) {
     return <section className="ci-page ci-host-state" aria-busy="true">{batchReturn}正在核对企业权限…</section>;
@@ -1475,20 +1506,8 @@ export default function ChannelInventoryHost() {
 
   return (
     <section className="ci-page ci-host" aria-label="渠道库存管理" data-channel-inventory-host>
-      {tab === "materials" || tab === "channels" ? <div className="ci-tabbar">
-        <h1 className="ci-page-title">{tab === "materials" ? "渠道库存" : "渠道档案"}</h1>
-        {batchReturn}
-        <div className="ci-heading-actions" aria-label="渠道库存操作">
-          {tab === "channels" ? (
-            <button type="button" className="ci-button ci-primary" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
-          ) : tab === "materials" ? (
-            <>
-              <button type="button" className="ci-button" disabled={!canWriteMaterials || pendingBatch !== null} onClick={() => openBatch()}>上传库存</button>
-              <button type="button" className="ci-button ci-primary" disabled={!canWriteMaterials} onClick={openMaterialCreate}>单条上传</button>
-            </>
-          ) : null}
-        </div>
-      </div> : null}
+      <h1 className="ci-sr-only">{tab === "materials" ? inventoryView === "channels" ? "渠道库存" : "库存列表" : tab === "channels" ? "历史渠道整理" : tab === "batches" ? "上传记录" : "已删除库存"}</h1>
+      {batchReturn}
 
       {tab === "materials" && currentReadableChannel ? <div className="ci-supply-location"><span>当前渠道：{currentReadableChannel.name}</span><button type="button" className="ci-inline-link" onClick={() => changeInventoryView("channels")}>返回渠道列表</button></div> : null}
       {supplyLink ? <div className="ci-supply-location" role="status">
@@ -1526,6 +1545,8 @@ export default function ChannelInventoryHost() {
               </select>
             </label>
             <button type="button" className="ci-button" onClick={() => { setChannelFilters({ name: "", type: "all", active: "all" }); setChannelPage(1); }}>重置</button>
+            <button type="button" className="ci-button" disabled={!canWriteChannels} onClick={openChannelCreate}>+ 新增渠道</button>
+            {inventoryMore}
             <span className="ci-filter-count">{displayedChannelTotal} 条渠道</span>
           </div>
           <div className="ci-tablewrap">
@@ -1588,7 +1609,7 @@ export default function ChannelInventoryHost() {
                 <button type="button" className="ci-columns-reset" onClick={() => updateColumns(DEFAULT_CHANNEL_INVENTORY_COLUMNS)}>恢复默认</button>
               </PopoverContent>
             </Popover> : null}
-            <div className="ci-inventory-view-controls" role="group" aria-label="库存查看方式"><button type="button" className={`ci-button${inventoryView === "flat" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "flat"} onClick={() => changeInventoryView("flat")}>平铺查看</button><button type="button" className={`ci-button${inventoryView === "channels" ? " ci-primary" : ""}`} aria-pressed={inventoryView === "channels"} onClick={() => changeInventoryView("channels")}>按渠道查看</button></div>
+            {inventoryMore}
             <span className="ci-filter-count">{materialsQuery.isError || !uploadBatchFilterValid || readableChannelStockDenied ? "库存条数不可用" : materialTotalKnown ? `${materialTotal} 条库存` : "正在读取库存条数…"}</span>
           </form>
           {browsingChannelsOnly && expectedContext ? <ChannelInventoryBrowsePanel key={identity} client={managementClient} context={expectedContext} scopeKey={identity} active={sourceContextVerified && contextCurrent && sourceIdentityCurrent} canReadChannels={ready && hasInventoryWrite} canReadTeamSources={sourceFilterHint} isCurrent={isCurrent} onSelect={selectReadableChannel} onAuthorizationError={businessScope.onAuthorizationError} /> : <>

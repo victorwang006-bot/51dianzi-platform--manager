@@ -11,6 +11,7 @@ const runtime = vi.hoisted(() => ({
   readContext: vi.fn(), create: vi.fn(), createBatch: vi.fn(), listChannels: vi.fn(), getChannel: vi.fn(), onAuthorizationError: vi.fn(),
   native: { read: true, write: true, note: true, authorizationVersion: "v1" },
   authorityOptions: vi.fn(),
+  invalidateContext: vi.fn(), invalidateSummary: vi.fn(),
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers", runtime.navigate] }));
 vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({
@@ -19,15 +20,20 @@ vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({
 }) }));
 vi.mock("../../../../../api/business-trpc", () => ({ trpc: {
   enterprise: { me: { useQuery: (_: unknown, options: unknown) => { runtime.authorityOptions(options); return { data: { enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: false, refetch: vi.fn() }; } } },
-  useUtils: () => ({ client: { channelInventory: {
+  channelInventory: {
+    customerSupplyContext: { useQuery: () => ({ data: runtime.context, isError: false, isFetching: false, isPlaceholderData: false, isFetchedAfterMount: true, refetch: runtime.readContext }) },
+    customerSupplySummary: { useQuery: () => ({ data: { items: [{ customerId: 801, channelId: null, canViewStock: false, materialCount: 0 }] }, isError: false, isFetching: false, isPlaceholderData: false, isFetchedAfterMount: true, refetch: vi.fn() }) },
+  },
+  useUtils: () => ({ channelInventory: { customerSupplyContext: { invalidate: runtime.invalidateContext }, customerSupplySummary: { invalidate: runtime.invalidateSummary } }, client: { channelInventory: {
     customerSupplyContext: { query: runtime.readContext }, createCustomerUploadBatch: { mutate: runtime.createBatch }, createCustomerMaterial: { mutate: runtime.create },
     listChannels: { query: runtime.listChannels }, getChannel: { query: runtime.getChannel },
   } } }),
 } }));
 import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
 import { CustomerSupplyCell } from "./CustomerSupplyCell";
+import { CustomerWorkbenchSupply } from "./CustomerWorkbenchSupply";
 import { customerMaterialInput, customerSupplySessionSuffix, completedSupplyChannel, parseSupplyLocation, supplyReceipt, useCustomerSupplyAuthority,
-  type SupplyContext, type SupplyIdentity, type SupplySummary } from "./customerSupply";
+  supplyLocation, type SupplyContext, type SupplyIdentity, type SupplySummary } from "./customerSupply";
 import { runBatch, type BatchEntry } from "../channelInventory/queue";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -86,6 +92,7 @@ beforeEach(() => {
   runtime.getChannel.mockReset().mockResolvedValue(channel);
   runtime.navigate.mockReset(); runtime.close.mockReset(); runtime.complete.mockReset(); runtime.onAuthorizationError.mockReset();
   runtime.authorityOptions.mockReset();
+  runtime.invalidateContext.mockReset(); runtime.invalidateSummary.mockReset();
   sessionStorage.clear(); vi.stubGlobal("confirm", vi.fn(() => true));
 });
 afterEach(async () => { if (root) await act(async () => root?.unmount()); container?.remove(); root = null; container = null; document.body.replaceChildren(); vi.unstubAllGlobals(); vi.useRealTimers(); });
@@ -182,7 +189,7 @@ describe("customer supply real portal and reused importer", () => {
     render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
     expect(runtime.create).toHaveBeenCalledTimes(2); expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     await act(async () => { finish(receipt()); }); await settle();
-    expect(runtime.create).toHaveBeenCalledTimes(3); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+    expect(runtime.create).toHaveBeenCalledTimes(3); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
     for (const [dto] of runtime.create.mock.calls) { expect(dto).not.toHaveProperty("channelId"); expect(dto).toMatchObject({ customerId: 801, expectedCustomerVersion: 4, sourceProfile: { type: "factory" } }); }
   });
@@ -201,7 +208,7 @@ describe("customer supply real portal and reused importer", () => {
   it("requires explicit partial finish and leaves the failed original batch recoverable", async () => {
     runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.resolve(receipt()); }).mockRejectedValueOnce(new Error("unknown"));
     render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
-    click(button("查看已上传结果 / 完成")); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels"); expect(sessionStorage.length).toBe(1);
+    click(button("查看已上传结果 / 完成")); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials"); expect(sessionStorage.length).toBe(1);
   });
   it("all-fail and cancel cannot client-precreate or navigate an empty channel", async () => {
     runtime.create.mockRejectedValue(new Error("FORBIDDEN")); render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
@@ -438,7 +445,7 @@ describe("customer single material upload uses the customer batch transaction", 
     expect(runtime.create.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, expectedCustomerVersion: 4, sourceProfile: { type: "factory" },
       partNumber: "ONE", brand: "TI", qty: 4000, price: "1.123456789012", currency: "CNY", taxIncluded: true, leadTime: "7天", dateCode: "0026+", note: "个人说明", requestId: expect.stringMatching(/^[-0-9a-f]{36}$/i), uploadBatchId: 501 });
     expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
-    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
   });
   it.each(["unknown", "true", "false"])("preserves %s tax including nullable blank qty/price", async tax => {
@@ -655,5 +662,31 @@ describe("IR-01 directly mounted customer upload real batch regression", () => {
       entries: [{ row: 2, requestId: "00000000-0000-4000-8000-000000000001", payload, status: "unknown" }] }));
     render(); await setupUpload(); expect(button("选择库存表格").disabled).toBe(true);
     expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("customer-detail supply entry uses the real existing upload portal", () => {
+  it("opens one existing portal from verified supply context and sends the original customer batch DTO", async () => {
+    const onOpenChange = vi.fn();
+    render(React.createElement(CustomerWorkbenchSupply, { customerId: 801, customerVersion: 4,
+      scope: { enterpriseId: 31, actorUserId: 7, canManageAll: false }, scopeReady: true, onOpenChange }));
+    click(button("上传物料表")); await setupUpload();
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true); click(button("单条上传"));
+    enterSingle("单条型号", "ONE"); enterSingle("单条品牌", "TI"); previewSingle(); click(button("确认上传 1 条")); await settle();
+    expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create.mock.calls[0][0]).toMatchObject({
+      customerId: 801, expectedCustomerVersion: 4, expectedEnterpriseId: 31, expectedActorUserId: 7, uploadBatchId: 501,
+    });
+    expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("channelId");
+    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
+    expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(runtime.invalidateContext).toHaveBeenCalled(); expect(runtime.invalidateSummary).toHaveBeenCalled();
+    expect(sessionStorage.length).toBe(0);
+  });
+  it("preserves exact legacy channel/settings links and does not append an unrelated old source or customer URL", () => {
+    expect(supplyLocation(411, "channels")).toBe("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+    expect(supplyLocation(411, "materials")).toBe("/channel-inventory?supplyChannelId=411&supplyTab=materials");
+    expect(parseSupplyLocation(supplyLocation(411, "channels").split("?")[1])).toEqual({ channelId: 411, tab: "channels" });
+    expect(() => supplyLocation(0, "materials")).toThrow();
   });
 });

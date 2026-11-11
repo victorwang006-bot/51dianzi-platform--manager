@@ -35,6 +35,7 @@ import { useLocation, useSearch } from "wouter";
 import {
   channelInventoryTabLocation,
   type ChannelInventoryNavigationTab,
+  type ChannelInventoryNavigationView,
 } from "@/lib/channelInventoryNavigation";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Logo } from "./Logo";
@@ -558,14 +559,14 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     markModuleSeen.mutate({ module: activeNotificationModule });
   }, [activeNotificationModule]);
 
-  const navigateToItem = (item: MenuItem, channelTab?: ChannelInventoryNavigationTab) => {
+  const navigateToItem = (item: MenuItem, channelTab?: ChannelInventoryNavigationTab, channelView?: ChannelInventoryNavigationView) => {
     if (item.notificationModule) {
       lastMarkedModuleRef.current = item.notificationModule;
       markModuleSeen.mutate({ module: item.notificationModule });
     }
     const navigationTarget =
       item.path === "/workbench/channel-inventory"
-        ? channelInventoryTabLocation(channelTab) ?? item.path
+        ? channelInventoryTabLocation(channelTab, false, channelView) ?? item.path
         : buildBusinessNavigationTarget(
             `${window.location.pathname}${window.location.search}`,
             item.path
@@ -599,7 +600,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
           <a
             className="admin-workspace-shell__brand"
             href="/workbench/channel-inventory"
-            aria-label="51电子网后台首页：渠道库存"
+            aria-label="51电子网后台首页：库存列表"
             onClick={(event) => {
               if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
               event.preventDefault();

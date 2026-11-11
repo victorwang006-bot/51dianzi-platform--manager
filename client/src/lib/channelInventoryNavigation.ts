@@ -6,6 +6,7 @@ export const CHANNEL_INVENTORY_TABS = [
   { id: "trash", label: "回收站" },
 ] as const;
 export type ChannelInventoryNavigationTab = typeof CHANNEL_INVENTORY_TABS[number]["id"];
+export type ChannelInventoryNavigationView = "flat" | "channels";
 export type ChannelInventoryBatchListState = { channelId: string; archived: "all" | "active" | "archived"; page: number };
 export const DEFAULT_BATCH_LIST_STATE: ChannelInventoryBatchListState = { channelId: "", archived: "active", page: 1 };
 const paramsFrom = (search: string) => new URLSearchParams(search.replace(/^\?/, ""));
@@ -32,11 +33,23 @@ export function getChannelInventoryNavigationTab(search: string): ChannelInvento
   return "materials";
 }
 
+/** Display state only; missing or invalid views use the flat inventory list. */
+export function getChannelInventoryNavigationView(search: string): ChannelInventoryNavigationView {
+  return paramsFrom(search).get("ciView") === "channels" ? "channels" : "flat";
+}
+
 /** Generic tab selection intentionally clears old exact-customer target parameters. */
-export function channelInventoryTabLocation(tab: unknown, relativeToWorkbench = false): string | null {
+export function channelInventoryTabLocation(tab: unknown, relativeToWorkbench = false, view?: ChannelInventoryNavigationView): string | null {
   if (!CHANNEL_INVENTORY_TABS.some(item => item.id === tab)) return null;
+  if (tab === "materials" && view !== undefined && view !== "flat" && view !== "channels") return null;
   const path = relativeToWorkbench ? "/channel-inventory" : CHANNEL_INVENTORY_ROUTE;
-  return `${path}?ciTab=${tab}`;
+  return `${path}?ciTab=${tab}${tab === "materials" && view !== undefined ? `&ciView=${view}` : ""}`;
+}
+
+/** Top-level view selection rebuilds the route without any old supply target. */
+export function channelInventoryViewLocation(view: unknown, relativeToWorkbench = false): string | null {
+  if (view !== "flat" && view !== "channels") return null;
+  return channelInventoryTabLocation("materials", relativeToWorkbench, view);
 }
 
 /** UI-only list state; never accepts enterprise, actor, scope or permission parameters. */

@@ -173,7 +173,7 @@ function CustomerSupplyUploadSession(props: Props) {
     const channelId = completedSupplyChannel(entries, props.customerId);
     if (!channelId) { setMessage("成功回执渠道不一致，已阻止跳转，请核实原批次。"); return; }
     // Close the real portal before navigating, never on the first successful row.
-    props.onComplete(); props.onClose(); navigate(supplyLocation(channelId, "channels"));
+    props.onComplete(); props.onClose(); navigate(supplyLocation(channelId, "materials"));
   };
   if (!currentRef.current || invalidated) return null;
   const upload = context && sessionData ? <BatchUpload

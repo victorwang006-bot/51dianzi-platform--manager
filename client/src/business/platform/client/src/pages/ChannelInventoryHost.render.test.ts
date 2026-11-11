@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { selectHostTab, hostNavigate } from "./ChannelInventoryHost.router-test-helper";
+import { selectHostTab, selectHostView, hostNavigate } from "./ChannelInventoryHost.router-test-helper";
 import { getChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
 import { BUSINESS_INDUSTRY_OPTIONS } from "../../../shared/businessIndustry";
 import { DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, channelInventoryColumnLayout } from "./channelInventoryColumns";
@@ -179,6 +179,19 @@ function button(name: string) {
     ),
     `missing button: ${name}`,
   );
+}
+
+function expectNoGlobalUpload() {
+  const toolbar = document.querySelector('.ci-toolbar[aria-label="材料筛选"]');
+  expect(document.querySelector(".ci-tabbar,.ci-heading-actions")).toBeNull();
+  expect(Array.from(toolbar?.querySelectorAll("button") ?? []).find(item => item.textContent === "单条上传" || item.textContent === "上传库存")).toBeUndefined();
+}
+
+async function openLegacyBatch() {
+  selectHostTab("channels");
+  click(required(document.querySelector(".ci-channel-table .ci-row-actions button"), "missing legacy row upload"));
+  await settle();
+  expect(document.querySelector('[aria-label="上传库存表格"]')).not.toBeNull();
 }
 
 function openMore(index = 0) {
@@ -452,8 +465,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.body.textContent).toContain("LM358DR");
     expect(document.body.textContent).toContain("TEAM-SN74");
     expect(document.querySelectorAll("h1")).toHaveLength(1);
-    expect(document.querySelector(".ci-tabbar > h1.ci-page-title")?.textContent).toBe("渠道库存");
-    expect(document.querySelector(".ci-heading-actions")?.textContent).toContain("上传库存单条上传");
+    expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
+    expect(document.querySelector("h1.ci-sr-only")?.textContent).toBe("库存列表");
+    expectNoGlobalUpload();
     expect(document.body.textContent).not.toContain("共享给同队");
     expect(document.body.textContent).not.toContain("撤销共享");
     expect(document.body.innerHTML).not.toContain("已核对交期");
@@ -497,9 +511,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(filter.textContent).toBe("全部可见库存");
     expect(filter.innerHTML).not.toContain("深圳代理");
     expect(filter.querySelectorAll("option")).toHaveLength(1);
-    click(button("单条上传"));
-    const upload = required(document.querySelector<HTMLSelectElement>('[aria-label="关联渠道"]'), "missing upload channel");
-    expect(upload.textContent).toContain("深圳代理");
+    expectNoGlobalUpload();
+    expect(document.querySelector('[aria-label="关联渠道"]')).toBeNull();
+    expect(runtime.optionInputs).toHaveLength(0);
     expect(filter.innerHTML).not.toContain("深圳代理");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined });
   });
@@ -651,6 +665,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   });
 
   it("cycles server quantity sort default desc asc default, resets page and preserves server ordering/page count", async () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode"]));
     renderHost();
     const qty = required(document.querySelector<HTMLButtonElement>('[aria-label="按可供数量排序"]'), "missing qty sort");
     const dc = required(document.querySelector<HTMLButtonElement>('[aria-label="按 Date Code 排序"]'), "missing date sort");
@@ -770,32 +785,23 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(getChannelInventoryNavigationTab(window.location.search)).toBe(returnToInventory ? "materials" : "channels");
   });
 
-  it("preserves the new upload title and typed model when old public detail resolves", async () => {
+  it("does not reopen a late public editor when a top-entry view replaces the retired new-upload entrance", async () => {
     let finish!: (value: unknown) => void;
-    const detail = (runtime.materialQuery as { data: { items: unknown[] } }).data.items[0];
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    renderHost();
-    click(materialMenuItem("编辑"));
-    click(button("单条上传"));
-    const dialog = required(document.querySelector('[role="dialog"]'), "missing new upload");
-    change(control(dialog, "型号"), "NEW-DRAFT-MODEL");
-    await act(async () => { finish(detail); await Promise.resolve(); });
-    expect(dialog.querySelector("h2")?.textContent).toBe("单条上传");
-    expect(control(dialog, "型号").value).toBe("NEW-DRAFT-MODEL");
-    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    renderHost(); click(materialMenuItem("编辑"));
+    expectNoGlobalUpload(); selectHostView("channels");
+    await act(async () => finish({ ...(runtime.materialQuery as { data: { items: unknown[] } }).data.items[0], channelId: 11 }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.innerHTML).not.toContain("历史库存备注");
-    expect(button("上传库存")).toBeTruthy();
     expect(runtime.updateMaterial).not.toHaveBeenCalled();
   });
 
-  it("suppresses a late detail error after opening and closing a new upload", async () => {
+  it("suppresses a late detail error after top-entry navigation without any new-upload CTA", async () => {
     let reject!: (error: Error) => void;
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
-    renderHost();
-    click(materialMenuItem("编辑"));
-    click(button("单条上传"));
-    click(required(document.querySelector('[aria-label="关闭库存编辑"]'), "missing close"));
-    await act(async () => { reject(new Error("STALE-DETAIL-ERROR")); await Promise.resolve(); });
+    renderHost(); click(materialMenuItem("编辑")); expectNoGlobalUpload();
+    selectHostView("channels"); selectHostView("flat");
+    await act(async () => reject(new Error("STALE-DETAIL-ERROR")));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.textContent).not.toContain("STALE-DETAIL-ERROR");
   });
@@ -806,7 +812,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     runtime.getTeamMaterialForEdit.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     renderHost();
     click(materialMenuItem("编辑"));
-    click(button("上传库存"));
+    await openLegacyBatch();
     await act(async () => { finish(detail); await Promise.resolve(); });
     expect(document.querySelector('[aria-label="上传库存表格"]')).not.toBeNull();
     expect(document.querySelector('#ci-material-editor-title')).toBeNull();
@@ -819,7 +825,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.body.textContent).not.toContain("TEAM-SN74");
     expect(document.body.textContent).not.toContain("LM358DR");
     expect(runtime.sharedInputs).toHaveLength(0);
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
 
@@ -827,7 +833,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     renderHost();
     change(required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存型号"]'), "missing part filter"), "FILTER");
     click(required(document.querySelector('[aria-label="按可供数量排序"]'), "missing sort"));
-    click(button("单条上传"));
+    click(materialMenuItem("编辑")); await settle();
     runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
     act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await settle();
@@ -939,35 +945,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.createMaterial).not.toHaveBeenCalled(); expect(runtime.updateMaterial).not.toHaveBeenCalled();
   });
 
-  it("creates with the original DTO and keeps public editing separate from the independent owner private history", async () => {
-    renderHost();
-    selectHostTab("materials");
-    await settle();
-
-    click(button("单条上传"));
-    await settle();
-    const dialog = required(document.querySelector('[role="dialog"]'), "missing material editor");
-    const channelSelect = required(
-      dialog.querySelector('select[aria-label="关联渠道"]'),
-      "missing material channel select",
-    ) as HTMLSelectElement;
-    change(channelSelect, "11");
-    change(control(dialog, "型号") as HTMLInputElement, "SN74HC00");
-    change(control(dialog, "品牌") as HTMLInputElement, "TI");
-    click(button("上传库存"));
-    await settle();
-    expect(runtime.createMaterial).toHaveBeenCalledWith(expect.objectContaining({
-      expectedEnterpriseId: 31,
-      expectedActorUserId: 7,
-      channelId: 11,
-      partNumber: "SN74HC00",
-      brand: "TI",
-      qty: null,
-      price: null,
-      currency: "CNY",
-      taxIncluded: null,
-      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
-    }));
+  it("removes global creation while keeping public editing separate from owner private history", async () => {
+    renderHost(); selectHostTab("materials"); await settle();
+    expectNoGlobalUpload(); expect(runtime.createMaterial).not.toHaveBeenCalled();
 
     click(materialMenuItem("编辑"));
     await settle();
@@ -1015,7 +995,7 @@ function previewBatch() {
 describe("channel inventory upload entrypoints", () => {
   it("reads a real synthetic Excel file, maps/previews then submits only supported authenticated DTO fields", async () => {
     renderHost();
-    click(button("上传库存"));
+    await openLegacyBatch();
     chooseBatchChannel();
     await uploadSheet([
       ["型号", "品牌", "数量", "报价", "Date Code", "owner", "enterpriseId", "teamId", "备注"],
@@ -1054,7 +1034,7 @@ describe("channel inventory upload entrypoints", () => {
 
   it("previews an over-15-digit numeric identifier as an error and never submits it", async () => {
     renderHost();
-    click(button("上传库存"));
+    await openLegacyBatch();
     chooseBatchChannel();
     await uploadSheet([["型号", "品牌"], [1234567890123456, "TI"]]);
     previewBatch();
@@ -1068,7 +1048,7 @@ describe("channel inventory upload entrypoints", () => {
   it("restores the original batch and retries only the uncertain row using the original request ID", async () => {
     runtime.createMaterial.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("response lost")).mockResolvedValue({});
     renderHost();
-    click(button("上传库存"));
+    await openLegacyBatch();
     chooseBatchChannel();
     await uploadSheet([["型号", "品牌"], ["ONE", "TI"], ["TWO", "TI"], ["THREE", "TI"]]);
     previewBatch();
@@ -1077,7 +1057,7 @@ describe("channel inventory upload entrypoints", () => {
     expect(runtime.createMaterial).toHaveBeenCalledTimes(2);
     const unknownDto = runtime.createMaterial.mock.calls[1][0];
     click(button("取消"));
-    click(button("上传库存"));
+    await openLegacyBatch();
     click(button("恢复原批次"));
     click(button("按原批次继续 / 重试"));
     await settle();
@@ -1091,7 +1071,7 @@ describe("channel inventory upload entrypoints", () => {
     let finish!: () => void;
     runtime.createMaterial.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
     renderHost();
-    click(button("上传库存"));
+    await openLegacyBatch();
     chooseBatchChannel();
     await uploadSheet([["型号", "品牌"], ["ONE", "TI"], ["TWO", "TI"]]);
     previewBatch();
@@ -1115,33 +1095,21 @@ describe("channel inventory upload entrypoints", () => {
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
   });
 
-  it("validates single required fields in the compact dialog and keeps zero/exact price and edit CAS", async () => {
-    renderHost();
-    click(button("单条上传"));
-    let dialog = required(document.querySelector('[role="dialog"]'), "missing single upload");
-    expect(dialog.querySelector("h2")?.textContent).toBe("单条上传");
-    expect(dialog.querySelector("header p")).toBeNull();
+  it("removes single creation CTA while retaining zero/exact price and edit CAS", async () => {
+    renderHost(); expectNoGlobalUpload();
+    expect(runtime.createMaterial).not.toHaveBeenCalled();
+    click(materialMenuItem("编辑")); await settle();
+    const dialog = required(document.querySelector('[role="dialog"]'), "missing edit inventory");
     expect(control(dialog, "可供数量").getAttribute("placeholder")).toBe("待确认");
     expect(control(dialog, "报价 CNY").getAttribute("placeholder")).toBe("面议");
-    click(button("上传库存"));
-    expect(dialog.querySelector('[role="alert"]')?.textContent).toContain("请输入型号");
-    expect(runtime.createMaterial).not.toHaveBeenCalled();
-    change(control(dialog, "型号"), "SINGLE");
-    change(control(dialog, "品牌"), "TI");
     change(control(dialog, "可供数量"), "0");
     change(control(dialog, "报价 CNY"), "123456789012345.123456789012");
-    click(button("上传库存"));
-    await settle();
-    expect(runtime.createMaterial).toHaveBeenCalledWith(expect.objectContaining({ channelId: 11, qty: 0, price: "123456789012345.123456789012", taxIncluded: null }));
-    click(materialMenuItem("编辑"));
-    await settle();
-    dialog = required(document.querySelector('[role="dialog"]'), "missing edit inventory");
     expect(dialog.querySelector("h2")?.textContent).toBe("编辑渠道库存");
     expect((control(dialog, "关联渠道") as HTMLSelectElement).disabled).toBe(true);
     change(control(dialog, "型号"), "EDITED");
     click(button("保存修改"));
     await settle();
-    expect(runtime.updateMaterial).toHaveBeenCalledWith(expect.objectContaining({ id: 101, expectedRevision: 9, partNumber: "EDITED", expectedEnterpriseId: 31, expectedActorUserId: 7 }));
+    expect(runtime.updateMaterial).toHaveBeenCalledWith(expect.objectContaining({ id: 101, expectedRevision: 9, partNumber: "EDITED", qty: 0, price: "123456789012345.123456789012", expectedEnterpriseId: 31, expectedActorUserId: 7 }));
   });
 });
 
@@ -1460,14 +1428,14 @@ describe("channel industry required integration", () => {
     expect(runtime.updateChannel).toHaveBeenCalledWith(expect.objectContaining({ industryCode: "medical", id: 11, expectedRevision: 4 }));
     // A real invalidation returns a fresh query DTO and repopulates upload candidates.
     runtime.channelQuery = query({ ...(runtime.channelQuery as { data: object }).data });
-    selectHostTab("materials");
-    click(button("单条上传"));
-    const upload = required(document.querySelector('[role="dialog"]'), "missing upload dialog");
-    expect(upload.querySelector('[aria-label="所属行业"]')).toBeNull();
-    expect(document.querySelector<HTMLSelectElement>('[aria-label="关联渠道"]')?.textContent).toContain("深圳代理");
+    selectHostTab("materials"); expectNoGlobalUpload();
+    await openLegacyBatch();
+    expect(document.querySelector('[aria-label="所属行业"]')).toBeNull();
+    expect(document.querySelector<HTMLSelectElement>('[aria-label="批量关联渠道"]')?.textContent).toContain("深圳代理");
   });
 
   it("echoes an existing channel industry and cannot edit a read-only source", async () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     const result = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
     result.data.items[0].industryCode = "renewable_energy";
     renderHost();
@@ -1520,7 +1488,7 @@ describe("v9 public inventory and collaboration integration", () => {
     const old = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
     runtime.teamQuery = query({ ...old.data, canWrite: false, items: old.data.items.map(row => ({ ...row, canEdit: false, readOnly: true })) });
     renderHost();
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).not.toContain("编辑");
     click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "备注（0）"), "missing unified readonly note entry"));
@@ -1791,25 +1759,19 @@ describe("v11 real Host source authorization lifecycle", () => {
     renderHost();
     expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
-    const header = required(document.querySelector(".ci-tabbar"), "missing compact channel header");
-    expect(header.querySelector("h1.ci-page-title")?.textContent).toBe("渠道库存");
-    expect(getComputedStyle(header).minHeight).toBe("54px");
-    expect(getComputedStyle(header).paddingTop).toBe("8px");
-    expect(getComputedStyle(header).marginBottom).toBe("6px");
-    expect(getComputedStyle(header).flexWrap).toBe("nowrap");
-    expect(getComputedStyle(required(header.querySelector(".ci-heading-actions"), "missing actions")).flexWrap).toBe("nowrap");
-    const views = required(document.querySelector('.ci-toolbar[aria-label="材料筛选"] .ci-inventory-view-controls'), "missing filter-row views");
-    expect(getComputedStyle(views).flexWrap).toBe("nowrap");
-    expect(getComputedStyle(button("上传库存")).height).toBe("34px");
-    for (const name of ["上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
-    for (const name of ["平铺查看", "按渠道查看"]) { expect(header.contains(button(name))).toBe(false); expect(views.contains(button(name))).toBe(true); }
-    expect(document.querySelector(".ci-stats,.ci-toolbar.ci-inventory-view-controls")).toBeNull();
+    expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
+    const title = required(document.querySelector("h1.ci-sr-only"), "missing accessible title");
+    expect(title.textContent).toBe("库存列表");
+    expect(getComputedStyle(title).position).toBe("absolute");
+    expect(getComputedStyle(title).height).toBe("1px");
+    expectNoGlobalUpload();
+    expect(document.querySelector('[aria-label="更多库存管理"]')).not.toBeNull();
     expect(document.body.textContent).not.toMatch(/库存明细|切换示例身份|leader|creator/);
     expect(getComputedStyle(required(document.querySelector(".ci-filter-label"), "missing original a11y label")).position).toBe("absolute");
     expect(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')?.disabled).toBe(true);
     expect(document.querySelector('input[aria-label="筛选库存型号"]')).not.toBeNull();
     expect(document.querySelector('input[aria-label="筛选库存品牌"]')).not.toBeNull();
-    expect(button("刷新")).toBeTruthy(); expect(button("上传库存")).toBeTruthy(); expect(button("单条上传")).toBeTruthy();
+    expect(button("刷新")).toBeTruthy(); expectNoGlobalUpload();
   });
 });
 
@@ -1844,12 +1806,12 @@ describe("v13 native channel read and original recorder contract", () => {
     renderHost();
     expect(document.body.textContent).toContain("TEAM-SN74");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7 });
-    expect(button("单条上传").disabled).toBe(true);
-    expect(button("上传库存").disabled).toBe(true);
+    expectNoGlobalUpload();
+    expectNoGlobalUpload();
     const edit = materialMenuItem("编辑");
     expect(edit.hasAttribute("data-disabled")).toBe(true);
     expect(edit.getAttribute("aria-disabled")).toBe("true");
-    click(button("单条上传")); click(button("上传库存")); click(edit);
+    expectNoGlobalUpload(); click(edit);
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.textContent).not.toContain("新增备注");
     act(() => edit.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })));
@@ -1897,7 +1859,7 @@ describe("v13 native channel read and original recorder contract", () => {
     await act(async () => finish({ ...(runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data.items[0], channelId: 11 }));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.textContent).toContain("TEAM-SN74");
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
   });
   it("allows a read-only native reader to export without granting ERP inventory.manage", async () => {
     runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-reader-v1" };
@@ -1929,7 +1891,7 @@ describe("v14 industry and channel-row stock upload", () => {
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
     expect(getComputedStyle(table.parentElement!).overflowX).toBe("auto");
-    expect(button("上传库存")).toBeTruthy(); expect(button("单条上传")).toBeTruthy();
+    expectNoGlobalUpload();
     selectHostTab("channels");
     const actions = required(document.querySelector(".ci-channel-table td.ci-col-actions"), "missing archive actions");
     expect(getComputedStyle(actions).width).toBe("172px");
@@ -2083,7 +2045,7 @@ describe("v14 industry and channel-row stock upload", () => {
     await act(async () => finish(channelFixture()));
     expect(batchSelect()).toBeNull();
     expect(document.body.textContent).not.toContain("正在核验库存写权限");
-    if (kind === "tab-return") { click(button("上传库存")); await settle(); expect(batchSelect()?.value).toBe(""); }
+    if (kind === "tab-return") { expectNoGlobalUpload(); expect(batchSelect()).toBeNull(); }
     expect(runtime.createMaterial).not.toHaveBeenCalled();
   });
 
@@ -2098,7 +2060,7 @@ describe("v14 industry and channel-row stock upload", () => {
     if (kind === "tab") { selectHostTab("channels"); selectHostTab("materials"); }
     else rerender();
     await settle(); expect(batchSelect()).toBeNull();
-    if (kind === "tab") { click(button("上传库存")); await settle(); expect(batchSelect()?.value).toBe(""); }
+    if (kind === "tab") { expectNoGlobalUpload(); expect(batchSelect()).toBeNull(); }
   });
 
   it("stops the original per-row queue on tab change even after returning to the same identity", async () => {
@@ -2260,12 +2222,12 @@ describe("customer supply independent exact source-readable proof", () => {
     runtime.listTeamMaterials.mockReturnValueOnce(new Promise(resolve => { finishStock = resolve; }));
     renderHost();
     expect(runtime.listTeamMaterials).not.toHaveBeenCalled();
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     noOtherStocks();
     await act(async () => finishChannel(channel));
     expect(runtime.listTeamMaterials).toHaveBeenCalledTimes(1);
     expect(runtime.materialInputs).toHaveLength(0);
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     noOtherStocks();
     await act(async () => finishStock({ ...stock, pageSize: 1 })); await settle();
     expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
@@ -2331,8 +2293,8 @@ describe("customer supply independent exact source-readable proof", () => {
     runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 999, name: "未经库存证明的来源" }] });
     renderHost(); await settle();
     expect(document.body.textContent).toContain("没有目标渠道库存来源读取权限");
-    expect(button("单条上传").disabled).toBe(true);
-    click(button("单条上传")); click(button("上传库存"));
+    expectNoGlobalUpload();
+    expectNoGlobalUpload();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
     noOtherStocks(); onlyExactRequests();
@@ -2357,7 +2319,7 @@ describe("customer supply independent exact source-readable proof", () => {
     expect(document.querySelector(".ci-supply-location")?.textContent).not.toContain("已精确定位");
     expect(sourceFilter().disabled).toBe(true);
     expect(sourceFilter().textContent).not.toContain("全部可见库存");
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
     noOtherStocks(); onlyExactRequests();
   });
@@ -2367,7 +2329,7 @@ describe("customer supply independent exact source-readable proof", () => {
     renderHost(); await settle();
     expect(runtime.listTeamMaterials).not.toHaveBeenCalled();
     expect(runtime.listTeamSourceOptions).not.toHaveBeenCalled();
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     noOtherStocks();
   });
 
@@ -2379,7 +2341,7 @@ describe("customer supply independent exact source-readable proof", () => {
     rerender(); await settle();
     expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
     expect(document.body.textContent).toContain("来源权限已改变");
-    expect(button("单条上传").disabled).toBe(true);
+    expectNoGlobalUpload();
     runtime.exactTeamQuery = query(stock); rerender(); await settle();
     expect(runtime.materialInputs.every(input => (input as { channelId?: number }).channelId === 999)).toBe(true);
     expect(document.querySelector("tbody")?.textContent).not.toMatch(/LM358DR|TEAM-SN74/);
@@ -2658,7 +2620,7 @@ describe("approved channel inventory part-number density", () => {
     result.data.items[0] = { ...result.data.items[0], partNumber: longPart }; rerender(); expect(panel()).toBeNull();
     click(partTrigger()); click(button("下一页")); expect(panel()).toBeNull();
     click(partTrigger()); runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] }); rerender(); await settle(); expect(panel()).toBeNull();
-    click(partTrigger()); click(button("按渠道查看")); await settle(); expect(panel()).toBeNull();
+    click(partTrigger()); selectHostView("channels"); await settle(); expect(panel()).toBeNull();
   });
 
   it.each([320, 390, 768, 1024, 1560])("clamps the portal within a synthetic %spx viewport without changing table budgets", width => {
@@ -2793,8 +2755,8 @@ describe("approved inventory compact time presentation", () => {
   it("dismisses time Portal on source time, page, view and identity changes", async () => {
     renderHost(); click(trigger()); setFirst({ updatedAt: "2026-11-11T00:00:01Z" }); rerender(); expect(panel()).toBeNull();
     click(trigger()); click(button("下一页")); expect(panel()).toBeNull();
-    click(trigger()); click(button("按渠道查看")); await settle(); expect(panel()).toBeNull();
-    click(button("平铺查看")); await settle(); click(trigger());
+    click(trigger()); selectHostView("channels"); await settle(); expect(panel()).toBeNull();
+    selectHostView("flat"); await settle(); click(trigger());
     runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
     rerender(); await settle(); expect(panel()).toBeNull();
   });

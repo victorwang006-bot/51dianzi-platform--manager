@@ -1,6 +1,6 @@
 import { act, useSyncExternalStore } from "react";
 import { vi } from "vitest";
-import { channelInventoryTabLocation, type ChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
+import { channelInventoryTabLocation, channelInventoryViewLocation, type ChannelInventoryNavigationView, type ChannelInventoryNavigationTab } from "../../../../../lib/channelInventoryNavigation";
 
 function subscribe(listener: () => void) {
   window.addEventListener("popstate", listener);
@@ -26,6 +26,10 @@ export function setHostTestLocation(location: string, historyMode: "push" | "rep
     else window.history.replaceState(null, "", location);
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
+}
+
+export function selectHostView(view: ChannelInventoryNavigationView) {
+  setHostTestLocation(channelInventoryViewLocation(view)!);
 }
 
 export function selectHostTab(tab: ChannelInventoryNavigationTab) {

@@ -13,6 +13,7 @@ const runtime = vi.hoisted(() => ({
   getInvalidate: vi.fn(), listInvalidate: vi.fn(), contactError: vi.fn((error: Error) => error.message),
   orderSummaryInvalidate: vi.fn(), orderMaterialsInvalidate: vi.fn(),
   canReadOrders: false, ordersDirty: false, demandsDirty: false, demandProps: null as any, orderProps: null as any,
+  supplyProps: null as any,
 }));
 vi.mock("../hooks/usePageIdentity", () => ({ usePageIdentity: () => runtime.identity }));
 vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({ contextVerification: { authorizationVersion: runtime.authorizationVersion } }) }));
@@ -31,7 +32,13 @@ vi.mock("../components/customerDemands/CustomerDemandHistory", () => ({ Customer
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: () => null }));
 vi.mock("../components/customers/CustomerWorkbenchOverview", () => ({ CustomerWorkbenchOverview: () => null }));
 vi.mock("../components/customers/CustomerWorkbenchContacts", () => ({ CustomerWorkbenchContacts: () => null }));
-vi.mock("../components/customers/CustomerWorkbenchMaterials", () => ({ CustomerWorkbenchMaterials: () => null }));
+vi.mock("../components/customers/CustomerWorkbenchMaterials", () => ({ CustomerWorkbenchMaterials: (props: any) => {
+  runtime.supplyProps = props.supply;
+  const [, navigate] = useLocation();
+  return React.createElement(React.Fragment, {},
+    React.createElement("button", { onClick: () => props.supply.onAction(() => props.supply.onOpenChange(true)) }, "synthetic-open-supply"),
+    React.createElement("button", { onClick: () => { props.supply.onOpenChange(false); navigate("/channel-inventory?supplyChannelId=411&supplyTab=materials"); } }, "synthetic-finish-supply"));
+} }));
 vi.mock("../components/customers/useCustomerWorkbenchOrders", () => ({ useCustomerWorkbenchOrders: () => ({ canRead: runtime.canReadOrders, failed: false }) }));
 vi.mock("./CrmSalesOrders", () => ({ CustomerSalesOrders: (props: any) => {
   runtime.orderProps = props;
@@ -94,6 +101,7 @@ beforeEach(() => {
   runtime.ready = true; runtime.enterpriseId = 31; runtime.contextError = false; runtime.detailError = false; runtime.getOptions = [];
   runtime.detail = { customer: record(), followUps: [] };
   runtime.canReadOrders = false; runtime.ordersDirty = false; runtime.demandsDirty = false; runtime.demandProps = null; runtime.orderProps = null;
+  runtime.supplyProps = null;
   memory.setPageMemoryScope(null); nativeReplace.call(history, {}, "", "/workbench/customers/801?merchantId=30061");
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0));
   vi.stubGlobal("cancelAnimationFrame", (frame: number) => window.clearTimeout(frame));
@@ -427,5 +435,38 @@ describe.sequential("CustomerDetail completion and parent receipt safety", () =>
     runtime.orderSummaryInvalidate.mockClear(); runtime.orderMaterialsInvalidate.mockClear();
     runtime.authorizationVersion = "auth-B"; await render(); runtime.authorizationVersion = "auth-A"; await render();
     await act(async () => old()); expect(runtime.orderSummaryInvalidate).not.toHaveBeenCalled(); expect(runtime.orderMaterialsInvalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe.sequential("CustomerDetail supply session parent guard integration", () => {
+  it("passes only verified current customer/version/archive and keeps tab/top/back/SPA/unload blocked until importer close", async () => {
+    await prepareSource(); await click("关联物料");
+    expect(runtime.supplyProps.customerVersion).toBe(1); expect(runtime.supplyProps.archived).toBe(false);
+    expect(runtime.supplyProps.isCurrent()).toBe(true);
+    await click("synthetic-open-supply"); const url = window.location.href;
+    await click("概览"); expect(window.location.href).toBe(url);
+    expect(document.body.textContent).toContain("供应库存上传"); await bodyClick("继续当前操作");
+    await click("新增需求"); expect(window.location.href).toBe(url); await bodyClick("继续当前操作");
+    await click("返回上一页"); expect(window.location.href).toBe(url); await bodyClick("继续当前操作");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    await navigateOutside("navigate"); expect(window.location.href).toBe(url); expect(confirm).not.toHaveBeenCalled();
+    const unload = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(unload); expect(unload.defaultPrevented).toBe(true);
+    await bodyClick("继续当前操作"); await act(async () => runtime.supplyProps.onOpenChange(false));
+    await click("概览"); expect(window.location.search).toContain("tab=overview");
+  });
+  it("clears the live upload guard synchronously before the importer's completion navigate, without a sticky busy render", async () => {
+    await render(); await click("关联物料"); await click("synthetic-open-supply");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    await click("synthetic-finish-supply");
+    expect(window.location.pathname).toBe("/workbench/channel-inventory");
+    expect(window.location.search).toBe("?supplyChannelId=411&supplyTab=materials"); expect(confirm).not.toHaveBeenCalled();
+  });
+  it("does not let an old A→B→A supply callback lock the new customer session or acquire a write from an archived URL", async () => {
+    await render(); await click("关联物料"); const old = runtime.supplyProps;
+    runtime.authorizationVersion = "auth-B"; await render(); runtime.authorizationVersion = "auth-A"; await render();
+    expect(old.isCurrent()).toBe(false); await act(async () => old.onOpenChange(true));
+    await click("概览"); expect(window.location.search).toContain("tab=overview");
+    runtime.detail = { customer: record({ archivedAt: "2026-11-01", version: 2 }), followUps: [] };
+    await render(); await click("关联物料"); expect(runtime.supplyProps.archived).toBe(true); expect(runtime.supplyProps.customerVersion).toBe(2);
   });
 });

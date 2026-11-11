@@ -3,6 +3,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { writeFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { selectHostView } from "./ChannelInventoryHost.router-test-helper";
 import { BUSINESS_INDUSTRY_OPTIONS } from "../../../shared/businessIndustry";
 vi.mock("wouter", async importOriginal => ({ ...await importOriginal<typeof import("wouter")>(), ...(await import("./ChannelInventoryHost.router-test-helper")).hostWouterHooks }));
 const runtime = vi.hoisted(() => {
@@ -49,30 +50,26 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); expect(fetch).not.toHaveBeenCalled(); vi.unstubAllGlobals(); });
 describe("approved channel inventory filters and compact header (real component, mock transport)", () => {
-  it("keeps title/uploads in the header and views after selection before inventory count in the filter row", () => {
-    const header = required(container.querySelector(".ci-tabbar"));
-    expect(header.querySelector("h1")?.textContent).toBe("渠道库存");
-    for (const name of ["上传库存", "单条上传"]) expect(header.contains(button(name))).toBe(true);
+  it("removes the title/uploads/view-switch row and keeps accessible title, filters and More", () => {
+    expect(container.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
+    expect(container.querySelector("h1.ci-sr-only")?.textContent).toBe("库存列表");
+    for (const name of ["上传库存", "单条上传", "平铺查看", "按渠道查看"]) expect(Array.from(container.querySelectorAll("button")).find(item => item.textContent === name)).toBeUndefined();
     const toolbar = required(container.querySelector('.ci-toolbar[aria-label="材料筛选"]'));
-    const views = required(toolbar.querySelector(".ci-inventory-view-controls"));
-    for (const name of ["平铺查看", "按渠道查看"]) { expect(header.contains(button(name))).toBe(false); expect(views.contains(button(name))).toBe(true); }
-    expect(views.nextElementSibling?.className).toBe("ci-filter-count");
-    // This transport fixture is readonly, so the original selection permission guard omits Select.
-    expect(views.previousElementSibling?.textContent).toBe("刷新");
-    expect(container.querySelector(".ci-toolbar.ci-inventory-view-controls")).toBeNull();
-    expect(header.querySelector('[aria-hidden="true"]')).toBeNull();
+    const more = required(toolbar.querySelector('[aria-label="更多库存管理"]'));
+    expect(more.nextElementSibling?.className).toBe("ci-filter-count");
+    // Read access keeps More even when the transport denies writes.
+    expect(container.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull();
     expect(Array.from(container.querySelectorAll("button")).find(item => item.textContent === "重置")).toBeUndefined();
     if (process.env.CHANNEL_GEOMETRY_DOM) writeFileSync(process.env.CHANNEL_GEOMETRY_DOM, container.innerHTML);
   });
-  it("keeps the same view switch visible on the channel list and selected channel and returns to flat inventory", async () => {
-    click(button("按渠道查看")); await settle();
-    const views = required(container.querySelector('.ci-toolbar[aria-label="材料筛选"] .ci-inventory-view-controls'));
-    expect(button("按渠道查看").getAttribute("aria-pressed")).toBe("true");
-    expect(views.contains(button("平铺查看"))).toBe(true);
+  it("top-entry URL views select channels and flat inventory without duplicate switches", async () => {
+    selectHostView("channels"); await settle();
+    expect(container.querySelector(".ci-inventory-view-controls")).toBeNull();
+    expect(window.location.search).toBe("?ciTab=materials&ciView=channels");
     click(button("查看该渠道库存")); await settle();
     expect(container.querySelector(".ci-supply-location")?.textContent).toContain("授权渠道");
-    click(button("平铺查看")); await settle();
-    expect(button("平铺查看").getAttribute("aria-pressed")).toBe("true");
+    selectHostView("flat"); await settle();
+    expect(window.location.search).toBe("?ciTab=materials&ciView=flat");
     expect(container.querySelector(".ci-supply-location")).toBeNull();
     expect(runtime.inputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
     expect(container.querySelector("tbody")?.textContent).toContain("SERVER-FIRST");
@@ -135,7 +132,7 @@ describe("approved channel inventory filters and compact header (real component,
     click(sort); expect(runtime.inputs.at(-1)).toMatchObject({ sortBy: undefined, sortDirection: undefined, page: 1 }); expect(sort.querySelectorAll("svg path")).toHaveLength(2); expect(sort.querySelectorAll(".ci-sort-active")).toHaveLength(0);
   });
   it("uses the same confirmed industry and quantity API inside a server-readable channel", async () => {
-    click(button("按渠道查看")); await settle(); click(button("查看该渠道库存"));
+    selectHostView("channels"); await settle(); click(button("查看该渠道库存"));
     setControl("筛选库存行业", "unset"); click(button("确定")); click(required(container.querySelector('[aria-label="按可供数量排序"]')));
     expect(runtime.inputs.at(-1)).toMatchObject({ channelId: 11, industryCode: "unset", sortBy: "qty", sortDirection: "desc", page: 1 });
     expect(required(container.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')).disabled).toBe(true);

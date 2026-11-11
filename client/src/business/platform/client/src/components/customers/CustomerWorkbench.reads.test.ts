@@ -6,13 +6,15 @@ const state = vi.hoisted(() => ({
     enterprise: null, enterpriseError: false, inputs: [],
     demands: null, demand: null, contacts: null, summary: null, materials: null,
     supply: null, canReadSupply: false, navigate: vi.fn(),
+    supplyContext: null,
     queryFlags: {} as Record<string, { isFetching?: boolean; isFetchedAfterMount?: boolean; isPlaceholderData?: boolean }>,
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers/801", state.navigate] }));
 vi.mock("./customerSupply", () => ({
-    useCustomerSupplyAuthority: () => ({ identity: { key: "SYNTHETIC", enterpriseId: 31, actorUserId: 7 }, canRead: state.canReadSupply, failed: false }),
-    supplyLocation: (id) => `/channel-inventory?supplyChannelId=${id}&supplyTab=materials`,
+    useCustomerSupplyAuthority: () => ({ identity: { key: "SYNTHETIC", enterpriseId: 31, actorUserId: 7 }, canRead: state.canReadSupply, canWrite: false, failed: false, onAuthorizationError: vi.fn() }),
+    supplyLocation: (id, tab) => `/channel-inventory?supplyChannelId=${id}&supplyTab=${tab}`,
 }));
+vi.mock("./CustomerSupplyUploadDialog", () => ({ CustomerSupplyUploadDialog: () => null }));
 vi.mock("../../../../../api/business-trpc", () => {
     const query = (name, data) => ({ useQuery: (input, options) => {
             state.inputs.push({ name, input, options });
@@ -23,7 +25,8 @@ vi.mock("../../../../../api/business-trpc", () => {
             customer: { contactsList: query("contacts", () => state.contacts) },
             customerDemand: { list: query("demands", () => state.demands), get: query("demand", () => state.demand) },
             crmSalesOrder: { customerSummary: query("summary", () => state.summary), customerMaterials: query("materials", () => state.materials) },
-            channelInventory: { customerSupplySummary: query("supply", () => state.supply) },
+            channelInventory: { customerSupplySummary: query("supply", () => state.supply), customerSupplyContext: query("supplyContext", () => state.supplyContext) },
+            useUtils: () => ({ channelInventory: { customerSupplySummary: { invalidate: vi.fn() }, customerSupplyContext: { invalidate: vi.fn() } } }),
         } };
 });
 import { useCustomerWorkbenchOrders } from "./useCustomerWorkbenchOrders";
@@ -54,6 +57,7 @@ beforeEach(() => {
     state.summary = { customerId: 801, totalOrders: 123, awaitingPaymentOrders: 17, awaitingShipmentOrders: 8, monthlyOrders: 3 };
     state.materials = { items: [{ id: 1002, orderId: 1001, customerId: 801, orderNumber: "O-SYNTHETIC", partNumber: "ORDER-MATERIAL", brand: "TI", status: "cancelled", orderedQty: 20, shippedQty: 5, remainingQty: 0, unitPrice: "0.1234", qtyUnit: "片" }], total: 111 };
     state.supply = { items: [{ customerId: 801, channelId: 411, canViewStock: true, materialCount: 9 }] };
+    state.supplyContext = { customer: { id: 801, version: 4, industryCode: "electronic_components", archivedAt: null }, channel: { id: 411, active: true, revision: 1 }, canUpload: true, disabledReason: null };
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);

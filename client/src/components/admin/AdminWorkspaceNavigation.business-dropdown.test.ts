@@ -84,7 +84,10 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
   });
   it("只有渠道权限时不制造空业务工作台", async () => {
     await render("/workbench/channel-inventory", { items: subset(["/workbench/channel-inventory"]) });
-    expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull(); expect(button("channel").getAttribute("aria-current")).toBe("location");
+    expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+    expect(button("inventory").getAttribute("aria-current")).toBe("page");
+    expect(button("channel").hasAttribute("aria-current")).toBe(false);
+    expect(host.querySelectorAll('[data-channel-view]')).toHaveLength(2);
   });
   it("ops页能展开business但只按真实route高亮ops", async () => {
     await render("/materials"); await click("business"); expect(button("operations").getAttribute("aria-current")).toBe("location");

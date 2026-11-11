@@ -191,7 +191,7 @@ describe("actual CustomerList supply layout and once-identity refresh", () => {
     await click(button("预览并校验", document.body)); await click(button("确认上传 1 条", document.body));
     expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.create.mock.calls[0][0].sourceProfile).toEqual({ type: "factory" });
     expect(runtime.summary).toHaveBeenCalledTimes(2); expect(runtime.summary.mock.calls[1][0].customerIds).toEqual([801, 802, 803]);
-    expect(runtime.navigate).toHaveBeenLastCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+    expect(runtime.navigate).toHaveBeenLastCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
   it("does not refresh summary on focus or after 90 seconds, but page and authorization changes refresh", async () => {

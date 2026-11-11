@@ -26,21 +26,27 @@ function labels(host: Element) {
 describe("只读当前位置：不恢复第二行导航，不替代页面标题和操作", () => {
   it.each(CHANNEL_INVENTORY_TABS)("渠道 $id 位置来自实际ciTab而顶级标签固定", tab => {
     const host = render(`${CHANNEL_INVENTORY_ROUTE}?merchantId=31&ciTab=${tab.id}#detail`);
-    expect(labels(host)).toEqual(tab.id === "materials" ? ["渠道库存"] : ["渠道库存", tab.label]);
+    expect(labels(host)).toEqual(tab.id === "materials" ? ["库存列表"]
+      : [tab.id === "channels" ? "渠道库存" : "库存列表", tab.label]);
     expect(host.querySelector('nav[aria-label="当前位置"]')).not.toBeNull();
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
-    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(tab.label);
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(tab.id === "materials" ? "库存列表" : tab.label);
     expect(host.querySelectorAll("button, a, h1, h2")).toHaveLength(0);
     expect(host.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
   });
 
   it.each([
-    ["?ciTab=invalid", ["渠道库存"]],
-    ["?supplyChannelId=22&supplyTab=materials", ["渠道库存"]],
+    ["?ciTab=invalid", ["库存列表"]],
+    ["?supplyChannelId=22&supplyTab=materials", ["库存列表"]],
     ["?supplyChannelId=22&supplyTab=details", ["渠道库存", "渠道档案"]],
     ["?supplyChannelId=0&supplyTab=materials", ["渠道库存", "渠道档案"]],
-    ["?supplyChannelId=0&supplyTab=materials&ciTab=trash", ["渠道库存", "回收站"]],
-    ["?ciTab=batches#ciTab=channels", ["渠道库存", "上传批次"]],
+    ["?supplyChannelId=0&supplyTab=materials&ciTab=trash", ["库存列表", "回收站"]],
+    ["?ciTab=batches#ciTab=channels", ["库存列表", "上传批次"]],
+    ["?ciTab=materials&ciView=flat", ["库存列表"]],
+    ["?ciTab=materials&ciView=channels", ["渠道库存"]],
+    ["?ciTab=materials&ciView=invalid", ["库存列表"]],
+    ["?ciTab=materials&ciView=flat#ciView=channels", ["库存列表"]],
+    ["?ciTab=trash&ciView=channels", ["库存列表", "回收站"]],
   ])("渠道查询%s严格复用既有解析", (query, expected) => {
     expect(labels(render(`${CHANNEL_INVENTORY_ROUTE}${query}`))).toEqual(expected);
   });
@@ -49,7 +55,7 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
     ["/workbench/customers/88?merchantId=31", ["业务工作台", "客户与销售", "客户列表"]],
     ["/workbench/sales-orders/8", ["业务工作台", "客户与销售", "销售订单"]],
     ["/workbench/chat/8", ["业务工作台", "客户与销售", "询价接待"]],
-    ["/workbench", ["业务工作台", "库存管理", "我的库存"]],
+    ["/workbench", ["库存列表"]],
     ["/workbench/outbound", ["业务工作台", "库存管理", "出库管理"]],
     ["/workbench/procurement/orders/8", ["业务工作台", "采购管理", "采购订单"]],
     ["/materials/8", ["平台运营", "基础资料", "物料数据库"]],
@@ -91,7 +97,7 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
       const action = host.querySelector<HTMLButtonElement>("[data-action]")!;
       await act(async () => action.focus());
       await act(async () => root.render(view(`${CHANNEL_INVENTORY_ROUTE}?ciTab=batches`)));
-      expect(labels(host)).toEqual(["渠道库存", "上传批次"]);
+      expect(labels(host)).toEqual(["库存列表", "上传批次"]);
       expect(document.activeElement).toBe(action);
       expect(host.querySelector("article")).toBe(page);
       await act(async () => root.render(view("/workbench/sales-orders/8")));

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { trpc } from "../../../../../api/business-trpc";
 import { errorMessage } from "./customerUtils";
-import { supplyLocation, useCustomerSupplyAuthority } from "./customerSupply";
-import { withCustomerContactScope, type CustomerContactScope } from "./customerContacts";
+import type { CustomerContactScope } from "./customerContacts";
+import { CustomerWorkbenchSupply, type CustomerWorkbenchSupplyProps } from "./CustomerWorkbenchSupply";
 
-export function CustomerWorkbenchMaterials({ customerId, scope, scopeReady, canReadOrders }: {
+export function CustomerWorkbenchMaterials({ customerId, scope, scopeReady, canReadOrders, supply }: {
   customerId: number; scope: CustomerContactScope | null; scopeReady: boolean; canReadOrders: boolean;
+  supply?: Omit<CustomerWorkbenchSupplyProps, "customerId" | "scope" | "scopeReady">;
 }) {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -28,7 +28,7 @@ export function CustomerWorkbenchMaterials({ customerId, scope, scopeReady, canR
       </>}
     </section>
     <CustomerWorkbenchOrderMaterials customerId={customerId} canRead={canReadOrders} />
-    <CustomerWorkbenchSupply customerId={customerId} scope={scope} scopeReady={scopeReady} />
+    <CustomerWorkbenchSupply {...supply} customerId={customerId} scope={scope} scopeReady={scopeReady} />
   </>;
 }
 
@@ -45,24 +45,5 @@ function CustomerWorkbenchOrderMaterials({ customerId, canRead }: { customerId: 
       <div className="customer-workbench-table-scroll"><table className="crm-table"><thead><tr><th>订单 / 型号</th><th>状态</th><th>订购数量</th><th>已出数量</th><th>待出数量</th><th>成交含税单价</th></tr></thead><tbody>{result.items.map(item => <tr key={`${item.orderId}:${item.id}`}><td>{item.orderNumber}<br />{item.partNumber} · {item.brand}</td><td>{item.status === "cancelled" ? "已取消" : "有效订单"}</td><td>{item.orderedQty} {item.qtyUnit}</td><td>{item.shippedQty} {item.qtyUnit}</td><td>{item.remainingQty} {item.qtyUnit}</td><td>{item.unitPrice}</td></tr>)}</tbody></table></div>
       <div className="customer-workbench-pagination"><span>共 {result.total} 行订单物料 · 第 {page} 页</span><button type="button" className="crm-btn" disabled={page <= 1 || query.isFetching} onClick={() => setPage(value => value - 1)}>上一页</button><button type="button" className="crm-btn" disabled={page * 20 >= result.total || query.isFetching} onClick={() => setPage(value => value + 1)}>下一页</button></div>
     </>}
-  </section>;
-}
-
-function CustomerWorkbenchSupply({ customerId, scope, scopeReady }: {
-  customerId: number; scope: CustomerContactScope | null; scopeReady: boolean;
-}) {
-  const [, navigate] = useLocation();
-  const authority = useCustomerSupplyAuthority(scope, scopeReady);
-  const query = trpc.channelInventory.customerSupplySummary.useQuery(scope
-    ? withCustomerContactScope(scope, { customerIds: [customerId] })
-    : { customerIds: [customerId], expectedActorUserId: 0, expectedEnterpriseId: 0 }, {
-    enabled: authority.canRead && Boolean(authority.identity), retry: false, staleTime: 0, placeholderData: undefined,
-  });
-  const summary = authority.canRead && !query.isError && !query.isFetching && !query.isPlaceholderData && query.isFetchedAfterMount !== false
-    ? query.data?.items.find(item => item.customerId === customerId) : undefined;
-  const channelId = summary?.canViewStock && Number.isSafeInteger(summary.channelId) && (summary.channelId ?? 0) > 0 ? summary.channelId : null;
-  return <section className="customer-workbench-panel"><h2 className="admin-section-title">客户供应库存</h2>
-    <p className="customer-detail-meta">与采购需求分开。</p>
-    {authority.failed ? <p role="alert">库存权限核验失败 <button type="button" className="crm-link" onClick={() => void authority.retry()}>重试</button></p> : !authority.canRead ? <p className="customer-workbench-empty">暂无供应库存查看权限。</p> : query.isError ? <p role="alert">读取客户供应渠道失败：{errorMessage(query.error)} <button type="button" className="crm-link" onClick={() => void query.refetch()}>重试</button></p> : !summary ? <p className="customer-workbench-empty">正在核验客户供应渠道…</p> : channelId ? <button type="button" className="crm-btn" onClick={() => navigate(supplyLocation(channelId, "materials"))}>查看供应库存{summary.materialCount === null ? "" : `（${summary.materialCount}）`}</button> : <p className="customer-workbench-empty">暂无可查看的供应库存。</p>}
   </section>;
 }
