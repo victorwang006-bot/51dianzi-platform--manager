@@ -146,7 +146,6 @@ describe("后台工作台导航分组", () => {
         label: "客户管理",
         items: [
           item("/workbench/customers"),
-          item("/workbench/customer-demands"),
           item("/workbench/orders"),
           item("/workbench/outbound"),
           item("/workbench/inquiries"),
@@ -284,6 +283,12 @@ describe("后台工作台导航分组", () => {
         label: "询价接待",
       },
       {
+        path: "/workbench/customer-demands",
+        canonicalPath: "/workbench/customers",
+        groupId: "customers",
+        label: "客户需求",
+      },
+      {
         path: "/profile",
         canonicalPath: "/profile",
         groupId: "system",
@@ -313,6 +318,9 @@ describe("后台工作台导航分组", () => {
       label: "询价接待",
       isAlias: true,
     });
+    expect(getAdminWorkbenchNavigationRoute("/workbench/customer-demands")).toMatchObject({ canonicalPath: "/workbench/customers", label: "客户需求", groupId: "customers", isAlias: true });
+    expect(groupAdminWorkbenchNavigationItems(navigationItems).flatMap(group => group.items.map(item => item.path))).not.toContain("/workbench/customer-demands");
+    expect(isAdminBusinessWorkbenchPath("/workbench/customer-demands")).toBe(true);
     expect(
       ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths)
     ).toContain("/staff");

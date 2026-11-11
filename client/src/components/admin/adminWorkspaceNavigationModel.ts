@@ -79,7 +79,6 @@ const BUSINESS_MODULE_ENTRIES = [
     label: "客户与销售",
     paths: [
       "/workbench/customers",
-      "/workbench/customer-demands",
       "/workbench/inquiries",
       "/workbench/orders",
     ],
@@ -184,7 +183,6 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
       paths: [
         "/workbench/channel-inventory",
         "/workbench/customers",
-        "/workbench/customer-demands",
         "/workbench/orders",
         "/workbench/inbound",
         "/workbench/outbound",

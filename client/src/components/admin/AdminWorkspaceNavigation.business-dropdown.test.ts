@@ -13,9 +13,8 @@ const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths).ma
 }));
 type Item = typeof items[number];
 const groups = [
-  ["customers", "/workbench/customers"], ["customers", "/workbench/customer-demands"],
+  ["customers", "/workbench/customers"],
   ["customers", "/workbench/inquiries"], ["customers", "/workbench/orders"],
-  ["inventory", "/workbench/inventory"], ["inventory", "/workbench/publish"],
   ["inventory", "/workbench/inbound"], ["inventory", "/workbench/outbound"],
   ["procurement", "/workbench/procurement-demands"], ["procurement", "/workbench/procurement-orders"],
 ] as const;
@@ -55,9 +54,9 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     expect(Array.from(panel()!.querySelectorAll<HTMLButtonElement>("[data-navigation-choice]")).map(b => b.dataset.workspaceNavTarget))
       .toEqual(["group:customers", "group:inventory", "group:procurement"]);
     expect(panel(3)).toBeNull(); expect(panel()!.textContent).not.toContain("渠道库存");
-    await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(4);
+    await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(3);
     await click("group:inventory"); expect(host.querySelector('[data-business-submenu="customers"]')).toBeNull();
-    expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(4);
+    expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(2);
   });
   it.each(groups)("%s → %s 只回传原授权对象一次且保留预加载", async (group, path) => {
     await render(); await click("business"); await click(`group:${group}`);

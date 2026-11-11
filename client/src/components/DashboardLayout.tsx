@@ -132,13 +132,6 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         nested: false,
       },
       {
-        icon: ClipboardList,
-        label: "客户需求",
-        path: "/workbench/customer-demands",
-        workbenchCapability: "customers.manage",
-        nested: false,
-      },
-      {
         icon: ReceiptText,
         label: "销售订单",
         path: "/workbench/orders",

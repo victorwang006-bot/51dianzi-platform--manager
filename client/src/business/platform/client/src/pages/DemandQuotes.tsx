@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "../../../../api/business-trpc";
 import PlatformLayout from "../../../../BusinessContentFrame";
-import ProcurementWorkspaceNav from "../components/customerDemands/ProcurementWorkspaceNav";
 import ChatActionButton from "../components/ChatActionButton";
 import {
   AdminDataPanel,
@@ -74,7 +73,6 @@ export default function DemandQuotes() {
   return (
     <PlatformLayout>
       <AdminPage aria-label="收到的报价">
-        <ProcurementWorkspaceNav active="quotes" />
         {/* 工具栏 */}
         <AdminFilterBar>
           <input

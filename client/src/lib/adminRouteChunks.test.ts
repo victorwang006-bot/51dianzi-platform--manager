@@ -7,6 +7,7 @@ const dashboardSource = readFileSync(
   "client/src/components/DashboardLayout.tsx",
   "utf8"
 );
+const navigationSource = readFileSync("client/src/components/admin/AdminWorkspaceNavigation.tsx", "utf8");
 
 const pages = [
   "Login",
@@ -45,10 +46,6 @@ describe("后台首屏分片契约", () => {
   it("统一注册工作台业务路径，且不从浏览器侧推断商户身份", () => {
     const normalizedAppSource = appSource.replace(/\s+/g, "");
     const workbenchRoutes = [
-      ["/workbench", "BusinessWorkbenchRoute"],
-      ["/workbench/inventory", "BusinessWorkbenchRoute"],
-      ["/workbench/publish/:id/edit", "BusinessWorkbenchRoute"],
-      ["/workbench/publish", "BusinessWorkbenchRoute"],
       ["/workbench/inbound", "BusinessWorkbenchRoute"],
       ["/workbench/channel-inventory", "BusinessWorkbenchRoute"],
       ["/workbench/customers/:id", "BusinessWorkbenchRoute"],
@@ -66,6 +63,8 @@ describe("后台首屏分片契约", () => {
       ["/workbench/add-user", "BusinessWorkbenchRoute"],
       ["/workbench/user-records", "BusinessWorkbenchRoute"],
       ["/workbench/company-info", "BusinessWorkbenchRoute"],
+      ["/workbench/demand-quotes", "BusinessWorkbenchRoute"],
+      ["/workbench/procurement/demands", "BusinessWorkbenchRoute"],
     ] as const;
 
     for (const [path, component] of workbenchRoutes) {
@@ -73,6 +72,10 @@ describe("后台首屏分片契约", () => {
         `<Routepath={"${path}"}component={${component}}/>`
       );
     }
+    expect(appSource).toContain("getClosedAdminEntryNavigationTarget(");
+    expect(appSource).toContain("if (closedEntryTarget)");
+    expect(normalizedAppSource).not.toContain('<Routepath={"/workbench"}component={BusinessWorkbenchRoute}/>');
+    expect(dashboardSource).not.toContain('path: "/workbench/customer-demands"');
     expect(appSource).toContain('routeBase="/workbench"');
     expect(appSource).toContain("merchantId is intentionally not inferred");
     // B01: independent BFF scope/binding, not auth.me native permission keys,
@@ -139,12 +142,12 @@ describe("后台首屏分片契约", () => {
     );
     expect(dashboardSource).toContain('path: "/staff"');
     expect(dashboardSource).toContain('chunk: "staff"');
-    expect(dashboardSource).toMatch(
-      /onPointerEnter=\{\(\)\s*=>\s*\{\s*if\s*\(item\.chunk\)\s*preloadAdminRoute\(item\.chunk\)/
-    );
-    expect(dashboardSource).toMatch(
-      /onFocus=\{\(\)\s*=>\s*\{\s*if\s*\(item\.chunk\)\s*preloadAdminRoute\(item\.chunk\)/
-    );
+    expect(dashboardSource).toContain("if (item.chunk) preloadAdminRoute(item.chunk)");
+    expect(dashboardSource).toContain("items={visibleMenuItems}");
+    expect(dashboardSource).toContain("onPreload={preloadItem}");
+    expect(navigationSource).toContain("onPointerEnter=");
+    expect(navigationSource).toContain("onFocus={() => (onPreload ?? onItemIntent)?.(item)}");
+    expect(navigationSource).toContain("(onPreload ?? onItemIntent)?.(item)");
     expect(dashboardSource).not.toContain("requestIdleCallback");
   });
 });

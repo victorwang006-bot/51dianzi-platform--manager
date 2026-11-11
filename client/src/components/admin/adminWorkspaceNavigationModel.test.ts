@@ -48,11 +48,8 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
     expect(groupedPaths).toEqual([
       "/workbench/channel-inventory",
       "/workbench/customers",
-      "/workbench/customer-demands",
       "/workbench/inquiries",
       "/workbench/orders",
-      "/workbench/inventory",
-      "/workbench/publish",
       "/workbench/inbound",
       "/workbench/outbound",
       "/workbench/procurement-demands",
@@ -94,6 +91,16 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
         { path: "/not-registered", label: "未知" },
       ])
     ).toEqual([]);
+  });
+});
+
+describe("客户需求旧链接兼容，不产生独立菜单", () => {
+  it("keeps the old route context but never synthesizes a demand item", () => {
+    const authorized = [...items, { path: "/workbench/customer-demands", label: "客户需求", permission: "customers.manage", chunk: "legacy" }];
+    expect(groupAdminWorkspaceNavigationItems(authorized).flatMap(workspace => workspace.items.map(item => item.path))).not.toContain("/workbench/customer-demands");
+    expect(groupAdminBusinessNavigationItems(authorized).flatMap(entry => entry.kind === "direct" ? [entry.item.path] : entry.items.map(item => item.path))).not.toContain("/workbench/customer-demands");
+    expect(getAdminWorkspaceNavigationState(authorized, "/workbench/customer-demands?merchantId=31")).toMatchObject({ route: { pathname: "/workbench/customer-demands", canonicalPath: "/workbench/customers", label: "客户需求", isAlias: true, workspaceId: "business" }, activeItem: { path: "/workbench/customers" } });
+    expect(groupAdminWorkspaceNavigationItems(authorized.filter(item => item.path === "/workbench/customer-demands"))).toEqual([]);
   });
 });
 
@@ -140,7 +147,7 @@ describe("正式后台顶部工作区菜单", () => {
     const paths = ADMIN_WORKSPACE_DEFINITIONS.flatMap(
       workspace => workspace.paths
     );
-    const expectedPaths = officialPaths.filter(path => path !== "/workbench/company-info");
+    const expectedPaths = officialPaths.filter(path => !["/workbench/company-info", "/workbench/inventory", "/workbench/publish", "/role-templates", "/permission-audit"].includes(path));
     expect([...paths].sort()).toEqual([...expectedPaths].sort());
     expect(new Set(paths).size).toBe(expectedPaths.length);
     expect(
@@ -154,7 +161,7 @@ describe("正式后台顶部工作区菜单", () => {
     expect(paths).not.toContain("/unregistered-team-demo");
     expect(paths).not.toContain("/templates");
     expect(paths).toEqual(
-      expect.arrayContaining(["/teams", "/role-templates", "/permission-audit"])
+      expect.arrayContaining(["/teams", "/staff"])
     );
   });
 
@@ -166,10 +173,7 @@ describe("正式后台顶部工作区菜单", () => {
     expect(workspace.items.map(item => item.path)).toEqual([
       "/workbench/channel-inventory",
       "/workbench/customers",
-      "/workbench/customer-demands",
       "/workbench/orders",
-      "/workbench/inventory",
-      "/workbench/publish",
       "/workbench/inbound",
       "/workbench/outbound",
       "/workbench/inquiries",
@@ -198,8 +202,6 @@ describe("正式后台顶部工作区菜单", () => {
     expect(groups[2].items.map(item => item.path)).toEqual([
       "/staff",
       "/teams",
-      "/role-templates",
-      "/permission-audit",
       "/workbench/user-records",
     ]);
   });
@@ -216,7 +218,7 @@ describe("正式后台顶部工作区菜单", () => {
     expect(groups[1].items[0]).toBe(
       authorized.find(item => item.path === "/analytics")
     );
-    for (const path of ["/teams", "/role-templates", "/permission-audit"]) {
+    for (const path of ["/teams"]) {
       const original = Object.freeze(items.find(item => item.path === path)!);
       const [workspace] = groupAdminWorkspaceNavigationItems(
         Object.freeze([original])
@@ -275,10 +277,11 @@ describe("实际路由驱动两级选中态", () => {
     ["/orders/42", "operations", "/orders"],
     ["/merchants/8", "operations", "/merchants"],
     ["/exception-logs/9", "operations", "/exception-logs"],
-    ["/workbench/inventory", "business", "/workbench/inventory"],
-    ["/workbench/publish/42/edit", "business", "/workbench/publish"],
+    ["/workbench/inventory", "business", "/workbench/channel-inventory"],
+    ["/workbench/publish/42/edit", "business", "/workbench/channel-inventory"],
     ["/workbench/customers/new/8", "business", "/workbench/customers"],
     ["/workbench/customers/8", "business", "/workbench/customers"],
+    ["/workbench/customer-demands", "business", "/workbench/customers"],
     ["/workbench/orders/8", "business", "/workbench/orders"],
     [
       "/workbench/procurement-orders/quote",
@@ -297,8 +300,8 @@ describe("实际路由驱动两级选中态", () => {
     ],
     ["/staff/7", "organization", "/staff"],
     ["/teams", "organization", "/teams"],
-    ["/role-templates", "organization", "/role-templates"],
-    ["/permission-audit", "organization", "/permission-audit"],
+    ["/role-templates", "organization", "/staff"],
+    ["/permission-audit", "organization", "/staff"],
     ["/workbench/user-records", "organization", "/workbench/user-records"],
     ["/admins/7", "organization", "/staff"],
     ["/workbench/add-user", "organization", "/staff"],
@@ -315,7 +318,7 @@ describe("实际路由驱动两级选中态", () => {
       "/workbench/procurement-orders",
     ],
     ["/workbench/demand-quotes", "business", "/workbench/procurement-demands"],
-    ["/workbench", "business", "/workbench/inventory"],
+    ["/workbench", "business", "/workbench/channel-inventory"],
   ])("%s 归属 %s 并选中 %s", (location, workspaceId, canonicalPath) => {
     const state = getAdminWorkspaceNavigationState(items, location);
     expect(state.route).toMatchObject({ workspaceId, canonicalPath });
@@ -338,8 +341,6 @@ describe("实际路由驱动两级选中态", () => {
     expect(state.activeWorkspace?.items.map(item => item.path)).toEqual([
       "/staff",
       "/teams",
-      "/role-templates",
-      "/permission-audit",
       "/workbench/user-records",
     ]);
   });
@@ -375,7 +376,7 @@ describe("实际路由驱动两级选中态", () => {
       items,
       "/workbench/publish/42/edit?merchantId=8&returnTo=%2Fstaff#content"
     );
-    expect(state.activeItem?.path).toBe("/workbench/publish");
+    expect(state.activeItem?.path).toBe("/workbench/channel-inventory");
     expect(
       getAdminWorkspaceNavigationState(items, "/materials?merchantId=8")
         .activeItem?.path

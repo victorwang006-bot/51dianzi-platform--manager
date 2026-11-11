@@ -67,7 +67,6 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
       label: "客户管理",
       paths: [
         "/workbench/customers",
-        "/workbench/customer-demands",
         "/workbench/orders",
         "/workbench/outbound",
         "/workbench/inquiries",
@@ -133,6 +132,12 @@ export const ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES: readonly AdminWorkbenchNa
       canonicalPath: "/workbench/inquiries",
       groupId: "customers",
       label: "询价接待",
+    },
+    {
+      path: "/workbench/customer-demands",
+      canonicalPath: "/workbench/customers",
+      groupId: "customers",
+      label: "客户需求",
     },
     {
       path: "/profile",

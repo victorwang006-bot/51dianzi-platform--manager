@@ -105,7 +105,7 @@ function rows() {
 }
 
 describe("收到的报价：统一呈现与原业务行为", () => {
-  it("复用公共筛选及数据容器，不重复大标题，保留共享导航及所有报价字段", async () => {
+  it("复用公共筛选及数据容器，不重复大标题和页签，保留所有报价字段", async () => {
     await render();
     expect(
       host.querySelector('section.aui-page[aria-label="收到的报价"]')
@@ -113,16 +113,8 @@ describe("收到的报价：统一呈现与原业务行为", () => {
     expect(host.querySelector(".aui-filterbar input")).not.toBeNull();
     expect(host.querySelector(".aui-data-panel table")).not.toBeNull();
     expect(host.querySelector("h1")).toBeNull();
-    expect(host.querySelectorAll("nav")).toHaveLength(1);
-    const links = Array.from(host.querySelectorAll("nav a"));
-    expect(links.map(link => link.getAttribute("href"))).toEqual([
-      "/procurement/demands",
-      "/demand-publish",
-      "/demand-quotes",
-    ]);
-    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
-      "收到的报价"
-    );
+    expect(host.querySelectorAll("nav")).toHaveLength(0);
+    expect(host.querySelectorAll("a")).toHaveLength(0);
     expect(host.querySelectorAll("thead th")).toHaveLength(12);
     expect(host.querySelectorAll('thead th[scope="col"]')).toHaveLength(12);
     expect(rows()).toHaveLength(10);
@@ -198,14 +190,13 @@ describe("收到的报价：统一呈现与原业务行为", () => {
     expect(mocks.navigate).toHaveBeenCalledWith("/chat?userId=212");
   });
 
-  it("原内部需求权限仍由共享导航控制，不新增或替换业务入口", async () => {
+  it("无内部需求权限时也不新增或替换业务入口", async () => {
     mocks.enterprise.mockReturnValue({
       data: { isOwner: false, permissionKeys: [] },
     });
     await render();
-    expect(
-      Array.from(host.querySelectorAll("nav a")).map(link => link.textContent)
-    ).toEqual(["发布需求", "收到的报价"]);
+    expect(host.querySelectorAll("nav, a")).toHaveLength(0);
+    expect(mocks.enterprise).not.toHaveBeenCalled();
   });
 
   it("保留加载、空态、失败与重新加载状态，跨全部12列展示", async () => {

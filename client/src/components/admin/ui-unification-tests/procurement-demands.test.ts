@@ -9,6 +9,7 @@ const runtime = vi.hoisted(() => ({
   initialState: {} as Record<string, unknown>,
   list: vi.fn(),
   refetch: vi.fn(),
+  detail: undefined as any,
   toastError: vi.fn(),
   fetching: false,
   enterprise: { isOwner: false, permissionKeys: ["procurement.demands"] as string[] },
@@ -38,7 +39,7 @@ vi.mock("@/business/api/business-trpc", () => ({
     enterprise: { me: { useQuery: () => ({ data: runtime.enterprise }) } },
     customerDemand: {
       procurementList: { useQuery: runtime.list },
-      procurementGet: { useQuery: () => ({ data: undefined, isLoading: true, error: null }) },
+      procurementGet: { useQuery: () => ({ data: runtime.detail, isLoading: !runtime.detail, error: null }) },
     },
   },
 }));
@@ -47,7 +48,7 @@ vi.mock("@/business/platform/client/src/components/customerDemands/DemandQuoteDi
     React.createElement("div", { "data-test-quote-demand": demandId, "data-test-quote-id": quoteId }),
 }));
 vi.mock("@/business/platform/client/src/components/customerDemands/DemandQuoteList", () => ({
-  DemandQuoteList: () => null,
+  DemandQuoteList: ({ onCreate }: { onCreate: () => void }) => React.createElement("section", { "aria-label": "我的供应商报价" }, React.createElement("button", { onClick: onCreate }, "新增供应商报价")),
 }));
 
 import ProcurementDemands from "@/business/platform/client/src/pages/ProcurementDemands";
@@ -92,6 +93,7 @@ beforeEach(() => {
   runtime.initialState = {};
   runtime.fetching = false;
   runtime.enterprise = { isOwner: false, permissionKeys: ["procurement.demands"] };
+  runtime.detail = undefined;
   runtime.refetch.mockReset().mockResolvedValue(undefined);
   runtime.toastError.mockReset();
   runtime.list.mockReset().mockImplementation((input: { page: number }) => ({
@@ -102,6 +104,7 @@ beforeEach(() => {
         id: 41, demandNo: "REQ-41", projectName: "原项目", priority: "normal",
         firstPartNumber: "LM358", firstBrand: "TI", firstQty: 1200,
         firstQtyUnit: "片", firstDeliveryRequirement: "3天", salesName: "原销售",
+        createdAt: "2026-11-11T01:02:03Z", updatedAt: "2026-11-12T01:02:03Z", submittedAt: "2026-11-13T01:02:03Z",
         itemCount: 1, status: "submitted", mySupplierCount: 0,
         myQuoteRoundCount: 0, myActiveQuoteCount: 0, currentQuoteCount: 2,
       }],
@@ -136,6 +139,36 @@ describe("procurement-demands unified page", () => {
     expect(control("thead th:nth-child(4)").classList.contains("text-right")).toBe(true);
     expect(control("tbody td:nth-child(4)").classList.contains("text-right")).toBe(true);
     expect(control("tbody td:last-child").classList.contains("text-right")).toBe(true);
+  });
+
+  it("removes page tabs and duplicate project lines, inserts Beijing createdAt between delivery and sales", () => {
+    render();
+    expect(container.querySelector('nav[aria-label="采购工作台功能"]')).toBeNull();
+    expect(Array.from(container.querySelectorAll("thead th")).map(node => node.textContent)).toEqual(["需求编号", "型号", "品牌", "数量", "交期", "录入时间", "销售", "报价进度", "操作"]);
+    expect(control("tbody td:nth-child(6)").textContent).toBe("2026-11-11 09:02");
+    expect(control("tbody td:first-child").textContent).not.toContain("原项目");
+    expect(container.textContent).toContain("全部共2份");
+    expect(control("colgroup").children).toHaveLength(9);
+    expect(control("colgroup col:nth-child(2)").getAttribute("class")).toBeNull();
+    expect(control("tbody td:last-child").classList.contains("procurement-demand-actions")).toBe(true);
+  });
+
+  it.each([null, "", "   ", "真实需求说明"])("only displays meaningful notes, keeps real project and one quote create button: %j", note => {
+    runtime.detail = { id: 41, demandNo: "REQ-41", projectName: "真实项目", salesName: "合成销售", priority: "normal", status: "submitted", createdAt: "2026-11-11T01:02:03Z", updatedAt: "2026-11-12T01:02:03Z", replyDueAt: null, items: [], note };
+    render();
+    click(button("查看"));
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(dialog.textContent).toContain("真实项目");
+    expect(dialog.textContent).toContain("录入时间2026-11-11 09:02");
+    expect(dialog.textContent?.includes("需求说明")).toBe(Boolean(note?.trim()));
+    expect(dialog.textContent).not.toContain("内部需求，仅供授权采购独立报价");
+    expect(dialog.querySelector('[data-slot="dialog-description"]')?.classList.contains("sr-only")).toBe(true);
+    const creates = Array.from(dialog.querySelectorAll("button")).filter(node => node.textContent === "新增供应商报价");
+    expect(creates).toHaveLength(1);
+    expect(creates[0].closest('section[aria-label="我的供应商报价"]')).not.toBeNull();
+    expect(Array.from(dialog.querySelectorAll("button")).some(node => node.textContent?.trim() === "关闭")).toBe(true);
+    click(creates[0]);
+    expect(control("[data-test-quote-demand]").getAttribute("data-test-quote-demand")).toBe("41");
   });
 
   it.each(["all", "unquoted", "quoted"])("preserves %s as the original view query value and resets only its page", view => {
@@ -235,6 +268,12 @@ describe("procurement-demands unified page", () => {
     expect(css).toContain("font-size: var(--admin-content-font-body, 12px)");
     expect(css).toContain("font-size: var(--admin-content-font-caption, 11px)");
     expect(css).toContain("border-radius: 6px");
+    expect(css).toMatch(/\.procurement-demands-table-scroll\s*\{[^}]*overflow-x: auto/);
+    expect(css).toContain("min-width: 1320px");
+    ["170px", "auto", "90px", "110px", "100px", "166px", "90px", "174px", "160px"].forEach((width, index) => {
+      expect(css).toContain(`col:nth-child(${index + 1}) { width: ${width}; }`);
+    });
+    expect(css).toMatch(/\.procurement-demand-actions\s*\{[^}]*position: sticky;\s*right: 0/);
     expect(css).not.toMatch(/!important|\bzoom\s*:|\btransform\s*:/);
   });
 });

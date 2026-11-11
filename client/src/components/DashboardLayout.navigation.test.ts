@@ -219,6 +219,25 @@ describe("正式后台顶部布局集成", () => {
     expect(source).toContain('workbenchCapability: "company.read"');
   });
 
+  it("retires standalone customer demand from the actual menu but retains the legacy breadcrumb and original capability", async () => {
+    runtime.location = "/workbench/customer-demands?merchantId=31";
+    runtime.capabilities = ["customers.manage", "crm.sales_orders", "inquiry.receive", "procurement.demands"];
+    await withMountedLayout(async container => {
+      const breadcrumb = container.querySelector('[data-admin-navigation="current-location"]');
+      expect(breadcrumb?.textContent).toContain("客户列表");
+      expect(breadcrumb?.querySelectorAll("button, a")).toHaveLength(0);
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="business"]')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="group:customers"]')!.click());
+      const paths = Array.from(container.querySelectorAll("[data-workspace-dropdown-item]")).map(node => node.getAttribute("data-workspace-dropdown-item"));
+      expect(paths).toEqual(["/workbench/customers", "/workbench/inquiries", "/workbench/orders"]);
+      expect(container.querySelector('[data-workspace-nav-target="/workbench/customer-demands"]')).toBeNull();
+      expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");
+      expect(runtime.setLocation).not.toHaveBeenCalled();
+    });
+    expect(source).not.toContain('path: "/workbench/customer-demands"');
+    expect(runtime.capabilities).toContain("customers.manage");
+  });
+
   it.each([
     ["materials", ["渠道库存"]],
     ["channels", ["渠道库存", "渠道档案"]],

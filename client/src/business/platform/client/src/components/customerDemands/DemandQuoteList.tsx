@@ -290,11 +290,6 @@ function DemandQuoteListSession({
       <div className="mb-2 flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-slate-800">{heading}</h3>
-          {audience === "procurement" ? (
-            <p className="mt-0.5 text-[11px] text-slate-500">
-              每家供应商独立报价；同物料可有多个备选，修改保存完整新轮次，备选不累计采购金额
-            </p>
-          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {typeof result?.total === "number" && (
@@ -702,9 +697,7 @@ function QuoteCard({
       ? "报价已撤回，历史仍保留"
       : quote.needsReconfirmation
         ? "旧版报价不能采用，请采购重新确认"
-        : audience === "procurement"
-          ? "修改报价将生成下一轮"
-          : "";
+        : "";
   return (
     <article
       className={`min-w-0 rounded border ${withdrawn ? "border-slate-200 bg-slate-50/50" : "border-slate-200 bg-white"}`}
@@ -789,6 +782,7 @@ function QuoteCard({
               variant="ghost"
               size="sm"
               className="h-7 rounded-none px-2 text-[11px] text-[#185FA5]"
+              title="修改报价将生成下一轮，保留历史报价"
               onClick={onEdit}
             >
               {quote.needsReconfirmation ? "重新确认" : "新一轮"}

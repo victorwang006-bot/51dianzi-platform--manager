@@ -229,6 +229,39 @@ describe("客户集中需求与采购报价", () => {
   });
 });
 
+describe("采购报价简洁呈现保留业务状态", () => {
+  it("removes permanent explanations but preserves totals, rounds and edit context", async () => {
+    const edit = vi.fn(), create = vi.fn();
+    render(h(DemandQuoteList, { demandId: 41, audience: "procurement", onEdit: edit, onCreate: create }));
+    expect(host.textContent).not.toContain("每家供应商独立报价");
+    expect(host.textContent).not.toContain("修改报价将生成下一轮");
+    expect(host.textContent).toContain("1 份");
+    expect(host.textContent).toContain("第3轮");
+    expect(button("新一轮").title).toContain("修改报价将生成下一轮");
+    await click("新一轮"); expect(edit).toHaveBeenCalledWith(501);
+    await click("新增供应商报价"); expect(create).toHaveBeenCalledOnce();
+  });
+  it.each([
+    ["withdrawn", { status: "withdrawn" }, "已撤回"],
+    ["stale", { needsReconfirmation: true, demandRevision: 1 }, "旧版报价不能采用，请采购重新确认"],
+    ["accepted", { isAccepted: true, acceptedByName: "合成销售", acceptedAt: "2026-11-01T00:00:00Z" }, "已采用"],
+  ])("preserves important %s status", (_name, flags, label) => {
+    runtime.quotes = state({ items: [quote(flags)], total: 1, page: 1 });
+    render(h(DemandQuoteList, { demandId: 41, audience: _name === "accepted" ? "sales" : "procurement", onEdit: vi.fn() }));
+    expect(host.textContent).toContain(label);
+    if (_name === "withdrawn") expect(host.textContent).not.toContain("新一轮");
+  });
+  it("withdraw still requires explicit confirmation and retains the original quote version", async () => {
+    render(h(DemandQuoteList, { demandId: 41, audience: "procurement" }));
+    await click("撤回");
+    expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain("撤回此报价？");
+    expect(runtime.withdraw).not.toHaveBeenCalled();
+    await click("取消确认"); expect(runtime.withdraw).not.toHaveBeenCalled();
+    await click("撤回"); await click("确认撤回");
+    expect(runtime.withdraw).toHaveBeenCalledWith({ quoteId: 501, version: 3 });
+  });
+});
+
 describe("R1/R4 服务端首读证明与会话回执", () => {
   const cachedFirstRead = { isFetching: true, isFetchedAfterMount: false, status: "success" };
   it.each([

@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import {createRequire} from 'node:module';
+const ROOT='/home/ubuntu/51-inspection',OUT=ROOT+'/candidate-admin',BASE=ROOT+'/runtime-baseline/admin';
+const require=createRequire(ROOT+'/manager-github/package.json'),ts=require('typescript');
+const sha=x=>crypto.createHash('sha256').update(x).digest('hex'),read=f=>fs.readFileSync(f,'utf8'),assert=(x,m)=>{if(!x)throw Error(m);};
+const m=JSON.parse(read(OUT+'/manifest.json')),checks=[];
+function nodes(n,p){const out=[];function w(x){if(p(x))out.push(x);ts.forEachChild(x,w);}w(n);return out;}
+function parse(s){const ast=ts.createSourceFile('check.js',s,ts.ScriptTarget.Latest,true);assert(!ast.parseDiagnostics.length,'SYNTAX');return ast;}
+const prop=(n,k)=>n.properties.find(x=>ts.isPropertyAssignment(x)&&(x.name.text===k));
+function loc(ast,page,line){const rows=nodes(ast,n=>ts.isCallExpression(n)&&n.arguments.length>=2&&ts.isObjectLiteralExpression(n.arguments[1])&&prop(n.arguments[1],'data-loc')?.initializer.text?.endsWith('/'+page+':'+line));assert(rows.length===1,'PROTECTED_NODE_UNIQUE:'+page+':'+line);return rows[0].getText(ast);}
+for(const r of m.files){const old=read(BASE+'/'+r.beforeFile),s=read(OUT+'/assets/'+r.file);assert(sha(old)===r.beforeSha256&&sha(s)===r.sha256,'FILE_SHA:'+r.id);const oldAST=parse(old),newAST=parse(s);let restored='',cursor=0,delta=0;for(const p of r.patches){const start=p.start+delta;assert(s.slice(start,start+p.after.length)===p.after,'PATCH_RANGE:'+p.label);assert(sha(p.before)===p.beforeSha256&&sha(p.after)===p.afterSha256,'PATCH_SHA');restored+=s.slice(cursor,start)+p.before;cursor=start+p.after.length;delta+=p.after.length-(p.end-p.start);}restored+=s.slice(cursor);assert(restored===old&&sha(restored)===r.beforeSha256,'RESTORE_UNRELATED_BYTES');
+ if(r.id==='workbench'){assert(!s.includes('ProcurementDemands.tsx:415'),'PROJECT_NAME_SUBROW_NOT_REMOVED');assert(loc(oldAST,'ProcurementDemands.tsx',129)===loc(newAST,'ProcurementDemands.tsx',129),'DETAIL_PROJECT_NAME_CHANGED');for(const line of [677,682,689,695,705,746,760,773])assert(loc(oldAST,'DemandQuoteList.tsx',line)===loc(newAST,'DemandQuoteList.tsx',line),'IMPORTANT_QUOTE_STATUS_CHANGED:'+line);for(const line of [221,226,434,444,494,504])assert(loc(oldAST,'ProcurementDemands.tsx',line)===loc(newAST,'ProcurementDemands.tsx',line),'QUOTE_CONTROL_CHANGED:'+line);}
+ if(r.id==='entry'){const oldRoute=oldAST.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='$2'),newRoute=newAST.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='$2');assert(oldRoute.getText(oldAST)===newRoute.getText(newAST),'ROUTES_CHANGED');}
+ checks.push({id:r.id,sha256:r.sha256,reverseRestoreSha256:sha(restored),unrelatedBytesUnchanged:true,protectedNodesVerified:true});}
+const html=read(OUT+'/index.html');assert(sha(html)===m.index.afterSha256,'HTML_SHA');const map=JSON.parse([...html.matchAll(/<script\b(?=[^>]*type=['"]importmap['"])[^>]*>([\s\S]*?)<\/script>/g)][0][1]);assert(JSON.stringify(map)===JSON.stringify(m.importmapAfter),'MAP_MANIFEST');const entry=m.files.find(r=>r.id==='entry'),oldScope=m.importmapBefore.scopes[entry.beforeURL],newScope=map.scopes[entry.url];assert(oldScope&&newScope,'ENTRY_SCOPE_INHERITANCE');for(const[k,v]of Object.entries(oldScope)){const target=m.files.find(r=>r.beforeURL===v);assert(newScope[k]===(target?.url??v),'SCOPE_ENTRY_LOST:'+k);}
+for(const pin of m.sourceFiles){assert(sha(read(pin.file))===pin.sha256,'SOURCE_CHANGED_SINCE_CANDIDATE:'+pin.file);assert(pin.beforeSha256&&sha(read(pin.beforeFile))===pin.beforeSha256,'REAL_SOURCE_BEFORE_PIN:'+pin.file);}
+for(const r of m.files)for(const p of r.patches){const pin=m.sourceFiles.find(x=>x.file===p.sourceFile);assert(pin&&p.beforeSourceSha256===pin.beforeSha256&&p.afterSourceSha256===pin.sha256,'PATCH_SOURCE_PROVENANCE:'+p.label);}
+assert(m.css.baselineSourceSha256===m.sourceFiles.find(x=>x.file===m.css.sourceFile).beforeSha256,'CSS_BEFORE_PROVENANCE');
+for(const [f,pin] of [[m.sourceBeforeProvenance.pinFile,m.sourceBeforeProvenance.pinFileSha256],[m.sourceBeforeProvenance.actualDiffFile,m.sourceBeforeProvenance.actualDiffSha256]])assert(sha(read(f))===pin,'PROVENANCE_FILE_SHA');
+assert(sha(read(OUT+'/assets/'+m.css.file))===m.css.sha256,'CSS_SHA');
+const report={success:true,verifiedAt:new Date().toISOString(),offlineOnly:true,files:checks,indexSha256:sha(html),entryScopeCopied:true,importantQuoteStatesAndControlsPreserved:true,sourcePinsStillMatch:true,sourceBeforeProvenanceComplete:true,caveat:'Real before/after source snapshots verified. Synthetic SSR is separate evidence, not browser validation. Publication remains on hold pending exact user confirmation.'};
+fs.writeFileSync(OUT+'/verification.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

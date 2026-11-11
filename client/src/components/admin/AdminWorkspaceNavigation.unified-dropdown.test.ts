@@ -32,8 +32,8 @@ const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths).ma
 type Item = (typeof items)[number];
 const topIds = ["channel", "business", "operations", "organization"];
 const groupedPaths = {
-  customers: ["/workbench/customers", "/workbench/customer-demands", "/workbench/inquiries", "/workbench/orders"],
-  inventory: ["/workbench/inventory", "/workbench/publish", "/workbench/inbound", "/workbench/outbound"],
+  customers: ["/workbench/customers", "/workbench/inquiries", "/workbench/orders"],
+  inventory: ["/workbench/inbound", "/workbench/outbound"],
   procurement: ["/workbench/procurement-demands", "/workbench/procurement-orders"],
 };
 const operationsPaths = {
@@ -490,7 +490,7 @@ describe("统一导航下拉（new focused contract）", () => {
 
   it.each([
     [CHANNEL_INVENTORY_ROUTE, "channel"],
-    ["/workbench/inventory", "business"],
+    ["/workbench/inventory", "channel"],
     ["/workbench/sales-orders/8", "business"],
     ["/workbench/chat/8", "business"],
     ["/materials/8", "operations"],
@@ -615,8 +615,8 @@ describe("统一导航下拉（new focused contract）", () => {
     await key("group:customers", "ArrowRight");
     expect(document.activeElement).toBe(button("/workbench/customers"));
     await key("/workbench/customers", "ArrowDown");
-    expect(document.activeElement).toBe(button("/workbench/customer-demands"));
-    await key("/workbench/customer-demands", "End");
+    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "End");
     expect(document.activeElement).toBe(button("/workbench/orders"));
     expect((await key("/workbench/orders", "Tab")).defaultPrevented).toBe(false);
     await key("/workbench/orders", "ArrowLeft");
@@ -641,7 +641,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(panel()?.hidden).toBe(true);
     expect(panel(3)?.hidden).toBe(false);
     expect(leaves(3)).toEqual(groupedPaths.inventory);
-    expect(document.activeElement).toBe(button("/workbench/inventory"));
+    expect(document.activeElement).toBe(button("/workbench/inbound"));
     await act(async () => panel(3)!.querySelector<HTMLButtonElement>('[data-workspace-dropdown="back"]')!.click());
     expect(panel(3)).toBeNull();
     expect(panel()?.hidden).toBe(false);

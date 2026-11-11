@@ -17,7 +17,6 @@ import { formatBeijingDateTime } from "../../../shared/beijingTime";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { DemandQuoteDialog } from "../components/customerDemands/DemandQuoteDialog";
 import { DemandQuoteList } from "../components/customerDemands/DemandQuoteList";
-import { ProcurementWorkspaceNav } from "../components/customerDemands/ProcurementWorkspaceNav";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
@@ -88,8 +87,8 @@ function ProcurementDemandDetailDialog({
             <DialogTitle>
               采购需求详情
             </DialogTitle>
-            <DialogDescription className="admin-cell-secondary mt-1">
-              内部需求，仅供授权采购独立报价
+            <DialogDescription className="sr-only">
+              查看需求基本信息、物料明细与供应商报价
             </DialogDescription>
           </div>
           <button
@@ -129,6 +128,12 @@ function ProcurementDemandDetailDialog({
                   <p className="admin-cell-secondary">项目</p>
                   <p className="mt-1">
                     {detail.projectName || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="admin-cell-secondary">录入时间</p>
+                  <p className="mt-1 tabular-nums">
+                    {formatBeijingDateTime(detail.createdAt) || "—"}
                   </p>
                 </div>
                 <div>
@@ -210,14 +215,14 @@ function ProcurementDemandDetailDialog({
                   </table>
                 </div>
               </div>
-              <div className="mt-3">
+              {detail.note?.trim() ? <div className="mt-3">
                 <h3 className="admin-section-title">
                   需求说明
                 </h3>
                 <p className="mt-1 whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 px-3 py-2 leading-6 text-slate-700">
-                  {detail.note || "—"}
+                  {detail.note}
                 </p>
-              </div>
+              </div> : null}
               <DemandQuoteList demandId={id} audience="procurement" onCreate={() => onQuote()} onEdit={onQuote} />
             </>
           )}
@@ -232,18 +237,6 @@ function ProcurementDemandDetailDialog({
           >
             关闭
           </Button>
-          {detail &&
-            (detail.status === "submitted" ||
-              detail.status === "processing") && (
-              <Button
-                type="button"
-                size="default"
-                onClick={() => onQuote()}
-                className="procurement-demand-control bg-[#185FA5] hover:bg-[#0C447C]"
-              >
-                新增供应商报价
-              </Button>
-            )}
         </div>
       </DialogContent>
     </Dialog>
@@ -294,7 +287,6 @@ export default function ProcurementDemands() {
   return (
     <PlatformLayout>
     <AdminPage className="procurement-demands-page" aria-label="采购内部需求">
-    <ProcurementWorkspaceNav active="internal" />
     <AdminFilterBar className="mb-3 flex flex-wrap items-center gap-2">
         <label htmlFor="procurement-demand-view" className="admin-cell-secondary">报价状态</label>
         <select
@@ -378,16 +370,17 @@ export default function ProcurementDemands() {
             </p>
           </div>
         ) : (
-          <Table className="admin-table-readable procurement-demands-table table-fixed">
+          <Table className="admin-table-readable procurement-demands-table table-fixed" containerClassName="procurement-demands-table-scroll">
             <colgroup>
-              <col className="w-[17%]" />
-              <col className="w-[21%]" />
-              <col className="w-[8%]" />
-              <col className="w-[10%]" />
-              <col className="w-[10%]" />
-              <col className="w-[8%]" />
-              <col className="w-[12%]" />
-              <col className="w-[14%]" />
+              <col className="w-[170px]" />
+              <col />
+              <col className="w-[90px]" />
+              <col className="w-[110px]" />
+              <col className="w-[100px]" />
+              <col className="w-[166px]" />
+              <col className="w-[90px]" />
+              <col className="w-[174px]" />
+              <col className="w-[160px]" />
             </colgroup>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
@@ -396,6 +389,7 @@ export default function ProcurementDemands() {
                 <TableHead>品牌</TableHead>
                 <TableHead className="text-right">数量</TableHead>
                 <TableHead>交期</TableHead>
+                <TableHead>录入时间</TableHead>
                 <TableHead>销售</TableHead>
                 <TableHead>报价进度</TableHead>
                 <TableHead className="procurement-demand-actions text-right">操作</TableHead>
@@ -412,7 +406,6 @@ export default function ProcurementDemands() {
                       <span className="admin-cell-primary procurement-demand-number">{demand.demandNo}</span>
                       {demand.priority === "urgent" ? <span className="procurement-demand-priority font-medium text-red-600">紧急</span> : null}
                     </div>
-                    <div className="admin-cell-secondary mt-0.5 truncate" title={demand.projectName || undefined}>{demand.projectName || "—"}</div>
                   </TableCell>
                   <TableCell>
                     <div className="admin-cell-primary procurement-demand-model" title={demand.firstPartNumber || undefined}>{demand.firstPartNumber || "—"}</div>
@@ -421,6 +414,7 @@ export default function ProcurementDemands() {
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstBrand || undefined}>{demand.firstBrand || "—"}</TableCell>
                   <TableCell className="admin-cell-primary whitespace-nowrap text-right tabular-nums">{formatQty(demand.firstQty, demand.firstQtyUnit)}</TableCell>
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstDeliveryRequirement || undefined}>{demand.firstDeliveryRequirement || "待确认"}</TableCell>
+                  <TableCell className="procurement-demand-secondary-data whitespace-nowrap tabular-nums">{formatBeijingDateTime(demand.createdAt) || "—"}</TableCell>
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.salesName || undefined}>{demand.salesName || "—"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5 whitespace-nowrap">

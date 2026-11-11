@@ -106,7 +106,6 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
       "/workbench/channel-inventory",
       "group:customers",
       "/workbench/customers",
-      "/workbench/customer-demands",
       "/workbench/inquiries",
       "/workbench/orders",
       "group:inventory",
@@ -125,16 +124,14 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
         host.querySelectorAll<HTMLButtonElement>("[data-workspace-nav-child]")
       ).map(node => node.dataset.workspaceNavTarget)
     ).toEqual([
-      "/workbench/inventory",
-      "/workbench/publish",
       "/workbench/inbound",
       "/workbench/outbound",
     ]);
     await act(async () => {
-      button("/workbench/inventory").focus();
-      button("/workbench/inventory").click();
+      button("/workbench/inbound").focus();
+      button("/workbench/inbound").click();
     });
-    const original = items.find(item => item.path === "/workbench/inventory");
+    const original = items.find(item => item.path === "/workbench/inbound");
     expect(onNavigate.mock.calls[0][0]).toBe(original);
     expect(onPreload.mock.calls[0][0]).toBe(original);
     expect(onNavigate).toHaveBeenCalledTimes(1);
@@ -144,19 +141,19 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     expect(host.querySelector("[data-workspace-nav-child]")).toBeNull();
     const subset = items.filter(item =>
       [
-        "/workbench/inventory",
+        "/workbench/inbound",
         "/workbench/orders",
         "/workbench/company-info",
       ].includes(item.path)
     );
-    await render("/workbench/inventory?merchantId=31", subset);
+    await render("/workbench/inbound?merchantId=31", subset);
     expect(modulePaths()).toEqual([
       "group:customers",
       "group:inventory",
     ]);
     expect(button("group:inventory").dataset.active).toBe("true");
     await click("group:inventory");
-    expect(button("/workbench/inventory").getAttribute("aria-current")).toBe(
+    expect(button("/workbench/inbound").getAttribute("aria-current")).toBe(
       "page"
     );
   });
@@ -209,8 +206,8 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     await key("group:customers", "ArrowDown");
     expect(document.activeElement).toBe(button("/workbench/customers"));
     await key("/workbench/customers", "ArrowDown");
-    expect(document.activeElement).toBe(button("/workbench/customer-demands"));
-    await key("/workbench/customer-demands", "End");
+    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "End");
     expect(document.activeElement).toBe(button("/workbench/orders"));
     await key("/workbench/orders", "ArrowDown");
     expect(document.activeElement).toBe(button("/workbench/customers"));
@@ -290,7 +287,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
   it.each([
     ["/workbench/chat/88", "customers", "/workbench/inquiries"],
     ["/workbench/sales-orders/88", "customers", "/workbench/orders"],
-    ["/workbench", "inventory", "/workbench/inventory"],
+    ["/workbench/customer-demands", "customers", "/workbench/customers"],
     [
       "/workbench/procurement/demands/8",
       "procurement",
@@ -342,11 +339,8 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
 
   it.each([
     ["customers", "/workbench/customers"],
-    ["customers", "/workbench/customer-demands"],
     ["customers", "/workbench/inquiries"],
     ["customers", "/workbench/orders"],
-    ["inventory", "/workbench/inventory"],
-    ["inventory", "/workbench/publish"],
     ["inventory", "/workbench/inbound"],
     ["inventory", "/workbench/outbound"],
     ["procurement", "/workbench/procurement-demands"],
@@ -506,7 +500,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(0);
     expect(
       host.querySelectorAll('[data-admin-navigation="module-tabs"] button')
-    ).toHaveLength(5);
+    ).toHaveLength(3);
     expect(
       Array.from(
         host.querySelectorAll<HTMLButtonElement>(
@@ -516,13 +510,11 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     ).toEqual([
       "/staff",
       "/teams",
-      "/role-templates",
-      "/permission-audit",
       "/workbench/user-records",
     ]);
   });
 
-  it.each(["/teams", "/role-templates", "/permission-audit"])(
+  it.each(["/teams"])(
     "%s 真实组织路由严格选中对应模块并尊重过滤后权限",
     async path => {
       await render(`${path}?tab=details`);
