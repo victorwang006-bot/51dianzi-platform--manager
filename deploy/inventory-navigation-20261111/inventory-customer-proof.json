@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "completed": true,
+  "liveFile": "/home/ubuntu/51-inspection/inventory-baseline/admin/BusinessWorkbenchPage-demand-navigation-1afdb6c381dcfc25.js",
+  "liveSha256": "1afdb6c381dcfc25220698d199b59c7d374de6aadced8ab3b109143977dd5d4f",
+  "candidateSha256": "9151b6e538373183766c7cf2860dd3d2461ce29745d57b66211653d52f778dcb",
+  "candidateWritten": false,
+  "sourcePins": [
+    {
+      "relative": "client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx",
+      "file": "/home/ubuntu/51-inspection/manager-github/client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx",
+      "beforeFile": "/home/ubuntu/51-inspection/inventory-source-before/client/src/business/platform/client/src/components/customers/CustomerWorkbenchMaterials.tsx",
+      "beforeSha256": "988301a6da694c36686e6daa40db1c57ff6fe68149b0920adbd7c7d6129f0cae",
+      "sha256": "ce94bed93bc70382e65aeb5bea0d31ef2d07699d053c2683da10f6c680581256",
+      "beforeKind": "EXTRACTED_FROM_REAL_INLINE_OWNER",
+      "newSourceAbsenceProven": true,
+      "extractedOwner": "CustomerWorkbenchSupply",
+      "extractedOwnerStart": 5680,
+      "extractedOwnerEnd": 7564,
+      "beforeOwnerFileSha256": "25e9ed4e964e44e0b7e8ba1243e4612ead72c433c8e123d1f2c48862b799f8cc"
+    },
+    {
+      "relative": "client/src/business/platform/client/src/components/customers/CustomerWorkbenchMaterials.tsx",
+      "file": "/home/ubuntu/51-inspection/manager-github/client/src/business/platform/client/src/components/customers/CustomerWorkbenchMaterials.tsx",
+      "beforeFile": "/home/ubuntu/51-inspection/inventory-source-before/client/src/business/platform/client/src/components/customers/CustomerWorkbenchMaterials.tsx",
+      "beforeSha256": "25e9ed4e964e44e0b7e8ba1243e4612ead72c433c8e123d1f2c48862b799f8cc",
+      "sha256": "f126418e5b2eaea51216092288e78c470a8056ef19ef0e1408a270e38e07555e",
+      "beforeKind": "EXISTING"
+    },
+    {
+      "relative": "client/src/business/platform/client/src/pages/CustomerDetail.tsx",
+      "file": "/home/ubuntu/51-inspection/manager-github/client/src/business/platform/client/src/pages/CustomerDetail.tsx",
+      "beforeFile": "/home/ubuntu/51-inspection/inventory-source-before/client/src/business/platform/client/src/pages/CustomerDetail.tsx",
+      "beforeSha256": "522450a43da7e25cf99d93f742bf7e6598ab4716699375f92e71016b27bac885",
+      "sha256": "c8ca012fef09f8e2855fe518b3a93fe6e444e2180d06c9a028ba8a1ec906db9f",
+      "beforeKind": "EXISTING"
+    }
+  ],
+  "patchCount": 10,
+  "reverseVerified": true,
+  "reverseRestoreSha256": "1afdb6c381dcfc25220698d199b59c7d374de6aadced8ab3b109143977dd5d4f",
+  "outsidePatchBytesUnchanged": true,
+  "factoryScaffold": {
+    "signatureUnchanged": true,
+    "returnBridgeUnchanged": true,
+    "callBridgeUnchanged": true,
+    "wrapperXPByteIdentical": true
+  },
+  "sourceDetailDiffFullyReversed": true,
+  "readinessBinding": {
+    "source": "authorityReady = contextValid && contextVerified.current",
+    "actual": "y=m&&k.current",
+    "notAuthorityReady": "ie=!!x"
+  },
+  "bindings": {
+    "useLocation": "fa",
+    "trpc": "K",
+    "useCustomerSupplyAuthority": "rw",
+    "useId": "Ba",
+    "withCustomerContactScope": "ut",
+    "businessIndustryCodeSchema": "Xa",
+    "errorMessage": "rt",
+    "useRef": "U",
+    "useState": "w",
+    "useLayoutEffect": "ns",
+    "useEffect": "te",
+    "supplyLocation": "ow",
+    "CustomerSupplyUploadDialog": "LN",
+    "React": "__live.React",
+    "jsx.jsx": "s",
+    "jsx.jsxs": "l",
+    "jsx.Fragment": "Ue"
+  },
+  "tests": [
+    {
+      "name": "actual-rO-new-upload-and-settings",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-settings-existing-navigation",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-actual-dialog-props-current",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-completion-only-metadata-invalidation",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-dirty-session-background-fetch-retained",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-close-notifies-and-hides",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-A-B-A-old-callback-invalidated",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-archived-upload-disabled",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-readonly-settings-still-readable",
+      "passed": true
+    },
+    {
+      "name": "actual-rO-version-mismatch-fail-closed",
+      "passed": true
+    },
+    {
+      "name": "actual-cN-spread-session-and-authoritative-props",
+      "passed": true
+    },
+    {
+      "name": "actual-cN-order-call-intact",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-materials-source-session-props",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-original-navigation-guard-clean",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-open-blocks-original-navigation-guard",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-open-blocks-original-action",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-open-beforeunload-blocked",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-close-restores-original-action",
+      "passed": true
+    },
+    {
+      "name": "actual-nO-captured-child-receipt-A-B-A-invalid",
+      "passed": true
+    },
+    {
+      "name": "unrelated-demand-order-materials-byte-protected",
+      "passed": true
+    },
+    {
+      "name": "actual-factory-no-new-unresolved-closures",
+      "passed": true
+    },
+    {
+      "name": "all-patches-within-rO-cN-nO-only",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Synthetic execution of actual patched rO/cN/nO with mocked hooks/query results; not a browser or a real React portal integration test.",
+    "No real API writes, DB, SSH, Git, secrets or deployment operations performed.",
+    "Prior source test totals supplied by parent (265 Customer / 357 Host / 288 Nav) were not rerun here.",
+    "Existing LN importer, CustomerNavigationGuard implementation, Wouter/TRPC/React/providers and factory scaffold retained byte-identically outside listed patches."
+  ],
+  "actualNodeProof": [
+    {
+      "name": "rO",
+      "beforeStart": 2841699,
+      "beforeEnd": 2843479,
+      "beforeNodeSha256": "d8ed60adb3d4b0e5205e853a151cd0a3468e2c6a12355d409c6db60bc029b0ec",
+      "afterNodeSha256": "09e87bfc45095703eef2cb65ac21d8afb2430b0dd2b36f8c2e65f5343e7d30cf",
+      "changed": true
+    },
+    {
+      "name": "cN",
+      "beforeStart": 2836106,
+      "beforeEnd": 2839150,
+      "beforeNodeSha256": "f70274451bd054c148afa676253a0d0ce6b6db79c193e6a7a9ae4e50b3ae0d35",
+      "afterNodeSha256": "4df89460923b141b7e333da269edbec1551189508d7efbb36cb645bc7ac31085",
+      "changed": true
+    },
+    {
+      "name": "nO",
+      "beforeStart": 2849533,
+      "beforeEnd": 2874057,
+      "beforeNodeSha256": "830005bec1793519cb40a4f8c45ceb7454d32b9978f445a84f169962a2227e1d",
+      "afterNodeSha256": "5ba58954e2a35641ae91d32093751094781602ad00b402ef34b8002805047338",
+      "changed": true
+    },
+    {
+      "name": "XP",
+      "beforeStart": 2849369,
+      "beforeEnd": 2849533,
+      "beforeNodeSha256": "26e69ff85b47664cce281fc648a1743c26d4e7479054dd6e6a5bcb4b7cf0957c",
+      "afterNodeSha256": "26e69ff85b47664cce281fc648a1743c26d4e7479054dd6e6a5bcb4b7cf0957c",
+      "changed": false
+    }
+  ],
+  "factoryClosureAudit": {
+    "baselineUnresolved": [
+      "AbortController",
+      "Array",
+      "BigInt",
+      "Boolean",
+      "Date",
+      "Element",
+      "Error",
+      "File",
+      "Function",
+      "HTMLInputElement",
+      "Intl",
+      "JSON",
+      "Map",
+      "Math",
+      "Number",
+      "Object",
+      "Promise",
+      "Proxy",
+      "Reflect",
+      "RegExp",
+      "Set",
+      "String",
+      "Symbol",
+      "URL",
+      "URLSearchParams",
+      "Uint8Array",
+      "WeakMap",
+      "atob",
+      "btoa",
+      "cancelAnimationFrame",
+      "console",
+      "crypto",
+      "document",
+      "encodeURIComponent",
+      "navigator",
+      "queueMicrotask",
+      "requestAnimationFrame",
+      "sessionStorage",
+      "window"
+    ],
+    "candidateUnresolved": [
+      "AbortController",
+      "Array",
+      "BigInt",
+      "Boolean",
+      "Date",
+      "Element",
+      "Error",
+      "File",
+      "Function",
+      "HTMLInputElement",
+      "Intl",
+      "JSON",
+      "Map",
+      "Math",
+      "Number",
+      "Object",
+      "Promise",
+      "Proxy",
+      "Reflect",
+      "RegExp",
+      "Set",
+      "String",
+      "Symbol",
+      "URL",
+      "URLSearchParams",
+      "Uint8Array",
+      "WeakMap",
+      "atob",
+      "btoa",
+      "cancelAnimationFrame",
+      "console",
+      "crypto",
+      "document",
+      "encodeURIComponent",
+      "navigator",
+      "queueMicrotask",
+      "requestAnimationFrame",
+      "sessionStorage",
+      "window"
+    ],
+    "noNewUnresolved": true
+  },
+  "sourceDetailDiff": {
+    "addedLines": 8,
+    "removedLines": 5,
+    "completeSourceReverseSha256": "522450a43da7e25cf99d93f742bf7e6598ab4716699375f92e71016b27bac885"
+  }
+}

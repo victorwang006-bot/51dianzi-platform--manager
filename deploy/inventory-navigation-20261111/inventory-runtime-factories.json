@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 3,
+  "verifiedAt": "2026-11-11T03:37:07.909Z",
+  "passed": false,
+  "fullCandidate": false,
+  "offlineOnly": true,
+  "mode": "actual factory initializer expression VM, actual React SSR, real bridge-only fixtures",
+  "cases": [
+    {
+      "name": "actual Nav SSR ciTab=materials&ciView=flat",
+      "passed": true,
+      "selected": [
+        "inventory"
+      ],
+      "htmlSha256": "a53b32aaca5c1b5d88fb151e1375dc743bd5cad1b7d1329e6c799ac5eef1cd82"
+    },
+    {
+      "name": "actual Nav SSR ciTab=materials&ciView=channels",
+      "passed": true,
+      "selected": [
+        "channel"
+      ],
+      "htmlSha256": "7b1df620feae0b21bde5d6eceaa249d6f0d4a2483cdcf65711a50b11dd64c428"
+    },
+    {
+      "name": "actual Nav SSR ciTab=materials&ciView=invalid",
+      "passed": true,
+      "selected": [
+        "inventory"
+      ],
+      "htmlSha256": "a53b32aaca5c1b5d88fb151e1375dc743bd5cad1b7d1329e6c799ac5eef1cd82"
+    },
+    {
+      "name": "actual Nav SSR ciTab=channels",
+      "passed": true,
+      "selected": [
+        "channel"
+      ],
+      "htmlSha256": "7b1df620feae0b21bde5d6eceaa249d6f0d4a2483cdcf65711a50b11dd64c428"
+    },
+    {
+      "name": "actual Nav SSR ciTab=trash",
+      "passed": true,
+      "selected": [
+        "inventory"
+      ],
+      "htmlSha256": "a53b32aaca5c1b5d88fb151e1375dc743bd5cad1b7d1329e6c799ac5eef1cd82"
+    },
+    {
+      "name": "actual outer callback accepts third view and absolute no-supplies route",
+      "passed": true,
+      "callbackSha256": "b2f9dd2e11de1ef3c20f35101c2b9f31adf911c4f92648cc5714714d206be157",
+      "helperSha256": "ed6fa7332ce188f792e371bc8c9b71e58c4872456f9c12e431268ee92cc4d088",
+      "navigateCalls": [
+        "/workbench/channel-inventory?ciTab=materials&ciView=flat",
+        "/workbench/channel-inventory?ciTab=materials&ciView=channels"
+      ]
+    },
+    {
+      "name": "actual Host flat list sr-title; removed header/upload/view controls",
+      "passed": true,
+      "htmlSha256": "5cfd3902529aa2451bb1619bdae53d8701353d7b515e9d0310caad63f0fc6a19",
+      "menuItems": [
+        "上传记录",
+        "已删除库存",
+        "历史渠道整理"
+      ],
+      "mutationCalls": 0
+    },
+    {
+      "name": "actual Host channels triggers existing source browse panel",
+      "passed": true,
+      "htmlSha256": "0a220ce7f53a9702bb2488223fa3a1edb68469ee60872ef2fa3101b64a78a6ba",
+      "existingBrowsePanel": "section.ci-panel[aria-label=\"按渠道查看库存\"]",
+      "duplicateViewButtonsAbsent": true,
+      "queryHookCalls": [
+        {
+          "path": "je.channelInventory.listChannels.useQuery",
+          "input": {
+            "expectedEnterpriseId": 31,
+            "expectedActorUserId": 7,
+            "page": 1,
+            "pageSize": 20
+          },
+          "enabled": false
+        },
+        {
+          "path": "je.channelInventory.listTeamMaterials.useQuery",
+          "input": {
+            "expectedEnterpriseId": 31,
+            "expectedActorUserId": 7,
+            "page": 1,
+            "pageSize": 20
+          },
+          "enabled": true
+        },
+        {
+          "path": "je.channelInventory.listChannels.useQuery",
+          "input": {
+            "expectedEnterpriseId": 31,
+            "expectedActorUserId": 7,
+            "active": true,
+            "page": 1,
+            "pageSize": 100
+          },
+          "enabled": false
+        },
+        {
+          "path": "je.channelInventory.listChannels.useQuery",
+          "input": {
+            "expectedEnterpriseId": 31,
+            "expectedActorUserId": 7,
+            "page": 1,
+            "pageSize": 20
+          },
+          "enabled": false
+        },
+        {
+          "path": "je.channelInventory.listTeamMaterials.useQuery",
+          "input": {
+            "expectedEnterpriseId": 31,
+            "expectedActorUserId": 7,
+            "page": 1,
+            "pageSize": 20
+          },
+          "enabled": false
+        },
+        {
+          "path": "je.channelInventory.listChannels.useQuery",
+          "input": {
+            "expectedEnterpriseId": 31,
+            "expectedActorUserId": 7,
+            "active": true,
+            "page": 1,
+            "pageSize": 100
+          },
+          "enabled": false
+        }
+      ],
+      "mutationCalls": 0
+    },
+    {
+      "name": "actual Host legacy batches target mode",
+      "passed": true,
+      "htmlSha256": "3c9fac8d5a38ec24b46aebb9ff88b0c766e2383d0ad428805d95a4f05a700eed",
+      "managementTargets": [
+        {
+          "targetComponent": "wd",
+          "mode": "batches",
+          "canWrite": true
+        }
+      ],
+      "mutationCalls": 0
+    },
+    {
+      "name": "actual Host legacy trash target mode",
+      "passed": true,
+      "htmlSha256": "c69b8525608d82ac1324602eeaf04b8191aefafd160c2c07a46496a6bad8ed04",
+      "managementTargets": [
+        {
+          "targetComponent": "wd",
+          "mode": "trash",
+          "canWrite": true
+        }
+      ],
+      "mutationCalls": 0
+    },
+    {
+      "name": "actual Host More handlers navigate batch/trash/channels",
+      "passed": true,
+      "navigateCalls": [
+        "/channel-inventory?ciTab=batches",
+        "/channel-inventory?ciTab=trash",
+        "/channel-inventory?ciTab=channels"
+      ],
+      "mutationCalls": 0
+    },
+    {
+      "name": "actual Host read-only hides historical management; render no mutate",
+      "passed": true,
+      "menuItems": [
+        "上传记录",
+        "已删除库存"
+      ],
+      "mutationCalls": 0
+    }
+  ],
+  "assets": [
+    {
+      "id": "nav",
+      "sourceMode": "actual-candidate",
+      "baselineSha256": "0573716bc08061edd7511315c5d8e3784c1a84e56fee755f40d276dcaf3819c0",
+      "testedAssetSha256": "b2f91048f3574631b621973d7eef2a5c040f968d44368f33c485183009838e32",
+      "actualFactory": "__admin_workbench_nav_v1",
+      "actualFactorySha256": "1a8f8c76dfffac22c64aa1b34575deadc1b8739df0a4bcbb2adfb141f17139b1",
+      "bridgeSha256": "7a7aeb1ccc68054a4574060920d4d9577a969554e439a3af3e98c5f826c984a3",
+      "factoryScaffoldByteIdentical": true
+    },
+    {
+      "id": "workbench",
+      "sourceMode": "actual-candidate",
+      "baselineSha256": "1afdb6c381dcfc25220698d199b59c7d374de6aadced8ab3b109143977dd5d4f",
+      "testedAssetSha256": "65e7587c727cdee5577177849237bd425f77a8bc2b23caedb71aefb9c94e0113",
+      "actualFactory": "__admin_workbench_host_v1",
+      "actualFactorySha256": "d79c7a7a9c5bcf36d61a5acecf48401f9a453a96f1ff26680bd7c92df946fe50",
+      "bridgeSha256": "d06d27f696577c779598506101be1a254ccac540870a031335817ee7af116ec2",
+      "factoryScaffoldByteIdentical": true
+    }
+  ],
+  "limitations": [
+    "Partial Nav/Host proof only; customer rO, Supply Yb interactions, full dependency graph, index/CSS, browser hydration/layout, authorization effects and live data are not proven.",
+    "SSR does not run useEffect; query hooks supply lawful test fixture shapes. Bridged dropdown primitives expose SSR children/handlers instead of Radix portals.",
+    "Legacy component target mode is observed on actual JSX construction; full legacy mutation workflows are not exercised."
+  ],
+  "networkRequests": false,
+  "databaseConnected": false,
+  "browserUsed": false,
+  "realBusinessWrites": false,
+  "syntheticTrpcHookPaths": [
+    "je.channelInventory.collaborationNotesList.useQuery",
+    "je.channelInventory.publishFactoryMaterial.useMutation",
+    "je.channelInventory.notesList.useQuery",
+    "je.channelInventory.notesAdd.useMutation",
+    "je.channelInventory.notesEdit.useMutation",
+    "je.enterprise.me.useQuery",
+    "je.channelInventory.listChannels.useQuery",
+    "je.channelInventory.listTeamMaterials.useQuery",
+    "je.channelInventory.createChannel.useMutation",
+    "je.channelInventory.updateChannel.useMutation",
+    "je.channelInventory.setChannelActive.useMutation",
+    "je.channelInventory.createMaterial.useMutation",
+    "je.channelInventory.updateTeamMaterial.useMutation"
+  ],
+  "hostRenderEvidence": [
+    {
+      "search": "ciTab=materials&ciView=flat",
+      "write": true,
+      "htmlSha256": "5cfd3902529aa2451bb1619bdae53d8701353d7b515e9d0310caad63f0fc6a19",
+      "menuItems": [
+        "上传记录",
+        "已删除库存",
+        "历史渠道整理"
+      ],
+      "modes": [],
+      "removedUiMatches": [],
+      "sourceBrowseMatches": [
+        "ci-material-source-col"
+      ]
+    },
+    {
+      "search": "ciTab=materials&ciView=channels",
+      "write": true,
+      "htmlSha256": "0a220ce7f53a9702bb2488223fa3a1edb68469ee60872ef2fa3101b64a78a6ba",
+      "menuItems": [
+        "上传记录",
+        "已删除库存",
+        "历史渠道整理"
+      ],
+      "modes": [],
+      "removedUiMatches": [
+        {
+          "label": "按渠道查看",
+          "htmlSnippet": "录</div><div role=\"menuitem\">已删除库存</div><hr/><div role=\"menuitem\">历史渠道整理</div></div></div><span class=\"ci-filter-count\">正在读取库存条数…</span></form><section class=\"ci-panel\" aria-label=\"按渠道查看库存\"><div class=\"ci-toolbar\"><label class=\"ci-field ci-toolbar-search\"><span class=\"ci-filter-label\">渠道名称</span><input aria-label=\"搜索可读库存渠道\" place"
+        }
+      ],
+      "sourceBrowseMatches": []
+    },
+    {
+      "search": "ciTab=batches",
+      "write": true,
+      "htmlSha256": "3c9fac8d5a38ec24b46aebb9ff88b0c766e2383d0ad428805d95a4f05a700eed",
+      "menuItems": [],
+      "modes": [
+        {
+          "targetComponent": "wd",
+          "mode": "batches",
+          "canWrite": true
+        }
+      ],
+      "removedUiMatches": [],
+      "sourceBrowseMatches": []
+    },
+    {
+      "search": "ciTab=trash",
+      "write": true,
+      "htmlSha256": "c69b8525608d82ac1324602eeaf04b8191aefafd160c2c07a46496a6bad8ed04",
+      "menuItems": [],
+      "modes": [
+        {
+          "targetComponent": "wd",
+          "mode": "trash",
+          "canWrite": true
+        }
+      ],
+      "removedUiMatches": [],
+      "sourceBrowseMatches": []
+    },
+    {
+      "search": "ciTab=materials&ciView=flat",
+      "write": true,
+      "htmlSha256": "5cfd3902529aa2451bb1619bdae53d8701353d7b515e9d0310caad63f0fc6a19",
+      "menuItems": [
+        "上传记录",
+        "已删除库存",
+        "历史渠道整理"
+      ],
+      "modes": [],
+      "removedUiMatches": [],
+      "sourceBrowseMatches": [
+        "ci-material-source-col"
+      ]
+    },
+    {
+      "search": "ciTab=materials&ciView=flat",
+      "write": false,
+      "htmlSha256": "d2c533d4059a04331287acacdadee3ce5a8339db822377768190be505f302d51",
+      "menuItems": [
+        "上传记录",
+        "已删除库存"
+      ],
+      "modes": [],
+      "removedUiMatches": [],
+      "sourceBrowseMatches": [
+        "ci-material-source-col"
+      ]
+    }
+  ],
+  "sourceProtection": [
+    {
+      "path": "/home/ubuntu/51-inspection/manager-github/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "beforeSha256": "d19f2d1b973aa53a196bbc342708d1f8f3a5e782b9bcd31961fea299886f36cc",
+      "afterSha256": "d19f2d1b973aa53a196bbc342708d1f8f3a5e782b9bcd31961fea299886f36cc",
+      "unchanged": true
+    },
+    {
+      "path": "/home/ubuntu/51-inspection/manager-github/client/src/components/DashboardLayout.tsx",
+      "beforeSha256": "9942b1016bff3be840d27d631ef924a6ff588151074aef2aebb838e27556692b",
+      "afterSha256": "9942b1016bff3be840d27d631ef924a6ff588151074aef2aebb838e27556692b",
+      "unchanged": true
+    },
+    {
+      "path": "/home/ubuntu/51-inspection/manager-github/client/src/business/platform/client/src/pages/ChannelInventoryHost.tsx",
+      "beforeSha256": "0e4023abb26359bb3cd031bf41bc68db6ff6d38aae4fb5516cf57c463c13e2a6",
+      "afterSha256": "0e4023abb26359bb3cd031bf41bc68db6ff6d38aae4fb5516cf57c463c13e2a6",
+      "unchanged": true
+    },
+    {
+      "path": "/home/ubuntu/51-inspection/deployment-tools/inventory-builder-core.mjs",
+      "beforeSha256": "cd5ce7759575c0e8328b9d10e4cc12201ffe014c0bd7bc781095aab56e2f1afe",
+      "afterSha256": "cd5ce7759575c0e8328b9d10e4cc12201ffe014c0bd7bc781095aab56e2f1afe",
+      "unchanged": true
+    },
+    {
+      "path": "/home/ubuntu/51-inspection/deployment-tools/build-inventory-candidate.mjs",
+      "beforeSha256": "899ea602bf09e8d235468c36f541520950b1147906a6516a10e84302235f5661",
+      "afterSha256": "899ea602bf09e8d235468c36f541520950b1147906a6516a10e84302235f5661",
+      "unchanged": true
+    }
+  ],
+  "testedCasesPassed": true,
+  "mutationCalls": 0,
+  "scriptSha256": "6a86bd9a62e180663e4fd527a536122d17a35ce104c1094ce154e0d923038e20",
+  "candidateReplayed": true
+}

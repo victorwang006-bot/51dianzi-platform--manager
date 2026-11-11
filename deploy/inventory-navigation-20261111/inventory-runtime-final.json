@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 3,
+  "passed": true,
+  "fullCandidate": true,
+  "candidateReplayed": true,
+  "coverageScope": "Authorized inventory navigation and customer supply deltas, not the entire platform",
+  "manifestSha256": "8af68a762949b0d916b8d126400c947e023dc8afc541317b4b5ed0ce65c95554",
+  "candidateIndexSha256": "f7e9f38de1bc0f2e35c4cc951a9c118d97a852d51ee827e957bb566b8386c620",
+  "assets": [
+    {
+      "file": "DashboardLayout-inventory-navigation-b2f91048f3574631.js",
+      "sha256": "b2f91048f3574631b621973d7eef2a5c040f968d44368f33c485183009838e32"
+    },
+    {
+      "file": "BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5.js",
+      "sha256": "65e7587c727cdee5577177849237bd425f77a8bc2b23caedb71aefb9c94e0113"
+    }
+  ],
+  "navHostTestsPassed": 12,
+  "customerTestsPassed": 22,
+  "completionTestsPassed": 3,
+  "customerFactorySha256": "d4d83e20d9147945fc1f3264f8112cf988a4f3197e40b39f9dfbd21c8d252397",
+  "customerFactoryBytesMatchTestedProof": true,
+  "navHostEvidenceSha256": "02f4b0eb2299e40ae7db95f7829779b911c693a01b96eb1f0aae12119ab81a15",
+  "customerEvidenceSha256": "21f159897e999a2014c4005674f2862e1cba0a7c508b8197c9bd8372464495c6",
+  "completionCases": [
+    {
+      "name": "successful single receipt closes portal then targets exact materials",
+      "passed": true,
+      "events": [
+        "complete",
+        "close",
+        "navigate:/channel-inventory?supplyChannelId=73&supplyTab=materials"
+      ]
+    },
+    {
+      "name": "stale upload callback cannot close or navigate",
+      "passed": true,
+      "events": []
+    },
+    {
+      "name": "mixed channels are rejected without close or navigation",
+      "passed": true,
+      "events": [
+        "error"
+      ]
+    }
+  ],
+  "mutationCalls": 0,
+  "realBusinessWrites": false,
+  "browserUsed": false,
+  "databaseConnected": false,
+  "networkRequests": false,
+  "limitations": [
+    "Partial Nav/Host proof only; customer rO, Supply Yb interactions, full dependency graph, index/CSS, browser hydration/layout, authorization effects and live data are not proven.",
+    "SSR does not run useEffect; query hooks supply lawful test fixture shapes. Bridged dropdown primitives expose SSR children/handlers instead of Radix portals.",
+    "Legacy component target mode is observed on actual JSX construction; full legacy mutation workflows are not exercised.",
+    "Synthetic execution of actual patched rO/cN/nO with mocked hooks/query results; not a browser or a real React portal integration test.",
+    "No real API writes, DB, SSH, Git, secrets or deployment operations performed.",
+    "Prior source test totals supplied by parent (265 Customer / 357 Host / 288 Nav) were not rerun here.",
+    "Existing LN importer, CustomerNavigationGuard implementation, Wouter/TRPC/React/providers and factory scaffold retained byte-identically outside listed patches.",
+    "Completion proof executes the actual single-receipt callback; batch/restore unchanged behavior is covered by source tests and byte preservation, not real production writes.",
+    "No real browser layout, hydration or logged-in production API test was performed."
+  ]
+}
