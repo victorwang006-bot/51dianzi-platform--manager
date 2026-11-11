@@ -3,6 +3,7 @@ import {
   cancelPlatformAgencyCertification,
   getPlatformAgencyCertificationDocument,
   listPlatformAgencyCertifications,
+  reviewPlatformAgencyCertification,
   upsertPlatformAgencyCertification,
 } from "./platformAgencyCertificationApi";
 
@@ -136,5 +137,43 @@ describe("internalAgencyCertification 后台代理", () => {
     await expect(listPlatformAgencyCertifications({ ...binding, operator }))
       .rejects.toThrow("PORTAL_API_KEY 未配置");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("HK待审和驳回记录连同日期、原因及替代历史白名单透传，不把新增状态当active或遗漏", async () => {
+    const extra = { authorizationIssuer: "品牌授权主体", validFrom: "2026-11-01", validUntil: null,
+      supplementalNote: "申请补充说明", reviewReason: "授权范围不符", submittedAt: "2026-11-02T00:00:00Z",
+      reviewedAt: null, createdAt: item.updatedAt, supersedesCertificationId: 70, effectiveBrands: [] };
+    const pending = { ...item, ...extra, status: "pending" };
+    const rejected = { ...pending, id: 82, status: "rejected" };
+    const fetchMock = vi.fn().mockResolvedValue(response({ items: [
+      { ...pending, objectKey: "private-key", url: "private-url", fileSha256: "private-hash", base64: "secret" }, rejected,
+    ] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const hk = { registrationRegion: "HK" as const, registrationIdentifier: "HK:01234567", expectedOwnerUserId: 700001 };
+    await expect(listPlatformAgencyCertifications({ ...hk, operator })).resolves.toEqual({ items: [pending, rejected] });
+    expect(JSON.parse(new URL(fetchMock.mock.calls[0][0]).searchParams.get("input") ?? "{}")['0'].json).toEqual(hk);
+  });
+
+  it("review使用POST、版本锁和幂等请求号，可信operator只在header且支持平台manual返回新id", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => response({ success: true, id: 99 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const hk = { registrationRegion: "HK" as const, registrationIdentifier: "HK:01234567", expectedOwnerUserId: 700001 };
+    const review = { ...hk, id: 81, expectedRevision: 3, decision: "reject" as const, reviewReason: "授权范围不符", requestId: "17ad5627-1982-4f31-adef-d9ac7d8b9d06" };
+    await expect(reviewPlatformAgencyCertification({ ...review, operator })).resolves.toEqual({ success: true, id: 99 });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("internalAgencyCertification.review?batch=1");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(String(init.body))['0'].json).toEqual(review);
+    expect(decode((init.headers as Record<string, string>)["x-internal-operator-name"])).toBe(operator.name);
+    await expect(upsertPlatformAgencyCertification({ ...binding, id: 81, expectedRevision: 3, brands: item.brands, requestId: review.requestId, operator })).resolves.toEqual({ success: true, id: 99 });
+  });
+
+  it("拒绝未知状态、错误日期格式及错误effectiveBrands，不透传坏结果", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ items: [{ ...item, status: "approved" }] }))
+      .mockResolvedValueOnce(response({ items: [{ ...item, validUntil: "tomorrow" }] }))
+      .mockResolvedValueOnce(response({ items: [{ ...item, effectiveBrands: [42] }] }));
+    vi.stubGlobal("fetch", fetchMock);
+    for (let n = 0; n < 3; n++) await expect(listPlatformAgencyCertifications({ ...binding, operator })).rejects.toThrow("版本不兼容");
   });
 });

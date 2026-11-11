@@ -383,6 +383,9 @@ export default function MerchantDetail() {
   const adminPermissions = (user as { permissions?: string[] } | null)?.permissions;
   const canWriteAgencyCertification = Boolean(user) && Boolean(merchant.canManage)
     && hasAdminPermission(adminRole, "merchants.write", adminPermissions);
+  const agencyIdentityKey = JSON.stringify([merchant.id, merchant.registrationRegion,
+    merchant.registrationIdentifier, merchant.businessLicense, merchant.crmOwnerPortalUserId,
+    user?.id, canWriteAgencyCertification]);
   // Keep the narrowed value stable inside nested document map callbacks below.
   const hkRegistration = merchant.hkRegistration;
   // The API returns this sensitive candidate only to a scoped merchant writer/reviewer.
@@ -867,7 +870,7 @@ export default function MerchantDetail() {
 
           {visitedTabs.has("agency") ? (
             <TabsContent value="agency" forceMount className={activeTab === "agency" ? "mt-0" : "hidden"}>
-              <AgencyCertificationTab merchantId={merchant.id} canWrite={canWriteAgencyCertification} />
+              {merchant.id === id ? <AgencyCertificationTab key={agencyIdentityKey} identityKey={agencyIdentityKey} merchantId={merchant.id} canWrite={canWriteAgencyCertification} /> : null}
             </TabsContent>
           ) : null}
         </Tabs>

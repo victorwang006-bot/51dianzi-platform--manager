@@ -1,3 +1,5 @@
+import { isValidCalendarDate } from "../shared/merchantCreatedAtFilter";
+
 export type PlatformAgencyCertificationOperator = {
   id: number;
   name: string;
@@ -7,7 +9,9 @@ export type PlatformAgencyCertificationOperator = {
 };
 
 export type PlatformAgencyCertificationBinding = {
-  creditCode: string;
+  creditCode?: string;
+  registrationRegion?: "CN" | "HK";
+  registrationIdentifier?: string;
   expectedOwnerUserId: number;
 };
 
@@ -21,9 +25,19 @@ export type PlatformAgencyCertification = {
   id: number;
   brands: string[];
   fileName: string;
-  status: "active" | "cancelled";
+  status: "active" | "cancelled" | "pending" | "rejected";
   revision: number;
   updatedAt: string | Date;
+  authorizationIssuer?: string | null;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  supplementalNote?: string | null;
+  reviewReason?: string | null;
+  submittedAt?: string | Date | null;
+  reviewedAt?: string | Date | null;
+  createdAt?: string | Date | null;
+  supersedesCertificationId?: number | null;
+  effectiveBrands?: string[];
 };
 
 export type PlatformAgencyCertificationList = {
@@ -44,7 +58,7 @@ type TrpcEnvelope<T> = {
   };
 };
 
-type Procedure = "list" | "upsert" | "cancel" | "document";
+type Procedure = "list" | "upsert" | "cancel" | "document" | "review";
 
 function getConfig() {
   const baseUrl = process.env.PLATFORM_API_BASE?.trim()
@@ -123,18 +137,46 @@ function normalizeCertification(value: unknown): PlatformAgencyCertification {
     || !Array.isArray(item.brands) || item.brands.length > 30
     || item.brands.some(brand => typeof brand !== "string" || brand.length === 0 || brand.length > 80)
     || typeof item.fileName !== "string" || item.fileName.length === 0
-    || (item.status !== "active" && item.status !== "cancelled")
+    || !["active", "cancelled", "pending", "rejected"].includes(String(item.status))
     || !Number.isSafeInteger(item.revision) || Number(item.revision) < 0
     || (typeof item.updatedAt !== "string" && !(item.updatedAt instanceof Date))) {
     throw new Error("代理认证接口版本不兼容，请先完成主站发布");
+  }
+  // 仅投影合同字段。旧 active/cancelled 响应可缺少新增字段；未知私有字段不透传。
+  const extra: Partial<PlatformAgencyCertification> = {};
+  const incompatible = () => { throw new Error("代理认证接口版本不兼容，请先完成主站发布"); };
+  for (const key of ["authorizationIssuer", "validFrom", "validUntil", "supplementalNote", "reviewReason"] as const) {
+    const value = item[key];
+    if (value === undefined) continue;
+    if (value !== null && typeof value !== "string") incompatible();
+    if ((key === "validFrom" || key === "validUntil") && typeof value === "string"
+      && !isValidCalendarDate(value)) incompatible();
+    extra[key] = value as string | null;
+  }
+  for (const key of ["submittedAt", "reviewedAt", "createdAt"] as const) {
+    const value = item[key];
+    if (value === undefined) continue;
+    if (value !== null && typeof value !== "string" && !(value instanceof Date)) incompatible();
+    extra[key] = value as string | Date | null;
+  }
+  if (item.supersedesCertificationId !== undefined) {
+    if (item.supersedesCertificationId !== null && (!Number.isSafeInteger(item.supersedesCertificationId)
+      || Number(item.supersedesCertificationId) <= 0)) incompatible();
+    extra.supersedesCertificationId = item.supersedesCertificationId as number | null;
+  }
+  if (item.effectiveBrands !== undefined) {
+    if (!Array.isArray(item.effectiveBrands) || item.effectiveBrands.length > 30
+      || item.effectiveBrands.some(brand => typeof brand !== "string" || !brand || brand.length > 80)) incompatible();
+    extra.effectiveBrands = item.effectiveBrands as string[];
   }
   return {
     id: Number(item.id),
     brands: item.brands as string[],
     fileName: item.fileName,
-    status: item.status,
+    status: item.status as PlatformAgencyCertification["status"],
     revision: Number(item.revision),
     updatedAt: item.updatedAt as string | Date,
+    ...extra,
   };
 }
 
@@ -190,6 +232,10 @@ export function upsertPlatformAgencyCertification(input: PlatformAgencyCertifica
   id?: number;
   expectedRevision?: number;
   brands: string[];
+  authorizationIssuer?: string | null;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  supplementalNote?: string | null;
   file?: PlatformAgencyCertificationFile;
   requestId: string;
   operator: PlatformAgencyCertificationOperator;
@@ -206,6 +252,19 @@ export function cancelPlatformAgencyCertification(input: PlatformAgencyCertifica
 }) {
   const { operator, ...payload } = input;
   return callPlatform<unknown>("cancel", payload, "POST", operator).then(normalizeCancel);
+}
+
+/** 人工审核只转发可信后台身份；requestId 和 revision 由权威服务校验并审计。 */
+export function reviewPlatformAgencyCertification(input: PlatformAgencyCertificationBinding & {
+  id: number;
+  expectedRevision: number;
+  decision: "approve" | "reject";
+  reviewReason: string;
+  requestId: string;
+  operator: PlatformAgencyCertificationOperator;
+}) {
+  const { operator, ...payload } = input;
+  return callPlatform<unknown>("review", payload, "POST", operator).then(normalizeMutation);
 }
 
 /** 原件仅在受控点击后由主站签发短时 URL，返回值不包含私有对象键。 */

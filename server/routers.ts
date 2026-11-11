@@ -76,6 +76,7 @@ import {
   cancelPlatformAgencyCertification,
   getPlatformAgencyCertificationDocument,
   listPlatformAgencyCertifications,
+  reviewPlatformAgencyCertification,
   upsertPlatformAgencyCertification,
 } from "./platformAgencyCertificationApi";
 import {
@@ -448,6 +449,28 @@ async function getPlatformCompanyMediaBinding(ctx: TrpcContext, merchantId: numb
     });
   }
   return { creditCode, expectedOwnerUserId: ownerUserId };
+}
+
+/** 代理认证支持 CN/HK；身份与 owner 仅从负责范围内商户派生，不借用拒绝 HK 的照片墙绑定。 */
+async function getPlatformAgencyCertificationBinding(ctx: TrpcContext, merchantId: number) {
+  const merchant = await assertMerchantInSalesScope(ctx, merchantId);
+  const ownerText = merchant.crmOwnerPortalUserId?.trim() || "";
+  const expectedOwnerUserId = Number(ownerText);
+  if (!/^\d+$/.test(ownerText) || !Number.isSafeInteger(expectedOwnerUserId) || expectedOwnerUserId <= 0) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户前台企业绑定异常，请先核对企业身份与所有者" });
+  }
+  if (merchant.registrationRegion === "HK") {
+    const registrationIdentifier = merchant.registrationIdentifier?.trim().toUpperCase() || "";
+    if (!/^HK:\d{8}$/.test(registrationIdentifier)) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "香港企业绑定异常，请核对8位商业登记号码" });
+    }
+    return { registrationRegion: "HK" as const, registrationIdentifier, expectedOwnerUserId };
+  }
+  const creditCode = merchant.businessLicense?.trim().replace(/\s+/g, "").toUpperCase() || "";
+  if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(creditCode)) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "商户前台企业绑定异常，请核对统一社会信用代码" });
+  }
+  return { creditCode, expectedOwnerUserId };
 }
 
 // 前台对接鉴权：请求头 x-portal-key 必须与 PORTAL_API_KEY 一致
@@ -1493,19 +1516,23 @@ export const appRouter = router({
     agencyCertifications: merchantReadProcedure
       .input(z.object({ merchantId: z.number().int().positive() }))
       .query(async ({ ctx, input }) => {
-        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const binding = await getPlatformAgencyCertificationBinding(ctx, input.merchantId);
         return listPlatformAgencyCertifications({
           ...binding,
           operator: platformUserOperatorFromContext(ctx),
         });
       }),
-    /** 新建需要原件；编辑保留未传 file 的既有私有原件，认证保存后立即生效。 */
+    /** 后台人工认定保留立即生效；编辑已通过记录由主站新建版本，不覆盖旧审核结果和原件。 */
     saveAgencyCertification: merchantWriteProcedure
       .input(z.object({
         merchantId: z.number().int().positive(),
         id: z.number().int().positive().optional(),
         expectedRevision: z.number().int().min(0).optional(),
         brands: AGENCY_CERTIFICATION_BRANDS_SCHEMA,
+        authorizationIssuer: z.string().trim().max(200).nullable().optional(),
+        validFrom: z.string().refine(isValidCalendarDate, "有效起始日期无效").nullable().optional(),
+        validUntil: z.string().refine(isValidCalendarDate, "有效截止日期无效").nullable().optional(),
+        supplementalNote: z.string().trim().max(2_000).nullable().optional(),
         file: AGENCY_CERTIFICATION_FILE_SCHEMA.optional(),
         requestId: z.string().uuid("代理认证请求号无效"),
       }).superRefine((value, ctx) => {
@@ -1515,14 +1542,24 @@ export const appRouter = router({
         if (!value.id && value.expectedRevision !== undefined) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["expectedRevision"], message: "新建代理认证不能提供版本号" });
         }
+        if (value.id && value.expectedRevision === undefined) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["expectedRevision"], message: "编辑代理认证必须提供版本号" });
+        }
+        if (value.validFrom && value.validUntil && value.validFrom > value.validUntil) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["validUntil"], message: "有效截止日期不能早于起始日期" });
+        }
       }))
       .mutation(async ({ ctx, input }) => {
-        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const binding = await getPlatformAgencyCertificationBinding(ctx, input.merchantId);
         const result = await upsertPlatformAgencyCertification({
           ...binding,
           id: input.id,
           expectedRevision: input.expectedRevision,
           brands: input.brands,
+          authorizationIssuer: input.authorizationIssuer,
+          validFrom: input.validFrom,
+          validUntil: input.validUntil,
+          supplementalNote: input.supplementalNote,
           file: input.file,
           requestId: input.requestId,
           operator: platformUserOperatorFromContext(ctx),
@@ -1539,7 +1576,7 @@ export const appRouter = router({
         });
         return result;
       }),
-    /** 取消是可逆业务状态：不删除主站记录或私有原件，立即取消当前认证展示。 */
+    /** 撤销仅变更业务状态：不删除主站记录或私有原件，取消当前认证展示。 */
     cancelAgencyCertification: merchantWriteProcedure
       .input(z.object({
         merchantId: z.number().int().positive(),
@@ -1548,7 +1585,7 @@ export const appRouter = router({
         requestId: z.string().uuid("代理认证请求号无效"),
       }))
       .mutation(async ({ ctx, input }) => {
-        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const binding = await getPlatformAgencyCertificationBinding(ctx, input.merchantId);
         const result = await cancelPlatformAgencyCertification({
           ...binding,
           id: input.id,
@@ -1566,14 +1603,40 @@ export const appRouter = router({
         });
         return result;
       }),
-    /** 原件按点击实时签发短时链接；浏览器和审计记录均不接触稳定对象 key。 */
-    agencyCertificationDocument: merchantReadProcedure
+    /** 前台申请必须由负责范围内具备商户写权限的后台人员人工审核，主站权威事务留审核记录。 */
+    reviewAgencyCertification: merchantWriteProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        id: z.number().int().positive(),
+        expectedRevision: z.number().int().min(0),
+        decision: z.enum(["approve", "reject"]),
+        reviewReason: z.string().trim().max(2_000, "审核意见最多2000字"),
+        requestId: z.string().uuid("代理认证请求号无效"),
+      }).superRefine((value, ctx) => {
+        if (value.decision === "reject" && !value.reviewReason) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["reviewReason"], message: "驳回原因不能为空" });
+        }
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const binding = await getPlatformAgencyCertificationBinding(ctx, input.merchantId);
+        return reviewPlatformAgencyCertification({
+          ...binding,
+          id: input.id,
+          expectedRevision: input.expectedRevision,
+          decision: input.decision,
+          reviewReason: input.reviewReason,
+          requestId: input.requestId,
+          operator: platformUserOperatorFromContext(ctx),
+        });
+      }),
+    /** 原件仅供商户写权限审核人员按点击实时签发短时链接，撤销后仍保留原件。 */
+    agencyCertificationDocument: merchantWriteProcedure
       .input(z.object({
         merchantId: z.number().int().positive(),
         id: z.number().int().positive(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const binding = await getPlatformCompanyMediaBinding(ctx, input.merchantId);
+        const binding = await getPlatformAgencyCertificationBinding(ctx, input.merchantId);
         const document = await getPlatformAgencyCertificationDocument({
           ...binding,
           id: input.id,
