@@ -1,0 +1,94 @@
+{
+  "releaseId": "20261112-admin-workspace-32661bf7134482d2",
+  "sourceCommit": "6d4a39f320d91374d5f3f4151dcb703439339baf",
+  "artifacts": [
+    {
+      "kind": "admin-api",
+      "relative": "admin-api/index.js",
+      "sha256": "c1f4171ea86a95cbc6195e25acd2f3a1b5d0555a886529ead771c80f8862bef0"
+    },
+    {
+      "kind": "html",
+      "relative": "static/index.html",
+      "sha256": "fcaf6b60cccb9d0dafa09b4696818c2537cf2be8c11702c8b48cab64d735cb9e"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js",
+      "sha256": "c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shared-BUxb-QlJ-composition-96cad69e7ffdcf5bf52602ae5a39e720e66b72c7d547e84d90f06ec33cc7cf81.js",
+      "sha256": "96cad69e7ffdcf5bf52602ae5a39e720e66b72c7d547e84d90f06ec33cc7cf81"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "sha256": "abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Materials-LZk-BqLV-composition-ef4bed4b523bf88c79ed6e6b74b5bb33c1f396168c352ee7755dd5d57c89b4dd.js",
+      "sha256": "ef4bed4b523bf88c79ed6e6b74b5bb33c1f396168c352ee7755dd5d57c89b4dd"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611.js",
+      "sha256": "446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-CdGnGQAR-composition-5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7.js",
+      "sha256": "5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Orders-admin-header-8bf2e7a522e1-composition-16d10d139af13431bf594fa9ca327faab820bbe80423922aeeb14b30c18a6472.js",
+      "sha256": "16d10d139af13431bf594fa9ca327faab820bbe80423922aeeb14b30c18a6472"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/PortalUsers-C6ATutza-composition-1da389a5b265348bf99efa4fe3eef869c62bc08301e8612e415844ae9bb68ea8.js",
+      "sha256": "1da389a5b265348bf99efa4fe3eef869c62bc08301e8612e415844ae9bb68ea8"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Reviews-BmcUxzFU-composition-2c68b52011b4b0427f699c4aaa0c98e29f2add0873c2d92a6936278959564f8f.js",
+      "sha256": "2c68b52011b4b0427f699c4aaa0c98e29f2add0873c2d92a6936278959564f8f"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/ExceptionLogs-admin-header-8198e273e0d2-composition-ecaa95afb62cd7cdb3790794b89e28cf1f35fcdc6aa5fb50fdc706cc308de3d0.js",
+      "sha256": "ecaa95afb62cd7cdb3790794b89e28cf1f35fcdc6aa5fb50fdc706cc308de3d0"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Analytics-sIcKW5Kg-composition-a04f3f397520e01f9251b10de28b56d4fac771cbbd1635b5bd669f8492ee8134.js",
+      "sha256": "a04f3f397520e01f9251b10de28b56d4fac771cbbd1635b5bd669f8492ee8134"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175.js",
+      "sha256": "1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804.js",
+      "sha256": "a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/composition-inventory-58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3.css",
+      "sha256": "58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3"
+    },
+    {
+      "kind": "asset",
+      "relative": "static/assets/composition-admin-67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60.css",
+      "sha256": "67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60"
+    }
+  ],
+  "status": "fixed candidate; activation not claimed",
+  "productionDataEdited": false,
+  "dependencyInstallationRequired": false
+}
