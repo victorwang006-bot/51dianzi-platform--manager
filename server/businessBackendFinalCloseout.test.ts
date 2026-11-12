@@ -2,19 +2,45 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { z } from "zod";
+import { getTableName } from "drizzle-orm";
 import { validateBusinessCommandResourceCorrelation } from "./businessCommandAudit";
 import type { TrpcContext } from "./_core/context";
 
 const fixture = vi.hoisted(() => ({
   account: { id: 303, username: "fixture", displayName: "fixture", adminRole: "merchant_mgr", status: "active", sessionVersion: 1 },
-  nativePermissions: ["officialInventory.read"],
+  nativePermissions: ["officialInventory.read", "officialInventory.write"],
   accountLookup: vi.fn(),
   permissionLookup: vi.fn(),
   scope: { id: 10, adminUserId: 303, merchantId: 51, status: "active", scopeVersion: 3, modulePermissions: ["business.context.read", "business.inventory.read", "business.inventory.write"] },
   scopeLookup: vi.fn(),
   record: vi.fn(),
+  profileLocks: vi.fn(),
 }));
 vi.mock("./db", () => ({
+  // Exercise the real profile authority function against a transaction-shaped adapter.
+  // This fixture is an active, unassigned ordinary member: no team leader proof is minted.
+  getDb: async () => ({
+    transaction: async (run: (tx: unknown) => Promise<unknown>) => run({
+      select: () => {
+        let table: string | undefined;
+        const query = {
+          from(value: Parameters<typeof getTableName>[0]) { table = getTableName(value); return query; },
+          where(_value: unknown) { return query; },
+          orderBy(_value: unknown) { return query; },
+          limit(_value: number) { return query; },
+          innerJoin(_table: unknown, _condition: unknown) { return query; },
+          async for(lock: string) {
+            fixture.profileLocks(table, lock);
+            if (table === "admin_users") return [fixture.account];
+            if (table === "admin_user_permissions") return fixture.nativePermissions.map(permission => ({ permission }));
+            if (table === "official_channel_team_members") return [];
+            throw new Error(`Unexpected synthetic profile authority table: ${table}`);
+          },
+        };
+        return query;
+      },
+    }),
+  }),
   withBusinessAuthorizationFence: async (_key: unknown, operation: () => Promise<unknown>) => operation(),
   getAdminUserById: (...args: unknown[]) => fixture.accountLookup(...args),
   getAdminUserPermissions: (...args: unknown[]) => fixture.permissionLookup(...args),
@@ -43,7 +69,7 @@ const upstream = frontRouter({ internalBusiness: frontRouter({ execute: frontPro
   const payload = input as { officialInventoryGrant: { permissions: OfficialInventoryPermissions } };
   expect(input).toMatchObject({
     staffUserId: 202, adminAccountId: 303, bindingVersion: 7,
-    officialInventoryGrant: { permissions: { read: true, write: false, note: false, customerScopeRead: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) } },
+    officialInventoryGrant: { permissions: { read: true, write: fixture.nativePermissions.includes("officialInventory.write"), note: false, publish: false, customerScopeRead: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) } },
   });
   return {
     enterpriseId: 51, companyName: "fixture", dataOwnerUserId: 404, ownerUserId: 101,
@@ -75,11 +101,13 @@ beforeEach(() => {
   process.env.PORTAL_API_KEY = "fixture-service-key";
   process.env.BUSINESS_WORKBENCH_MERCHANT_IDS = "51";
   upstreamError = undefined;
-  // Live native DB reads, not the stale session permission array, grant read only.
+  // Formatter fixtures must qualify for managerial getMaterial; a separate case proves read-only denial.
+  fixture.nativePermissions.splice(0, fixture.nativePermissions.length, "officialInventory.read", "officialInventory.write");
   fixture.accountLookup.mockReset().mockImplementation(async (id: number) => id === fixture.account.id ? fixture.account : undefined);
   fixture.permissionLookup.mockReset().mockImplementation(async (id: number) => id === fixture.account.id ? [...fixture.nativePermissions] : []);
   fixture.scopeLookup.mockReset().mockImplementation(async () => fixture.scope);
   fixture.record.mockReset().mockResolvedValue(undefined);
+  fixture.profileLocks.mockClear();
   // In-process HTTP adapters only. No TCP, database or production service exists.
   vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const req = new Request(input, init);
@@ -108,6 +136,9 @@ describe("front formatter -> service client -> admin business router -> admin fo
     expect(result.body.error.json.data).toMatchObject({ code, businessFailure: expected });
     expect(fixture.accountLookup).toHaveBeenCalledWith(303);
     expect(fixture.permissionLookup).toHaveBeenCalledWith(303);
+    expect(fixture.profileLocks.mock.calls).toEqual([
+      ["admin_users", "update"], ["admin_user_permissions", "update"], ["official_channel_team_members", "update"],
+    ]);
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fixture.record).not.toHaveBeenCalled();
   });
@@ -129,6 +160,15 @@ describe("front formatter -> service client -> admin business router -> admin fo
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("read-only official grant denies managerial getMaterial before any formatter or upstream call", async () => {
+    fixture.nativePermissions.splice(0, fixture.nativePermissions.length, "officialInventory.read");
+    const result = await downstream();
+    expect(result.status).toBe(403);
+    expect(result.body.error.json.data.businessFailure).toBe("BUSINESS_RESOURCE_FORBIDDEN");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(fixture.record).not.toHaveBeenCalled();
+  });
+
   it("service client preserves actual authenticated unauthorized instead of filtering to availability error", async () => {
     upstreamError = new TRPCError({ code: "UNAUTHORIZED", message: "真实登录已失效" });
     const promise = callPlatformBusinessCommand({ binding: { creditCode: "fixture", expectedOwnerUserId: 101 }, staffUserId: 202, bindingVersion: 7, adminActor: { id: 303, name: "fixture", role: "operations" }, method: "inventory.list", requestId: "fixture-request-001", params: {} });
@@ -138,10 +178,11 @@ describe("front formatter -> service client -> admin business router -> admin fo
   });
 
   it("BFF authorization revision retains server state and is stable across local scope array reorder", async () => {
+    fixture.nativePermissions.splice(0, fixture.nativePermissions.length, "officialInventory.read");
     const first = await businessRouter.createCaller(context()).context();
     expect(first.authorizationVersion).toMatch(/^business-bff-auth-v1:[a-f0-9]{64}$/);
     expect(first.staffPrincipal).toMatchObject({ status: "ready", frontendUserId: 202, adminAccountId: 303, bindingVersion: 7, enterpriseId: 51 });
-    expect(first.officialInventoryPermissions).toEqual({ read: true, write: false, note: false, customerScopeRead: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
+    expect(first.officialInventoryPermissions).toEqual({ read: true, write: false, note: false, publish: false, customerScopeRead: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
     fixture.scope.modulePermissions.reverse();
     const reordered = await businessRouter.createCaller(context()).context();
     expect(reordered.authorizationVersion).toBe(first.authorizationVersion);

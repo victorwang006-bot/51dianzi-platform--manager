@@ -8,6 +8,8 @@ const state = vi.hoisted(() => ({
   fence: vi.fn(),
   transport: vi.fn(),
 }));
+// The live official-team helper is independently exercised in officialChannelProfileRead.test.ts.
+vi.mock("./services/officialChannelProfileRead", () => ({ withOfficialChannelProfileRead: async (_ctx: unknown, _staff: number, run: (proof: undefined) => Promise<unknown>) => run(undefined) }));
 vi.mock("./db", async importOriginal => ({
   ...await importOriginal<object>(),
   getAdminUserById: async () => ({ id: 303, status: "active", adminRole: "super_admin", sessionVersion: 1 }),

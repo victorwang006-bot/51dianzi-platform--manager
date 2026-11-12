@@ -241,15 +241,16 @@ export default function PortalUsers() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 p-4 sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header">
-          <div>
+      <div className="space-y-4 p-4 sm:p-5" data-admin-list-page="true">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header" data-admin-list-header="true">
+          <div data-admin-list-heading="true">
             <h1 className="text-2xl font-semibold tracking-tight aui-page-title">用户管理</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               统计前台注册用户，并按后台权威开通状态区分普通用户与ERP用户。
             </p>
           </div>
           <Button
+            data-admin-list-actions="true"
             variant="outline"
             size="sm"
             onClick={() => void Promise.all([query.refetch(), statsQuery.refetch()])}

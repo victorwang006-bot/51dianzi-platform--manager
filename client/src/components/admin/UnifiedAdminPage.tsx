@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import "./AdminListPage.css";
 
 /** Presentational primitives only: no data requests, router, auth or state. */
 export function AdminPage({ className, ...props }: HTMLAttributes<HTMLElement>) {
@@ -11,17 +12,18 @@ type AdminPageHeaderProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  list?: boolean;
 };
 
-export function AdminPageHeader({ title, description, actions, children, className, ...props }: AdminPageHeaderProps) {
+export function AdminPageHeader({ title, description, actions, children, className, list = false, ...props }: AdminPageHeaderProps) {
   return (
-    <header className={cn("aui-page-header", className)} {...props}>
-      <div className="aui-page-heading">
+    <header data-admin-list-header={list ? "true" : undefined} className={cn("aui-page-header", className)} {...props}>
+      <div data-admin-list-heading={list ? "true" : undefined} className="aui-page-heading">
         <h1 className="aui-page-title">{title}</h1>
         {description ? <div className="aui-page-description">{description}</div> : null}
         {children}
       </div>
-      {actions ? <div className="aui-page-actions">{actions}</div> : null}
+      {actions ? <div data-admin-list-actions={list ? "true" : undefined} className="aui-page-actions">{actions}</div> : null}
     </header>
   );
 }

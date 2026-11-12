@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { formatBeijingDateTime } from "@shared/beijingTime";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
+import "./AdminListPage.css";
 
 // ─── 状态徽章映射 ─────────────────────────────────────────────────────────────
 
@@ -156,14 +157,14 @@ export const adminRoleMap: Record<string, string> = {
 // ─── 页头 ─────────────────────────────────────────────────────────────────────
 
 // description 保留为兼容参数；页头只呈现标题与操作，风险确认和状态提示由原交互承载。
-export function PageHeader({ title, actions }: { title: string; description?: string; actions?: ReactNode }) {
+export function PageHeader({ title, actions, list = false }: { title: string; description?: string; actions?: ReactNode; list?: boolean }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0">
+    <header data-admin-list-header={list ? "true" : undefined} className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div data-admin-list-heading={list ? "true" : undefined} className="min-w-0">
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
-    </div>
+      {actions && <div data-admin-list-actions={list ? "true" : undefined} className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    </header>
   );
 }
 

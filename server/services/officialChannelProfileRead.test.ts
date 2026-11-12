@@ -29,6 +29,11 @@ describe("native official leader -> explicit current staff bridge, no database",
     state.access.teamId = null; state.access.teamRole = null;
     await expect(withOfficialChannelProfileRead({} as never, 202, vi.fn())).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+  it("unassigned ordinary public-stock compatibility issues no source/team proof", async () => {
+    state.access.teamId = null; state.access.teamRole = null;
+    await withOfficialChannelProfileRead({} as never, 202, async proof => { expect(proof).toBeUndefined(); }, true);
+    expect(state.calls).toEqual([]);
+  });
   it.each([[203], [202, 202], [0], Array.from({ length: 501 }, (_, i) => i + 1)].map(owners => ({ owners })))("rejects absent, ambiguous or oversized bindings", async ({ owners }) => {
     state.owners = owners;
     await expect(withOfficialChannelProfileRead({} as never, 202, vi.fn())).rejects.toMatchObject({ code: "FORBIDDEN" });

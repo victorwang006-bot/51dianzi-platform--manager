@@ -274,3 +274,153 @@ describe("员工五页签及统一保存当前页（仅本地合成）", () => {
     expect(mocks.save).toHaveBeenCalledOnce();
   });
 });
+
+async function selectTemplate(id: string, value: string) {
+  await act(async () => {
+    const select = document.getElementById(id) as HTMLSelectElement;
+    select.value = value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+describe("权限简化回归（本地草稿，不写真实账号）", () => {
+  it("角色只读，选模板不自动修改/保存，显式应用只生成当前平台操作草稿", async () => {
+    props.initialSection = "admin";
+    props.row = { ...row, admin: { ...row.admin!, adminRole: "operation" } };
+    await render();
+    expect(document.getElementById("staff-admin-role")).toBeNull();
+    expect(visiblePanel()[0].textContent).toContain("平台运营（只读）");
+    await selectTemplate("staff-admin-template", "sales");
+    expect(button("保存当前页").disabled).toBe(true);
+    expect(mocks.save).not.toHaveBeenCalled();
+    await click("应用平台模板到草稿");
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(button("保存当前页").disabled).toBe(false);
+    await click("保存当前页");
+    expect(mocks.save.mock.calls[0][0]).toMatchObject({
+      adminRole: "operation",
+      inventoryDataScope: "own",
+      erpPermissionKeys: ["inventory.manage"],
+    });
+    expect(mocks.nativeSave).not.toHaveBeenCalled();
+  });
+  it("业务模板不按组长身份扩全量，勾选范围与原native授权保持独立", async () => {
+    props.initialSection = "erp";
+    props.row = { ...row, member: { ...row.member!, role: "leader" } };
+    props.enterpriseAccess.grantableKeys = [
+      "inventory.manage",
+      "inventory.publish",
+      "inventory.inbound",
+      "customers.manage_all",
+      "customers.manage",
+      "enterprise.members.manage",
+    ];
+    await render();
+    await selectTemplate("staff-erp-template", "inventory");
+    const impact = document.querySelector('[aria-label="库存管理授权影响"]')!;
+    expect(impact.textContent).toContain("也可能允许渠道导出");
+    expect(impact.textContent).toContain("原生读取、业务范围和渠道授权");
+    expect(impact.textContent).toContain("当前没有独立的导出或来源开关");
+    expect(button("保存当前页").disabled).toBe(true);
+    await click("添加业务模板到草稿");
+    expect(check("发布库存").getAttribute("aria-checked")).toBe("true");
+    expect(check("全部客户管理").getAttribute("aria-checked")).toBe("false");
+    expect(check("用户与权限").getAttribute("aria-checked")).toBe("false");
+    expect(
+      document.querySelector<HTMLInputElement>(
+        'input[name="staff-business-scope"]'
+      )!.checked
+    ).toBe(true);
+    expect(mocks.nativeSave).not.toHaveBeenCalled();
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(
+      document.querySelectorAll('input[name="staff-business-scope"]')
+    ).toHaveLength(2);
+  });
+  it("高风险项默认折叠，隐藏看板不混入日常矩阵，已授权数量仍可见", async () => {
+    props.initialSection = "erp";
+    props.row = {
+      ...row,
+      member: {
+        ...row.member!,
+        permissionKeys: [
+          "inventory.manage",
+          "customers.manage",
+          "customers.manage_all",
+        ],
+      },
+    };
+    props.enterpriseAccess.grantableKeys = [
+      "inventory.manage",
+      "customers.manage",
+      "customers.manage_all",
+    ];
+    await render();
+    const advanced =
+      visiblePanel()[0].querySelector<HTMLDetailsElement>("details")!;
+    expect(advanced.open).toBe(false);
+    expect(advanced.querySelector("summary")!.textContent).toContain(
+      "已选 1 项"
+    );
+    expect(advanced.contains(check("全部客户管理"))).toBe(true);
+    expect(
+      document.querySelector('[role="checkbox"][aria-label="库存看板"]')
+    ).toBeNull();
+  });
+  it("超级管理员所有配置只读，不能选择角色或套用模板", async () => {
+    props.row = { ...row, admin: { ...row.admin!, adminRole: "super_admin" } };
+    props.initialSection = "admin";
+    await render();
+    expect(document.getElementById("staff-admin-role")).toBeNull();
+    expect(document.getElementById("staff-admin-template")).toBeNull();
+    expect(button("保存当前页").disabled).toBe(true);
+    await click("业务ERP");
+    expect(
+      (document.getElementById("staff-erp-template") as HTMLSelectElement)
+        .disabled
+    ).toBe(true);
+    expect(check("我的库存").disabled).toBe(true);
+    await click("渠道库存");
+    expect(visiblePanel()[0].textContent).toContain("由系统固定授予");
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(mocks.nativeSave).not.toHaveBeenCalled();
+  });
+  it("目标自己不可改平台/ERP/渠道配置，系统或未知native键不能从平台草稿误删", async () => {
+    props.initialSection = "admin";
+    props.enterpriseAccess.currentUserId = 88;
+    await render();
+    expect(check("数据物料库查看").disabled).toBe(true);
+    await click("业务ERP");
+    expect(check("我的库存").disabled).toBe(true);
+    await click("渠道库存");
+    expect(check("查看渠道库存").disabled).toBe(true);
+    expect(visiblePanel()[0].textContent).toContain("不能修改自己的");
+    props.enterpriseAccess.currentUserId = 20;
+    props.row = {
+      ...row,
+      admin: {
+        ...row.admin!,
+        permissions: [
+          ...row.admin!.permissions,
+          "officialInventory.sourceRead",
+          "officialInventory.export",
+          "logs.read",
+        ],
+      },
+    };
+    await render("actor1:protected");
+    await click("平台权限");
+    expect(check("数据物料库查看").disabled).toBe(true);
+    expect(button("应用平台模板到草稿").disabled).toBe(true);
+    expect(visiblePanel()[0].textContent).toContain(
+      "officialInventory.sourceRead"
+    );
+    expect(visiblePanel()[0].textContent).toContain("officialInventory.export");
+    await click("渠道库存");
+    expect(check("查看渠道库存").disabled).toBe(true);
+    expect(visiblePanel()[0].textContent).toContain("只读以防整包更新误删");
+    await toggle("查看渠道库存");
+    await click("保存当前页");
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(mocks.nativeSave).not.toHaveBeenCalled();
+  });
+});

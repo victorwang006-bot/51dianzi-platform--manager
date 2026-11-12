@@ -249,7 +249,7 @@ export default function Merchants() {
 
   return (
     <DashboardLayout>
-      <PageHeader title="商户管理" description="ERP 开通审核、账号绑定、协议状态与结算账户配置" />
+      <PageHeader list title="商户管理" description="ERP 开通审核、账号绑定、协议状态与结算账户配置" />
       <CnRegistrationReviewQueue onOpenDetail={setCnReviewMerchantId} />
 
       {/* 筛选栏 */}

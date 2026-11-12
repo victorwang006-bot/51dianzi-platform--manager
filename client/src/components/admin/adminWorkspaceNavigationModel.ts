@@ -70,15 +70,14 @@ function pathsForGroup(id: string): readonly string[] {
   );
 }
 
-/** Second-row presentation only; canonical routes and first-row targets stay unchanged. */
+/** Dropdown presentation only. Customers/inventory have independent primary
+ * entries; keep their canonical route context and legacy targets below intact. */
 const BUSINESS_MODULE_ENTRIES = [
-  { kind: "direct", path: "/workbench/channel-inventory" },
   {
     kind: "group",
     id: "customers",
-    label: "客户与销售",
+    label: "销售与询价",
     paths: [
-      "/workbench/customers",
       "/workbench/inquiries",
       "/workbench/orders",
     ],

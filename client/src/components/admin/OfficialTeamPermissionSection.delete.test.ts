@@ -96,14 +96,15 @@ function business(): StaffBusinessTeamEditor {
 }
 let data = overview();
 let businessEditor = business();
-async function render(id = 7, real = true) {
+async function render(id = 7, real = true, superAdmin = false, active = true) {
   await act(async () =>
     root.render(
       React.createElement(OfficialTeamPermissionSection, {
         ref: handle,
         adminUserId: id,
         hasRealAdminAccount: real,
-        targetIsSuperAdmin: false,
+        targetIsSuperAdmin: superAdmin,
+        targetIsActive: active,
         overviewData: data,
         overviewLoading: false,
         overviewError: null,
@@ -367,5 +368,145 @@ describe("业务团队复用与原生 grant 回读保存（合成，无真实权
     });
     expect(mocks.member).not.toHaveBeenCalled();
     expect(state.dirty).toBe(false);
+  });
+});
+
+describe("渠道简洁配置不混合授权与数据范围", () => {
+  it("发布和内部备注仍为独立grant，折叠不丢失，如实说明现有来源与导出条件而不伪造开关", async () => {
+    const permissions = [
+      "officialInventory.read",
+      "officialInventory.publish",
+      "officialInventory.note",
+    ];
+    data = overview(permissions);
+    mocks.member.mockResolvedValue(
+      receipt([
+        "officialInventory.read",
+        "officialInventory.publish",
+        "officialInventory.note",
+        "officialInventory.write",
+      ])
+    );
+    await render();
+    const note = host.querySelector<HTMLButtonElement>(
+      '[aria-label="追加内部备注"]'
+    )!;
+    expect(note.getAttribute("aria-checked")).toBe("true");
+    expect(note.closest("details")!.open).toBe(false);
+    expect(
+      note.closest("details")!.querySelector("summary")!.textContent
+    ).toContain("已选 1 项");
+    expect(
+      host.querySelector('[aria-label="导出与来源权限说明"]')!.textContent
+    ).toContain("库存管理权限在其他授权条件满足时可允许渠道导出");
+    expect(host.textContent).toContain("关联客户资料另受客户权限控制");
+    expect(
+      host.querySelector('[role="checkbox"][aria-label*="导出"]')
+    ).toBeNull();
+    await act(async () =>
+      host
+        .querySelector<HTMLButtonElement>('[aria-label="录入和编辑库存"]')!
+        .click()
+    );
+    await save();
+    expect(mocks.member.mock.calls[0][0].officialPermissions).toEqual([
+      "officialInventory.read",
+      "officialInventory.write",
+      "officialInventory.publish",
+      "officialInventory.note",
+    ]);
+    expect(mocks.team).not.toHaveBeenCalled();
+  });
+  it("自己的native后台身份或业务身份均禁止团队和grant修改", async () => {
+    data.currentAccess.adminUserId = 7;
+    await render();
+    expect(checkbox().disabled).toBe(true);
+    expect(
+      host.querySelector<HTMLSelectElement>(
+        '[aria-label="渠道库存团队（业务团队）"]'
+      )!.disabled
+    ).toBe(true);
+    expect(host.textContent).toContain("不能修改自己的");
+    await save();
+    expect(mocks.member).not.toHaveBeenCalled();
+    data = overview();
+    businessEditor.overview!.actorUserId = 88;
+    await render();
+    expect(checkbox().disabled).toBe(true);
+    expect(state.canSave).toBe(false);
+  });
+  it("超级管理员和停用目标不改变团队及native授权", async () => {
+    await render(7, true, true);
+    expect(
+      host.querySelector<HTMLSelectElement>('[aria-label="业务团队身份"]')!
+        .disabled
+    ).toBe(true);
+    expect(host.textContent).toContain("由系统固定授予");
+    await save();
+    await render(7, true, false, false);
+    expect(checkbox().disabled).toBe(true);
+    expect(
+      host.querySelector<HTMLSelectElement>('[aria-label="业务团队身份"]')!
+        .disabled
+    ).toBe(true);
+    await save();
+    expect(mocks.member).not.toHaveBeenCalled();
+    expect(mocks.team).not.toHaveBeenCalled();
+  });
+  it("新服务返回当前合同未知sourceRead/export时fail closed，不整包覆盖丢失敏感键", async () => {
+    data = overview([
+      "officialInventory.read",
+      "officialInventory.sourceRead",
+      "officialInventory.export",
+    ]);
+    await render();
+    expect(checkbox().disabled).toBe(true);
+    expect(host.textContent).toContain("可信授权与账号版本");
+    await toggle();
+    await save();
+    expect(mocks.member).not.toHaveBeenCalled();
+  });
+  it("本人/本组/企业只显示服务实际moduleAccess，不从组长岗位或未分组推导", async () => {
+    businessEditor.overview!.members[0].moduleAccess = [
+      {
+        module: "channels",
+        read: true,
+        write: true,
+        scope: "self",
+        revision: 6,
+        explicit: true,
+      },
+      {
+        module: "stocks",
+        read: true,
+        write: false,
+        scope: "team",
+        revision: 6,
+        explicit: true,
+      },
+      {
+        module: "customers",
+        read: true,
+        write: true,
+        scope: "enterprise",
+        revision: 6,
+        explicit: true,
+      },
+    ];
+    await render();
+    const details = Array.from(
+      host.querySelectorAll<HTMLDetailsElement>("details")
+    ).find(
+      item =>
+        item.querySelector("summary")!.textContent ===
+        "业务模块真实范围（只读）"
+    )!;
+    expect(details.open).toBe(false);
+    expect(details.textContent).toContain("本人 · 可维护");
+    expect(details.textContent).toContain("本组 · 只读");
+    expect(details.textContent).toContain("全企业 · 可维护");
+    expect(host.querySelectorAll('input[type="radio"]')).toHaveLength(0);
+    expect(mocks.team).not.toHaveBeenCalled();
+    expect(mocks.member).not.toHaveBeenCalled();
   });
 });

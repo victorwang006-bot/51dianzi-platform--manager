@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   adminPermissionsForUpdate,
+  applyStaffAdminPermissionTemplate,
+  applyStaffErpPermissionTemplate,
+  protectedStaffAdminKeys,
+  STAFF_ADMIN_PERMISSION_TEMPLATES,
+  STAFF_ERP_PERMISSION_TEMPLATES,
   evaluateBffReadiness,
   STAFF_PERMISSION_TABS,
   staffPermissionTab,
@@ -385,6 +390,224 @@ describe("五页签与同源业务团队模型", () => {
     expect(
       staffBusinessTeamGuard(row, access, { ...organization, members: [] })
         .allowed
+    ).toBe(false);
+  });
+});
+
+describe("简洁权限模板与安全边界", () => {
+  const row: StaffRow = {
+    key: "admin:7",
+    admin,
+    member,
+    binding: { adminUserId: 7, frontUserId: 88, bindingVersion: 1 },
+    bindingState: "bound",
+    scopeState: "ready",
+    bff: {
+      state: "ready",
+      missingPermissions: [],
+      detail: "synthetic verified",
+    },
+  };
+  const access = {
+    available: true,
+    canManageMembers: true,
+    actorIsOwner: true,
+    currentUserId: 20,
+    grantableKeys: [
+      "inventory.manage",
+      "inventory.publish",
+      "inventory.inbound",
+      "customers.manage",
+      "inquiry.receive",
+      "sales.business_orders",
+      "procurement.demands",
+      "procurement.orders",
+    ] as const,
+  };
+  it("平台模板复用已有角色默认的可见操作，但不改变任何实际角色、ERP和范围", () => {
+    const base = {
+      ...staffDraftFromRow(row),
+      adminRole: "operation",
+      inventoryDataScope: "enterprise" as const,
+    };
+    for (const template of STAFF_ADMIN_PERMISSION_TEMPLATES) {
+      const draft = applyStaffAdminPermissionTemplate(base, template.id);
+      expect(draft.adminRole).toBe("operation");
+      expect(draft.erpPermissionKeys).toEqual(base.erpPermissionKeys);
+      expect(draft.inventoryDataScope).toBe("enterprise");
+      expect(
+        draft.adminPermissions.some(
+          key =>
+            key.startsWith("business.") ||
+            key.startsWith("official") ||
+            key === "admins.manage" ||
+            key === "logs.read"
+        )
+      ).toBe(false);
+    }
+    expect(applyStaffAdminPermissionTemplate(base, "super_admin")).toBe(base);
+  });
+  it("业务模板仅添加可授予日常操作，不删除原高风险项，不根据组长标签授予全量", () => {
+    const base = {
+      ...staffDraftFromRow(row),
+      erpPermissionKeys: [
+        "inventory.manage",
+        "customers.manage_all",
+        "customers.manage",
+        "enterprise.members.manage",
+      ] as const,
+    };
+    for (const template of STAFF_ERP_PERMISSION_TEMPLATES) {
+      const draft = applyStaffErpPermissionTemplate(
+        { ...base, erpPermissionKeys: [...base.erpPermissionKeys] },
+        template.id,
+        { ...row, member: { ...member, role: "leader" } },
+        access
+      );
+      expect(draft.inventoryDataScope).toBe("own");
+      expect(draft.adminRole).toBe(base.adminRole);
+      expect(draft.adminPermissions).toEqual(base.adminPermissions);
+      expect(draft.erpPermissionKeys).toEqual(
+        expect.arrayContaining([...base.erpPermissionKeys])
+      );
+    }
+    const minimal = applyStaffErpPermissionTemplate(
+      staffDraftFromRow(row),
+      "inventory",
+      row,
+      {
+        ...access,
+        actorIsOwner: false,
+        grantableKeys: ["inventory.manage", "inventory.publish"],
+      }
+    );
+    expect(minimal.erpPermissionKeys).toEqual([
+      "inventory.manage",
+      "inventory.publish",
+    ]);
+    expect(minimal.erpPermissionKeys).not.toContain("customers.manage_all");
+    expect(minimal.erpPermissionKeys).not.toContain(
+      "enterprise.members.manage"
+    );
+  });
+  it("未就绪、目标自己、super_admin及不可授予存量阻止模板修改", () => {
+    const base = staffDraftFromRow(row);
+    for (const [target, actor] of [
+      [row, { ...access, available: false }],
+      [row, { ...access, currentUserId: 88 }],
+      [{ ...row, admin: { ...admin, adminRole: "super_admin" } }, access],
+      [{ ...row, bindingState: "unbound" as const }, access],
+      [
+        row,
+        {
+          ...access,
+          actorIsOwner: false,
+          grantableKeys: ["inventory.publish"] as const,
+        },
+      ],
+    ] as const) {
+      expect(
+        applyStaffErpPermissionTemplate(base, "inventory", target, actor)
+      ).toBe(base);
+    }
+  });
+  it("日常勾选保留隐藏历史键，customers.manage_all依赖不可授予时不自动补权限", () => {
+    expect(
+      toggleStaffErpPermission(
+        ["inventory.dashboard"],
+        "inquiry.receive",
+        ["inquiry.receive"],
+        true
+      )
+    ).toEqual(["inquiry.receive", "inventory.dashboard"]);
+    expect(
+      toggleStaffErpPermission(
+        [],
+        "customers.manage_all",
+        ["customers.manage_all"],
+        false
+      )
+    ).toEqual([]);
+    expect(
+      staffChangePreview(
+        {
+          ...staffDraftFromRow(row),
+          erpPermissionKeys: ["inventory.dashboard"],
+        },
+        { ...staffDraftFromRow(row), erpPermissionKeys: [] }
+      ).erpRemoved
+    ).toEqual(["inventory.dashboard"]);
+  });
+  it("平台整包更新保留原四native权限，遇到系统/未知敏感键停止而不是静默删掉", () => {
+    const native = [
+      "officialInventory.read",
+      "officialInventory.write",
+      "officialInventory.publish",
+      "officialInventory.note",
+    ];
+    expect(
+      adminPermissionsForUpdate(
+        [...native, "business.inventory.write"],
+        ["orders.read"],
+        "merchant_mgr"
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        ...native,
+        "business.inventory.read",
+        "business.inventory.write",
+      ])
+    );
+    for (const key of [
+      "admins.manage",
+      "logs.read",
+      "officialTeams.manage",
+      "officialInventory.sourceRead",
+      "officialInventory.export",
+    ]) {
+      expect(protectedStaffAdminKeys([key])).toEqual([key]);
+      expect(() =>
+        adminPermissionsForUpdate(
+          [key, "materials.read"],
+          ["orders.read"],
+          "merchant_mgr"
+        )
+      ).toThrow("整包保存已停止");
+    }
+  });
+  it("既有团队guard额外阻止操作者自己和后台超级管理员，不移除原BFF条件", () => {
+    const organization = {
+      enterprise: { id: 15, name: "测试企业" },
+      actorUserId: 20,
+      canManage: true,
+      teams: [],
+      members: [
+        {
+          userId: 88,
+          status: "active",
+          enterpriseRole: "member",
+          teamId: null,
+          teamRole: null,
+          revision: 6,
+        },
+      ],
+    };
+    expect(staffBusinessTeamGuard(row, access, organization).allowed).toBe(
+      true
+    );
+    expect(
+      staffBusinessTeamGuard(
+        row,
+        { ...access, currentUserId: 88 },
+        { ...organization, actorUserId: 88 }
+      ).allowed
+    ).toBe(false);
+    expect(
+      staffBusinessTeamGuard(
+        { ...row, admin: { ...admin, adminRole: "super_admin" } },
+        access,
+        organization
+      ).allowed
     ).toBe(false);
   });
 });

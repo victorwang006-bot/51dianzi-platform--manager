@@ -290,19 +290,26 @@ async function withCurrentBusinessAuthorization<T>(
     const channel = capability.method?.startsWith("channelInventory.") === true;
     const contextProjection = capability.module === "context" && capability.method === undefined;
     const officialInventoryPermissions = channel || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined;
+    // These fixed management SELECT/export paths have no independent export grant.
+    // Preserve their public read contract, but require official management write.
+    const managementRead = ["channelInventory.listMaterials", "channelInventory.getMaterial", "channelInventory.listSharedMaterials", "channelInventory.exportChannelMaterials"].includes(capability.method ?? "");
     if (channel) {
       const notes = ["channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit"].includes(capability.method!);
       const publishing = capability.method === "channelInventory.publishFactoryMaterial";
-      const requirement = publishing ? "publish" : notes ? "note" : capability.mode === "write" ? "write" : "read";
+      const requirement = publishing ? "publish" : notes ? "note" : capability.mode === "write" || managementRead ? "write" : "read";
       if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement]) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
     }
     const profileRead = ["channelInventory.listChannels", "channelInventory.getChannel"].includes(capability.method ?? "");
+    // The same fresh official-team proof must reach exact stock/source, editor,
+    // batch and export paths; ERP leader labels alone are never official scope.
+    // Keep unassigned ordinary public-stock reads compatible (no proof), while
+    // the original profile endpoints still require a configured official team.
     const withProfileRead = (run: (projection: OfficialInventoryPermissions["channelProfileTeamRead"]) => Promise<T>) =>
-      profileRead ? withOfficialChannelProfileRead(ctx, staffBinding.frontUserId, run) : run(undefined);
+      channel ? withOfficialChannelProfileRead(ctx, staffBinding.frontUserId, run, !profileRead) : run(undefined);
     return withProfileRead(async channelProfileTeamRead => {
     const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
     const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
-      && (contextProjection || Boolean(channelProfileTeamRead) || nativeReadMethods.includes(capability.method ?? ""));
+      && (contextProjection || profileRead || nativeReadMethods.includes(capability.method ?? ""));
     const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);
     // This read occurs while the fence is held and supplies the actual scope
     // version persisted in the generic audit record for a forwarded command.
@@ -312,6 +319,9 @@ async function withCurrentBusinessAuthorization<T>(
     }
     if (!businessScopeAllows(scope, capability.module, capability.mode) && !officialReadProjection) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的业务工作台范围授权" });
+    }
+    if (managementRead && !businessScopeAllows(scope, "inventory", "write")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的库存管理范围授权" });
     }
     // Customer supply is the intersection of current inventory and CRM scope.
     // It is deliberately absent from nativeReadMethods: an official inventory

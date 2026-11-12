@@ -78,6 +78,8 @@ const OfficialTeamPermissionSection = forwardRef<
     hasRealAdminAccount: boolean;
     targetIsActive?: boolean;
     targetIsSuperAdmin: boolean;
+    targetIsSelf?: boolean;
+    targetHasProtectedPermissions?: boolean;
     overviewData: unknown;
     overviewLoading: boolean;
     overviewError: string | null;
@@ -91,6 +93,8 @@ const OfficialTeamPermissionSection = forwardRef<
     hasRealAdminAccount,
     targetIsActive = true,
     targetIsSuperAdmin,
+    targetIsSelf = false,
+    targetHasProtectedPermissions = false,
     overviewData,
     overviewLoading,
     overviewError,
@@ -211,6 +215,12 @@ const OfficialTeamPermissionSection = forwardRef<
       setTeamNeedsRefresh(false);
     }
   }, [incomingTeam, teamBase, teamDirty, teamNeedsRefresh, saving]);
+  const isSelf =
+    targetIsSelf ||
+    (overview.serverScope.available &&
+      overview.serverScope.adminUserId === adminUserId) ||
+    (businessTeam?.frontUserId != null &&
+      businessTeam.overview?.actorUserId === businessTeam.frontUserId);
   const canGrant =
     overview.available &&
     overview.serverScope.isSuperAdmin &&
@@ -219,9 +229,15 @@ const OfficialTeamPermissionSection = forwardRef<
     adminUserId !== null &&
     Boolean(target) &&
     !targetIsSuperAdmin &&
+    !isSelf &&
+    !targetHasProtectedPermissions &&
     !overviewLoading &&
     !overviewError;
   const canTeam =
+    hasRealAdminAccount &&
+    targetIsActive &&
+    !targetIsSuperAdmin &&
+    !isSelf &&
     businessTeam?.canEdit === true &&
     Boolean(teamDraft) &&
     !businessTeam.loading &&
@@ -344,17 +360,19 @@ const OfficialTeamPermissionSection = forwardRef<
   useImperativeHandle(ref, () => ({ save }));
   const reason = !hasRealAdminAccount
     ? "当前员工没有可核验的后台账号，权限设置不可用。"
-    : !targetIsActive
-      ? "目标后台账号已停用或锁定，授权设置保持只读；未保存草稿不会自动写入。"
-      : overviewLoading
-        ? "正在读取渠道库存授权…"
-        : overviewError
-          ? `渠道库存授权读取失败：${overviewError}`
-          : !overview.available || !overview.serverScope.isSuperAdmin
-            ? "只有服务器核验的真实后台超级管理员可配置渠道库存授权。"
-            : !target
-              ? "概览未返回该账号的可信授权与账号版本，请刷新核验；不会把未分组视为没有权限。"
-              : null;
+    : isSelf
+      ? "不能修改自己的渠道授权或团队身份。"
+      : !targetIsActive
+        ? "目标后台账号已停用或锁定，授权设置保持只读；未保存草稿不会自动写入。"
+        : overviewLoading
+          ? "正在读取渠道库存授权…"
+          : overviewError
+            ? `渠道库存授权读取失败：${overviewError}`
+            : !overview.available || !overview.serverScope.isSuperAdmin
+              ? "只有服务器核验的真实后台超级管理员可配置渠道库存授权。"
+              : !target
+                ? "概览未返回该账号的可信授权与账号版本，请刷新核验；不会把未分组视为没有权限。"
+                : null;
   const selectedTeam = businessTeam?.overview?.teams.find(
     team => team.id === teamDraft?.teamId
   );
@@ -375,6 +393,35 @@ const OfficialTeamPermissionSection = forwardRef<
     onRetryOverview();
     businessTeam?.onRetry();
   }
+  const renderGrant = (permission: OfficialInventoryPermission) => (
+    <label key={permission} className="official-team-settings__permission">
+      <Checkbox
+        checked={grantDraft?.permissions.includes(permission) ?? false}
+        disabled={!canGrant || saving || grantConflict || grantNeedsRefresh}
+        aria-label={officialPermissionLabel(permission)}
+        onCheckedChange={() => {
+          if (
+            !canGrant ||
+            savingRef.current ||
+            grantConflict ||
+            grantNeedsRefresh
+          )
+            return;
+          setGrantDraft(old => {
+            if (!old) return old;
+            const permissions = old.permissions.includes(permission)
+              ? old.permissions.filter(item => item !== permission)
+              : [...old.permissions, permission];
+            return {
+              ...old,
+              permissions: normalizeOfficialPermissions(permissions),
+            };
+          });
+        }}
+      />
+      <span>{officialPermissionLabel(permission)}</span>
+    </label>
+  );
   return (
     <section
       className="official-team-settings space-y-3 rounded-md border p-3"
@@ -384,6 +431,9 @@ const OfficialTeamPermissionSection = forwardRef<
       <h3 id="staff-official-team-title" className="text-sm font-medium">
         渠道库存
       </h3>
+      <p className="text-xs text-muted-foreground">
+        使用现有业务团队和队员/组长身份，不另建渠道角色。团队身份与操作授权分开保存，组长身份不代表全平台数据权限。
+      </p>
       <div className="official-team-settings__assignment">
         <div className="official-team-settings__assignment-fields">
           <label>
@@ -476,6 +526,47 @@ const OfficialTeamPermissionSection = forwardRef<
           </Button>
         )}
       </div>
+      <details className="official-team-settings__advanced">
+        <summary>业务模块真实范围（只读）</summary>
+        <p className="text-xs text-muted-foreground">
+          本人/本组/企业范围沿用现有组织模块配置；这里只展示服务返回值，不按岗位标签或
+          ERP 范围推导渠道权限。
+        </p>
+        {businessMember?.moduleAccess?.length ? (
+          <dl className="official-team-settings__scope-list">
+            {businessMember.moduleAccess.map(access => (
+              <div key={access.module}>
+                <dt>
+                  {
+                    {
+                      customers: "客户",
+                      demands: "需求",
+                      channels: "渠道",
+                      stocks: "库存",
+                    }[access.module]
+                  }
+                </dt>
+                <dd>
+                  {!access.read
+                    ? "无查看权限"
+                    : `${{ self: "本人", team: "本组", enterprise: "全企业" }[access.scope]} · ${access.write ? "可维护" : "只读"}`}
+                  {access.explicit ? "（显式配置）" : "（服务默认）"}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            服务未返回模块范围；不会把缺失信息视为全量授权。
+          </p>
+        )}
+      </details>
+      {targetHasProtectedPermissions && !targetIsSuperAdmin && (
+        <p className="official-team-settings__notice" role="status">
+          账号已有当前接口不可安全保留的受保护授权，渠道操作只读以防整包更新误删；业务团队仍按独立服务
+          guard 管理。
+        </p>
+      )}
       {reason && (
         <div
           className="official-team-settings__notice"
@@ -498,41 +589,43 @@ const OfficialTeamPermissionSection = forwardRef<
           该员工是超级管理员，渠道库存权限由系统固定授予，不能在此修改。
         </p>
       ) : (
-        <div
-          className="official-team-settings__permissions"
-          aria-label="渠道库存原生权限"
-        >
-          {OFFICIAL_INVENTORY_PERMISSIONS.map(permission => (
-            <label
-              key={permission}
-              className="official-team-settings__permission"
+        <>
+          <div
+            className="official-team-settings__permissions"
+            aria-label="渠道库存日常操作"
+          >
+            {OFFICIAL_INVENTORY_PERMISSIONS.filter(
+              permission => permission !== "officialInventory.note"
+            ).map(renderGrant)}
+          </div>
+          <details className="official-team-settings__advanced">
+            <summary>
+              内部备注（已选{" "}
+              {grantDraft?.permissions.includes("officialInventory.note")
+                ? 1
+                : 0}{" "}
+              项）
+            </summary>
+            <div
+              className="official-team-settings__permissions"
+              aria-label="渠道库存原生权限"
             >
-              <Checkbox
-                checked={grantDraft?.permissions.includes(permission) ?? false}
-                disabled={
-                  !canGrant || saving || grantConflict || grantNeedsRefresh
-                }
-                aria-label={officialPermissionLabel(permission)}
-                onCheckedChange={() =>
-                  setGrantDraft(old => {
-                    if (!old) return old;
-                    const permissions = old.permissions.includes(permission)
-                      ? old.permissions.filter(item => item !== permission)
-                      : [...old.permissions, permission];
-                    return {
-                      ...old,
-                      permissions: normalizeOfficialPermissions(permissions),
-                    };
-                  })
-                }
-              />
-              <span>{officialPermissionLabel(permission)}</span>
-            </label>
-          ))}
-        </div>
+              {renderGrant("officialInventory.note")}
+            </div>
+          </details>
+          <div
+            className="official-team-settings__export"
+            aria-label="导出与来源权限说明"
+          >
+            <span>导出与敏感来源</span>
+            <p>
+              当前没有独立的导出或来源开关，沿用现有权限及数据范围。库存管理权限在其他授权条件满足时可允许渠道导出；查看可读取已授权渠道档案和来源，关联客户资料另受客户权限控制。
+            </p>
+          </div>
+        </>
       )}
       <p className="text-xs text-muted-foreground">
-        查看不包含录入、编辑、发布、来源联系方式或私人备注。业务团队与原生授权由两个服务分别保存，不保证跨服务原子成功。
+        查看本身不授予录入、编辑、发布或他人的私人备注，也不扩大渠道归属范围。业务团队与原生授权由两个服务分别保存，不保证跨服务原子成功。
       </p>
       {(grantDirty || teamDirty) && (
         <p className="text-xs text-muted-foreground" role="status">

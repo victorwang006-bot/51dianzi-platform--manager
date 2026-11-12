@@ -128,3 +128,44 @@ describe("factory publication capability stays independent and scope-bound", () 
     expect(result.officialInventoryPermissions?.publish).toBe(testCase.allowed);
   });
 });
+
+describe("recovered official channel projection intersects current official module capability", () => {
+  it.each([
+    { read: true, write: true, scopeWrite: true, expectedWrite: true },
+    { read: true, write: false, scopeWrite: true, expectedWrite: false },
+    { read: true, write: true, scopeWrite: false, expectedWrite: false },
+    { read: false, write: true, scopeWrite: true, expectedWrite: false },
+  ])("keeps official read/write and explicit BFF scope intersection: %j", vector => {
+    const result = projectBusinessWorkbenchCapabilities({
+      scope: { modulePermissions: vector.scopeWrite ? ["business.inventory.write"] : [] },
+      // The platform now derives this capability from official module flags, not ERP ownership.
+      frontWorkbenchCapabilities: ["inventory.channel"],
+      officialInventoryPermissions: { read: vector.read, write: vector.write, note: true, authorizationVersion: "synthetic-official-projection" },
+    });
+    expect(result.workbenchCapabilities.includes("inventory.channel")).toBe(vector.read);
+    expect(result.writeCapabilities.includes("inventory.channel")).toBe(vector.expectedWrite);
+    expect(result.officialInventoryPermissions).toMatchObject({ read: vector.read, write: vector.expectedWrite, note: vector.read });
+    expect(result.moduleAvailability.inventory.write).toBe(vector.scopeWrite);
+    expect(result.workbenchCapabilities).not.toContain("inventory.read");
+  });
+  it("note-only grant is independent but never provides stock write or export authority", () => {
+    const result = projectBusinessWorkbenchCapabilities({
+      scope: { modulePermissions: ["business.inventory.read", "business.inventory.write"] },
+      frontWorkbenchCapabilities: ["inventory.channel"],
+      officialInventoryPermissions: { read: true, write: false, note: true, authorizationVersion: "synthetic-note-only-projection" },
+    });
+    expect(result.workbenchCapabilities).toEqual(["inventory.channel"]);
+    expect(result.writeCapabilities).toEqual([]);
+    expect(result.canWrite).toBe(false);
+    expect(result.officialInventoryPermissions).toMatchObject({ read: true, write: false, note: true, publish: false });
+  });
+  it("explicit official deny cannot be rescued by full native capabilities and local write scope", () => {
+    const result = projectBusinessWorkbenchCapabilities({
+      scope: { modulePermissions: ["business.inventory.read", "business.inventory.write"] },
+      frontWorkbenchCapabilities: ["inventory.channel"],
+      officialInventoryPermissions: { read: false, write: false, note: false, authorizationVersion: "synthetic-official-deny" },
+    });
+    expect(result.workbenchCapabilities).toEqual([]); expect(result.writeCapabilities).toEqual([]);
+    expect(result.officialInventoryPermissions).toMatchObject({ read: false, write: false, note: false });
+  });
+});

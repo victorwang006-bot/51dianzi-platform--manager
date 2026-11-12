@@ -5,7 +5,7 @@ import * as React from "react";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 Object.assign(globalThis, { React });
 
@@ -119,12 +119,22 @@ const shellCss = readFileSync(
 
 describe("正式后台顶部布局集成", () => {
   beforeEach(() => {
+    const forbidden = () => { throw new Error("OFFLINE_NETWORK_FORBIDDEN"); };
+    vi.stubGlobal("fetch", vi.fn(forbidden));
+    vi.stubGlobal("XMLHttpRequest", vi.fn(forbidden));
+    vi.stubGlobal("WebSocket", vi.fn(forbidden));
     runtime.location = "/materials";
     runtime.status = "ready";
     runtime.refetch.mockClear();
     runtime.setLocation.mockReset();
     runtime.capabilities = [];
     runtime.user = { id: 6001, role: "admin", name: "真实员工", adminRole: "operation", hasNativeAdminAccount: true, permissions: ["materials.read", "messages.read"] };
+  });
+  afterEach(() => {
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(globalThis.XMLHttpRequest).not.toHaveBeenCalled();
+    expect(globalThis.WebSocket).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 
   it.each(["/", "/materials", "/workbench", "/staff"])(
@@ -230,7 +240,8 @@ describe("正式后台顶部布局集成", () => {
       await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="business"]')!.click());
       await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="group:customers"]')!.click());
       const paths = Array.from(container.querySelectorAll("[data-workspace-dropdown-item]")).map(node => node.getAttribute("data-workspace-dropdown-item"));
-      expect(paths).toEqual(["/workbench/customers", "/workbench/inquiries", "/workbench/orders"]);
+      expect(paths).toEqual(["/workbench/inquiries", "/workbench/orders"]);
+      expect(container.querySelector('[data-workspace-nav-target="customers"]')?.getAttribute("aria-current")).toBe("page");
       expect(container.querySelector('[data-workspace-nav-target="/workbench/customer-demands"]')).toBeNull();
       expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");
       expect(runtime.setLocation).not.toHaveBeenCalled();
@@ -239,13 +250,40 @@ describe("正式后台顶部布局集成", () => {
     expect(runtime.capabilities).toContain("customers.manage");
   });
 
+  it("customer entry is first, direct and merchant-aware without changing login/default landing or backend grants", async () => {
+    const previousLocation = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(null, "", "/workbench/orders?merchantId=31&returnTo=%2Forders&ciView=channels");
+    runtime.location = "/workbench/orders?merchantId=31&returnTo=%2Forders&ciView=channels";
+    runtime.capabilities = ["customers.manage", "crm.sales_orders", "inventory.channel"];
+    runtime.user.permissions = ["officialInventory.read"];
+    try {
+      await withMountedLayout(async container => {
+        expect(Array.from(container.querySelectorAll('[data-navigation-level="1"]')).map(node => node.getAttribute("data-workspace-nav-target")))
+          .toEqual(["customers", "inventory", "business"]);
+        await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="customers"]')!.click());
+        expect(runtime.setLocation.mock.calls).toEqual([["/workbench/customers?merchantId=31"]]);
+        expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");
+        expect(runtime.capabilities).toEqual(["customers.manage", "crm.sales_orders", "inventory.channel"]);
+        expect(runtime.user.permissions).toEqual(["officialInventory.read"]);
+      });
+      runtime.capabilities = ["crm.sales_orders", "inventory.channel"];
+      runtime.location = "/workbench/customers/88";
+      const html = renderLayout();
+      expect(html).not.toContain('data-workspace-nav-target="customers"');
+      expect(html).not.toContain('data-workspace-dropdown-item="/workbench/customers"');
+      expect(html).not.toContain('data-admin-navigation="current-location"');
+    } finally {
+      window.history.replaceState(null, "", previousLocation);
+    }
+  });
+
   it.each([
     ["materials", ["库存列表"], "inventory", "flat"],
-    ["channels", ["渠道库存", "渠道档案"], "channel", "channels"],
+    ["channels", ["库存列表", "渠道库存", "渠道档案"], "inventory", "flat"],
     ["batches", ["库存列表", "上传批次"], "inventory", "flat"],
     ["trash", ["库存列表", "回收站"], "inventory", "flat"],
     ["materials&ciView=flat", ["库存列表"], "inventory", "flat"],
-    ["materials&ciView=channels", ["渠道库存"], "channel", "channels"],
+    ["materials&ciView=channels", ["库存列表", "渠道库存"], "inventory", "flat"],
     ["materials&ciView=invalid", ["库存列表"], "inventory", "flat"],
   ])("channel %s keeps accurate direct entry and a read-only breadcrumb inside main", async (tab, expected, target, view) => {
     runtime.location = `/workbench/channel-inventory?ciTab=${tab}`;
@@ -255,7 +293,7 @@ describe("正式后台顶部布局集成", () => {
       const main = container.querySelector("main")!;
       const breadcrumb = main.querySelector('[data-admin-navigation="current-location"]')!;
       const trigger = container.querySelector<HTMLButtonElement>(`[data-workspace-nav-target="${target}"]`)!;
-      expect(trigger.textContent).toBe(target === "channel" ? "渠道库存" : "库存列表");
+      expect(trigger.textContent).toBe("库存列表");
       expect(trigger.getAttribute("aria-current")).toBe("page");
       expect(trigger.hasAttribute("aria-expanded")).toBe(false);
       expect(Array.from(breadcrumb.querySelectorAll("li")).map(node => node.lastElementChild?.textContent)).toEqual(expected);
@@ -277,13 +315,13 @@ describe("正式后台顶部布局集成", () => {
     const host = document.createElement("div");
     host.innerHTML = renderLayout();
     expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent))
-      .toEqual(["业务工作台", "客户与销售", "销售订单"]);
+      .toEqual(["业务工作台", "销售与询价", "销售订单"]);
     expect(host.querySelector('[data-workspace-nav-target="business"]')?.getAttribute("aria-current")).toBe("location");
     expect(host.querySelector('[data-workspace-dropdown="panel"]')).toBeNull();
     expect(host.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
   });
 
-  it("shows two direct inventory views only with exact native read and the original bound route capability", async () => {
+  it("shows one direct inventory entry only with exact native read and the original bound route capability", async () => {
     runtime.location = "/workbench/channel-inventory?merchantId=31&supplyChannelId=22&supplyTab=details&ciBatchId=8&ciBatchReturn=%2Forders&ciTab=materials";
     runtime.capabilities = ["inventory.channel"];
     runtime.user.permissions = ["materials.read", "messages.read", "officialInventory.read"];
@@ -295,17 +333,14 @@ describe("正式后台顶部布局集成", () => {
       await act(async () => root.render(createElement(DashboardLayout, null, createElement("article", { "data-real-content": "yes" }, "渠道库存与渠道档案"))));
       expect(container.querySelector('[data-admin-navigation="module-tabs"]')).toBeNull();
       const inventory = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="inventory"]')!;
-      const channel = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="channel"]')!;
+      expect(container.querySelector('[data-workspace-nav-target="channel"]')).toBeNull();
       expect(inventory.getAttribute("aria-current")).toBe("page");
-      expect(channel.hasAttribute("aria-current")).toBe(false);
       expect(container.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
       await act(async () => inventory.click());
-      await act(async () => channel.click());
       expect(runtime.setLocation.mock.calls).toEqual([
         ["/workbench/channel-inventory?ciTab=materials&ciView=flat"],
-        ["/workbench/channel-inventory?ciTab=materials&ciView=channels"],
       ]);
-      expect(container.querySelectorAll('[data-channel-view]')).toHaveLength(2);
+      expect(container.querySelectorAll('[data-channel-view]')).toHaveLength(1);
       expect(container.querySelectorAll('[data-channel-tab]')).toHaveLength(0);
       expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
       expect(container.querySelector("[data-real-content]")?.textContent).toBe("渠道库存与渠道档案");
@@ -329,18 +364,18 @@ describe("正式后台顶部布局集成", () => {
       createElement("article", { "data-real-content": "yes" }, "真实业务页面"));
     try {
       let retained: Element | null = null;
-      for (const [search, target, label] of [
-        ["ciTab=materials&ciView=flat", "inventory", "库存列表"],
-        ["ciTab=materials&ciView=channels", "channel", "渠道库存"],
-        ["ciTab=materials&ciView=flat", "inventory", "库存列表"],
+      for (const [search, labels] of [
+        ["ciTab=materials&ciView=flat", ["库存列表"]],
+        ["ciTab=materials&ciView=channels", ["库存列表", "渠道库存"]],
+        ["ciTab=materials&ciView=flat", ["库存列表"]],
       ]) {
         runtime.location = `/workbench/channel-inventory?${search}`;
         await act(async () => root.render(content()));
         const active = container.querySelectorAll('[data-navigation-level="1"][data-active="true"]');
         expect(active).toHaveLength(1);
-        expect(active[0].getAttribute("data-workspace-nav-target")).toBe(target);
+        expect(active[0].getAttribute("data-workspace-nav-target")).toBe("inventory");
         const location = container.querySelector('[data-admin-navigation="current-location"]')!;
-        expect(Array.from(location.querySelectorAll("li")).map(node => node.textContent)).toEqual([label]);
+        expect(Array.from(location.querySelectorAll("li")).map(node => node.lastElementChild?.textContent)).toEqual(labels);
         expect(location.querySelectorAll("button, a, h1, h2")).toHaveLength(0);
         expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
         retained ??= container.querySelector('[data-real-content]');

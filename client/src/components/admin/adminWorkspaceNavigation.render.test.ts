@@ -88,10 +88,9 @@ function modulePaths() {
 }
 
 describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载第二行）", () => {
-  it("业务兼容菜单四入口按方案分组，不含公司信息且别名跟随canonical高亮", async () => {
+  it("业务兼容菜单三个入口按方案分组，不含公司信息且别名跟随canonical高亮", async () => {
     await render("/workbench/sales-orders?merchantId=31&returnTo=%2Forders");
     expect(modulePaths()).toEqual([
-      "/workbench/channel-inventory",
       "group:customers",
       "group:inventory",
       "group:procurement",
@@ -103,9 +102,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     expect(host.querySelector("[data-workspace-nav-child]")).toBeNull();
     await click("group:customers");
     expect(modulePaths()).toEqual([
-      "/workbench/channel-inventory",
       "group:customers",
-      "/workbench/customers",
       "/workbench/inquiries",
       "/workbench/orders",
       "group:inventory",
@@ -204,29 +201,29 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     await render("/workbench/chat?merchantId=31");
     await act(async () => button("group:customers").focus());
     await key("group:customers", "ArrowDown");
-    expect(document.activeElement).toBe(button("/workbench/customers"));
-    await key("/workbench/customers", "ArrowDown");
     expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "ArrowDown");
+    expect(document.activeElement).toBe(button("/workbench/orders"));
     await key("/workbench/inquiries", "End");
     expect(document.activeElement).toBe(button("/workbench/orders"));
     await key("/workbench/orders", "ArrowDown");
-    expect(document.activeElement).toBe(button("/workbench/customers"));
-    await key("/workbench/customers", "ArrowUp");
+    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "ArrowUp");
     expect(document.activeElement).toBe(button("/workbench/orders"));
     await key("/workbench/orders", "Home");
-    expect(document.activeElement).toBe(button("/workbench/customers"));
-    await key("/workbench/customers", "Escape");
+    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "Escape");
     expect(host.querySelector('[role="group"]')).toBeNull();
     expect(document.activeElement).toBe(button("group:customers"));
     await key("group:customers", "ArrowUp");
     expect(document.activeElement).toBe(button("/workbench/orders"));
     await key("/workbench/orders", "Escape");
     await key("group:customers", " ");
-    expect(document.activeElement).toBe(button("/workbench/customers"));
-    await key("/workbench/customers", "Escape");
+    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "Escape");
     await key("group:customers", "Enter");
-    expect(document.activeElement).toBe(button("/workbench/customers"));
-    await key("/workbench/customers", "Escape");
+    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "Escape");
     await key("group:customers", "ArrowRight");
     expect(document.activeElement).toBe(button("group:inventory"));
     expect(onNavigate).not.toHaveBeenCalled();
@@ -235,13 +232,13 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
   it("Tab保持原生按钮可达，焦点离开导航关闭，不设置键盘陷阱", async () => {
     await render("/workbench/orders");
     await key("group:customers", "ArrowDown");
-    expect(button("/workbench/customers").tabIndex).toBe(0);
+    expect(button("/workbench/inquiries").tabIndex).toBe(0);
     const tab = new KeyboardEvent("keydown", {
       key: "Tab",
       bubbles: true,
       cancelable: true,
     });
-    await act(async () => button("/workbench/customers").dispatchEvent(tab));
+    await act(async () => button("/workbench/inquiries").dispatchEvent(tab));
     expect(tab.defaultPrevented).toBe(false);
     const outside = document.createElement("button");
     document.body.append(outside);
@@ -287,7 +284,6 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
   it.each([
     ["/workbench/chat/88", "customers", "/workbench/inquiries"],
     ["/workbench/sales-orders/88", "customers", "/workbench/orders"],
-    ["/workbench/customer-demands", "customers", "/workbench/customers"],
     [
       "/workbench/procurement/demands/8",
       "procurement",
@@ -319,7 +315,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
   it("渠道库存仍直达原回调、采购两项回传父原对象，公司信息不再显示", async () => {
     await render("/workbench/company?merchantId=31");
     expect(host.querySelector('[data-workspace-nav-target="/workbench/company-info"]')).toBeNull();
-    await click("/workbench/channel-inventory");
+    await click("inventory");
     await click("group:procurement");
     expect(host.querySelectorAll("[data-workspace-nav-child]")).toHaveLength(2);
     await click("/workbench/procurement-demands");
@@ -338,7 +334,6 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
   });
 
   it.each([
-    ["customers", "/workbench/customers"],
     ["customers", "/workbench/inquiries"],
     ["customers", "/workbench/orders"],
     ["inventory", "/workbench/inbound"],
@@ -543,7 +538,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
       root.render(
         createElement(AdminModuleTabs, {
           items,
-          location: "/workbench/customers/88?merchantId=3",
+          location: "/workbench/inquiries/88?merchantId=3",
           onNavigate,
           renderItem: (item, state) =>
             createElement(
@@ -558,7 +553,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     );
     await click("group:customers");
     expect(
-      button("/workbench/customers")
+      button("/workbench/inquiries")
         .querySelector("[data-is-module-active]")
         ?.getAttribute("data-is-module-active")
     ).toBe("true");
@@ -643,13 +638,13 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
       )
     );
-    expect(document.activeElement).toBe(button("inventory"));
+    expect(document.activeElement).toBe(button("customers"));
     await act(async () =>
       button("business").dispatchEvent(
         new KeyboardEvent("keydown", { key: "Home", bubbles: true })
       )
     );
-    expect(document.activeElement).toBe(button("inventory"));
+    expect(document.activeElement).toBe(button("customers"));
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -672,12 +667,12 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
   });
 
   it("点击工作区只展开不重置详情或query，选择原功能项才导航", async () => {
-    await render("/workbench/customers/88?merchantId=3");
+    await render("/workbench/inquiries/88?merchantId=3");
     await act(async () => button("business").click());
     expect(onNavigate).not.toHaveBeenCalled();
     expect(button("group:customers").dataset.active).toBe("true");
     await click("group:customers");
-    expect(button("/workbench/customers").getAttribute("aria-current")).toBe(
+    expect(button("/workbench/inquiries").getAttribute("aria-current")).toBe(
       "page"
     );
     await act(async () => button("operations").click());

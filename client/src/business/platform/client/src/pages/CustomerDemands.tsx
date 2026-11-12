@@ -138,7 +138,7 @@ export default function CustomerDemands() {
   return (
     <PlatformLayout>
       <AdminPage className="space-y-3 text-xs text-slate-700">
-        <AdminPageHeader title="客户需求" actions={
+        <AdminPageHeader list title="客户需求" actions={
           <div className="flex flex-wrap items-center gap-2">
             {canManageAll ? (
               <Select value={scope} onValueChange={value => { setScope(value as ScopeFilter); setAssignedUserId("all"); setPage(1); }}>

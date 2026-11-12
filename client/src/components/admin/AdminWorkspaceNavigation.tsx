@@ -26,6 +26,7 @@ import {
   type AdminWorkspaceNavigationItem,
 } from "./adminWorkspaceNavigationModel";
 import "./AdminWorkspaceNavigation.css";
+import "./AdminListPage.css";
 
 /** UI release only; native/business authorization versions remain independent. */
 export const ADMIN_SYSTEM_RELEASE = "20261103-channel-permission-owner-v13-a2";
@@ -118,17 +119,19 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   items,
   location,
 }: Pick<AdminWorkspaceTabsProps<T>, "items" | "location">) {
-  const { activeWorkspace, activeItem } = getAdminWorkspaceNavigationState(items, location);
+  const { activeWorkspace, activeItem, route } = getAdminWorkspaceNavigationState(items, location);
   if (!activeWorkspace || !activeItem) return null;
   const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
+  const customer = activeItem.path === "/workbench/customers";
   const tab = channel ? channelTabForLocation(location) : null;
   const entry = !channel
     ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id).find(entry =>
       entry.kind === "group" && entry.items.some(item => item.path === activeItem.path))
     : null;
   const labels = channel
-    ? [channelViewForLocation(location) === "channels" ? "渠道库存" : "库存列表",
+    ? ["库存列表", ...(channelViewForLocation(location) === "channels" ? ["渠道库存"] : []),
       ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
+    : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
     : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   return (
     <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location">
@@ -158,20 +161,22 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   className,
 }: AdminModuleTabsProps<T>) {
   const state = getAdminWorkspaceNavigationState(items, location);
+  const customerItem = items.find(item => item.path === "/workbench/customers");
   const channelItem = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE);
   const filteredBusinessItems = state.workspaces.find(workspace => workspace.id === "business")
-    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE) ?? [];
+    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers") ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
   const operationsEntries = groupAdminOperationsNavigationItems(
     state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
   );
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
-  const channelView = channelViewForLocation(location);
+  const customerActive = !!customerItem && state.route?.canonicalPath === "/workbench/customers";
   const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] =
     state.workspaces.flatMap(workspace => workspace.id === "business"
       ? businessEntries.length ? [{ ...workspace, items: filteredBusinessItems }] : []
       : [workspace]);
-  const activeWorkspaceId = state.route?.canonicalPath !== CHANNEL_INVENTORY_ROUTE ? state.activeWorkspace?.id : null;
+  const activeWorkspaceId = ![CHANNEL_INVENTORY_ROUTE, "/workbench/customers"].includes(state.route?.canonicalPath ?? "")
+    ? state.activeWorkspace?.id : null;
   const navRef = useRef<HTMLElement>(null);
   const triggerRefs = useRef(new Map<UnifiedWorkspaceId, HTMLButtonElement>());
   const groupRefs = useRef(new Map<AdminWorkspaceNavigationGroupId, HTMLButtonElement>());
@@ -403,7 +408,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     );
   }
 
-  if (!channelItem && !workspaces.length) return null;
+  if (!customerItem && !channelItem && !workspaces.length) return null;
 
   return (
     <nav
@@ -417,24 +422,35 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
       onKeyDown={handleNavigationKeys}
       onPointerLeave={scheduleHoverClose}
     >
-      {channelItem ? (["flat", "channels"] as const).map(view => {
-        const isActive = channelActive && channelView === view;
-        return (
-          <button key={view} type="button"
-            className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-            data-workspace-nav-target={view === "flat" ? "inventory" : "channel"}
-            data-navigation-level="1" data-channel-view={view}
-            data-active={isActive ? "true" : "false"} aria-current={isActive ? "page" : undefined}
-            onClick={() => { closeWorkspace(); onNavigate(channelItem, "materials", view); }}
-            onPointerEnter={event => {
-              cancelHoverClose();
-              if (isDesktopMouse(event) && expanded) closeWorkspace();
-              (onPreload ?? onItemIntent)?.(channelItem);
-            }}
-            onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
-          >{view === "flat" ? "库存列表" : "渠道库存"}</button>
-        );
-      }) : null}
+      {customerItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          data-workspace-nav-target="customers" data-navigation-level="1"
+          data-active={customerActive ? "true" : "false"} aria-current={customerActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(customerItem); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(customerItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(customerItem)}
+        >客户列表{renderBadge?.(customerItem)}</button>
+      ) : null}
+      {channelItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          data-workspace-nav-target="inventory"
+          data-navigation-level="1" data-channel-view="flat"
+          data-active={channelActive ? "true" : "false"} aria-current={channelActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(channelItem, "materials", "flat"); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(channelItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
+        >库存列表{renderBadge?.(channelItem)}</button>
+      ) : null}
       {workspaces.map(workspace => {
         const isActive = workspace.id === activeWorkspaceId;
         const isExpanded = expanded && open?.id === workspace.id;
@@ -614,6 +630,7 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
   const instanceId = useId();
   const [open, setOpen] = useState<{
     id: AdminWorkspaceNavigationGroupId;
+    items: readonly T[];
     location: string;
     top: number;
     left: number;
@@ -625,7 +642,7 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
       : [];
   // A location or permission change must not preserve a stale popup or selection.
   const openEntry =
-    open?.location === location
+    open?.items === items && open.location === location
       ? entries.find(entry => entry.kind === "group" && entry.id === open.id)
       : undefined;
   const openId = openEntry?.kind === "group" ? openEntry.id : null;
@@ -646,6 +663,7 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
     pendingFocus.current = focus ?? null;
     setOpen({
       id,
+      items,
       location,
       top: rect.bottom,
       left: Math.max(8, Math.min(rect.left, window.innerWidth - 188)),
@@ -654,7 +672,11 @@ export function ModuleTabs<T extends AdminWorkspaceNavigationItem>({
   }
 
   useEffect(() => {
-    if (open && !openId) setOpen(null);
+    if (open && !openId) {
+      pendingFocus.current = null;
+      setOpen(null);
+      return;
+    }
     if (!pendingFocus.current || !openId) return;
     const buttons =
       panelRef.current?.querySelectorAll<HTMLButtonElement>("button");

@@ -7,7 +7,7 @@ export const officialInventoryPermissionsSchema = z.object({
   publish: z.boolean().optional(),
   /** Signed server-local CRM scope projection, NOT a native inventory grant. */
   customerScopeRead: z.boolean().optional(),
-  /** Only listChannels/getChannel: live official leader -> explicit bound staff.
+  /** Channel/source-sensitive reads: live official leader -> explicit bound staff.
    * ERP team and current channel assignment are independently rechecked. */
   channelProfileTeamRead: z.object({ ownerUserIds: z.array(z.number().int().safe().positive()).min(1).max(500)
     .refine(ids => new Set(ids).size === ids.length) }).strict().optional(),

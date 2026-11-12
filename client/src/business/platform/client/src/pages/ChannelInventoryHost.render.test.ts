@@ -58,6 +58,9 @@ const runtime = vi.hoisted(() => {
     createMaterial: vi.fn().mockResolvedValue({ idempotent: false }),
     updateMaterial: vi.fn().mockResolvedValue({}),
     setMaterialShare: vi.fn().mockResolvedValue({}),
+    notesAdd: vi.fn().mockResolvedValue({}),
+    notesEdit: vi.fn().mockResolvedValue({}),
+    deleteMaterials: vi.fn().mockResolvedValue({}),
     enterpriseMe: null as unknown,
     channelQuery: null as unknown,
     uploadOptionsQuery: null as unknown,
@@ -143,8 +146,8 @@ vi.mock("../../../../api/business-trpc", () => ({
           return runtime.notesQuery;
         },
       },
-      notesAdd: { useMutation: () => ({ isPending: false, mutateAsync: vi.fn() }) },
-      notesEdit: { useMutation: () => ({ isPending: false, mutateAsync: vi.fn() }) },
+      notesAdd: { useMutation: () => ({ isPending: false, mutateAsync: runtime.notesAdd }) },
+      notesEdit: { useMutation: () => ({ isPending: false, mutateAsync: runtime.notesEdit }) },
     },
   },
 }));
@@ -292,6 +295,10 @@ function configureFixtures() {
   runtime.createMaterial.mockClear();
   runtime.updateMaterial.mockClear();
   runtime.setMaterialShare.mockClear();
+  runtime.notesAdd.mockReset().mockResolvedValue({});
+  runtime.notesEdit.mockReset().mockResolvedValue({});
+  runtime.deleteMaterials.mockReset().mockResolvedValue({});
+  Object.assign(runtime.utils.client.channelInventory, { deleteMaterials: { mutate: runtime.deleteMaterials } });
   runtime.sharedQuery = query({
     items: [{ id: 202, partNumber: "TEAM-SN74", brand: "NXP", qty: 100, dateCode: "2601", price: "1.20", currency: "CNY", taxIncluded: true, leadTime: "3天", revision: 2, updatedAt: "2026-10-03T01:00:00.000Z", canEdit: false, readOnly: true }],
     total: 1, page: 1, pageSize: 20,
@@ -427,6 +434,7 @@ function configureFixtures() {
     page: 1,
     pageSize: 50,
   });
+  (runtime.notesQuery as { refetch: ReturnType<typeof vi.fn> }).refetch.mockImplementation(async () => runtime.notesQuery);
 }
 
 beforeEach(() => {
@@ -484,7 +492,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.sourceInputs).toHaveLength(0);
     expect(runtime.optionInputs).toHaveLength(0);
     expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
-    expect(Array.from(rows[0].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "更多"]);
+    expect(Array.from(rows[0].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "本人备注", "更多"]);
     for (const row of rows) {
       const publish = required(row.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing publish action");
       expect(publish.disabled).toBe(true);
@@ -647,7 +655,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     act(() => filter.focus()); await settle();
     change(filter, "22");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
-    click(button("确定"));
+    click(button("搜索"));
     await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22, page: 1 });
     click(button("下一页"));
@@ -722,7 +730,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     act(() => source.focus()); await settle();
     change(source, "22");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
-    click(button("确定"));
+    click(button("搜索"));
     await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 22, page: 1 });
     runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
@@ -1141,7 +1149,8 @@ function exportedBook() {
 describe("v6 channel archive complete inventory download", () => {
   it("keeps download in the ordered menu and permits read-only channels without leader source privileges", async () => {
     const old = runtime.channelQuery as { data: { items: Record<string, unknown>[] } };
-    runtime.channelQuery = query({ ...old.data, canWrite: false, items: old.data.items.map(item => ({ ...item, canEdit: false, readOnly: true })) });
+    // Effective management write is independent of this readable record's edit denial.
+    runtime.channelQuery = query({ ...old.data, canWrite: true, items: old.data.items.map(item => ({ ...item, canEdit: false, readOnly: true })) });
     renderHost(); selectHostTab("channels");
     const actions = document.querySelector(".ci-row-actions")!;
     expect(Array.from(actions.querySelectorAll("button")).map(item => item.textContent)).toEqual(["上传库存", "更多操作"]);
@@ -1861,15 +1870,17 @@ describe("v13 native channel read and original recorder contract", () => {
     expect(document.body.textContent).toContain("TEAM-SN74");
     expectNoGlobalUpload();
   });
-  it("allows a read-only native reader to export without granting ERP inventory.manage", async () => {
+  it.each(["stocks.read", "inventory.manage"])("denies native read-only export despite ERP %s", async permission => {
     runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-reader-v1" };
-    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, isOwner: false, permissionKeys: ["stocks.read"] });
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, isOwner: false, permissionKeys: [permission] });
     (runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn> }).refetch.mockResolvedValue(runtime.enterpriseMe);
     renderHost(); selectHostTab("channels");
     expect(menuItem("编辑渠道").hasAttribute("data-disabled")).toBe(true);
+    expect(menuItem("下载库存").hasAttribute("data-disabled")).toBe(true);
+    expect(menuItem("下载库存").title).toContain("没有库存导出权限");
     click(menuItem("下载库存")); await settleExport();
-    expect(XLSX.writeFile).toHaveBeenCalledTimes(1);
-    expect(runtime.exportChannelMaterials).toHaveBeenCalledTimes(1);
+    expect(XLSX.writeFile).not.toHaveBeenCalled();
+    expect(runtime.exportChannelMaterials).not.toHaveBeenCalled();
     expect(runtime.updateMaterial).not.toHaveBeenCalled();
   });
 });
@@ -1906,6 +1917,7 @@ describe("v14 industry and channel-row stock upload", () => {
     (runtime.channelQuery as { data: { items: Record<string, unknown>[] } }).data.items[0].industryCode = "medical";
     renderHost();
     expect(Array.from(document.querySelectorAll("td.ci-material-industry-col")).map(cell => cell.textContent)).toEqual(["汽车电子", "未设置"]);
+    click(required(document.querySelector<HTMLButtonElement>('[aria-label="高级库存筛选"]'), "missing advanced filter trigger"));
     const industryFilter = required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存行业"]'), "missing public industry filter");
     expect(Array.from(industryFilter.options).map(option => ({ value: option.value, label: option.text }))).toEqual([
       { value: "all", label: "全部行业" }, ...BUSINESS_INDUSTRY_OPTIONS, { value: "unset", label: "未设置" },
@@ -2246,10 +2258,10 @@ describe("customer supply independent exact source-readable proof", () => {
     change(sourceFilter(), "22"); await settle();
     expect(sourceFilter().value).toBe("22");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999 });
-    click(button("确定")); await settle();
+    click(button("搜索")); await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999 });
     change(sourceFilter(), ""); await settle();
-    click(button("确定")); await settle();
+    click(button("搜索")); await settle();
     expect(document.querySelector("tbody")?.textContent).toContain("LM358DR");
     onlyExactRequests();
   });
@@ -2275,7 +2287,7 @@ describe("customer supply independent exact source-readable proof", () => {
     expect(Array.from(document.querySelectorAll("button")).some(item => item.textContent?.trim() === "重置")).toBe(false);
     change(model, "NO-MATCH");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: undefined });
-    click(button("确定")); await settle();
+    click(button("搜索")); await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: "NO-MATCH", page: 1 });
     click(required(document.querySelector('[aria-label="按可供数量排序"]'), "missing sort"));
     runtime.exactTeamQuery = query({ ...stock, items: [], total: 0 }); rerender(); await settle();
@@ -2283,7 +2295,7 @@ describe("customer supply independent exact source-readable proof", () => {
     expect(document.querySelector("tbody")?.textContent).not.toContain("TEAM-SN74");
     change(model, "");
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: "NO-MATCH", sortBy: "qty" });
-    click(button("确定")); await settle();
+    click(button("搜索")); await settle();
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: 999, partNumber: undefined, sortBy: "qty", page: 1 });
     onlyExactRequests();
   });
@@ -2759,5 +2771,148 @@ describe("approved inventory compact time presentation", () => {
     selectHostView("flat"); await settle(); click(trigger());
     runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] });
     rerender(); await settle(); expect(panel()).toBeNull();
+  });
+});
+
+// Recovered policy behavior, not a claim of byte identity with the missing final source.
+describe("20261112 recovered official Host write, private notes and export policy", () => {
+  const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
+  const ownEntry = () => required(document.querySelector<HTMLButtonElement>('[aria-label="本人备注：LM358DR"]'), "missing independent private entry");
+  const ownNotes = () => required(document.querySelector<HTMLElement>(".ci-private-notes-dialog"), "missing private notes dialog");
+  const stock = () => (runtime.teamQuery as { data: { items: Record<string, unknown>[]; canWrite: boolean } }).data;
+  const notes = () => runtime.notesQuery as { data: Record<string, any>; refetch: ReturnType<typeof vi.fn> };
+  const denyStockWrite = () => {
+    runtime.scope.officialInventoryPermissions.write = false;
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: ["stocks.read"], isOwner: false });
+    runtime.teamQuery = query({ ...stock(), canWrite: false, items: stock().items.map(row => ({ ...row, canEdit: false, canDelete: false, readOnly: true })) });
+  };
+  const expectNoStockCalls = () => {
+    for (const call of [runtime.getTeamMaterialForEdit, runtime.getMaterial, runtime.createMaterial, runtime.updateMaterial, runtime.deleteMaterials, runtime.setMaterialShare, runtime.utils.client.channelInventory.createUploadBatch.mutate]) expect(call).not.toHaveBeenCalled();
+    expect(document.querySelector(".ci-host-material-dialog")).toBeNull();
+  };
+  beforeEach(() => {
+    runtime.utils.client.channelInventory.createUploadBatch.mutate.mockClear();
+    vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Network forbidden in official Host source regression"); }));
+  });
+  afterEach(() => { expect(fetch).not.toHaveBeenCalled(); });
+
+  it.each([[], ["stocks.read"]])("official write can edit with no ERP inventory.manage or owner: %j", async permissionKeys => {
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys, isOwner: false });
+    renderHost(); click(materialMenuItem("编辑")); await settle();
+    const editor = required(document.querySelector(".ci-host-material-dialog"), "official writer incorrectly denied by ERP role");
+    change(control(editor, "型号"), "OFFICIAL-WRITE-NO-ERP"); click(button("保存修改")); await settle();
+    expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledTimes(1);
+    expect(runtime.updateMaterial).toHaveBeenCalledWith(expect.objectContaining({ id: 101, partNumber: "OFFICIAL-WRITE-NO-ERP", expectedRevision: 9, expectedEnterpriseId: 31, expectedActorUserId: 7 }));
+    expect(runtime.updateMaterial).toHaveBeenCalledTimes(1);
+    expect(runtime.notesInputs).toHaveLength(0); expect(runtime.setMaterialShare).not.toHaveBeenCalled();
+  });
+  it.each(["official-read", "official-write", "module-write", "row-edit", "row-readOnly", "detail-edit", "detail-readOnly", "source-identity"])("preserves %s inventory denial despite other writable hints", async denial => {
+    if (denial === "official-read") runtime.scope.officialInventoryPermissions.read = false;
+    if (denial === "official-write") runtime.scope.officialInventoryPermissions.write = false;
+    if (denial === "module-write") runtime.teamQuery = query({ ...stock(), canWrite: false });
+    if (denial === "row-edit" || denial === "row-readOnly") runtime.teamQuery = query({ ...stock(), items: stock().items.map(row => row.id === 101 ? { ...row, ...(denial === "row-edit" ? { canEdit: false } : { readOnly: true }) } : row) });
+    if (denial === "detail-edit" || denial === "detail-readOnly") runtime.getTeamMaterialForEdit.mockResolvedValueOnce({ id: 101, partNumber: "LM358DR", canEdit: denial !== "detail-edit", readOnly: denial === "detail-readOnly" });
+    if (denial === "source-identity") runtime.scope.contextVerification.identity = "previous-storage-scope";
+    renderHost();
+    if (document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')) click(materialMenuItem("编辑"));
+    await settle(); expect(document.querySelector(".ci-host-material-dialog")).toBeNull();
+    expect(runtime.updateMaterial).not.toHaveBeenCalled(); expect(runtime.createMaterial).not.toHaveBeenCalled();
+    if (denial.startsWith("detail-")) expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledTimes(1);
+    else expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
+  });
+  it("read+note without stock write opens an independent row panel and sends only authorized note Add/Edit", async () => {
+    denyStockWrite(); renderHost();
+    expect(ownEntry().disabled).toBe(false);
+    expect(document.querySelector('[aria-label="本人备注：TEAM-SN74"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("历史库存备注");
+    click(ownEntry()); await settle();
+    expect(ownNotes().textContent).toContain("历史库存备注");
+    expect(runtime.notesInputs.at(-1)).toEqual({ materialId: 101, expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1, pageSize: 50 });
+    change(required(ownNotes().querySelector<HTMLTextAreaElement>("textarea"), "missing note-only add"), "独立本人备注新增");
+    click(button("保存本人备注")); await settle();
+    expect(runtime.notesAdd).toHaveBeenCalledWith({ materialId: 101, expectedEnterpriseId: 31, expectedActorUserId: 7, content: "独立本人备注新增", requestId: expect.any(String) });
+    click(button("修改我的备注"));
+    change(required(ownNotes().querySelector<HTMLTextAreaElement>("textarea"), "missing note-only edit"), "独立本人备注修改");
+    click(button("保存备注修改")); await settle();
+    expect(runtime.notesEdit).toHaveBeenCalledWith({ noteId: 901, expectedRevision: 1, expectedEnterpriseId: 31, expectedActorUserId: 7, content: "独立本人备注修改", requestId: expect.any(String) });
+    expectNoStockCalls();
+  });
+  it.each(["canEdit", "readOnly", "material"])("notesList %s denial does not inherit writable stock or official note flags", async denial => {
+    notes().data = { ...notes().data, ...(denial === "canEdit" ? { canEdit: false } : denial === "readOnly" ? { readOnly: true } : { material: { id: 999, partNumber: "WRONG-ROW" } }) };
+    renderHost(); click(ownEntry()); await settle();
+    expect(ownNotes().querySelector("textarea")).toBeNull();
+    expect(ownNotes().textContent).not.toContain("修改我的备注");
+    expect(runtime.notesAdd).not.toHaveBeenCalled(); expect(runtime.notesEdit).not.toHaveBeenCalled(); expectNoStockCalls();
+  });
+  it("stock write-only loss leaves a still-authorized note panel independent", async () => {
+    renderHost(); click(ownEntry()); await settle();
+    change(required(ownNotes().querySelector<HTMLTextAreaElement>("textarea"), "missing draft"), "NOTE-INDEPENDENT-OF-STOCK");
+    runtime.scope.officialInventoryPermissions.write = false;
+    runtime.teamQuery = query({ ...stock(), canWrite: false, items: stock().items.map(row => ({ ...row, canEdit: false, readOnly: true })) });
+    rerender(); await settle();
+    expect(ownNotes().querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("NOTE-INDEPENDENT-OF-STOCK");
+    click(button("保存本人备注")); await settle(); expect(runtime.notesAdd).toHaveBeenCalledTimes(1); expectNoStockCalls();
+  });
+  it.each(["note", "read", "identity", "actor", "enterprise", "row-removed", "row-not-mine", "authorization"])("closes notes and cannot reuse a draft after %s loss", async denial => {
+    denyStockWrite(); renderHost(); click(ownEntry()); await settle();
+    change(required(ownNotes().querySelector<HTMLTextAreaElement>("textarea"), "missing draft"), "STALE-NOTE-DRAFT");
+    const staleSave = button("保存本人备注");
+    if (denial === "note" || denial === "read") runtime.scope.officialInventoryPermissions[denial] = false;
+    if (denial === "identity") runtime.scope.contextVerification.identity = "revoked-binding";
+    if (denial === "authorization") runtime.scope.contextVerification.authorizationVersion = "changed-authorization";
+    if (denial === "actor" || denial === "enterprise") runtime.enterpriseMe = query({ currentUserId: denial === "actor" ? 8 : 7, enterprise: { id: denial === "enterprise" ? 32 : 31 }, permissionKeys: [] });
+    if (denial === "row-removed") runtime.teamQuery = query({ ...stock(), items: stock().items.filter(row => row.id !== 101) });
+    if (denial === "row-not-mine") runtime.teamQuery = query({ ...stock(), items: stock().items.map(row => ({ ...row, isMine: false })) });
+    rerender(); await settle(); click(staleSave);
+    expect(document.querySelector(".ci-private-notes-dialog")).toBeNull();
+    expect(document.body.textContent).not.toContain("STALE-NOTE-DRAFT");
+    expect(runtime.notesAdd).not.toHaveBeenCalled(); expect(runtime.notesEdit).not.toHaveBeenCalled(); expectNoStockCalls();
+  });
+  it.each(["readonly", "error"])("focus refresh blocks same-tick cached submit and preserves fresh %s denial", async denial => {
+    denyStockWrite(); renderHost(); click(ownEntry()); await settle();
+    change(required(ownNotes().querySelector<HTMLTextAreaElement>("textarea"), "missing draft"), "NO-CACHED-SUBMIT");
+    const staleSave = button("保存本人备注");
+    let finish!: (value: unknown) => void;
+    notes().refetch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    act(() => { window.dispatchEvent(new Event("focus")); staleSave.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(runtime.notesAdd).not.toHaveBeenCalled();
+    expect(ownNotes().querySelector("textarea")).toBeNull();
+    const fresh = denial === "readonly" ? query({ ...notes().data, canEdit: false, readOnly: true }) : query(undefined, { isError: true, error: new Error("撤权后重核验失败") });
+    await act(async () => { finish(fresh); await Promise.resolve(); }); await settle();
+    expect(notes().refetch).toHaveBeenCalledTimes(1); expect(ownNotes().querySelector("textarea")).toBeNull();
+    click(staleSave); expect(runtime.notesAdd).not.toHaveBeenCalled(); expect(runtime.notesEdit).not.toHaveBeenCalled(); expectNoStockCalls();
+  });
+  it("an unconfirmed note retry never becomes stock authority and is discarded on note revocation", async () => {
+    denyStockWrite(); runtime.notesAdd.mockRejectedValueOnce(new Error("unknown note response"));
+    renderHost(); click(ownEntry()); await settle();
+    change(required(ownNotes().querySelector<HTMLTextAreaElement>("textarea"), "missing draft"), "FROZEN-NOTE-RETRY");
+    click(button("保存本人备注")); await settle();
+    expect(button("按原请求重试")).not.toBeNull();
+    const staleRetry = button("按原请求重试");
+    runtime.scope.officialInventoryPermissions.note = false; rerender(); await settle(); click(staleRetry);
+    expect(runtime.notesAdd).toHaveBeenCalledTimes(1); expect(document.querySelector(".ci-private-notes-dialog")).toBeNull(); expectNoStockCalls();
+  });
+  it.each(["official-write", "module-write", "identity", "authorization"])("does not write an export file after %s loss during download", async denial => {
+    let finish!: (value: unknown) => void;
+    runtime.exportChannelMaterials.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    renderHost(); selectHostTab("channels"); click(menuItem("下载库存"));
+    expect(runtime.exportChannelMaterials).toHaveBeenCalledTimes(1);
+    if (denial === "official-write") runtime.scope.officialInventoryPermissions.write = false;
+    if (denial === "module-write") {
+      const old = runtime.channelQuery as { data: object }; runtime.channelQuery = query({ ...old.data, canWrite: false });
+    }
+    if (denial === "identity") runtime.scope.contextVerification.identity = "previous-scope";
+    if (denial === "authorization") runtime.scope.contextVerification.authorizationVersion = "revoked-export-authorization";
+    rerender(); await settle();
+    await act(async () => { finish(exportFixture()); await Promise.resolve(); }); await settleExport();
+    expect(XLSX.writeFile).not.toHaveBeenCalled(); expect(runtime.updateMaterial).not.toHaveBeenCalled();
+  });
+  it("effective official export works without ERP manage or owner and still rechecks authenticated identity", async () => {
+    runtime.enterpriseMe = query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: [], isOwner: false });
+    (runtime.enterpriseMe as { refetch: ReturnType<typeof vi.fn> }).refetch.mockResolvedValue(runtime.enterpriseMe);
+    renderHost(); selectHostTab("channels"); expect(menuItem("下载库存").hasAttribute("data-disabled")).toBe(false);
+    click(menuItem("下载库存")); await settleExport();
+    expect(runtime.exportChannelMaterials).toHaveBeenCalledTimes(1); expect(XLSX.writeFile).toHaveBeenCalledTimes(1);
+    expectNoStockCalls();
   });
 });

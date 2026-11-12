@@ -199,12 +199,14 @@ export default function Messages() {
 
   return (
     <DashboardLayout>
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight aui-page-title">消息中心</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          统一查看并处理快速询价、在线客服、开通消息、合作/订货咨询与举报投诉
-        </p>
+    <div className="space-y-4" data-admin-list-page="true">
+      <div data-admin-list-header="true">
+        <div data-admin-list-heading="true">
+          <h1 className="text-2xl font-semibold tracking-tight aui-page-title">消息中心</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            统一查看并处理快速询价、在线客服、开通消息、合作/订货咨询与举报投诉
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

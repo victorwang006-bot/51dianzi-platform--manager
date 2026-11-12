@@ -653,6 +653,7 @@ export default function Materials() {
   return (
     <DashboardLayout>
       <PageHeader
+        list
         title="物料数据库"
         description="电子元器件物料主数据管理：型号、品牌、封装、参数与生命周期"
         actions={

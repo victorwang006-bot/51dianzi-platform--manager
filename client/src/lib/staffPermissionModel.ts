@@ -1,4 +1,6 @@
 import {
+  getAdminRolePermissions,
+  isAssignableAdminPermission,
   normalizeAssignedAdminPermissions,
   type AdminPermission,
 } from "@shared/adminPermissions";
@@ -6,6 +8,7 @@ import { z } from "zod";
 import {
   ERP_PERMISSION_DEFINITIONS,
   ERP_PERMISSION_GROUPS,
+  ERP_PERMISSION_KEYS,
   ERP_VISIBLE_PERMISSION_KEYS,
   isErpPermissionKey,
   normalizeErpPermissions,
@@ -157,6 +160,18 @@ const staffBusinessOrganizationSchema = z.object({
       teamId: z.number().int().positive().nullable(),
       teamRole: z.enum(["member", "leader"]).nullable(),
       revision: z.number().int().nonnegative(),
+      moduleAccess: z
+        .array(
+          z.object({
+            module: z.enum(["customers", "demands", "channels", "stocks"]),
+            read: z.boolean(),
+            write: z.boolean(),
+            scope: z.enum(["self", "team", "enterprise"]),
+            revision: z.number().int().nonnegative(),
+            explicit: z.boolean(),
+          })
+        )
+        .optional(),
     })
   ),
 });
@@ -205,6 +220,10 @@ export function staffBusinessTeamGuard(
       allowed: false,
       reason: "尚未完成真实后台账号与业务成员关联，请使用现有邀请／关联流程。",
     };
+  if (row.admin.adminRole === "super_admin")
+    return { allowed: false, reason: "超级管理员的团队与权限在此保持只读。" };
+  if (access.currentUserId === row.member.userId)
+    return { allowed: false, reason: "当前业务操作者不能修改自己的团队身份。" };
   if (
     !access.available ||
     !access.canManageMembers ||
@@ -291,6 +310,94 @@ export const STAFF_ADMIN_PERMISSION_GROUPS: ReadonlyArray<{
 const STAFF_ADMIN_UI_PERMISSION_SET = new Set<AdminPermission>(
   STAFF_ADMIN_PERMISSION_GROUPS.flatMap(group => group.options.map(option => option.key)),
 );
+
+/** Reuse existing role defaults as operation drafts, never as a new persisted role. */
+export const STAFF_ADMIN_PERMISSION_TEMPLATES = [
+  { id: "sales", label: "业务协作", role: "merchant_mgr" },
+  { id: "operations", label: "平台运营", role: "operation" },
+  { id: "support", label: "客服处理", role: "customer_svc" },
+  { id: "read-only", label: "只读核对", role: "auditor" },
+] as const;
+
+export const STAFF_ERP_PERMISSION_TEMPLATES: ReadonlyArray<{
+  id: string;
+  label: string;
+  keys: readonly ErpPermissionKey[];
+}> = [
+  {
+    id: "inventory",
+    label: "库存协作",
+    keys: ["inventory.manage", "inventory.publish", "inventory.inbound"],
+  },
+  {
+    id: "customers",
+    label: "客户协作",
+    keys: ["customers.manage", "inquiry.receive", "sales.business_orders"],
+  },
+  {
+    id: "procurement",
+    label: "采购协作",
+    keys: ["procurement.demands", "procurement.orders"],
+  },
+];
+
+export const STAFF_ERP_ADVANCED_KEYS: readonly ErpPermissionKey[] = [
+  "customers.manage_all",
+  "enterprise.members.manage",
+];
+
+/** No draft update can remove a system/unknown permission rejected by the replacement API. */
+export function protectedStaffAdminKeys(existing: readonly string[]): string[] {
+  return existing.filter(
+    key => key !== "profile.manage" && !isAssignableAdminPermission(key)
+  );
+}
+
+export function applyStaffAdminPermissionTemplate(
+  draft: StaffSaveDraft,
+  templateId: string
+): StaffSaveDraft {
+  const template = STAFF_ADMIN_PERMISSION_TEMPLATES.find(
+    item => item.id === templateId
+  );
+  if (!template) return draft;
+  return {
+    ...draft,
+    adminPermissions: normalizeStaffAdminPermissions(
+      getAdminRolePermissions(template.role)
+    ),
+  };
+}
+
+/** Add only grantable daily operations. Advanced/hidden rights and every scope remain unchanged. */
+export function applyStaffErpPermissionTemplate(
+  draft: StaffSaveDraft,
+  templateId: string,
+  row: StaffRow | null,
+  access: StaffErpEditorAccess
+): StaffSaveDraft {
+  const template = STAFF_ERP_PERMISSION_TEMPLATES.find(
+    item => item.id === templateId
+  );
+  if (
+    !template ||
+    !staffErpMutationGuard(row, access).allowed ||
+    protectedStaffErpKeys(
+      draft.erpPermissionKeys,
+      access.grantableKeys,
+      access.actorIsOwner
+    ).length
+  )
+    return draft;
+  const selected = new Set(draft.erpPermissionKeys);
+  for (const key of template.keys) {
+    if (access.grantableKeys.includes(key)) selected.add(key);
+  }
+  return {
+    ...draft,
+    erpPermissionKeys: ERP_PERMISSION_KEYS.filter(key => selected.has(key)),
+  };
+}
 
 const ERP_SCOPE_REQUIREMENTS: Partial<Record<ErpPermissionKey, readonly string[]>> = {
   "inventory.manage": ["business.inventory.read", "business.inventory.write"],
@@ -424,10 +531,15 @@ export function validateStaffBusinessContext(
 }
 
 /** A later domain response must prove the same employee and enterprise as the BFF context. */
-export function validateStaffEnterpriseSummary(value: unknown, context: StaffBusinessContext | null): boolean {
+export function validateStaffEnterpriseSummary(
+  value: unknown,
+  context: StaffBusinessContext | null
+): boolean {
   if (!context || !isRecord(value) || !isRecord(value.enterprise)) return false;
-  return positiveInteger(value.currentUserId) === context.frontendUserId
-    && positiveInteger(value.enterprise.id) === context.enterpriseId;
+  return (
+    positiveInteger(value.currentUserId) === context.frontendUserId &&
+    positiveInteger(value.enterprise.id) === context.enterpriseId
+  );
 }
 
 /** Full-replacement ERP writes may not silently discard rights the actor cannot grant. */
@@ -445,9 +557,12 @@ export function toggleStaffErpPermission(
   current: readonly ErpPermissionKey[],
   key: ErpPermissionKey,
   grantable: readonly ErpPermissionKey[],
-  actorIsOwner: boolean,
+  actorIsOwner: boolean
 ): ErpPermissionKey[] {
-  if (protectedStaffErpKeys(current, grantable, actorIsOwner).length || !grantable.includes(key)) {
+  if (
+    protectedStaffErpKeys(current, grantable, actorIsOwner).length ||
+    !grantable.includes(key)
+  ) {
     return [...current];
   }
   const selected = new Set(current);
@@ -455,10 +570,15 @@ export function toggleStaffErpPermission(
     selected.delete(key);
     if (key === "customers.manage") selected.delete("customers.manage_all");
   } else {
+    if (
+      key === "customers.manage_all" &&
+      !grantable.includes("customers.manage")
+    )
+      return [...current];
     selected.add(key);
     if (key === "customers.manage_all") selected.add("customers.manage");
   }
-  return ERP_VISIBLE_PERMISSION_KEYS.filter(permission => selected.has(permission));
+  return ERP_PERMISSION_KEYS.filter(permission => selected.has(permission));
 }
 
 export function parseEnterpriseMembers(value: unknown): StaffEnterpriseMember[] {
@@ -572,21 +692,53 @@ export function evaluateBffReadiness(input: {
  */
 export function staffErpMutationGuard(
   row: StaffRow | null | undefined,
-  access: Pick<StaffErpEditorAccess, "available" | "canManageMembers" | "currentUserId">,
+  access: Pick<
+    StaffErpEditorAccess,
+    "available" | "canManageMembers" | "currentUserId"
+  >
 ): StaffErpMutationGuard {
   const member = row?.member;
   const admin = row?.admin;
   const binding = row?.binding;
-  if (!member || !admin) return { allowed: false, reason: "目标后台账号或企业成员未完成可信关联，ERP 设置保持禁用。" };
-  if (member.isOwner) return { allowed: false, reason: "企业所有者的 ERP 权限与业务范围只读。" };
-  if (access.currentUserId === member.userId) return { allowed: false, reason: "当前业务操作者不能修改自己的 ERP 权限或业务范围。" };
-  if (!access.available) return { allowed: false, reason: "业务上下文未安全就绪，ERP 设置保持禁用。" };
-  if (!access.canManageMembers) return { allowed: false, reason: "当前前台业务员工没有企业成员管理权限。" };
+  if (!member || !admin)
+    return {
+      allowed: false,
+      reason: "目标后台账号或企业成员未完成可信关联，ERP 设置保持禁用。",
+    };
+  if (admin.adminRole === "super_admin")
+    return {
+      allowed: false,
+      reason: "超级管理员的 ERP 权限与业务范围在此保持只读。",
+    };
+  if (member.isOwner)
+    return { allowed: false, reason: "企业所有者的 ERP 权限与业务范围只读。" };
+  if (access.currentUserId === member.userId)
+    return {
+      allowed: false,
+      reason: "当前业务操作者不能修改自己的 ERP 权限或业务范围。",
+    };
+  if (!access.available)
+    return {
+      allowed: false,
+      reason: "业务上下文未安全就绪，ERP 设置保持禁用。",
+    };
+  if (!access.canManageMembers)
+    return { allowed: false, reason: "当前前台业务员工没有企业成员管理权限。" };
   if (row.bindingState !== "bound" || row.bff.state !== "ready") {
-    return { allowed: false, reason: "目标成员的绑定或 BFF 前置核验未完成，ERP 设置保持禁用。" };
+    return {
+      allowed: false,
+      reason: "目标成员的绑定或 BFF 前置核验未完成，ERP 设置保持禁用。",
+    };
   }
-  if (!binding || binding.adminUserId !== admin.id || binding.frontUserId !== member.userId) {
-    return { allowed: false, reason: "目标成员的后台账号与前台身份绑定不一致，ERP 设置保持禁用。" };
+  if (
+    !binding ||
+    binding.adminUserId !== admin.id ||
+    binding.frontUserId !== member.userId
+  ) {
+    return {
+      allowed: false,
+      reason: "目标成员的后台账号与前台身份绑定不一致，ERP 设置保持禁用。",
+    };
   }
   return { allowed: true };
 }
@@ -667,18 +819,28 @@ export function normalizeStaffAdminPermissions(values: readonly string[]): Admin
 export function adminPermissionsForUpdate(
   existing: readonly string[],
   draftVisible: readonly string[],
-  role: string,
+  role: string
 ): AdminPermission[] {
   if (role === "super_admin") return [];
-  const preserved = existing.filter(permission =>
-    permission === "profile.manage" || permission.startsWith("business.") || permission.startsWith("officialInventory."),
+  if (protectedStaffAdminKeys(existing).length)
+    throw new Error(
+      "现有授权包含不可授予或当前接口不支持的权限，整包保存已停止以防误删；请使用原有安全管理流程。"
+    );
+  const preserved = existing.filter(
+    permission =>
+      permission === "profile.manage" ||
+      permission.startsWith("business.") ||
+      permission.startsWith("officialInventory.")
   );
-  return normalizeAssignedAdminPermissions([...preserved, ...normalizeStaffAdminPermissions(draftVisible)]);
+  return normalizeAssignedAdminPermissions([
+    ...preserved,
+    ...normalizeStaffAdminPermissions(draftVisible),
+  ]);
 }
 
 function orderedErp(values: readonly ErpPermissionKey[]): ErpPermissionKey[] {
   const selected = new Set(values);
-  return ERP_VISIBLE_PERMISSION_KEYS.filter(key => selected.has(key));
+  return ERP_PERMISSION_KEYS.filter(key => selected.has(key));
 }
 
 function orderedAdmin(values: readonly AdminPermission[]): AdminPermission[] {
@@ -706,14 +868,19 @@ export function staffChangePreview(base: StaffSaveBaseline, draft: StaffSaveDraf
   };
 }
 
-export function hasStaffDraftChanges(base: StaffSaveBaseline, draft: StaffSaveDraft) {
+export function hasStaffDraftChanges(
+  base: StaffSaveBaseline,
+  draft: StaffSaveDraft
+) {
   const preview = staffChangePreview(base, draft);
-  return preview.erpAdded.length > 0
-    || preview.erpRemoved.length > 0
-    || preview.adminAdded.length > 0
-    || preview.adminRemoved.length > 0
-    || preview.scopeChanged
-    || preview.roleChanged;
+  return (
+    preview.erpAdded.length > 0 ||
+    preview.erpRemoved.length > 0 ||
+    preview.adminAdded.length > 0 ||
+    preview.adminRemoved.length > 0 ||
+    preview.scopeChanged ||
+    preview.roleChanged
+  );
 }
 
 export function erpPermissionLabel(key: ErpPermissionKey) {

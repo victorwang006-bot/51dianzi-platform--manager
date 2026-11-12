@@ -27,16 +27,15 @@ const items = officialPaths.map(path => ({
 const visible = (...paths: string[]) =>
   items.filter(item => paths.includes(item.path));
 
-describe("业务第二行展示分组（不更改canonical和工作区首个目标）", () => {
-  it("四入口保留现有业务菜单但移除公司信息，子项只出现一次", () => {
+describe("业务下拉展示分组（独立客户和库存不重复，不更改canonical和历史目标）", () => {
+  it("三组仅保留销售询价、出入库和采购，子项只出现一次", () => {
     const entries = groupAdminBusinessNavigationItems([...items].reverse());
     expect(
       entries.map(entry =>
         entry.kind === "direct" ? entry.item.path : entry.label
       )
     ).toEqual([
-      "/workbench/channel-inventory",
-      "客户与销售",
+      "销售与询价",
       "库存管理",
       "采购管理",
     ]);
@@ -46,8 +45,6 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
         : entry.items.map(item => item.path)
     );
     expect(groupedPaths).toEqual([
-      "/workbench/channel-inventory",
-      "/workbench/customers",
       "/workbench/inquiries",
       "/workbench/orders",
       "/workbench/inbound",
@@ -56,7 +53,7 @@ describe("业务第二行展示分组（不更改canonical和工作区首个目�
       "/workbench/procurement-orders",
     ]);
     expect([...groupedPaths].sort()).toEqual(
-      [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].sort()
+      [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].filter(path => !["/workbench/customers", "/workbench/channel-inventory"].includes(path)).sort()
     );
     expect(new Set(groupedPaths).size).toBe(groupedPaths.length);
     for (const entry of entries) {

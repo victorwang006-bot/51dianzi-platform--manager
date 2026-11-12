@@ -1,14 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -25,8 +17,16 @@ import {
   type StaffPermissionTab,
   STAFF_ADMIN_PERMISSION_GROUPS,
   adminPermissionsForUpdate,
+  applyStaffAdminPermissionTemplate,
+  applyStaffErpPermissionTemplate,
   hasStaffDraftChanges,
+  normalizeStaffAdminPermissions,
+  protectedStaffAdminKeys,
   protectedStaffErpKeys,
+  sameStringSet,
+  STAFF_ADMIN_PERMISSION_TEMPLATES,
+  STAFF_ERP_PERMISSION_TEMPLATES,
+  STAFF_ERP_ADVANCED_KEYS,
   staffErpMutationGuard,
   staffDraftFromRow,
   toggleStaffErpPermission,
@@ -40,6 +40,7 @@ import {
   ERP_PERMISSION_DEFINITIONS,
   type ErpPermissionKey,
 } from "@/business/platform/shared/erpPermissions";
+import { readOfficialTeamsOverview } from "@/lib/officialChannelInventoryUi";
 import { formatDateTime } from "@/components/admin/shared";
 import OfficialTeamPermissionSection, {
   type OfficialTeamPermissionHandle,
@@ -172,6 +173,8 @@ export default function StaffPermissionSheet({
   const [activeSection, setActiveSection] = useState<StaffPermissionTab>(
     staffPermissionTab(initialSection)
   );
+  const [adminTemplate, setAdminTemplate] = useState("");
+  const [erpTemplate, setErpTemplate] = useState("");
   const previousOpen = useRef(false);
   const previousKey = useRef<string | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -202,6 +205,8 @@ export default function StaffPermissionSheet({
       setDraft(next);
       setBaseline(next);
       setActiveSection(staffPermissionTab(initialSection));
+      setAdminTemplate("");
+      setErpTemplate("");
     }
     previousOpen.current = open;
     previousKey.current = key;
@@ -225,8 +230,24 @@ export default function StaffPermissionSheet({
   };
   const admin = row?.admin;
   const member = row?.member;
+  const nativeActor = readOfficialTeamsOverview(
+    officialTeamsOverview
+  ).serverScope;
+  const targetIsSelf = Boolean(
+    (member && enterpriseAccess.currentUserId === member.userId) ||
+      (admin && nativeActor.available && nativeActor.adminUserId === admin.id)
+  );
+  const protectedAdminKeys = protectedStaffAdminKeys(admin?.permissions ?? []);
+  const canEditAdmin = Boolean(
+    admin &&
+      canManageAdmin &&
+      admin.status === "active" &&
+      admin.adminRole !== "super_admin" &&
+      !targetIsSelf &&
+      protectedAdminKeys.length === 0
+  );
   const erpGuard = staffErpMutationGuard(row, enterpriseAccess);
-  const canEditErp = erpGuard.allowed;
+  const canEditErp = erpGuard.allowed && !targetIsSelf;
   const availableErpKeys = enterpriseAccess.grantableKeys;
   const availableErpSet = new Set(availableErpKeys);
   const lockedErpKeys = protectedStaffErpKeys(
@@ -235,6 +256,22 @@ export default function StaffPermissionSheet({
     enterpriseAccess.actorIsOwner
   );
   const canEditErpPermissions = canEditErp && lockedErpKeys.length === 0;
+  const erpPermissionsChanged = !sameStringSet(
+    baseline.erpPermissionKeys,
+    draft.erpPermissionKeys
+  );
+  const pageCanSave =
+    activeSection === "official-team"
+      ? channelState.canSave
+      : activeSection === "admin"
+        ? canEditAdmin
+        : activeSection === "erp"
+          ? canEditErp &&
+            (!erpPermissionsChanged || canEditErpPermissions) &&
+            (draft.inventoryDataScope === baseline.inventoryDataScope ||
+              draft.inventoryDataScope === "own" ||
+              enterpriseAccess.actorIsOwner)
+          : false;
   const adminStatus = admin
     ? admin.status === "active"
       ? { label: "启用", style: "success" }
@@ -246,16 +283,28 @@ export default function StaffPermissionSheet({
   const updateAdminPermission = (
     permission: StaffSaveDraft["adminPermissions"][number]
   ) => {
+    if (!canEditAdmin || busy) return;
     setDraft(current => ({
       ...current,
       adminPermissions: current.adminPermissions.includes(permission)
-        ? current.adminPermissions.filter(item => item !== permission)
-        : [...current.adminPermissions, permission],
+        ? current.adminPermissions.filter(
+            item =>
+              item !== permission &&
+              !STAFF_ADMIN_PERMISSION_GROUPS.flatMap(
+                group => group.options
+              ).some(
+                option => option.key === item && option.requires === permission
+              )
+          )
+        : normalizeStaffAdminPermissions([
+            ...current.adminPermissions,
+            permission,
+          ]),
     }));
   };
 
   const updateErpPermission = (permission: ErpPermissionKey) => {
-    if (!canEditErpPermissions) return;
+    if (!canEditErpPermissions || busy) return;
     setDraft(current => ({
       ...current,
       erpPermissionKeys: toggleStaffErpPermission(
@@ -267,8 +316,39 @@ export default function StaffPermissionSheet({
     }));
   };
 
+  const renderErpPermissions = (keys: readonly ErpPermissionKey[]) => (
+    <div className="grid gap-1.5 sm:grid-cols-2">
+      {keys
+        .filter(
+          key =>
+            member?.isOwner ||
+            availableErpSet.has(key) ||
+            draft.erpPermissionKeys.includes(key)
+        )
+        .map(key => (
+          <label
+            key={key}
+            title={ERP_PERMISSION_DEFINITIONS[key].description}
+            className="flex min-h-8 items-center gap-2 rounded-md border px-2 text-sm"
+          >
+            <Checkbox
+              checked={member?.isOwner || draft.erpPermissionKeys.includes(key)}
+              disabled={
+                !canEditErpPermissions || busy || !availableErpSet.has(key)
+              }
+              onCheckedChange={() => updateErpPermission(key)}
+              aria-label={ERP_PERMISSION_DEFINITIONS[key].label}
+            />
+            <span className="min-w-0 font-medium">
+              {ERP_PERMISSION_DEFINITIONS[key].label}
+            </span>
+          </label>
+        ))}
+    </div>
+  );
+
   const handleSave = async () => {
-    if (!row || busy || !pageHasChanges) return;
+    if (!row || busy || !pageHasChanges || !pageCanSave) return;
     if (activeSection === "official-team") {
       await officialRef.current?.save();
       return;
@@ -277,6 +357,7 @@ export default function StaffPermissionSheet({
     if (
       activeSection === "erp" &&
       canEditErp &&
+      erpPermissionsChanged &&
       pageDraft.erpPermissionKeys.length === 0
     ) {
       toast.error("请至少保留一项 ERP 权限");
@@ -520,7 +601,7 @@ export default function StaffPermissionSheet({
                     id="staff-admin-permissions-title"
                     className="text-sm font-medium"
                   >
-                    平台角色与模块权限
+                    平台操作权限
                   </h3>
                   {!admin ? (
                     <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
@@ -532,74 +613,131 @@ export default function StaffPermissionSheet({
                     </div>
                   ) : (
                     <>
-                      <div className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-center">
-                        <Label htmlFor="staff-admin-role">后台角色</Label>
-                        <Select
-                          value={draft.adminRole}
-                          onValueChange={value =>
-                            setDraft(current => ({
-                              ...current,
-                              adminRole: value,
-                            }))
-                          }
-                          disabled={busy}
-                        >
-                          <SelectTrigger id="staff-admin-role">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {draft.adminRole !== "super_admin" &&
-                            draft.adminRole !== "merchant_mgr" ? (
-                              <SelectItem value={draft.adminRole} disabled>
-                                {roleLabel(draft.adminRole)}（历史角色，仅展示）
-                              </SelectItem>
-                            ) : null}
-                            <SelectItem value="merchant_mgr">
-                              普通用户
-                            </SelectItem>
-                            <SelectItem value="super_admin">
-                              超级管理员
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <span>账号身份</span>
+                        <Badge variant="outline">
+                          {roleLabel(admin.adminRole)}（只读）
+                        </Badge>
                       </div>
-                      {draft.adminRole === "super_admin" ? (
+                      {!canEditAdmin && (
+                        <p
+                          role="status"
+                          className="rounded-md border bg-muted/20 p-2 text-xs text-muted-foreground"
+                        >
+                          {admin.adminRole === "super_admin"
+                            ? "超级管理员由系统管理，本窗口保持只读。"
+                            : targetIsSelf
+                              ? "不能修改自己的权限。"
+                              : protectedAdminKeys.length
+                                ? "现有授权含不可授予或当前接口不支持的项目；为避免误删，本页只读。"
+                                : "账号已停用或锁定，本页只读。"}
+                        </p>
+                      )}
+                      {admin.adminRole === "super_admin" ? (
                         <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
                           超级管理员拥有全部后台模块权限。
                         </div>
                       ) : (
-                        <div className="staff-platform-matrix grid gap-2 sm:grid-cols-2">
-                          {STAFF_ADMIN_PERMISSION_GROUPS.map(group => (
-                            <div
-                              key={group.title}
-                              className="rounded-md border p-2"
+                        <>
+                          <div className="staff-permission-template">
+                            <label htmlFor="staff-admin-template">
+                              配置模板
+                            </label>
+                            <select
+                              id="staff-admin-template"
+                              value={adminTemplate}
+                              disabled={!canEditAdmin || busy}
+                              onChange={event =>
+                                setAdminTemplate(event.target.value)
+                              }
                             >
-                              <p className="mb-1 text-xs font-medium">
-                                {group.title}
-                              </p>
-                              <div className="space-y-1">
-                                {group.options.map(option => (
-                                  <label
-                                    key={option.key}
-                                    className="flex h-8 cursor-pointer items-center gap-2 text-sm"
-                                  >
-                                    <Checkbox
-                                      checked={draft.adminPermissions.includes(
-                                        option.key
-                                      )}
-                                      disabled={busy}
-                                      onCheckedChange={() =>
-                                        updateAdminPermission(option.key)
-                                      }
-                                      aria-label={`${group.title}${option.label}`}
-                                    />
-                                    <span>{option.label}</span>
-                                  </label>
-                                ))}
+                              <option value="">保持现有配置</option>
+                              {STAFF_ADMIN_PERMISSION_TEMPLATES.map(
+                                template => (
+                                  <option key={template.id} value={template.id}>
+                                    {template.label}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={!canEditAdmin || busy || !adminTemplate}
+                              onClick={() =>
+                                setDraft(current =>
+                                  applyStaffAdminPermissionTemplate(
+                                    current,
+                                    adminTemplate
+                                  )
+                                )
+                              }
+                            >
+                              应用平台模板到草稿
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            模板只替换下方操作草稿，不改账号角色、数据范围或渠道授权；检查后保存当前页才生效。
+                          </p>
+                          <div
+                            className="staff-platform-matrix grid gap-2 sm:grid-cols-2"
+                            aria-label="平台日常操作"
+                          >
+                            {STAFF_ADMIN_PERMISSION_GROUPS.map(group => (
+                              <div
+                                key={group.title}
+                                className="rounded-md border p-2"
+                              >
+                                <p className="mb-1 text-xs font-medium">
+                                  {group.title}
+                                </p>
+                                <div className="space-y-1">
+                                  {group.options.map(option => (
+                                    <label
+                                      key={option.key}
+                                      className="flex h-8 cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                      <Checkbox
+                                        checked={draft.adminPermissions.includes(
+                                          option.key
+                                        )}
+                                        disabled={!canEditAdmin || busy}
+                                        onCheckedChange={() =>
+                                          updateAdminPermission(option.key)
+                                        }
+                                        aria-label={`${group.title}${option.label}`}
+                                      />
+                                      <span>{option.label}</span>
+                                    </label>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                          <details className="staff-permission-advanced">
+                            <summary>服务与受保护授权（保留不变）</summary>
+                            <p className="text-xs text-muted-foreground">
+                              个人信息、BFF
+                              服务键与渠道原生权限不进入日常矩阵，也不会被模板覆盖。
+                            </p>
+                            <ul className="staff-permission-service-keys">
+                              {admin.permissions
+                                .filter(
+                                  key =>
+                                    key === "profile.manage" ||
+                                    key.startsWith("business.") ||
+                                    key.startsWith("official") ||
+                                    protectedAdminKeys.includes(key)
+                                )
+                                .map(key => (
+                                  <li key={key}>
+                                    <code>{key}</code>
+                                  </li>
+                                ))}
+                            </ul>
+                          </details>
+                        </>
                       )}
                     </>
                   )}
@@ -620,6 +758,8 @@ export default function StaffPermissionSheet({
                   hasRealAdminAccount={Boolean(admin)}
                   targetIsActive={admin?.status === "active"}
                   targetIsSuperAdmin={admin?.adminRole === "super_admin"}
+                  targetIsSelf={targetIsSelf}
+                  targetHasProtectedPermissions={protectedAdminKeys.length > 0}
                   overviewData={officialTeamsOverview}
                   overviewLoading={officialTeamsLoading === true}
                   overviewError={officialTeamsError ?? null}
@@ -647,6 +787,48 @@ export default function StaffPermissionSheet({
                   </h3>
                   {member ? (
                     <>
+                      <div className="staff-permission-template">
+                        <label htmlFor="staff-erp-template">操作模板</label>
+                        <select
+                          id="staff-erp-template"
+                          value={erpTemplate}
+                          disabled={!canEditErpPermissions || busy}
+                          onChange={event => setErpTemplate(event.target.value)}
+                        >
+                          <option value="">保持现有配置</option>
+                          {STAFF_ERP_PERMISSION_TEMPLATES.map(template => (
+                            <option key={template.id} value={template.id}>
+                              {template.label}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            !canEditErpPermissions || busy || !erpTemplate
+                          }
+                          onClick={() =>
+                            setDraft(current =>
+                              applyStaffErpPermissionTemplate(
+                                current,
+                                erpTemplate,
+                                row,
+                                enterpriseAccess
+                              )
+                            )
+                          }
+                        >
+                          添加业务模板到草稿
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        仅添加你可授予的日常操作，保留已有权限；不授予全量客户或成员管理，不改变任何数据范围。
+                      </p>
+                      <p className="text-xs text-muted-foreground" role="note" aria-label="库存管理授权影响">
+                        库存协作模板包含库存管理权限；保存后，在原生读取、业务范围和渠道授权等条件同时满足时，也可能允许渠道导出。当前没有独立的导出或来源开关，来源仍按已授权渠道及关联客户权限校验。
+                      </p>
                       {lockedErpKeys.length && enterpriseAccess.available ? (
                         <div
                           role="status"
@@ -661,61 +843,55 @@ export default function StaffPermissionSheet({
                           role="status"
                           className="rounded-md border bg-muted/20 p-3 text-xs leading-5 text-muted-foreground"
                         >
-                          {erpGuard.reason}
+                          {erpGuard.allowed
+                            ? "不能修改自己的 ERP 权限或业务范围。"
+                            : erpGuard.reason}
                         </div>
                       ) : null}
                       <div className="space-y-3">
                         {ERP_PERMISSION_GROUPS.map(group => {
                           const keys = group.keys.filter(
                             key =>
-                              availableErpSet.has(key) ||
-                              draft.erpPermissionKeys.includes(key)
+                              !STAFF_ERP_ADVANCED_KEYS.includes(key) &&
+                              (member.isOwner ||
+                                availableErpSet.has(key) ||
+                                draft.erpPermissionKeys.includes(key))
                           );
-                          if (!keys.length && !member.isOwner) return null;
+                          if (!keys.length) return null;
                           return (
                             <div key={group.title}>
                               <p className="mb-1 text-xs font-medium text-muted-foreground">
                                 {group.title}
                               </p>
-                              <div className="grid gap-1.5 sm:grid-cols-2">
-                                {(member.isOwner ? group.keys : keys).map(
-                                  key => (
-                                    <label
-                                      key={key}
-                                      title={
-                                        ERP_PERMISSION_DEFINITIONS[key]
-                                          .description
-                                      }
-                                      className="flex h-8 items-center gap-2 rounded-md border px-2 text-sm"
-                                    >
-                                      <Checkbox
-                                        checked={
-                                          member.isOwner ||
-                                          draft.erpPermissionKeys.includes(key)
-                                        }
-                                        disabled={
-                                          !canEditErpPermissions ||
-                                          saving ||
-                                          !availableErpSet.has(key)
-                                        }
-                                        onCheckedChange={() =>
-                                          updateErpPermission(key)
-                                        }
-                                        aria-label={
-                                          ERP_PERMISSION_DEFINITIONS[key].label
-                                        }
-                                      />
-                                      <span className="min-w-0 truncate font-medium">
-                                        {ERP_PERMISSION_DEFINITIONS[key].label}
-                                      </span>
-                                    </label>
-                                  )
-                                )}
-                              </div>
+                              {renderErpPermissions(keys)}
                             </div>
                           );
                         })}
                       </div>
+                      <details className="staff-permission-advanced">
+                        <summary>
+                          高风险能力与历史授权（已选{" "}
+                          {member.isOwner
+                            ? STAFF_ERP_ADVANCED_KEYS.length
+                            : draft.erpPermissionKeys.filter(
+                                key =>
+                                  STAFF_ERP_ADVANCED_KEYS.includes(key) ||
+                                  key === "inventory.dashboard"
+                              ).length}{" "}
+                          项）
+                        </summary>
+                        <p className="text-xs text-muted-foreground">
+                          全量客户管理和成员管理单独控制，不包含在日常模板内。
+                        </p>
+                        {renderErpPermissions(STAFF_ERP_ADVANCED_KEYS)}
+                        {draft.erpPermissionKeys.includes(
+                          "inventory.dashboard"
+                        ) && (
+                          <p className="text-xs text-muted-foreground">
+                            库存看板：历史授权保留，已并入入库管理，不在此单独调整。
+                          </p>
+                        )}
+                      </details>
                     </>
                   ) : (
                     <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
@@ -733,8 +909,9 @@ export default function StaffPermissionSheet({
                     ERP 数据范围
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    仅适用于原有 ERP
-                    业务数据范围，不改变渠道库存的业务团队及显式分享范围。
+                    沿用原有 ERP
+                    本人/全企业设置；全企业仅所有者可显式授予。业务模块已有本人/本组/企业范围配置，不由账号角色或模板推导。
+                    此处不改变渠道库存的业务团队及显式分享范围。
                   </p>
                   {member ? (
                     <div className="grid grid-cols-2 gap-1.5">
@@ -769,7 +946,7 @@ export default function StaffPermissionSheet({
                           disabled={
                             !canEditErp ||
                             !enterpriseAccess.actorIsOwner ||
-                            saving
+                            busy
                           }
                           onChange={() =>
                             setDraft(current => ({
@@ -898,12 +1075,7 @@ export default function StaffPermissionSheet({
           </Button>
           <Button
             onClick={() => void handleSave()}
-            disabled={
-              !row ||
-              busy ||
-              !pageHasChanges ||
-              (activeSection === "official-team" && !channelState.canSave)
-            }
+            disabled={!row || busy || !pageHasChanges || !pageCanSave}
           >
             {busy ? "保存中…" : "保存当前页"}
           </Button>

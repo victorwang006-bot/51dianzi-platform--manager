@@ -87,13 +87,13 @@ function OrderList() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6" data-admin-page-family="platform-orders-list">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header" data-admin-header="primary">
-          <div>
+      <div className="space-y-6 p-4 sm:p-6" data-admin-page-family="platform-orders-list" data-admin-list-page="true">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header" data-admin-header="primary" data-admin-list-header="true">
+          <div data-admin-list-heading="true">
             <h1 className="text-2xl font-semibold tracking-tight aui-page-title">平台订单</h1>
             <p className="mt-1 text-sm text-muted-foreground">商城用户下单与履约记录；与客户管理中的销售订单、采购管理中的采购订单分开管理。</p>
           </div>
-          <Button variant="outline" onClick={() => void Promise.all([query.refetch(), statsQuery.refetch()])} disabled={isRefreshing}>
+          <Button data-admin-list-actions="true" variant="outline" onClick={() => void Promise.all([query.refetch(), statsQuery.refetch()])} disabled={isRefreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />刷新
           </Button>
         </div>

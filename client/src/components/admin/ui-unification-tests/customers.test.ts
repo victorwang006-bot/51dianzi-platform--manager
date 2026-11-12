@@ -75,13 +75,15 @@ describe("customer list unified presentation contract", () => {
     expect(attribute(summary, "identityKey")).toBe("identityKey={contactScope.identityKey}");
     expect(source).toContain("withCustomerContactScope(contactScope.scope, { customerIds: pageCustomerIds })");
     expect(source).toContain("enabled: contactScope.ready && Boolean(contactScope.scope) && pageCustomerIds.length > 0");
-    expect(source).toContain('const scope = delegatedStars ? "all" : canManageAll ? appliedFilters.scope : "mine"');
-    expect(source).toContain('assignedUserId: stars.targetUserId');
+    expect(source).toContain('const scope = canReadAll ? appliedFilters.scope : "mine"');
+    expect(source).toMatch(/canReadAll\s*&&\s*scope === "all"\s*&&\s*Number\.isInteger\(assignedUserId\)\s*&&\s*assignedUserId > 0/);
+    expect(source).toContain('starMode: "assignee" as const');
+    expect(source).toContain('customer.starUserId === customer.assignedUserId');
   });
 
   it("retains customer navigation, archived restrictions, creation draft and pagination handlers", () => {
-    expect(source).toContain("navigate(`/customers/${customer.id}`)");
-    expect(source).toContain("navigate(`/customers/${customer.id}?follow=1`)");
+    expect(source).toContain('navigate(customerWorkbenchLocation(customer.id, "overview"))');
+    expect(source).toContain('navigate(customerWorkbenchLocation(customer.id, "followups", "follow=1"))');
     expect(source).toContain('disabledReason={customer.archivedAt ? "该客户已归档，不能新增跟进" : undefined}');
     expect(source).toContain('disabledReason={customer.archivedAt ? "该客户已归档，不能录入需求" : undefined}');
     expect(source).toContain("onClick={() => createOpen ? collapseCreate() : setCreateOpen(true)}");
@@ -105,7 +107,13 @@ describe("customer list unified presentation contract", () => {
       expect(item.prop).not.toMatch(/^(zoom|transform|scale)$/);
     });
     stylesheet.walkRules(rule => {
-      for (const selector of rule.selectors) expect(selector.startsWith(".customer-list-page ") || selector === ".customer-list-page").toBe(true);
+      for (const selector of rule.selectors) {
+        const customerScoped = selector.startsWith(".customer-list-page ") || selector === ".customer-list-page";
+        const compactLocationScoped = selector.startsWith(".admin-workspace-shell__main:has(")
+          && selector.includes(".customer-list-page")
+          && selector.includes('[data-admin-navigation="current-location"]');
+        expect(customerScoped || compactLocationScoped).toBe(true);
+      }
     });
   });
 });

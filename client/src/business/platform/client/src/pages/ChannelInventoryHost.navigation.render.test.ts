@@ -66,7 +66,7 @@ function materialMenuItem(name: string) {
 }
 function selectCurrentPageForDeletion() {
   expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull();
-  const select = button("选择");
+  const select = button("批量操作");
   expect(select.disabled).toBe(false);
   click(select);
   expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
@@ -180,6 +180,7 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
     expect(new URLSearchParams(window.location.search).get("ciBatchId")).toBe("81");
     expect(button("返回上传批次").disabled).toBe(false);
     expect(runtime.inputs.at(-1)).toMatchObject({ ...context, uploadBatchId: 81, page: 1 });
+    click(required(document.querySelector('[aria-label="高级库存筛选"]')));
     expect(required(document.querySelector<HTMLInputElement>('[aria-label="筛选上传批次 ID"]')).value).toBe("81");
     expect(required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')).disabled).toBe(true);
     renderHost(); await settle(); expect(hostNavigate).toHaveBeenCalledTimes(1);
@@ -239,6 +240,8 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
   it("generic tab intent cannot grant native read authorization", async () => {
     runtime.scope.officialInventoryPermissions.read = false; selectHostTab("trash"); renderHost(); await settle();
     expect(document.body.textContent).toContain("没有渠道库存查看权限");
+    expect(document.body.textContent).toContain("有效官方员工身份及当前渠道分配");
+    expect(document.body.textContent).not.toMatch(/选择.*企业|切换.*企业|原生查看授权/);
     expect(runtime.inputs).toHaveLength(0); expect(runtime.client.listDeletedMaterials.query).not.toHaveBeenCalled();
   });
 });
@@ -323,9 +326,10 @@ describe("durable exact batch navigation and return", () => {
   it("inventory filter refinements never overwrite the source batch-list return state", async () => {
     const origin = channelInventoryBatchListLocation({ channelId: "11", archived: "all", page: 2 });
     setHostTestLocation(channelInventoryBatchMaterialLocation(81, origin)!, "replace"); renderHost(); await settle();
+    click(required(document.querySelector('[aria-label="高级库存筛选"]')));
     const input = required(document.querySelector<HTMLInputElement>('[aria-label="筛选上传批次 ID"]'));
     act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, "82"); input.dispatchEvent(new Event("input", { bubbles: true })); });
-    click(button("确定")); expect(runtime.inputs.at(-1)).toMatchObject({ uploadBatchId: 82, page: 1, channelId: undefined });
+    click(button("搜索")); expect(runtime.inputs.at(-1)).toMatchObject({ uploadBatchId: 82, page: 1, channelId: undefined });
     click(button("返回上传批次")); await settle(); expect(window.location.search).toBe(origin.slice(origin.indexOf("?")));
   });
   it("shows only the exact server-readable reverse batch without exposing hidden IDs or guessing missing metadata", async () => {
@@ -382,15 +386,17 @@ describe("approved Host ciView and More entry contract", () => {
     expect(hostNavigate).not.toHaveBeenCalled();
   });
 
-  it("the current-channel return uses view helper to navigate to channels and re-reads its real list", async () => {
+  it("the toolbar auto-selects one verified channel and switches back to flat via the original URL bridge", async () => {
     runtime.team = runtime.query(page([{ ...row, canViewSource: true }], { canWrite: true, canFilterSource: false }));
-    selectHostView("channels"); renderHost(); await settle(); click(button("查看该渠道库存")); await settle();
-    expect(document.querySelector(".ci-supply-location")?.textContent).toContain("授权渠道");
+    selectHostView("channels"); renderHost(); await settle();
+    expect(required(document.querySelector<HTMLSelectElement>('[aria-label="选择已授权库存渠道"]')).value).toBe("11");
     expect(runtime.inputs.at(-1)).toMatchObject({ ...context, channelId: 11 });
-    click(button("返回渠道列表")); await settle();
-    expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials&ciView=channels"]]);
-    expect(document.querySelector(".ci-supply-location")).toBeNull();
-    expect(document.querySelector('[aria-label="按渠道查看库存"]')).not.toBeNull();
+    const view = required(document.querySelector<HTMLSelectElement>('[aria-label="库存查看方式"]'));
+    act(() => { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(view, "flat"); view.dispatchEvent(new Event("change", { bubbles: true })); });
+    await settle();
+    expect(hostNavigate.mock.calls).toEqual([["/channel-inventory?ciTab=materials&ciView=flat"]]);
+    expect(runtime.inputs.at(-1)).toMatchObject({ channelId: undefined, page: 1 });
+    expect(document.querySelector('[aria-label="按渠道查看库存"]')).toBeNull();
   });
 
   it.each(["supply", "batch"])("a normal top-entry inventory route clears old %s targeting rather than retaining a prior source", async target => {
@@ -432,5 +438,74 @@ describe("approved Host ciView and More entry contract", () => {
     expect(document.querySelector('[aria-label="更多库存管理"]')).toBeNull();
     expect(runtime.client.listUploadBatches.query).not.toHaveBeenCalled();
     expect(runtime.client.listDeletedMaterials.query).not.toHaveBeenCalled();
+  });
+});
+
+function chooseVerifiedChannel(id: string) {
+  const select = required(document.querySelector<HTMLSelectElement>('[aria-label="选择已授权库存渠道"]'));
+  act(() => { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(select, id); select.dispatchEvent(new Event("change", { bubbles: true })); });
+}
+describe("20261112 compact inventory view and fail-closed channel integration", () => {
+  it("native read plus stocks.read can select the assigned own channel without inventory.manage or native write", async () => {
+    runtime.scope.officialInventoryPermissions.write = false;
+    runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["stocks.read"], isOwner: false });
+    runtime.team = runtime.query(page([{ ...row, canViewSource: true, canEdit: false, canDelete: false, readOnly: true }], { canWrite: false, canFilterSource: false }));
+    runtime.client.listChannels.query.mockResolvedValue(page([{ ...channel, canEdit: false, readOnly: true }], { pageSize: 100, canWrite: false }));
+    selectHostView("channels"); renderHost(); await settle();
+    expect(runtime.client.listChannels.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 100 }, { signal: expect.any(AbortSignal) });
+    expect(required(document.querySelector<HTMLSelectElement>('[aria-label="选择已授权库存渠道"]')).value).toBe("11");
+    expect(runtime.inputs.length).toBeGreaterThan(0);
+    expect(runtime.inputs.every(input => input.channelId === 11)).toBe(true);
+    expect(document.querySelector(".ci-stock-edit-table tbody")?.textContent).toContain("NAV-ONE");
+    expect(Array.from(document.querySelectorAll("button")).some(item => item.textContent === "批量操作" || item.textContent === "单条上传")).toBe(false);
+    expect(runtime.mutations.createMaterial).not.toHaveBeenCalled();
+    expect(runtime.client.deleteMaterials.mutate).not.toHaveBeenCalled();
+  });
+  it("leaves zero assigned channels empty and never queries flat inventory", async () => {
+    runtime.client.listChannels.query.mockResolvedValue(page([], { pageSize: 100 }));
+    selectHostView("channels"); renderHost(); await settle();
+    expect(document.body.textContent).toContain("暂无分配渠道");
+    expect(document.querySelector(".ci-stock-edit-table")).toBeNull();
+    expect(runtime.inputs).toHaveLength(0);
+    expect(document.querySelector('[aria-label="库存查看方式"]')).not.toBeNull();
+  });
+  it("multiple authorized channels require a selection, never offer all, and query the exact selected ID", async () => {
+    runtime.client.listChannels.query.mockResolvedValue(page([channel, { ...channel, id: 12, name: "第二授权渠道" }], { pageSize: 100 }));
+    runtime.team = runtime.query(page([{ ...row, canViewSource: true }], { canWrite: true, canFilterSource: false }));
+    selectHostView("channels"); renderHost(); await settle();
+    expect(runtime.inputs).toHaveLength(0);
+    expect(Array.from(required(document.querySelector<HTMLSelectElement>('[aria-label="选择已授权库存渠道"]')).options).map(item => item.value)).toEqual(["", "12", "11"]);
+    chooseVerifiedChannel("12"); await settle();
+    expect(runtime.inputs.length).toBeGreaterThan(0);
+    expect(runtime.inputs.every(input => input.channelId === 12)).toBe(true);
+    expect(document.querySelector(".ci-stock-edit-table")).not.toBeNull();
+    expect(document.body.textContent).not.toContain("全部渠道");
+  });
+  it("focus revalidation clears selected rows before a delayed revoked-channel response, without a flat fallback", async () => {
+    runtime.team = runtime.query(page([{ ...row, canViewSource: true }], { canWrite: true, canFilterSource: false }));
+    selectHostView("channels"); renderHost(); await settle();
+    expect(document.querySelector(".ci-stock-edit-table tbody")?.textContent).toContain("NAV-ONE");
+    let finish!: (value: unknown) => void;
+    runtime.client.listChannels.query.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    runtime.inputs = [];
+    act(() => window.dispatchEvent(new Event("focus")));
+    expect(document.querySelector(".ci-stock-edit-table")).toBeNull();
+    expect(runtime.inputs).toHaveLength(0);
+    await act(async () => finish(page([], { pageSize: 100 })));
+    await settle();
+    expect(document.body.textContent).toContain("暂无分配渠道");
+    expect(document.body.textContent).not.toContain("NAV-ONE");
+    expect(runtime.inputs).toHaveLength(0);
+  });
+  it("native read revocation removes the view selector and channel/stock rows instead of trusting old options", async () => {
+    runtime.team = runtime.query(page([{ ...row, canViewSource: true }], { canWrite: true, canFilterSource: false }));
+    selectHostView("channels"); renderHost(); await settle();
+    runtime.scope.officialInventoryPermissions.read = false; runtime.inputs = []; runtime.client.listChannels.query.mockClear();
+    renderHost(); await settle();
+    expect(document.querySelector('[aria-label="库存查看方式"]')).toBeNull();
+    expect(document.querySelector('[aria-label="选择已授权库存渠道"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("NAV-ONE");
+    expect(runtime.inputs).toHaveLength(0);
+    expect(runtime.client.listChannels.query).not.toHaveBeenCalled();
   });
 });

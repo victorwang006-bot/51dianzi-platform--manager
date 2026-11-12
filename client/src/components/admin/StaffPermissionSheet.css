@@ -5,7 +5,10 @@
   font-size: var(--admin-content-dialog-title-size, 18px);
   line-height: 24px;
 }
-body[data-admin-readability="true"] [data-staff-permission-sheet] .staff-permission-panel h3 {
+body[data-admin-readability="true"]
+  [data-staff-permission-sheet]
+  .staff-permission-panel
+  h3 {
   font-size: var(--admin-content-section-title-size, 16px);
   line-height: 22px;
 }
@@ -44,4 +47,56 @@ body[data-admin-readability="true"] [data-staff-permission-sheet] .staff-permiss
   height: var(--admin-content-control-height, 32px);
   white-space: nowrap;
   font-size: var(--admin-content-font-label, 12px);
+}
+
+[data-staff-permission-sheet] .staff-permission-template {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+[data-staff-permission-sheet] .staff-permission-template label {
+  font-size: var(--admin-content-font-label, 12px);
+}
+[data-staff-permission-sheet] .staff-permission-template select {
+  min-width: 0;
+  height: var(--admin-content-control-height, 32px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  background: var(--background);
+  font-size: var(--admin-content-font-body, 12px);
+}
+[data-staff-permission-sheet] .staff-permission-template select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+[data-staff-permission-sheet] .staff-permission-advanced {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+[data-staff-permission-sheet] .staff-permission-advanced summary {
+  cursor: pointer;
+  font-size: var(--admin-content-font-label, 12px);
+  line-height: 24px;
+}
+[data-staff-permission-sheet] .staff-permission-advanced[open] > :not(summary) {
+  margin-top: 8px;
+}
+[data-staff-permission-sheet] .staff-permission-service-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
+  color: var(--muted-foreground);
+  font-size: var(--admin-content-font-caption, 11px);
+}
+@media (max-width: 520px) {
+  [data-staff-permission-sheet] .staff-permission-template {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  [data-staff-permission-sheet] .staff-permission-template button {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
 }

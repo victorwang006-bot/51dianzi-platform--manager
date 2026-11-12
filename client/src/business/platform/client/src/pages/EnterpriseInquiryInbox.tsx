@@ -107,6 +107,7 @@ export default function EnterpriseInquiryInbox() {
   return <PlatformLayout>
     <AdminPage className="w-full min-w-0" data-enterprise-inquiry-inbox>
       <AdminPageHeader
+        list
         title={<span id="enterprise-inquiry-list-title">企业询价</span>}
         description={ownerView ? "查看企业当前分配给您的询价接待业务。" : "仅展示后端分配给您接待的询价。"}
         actions={canReceive ? <span className="rounded-full border border-[#d8e6f4] bg-[#f5f9fe] px-3 py-1 text-[11px] text-[#185fa5]">{ownerView ? "企业管理视图" : "我的接待询价"}</span> : null}

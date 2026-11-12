@@ -9,6 +9,7 @@ const runtime = vi.hoisted(() => {
   const supplySummary = vi.fn().mockResolvedValue({ items: [], canWrite: false });
   return {
     supplySummary,
+    location: "/customers",
     supplyNative: { read: false, write: false, note: false, authorizationVersion: "v1" },
     contextQuery: null as unknown,
     detailQuery: null as unknown,
@@ -42,6 +43,8 @@ vi.mock("../../../../../api/business-trpc", () => ({
   trpc: {
     useUtils: () => runtime.utils,
     enterprise: { me: { useQuery: () => query({ currentUserId: 7, enterprise: { id: 31 }, permissionKeys: ["inventory.manage"] }) } },
+    customerDemand: { list: { useQuery: () => query({ items: [], total: 0 }) } },
+    crmSalesOrder: { customerSummary: { useQuery: () => query(undefined) } },
     customer: {
       context: { useQuery: () => runtime.contextQuery },
       get: { useQuery: () => runtime.detailQuery },
@@ -155,7 +158,17 @@ vi.mock("../../hooks/usePageMemory", async () => {
     returnToPageSource: () => undefined,
   };
 });
-vi.mock("wouter", () => ({ useLocation: () => ["/customers", vi.fn()], useSearch: () => "", useParams: () => ({ id: "801" }) }));
+vi.mock("wouter", async () => {
+  const react = await import("react");
+  return {
+    useLocation: () => {
+      const [location, setLocation] = react.useState(runtime.location);
+      return [location, (next: string) => { runtime.location = next; setLocation(next); }];
+    },
+    useSearch: () => runtime.location.includes("?") ? runtime.location.slice(runtime.location.indexOf("?") + 1) : "",
+    useParams: () => ({ id: "801" }),
+  };
+});
 
 import { CustomerCreateForm } from "./CustomerCreateForm";
 import { CustomerContactsManager } from "./CustomerContactsManager";
@@ -181,6 +194,8 @@ function query<T>(data: T, overrides: Record<string, unknown> = {}) {
     isLoading: false,
     isFetching: false,
     isError: false,
+    isFetchedAfterMount: true,
+    isPlaceholderData: false,
     error: new Error("fixture query error"),
     refetch: vi.fn().mockResolvedValue({ error: null }),
     ...overrides,
@@ -227,6 +242,11 @@ function render(element: React.ReactNode) {
 }
 
 function configureFixtures() {
+  const forbidden = () => { throw new Error("OFFLINE_NETWORK_FORBIDDEN"); };
+  vi.stubGlobal("fetch", vi.fn(forbidden));
+  vi.stubGlobal("XMLHttpRequest", vi.fn(forbidden));
+  vi.stubGlobal("WebSocket", vi.fn(forbidden));
+  runtime.location = "/customers";
   runtime.supplyNative = { read: false, write: false, note: false, authorizationVersion: "v1" };
   runtime.supplySummary.mockReset().mockResolvedValue({ items: [], canWrite: false });
   __resetCustomerCreateDraftStoreForTests();
@@ -276,6 +296,10 @@ afterEach(async () => {
   root = null;
   container = null;
   document.body.replaceChildren();
+  expect(globalThis.fetch).not.toHaveBeenCalled();
+  expect(globalThis.XMLHttpRequest).not.toHaveBeenCalled();
+  expect(globalThis.WebSocket).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
 });
 
 describe("customer contacts restore UI", () => {
@@ -366,6 +390,26 @@ function seedLegacyDraft(pending = false) {
 }
 
 describe("business industry customer integration", () => {
+  it("does not expose cached or placeholder detail until this mount has verified both actor context and matching customer", async () => {
+    const contextData = (runtime.contextQuery as { data: unknown }).data;
+    const detailData = (runtime.detailQuery as { data: unknown }).data;
+    runtime.contextQuery = query(contextData, { isFetchedAfterMount: false });
+    const view = render(<CustomerDetail />);
+    await settle();
+    expect(document.body.textContent).toContain("加载客户详情中…");
+    expect(document.querySelector("h1")).toBeNull();
+    expect(runtime.updateBasic).not.toHaveBeenCalled();
+    runtime.contextQuery = query(contextData);
+    runtime.detailQuery = query(detailData, { isPlaceholderData: true });
+    view.rerender(<CustomerDetail />); await settle();
+    expect(document.body.textContent).toContain("加载客户详情中…");
+    expect(document.querySelector("h1")).toBeNull();
+    runtime.detailQuery = query(detailData);
+    view.rerender(<CustomerDetail />); await settle();
+    expect(document.querySelector("h1")?.textContent).toBe("列表客户一");
+    expect(runtime.updateBasic).not.toHaveBeenCalled();
+  });
+
   it("starts empty, requires industry on createMulti and submits the explicit selection", async () => {
     render(<CustomerCreateForm onCollapse={vi.fn()} onDiscarded={vi.fn()} onSaved={vi.fn()} onStateChange={vi.fn()} />);
     fillCustomer();
@@ -396,6 +440,7 @@ describe("business industry customer integration", () => {
   });
 
   it("requires a missing historical industry only when editing basic information", async () => {
+    runtime.location = "/customers/801?tab=company";
     render(<CustomerDetail />);
     await settle();
     expect(document.body.textContent).toContain("所属行业：未设置");
@@ -415,6 +460,7 @@ describe("business industry customer integration", () => {
   it("echoes a saved industry in the basic editor without auto-selecting other", async () => {
     const result = runtime.detailQuery as { data: { customer: object } };
     runtime.detailQuery = query({ ...result.data, customer: { ...result.data.customer, industryCode: "medical" } });
+    runtime.location = "/customers/801?tab=company";
     render(<CustomerDetail />);
     await settle();
     click(button("展开"));
@@ -426,6 +472,7 @@ describe("business industry customer integration", () => {
     render(<CustomerDetail />);
     await settle();
     click(button("新增跟进"));
+    expect(document.querySelector('#customer-panel-followups')?.hasAttribute("hidden")).toBe(false);
     change(required(document.querySelector('textarea[aria-label="跟进内容"]'), "missing follow-up") as HTMLTextAreaElement, "行业待补，正常追加跟进");
     click(button("保存跟进"));
     await settle();

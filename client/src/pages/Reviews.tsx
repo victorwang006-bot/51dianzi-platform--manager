@@ -143,15 +143,15 @@ export default function Reviews() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4 aui-page-header">
-          <div>
+      <div className="space-y-6" data-admin-list-page="true">
+        <div className="flex items-start justify-between gap-4 aui-page-header" data-admin-list-header="true">
+          <div data-admin-list-heading="true">
             <h1 className="text-2xl font-semibold text-slate-900 aui-page-title">评价管理</h1>
             <p className="mt-1 text-sm text-slate-500">
               查看实名评价、用户删除历史及平台处理记录；后台不可修改评价原文。
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>
+          <Button data-admin-list-actions="true" variant="outline" size="sm" onClick={refresh} disabled={busy}>
             {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
             刷新
           </Button>

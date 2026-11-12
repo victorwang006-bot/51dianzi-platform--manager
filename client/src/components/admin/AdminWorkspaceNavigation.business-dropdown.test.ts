@@ -13,7 +13,6 @@ const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths).ma
 }));
 type Item = typeof items[number];
 const groups = [
-  ["customers", "/workbench/customers"],
   ["customers", "/workbench/inquiries"], ["customers", "/workbench/orders"],
   ["inventory", "/workbench/inbound"], ["inventory", "/workbench/outbound"],
   ["procurement", "/workbench/procurement-demands"], ["procurement", "/workbench/procurement-orders"],
@@ -45,7 +44,7 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     const hover = new MouseEvent("pointerover", { bubbles: true });
     Object.defineProperty(hover, "pointerType", { value: "mouse" });
     await act(async () => button("business").dispatchEvent(hover));
-    expect(panel()).not.toBeNull(); expect(onPreload).toHaveBeenCalledWith(items.find(item => item.path === "/workbench/customers"));
+    expect(panel()).not.toBeNull(); expect(onPreload).toHaveBeenCalledWith(items.find(item => item.path === "/workbench/orders"));
     await click("business"); expect(panel()).not.toBeNull();
     expect(onNavigate).not.toHaveBeenCalled(); await click("business"); expect(panel()).toBeNull();
   });
@@ -54,7 +53,7 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     expect(Array.from(panel()!.querySelectorAll<HTMLButtonElement>("[data-navigation-choice]")).map(b => b.dataset.workspaceNavTarget))
       .toEqual(["group:customers", "group:inventory", "group:procurement"]);
     expect(panel(3)).toBeNull(); expect(panel()!.textContent).not.toContain("渠道库存");
-    await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(3);
+    await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(2);
     await click("group:inventory"); expect(host.querySelector('[data-business-submenu="customers"]')).toBeNull();
     expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(2);
   });
@@ -86,8 +85,8 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     await render("/workbench/channel-inventory", { items: subset(["/workbench/channel-inventory"]) });
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     expect(button("inventory").getAttribute("aria-current")).toBe("page");
-    expect(button("channel").hasAttribute("aria-current")).toBe(false);
-    expect(host.querySelectorAll('[data-channel-view]')).toHaveLength(2);
+    expect(host.querySelector('[data-workspace-nav-target="channel"]')).toBeNull();
+    expect(host.querySelectorAll('[data-channel-view]')).toHaveLength(1);
   });
   it("ops页能展开business但只按真实route高亮ops", async () => {
     await render("/materials"); await click("business"); expect(button("operations").getAttribute("aria-current")).toBe("location");
@@ -143,8 +142,8 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
   });
   it("键盘Enter进入二级、右键进入三级、左键返回、Escape关闭", async () => {
     await render(); await key("business", "Enter"); expect(document.activeElement).toBe(button("group:customers"));
-    await key("group:customers", "ArrowRight"); expect(document.activeElement).toBe(button("/workbench/customers"));
-    await key("/workbench/customers", "ArrowLeft"); expect(panel(3)).toBeNull(); expect(document.activeElement).toBe(button("group:customers"));
+    await key("group:customers", "ArrowRight"); expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    await key("/workbench/inquiries", "ArrowLeft"); expect(panel(3)).toBeNull(); expect(document.activeElement).toBe(button("group:customers"));
     await key("group:customers", "Escape"); expect(panel()).toBeNull(); expect(document.activeElement).toBe(button("business"));
   });
   it("面板内部滚动不关，窗口resize关闭；Tab不设置键盘陷阱", async () => {

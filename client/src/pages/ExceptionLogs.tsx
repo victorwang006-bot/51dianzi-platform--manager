@@ -134,15 +134,16 @@ export default function ExceptionLogs() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6" data-admin-header-family="exception-logs-inline-heading">
-        <div className="flex items-start justify-between gap-4 aui-page-header" data-admin-header="primary">
+      <div className="space-y-6" data-admin-header-family="exception-logs-inline-heading" data-admin-list-page="true">
+        <div className="flex items-start justify-between gap-4 aui-page-header" data-admin-header="primary" data-admin-list-header="true">
           <div className="aui-page-heading">
-            <h1 className="text-2xl font-semibold text-slate-900 aui-page-title">异常日志</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 aui-page-title" data-admin-list-title="true">异常日志</h1>
             <p className="mt-1 text-sm text-slate-500 aui-page-description">
               自动记录服务器错误、攻击探测、认证异常与外部服务故障。日志保留 30 天，超期自动清理。
             </p>
           </div>
           <Button
+            data-admin-list-actions="true"
             variant="outline"
             size="sm"
             onClick={() => {

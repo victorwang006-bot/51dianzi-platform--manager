@@ -611,6 +611,7 @@ export default function InboundManagement() {
     <PlatformLayout>
       <AdminPage className="erp-ui inbound-management-page">
         <AdminPageHeader
+          list
           title="入库管理"
           description="管理在途、入库、采购付款与验收记录"
           actions={

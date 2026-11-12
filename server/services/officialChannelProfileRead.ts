@@ -18,12 +18,12 @@ function officialChannelProfileAuthorityRows(result: unknown): Record<string, un
  * (member administration locks target account before team and could deadlock).
  * No permission, role, assignment, stock or historical record is written here. */
 export async function withOfficialChannelProfileRead<T>(ctx: TrpcContext, staffUserId: number,
-  run: (projection: Projection | undefined) => Promise<T>): Promise<T> {
+  run: (projection: Projection | undefined) => Promise<T>, allowUnassignedPublicRead = false): Promise<T> {
   const database = await getDb();
   if (!database) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "渠道档案团队权限暂时无法核实" });
   return database.transaction(async tx => {
     const access = await loadOfficialAccess(tx, officialActorFromContext(ctx), "officialInventory.read");
-    if (!access.teamId && !access.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未配置有效官方团队" });
+    if (!access.teamId && !access.isSuperAdmin && !allowUnassignedPublicRead) throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未配置有效官方团队" });
     if (access.teamRole !== "leader" || !access.teamId) return run(undefined);
     const found = officialChannelProfileAuthorityRows(await tx.execute(sql`SELECT b.frontUserId AS ownerUserId
       FROM official_channel_team_members tm

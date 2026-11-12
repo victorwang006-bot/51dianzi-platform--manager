@@ -177,6 +177,7 @@ export default function ProcurementOrders() {
     <PlatformLayout>
       <AdminPage className="procurement-orders-page mx-auto max-w-[1480px] space-y-3">
         <AdminPageHeader
+          list
           title={<>采购订单 <span className="procurement-order-context rounded-md bg-blue-50 px-2 py-0.5 font-medium text-[#185FA5]">采购管理</span></>}
           description="独立管理采购下单、人工付款进度、发货、入库关联与供应商发票。"
           actions={<PrimaryButton onClick={() => { setCreateSource("manual"); setCreateOpen(true); }}><Plus className="size-3.5" />新建采购订单</PrimaryButton>}
