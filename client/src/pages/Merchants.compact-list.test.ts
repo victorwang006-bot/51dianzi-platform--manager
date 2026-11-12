@@ -74,9 +74,10 @@ async function type(input: HTMLInputElement, value: string) {
 const latestInput = () => mocks.list.mock.calls.at(-1)?.[0];
 
 describe("实际Merchants普通列表紧凑布局（离线，不加载凭据）", () => {
-  it("显式紧凑页头保留唯一H1、只读二级定位、八列表头及详情真链接", async () => {
+  it("共用紧凑工具栏保留唯一不可见可访问H1、只读二级定位、八列表头及详情真链接", async () => {
     await render(); expect(host.querySelectorAll("h1")).toHaveLength(1);
-    expect(host.querySelector('[data-admin-list-header="true"] h1')?.textContent).toBe("商户管理");
+    expect(host.querySelector('h1.d51-compact-list-title')?.textContent).toBe("商户管理");
+    expect(host.querySelectorAll(".d51-compact-list-toolbar")).toHaveLength(1);
     expect(host.querySelector("h1")?.closest('[hidden], [aria-hidden="true"]')).toBeNull();
     expect([...host.querySelectorAll("li")].map(node => node.lastElementChild?.textContent)).toEqual(["平台运营", "基础资料", "商户管理"]);
     expect([...host.querySelectorAll("th")].map(node => node.textContent)).toEqual(["商户编号", "公司名称", "用户名", "销售负责人", "ERP", "协议", "入驻时间", "操作"]);
@@ -95,6 +96,6 @@ describe("实际Merchants普通列表紧凑布局（离线，不加载凭据）"
   it("空数据仍显示真实空状态，列表标题保持可访问", async () => {
     mocks.list.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
     await render(); expect(host.textContent).toContain("暂无商户数据");
-    expect(host.querySelector('[data-admin-list-header="true"] h1')?.textContent).toBe("商户管理");
+    expect(host.querySelector('h1.d51-compact-list-title')?.textContent).toBe("商户管理");
   });
 });

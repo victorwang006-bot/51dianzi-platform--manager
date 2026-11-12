@@ -14,11 +14,10 @@ import StaffPermissionSheet, {
 import { EmptyState, Pagination, StatusBadge } from "@/components/admin/shared";
 import {
   AdminDataPanel,
-  AdminFilterBar,
   AdminPage,
-  AdminPageHeader,
 } from "@/components/admin/UnifiedAdminPage";
 import DashboardLayout from "@/components/DashboardLayout";
+import { CompactListToolbar } from "@/business/platform/client/src/components/ui/CompactListToolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -956,32 +955,7 @@ export default function Staff() {
   return (
     <DashboardLayout>
       <AdminPage data-staff-page className="staff-management-page">
-        <AdminPageHeader
-          title="员工与权限"
-          actions={
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void refresh()}
-                disabled={
-                  adminUsersQuery.isFetching || navigationQuery.isFetching
-                }
-              >
-                <RefreshCw
-                  className={`mr-1 h-4 w-4 ${adminUsersQuery.isFetching || navigationQuery.isFetching ? "animate-spin" : ""}`}
-                />
-                刷新
-              </Button>
-              {canManageAdmin ? (
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="mr-1 h-4 w-4" />
-                  新增员工
-                </Button>
-              ) : null}
-            </div>
-          }
-        />
+
 
         {businessNotice ? (
           <div
@@ -1011,7 +985,30 @@ export default function Staff() {
           </div>
         ) : null}
 
-        <AdminFilterBar role="search" aria-label="员工筛选">
+        <CompactListToolbar
+          title="员工与权限"
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void refresh()}
+                disabled={adminUsersQuery.isFetching || navigationQuery.isFetching}
+              >
+                <RefreshCw
+                  className={`mr-1 h-4 w-4 ${adminUsersQuery.isFetching || navigationQuery.isFetching ? "animate-spin" : ""}`}
+                />
+                刷新
+              </Button>
+              {canManageAdmin ? (
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  新增员工
+                </Button>
+              ) : null}
+            </div>
+          }
+        >
           <Input
             value={keyword}
             onChange={event => setKeyword(event.target.value)}
@@ -1021,9 +1018,7 @@ export default function Staff() {
           />
           <select
             value={status}
-            onChange={event =>
-              setStatus(event.target.value as StaffStatusFilter)
-            }
+            onChange={event => setStatus(event.target.value as StaffStatusFilter)}
             className="h-8 rounded-md border border-input bg-background px-2 text-xs"
             aria-label="员工状态筛选"
           >
@@ -1047,7 +1042,7 @@ export default function Staff() {
               </option>
             ))}
           </select>
-        </AdminFilterBar>
+        </CompactListToolbar>
         <AdminDataPanel aria-label="员工列表">
           {adminUsersQuery.isLoading ||
           (enterpriseMembersQuery.isPending &&

@@ -90,9 +90,10 @@ describe("staff unified presentation", () => {
     expect(attributes("AdminPage", "className")).toEqual([
       '"staff-management-page"',
     ]);
-    expect(attributes("AdminPageHeader", "title")).toEqual(['"员工与权限"']);
-    expect(attributes("AdminFilterBar", "role")).toEqual(['"search"']);
-    expect(attributes("AdminFilterBar", "aria-label")).toEqual(['"员工筛选"']);
+    expect(attributes("CompactListToolbar", "title")).toEqual(['"员工与权限"']);
+    expect(attributes("AdminPageHeader", "title")).toEqual([]);
+    expect(attributes("AdminFilterBar", "role")).toEqual([]);
+    expect(page).toContain('from "@/business/platform/client/src/components/ui/CompactListToolbar"');
     expect(attributes("AdminDataPanel", "aria-label")).toEqual(['"员工列表"']);
     expect(page).not.toContain("<CardHeader");
     expect(page).not.toContain("<PageHeader");

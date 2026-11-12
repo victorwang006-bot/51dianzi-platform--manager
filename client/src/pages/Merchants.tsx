@@ -2,13 +2,13 @@ import { useAdminPageMemory, useAdminRememberedState, useAdminUrlState, useAdmin
 import { MerchantPagination } from "@/components/admin/MerchantNavigation";
 import {
   EmptyState,
-  PageHeader,
   Pagination,
   StatusBadge,
   agreementStatusMap,
   formatDateTime,
 } from "@/components/admin/shared";
 import DashboardLayout from "@/components/DashboardLayout";
+import { CompactListToolbar } from "@/business/platform/client/src/components/ui/CompactListToolbar";
 import MerchantCreatedAtFilter, {
   type MerchantCreatedAtFilterValue,
 } from "@/components/MerchantCreatedAtFilter";
@@ -249,52 +249,59 @@ export default function Merchants() {
 
   return (
     <DashboardLayout>
-      <PageHeader list title="商户管理" description="ERP 开通审核、账号绑定、协议状态与结算账户配置" />
       <CnRegistrationReviewQueue onOpenDetail={setCnReviewMerchantId} />
 
       {/* 筛选栏 */}
-      <Card className="mb-4">
-        <CardContent className="py-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-[240px]">
-            <Input
-              placeholder="搜索公司名称 / 商户编号"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && doSearch()}
-              className="max-w-xs"
-            />
-            <Button variant="outline" size="sm" onClick={doSearch}>
-              <Search className="h-4 w-4 mr-1" />
-              搜索
-            </Button>
-          </div>
-          <MerchantCreatedAtFilter
-            value={createdAtFilter}
-            onChange={value => {
-              setCreatedAtFilter(value);
-              setPage(1);
-            }}
-          />
-          <SalesOwnerFilterCombobox
-            value={salesOwnerFilter}
-            onChange={value => {
-              setSalesOwnerFilter(value);
-              setPage(1);
-            }}
-            options={salesOwnerFilterOptions?.options ?? []}
-            canViewUnassigned={Boolean(salesOwnerFilterOptions?.canViewUnassigned)}
-          />
-          <Button type="button" size="sm" variant="outline" onClick={() => setOwnershipLookupOpen(true)}>
+      <CompactListToolbar
+        title="商户管理"
+        actions={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setOwnershipLookupOpen(true)}
+          >
             <ShieldCheck className="mr-1 h-4 w-4" />
             客户归属查询
           </Button>
-          {hasFilters && (
-            <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
-              重置
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        }
+      >
+        <div className="d51-compact-list-search-group">
+          <Input
+            placeholder="搜索公司名称 / 商户编号"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && doSearch()}
+            className="max-w-xs"
+          />
+          <Button variant="outline" size="sm" onClick={doSearch}>
+            <Search className="h-4 w-4 mr-1" />
+            搜索
+          </Button>
+        </div>
+        <MerchantCreatedAtFilter
+          value={createdAtFilter}
+          onChange={value => {
+            setCreatedAtFilter(value);
+            setPage(1);
+          }}
+        />
+        <SalesOwnerFilterCombobox
+          value={salesOwnerFilter}
+          onChange={value => {
+            setSalesOwnerFilter(value);
+            setPage(1);
+          }}
+          options={salesOwnerFilterOptions?.options ?? []}
+          canViewUnassigned={Boolean(salesOwnerFilterOptions?.canViewUnassigned)}
+        />
+      
+        {hasFilters && (
+          <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
+            重置
+          </Button>
+        )}
+      </CompactListToolbar>
 
       {/* 列表 */}
       <Card>

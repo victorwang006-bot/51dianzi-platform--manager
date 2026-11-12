@@ -24,7 +24,8 @@ import { CustomerDemandDialog } from "../components/customerDemands/CustomerDema
 import { EMPTY_CUSTOMER_FORM, errorMessage } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
 import { customerWorkbenchLocation } from "../components/customers/customerWorkbench";
-import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
+import { AdminPage, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
+import { CompactListToolbar } from "@/business/platform/client/src/components/ui/CompactListToolbar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -381,8 +382,113 @@ export default function CustomerList() {
   return (
     <PlatformLayout>
       <AdminPage className="customer-list-page">
-      <AdminPageHeader title="客户列表" actions={
-        <div className="flex flex-wrap items-center gap-2">
+
+      {appliedFilters.starredOnly === true && !stars.ready && !stars.failed && !stars.invalidTarget ?
+        <p role="status" className="customer-list-caption mb-2">正在核验重点客户权限；仅看重点客户筛选已保留，暂不读取客户结果。</p> : null}
+      {stars.failed || stars.invalidTarget ? <div role="alert" className="customer-list-caption mb-2">
+        重点客户权限读取失败，其他客户操作仍可使用。
+        <CustomerSupplyAction onClick={stars.refresh}>重新读取重点客户权限</CustomerSupplyAction>
+      </div> : null}
+      {stars.notice ? <div role={stars.unknown ? "alert" : "status"} aria-live="polite" className="customer-list-caption mb-2">
+        {stars.notice}
+        {stars.unknown ? <CustomerSupplyAction onClick={stars.retry}>重试原重点客户请求</CustomerSupplyAction> : null}
+      </div> : null}
+
+      <CompactListToolbar title="客户列表" actions={
+          <Button
+            ref={createButtonRef}
+            type="button"
+            className="customer-list-control bg-[#185FA5] hover:bg-[#0C447C]"
+            aria-expanded={createOpen}
+            aria-controls="customer-entry-panel"
+            disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
+            onClick={() => createOpen ? collapseCreate() : setCreateOpen(true)}
+          >
+            {createOpen ? <ChevronUp className="mr-1 h-3.5 w-3.5" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
+            {createOpen ? "收起录入" : "录入客户"}
+          </Button>
+      } extra={
+        moreFiltersOpen ? (
+          <div id="customer-list-more-filters" className="customer-list-filter-row customer-list-more-filters" role="group" aria-label="更多筛选条件">
+            <Select
+              value={draftFilters.stage || "all"}
+              onValueChange={value =>
+                updateDraft(
+                  "stage",
+                  value === "all" ? "" : (value as StageFilter)
+                )
+              }
+            >
+              <SelectTrigger
+                aria-label="按客户阶段筛选"
+                className="customer-list-control w-[140px] bg-white"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部阶段</SelectItem>
+                {CUSTOMER_STAGES.map(stage => (
+                  <SelectItem key={stage} value={stage}>
+                    {CUSTOMER_STAGE_LABELS[stage]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {canReadAll && draftFilters.scope === "all" ? (
+              <Select
+                value={draftFilters.assignedUserId || "all"}
+                onValueChange={value =>
+                  updateDraft("assignedUserId", value === "all" ? "" : value)
+                }
+              >
+                <SelectTrigger
+                  aria-label="按负责人筛选"
+                  className="customer-list-control w-[156px] bg-white"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部负责人</SelectItem>
+                  {(canManageAll ? contextQuery.data?.members ?? [] : stars.targets).map(member => (
+                    <SelectItem
+                      key={member.userId}
+                      value={String(member.userId)}
+                    >
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            <Select
+              value={draftFilters.archived ? "archived" : "active"}
+              onValueChange={value =>
+                updateDraft("archived", value === "archived")
+              }
+            >
+              <SelectTrigger
+                aria-label="按归档状态筛选"
+                className="customer-list-control w-[140px] bg-white"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">在档客户</SelectItem>
+                <SelectItem value="archived">已归档客户</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className={toolbarActionClass}
+              onClick={applyFilters}
+            >
+              确定
+            </Button>
+          </div>
+        ) : null
+      }>
           {canReadAll ? (
             <Select
               value={appliedFilters.scope}
@@ -400,35 +506,7 @@ export default function CustomerList() {
               </SelectContent>
             </Select>
           ) : null}
-          <Button
-            ref={createButtonRef}
-            type="button"
-            className="customer-list-control bg-[#185FA5] hover:bg-[#0C447C]"
-            aria-expanded={createOpen}
-            aria-controls="customer-entry-panel"
-            disabled={!d51Ready || createState.busy || contextQuery.isPending || contextQuery.isError}
-            onClick={() => createOpen ? collapseCreate() : setCreateOpen(true)}
-          >
-            {createOpen ? <ChevronUp className="mr-1 h-3.5 w-3.5" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
-            {createOpen ? "收起录入" : "录入客户"}
-          </Button>
-        </div>
-      } />
-
-      {appliedFilters.starredOnly === true && !stars.ready && !stars.failed && !stars.invalidTarget ?
-        <p role="status" className="customer-list-caption mb-2">正在核验重点客户权限；仅看重点客户筛选已保留，暂不读取客户结果。</p> : null}
-      {stars.failed || stars.invalidTarget ? <div role="alert" className="customer-list-caption mb-2">
-        重点客户权限读取失败，其他客户操作仍可使用。
-        <CustomerSupplyAction onClick={stars.refresh}>重新读取重点客户权限</CustomerSupplyAction>
-      </div> : null}
-      {stars.notice ? <div role={stars.unknown ? "alert" : "status"} aria-live="polite" className="customer-list-caption mb-2">
-        {stars.notice}
-        {stars.unknown ? <CustomerSupplyAction onClick={stars.retry}>重试原重点客户请求</CustomerSupplyAction> : null}
-      </div> : null}
-
-      <AdminFilterBar className="customer-list-filters mb-3" aria-label="客户筛选">
-        <div className="customer-list-filter-row customer-list-basic-filters" role="group" aria-label="基础筛选">
-          <div className="customer-list-search-group">
+          <div className="d51-compact-list-search-group customer-list-search-group">
             <Input
               placeholder="搜索客户名称、联系人或电话"
               aria-label="搜索客户名称、联系人或电话"
@@ -519,89 +597,7 @@ export default function CustomerList() {
               />
             </Button>
           </div>
-        </div>
-
-        {moreFiltersOpen ? (
-          <div id="customer-list-more-filters" className="customer-list-filter-row customer-list-more-filters" role="group" aria-label="更多筛选条件">
-            <Select
-              value={draftFilters.stage || "all"}
-              onValueChange={value =>
-                updateDraft(
-                  "stage",
-                  value === "all" ? "" : (value as StageFilter)
-                )
-              }
-            >
-              <SelectTrigger
-                aria-label="按客户阶段筛选"
-                className="customer-list-control w-[140px] bg-white"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部阶段</SelectItem>
-                {CUSTOMER_STAGES.map(stage => (
-                  <SelectItem key={stage} value={stage}>
-                    {CUSTOMER_STAGE_LABELS[stage]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {canReadAll && draftFilters.scope === "all" ? (
-              <Select
-                value={draftFilters.assignedUserId || "all"}
-                onValueChange={value =>
-                  updateDraft("assignedUserId", value === "all" ? "" : value)
-                }
-              >
-                <SelectTrigger
-                  aria-label="按负责人筛选"
-                  className="customer-list-control w-[156px] bg-white"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部负责人</SelectItem>
-                  {(canManageAll ? contextQuery.data?.members ?? [] : stars.targets).map(member => (
-                    <SelectItem
-                      key={member.userId}
-                      value={String(member.userId)}
-                    >
-                      {member.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : null}
-            <Select
-              value={draftFilters.archived ? "archived" : "active"}
-              onValueChange={value =>
-                updateDraft("archived", value === "archived")
-              }
-            >
-              <SelectTrigger
-                aria-label="按归档状态筛选"
-                className="customer-list-control w-[140px] bg-white"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">在档客户</SelectItem>
-                <SelectItem value="archived">已归档客户</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className={toolbarActionClass}
-              onClick={applyFilters}
-            >
-              确定
-            </Button>
-          </div>
-        ) : null}
-      </AdminFilterBar>
+      </CompactListToolbar>
 
       {createOpen && (
         <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">

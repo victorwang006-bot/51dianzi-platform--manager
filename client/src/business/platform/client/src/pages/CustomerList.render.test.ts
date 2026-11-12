@@ -247,14 +247,15 @@ describe("actual CustomerList layered filters v20", () => {
     const draft = { keyword: "待应用", grade: "B", stage: "quoted", scope: "mine", assignedUserId: "", due: "today", archived: true };
     runtime.remembered = { draftFilters: draft, page: 2 };
     await render();
-    const basic = host.querySelector('.customer-list-basic-filters[aria-label="基础筛选"]')!;
+    const basic = host.querySelector('.d51-compact-list-toolbar__filters')!;
     const moreButton = button("更多筛选", basic);
     expect(moreButton.getAttribute("aria-controls")).toBe("customer-list-more-filters");
     expect(moreButton.getAttribute("aria-expanded")).toBe("false");
     expect(button("搜索", basic)).toBeDefined();
     await click(moreButton);
     const expanded = host.querySelector('#customer-list-more-filters[aria-label="更多筛选条件"]')!;
-    expect(expanded.parentElement).toBe(basic.parentElement);
+    expect(expanded.closest('.d51-compact-list-toolbar')).toBe(basic.closest('.d51-compact-list-toolbar'));
+    expect(expanded.parentElement?.className).toBe('d51-compact-list-toolbar__extra');
     expect(basic.contains(expanded)).toBe(false);
     expect(expanded.querySelector('[aria-label="按客户阶段筛选"]')?.textContent).toBe("报价中");
     expect(expanded.querySelector('[aria-label="按负责人筛选"]')).toBeNull();

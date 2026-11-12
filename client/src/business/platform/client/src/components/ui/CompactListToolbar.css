@@ -1,0 +1,129 @@
+.d51-compact-list-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.d51-compact-list-toolbar {
+  --admin-control-height: 36px;
+  --admin-content-control-height: 36px;
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 12px !important;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* The embedded customer page already provides a 12px grid gap. */
+.d51-compact-list-toolbar:is(.customer-list-page > *) {
+  margin-bottom: 0 !important;
+}
+
+.d51-compact-list-title + .d51-compact-list-toolbar,
+.d51-compact-list-toolbar + * {
+  margin-top: 0 !important;
+}
+
+.d51-compact-list-toolbar__row,
+.d51-compact-list-toolbar__filters,
+.d51-compact-list-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.d51-compact-list-toolbar__filters {
+  flex: 1 1 0;
+  min-width: min(100%, 320px);
+}
+
+.d51-compact-list-toolbar__actions {
+  flex: 0 1 auto;
+  margin-inline-start: auto;
+}
+
+.d51-compact-list-toolbar .d51-compact-list-toolbar__filters .d51-compact-list-search-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 320px;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.d51-compact-list-toolbar__filters > div,
+.d51-compact-list-toolbar__actions > div,
+.d51-compact-list-toolbar__extra > div {
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.d51-compact-list-toolbar :where(input, select, button, [data-slot="select-trigger"]) {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  max-width: 100%;
+}
+
+.d51-compact-list-toolbar__filters > input {
+  flex: 0 1 230px;
+  width: 230px;
+  min-width: 0;
+  max-width: min(100%, 320px);
+}
+
+.d51-compact-list-toolbar .d51-compact-list-toolbar__filters .d51-compact-list-search-group > input {
+  flex: 1 1 160px;
+  width: 160px;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.d51-compact-list-toolbar__extra {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .d51-compact-list-toolbar {
+    --admin-control-height: 40px;
+    --admin-content-control-height: 40px;
+  }
+
+  .d51-compact-list-toolbar :where(input, select, button, [data-slot="select-trigger"]) {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .d51-compact-list-toolbar .d51-compact-list-toolbar__filters .customer-list-star {
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .d51-compact-list-toolbar__filters {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .d51-compact-list-toolbar .d51-compact-list-toolbar__filters .d51-compact-list-search-group {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .d51-compact-list-toolbar__actions {
+    max-width: 100%;
+  }
+}

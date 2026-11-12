@@ -37,13 +37,14 @@ function declaration(selector: string, property: string) {
 }
 
 describe("customer list unified presentation contract", () => {
-  it("uses the presentational page, compact header, filter bar and data panels", () => {
+  it("uses the presentational page, shared compact toolbar and data panels without a duplicate header", () => {
     expect(elements("AdminPage")).toHaveLength(1);
-    expect(elements("AdminPageHeader")).toHaveLength(1);
-    expect(attribute(elements("AdminPageHeader")[0], "title")).toBe('title="客户列表"');
-    expect(attribute(elements("AdminPageHeader")[0], "actions")).toContain("createButtonRef");
-    expect(elements("AdminFilterBar")).toHaveLength(1);
-    expect(attribute(elements("AdminFilterBar")[0], "aria-label")).toContain("客户筛选");
+    expect(elements("AdminPageHeader")).toHaveLength(0);
+    expect(elements("AdminFilterBar")).toHaveLength(0);
+    expect(elements("CompactListToolbar")).toHaveLength(1);
+    expect(attribute(elements("CompactListToolbar")[0], "title")).toBe('title="客户列表"');
+    expect(attribute(elements("CompactListToolbar")[0], "actions")).toContain("createButtonRef");
+    expect(attribute(elements("CompactListToolbar")[0], "extra")).toContain("moreFiltersOpen");
     expect(elements("AdminDataPanel")).toHaveLength(2);
     expect(elements("Card")).toHaveLength(0);
     expect(elements("h1")).toHaveLength(0);
