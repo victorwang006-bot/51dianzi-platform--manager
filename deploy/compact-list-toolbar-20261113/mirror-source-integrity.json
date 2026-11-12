@@ -1,0 +1,158 @@
+{
+  "status": "PASS",
+  "scope": "manager tracked business-platform mirror only; no canonical CustomerList replacement",
+  "baselinePath": "/home/ubuntu/work/51dianzi-platform--manager/client/src/pages/compact-list-test-fixtures/CustomerList.before-20261113.txt",
+  "pagePath": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/pages/CustomerList.tsx",
+  "baselineSha256": "bf701f1b449029e16fa8c8aca8e6a8805f24ddb107638f475d94ec1bf439c8ad",
+  "afterSha256": "5a215c93c83fa61d2d2c297740402b3ecc8ee7add1f0452388efc967d47164ca",
+  "tsParseDiagnostics": {
+    "baseline": 0,
+    "mirror": 0,
+    "component": 0
+  },
+  "unchangedPartitions": [
+    {
+      "name": "beforeMainReturnWithOnlyApprovedImportReplacement",
+      "beforeBytes": 18742,
+      "afterBytes": 18742,
+      "beforeSha256": "e00be232fad0ad3b1b445645ff1ff07926f90b2b609669b58cd491d2ec5df964",
+      "afterSha256": "e00be232fad0ad3b1b445645ff1ff07926f90b2b609669b58cd491d2ec5df964",
+      "byteExact": true
+    },
+    {
+      "name": "functionBusinessPreamble",
+      "beforeBytes": 15424,
+      "afterBytes": 15424,
+      "beforeSha256": "5b8b2ecf238d01baf9af4e85a7785851e01d82b669285b2a2e41d463ad198f7f",
+      "afterSha256": "5b8b2ecf238d01baf9af4e85a7785851e01d82b669285b2a2e41d463ad198f7f",
+      "byteExact": true
+    },
+    {
+      "name": "afterMainReturn",
+      "beforeBytes": 778,
+      "afterBytes": 778,
+      "beforeSha256": "6825230734bf1ba8a9976ac48cd38bb4dfdf7f4a3c0caa09979b5e211f72c91d",
+      "afterSha256": "6825230734bf1ba8a9976ac48cd38bb4dfdf7f4a3c0caa09979b5e211f72c91d",
+      "byteExact": true
+    },
+    {
+      "name": "independentStarredPermissionAndNoticeSiblings",
+      "beforeBytes": 883,
+      "afterBytes": 883,
+      "beforeSha256": "6d8569fbfc332148a9ac40b889cfbef120e16598936f5fd302ca1b3216796b40",
+      "afterSha256": "6d8569fbfc332148a9ac40b889cfbef120e16598936f5fd302ca1b3216796b40",
+      "byteExact": true
+    },
+    {
+      "name": "createPanelAndAllFollowingBusinessJSX",
+      "beforeBytes": 14574,
+      "afterBytes": 14574,
+      "beforeSha256": "4a7551a2f5cba9e7bf772cb470b8578a418dae364ba0c265a64410e674c85b3f",
+      "afterSha256": "4a7551a2f5cba9e7bf772cb470b8578a418dae364ba0c265a64410e674c85b3f",
+      "byteExact": true
+    }
+  ],
+  "relocatedFragments": [
+    {
+      "name": "completeScopeConditional",
+      "beforeBytes": 657,
+      "afterBytes": 657,
+      "beforeSha256": "bbc1c9c0fe45ec59874544c60d34ce66932078a7d61cedb34f34998dc8d8d69f",
+      "afterSha256": "bbc1c9c0fe45ec59874544c60d34ce66932078a7d61cedb34f34998dc8d8d69f",
+      "byteExact": true
+    },
+    {
+      "name": "completeCreateButton",
+      "beforeBytes": 617,
+      "afterBytes": 617,
+      "beforeSha256": "bf2631c57bebe720424dac4ecc4ba4b31ba84d75f528aafe9f4bce749fa47e31",
+      "afterSha256": "bf2631c57bebe720424dac4ecc4ba4b31ba84d75f528aafe9f4bce749fa47e31",
+      "byteExact": true
+    },
+    {
+      "name": "completeGradeSelect",
+      "beforeBytes": 788,
+      "afterBytes": 788,
+      "beforeSha256": "0dedf8ba4e96e2cdfd1a4bc6095a4b2a44c729b377e4ff9980f806ed70dcb704",
+      "afterSha256": "0dedf8ba4e96e2cdfd1a4bc6095a4b2a44c729b377e4ff9980f806ed70dcb704",
+      "byteExact": true
+    },
+    {
+      "name": "completeDueSelect",
+      "beforeBytes": 623,
+      "afterBytes": 623,
+      "beforeSha256": "d39aadb86f33b5ca2f8c7deaf178e441eb71b4f035dca5ca377412e398a2be84",
+      "afterSha256": "d39aadb86f33b5ca2f8c7deaf178e441eb71b4f035dca5ca377412e398a2be84",
+      "byteExact": true
+    },
+    {
+      "name": "completeThreeFilterActionsIncludingSearchCaption",
+      "beforeBytes": 1257,
+      "afterBytes": 1257,
+      "beforeSha256": "1f105d0c1a505d22763aabfe5cefa0b90b29cd5d5830cc86a2c901c4cb1e38fb",
+      "afterSha256": "1f105d0c1a505d22763aabfe5cefa0b90b29cd5d5830cc86a2c901c4cb1e38fb",
+      "byteExact": true
+    },
+    {
+      "name": "completeMoreFiltersConditional",
+      "beforeBytes": 3041,
+      "afterBytes": 3041,
+      "beforeSha256": "39385698f480edf653b7a4da16dfbe71c431b331dccb5befbe2ee7ee68adfdc3",
+      "afterSha256": "39385698f480edf653b7a4da16dfbe71c431b331dccb5befbe2ee7ee68adfdc3",
+      "byteExact": true
+    },
+    {
+      "name": "searchAndStarGroupWithOnlyApprovedClassAddition",
+      "beforeBytes": 1066,
+      "afterBytes": 1066,
+      "beforeSha256": "0d7a90ec012fd63da13b9858a3efa5c408c921b86537e32b84ab9107ac65511e",
+      "afterSha256": "0d7a90ec012fd63da13b9858a3efa5c408c921b86537e32b84ab9107ac65511e",
+      "byteExact": true
+    }
+  ],
+  "props": {
+    "beforeCount": 178,
+    "afterCount": 178,
+    "beforeSha256": "381a66d7c0df6ea9efa6d6a2d1892669c76c53e4398e00341233d3586f52d7ab",
+    "afterSha256": "381a66d7c0df6ea9efa6d6a2d1892669c76c53e4398e00341233d3586f52d7ab",
+    "equal": true
+  },
+  "guards": {
+    "beforeCount": 165,
+    "afterCount": 165,
+    "beforeSha256": "e563d6be4207052850f087bec181c9631ee7d49a025a62f648345084e90a912e",
+    "afterSha256": "e563d6be4207052850f087bec181c9631ee7d49a025a62f648345084e90a912e",
+    "equal": true
+  },
+  "layoutExceptions": [
+    "replace AdminPageHeader and AdminFilterBar with CompactListToolbar",
+    "remove obsolete basic div role=group aria-label=基础筛选 and header flex wrapper",
+    "add only d51-compact-list-search-group to original search/收藏 group"
+  ],
+  "components": {
+    "tsx": {
+      "canonicalPath": "/home/ubuntu/work/51dianzi-platform/client/src/components/ui/CompactListToolbar.tsx",
+      "mirrorPath": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/components/ui/CompactListToolbar.tsx",
+      "canonicalSha256": "37ea5b4ffc35a8d3603ea58d84eb3eba0b562e931a3a459ba40f7da9b111c21e",
+      "mirrorSha256": "37ea5b4ffc35a8d3603ea58d84eb3eba0b562e931a3a459ba40f7da9b111c21e",
+      "byteExact": true,
+      "expectedSha256": "37ea5b4ffc35a8d3603ea58d84eb3eba0b562e931a3a459ba40f7da9b111c21e"
+    },
+    "css": {
+      "canonicalPath": "/home/ubuntu/work/51dianzi-platform/client/src/components/ui/CompactListToolbar.css",
+      "mirrorPath": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/components/ui/CompactListToolbar.css",
+      "canonicalSha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007",
+      "mirrorSha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007",
+      "byteExact": true,
+      "expectedSha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007"
+    }
+  },
+  "moduleResolution": {
+    "importedSpecifier": "@/business/platform/client/src/components/ui/CompactListToolbar",
+    "ordinaryManagerAliasAt": "/home/ubuntu/work/51dianzi-platform--manager/client/src",
+    "resolvedPath": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/components/ui/CompactListToolbar.tsx",
+    "externalCanonicalAliasNeeded": false
+  },
+  "runtimeReference": "/home/ubuntu/task-recovery/compact-list-20261113/proofs/customers.json",
+  "validationBoundary": "read-only source integrity plus separate limited local Vitest suites; not browser, production or final ordinary tsc acceptance"
+}

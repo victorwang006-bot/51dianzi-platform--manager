@@ -1,0 +1,1058 @@
+[
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 82,
+      "width": 1408,
+      "height": 54,
+      "right": 1424,
+      "bottom": 136
+    },
+    "toolbarScrollWidth": 1406,
+    "toolbarClientWidth": 1406,
+    "filters": {
+      "x": 25,
+      "y": 91,
+      "width": 1293.859375,
+      "height": 36,
+      "right": 1318.859375,
+      "bottom": 127
+    },
+    "actions": {
+      "x": 1326.859375,
+      "y": 91,
+      "width": 88.140625,
+      "height": 36,
+      "right": 1415,
+      "bottom": 127
+    },
+    "heading": {
+      "x": 16,
+      "y": 82,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 83
+    },
+    "listGap": 12,
+    "searchGroups": [
+      {
+        "x": 159,
+        "y": 91,
+        "width": 320,
+        "height": 36,
+        "right": 479,
+        "bottom": 127
+      }
+    ],
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "label": "全企业",
+        "x": 25,
+        "y": 91,
+        "width": 126,
+        "height": 36,
+        "right": 151,
+        "bottom": 127
+      },
+      {
+        "tag": "INPUT",
+        "label": "搜索客户名称、联系人或电话",
+        "x": 159,
+        "y": 91,
+        "width": 288,
+        "height": 36,
+        "right": 447,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "仅看重点客户",
+        "x": 455,
+        "y": 91,
+        "width": 24,
+        "height": 36,
+        "right": 479,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部等级",
+        "x": 487,
+        "y": 91,
+        "width": 126,
+        "height": 36,
+        "right": 613,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部跟进",
+        "x": 621,
+        "y": 91,
+        "width": 140,
+        "height": 36,
+        "right": 761,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "搜索",
+        "x": 769,
+        "y": 91,
+        "width": 52.015625,
+        "height": 36,
+        "right": 821.015625,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "重置",
+        "x": 827.015625,
+        "y": 91,
+        "width": 52.015625,
+        "height": 36,
+        "right": 879.03125,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "更多筛选",
+        "x": 885.03125,
+        "y": 91,
+        "width": 110,
+        "height": 36,
+        "right": 995.03125,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "+ 录入客户",
+        "x": 1326.859375,
+        "y": 91,
+        "width": 88.140625,
+        "height": 36,
+        "right": 1415,
+        "bottom": 127
+      }
+    ],
+    "page": "customers",
+    "viewportWidth": 1440,
+    "expectedControlHeight": 36,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 82,
+      "width": 992,
+      "height": 98,
+      "right": 1008,
+      "bottom": 180
+    },
+    "toolbarScrollWidth": 990,
+    "toolbarClientWidth": 990,
+    "filters": {
+      "x": 25,
+      "y": 91,
+      "width": 877.859375,
+      "height": 80,
+      "right": 902.859375,
+      "bottom": 171
+    },
+    "actions": {
+      "x": 910.859375,
+      "y": 113,
+      "width": 88.140625,
+      "height": 36,
+      "right": 999,
+      "bottom": 149
+    },
+    "heading": {
+      "x": 16,
+      "y": 82,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 83
+    },
+    "listGap": 12,
+    "searchGroups": [
+      {
+        "x": 159,
+        "y": 91,
+        "width": 320,
+        "height": 36,
+        "right": 479,
+        "bottom": 127
+      }
+    ],
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "label": "全企业",
+        "x": 25,
+        "y": 91,
+        "width": 126,
+        "height": 36,
+        "right": 151,
+        "bottom": 127
+      },
+      {
+        "tag": "INPUT",
+        "label": "搜索客户名称、联系人或电话",
+        "x": 159,
+        "y": 91,
+        "width": 288,
+        "height": 36,
+        "right": 447,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "仅看重点客户",
+        "x": 455,
+        "y": 91,
+        "width": 24,
+        "height": 36,
+        "right": 479,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部等级",
+        "x": 487,
+        "y": 91,
+        "width": 126,
+        "height": 36,
+        "right": 613,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部跟进",
+        "x": 621,
+        "y": 91,
+        "width": 140,
+        "height": 36,
+        "right": 761,
+        "bottom": 127
+      },
+      {
+        "tag": "BUTTON",
+        "label": "搜索",
+        "x": 25,
+        "y": 135,
+        "width": 52.015625,
+        "height": 36,
+        "right": 77.015625,
+        "bottom": 171
+      },
+      {
+        "tag": "BUTTON",
+        "label": "重置",
+        "x": 83.015625,
+        "y": 135,
+        "width": 52.015625,
+        "height": 36,
+        "right": 135.03125,
+        "bottom": 171
+      },
+      {
+        "tag": "BUTTON",
+        "label": "更多筛选",
+        "x": 141.03125,
+        "y": 135,
+        "width": 110,
+        "height": 36,
+        "right": 251.03125,
+        "bottom": 171
+      },
+      {
+        "tag": "BUTTON",
+        "label": "+ 录入客户",
+        "x": 910.859375,
+        "y": 113,
+        "width": 88.140625,
+        "height": 36,
+        "right": 999,
+        "bottom": 149
+      }
+    ],
+    "page": "customers",
+    "viewportWidth": 1024,
+    "expectedControlHeight": 36,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 56,
+      "width": 358,
+      "height": 250,
+      "right": 374,
+      "bottom": 306
+    },
+    "toolbarScrollWidth": 356,
+    "toolbarClientWidth": 356,
+    "filters": {
+      "x": 25,
+      "y": 65,
+      "width": 340,
+      "height": 184,
+      "right": 365,
+      "bottom": 249
+    },
+    "actions": {
+      "x": 276.859375,
+      "y": 257,
+      "width": 88.140625,
+      "height": 40,
+      "right": 365,
+      "bottom": 297
+    },
+    "heading": {
+      "x": 16,
+      "y": 56,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 57
+    },
+    "listGap": 12,
+    "searchGroups": [
+      {
+        "x": 25,
+        "y": 113,
+        "width": 340,
+        "height": 40,
+        "right": 365,
+        "bottom": 153
+      }
+    ],
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "label": "全企业",
+        "x": 25,
+        "y": 65,
+        "width": 126,
+        "height": 40,
+        "right": 151,
+        "bottom": 105
+      },
+      {
+        "tag": "INPUT",
+        "label": "搜索客户名称、联系人或电话",
+        "x": 25,
+        "y": 113,
+        "width": 292,
+        "height": 40,
+        "right": 317,
+        "bottom": 153
+      },
+      {
+        "tag": "BUTTON",
+        "label": "仅看重点客户",
+        "x": 325,
+        "y": 113,
+        "width": 40,
+        "height": 40,
+        "right": 365,
+        "bottom": 153
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部等级",
+        "x": 25,
+        "y": 161,
+        "width": 126,
+        "height": 40,
+        "right": 151,
+        "bottom": 201
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部跟进",
+        "x": 159,
+        "y": 161,
+        "width": 140,
+        "height": 40,
+        "right": 299,
+        "bottom": 201
+      },
+      {
+        "tag": "BUTTON",
+        "label": "搜索",
+        "x": 25,
+        "y": 209,
+        "width": 52.015625,
+        "height": 40,
+        "right": 77.015625,
+        "bottom": 249
+      },
+      {
+        "tag": "BUTTON",
+        "label": "重置",
+        "x": 83.015625,
+        "y": 209,
+        "width": 52.015625,
+        "height": 40,
+        "right": 135.03125,
+        "bottom": 249
+      },
+      {
+        "tag": "BUTTON",
+        "label": "更多筛选",
+        "x": 141.03125,
+        "y": 209,
+        "width": 110,
+        "height": 40,
+        "right": 251.03125,
+        "bottom": 249
+      },
+      {
+        "tag": "BUTTON",
+        "label": "+ 录入客户",
+        "x": 276.859375,
+        "y": 257,
+        "width": 88.140625,
+        "height": 40,
+        "right": 365,
+        "bottom": 297
+      }
+    ],
+    "page": "customers",
+    "viewportWidth": 390,
+    "expectedControlHeight": 40,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 48,
+      "width": 1408,
+      "height": 54,
+      "right": 1424,
+      "bottom": 102
+    },
+    "toolbarScrollWidth": 1406,
+    "toolbarClientWidth": 1406,
+    "filters": {
+      "x": 25,
+      "y": 57,
+      "width": 1277.984375,
+      "height": 36,
+      "right": 1302.984375,
+      "bottom": 93
+    },
+    "actions": {
+      "x": 1310.984375,
+      "y": 57,
+      "width": 104.015625,
+      "height": 36,
+      "right": 1415,
+      "bottom": 93
+    },
+    "heading": {
+      "x": 16,
+      "y": 48,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 49
+    },
+    "listGap": 12,
+    "searchGroups": [
+      {
+        "x": 25,
+        "y": 57,
+        "width": 320,
+        "height": 36,
+        "right": 345,
+        "bottom": 93
+      }
+    ],
+    "controls": [
+      {
+        "tag": "INPUT",
+        "label": "搜索公司名称 / 商户编号",
+        "x": 25,
+        "y": 57,
+        "width": 259.984375,
+        "height": 36,
+        "right": 284.984375,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "搜索",
+        "x": 292.984375,
+        "y": 57,
+        "width": 52.015625,
+        "height": 36,
+        "right": 345,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "入驻时间",
+        "x": 353,
+        "y": 57,
+        "width": 160,
+        "height": 36,
+        "right": 513,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部负责人",
+        "x": 521,
+        "y": 57,
+        "width": 220,
+        "height": 36,
+        "right": 741,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "客户归属查询",
+        "x": 1310.984375,
+        "y": 57,
+        "width": 104.015625,
+        "height": 36,
+        "right": 1415,
+        "bottom": 93
+      }
+    ],
+    "page": "merchants",
+    "viewportWidth": 1440,
+    "expectedControlHeight": 36,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 48,
+      "width": 992,
+      "height": 54,
+      "right": 1008,
+      "bottom": 102
+    },
+    "toolbarScrollWidth": 990,
+    "toolbarClientWidth": 990,
+    "filters": {
+      "x": 25,
+      "y": 57,
+      "width": 861.984375,
+      "height": 36,
+      "right": 886.984375,
+      "bottom": 93
+    },
+    "actions": {
+      "x": 894.984375,
+      "y": 57,
+      "width": 104.015625,
+      "height": 36,
+      "right": 999,
+      "bottom": 93
+    },
+    "heading": {
+      "x": 16,
+      "y": 48,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 49
+    },
+    "listGap": 12,
+    "searchGroups": [
+      {
+        "x": 25,
+        "y": 57,
+        "width": 320,
+        "height": 36,
+        "right": 345,
+        "bottom": 93
+      }
+    ],
+    "controls": [
+      {
+        "tag": "INPUT",
+        "label": "搜索公司名称 / 商户编号",
+        "x": 25,
+        "y": 57,
+        "width": 259.984375,
+        "height": 36,
+        "right": 284.984375,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "搜索",
+        "x": 292.984375,
+        "y": 57,
+        "width": 52.015625,
+        "height": 36,
+        "right": 345,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "入驻时间",
+        "x": 353,
+        "y": 57,
+        "width": 160,
+        "height": 36,
+        "right": 513,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部负责人",
+        "x": 521,
+        "y": 57,
+        "width": 220,
+        "height": 36,
+        "right": 741,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "客户归属查询",
+        "x": 894.984375,
+        "y": 57,
+        "width": 104.015625,
+        "height": 36,
+        "right": 999,
+        "bottom": 93
+      }
+    ],
+    "page": "merchants",
+    "viewportWidth": 1024,
+    "expectedControlHeight": 36,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 48,
+      "width": 358,
+      "height": 202,
+      "right": 374,
+      "bottom": 250
+    },
+    "toolbarScrollWidth": 356,
+    "toolbarClientWidth": 356,
+    "filters": {
+      "x": 25,
+      "y": 57,
+      "width": 340,
+      "height": 136,
+      "right": 365,
+      "bottom": 193
+    },
+    "actions": {
+      "x": 260.984375,
+      "y": 201,
+      "width": 104.015625,
+      "height": 40,
+      "right": 365,
+      "bottom": 241
+    },
+    "heading": {
+      "x": 16,
+      "y": 48,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 49
+    },
+    "listGap": 12,
+    "searchGroups": [
+      {
+        "x": 25,
+        "y": 57,
+        "width": 340,
+        "height": 40,
+        "right": 365,
+        "bottom": 97
+      }
+    ],
+    "controls": [
+      {
+        "tag": "INPUT",
+        "label": "搜索公司名称 / 商户编号",
+        "x": 25,
+        "y": 57,
+        "width": 279.984375,
+        "height": 40,
+        "right": 304.984375,
+        "bottom": 97
+      },
+      {
+        "tag": "BUTTON",
+        "label": "搜索",
+        "x": 312.984375,
+        "y": 57,
+        "width": 52.015625,
+        "height": 40,
+        "right": 365,
+        "bottom": 97
+      },
+      {
+        "tag": "BUTTON",
+        "label": "入驻时间",
+        "x": 25,
+        "y": 105,
+        "width": 160,
+        "height": 40,
+        "right": 185,
+        "bottom": 145
+      },
+      {
+        "tag": "BUTTON",
+        "label": "全部负责人",
+        "x": 25,
+        "y": 153,
+        "width": 220,
+        "height": 40,
+        "right": 245,
+        "bottom": 193
+      },
+      {
+        "tag": "BUTTON",
+        "label": "客户归属查询",
+        "x": 260.984375,
+        "y": 201,
+        "width": 104.015625,
+        "height": 40,
+        "right": 365,
+        "bottom": 241
+      }
+    ],
+    "page": "merchants",
+    "viewportWidth": 390,
+    "expectedControlHeight": 40,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 48,
+      "width": 1408,
+      "height": 54,
+      "right": 1424,
+      "bottom": 102
+    },
+    "toolbarScrollWidth": 1406,
+    "toolbarClientWidth": 1406,
+    "filters": {
+      "x": 25,
+      "y": 57,
+      "width": 1233.84375,
+      "height": 36,
+      "right": 1258.84375,
+      "bottom": 93
+    },
+    "actions": {
+      "x": 1266.84375,
+      "y": 57,
+      "width": 148.15625,
+      "height": 36,
+      "right": 1415,
+      "bottom": 93
+    },
+    "heading": {
+      "x": 16,
+      "y": 48,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 49
+    },
+    "listGap": 12,
+    "searchGroups": [],
+    "controls": [
+      {
+        "tag": "INPUT",
+        "label": "搜索姓名、账号或手机",
+        "x": 25,
+        "y": 57,
+        "width": 230,
+        "height": 36,
+        "right": 255,
+        "bottom": 93
+      },
+      {
+        "tag": "SELECT",
+        "label": "员工状态筛选",
+        "x": 263,
+        "y": 57,
+        "width": 99,
+        "height": 36,
+        "right": 362,
+        "bottom": 93
+      },
+      {
+        "tag": "SELECT",
+        "label": "后台角色筛选",
+        "x": 370,
+        "y": 57,
+        "width": 125,
+        "height": 36,
+        "right": 495,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "刷新",
+        "x": 1266.84375,
+        "y": 57,
+        "width": 52.015625,
+        "height": 36,
+        "right": 1318.859375,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "+ 新增员工",
+        "x": 1326.859375,
+        "y": 57,
+        "width": 88.140625,
+        "height": 36,
+        "right": 1415,
+        "bottom": 93
+      }
+    ],
+    "page": "staff",
+    "viewportWidth": 1440,
+    "expectedControlHeight": 36,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 48,
+      "width": 992,
+      "height": 54,
+      "right": 1008,
+      "bottom": 102
+    },
+    "toolbarScrollWidth": 990,
+    "toolbarClientWidth": 990,
+    "filters": {
+      "x": 25,
+      "y": 57,
+      "width": 817.84375,
+      "height": 36,
+      "right": 842.84375,
+      "bottom": 93
+    },
+    "actions": {
+      "x": 850.84375,
+      "y": 57,
+      "width": 148.15625,
+      "height": 36,
+      "right": 999,
+      "bottom": 93
+    },
+    "heading": {
+      "x": 16,
+      "y": 48,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 49
+    },
+    "listGap": 12,
+    "searchGroups": [],
+    "controls": [
+      {
+        "tag": "INPUT",
+        "label": "搜索姓名、账号或手机",
+        "x": 25,
+        "y": 57,
+        "width": 230,
+        "height": 36,
+        "right": 255,
+        "bottom": 93
+      },
+      {
+        "tag": "SELECT",
+        "label": "员工状态筛选",
+        "x": 263,
+        "y": 57,
+        "width": 99,
+        "height": 36,
+        "right": 362,
+        "bottom": 93
+      },
+      {
+        "tag": "SELECT",
+        "label": "后台角色筛选",
+        "x": 370,
+        "y": 57,
+        "width": 125,
+        "height": 36,
+        "right": 495,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "刷新",
+        "x": 850.84375,
+        "y": 57,
+        "width": 52.015625,
+        "height": 36,
+        "right": 902.859375,
+        "bottom": 93
+      },
+      {
+        "tag": "BUTTON",
+        "label": "+ 新增员工",
+        "x": 910.859375,
+        "y": 57,
+        "width": 88.140625,
+        "height": 36,
+        "right": 999,
+        "bottom": 93
+      }
+    ],
+    "page": "staff",
+    "viewportWidth": 1024,
+    "expectedControlHeight": 36,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  },
+  {
+    "toolbar": {
+      "x": 16,
+      "y": 48,
+      "width": 358,
+      "height": 154,
+      "right": 374,
+      "bottom": 202
+    },
+    "toolbarScrollWidth": 356,
+    "toolbarClientWidth": 356,
+    "filters": {
+      "x": 25,
+      "y": 57,
+      "width": 340,
+      "height": 88,
+      "right": 365,
+      "bottom": 145
+    },
+    "actions": {
+      "x": 216.84375,
+      "y": 153,
+      "width": 148.15625,
+      "height": 40,
+      "right": 365,
+      "bottom": 193
+    },
+    "heading": {
+      "x": 16,
+      "y": 48,
+      "width": 1,
+      "height": 1,
+      "right": 17,
+      "bottom": 49
+    },
+    "listGap": 12,
+    "searchGroups": [],
+    "controls": [
+      {
+        "tag": "INPUT",
+        "label": "搜索姓名、账号或手机",
+        "x": 25,
+        "y": 57,
+        "width": 230,
+        "height": 40,
+        "right": 255,
+        "bottom": 97
+      },
+      {
+        "tag": "SELECT",
+        "label": "员工状态筛选",
+        "x": 263,
+        "y": 57,
+        "width": 99,
+        "height": 40,
+        "right": 362,
+        "bottom": 97
+      },
+      {
+        "tag": "SELECT",
+        "label": "后台角色筛选",
+        "x": 25,
+        "y": 105,
+        "width": 125,
+        "height": 40,
+        "right": 150,
+        "bottom": 145
+      },
+      {
+        "tag": "BUTTON",
+        "label": "刷新",
+        "x": 216.84375,
+        "y": 153,
+        "width": 52.015625,
+        "height": 40,
+        "right": 268.859375,
+        "bottom": 193
+      },
+      {
+        "tag": "BUTTON",
+        "label": "+ 新增员工",
+        "x": 276.859375,
+        "y": 153,
+        "width": 88.140625,
+        "height": 40,
+        "right": 365,
+        "bottom": 193
+      }
+    ],
+    "page": "staff",
+    "viewportWidth": 390,
+    "expectedControlHeight": 40,
+    "status": "PASS",
+    "errors": [],
+    "fixtureOnly": true,
+    "productionDataRead": false,
+    "historicalCSSLoadedAfterNewScopedCSS": true
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "sourceFile": "/home/ubuntu/work/51dianzi-platform/client/src/components/ui/CompactListToolbar.tsx",
+  "sourceSha256": "37ea5b4ffc35a8d3603ea58d84eb3eba0b562e931a3a459ba40f7da9b111c21e",
+  "cssFile": "/home/ubuntu/work/51dianzi-platform/client/src/components/ui/CompactListToolbar.css",
+  "cssSourceSha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007",
+  "compilerOptions": {
+    "loader": "tsx",
+    "jsx": "automatic",
+    "target": "es2022",
+    "format": "esm",
+    "minify": false
+  },
+  "compiledSha256": "151f818f6476d1aa9dddcf4bf92a63ab7417b3bdaa6216c61b609c90761e9575",
+  "runtimeSha256": "f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4",
+  "runtimeBindings": [
+    {
+      "imported": "Fragment",
+      "local": "Fragment"
+    },
+    {
+      "imported": "jsx",
+      "local": "jsx"
+    },
+    {
+      "imported": "jsxs",
+      "local": "jsxs"
+    }
+  ],
+  "sourceCompiledBodyUnchanged": true,
+  "onlyActualJSXRuntimeAndCSSLinkAdapted": true
+}

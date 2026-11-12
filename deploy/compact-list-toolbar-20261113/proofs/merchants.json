@@ -1,0 +1,118 @@
+{
+  "title": "商户管理",
+  "beforeURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611.js",
+  "afterURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611-compact-4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487.js",
+  "beforeSha256": "446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611",
+  "afterSha256": "4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487",
+  "patches": [
+    {
+      "label": "new shared pure toolbar import",
+      "start": 0,
+      "end": 0,
+      "before": "",
+      "after": "import {CompactListToolbar as __d51CompactListToolbar} from \"/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js\";\n"
+    },
+    {
+      "label": "remove redundant header row",
+      "start": 39763,
+      "end": 39887,
+      "before": "e.jsx(Pt,{\"data-loc\":\"client/src/pages/Merchants.tsx:252\",\"list\":true,title:\"商户管理\",description:\"ERP 开通审核、账号绑定、协议状态与结算账户配置\"})",
+      "after": "null"
+    },
+    {
+      "label": "merge original filters and actions in shared toolbar",
+      "start": 39963,
+      "end": 41289,
+      "before": "e.jsx(me,{\"data-loc\":\"client/src/pages/Merchants.tsx:256\",className:\"mb-4\",children:e.jsxs(ue,{\"data-loc\":\"client/src/pages/Merchants.tsx:257\",className:\"py-4 flex flex-wrap items-center gap-3\",children:[e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Merchants.tsx:258\",className:\"flex items-center gap-2 flex-1 min-w-[240px]\",children:[e.jsx(we,{\"data-loc\":\"client/src/pages/Merchants.tsx:259\",placeholder:\"搜索公司名称 / 商户编号\",value:f,onChange:c=>C(c.target.value),onKeyDown:c=>c.key===\"Enter\"&&We(),className:\"max-w-xs\"}),e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:266\",variant:\"outline\",size:\"sm\",onClick:We,children:[e.jsx(dt,{\"data-loc\":\"client/src/pages/Merchants.tsx:267\",className:\"h-4 w-4 mr-1\"}),\"搜索\"]})]}),e.jsx(rs,{\"data-loc\":\"client/src/pages/Merchants.tsx:271\",value:i,onChange:c=>{d(c),l(1)}}),e.jsx(Ps,{\"data-loc\":\"client/src/pages/Merchants.tsx:278\",value:p,onChange:c=>{N(c),l(1)},options:he?.options??[],canViewUnassigned:!!he?.canViewUnassigned}),e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:287\",type:\"button\",size:\"sm\",variant:\"outline\",onClick:()=>ne(!0),children:[e.jsx(es,{\"data-loc\":\"client/src/pages/Merchants.tsx:288\",className:\"mr-1 h-4 w-4\"}),\"客户归属查询\"]}),Mt&&e.jsx(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:292\",type:\"button\",variant:\"ghost\",size:\"sm\",onClick:Rt,children:\"重置\"})]})})",
+      "after": "e.jsx(__d51CompactListToolbar,{title:\"商户管理\",children:[e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Merchants.tsx:258\",className:\"d51-compact-list-search-group\",children:[e.jsx(we,{\"data-loc\":\"client/src/pages/Merchants.tsx:259\",placeholder:\"搜索公司名称 / 商户编号\",value:f,onChange:c=>C(c.target.value),onKeyDown:c=>c.key===\"Enter\"&&We(),className:\"max-w-xs\"}),e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:266\",variant:\"outline\",size:\"sm\",onClick:We,children:[e.jsx(dt,{\"data-loc\":\"client/src/pages/Merchants.tsx:267\",className:\"h-4 w-4 mr-1\"}),\"搜索\"]})]}),e.jsx(rs,{\"data-loc\":\"client/src/pages/Merchants.tsx:271\",value:i,onChange:c=>{d(c),l(1)}}),e.jsx(Ps,{\"data-loc\":\"client/src/pages/Merchants.tsx:278\",value:p,onChange:c=>{N(c),l(1)},options:he?.options??[],canViewUnassigned:!!he?.canViewUnassigned}),Mt&&e.jsx(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:292\",type:\"button\",variant:\"ghost\",size:\"sm\",onClick:Rt,children:\"重置\"})],actions:e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:287\",type:\"button\",size:\"sm\",variant:\"outline\",onClick:()=>ne(!0),children:[e.jsx(es,{\"data-loc\":\"client/src/pages/Merchants.tsx:288\",className:\"mr-1 h-4 w-4\"}),\"客户归属查询\"]})})"
+    }
+  ],
+  "inverse": [
+    {
+      "label": "new shared pure toolbar import",
+      "start": 0,
+      "end": 166,
+      "before": "import {CompactListToolbar as __d51CompactListToolbar} from \"/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js\";\n",
+      "after": ""
+    },
+    {
+      "label": "remove redundant header row",
+      "start": 39929,
+      "end": 39933,
+      "before": "null",
+      "after": "e.jsx(Pt,{\"data-loc\":\"client/src/pages/Merchants.tsx:252\",\"list\":true,title:\"商户管理\",description:\"ERP 开通审核、账号绑定、协议状态与结算账户配置\"})"
+    },
+    {
+      "label": "merge original filters and actions in shared toolbar",
+      "start": 40009,
+      "end": 41176,
+      "before": "e.jsx(__d51CompactListToolbar,{title:\"商户管理\",children:[e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Merchants.tsx:258\",className:\"d51-compact-list-search-group\",children:[e.jsx(we,{\"data-loc\":\"client/src/pages/Merchants.tsx:259\",placeholder:\"搜索公司名称 / 商户编号\",value:f,onChange:c=>C(c.target.value),onKeyDown:c=>c.key===\"Enter\"&&We(),className:\"max-w-xs\"}),e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:266\",variant:\"outline\",size:\"sm\",onClick:We,children:[e.jsx(dt,{\"data-loc\":\"client/src/pages/Merchants.tsx:267\",className:\"h-4 w-4 mr-1\"}),\"搜索\"]})]}),e.jsx(rs,{\"data-loc\":\"client/src/pages/Merchants.tsx:271\",value:i,onChange:c=>{d(c),l(1)}}),e.jsx(Ps,{\"data-loc\":\"client/src/pages/Merchants.tsx:278\",value:p,onChange:c=>{N(c),l(1)},options:he?.options??[],canViewUnassigned:!!he?.canViewUnassigned}),Mt&&e.jsx(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:292\",type:\"button\",variant:\"ghost\",size:\"sm\",onClick:Rt,children:\"重置\"})],actions:e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:287\",type:\"button\",size:\"sm\",variant:\"outline\",onClick:()=>ne(!0),children:[e.jsx(es,{\"data-loc\":\"client/src/pages/Merchants.tsx:288\",className:\"mr-1 h-4 w-4\"}),\"客户归属查询\"]})})",
+      "after": "e.jsx(me,{\"data-loc\":\"client/src/pages/Merchants.tsx:256\",className:\"mb-4\",children:e.jsxs(ue,{\"data-loc\":\"client/src/pages/Merchants.tsx:257\",className:\"py-4 flex flex-wrap items-center gap-3\",children:[e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Merchants.tsx:258\",className:\"flex items-center gap-2 flex-1 min-w-[240px]\",children:[e.jsx(we,{\"data-loc\":\"client/src/pages/Merchants.tsx:259\",placeholder:\"搜索公司名称 / 商户编号\",value:f,onChange:c=>C(c.target.value),onKeyDown:c=>c.key===\"Enter\"&&We(),className:\"max-w-xs\"}),e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:266\",variant:\"outline\",size:\"sm\",onClick:We,children:[e.jsx(dt,{\"data-loc\":\"client/src/pages/Merchants.tsx:267\",className:\"h-4 w-4 mr-1\"}),\"搜索\"]})]}),e.jsx(rs,{\"data-loc\":\"client/src/pages/Merchants.tsx:271\",value:i,onChange:c=>{d(c),l(1)}}),e.jsx(Ps,{\"data-loc\":\"client/src/pages/Merchants.tsx:278\",value:p,onChange:c=>{N(c),l(1)},options:he?.options??[],canViewUnassigned:!!he?.canViewUnassigned}),e.jsxs(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:287\",type:\"button\",size:\"sm\",variant:\"outline\",onClick:()=>ne(!0),children:[e.jsx(es,{\"data-loc\":\"client/src/pages/Merchants.tsx:288\",className:\"mr-1 h-4 w-4\"}),\"客户归属查询\"]}),Mt&&e.jsx(y,{\"data-loc\":\"client/src/pages/Merchants.tsx:292\",type:\"button\",variant:\"ghost\",size:\"sm\",onClick:Rt,children:\"重置\"})]})})"
+    }
+  ],
+  "unaffectedPartitions": [
+    {
+      "beforeStart": 0,
+      "beforeEnd": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "beforeStart": 0,
+      "beforeEnd": 39763,
+      "bytes": 39763,
+      "sha256": "bee4d2d982e0e1d891d09cd5a8b98464a6a137cafdd3303055eb0b3c4148da6d"
+    },
+    {
+      "beforeStart": 39887,
+      "beforeEnd": 39963,
+      "bytes": 76,
+      "sha256": "1a216ceaccb20c0810af8c1ab8327837c122009b6a061e0fbbfe0ab7c6682984"
+    },
+    {
+      "beforeStart": 41289,
+      "beforeEnd": 57671,
+      "bytes": 16382,
+      "sha256": "5956ae58334465ddb2826a3cd4670814944e1a9d3de012f8ff0d84c21fb5536a"
+    }
+  ],
+  "forwardReverseFullBytes": true,
+  "allOriginalControlsAndConditionsRetained": true,
+  "searchGroupClassChanges": [
+    {
+      "before": "flex items-center gap-2 flex-1 min-w-[240px]",
+      "after": "d51-compact-list-search-group"
+    }
+  ],
+  "onlySameFunctionReturnJSXRelocated": true,
+  "noBusinessPreambleChanged": true,
+  "newImportAliasAbsentEverywhereInOriginalAST": true,
+  "oldImportsExportsAndAllOtherFunctionsUnchanged": true,
+  "movedFragments": [
+    {
+      "start": 40167,
+      "end": 40680,
+      "sha256": "748ae7b5dc0d7343df2cda7cb5bc691e88dcd5b414d44c8c3f3f325dd1fbeba9"
+    },
+    {
+      "start": 40681,
+      "end": 40772,
+      "sha256": "92663a150a4dae2a531fc387b98c93c4f9259c158099d5b0d4c584717c2ebaca"
+    },
+    {
+      "start": 40773,
+      "end": 40930,
+      "sha256": "b6530f0b0b55786b791c99dba8965bc668331ec8a531cfceb59cd4c856fa23e2"
+    },
+    {
+      "start": 40931,
+      "end": 41156,
+      "sha256": "8a8704351c2f1546b5a663320e606079588b6f0a8e880341316ac82529a43d55"
+    },
+    {
+      "start": 41157,
+      "end": 41284,
+      "sha256": "b61078a49ff8d1b02d4765fca2e7115e3c14dfeb8b3ab7f70ec962b1847a98e3"
+    }
+  ]
+}

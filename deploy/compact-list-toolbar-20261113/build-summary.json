@@ -1,0 +1,36 @@
+{
+  "status": "PASS-COMPACT-LIST-STATIC-INCREMENT",
+  "htmlBeforeSha256": "fcaf6b60cccb9d0dafa09b4696818c2537cf2be8c11702c8b48cab64d735cb9e",
+  "htmlAfterSha256": "872630fb1ceda5e7ac8a9d9a10fab741033aa32406451125a0441e0bfecc27ba",
+  "moduleCount": 3,
+  "sharedHelper": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+  "scopedCSS": "/assets/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css",
+  "publishFileCount": 6,
+  "allPreviousStaticFilesKept": true,
+  "onlyReturnLayoutChanged": true,
+  "apiOrWorkerChanged": false,
+  "productionModified": false,
+  "proofs": [
+    {
+      "title": "客户列表",
+      "beforeURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/BusinessWorkbenchPage-admin-workbench-68c2dd58a80a9f3f.js",
+      "afterURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/BusinessWorkbenchPage-admin-workbench-68c2dd58a80a9f3f-compact-a2e90b738a36385a49efc7379f7bfa1e90283f1fa7041e6f8cda237e17a92c75.js",
+      "beforeSha256": "68c2dd58a80a9f3f9206a3589d537c1d2a9e9da63a607816af18b509f1d7bb1b",
+      "afterSha256": "a2e90b738a36385a49efc7379f7bfa1e90283f1fa7041e6f8cda237e17a92c75"
+    },
+    {
+      "title": "商户管理",
+      "beforeURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611.js",
+      "afterURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611-compact-4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487.js",
+      "beforeSha256": "446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611",
+      "afterSha256": "4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487"
+    },
+    {
+      "title": "员工与权限",
+      "beforeURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804.js",
+      "afterURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+      "beforeSha256": "a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804",
+      "afterSha256": "6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388"
+    }
+  ]
+}

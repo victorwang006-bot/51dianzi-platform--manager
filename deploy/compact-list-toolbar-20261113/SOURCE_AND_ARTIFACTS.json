@@ -1,0 +1,56 @@
+{
+  "releaseId": "20261113-admin-compact-list-872630fb1ceda5e7",
+  "sourceCommits": {
+    "51dianzi-platform": "e0c35c2db936949abfee9c154757a033e758ff16",
+    "51dianzi-platform--manager": "bbebb4010bdd650518938fb53170c3d6b65bf322"
+  },
+  "baselineMains": {
+    "51dianzi-platform": "6063a22876584e9a819a043efa4f6ddf63b62dfb",
+    "51dianzi-platform--manager": "f78d161c8cdf09e496db551ec63188e49717fdbe"
+  },
+  "artifacts": [
+    {
+      "targetRelative": "assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "kind": "asset",
+      "sha256": "f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4"
+    },
+    {
+      "targetRelative": "assets/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css",
+      "kind": "asset",
+      "sha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007"
+    },
+    {
+      "targetRelative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/BusinessWorkbenchPage-admin-workbench-68c2dd58a80a9f3f-compact-a2e90b738a36385a49efc7379f7bfa1e90283f1fa7041e6f8cda237e17a92c75.js",
+      "kind": "asset",
+      "sha256": "a2e90b738a36385a49efc7379f7bfa1e90283f1fa7041e6f8cda237e17a92c75"
+    },
+    {
+      "targetRelative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611-compact-4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487.js",
+      "kind": "asset",
+      "sha256": "4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487"
+    },
+    {
+      "targetRelative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+      "kind": "asset",
+      "sha256": "6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388"
+    },
+    {
+      "targetRelative": "index.html",
+      "kind": "html",
+      "sha256": "872630fb1ceda5e7ac8a9d9a10fab741033aa32406451125a0441e0bfecc27ba"
+    }
+  ],
+  "scope": "three admin list pages; original events and guards retained; no API/worker/database writes",
+  "tests": {
+    "manager": 92,
+    "platform": 26,
+    "total": 118,
+    "typechecks": "both normal repository tsconfig passed",
+    "browserFixtureScenarios": 9
+  },
+  "browserBoundary": "pure shared component with synthetic controls plus actual historic CSS loaded after new CSS; no authenticated production data or page testing",
+  "staticClosureFiles": 117,
+  "reverseProof": "all original bytes restored by inverse patches; only three page JSX layouts and one new pure-component import per page changed",
+  "fullHistoricBundleSourceEquivalenceClaimed": false,
+  "status": "candidate prepared; new explicit fixed-version approval required before main branches or public HTML change"
+}

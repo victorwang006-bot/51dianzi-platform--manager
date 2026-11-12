@@ -1,0 +1,108 @@
+{
+  "title": "员工与权限",
+  "beforeURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804.js",
+  "afterURL": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+  "beforeSha256": "a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804",
+  "afterSha256": "6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388",
+  "patches": [
+    {
+      "label": "new shared pure toolbar import",
+      "start": 0,
+      "end": 0,
+      "before": "",
+      "after": "import {CompactListToolbar as __d51CompactListToolbar} from \"/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js\";\n"
+    },
+    {
+      "label": "remove redundant header row",
+      "start": 86606,
+      "end": 87268,
+      "before": "e.jsx(bt,{\"data-loc\":\"client/src/pages/Staff.tsx:959\",title:\"员工与权限\",actions:e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Staff.tsx:962\",className:\"flex flex-wrap gap-2\",children:[e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:963\",variant:\"outline\",size:\"sm\",onClick:()=>void Ls(),disabled:C.isFetching||de.isFetching,children:[e.jsx(It,{\"data-loc\":\"client/src/pages/Staff.tsx:971\",className:`mr-1 h-4 w-4 ${C.isFetching||de.isFetching?\"animate-spin\":\"\"}`}),\"刷新\"]}),g?e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:977\",size:\"sm\",onClick:()=>P(!0),children:[e.jsx(Rt,{\"data-loc\":\"client/src/pages/Staff.tsx:978\",className:\"mr-1 h-4 w-4\"}),\"新增员工\"]}):null]})})",
+      "after": "null"
+    },
+    {
+      "label": "merge original filters and actions in shared toolbar",
+      "start": 88127,
+      "end": 89592,
+      "before": "e.jsxs(vt,{\"data-loc\":\"client/src/pages/Staff.tsx:1014\",role:\"search\",\"aria-label\":\"员工筛选\",children:[e.jsx(Fe,{\"data-loc\":\"client/src/pages/Staff.tsx:1015\",value:A,onChange:i=>U(i.target.value),placeholder:\"搜索姓名、账号或手机\",className:\"h-8 w-full text-xs sm:w-[220px]\",\"aria-label\":\"搜索员工\"}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1022\",value:v,onChange:i=>p(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"员工状态筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1030\",value:\"all\",children:\"全部状态\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1031\",value:\"active\",children:\"正常 / 启用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1032\",value:\"disabled\",children:\"后台停用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1033\",value:\"locked\",children:\"后台锁定\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1034\",value:\"suspended\",children:\"企业暂停\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1035\",value:\"deleted\",children:\"已删除\"})]}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1037\",value:h,onChange:i=>le(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"后台角色筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1043\",value:\"all\",children:\"全部后台角色\"}),Y.map(i=>e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1045\",value:i,children:Be(i)},i))]})]})",
+      "after": "e.jsx(__d51CompactListToolbar,{title:\"员工与权限\",children:[e.jsx(Fe,{\"data-loc\":\"client/src/pages/Staff.tsx:1015\",value:A,onChange:i=>U(i.target.value),placeholder:\"搜索姓名、账号或手机\",className:\"h-8 w-full text-xs sm:w-[220px]\",\"aria-label\":\"搜索员工\"}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1022\",value:v,onChange:i=>p(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"员工状态筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1030\",value:\"all\",children:\"全部状态\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1031\",value:\"active\",children:\"正常 / 启用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1032\",value:\"disabled\",children:\"后台停用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1033\",value:\"locked\",children:\"后台锁定\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1034\",value:\"suspended\",children:\"企业暂停\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1035\",value:\"deleted\",children:\"已删除\"})]}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1037\",value:h,onChange:i=>le(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"后台角色筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1043\",value:\"all\",children:\"全部后台角色\"}),Y.map(i=>e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1045\",value:i,children:Be(i)},i))]})],actions:e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Staff.tsx:962\",className:\"flex flex-wrap gap-2\",children:[e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:963\",variant:\"outline\",size:\"sm\",onClick:()=>void Ls(),disabled:C.isFetching||de.isFetching,children:[e.jsx(It,{\"data-loc\":\"client/src/pages/Staff.tsx:971\",className:`mr-1 h-4 w-4 ${C.isFetching||de.isFetching?\"animate-spin\":\"\"}`}),\"刷新\"]}),g?e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:977\",size:\"sm\",onClick:()=>P(!0),children:[e.jsx(Rt,{\"data-loc\":\"client/src/pages/Staff.tsx:978\",className:\"mr-1 h-4 w-4\"}),\"新增员工\"]}):null]})})"
+    }
+  ],
+  "inverse": [
+    {
+      "label": "new shared pure toolbar import",
+      "start": 0,
+      "end": 166,
+      "before": "import {CompactListToolbar as __d51CompactListToolbar} from \"/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js\";\n",
+      "after": ""
+    },
+    {
+      "label": "remove redundant header row",
+      "start": 86772,
+      "end": 86776,
+      "before": "null",
+      "after": "e.jsx(bt,{\"data-loc\":\"client/src/pages/Staff.tsx:959\",title:\"员工与权限\",actions:e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Staff.tsx:962\",className:\"flex flex-wrap gap-2\",children:[e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:963\",variant:\"outline\",size:\"sm\",onClick:()=>void Ls(),disabled:C.isFetching||de.isFetching,children:[e.jsx(It,{\"data-loc\":\"client/src/pages/Staff.tsx:971\",className:`mr-1 h-4 w-4 ${C.isFetching||de.isFetching?\"animate-spin\":\"\"}`}),\"刷新\"]}),g?e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:977\",size:\"sm\",onClick:()=>P(!0),children:[e.jsx(Rt,{\"data-loc\":\"client/src/pages/Staff.tsx:978\",className:\"mr-1 h-4 w-4\"}),\"新增员工\"]}):null]})})"
+    },
+    {
+      "label": "merge original filters and actions in shared toolbar",
+      "start": 87635,
+      "end": 89648,
+      "before": "e.jsx(__d51CompactListToolbar,{title:\"员工与权限\",children:[e.jsx(Fe,{\"data-loc\":\"client/src/pages/Staff.tsx:1015\",value:A,onChange:i=>U(i.target.value),placeholder:\"搜索姓名、账号或手机\",className:\"h-8 w-full text-xs sm:w-[220px]\",\"aria-label\":\"搜索员工\"}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1022\",value:v,onChange:i=>p(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"员工状态筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1030\",value:\"all\",children:\"全部状态\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1031\",value:\"active\",children:\"正常 / 启用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1032\",value:\"disabled\",children:\"后台停用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1033\",value:\"locked\",children:\"后台锁定\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1034\",value:\"suspended\",children:\"企业暂停\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1035\",value:\"deleted\",children:\"已删除\"})]}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1037\",value:h,onChange:i=>le(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"后台角色筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1043\",value:\"all\",children:\"全部后台角色\"}),Y.map(i=>e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1045\",value:i,children:Be(i)},i))]})],actions:e.jsxs(\"div\",{\"data-loc\":\"client/src/pages/Staff.tsx:962\",className:\"flex flex-wrap gap-2\",children:[e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:963\",variant:\"outline\",size:\"sm\",onClick:()=>void Ls(),disabled:C.isFetching||de.isFetching,children:[e.jsx(It,{\"data-loc\":\"client/src/pages/Staff.tsx:971\",className:`mr-1 h-4 w-4 ${C.isFetching||de.isFetching?\"animate-spin\":\"\"}`}),\"刷新\"]}),g?e.jsxs(oe,{\"data-loc\":\"client/src/pages/Staff.tsx:977\",size:\"sm\",onClick:()=>P(!0),children:[e.jsx(Rt,{\"data-loc\":\"client/src/pages/Staff.tsx:978\",className:\"mr-1 h-4 w-4\"}),\"新增员工\"]}):null]})})",
+      "after": "e.jsxs(vt,{\"data-loc\":\"client/src/pages/Staff.tsx:1014\",role:\"search\",\"aria-label\":\"员工筛选\",children:[e.jsx(Fe,{\"data-loc\":\"client/src/pages/Staff.tsx:1015\",value:A,onChange:i=>U(i.target.value),placeholder:\"搜索姓名、账号或手机\",className:\"h-8 w-full text-xs sm:w-[220px]\",\"aria-label\":\"搜索员工\"}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1022\",value:v,onChange:i=>p(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"员工状态筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1030\",value:\"all\",children:\"全部状态\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1031\",value:\"active\",children:\"正常 / 启用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1032\",value:\"disabled\",children:\"后台停用\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1033\",value:\"locked\",children:\"后台锁定\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1034\",value:\"suspended\",children:\"企业暂停\"}),e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1035\",value:\"deleted\",children:\"已删除\"})]}),e.jsxs(\"select\",{\"data-loc\":\"client/src/pages/Staff.tsx:1037\",value:h,onChange:i=>le(i.target.value),className:\"h-8 rounded-md border border-input bg-background px-2 text-xs\",\"aria-label\":\"后台角色筛选\",children:[e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1043\",value:\"all\",children:\"全部后台角色\"}),Y.map(i=>e.jsx(\"option\",{\"data-loc\":\"client/src/pages/Staff.tsx:1045\",value:i,children:Be(i)},i))]})]})"
+    }
+  ],
+  "unaffectedPartitions": [
+    {
+      "beforeStart": 0,
+      "beforeEnd": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "beforeStart": 0,
+      "beforeEnd": 86606,
+      "bytes": 86606,
+      "sha256": "a18d079cafdaa173dadbc04dd377540d11a11fbf93343dce687bab8c3d6a1a6d"
+    },
+    {
+      "beforeStart": 87268,
+      "beforeEnd": 88127,
+      "bytes": 859,
+      "sha256": "dacc329f958f2a8c8220e58d9cd2b55562814a1b149587928d0bf9e8be6b1e60"
+    },
+    {
+      "beforeStart": 89592,
+      "beforeEnd": 98358,
+      "bytes": 8766,
+      "sha256": "58033f6c7d4845ddb627ccb83c5aadec3f8ccd6726c071300ad6d72e0c860f18"
+    }
+  ],
+  "forwardReverseFullBytes": true,
+  "allOriginalControlsAndConditionsRetained": true,
+  "searchGroupClassChanges": [],
+  "onlySameFunctionReturnJSXRelocated": true,
+  "noBusinessPreambleChanged": true,
+  "newImportAliasAbsentEverywhereInOriginalAST": true,
+  "oldImportsExportsAndAllOtherFunctionsUnchanged": true,
+  "movedFragments": [
+    {
+      "start": 86682,
+      "end": 87266,
+      "sha256": "a5d939456ea08f1a4d7d9197b8362a110dec4a2dffc38b0584421fc41a88d99c"
+    },
+    {
+      "start": 88227,
+      "end": 88410,
+      "sha256": "1b53ae6095813362351e90b7c895eda183116f20122aaacf00da736808a4afaa"
+    },
+    {
+      "start": 88411,
+      "end": 89188,
+      "sha256": "92e2aa29c3349801d6cfab2f433d71c50ed66ed293df886f5325dc2c1792074b"
+    },
+    {
+      "start": 89189,
+      "end": 89589,
+      "sha256": "96bd4aeda4984eab1ace805bc8b4a1fa89998a13992657054e0153fa876fc0dc"
+    }
+  ]
+}
