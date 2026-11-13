@@ -56,6 +56,16 @@ import { channelInventoryListBusinessInputSchema } from "./channelInventoryListB
 import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInputSchema, previewFactoryMaterialReceptionResultSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
+import {
+  businessSalesOrderMetadataGetSchema, businessSalesOrderSaveReceiverSchema,
+  businessSalesOrderAddAfterSaleSchema, businessSalesOrderUpdateAfterSaleSchema,
+  type BusinessSalesOrderMetadataGetInput,
+} from "../shared/businessSalesOrderMetadata";
+import {
+  deriveBusinessSalesOrderMetadataProvenance, getBusinessSalesOrderMetadata,
+  saveBusinessSalesOrderReceiver, addBusinessSalesOrderAfterSale, updateBusinessSalesOrderAfterSale,
+  type BusinessSalesOrderMetadataProvenance, type BusinessSalesOrderMetadataActor,
+} from "./services/businessSalesOrderMetadata";
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
@@ -504,6 +514,49 @@ function collaborationMutation(method: "channelInventory.collaborationNotesAdd" 
     forwardBusinessMethod(ctx, input, { method, module: "inventory", mode: "read" }));
 }
 
+/** Local metadata cannot grant order visibility. The original get must succeed on
+ * every call, inside the unchanged authorization fence, before native metadata IO. */
+async function withBusinessSalesOrderMetadata<T>(
+  ctx: TrpcContext,
+  input: BusinessSalesOrderMetadataGetInput,
+  mode: BusinessAccessMode,
+  operation: (provenance: BusinessSalesOrderMetadataProvenance, actor: BusinessSalesOrderMetadataActor) => Promise<T>,
+) {
+  const merchantId = businessMerchantIdFromContext(ctx);
+  return withCurrentBusinessAuthorization(ctx, merchantId, { module: "orders", mode }, async ({ account, staffBinding, scope, merchant }) => {
+    if (!businessScopeAllows(scope, "customers", "read")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的客户读取范围授权" });
+    }
+    const binding = businessEnterpriseBindingFromMerchant(merchant);
+    const actor = businessAuditActor(ctx);
+    let original: unknown;
+    try {
+      original = await callPlatformBusinessCommand({
+        binding,
+        staffUserId: staffBinding.frontUserId,
+        bindingVersion: staffBinding.bindingVersion,
+        adminActor: { id: actor.operatorId, name: actor.operatorName, role: actor.operatorRole },
+        requestId: randomUUID(), method: "crmSalesOrder.get",
+        params: { id: input.id, ...(input.customerId === undefined ? {} : { customerId: input.customerId }) },
+      });
+    } catch (error) {
+      if (error instanceof PlatformBusinessPublicError) {
+        throw new TRPCError({ code: error.code, message: error.message });
+      }
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务订单核验暂时不可用，请稍后重试" });
+    }
+    const provenance = deriveBusinessSalesOrderMetadataProvenance(merchant,
+      { id: input.id, ...(input.customerId === undefined ? {} : { customerId: input.customerId }) }, original);
+    return operation(provenance, {
+      adminUserId: account.id, frontUserId: staffBinding.frontUserId,
+      bindingVersion: staffBinding.bindingVersion, scopeVersion: scope.scopeVersion,
+    });
+  }).catch((error: unknown) => {
+    if (error instanceof TRPCError) throw error;
+    throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务订单信息授权核验暂时不可用，请稍后重试" });
+  });
+}
+
 const inventoryBusinessRouter = router({
   list: businessQuery("inventory.list", "inventory"),
   listPaged: businessQuery("inventory.listPaged", "inventory"),
@@ -677,6 +730,14 @@ const customerDemandBusinessRouter = router({
 });
 
 const crmSalesOrderBusinessRouter = router({
+  metadataGet: publicProcedure.input(businessSalesOrderMetadataGetSchema).query(({ ctx, input }) =>
+    withBusinessSalesOrderMetadata(ctx, input, "read", provenance => getBusinessSalesOrderMetadata(provenance))),
+  saveReceiver: publicProcedure.input(businessSalesOrderSaveReceiverSchema).mutation(({ ctx, input }) =>
+    withBusinessSalesOrderMetadata(ctx, input, "write", (provenance, actor) => saveBusinessSalesOrderReceiver(provenance, actor, input))),
+  addAfterSale: publicProcedure.input(businessSalesOrderAddAfterSaleSchema).mutation(({ ctx, input }) =>
+    withBusinessSalesOrderMetadata(ctx, input, "write", (provenance, actor) => addBusinessSalesOrderAfterSale(provenance, actor, input))),
+  updateAfterSale: publicProcedure.input(businessSalesOrderUpdateAfterSaleSchema).mutation(({ ctx, input }) =>
+    withBusinessSalesOrderMetadata(ctx, input, "write", (provenance, actor) => updateBusinessSalesOrderAfterSale(provenance, actor, input))),
   list: businessQuery("crmSalesOrder.list", "orders"),
   candidates: businessQuery("crmSalesOrder.candidates", "orders"),
   get: businessQuery("crmSalesOrder.get", "orders"),

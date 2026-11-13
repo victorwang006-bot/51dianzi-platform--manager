@@ -99,6 +99,8 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
     ["/workbench/chat/8", ["询价接待"]],
     ["/workbench", ["客户列表"]],
     ["/workbench/outbound", ["销售订单", "商城订单"]],
+    ["/workbench/inbound", ["入库管理"]],
+    ["/workbench/inbound/fixture-detail?fixture=true#entry", ["入库管理"]],
     ["/workbench/procurement/orders/8", ["采购管理", "采购订单"]],
     ["/materials/8", ["平台运营", "基础资料", "物料数据库"]],
     ["/portal-users/8", ["平台运营", "基础资料", "平台用户"]],

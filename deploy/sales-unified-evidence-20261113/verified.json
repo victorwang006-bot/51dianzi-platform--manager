@@ -1,0 +1,105 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T15:19:29.111042+00:00",
+  "htmlSha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-sales-unified-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js",
+      "sha256": "62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js",
+      "sha256": "31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js",
+      "sha256": "894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342"
+    },
+    {
+      "relative": "assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "sha256": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-sales-unified-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "status": 200,
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js",
+      "status": 200,
+      "sha256": "62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js",
+      "status": 200,
+      "sha256": "31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js",
+      "status": 200,
+      "sha256": "894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "status": 200,
+      "sha256": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=mall",
+      "status": 200,
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=business",
+      "status": 200,
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    }
+  ],
+  "sourceTests": 305,
+  "actualUITests": 31,
+  "allProtectedFilesUnchanged": true,
+  "allProcessesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "loggedInOrderMutationTested": false
+}

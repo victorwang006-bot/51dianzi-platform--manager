@@ -20,10 +20,31 @@ import PlatformLayout from "../../../../BusinessContentFrame";
 import { trpc } from "../../../../api/business-trpc";
 import {
   AdminPage,
-  AdminPageHeader,
   AdminFilterBar,
   AdminDataPanel,
 } from "@/components/admin/UnifiedAdminPage";
+import { useBusinessScope } from "../../../../BusinessScope";
+import { useBusinessWorkbenchAccess } from "../../../../BusinessWorkbenchAccessGate";
+import { businessSalesOrderMetadataCanWrite } from "../lib/businessSalesOrderMetadataAccess";
+import { useBusinessSalesOrderPresentation } from "../hooks/useBusinessSalesOrderPresentation";
+import {
+  BusinessOrderItems,
+  BusinessOrderMetadataBoundary,
+  BusinessOrderLogistics,
+  BusinessOrderRowActions,
+  type BusinessSalesOrderRowSlots,
+} from "../components/businessSalesOrderRows";
+import {
+  BUSINESS_AFTERSALE_MISSING,
+  BUSINESS_RECEIVER_MISSING,
+} from "../lib/businessSalesOrderPresentation";
+import {
+  BusinessSalesOrderMetadataProvider,
+  BusinessSalesOrderReceiverCell,
+  BusinessSalesOrderAfterSaleCell,
+  BusinessSalesOrderMetadataActionItems,
+  createBusinessSalesOrderMetadataExportReader,
+} from "../components/businessSalesOrderMetadata";
 import { ConfirmDialog } from "../components/customers/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
@@ -125,6 +146,7 @@ export type CustomerSalesOrdersProps = {
   customer: { id: number; name: string; archivedAt?: string | Date | null };
   /** UI identity only, not an authorization grant; include actor/enterprise/customer revisions. */
   contextIdentityKey: string | number | null;
+  rowSlots?: BusinessSalesOrderRowSlots;
   canRead?: boolean;
   canWrite?: boolean;
   readOnly?: boolean;
@@ -142,7 +164,12 @@ type OrderListState = {
   selectedId: StatePair<number | null>;
 };
 /** Backward-compatible standalone route; only this wrapper reads the route's page memory. */
-export default function CrmSalesOrders() {
+export default function CrmSalesOrders({
+  rowSlots,
+}: { rowSlots?: BusinessSalesOrderRowSlots } = {}) {
+  const proof = useBusinessScope().contextVerification;
+  const proofKey = JSON.stringify([proof.identity, proof.authorizationVersion, proof.readVersion]);
+  const previousProof = useRef(proofKey);
   const ready = usePageMemory();
   const state: OrderListState = {
     draftKeyword: useRememberedState("draftKeyword", ""),
@@ -151,9 +178,14 @@ export default function CrmSalesOrders() {
     page: useRememberedState("page", 1),
     selectedId: useRememberedState<number | null>("selectedId", null),
   };
+  useEffect(() => {
+    if (previousProof.current === proofKey) return;
+    previousProof.current = proofKey;
+    state.selectedId[1](null);
+  }, [proofKey]);
   return (
     <PlatformLayout>
-      <SalesOrdersContent ready={ready} state={state} />
+      <SalesOrdersContent key={proofKey} ready={ready} state={state} rowSlots={rowSlots} />
     </PlatformLayout>
   );
 }
@@ -183,6 +215,9 @@ export function CustomerSalesOrders(props: CustomerSalesOrdersProps) {
   return <CustomerOrdersSession key={identity} {...props} />;
 }
 function CustomerOrdersSession(props: CustomerSalesOrdersProps) {
+  const proof = useBusinessScope().contextVerification;
+  const proofKey = JSON.stringify([proof.identity, proof.authorizationVersion, proof.readVersion]);
+  const previousProof = useRef(proofKey);
   const state: OrderListState = {
     draftKeyword: useState(""),
     keyword: useState(""),
@@ -190,18 +225,45 @@ function CustomerOrdersSession(props: CustomerSalesOrdersProps) {
     page: useState(1),
     selectedId: useState<number | null>(null),
   };
-  return <SalesOrdersContent ready state={state} embedded={props} />;
+  useEffect(() => {
+    if (previousProof.current === proofKey) return;
+    previousProof.current = proofKey;
+    state.selectedId[1](null);
+  }, [proofKey]);
+  return (
+    <SalesOrdersContent
+      key={proofKey}
+      ready
+      state={state}
+      embedded={props}
+      rowSlots={props.rowSlots}
+    />
+  );
 }
 function SalesOrdersContent({
   ready,
   state,
   embedded,
+  rowSlots,
 }: {
   ready: boolean;
   state: OrderListState;
   embedded?: CustomerSalesOrdersProps;
+  rowSlots?: BusinessSalesOrderRowSlots;
 }) {
   const utils = trpc.useUtils();
+  const business = useBusinessScope();
+  const metadataAccess = useBusinessWorkbenchAccess();
+  const verification = business.contextVerification;
+  const verified = verification.state === "verified";
+  const verifiedIdentity = JSON.stringify([
+    verification.identity,
+    verification.authorizationVersion,
+    verification.readVersion,
+    embedded?.contextIdentityKey,
+    embedded?.customer.id,
+  ]);
+  const verifiedIdentityRef = useRef(verifiedIdentity);
   const [, navigate] = useLocation();
   const search = useSearch();
   const deepLinkedDemandNoRef = useRef("");
@@ -219,7 +281,17 @@ function SalesOrdersContent({
       embedded.canWrite === true &&
       !embedded.readOnly &&
       !embedded.customer.archivedAt);
-  const session = useSalesOrderSession(canWrite);
+  const coreSession = useSalesOrderSession(canWrite && verified);
+  const liveIdentityRef = useRef(verifiedIdentity);
+  liveIdentityRef.current = verifiedIdentity;
+  const session = useMemo(
+    () => ({
+      isWritable: () =>
+        coreSession.isWritable() &&
+        liveIdentityRef.current === verifiedIdentity,
+    }),
+    [coreSession, verifiedIdentity]
+  );
   const [entryOpen, setEntryOpen] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [candidateKeyword, setCandidateKeyword] = useState("");
@@ -271,7 +343,10 @@ function SalesOrdersContent({
     [customerId, keyword, page, status]
   );
   const rawListQuery = useRestoringListQuery(
-    trpc.crmSalesOrder.list.useQuery(listInput, freshListOptions({}, ready)),
+    trpc.crmSalesOrder.list.useQuery(
+      listInput,
+      freshListOptions({ trpc: { abortOnUnmount: true } }, ready && verified)
+    ),
     !embedded
   );
   const rawDetailQuery = trpc.crmSalesOrder.get.useQuery(
@@ -279,7 +354,12 @@ function SalesOrdersContent({
       id: selectedId ?? 1,
       ...(customerId === undefined ? {} : { customerId }),
     },
-    { enabled: selectedId != null, staleTime: 0, refetchOnMount: "always" }
+    {
+      enabled: selectedId != null && verified,
+      trpc: { abortOnUnmount: true },
+      staleTime: 0,
+      refetchOnMount: "always",
+    }
   );
   const rawCandidatesQuery = trpc.crmSalesOrder.candidates.useQuery(
     {
@@ -306,11 +386,12 @@ function SalesOrdersContent({
   const listQuery = {
     ...rawListQuery,
     data:
+      !verified ||
+      verifiedIdentityRef.current !== verifiedIdentity ||
       listMismatch ||
-      (embedded &&
-        (rawListQuery.isError ||
-          rawListQuery.isFetching ||
-          rawListQuery.isFetchedAfterMount === false))
+      rawListQuery.isError ||
+      rawListQuery.isFetching ||
+      rawListQuery.isFetchedAfterMount === false
         ? undefined
         : rawListQuery.data,
     isError: rawListQuery.isError || listMismatch,
@@ -319,11 +400,12 @@ function SalesOrdersContent({
   const detailQuery = {
     ...rawDetailQuery,
     data:
+      !verified ||
+      verifiedIdentityRef.current !== verifiedIdentity ||
       detailMismatch ||
-      (embedded &&
-        (rawDetailQuery.isError ||
-          rawDetailQuery.isFetching ||
-          rawDetailQuery.isFetchedAfterMount === false))
+      rawDetailQuery.isError ||
+      rawDetailQuery.isFetching ||
+      rawDetailQuery.isFetchedAfterMount === false
         ? undefined
         : rawDetailQuery.data,
     isError: rawDetailQuery.isError || detailMismatch,
@@ -332,6 +414,8 @@ function SalesOrdersContent({
   const candidatesQuery = {
     ...rawCandidatesQuery,
     data:
+      !verified ||
+      verifiedIdentityRef.current !== verifiedIdentity ||
       candidateMismatch ||
       (embedded &&
         (rawCandidatesQuery.isError ||
@@ -342,6 +426,59 @@ function SalesOrdersContent({
     isError: rawCandidatesQuery.isError || candidateMismatch,
     error: candidateMismatch ? scopeError : rawCandidatesQuery.error,
   };
+  const metadataReady = ready && verified && verifiedIdentityRef.current === verifiedIdentity && listQuery.data != null;
+  const metadataCanWrite = businessSalesOrderMetadataCanWrite({ verified: metadataReady, merchantId: business.merchantId, pageWritable: session.isWritable(), access: metadataAccess });
+  const metadataLive = useRef({ ready: metadataReady, identity: verifiedIdentity, merchantId: business.merchantId });
+  metadataLive.current = { ready: metadataReady, identity: verifiedIdentity, merchantId: business.merchantId };
+  const metadataSlots = useMemo<BusinessSalesOrderRowSlots>(() => ({
+    wrapList: context => <BusinessSalesOrderMetadataProvider {...context} />,
+    receiverCell: ({ order }) => <BusinessSalesOrderReceiverCell order={order} />,
+    statusCell: ({ order }) => <BusinessSalesOrderAfterSaleCell order={order} />,
+    options: ({ order }) => <BusinessSalesOrderMetadataActionItems order={order} />,
+    readExportMetadata: createBusinessSalesOrderMetadataExportReader({
+      ready: metadataReady,
+      identityKey: verifiedIdentity,
+      merchantId: business.merchantId ?? 0,
+      ...(customerId === undefined ? {} : { customerId }),
+      isCurrent: () => metadataLive.current.ready && metadataLive.current.identity === verifiedIdentity && metadataLive.current.merchantId === business.merchantId,
+      onAuthorizationError: business.onAuthorizationError,
+    }),
+    ...rowSlots,
+  }), [metadataReady, verifiedIdentity, business.merchantId, customerId, business.onAuthorizationError, rowSlots]);
+  // New presentation reads bypass shared query cache: a previous principal's cached
+  // get/list response or in-flight fetch can never satisfy this read generation.
+  const presentation = useBusinessSalesOrderPresentation({
+    identity: verifiedIdentity,
+    verified: verified && verifiedIdentityRef.current === verifiedIdentity,
+    page,
+    filters: {
+      keyword,
+      ...(customerId === undefined ? {} : { customerId }),
+      ...(status === "all" ? {} : { status }),
+    },
+    rows: listQuery.data?.items,
+    total: listQuery.data?.total,
+    readRevision: rawListQuery.dataUpdatedAt,
+    readers: {
+      list: (input, signal) =>
+        utils.client.crmSalesOrder.list.query(input, { signal }),
+      get: (input, signal) =>
+        utils.client.crmSalesOrder.get.query(input, { signal }),
+    },
+    onReadError: business.onAuthorizationError,
+    readExportMetadata: metadataSlots?.readExportMetadata,
+  });
+  useEffect(() => {
+    if (verifiedIdentityRef.current === verifiedIdentity) return;
+    verifiedIdentityRef.current = verifiedIdentity;
+    setSelectedId(null);
+    setPayOpen(false);
+    setShipOpen(false);
+    setCancelOpen(false);
+    // Require a new response before showing same-id data after a proof revision.
+    void utils.crmSalesOrder.list.invalidate();
+    void utils.crmSalesOrder.get.invalidate();
+  }, [verifiedIdentity, utils]);
   const totalPages = Math.max(
     1,
     Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE)
@@ -396,9 +533,12 @@ function SalesOrdersContent({
       setCandidatePage(1);
       params.delete("demandNo");
       params.set("orderSource", "business");
-      navigate(`/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`, {
-        replace: true,
-      });
+      navigate(
+        `/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`,
+        {
+          replace: true,
+        }
+      );
       return;
     }
     if (orderKeyword) {
@@ -407,9 +547,12 @@ function SalesOrdersContent({
       setPage(1);
       params.delete("keyword");
       params.set("orderSource", "business");
-      navigate(`/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`, {
-        replace: true,
-      });
+      navigate(
+        `/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`,
+        {
+          replace: true,
+        }
+      );
     }
   }, [embedded, navigate, search]);
 
@@ -807,351 +950,471 @@ function SalesOrdersContent({
 
   return (
     <>
-      <AdminPage
-        className={`crm-sales-orders-page min-w-0 space-y-3${embedded ? " crm-sales-orders-embedded" : ""}`}
-        aria-label={
-          embedded ? `${embedded.customer.name}订单与出货` : undefined
-        }
+      <BusinessOrderMetadataBoundary
+        slots={metadataSlots}
+        context={{
+          rows: listQuery.data?.items ?? [],
+          ready: metadataReady,
+          canWrite: metadataCanWrite,
+          identityKey: verifiedIdentity,
+          merchantId: business.merchantId,
+          ...(customerId === undefined ? {} : { customerId }),
+        }}
       >
-        {!embedded ? (
-          <AdminPageHeader
-            list
-            title="业务订单"
-            description="客户需求形成的内部订单，不含网站自主下单。"
-            actions={
-              <Button
-                type="button"
-                className={buttonClass}
-                onClick={() => setEntryOpen(true)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                录入销售订单
-              </Button>
-            }
-          />
-        ) : null}
-        {embedded && !canWrite ? (
-          <p role="status" className="crm-sales-orders-readonly-note">
-            {embedded.customer.archivedAt
-              ? "客户已归档，订单与出货仅供查看。"
-              : "当前为只读模式，不能录入、收款、出货或取消订单。"}
-          </p>
-        ) : null}
+        <AdminPage
+          className={`crm-sales-orders-page min-w-0 space-y-3${embedded ? " crm-sales-orders-embedded" : ""}`}
+          aria-label={
+            embedded ? `${embedded.customer.name}订单与出货` : undefined
+          }
+        >
+          {embedded && !canWrite ? (
+            <p role="status" className="crm-sales-orders-readonly-note">
+              {embedded.customer.archivedAt
+                ? "客户已归档，订单与出货仅供查看。"
+                : "当前为只读模式，不能录入、收款、出货或取消订单。"}
+            </p>
+          ) : null}
 
-        <AdminFilterBar className="crm-sales-orders-filters">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              aria-label="搜索销售订单"
-              className="crm-sales-orders-control w-[320px] max-w-full bg-white text-xs"
-              placeholder="订单号、需求号、项目、客户、型号"
-              value={draftKeyword}
-              onChange={event => setDraftKeyword(event.target.value)}
-              onKeyDown={event => {
-                if (event.key === "Enter") applyFilters();
-              }}
-            />
-            <Select
-              value={status}
-              onValueChange={value => {
-                setStatus(value as StatusFilter);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="crm-sales-orders-control w-[128px] bg-white text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="crm-sales-orders-select">
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="confirmed">待交付</SelectItem>
-                <SelectItem value="cancelled">已取消</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              className={secondaryButtonClass}
-              onClick={applyFilters}
-            >
-              <Search className="mr-1 h-3.5 w-3.5" />
-              筛选
-            </Button>
-            {embedded && canWrite ? (
-              <Button
-                type="button"
-                className={buttonClass}
-                onClick={() => setEntryOpen(true)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                成交确认 / 生成订单
-              </Button>
-            ) : null}
-            {keyword || status !== "all" || draftKeyword ? (
-              <Button
-                type="button"
-                variant="outline"
-                className={secondaryButtonClass}
-                onClick={() => {
-                  setDraftKeyword("");
-                  setKeyword("");
-                  setStatus("all");
-                  setPage(1);
-                }}
-              >
-                重置
-              </Button>
-            ) : null}
-          </div>
-        </AdminFilterBar>
-
-        <AdminDataPanel className="overflow-hidden">
-          {listQuery.isLoading ? (
-            <div className="flex justify-center p-12">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : listQuery.isError ? (
-            <div className="p-14 text-center text-xs text-red-600">
-              {listQuery.error?.message || "订单读取失败"}{" "}
-              <Button
-                className="ml-2 h-7 text-xs"
-                variant="outline"
-                onClick={() => listQuery.refetch()}
-              >
-                重试
-              </Button>
-            </div>
-          ) : !listQuery.data?.items.length ? (
-            <div className="p-14 text-center">
-              <p className="text-sm font-medium">暂无匹配的内部销售订单</p>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                可调整筛选，或录入新的销售订单。
-              </p>
-            </div>
-          ) : (
-            <div className="min-w-0">
-              <Table
-                className="crm-sales-orders-table admin-table-readable w-full table-fixed"
-                containerClassName="crm-sales-orders-table-scroll overflow-x-auto"
-              >
-                <colgroup>
-                  <col className="w-[14%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[14%]" />
-                </colgroup>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      订单号
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      客户 / 需求
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      项目
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-right text-[11px] text-slate-500">
-                      金额（含税）
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      状态
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      收款
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      出货
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      录入时间
-                    </TableHead>
-                    <TableHead className="h-8 whitespace-nowrap px-2 text-right text-[11px] text-slate-500">
-                      操作
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {listQuery.data.items.map(order => (
-                    <TableRow
-                      key={order.id}
-                      className="h-14"
-                      data-page-memory-row={String(order.id)}
+          <AdminDataPanel className="overflow-hidden">
+            <AdminFilterBar className="crm-sales-orders-filters border-0 border-b rounded-none shadow-none">
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <Input
+                  aria-label="搜索销售订单"
+                  className="crm-sales-orders-control w-[320px] max-w-full bg-white text-xs"
+                  placeholder="订单号、需求号、项目、客户、型号"
+                  value={draftKeyword}
+                  onChange={event => setDraftKeyword(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === "Enter") applyFilters();
+                  }}
+                />
+                <Select
+                  value={status}
+                  onValueChange={value => {
+                    setStatus(value as StatusFilter);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="crm-sales-orders-control w-[128px] bg-white text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="crm-sales-orders-select">
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="confirmed">待交付</SelectItem>
+                    <SelectItem value="cancelled">已取消</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={secondaryButtonClass}
+                  onClick={applyFilters}
+                >
+                  <Search className="mr-1 h-3.5 w-3.5" />
+                  筛选
+                </Button>
+                {keyword || status !== "all" || draftKeyword ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={secondaryButtonClass}
+                    onClick={() => {
+                      setDraftKeyword("");
+                      setKeyword("");
+                      setStatus("all");
+                      setPage(1);
+                    }}
+                  >
+                    重置
+                  </Button>
+                ) : null}
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  {canWrite ? (
+                    <Button
+                      type="button"
+                      className={buttonClass}
+                      disabled={!verified}
+                      onClick={() => setEntryOpen(true)}
                     >
-                      <TableCell className="min-w-0 px-2 py-1.5">
-                        <button
-                          type="button"
-                          className="crm-sales-orders-order-link block w-full truncate text-left font-medium text-[#185FA5] hover:underline"
-                          title={order.orderNumber}
-                          onClick={() => setSelectedId(order.id)}
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      {embedded ? "成交确认 / 生成订单" : "录入销售订单"}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={secondaryButtonClass}
+                    disabled={
+                      !listQuery.data || presentation.exportBusy || !verified
+                    }
+                    onClick={() => void presentation.exportOrders()}
+                  >
+                    {presentation.exportBusy
+                      ? "导出中…"
+                      : presentation.selectedIds.size
+                        ? `导出选中 ${presentation.selectedIds.size}`
+                        : "导出当前筛选全部"}
+                  </Button>
+                  {presentation.exportBusy ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={secondaryButtonClass}
+                      onClick={presentation.cancelExport}
+                    >
+                      取消导出
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </AdminFilterBar>
+            {presentation.exportMessage ? (
+              <p
+                role="status"
+                className="px-3 py-1.5 text-xs text-muted-foreground"
+              >
+                {presentation.exportMessage}
+              </p>
+            ) : null}
+            {!verified ? (
+              <p
+                role="status"
+                className="px-3 py-2 text-xs text-muted-foreground"
+              >
+                正在重新核验业务身份，暂停读取与导出。
+              </p>
+            ) : null}
+            {listQuery.isLoading ? (
+              <div className="flex justify-center p-12">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : listQuery.isError ? (
+              <div className="p-14 text-center text-xs text-red-600">
+                {listQuery.error?.message || "订单读取失败"}{" "}
+                <Button
+                  className="ml-2 h-7 text-xs"
+                  variant="outline"
+                  onClick={() => listQuery.refetch()}
+                >
+                  重试
+                </Button>
+              </div>
+            ) : !listQuery.data?.items.length ? (
+              <div className="p-14 text-center">
+                <p className="text-sm font-medium">暂无匹配的内部销售订单</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  可调整筛选，或录入新的销售订单。
+                </p>
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <Table
+                  className="crm-sales-orders-table admin-table-readable w-full min-w-[1040px] table-fixed"
+                  containerClassName="crm-sales-orders-table-scroll overflow-x-auto"
+                >
+                  <colgroup>
+                    <col className="w-[36px]" />
+                    <col className="w-[150px]" />
+                    <col className="w-[19%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[156px]" />
+                    <col />
+                    <col className="w-[132px]" />
+                    <col className="w-[64px]" />
+                  </colgroup>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="h-8 px-2 text-center">
+                        <input
+                          type="checkbox"
+                          aria-label="选择本页全部订单"
+                          checked={
+                            listQuery.data.items.length > 0 &&
+                            listQuery.data.items.every(order =>
+                              presentation.selectedIds.has(order.id)
+                            )
+                          }
+                          disabled={presentation.exportBusy}
+                          onChange={presentation.toggleAll}
+                        />
+                      </TableHead>
+                      {[
+                        "订单 / 日期",
+                        "客户 / 收货人",
+                        "商品明细",
+                        "含税金额",
+                        "配送 / 物流",
+                        "状态",
+                        "操作",
+                      ].map((label, index) => (
+                        <TableHead
+                          key={label}
+                          className={`h-8 px-2 text-[11px] text-slate-500${index === 3 || index === 6 ? " text-right" : ""}`}
                         >
-                          {order.orderNumber}
-                        </button>
-                      </TableCell>
-                      <TableCell className="min-w-0 px-2 py-1.5 whitespace-normal">
-                        <div
-                          className="admin-cell-primary truncate"
-                          title={order.customerName}
-                        >
-                          {order.customerName || "—"}
-                        </div>
-                        <div
-                          className="admin-cell-secondary mt-0.5 truncate"
-                          title={order.demandNo}
-                        >
-                          {order.demandNo}
-                        </div>
-                      </TableCell>
-                      <TableCell
-                        className="admin-cell-primary min-w-0 truncate px-2 py-1.5"
-                        title={order.projectName || "—"}
+                          {label}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {listQuery.data.items.map(order => (
+                      <TableRow
+                        key={order.id}
+                        className="h-14"
+                        data-page-memory-row={String(order.id)}
                       >
-                        {order.projectName || "—"}
-                      </TableCell>
-                      <TableCell className="admin-cell-primary px-2 py-1.5 text-right tabular-nums">
-                        {formatSalesOrderAmount(order.totalAmount)}
-                      </TableCell>
-                      <TableCell className="px-2 py-1.5">
-                        <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
-                          <span
-                            className={`crm-sales-orders-status-dot text-[10px] ${statusDotClass(order.status)}`}
-                            aria-hidden="true"
+                        <TableCell className="px-2 py-1.5 text-center">
+                          <input
+                            type="checkbox"
+                            aria-label={`选择订单 ${order.orderNumber}`}
+                            checked={presentation.selectedIds.has(order.id)}
+                            disabled={presentation.exportBusy}
+                            onChange={() => presentation.toggle(order.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-0 px-2 py-1.5">
+                          <button
+                            type="button"
+                            className="crm-sales-orders-order-link block w-full truncate text-left font-medium text-[#185FA5] hover:underline"
+                            title={order.orderNumber}
+                            onClick={() => setSelectedId(order.id)}
                           >
-                            ●
-                          </span>
-                          <span className="font-medium text-slate-700">
-                            {CRM_SALES_ORDER_STATUS_LABELS[order.status]}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-2 py-1.5">
-                        <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
-                          <span
-                            className={`crm-sales-orders-status-dot text-[10px] ${paymentDotClass(order.paymentStatus)}`}
-                            aria-hidden="true"
+                            {order.orderNumber}
+                          </button>
+                          <div className="admin-cell-secondary mt-0.5 tabular-nums">
+                            {beijingDate(order.createdAt)}
+                          </div>
+                          <div
+                            className="admin-cell-secondary mt-0.5 truncate"
+                            title={`${order.demandNo} · ${order.projectName || "—"}`}
                           >
-                            ●
-                          </span>
-                          <span className="font-medium text-slate-700">
-                            {
-                              CRM_SALES_PAYMENT_STATUS_LABELS[
-                                order.paymentStatus
-                              ]
-                            }
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-2 py-1.5">
-                        <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
-                          <span
-                            className={`crm-sales-orders-status-dot text-[10px] ${shipmentDotClass(order.shipmentStatus)}`}
-                            aria-hidden="true"
+                            {order.demandNo} · {order.projectName || "—"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="min-w-0 px-2 py-1.5 whitespace-normal">
+                          <div
+                            className="admin-cell-primary truncate"
+                            title={order.customerName}
                           >
-                            ●
-                          </span>
-                          <span className="font-medium text-slate-700">
+                            {order.customerName || "—"}
+                          </div>
+                          {metadataSlots?.receiverCell ? (
+                            metadataSlots.receiverCell({
+                              order,
+                              identity: verifiedIdentity,
+                              verified,
+                              canWrite,
+                            })
+                          ) : (
+                            <>
+                              <div className="admin-cell-secondary mt-0.5">
+                                收货人：{BUSINESS_RECEIVER_MISSING}
+                              </div>
+                              <div className="admin-cell-secondary mt-0.5">
+                                地址：{BUSINESS_RECEIVER_MISSING}
+                              </div>
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell className="min-w-0 px-2 py-1.5">
+                          <BusinessOrderItems
+                            detail={presentation.details?.get(order.id)}
+                            failed={presentation.detailsError}
+                            onView={() => setSelectedId(order.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="admin-cell-primary px-2 py-1.5 text-right tabular-nums">
+                          <div className="font-medium">
+                            {formatSalesOrderAmount(order.totalAmount)}
+                          </div>
+                          <div className="admin-cell-secondary mt-0.5">
+                            已收 {formatSalesOrderAmount(order.paidAmount)}
+                          </div>
+                          <div className="admin-cell-secondary mt-0.5">
+                            月结 {formatSalesOrderAmount(order.monthlyAmount)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="min-w-0 px-2 py-1.5">
+                          <BusinessOrderLogistics
+                            detail={presentation.details?.get(order.id)}
+                            failed={presentation.detailsError}
+                            onView={() => setSelectedId(order.id)}
+                          />
+                          <div className="admin-cell-secondary mt-0.5">
                             {
                               CRM_SALES_SHIPMENT_STATUS_LABELS[
                                 order.shipmentStatus
                               ]
                             }
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="truncate px-2 py-1.5 tabular-nums">
-                        <span className="admin-cell-secondary">
-                          {beijingDate(order.createdAt)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-2 py-1.5 text-right">
-                        <div className="inline-flex items-center whitespace-nowrap divide-x divide-slate-200">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="admin-row-action rounded-none px-2 text-xs text-[#185FA5] hover:bg-[#185FA5]/5 hover:text-[#0C447C]"
-                            onClick={() => setSelectedId(order.id)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-2 py-1.5">
+                          <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
+                            <span
+                              className={`crm-sales-orders-status-dot text-[10px] ${statusDotClass(order.status)}`}
+                              aria-hidden="true"
+                            >
+                              ●
+                            </span>
+                            <span className="font-medium text-slate-700">
+                              {CRM_SALES_ORDER_STATUS_LABELS[order.status]}
+                            </span>
+                          </div>
+                          <div className="admin-cell-secondary mt-0.5">
+                            {
+                              CRM_SALES_PAYMENT_STATUS_LABELS[
+                                order.paymentStatus
+                              ]
+                            }
+                          </div>
+                          {metadataSlots?.statusCell ? (
+                            metadataSlots.statusCell({
+                              order,
+                              identity: verifiedIdentity,
+                              verified,
+                              canWrite,
+                            })
+                          ) : (
+                            <div
+                              className="admin-cell-secondary mt-0.5"
+                              title={BUSINESS_AFTERSALE_MISSING}
+                            >
+                              {BUSINESS_AFTERSALE_MISSING}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-2 py-1.5 text-right">
+                          <BusinessOrderRowActions
+                            orderNumber={order.orderNumber}
                           >
-                            查看
-                          </Button>
-                          {canWrite && order.status === "confirmed" ? (
-                            <>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="admin-row-action rounded-none px-2 text-xs text-[#185FA5] hover:bg-[#185FA5]/5 hover:text-[#0C447C]"
-                                onClick={() => {
-                                  setSelectedId(order.id);
-                                  setPayAmount("");
-                                  setPayDate(todayLocal());
-                                  setPayNote("");
-                                  setPayMethod("bank");
-                                  setPayOpen(true);
-                                }}
-                              >
-                                收款
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="admin-row-action rounded-none px-2 text-xs text-[#185FA5] hover:bg-[#185FA5]/5 hover:text-[#0C447C]"
-                                onClick={() => {
-                                  setSelectedId(order.id);
-                                  setShipQtys({});
-                                  setExpressCo("");
-                                  setExpressNo("");
-                                  setShipNote("");
-                                  setShipMethod("express");
-                                  setShipOpen(true);
-                                }}
-                              >
-                                出货
-                              </Button>
-                            </>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </AdminDataPanel>
-        {listQuery.data?.items.length ? (
-          <div className="aui-pagination crm-sales-orders-pagination mb-8 mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>共 {listQuery.data.total} 条</span>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 bg-white text-xs"
-                disabled={page <= 1 || listQuery.isFetching}
-                onClick={() => setPage(current => current - 1)}
-              >
-                上一页
-              </Button>
-              <span className="min-w-[64px] text-center">
-                第 {page} / {totalPages} 页
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 bg-white text-xs"
-                disabled={page >= totalPages || listQuery.isFetching}
-                onClick={() => setPage(current => current + 1)}
-              >
-                下一页
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </AdminPage>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="admin-row-action rounded-none px-2 text-xs text-[#185FA5] hover:bg-[#185FA5]/5 hover:text-[#0C447C]"
+                              onClick={() => setSelectedId(order.id)}
+                            >
+                              查看
+                            </Button>
+                            {canWrite && order.status === "confirmed" ? (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="admin-row-action rounded-none px-2 text-xs text-[#185FA5] hover:bg-[#185FA5]/5 hover:text-[#0C447C]"
+                                  onClick={() => {
+                                    setSelectedId(order.id);
+                                    setPayAmount("");
+                                    setPayDate(todayLocal());
+                                    setPayNote("");
+                                    setPayMethod("bank");
+                                    setPayOpen(true);
+                                  }}
+                                >
+                                  收款
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="admin-row-action rounded-none px-2 text-xs text-[#185FA5] hover:bg-[#185FA5]/5 hover:text-[#0C447C]"
+                                  onClick={() => {
+                                    setSelectedId(order.id);
+                                    setShipQtys({});
+                                    setExpressCo("");
+                                    setExpressNo("");
+                                    setShipNote("");
+                                    setShipMethod("express");
+                                    setShipOpen(true);
+                                  }}
+                                >
+                                  出货
+                                </Button>
+                              </>
+                            ) : null}
+                          </BusinessOrderRowActions>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            {presentation.detailsError ? (
+              <p role="alert" className="px-3 py-2 text-xs text-red-600">
+                商品 / 物流：{presentation.detailsError}{" "}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={presentation.retry}
+                >
+                  重试商品与统计
+                </Button>
+              </p>
+            ) : null}
+            {listQuery.data ? (
+              <div className="aui-pagination crm-sales-orders-pagination flex flex-wrap items-center justify-between gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>
+                    共 {presentation.aggregate?.total ?? listQuery.data.total}{" "}
+                    条，每页 {PAGE_SIZE} 条
+                  </span>
+                  <span>
+                    当前筛选含税金额：
+                    {presentation.aggregate
+                      ? formatSalesOrderAmount(presentation.aggregate.amount)
+                      : presentation.aggregateError
+                        ? "统计失败"
+                        : "统计中…"}
+                  </span>
+                  {presentation.aggregateError ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      title={presentation.aggregateError}
+                      onClick={presentation.retry}
+                    >
+                      重试统计
+                    </Button>
+                  ) : null}
+                  {presentation.selectedIds.size ? (
+                    <span>
+                      本页已选 {presentation.selectedIds.size} 条；翻页 /
+                      更改筛选将清空
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 bg-white text-xs"
+                    disabled={page <= 1 || listQuery.isFetching}
+                    onClick={() => setPage(current => current - 1)}
+                  >
+                    上一页
+                  </Button>
+                  <span className="min-w-[64px] text-center">
+                    第 {page} / {totalPages} 页
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 bg-white text-xs"
+                    disabled={page >= totalPages || listQuery.isFetching}
+                    onClick={() => setPage(current => current + 1)}
+                  >
+                    下一页
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </AdminDataPanel>
+        </AdminPage>
+      </BusinessOrderMetadataBoundary>
 
       <Dialog
         open={entryOpen}

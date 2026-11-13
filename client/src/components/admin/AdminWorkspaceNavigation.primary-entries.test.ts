@@ -32,9 +32,9 @@ async function render(location = "/workbench/customers", visibleItems: readonly 
 function button(target: string) { const n = host.querySelector<HTMLButtonElement>(`button[data-workspace-nav-target="${target}"]`); if (!n) throw new Error(`Missing ${target}`); return n; }
 async function click(target: string) { await act(async () => button(target).click()); }
 async function key(target: string, value: string) { const e = new KeyboardEvent("keydown", { key: value, bubbles: true, cancelable: true }); await act(async () => button(target).dispatchEvent(e)); return e; }
-const primaryTargets = () => [...host.querySelectorAll<HTMLButtonElement>('button[data-navigation-level="1"]')].map(n => n.dataset.workspaceNavTarget);
-const activeTargets = () => [...host.querySelectorAll<HTMLButtonElement>('button[data-navigation-level="1"][data-active="true"]')].map(n => n.dataset.workspaceNavTarget);
-const locationLabels = () => [...host.querySelectorAll('[data-admin-navigation="current-location"] li')].map(n => n.lastElementChild?.textContent);
+const primaryTargets = () => Array.from(host.querySelectorAll<HTMLButtonElement>('button[data-navigation-level="1"]')).map(n => n.dataset.workspaceNavTarget);
+const activeTargets = () => Array.from(host.querySelectorAll<HTMLButtonElement>('button[data-navigation-level="1"][data-active="true"]')).map(n => n.dataset.workspaceNavTarget);
+const locationLabels = () => Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(n => n.lastElementChild?.textContent);
 const panels = () => host.querySelectorAll('[data-workspace-dropdown="panel"]');
 
 describe("20261113 已批准八项一级入口", () => {
@@ -46,9 +46,11 @@ describe("20261113 已批准八项一级入口", () => {
     expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("入库管理");
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     await click("inventory-management");
-    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.getAttribute("data-workspace-dropdown-item"))).toEqual(["/workbench/inbound"]);
+    expect(button("inventory-management").textContent).toBe("入库管理");
+    expect(button("inventory-management").hasAttribute("aria-expanded")).toBe(false);
+    expect(panels()).toHaveLength(0);
     for (const path of ["/workbench/orders", "/workbench/outbound", "/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries"]) expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull();
-    expect(onNavigate).not.toHaveBeenCalled();
+    expect(onNavigate.mock.calls).toEqual([[items.find(item => item.path === "/workbench/inbound")]]);
   });
   it.each([1280, 390].flatMap(width => ["customers", "inquiries"].map(target => [width, target] as const)))
     ("%s宽度%s点击同步关闭旧层并保留同一授权对象与上下文", async (width, target) => {
@@ -73,7 +75,7 @@ describe("20261113 已批准八项一级入口", () => {
     ["/workbench/orders", "sales-orders", ["销售订单", "商城订单"]],
     ["/workbench/orders?orderSource=business", "sales-orders", ["销售订单", "业务订单"]],
     ["/workbench/sales-orders/88?merchantId=31", "sales-orders", ["销售订单", "业务订单"]],
-    ["/workbench/inbound", "inventory-management", ["库存管理", "入库管理"]],
+    ["/workbench/inbound", "inventory-management", ["入库管理"]],
     ["/workbench/outbound", "sales-orders", ["销售订单", "商城订单"]],
     ["/workbench/procurement/orders/88", "procurement-management", ["采购管理", "采购订单"]],
     ["/workbench/procurement-demands", "procurement-management", ["采购管理", "采购需求"]],
@@ -94,7 +96,7 @@ describe("20261113 已批准八项一级入口", () => {
     expect(primaryTargets()).toEqual(["sales-orders"]); expect(activeTargets()).toEqual(["sales-orders"]); expect(locationLabels()).toEqual(["销售订单", "商城订单"]);
     await act(async () => button("sales-orders").focus()); expect(onPreload.mock.calls[0][0]).toBe(seller);
     await click("sales-orders"); expect(onNavigate).not.toHaveBeenCalled();
-    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.textContent)).toEqual(["商城订单"]);
+    expect(Array.from(host.querySelectorAll('[data-workspace-dropdown-item]')).map(n => n.textContent)).toEqual(["商城订单"]);
     await click(seller.path); expect(onNavigate.mock.calls).toEqual([[seller, undefined, undefined, "mall"]]); expect(onNavigate.mock.calls[0][0]).toBe(seller);
     await render("/workbench/orders?orderSource=business", [seller]); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
     await render("/workbench/outbound", items.filter(item => item !== seller)); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
@@ -102,11 +104,11 @@ describe("20261113 已批准八项一级入口", () => {
   it("单销售、单入库授权只出现原允许入口", async () => {
     const sale = items.find(item => item.path === "/workbench/orders")!;
     await render(sale.path, [sale]); expect(primaryTargets()).toEqual(["sales-orders"]); await click("sales-orders"); expect(onNavigate).not.toHaveBeenCalled();
-    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.textContent)).toEqual(["业务订单"]);
+    expect(Array.from(host.querySelectorAll('[data-workspace-dropdown-item]')).map(n => n.textContent)).toEqual(["业务订单"]);
     await click(sale.path); expect(onNavigate.mock.calls).toEqual([[sale, undefined, undefined, "business"]]); expect(onNavigate.mock.calls[0][0]).toBe(sale);
     const inbound = items.find(item => item.path === "/workbench/inbound")!;
     await render(inbound.path, [inbound]); expect(primaryTargets()).toEqual(["inventory-management"]); await click("inventory-management");
-    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.getAttribute("data-workspace-dropdown-item"))).toEqual([inbound.path]);
+    expect(panels()).toHaveLength(0); expect(onNavigate.mock.calls[1]).toEqual([inbound]); expect(onNavigate.mock.calls[1][0]).toBe(inbound);
     await render(inbound.path, [{ ...inbound, path: `${inbound.path}?grant=all` }]); expect(host.querySelector("nav")).toBeNull();
   });
   it("一级方向键只移焦点，销售与其他 workspace 使用同一键盘菜单", async () => {
@@ -118,7 +120,7 @@ describe("20261113 已批准八项一级入口", () => {
     await key("organization", "Home"); expect(document.activeElement).toBe(button("customers")); expect(onNavigate).not.toHaveBeenCalled();
   });
   it("URL或父权限新快照立即关闭旧菜单，旧快照返回不迟到重开", async () => {
-    await render(); await key("inventory-management", "Enter"); expect(panels()).toHaveLength(1);
+    await render(); await key("procurement-management", "Enter"); expect(panels()).toHaveLength(1);
     await render("/workbench/customers?merchantId=32"); expect(panels()).toHaveLength(0);
     await click("procurement-management"); await render("/workbench/customers?merchantId=32", [...items]); expect(panels()).toHaveLength(0);
     await render(); expect(panels()).toHaveLength(0);

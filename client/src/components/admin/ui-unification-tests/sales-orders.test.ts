@@ -13,6 +13,7 @@ const runtime = vi.hoisted(() => ({
   list: {
     data: { items: [] as Record<string, unknown>[], total: 0 },
     isLoading: false, isError: false, isFetching: false,
+    isFetchedAfterMount: true,
     error: new Error("订单读取失败"), refetch: vi.fn(),
   },
   detail: { data: null as Record<string, unknown> | null, isLoading: false, isError: false },
@@ -28,6 +29,25 @@ vi.mock("@/business/platform/client/src/hooks/usePageMemory", async () => {
     returnToPageSource: vi.fn(),
   };
 });
+vi.mock("@/business/BusinessScope", () => ({ useBusinessScope: () => ({
+  merchantId: 17,
+  contextVerification: { state: "verified", identity: "fixture-source", authorizationVersion: "v1", readVersion: "v1" },
+  onAuthorizationError: vi.fn(),
+}) }));
+vi.mock("@/business/BusinessWorkbenchAccessGate", () => ({ useBusinessWorkbenchAccess: () => ({
+  merchantId: 17, canWrite: false, readCapabilities: ["crm.sales_orders"], writeCapabilities: [],
+}) }));
+// Actual metadata/native transport is covered by its independent offline UI suite.
+vi.mock("@/business/platform/client/src/components/businessSalesOrderMetadata", () => ({
+  BusinessSalesOrderMetadataProvider: ({ children }: { children: React.ReactNode }) => children,
+  BusinessSalesOrderReceiverCell: () => "未录入",
+  BusinessSalesOrderAfterSaleCell: () => "未录入",
+  BusinessSalesOrderMetadataActionItems: () => null,
+  createBusinessSalesOrderMetadataExportReader: () => async (rows: readonly { id: number }[]) =>
+    new Map(rows.map(row => [row.id, {
+      receiver: "未录入", receiverPhone: "未录入", receiverAddress: "未录入", afterSales: "未录入",
+    }])),
+}));
 vi.mock("wouter", () => ({ useLocation: () => ["/sales-orders", vi.fn()], useSearch: () => "" }));
 vi.mock("@/business/BusinessContentFrame", () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/business/api/business-trpc", () => {
@@ -35,7 +55,13 @@ vi.mock("@/business/api/business-trpc", () => {
   const invalidate = vi.fn().mockResolvedValue(undefined);
   return {
     trpc: {
-      useUtils: () => ({ crmSalesOrder: { list: { invalidate }, get: { invalidate }, candidates: { invalidate } } }),
+      useUtils: () => ({
+        client: { crmSalesOrder: {
+          list: { query: vi.fn(async () => runtime.list.data) },
+          get: { query: vi.fn(async () => runtime.detail.data) },
+        } },
+        crmSalesOrder: { list: { invalidate }, get: { invalidate }, candidates: { invalidate } },
+      }),
       crmSalesOrder: {
         list: { useQuery: (input: unknown) => { runtime.listInputs.push(input); return runtime.list; } },
         get: { useQuery: () => runtime.detail },
@@ -61,6 +87,7 @@ vi.mock("@/business/platform/client/src/components/ui/dialog", async importOrigi
 });
 
 import CrmSalesOrders from "@/business/platform/client/src/pages/CrmSalesOrders";
+import { Button } from "@/business/platform/client/src/components/ui/button";
 
 const pagePath = resolve(process.cwd(), "client/src/business/platform/client/src/pages/CrmSalesOrders.tsx");
 const pageText = readFileSync(pagePath, "utf8");
@@ -72,7 +99,7 @@ const print = (node: ts.Node) => printer.printNode(ts.EmitHint.Unspecified, node
 // dependencies. No full-page reimplementation, count/hash snapshot or live transport.
 function evaluate<T = any>(node: ts.Node, dependencies: Record<string, unknown>): T {
   const code = ts.transpileModule(`const target = (${print(node)});`, {
-    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None },
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, jsx: ts.JsxEmit.React },
   }).outputText;
   return new Function(...Object.keys(dependencies), `${code}; return target;`)(...Object.values(dependencies));
 }
@@ -90,7 +117,7 @@ function renderPage() {
 function buttons(element: Element | Document) { return [...element.querySelectorAll("button")].map(button => button.textContent?.trim()); }
 function order(id: number, status: "confirmed" | "cancelled") {
   return {
-    id, status, orderNumber: `SO-${id}`, customerName: "测试客户", demandNo: `D-${id}`,
+    id, customerId: 1, status, orderNumber: `SO-${id}`, customerName: "虚构测试客户", demandNo: `D-${id}`,
     projectName: "保留项目", totalAmount: "120.0000", paymentStatus: "unpaid", shipmentStatus: "unshipped",
     createdAt: "2026-11-03T01:00:00.000Z",
   };
@@ -106,22 +133,27 @@ function detail(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.stubGlobal("React", React);
+  vi.stubGlobal("fetch", vi.fn(() => { throw new Error("No production network or DB allowed"); }));
   runtime.memory = {};
   runtime.listInputs = [];
   runtime.list.data = { items: [order(11, "confirmed"), order(12, "cancelled")], total: 41 };
   runtime.list.isLoading = false;
   runtime.list.isError = false;
   runtime.list.isFetching = false;
+  runtime.list.isFetchedAfterMount = true;
   runtime.detail.data = null;
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  expect(fetch).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
+});
 
 describe("sales-orders UI unification", () => {
-  it("uses shared page, header, filters and data panels without the old oversized heading", () => {
+  it("uses shared page, in-list filters and data panels without a standalone heading", () => {
     const names = collect((node): node is ts.JsxOpeningElement | ts.JsxSelfClosingElement => ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)).map(node => node.tagName.getText(source));
     expect(names.filter(name => name === "AdminPage")).toHaveLength(1);
-    expect(names.filter(name => name === "AdminPageHeader")).toHaveLength(1);
+    expect(names.filter(name => name === "AdminPageHeader")).toHaveLength(0);
     expect(names.filter(name => name === "AdminFilterBar")).toHaveLength(2);
     expect(names.filter(name => name === "AdminDataPanel")).toHaveLength(11);
     expect(pageText).not.toContain("text-[22px]");
@@ -291,14 +323,36 @@ describe("sales-orders UI unification", () => {
   it("renders original state-specific actions, amount values and pagination in the shared skeleton", () => {
     const document = renderPage();
     expect(document.querySelector("section.aui-page")?.getAttribute("data-admin-ui-system")).toBe("channel-inventory");
-    expect(document.querySelector("h1.aui-page-title")?.textContent).toBe("销售订单");
+    expect(document.querySelector("h1.aui-page-title")).toBeNull();
     expect(document.querySelector(".aui-filterbar input")?.getAttribute("aria-label")).toBe("搜索销售订单");
+    expect(document.querySelector(".aui-data-panel .aui-filterbar")).not.toBeNull();
+    expect(buttons(document.querySelector(".aui-filterbar")!)).toContain("录入销售订单");
+    expect(buttons(document.querySelector(".aui-filterbar")!)).toContain("导出当前筛选全部");
     const rows = document.querySelectorAll(".crm-sales-orders-table tbody tr");
-    expect(buttons(rows[0])).toEqual(["SO-11", "查看", "收款", "出货"]);
-    expect(buttons(rows[1])).toEqual(["SO-12", "查看"]);
-    expect(rows[0].querySelectorAll("td")[3].classList.contains("text-right")).toBe(true);
-    expect(rows[0].querySelectorAll("td")[3].textContent).toBe("¥120");
+    expect(buttons(rows[0])).toEqual(["SO-11", "…"]);
+    expect(buttons(rows[1])).toEqual(["SO-12", "…"]);
+    for (const row of rows) expect(row.querySelector('[aria-haspopup="dialog"]')?.getAttribute("aria-expanded")).toBe("false");
+    // SSR cannot open a body portal. Render only the real page's menu JSX with a
+    // synthetic wrapper, keeping its original state/permission branches and buttons.
+    const menu = collect(ts.isJsxElement).find(node => node.openingElement.tagName.getText(source) === "BusinessOrderRowActions")!;
+    const menuButtons = (status: "confirmed" | "cancelled", canWrite: boolean) => {
+      const content = evaluate<React.ReactNode>(menu, {
+        React, Button, order: order(11, status), canWrite,
+        BusinessOrderRowActions: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children),
+      });
+      const container = document.createElement("div");
+      container.innerHTML = renderToStaticMarkup(content);
+      return buttons(container);
+    };
+    expect(menuButtons("confirmed", true)).toEqual(["查看", "收款", "出货"]);
+    expect(menuButtons("cancelled", true)).toEqual(["查看"]);
+    expect(menuButtons("confirmed", false)).toEqual(["查看"]);
+    expect([...document.querySelectorAll(".crm-sales-orders-table th")].map(header => header.textContent)).toEqual(["", "订单 / 日期", "客户 / 收货人", "商品明细", "含税金额", "配送 / 物流", "状态", "操作"]);
+    expect(rows[0].querySelectorAll("td")).toHaveLength(8);
+    expect(rows[0].querySelectorAll("td")[4].classList.contains("text-right")).toBe(true);
+    expect(rows[0].querySelectorAll("td")[4].querySelector(".font-medium")?.textContent).toBe("¥120");
     expect(document.querySelector(".crm-sales-orders-pagination")?.textContent).toContain("第 1 / 3 页");
+    expect(document.querySelector(".crm-sales-orders-pagination")?.textContent).toContain("当前筛选含税金额");
     expect(runtime.listInputs.at(-1)).toEqual({ keyword: "", page: 1, pageSize: 20 });
   });
 
@@ -314,15 +368,28 @@ describe("sales-orders UI unification", () => {
   it.each(["loading", "error", "empty"] as const)("keeps the %s list state inside the data panel", state => {
     runtime.list.isLoading = state === "loading";
     runtime.list.isError = state === "error";
+    runtime.list.isFetching = state === "loading";
+    runtime.list.isFetchedAfterMount = state !== "loading";
     if (state === "empty") runtime.list.data = { items: [], total: 0 };
     const document = renderPage();
     const panel = document.querySelector(".aui-data-panel")!;
     if (state === "loading") expect(panel.querySelector(".animate-spin")).not.toBeNull();
     if (state === "error") { expect(panel.textContent).toContain("订单读取失败"); expect(buttons(panel)).toContain("重试"); }
     if (state === "empty") expect(panel.textContent).toContain("暂无匹配的内部销售订单");
-    // Existing data keeps its pagination while loading or on a refresh error.
-    if (state === "empty") expect(document.querySelector(".crm-sales-orders-pagination")).toBeNull();
-    else expect(document.querySelector(".crm-sales-orders-pagination")?.textContent).toContain("共 41 条");
+    expect(document.querySelector(".crm-sales-orders-table")).toBeNull();
+    if (state === "error" || state === "loading") {
+      // A failed refresh or pending fresh query must not leak cached DTOs/counts.
+      expect(document.querySelector(".crm-sales-orders-pagination")).toBeNull();
+      expect(panel.textContent).not.toContain("共 41 条");
+      expect(panel.textContent).not.toContain("SO-11");
+      expect(panel.textContent).not.toContain("虚构测试客户");
+    } else {
+      const footer = document.querySelector(".crm-sales-orders-pagination")!;
+      expect(footer.textContent).toContain("共 0 条");
+      expect(footer.textContent).toContain("当前筛选含税金额");
+      expect(footer.textContent).toContain("第 1 / 1 页");
+      expect([...footer.querySelectorAll("button")].every(button => button.disabled)).toBe(true);
+    }
   });
 
   it.each([false, true])("keeps detail fields, right-aligned numeric columns and paid-order cancellation guard (paid=%s)", paid => {

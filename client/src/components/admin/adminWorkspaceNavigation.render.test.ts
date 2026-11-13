@@ -428,15 +428,13 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     expect(host.querySelector('[role="group"]')).toBeNull();
   });
 
-  it("业务顶层先展开下拉，选项复用父导航原条目，不先修改本地选中态", async () => {
+  it("入库顶层直达原条目，不先修改本地选中态；ModuleTabs兼容API保留", async () => {
     const subset = items.filter(item =>
       ["/workbench/inbound", "/workbench/company-info", "/analytics", "/staff"].includes(item.path)
     );
     await render("/staff", subset);
     await act(async () => button("inventory-management").click());
-    expect(onNavigate).not.toHaveBeenCalled();
-    expect(button("inventory-management").getAttribute("aria-expanded")).toBe("true");
-    await click("/workbench/inbound");
+    expect(button("inventory-management").hasAttribute("aria-expanded")).toBe(false);
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith(
       subset.find(item => item.path === "/workbench/inbound")
@@ -446,7 +444,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     );
     expect(button("inventory-management").hasAttribute("aria-current")).toBe(false);
     await render("/workbench/inbound?merchantId=8", subset);
-    expect(button("inventory-management").getAttribute("aria-current")).toBe("location");
+    expect(button("inventory-management").getAttribute("aria-current")).toBe("page");
     await click("group:inventory");
     expect(button("/workbench/inbound").getAttribute("aria-current")).toBe(
       "page"
@@ -680,7 +678,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
 
   it("点击工作区只展开不重置详情或query，选择原功能项才导航", async () => {
     await render("/workbench/sales-orders/88?merchantId=3");
-    await act(async () => button("inventory-management").click());
+    await act(async () => button("procurement-management").click());
     expect(onNavigate).not.toHaveBeenCalled();
     expect(button("sales-orders").getAttribute("aria-current")).toBe("location");
     expect(button("group:customers").dataset.active).toBe("true");

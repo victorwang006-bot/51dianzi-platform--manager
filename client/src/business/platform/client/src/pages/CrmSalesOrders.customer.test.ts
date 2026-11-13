@@ -20,6 +20,19 @@ const runtime = vi.hoisted(() => ({
   list: { items: [] as any[], total: 0 },
   candidates: { items: [] as any[], total: 0 },
   detail: null as any,
+  metadataAccess: {
+    merchantId: 17,
+    canWrite: false,
+    readCapabilities: ["crm.sales_orders"],
+    writeCapabilities: [] as string[],
+  },
+  metadataProvider: vi.fn(),
+  verification: {
+    state: "verified",
+    identity: "fixture-scope",
+    authorizationVersion: "v1",
+    readVersion: "v1",
+  },
   fetching: false,
   fetched: true,
   mutations: {} as Record<
@@ -45,6 +58,34 @@ vi.mock("../hooks/usePageMemory", async () => {
 vi.mock("wouter", () => ({
   useLocation: () => ["/customers/1", runtime.navigate],
   useSearch: () => "?demandNo=UNRELATED-ROUTE&keyword=OTHER-CUSTOMER",
+}));
+vi.mock("../../../../BusinessScope", () => ({
+  useBusinessScope: () => ({
+    merchantId: 17,
+    contextVerification: runtime.verification,
+    onAuthorizationError: vi.fn(),
+  }),
+}));
+vi.mock("../../../../BusinessWorkbenchAccessGate", () => ({
+  useBusinessWorkbenchAccess: () => runtime.metadataAccess,
+}));
+// Keep original customer/financial-flow tests focused on the real source page.
+// The separate metadata UI suite exercises the real provider and native client.
+vi.mock("../components/businessSalesOrderMetadata", () => ({
+  BusinessSalesOrderMetadataProvider: ({ children, ...context }: any) => {
+    runtime.metadataProvider(context);
+    return children;
+  },
+  BusinessSalesOrderReceiverCell: () => "未录入",
+  BusinessSalesOrderAfterSaleCell: () => "未录入",
+  BusinessSalesOrderMetadataActionItems: () => null,
+  createBusinessSalesOrderMetadataExportReader: () => async (rows: readonly { id: number }[]) =>
+    new Map(rows.map(row => [row.id, {
+      receiver: "未录入",
+      receiverPhone: "未录入",
+      receiverAddress: "未录入",
+      afterSales: "未录入",
+    }])),
 }));
 vi.mock("../../../../BusinessContentFrame", () => ({
   default: ({ children }: { children: React.ReactNode }) =>
@@ -93,6 +134,12 @@ vi.mock("../../../../api/business-trpc", () => {
   return {
     trpc: {
       useUtils: () => ({
+        client: {
+          crmSalesOrder: {
+            list: { query: vi.fn(async () => runtime.list) },
+            get: { query: vi.fn(async () => runtime.detail) },
+          },
+        },
         crmSalesOrder: {
           list: { invalidate: runtime.invalidate },
           get: { invalidate: runtime.invalidate },
@@ -237,9 +284,19 @@ function render(change: Partial<CustomerSalesOrdersProps> = {}) {
   act(() => root.render(React.createElement(CustomerSalesOrders, props)));
 }
 function button(text: string, scope: ParentNode = document.body) {
-  const result = Array.from(
+  let result = Array.from(
     scope.querySelectorAll<HTMLButtonElement>("button")
   ).find(item => item.textContent?.trim() === text);
+  // Real compact list uses an ellipsis popover; exercise its trigger before actions.
+  if (!result && ["查看", "收款", "出货"].includes(text)) {
+    const trigger = container.querySelector<HTMLButtonElement>(
+      'button[aria-label^="操作 "]'
+    );
+    if (trigger) click(trigger);
+    result = Array.from(
+      scope.querySelectorAll<HTMLButtonElement>("button")
+    ).find(item => item.textContent?.trim() === text);
+  }
   if (!result) throw new Error(`Missing button: ${text}`);
   return result;
 }
@@ -281,7 +338,9 @@ function fillOrder() {
   input('[aria-label="LM358 含税单价"]', "12.3456");
   input("#sales-order-due-date", "2026-12-01");
   input("#sales-order-confirmation", "客户电话确认数量、含税价格和交期");
-  click(document.querySelector('input[type="checkbox"]')!);
+  click(
+    document.querySelector('.crm-sales-orders-dialog input[type="checkbox"]')!
+  );
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -294,6 +353,18 @@ beforeEach(() => {
     selectedId: 99,
   };
   runtime.mutations = {};
+  runtime.metadataAccess = {
+    merchantId: 17,
+    canWrite: false,
+    readCapabilities: ["crm.sales_orders"],
+    writeCapabilities: [],
+  };
+  runtime.verification = {
+    state: "verified",
+    identity: "fixture-scope",
+    authorizationVersion: "v1",
+    readVersion: "v1",
+  };
   runtime.fetching = false;
   runtime.fetched = true;
   runtime.list = { items: [order()], total: 41 };
@@ -710,5 +781,75 @@ describe("customer response boundary", () => {
     expect(customerMatches({}, 1)).toBe(false);
     expect(customerPageMatches({ items: [order(1), order(2)] }, 1)).toBe(false);
     expect(customerPageMatches({ items: [order(1)] }, 1)).toBe(true);
+  });
+});
+
+describe("BFF verification generation replaces callback authority", () => {
+  it("rejects stale original mutation completions even when embedded props stay the same", () => {
+    render();
+    const stale = runtime.mutations.payment.options;
+    runtime.verification = {
+      state: "verified",
+      identity: "fixture-scope",
+      authorizationVersion: "v2",
+      readVersion: "v2",
+    };
+    render();
+    runtime.invalidate.mockClear();
+    act(() => {
+      stale.onSuccess({ replayed: false });
+      stale.onError({ message: "OLD-PAYMENT" });
+    });
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(props.onOrderChanged).not.toHaveBeenCalled();
+    expect(runtime.invalidate).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("source propagates exact metadata write authority", () => {
+  it.each([
+    { label: "只读 projection", access: { canWrite: false, writeCapabilities: ["crm.sales_orders"] }, expected: false },
+    { label: "缺少 CRM write", access: { canWrite: true, writeCapabilities: [] }, expected: false },
+    { label: "其他模块 write", access: { canWrite: true, writeCapabilities: ["marketplace.seller"] }, expected: false },
+    { label: "其他 merchant", access: { merchantId: 18, canWrite: true, writeCapabilities: ["crm.sales_orders"] }, expected: false },
+    { label: "同 merchant 精确 CRM write", access: { canWrite: true, writeCapabilities: ["crm.sales_orders"] }, expected: true },
+  ])("default source: $label", ({ access, expected }) => {
+    runtime.metadataAccess = { ...runtime.metadataAccess, ...access };
+    act(() => root.render(React.createElement(CrmSalesOrders)));
+    const context = runtime.metadataProvider.mock.calls.at(-1)?.[0];
+    expect(context).toMatchObject({ merchantId: 17, ready: true, canWrite: expected });
+    expect(context.rows.map((row: any) => [row.id, row.customerId])).toEqual([[11, 1]]);
+    expect(JSON.parse(context.identityKey).slice(0, 3)).toEqual(["fixture-scope", "v1", "v1"]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([
+    { canWrite: false },
+    { readOnly: true },
+    { customer: { id: 1, name: "客户甲", archivedAt: "2026-11-10" } },
+  ])("embedded page writability intersects exact CRM authority: %j", change => {
+    runtime.metadataAccess = { ...runtime.metadataAccess, canWrite: true, writeCapabilities: ["crm.sales_orders"] };
+    render(change);
+    expect(runtime.metadataProvider.mock.calls.at(-1)?.[0]).toMatchObject({
+      merchantId: 17, customerId: 1, ready: true, canWrite: false,
+    });
+  });
+  it("embedded writable source propagates the same merchant/customer and exact CRM authority", () => {
+    runtime.metadataAccess = { ...runtime.metadataAccess, canWrite: true, writeCapabilities: ["crm.sales_orders"] };
+    render();
+    expect(runtime.metadataProvider.mock.calls.at(-1)?.[0]).toMatchObject({
+      merchantId: 17, customerId: 1, ready: true, canWrite: true,
+    });
+  });
+  it("unverified source never propagates metadata write authority", () => {
+    runtime.metadataAccess = { ...runtime.metadataAccess, canWrite: true, writeCapabilities: ["crm.sales_orders"] };
+    runtime.verification.state = "unverified";
+    render();
+    for (const [context] of runtime.metadataProvider.mock.calls) {
+      expect(context).toMatchObject({ merchantId: 17, ready: false, canWrite: false });
+      expect(context.rows).toEqual([]);
+    }
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

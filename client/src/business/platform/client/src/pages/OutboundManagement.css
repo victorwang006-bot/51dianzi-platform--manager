@@ -19,3 +19,22 @@
 .aui-page.erp-ui.sales-order-page .outbound-dialog > .flex.justify-end {
   flex-wrap: wrap;
 }
+
+/* Unified compact order list: toolbar belongs to the table card. */
+.aui-page.erp-ui.sales-order-page .sales-order-list-toolbar {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid #e8edf2;
+  border-radius: 0;
+  padding: 8px 10px;
+  background: #fff;
+}
+.aui-page.erp-ui.sales-order-page .sales-order-readonly-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+.aui-page.erp-ui.sales-order-page .sales-order-pagination {
+  gap: 8px;
+  flex-wrap: wrap;
+}

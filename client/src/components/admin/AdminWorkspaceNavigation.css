@@ -368,7 +368,7 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: 176px;
+  width: max-content;
   max-width: calc(100vw - 16px);
   overflow: hidden;
   border: 1px solid #e5eaf0;
@@ -379,19 +379,18 @@
   pointer-events: auto;
 }
 
-[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="sales-orders"],
-[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="inventory-management"],
-[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="procurement-management"] {
-  width: 160px;
-}
-
-[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="operations"][data-navigation-level="2"] {
-  width: 168px;
+/* Also beat earlier id/level-specific fixed widths in additive release CSS.
+ * Width only: the mobile 360px !important and other mobile geometry still win. */
+[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace][data-navigation-level] {
+  width: max-content;
 }
 
 [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
-  padding: 4px;
+  padding: 4px 0;
+  overflow-x: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -400,11 +399,13 @@
 [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel .admin-workspace-nav__dropdown-item {
   min-height: 40px;
   padding: 0 12px;
+  gap: 10px;
   justify-content: flex-start;
 }
 
 [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel .admin-workspace-nav__group-trigger .admin-workspace-nav__chevron {
-  margin-left: auto;
+  flex: 0 0 auto;
+  margin-left: 0;
   transform: none;
 }
 

@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "httpStatus": 401,
+  "unauthenticatedMetadataAccessDenied": true,
+  "registeredProcedureReturnedJson": true,
+  "realRecordMutation": false
+}

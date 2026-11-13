@@ -18,7 +18,8 @@ function resolveRole(value: string): string {
 function declarations(root: Root, selector: string, property: string) {
   const values: string[] = [];
   root.walkRules(rule => {
-    if (rule.selectors.includes(selector)) rule.walkDecls(property, decl => values.push(decl.value));
+    // Whitespace in a multiline descendant selector does not change its CSS meaning.
+    if (rule.selectors.some(value => value.replace(/\s+/g, " ").trim() === selector)) rule.walkDecls(property, decl => values.push(decl.value));
   });
   return values;
 }
@@ -28,8 +29,8 @@ const cases: Array<[string, string, string, string, string]> = [
   ["native channel field", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-field", "font-size", "13px"],
   ["native channel text action", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-inline-link", "font-size", "13px"],
   ["native channel table heading", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-table th", "font-size", "12px"],
-  ["native channel update time", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-table :is(.ci-lead-time, .ci-row-index, .ci-date, .ci-channel-type-tag)", "font-size", "12px"],
-  ["native channel page tabs", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-tabs button", "font-size", "16px"],
+  ["native channel update time", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-table :is(.ci-row-index, .ci-date, .ci-channel-type-tag)", "font-size", "12px"],
+  ["native channel compact lead-time body", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-compact-stock-table td:is(.ci-material-recorder-col, .ci-material-industry-col, .ci-material-qty-col, .ci-material-price-col, .ci-material-lead-col)", "font-size", "13px"],
   ["native channel dialog title", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-host-dialog h2", "font-size", "18px"],
   ["native channel ordinary button", `${platform}pages/ChannelInventoryHost.css`, ".ci-page.ci-host .ci-button", "min-height", "34px"],
   ["customer action remains unboxed", `${platform}pages/CustomerList.css`, ".customer-list-page .customer-list-text-action", "font-size", "13px"],
@@ -113,7 +114,7 @@ describe("v18 admin content font role contract (not browser measurements)", () =
     const customer = postcss.parse(css(`${platform}pages/CustomerList.css`));
     expect(declarations(customer, ".customer-list-page .customer-list-text-action", "background")).toEqual(["transparent"]);
     expect(declarations(customer, ".customer-list-page .customer-list-text-action", "border")).toEqual(["0"]);
-    expect(declarations(customer, ".customer-list-page .customer-list-table", "min-width")).toEqual(["1480px"]);
+    expect(declarations(customer, ".customer-list-page .customer-list-table", "min-width")).toEqual(["1304px"]);
     expect(declarations(customer, ".customer-list-page .customer-list-table-scroll", "overflow-x")).toEqual(["auto"]);
     expect(declarations(customer, ".customer-list-page .customer-list-table .customer-list-demand-column", "right")).toEqual(["var(--customer-list-actions-width)"]);
   });
@@ -128,8 +129,16 @@ describe("v18 admin content font role contract (not browser measurements)", () =
     expect(bridges).toHaveLength(2);
     for (const selector of bridges) {
       expect(selector).toContain("td:not(:where(");
-      for (const role of [".ci-row-index", ".ci-date", ".ci-lead-time", ".ci-channel-type-tag"]) expect(selector).toContain(role);
+      for (const role of [".ci-row-index", ".ci-date", ".ci-channel-type-tag"]) expect(selector).toContain(role);
     }
+    // The old global bridge retains lead-time captions; compact native stock uses body text.
+    expect(bridges[0]).toContain(".ci-lead-time");
+    expect(bridges[1]).not.toContain(".ci-lead-time");
+    expect(bridges[1]).toContain(".admin-cell-secondary");
+    const hostSource = readFileSync(`client/src/${platform}pages/ChannelInventoryHost.tsx`, "utf8");
+    expect(hostSource).toContain('className="ci-material-lead-col ci-lead-time admin-cell-primary"');
+    expect(hostSource).not.toContain('className="ci-tabs"');
+    expect(hostSource).toContain('<h1 className="ci-sr-only">');
   });
   it("retains shared platform fallbacks so absent admin scope cannot enable v18", () => {
     const customer = postcss.parse(css(`${platform}pages/CustomerList.css`));

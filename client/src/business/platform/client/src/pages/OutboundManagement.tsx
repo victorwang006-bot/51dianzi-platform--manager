@@ -7,8 +7,9 @@ import { ORDER_STATUS_META } from "../../../shared/cartUtils";
 import LogisticsDialog from "../components/LogisticsDialog";
 import WaybillOcrUploader from "../components/WaybillOcrUploader";
 import { formatBeijingDateCompact, formatBeijingDateTime } from "../../../shared/beijingTime";
-import { AdminDataPanel, AdminFilterBar, AdminPage, AdminPageHeader, AdminPageTabs } from "@/components/admin/UnifiedAdminPage";
+import { AdminDataPanel, AdminFilterBar, AdminPage } from "@/components/admin/UnifiedAdminPage";
 import "./OutboundManagement.css";
+import { sumMallOrderAmounts } from "../lib/mallOrderListAmounts";
 
 /**
  * 线上订单 —— 显示买家通过商城下的订单，支持筛选、发货、详情、订单动态
@@ -35,24 +36,25 @@ const dateStr = (d: Date | string | null | undefined) =>
 const fmtDate = (d: Date | string | null | undefined) =>
   dateStr(d).slice(0, 10);
 
-/** 将选中的订单行导出为 Excel */
-async function exportToExcel(rows: OrderRow[]) {
+/** 导出当前筛选结果或所选订单；过期/卸载后不生成文件。 */
+async function exportToExcel(rows: OrderRow[], isCurrent: () => boolean = () => true) {
   if (rows.length === 0) {
-    toast.warning("请先勾选要导出的订单");
+    toast.warning("没有可导出的订单");
     return;
   }
 
   try {
     const XLSX = await import("xlsx");
+    if (!isCurrent()) return;
     const sheetData = rows.flatMap(o =>
-      o.items.map(it => ({
+      (o.items.length ? o.items : [{ partNumber: "", qty: "", unitPrice: "" }]).map(it => ({
         订单号: o.orderNo,
         料号型号: it.partNumber,
         数量: it.qty,
-        "单价(含税)": num(it.unitPrice),
-        "金额(含税)": num(o.totalAmount),
-        "含税额(价内税)": num(o.taxAmount),
-        运费: num(o.shippingFee),
+        "单价(含税)": it.unitPrice,
+        "金额(含税)": o.totalAmount,
+        "含税额(价内税)": o.taxAmount,
+        运费: o.shippingFee,
         收货人: o.receiver,
         联系电话: o.receiverPhone,
         配送方式: o.deliveryMethod === "pickup" ? "自提" : "快递",
@@ -65,6 +67,13 @@ async function exportToExcel(rows: OrderRow[]) {
       }))
     );
     const ws = XLSX.utils.json_to_sheet(sheetData);
+    // 文本单元格显式为字符串，避免公式注入；金额字符串保留原精度。
+    for (const [key, cell] of Object.entries(ws)) {
+      if (!key.startsWith("!") && cell && typeof cell === "object" && "v" in cell && typeof cell.v === "string") {
+        cell.t = "s";
+        delete cell.f;
+      }
+    }
     ws["!cols"] = [
       { wch: 20 },
       { wch: 18 },
@@ -83,9 +92,10 @@ async function exportToExcel(rows: OrderRow[]) {
       { wch: 20 },
     ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "线上订单");
+    XLSX.utils.book_append_sheet(wb, ws, "商城订单");
     // 导出文件名与菜单名保持一致，否则商家下载后对不上模块
-    const fileName = `线上订单_${formatBeijingDateCompact(new Date())}.xlsx`;
+    const fileName = `商城订单_${formatBeijingDateCompact(new Date())}.xlsx`;
+    if (!isCurrent()) return;
     XLSX.writeFile(wb, fileName);
     toast.success(`已导出 ${rows.length} 笔订单`, { description: fileName });
   } catch (error) {
@@ -249,6 +259,14 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
   const [filters, setFilters] = useState(emptyFilters());
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
+  const exportEpoch = useRef(0);
+  useEffect(() => {
+    const epoch = ++exportEpoch.current;
+    setExporting(false);
+    return () => { if (exportEpoch.current === epoch) ++exportEpoch.current; };
+  }, [orders, filters]);
+
 
   const [detailRow, setDetailRow] = useState<OrderRow | null>(null);
   const [shipOrder, setShipOrder] = useState<OrderRow | null>(null);
@@ -495,57 +513,12 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
 
   return (
     <PlatformLayout>
-      <AdminPage className="erp-ui sales-order-page" data-testid="sales-order-inventory-style">
-        <AdminPageHeader
-          list
-          title="商城订单"
-          description={readOnly ? "查看商城订单、订单动态与物流信息（只读）" : "管理商城订单、收款确认、发货物流与售后处理"}
-          actions={
-          <button
-            type="button"
-            className="sales-order-compact-button"
-            disabled={selectedIds.size === 0}
-            onClick={() => exportToExcel((orders ?? []).filter(order => selectedIds.has(order.id)) as OrderRow[])}>
-            <Download className="h-3.5 w-3.5" />
-            导出选中{selectedIds.size > 0 ? `（${selectedIds.size}）` : ""}
-          </button>
-          }
-        />
-
-        <AdminPageTabs className="sales-order-status-tabs mb-3" role="tablist" ariaLabel="线上订单状态">
-          {SALES_ORDER_STATUS_TABS.map(item => {
-            const active = filters.status === item.value;
-            return <button
-              key={item.value}
-              id={`sales-order-tab-${item.value}`}
-              type="button"
-              role="tab"
-              tabIndex={active ? 0 : -1}
-              aria-selected={active}
-              aria-controls="sales-order-panel"
-              className="sales-order-status-tab"
-              data-state={active ? "active" : "inactive"}
-              onKeyDown={event => {
-                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-                event.preventDefault();
-                const index = SALES_ORDER_STATUS_TABS.findIndex(tab => tab.value === item.value);
-                const nextIndex = event.key === "Home"
-                  ? 0
-                  : event.key === "End"
-                    ? SALES_ORDER_STATUS_TABS.length - 1
-                    : (index + (event.key === "ArrowRight" ? 1 : -1) + SALES_ORDER_STATUS_TABS.length) % SALES_ORDER_STATUS_TABS.length;
-                const next = SALES_ORDER_STATUS_TABS[nextIndex];
-                selectStatus(next.value);
-                document.getElementById(`sales-order-tab-${next.value}`)?.focus();
-              }}
-              onClick={() => selectStatus(item.value)}>
-              {item.label}<span>{counts[item.value] ?? 0}</span>
-            </button>;
-          })}
-        </AdminPageTabs>
-
+      <AdminPage className="erp-ui sales-order-page" aria-label="商城订单" data-testid="sales-order-inventory-style">
+        <h1 className="sr-only">商城订单</h1>
+        {readOnly && <p role="status" className="sales-order-readonly-note">当前为只读模式，不能收款、发货、取消或处理退款。</p>}
+        <AdminDataPanel id="sales-order-panel" aria-label="商城订单列表" className="sales-order-table-card overflow-hidden">
         <AdminFilterBar
-          className="sales-order-toolbar mb-3"
+          className="sales-order-toolbar sales-order-list-toolbar"
           onKeyDown={event => { if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") applyFilters(); }}>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -554,6 +527,9 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
               value={filterInput.kw}
               onChange={event => setFilterInput(current => ({ ...current, kw: event.target.value }))}
             />
+            <select aria-label="商城订单状态" className="crm-input w-[128px]" value={filters.status} onChange={event => selectStatus(event.target.value)}>
+              {SALES_ORDER_STATUS_TABS.map(item => <option key={item.value} value={item.value}>{item.value === "all" ? "全部状态" : item.label}（{counts[item.value] ?? 0}）</option>)}
+            </select>
             <button
               type="button"
               className="sales-order-compact-button min-w-[100px] justify-between"
@@ -564,9 +540,16 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
             </button>
             <button type="button" className="sales-order-compact-button text-[#185FA5]" onClick={applyFilters}>筛选</button>
             <button type="button" className="sales-order-compact-button" disabled={!hasAnyFilterInput} onClick={resetFilters}>重置</button>
-            <div className="ml-auto whitespace-nowrap text-xs text-muted-foreground">
-              共 <b className="text-slate-700">{list.length}</b> 笔 · 含税合计 <b className="font-medium tabular-nums text-slate-800">¥{fmtMoney(list.reduce((sum, order) => sum + num(order.totalAmount), 0))}</b>
-            </div>
+            <button type="button" className="sales-order-compact-button ml-auto" disabled={exporting || isLoading || list.length === 0}
+              onClick={async () => {
+                const epoch = exportEpoch.current;
+                setExporting(true);
+                await exportToExcel(selectedIds.size > 0 ? list.filter(order => selectedIds.has(order.id)) : list, () => exportEpoch.current === epoch);
+                if (exportEpoch.current === epoch) setExporting(false);
+              }}>
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? "导出中…" : selectedIds.size > 0 ? `导出选中（${list.filter(order => selectedIds.has(order.id)).length}）` : "导出筛选结果"}
+            </button>
           </div>
           {showMoreFilters && <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2" data-testid="sales-order-advanced-filters">
             <input
@@ -589,11 +572,6 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           </div>}
         </AdminFilterBar>
 
-        <AdminDataPanel
-          id="sales-order-panel"
-          role="tabpanel"
-          aria-labelledby={`sales-order-tab-${filters.status}`}
-          className="sales-order-table-card overflow-hidden">
           <div className="sales-order-table-viewport overflow-x-auto">
             <table className="crm-table sales-order-table min-w-[1040px] table-fixed">
               <colgroup>
@@ -635,7 +613,7 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
             </table>
           </div>
           <div className="sales-order-pagination">
-            <span>共 {list.length} 条，每页 {PAGE_SIZE} 条</span>
+            <span>共 {list.length} 条，每页 {PAGE_SIZE} 条 · 含税合计 {sumMallOrderAmounts(list.map(order => order.totalAmount))}</span>
             <div className="flex gap-1">{Array.from({ length: totalPages }, (_, index) => index + 1).slice(Math.max(0, safePage - 3), Math.max(0, safePage - 3) + 5).map(value => <button key={value} type="button" onClick={() => setPage(value)} className={value === safePage ? "h-7 w-7 rounded-md bg-[#185FA5] text-white" : "h-7 w-7 rounded-md border bg-white hover:bg-slate-50"}>{value}</button>)}</div>
             <span>第 {safePage} / {totalPages} 页</span>
           </div>

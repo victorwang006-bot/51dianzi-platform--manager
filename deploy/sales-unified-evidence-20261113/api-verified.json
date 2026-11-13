@@ -1,0 +1,33 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T15:18:15.680593+00:00",
+  "candidateSha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+  "onlyAdminProcessReloaded": true,
+  "frontAPIAndFrontendUnchanged": true,
+  "allUnrelatedProcessesUnchanged": true,
+  "originalAuthorizationUnchanged": true,
+  "originalDatabaseWrites": 0,
+  "independentMetadataTables": 5,
+  "metadataRecordWrites": 0,
+  "refundOrStockOperations": 0,
+  "sourceTests": 96,
+  "actualAPITests": 53,
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/api/trpc/auth.me",
+      "status": 200,
+      "sha256": "5a68d3889a3d32c17cdfdfed73912a1f5f82244b7a715f271a899f4c7a35bd69"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    }
+  ],
+  "loggedInOrderMutationTested": false
+}

@@ -1,0 +1,250 @@
+{
+  "status": "PASS",
+  "actualCandidatePatchBytesExecuted": true,
+  "testCount": 53,
+  "baselineSha256": "56f9a8e50070c3a17601b5c95f9459e014861cffca9aba5a836580c563d5cf14",
+  "candidateSha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+  "sourceHashes": {
+    "shared/businessSalesOrderMetadata.ts": "a62b17b64f1855e59ec64c8896f99c802629be87e00107ce11360388a1e4b7b1",
+    "server/services/businessSalesOrderMetadata.ts": "a7ebd3c288cd596b82466e154a29f2472b1e80ec390d53d807eb3aeec2ccc2f2",
+    "server/businessRouter.ts": "4ab641f464d3da2e8b7958e4f8aa7ac53f4a9d33821afa9154973db546cd4e4d",
+    "server/services/businessSalesOrderMetadata.fixture.ts": "c0bf898fbe66309340b5a2186609825bf9302cbed8447c96643af9250420f4ed",
+    "drizzle/businessSalesOrderMetadataSchema.ts": "6c6862f571384bb892527c08dfb65997ab78c565a5179780606dbb662f8b0f30"
+  },
+  "patchFactorySha256": "f935e4319c3cfc540b1b203482714b1bf3af95231f03c400d5d3a99b9ea567e1",
+  "actualRouterPropertiesSha256": "515ef4d5b0b6bd1c268c00f7571833769be741e0e17ef08dea6cabbe19b642d5",
+  "nativeAuthorizationFunctionsExecuted": [
+    "businessScopePermission",
+    "businessScopeAllows",
+    "requireBusinessAdminAccount",
+    "getBusinessWorkbenchMerchantIds",
+    "parseBusinessMerchantId",
+    "businessMerchantIdFromContext",
+    "assertBusinessMerchantAccess",
+    "businessEnterpriseBindingFromMerchant",
+    "businessAuditActor",
+    "requireCurrentBusinessStaffBinding",
+    "isCustomerSupplyBusinessMethod",
+    "withCurrentBusinessAuthorization"
+  ],
+  "results": [
+    {
+      "name": "exact inverse, preserved native auth/imports/archive bytes and source hashes",
+      "status": "PASS"
+    },
+    {
+      "name": "actual tRPC router has exactly four fixed metadata methods with correct query/mutation types",
+      "status": "PASS"
+    },
+    {
+      "name": "actual metadata query executes unchanged native authorization and original get before SELECT-only DB",
+      "status": "PASS"
+    },
+    {
+      "name": "read mode succeeds without orders.write; all three metadata writes fail before get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "write mode does not silently downgrade to read; write-only orders scope allows explicit save only",
+      "status": "PASS"
+    },
+    {
+      "name": "native authorization/customer read intersection rejects missing-binding before original get or metadata IO",
+      "status": "PASS"
+    },
+    {
+      "name": "native authorization/customer read intersection rejects revoked-scope before original get or metadata IO",
+      "status": "PASS"
+    },
+    {
+      "name": "native authorization/customer read intersection rejects no-orders before original get or metadata IO",
+      "status": "PASS"
+    },
+    {
+      "name": "native authorization/customer read intersection rejects no-customer-intersection before original get or metadata IO",
+      "status": "PASS"
+    },
+    {
+      "name": "native authorization/customer read intersection rejects customer-write-only before original get or metadata IO",
+      "status": "PASS"
+    },
+    {
+      "name": "native account rejects anonymous before SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "native account rejects oauth before SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "native account rejects inactive before SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "super-admin label cannot replace revoked native business scope",
+      "status": "PASS"
+    },
+    {
+      "name": "unchanged native merchant allowlist and strict header reject wrong merchant before scope/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "disabled original merchant enterprise binding rejects before get or native IO",
+      "status": "PASS"
+    },
+    {
+      "name": "original get FORBIDDEN retains public error identity and metadata IO zero",
+      "status": "PASS"
+    },
+    {
+      "name": "original get NOT_FOUND retains public error identity and metadata IO zero",
+      "status": "PASS"
+    },
+    {
+      "name": "raw original transport/auth fence errors are bounded with no private cause",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #0 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #1 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #2 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #3 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #4 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #5 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #6 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong original tuple #7 fails closed before metadata SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged merchantId before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged actorAdminId before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged frontUserId before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged bindingVersion before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged method before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged amount before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual strict schema rejects forged refundEvidence before auth/get/SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "all four actual procedure inputs reject unknown fields rather than stripping financial/identity fields",
+      "status": "PASS"
+    },
+    {
+      "name": "actual contract bounds fields and rejects empty record, unknown kind and zero update version",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundled receiver service saves version 0→1→2, parameterized SQL and fresh native audit",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundled receiver replay returns original result after later CAS update with no duplicate audit",
+      "status": "PASS"
+    },
+    {
+      "name": "same request changed payload/action, stale version and SQL CAS miss roll back atomically",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle audit failure rolls back base/receiver/request/audit",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle request-completion failure rolls back base/receiver/request/audit",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle concurrent replay and distinct stale requests preserve one audited receiver",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle consultation is intent-only, replayable, no financial/stock/original mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle repair is intent-only, replayable, no financial/stock/original mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle exchange is intent-only, replayable, no financial/stock/original mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle return_request is intent-only, replayable, no financial/stock/original mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle refund_request is intent-only, replayable, no financial/stock/original mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "actual after-sale update CAS/close/reopen/replay and rollback preserve independent audited records",
+      "status": "PASS"
+    },
+    {
+      "name": "current original visibility still required for replay; fresh binding determines next audit actor",
+      "status": "PASS"
+    },
+    {
+      "name": "actual service malformed SQL rows and corrupt request replay fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle unavailable transaction sanitizes native DB errors and emits no SQL",
+      "status": "PASS"
+    },
+    {
+      "name": "actual bundle stored wrong provenance read/write conflict and rollback",
+      "status": "PASS"
+    },
+    {
+      "name": "actual service SQL is restricted to five metadata tables and no DELETE or original business side effects",
+      "status": "PASS"
+    }
+  ],
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "noLiveIo": true,
+  "noOriginalFinancialInventoryCancelCalls": true,
+  "diBoundary": "Only final candidate factory/contract/helper and actual full crm router declaration plus listed unchanged native auth functions execute in isolated VM. Real installed tRPC procedure/schema semantics and native TRPCError identity; native DB/fence/staff/scope/merchant/ERP suppliers are fictional spies. Only fictional SQL fixture compiled from source. No complete API/package startup, listener, network, credentials, real DB or live order changes.",
+  "timezoneBoundary": "Native root getDb is unchanged. Date values use service UTC serialization; live pool/session timezone is an activation-owner prerequisite, not inferred from fixtures."
+}

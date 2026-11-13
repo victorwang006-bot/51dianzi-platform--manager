@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useRef,
   useState,
@@ -28,7 +29,7 @@ import {
 import { getAdminListLocationLayout } from "./adminListLocationLayout";
 import InquiryReceptionNavigationBadge from "./InquiryReceptionNavigationBadge";
 import { getSalesOrderNavigationContext, type SalesOrderSource } from "@/lib/salesOrderWorkspace";
-import { getAdminWorkspaceDropdownWidth } from "@/lib/adminWorkspaceDropdownWidth";
+import { getAdminWorkspaceDropdownWidth, getAdminWorkspaceDropdownLeft, getAdminWorkspaceSubmenuPlacement } from "@/lib/adminWorkspaceDropdownWidth";
 import "./AdminWorkspaceNavigation.css";
 import "./AdminListPage.css";
 
@@ -143,6 +144,7 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
         ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
       : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
       : reception ? ["询价接待"]
+      : activeItem.path === "/workbench/inbound" ? ["入库管理"]
       : activeWorkspace.id === "business" && entry?.kind === "group" ? [entry.label, activeItem.label]
       : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   })();
@@ -192,12 +194,15 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const salesActive = !!salesItem && salesContext.active;
   // Promote only already parent-authorized groups. Their canonical business
   // routes and the original item objects remain untouched.
-  const workspaces: { id: UnifiedWorkspaceId; workspaceId: AdminWorkspaceId; label: string; items: readonly T[] }[] = [
+  const workspaces: { id: UnifiedWorkspaceId; workspaceId: AdminWorkspaceId; label: string; items: readonly T[]; directItem?: T }[] = [
     ...(salesContext.entries.length ? [{ id: "sales-orders" as const, workspaceId: "business" as const,
       label: "销售订单", items: salesContext.entries.map(entry => entry.item) }] : []),
     ...businessEntries.flatMap(entry => entry.kind === "group" && (entry.id === "inventory" || entry.id === "procurement")
       ? [{ id: (entry.id === "inventory" ? "inventory-management" : "procurement-management") as UnifiedWorkspaceId,
-        workspaceId: "business" as const, label: entry.label, items: entry.items }] : []),
+        workspaceId: "business" as const,
+        label: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? "入库管理" : entry.label,
+        items: entry.items,
+        directItem: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : []),
     ...state.workspaces.filter(workspace => workspace.id !== "business").map(workspace => ({ ...workspace, workspaceId: workspace.id })),
   ];
   const activeWorkspaceId = state.activeWorkspace?.id === "business"
@@ -221,12 +226,14 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     mobile: boolean;
     top: number;
     left: number;
+    width: number;
     maxHeight: number;
     group: null | {
       id: AdminWorkspaceNavigationGroupId;
       source: "hover" | "activation";
       top: number;
       left: number;
+      width: number;
       maxHeight: number;
       side: "left" | "right";
     };
@@ -270,20 +277,29 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     if (restoreFocus && expanded && open) triggerRefs.current.get(open.id)?.focus({ preventScroll: true });
   }
 
+  function workspacePanelWidth(workspace: typeof workspaces[number], measuredWidth?: number) {
+    const labels = workspace.id === "sales-orders" ? salesContext.entries.map(entry => entry.label)
+      : workspace.id === "operations" ? operationsEntries.map(entry => entry.kind === "group" ? entry.label : entry.item.label)
+      : workspace.items.map(item => item.label);
+    return getAdminWorkspaceDropdownWidth(workspace.id, 2, {
+      measuredWidth, labels, hasArrow: workspace.id === "operations", viewportWidth: window.innerWidth,
+    });
+  }
+
   function openWorkspaceMenu(id: UnifiedWorkspaceId, focus?: "first" | "last", source: "hover" | "activation" = "activation") {
     cancelHoverClose();
     // Re-entering a parent must not reset its selected child or steal focus.
     if (source === "hover" && expanded && open?.id === id) return;
     const workspace = workspaces.find(entry => entry.id === id);
     const trigger = triggerRefs.current.get(id);
-    if (!workspace || !trigger) return;
+    if (!workspace || workspace.directItem || !trigger) return;
     const rect = trigger.getBoundingClientRect();
-    const width = Math.min(getAdminWorkspaceDropdownWidth(id), window.innerWidth - 16);
+    const width = workspacePanelWidth(workspace);
     const top = Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 56));
     setOpen({
       id, source, items, location, mobile: window.innerWidth <= 767,
-      top,
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      top, width,
+      left: getAdminWorkspaceDropdownLeft(rect.left, width, window.innerWidth),
       maxHeight: Math.max(0, window.innerHeight - top - 8),
       group: null,
       focus: focus ? { level: 2, target: focus } : undefined,
@@ -297,16 +313,15 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     const trigger = groupRefs.current.get(id);
     if (!expanded || !open || entry?.kind !== "group" || !trigger) return;
     const rect = trigger.getBoundingClientRect();
-    const parentRight = open.left + Math.min(getAdminWorkspaceDropdownWidth(open.id), window.innerWidth - 16);
-    const childWidth = Math.min(getAdminWorkspaceDropdownWidth(open.id, 3), window.innerWidth - 16);
-    const side = parentRight + childWidth <= window.innerWidth - 8 ? "right" : "left";
+    const parentWidth = workspacePanelWidth(openWorkspace!, panelRef.current?.getBoundingClientRect().width);
+    const childWidth = getAdminWorkspaceDropdownWidth(open.id, 3, { labels: entry.items.map(item => item.label), viewportWidth: window.innerWidth });
+    const placement = getAdminWorkspaceSubmenuPlacement(open.left, parentWidth, childWidth, window.innerWidth);
     const desiredHeight = Math.min(entry.items.length * 40 + 10, window.innerHeight - 16);
     const top = Math.max(8, Math.min(rect.top, window.innerHeight - desiredHeight - 8));
     setOpen({
       ...open,
       group: {
-        id, source, top, side,
-        left: side === "right" ? parentRight : Math.max(8, open.left - childWidth),
+        id, source, top, ...placement, width: childWidth,
         maxHeight: Math.max(0, window.innerHeight - top - 8),
       },
       focus: focus || open.mobile ? { level: 3, target: focus ?? "first" } : undefined,
@@ -322,6 +337,39 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
 
   // Cancel delayed work on URL/query, permission snapshot changes and unmount.
   useEffect(() => () => cancelHoverClose(), [items, location]);
+
+  // CSS max-content sizes each level from its real longest rendered row. Measure
+  // before paint, then remeasure badge/custom content/font changes without focus.
+  useLayoutEffect(() => {
+    if (!expanded || !open || !openWorkspace || open.mobile) return;
+    let disposed = false;
+    const measurePanels = () => {
+      if (disposed || layerRef.current?.hidden) return;
+      const trigger = triggerRefs.current.get(open.id);
+      if (!trigger || !panelRef.current) return;
+      const width = workspacePanelWidth(openWorkspace, panelRef.current.getBoundingClientRect().width);
+      const left = getAdminWorkspaceDropdownLeft(trigger.getBoundingClientRect().left, width, window.innerWidth);
+      const childWidth = group ? getAdminWorkspaceDropdownWidth(open.id, 3, {
+        measuredWidth: childPanelRef.current?.getBoundingClientRect().width,
+        labels: group.items.map(item => item.label), viewportWidth: window.innerWidth,
+      }) : null;
+      const placement = childWidth !== null ? getAdminWorkspaceSubmenuPlacement(left, width, childWidth, window.innerWidth) : null;
+      setOpen(current => {
+        if (!current || current.id !== open.id || current.items !== items || current.location !== location) return current;
+        const childChanged = current.group && placement && (current.group.left !== placement.left || current.group.side !== placement.side || current.group.width !== childWidth);
+        if (current.width === width && current.left === left && !childChanged) return current;
+        return { ...current, width, left,
+          group: current.group && placement ? { ...current.group, ...placement, width: childWidth! } : current.group };
+      });
+    };
+    measurePanels();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measurePanels);
+    observer?.observe(panelRef.current!);
+    if (childPanelRef.current) observer?.observe(childPanelRef.current);
+    document.fonts?.addEventListener("loadingdone", measurePanels);
+    void document.fonts?.ready.then(measurePanels);
+    return () => { disposed = true; observer?.disconnect(); document.fonts?.removeEventListener("loadingdone", measurePanels); };
+  }, [open, expanded]);
 
   useEffect(() => {
     if (open && !expanded) {
@@ -501,6 +549,24 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
         const isActive = workspace.id === "sales-orders" ? salesActive : workspace.id === activeWorkspaceId;
         const isExpanded = expanded && open?.id === workspace.id;
         const id = `${instanceId}-${workspace.id}`;
+        if (workspace.directItem) {
+          const item = workspace.directItem;
+          return (
+            <button key={workspace.id} type="button"
+              className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+              title="入库管理" data-workspace-nav-target={workspace.id} data-navigation-level="1"
+              data-workspace-direct-item={item.path}
+              data-active={isActive ? "true" : "false"} aria-current={isActive ? "page" : undefined}
+              onClick={() => { closeWorkspace(); onNavigate(item); }}
+              onPointerEnter={event => {
+                cancelHoverClose();
+                if (isDesktopMouse(event) && expanded) closeWorkspace();
+                (onPreload ?? onItemIntent)?.(item);
+              }}
+              onFocus={() => (onPreload ?? onItemIntent)?.(item)}
+            >入库管理{renderBadge?.(item)}</button>
+          );
+        }
         return (
           <button
             key={workspace.id}
@@ -571,9 +637,10 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             data-workspace-dropdown="panel"
             data-workspace={open.id}
             data-navigation-level="2"
+            data-dropdown-measured-width={open.width}
             className="admin-workspace-nav__workspace-panel"
             hidden={open.mobile && !!group}
-            style={{ top: open.top, left: open.left, width: getAdminWorkspaceDropdownWidth(open.id), maxHeight: open.maxHeight }}
+            style={{ top: open.top, left: open.left, maxHeight: open.maxHeight }}
             onKeyDown={event => handlePanelKeys(event, 2)}
             onPointerEnter={cancelHoverClose}
             onPointerLeave={scheduleHoverClose}
@@ -632,8 +699,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
               data-workspace={open.id} data-navigation-level="3" data-workspace-submenu={group.id}
               data-business-submenu={open.id === "business" ? group.id : undefined}
               data-submenu-side={open.group.side}
+              data-dropdown-measured-width={open.group.width}
               className="admin-workspace-nav__workspace-panel admin-workspace-nav__workspace-panel--children"
-              style={{ top: open.group.top, left: open.group.left, width: getAdminWorkspaceDropdownWidth(open.id, 3), maxHeight: open.group.maxHeight }}
+              style={{ top: open.group.top, left: open.group.left, maxHeight: open.group.maxHeight }}
               onKeyDown={event => handlePanelKeys(event, 3)}
               onPointerEnter={cancelHoverClose}
               onPointerLeave={scheduleHoverClose}

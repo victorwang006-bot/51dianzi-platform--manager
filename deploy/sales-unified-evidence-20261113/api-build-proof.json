@@ -1,0 +1,117 @@
+{
+  "status": "PASS",
+  "baselineSha256": "56f9a8e50070c3a17601b5c95f9459e014861cffca9aba5a836580c563d5cf14",
+  "candidateSha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+  "sourceHashes": {
+    "shared/businessSalesOrderMetadata.ts": "a62b17b64f1855e59ec64c8896f99c802629be87e00107ce11360388a1e4b7b1",
+    "server/services/businessSalesOrderMetadata.ts": "a7ebd3c288cd596b82466e154a29f2472b1e80ec390d53d807eb3aeec2ccc2f2",
+    "server/businessRouter.ts": "4ab641f464d3da2e8b7958e4f8aa7ac53f4a9d33821afa9154973db546cd4e4d",
+    "server/services/businessSalesOrderMetadata.fixture.ts": "c0bf898fbe66309340b5a2186609825bf9302cbed8447c96643af9250420f4ed",
+    "drizzle/businessSalesOrderMetadataSchema.ts": "6c6862f571384bb892527c08dfb65997ab78c565a5179780606dbb662f8b0f30"
+  },
+  "patchCount": 2,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "originalAuthorizationUnchanged": true,
+  "originalPlatformCommandUnchanged": true,
+  "originalImportsUnchanged": true,
+  "originalArchiveFactoryAndHookUnchanged": true,
+  "originalRouterPropertiesUnchanged": true,
+  "noApiRebuild": true,
+  "metadataMethods": {
+    "metadataGet": "query",
+    "saveReceiver": "mutation",
+    "addAfterSale": "mutation",
+    "updateAfterSale": "mutation"
+  },
+  "protectedFunctions": [
+    {
+      "name": "getDb",
+      "sha256": "b2823d22e9c501ed9b0c81f5b23834198ee99fdd5dde43541d4cd9ac6869c492"
+    },
+    {
+      "name": "withCurrentBusinessAuthorization",
+      "sha256": "2a319c2160e5fb99d97a00faca38907e2a083b9133ae79259a070b254405bdbe"
+    },
+    {
+      "name": "assertBusinessMerchantAccess",
+      "sha256": "85c85ba4762aa95092bfcd52a081b4774ab57e052fb7754e9a0b691d0fefde22"
+    },
+    {
+      "name": "forwardBusinessMethod",
+      "sha256": "cde6718516ef693c3964e44293bcb5a08765b7cb7ffba3dae15baf5d40f620f2"
+    },
+    {
+      "name": "businessQuery",
+      "sha256": "ca76b8308ddaff191b26cd53ed4e7e36a79a2b26f1c05b1733738619dbe89873"
+    },
+    {
+      "name": "businessMutation",
+      "sha256": "0c25f23840546a77c5bef79749336e70e3659fde1e98b1f3855fd06c93221a68"
+    },
+    {
+      "name": "callPlatformBusinessCommand",
+      "sha256": "2e01a4942f352395899771f3d6bdf568f1b4c54bd828e135ccfb29e596e4d683"
+    },
+    {
+      "name": "recordBusinessCommandAccess",
+      "sha256": "e7cebb003e8e3ebee87591b760692781018137a7cb7c8213142547e989c82ef6"
+    },
+    {
+      "name": "businessScopeAllows",
+      "sha256": "f8636c917398d90a77e13b36aeea4f1a57e90b17bf9d3cda8a5f8a76499a2c1b"
+    },
+    {
+      "name": "businessMerchantIdFromContext",
+      "sha256": "ce4602df2e7f07225c6f89292d17d0826b9c61c698b880d1a7ac7cf25ed83d79"
+    },
+    {
+      "name": "businessEnterpriseBindingFromMerchant",
+      "sha256": "e5ad6acee210a95aeb27a31f088325f0eecce1c02d31291c79cbe15f3f1a66c9"
+    },
+    {
+      "name": "businessAuditActor",
+      "sha256": "3ab2529e1a67ae5cdc55a7205da23a24097f946e0940013cd3e9404f3c927fb5"
+    },
+    {
+      "name": "requireCurrentBusinessStaffBinding",
+      "sha256": "50533e4b51e9c72dd70b9b2384ab3849b168f73090327b749677ebf4de960932"
+    }
+  ],
+  "protectedVariables": [
+    {
+      "name": "BUSINESS_METHOD_CAPABILITIES",
+      "sha256": "d54a334af9f5a3fff05203c479d5b2398a59fb054d2c194f8ab6170ab7778b05"
+    },
+    {
+      "name": "PlatformBusinessPublicError",
+      "sha256": "44d9aaee1aa00e68fefa3a17250b5ac28201d49dd6940c4b7b1f544189018e26"
+    },
+    {
+      "name": "__archiveLive",
+      "sha256": "d0ca7ee69cde501c62ebfefa8eeca1d1d721aef93701b24e0720c1a31d754519"
+    },
+    {
+      "name": "__D51_TEST_ORDER_ARCHIVE",
+      "sha256": "44ab0a481bd9d957b0765a0fa93ea874dc1b5cac61b892f5bbd15cef6ed01fbf"
+    },
+    {
+      "name": "__ir_admin_d67f0938_namespace_db",
+      "sha256": "dfb13a750602605ab17db6ada9deacdb29db2a22b97cef48e257aa2d5089908a"
+    }
+  ],
+  "rootImportsSha256": "015680af6db577919db854ef5a56a35cf4f55d1cff36bb708848560bed102a4d",
+  "checkedNativeBindings": {
+    "getDb": "getDb",
+    "sql": "sql4",
+    "TRPCError": "__ir_admin_d67f0938_import_TRPCError",
+    "createHash": "__ir_admin_d67f0938_import_createHash",
+    "randomUUID": "__ir_admin_d67f0938_import_randomUUID",
+    "publicError": "PlatformBusinessPublicError"
+  },
+  "compiledHelperSha256": "9bd26adb6d057e4dd3b38372e1f8216f947e943576e3f8b881135cbd5ad73873",
+  "sourceHelperSha256": "2caa6720ff197b6937477c5a1577ec003b265db1f65802387ab362052fb443d7",
+  "getDbPreservedExactly": true,
+  "baselineGetDbHasExplicitTimezoneZ": false,
+  "timezoneBoundary": "Native root getDb is unchanged. Date values use service UTC serialization; live pool/session timezone is an activation-owner prerequisite, not inferred from fixtures."
+}

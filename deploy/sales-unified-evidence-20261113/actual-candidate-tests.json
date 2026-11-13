@@ -1,0 +1,292 @@
+{
+  "status": "PASS",
+  "actualCandidatePatchBytesExecuted": true,
+  "inputs": [
+    {
+      "relative": "index.html",
+      "sha256": "c63c9d5d06a19dfd4c94da1445d165f116d57314a2dd401968708ef6053bd803"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-sales-unified-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js",
+      "sha256": "62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js",
+      "sha256": "31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js",
+      "sha256": "894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342"
+    },
+    {
+      "relative": "assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "sha256": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28"
+    }
+  ],
+  "productionHashesVerifiedAtStart": true,
+  "productionHashesVerifiedAtEnd": true,
+  "results": [
+    {
+      "name": "nav: actual single inbound is direct first-level same-object button without dropdown attributes or arrow",
+      "status": "PASS"
+    },
+    {
+      "name": "nav: two sales leaves preserve original object and source fourth callback parameter",
+      "status": "PASS"
+    },
+    {
+      "name": "nav: measured parent/child widths are independent and right submenu gap is at most 3 mock CSS pixels",
+      "status": "PASS"
+    },
+    {
+      "name": "nav: actual width factory respects arbitrary measured widths rather than old fixed width constants",
+      "status": "PASS"
+    },
+    {
+      "name": "nav: permission revoke removes open dropdown synchronously in render snapshot",
+      "status": "PASS"
+    },
+    {
+      "name": "nav: source highlights/breadcrumbs and badge original-owner callback remain correct",
+      "status": "PASS"
+    },
+    {
+      "name": "nav: native parent To and unread owner bytes unchanged, exact layout inverse proof",
+      "status": "PASS"
+    },
+    {
+      "name": "stylesheet: scoped navigation max-content and order styles, not a browser pixel acceptance",
+      "status": "PASS"
+    },
+    {
+      "name": "entry: whole original customer-home entry bytes unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "entry: actual login-return normalization still defaults to customer and preserves explicit deep links",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: all nonpatch bytes, original table and native gates preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual amount factory exact decimal aggregate, no floating total",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: exact helper XLSX preserves strings/unit scales and strips all string formula cells",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: exact helper empty/cancel-after-await/final-isCurrent guards never write stale file",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: no unmapped new toolbar identifiers inside actual native mall root",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual toolbar export handler uses current filtered selection, not raw orders",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual mall root renders select/header/panel/toolbar/footer with source-native bindings",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual CRM factory init reuses native React/scope/trpc and integrates metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual CRM root SSR empty fixture no real reads or mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual compiled metadata write gate requires verified/same merchant/read/write/canWrite/pageWritable",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: all nonpatch bytes, original table and native gates preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual amount factory exact decimal aggregate, no floating total",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: exact helper XLSX preserves strings/unit scales and strips all string formula cells",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: exact helper empty/cancel-after-await/final-isCurrent guards never write stale file",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: no unmapped new toolbar identifiers inside actual native mall root",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual toolbar export handler uses current filtered selection, not raw orders",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual mall root renders select/header/panel/toolbar/footer with source-native bindings",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual CRM factory init reuses native React/scope/trpc and integrates metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual CRM root SSR empty fixture no real reads or mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual compiled metadata write gate requires verified/same merchant/read/write/canWrite/pageWritable",
+      "status": "PASS"
+    },
+    {
+      "name": "final: all six production hashes and manifest reverified; zero external calls and no DML",
+      "status": "PASS"
+    }
+  ],
+  "namedResults": 31,
+  "passed": 31,
+  "failed": 0,
+  "nativeCodeRows": [
+    {
+      "label": "navigation original capsule with new Ee/Ve and measured width factory",
+      "sha256": "948b3d26d9d6bcdec78c5d252fda8bbb9a0510b0ff745026d347201b97932d0d",
+      "bytes": 44631,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "actual navigation width factory",
+      "sha256": "1a58b99483011bd7bb58e466991b4630f8949edfbe29c6869462846180a1cd60",
+      "bytes": 1153,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "entry default target",
+      "sha256": "f95ca8459a9d6b52b6c8b0034d2578194fdc16decbf427da76fa248161305501",
+      "bytes": 25,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "entry safe target normalize",
+      "sha256": "aaf19054de7e902eb55bc6d393e19d3d1a9e2224c5c23e7f62f2582b3d112d10",
+      "bytes": 180,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "entry login return",
+      "sha256": "3fc355bb9108011c4957e46e49d0d75238ca505956b494e89d432289cb17cdd2",
+      "bytes": 97,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 actual opaque-loader XLSX helper",
+      "sha256": "8110ee20a4305f8bdfe9ba267980f35ce8488bb09e963e0a2ebe75da240fb696",
+      "bytes": 2706,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 actual BigInt amount factory",
+      "sha256": "1b82c6feabb5821e85b61002e139e196cd9057331507671a71967a6d04e61452",
+      "bytes": 877,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 exact toolbar export handler",
+      "sha256": "f2348c3e5adfe337301679fd3c72c32db9d4f3e78729052468a719c46adbd58b",
+      "bytes": 374,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 exact full mall root uI",
+      "sha256": "045876e1b9040586a9db1716394124469dcb16b665ed9da1f4c837e9fd42db20",
+      "bytes": 46795,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 exact CRM getter including actual factory and original native object",
+      "sha256": "3be827cab0f0d1b8766bae1e6613371a33542f61237d6c95e46a5b9b3a296540",
+      "bytes": 517489,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 exact thin original CRM root op",
+      "sha256": "cad377310870fbadb9fe39df851fb698714f86b98f2dd774adf1f55f331e050f",
+      "bytes": 64,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle0 exact compiled metadata write gate",
+      "sha256": "3bc3879c173be9941a72068d0d8dc5b4f034227861ef3979816baf156a04e79e",
+      "bytes": 315,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 actual opaque-loader XLSX helper",
+      "sha256": "8110ee20a4305f8bdfe9ba267980f35ce8488bb09e963e0a2ebe75da240fb696",
+      "bytes": 2706,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 actual BigInt amount factory",
+      "sha256": "1b82c6feabb5821e85b61002e139e196cd9057331507671a71967a6d04e61452",
+      "bytes": 877,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 exact toolbar export handler",
+      "sha256": "f2348c3e5adfe337301679fd3c72c32db9d4f3e78729052468a719c46adbd58b",
+      "bytes": 374,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 exact full mall root uI",
+      "sha256": "045876e1b9040586a9db1716394124469dcb16b665ed9da1f4c837e9fd42db20",
+      "bytes": 46795,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 exact CRM getter including actual factory and original native object",
+      "sha256": "3be827cab0f0d1b8766bae1e6613371a33542f61237d6c95e46a5b9b3a296540",
+      "bytes": 517489,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 exact thin original CRM root op",
+      "sha256": "cad377310870fbadb9fe39df851fb698714f86b98f2dd774adf1f55f331e050f",
+      "bytes": 64,
+      "mode": "exact candidate bytes"
+    },
+    {
+      "label": "bundle1 exact compiled metadata write gate",
+      "sha256": "3bc3879c173be9941a72068d0d8dc5b4f034227861ef3979816baf156a04e79e",
+      "bytes": 315,
+      "mode": "exact candidate bytes"
+    }
+  ],
+  "mockNativeIO": {
+    "externalBusinessCalls": 0,
+    "mutationCalls": 0,
+    "nativeClientReads": 0,
+    "queryHooks": 6,
+    "xlsxWrites": 2
+  },
+  "coverageLimits": [
+    "No browser/computed production pixels: DOMRect fixtures prove measured-width control flow only.",
+    "Full production top-level imports/startup were not executed; only exact AST-extracted candidate units executed.",
+    "CRM coverage is actual factory initialization and empty-fixture SSR plus actual compiled metadata write gate; not full CRM metadata dialogs/customer interactions. Source UI tests are not counted as actual candidate tests.",
+    "Native React 19/JSX objects used unchanged. Scope/tRPC/native-client IO are inert matching fixtures; hook registration is not business IO.",
+    "Mall XLSX original preloader stub returns controlled promise without invoking opaque dynamic-import callback. XLSX workbook/file outputs are in-memory spies.",
+    "No real receiver, after-sale, refund, shipping, payment or database record was entered or changed."
+  ]
+}

@@ -66,7 +66,8 @@ describe("销售来源复用统一 workspace dropdown", () => {
     expect(leaves().map(leaf => [leaf.dataset.workspaceDropdownItem, leaf.dataset.orderSource, leaf.textContent])).toEqual([
       [mall.path, "mall", "商城订单"], [business.path, "business", "业务订单"],
     ]);
-    expect(panel()?.style.width).toBe("160px");
+    expect(panel()?.style.width).toBe("");
+    expect(Number(panel()?.dataset.dropdownMeasuredWidth)).toBeGreaterThan(0);
     expect(onNavigate).not.toHaveBeenCalled();
     expect(button("sales-orders").getAttribute("aria-current")).toBe("location");
     expect(button(business.path).getAttribute("aria-current")).toBe("page");
