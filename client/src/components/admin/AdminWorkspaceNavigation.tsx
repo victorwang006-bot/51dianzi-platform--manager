@@ -31,7 +31,7 @@ import "./AdminWorkspaceNavigation.css";
 import "./AdminListPage.css";
 
 /** UI release only; native/business authorization versions remain independent. */
-export const ADMIN_SYSTEM_RELEASE = "20261103-channel-permission-owner-v13-a2";
+export const ADMIN_SYSTEM_RELEASE = "20261113-primary-menu-reminders-v1";
 
 export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   /** Already filtered by the existing native-admin/BFF capability checks. */
@@ -97,7 +97,7 @@ function handleNavigationKeys(event: KeyboardEvent<HTMLElement>) {
   buttons[next].scrollIntoView?.({ block: "nearest", inline: "nearest" });
 }
 
-type UnifiedWorkspaceId = AdminWorkspaceId;
+type UnifiedWorkspaceId = AdminWorkspaceId | "inventory-management" | "procurement-management";
 const WORKSPACE_PANEL_WIDTH = 212;
 const HOVER_CLOSE_DELAY = 180;
 
@@ -126,6 +126,7 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
   const customer = activeItem.path === "/workbench/customers";
   const reception = activeItem.path === "/workbench/inquiries";
+  const sales = activeItem.path === "/workbench/orders";
   const tab = channel ? channelTabForLocation(location) : null;
   const entry = !channel
     ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id).find(entry =>
@@ -136,6 +137,8 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
       ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
     : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
     : reception ? ["询价接待"]
+    : sales ? ["销售订单"]
+    : activeWorkspace.id === "business" && entry?.kind === "group" ? [entry.label, activeItem.label]
     : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   return (
     <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location"
@@ -169,8 +172,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const customerItem = items.find(item => item.path === "/workbench/customers");
   const channelItem = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE);
   const receptionItem = items.find(item => item.path === "/workbench/inquiries");
+  const salesItem = items.find(item => item.path === "/workbench/orders");
   const filteredBusinessItems = state.workspaces.find(workspace => workspace.id === "business")
-    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries") ?? [];
+    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries" && item.path !== "/workbench/orders") ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
   const operationsEntries = groupAdminOperationsNavigationItems(
     state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
@@ -178,12 +182,20 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
   const customerActive = !!customerItem && state.route?.canonicalPath === "/workbench/customers";
   const receptionActive = !!receptionItem && state.route?.canonicalPath === "/workbench/inquiries";
-  const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] =
-    state.workspaces.flatMap(workspace => workspace.id === "business"
-      ? businessEntries.length ? [{ ...workspace, items: filteredBusinessItems }] : []
-      : [workspace]);
-  const activeWorkspaceId = ![CHANNEL_INVENTORY_ROUTE, "/workbench/customers", "/workbench/inquiries"].includes(state.route?.canonicalPath ?? "")
-    ? state.activeWorkspace?.id : null;
+  const salesActive = !!salesItem && state.route?.canonicalPath === "/workbench/orders";
+  // Promote only already parent-authorized groups. Their canonical business
+  // routes and the original item objects remain untouched.
+  const workspaces: { id: UnifiedWorkspaceId; workspaceId: AdminWorkspaceId; label: string; items: readonly T[] }[] = [
+    ...businessEntries.flatMap(entry => entry.kind === "group" && (entry.id === "inventory" || entry.id === "procurement")
+      ? [{ id: (entry.id === "inventory" ? "inventory-management" : "procurement-management") as UnifiedWorkspaceId,
+        workspaceId: "business" as const, label: entry.label, items: entry.items }] : []),
+    ...state.workspaces.filter(workspace => workspace.id !== "business").map(workspace => ({ ...workspace, workspaceId: workspace.id })),
+  ];
+  const activeWorkspaceId = state.activeWorkspace?.id === "business"
+    ? workspaces.find(workspace => workspace.workspaceId === "business" && workspace.items.some(item => item.path === state.activeItem?.path))?.id ?? null
+    : state.activeWorkspace?.id ?? null;
+  const operationsMessageItem = operationsEntries.flatMap(entry => entry.kind === "group" ? entry.items : [entry.item])
+    .find(item => item.path === "/messages");
   const navRef = useRef<HTMLElement>(null);
   const triggerRefs = useRef(new Map<UnifiedWorkspaceId, HTMLButtonElement>());
   const groupRefs = useRef(new Map<AdminWorkspaceNavigationGroupId, HTMLButtonElement>());
@@ -214,8 +226,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const openWorkspace = open?.items === items && open.location === location
     ? workspaces.find(workspace => workspace.id === open.id) : undefined;
   const expanded = !!openWorkspace;
-  const moduleEntries = open?.id === "business" ? businessEntries
-    : open?.id === "operations" ? operationsEntries : [];
+  const moduleEntries = open?.id === "operations" ? operationsEntries : [];
   const selectedGroup = expanded && open?.group
     ? moduleEntries.find(entry => entry.kind === "group" && entry.id === open.group?.id)
     : undefined;
@@ -415,7 +426,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     );
   }
 
-  if (!customerItem && !channelItem && !receptionItem && !workspaces.length) return null;
+  if (!customerItem && !channelItem && !receptionItem && !salesItem && !workspaces.length) return null;
 
   return (
     <nav
@@ -446,6 +457,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
       {channelItem ? (
         <button type="button"
           className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          title="渠道物料查询"
           data-workspace-nav-target="inventory"
           data-navigation-level="1" data-channel-view="flat"
           data-active={channelActive ? "true" : "false"} aria-current={channelActive ? "page" : undefined}
@@ -472,6 +484,20 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
           onFocus={() => (onPreload ?? onItemIntent)?.(receptionItem)}
         >询价接待<InquiryReceptionNavigationBadge /></button>
       ) : null}
+      {salesItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          data-workspace-nav-target="sales-orders" data-navigation-level="1"
+          data-active={salesActive ? "true" : "false"} aria-current={salesActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(salesItem); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(salesItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(salesItem)}
+        >销售订单{renderBadge?.(salesItem)}</button>
+      ) : null}
       {workspaces.map(workspace => {
         const isActive = workspace.id === activeWorkspaceId;
         const isExpanded = expanded && open?.id === workspace.id;
@@ -486,6 +512,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             id={`${id}-trigger`}
             type="button"
             className="admin-workspace-nav__tab admin-workspace-nav__workspace admin-workspace-nav__workspace-trigger"
+            title={workspace.id === "inventory-management" ? "入库与出库" : undefined}
             data-workspace-nav-target={workspace.id}
             data-navigation-level="1"
             data-workspace-dropdown-trigger={workspace.id}
@@ -516,6 +543,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             onFocus={() => (onPreload ?? onItemIntent)?.(workspace.items[0])}
           >
             {workspace.label}
+            {workspace.id === "operations" && operationsMessageItem ? renderBadge?.(operationsMessageItem) : null}
             <span className="admin-workspace-nav__chevron" aria-hidden="true">▾</span>
           </button>
         );
@@ -557,8 +585,8 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                 onClick={() => closeWorkspace(true)}>关闭</button>
             </div>
             <div className="admin-workspace-nav__workspace-content" data-workspace-dropdown="content">
-              {open.id === "business" || open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
-                ? renderLeaf(entry.item, open.id as AdminWorkspaceId, 2)
+              {open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
+                ? renderLeaf(entry.item, openWorkspace.workspaceId, 2)
                 : (
                   <button key={entry.id}
                     ref={node => {
@@ -588,9 +616,11 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                       else openModuleGroup(entry.id, "first");
                     }}
                   >
-                    {entry.label}<span className="admin-workspace-nav__chevron" aria-hidden="true">›</span>
+                    {entry.label}
+                    {entry.items.find(item => item.path === "/messages") ? renderBadge?.(entry.items.find(item => item.path === "/messages")!) : null}
+                    <span className="admin-workspace-nav__chevron" aria-hidden="true">›</span>
                   </button>
-                )) : openWorkspace.items.map(item => renderLeaf(item, open.id as AdminWorkspaceId, 2))}
+                )) : openWorkspace.items.map(item => renderLeaf(item, openWorkspace.workspaceId, 2))}
             </div>
           </div>
           {group && open.group ? (
@@ -614,10 +644,10 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                 <span>{group.label}</span>
                 <button type="button" className="admin-workspace-nav__workspace-control"
                   data-workspace-dropdown="close" aria-label={`关闭${openWorkspace.label}菜单`}
-                  onClick={() => closeWorkspace(true)}>关闭</button>
+                onClick={() => closeWorkspace(true)}>关闭</button>
               </div>
               <div className="admin-workspace-nav__workspace-content" data-workspace-dropdown="content">
-                {group.items.map(item => renderLeaf(item, open.id as AdminWorkspaceId, 3))}
+                {group.items.map(item => renderLeaf(item, openWorkspace.workspaceId, 3))}
               </div>
             </div>
           ) : null}

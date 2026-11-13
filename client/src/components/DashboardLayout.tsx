@@ -30,6 +30,10 @@ import {
 import { MessageSquare } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { buildBusinessNavigationTarget } from "@/lib/businessNavigation";
+import {
+  getAdminMessageUnreadQueryOptions,
+  getAdminMessageUnreadTotal,
+} from "@/lib/adminMessageRefresh";
 import { useEffect, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
 import {
@@ -489,11 +493,15 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     adminPermissions
   );
   // 消息未读总数（侧边栏角标，30 秒轮询）
-  const { data: unreadData } = trpc.message.unreadCount.useQuery(undefined, {
-    enabled: canReadMessages,
-    refetchInterval: canReadMessages ? 30000 : false,
+  const unreadQuery = trpc.message.unreadCount.useQuery(
+    undefined,
+    getAdminMessageUnreadQueryOptions(canReadMessages),
+  );
+  const unreadTotal = getAdminMessageUnreadTotal({
+    canReadMessages,
+    isError: unreadQuery.isError,
+    data: unreadQuery.data,
   });
-  const unreadTotal = unreadData?.total ?? 0;
   const canReadAnyNotifiedModule = [
     "merchants.read",
     "orders.read",

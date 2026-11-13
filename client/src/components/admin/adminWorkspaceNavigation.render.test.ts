@@ -315,7 +315,8 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     ).toHaveLength(1);
     await click(`group:${group}`);
     expect(button(path).getAttribute("aria-current")).toBe("page");
-    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    // This legacy fixture mounts both rows; production uses only the primary.
+    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(path === "/workbench/orders" ? 2 : 1);
   });
 
   it("渠道库存仍直达原回调、采购两项回传父原对象，公司信息不再显示", async () => {
@@ -432,10 +433,9 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
       ["/workbench/inbound", "/workbench/company-info", "/analytics", "/staff"].includes(item.path)
     );
     await render("/staff", subset);
-    await act(async () => button("business").click());
+    await act(async () => button("inventory-management").click());
     expect(onNavigate).not.toHaveBeenCalled();
-    expect(button("business").getAttribute("aria-expanded")).toBe("true");
-    await click("group:inventory");
+    expect(button("inventory-management").getAttribute("aria-expanded")).toBe("true");
     await click("/workbench/inbound");
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith(
@@ -444,9 +444,9 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     expect(button("organization").getAttribute("aria-current")).toBe(
       "location"
     );
-    expect(button("business").hasAttribute("aria-current")).toBe(false);
+    expect(button("inventory-management").hasAttribute("aria-current")).toBe(false);
     await render("/workbench/inbound?merchantId=8", subset);
-    expect(button("business").getAttribute("aria-current")).toBe("location");
+    expect(button("inventory-management").getAttribute("aria-current")).toBe("location");
     await click("group:inventory");
     expect(button("/workbench/inbound").getAttribute("aria-current")).toBe(
       "page"
@@ -633,8 +633,8 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
       )
     );
     await act(async () => {
-      button("business").focus();
-      button("business").dispatchEvent(
+      button("procurement-management").focus();
+      button("procurement-management").dispatchEvent(
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
       );
     });
@@ -652,7 +652,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     );
     expect(document.activeElement).toBe(button("customers"));
     await act(async () =>
-      button("business").dispatchEvent(
+      button("procurement-management").dispatchEvent(
         new KeyboardEvent("keydown", { key: "Home", bubbles: true })
       )
     );
@@ -680,8 +680,9 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
 
   it("点击工作区只展开不重置详情或query，选择原功能项才导航", async () => {
     await render("/workbench/sales-orders/88?merchantId=3");
-    await act(async () => button("business").click());
+    await act(async () => button("inventory-management").click());
     expect(onNavigate).not.toHaveBeenCalled();
+    expect(button("sales-orders").getAttribute("aria-current")).toBe("page");
     expect(button("group:customers").dataset.active).toBe("true");
     await click("group:customers");
     expect(button("/workbench/orders").getAttribute("aria-current")).toBe(

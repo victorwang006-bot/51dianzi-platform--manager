@@ -1,0 +1,75 @@
+{
+  "status": "verified",
+  "manifestSha256": "f2594fe7fdac3c34b52d12846da32590191752da2726c1c47e17a78d82121a36",
+  "htmlSha256": "78b2c915bf0b38b855498428e09dc1b762050ee2bd06b9932224d5796488d0d4",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "78b2c915bf0b38b855498428e09dc1b762050ee2bd06b9932224d5796488d0d4"
+    },
+    {
+      "relative": "assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "sha256": "66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "sha256": "0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd"
+    },
+    {
+      "relative": "assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+      "sha256": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "status": 200,
+      "sha256": "66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "status": 200,
+      "sha256": "0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+      "status": 200,
+      "sha256": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe",
+      "contentType": "text/css"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "78b2c915bf0b38b855498428e09dc1b762050ee2bd06b9932224d5796488d0d4",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "78b2c915bf0b38b855498428e09dc1b762050ee2bd06b9932224d5796488d0d4",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee",
+      "contentType": "text/html"
+    }
+  ],
+  "dependenciesVerified": 26,
+  "allProcessesUnchanged": true,
+  "allProtectedFilesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "sourceTests": 291,
+  "actualCandidateTests": 10,
+  "databaseOperations": 0,
+  "backendChanges": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "loggedInBusinessInteractionVerified": false,
+  "atUtc": "2026-11-13T08:45:25.587068+00:00"
+}

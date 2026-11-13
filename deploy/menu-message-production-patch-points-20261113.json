@@ -1,0 +1,33 @@
+{
+  "scope": "Only shared operations unread count and Messages cache refresh; no full chunk rebuild, no server/db/read-rule changes",
+  "suggestedObjects": {
+    "layout": "DashboardLayout-menu-message-reminders-<sha256>.js",
+    "messages": "Messages-operations-unread-refresh-<sha256>.js"
+  },
+  "patches": [
+    {
+      "name": "operations-unread-permission-error-focus",
+      "baselineFile": "/home/ubuntu/work/menu-production-baseline/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+      "expectedMatches": 1,
+      "old": "{data:Z}=me.message.unreadCount.useQuery(void 0,{enabled:H,refetchInterval:H?3e4:!1}),z=Z?.total??0",
+      "new": "{data:Z,isError:__d51_messageUnreadError}=me.message.unreadCount.useQuery(void 0,{enabled:H,refetchInterval:H?3e4:!1,refetchOnWindowFocus:\"always\"}),z=H&&!__d51_messageUnreadError&&Number.isFinite(Z?.total)&&Z.total>0?Z.total:0",
+      "preserve": "Do not replace renderBadge R or its exact existing wrapper renderBadge:item=>item.path===\"/workbench/inquiries\"?a.jsx(__d51_ir_layout_badge,{}):R(item); moduleNotification branches remain unchanged. H is the existing messages.read permission."
+    },
+    {
+      "name": "detail-success-summary-refresh-effect",
+      "baselineFile": "/home/ubuntu/work/menu-production-baseline/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-CdGnGQAR-composition-5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7.js",
+      "expectedMatches": 1,
+      "old": "{data:y,isLoading:d}=T.message.detail.useQuery({threadId:a},{refetchInterval:15e3}),h=",
+      "new": "{data:y,isLoading:d,isSuccess:__d51_detailSuccess,dataUpdatedAt:__d51_detailUpdatedAt}=T.message.detail.useQuery({threadId:a},{refetchInterval:15e3}),__d51_detailSummaryRefresh=f.useEffect(()=>{if(!__d51_detailSuccess||__d51_detailUpdatedAt===0)return;j.message.unreadCount.invalidate();j.message.threads.invalidate()},[a,__d51_detailSuccess,__d51_detailUpdatedAt,j]),h=",
+      "preserve": "f is existing React import and j is existing root T.useUtils(); no imports or new production helper chunk needed. Never invalidate detail inside this effect. Existing back callback already invalidates both summaries and can remain byte-identical."
+    },
+    {
+      "name": "reply-and-status-success-summary-refresh",
+      "baselineFile": "/home/ubuntu/work/menu-production-baseline/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-CdGnGQAR-composition-5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7.js",
+      "expectedMatches": 2,
+      "old": "j.message.detail.invalidate({threadId:a}),I.success(",
+      "new": "j.message.detail.invalidate({threadId:a}),j.message.unreadCount.invalidate(),j.message.threads.invalidate(),I.success(",
+      "preserve": "Only onSuccess reply and setStatus callbacks; keep existing texts, failure handlers, detail invalidation and server-side shared read rules."
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "from": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "spec": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+      "resolved": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "spec": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+      "resolved": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "spec": "./index-8jluR_FO.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./index-8jluR_FO.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./DashboardLayout-DfHnpqnr.js",
+      "resolved": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./MerchantOwnershipLookup-Df_Q_U9k.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/MerchantOwnershipLookup-Df_Q_U9k.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./button-CJNcu3ZB.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/button-CJNcu3ZB.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./input-CQXSswZV.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/input-CQXSswZV.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./textarea-D73luk0z.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/textarea-D73luk0z.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./badge-nRLPbtbu.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/badge-nRLPbtbu.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./select-CbYk8WeG.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/select-CbYk8WeG.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./search-ONoaRAKt.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./phone-BqXAsUMx.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/phone-BqXAsUMx.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./building-2-C-lkjaR2.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/building-2-C-lkjaR2.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./mail-rvpPVrVf.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./arrow-left-DuEH-89r.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./circle-check-CAy1Bkqq.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./shield-check-B59sBzA-.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./download-DjbzCqGn.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./shared-BUxb-QlJ.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shared-BUxb-QlJ-composition-96cad69e7ffdcf5bf52602ae5a39e720e66b72c7d547e84d90f06ec33cc7cf81.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./chevron-right-56l-KeF7.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./external-link-D3MS9--y.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./index-Dp3hShr1.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./index-DqlifW_A.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./index-DgUTVUJa.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js"
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "spec": "./index-h_rcmx-z.js",
+      "resolved": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js"
+    }
+  ],
+  "preservedFrozenWorkbenchMappings": true,
+  "extraScopes": [
+    {
+      "oldScope": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+      "newScope": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js"
+    }
+  ]
+}

@@ -55,6 +55,7 @@
 .admin-workspace-nav__tabs--workspaces {
   min-height: 56px;
   font-family: inherit;
+  gap: clamp(8px, 1vw, 14px);
 }
 
 .admin-workspace-nav__tabs--modules {
@@ -190,6 +191,7 @@
 
   .admin-workspace-nav__tabs--workspaces {
     min-height: 48px;
+    gap: 10px;
   }
 }
 
@@ -459,7 +461,8 @@
 }
 
 /* Inquiry-only unread, rendered by the current authorized business cache. */
-.admin-workspace-nav .inquiry-reception-nav-badge {
+.admin-workspace-nav .inquiry-reception-nav-badge,
+[data-admin-navigation="unified-dropdown"] .inquiry-reception-nav-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "layoutSha256": "66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0",
+  "actualCapsule": true,
+  "diBoundary": "parent callbacks/badge rendering and message transport only; source and existing root QueryClient integration tests verify those owners separately",
+  "results": [
+    {
+      "name": "actual capsule eight primary order and no business workbench",
+      "status": "PASS"
+    },
+    {
+      "name": "same operations count at parent/group/leaf and zero removal",
+      "status": "PASS"
+    },
+    {
+      "name": "direct sales original object closes old layers before callback",
+      "status": "PASS"
+    },
+    {
+      "name": "management one level original two leaves and exact object",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical historical route unique active and compact sales location",
+      "status": "PASS"
+    },
+    {
+      "name": "keyboard direct management, original preloads and Escape",
+      "status": "PASS"
+    },
+    {
+      "name": "mobile drawer direct procurement without third layer",
+      "status": "PASS"
+    },
+    {
+      "name": "permission snapshot removes old menus, badges and route fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "actual unread gating expression no permission/error stale cache",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Messages effect invalidates same summaries, never detail",
+      "status": "PASS"
+    }
+  ]
+}

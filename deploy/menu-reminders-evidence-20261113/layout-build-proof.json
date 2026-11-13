@@ -1,0 +1,13 @@
+{
+  "beforeUrl": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+  "url": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+  "beforeSha256": "6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e",
+  "sha256": "66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0",
+  "cssUrl": "/assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+  "cssSha256": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe",
+  "patches": 4,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "sourcePath": "/home/ubuntu/work/51dianzi-platform--manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+  "sourceSha256": "28b2180a43cab03442b5cc43b0d90e2612fd85a0c2e69b9f4ca7a881e38f4519"
+}

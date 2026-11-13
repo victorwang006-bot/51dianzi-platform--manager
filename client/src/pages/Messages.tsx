@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { invalidateAdminMessageSummaries } from "@/lib/adminMessageRefresh";
 import {
   parseBomInquiryMessage,
   type BomInquiryMessage,
@@ -189,8 +190,7 @@ export default function Messages() {
           threadId={activeThreadId}
           onBack={() => {
             setActiveThreadId(null);
-            utils.message.threads.invalidate();
-            utils.message.unreadCount.invalidate();
+            void invalidateAdminMessageSummaries(utils);
           }}
         />
       </DashboardLayout>
@@ -352,15 +352,24 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
-  const { data, isLoading } = trpc.message.detail.useQuery(
+  const { data, isLoading, isSuccess, dataUpdatedAt } = trpc.message.detail.useQuery(
     { threadId },
     { refetchInterval: 15000 },
   );
 
+  // The existing detail request marks shared operations unread as read. Watch
+  // successful fetch timestamps (not structurally-shared data) so identical
+  // 15-second responses also refresh the badge/list, but never detail itself.
+  useEffect(() => {
+    if (!isSuccess || dataUpdatedAt === 0) return;
+    void invalidateAdminMessageSummaries(utils);
+  }, [threadId, isSuccess, dataUpdatedAt, utils]);
+
   const replyMutation = trpc.message.reply.useMutation({
     onSuccess: () => {
       setReplyContent("");
-      utils.message.detail.invalidate({ threadId });
+      void utils.message.detail.invalidate({ threadId });
+      void invalidateAdminMessageSummaries(utils);
       toast.success("回复已发送");
     },
     onError: err => toast.error(err.message || "回复失败"),
@@ -368,7 +377,8 @@ function ThreadDetail({ threadId, onBack }: { threadId: number; onBack: () => vo
 
   const statusMutation = trpc.message.setStatus.useMutation({
     onSuccess: (_d, vars) => {
-      utils.message.detail.invalidate({ threadId });
+      void utils.message.detail.invalidate({ threadId });
+      void invalidateAdminMessageSummaries(utils);
       toast.success(vars.status === "closed"
         ? (isComplaint ? "举报投诉已处理" : isOrderConsultation ? "订货咨询已标记为已跟进" : "会话已关闭")
         : (isComplaint ? "举报投诉已重新打开" : isOrderConsultation ? "订货咨询已重新打开" : "会话已重新打开"));

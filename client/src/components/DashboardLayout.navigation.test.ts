@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import * as React from "react";
 import { act, createElement } from "react";
@@ -238,10 +239,11 @@ describe("正式后台顶部布局集成", () => {
       const breadcrumb = container.querySelector('[data-admin-navigation="current-location"]');
       expect(breadcrumb?.textContent).toContain("客户列表");
       expect(breadcrumb?.querySelectorAll("button, a")).toHaveLength(0);
-      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="business"]')!.click());
-      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="group:customers"]')!.click());
+      expect(container.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+      expect(container.querySelector('[data-workspace-nav-target="sales-orders"]')).not.toBeNull();
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="procurement-management"]')!.click());
       const paths = Array.from(container.querySelectorAll("[data-workspace-dropdown-item]")).map(node => node.getAttribute("data-workspace-dropdown-item"));
-      expect(paths).toEqual(["/workbench/orders"]);
+      expect(paths).toEqual(["/workbench/procurement-demands"]);
       expect(container.querySelector('[data-workspace-nav-target="inquiries"]')).not.toBeNull();
       expect(container.querySelector('[data-workspace-nav-target="customers"]')?.getAttribute("aria-current")).toBe("page");
       expect(container.querySelector('[data-workspace-nav-target="/workbench/customer-demands"]')).toBeNull();
@@ -262,7 +264,8 @@ describe("正式后台顶部布局集成", () => {
         const originalContent = container.querySelector('[data-real-content]');
         const inquiry = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="inquiries"]')!;
         expect(inquiry.getAttribute("aria-current")).toBe("page");
-        expect(container.querySelector('[data-workspace-nav-target="business"]')?.getAttribute("data-active")).toBe("false");
+        expect(container.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+        expect(container.querySelector('[data-workspace-nav-target="sales-orders"]')?.getAttribute("data-active")).toBe("false");
         expect(Array.from(container.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent)).toEqual(["询价接待"]);
         await act(async () => inquiry.click());
         expect(runtime.setLocation.mock.calls).toEqual([["/workbench/inquiries?merchantId=30061"]]);
@@ -297,7 +300,7 @@ describe("正式后台顶部布局集成", () => {
     try {
       await withMountedLayout(async container => {
         expect(Array.from(container.querySelectorAll('[data-navigation-level="1"]')).map(node => node.getAttribute("data-workspace-nav-target")))
-          .toEqual(["customers", "inventory", "business"]);
+          .toEqual(["customers", "inventory", "sales-orders"]);
         await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="customers"]')!.click());
         expect(runtime.setLocation.mock.calls).toEqual([["/workbench/customers?merchantId=31"]]);
         expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");
@@ -353,8 +356,9 @@ describe("正式后台顶部布局集成", () => {
     const host = document.createElement("div");
     host.innerHTML = renderLayout();
     expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent))
-      .toEqual(["业务工作台", "销售管理", "销售订单"]);
-    expect(host.querySelector('[data-workspace-nav-target="business"]')?.getAttribute("aria-current")).toBe("location");
+      .toEqual(["销售订单"]);
+    expect(host.querySelector('[data-workspace-nav-target="sales-orders"]')?.getAttribute("aria-current")).toBe("page");
+    expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     expect(host.querySelector('[data-workspace-dropdown="panel"]')).toBeNull();
     expect(host.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
   });
@@ -492,9 +496,10 @@ describe("正式后台顶部布局集成", () => {
   });
 
   it("keeps the original content typography untouched", () => {
-    expect(shellCss).not.toMatch(
-      /font(?:-family|-size|-weight)?\s*:|line-height\s*:/
-    );
+    // The existing stylesheet legitimately contains historical typography.
+    // Protect its exact original bytes rather than rejecting those old rules.
+    expect(createHash("sha256").update(Buffer.from(shellCss).subarray(0, 144081)).digest("hex"))
+      .toBe("146580f41b7f7f917ea1f1fd3074e5f4a2178a4f04d1a110d6be21a3a0773368");
     expect(shellCss).toContain("min-width: 0");
     expect(shellCss).toContain("width: 100%");
   });

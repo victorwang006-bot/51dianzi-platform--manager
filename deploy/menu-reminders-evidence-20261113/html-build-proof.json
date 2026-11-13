@@ -1,0 +1,29 @@
+{
+  "beforeSha256": "d354d840f04f7faedd714632d066f2d04dffda7bd62ffe446979120b8cb21f87",
+  "sha256": "78b2c915bf0b38b855498428e09dc1b762050ee2bd06b9932224d5796488d0d4",
+  "relocations": {
+    "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-CdGnGQAR-composition-5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js"
+  },
+  "changed": [
+    {
+      "oldUrl": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+      "newUrl": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "occurrences": 12
+    },
+    {
+      "oldUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-CdGnGQAR-composition-5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7.js",
+      "newUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+      "occurrences": 1
+    }
+  ],
+  "preservedImportKeys": true,
+  "preservedScopes": true,
+  "clonedScopes": [
+    {
+      "oldScope": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+      "newScope": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js"
+    }
+  ],
+  "onlyNewStylesheet": "/assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css"
+}

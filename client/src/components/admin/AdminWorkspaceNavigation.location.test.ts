@@ -95,11 +95,11 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
 
   it.each([
     ["/workbench/customers/88?merchantId=31", ["客户列表"]],
-    ["/workbench/sales-orders/8", ["业务工作台", "销售管理", "销售订单"]],
+    ["/workbench/sales-orders/8", ["销售订单"]],
     ["/workbench/chat/8", ["询价接待"]],
     ["/workbench", ["库存列表"]],
-    ["/workbench/outbound", ["业务工作台", "库存管理", "出库管理"]],
-    ["/workbench/procurement/orders/8", ["业务工作台", "采购管理", "采购订单"]],
+    ["/workbench/outbound", ["库存管理", "出库管理"]],
+    ["/workbench/procurement/orders/8", ["采购管理", "采购订单"]],
     ["/materials/8", ["平台运营", "基础资料", "物料数据库"]],
     ["/portal-users/8", ["平台运营", "基础资料", "平台用户"]],
     ["/orders/8", ["平台运营", "交易与服务", "平台订单"]],
@@ -160,7 +160,7 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
       expect(document.activeElement).toBe(action);
       expect(host.querySelector("article")).toBe(page);
       await act(async () => root.render(view("/workbench/sales-orders/8")));
-      expect(labels(host)).toEqual(["业务工作台", "销售管理", "销售订单"]);
+      expect(labels(host)).toEqual(["销售订单"]);
       await act(async () => root.render(view("/workbench/sales-orders/8", [])));
       expect(host.querySelector('[data-admin-navigation="current-location"]')).toBeNull();
       expect(host.querySelector("article")).toBe(page);

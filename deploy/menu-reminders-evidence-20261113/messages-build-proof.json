@@ -1,0 +1,9 @@
+{
+  "beforeUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-CdGnGQAR-composition-5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7.js",
+  "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+  "beforeSha256": "5bda660911e845a5f23bdf77b7c3411e71ca3f6029fb390ea010bdb8f6bb93c7",
+  "sha256": "0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd",
+  "patches": 3,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true
+}
