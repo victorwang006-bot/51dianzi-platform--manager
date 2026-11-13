@@ -2412,6 +2412,7 @@
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: none !important;
     grid-auto-rows: auto;
+    row-gap: 12px !important;
   }
 
   /* Merchant/staff real roots keep a compact, read-only breadcrumb. Details,
@@ -2419,9 +2420,25 @@
   .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > nav[data-admin-navigation="current-location"][data-admin-list-location-layout="list-breadcrumb"] {
     min-height: 20px;
     padding: 0;
-    margin: 0 0 8px;
+    margin: 0 0 8px !important;
     font-size: 12px;
     line-height: 20px;
+  }
+
+  /* Legacy admin small-button variants otherwise override the shared toolbar.
+   * Only marked list toolbars are normalized; table and dialog actions retain
+   * their existing sizes, handlers and permissions. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"]:is([data-admin-list-location-layout="root-hidden"], [data-admin-list-location-layout="list-breadcrumb"])) .d51-compact-list-toolbar :is(input, select, button, [data-slot="select-trigger"]) {
+    box-sizing: border-box;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  @media (max-width: 640px) {
+    .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"]:is([data-admin-list-location-layout="root-hidden"], [data-admin-list-location-layout="list-breadcrumb"])) .d51-compact-list-toolbar :is(input, select, button, [data-slot="select-trigger"]) {
+      height: 40px !important;
+      min-height: 40px !important;
+    }
   }
 }
 /* admin-list-outer-location-v1 END */
