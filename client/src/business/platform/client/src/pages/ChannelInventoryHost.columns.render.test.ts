@@ -141,7 +141,7 @@ describe("inventory column preference and geometry", () => {
     }
   });
   it("renders defaults, synchronizes toggle/restore with cells/colgroup/empty/loading/error and keeps selection", () => {
-    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]); assertAligned();
+    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]); assertAligned();
     click(button("显示列")); expect(option("型号").disabled).toBe(true); expect(option("操作").disabled).toBe(true);
     click(option("DC")); click(option("序号")); click(option("所属行业")); click(option("品牌")); assertAligned();
     expect(firstCell("td.ci-material-dc-col").textContent).toBe(runtime.rows[0].dateCode);
@@ -150,7 +150,7 @@ describe("inventory column preference and geometry", () => {
     expect(document.querySelector<HTMLTableColElement>('col[data-column="updatedAt"]')?.style.width).toBe("148px");
     click(button("恢复默认")); assertAligned(); expect(headers()).toHaveLength(9);
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
+    click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
     expect(document.querySelector('[aria-label="当前页批量删除"]')?.textContent).toContain("已选 1 条");
     click(button("显示列")); click(option("数量"));
     expect(document.querySelector('[aria-label="当前页批量删除"]')?.textContent).toContain("已选 1 条");
@@ -201,4 +201,22 @@ describe("inventory column preference and geometry", () => {
     click(button("下一页")); expect(runtime.inputs.at(-1)).toMatchObject({ page: 2, sortBy: "dateCode" });
     click(button("显示列")); click(option("DC")); expect(runtime.inputs.at(-1)).toMatchObject({ page: 2, sortBy: "dateCode" });
   });
+});
+
+
+it("explicitly displays authorized owning companies while retaining the all-company global query", () => {
+  runtime.rows = [
+    { ...runtime.rows[0], id: 1, company: { id: 801, name: "已确认供货公司甲" } },
+    { ...runtime.rows[0], id: 2, company: { id: 802, name: "已确认供货公司乙" }, channelName: "不能猜为所属公司的私有来源" },
+    { ...runtime.rows[0], id: 3, company: null, channelName: "不能猜为所属公司的私有来源" },
+  ];
+  renderHost();
+  expect(headers()).toContain("所属公司 / 渠道来源");
+  expect([...document.querySelectorAll(".ci-inventory-company")].map(item => item.textContent)).toEqual([
+    "所属公司：已确认供货公司甲", "所属公司：已确认供货公司乙", "所属公司：未确认或不可查看",
+  ]);
+  expect(runtime.inputs.at(-1)?.customerId).toBeUndefined();
+  expect(runtime.inputs.at(-1)?.channelId).toBeUndefined();
+  expect(document.body.textContent).not.toContain("不能猜为所属公司的私有来源");
+  assertAligned();
 });

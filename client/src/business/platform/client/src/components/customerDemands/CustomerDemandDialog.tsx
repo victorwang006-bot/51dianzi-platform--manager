@@ -1,11 +1,12 @@
 import { BeijingDateTimePicker } from "../customers/BeijingDateTimePicker";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Plus, Trash2, X } from "lucide-react";
+import { Download, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   CUSTOMER_DEMAND_MAX_ITEMS,
   CUSTOMER_DEMAND_STATUS_LABELS,
   CUSTOMER_DEMAND_UNITS,
+  customerDemandItemSchema,
   customerDemandSaveSchema,
   emptyCustomerDemandData,
   emptyCustomerDemandItem,
@@ -27,11 +28,14 @@ import { ReadOnlyDemandQuotes } from "./ReadOnlyDemandQuotes";
 import { customerDemandOrderPath, matchesCustomerDemand, type CustomerDemandCustomer, type CustomerDemandOrderIntent } from "./customerDemandWorkbench";
 import { useDemandQuotePending } from "./useDemandQuotePending";
 import { demandFreshReadOptions, useDemandReceiptGuard, useDemandServerRead } from "./useDemandReadSession";
+import { CustomerDemandBomDialog } from "./CustomerDemandBomDialog";
+import { appendDemandBomItems, createDemandBomTemplate, demandBomRemainingCapacity } from "./customerDemandBom";
 
 type FormItem = CustomerDemandItem & { _localKey: string };
 type DemandForm = Omit<CustomerDemandData, "replyDueAt" | "items"> & { replyDueAt: string; items: FormItem[] };
 type FieldErrors = Record<string, string>;
 type SaveIntent = "draft" | "submit" | "update";
+type BomSession = { token: object; isCurrent: () => boolean };
 
 export type CustomerDemandDialogProps = {
   customer: CustomerDemandCustomer;
@@ -96,6 +100,13 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
   const [, navigate] = useLocation();
   const aliveRef = useRef(true);
   const quoteSessionRef = useRef({});
+  const [bomSession, setBomSession] = useState<BomSession | null>(null);
+  const bomSessionRef = useRef(bomSession);
+  bomSessionRef.current = bomSession;
+  const bomPermissionRef = useRef(false);
+  const templatePendingRef = useRef(false);
+  const templateGenerationRef = useRef(0);
+  const [templatePending, setTemplatePending] = useState(false);
   const materialSectionRef = useRef<HTMLDivElement>(null);
   const quoteSectionRef = useRef<HTMLDivElement>(null);
   const scrolledRef = useRef(false);
@@ -149,6 +160,8 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
   quotePendingRef.current = quotePending;
   const receiptGuard = useDemandReceiptGuard(`${customer.id}:${activeDemandId}`, !immutable && (!activeDemandId || detail?.canEdit === true));
   const updatingSubmitted = Boolean(activeDemandId && effectiveStatus && effectiveStatus !== "draft");
+  const bomDisabled = readOnly || savingIntent !== null || quotePending || awaitingReplay || Boolean(detail?.hasActiveOrders) || !receiptGuard.isCurrent();
+  bomPermissionRef.current = !bomDisabled;
   const lockedIds = new Set(detail?.lockedItemIds ?? []);
   const itemIsLocked = (item: FormItem) => Boolean(item.id && lockedIds.has(item.id));
   const salesName = useMemo(() => {
@@ -171,6 +184,15 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
     setSaveError("");
     setFieldErrors({});
   };
+
+  const closeBom = () => { bomSessionRef.current = null; setBomSession(null); };
+  useEffect(() => {
+    if (bomDisabled) {
+      bomSessionRef.current = null; setBomSession(null);
+      templateGenerationRef.current += 1;
+      templatePendingRef.current = false; setTemplatePending(false);
+    }
+  }, [bomDisabled]);
 
   useEffect(() => {
     if (!activeDemandId || !detailRead.failed) return;
@@ -235,8 +257,8 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
   }, []);
 
   useEffect(() => {
-    onDirtyChange?.(dirty || savingIntent !== null || awaitingReplay || quotePending);
-  }, [dirty, savingIntent, awaitingReplay, quotePending, onDirtyChange]);
+    onDirtyChange?.(dirty || savingIntent !== null || awaitingReplay || quotePending || Boolean(bomSession && !bomDisabled));
+  }, [dirty, savingIntent, awaitingReplay, quotePending, bomSession, bomDisabled, onDirtyChange]);
   useEffect(() => () => { onDirtyChange?.(false); }, [onDirtyChange]);
 
   useEffect(() => {
@@ -249,7 +271,7 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirtyRef.current && !savingRef.current && !quotePendingRef.current) return;
+      if (!dirtyRef.current && !savingRef.current && !quotePendingRef.current && !bomSessionRef.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -259,7 +281,7 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
 
   const requestClose = () => {
     if (savingRef.current || quotePendingRef.current) return;
-    if (dirtyRef.current) {
+    if (dirtyRef.current || bomSessionRef.current) {
       setConfirmDiscard(true);
       return;
     }
@@ -281,6 +303,43 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
   const addRow = () => {
     if (readOnly || detail?.hasActiveOrders || formRef.current.items.length >= CUSTOMER_DEMAND_MAX_ITEMS) return;
     replaceForm(current => ({ ...current, items: [...current.items, { ...emptyCustomerDemandItem(), _localKey: localKey() }] }));
+  };
+
+  const openBom = () => {
+    if (!aliveRef.current || !bomPermissionRef.current || bomSessionRef.current) return;
+    const receipt = receiptGuard.capture();
+    const token = {};
+    const session: BomSession = { token, isCurrent: () => aliveRef.current && receipt() && bomPermissionRef.current && bomSessionRef.current?.token === token };
+    bomSessionRef.current = session;
+    setBomSession(session);
+  };
+  const appendBom = (items: CustomerDemandItem[]) => {
+    if (!bomSessionRef.current?.isCurrent() || savingRef.current || quotePendingRef.current) return;
+    const parsedItems = items.map(item => customerDemandItemSchema.safeParse({
+      partNumber: item.partNumber, brand: item.brand, pkg: item.pkg, qty: item.qty,
+      qtyUnit: item.qtyUnit, deliveryRequirement: item.deliveryRequirement, note: item.note,
+    }));
+    if (!items.length || parsedItems.some(item => !item.success)) { toast.warning("BOM 含无效物料，请修正后重试。"); return; }
+    if (items.length > demandBomRemainingCapacity(formRef.current.items)) { toast.warning(`一张需求单最多 ${CUSTOMER_DEMAND_MAX_ITEMS} 行，请减少导入行数。`); return; }
+    const newItems = parsedItems.flatMap(item => item.success ? [{ ...item.data, _localKey: localKey() }] : []);
+    replaceForm(current => ({ ...current, items: appendDemandBomItems(current.items, newItems) }));
+    closeBom();
+    toast.success(`已追加 ${newItems.length} 行 BOM 物料`, { description: "尚未保存或提交采购，请检查明细。" });
+  };
+  const downloadBomTemplate = async () => {
+    if (!aliveRef.current || !bomPermissionRef.current || templatePendingRef.current) return;
+    const receipt = receiptGuard.capture();
+    const generation = ++templateGenerationRef.current;
+    templatePendingRef.current = true; setTemplatePending(true);
+    try {
+      const xlsx = await import("xlsx");
+      if (!aliveRef.current || !receipt() || !bomPermissionRef.current || generation !== templateGenerationRef.current) return;
+      xlsx.writeFile(createDemandBomTemplate(xlsx), "客户需求BOM导入模板.xlsx", { bookType: "xlsx", compression: true });
+    } catch (error) {
+      if (aliveRef.current && receipt() && bomPermissionRef.current && generation === templateGenerationRef.current) toast.error(`模板下载失败：${errorMessage(error)}`);
+    } finally {
+      if (aliveRef.current && generation === templateGenerationRef.current) { templatePendingRef.current = false; setTemplatePending(false); }
+    }
   };
 
   const selectPart = (rowKey: string, suggestion: DemandPartSuggestion) => {
@@ -338,7 +397,7 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
   };
 
   const save = async (intent: SaveIntent) => {
-    if (!aliveRef.current || !receiptGuard.isCurrent() || readOnly || savingRef.current || customer.archivedAt) return;
+    if (!aliveRef.current || !receiptGuard.isCurrent() || readOnly || savingRef.current || customer.archivedAt || bomSessionRef.current) return;
     const isCurrentReceipt = receiptGuard.capture();
     const built = buildInput(intent);
     if (Object.keys(built.errors).length > 0) return;
@@ -411,7 +470,7 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
     }
   };
 
-  const pending = savingIntent !== null || quotePending;
+  const pending = savingIntent !== null || quotePending || Boolean(bomSession && !bomDisabled);
   const fieldDisabled = readOnly || pending || awaitingReplay || Boolean(customer.archivedAt);
   const globalItemsError = inputError(fieldErrors, "data.items");
   const openOrders = (action: "create" | "view") => {
@@ -428,7 +487,7 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
     <Dialog open onOpenChange={open => { if (!open) requestClose(); }}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-auto max-h-[90dvh] w-[calc(100vw-32px)] max-w-[1180px] sm:max-w-[1180px] flex-col gap-0 overflow-hidden p-0"
+        className="customer-demand-dialog flex h-auto max-h-[90dvh] w-[calc(100vw-32px)] max-w-[1180px] sm:max-w-[1180px] flex-col gap-0 overflow-hidden p-0"
         onEscapeKeyDown={event => { event.preventDefault(); requestClose(); }}
         onInteractOutside={event => { event.preventDefault(); requestClose(); }}>
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
@@ -481,9 +540,13 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
           </div>
 
           <div className="mt-3" ref={materialSectionRef}>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div><h3 className="text-sm font-semibold text-slate-800">物料明细</h3><p className="mt-0.5 text-[11px] text-slate-500">提交采购时，型号和数量为必填。</p></div>
-              {!readOnly && <Button type="button" size="sm" variant="outline" disabled={pending || awaitingReplay || Boolean(customer.archivedAt) || detail?.hasActiveOrders || form.items.length >= CUSTOMER_DEMAND_MAX_ITEMS} onClick={addRow} className="h-8 border-[#185FA5]/40 bg-white px-2 text-xs text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"><Plus className="mr-1 h-3.5 w-3.5" />新增一行</Button>}
+              {!readOnly && <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" size="sm" variant="outline" disabled={bomDisabled || pending || templatePending} onClick={() => void downloadBomTemplate()} className="h-8 bg-white px-2 text-xs">{templatePending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />}下载模板</Button>
+                <Button type="button" size="sm" variant="outline" disabled={bomDisabled || pending || demandBomRemainingCapacity(form.items) <= 0} onClick={openBom} className="h-8 border-[#185FA5]/40 bg-white px-2 text-xs text-[#185FA5]"><Upload className="mr-1 h-3.5 w-3.5" />导入BOM</Button>
+                <Button type="button" size="sm" variant="outline" disabled={pending || awaitingReplay || Boolean(customer.archivedAt) || detail?.hasActiveOrders || form.items.length >= CUSTOMER_DEMAND_MAX_ITEMS} onClick={addRow} className="h-8 border-[#185FA5]/40 bg-white px-2 text-xs text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"><Plus className="mr-1 h-3.5 w-3.5" />新增一行</Button>
+              </div>}
             </div>
             {globalItemsError && <p role="alert" className="mb-2 text-xs text-red-600">{globalItemsError}</p>}
             <div className="overflow-x-auto rounded border border-slate-200">
@@ -526,7 +589,8 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
         </div>
       </DialogContent>
     </Dialog>
-    {confirmDiscard && <ConfirmDialog title="放弃未保存的需求？" description="关闭后本次未保存的需求内容将丢失。" confirmLabel="放弃并关闭" danger onCancel={() => setConfirmDiscard(false)} onConfirm={() => { setConfirmDiscard(false); onClose(); }} />}
+    {bomSession && !bomDisabled && <CustomerDemandBomDialog existingItems={form.items} remainingCapacity={demandBomRemainingCapacity(form.items)} disabled={bomDisabled} isCurrent={bomSession.isCurrent} onConfirm={items => { if (bomSession.isCurrent()) appendBom(items); }} onClose={closeBom} />}
+    {confirmDiscard && <ConfirmDialog title="放弃未保存的需求？" description="关闭后本次未保存的需求内容及 BOM 预览将丢失。" confirmLabel="放弃并关闭" danger onCancel={() => setConfirmDiscard(false)} onConfirm={() => { setConfirmDiscard(false); closeBom(); onClose(); }} />}
   </>;
 }
 

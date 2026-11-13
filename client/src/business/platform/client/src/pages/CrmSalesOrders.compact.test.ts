@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 import { Loader2, Plus, Search } from "lucide-react";
-import { AdminPage, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
+import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import * as select from "../components/ui/select";
@@ -49,7 +49,7 @@ const order = (status: "confirmed" | "cancelled" = "confirmed") => ({
 });
 function environment(overrides: Record<string, unknown> = {}) {
   return {
-    React, AdminPage, AdminFilterBar, AdminDataPanel, Button, Input, Loader2, Plus, Search, ...select, ...table,
+    React, AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel, Button, Input, Loader2, Plus, Search, ...select, ...table,
     CRM_SALES_ORDER_STATUS_LABELS, CRM_SALES_PAYMENT_STATUS_LABELS, CRM_SALES_SHIPMENT_STATUS_LABELS,
     formatSalesOrderAmount, beijingDate: () => "2026/11/10", statusDotClass: () => "text-[#185FA5]",
     paymentDotClass: () => "text-slate-400", shipmentDotClass: () => "text-amber-500",
@@ -137,16 +137,19 @@ describe("approved standalone business-order compact presentation", () => {
     { name: "loading", change: { listQuery: { isLoading: true } } },
     { name: "error", change: { listQuery: { isError: true, error: { message: "读取失败" }, refetch: vi.fn() } } },
     { name: "empty", change: { listQuery: { data: { items: [], total: 0 } } } },
-  ])("preserves exact baseline embedded page DOM in $name state", ({ change }) => {
+  ])("preserves exact baseline embedded nine-column table and approved customer header in $name state", ({ change }) => {
     const overrides = { embedded, ...change };
     // React useId encodes non-DOM JSX sibling slots; compare all DOM bytes except that opaque generated ID.
     const stableIds = (html: string) => html.replace(/radix-_R_[A-Za-z0-9]+_/g, "radix-GENERATED-ID");
-    expect(stableIds(markup(current, overrides))).toBe(stableIds(markup(baseline, overrides)));
-    const page = documentFor(markup(current, overrides));
-    expect(page.querySelector("h1, header")).toBeNull();
-    expect(page.querySelector(".crm-sales-orders-page")?.getAttribute("aria-label")).toBe("客户甲订单与出货");
+    const page = documentFor(stableIds(markup(current, overrides)));
+    const original = documentFor(stableIds(markup(baseline, overrides)));
+    expect(page.querySelector(".crm-sales-orders-table")?.outerHTML).toBe(original.querySelector(".crm-sales-orders-table")?.outerHTML);
+    expect(page.querySelector("h1")?.textContent).toBe("客户订单");
+    expect(page.querySelector(".crm-sales-orders-page")?.getAttribute("aria-label")).toBe("客户甲客户订单");
     expect(page.querySelectorAll("col[style]")).toHaveLength(0);
-    expect(page.body.textContent).not.toContain("录入销售订单");
+    expect(page.querySelector(".crm-sales-orders-filters")?.textContent).not.toContain("录入销售订单");
+    expect(page.body.textContent).not.toContain("成交确认 / 生成订单");
+    expect(page.body.textContent?.includes("录入销售订单")).toBe(!("canWrite" in change) || change.canWrite !== false);
   });
 
   it("preserves every non-render callback/function body, query payload and complete dialog tail byte-for-byte", () => {

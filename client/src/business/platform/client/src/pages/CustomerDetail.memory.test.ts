@@ -32,12 +32,12 @@ vi.mock("../components/customerDemands/CustomerDemandHistory", () => ({ Customer
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: () => null }));
 vi.mock("../components/customers/CustomerWorkbenchOverview", () => ({ CustomerWorkbenchOverview: () => null }));
 vi.mock("../components/customers/CustomerWorkbenchContacts", () => ({ CustomerWorkbenchContacts: () => null }));
-vi.mock("../components/customers/CustomerWorkbenchMaterials", () => ({ CustomerWorkbenchMaterials: (props: any) => {
-  runtime.supplyProps = props.supply;
+vi.mock("../components/customers/CustomerWorkbenchSupply", () => ({ CustomerWorkbenchSupply: (props: any) => {
+  runtime.supplyProps = props;
   const [, navigate] = useLocation();
   return React.createElement(React.Fragment, {},
-    React.createElement("button", { onClick: () => props.supply.onAction(() => props.supply.onOpenChange(true)) }, "synthetic-open-supply"),
-    React.createElement("button", { onClick: () => { props.supply.onOpenChange(false); navigate("/channel-inventory?supplyChannelId=411&supplyTab=materials"); } }, "synthetic-finish-supply"));
+    React.createElement("button", { onClick: () => props.onAction(() => props.onOpenChange(true)) }, "synthetic-open-supply"),
+    React.createElement("button", { onClick: () => { props.onOpenChange(false); navigate("/channel-inventory?supplyChannelId=411&supplyTab=materials"); } }, "synthetic-finish-supply"));
 } }));
 vi.mock("../components/customers/useCustomerWorkbenchOrders", () => ({ useCustomerWorkbenchOrders: () => ({ canRead: runtime.canReadOrders, failed: false }) }));
 vi.mock("./CrmSalesOrders", () => ({ CustomerSalesOrders: (props: any) => {
@@ -162,6 +162,18 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
     await click("公司与联系人"); expect(window.location.search).toContain("tab=company");
   });
 
+  it("legacy material bookmark opens only the replacement customer inventory and preserves merchant", async () => {
+    nativeReplace.call(history, {}, "", "/workbench/customers/801?merchantId=30061&tab=materials&source=list");
+    await render();
+    expect(window.location.search).toBe("?merchantId=30061&tab=inventory&source=list");
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("渠道库存");
+    expect(runtime.supplyProps.customerId).toBe(801);
+    expect(runtime.supplyProps.scope.enterpriseId).toBe(31);
+    expect(runtime.supplyProps.scopeReady).toBe(true);
+    expect(host.textContent).not.toContain("客户需求物料");
+    expect(host.textContent).not.toContain("客户订单物料快照");
+  });
+
   it("top create reuses demand token and demand callbacks embed current-customer orders", async () => {
     runtime.canReadOrders = true; await render(); await click("新增需求");
     expect(runtime.demandProps.customer.id).toBe(801); expect(runtime.demandProps.createRequestToken).toBeGreaterThan(0);
@@ -175,7 +187,7 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
   });
 
   it("blocks tab/back/new actions while a demand or order draft/transaction is dirty", async () => {
-    runtime.canReadOrders = true; await render(); await click("订单与出货");
+    runtime.canReadOrders = true; await render(); await click("客户订单");
     runtime.ordersDirty = true; await render(); await click("概览");
     expect(window.location.search).toContain("tab=orders"); expect(document.body.textContent).toContain("当前需求或订单尚未完成");
     const confirm = [...document.body.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "继续当前操作")!;
@@ -188,7 +200,7 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
 
   it("archived customers and denied order grant cannot acquire order writes", async () => {
     runtime.detail = { customer: record({ archivedAt: "2026-11-01" }), followUps: [] };
-    runtime.canReadOrders = true; await render(); await click("订单与出货");
+    runtime.canReadOrders = true; await render(); await click("客户订单");
     expect(runtime.orderProps.readOnly).toBe(true); expect(runtime.orderProps.canWrite).toBe(false); expect(button("新增需求").disabled).toBe(true);
     runtime.canReadOrders = false; await render(); expect(runtime.orderProps.canRead).toBe(false); expect(runtime.orderProps.canWrite).toBe(false);
   });
@@ -361,7 +373,7 @@ async function makeDraft(module: string) {
   else if (module === "follow") {
     await click("新增跟进"); await input(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!, "SPA FOLLOW DRAFT");
   } else if (module === "demand") { await click("需求与报价"); runtime.demandsDirty = true; await render(); }
-  else if (module === "order") { runtime.canReadOrders = true; await render(); await click("订单与出货"); runtime.ordersDirty = true; await render(); }
+  else if (module === "order") { runtime.canReadOrders = true; await render(); await click("客户订单"); runtime.ordersDirty = true; await render(); }
   else if (module === "contact") { await click("公司与联系人"); await click("管理联系人"); runtime.contactsDirty = true; await render(); }
   else if (module === "contactBusy") { await click("公司与联系人"); await click("管理联系人"); runtime.contactsBusy = true; await render(); }
   else { runtime.mutations[module].isPending = true; await render(); }
@@ -428,7 +440,7 @@ describe.sequential("CustomerDetail completion and parent receipt safety", () =>
   });
 
   it("guards parent order receipt invalidations through authorization A→B→A", async () => {
-    runtime.canReadOrders = true; await render(); await click("订单与出货");
+    runtime.canReadOrders = true; await render(); await click("客户订单");
     const old = runtime.orderProps.onOrderChanged;
     await act(async () => old());
     expect(runtime.orderSummaryInvalidate).toHaveBeenCalledWith({ customerId: 801 }); expect(runtime.orderMaterialsInvalidate).toHaveBeenCalledWith({ customerId: 801 });
@@ -440,7 +452,7 @@ describe.sequential("CustomerDetail completion and parent receipt safety", () =>
 
 describe.sequential("CustomerDetail supply session parent guard integration", () => {
   it("passes only verified current customer/version/archive and keeps tab/top/back/SPA/unload blocked until importer close", async () => {
-    await prepareSource(); await click("关联物料");
+    await prepareSource(); await click("渠道库存");
     expect(runtime.supplyProps.customerVersion).toBe(1); expect(runtime.supplyProps.archived).toBe(false);
     expect(runtime.supplyProps.isCurrent()).toBe(true);
     await click("synthetic-open-supply"); const url = window.location.href;
@@ -455,18 +467,18 @@ describe.sequential("CustomerDetail supply session parent guard integration", ()
     await click("概览"); expect(window.location.search).toContain("tab=overview");
   });
   it("clears the live upload guard synchronously before the importer's completion navigate, without a sticky busy render", async () => {
-    await render(); await click("关联物料"); await click("synthetic-open-supply");
+    await render(); await click("渠道库存"); await click("synthetic-open-supply");
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     await click("synthetic-finish-supply");
     expect(window.location.pathname).toBe("/workbench/channel-inventory");
     expect(window.location.search).toBe("?supplyChannelId=411&supplyTab=materials"); expect(confirm).not.toHaveBeenCalled();
   });
   it("does not let an old A→B→A supply callback lock the new customer session or acquire a write from an archived URL", async () => {
-    await render(); await click("关联物料"); const old = runtime.supplyProps;
+    await render(); await click("渠道库存"); const old = runtime.supplyProps;
     runtime.authorizationVersion = "auth-B"; await render(); runtime.authorizationVersion = "auth-A"; await render();
     expect(old.isCurrent()).toBe(false); await act(async () => old.onOpenChange(true));
     await click("概览"); expect(window.location.search).toContain("tab=overview");
     runtime.detail = { customer: record({ archivedAt: "2026-11-01", version: 2 }), followUps: [] };
-    await render(); await click("关联物料"); expect(runtime.supplyProps.archived).toBe(true); expect(runtime.supplyProps.customerVersion).toBe(2);
+    await render(); await click("渠道库存"); expect(runtime.supplyProps.archived).toBe(true); expect(runtime.supplyProps.customerVersion).toBe(2);
   });
 });

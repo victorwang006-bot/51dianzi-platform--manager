@@ -31,6 +31,7 @@ vi.mock("../../../../../api/business-trpc", () => ({ trpc: {
 } }));
 import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
 import { CustomerSupplyCell } from "./CustomerSupplyCell";
+vi.mock("./CustomerChannelInventory", () => ({ CustomerChannelInventory: () => React.createElement("div", { "data-customer-inventory": true }) }));
 import { CustomerWorkbenchSupply } from "./CustomerWorkbenchSupply";
 import { customerMaterialInput, customerSupplySessionSuffix, completedSupplyChannel, parseSupplyLocation, supplyReceipt, useCustomerSupplyAuthority,
   supplyLocation, type SupplyContext, type SupplyIdentity, type SupplySummary } from "./customerSupply";
@@ -670,7 +671,7 @@ describe("customer-detail supply entry uses the real existing upload portal", ()
     const onOpenChange = vi.fn();
     render(React.createElement(CustomerWorkbenchSupply, { customerId: 801, customerVersion: 4,
       scope: { enterpriseId: 31, actorUserId: 7, canManageAll: false }, scopeReady: true, onOpenChange }));
-    click(button("上传物料表")); await setupUpload();
+    click(button("上传库存表")); await setupUpload();
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenChange).toHaveBeenLastCalledWith(true); click(button("单条上传"));
     enterSingle("单条型号", "ONE"); enterSingle("单条品牌", "TI"); previewSingle(); click(button("确认上传 1 条")); await settle();

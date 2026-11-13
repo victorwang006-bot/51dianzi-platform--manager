@@ -1,0 +1,19 @@
+{
+  "status": "PASS_SOURCE_CONTRACT_READ_ONLY",
+  "sourceSnapshot": "pm2-native-client-contract.txt",
+  "pingDaemonCallback": "cb(true) after socket connect/close; cb(false) on reconnect attempt",
+  "launchRPCCallback": "cb(null) on existing socket connection; cb(error) on socket error",
+  "daemonLaunchInvokedByTheseMethods": false,
+  "nativeDaemonOperationsPerformed": 0,
+  "realReloadsPerformed": 0,
+  "currentReloadHelperRequiresExistingClientCallBeforeNativeDispatch": true,
+  "interpretation": "The helper's current callback shapes match the installed Client source; independent focused review must still approve R1 closure.",
+  "sourceHashes": {
+    "pm2-native-client-contract.txt": "8be14740c9a9c7e99d34b6103ad769b7dc3cb1b0da4607667aa6849597015948",
+    "pm2-native-api-contract.txt": "884854ae10c25d0698680a78fb3cfb39b6327a335468e8fdff8defe93bbdd13f",
+    "pm2-native-recovery-contract.txt": "d46d72bb740b5acc99111e6ab33c5e51231920cc4aa2787cb0be2b408c7e1760",
+    "pm2-native-utility.js": "66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1"
+  },
+  "apiListUsesExistingExecuteRemote": true,
+  "disconnectClosesClientOnly": true
+}

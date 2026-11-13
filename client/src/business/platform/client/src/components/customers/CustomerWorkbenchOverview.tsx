@@ -48,7 +48,7 @@ function CustomerWorkbenchOrderSummary({ customerId, canRead, onOrders }: { cust
   const summary = canRead && !query.isError && !query.isFetching && !query.isPlaceholderData && query.isFetchedAfterMount !== false
     && query.data?.customerId === customerId ? query.data : undefined;
   return <section className="customer-workbench-panel">
-    <div className="customer-workbench-panel-heading"><h2 className="admin-section-title">订单待办</h2>{canRead && <button type="button" className="crm-link" onClick={onOrders}>查看订单与出货</button>}</div>
+    <div className="customer-workbench-panel-heading"><h2 className="admin-section-title">订单待办</h2>{canRead && <button type="button" className="crm-link" onClick={onOrders}>查看客户订单</button>}</div>
     {!canRead ? <p className="customer-workbench-empty">暂无订单查看权限。</p> : query.isError ? <p role="alert">读取订单统计失败：{errorMessage(query.error)} <button type="button" className="crm-link" onClick={() => void query.refetch()}>重试</button></p> : !summary ? <p className="customer-workbench-empty" role="status">正在读取客户订单待办…</p> : <>
       <dl className="customer-workbench-summary">
         <div><dt>全部订单</dt><dd>{summary.totalOrders}</dd></div>

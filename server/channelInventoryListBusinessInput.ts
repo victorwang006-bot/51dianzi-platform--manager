@@ -7,6 +7,7 @@ export const channelInventoryListBusinessInputSchema = z.object({
   expectedEnterpriseId: positiveId.optional(),
   expectedActorUserId: positiveId.optional(),
   channelId: positiveId.optional(),
+  customerId: positiveId.optional(),
   uploadBatchId: positiveId.optional(),
   partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(),
   brand: z.string().trim().max(64).optional(),

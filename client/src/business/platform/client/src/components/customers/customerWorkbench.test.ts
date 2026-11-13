@@ -4,12 +4,17 @@ import { CUSTOMER_WORKBENCH_TABS, customerWorkbenchLocation, customerWorkbenchTa
 
 describe("customer workbench URL and scoped layout", () => {
   it("has exactly the approved six tabs and fails invalid links to overview", () => {
-    expect(CUSTOMER_WORKBENCH_TABS.map(tab => tab.label)).toEqual(["概览", "公司与联系人", "需求与报价", "订单与出货", "关联物料", "跟进记录"]);
+    expect(CUSTOMER_WORKBENCH_TABS.map(tab => tab.label)).toEqual(["概览", "公司与联系人", "需求与报价", "客户订单", "渠道库存", "跟进记录"]);
     for (const tab of CUSTOMER_WORKBENCH_TABS) expect(customerWorkbenchTab(`tab=${tab.id}`)).toBe(tab.id);
     expect(customerWorkbenchTab("tab=bad&follow=1")).toBe("overview");
     expect(customerWorkbenchTab("tab=")).toBe("overview");
     expect(customerWorkbenchTab("follow=1")).toBe("followups");
     expect(customerWorkbenchTab("")).toBe("overview");
+  });
+  it("preserves legacy materials bookmarks and normalizes to the customer inventory tab", () => {
+    expect(customerWorkbenchTab("tab=materials&merchantId=30061")).toBe("inventory");
+    expect(customerWorkbenchLocation(801, customerWorkbenchTab("tab=materials"), "merchantId=30061&tab=materials&source=list")).toBe("/customers/801?merchantId=30061&tab=inventory&source=list");
+    expect(CUSTOMER_WORKBENCH_TABS.some(tab => (tab.id as string) === "materials")).toBe(false);
   });
   it("preserves merchant and source parameters without introducing another customer", () => {
     expect(customerWorkbenchLocation(801, "company", "merchantId=30061&source=list&follow=1")).toBe("/customers/801?merchantId=30061&source=list&tab=company");

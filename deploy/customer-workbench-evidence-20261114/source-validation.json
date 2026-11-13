@@ -1,0 +1,110 @@
+{
+  "status": "PASS_AFFECTED_FINAL_CHECKS",
+  "tscPassed": true,
+  "affectedFinalSourceTestFailures": 0,
+  "sourceBaseCommit": "847b2be877301801657a9751ed9f9bb05047d0b5",
+  "frontendMergedSuite": {
+    "tests": 284,
+    "initialObsoleteEmbeddedLayoutExpectations": 7,
+    "compactTestUpdatedToNewCustomerHeader": true,
+    "finalCompactTestsPassed": 11,
+    "globalAssertionsNotWeakened": true,
+    "unaffectedNineFilesPassed": 273,
+    "singleFreshFullRunClaimed": false
+  },
+  "customerBomScopeTestsPassed": 36,
+  "inventoryFrontendTestsPassed": 220,
+  "backendDirectedTestsPassed": 162,
+  "knownBaselineFailures": [
+    {
+      "file": "server/customerSupplyBusinessHook.spec.ts",
+      "failures": 3,
+      "baselineCommit": "e7975e588ca42ad07a1045690233b5d26f620dea",
+      "reason": "Legacy db mock lacks getDb; reproduced in unmodified baseline worktree; excluded from affected-zero-failure claim."
+    }
+  ],
+  "wholeRepositoryAllGreenClaimed": false,
+  "logEvidence": [
+    {
+      "logName": "customer-final-typecheck.log",
+      "sha256": "6e84cd68fc6e86adda5787e6cc5f2fe4b6d536fd9f0f0fe656e03c2424abd1f9",
+      "summaries": []
+    },
+    {
+      "logName": "customer-final-frontend-tests.log",
+      "sha256": "8cb059f2fb90adff645d05f36bd5100173bd23a98800879dbca9710428cc3978",
+      "summaries": [
+        "❯ client/src/business/platform/client/src/pages/CrmSalesOrders.compact.test.ts (11 tests | 7 failed) 710ms",
+        "Test Files  1 failed | 9 passed (10)",
+        "Tests  7 failed | 277 passed (284)"
+      ]
+    },
+    {
+      "logName": "customer-global-merge-tests.log",
+      "sha256": "35db6720fc5cb7eecf13db40d24af40b44f2b2a2a7784feafc55f6035e246f20",
+      "summaries": [
+        "Test Files  1 passed (1)",
+        "Tests  11 passed (11)"
+      ]
+    },
+    {
+      "logName": "customer-bom-scope-tests.log",
+      "sha256": "0d7f95c0063812091e0828d2ed4bbe52842b31a1d2d97d342e6d5f0697b995b7",
+      "summaries": [
+        "Test Files  1 passed (1)",
+        "Tests  36 passed (36)"
+      ]
+    },
+    {
+      "logName": "inventory-final-tests.log",
+      "sha256": "19083a8675b073a19c88694029bf1d7f2d873190aeb667437e5ed8189c1fb371",
+      "summaries": [
+        "Test Files  7 passed (7)",
+        "Tests  220 passed (220)"
+      ]
+    },
+    {
+      "logName": "inventory-backend-tests-green.log",
+      "sha256": "329f7f5301e3ea6e2b6f2c3ead134f5ef44142a81b89e6ac07c2fd90b8bff5c4",
+      "summaries": [
+        "Test Files  7 passed (7)",
+        "Tests  162 passed (162)"
+      ]
+    },
+    {
+      "logName": "customer-hook-baseline.txt",
+      "sha256": "bfb5381f241aed97be6471dd8c0dd68f4ddb9d58595db9e7b102e3e22885ca0e",
+      "summaries": [
+        "❯ server/customerSupplyBusinessHook.spec.ts (3 tests | 3 failed) 64ms",
+        "Test Files  1 failed (1)",
+        "Tests  3 failed (3)"
+      ]
+    },
+    {
+      "logName": "customer-activation-tests.log",
+      "sha256": "5d2d96e2765aaecc9ecfb822b6ab45d4c6d7e125a306e46b0cd7d853cff8b691",
+      "summaries": [
+        "Ran 9 tests in 0.092s",
+        "OK"
+      ]
+    },
+    {
+      "logName": "customer-reload-tests.log",
+      "sha256": "58077a9ca9192daa4cee53ba095290dcfd8ea3726de7cdec25ea3e3d187b687f",
+      "summaries": []
+    },
+    {
+      "logName": "customer-activation-recovery-tests.log",
+      "sha256": "bc5545094ae933a1d13a39bbaae38565623a522755c4baee48d52522ce70991d"
+    },
+    {
+      "logName": "customer-reload-recovery-tests.log",
+      "sha256": "d2dab966d78bc11e0e578b381f634c6b017fcfcfa6276293e8baef6dce4bf6d9"
+    }
+  ],
+  "realDatabaseUsed": false,
+  "productionRecordWrites": 0,
+  "loggedInBrowserAcceptancePerformed": false,
+  "activationRecoveryFixturesPassed": 28,
+  "nativeReloadRecoveryVmFixturesPassed": 43
+}

@@ -43,6 +43,7 @@ type PublishProps = {
   isCurrent: () => boolean;
   onComplete: () => Promise<unknown>;
   onAuthorizationError: (error: unknown) => void;
+  onAction?: (action: () => void) => void;
 };
 
 export function factoryMaterialPublishDisabledReason(
@@ -158,11 +159,15 @@ export function useFactoryMaterialPublish(props: PublishProps) {
   const open = (row: FactoryMaterialPublishRow) => {
     if (!current() || !props.context || row.canPublish !== true) return;
     // A list hint is never reception evidence. Query only after selecting a row.
-    setSession({ scopeKey: authorityKey, row: {
-      id: row.id, revision: row.revision, partNumber: row.partNumber,
-      brand: row.brand, qty: row.qty, price: row.price,
-      canPublish: row.canPublish, publicationStatus: row.publicationStatus,
-    } });
+    const action = () => {
+      if (!current() || !latest.current.proofReady || !latest.current.rows.some(item => item.id === row.id && item.revision === row.revision && item.canPublish === true)) return;
+      setSession({ scopeKey: authorityKey, row: {
+        id: row.id, revision: row.revision, partNumber: row.partNumber,
+        brand: row.brand, qty: row.qty, price: row.price,
+        canPublish: row.canPublish, publicationStatus: row.publicationStatus,
+      } });
+    };
+    props.onAction ? props.onAction(action) : action();
   };
   const action = (row: FactoryMaterialPublishRow) => {
     const published =

@@ -31,6 +31,7 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
     listChannels: { useQuery: () => runtime.channels }, listTeamMaterials: { useQuery: (input: Record<string, unknown>, options?: { enabled?: boolean }) => { if (options?.enabled) runtime.inventoryInputs.push(input); return runtime.team; } },
     createChannel: { useMutation: () => ({ mutateAsync: runtime.mutations.createChannel }) }, updateChannel: { useMutation: () => ({ mutateAsync: runtime.mutations.updateChannel }) }, setChannelActive: { useMutation: () => ({ mutateAsync: runtime.mutations.setChannelActive }) }, createMaterial: { useMutation: () => ({ mutateAsync: runtime.mutations.createMaterial }) }, updateTeamMaterial: { useMutation: () => ({ mutateAsync: runtime.mutations.updateTeamMaterial }) },
     publishFactoryMaterial: { useMutation: () => ({ mutateAsync: runtime.mutations.publishFactoryMaterial }) },
+    previewFactoryMaterialReception: { useQuery: () => ({ data: { reception: { status: "pending", recipientName: null, responsibilityVersion: 4 } }, isFetching: false, error: null }) },
   },
 } }));
 import ChannelInventoryHost from "./ChannelInventoryHost";
@@ -58,14 +59,14 @@ afterEach(() => { act(() => root.unmount()); container.remove(); document.body.r
 describe("manager Host inventory-management bridge", () => {
   it("adds batches/trash without replacing original inventory columns or readonly row actions", () => {
     renderHost(); expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
     expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
     expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(1);
     expect(document.querySelector(".ci-tabbar,.ci-inventory-view-controls")).toBeNull();
     const more = required(document.querySelector('.ci-toolbar[aria-label="材料筛选"] [aria-label="更多库存管理"]'));
     expect(more.previousElementSibling?.textContent).toBe("显示列");
     expect(more.nextElementSibling?.className).toBe("ci-filter-count");
-    click(button("选择")); expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
+    click(button("批量操作")); expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
     expect(document.querySelectorAll("tbody input[type=checkbox]")).toHaveLength(1);
     expect(document.querySelectorAll("thead th")).toHaveLength(10);
     for (const row of document.querySelectorAll("tbody tr")) expect(row.querySelectorAll("td")).toHaveLength(10);
@@ -83,7 +84,7 @@ describe("manager Host inventory-management bridge", () => {
     expect(runtime.management.deleteMaterials.mutate).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, items: [{ id: 1, expectedRevision: 4 }], requestId: expect.any(String) });
   });
   it("clears current-page selection when a filter changes", () => {
-    renderHost(); click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]'))); expect(document.body.textContent).toContain("已选 1 条");
+    renderHost(); click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]'))); expect(document.body.textContent).toContain("已选 1 条");
     const input = required(document.querySelector<HTMLInputElement>('[aria-label="筛选库存品牌"]'));
     act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, "ADI"); input.dispatchEvent(new Event("input", { bubbles: true })); });
     expect(document.querySelector('[aria-label="当前页批量删除"]')).toBeNull();
@@ -93,16 +94,16 @@ describe("manager Host inventory-management bridge", () => {
     expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
   });
   it("cancel exits selection mode, clears IDs and retains single deletion in More", () => {
-    renderHost(); click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
+    renderHost(); click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
     click(button("取消选择")); expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
     expect(document.querySelector('[aria-label="当前页批量删除"]')).toBeNull();
-    click(button("选择")); expect(required(document.querySelector<HTMLInputElement>('[aria-label="全选当前页可删除库存"]')).checked).toBe(false);
+    click(button("批量操作")); expect(required(document.querySelector<HTMLInputElement>('[aria-label="全选当前页可删除库存"]')).checked).toBe(false);
     const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
     act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
     expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑", "删除"]);
   });
   it.each(["view", "actor", "enterprise", "permission"])("clears selection mode on %s change", async change => {
-    renderHost(); click(button("选择")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
+    renderHost(); click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
     if (change === "view") { selectHostView("channels"); await settle(); }
     if (change === "actor") { runtime.enterprise = runtime.query({ enterprise: { id: 31 }, currentUserId: 8, permissionKeys: ["inventory.manage"], isOwner: true }); renderHost(); }
     if (change === "enterprise") { runtime.enterprise = runtime.query({ enterprise: { id: 32 }, currentUserId: 7, permissionKeys: ["inventory.manage"], isOwner: true }); renderHost(); }
@@ -111,6 +112,7 @@ describe("manager Host inventory-management bridge", () => {
   });
   it("views a batch using exact uploadBatchId without granting source filtering", async () => {
     renderHost(); selectHostTab("batches"); await settle(); click(button("查看库存")); await settle();
+    click(required(document.querySelector('[aria-label="高级库存筛选"]')));
     expect(required(document.querySelector<HTMLInputElement>('[aria-label="筛选上传批次 ID"]')).value).toBe("81");
     expect(runtime.inventoryInputs.at(-1)).toMatchObject({ uploadBatchId: 81, page: 1, expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(required(document.querySelector<HTMLSelectElement>('[aria-label="筛选库存渠道来源"]')).disabled).toBe(true);

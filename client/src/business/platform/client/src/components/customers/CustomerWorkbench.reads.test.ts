@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
     demands: null, demand: null, contacts: null, summary: null, materials: null,
     supply: null, canReadSupply: false, navigate: vi.fn(),
     supplyContext: null,
+    inventory: null as any,
     queryFlags: {} as Record<string, { isFetching?: boolean; isFetchedAfterMount?: boolean; isPlaceholderData?: boolean }>,
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers/801", state.navigate] }));
@@ -15,6 +16,11 @@ vi.mock("./customerSupply", () => ({
     supplyLocation: (id, tab) => `/channel-inventory?supplyChannelId=${id}&supplyTab=${tab}`,
 }));
 vi.mock("./CustomerSupplyUploadDialog", () => ({ CustomerSupplyUploadDialog: () => null }));
+// The independent inventory transport/source/publish boundaries have their own offline suite.
+vi.mock("./CustomerChannelInventory", () => ({ CustomerChannelInventory: (props: any) => {
+    state.inventory = props;
+    return React.createElement("div", { "data-customer-channel-inventory": true }, "SCOPED-INVENTORY");
+} }));
 vi.mock("../../../../../api/business-trpc", () => {
     const query = (name, data) => ({ useQuery: (input, options) => {
             state.inputs.push({ name, input, options });
@@ -46,6 +52,7 @@ beforeEach(() => {
     state.inputs = [];
     state.canReadSupply = false;
     state.queryFlags = {};
+    state.inventory = null;
     state.navigate.mockReset();
     state.demands = { items: [{ id: 901, customerId: 801, demandNo: "D-SYNTHETIC", status: "submitted", projectName: "SAMPLE" }], total: 321, page: 1, pageSize: 3 };
     state.demand = { id: 901, customerId: 801, items: [{ id: 902, partNumber: "CURRENT-MATERIAL", brand: "TI", pkg: "QFN", qty: 12, qtyUnit: "片", deliveryRequirement: "现货" }] };
@@ -154,8 +161,12 @@ describe("verified customer workbench read gates", () => {
         expect(input("demand").input).toEqual({ id: 901 });
         expect(input("materials").input).toEqual({ customerId: 801, page: 1, pageSize: 20 });
         expect(input("supply").input).toMatchObject({ customerIds: [801], expectedEnterpriseId: 31, expectedActorUserId: 7 });
-        await act(async () => [...host.querySelectorAll("button")].find(button => button.textContent?.includes("查看供应库存")).click());
-        expect(state.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
+        expect(input("supplyContext").input).toEqual({ customerId: 801, expectedEnterpriseId: 31, expectedActorUserId: 7 });
+        expect(state.inventory).toMatchObject({ customerId: 801, enabled: true, identity: { enterpriseId: 31, actorUserId: 7 } });
+        expect(state.inventory).not.toHaveProperty("partNumber");
+        expect(state.inventory).not.toHaveProperty("channelId");
+        await act(async () => [...host.querySelectorAll("button")].find(button => button.textContent?.includes("渠道设置")).click());
+        expect(state.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
     });
     it("never shows foreign demand/order material or cached inventory when module grants are missing", async () => {
         state.demand.customerId = 802;
@@ -167,6 +178,7 @@ describe("verified customer workbench read gates", () => {
         expect(input("materials").options.enabled).toBe(false);
         expect(input("supply").options.enabled).toBe(false);
         expect(host.textContent).not.toContain("查看供应库存");
+        expect(host.querySelector("[data-customer-channel-inventory]")).toBeNull();
         expect(state.inputs.every(item => !item.input?.keyword)).toBe(true);
     });
 });

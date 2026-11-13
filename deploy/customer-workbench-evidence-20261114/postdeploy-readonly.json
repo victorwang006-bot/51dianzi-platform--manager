@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "atUtc": "2026-11-13T17:24:13.352561+00:00",
+  "htmlSha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5",
+  "backendFiles": [
+    {
+      "processName": "dianzi51-admin",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "relative": "api/admin-index.js",
+      "sha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442",
+      "beforeSha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+      "bytes": 1550039
+    },
+    {
+      "processName": "dianzi51",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "relative": "api/front-index.js",
+      "sha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735",
+      "beforeSha256": "aa3b208401045baac11bc7806e97b1332d63bc5e650c763ebaaa6c49dfeeb0c0",
+      "bytes": 5753239
+    }
+  ],
+  "allProtectedFilesMatch": true,
+  "allProcessesOnline": true,
+  "processCount": 12,
+  "coordinationClosed": true,
+  "databaseOperations": 0,
+  "productionRecordWrites": 0,
+  "pm2PackageLicense": "AGPL-3.0"
+}

@@ -1766,7 +1766,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
     const title = required(document.querySelector("h1.ci-sr-only"), "missing accessible title");
@@ -1792,7 +1792,7 @@ describe("v13 native channel read and original recorder contract", () => {
     result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
     expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([9, 9]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
@@ -1897,7 +1897,7 @@ describe("v14 industry and channel-row stock upload", () => {
     localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
     expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");

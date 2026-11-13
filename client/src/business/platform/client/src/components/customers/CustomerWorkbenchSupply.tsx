@@ -4,6 +4,7 @@ import { trpc } from "../../../../../api/business-trpc";
 import { businessIndustryCodeSchema } from "../../../../shared/businessIndustry";
 import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
 import { supplyLocation, useCustomerSupplyAuthority } from "./customerSupply";
+import { CustomerChannelInventory } from "./CustomerChannelInventory";
 import { withCustomerContactScope, type CustomerContactScope } from "./customerContacts";
 import { errorMessage } from "./customerUtils";
 
@@ -42,12 +43,10 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
   const context = contextEnabled && contextMatches && !contextQuery.isError && !contextQuery.isFetching
     && !contextQuery.isPlaceholderData && contextQuery.isFetchedAfterMount !== false ? contextQuery.data : undefined;
   const boundChannelId = context?.channel && Number.isSafeInteger(context.channel.id) && context.channel.id > 0 ? context.channel.id : null;
-  // Summary intentionally hides channelId at zero stock; only context proves a binding.
-  const stockChannelId = readEnabled && summary?.canViewStock && Number.isSafeInteger(summary.channelId) && (summary.channelId ?? 0) > 0
-    ? (!context || boundChannelId === summary.channelId ? summary.channelId : null) : readEnabled ? boundChannelId : null;
+  const [inventoryRefreshVersion, setInventoryRefreshVersion] = useState(0);
   const missingIndustry = Boolean(context && !businessIndustryCodeSchema.safeParse(context.customer.industryCode).success);
   const uploadReason = authority.failed ? "库存权限核验失败，请重试。"
-    : props.archived || context?.customer.archivedAt ? "该客户已归档，不能上传物料表。"
+    : props.archived || context?.customer.archivedAt ? "该客户已归档，不能上传库存表。"
     : !authority.canWrite ? "当前账号没有客户供应上传权限。"
     : contextQuery.isError ? `读取供货设置失败：${errorMessage(contextQuery.error)}`
     : !context ? "正在核验客户供货设置…"
@@ -58,12 +57,12 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
   const settingsReason = !readEnabled ? "暂无供货设置查看权限。"
     : contextQuery.isError ? "供货设置读取失败，请重试。"
     : !context ? "正在核验客户供货关联…"
-    : !boundChannelId ? context.canUpload ? "尚未绑定供货渠道，可在上传物料表中人工选择并确认关联现有渠道。"
+    : !boundChannelId ? context.canUpload ? "当前上传负责人尚未绑定供货渠道，可在上传库存表中人工选择并确认关联现有渠道。"
       : context.disabledReason || "未能核验可查看的供货关联，请联系有权人员确认。" : "";
 
   const latest = useRef(props); latest.current = props;
-  const live = useRef({ identityKey: identity?.key, canUpload, context, readEnabled, boundChannelId, stockChannelId });
-  live.current = { identityKey: identity?.key, canUpload, context, readEnabled, boundChannelId, stockChannelId };
+  const live = useRef({ identityKey: identity?.key, canUpload, context, readEnabled, boundChannelId });
+  live.current = { identityKey: identity?.key, canUpload, context, readEnabled, boundChannelId };
   const lifecycle = useRef({ mounted: true, generation: 0, key: "", allowed: false });
   const sessionKey = `${identity?.enterpriseId}:${identity?.actorUserId}:${identity?.key}:${customerId}:${props.customerVersion ?? contextQuery.data?.customer.version}`;
   // Background fetching masks new actions, but cannot unmount a dirty importer.
@@ -79,7 +78,8 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
   const active = Boolean(session && session.key === sessionKey && session.generation === lifecycle.current.generation
     && allowed && session.customerVersion === contextQuery.data?.customer.version);
   const openRef = useRef(false);
-  const close = () => { lifecycle.current.generation++; openRef.current = false; latest.current.onOpenChange?.(false); setSession(null); };
+  const inventoryOpenRef = useRef(false);
+  const close = () => { lifecycle.current.generation++; openRef.current = false; latest.current.onOpenChange?.(inventoryOpenRef.current); setSession(null); };
   useLayoutEffect(() => {
     lifecycle.current.mounted = true;
     return () => {
@@ -116,37 +116,38 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
     if (authority.failed) void authority.retry();
     if (contextEnabled) void contextQuery.refetch();
     if (readEnabled) void summaryQuery.refetch();
+    setInventoryRefreshVersion(value => value + 1);
   };
   const isSessionCurrent = () => Boolean(session && lifecycle.current.mounted && lifecycle.current.allowed
     && openRef.current && lifecycle.current.key === session.key && lifecycle.current.generation === session.generation
     && (latest.current.isCurrent?.() ?? true));
-  return <section className="customer-workbench-panel"><h2 className="admin-section-title">客户供应库存</h2>
-    <p className="customer-detail-meta">与采购需求分开。</p>
+  return <section className="customer-workbench-panel"><h2 className="admin-section-title">客户渠道库存</h2>
+    <p className="customer-detail-meta">上传库存自动归属本客户公司；与采购需求、BOM导入分开。</p>
     <div className="flex flex-wrap items-center gap-2">
       <button type="button" className="crm-btn crm-btn-primary" aria-disabled={!canUpload} aria-describedby={uploadReason ? descriptionId : undefined}
-        onClick={openUpload}>上传物料表</button>
-      <button type="button" className="crm-btn" disabled={Boolean(settingsReason)} title={settingsReason || undefined} onClick={viewSettings}>供货设置</button>
-      {stockChannelId ? <button type="button" className="crm-btn" onClick={() => {
-        const generation = lifecycle.current.generation;
-        act(() => {
-          if (live.current.identityKey === identity?.key && live.current.stockChannelId === stockChannelId
-            && live.current.readEnabled && lifecycle.current.mounted && lifecycle.current.generation === generation
-            && (latest.current.isCurrent?.() ?? true)) navigate(supplyLocation(stockChannelId, "materials"));
-        });
-      }}>查看供应库存{summary && summary.materialCount !== null && Number.isSafeInteger(summary.materialCount) && summary.materialCount >= 0 ? `（${summary.materialCount}）` : ""}</button> : null}
+        onClick={openUpload}>上传库存表</button>
+      <button type="button" className="crm-btn" disabled={Boolean(settingsReason)} title={settingsReason || undefined} onClick={viewSettings}>渠道设置</button>
     </div>
     {uploadReason ? <p id={descriptionId} className="customer-detail-meta">{uploadReason}</p> : null}
     {context?.disabledReason && context.disabledReason !== uploadReason && context.disabledReason !== settingsReason ? <p className="customer-detail-meta">{context.disabledReason}</p> : null}
     {settingsReason ? <p className="customer-detail-meta">{settingsReason}</p> : context && (!authority.canWrite || !context.canUpload || props.archived) ? <p className="customer-detail-meta">供货设置入口可查看；编辑能力仍由原渠道页面核验，当前上传只读。</p> : null}
     {authority.failed || contextQuery.isError || (readEnabled && summaryQuery.isError) ? <p role="alert">{summaryQuery.isError && readEnabled ? `读取客户供应库存失败：${errorMessage(summaryQuery.error)}` : "供货权限或关联核验失败。"} <button type="button" className="crm-link" onClick={retry}>重试供应库存</button></p>
       : !readEnabled ? <p className="customer-workbench-empty">暂无供应库存查看权限。</p>
-      : !stockChannelId ? <p className="customer-workbench-empty">{!summary || !context ? "正在核验客户供应渠道…" : "暂无可查看的供应库存。"}</p> : null}
+      : !context ? <p className="customer-workbench-empty">正在核验客户供应渠道…</p> : null}
+    {identity && readEnabled ? <CustomerChannelInventory key={sessionKey} customerId={customerId} customerVersion={props.customerVersion ?? context?.customer.version}
+      identity={identity} enabled={Boolean(context)} refreshVersion={inventoryRefreshVersion}
+      isCurrent={() => lifecycle.current.mounted && live.current.identityKey === identity.key && live.current.readEnabled && (latest.current.isCurrent?.() ?? true)}
+      onAction={props.onAction} onOpenChange={open => {
+        inventoryOpenRef.current = open;
+        latest.current.onOpenChange?.(open || openRef.current);
+      }} onAuthorizationError={authority.onAuthorizationError} /> : null}
     {active && identity && session ? <CustomerSupplyUploadDialog customerId={customerId} identity={identity} isCurrent={isSessionCurrent}
       onClose={() => { if (isSessionCurrent()) close(); }} onComplete={() => {
         if (!isSessionCurrent()) return;
         // Refresh metadata only; the importer owns its queue, source locks and portal close timing.
         void utils.channelInventory.customerSupplySummary.invalidate();
         void utils.channelInventory.customerSupplyContext.invalidate();
+        setInventoryRefreshVersion(value => value + 1);
       }} onAuthorizationError={authority.onAuthorizationError} /> : null}
   </section>;
 }

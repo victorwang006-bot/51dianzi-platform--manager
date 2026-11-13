@@ -1,0 +1,559 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "front actual candidate strict customerId and authority-field rejection",
+      "passed": true,
+      "cases": 17,
+      "legacyGlobalInputAccepted": true
+    },
+    {
+      "name": "BFF actual candidate strict customerId and authority-field rejection",
+      "passed": true,
+      "cases": 17,
+      "legacyGlobalInputAccepted": true
+    },
+    {
+      "name": "actual candidate native SQL exact confirmed multi-channel binding, count/page and company projection",
+      "passed": true,
+      "bindingCount": 2,
+      "queryCount": 48,
+      "nativeDeclarations": 84,
+      "onlySyntheticSQLTransport": true
+    },
+    {
+      "name": "native customer fail closed {\"noCrm\":true}",
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "name": "native customer fail closed {\"missingCustomer\":true}",
+      "passed": true,
+      "code": "NOT_FOUND"
+    },
+    {
+      "name": "native customer fail closed {\"noInventory\":true}",
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "name": "native customer fail closed {\"companyDenied\":true}",
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "name": "native customer fail closed {\"wrongCompany\":true}",
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "name": "native customer fail closed {\"noSource\":true}",
+      "passed": true,
+      "code": "FORBIDDEN"
+    },
+    {
+      "name": "actual native signed customer scope required",
+      "passed": true
+    },
+    {
+      "name": "authorized zero binding returns real empty proof",
+      "passed": true
+    },
+    {
+      "name": "old global scope SQL and existing DTO semantics retained",
+      "passed": true,
+      "sameSQL": true,
+      "sameExistingFields": true,
+      "additiveCompanyProjection": true
+    },
+    {
+      "name": "global company field is additive and null without current source or CRM permission",
+      "passed": true,
+      "unauthorizedRowsRetained": true,
+      "noPrivateSourceNameFallback": true
+    },
+    {
+      "name": "actual BFF customer inventory scope intersection and bound signed command projection",
+      "passed": true,
+      "actualCandidateDeclarations": true,
+      "currentIdentityBoundarySynthetic": true,
+      "signedPayloadFieldPropagated": true
+    },
+    {
+      "name": "actual BFF fresh scope fail closed {\"noCustomers\":true}",
+      "passed": true
+    },
+    {
+      "name": "actual BFF fresh scope fail closed {\"noInventory\":true}",
+      "passed": true
+    },
+    {
+      "name": "actual BFF fresh scope fail closed {\"noOfficial\":true}",
+      "passed": true
+    },
+    {
+      "name": "global native official inventory read remains available without CRM scope",
+      "passed": true
+    },
+    {
+      "name": "actual BFF rejects wrong, missing-source or inconsistent customer result proof",
+      "passed": true,
+      "cases": 5
+    },
+    {
+      "name": "original order archive and command audit branch remains executed",
+      "passed": true
+    },
+    {
+      "name": "actual original-position router construction, schema and native target service boot order",
+      "passed": true,
+      "actualTRPC": true,
+      "originalRouterCallBytePreserved": true,
+      "newHelperFunctionHoisted": true,
+      "newHelperAfterRouterInit": true,
+      "dbCalls": 0,
+      "otherFactoryConstructorsOnlySynthetic": true,
+      "newRootProvider": false
+    }
+  ],
+  "caseGroups": 21,
+  "realDatabaseUsed": false,
+  "productionNetworkCalls": 0,
+  "boot": {
+    "routerCallOffset": 5569850,
+    "newHelperOffset": 5712246,
+    "nativeBootDeclarations": 220,
+    "dbCalls": 0
+  },
+  "sourceHashes": {
+    "server/channelInventoryListBusinessInput.ts": "c837e0f07abff93a7040838746fb5da0eba76cad1374df5bbe49417e6959b02a",
+    "server/businessRouter.ts": "f31dc9fcc5aac552f058c06897ad04bb1663f64c6a447f1551828072da4992a6",
+    "client/src/business/platform/front-router-types/server/services/channelTeamInventory.ts": "65f6dc2e4ebdf529fbccac31181e9648e334b54a109f864d482dcb0ad69aafe8",
+    "client/src/business/platform/front-router-types/server/routers/channelInventory.ts": "77211623b641dfa3e25a7422c3e0394f477bf47555e7819afddd3ea6dc91128d"
+  },
+  "sourceBound": true,
+  "actualCandidateDeclarationsExecuted": true,
+  "nativeClosure": [
+    {
+      "name": "normalizeErpPermissions",
+      "module": "shared/erpPermissions.ts",
+      "sha256": "321cdc3267bc8d9e45fcf22f8fca4c58635abcb6495007afa3bafeea88ab4f23"
+    },
+    {
+      "name": "ERP_PERMISSION_KEYS",
+      "module": "shared/erpPermissions.ts",
+      "sha256": "3290e749170cf0bfefeb310c466e31c30b0cf18f9726c18f0c2ad51d705269f3"
+    },
+    {
+      "name": "BUSINESS_MODULES",
+      "module": "shared/businessOrganization.ts",
+      "sha256": "b16d566e97decb3f6b4d917465a5cfdf504290d73692af0c3b8dd81420ca39cc"
+    },
+    {
+      "name": "businessRows",
+      "module": "server/services/businessModuleAccess.ts",
+      "sha256": "3d62341dd776a411ebdafb84d2d2ca2e0e9d6b829e0d6bcd8588e3ebba876dd2"
+    },
+    {
+      "name": "businessIsTransaction",
+      "module": "server/services/businessModuleAccess.ts",
+      "sha256": "8b960f4641e7dc55b01d3d55bd615944bae0e385ea988db47dc9050fad677022"
+    },
+    {
+      "name": "businessBoolean",
+      "module": "server/services/businessModuleAccess.ts",
+      "sha256": "ee539ed04983e57280da54decea82127995c5d4fc42c957ecc1bf4977e964395"
+    },
+    {
+      "name": "businessIsOwner",
+      "module": "server/services/businessModuleAccess.ts",
+      "sha256": "7c022a827f31f7d88f50a7abbda1e402111422fb5304c797e14fe61dd779f440"
+    },
+    {
+      "name": "businessModuleEntitled",
+      "module": "server/services/businessModuleAccess.ts",
+      "sha256": "a7a954df3599bb1fc8fe6aec8d91f2ff5452dbad53a3c87db755e2ced25363c2"
+    },
+    {
+      "name": "resolveBusinessModuleAccess",
+      "module": "server/services/businessModuleAccess.ts",
+      "sha256": "3cfc06b4cfb0718e4e5ff36d060d9d02e846a4d0fad14611aefe4927341fa2d2"
+    },
+    {
+      "name": "BUSINESS_INDUSTRY_OPTIONS",
+      "module": "shared/businessIndustry.ts",
+      "sha256": "c012dab630651b87221ec11e41f49dfa4274788eafd07b8abae1aaf654c7f7e9"
+    },
+    {
+      "name": "BUSINESS_INDUSTRY_CODES",
+      "module": "shared/businessIndustry.ts",
+      "sha256": "6a78ee5fd6eb47512177ed914cf04bf5d6958dae682db79b57350f4db70a6d6c"
+    },
+    {
+      "name": "businessIndustryCodeSchema",
+      "module": "shared/businessIndustry.ts",
+      "sha256": "b9cd99812119d4bcbb827b82e7c6c6f7cd307efcdf57d0cf99cda565a9d67d25"
+    },
+    {
+      "name": "resolveCrmCustomerPolicy",
+      "module": "server/services/crmCustomers.ts",
+      "sha256": "43a226e3a6dec61784c490c4a68d4e37ef4cb6399d289b486ff8fc1c83503635"
+    },
+    {
+      "name": "crmCustomerPolicyWhere",
+      "module": "server/services/crmCustomers.ts",
+      "sha256": "c0cba3105d3174a651729ae165dafc6e309a18f0caed4fd5611eb259eedc71dd"
+    },
+    {
+      "name": "assertCrmCustomerPolicy",
+      "module": "server/services/crmCustomers.ts",
+      "sha256": "e0120a136b3e4cfdcf428963be6a484b67fea48a0a879d93225279ff8ebf6270"
+    },
+    {
+      "name": "resultRows",
+      "module": "server/services/crmCustomers.ts",
+      "sha256": "f71a0f8be48378f02002f5444c7be28ea1fa19ee27f768d3e03905a26b39f429"
+    },
+    {
+      "name": "activeChannelMaterial",
+      "module": "server/services/channelInventoryManagementPersistence.ts",
+      "sha256": "a284faf3664d1d51293ac9959aeba3f9f40e1e74971e0807b5bb173f6138c300"
+    },
+    {
+      "name": "materialUploadBatchId",
+      "module": "server/services/channelInventoryManagementPersistence.ts",
+      "sha256": "dd78192c7b36aa4499217b9a9b912d53ffb750f6ec4b5e8b1f06cdedddc545c6"
+    },
+    {
+      "name": "rows9",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "535001b3a3e24196afbe0712afd2f913f04711d44fe8a28695247686595c9a12"
+    },
+    {
+      "name": "currentReadExecutor",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "3974c44c7a5c20c9a1338fadc92fba3e2b4880df2031d1492eb224cf7c6999cb"
+    },
+    {
+      "name": "hasCustomerScopeRead",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "173f6f66d180613bb13813c22f63ab9618ff495750a8b1c8895cae4fd3c2822f"
+    },
+    {
+      "name": "resolveCustomerSupplyReadPolicy",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "dd93c90a66940f0374686fccb402c544ce3ad1989582990652e9a84941abdd69"
+    },
+    {
+      "name": "customerReadPolicy",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "418af1c13f6ea7e631870fc4e62735697703efd4b324041d0cbddf5167294cd4"
+    },
+    {
+      "name": "readCustomerPrimaryContact",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "f25b2674ae9b1dd021aba458f593a5a088780d9039bf803f8f42f4705715d98a"
+    },
+    {
+      "name": "linkedCompanyReadGate",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "7559563c5ece9c3815988608b718adb38299f567ba95bd1bc0ca5085567b934c"
+    },
+    {
+      "name": "linkedCompany",
+      "module": "server/services/customerSupplyCompany.ts",
+      "sha256": "8b966e2970960b75eeea939e64cc2eec36932de807576f053674e83e24ce0bbc"
+    },
+    {
+      "name": "SNAPSHOT_FIELDS",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "b1be6f6886a0e88fee2364aa9693d7d97a149b14c727f23c8e9a3640778436c3"
+    },
+    {
+      "name": "SNAPSHOT_FIELD_SET",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "56aefbb5b9cfe8aac73434546e64c6d95a7a905086741947f7eb07b3dfc22f82"
+    },
+    {
+      "name": "OPAQUE_PUBLIC_ID",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "71411688e1a659157058ae471dbdfab1c50872ea2cea21dd800ae712c1f30eb7"
+    },
+    {
+      "name": "MAX_PART_NUMBER_LENGTH",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "1d9bcb6fffce265127972bfa387db75a4ff56193499237c3ca7cae940089cf98"
+    },
+    {
+      "name": "MAX_BRAND_LENGTH",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "9e3f887d55d1a3561895a941503144600082cd8b7a5b1f0ed4229fcda86ee89f"
+    },
+    {
+      "name": "MAX_DATE_CODE_LENGTH",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "4a604c3309d593219b4ef1429a37328760e368c4f23cf2c040ad024133fd1b68"
+    },
+    {
+      "name": "MAX_LEAD_TIME_LENGTH",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "3e6854884367f78d0e6996955865a7fbb706c5684a6701ea96dc1f9bb086c991"
+    },
+    {
+      "name": "MAX_PRICE_LENGTH",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "150c3d8f841a3c4b2768fafa3b6f02020a449bdfa11c53100fb6a3471088afef"
+    },
+    {
+      "name": "MAX_UNSIGNED_INT",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "8a0fe264e86cbcb89c858ea47717b514e24cfc4eefc96e085494e4d6cdbecd65"
+    },
+    {
+      "name": "toSnapshotRecord",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "89e7ed9292189b2d6101090e41cbcbb3ce30305c0799fdcf3a308025a909a637"
+    },
+    {
+      "name": "hasExactSnapshotWhitelist",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "9cd979d60e1cb627a342497a036657006bc78c2642d474348b7705308d8c56d3"
+    },
+    {
+      "name": "requiredText3",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "caf7ccafe7516fb46369f79bc00afc918c8806148a50fb7bb64fba783ac50ee9"
+    },
+    {
+      "name": "optionalText5",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "afbe1f9ba7c6640952f438c8da3b7c7b1d5ea94de9c580d59f12d217bbbf5ed6"
+    },
+    {
+      "name": "safePositiveDecimal",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "7ac7d50c4b43196e7c752cef4fe7ad41229d3570d48b946a75403ff37e615e7d"
+    },
+    {
+      "name": "channelCodeFor",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "f031b6af3df6a5c3b448d162358ff4d16ef9112552371dca0da43c17ad1fd0a0"
+    },
+    {
+      "name": "timestamp4",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "2f09ef865767f99a2f0ffa0880871b79bb137dd6a4cbbd08c0151463ed8b1f98"
+    },
+    {
+      "name": "decodePublication",
+      "module": "server/services/factoryChannelSnapshot.ts",
+      "sha256": "e0cf8058e2cbdb4f7f38918659ef23a5b30aee5b90ef8e3c811332424eb28eec"
+    },
+    {
+      "name": "rows10",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "48f98abfeb8dc0c4f5802e70377b79f325f2ccdabd4b8dcfaf612320cf7e9cfe"
+    },
+    {
+      "name": "fail9",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "f08787f84cdd826b72c864250bcf93392248394a3e50f671837908870aae983a"
+    },
+    {
+      "name": "bool2",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "e6d4c1feb7e7ebd04b3127b557c47a1f69f60a09183c699b2d57d246317defa0"
+    },
+    {
+      "name": "suffix",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "4afc4f99ff40ebc1e7201d0d8cf1cec4836430c9558ecff163afa3bfc78dfaf0"
+    },
+    {
+      "name": "hasFactoryPublishProof",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "2c75b9e0531fb14a98211a8728cfa5596a29e23b57a6fba3023584f932b27de8"
+    },
+    {
+      "name": "SOURCE_FROM",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "1dd61a8c97da2e72b3ec0cc80504df14f192d91c8bb007836f5ffd5930e1c526"
+    },
+    {
+      "name": "sourceValid",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "e7d0b0dd0d66e7986ef645673e4e980d2cc472126318ddc610dc428bcfede289"
+    },
+    {
+      "name": "actorBoundary",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "e7aeaebcd2633d4613a7b4cf931218d622c93f968c6190bb5f55602f6d9275f6"
+    },
+    {
+      "name": "PROJECTION_MATCH",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "135b84ae4d0e7d6185cd2b03db30d4d7d4ba1ae9833c5f7b98de8e8121d4af65"
+    },
+    {
+      "name": "buildFactoryMaterialSnapshot",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "729d29694435f4319507a344d2c7d505e575e819ff03b2a7dd6de267d54df8c5"
+    },
+    {
+      "name": "factoryMaterialPublicationMetadata",
+      "module": "server/services/channelFactoryPublication.ts",
+      "sha256": "398838e33d5ea30ee76ee2ba0c5a9c09ee153f395210afd4d2acf730e3a9d7f7"
+    },
+    {
+      "name": "LEGACY_CONFIRMATION_ACTION",
+      "module": "server/services/channelInventoryLegacyConfirmation.ts",
+      "sha256": "7f76e71cda982bb0a2931a6278080634a8c76a681370431fac65476c7297f2ed"
+    },
+    {
+      "name": "LEGACY_CONFIRMATION_HASH_PATHS",
+      "module": "server/services/channelInventoryLegacyConfirmation.ts",
+      "sha256": "4433a619fee40d66bc3f8ce392dc149e49b594606b06ef85137439f12edcad0d"
+    },
+    {
+      "name": "originalActorClaims",
+      "module": "server/services/channelInventoryOriginalActor.ts",
+      "sha256": "078773fe6fef18727ad09a3c3e84062de37355d6bfcc6ae6265733b3f815eac3"
+    },
+    {
+      "name": "officialMaterialRecorderAdminAccountId",
+      "module": "server/services/channelInventoryOriginalActor.ts",
+      "sha256": "550a83350daa550ccbaebf7a70f49a338056f41e914d01a09b76aa6b82158088"
+    },
+    {
+      "name": "teamInventoryRows",
+      "module": "server/services/channelTeamInventoryAccess.ts",
+      "sha256": "5656e3e7a412b16e3e49c6f584dc3422e8df026e9a6d45012c46b493cc74d74d"
+    },
+    {
+      "name": "teamInventoryAll",
+      "module": "server/services/channelTeamInventoryAccess.ts",
+      "sha256": "927f4421e947eac20e71e3ec4b0543b430f898bbf72dfdbbb325a59618c5b3a7"
+    },
+    {
+      "name": "TEAM_MATERIAL_FROM",
+      "module": "server/services/channelTeamInventoryAccess.ts",
+      "sha256": "8a8d494c55aafe07091054cf850091b454a835011aafb40097ece3a83b9c04ab"
+    },
+    {
+      "name": "resolveTeamInventoryVisibility",
+      "module": "server/services/channelTeamInventoryAccess.ts",
+      "sha256": "26e966fdd133371367e1e353c470c3884b9f7744ff26dd545200c105539dbe8a"
+    },
+    {
+      "name": "teamMaterialSourceEligibility",
+      "module": "server/services/channelInventorySource.ts",
+      "sha256": "6a8cf70296bc5dfa2978b65a63956b135f445fe6e3e989704ad2e61d348c8cdc"
+    },
+    {
+      "name": "ChannelInventoryError",
+      "module": "server/services/channelInventory.ts",
+      "sha256": "bf4f0407074c935333276ea314ed9fe5e1e14e15479eec78c862d355863f4a2c"
+    },
+    {
+      "name": "appError",
+      "module": "server/services/channelInventory.ts",
+      "sha256": "b26a710e102059863b1754e80dfaba97eac3a6cdf691eb1e5c4ca8888eaad9c7"
+    },
+    {
+      "name": "databaseFailure",
+      "module": "server/services/channelInventory.ts",
+      "sha256": "27775d31aae36a8941365822f3ec92cfe13e1cce774611000d0744cc54013d01"
+    },
+    {
+      "name": "rows11",
+      "module": "server/services/channelInventory.ts",
+      "sha256": "94d643ec7aac48370638a77efa22b59e5b45b69f2c5ee61fed437804b4dfc45a"
+    },
+    {
+      "name": "bool3",
+      "module": "server/services/channelInventory.ts",
+      "sha256": "d78c9931392ac0481af347751545fc4bb2cae4e6d9fd27129663b10c9d9ae4cb"
+    },
+    {
+      "name": "resolveChannelInventoryAuthority",
+      "module": "server/services/channelInventory.ts",
+      "sha256": "f4b0418638734a3a0386159f3676c26009ea41201308fe34db50e87e116314da"
+    },
+    {
+      "name": "rows13",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "b6368bd4e9901046cdddfb288eb0561015f7ad9522e5e52a1ff0a4765c4216cc"
+    },
+    {
+      "name": "bool6",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "9290b6b51232146b45f693d6f3a7c1ac922b3a190bb62e363c0b8e71c5c66f83"
+    },
+    {
+      "name": "text11",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "1898a741b9e6aecc0112ea8f02ddbc37596c4176d677ae6dc433fbca4da9b5d2"
+    },
+    {
+      "name": "all",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "f49f7885eedf19cf662a947fe4d3854b797d229a4a9ca367ebb453d98e4a2ee7"
+    },
+    {
+      "name": "literal",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "1738945665b274661d7040472c902794a4b579c0749a8baae34c8b31568dd01a"
+    },
+    {
+      "name": "fail13",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "a74de206dac02fc3f09c17f1983657d099ff9c76602ff800c917743249a7338c"
+    },
+    {
+      "name": "teamMaterialFrom",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "d1ba1d4520a4dcf24c8436930f4d12f2f0aa1480f7b41f2ee26782bbd0ae00e0"
+    },
+    {
+      "name": "expected4",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "415fd8a70ac27dda6099e808f6bfaba45649edd708b940062db2dcb4264cd520"
+    },
+    {
+      "name": "teamMaterialOrder",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "e94fbdc9814e38e376028cc4cf1e099ec14ff9014996083a4d855dbf056668ac"
+    },
+    {
+      "name": "createChannelTeamInventoryService",
+      "module": "server/services/channelTeamInventory.ts",
+      "sha256": "a9a0d45e38de79c234c4532365491d9bc25861419e5b738f55d1a0bd485ed52d"
+    },
+    {
+      "name": "channelUploadBatchReadWhere",
+      "module": "server/_core/index.ts",
+      "sha256": "7e51a0c137023e4edeb5cc671b81af86dde4bb07d03ebe1ffbb0f81771ea4928"
+    },
+    {
+      "name": "channelMaterialCanViewUploadBatch",
+      "module": "server/_core/index.ts",
+      "sha256": "7a891f7b7bb34613fdf5c51cbfdfaac309176332564433adc5a918ade80e8950"
+    },
+    {
+      "name": "continued20261112_channelSourceReadEligibility",
+      "module": "server/services/channelInventoryChannelAccess.ts",
+      "sha256": "cc3c36ffc37f56456d4ead80e7f76d915d4c98c39a8b409df94f6c45d41a115f"
+    },
+    {
+      "name": "continued20261112_channelTeamReader",
+      "module": "server/services/channelInventoryChannelAccess.ts",
+      "sha256": "004f76f91c28f976cb200dda42e4d85bc86079c1e56840841b088043f526efa9"
+    },
+    {
+      "name": "customerTeamInventoryBindingPredicate",
+      "module": "server/services/channelInventoryCollaboration.ts",
+      "sha256": "7318ea021966f5531fced6edf479ecff91f54a6a3f9dd36c9bf2e21557554427"
+    }
+  ],
+  "caveat": "Synthetic SQL transport and current-identity fixtures; not authenticated production acceptance."
+}

@@ -22,7 +22,7 @@ import { CustomerDemandHistory } from "../components/customerDemands/CustomerDem
 import { CustomerSalesOrders, type CustomerSalesOrderIntent } from "./CrmSalesOrders";
 import { CustomerWorkbenchContacts } from "../components/customers/CustomerWorkbenchContacts";
 import { CustomerWorkbenchOverview } from "../components/customers/CustomerWorkbenchOverview";
-import { CustomerWorkbenchMaterials } from "../components/customers/CustomerWorkbenchMaterials";
+import { CustomerWorkbenchSupply } from "../components/customers/CustomerWorkbenchSupply";
 import { CUSTOMER_WORKBENCH_TABS, customerWorkbenchLocation, customerWorkbenchTab, type CustomerWorkbenchTab, type CustomerDemandOrderLink } from "../components/customers/customerWorkbench";
 import { useCustomerWorkbenchOrders } from "../components/customers/useCustomerWorkbenchOrders";
 import { useCustomerNavigationGuard } from "../components/customers/useCustomerNavigationGuard";
@@ -237,7 +237,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   useEffect(() => {
     const params = new URLSearchParams(search);
     if (params.has("tab") && !CUSTOMER_WORKBENCH_TABS.some(item => item.id === params.get("tab"))) {
-      navigate(customerWorkbenchLocation(id, "overview", search), { replace: true });
+      navigate(customerWorkbenchLocation(id, customerWorkbenchTab(search), search), { replace: true });
     }
   }, [id, search, navigate]);
 
@@ -592,7 +592,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         {orderAuthority.failed && <p role="alert">订单权限核验失败。<button type="button" className="crm-link" onClick={() => void orderAuthority.refresh()}>重试核验</button></p>}
         <CustomerSalesOrders customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} contextIdentityKey={workbenchIdentity} canRead={canReadOrders} canWrite={canReadOrders && !isArchived} readOnly={isArchived} intent={orderIntent} onIntentHandled={nonce => { if (isCurrentChildReceipt()) setOrderIntent(current => current?.nonce === nonce ? null : current); }} onDirtyChange={setOrdersDirty} onOrderChanged={() => { if (!isCurrentChildReceipt()) return; void utils.crmSalesOrder.customerSummary.invalidate({ customerId: customer.id }); if (isCurrentChildReceipt()) void utils.crmSalesOrder.customerMaterials.invalidate({ customerId: customer.id }); }} />
       </section>}
-      {tab === "materials" && <div id="customer-panel-materials" role="tabpanel" aria-labelledby="customer-tab-materials"><CustomerWorkbenchMaterials key={workbenchIdentity} customerId={customer.id} scope={contactScope.scope} scopeReady={authorityReady} canReadOrders={canReadOrders} supply={{ customerVersion: customer.version, archived: isArchived, isCurrent: isCurrentChildReceipt, onAction: guardAction, onOpenChange: open => { if (isCurrentChildReceipt()) supplyOpen.current = open; } }} /></div>}
+      {tab === "inventory" && <div id="customer-panel-inventory" role="tabpanel" aria-labelledby="customer-tab-inventory"><CustomerWorkbenchSupply key={workbenchIdentity} customerId={customer.id} scope={contactScope.scope} scopeReady={authorityReady} customerVersion={customer.version} archived={isArchived} isCurrent={isCurrentChildReceipt} onAction={guardAction} onOpenChange={open => { if (isCurrentChildReceipt()) supplyOpen.current = open; }} /></div>}
 
       <div hidden={tab !== "followups"} role="tabpanel" id="customer-panel-followups" aria-labelledby="customer-tab-followups">
       <section id="customer-followups" className="customer-detail-followups mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">

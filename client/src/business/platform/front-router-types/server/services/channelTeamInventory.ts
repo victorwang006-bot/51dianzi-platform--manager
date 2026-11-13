@@ -6,8 +6,8 @@ import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOrigin
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
-import { customerReadPolicy, linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
-import { crmCustomerPolicyWhere } from "./crmCustomers";
+import { customerReadPolicy, linkedCompany, linkedCompanyReadGate, resolveCustomerSupplyReadPolicy } from "./customerSupplyCompany";
+import { assertCrmCustomerPolicy, crmCustomerPolicyWhere } from "./crmCustomers";
 
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
@@ -20,10 +20,11 @@ export type TeamChannelMaterial = {
   channelSource: { id: number; name: string } | null; canViewSource: boolean;
   originalRecorderName: string | null; recorderAdminAccountId: number | null;
   canPublish: boolean; publicationStatus: "unpublished" | "published";
+  company: { id: number; name: string } | null;
 };
 export type TeamMaterialsInput = {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
-  partNumber?: string; brand?: string; channelId?: number; uploadBatchId?: number; page: number; pageSize: number;
+  partNumber?: string; brand?: string; channelId?: number; customerId?: number; uploadBatchId?: number; page: number; pageSize: number;
   industryCode?: BusinessIndustryCode | "unset";
   sortBy?: "qty" | "dateCode"; sortDirection?: "asc" | "desc";
 };
@@ -52,6 +53,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
     channelSource: null, originalRecorderName: null, recorderAdminAccountId: null,
     canPublish: false, publicationStatus: "unpublished",
+    company: null,
   };
 }
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number }) {
@@ -80,26 +82,52 @@ export function teamMaterialOrder(input: Pick<TeamMaterialsInput, "sortBy" | "so
   return sql`m.id DESC`;
 }
 
+/** Persisted links are confirmed by the existing customer-supply write workflow.
+ * Never infer a link from model/name or restrict reads to the upload actor. */
+export function customerTeamInventoryBindingPredicate(scope: ChannelInventoryScope, customerId: number): SQL {
+  return sql`EXISTS (SELECT 1 FROM crm_customer_supply_channels customer_inventory_link
+    WHERE customer_inventory_link.enterpriseId = ${scope.enterpriseId}
+      AND customer_inventory_link.dataOwnerUserId = ${scope.dataOwnerUserId}
+      AND customer_inventory_link.customerId = ${customerId}
+      AND customer_inventory_link.channelId = m.channel_id
+      AND customer_inventory_link.enterpriseId = c.enterprise_id
+      AND customer_inventory_link.dataOwnerUserId = c.data_owner_user_id FOR UPDATE)`;
+}
+
 export function createChannelTeamInventoryService({ getDb }: { getDb: () => Promise<SqlDatabase | null> }) {
   async function database(): Promise<SqlDatabase> { const db = await getDb(); if (!db) throw new ChannelInventoryError("INTERNAL_SERVER_ERROR", "渠道库存服务暂不可用，请稍后重试"); return db; }
   return {
     async listTeamMaterials(scope: ChannelInventoryScope, input: TeamMaterialsInput) {
       expected(scope, input);
-      const allowed = new Set(["expectedEnterpriseId", "expectedActorUserId", "partNumber", "brand", "channelId", "uploadBatchId", "industryCode", "page", "pageSize", "sortBy", "sortDirection"]);
+      const allowed = new Set(["expectedEnterpriseId", "expectedActorUserId", "partNumber", "brand", "channelId", "customerId", "uploadBatchId", "industryCode", "page", "pageSize", "sortBy", "sortDirection"]);
       if (Object.keys(input).some(k => !allowed.has(k))) fail("BAD_REQUEST", "库存筛选字段无效");
+      if (input.customerId !== undefined && (!Number.isSafeInteger(input.customerId) || input.customerId < 1)) fail("BAD_REQUEST", "客户标识无效");
       if (input.industryCode !== undefined && input.industryCode !== "unset" && !businessIndustryCodeSchema.safeParse(input.industryCode).success) fail("BAD_REQUEST", "库存行业筛选无效");
       if (!Number.isInteger(input.page) || input.page < 1 || input.page > 1_000_000 || !Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 100) fail("BAD_REQUEST", "分页参数无效");
       const order = teamMaterialOrder(input);
       const db = await database();
       return db.transaction(async tx => {
       const { access, leader, predicates } = await visible(tx, scope, { lock: true });
+      let bindingCount: number | undefined;
+      if (input.customerId !== undefined) {
+        const policy = await resolveCustomerSupplyReadPolicy(tx, scope);
+        await assertCrmCustomerPolicy({ execute: query => tx.execute(sql`${query.getSQL()} FOR UPDATE`) }, scope, input.customerId, policy);
+        predicates.push(customerTeamInventoryBindingPredicate(scope, input.customerId), teamMaterialSourceEligibility(scope, true), await linkedCompanyReadGate(tx, scope));
+        // Count readable confirmed channels before any search/paging filters. An
+        // inaccessible source cannot disclose even the existence of its binding.
+        bindingCount = Number(rows(await tx.execute(sql`SELECT COUNT(DISTINCT m.channel_id) AS bindingCount ${FROM} WHERE ${all(predicates)} FOR UPDATE`))[0]?.bindingCount ?? 0);
+      }
       if (input.channelId !== undefined) {
         if (!Number.isSafeInteger(input.channelId) || input.channelId < 1) fail("BAD_REQUEST", "渠道来源无效");
         predicates.push(sql`m.channel_id = ${input.channelId}`);
-        predicates.push(teamMaterialSourceEligibility(scope, true, leader));
-        predicates.push(await linkedCompanyReadGate(tx, scope));
-        if (!leader) {
+        if (input.customerId === undefined) {
+          predicates.push(teamMaterialSourceEligibility(scope, true, leader));
+          predicates.push(await linkedCompanyReadGate(tx, scope));
+        }
+        if (input.customerId === undefined && !leader) {
           predicates.push(sql`c.responsible_user_id = ${scope.actorUserId}`, sql`c.data_owner_user_id = ${scope.dataOwnerUserId}`);
+        }
+        if (input.customerId !== undefined || !leader) {
           const ownExact = rows(await tx.execute(sql`SELECT m.id ${FROM} WHERE ${all(predicates)} LIMIT 1 FOR UPDATE`))[0];
           if (!ownExact) fail("FORBIDDEN", "无权查看该精确渠道来源");
         }
@@ -142,11 +170,14 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       for (const row of items) {
         const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
         if (company.linked) { row.industryCode = company.customer?.industryCode ?? null; row.canViewSource = bool(row.canViewSource) && company.customer !== null; }
+        if (input.customerId !== undefined && (!bool(row.canViewSource) || !company.customer || Number(company.customer.id) !== input.customerId)) fail("FORBIDDEN", "客户库存来源权限已变化，请刷新后重试");
         projected.push({ ...teamMaterialFrom(row, access.write, leader),
+          company: bool(row.canViewSource) && company.customer ? { id: Number(company.customer.id), name: String(company.customer.name) } : null,
           ...(publications.get(Number(row.id)) ?? { canPublish: false, publicationStatus: "unpublished" as const }),
           canDelete: access.write && (bool(row.isMine) || leader) && (!company.linked || company.customer !== null), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
       }
-      return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader };
+      return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write, canFilterSource: leader,
+        ...(input.customerId === undefined ? {} : { customerId: input.customerId, bindingCount: bindingCount! }) };
       });
     },
     async listTeamSourceOptions(scope: ChannelInventoryScope, input: { expectedEnterpriseId?: number; expectedActorUserId?: number } = {}) {

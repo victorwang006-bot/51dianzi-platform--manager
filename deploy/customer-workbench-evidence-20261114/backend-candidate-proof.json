@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "releaseType": "OFFLINE_SOURCE_BOUND_API_CANDIDATE_NOT_DEPLOYED",
+  "sourceBound": true,
+  "unrelatedBytesUnchanged": true,
+  "originalGlobalScopeUnchanged": true,
+  "existingGlobalDtoFieldsUnchanged": true,
+  "additiveAuthorizedGlobalCompanyProjection": true,
+  "nativeUploadBatchSourcePublicationSemanticsUnchanged": true,
+  "customerInventoryAndCrmIntersectionEnforced": true,
+  "actualCandidateTestsPassed": true,
+  "actualRouterBootOrderPassed": true,
+  "sourceSnapshotStable": true,
+  "noNewDatabaseOrProvider": true,
+  "databaseOperations": 0,
+  "productionRecordWrites": 0,
+  "sourceHashes": {
+    "server/channelInventoryListBusinessInput.ts": "c837e0f07abff93a7040838746fb5da0eba76cad1374df5bbe49417e6959b02a",
+    "server/businessRouter.ts": "f31dc9fcc5aac552f058c06897ad04bb1663f64c6a447f1551828072da4992a6",
+    "client/src/business/platform/front-router-types/server/services/channelTeamInventory.ts": "65f6dc2e4ebdf529fbccac31181e9648e334b54a109f864d482dcb0ad69aafe8",
+    "client/src/business/platform/front-router-types/server/routers/channelInventory.ts": "77211623b641dfa3e25a7422c3e0394f477bf47555e7819afddd3ea6dc91128d"
+  },
+  "files": [
+    {
+      "processName": "dianzi51-admin",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "relative": "api/admin-index.js",
+      "sha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442",
+      "beforeSha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+      "bytes": 1550039
+    },
+    {
+      "processName": "dianzi51",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "relative": "api/front-index.js",
+      "sha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735",
+      "beforeSha256": "aa3b208401045baac11bc7806e97b1332d63bc5e650c763ebaaa6c49dfeeb0c0",
+      "bytes": 5753239
+    }
+  ],
+  "testsSha256": "a32234073f13db0b83aa5b180398a2f45d5518f8de1526c3883daa35870c2f76",
+  "patchProofs": {
+    "admin": {
+      "sha256": "c20cb228e7892cc1944a0bf798bd6e622df459c44a677d9c5fd29cf2f5d51c8c",
+      "inverse": {
+        "byteExact": true,
+        "sha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+        "unchangedBytes": 1548102,
+        "allOutsideSlotsByteIdentical": true
+      },
+      "unchangedDeclarationCount": 1084
+    },
+    "front": {
+      "sha256": "00241f8bafb43589341cb7dd08a60111f7fd1e09b492d18ba008e217f4efccec",
+      "inverse": {
+        "byteExact": true,
+        "sha256": "aa3b208401045baac11bc7806e97b1332d63bc5e650c763ebaaa6c49dfeeb0c0",
+        "unchangedBytes": 5748527,
+        "allOutsideSlotsByteIdentical": true
+      },
+      "unchangedDeclarationCount": 4067
+    }
+  },
+  "deployed": false
+}

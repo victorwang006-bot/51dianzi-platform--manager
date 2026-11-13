@@ -272,7 +272,7 @@ function input(selector: string, value: string) {
   });
 }
 function selectDemand() {
-  click(button("成交确认 / 生成订单"));
+  click(button("录入销售订单"));
   click(button("选择"));
 }
 function fillOrder() {
@@ -335,10 +335,11 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     render({ canRead: true, contextIdentityKey: null });
     expect(runtime.inputs).toEqual([]);
   });
-  it("is compact without layout/header or independent remembered filters and route intents", () => {
+  it("uses the original nine-column layout with a customer-only header, without independent remembered filters or route intents", () => {
     render();
     expect(container.querySelector("[data-platform-layout]")).toBeNull();
-    expect(container.querySelector("h1")).toBeNull();
+    expect(container.querySelector("h1")?.textContent).toBe("客户订单");
+    expect(container.textContent).toContain("仅显示 客户甲 的内部业务订单");
     const table = container.querySelector(".crm-sales-orders-table")!;
     expect(Array.from(table.querySelectorAll("th"), item => item.textContent?.trim())).toEqual([
       "订单号", "客户 / 需求", "项目", "金额（含税）", "状态", "收款", "出货", "录入时间", "操作",
@@ -349,8 +350,8 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(table.querySelectorAll("tbody tr:first-child td")).toHaveLength(9);
     expect(table.querySelectorAll("tbody tr:first-child td")[1].textContent).toContain("D-21");
     expect(table.querySelectorAll("tbody tr:first-child td")[2].textContent).toBe("项目");
-    expect(button("筛选", container).nextElementSibling).toBe(button("成交确认 / 生成订单", container));
-    expect(container.textContent).not.toContain("录入销售订单");
+    expect(container.querySelector(".aui-filterbar")?.textContent).not.toContain("录入销售订单");
+    expect(container.textContent).not.toContain("成交确认 / 生成订单");
     expect(
       container.querySelector(".crm-sales-orders-embedded")
     ).not.toBeNull();
@@ -367,7 +368,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     render();
     click(button("查看"));
     click(button("关闭"));
-    click(button("成交确认 / 生成订单"));
+    click(button("录入销售订单"));
     for (const item of runtime.inputs) expect(item.input.customerId).toBe(1);
     expect(
       runtime.inputs.some(
@@ -397,7 +398,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
   it("refuses foreign demand candidates and foreign or mismatched-order details before writes", () => {
     runtime.candidates = { items: [demand(2)], total: 1 };
     render();
-    click(button("成交确认 / 生成订单"));
+    click(button("录入销售订单"));
     expect(document.body.textContent).toContain("响应与当前客户或订单不一致");
     expect(
       Array.from(document.querySelectorAll("button")).some(
@@ -666,7 +667,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
     expect(runtime.invalidate).not.toHaveBeenCalled();
-    click(button("成交确认 / 生成订单"));
+    click(button("录入销售订单"));
     click(button("选择"));
     render({ contextIdentityKey: "enterprise:2:actor:9" });
     expect(document.querySelector('[aria-label="LM358 含税单价"]')).toBeNull();

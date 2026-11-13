@@ -292,7 +292,7 @@ type CurrentBusinessAuthorization = {
 async function withCurrentBusinessAuthorization<T>(
   ctx: TrpcContext,
   merchantId: number,
-  capability: { module: BusinessModule; mode: BusinessAccessMode; method?: string },
+  capability: { module: BusinessModule; mode: BusinessAccessMode; method?: string; customerInventory?: boolean },
   operation: (authorization: CurrentBusinessAuthorization) => Promise<T>,
 ) {
   const account = requireBusinessAdminAccount(ctx);
@@ -321,7 +321,7 @@ async function withCurrentBusinessAuthorization<T>(
     return withProfileRead(async channelProfileTeamRead => {
     const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
     const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
-      && (contextProjection || profileRead || nativeReadMethods.includes(capability.method ?? ""));
+      && !capability.customerInventory && (contextProjection || profileRead || nativeReadMethods.includes(capability.method ?? ""));
     const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);
     // This read occurs while the fence is held and supplies the actual scope
     // version persisted in the generic audit record for a forwarded command.
@@ -343,7 +343,7 @@ async function withCurrentBusinessAuthorization<T>(
     // It is deliberately absent from nativeReadMethods: an official inventory
     // read grant never creates a CRM entry point or grants missing local scope.
     // The front repeats real CRM record visibility checks with the bound staff.
-    if (isCustomerSupplyBusinessMethod(capability.method) && !businessScopeAllows(scope, "customers", "read")) {
+    if ((isCustomerSupplyBusinessMethod(capability.method) || capability.customerInventory) && !businessScopeAllows(scope, "customers", "read")) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的客户读取范围授权" });
     }
     // Request-local merchant overlay, never a native user grant. All channel
@@ -396,7 +396,9 @@ async function forwardBusinessMethod(
   // workbench authorization system. The portal rechecks its original staff
   // permissions for the fixed method below on every request.
   const merchantId = businessMerchantIdFromContext(ctx);
-  return withCurrentBusinessAuthorization(ctx, merchantId, capability, async ({ staffBinding, scope, merchant, officialInventoryPermissions }) => {
+  const customerInventory = capability.method === "channelInventory.listTeamMaterials" && params !== null
+    && typeof params === "object" && (params as { customerId?: unknown }).customerId !== undefined;
+  return withCurrentBusinessAuthorization(ctx, merchantId, { ...capability, customerInventory }, async ({ staffBinding, scope, merchant, officialInventoryPermissions }) => {
     const binding = businessEnterpriseBindingFromMerchant(merchant);
     const actor = businessAuditActor(ctx);
     const requestId = randomUUID();
@@ -433,9 +435,24 @@ async function forwardBusinessMethod(
         sellerUserId: staffBinding.frontUserId,
       });
     }
-    if (capability.method === "channelInventory.listTeamMaterials" && result && typeof result === "object") {
+    if (capability.method === "channelInventory.listTeamMaterials" && (customerInventory || result && typeof result === "object")) {
+      if (!result || typeof result !== "object") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "客户库存范围未能确认，请刷新后重试" });
       const page = result as { items?: Record<string, unknown>[] };
       if (!Array.isArray(page.items) || page.items.length > 100) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "库存列表结果无效" });
+      if (customerInventory) {
+        const proof = result as { customerId?: unknown; bindingCount?: unknown; total?: unknown; page?: unknown; pageSize?: unknown; pageCount?: unknown };
+        const requested = params as { customerId: number; page: number; pageSize: number };
+        if (proof.customerId !== requested.customerId
+          || typeof proof.bindingCount !== "number" || !Number.isSafeInteger(proof.bindingCount) || proof.bindingCount < 0
+          || typeof proof.total !== "number" || !Number.isSafeInteger(proof.total) || proof.total < 0
+          || proof.page !== requested.page || proof.pageSize !== requested.pageSize || page.items.length > requested.pageSize
+          || proof.pageCount !== Math.ceil(proof.total / requested.pageSize)
+          || (proof.bindingCount === 0 && (page.items.length !== 0 || proof.total !== 0))
+          || page.items.some(item => item.canViewSource !== true || (item.company != null
+            && (typeof item.company !== "object" || (item.company as { id?: unknown }).id !== proof.customerId)))) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "客户库存范围未能确认，请刷新后重试" });
+        }
+      }
       const names = await officialRecorderNames(page.items.map(item => item.recorderAdminAccountId).filter((id): id is number => typeof id === "number"));
       result = { ...page, items: page.items.map(({ recorderAdminAccountId, originalRecorderName: _untrustedName, ...item }) => ({ ...item,
         originalRecorderName: typeof recorderAdminAccountId === "number" ? names.get(recorderAdminAccountId) ?? null : null })) };

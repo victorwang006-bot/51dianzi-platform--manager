@@ -11,11 +11,12 @@ type ConfirmDialogProps = {
   danger?: boolean;
   error?: string;
   children?: ReactNode;
+  scopeClassName?: "customer-bom-dialog";
 };
 
-export function ConfirmDialog({ title, description, confirmLabel, onConfirm, onCancel, busy = false, danger = false, error, children }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, description, confirmLabel, onConfirm, onCancel, busy = false, danger = false, error, children, scopeClassName }: ConfirmDialogProps) {
   return <Dialog open onOpenChange={open => { if (!open && !busy) onCancel(); }}>
-    <DialogContent className="sm:max-w-md" showCloseButton={false} onInteractOutside={event => { if (busy) event.preventDefault(); }} onEscapeKeyDown={event => { if (busy) event.preventDefault(); }}>
+    <DialogContent className={scopeClassName ? `${scopeClassName} sm:max-w-md` : "sm:max-w-md"} showCloseButton={false} onInteractOutside={event => { if (busy) event.preventDefault(); }} onEscapeKeyDown={event => { if (busy) event.preventDefault(); }}>
       <DialogHeader>
         <DialogTitle className="text-base text-slate-800">{title}</DialogTitle>
         <DialogDescription className="text-sm leading-6">{description}</DialogDescription>

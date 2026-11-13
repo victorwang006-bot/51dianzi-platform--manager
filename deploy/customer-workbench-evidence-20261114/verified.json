@@ -1,0 +1,111 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T17:23:35.623615+00:00",
+  "htmlSha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-customer-workbench-0-32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6.js",
+      "sha256": "32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-customer-workbench-1-74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90.js",
+      "sha256": "74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90"
+    },
+    {
+      "relative": "assets/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css",
+      "sha256": "57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827"
+    }
+  ],
+  "backendFiles": [
+    {
+      "processName": "dianzi51-admin",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "relative": "api/admin-index.js",
+      "sha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442",
+      "beforeSha256": "b1169a0f1c14c54fc3e2903c92d2a09c104708f6db783e3ea5ef9541357e2157",
+      "bytes": 1550039
+    },
+    {
+      "processName": "dianzi51",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "relative": "api/front-index.js",
+      "sha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735",
+      "beforeSha256": "aa3b208401045baac11bc7806e97b1332d63bc5e650c763ebaaa6c49dfeeb0c0",
+      "bytes": 5753239
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-customer-workbench-0-32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6.js",
+      "status": 200,
+      "sha256": "32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-customer-workbench-1-74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90.js",
+      "status": 200,
+      "sha256": "74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css",
+      "status": 200,
+      "sha256": "57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/channel-inventory",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=business",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=mall",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "3e4a9ebe8f675587e326521ed27ff65d05433aa6a9404490839661550f4e09a5"
+    }
+  ],
+  "unrelatedNativeBytesUnchanged": true,
+  "mallOperationsUnchanged": true,
+  "scopeAndArchiveUnchanged": true,
+  "latestGlobalOrdersBytesPreserved": true,
+  "allProtectedFilesUnchanged": true,
+  "independentWorkersUnchanged": true,
+  "apiPathsAndEnvironmentsUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 2,
+  "databaseOperations": 0,
+  "permissionAssignmentsChanged": 0,
+  "rollingReloadInstances": 6,
+  "globalRestart": false,
+  "startupDumpChanged": false,
+  "productionRecordWrites": 0,
+  "loggedInBrowserAcceptancePerformed": false
+}

@@ -40,6 +40,7 @@ const expectedContextSchema = {
 const nullableOptional = <T extends z.ZodType>(schema: T) => schema.nullable().optional();
 const pageSchema = z.number().int().safe().min(1).max(1_000_000).default(1);
 const pageSizeSchema = z.number().int().safe().min(1).max(100).default(20);
+export const teamMaterialsSchema = z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), customerId: positiveInt.optional(), uploadBatchId: positiveInt.optional(), industryCode: z.union([businessIndustryCodeSchema, z.literal("unset")]).optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict();
 const priceSchema = z
   .string()
   .trim()
@@ -284,7 +285,7 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
         } catch (error) { return asTrpcError(error); }
       }),
     listTeamMaterials: readProcedure
-      .input(z.object({ ...expectedContextSchema, channelId: positiveInt.optional(), uploadBatchId: positiveInt.optional(), industryCode: z.union([businessIndustryCodeSchema, z.literal("unset")]).optional(), partNumber: z.string().transform(value => value.normalize("NFKC").trim()).pipe(z.string().max(128)).optional(), brand: z.string().trim().max(64).optional(), page: pageSchema, pageSize: pageSizeSchema, sortBy: z.enum(["qty", "dateCode"]).optional(), sortDirection: z.enum(["asc", "desc"]).optional() }).strict())
+      .input(teamMaterialsSchema)
       .query(async ({ ctx, input }) => {
         try {
           assertExpectedContext(ctx, input);

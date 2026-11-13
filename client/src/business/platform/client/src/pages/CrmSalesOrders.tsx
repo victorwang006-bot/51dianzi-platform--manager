@@ -20,6 +20,7 @@ import PlatformLayout from "../../../../BusinessContentFrame";
 import { trpc } from "../../../../api/business-trpc";
 import {
   AdminPage,
+  AdminPageHeader,
   AdminFilterBar,
   AdminDataPanel,
 } from "@/components/admin/UnifiedAdminPage";
@@ -809,13 +810,21 @@ function SalesOrdersContent({
       <AdminPage
         className={`crm-sales-orders-page min-w-0 space-y-3${embedded ? " crm-sales-orders-embedded" : ""}`}
         aria-label={
-          embedded ? `${embedded.customer.name}订单与出货` : "业务订单"
+          embedded ? `${embedded.customer.name}客户订单` : "业务订单"
         }
       >
+        {embedded ? <AdminPageHeader
+          list
+          title="客户订单"
+          description={`仅显示 ${embedded.customer.name} 的内部业务订单，不含网站自主下单。`}
+          actions={canWrite ? <Button type="button" className={buttonClass} onClick={() => setEntryOpen(true)}>
+            <Plus className="mr-1 h-3.5 w-3.5" />录入销售订单
+          </Button> : undefined}
+        /> : null}
         {embedded && !canWrite ? (
           <p role="status" className="crm-sales-orders-readonly-note">
             {embedded.customer.archivedAt
-              ? "客户已归档，订单与出货仅供查看。"
+              ? "客户已归档，客户订单仅供查看。"
               : "当前为只读模式，不能录入、收款、出货或取消订单。"}
           </p>
         ) : null}
@@ -865,16 +874,6 @@ function SalesOrdersContent({
               >
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 录入销售订单
-              </Button>
-            ) : null}
-            {embedded && canWrite ? (
-              <Button
-                type="button"
-                className={buttonClass}
-                onClick={() => setEntryOpen(true)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                成交确认 / 生成订单
               </Button>
             ) : null}
             {keyword || status !== "all" || draftKeyword ? (
