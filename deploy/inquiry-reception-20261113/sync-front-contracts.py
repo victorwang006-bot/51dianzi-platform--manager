@@ -20,6 +20,22 @@ paths = set(subprocess.check_output(["git", "diff", "--name-only"], cwd=front, t
     + subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], cwd=front, text=True).splitlines())
 # Unchanged real dependencies whose old type snapshots predate the source baseline.
 paths.update([
+    # Keep the saved candidate reproducible after git diff becomes clean.
+    "drizzle/schema.ts",
+    "server/adminDb.ts",
+    "server/routers/chat.ts",
+    "server/routers/channelInventory.ts",
+    "server/routers/factoryChannel.ts",
+    "server/routers/inventory.ts",
+    "server/services/channelFactoryPublication.ts",
+    "server/services/enterpriseBusinessHandoff.ts",
+    "server/services/enterpriseMemberHandoff.ts",
+    "server/services/factoryInquiryBuyerIdentity.ts",
+    "server/services/factoryInventoryReception.ts",
+    "server/services/factoryReceptionConversation.ts",
+    "shared/channelFactoryPublication.ts",
+    "shared/channelInventoryBusinessPolicy.ts",
+    "shared/internalBusinessOfficialInventory.ts",
     "server/services/supplierForumRecommendationModel.ts",
     "server/services/supplierForumRecommendationAllowlist.ts",
     "server/services/supplierForumTodayRecommendation.ts",
