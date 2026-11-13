@@ -1,0 +1,39 @@
+{
+  "beforeSha256": "78b2c915bf0b38b855498428e09dc1b762050ee2bd06b9932224d5796488d0d4",
+  "sha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+  "exactInverse": true,
+  "preservedOldImportsAndScopes": true,
+  "clonedScopes": [
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js",
+      "newScope": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js"
+    },
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js",
+      "newScope": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js"
+    }
+  ],
+  "changes": [
+    {
+      "from": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js",
+      "to": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "hits": 4
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js",
+      "to": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "hits": 6
+    },
+    {
+      "from": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+      "to": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "hits": 2
+    }
+  ],
+  "relocations": {
+    "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+    "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+    "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js"
+  },
+  "onlyNewStylesheet": "/assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css"
+}

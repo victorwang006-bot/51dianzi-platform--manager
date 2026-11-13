@@ -1,0 +1,10 @@
+{
+  "beforeSha256": "d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0",
+  "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5",
+  "patches": 16,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "url": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+  "beforeUrl": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js",
+  "uiSourceSha256": "58b42b1b66386c35dbbb335bac0bad75797afa3e7fe0cc49946b0bdb5f7a5984"
+}

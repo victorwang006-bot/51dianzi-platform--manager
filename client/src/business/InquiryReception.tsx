@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
-import { ArrowLeft, Info, RefreshCw, Search, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Info, RefreshCw, Search, Volume2, VolumeX, X } from "lucide-react";
 import ChatPage from "./platform/client/src/pages/ChatPage";
 import BusinessContentFrame from "./BusinessContentFrame";
 import { BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES } from "./BusinessChatContract";
@@ -9,6 +9,7 @@ import {
   filterReceptionQueue, INQUIRY_RECEPTION_FILTER_LABELS, receptionConversationId, receptionInquiryId, receptionRequestedQuantity,
   type InquiryReceptionFilter, type InquiryReceptionRow,
 } from "./InquiryReceptionModel";
+import { groupReceptionQueue, sortReceptionQueue, type InquiryReceptionQueueMode } from "./InquiryReceptionGrouping";
 import { formatBeijingDateTime } from "./platform/shared/beijingTime";
 import "./InquiryReception.css";
 
@@ -23,15 +24,35 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
   const [text, setText] = useState("");
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [view, setView] = useState<"mine" | "team">("mine");
+  const [queueMode, setQueueMode] = useState<InquiryReceptionQueueMode>("material");
+  const queueId = useId();
   const notice = useInquiryReceptionNotice(data.scope.storageScope, data.conversations, data.canReceive && data.query.isSuccess);
   const conversationById = useMemo(() => new Map(data.conversations.map(item => [item.id, item])), [data.conversations]);
   const allRows = data.inbox.isError ? [] : data.inbox.data ?? [];
   const ownerCanSupervise = data.enterprise.data?.isOwner === true;
   // A server-authorized owner inbox may contain colleagues' assignments. Merely
   // seeing those rows never selects somebody else's conversation or claims their actor.
-  const queue = filterReceptionQueue(allRows.filter(row => view === "team" && ownerCanSupervise || conversationById.has(row.conversationId)), data.conversations, filter, text);
+  const authorizedRows = allRows.filter(row => view === "team" && ownerCanSupervise || conversationById.has(row.conversationId));
+  const queue = sortReceptionQueue(filterReceptionQueue(authorizedRows, data.conversations, filter, text), data.conversations);
+  const groups = groupReceptionQueue(authorizedRows, data.conversations, filter, text);
+  const expansionScope = JSON.stringify([data.scope.storageScope, data.scope.contextVerification.authorizationVersion, view]);
+  const [expansion, setExpansion] = useState<{ scope: string; initialized: boolean; keys: string[] }>(() => ({ scope: expansionScope, initialized: false, keys: [] }));
+  const expandedKeys = expansion.scope === expansionScope ? expansion.keys : [];
+  useEffect(() => {
+    if (expansion.scope !== expansionScope) {
+      // A changed identity/permission/view cannot carry old expansion state.
+      setExpansion({ scope: expansionScope, initialized: true, keys: [] });
+      setSummaryOpen(false);
+    } else if (!expansion.initialized && groups.length) {
+      setExpansion({ scope: expansionScope, initialized: true, keys: [(groups.find(group => group.unreadCount > 0) || groups[0]).key] });
+    }
+  }, [expansionScope, expansion, groups]);
+  const toggleGroup = (key: string) => setExpansion(previous => {
+    const keys = previous.scope === expansionScope ? previous.keys : [];
+    return { scope: expansionScope, initialized: true, keys: keys.includes(key) ? keys.filter(value => value !== key) : [...keys, key] };
+  });
   const selected = allRows.find(row => row.conversationId === selectedId && (!hasInquirySelection || selectedInquiryId !== null && row.id === selectedInquiryId));
-  const canOpenConversation = !!selectedId && conversationById.has(selectedId);
+  const canOpenConversation = view === "mine" && !!selectedId && conversationById.has(selectedId);
   const openConversation = (conversationId: number | null, inquiryId?: number) => {
     const params = new URLSearchParams(search);
     if (conversationId) params.set("conversationId", String(conversationId));
@@ -41,6 +62,17 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
     // Preserve only the existing URL scope, not a grant or fabricated participant.
     navigate(`${location.split("?")[0]}${params.size ? `?${params}` : ""}`);
     setSummaryOpen(false);
+  };
+  const renderCustomer = (row: InquiryReceptionRow) => {
+    const conversation = conversationById.get(row.conversationId);
+    const unread = Math.max(0, Number(conversation?.unreadCount) || 0);
+    const requestedQty = receptionRequestedQuantity(row);
+    return <button key={row.id} type="button" className="inquiry-reception__item" data-inquiry-id={row.id} aria-pressed={selected?.id === row.id} onClick={() => openConversation(row.conversationId, row.id)}>
+      <span className="inquiry-reception__item-top"><strong>{row.buyerCompanyName || row.buyerName || "采购客户"}</strong>{unread > 0 ? <span className="inquiry-reception__unread" aria-label={`${unread} 条询价未读`}>{unread > 99 ? "99+" : unread}</span> : null}</span>
+      <span className="inquiry-reception__part">{row.partNumber}<span>{requestedQty !== null ? ` × ${requestedQty}` : " · 数量待确认"}</span></span>
+      <span className="inquiry-reception__preview">{conversation?.lastMessagePreview || (conversation ? row.brand || "询价" : "监督记录 · 非本人参与会话")}</span>
+      <span className="inquiry-reception__item-bottom"><span data-status={row.status}>{INQUIRY_RECEPTION_FILTER_LABELS[row.status]}</span><time>{formatBeijingDateTime(conversation?.lastMessageAt || row.lastActivityAt || row.createdAt)}</time></span>
+    </button>;
   };
   const loading = data.enterprise.isLoading || data.inbox.isPending || data.query.isLoading;
   const error = data.enterprise.error || data.inbox.error || data.query.error;
@@ -58,17 +90,25 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
       {notice.notice ? <div className="inquiry-reception__notice" role="status" aria-live="polite">{notice.notice}<button type="button" aria-label="关闭新询价提示" onClick={notice.dismiss}><X size={14} /></button></div> : null}
       {!data.enterprise.isLoading && !data.canReceive ? <p className="inquiry-reception__state" role="alert">当前真实员工未获得询价接待权限或接待尚未安全就绪；库存权限不能代替 inquiry.receive。</p> : error ? <p className="inquiry-reception__state" role="alert">询价读取失败：{error.message}<button type="button" onClick={() => void data.refresh()}>重试</button></p> : <div className="inquiry-reception__panels">
         <aside className="inquiry-reception__queue" aria-label="受权询价队列" aria-busy={loading}>
-          {loading && !allRows.length ? <p className="inquiry-reception__state">正在读取询价…</p> : !queue.length ? <p className="inquiry-reception__state">暂无符合条件的询价</p> : queue.map(row => {
-            const conversation = conversationById.get(row.conversationId);
-            const unread = Math.max(0, Number(conversation?.unreadCount) || 0);
-            const requestedQty = receptionRequestedQuantity(row);
-            return <button key={row.id} type="button" className="inquiry-reception__item" data-inquiry-id={row.id} aria-pressed={selected?.id === row.id} onClick={() => openConversation(row.conversationId, row.id)}>
-              <span className="inquiry-reception__item-top"><strong>{row.buyerCompanyName || row.buyerName || "采购客户"}</strong>{unread > 0 ? <span className="inquiry-reception__unread" aria-label={`${unread} 条询价未读`}>{unread > 99 ? "99+" : unread}</span> : null}</span>
-              <span className="inquiry-reception__part">{row.partNumber}<span>{requestedQty !== null ? ` × ${requestedQty}` : " · 数量待确认"}</span></span>
-              <span className="inquiry-reception__preview">{conversation?.lastMessagePreview || (conversation ? row.brand || "询价" : "监督记录 · 非本人参与会话")}</span>
-              <span className="inquiry-reception__item-bottom"><span data-status={row.status}>{INQUIRY_RECEPTION_FILTER_LABELS[row.status]}</span><time>{formatBeijingDateTime(row.lastActivityAt || row.createdAt)}</time></span>
-            </button>;
-          })}
+          <div className="inquiry-reception__queue-modes" role="group" aria-label="队列展示方式">
+            <button type="button" aria-pressed={queueMode === "material"} onClick={() => setQueueMode("material")}>按物料</button>
+            <button type="button" aria-pressed={queueMode === "customer"} onClick={() => setQueueMode("customer")}>按客户</button>
+          </div>
+          <div className="inquiry-reception__queue-list">
+            {loading && !allRows.length ? <p className="inquiry-reception__state">正在读取询价…</p> : !queue.length ? <p className="inquiry-reception__state">暂无符合条件的询价</p> : queueMode === "customer" ? queue.map(renderCustomer) : groups.map(group => {
+              const expanded = expandedKeys.includes(group.key);
+              const contentId = `${queueId}-${encodeURIComponent(group.key)}`;
+              return <div key={group.key} className="inquiry-reception__material-group" data-material-key={group.key}>
+                <button type="button" className="inquiry-reception__group-trigger" aria-expanded={expanded} aria-controls={contentId} onClick={() => toggleGroup(group.key)}>
+                  <span className="inquiry-reception__group-title">{expanded ? <ChevronDown size={15} aria-hidden="true" /> : <ChevronRight size={15} aria-hidden="true" />}<strong>{group.partNumber}</strong>{group.unreadCount > 0 ? <span className="inquiry-reception__unread" aria-label={`${group.unreadCount} 条会话未读（已去重）`}>{group.unreadCount > 99 ? "99+" : group.unreadCount}</span> : null}</span>
+                  <span className="inquiry-reception__group-source">{group.brand} · {group.sourceSummary}</span>
+                  <span className="inquiry-reception__group-stats">{group.customerCount} 客户 / {group.conversationCount} 会话<time>{group.recentAt ? formatBeijingDateTime(group.recentAt) : "—"}</time></span>
+                  <span className="inquiry-reception__preview">{group.lastMessagePreview}</span>
+                </button>
+                <div id={contentId} className="inquiry-reception__group-customers" hidden={!expanded}>{expanded ? group.rows.map(renderCustomer) : null}</div>
+              </div>;
+            })}
+          </div>
         </aside>
         <main className="inquiry-reception__conversation" aria-label="原企业接待会话">
           <div className="inquiry-reception__detail-bar">
@@ -76,11 +116,10 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
             <span>{selected?.partNumber || (selectedId ? "询价会话" : "选择询价")}</span>
             {selected ? <button type="button" className="inquiry-reception__summary-trigger" onClick={() => setSummaryOpen(true)}><Info size={15} />业务摘要</button> : null}
           </div>
-          {canOpenConversation ? <ChatPage businessReception={{ requiredPermission: "inquiry.receive", personalFlowMessages: BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES }} receptionConversation={{ conversationId: selectedId!, onBack: () => openConversation(null), canReply }} /> : <p className="inquiry-reception__state">{selectedId ? "该记录不属于当前员工参与的受权接待会话。监督查看不会成为参与人，也不能回复或自动标为已读。" : "从左侧队列选择询价，查看并回复原企业会话。"}</p>}
+          {canOpenConversation ? <ChatPage businessReception={{ requiredPermission: "inquiry.receive", personalFlowMessages: BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES }} receptionConversation={{ conversationId: selectedId!, onBack: () => openConversation(null), canReply }} /> : <p className="inquiry-reception__state">{view === "team" ? "企业监督仅查看询价摘要。监督查看不会成为参与人，也不能回复或自动标为已读；切换“我的接待”后可进入本人会话。" : selectedId ? "该记录不属于当前员工参与的受权接待会话。监督查看不会成为参与人，也不能回复或自动标为已读。" : "从左侧队列选择询价，查看并回复原企业会话。"}</p>}
         </main>
-        <aside className="inquiry-reception__summary" aria-label="业务摘要"><InquiryReceptionSummary row={selected} /></aside>
       </div>}
-      {summaryOpen && selected ? <SummaryDrawer onClose={() => setSummaryOpen(false)} row={selected} /> : null}
+      {summaryOpen && selected && data.canReceive && !error && expansion.scope === expansionScope ? <SummaryDrawer onClose={() => setSummaryOpen(false)} row={selected} /> : null}
     </section>
   </BusinessContentFrame>;
 }

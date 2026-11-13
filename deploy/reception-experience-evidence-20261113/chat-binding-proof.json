@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "requiredLocalBindings": {
+    "user": [
+      [
+        "a",
+        38375
+      ]
+    ],
+    "receptionMode": [
+      [
+        "f",
+        14868
+      ]
+    ],
+    "activeConvId": [
+      [
+        "w",
+        24444
+      ]
+    ],
+    "activeConv": [
+      [
+        "_",
+        36182
+      ]
+    ],
+    "msgInput": [
+      [
+        "Ct",
+        2607
+      ]
+    ],
+    "setMsgInput": [
+      [
+        "on",
+        2660
+      ]
+    ],
+    "enterpriseQuery": [
+      [
+        "He",
+        2904
+      ]
+    ],
+    "messagesQuery": [
+      [
+        "re",
+        9278
+      ]
+    ],
+    "convListQuery": [
+      [
+        "B",
+        18884
+      ]
+    ]
+  },
+  "newDraftScopeUsesOriginalBusinessScope": true,
+  "wholeChatOrBubbleReplaced": false
+}

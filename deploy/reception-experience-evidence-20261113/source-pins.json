@@ -1,0 +1,38 @@
+[
+  {
+    "relative": "client/src/business/InquiryReception.tsx",
+    "sha256": "58b42b1b66386c35dbbb335bac0bad75797afa3e7fe0cc49946b0bdb5f7a5984"
+  },
+  {
+    "relative": "client/src/business/InquiryReceptionGrouping.ts",
+    "sha256": "64ecf3662d5b23bfe16a7038f94faff0abde010098c85d2dfb40e4017a0488ff"
+  },
+  {
+    "relative": "client/src/business/InquiryReceptionModel.ts",
+    "sha256": "b0f53169c63bc50146604b601c5627b0308048af9b4441e1803c27ae1f9e1a8c"
+  },
+  {
+    "relative": "client/src/business/InquiryReception.css",
+    "sha256": "c5abc8be2090429eae11494913b2bc61bb0556afb731cf12437d51f51df39e42"
+  },
+  {
+    "relative": "client/src/business/platform/client/src/pages/ChatPage.tsx",
+    "sha256": "6ab3ec6c3739c48e6c3b7eb1b54ff757addab9c4ee7cef5497c49929fbd477f4"
+  },
+  {
+    "relative": "client/src/business/platform/client/src/components/chat/useConversationDraft.ts",
+    "sha256": "f422e97b205759cae1b0cb83308362c0cc156997cde23acf9e4a0112f23aa1bc"
+  },
+  {
+    "relative": "client/src/business/platform/client/src/components/chat/QuickPhrases.tsx",
+    "sha256": "f61a785d1d9ce132cec0a8f250d61c4821a395375ae2dae56cff67d84c79624c"
+  },
+  {
+    "relative": "client/src/business/platform/client/src/components/chat/ChatStickerImage.tsx",
+    "sha256": "7f0a3c3cecb55bf89f88793a866d4ab7a97e1083e5efecb4e2e49c749123c282"
+  },
+  {
+    "relative": "client/src/components/admin/adminListLocationLayout.ts",
+    "sha256": "bbcf068f8f1218e15edd2a4d2e1cf8fc3b6e29f61c36e9dbf7ab18922f9e8e2a"
+  }
+]

@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "inputs": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "sha256": "615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502"
+    },
+    {
+      "relative": "assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "sha256": "a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c"
+    }
+  ],
+  "results": [
+    {
+      "name": "actual UI defaults material groups, exact inventory separation and dedup unread",
+      "status": "PASS"
+    },
+    {
+      "name": "group expand/collapse has no navigation and no read or send transport",
+      "status": "PASS"
+    },
+    {
+      "name": "customer click preserves inquiry, merchant scope and original canReply contract",
+      "status": "PASS"
+    },
+    {
+      "name": "business summary hidden by default and accessible native drawer on demand",
+      "status": "PASS"
+    },
+    {
+      "name": "material/customer toggle and client search retain only matches",
+      "status": "PASS"
+    },
+    {
+      "name": "authorization version change removes expansion and summary state immediately",
+      "status": "PASS"
+    },
+    {
+      "name": "supervision own selected conversation also unmounts chat and never reads",
+      "status": "PASS"
+    },
+    {
+      "name": "supervision cannot become participant or mount chat",
+      "status": "PASS"
+    },
+    {
+      "name": "permission/error states remove queue and stale identity content",
+      "status": "PASS"
+    },
+    {
+      "name": "actual helper hides only reception roots and preserves original other routes",
+      "status": "PASS"
+    }
+  ],
+  "actualCandidatePatchBytesExecuted": true,
+  "diBoundary": "existing authorized data/notice hooks and ChatPage transport are mocked; original owners remain byte-identical and source integration tests cover them separately",
+  "databaseOperations": 0,
+  "realMessagesSent": 0
+}

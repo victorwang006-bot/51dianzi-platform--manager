@@ -1,0 +1,42 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+ RUN  v2.1.9 /home/ubuntu/work/51dianzi-platform--manager
+
+ ✓ client/src/components/DashboardLayout.navigation.test.ts (39 tests) 515ms
+stderr | client/src/components/DashboardLayout.navigation.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+ ✓ client/src/components/admin/adminWorkspaceNavigation.render.test.ts (31 tests) 494ms
+ ✓ client/src/business/InquiryReception.render.test.ts (12 tests) 1951ms
+   ✓ 真实接待双栏与原conversation渲染DI > 选择同会话中的具体另一条询价，摘要按inquiryId而不是该会话第一条 324ms
+ ✓ client/src/business/BusinessReceptionNavigationBadge.network.test.ts (15 tests) 7554ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.unified-dropdown.test.ts (28 tests) 575ms
+ ✓ client/src/business/platform/client/src/components/chat/ChatPageDrafts.test.ts (13 tests) 901ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.location.test.ts (54 tests) 207ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.location-layout.source.test.ts (13 tests) 115ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.primary-entries.test.ts (32 tests) 453ms
+ ✓ client/src/pages/Messages.refresh.test.ts (7 tests) 634ms
+ ✓ client/src/business/platform/client/src/components/chat/ConversationDraft.test.ts (13 tests) 185ms
+ ✓ client/src/components/DashboardLayout.messages.test.ts (3 tests) 220ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.business-dropdown.test.ts (9 tests) 154ms
+ ✓ client/src/business/BusinessReceptionStorageScope.test.ts (4 tests) 56ms
+ ✓ client/src/business/BusinessReceptionSharedCache.test.ts (3 tests) 12ms
+ ✓ client/src/components/admin/adminWorkspaceNavigationModel.test.ts (52 tests) 32ms
+ ✓ client/src/business/BusinessReceptionChatPage.render.test.ts (2 tests) 1374ms
+   ✓ Business reception ChatPage rendered behavior > renders and operates ordinary reception controls while personal service/private/buyer/forum/invitation flows do not request BFF procedures 1323ms
+ ✓ client/src/business/InquiryReceptionModel.test.ts (17 tests) 28ms
+ ✓ client/src/components/admin/adminListLocationLayout.test.ts (46 tests) 15ms
+ ✓ client/src/lib/adminMessageRefresh.test.ts (8 tests) 11ms
+ ✓ client/src/business/BusinessReceptionChatPage.contract.test.ts (2 tests) 4ms
+ ✓ client/src/business/InquiryReceptionSnapshot.test.ts (2 tests) 4ms
+
+ Test Files  22 passed (22)
+      Tests  405 passed (405)
+   Start at  09:34:13
+   Duration  35.36s (transform 4.97s, setup 0ms, collect 5.70s, tests 15.49s, environment 7.31s, prepare 1.67s)

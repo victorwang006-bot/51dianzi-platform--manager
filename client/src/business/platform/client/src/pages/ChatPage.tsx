@@ -10,6 +10,10 @@ import { createClientMessageId } from "../lib/clientMessageId";
 import { createEnterpriseScopedTrpcClient } from "../lib/enterpriseTrpcClient";
 import { clearSessionQueryCache, installAuthSessionClearListener } from "../lib/authSessionEvents";
 import { INQUIRY_RECEPTION_CONVERSATION_OPTIONS } from "../../../../InquiryReceptionModel";
+import { useBusinessScope } from "../../../../BusinessScope";
+import QuickPhrases from "../components/chat/QuickPhrases";
+import ChatStickerImage from "../components/chat/ChatStickerImage";
+import { appendConversationDraft, useConversationDraft } from "../components/chat/useConversationDraft";
 import {
   isOperatingEnterprise,
   useEnterpriseSession,
@@ -402,6 +406,7 @@ type ChatPageContentProps = ChatPageProps & {
 
 function ChatPageContent({ businessReception, receptionConversation, user, loading, enterpriseScopeId }: ChatPageContentProps) {
   const { logout } = useAuth();
+  const businessScope = useBusinessScope();
   /*
    * 新标签页必须重新确认Cookie登录态。认证查询与受保护查询使用同一个
    * httpBatchLink；在认证仍加载时就挂载会话/分组查询，可以让服务端在
@@ -466,13 +471,11 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
   const inquiryKey = inquiryIntent ? buildInquiryKey(inquiryIntent) : null;
 
   // State
-  const [activeConvId, setActiveConvId] = useState<number | null>(receptionConversation?.conversationId ?? null);
-  useEffect(() => {
-    if (receptionConversation) setActiveConvId(receptionConversation.conversationId);
-  }, [receptionConversation?.conversationId]);
+  const [selectedConvId, setActiveConvId] = useState<number | null>(receptionConversation?.conversationId ?? null);
+  // Embedded selection is authoritative in this render, not in a later effect.
+  const activeConvId = receptionConversation?.conversationId ?? selectedConvId;
   const [filter, setFilter] = useState<"all" | "unread" | "pinned">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [msgInput, setMsgInput] = useState("");
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [messageMenu, setMessageMenu] = useState<{
     message: Message;
@@ -482,6 +485,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [stickerPack, setStickerPack] = useState<"noto" | "emoji" | "yayatuan" | "business">("noto");
   const [recentStickerIds, setRecentStickerIds] = useState<ChatStickerId[]>([]);
+  const [quickPhrasesOpen, setQuickPhrasesOpen] = useState(false);
   const recentStickers = useMemo(
     () => recentStickerIds.flatMap(id => {
       const sticker = getChatSticker(id);
@@ -578,6 +582,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
     reviewImageBatchRef.current += 1;
     reviewRequestIdRef.current = "";
     setStickerPickerOpen(false);
+    setQuickPhrasesOpen(false);
     setStickerPack("emoji");
     setAttachmentMenuOpen(false);
     setReplyingTo(null);
@@ -879,6 +884,32 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
       && (contactBlockState.blockedByMe || contactBlockState.blockedByContact),
   );
   const reviewState = reviewStateQuery.data;
+  // Only server-proven identity/grants namespace drafts. URL customer/source ids
+  // and the public browser storage are never draft identities or authorization.
+  const receptionDraftAllowed = !receptionMode || (
+    businessScope.sessionCapabilities.receptionReady === true
+    && !enterpriseQuery.isError
+    && Boolean(enterpriseQuery.data?.isOwner || enterprisePermissions.has("inquiry.receive"))
+    && receptionConversation?.canReply !== false
+  );
+  const messageAccessDenied = messagesQuery.isError
+    && (messagesQuery.error?.data?.code === "UNAUTHORIZED" || messagesQuery.error?.data?.code === "FORBIDDEN");
+  const draftScopeKey = !loading && user && user.id === businessScope.frontUser.id
+    && receptionDraftAllowed && !messageAccessDenied
+    ? `${user.id}:${enterpriseScopeId ?? businessScope.staffPrincipal.enterpriseId}:${businessScope.storageScope}:${businessScope.contextVerification.authorizationVersion}`
+    : null;
+  const authorizedDraftConversationIds = useMemo(() => receptionMode
+    ? !convListQuery.isError && convListQuery.data ? convListQuery.data.map(item => item.id) : []
+    : undefined, [receptionMode, convListQuery.isError, convListQuery.data]);
+  const { msgInput, setMsgInput, setConversationDraft } = useConversationDraft(
+    activeConvId, draftScopeKey, authorizedDraftConversationIds,
+  );
+  useLayoutEffect(() => {
+    setReplyingTo(null);
+    setQuickPhrasesOpen(false);
+    setStickerPickerOpen(false);
+    setAttachmentMenuOpen(false);
+  }, [draftScopeKey]);
 
   const openActiveContactProfile = useCallback(() => {
     if (!activeConv || isServiceConv) return;
@@ -1374,7 +1405,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
           const data = await getOrCreateConv.mutateAsync({ otherUserId: targetUserId });
           if (!scopeMountedRef.current || generation !== scopeGenerationRef.current || currentUserIdRef.current !== user.id) return;
           setActiveConvId(data.conversationId);
-          if (quoteChatDraft) setMsgInput(current => current.trim() ? current : quoteChatDraft);
+          if (quoteChatDraft) setConversationDraft(data.conversationId, current => current.trim() ? current : quoteChatDraft);
           void utils.chat.listConversations.invalidate();
         } catch (error) {
           console.error("[ChatPage] 会话初始化失败", error);
@@ -1607,7 +1638,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
   // ─── 发送消息 ───
   const handleSend = useCallback(() => {
     const content = msgInput.trim();
-    if (!content || !activeConvId) return;
+    if (!content || !activeConvId || !user || activeConversationBlocked || !draftScopeKey) return;
     const replyTo = messageReplyDescriptor(replyingTo);
     setMsgInput("");
     setReplyingTo(null);
@@ -1619,7 +1650,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
       replyToMessageId: replyTo?.id,
       replyTo,
     });
-  }, [msgInput, activeConvId, replyingTo, submitMessage]);
+  }, [msgInput, activeConvId, replyingTo, submitMessage, setMsgInput, user, activeConversationBlocked, draftScopeKey]);
 
   const handleSendSticker = useCallback((stickerId: ChatStickerId) => {
     if (!activeConvId) return;
@@ -1637,7 +1668,22 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
     });
   }, [activeConvId, replyingTo, submitMessage]);
 
+  const handleQuickPhrasesOpenChange = useCallback((open: boolean) => {
+    setQuickPhrasesOpen(open);
+    if (open) {
+      setStickerPickerOpen(false);
+      setAttachmentMenuOpen(false);
+    }
+  }, []);
+
+  const handleQuickPhraseSelect = useCallback((text: string) => {
+    if (!user || !activeConv || !activeConvId || activeConversationBlocked || !draftScopeKey) return;
+    setMsgInput(current => appendConversationDraft(current, text));
+    requestAnimationFrame(() => msgInputRef.current?.focus());
+  }, [user, activeConv, activeConvId, activeConversationBlocked, draftScopeKey, setMsgInput]);
+
   const closeComposerPanels = useCallback(() => {
+    setQuickPhrasesOpen(false);
     setStickerPickerOpen(false);
     setAttachmentMenuOpen(false);
   }, []);
@@ -2786,6 +2832,12 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
                   </div>
                 ) : null}
                 <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-50">
+                  {receptionMode ? <QuickPhrases
+                    open={quickPhrasesOpen}
+                    onOpenChange={handleQuickPhrasesOpenChange}
+                    disabled={!user || !activeConv || activeConversationBlocked || !draftScopeKey}
+                    onSelect={handleQuickPhraseSelect}
+                  /> : null}
                   <button
                     type="button"
                     aria-label="打开51表情包"
@@ -2793,6 +2845,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
                     title={activeConv.isService ? "客服会话暂不支持表情" : "51表情包"}
                     disabled={activeConv.isService || activeConversationBlocked}
                     onClick={() => {
+                      setQuickPhrasesOpen(false);
                       setAttachmentMenuOpen(false);
                       if (!stickerPickerOpen) setStickerPack("noto");
                       setStickerPickerOpen((open) => !open);
@@ -2988,6 +3041,7 @@ function ChatPageContent({ businessReception, receptionConversation, user, loadi
                     title="发送图片或文件"
                     disabled={attachmentBusy || activeConversationBlocked}
                     onClick={() => {
+                      setQuickPhrasesOpen(false);
                       setStickerPickerOpen(false);
                       setAttachmentMenuOpen((open) => !open);
                     }}
@@ -4383,7 +4437,8 @@ function MessageBubble({
           className={`flex min-w-0 max-w-[calc(100%_-_2.75rem)] flex-col ${isMe ? "items-end" : "items-start"}`}
         >
           {sticker ? (
-            <img
+            <ChatStickerImage
+              key={sticker.imageUrl}
               src={sticker.imageUrl}
               alt={sticker.label}
               loading="lazy"

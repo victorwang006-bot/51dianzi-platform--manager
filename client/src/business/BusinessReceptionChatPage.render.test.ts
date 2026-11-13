@@ -193,20 +193,25 @@ async function mountPage(): Promise<MountedPage> {
     window: dom.window,
     document: dom.window.document,
     HTMLElement: dom.window.HTMLElement,
+    Element: dom.window.Element,
     HTMLTextAreaElement: dom.window.HTMLTextAreaElement,
     Event: dom.window.Event,
     MouseEvent: dom.window.MouseEvent,
     Node: dom.window.Node,
     localStorage: dom.window.localStorage,
+    sessionStorage: dom.window.sessionStorage,
+    history: dom.window.history,
+    location: dom.window.location,
     requestAnimationFrame: (callback: FrameRequestCallback) => setTimeout(() => callback(Date.now()), 0),
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
   });
   (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const [reactModule, { createRoot }, pageModule, { EnterpriseSessionProvider }] = await Promise.all([
+  const [reactModule, { createRoot }, pageModule, { EnterpriseSessionProvider }, { BusinessScopeProvider }] = await Promise.all([
     import("react"),
     import("react-dom/client"),
     import("./platform/client/src/pages/ChatPage"),
     import("./platform/client/src/contexts/EnterpriseSessionContext"),
+    import("./BusinessScope"),
   ]);
   (globalThis as typeof globalThis & { React?: unknown }).React = reactModule;
   const container = dom.window.document.getElementById("root");
@@ -223,7 +228,18 @@ async function mountPage(): Promise<MountedPage> {
         });
         // Reception remains on the real BFF surface. Only the ordinary personal
         // fixture needs the App-owned enterprise session context.
-        root.render(businessReception ? page : createElement(EnterpriseSessionProvider, null, page));
+        root.render(createElement(BusinessScopeProvider, {
+          merchantId: 30061,
+          staffPrincipal: {
+            status: "ready", frontendUserId: 8420103, adminAccountId: 8420102,
+            enterpriseId: 8421001, bindingVersion: 1,
+            user: { id: 8420103, name: "接待真实员工", crmAccess: true },
+          } as import("./BusinessScope").ReadyBusinessStaffPrincipal,
+          sessionCapabilities: { receptionReady: true },
+          contextVerificationState: "verified",
+          authorizationVersion: "chat-render-verified-reception-v1",
+          children: businessReception ? page : createElement(EnterpriseSessionProvider, null, page),
+        }));
       });
     },
     async unmount() {

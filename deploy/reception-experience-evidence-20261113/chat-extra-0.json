@@ -1,0 +1,107 @@
+[
+  {
+    "start": 0,
+    "end": 0,
+    "before": "",
+    "after": "\nlet __d51_rx_chat_helpers_instance;function __d51_rx_chat_helpers_get(){if(!__d51_rx_chat_helpers_instance){const __rxLive={React:c,jsx:e};var __RX_CHAT_HELPERS=(()=>{var v=Object.defineProperty;var j=Object.getOwnPropertyDescriptor;var H=Object.getOwnPropertyNames;var M=Object.prototype.hasOwnProperty;var T=(e,t)=>{for(var o in t)v(e,o,{get:t[o],enumerable:!0})},_=(e,t,o,a)=>{if(t&&typeof t==\"object\"||typeof t==\"function\")for(let r of H(t))!M.call(e,r)&&r!==o&&v(e,r,{get:()=>t[r],enumerable:!(a=j(t,r))||a.enumerable});return e};var F=e=>_(v({},\"__esModule\",{value:!0}),e);var z={};T(z,{ChatStickerImage:()=>R,QuickPhrases:()=>D,appendConversationDraft:()=>P,useConversationDraft:()=>C});var N=__rxLive.React;var{useState:g,useEffect:m,useLayoutEffect:A,useRef:S,useCallback:y}=N;function P(e,t){return e?`${e}\n${t}`:t}function C(e,t,o){let a=S({scopeKey:t,generation:0,authorizedConversationIds:o});a.current.scopeKey!==t?a.current={scopeKey:t,generation:a.current.generation+1,authorizedConversationIds:o}:a.current.authorizedConversationIds=o;let r=a.current.generation,d=S(!1),[f,u]=g(()=>({scopeKey:t,generation:r,drafts:{}})),p=n=>Number.isSafeInteger(n)&&n>0&&(o===void 0||o.includes(n));A(()=>(d.current=!0,()=>{d.current=!1}),[]),A(()=>{u(n=>{if(!t||n.scopeKey!==t||n.generation!==r)return n.scopeKey===t&&n.generation===r&&Object.keys(n.drafts).length===0?n:{scopeKey:t,generation:r,drafts:{}};if(o===void 0)return n;let l=Object.fromEntries(Object.entries(n.drafts).filter(([c])=>o.includes(Number(c))));return Object.keys(l).length===Object.keys(n.drafts).length?n:{...n,drafts:l}})},[t,r,o]);let i=y(()=>{a.current.generation+=1,u({scopeKey:a.current.scopeKey,generation:a.current.generation,drafts:{}})},[]);m(()=>{let n=l=>{l.key===\"51dianzi:auth-session-cleared:v1\"&&l.newValue&&i()};return window.addEventListener(\"51dianzi:auth-session-cleared\",i),window.addEventListener(\"storage\",n),()=>{window.removeEventListener(\"51dianzi:auth-session-cleared\",i),window.removeEventListener(\"storage\",n)}},[i]);let s=y((n,l)=>{u(c=>{let k=a.current;if(!d.current||!t||k.scopeKey!==t||k.generation!==r||!Number.isSafeInteger(n)||n<=0||k.authorizedConversationIds!==void 0&&!k.authorizedConversationIds.includes(n))return c;let E=c.scopeKey===t&&c.generation===r?c:{scopeKey:t,generation:r,drafts:{}},O=E.drafts[n]??\"\",w=typeof l==\"function\"?l(O):l;if(w===O&&E===c)return c;let L={...E.drafts};return w?L[n]=w:delete L[n],{...E,drafts:L}})},[t,r]),x=y(n=>{e!==null&&s(e,n)},[e,s]);return{msgInput:t&&f.scopeKey===t&&f.generation===r&&e!==null&&p(e)?f.drafts[e]??\"\":\"\",setMsgInput:x,setConversationDraft:s,clearDrafts:i}}var{jsx:b,jsxs:h,Fragment:W}=__rxLive.jsx;var Q=[\"\\u4F60\\u597D\\uFF0C\\u8FD9\\u9897\\u6709\\u8D27\\u5417\\uFF1F\",\"\\u4F60\\u597D\\uFF0C\\u8FD9\\u4E2A\\u6599\\u8BE2\\u4EF7\",\"\\u4EA4\\u671F\\u591A\\u4E45\\uFF1F\",\"\\u5E74\\u4EFD\\u662F\\u4EC0\\u4E48\\uFF1F\",\"\\u6570\\u91CF\\u8D2D\\u5417\\uFF1F\",\"\\u4F60\\u597D\\u9700\\u8981\\u591A\\u5C11\\uFF1F\"];function D({disabled:e=!1,onSelect:t,open:o,onOpenChange:a}){let[r,d]=g(!1),[f]=g(()=>`chat-quick-phrases-${Math.random().toString(36).slice(2)}`),u=S(null),p=!e&&(o??r),i=s=>{s&&e||(d(s),a?.(s))};return m(()=>{e&&i(!1)},[e]),m(()=>{if(!p)return;let s=n=>{u.current?.contains(n.target)||i(!1)},x=n=>{n.key===\"Escape\"&&i(!1)};return document.addEventListener(\"pointerdown\",s),document.addEventListener(\"keydown\",x),()=>{document.removeEventListener(\"pointerdown\",s),document.removeEventListener(\"keydown\",x)}},[p,e,a]),h(\"div\",{ref:u,style:{position:\"relative\",flexShrink:0},children:[b(\"button\",{type:\"button\",disabled:e,\"aria-haspopup\":\"menu\",\"aria-expanded\":p,\"aria-controls\":f,onClick:()=>i(!p),style:{height:28,padding:\"0 8px\",border:\"1px solid #cfe0f1\",borderRadius:6,background:\"#fff\",color:\"#185FA5\",fontSize:11,fontWeight:500,cursor:e?\"not-allowed\":\"pointer\",opacity:e?.4:1},children:\"\\u5E38\\u7528\\u8BED\"}),p?b(\"div\",{id:f,role:\"menu\",\"aria-label\":\"\\u5E38\\u7528\\u8BED\",style:{position:\"absolute\",bottom:\"calc(100% + 8px)\",left:0,zIndex:50,width:\"min(300px, calc(100vw - 56px))\",padding:8,display:\"grid\",gap:6,gridTemplateColumns:\"repeat(2, minmax(0, 1fr))\",border:\"1px solid #cfe0f1\",borderRadius:10,background:\"#fff\",boxShadow:\"0 8px 24px rgba(0,0,0,.12)\"},children:Q.map(s=>b(\"button\",{type:\"button\",role:\"menuitem\",disabled:e,onClick:()=>{e||(i(!1),t(s))},style:{border:0,borderRadius:6,padding:\"9px 6px\",background:\"#f3f7fb\",color:\"#185FA5\",fontSize:11,textAlign:\"left\",cursor:\"pointer\"},children:s},s))}):null]})}function R({src:e,alt:t,className:o,style:a,...r}){let[d,f]=g(null);m(()=>{f(null)},[e]);let u=t?.trim()||\"\\u8868\\u60C5\";return e&&d===e?h(\"span\",{role:\"img\",\"aria-label\":`${u}\\uFF1A\\u8868\\u60C5\\u6682\\u4E0D\\u53EF\\u7528`,className:o,style:{...a,display:\"flex\",alignItems:\"center\",justifyContent:\"center\",minHeight:64,padding:8,boxSizing:\"border-box\",border:\"1px solid #e5e7eb\",borderRadius:8,background:\"#fff\",color:\"#6b7280\",fontSize:12,textAlign:\"center\"},children:[u,\" \\xB7 \\u8868\\u60C5\\u6682\\u4E0D\\u53EF\\u7528\"]}):b(\"img\",{...r,src:e,alt:t,className:o,style:a,onError:()=>{e&&f(e)}})}return F(z);})();\n\n__d51_rx_chat_helpers_instance=__RX_CHAT_HELPERS;}return __d51_rx_chat_helpers_instance;}\n",
+    "reason": "additive-chat-helpers-original-React-no-new-context"
+  },
+  {
+    "start": 8978,
+    "end": 8978,
+    "before": "",
+    "after": "const __rx_businessScope = Os(), [__rx_quickPhrasesOpen, __rx_setQuickPhrasesOpen] = y(!1);\n",
+    "reason": "real-business-scope-and-quick-menu-state"
+  },
+  {
+    "start": 9832,
+    "end": 9865,
+    "before": "[w,ce]=y(r?.conversationId??null)",
+    "after": "[__rx_selectedConvId, ce] = y(r?.conversationId ?? null),w = r?.conversationId ?? __rx_selectedConvId",
+    "reason": "synchronous-embedded-selection-no-old-customer-render"
+  },
+  {
+    "start": 9866,
+    "end": 9919,
+    "before": "Q(()=>{r&&ce(r.conversationId)},[r?.conversationId]);",
+    "after": "",
+    "reason": "remove-late-selection-sync-effect"
+  },
+  {
+    "start": 9953,
+    "end": 9967,
+    "before": "[Ct,on]=y(\"\"),",
+    "after": "",
+    "reason": "remove-shared-single-input-state"
+  },
+  {
+    "start": 10942,
+    "end": 10942,
+    "before": "",
+    "after": "__rx_setQuickPhrasesOpen(false);",
+    "reason": "close-quick-menu-on-original-conversation-reset"
+  },
+  {
+    "start": 16007,
+    "end": 16008,
+    "before": ",",
+    "after": ";\nconst __rx_receptionDraftAllowed = !f || __rx_businessScope.sessionCapabilities.receptionReady === !0 && !He.isError && !!(He.data?.isOwner || fe.has(\"inquiry.receive\")) && r?.canReply !== !1, __rx_messageAccessDenied = re.isError && (re.error?.data?.code === \"UNAUTHORIZED\" || re.error?.data?.code === \"FORBIDDEN\"), __rx_draftScopeKey = !p && a && a.id === __rx_businessScope.frontUser.id && __rx_receptionDraftAllowed && !__rx_messageAccessDenied ? `${a.id}:${d ?? __rx_businessScope.staffPrincipal.enterpriseId}:${__rx_businessScope.storageScope}:${__rx_businessScope.contextVerification.authorizationVersion}` : null, __rx_authorizedDraftConversationIds = ee(() => f ? !B.isError && B.data ? B.data.map((item) => item.id) : [] : void 0, [f, B.isError, B.data]), { msgInput: Ct, setMsgInput: on, setConversationDraft: __rx_setConversationDraft } = __d51_rx_chat_helpers_get().useConversationDraft(w, __rx_draftScopeKey, __rx_authorizedDraftConversationIds);\nIa(() => {\n    ue(null), __rx_setQuickPhrasesOpen(!1), ke(!1), Ae(!1);\n}, [__rx_draftScopeKey]);\n\nlet ",
+    "reason": "scoped-draft-permission-and-authorized-conversation-snapshot"
+  },
+  {
+    "start": 23520,
+    "end": 23539,
+    "before": "on(c=>c.trim()?c:j)",
+    "after": "__rx_setConversationDraft(i.conversationId,c=>c.trim()?c:j)",
+    "reason": "quote-initialization-targets-specific-conversation"
+  },
+  {
+    "start": 27154,
+    "end": 27343,
+    "before": "G(()=>{let e=Ct.trim();if(!e||!w)return;let n=Qt($);on(\"\"),ue(null),oe({conversationId:w,clientMessageId:ze(\"chat\"),msgType:\"text\",content:e,replyToMessageId:n?.id,replyTo:n})},[Ct,w,$,oe])",
+    "after": "G(() => {\n    const content = Ct.trim();\n    if (!content || !w || !a ||\n        pe || !__rx_draftScopeKey)\n        return;\n    const replyTo = Qt($);\n    on(\"\"), ue(null), oe({\n        conversationId: w,\n        clientMessageId: ze(\"chat\"),\n        msgType: \"text\",\n        content,\n        replyToMessageId: replyTo?.id,\n        replyTo\n    });\n}, [Ct, w, $, oe, on, a, pe, __rx_draftScopeKey])",
+    "reason": "send-only-current-authorized-scoped-draft"
+  },
+  {
+    "start": 27529,
+    "end": 27529,
+    "before": "",
+    "after": "__rx_handleQuickPhrasesOpenChange = G((open) => {\n    __rx_setQuickPhrasesOpen(open), open && (ke(!1), Ae(!1));\n}, []),__rx_handleQuickPhraseSelect = G((text) => {\n    !a || !_ || !w ||\n        pe || !__rx_draftScopeKey || (on((current) => __d51_rx_chat_helpers_get().appendConversationDraft(current, text)), requestAnimationFrame(() => Dr.current?.focus()));\n}, [a, _, w, pe, __rx_draftScopeKey, on]),",
+    "reason": "quick-phrase-callbacks-no-send"
+  },
+  {
+    "start": 27539,
+    "end": 27539,
+    "before": "",
+    "after": "__rx_setQuickPhrasesOpen(false);",
+    "reason": "close-quick-menu-with-composer-panels"
+  },
+  {
+    "start": 53161,
+    "end": 53161,
+    "before": "",
+    "after": "f ? /* @__PURE__ */ __live.jsx.jsx(__d51_rx_chat_helpers_get /* @__PURE__ */( /* @__PURE__ */).QuickPhrases, {\n    open: __rx_quickPhrasesOpen,\n    onOpenChange: __rx_handleQuickPhrasesOpenChange,\n    disabled: !a || !_ ||\n        pe || !__rx_draftScopeKey,\n    onSelect: __rx_handleQuickPhraseSelect\n}) : null,",
+    "reason": "reception-only-quick-phrases-toolbar"
+  },
+  {
+    "start": 53396,
+    "end": 53396,
+    "before": "",
+    "after": "__rx_setQuickPhrasesOpen(false);",
+    "reason": "close-quick-menu-before-打开51表情包"
+  },
+  {
+    "start": 59057,
+    "end": 59057,
+    "before": "",
+    "after": "__rx_setQuickPhrasesOpen(false);",
+    "reason": "close-quick-menu-before-发送图片或文件"
+  },
+  {
+    "start": 804597,
+    "end": 804989,
+    "before": "e.jsx(\"img\",{\"data-loc\":\"client/src/business/platform/client/src/pages/ChatPage.tsx:4377\",src:h.imageUrl,alt:h.label,loading:\"lazy\",className:s.content.startsWith(\"noto-\")||s.content.startsWith(\"emoji-\")?\"h-24 w-24 object-contain\":s.content.startsWith(\"yayatuan-\")?\"h-auto w-[120px] object-contain sm:w-[136px]\":\"h-auto w-[144px] rounded-xl object-cover shadow-sm sm:w-[176px]\",draggable:!1})",
+    "after": "e.jsx(__d51_rx_chat_helpers_get().ChatStickerImage,{\"data-loc\":\"client/src/business/platform/client/src/pages/ChatPage.tsx:4377\",src:h.imageUrl,alt:h.label,loading:\"lazy\",className:s.content.startsWith(\"noto-\")||s.content.startsWith(\"emoji-\")?\"h-24 w-24 object-contain\":s.content.startsWith(\"yayatuan-\")?\"h-auto w-[120px] object-contain sm:w-[136px]\":\"h-auto w-[144px] rounded-xl object-cover shadow-sm sm:w-[176px]\",draggable:!1},h.imageUrl)",
+    "reason": "known-sticker-image-fallback-only-original-bubble-preserved"
+  }
+]

@@ -11,6 +11,7 @@ export function getAdminListLocationLayout(
   const pathname = location.split(/[?#]/, 1)[0]?.replace(/\/+$/, "") || "/";
   if (!labels.length) return undefined;
   if (pathname === "/workbench/customers") return "root-hidden";
+  if (pathname === "/workbench/inquiries" || pathname === "/workbench/chat") return "root-hidden";
   if ((pathname === "/workbench" || pathname === CHANNEL_INVENTORY_ROUTE) && labels.length === 1) {
     return "root-hidden";
   }

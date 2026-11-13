@@ -1,6 +1,11 @@
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "./platform/front-router-types/server/routers";
 
+// Keep the new runtime in a dedicated helper so a production reception capsule
+// can bundle it without replacing the existing shared polling/selection model.
+export { groupReceptionQueue, receptionMaterialKey, receptionSourceSummary, sortReceptionQueue } from "./InquiryReceptionGrouping";
+export type { InquiryReceptionMaterialGroup, InquiryReceptionQueueMode } from "./InquiryReceptionGrouping";
+
 export const INQUIRY_RECEPTION_REFRESH_MS = 15_000;
 export const INQUIRY_RECEPTION_CONVERSATION_OPTIONS = {
   staleTime: 0,

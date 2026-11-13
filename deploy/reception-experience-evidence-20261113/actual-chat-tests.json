@@ -1,0 +1,965 @@
+{
+  "status": "PASS",
+  "inputs": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5",
+      "actualPsSha256": "77bf9ed046507c089d8cd70dcd9a3fb4ff3f602b59092341c6b628ce4e8660bc",
+      "actualHelpersSha256": "36dcd5f14f29cce37bf9353b45a9ef90ea98818bb50b8015061acd6e64a7f6fb",
+      "buildProofSha256": "4e5d3b2133caf6eced52483412f220c4c5355473d87c8264f8298ca34468f99f",
+      "chatExtraSha256": "328cc6e63fbaa993e259deed77088a076712e79eb695464213610617c6f304a2"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "sha256": "615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502",
+      "actualPsSha256": "77bf9ed046507c089d8cd70dcd9a3fb4ff3f602b59092341c6b628ce4e8660bc",
+      "actualHelpersSha256": "36dcd5f14f29cce37bf9353b45a9ef90ea98818bb50b8015061acd6e64a7f6fb",
+      "buildProofSha256": "8ab7c46ecdde45817cd0c1c52e075bc78caf824212c4b8d4047b62151b2c2672",
+      "chatExtraSha256": "e23035fb809193917e685cad512ad4b77962a743f6b04598460ed978c139c3b6"
+    }
+  ],
+  "sourceAdapterDIInput": {
+    "path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/pages/ChatPage.tsx",
+    "sha256": "6ab3ec6c3739c48e6c3b7eb1b54ff757addab9c4ee7cef5497c49929fbd477f4"
+  },
+  "sourceTestDIInput": {
+    "path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/components/chat/ChatPageDrafts.test.ts",
+    "sha256": "087fc931132104387dd637144e3523f24460c5c15f2313f635d23e8ad36b2c64"
+  },
+  "actualCandidatePatchBytesExecuted": true,
+  "identicalActualPsAcrossBothWorkbenches": true,
+  "identicalActualHelperAcrossBothWorkbenches": true,
+  "capturedAliasMapping": {
+    "Os": {
+      "target": "useBusinessScope",
+      "field": "useBusinessScope",
+      "kind": "live-field",
+      "references": 1
+    },
+    "y": {
+      "target": "useState",
+      "field": "React.useState",
+      "kind": "live-destructure",
+      "references": 43
+    },
+    "Aa": {
+      "target": "useAuth",
+      "field": "useAuth",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ca": {
+      "target": "useSearch",
+      "field": "useSearch",
+      "kind": "live-field",
+      "references": 1
+    },
+    "_a": {
+      "target": "useLocation",
+      "field": "useLocation",
+      "kind": "live-field",
+      "references": 1
+    },
+    "P": {
+      "target": "trpc",
+      "field": "trpc",
+      "kind": "live-field",
+      "references": 27
+    },
+    "ls": {
+      "target": "ERP_PERMISSION_KEYS",
+      "field": "ERP_PERMISSION_KEYS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "is": {
+      "target": "ERP_PERMISSION_DEFINITIONS",
+      "field": "ERP_PERMISSION_DEFINITIONS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ha": {
+      "target": "useForumUnreadTotal",
+      "field": "useForumUnreadTotal",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ee": {
+      "target": "useMemo",
+      "field": "React.useMemo",
+      "kind": "live-destructure",
+      "references": 12
+    },
+    "Sa": {
+      "target": "parseSearchInquiry",
+      "field": "parseSearchInquiry",
+      "kind": "live-field",
+      "references": 1
+    },
+    "xa": {
+      "target": "readMarketQuoteChatDraft",
+      "field": "readMarketQuoteChatDraft",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Na": {
+      "target": "buildInquiryKey",
+      "field": "buildInquiryKey",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ja": {
+      "target": "getChatSticker",
+      "field": "getChatSticker",
+      "kind": "live-field",
+      "references": 1
+    },
+    "D": {
+      "target": "useRef",
+      "field": "React.useRef",
+      "kind": "live-destructure",
+      "references": 19
+    },
+    "Ia": {
+      "target": "useLayoutEffect",
+      "field": "React.useLayoutEffect",
+      "kind": "live-destructure",
+      "references": 2
+    },
+    "Q": {
+      "target": "useEffect",
+      "field": "React.useEffect",
+      "kind": "live-destructure",
+      "references": 14
+    },
+    "Qa": {
+      "target": "getRecentChatStickerIds",
+      "field": "getRecentChatStickerIds",
+      "kind": "live-field",
+      "references": 1
+    },
+    "it": {
+      "target": "INQUIRY_RECEPTION_CONVERSATION_OPTIONS",
+      "field": "pure reception query options",
+      "kind": "source-constant",
+      "references": 1
+    },
+    "$a": {
+      "target": "useChatUnreadDocumentTitle",
+      "field": "useChatUnreadDocumentTitle",
+      "kind": "live-field",
+      "references": 1
+    },
+    "G": {
+      "target": "useCallback",
+      "field": "React.useCallback",
+      "kind": "live-destructure",
+      "references": 20
+    },
+    "us": {
+      "target": "safeChatAttachmentUrl",
+      "field": "safeChatAttachmentUrl",
+      "kind": "live-field",
+      "references": 2
+    },
+    "pt": {
+      "target": "isServiceName",
+      "field": "isServiceName",
+      "kind": "live-field",
+      "references": 5
+    },
+    "C": {
+      "target": "toast",
+      "field": "toast",
+      "kind": "live-field",
+      "references": 38
+    },
+    "On": {
+      "target": "createPublicReviewRequestId",
+      "field": "createPublicReviewRequestId",
+      "kind": "live-field",
+      "references": 2
+    },
+    "ct": {
+      "target": "PUBLIC_REVIEW_IMAGE_LIMIT",
+      "field": "PUBLIC_REVIEW_IMAGE_LIMIT",
+      "kind": "live-field",
+      "references": 4
+    },
+    "Ta": {
+      "target": "createPublicReviewImage",
+      "field": "createPublicReviewImage",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Hn": {
+      "target": "inventoryInquiryTransportFailure",
+      "field": "inventoryInquiryTransportFailure",
+      "kind": "live-field",
+      "references": 3
+    },
+    "ds": {
+      "target": "inquiryConversationId",
+      "field": "inquiryConversationId",
+      "kind": "live-field",
+      "references": 2
+    },
+    "bi": {
+      "target": "INVENTORY_INQUIRY_RETRY_DELAYS_MS",
+      "field": "INVENTORY_INQUIRY_RETRY_DELAYS_MS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ze": {
+      "target": "createClientMessageId",
+      "field": "createClientMessageId",
+      "kind": "live-field",
+      "references": 5
+    },
+    "fi": {
+      "target": "isFreshInventoryInquiryClaim",
+      "field": "isFreshInventoryInquiryClaim",
+      "kind": "live-field",
+      "references": 1
+    },
+    "pi": {
+      "target": "fileExtension",
+      "field": "fileExtension",
+      "kind": "live-field",
+      "references": 1
+    },
+    "cs": {
+      "target": "CHAT_FILE_MIME_BY_EXTENSION",
+      "field": "CHAT_FILE_MIME_BY_EXTENSION",
+      "kind": "live-field",
+      "references": 2
+    },
+    "ai": {
+      "target": "CHAT_IMAGE_MIMES",
+      "field": "CHAT_IMAGE_MIMES",
+      "kind": "live-field",
+      "references": 1
+    },
+    "oi": {
+      "target": "MAX_CHAT_IMAGE_BYTES",
+      "field": "MAX_CHAT_IMAGE_BYTES",
+      "kind": "live-field",
+      "references": 1
+    },
+    "si": {
+      "target": "CHAT_FILE_EXTENSIONS",
+      "field": "CHAT_FILE_EXTENSIONS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ii": {
+      "target": "MAX_CHAT_FILE_BYTES",
+      "field": "MAX_CHAT_FILE_BYTES",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Qt": {
+      "target": "messageReplyDescriptor",
+      "field": "messageReplyDescriptor",
+      "kind": "live-field",
+      "references": 4
+    },
+    "mi": {
+      "target": "fileToBase64",
+      "field": "fileToBase64",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Wa": {
+      "target": "recordRecentChatSticker",
+      "field": "recordRecentChatSticker",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ui": {
+      "target": "messageActionText",
+      "field": "messageActionText",
+      "kind": "live-field",
+      "references": 1
+    },
+    "t": {
+      "target": "__live.jsx.jsx",
+      "field": "jsx.jsx",
+      "kind": "live-destructure",
+      "references": 210
+    },
+    "ya": {
+      "target": "ChatEntryAuthWait",
+      "field": "ChatEntryAuthWait",
+      "kind": "live-field",
+      "references": 1
+    },
+    "o": {
+      "target": "__live.jsx.jsxs",
+      "field": "jsx.jsxs",
+      "kind": "live-destructure",
+      "references": 98
+    },
+    "Dn": {
+      "target": "MallLoginDialog",
+      "field": "MallLoginDialog",
+      "kind": "live-field",
+      "references": 2
+    },
+    "ns": {
+      "target": "MessageCircle",
+      "field": "MessageCircle",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ts": {
+      "target": "Mail",
+      "field": "Mail",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Gt": {
+      "target": "Pin",
+      "field": "Pin",
+      "kind": "live-field",
+      "references": 3
+    },
+    "ut": {
+      "target": "ChatUnreadBadge",
+      "field": "ChatUnreadBadge",
+      "kind": "live-field",
+      "references": 4
+    },
+    "Wn": {
+      "target": "__live.jsx.Fragment",
+      "field": "jsx.Fragment",
+      "kind": "live-destructure",
+      "references": 2
+    },
+    "dt": {
+      "target": "UsersRound",
+      "field": "UsersRound",
+      "kind": "live-field",
+      "references": 4
+    },
+    "jn": {
+      "target": "MoreHorizontal",
+      "field": "MoreHorizontal",
+      "kind": "live-field",
+      "references": 2
+    },
+    "Gn": {
+      "target": "Archive",
+      "field": "Archive",
+      "kind": "live-field",
+      "references": 2
+    },
+    "$n": {
+      "target": "getAvatarColor",
+      "field": "getAvatarColor",
+      "kind": "live-field",
+      "references": 3
+    },
+    "zn": {
+      "target": "ServiceAvatar",
+      "field": "ServiceAvatar",
+      "kind": "live-field",
+      "references": 2
+    },
+    "Ln": {
+      "target": "UserAvatar",
+      "field": "UserAvatar",
+      "kind": "live-field",
+      "references": 2
+    },
+    "gi": {
+      "target": "formatTime",
+      "field": "formatTime",
+      "kind": "live-field",
+      "references": 1
+    },
+    "vi": {
+      "target": "MessageActionTarget",
+      "field": "MessageActionTarget",
+      "kind": "live-field",
+      "references": 1
+    },
+    "hi": {
+      "target": "MessageBubble",
+      "field": "MessageBubble",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ka": {
+      "target": "accountDisplayName",
+      "field": "accountDisplayName",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ya": {
+      "target": "ArrowDown",
+      "field": "ArrowDown",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Qn": {
+      "target": "Reply",
+      "field": "Reply",
+      "kind": "live-field",
+      "references": 2
+    },
+    "di": {
+      "target": "compactMessageSummary",
+      "field": "compactMessageSummary",
+      "kind": "live-field",
+      "references": 1
+    },
+    "jt": {
+      "target": "X",
+      "field": "X",
+      "kind": "live-field",
+      "references": 3,
+      "captureAvoided": true,
+      "adapterReference": "__d51_native_source_captures.X"
+    },
+    "za": {
+      "target": "chatStickerPickerIcon",
+      "field": "chatStickerPickerIcon",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Da": {
+      "target": "chatNotoPackIcon",
+      "field": "chatNotoPackIcon",
+      "kind": "live-field",
+      "references": 1
+    },
+    "La": {
+      "target": "chatEmojiPackIcon",
+      "field": "chatEmojiPackIcon",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ga": {
+      "target": "chatYayatuanPackIcon",
+      "field": "chatYayatuanPackIcon",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Oa": {
+      "target": "chatBusinessPackIcon",
+      "field": "chatBusinessPackIcon",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Fa": {
+      "target": "NOTO_CHAT_STICKERS",
+      "field": "NOTO_CHAT_STICKERS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "qa": {
+      "target": "EMOJI_CHAT_STICKERS",
+      "field": "EMOJI_CHAT_STICKERS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ua": {
+      "target": "YAYATUAN_CHAT_STICKERS",
+      "field": "YAYATUAN_CHAT_STICKERS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Pa": {
+      "target": "BUSINESS_CHAT_STICKERS",
+      "field": "BUSINESS_CHAT_STICKERS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "as": {
+      "target": "Plus",
+      "field": "Plus",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Za": {
+      "target": "ImageIcon",
+      "field": "ImageIcon",
+      "kind": "live-field",
+      "references": 1
+    },
+    "rs": {
+      "target": "Paperclip",
+      "field": "Paperclip",
+      "kind": "live-field",
+      "references": 1
+    },
+    "$t": {
+      "target": "CtxMenuItem",
+      "field": "CtxMenuItem",
+      "kind": "live-field",
+      "references": 4
+    },
+    "Wt": {
+      "target": "MessageMenuItem",
+      "field": "MessageMenuItem",
+      "kind": "live-field",
+      "references": 4
+    },
+    "Ja": {
+      "target": "Copy",
+      "field": "Copy",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ci": {
+      "target": "RECALLABLE_MESSAGE_TYPES",
+      "field": "RECALLABLE_MESSAGE_TYPES",
+      "kind": "live-field",
+      "references": 1
+    },
+    "li": {
+      "target": "CHAT_MESSAGE_RECALL_WINDOW_MS",
+      "field": "CHAT_MESSAGE_RECALL_WINDOW_MS",
+      "kind": "live-field",
+      "references": 1
+    },
+    "ss": {
+      "target": "RotateCcw",
+      "field": "RotateCcw",
+      "kind": "live-field",
+      "references": 1
+    },
+    "os": {
+      "target": "Trash2",
+      "field": "Trash2",
+      "kind": "live-field",
+      "references": 1
+    },
+    "es": {
+      "target": "ImagePlus",
+      "field": "ImagePlus",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Xa": {
+      "target": "Combine",
+      "field": "Combine",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ka": {
+      "target": "ArchiveRestore",
+      "field": "ArchiveRestore",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Va": {
+      "target": "ContactProfileSheet",
+      "field": "ContactProfileSheet",
+      "kind": "live-field",
+      "references": 1
+    },
+    "Ba": {
+      "target": "ImageLightbox",
+      "field": "ImageLightbox",
+      "kind": "live-field",
+      "references": 1
+    }
+  },
+  "rewrittenCapturedReferences": 607,
+  "localBindingReferenceNamesPreserved": [
+    "s",
+    "p",
+    "a",
+    "k",
+    "He",
+    "fe",
+    "e",
+    "ht",
+    "f",
+    "l",
+    "b",
+    "S",
+    "h",
+    "sn",
+    "N",
+    "xt",
+    "bo",
+    "Re",
+    "M",
+    "r",
+    "__rx_selectedConvId",
+    "kr",
+    "n",
+    "d",
+    "Fe",
+    "At",
+    "Ce",
+    "xe",
+    "R",
+    "tt",
+    "Bt",
+    "F",
+    "Tr",
+    "A",
+    "__rx_setQuickPhrasesOpen",
+    "ye",
+    "Ze",
+    "ke",
+    "Te",
+    "Ae",
+    "ue",
+    "ve",
+    "dn",
+    "Lr",
+    "kt",
+    "cn",
+    "Mt",
+    "Et",
+    "Xe",
+    "w",
+    "et",
+    "Qr",
+    "qe",
+    "Me",
+    "Ee",
+    "j",
+    "B",
+    "ce",
+    "fo",
+    "g",
+    "m",
+    "c",
+    "v",
+    "i",
+    "xn",
+    "re",
+    "qr",
+    "ea",
+    "Ft",
+    "z",
+    "K",
+    "Tt",
+    "Xr",
+    "ta",
+    "Wr",
+    "de",
+    "q",
+    "St",
+    "It",
+    "J",
+    "_t",
+    "_",
+    "he",
+    "mn",
+    "__rx_businessScope",
+    "__rx_receptionDraftAllowed",
+    "__rx_messageAccessDenied",
+    "item",
+    "__rx_draftScopeKey",
+    "__rx_authorizedDraftConversationIds",
+    "nt",
+    "Ut",
+    "Pe",
+    "H",
+    "Rt",
+    "aa",
+    "yn",
+    "Ve",
+    "$r",
+    "me",
+    "L",
+    "ne",
+    "Yr",
+    "pn",
+    "ie",
+    "W",
+    "ge",
+    "le",
+    "Z",
+    "we",
+    "sa",
+    "V",
+    "be",
+    "ae",
+    "qn",
+    "Pn",
+    "va",
+    "ha",
+    "ho",
+    "__rx_setConversationDraft",
+    "Rr",
+    "oa",
+    "Nt",
+    "pe",
+    "$",
+    "Pr",
+    "Kr",
+    "oe",
+    "Ne",
+    "Ct",
+    "content",
+    "on",
+    "replyTo",
+    "open",
+    "current",
+    "text",
+    "Dr",
+    "ia",
+    "Vr",
+    "Hr",
+    "yo",
+    "Ie",
+    "wt",
+    "Be",
+    "Ye",
+    "Ur",
+    "gn",
+    "Ue",
+    "_n",
+    "Io",
+    "In",
+    "Cn",
+    "Oe",
+    "da",
+    "Ot",
+    "at",
+    "fn",
+    "Le",
+    "bn",
+    "Ke",
+    "Nn",
+    "De",
+    "st",
+    "vn",
+    "Sn",
+    "Lt",
+    "ot",
+    "hn",
+    "wn",
+    "Zr",
+    "Rn",
+    "Mn",
+    "Dt",
+    "Jr",
+    "qt",
+    "vo",
+    "_e",
+    "T",
+    "Tn",
+    "ma",
+    "fa",
+    "An",
+    "I",
+    "Fr",
+    "Pt",
+    "Yo",
+    "Go",
+    "Ko",
+    "Mr",
+    "Er",
+    "Lo",
+    "jo",
+    "kn",
+    "pa",
+    "Bn",
+    "zt",
+    "na",
+    "Oo",
+    "ca",
+    "Xo",
+    "ra",
+    "No",
+    "la",
+    "Co",
+    "Mo",
+    "_o",
+    "zr",
+    "ko",
+    "Gr",
+    "To",
+    "__rx_quickPhrasesOpen",
+    "__rx_handleQuickPhrasesOpenChange",
+    "__rx_handleQuickPhraseSelect",
+    "ln",
+    "te",
+    "Ar",
+    "rt",
+    "Br",
+    "En",
+    "Eo",
+    "Ao",
+    "X",
+    "Uo",
+    "xo",
+    "Y",
+    "Bo",
+    "Po",
+    "Fo",
+    "qo",
+    "jr",
+    "So",
+    "wo",
+    "un",
+    "Ro",
+    "Do",
+    "ga",
+    "ba",
+    "$o",
+    "Ho",
+    "Wo",
+    "zo",
+    "Vo",
+    "ua",
+    "Or",
+    "Je",
+    "Qo",
+    "U",
+    "Se"
+  ],
+  "unresolvedHostGlobals": [
+    "document",
+    "Set",
+    "URLSearchParams",
+    "Number",
+    "URL",
+    "Math",
+    "Promise",
+    "Date",
+    "String",
+    "requestAnimationFrame",
+    "cancelAnimationFrame",
+    "Array",
+    "Error",
+    "console",
+    "localStorage",
+    "window",
+    "JSON",
+    "navigator",
+    "Map"
+  ],
+  "adapterPath": "/tmp/reception-native-candidate/ActualChatPage.tsx",
+  "adapterSha256": "53caaa126f052a14b52b7a6ef9576befb237c613933362592f8f3f73609ac53c",
+  "testPath": "/tmp/reception-native-candidate/ActualChatPageDrafts.test.ts",
+  "testSha256": "356f94cb781bb8beedd2781a0d36c60b382786bff92ecd5d7e8343e9a8de060f",
+  "configPath": "/tmp/reception-chat-subagent/vitest.config.ts",
+  "DIboundary": "Actual candidate private-getter ps and outer additive __d51_rx_chat_helpers_get are executed. Only free captured lexical aliases are mapped back to source imported/globals; all local bindings including __rx remain intact. The source ChatPage outer wrapper, useAuth, BusinessScopeProvider and original non-additive source helpers are retained. The existing test mocks business-trpc queries/mutations/utilities, wouter and two unrelated display components. This is a native React/jsdom DI integration test, not execution of the complete production ES module, remote transport, browser or E2E; real messages/database operations are zero.",
+  "tests": {
+    "passed": 17,
+    "failed": 0,
+    "total": 17,
+    "results": [
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider switches customers without remounting, restores separate drafts and only fills after phrase selection",
+        "status": "PASS",
+        "durationMs": 272.46135700000013,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears old drafts on a real account/enterprise/business/authorization change: {\"user\":17}",
+        "status": "PASS",
+        "durationMs": 70.33337700000038,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears old drafts on a real account/enterprise/business/authorization change: {\"admin\":18}",
+        "status": "PASS",
+        "durationMs": 67.99540400000024,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears old drafts on a real account/enterprise/business/authorization change: {\"enterprise\":19}",
+        "status": "PASS",
+        "durationMs": 68.5305800000001,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears old drafts on a real account/enterprise/business/authorization change: {\"merchant\":30062}",
+        "status": "PASS",
+        "durationMs": 66.07778499999995,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears old drafts on a real account/enterprise/business/authorization change: {\"binding\":2}",
+        "status": "PASS",
+        "durationMs": 65.85392000000002,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears old drafts on a real account/enterprise/business/authorization change: {\"authorization\":\"changed-grants-v2\"}",
+        "status": "PASS",
+        "durationMs": 60.754681000000346,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider retains drafts during a same-proof background recheck but clears them after permission withdrawal",
+        "status": "PASS",
+        "durationMs": 86.075871,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider canReply=false immediately clears the composer, disables phrases/text/send and cannot send synthetic Enter",
+        "status": "PASS",
+        "durationMs": 43.801128999999946,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider a removed conversation cannot reveal an old draft and restoring access does not restore withdrawn text",
+        "status": "PASS",
+        "durationMs": 49.57250799999974,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider clears only the submitted customer's draft; a later success never clears a different customer's input",
+        "status": "PASS",
+        "durationMs": 53.83161199999995,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider keeps replyingTo when appending a phrase and retries failed sending with the original content/reference/idempotency key",
+        "status": "PASS",
+        "durationMs": 48.87395600000036,
+        "failureMessages": []
+      },
+      {
+        "name": "embedded reception ChatPage draft behavior with the real BusinessScope provider accepts an inquiry-only conversation, while an unauthorized messages result clears old drafts",
+        "status": "PASS",
+        "durationMs": 38.61722100000043,
+        "failureMessages": []
+      },
+      {
+        "name": "actual candidate commit and cross-conversation isolation commits the selected conversation and its independent draft synchronously before passive effects",
+        "status": "PASS",
+        "durationMs": 69.79005999999981,
+        "failureMessages": []
+      },
+      {
+        "name": "actual candidate commit and cross-conversation isolation a failed A message cannot appear/retry in B; retrying A preserves both later drafts and original transport identity",
+        "status": "PASS",
+        "durationMs": 119.72441099999969,
+        "failureMessages": []
+      },
+      {
+        "name": "actual candidate commit and cross-conversation isolation auth-session event and storage revocation clear the actual helper's drafts",
+        "status": "PASS",
+        "durationMs": 73.882881,
+        "failureMessages": []
+      },
+      {
+        "name": "actual candidate commit and cross-conversation isolation actual additive sticker component falls back on image error and resets on a different resource",
+        "status": "PASS",
+        "durationMs": 7.79894400000012,
+        "failureMessages": []
+      }
+    ]
+  },
+  "logPath": "/tmp/reception-chat-subagent/final-related-tests.log",
+  "vitestResultsPath": "/tmp/reception-native-candidate/vitest-results.json",
+  "realMessagesSent": 0,
+  "databaseOperations": 0,
+  "generatedBy": "/home/ubuntu/work/51dianzi-platform--manager/deploy/test-reception-native-chat-20261113.cjs",
+  "generatorSha256": "9fe52cf5d65c2fb219d004ce53006b2a1957cd1c3d094d674868d58be7231cf5",
+  "inputFilesUnchangedAfterRun": true,
+  "reportedAt": "2026-11-13T09:38:32.401Z"
+}

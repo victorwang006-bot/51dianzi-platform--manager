@@ -9,6 +9,7 @@ describe("getAdminListLocationLayout 原始 pathname 几何契约", () => {
     "/workbench/customers", "/workbench/customers/", "/workbench/customers///?merchantId=31#entry",
     "/workbench", "/workbench/?ciTab=materials&ciView=flat#entry",
     CHANNEL_INVENTORY_ROUTE, `${CHANNEL_INVENTORY_ROUTE}/?ciTab=materials#entry`,
+    "/workbench/inquiries", "/workbench/inquiries/?conversationId=31", "/workbench/chat?conversationId=31",
   ])("%s 根页保留可访问 nav 但脱离标题行", location => {
     expect(getAdminListLocationLayout(location, inventory)).toBe("root-hidden");
   });
@@ -36,7 +37,7 @@ describe("getAdminListLocationLayout 原始 pathname 几何契约", () => {
     expect(frozen).toEqual(labels);
   });
 
-  it.each(["/workbench/customers", "/workbench", CHANNEL_INVENTORY_ROUTE, "/merchants", "/staff", "/admins"])("%s 没有 labels 时不编造展示标记", location => {
+  it.each(["/workbench/customers", "/workbench", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries", "/workbench/chat", "/merchants", "/staff", "/admins"])("%s 没有 labels 时不编造展示标记", location => {
     expect(getAdminListLocationLayout(location, Object.freeze([]))).toBeUndefined();
   });
 });

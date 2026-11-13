@@ -1,0 +1,9 @@
+test_actual_manager_manifest_and_catalog (__main__.StickerResourceTests.test_actual_manager_manifest_and_catalog) ... ok
+test_copy_never_overwrites_conflict_and_detects_missing (__main__.StickerResourceTests.test_copy_never_overwrites_conflict_and_detects_missing) ... ok
+test_empty_html_and_wrong_image_signature_rejected (__main__.StickerResourceTests.test_empty_html_and_wrong_image_signature_rejected) ... ok
+test_manifest_hash_fields_and_full_directory_retention (__main__.StickerResourceTests.test_manifest_hash_fields_and_full_directory_retention) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.414s
+
+OK

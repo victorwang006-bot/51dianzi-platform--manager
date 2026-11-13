@@ -1,0 +1,2745 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T09:43:33.697404+00:00",
+  "manifestSha256": "6f50792499171aeb160182fe16adbd2d0ad37f7149d52f549dc5275f03988cb5",
+  "htmlSha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "sha256": "615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502"
+    },
+    {
+      "relative": "assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "sha256": "a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c"
+    },
+    {
+      "relative": "assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4"
+    },
+    {
+      "relative": "chat-sticker-tabs/business.png",
+      "sha256": "068c7fe6b4d553f3f188ee0e2acbffcb0d237eb300553a40c78f7a79253962c0"
+    },
+    {
+      "relative": "chat-sticker-tabs/emoji.png",
+      "sha256": "debba6a5f7220e42453fc6e7d9144fc14daa66afcf488851fcf5bb6cf27a65f2"
+    },
+    {
+      "relative": "chat-sticker-tabs/yayatuan.png",
+      "sha256": "dbddeb73cdcf74a18b8068b99ced8f8dd4183f97cf3453d22e0af683c46ab99c"
+    },
+    {
+      "relative": "chat-stickers/close-loop-thumb.jpg",
+      "sha256": "17b556433ec1b7d796e6d481174654acca73aa5746be36a70d97768eb151096d"
+    },
+    {
+      "relative": "chat-stickers/close-loop.jpg",
+      "sha256": "0c2b2b32262e89505b4bfe4ce8fa072c0555d4a92a1fb4923fa6c95074048b56"
+    },
+    {
+      "relative": "chat-stickers/emoji-angry.png",
+      "sha256": "806c860f37f9e889a734b81049d6c68b76ea37b9336ec25bd5d525e3ceb55705"
+    },
+    {
+      "relative": "chat-stickers/emoji-awkward.png",
+      "sha256": "80ded0399ebab01e759e3b402af6d739e47f454eae77d93ec9e59b3359859678"
+    },
+    {
+      "relative": "chat-stickers/emoji-bye.png",
+      "sha256": "09aaad23f9d219a49709a8dde17480c6134d41cbc5a79e06a8397e3fa813d239"
+    },
+    {
+      "relative": "chat-stickers/emoji-cheer.png",
+      "sha256": "0b3c011945e7e8e2f3358a836c51d8d626443cb84944c8a29bdf0d22a4e6acd9"
+    },
+    {
+      "relative": "chat-stickers/emoji-clap.png",
+      "sha256": "e3859fbe1b04c8af5d18f359ea461d7d2c84ea920a7328f4d68692bdef15d7bc"
+    },
+    {
+      "relative": "chat-stickers/emoji-cool.png",
+      "sha256": "4d7b50cccf1194588b12049d9838510d6e6998ca2689f88109d0922a2cbf86f5"
+    },
+    {
+      "relative": "chat-stickers/emoji-cry.png",
+      "sha256": "fdcfc3e17e75b1a8d80d1672e58ae410ed71442eaf5a3e4fc4a722210a65c01d"
+    },
+    {
+      "relative": "chat-stickers/emoji-dizzy.png",
+      "sha256": "c42d10a53e1d163a9e9239c883a52253d632a45414e70b53257af27eaf1a1823"
+    },
+    {
+      "relative": "chat-stickers/emoji-eye-roll.png",
+      "sha256": "7148de475c7a61833f98489b855e08b4c6e830201b2887cb53b531592e672909"
+    },
+    {
+      "relative": "chat-stickers/emoji-handshake.png",
+      "sha256": "456ed335e1683d3d2bfc0e7894824ba82518595f3dffb7903c1ac7c070202827"
+    },
+    {
+      "relative": "chat-stickers/emoji-heart-eyes.png",
+      "sha256": "44ca8188a837d0cb33d4767f8f20eccce0c45ca39a4e57431d2df311bbea4af6"
+    },
+    {
+      "relative": "chat-stickers/emoji-joy.png",
+      "sha256": "e5b707983da4c2fa34ef274a16350c559c8efcd4c11fa1ccf6f1626ef2ee34cc"
+    },
+    {
+      "relative": "chat-stickers/emoji-kiss.png",
+      "sha256": "824647fd6f107de3cbe183aba4f3814340f95e802d7067a51fc91cee670bf816"
+    },
+    {
+      "relative": "chat-stickers/emoji-laugh.png",
+      "sha256": "86fa05b7db9d8b105595fd9952f37f298b2dae506624a9936899a5586d043000"
+    },
+    {
+      "relative": "chat-stickers/emoji-ok.png",
+      "sha256": "adbc271f660dac46477b18f84ddb3fdfd5044a102c8d368a1cf2ddd94fdbde64"
+    },
+    {
+      "relative": "chat-stickers/emoji-playful.png",
+      "sha256": "a179df352d111a66641893380f549be6e24bd8d32f1d18e541e23e896c3f08ab"
+    },
+    {
+      "relative": "chat-stickers/emoji-please.png",
+      "sha256": "204bba0cb42414209d3a03071153506c4179778e4d8ed4988089f491abaf59fe"
+    },
+    {
+      "relative": "chat-stickers/emoji-proud.png",
+      "sha256": "955d1d711e19570c4d9f0ffec24b0f70cd77bf268ce3de9b892fa4807110f489"
+    },
+    {
+      "relative": "chat-stickers/emoji-question.png",
+      "sha256": "68047c5c91ede12f680b1c1fc03595995dcb40f257b5263dd924c9b699a7f3ad"
+    },
+    {
+      "relative": "chat-stickers/emoji-rage.png",
+      "sha256": "0b3581d2415b8252e0cb8e4755cbc1e17eefa2b585ce6323991838a08d11aba3"
+    },
+    {
+      "relative": "chat-stickers/emoji-sad.png",
+      "sha256": "bbd58b9304d5d5805992caf040abddf4349c1a05add07da9c2d9aca83fc849cb"
+    },
+    {
+      "relative": "chat-stickers/emoji-salute.png",
+      "sha256": "2df3f9867b3451b6b6d0c85afe00139ccde8fd62d2fb03bfbd1b7081b63bca73"
+    },
+    {
+      "relative": "chat-stickers/emoji-shocked.png",
+      "sha256": "4d02f0bd36ca7808cad395693716c9c764e79259dda3277b9cf450480357cdf1"
+    },
+    {
+      "relative": "chat-stickers/emoji-shy.png",
+      "sha256": "799e5b7c3dd825ee918865f5712b9a3e0a6264b8beec445cb8f3cf5218fd4b0f"
+    },
+    {
+      "relative": "chat-stickers/emoji-sleepy.png",
+      "sha256": "5001e92ff7644fa2ddd3bb0ac9826dd1916566ef8fafc8d334c2620ae2a27c1b"
+    },
+    {
+      "relative": "chat-stickers/emoji-smile.png",
+      "sha256": "f6b5f2d1134d3b5b203654e6e1353c1da3d85c7c9ee0eba6b4398a1dac4873c1"
+    },
+    {
+      "relative": "chat-stickers/emoji-sob.png",
+      "sha256": "8972531a56cb3e607b586637a1e68dc00f3791a885b0c4f1fb2fbed0a79f55b6"
+    },
+    {
+      "relative": "chat-stickers/emoji-speechless.png",
+      "sha256": "792f3a9c9a9f67d6a56483f59942a632f3f1f2b805d8ebeaf686c2c409e0ea95"
+    },
+    {
+      "relative": "chat-stickers/emoji-sweat.png",
+      "sha256": "41169a2c28ed3e0e994a955aa56f74e66d0bcada996c04ef88c2a0d27f352037"
+    },
+    {
+      "relative": "chat-stickers/emoji-thinking.png",
+      "sha256": "ba5df61385076db085ec9077e3b480841a4379de4bafbdb5dc9e0bf43dfb824d"
+    },
+    {
+      "relative": "chat-stickers/emoji-thumb-up.png",
+      "sha256": "b90559769d3c7961bb58bee61aa53b1dcd26928b96043bab5cfc54fa2983432d"
+    },
+    {
+      "relative": "chat-stickers/emoji-wink.png",
+      "sha256": "4c464cc0c09ae145bd8ce9453e9b4cf61e55dc277288ec6d6f23e6ca18382eba"
+    },
+    {
+      "relative": "chat-stickers/noto/LICENSE-APACHE-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "relative": "chat-stickers/noto/NOTICE.md",
+      "sha256": "976a9ebd48401ab874c926311b73567cee48afc7837637d6868967daa1c74e60"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-alarm-clock.svg",
+      "sha256": "19f0db9d5e9465e5fc97afde4c65f9415548088bccb38d8e9a6244279f05ebf5"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-angel.svg",
+      "sha256": "2c86acde97249bc72f5ccbb952b0229da93367fd97e7f03e961f1c5cf8eb0ba1"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-angry.svg",
+      "sha256": "31efac37a51fa060330f5b03bdaaf0a875b1270aa355dcee4a6760fa5b8860cd"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-anguished.svg",
+      "sha256": "313acceeb0b6592f99b583442607830fcf162b6407983dcc220e4d41ec9d1a3c"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-beaming.svg",
+      "sha256": "fb19d8afc300438b5d4921f0a306cf07122f3deab6a9d3b940a6bc8c80a9bc9a"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-bell.svg",
+      "sha256": "6594e3db7bd9ce3a9a5a3e98a43eef75456da9ddd926994b39947285006c0d88"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-blush.svg",
+      "sha256": "fdd7e8f4c8653d709319462cb5d54a6973e15042d6cf7c4c860c5c7776b7059e"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-calendar.svg",
+      "sha256": "be2d062f483768d0199fe9e93680872281984eb3f302fd3cada1b246f59a5e4e"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-call-me.svg",
+      "sha256": "ef0480668a00c405e246677bc12683b24920eecafc52fcd9af35dcc3cf7bbbfc"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-check-mark.svg",
+      "sha256": "10d5be93c52a1fc0bcd195dee9485445daeb9f2398f9f58e513e3c27f95a52d0"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-clap.svg",
+      "sha256": "34265e9431a758f6c4d3e88365b35a3e338cee0b1d84cfe9682a5779e52f452f"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-cool.svg",
+      "sha256": "98f1d7f1406ee3ab299a93586be1de0b0987bcbf946fabed082d96699e27e2a8"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-cross-mark.svg",
+      "sha256": "0ccbebbd79d7244d142eff2838125e21c8100d51bbb29a0ad17ee7ca7fdc0c3c"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-crossed-fingers.svg",
+      "sha256": "a0c6ad4619f8d9682bff0cb6b7a63c727599d33138b47e5d63cfa8f614a911d0"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-delivery-truck.svg",
+      "sha256": "cd431fc9d61c11d49f9378bebef8e58ba6c94b5ef82cda44f4dfc8fa13744937"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-dizzy-face.svg",
+      "sha256": "086c8b737bc4817cd08c49da917607024bedb5656bd0a9ac4c422b517f8072c4"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-envelope.svg",
+      "sha256": "5c65f30b8456ec49a0f9bd7fc61c3718de6a08ee139256e2eca4d01992a697ab"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-exploding-head.svg",
+      "sha256": "9756b17ba39d4af1efe566ced02b182bbe99a37d049d5e9bb68bbbd383b426dd"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-expressionless.svg",
+      "sha256": "dc2636e6eeb944460fd0a6ea51d3e32e3cb04ad7e525be59cc216488e1dadd24"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-eye-roll.svg",
+      "sha256": "dcb421412a6b94a0db189ca1a6bec6397167e67cfee5fbec38c566eaac31f0e5"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-fearful.svg",
+      "sha256": "243f3429de32c0d07f5ac5b15b5b6a1820b12368ebd923ce6a2728f96d674876"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-fire.svg",
+      "sha256": "189d06b95de39a43a55d2294b58759addb5dbc35051931e3809d5ece9bff1fd5"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-fist.svg",
+      "sha256": "5d4e29b3c20963f39add4659c60a240bdca99f88ec01f81376a92cf2325cf19e"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-flexed-biceps.svg",
+      "sha256": "7dc3422399832437476f9ba9e0badbf63a8bf955694b5a568770ce95c97b7a25"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-flushed.svg",
+      "sha256": "79f451edd62fddf9c0490b72c5ef738cfe9420410f745e0a7689bcaf94c5549f"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-folded-hands.svg",
+      "sha256": "3eb0ad703c9051666db5c387d292abec4f8319a5c774945745846c5163a7db5d"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-frown.svg",
+      "sha256": "67a6102efadfbc850ad77625ccd25484cc5fcea53b827d20d249ce16414c6dc2"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-gift.svg",
+      "sha256": "f8df9f99dd7e8582de860c15f037a141f1b7f4c531e5f80f1624d5aa472ba38b"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-grimacing.svg",
+      "sha256": "abd20a005f87335bdbef10ac65a9b7604fb76c88f3a501fbbd0ba0df5aadb43c"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-grinning.svg",
+      "sha256": "544b36625a90af0b952ead586044d76c00b47e112200533b9b5439c163152d66"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-handshake.svg",
+      "sha256": "f20707b7dcb0704be9b456d526aacb42c10acbb72e61fd8a69e2a64734029321"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-heart-eyes.svg",
+      "sha256": "d621a55c839b758a62e2722564dab703f7ad4598466f52f62648ca70b7dfb541"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-horns.svg",
+      "sha256": "38c5301d1af4e68a3e90dcb5031548dbd06bb0f7902da72a14f45a0a983ede14"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-hourglass.svg",
+      "sha256": "b0cb20e290c53c17c223b82d48925157d2ec7a8e699d5318b615c7dd53592c27"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-hugging.svg",
+      "sha256": "112355c0ab7dd1b03e64f5ce6229a845082f7b3a46adb6cbdd9544be68234af6"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-hundred.svg",
+      "sha256": "929d452a207acc4cb53f18fe4695a4a3620d665a32f1f8123e5064be3de50581"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-information.svg",
+      "sha256": "5bd75469fae1d49bd910a4ed64593cad0aa236c92e3784c4abb5bc5287c2225b"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-joy-tears.svg",
+      "sha256": "b553c8c7d447edbd684c436bdf49208ab142f3fc7004eb98fbe8ab6dc68451ab"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-kiss.svg",
+      "sha256": "e9bd062a90885f5703e151ebd0041879b82881d46ae21fd97bac0364062587a2"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-laugh.svg",
+      "sha256": "fd4fa55eeb9c57bc4358398b10ed7875249cf9301ee5f2896d1ce2e0df22c0ba"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-left-fist.svg",
+      "sha256": "9d3c3a6361cdf55817ed5639f2acc031288ea072184a793877d12d2d68b0a1a8"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-light-bulb.svg",
+      "sha256": "4c3d9c210c03271ebe63b9f86ab3e9a33d36483ed5920e116d7efed6c095def7"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-locked.svg",
+      "sha256": "953a5dce94ecf72594a97c2ad2ccbf4afbec2d54361b6fe228ee73081b0bbaa9"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-loudly-crying.svg",
+      "sha256": "b8b0845817217b19602544b7f5d0a681fd29f5d15564540de442c49e963f57c7"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-love-you-gesture.svg",
+      "sha256": "a95cef9bb153f5a50d22d630f8b019bf0a0715599c0891281451d6384e662137"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-lying.svg",
+      "sha256": "01b5933e2520404f8011bf26d80c5460808b13ed43d663af63aa1b404987827d"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-magnifying-glass.svg",
+      "sha256": "c4a1cc029264ab60dfec3e6e6c6493138b57c6de51e8efddd1e8be400ed7ad49"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-medical-mask.svg",
+      "sha256": "99d2b652e5ebba4badcec39d4c6d88e23889852ca12839adb3519c742a72caa5"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-mobile-phone.svg",
+      "sha256": "e363c1e6e9fa46e8064892468a5d188d4651f14dce222cd32798dd6621ba8840"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-money-bag.svg",
+      "sha256": "c6a2392833576f7eb22b16290982d40eea27269817b76262d6f5ec76e90807bf"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-nauseated.svg",
+      "sha256": "6a1197b82740b13d1774716951bfc0f808494d52ce1e4e5bc6da4c0b966c3e58"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-neutral.svg",
+      "sha256": "0d6f6357cd40e831116083376c4d1236fe781e59231d87ccd66cec79839aa212"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-no-mouth.svg",
+      "sha256": "d65ac81236d1fd8124c68525b84df9736132196613ab0b950bcf6eef4fdda6bd"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-ok-hand.svg",
+      "sha256": "affb072fa77f011abbd228fe264c97d164ad8a94671507a79d447d252ab699c1"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-oncoming-fist.svg",
+      "sha256": "5b8a6be4ec0edc112c334e9e3903e125cb0c134aa1b7ada0f501a45108b7c245"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-open-hands.svg",
+      "sha256": "4eff49ea08f7b7aac75059309175079b5c63ec4fbec075b8de335df7cf00bdec"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-package.svg",
+      "sha256": "18a3972cdb05953cfc2a587af3e52fe649c9f215c691e84a9325caf0684059df"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-party-popper.svg",
+      "sha256": "7268b46f76ce17366732005dd6528c4dd37a39f239a4c7761b468719642c011f"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-party.svg",
+      "sha256": "4da128d998c66e5f14761c92fd9c61264fdcc0c6840edaf3436fdbd8aa47f5a2"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-pleading.svg",
+      "sha256": "7ee641669ff26130c22eac8b9dc63638ce884531ffbe9af317d2b974f40f123d"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-rage.svg",
+      "sha256": "1646eb245c45d4159fade1bf05d43246f632dc6976f8ce0ddedf11f7b2cc97e9"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-raised-back-hand.svg",
+      "sha256": "ab2047b417dfe16bdd8324630aa4c3b54800ea93bfb1a24c48a80f20e9a411b2"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-raised-eyebrow.svg",
+      "sha256": "9decabdd87af390d9a97f98a429ce007eefd5f5786aff1779210a2d3f3ca12a5"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-raised-hand.svg",
+      "sha256": "301904282d7ba800a4ee9863dad658f2c4c6b2c3b5326df9f2db38666824d02c"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-raising-hands.svg",
+      "sha256": "ec89c9a4ea2a348886d2ea4a4711d79526f792acb06ee71da6a590438ca1c897"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-red-heart.svg",
+      "sha256": "280a633e0e72c7f45a0bdbc819d55d3de71dc47439d3024a0b9d3d7c76642023"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-relieved.svg",
+      "sha256": "635d51fd28352143f29e6d1de15d93600de4acdf799f3579eadfd97f5d3a7484"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-right-fist.svg",
+      "sha256": "c09cee94bf290eced3a98649c9c9154841cb93691c14fd1d037cc8a82adf6394"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-robot.svg",
+      "sha256": "1624b41c060b59d02e7112faeea8c933501845df5c21d674a5e0abcacc2c875c"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-rocket.svg",
+      "sha256": "12fa559cc0d22b47060ae6cbaee1274cd9731f8665c3edc88f5ba12dcb7755cc"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-sad.svg",
+      "sha256": "013f523dc0de817c4a7aff5abd5552a9a9490b1d53e4d398267f0b2cde90fd84"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-scream.svg",
+      "sha256": "0cdebcbcba7edbc42abf9796db6a9968ca15e2a92b7ae1fa39622d07800a619d"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-shushing.svg",
+      "sha256": "94ba3b190ab0f7b50dfd35776e7bb9bdd3d0c93c512889e648b5344299058dfc"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-sleeping.svg",
+      "sha256": "d3934f23e44d0c3d404ca53dce557dcf1d5f34f4ea013df79c82eb691162b27f"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-sleepy.svg",
+      "sha256": "4f7063edd1ef5f2a6e411dcde73ef2b2acf35536fc9be5d40f14261cbd314650"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-smile.svg",
+      "sha256": "57f531a34e0c021cd6c989a2c68b15979d2a34b5bf3ae3fc0bd68b243824d5b2"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-smiley.svg",
+      "sha256": "a27a299e4be6840946a2a6f9ae79ab059083ebc40fcd46c1056ba0d05c965196"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-smiling-hearts.svg",
+      "sha256": "ea04061b31c3fc1bd188b43061d4d07213863f4e1659175c4a5d2c7357bc478e"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-smiling-horns.svg",
+      "sha256": "f87c7f779393ed43dcf73543c994d97d941c1ba3ce22cebd642983e9e00ef5ed"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-smirk.svg",
+      "sha256": "068460414193d024f90c52bda092ce301e36caeb29c6406231fdd3e9f83f2109"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-sparkles.svg",
+      "sha256": "e17f4ea67fb41fd082235eae90f03722980342d478c817e1359ec068d2fa64ab"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-star.svg",
+      "sha256": "35ba477f2cd01990a2712384b2ad5c2f9b0ec1def9ad94aaec139ed27f5286cf"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-sweat-smile.svg",
+      "sha256": "1f80f40a64d55cfdba803529f09a6baea75f921e7b274d292bff0358b13036ea"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-telephone.svg",
+      "sha256": "a120b110f9a02295523339fe92600c828daf870450666bab17a70332186f7bcd"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-thermometer.svg",
+      "sha256": "157cbeaa43685b9f47ae936db13380ad10e2f0132336c360f9c5aad7daa75ca2"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-thinking.svg",
+      "sha256": "b393f008e46a8813060545984a801d2304573860aaedb828da3ea20520d83a68"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-thumb-down.svg",
+      "sha256": "06a70158ec233b780ba54bffd2d56d555288fbf9eb055e5c7a20e00967655213"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-thumb-up.svg",
+      "sha256": "c30d8e01a118cb2dce565d9153cb885111fade63c8191770cce4ced236dfb98a"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-trophy.svg",
+      "sha256": "58ee1c738abfdd3559d68b953a6675a1c9d9296cde6d5248d90872d413209faf"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-unamused.svg",
+      "sha256": "53efda47803eb7591daf3012555d6a8a249375790a36caeeff5a5675458f9b59"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-victory.svg",
+      "sha256": "3754df0f62d32bb39963e37a30616547b25380e653107e708bd498a92c6ce46a"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-warning.svg",
+      "sha256": "b7902e78af706c1ca1292e14393f876d28b8eb1164a50d54545c461d08c6ab07"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-wave.svg",
+      "sha256": "5ffa4704bf0bb9a5724f67c647f793bb584e075c19177c21e1aefa8fd65bf016"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-weary.svg",
+      "sha256": "82cf1ea480e759b4bb8beb57e1282219d01d129005d531b3744500a7e48bbc55"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-wink.svg",
+      "sha256": "12f6e171841c75ee34110fd80e1c08d6bd6f29e510e0c26272cf013093bf4bbd"
+    },
+    {
+      "relative": "chat-stickers/noto/noto-worried.svg",
+      "sha256": "fb7a6d16ad134de28deef446386bb93907a1eb5fb9507f9fe84fc1e8c7c7a472"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-alarm-clock.webp",
+      "sha256": "f9fe9d81acca8ce6955c133f9ae8d056bbeef53efc419f1c99ecd442d6f75e55"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-angel.webp",
+      "sha256": "f8bce18836f90596cf80f58f6e08469a6c1c868acba216d7ebb4f9f7088f9f79"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-angry.webp",
+      "sha256": "825adc5699419abcea7937094573681c71e0e9b5715489d78d4cb5b9788557bc"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-anguished.webp",
+      "sha256": "623b24887d15a9d9fba8516877607dfbf7ad1c8ddd231baac760fc053974341d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-beaming.webp",
+      "sha256": "c6842c26b7263d86ea73b9d7f24950de195281f6d9446b75e65a781acb2425f8"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-bell.webp",
+      "sha256": "4d470179c047f9413f9766b79a4d01fefffed71f243b1791ba28b1347d32422c"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-blush.webp",
+      "sha256": "20b5b752814ce0822b64205216ce21c4c155e7d0bea6bc33a44a0c94d68af6ac"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-calendar.webp",
+      "sha256": "1414a97dff73ac1188c409088f3ff06840f23aab6350c489b22bb95a078f832d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-call-me.webp",
+      "sha256": "d88571ab9744d6ecd1196b3cdf41e284e5467676f0532229377fea973afb894b"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-check-mark.webp",
+      "sha256": "0018ae8288bb1ea7dff2dbf9b2d26dedb216c8a397191b260b20dca1e8abd30d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-clap.webp",
+      "sha256": "1ff5e0a9865412e607743170b72d6dd71a208028e2cc654d54f7dbed8bd652cc"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-cool.webp",
+      "sha256": "78a4af318950ea69ba3b0bf39b9ff33fd87ed0d9291d20a0dea7ad3feaa2aff0"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-cross-mark.webp",
+      "sha256": "4e127036d7add04216e480cc7e6b98777b23ba16dcb7411b3b7ed74c1d9922b3"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-crossed-fingers.webp",
+      "sha256": "f31d8be99fc32a05ba7db1697627b5dc6345a7ec5d66e1c13659a7483f4ae68a"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-delivery-truck.webp",
+      "sha256": "6eba038e68f993a2ab2b649e6671bce7ce9c1bdfa75b034ed65f8cd1bfeec231"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-dizzy-face.webp",
+      "sha256": "6bfda7b77e90808ac98861b59126d9a25489226b423b609c8bfe46086f4cc191"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-envelope.webp",
+      "sha256": "8d61a9d410ed8c24345fbd4fa8156e668b2a662daf57e7b0036b223160d5068e"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-exploding-head.webp",
+      "sha256": "7072083224af5440624da72f1ab57ff8106bb0e52c865659a738383d6a23d094"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-expressionless.webp",
+      "sha256": "28a090c32e4a33ae0756164636c603d4b82d83b08ada5243015b1324a7d35744"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-eye-roll.webp",
+      "sha256": "ba552625820fc1f89c0cd6e4b65b384131589a05bee833b03aab7350631f1534"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-fearful.webp",
+      "sha256": "18d6993a627997537172e7195f20bd88f433d042e58df84967e248c0821aa531"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-fire.webp",
+      "sha256": "af242959d6cd860df8257d01d18a87a600e498f76729a832fb3d71f8cf212708"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-fist.webp",
+      "sha256": "a46ec2c16f0da561bf3347ae93b4dac416b0947911337fcb1e6bf21e159e7da8"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-flexed-biceps.webp",
+      "sha256": "a6cd4f6f0aa03cfda20f90457b5910c90b321064efeed3c0ea7e1f8024a6892a"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-flushed.webp",
+      "sha256": "ef9ec5e913607407fd19e1efbdc0f69b128e25e42e1ffbe0b86ed0ebcad48f30"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-folded-hands.webp",
+      "sha256": "8c9230418a08bb6296988e9cdaa040997d7799a46a29fdc3d2929d69f087be4a"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-frown.webp",
+      "sha256": "a1375b2dd989f27d17c24e95b2c8738f59748b589bafc30ca564627afb40a304"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-gift.webp",
+      "sha256": "44a558610b79446ccb2af15c942f6db8070e66825eea9ea606a4c34775d22857"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-grimacing.webp",
+      "sha256": "7345abd616cb2b8b301984bd37dfea64ec554436ed24c9ea82eb1f469a32783f"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-grinning.webp",
+      "sha256": "a4872d747ed0043bfc35c58ca4836b583158d530e7ac30609db3dc2f8d015db9"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-handshake.webp",
+      "sha256": "a3a5eb339bab69b1c208a8e7751128f17469e846cf8541a0688072c75d23a720"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-heart-eyes.webp",
+      "sha256": "5162093600a9906304b8f43ec314e4243cbc15b6feab930821379de91989b1ca"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-horns.webp",
+      "sha256": "00a849009b0dcec68dabc3c2fa0d07c203e8a405aa199d066716b0dcd281a05d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-hourglass.webp",
+      "sha256": "6e25ddd1785353397438fb5f097f9b24789ddd6168a833ec3a4079d0d9ccc546"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-hugging.webp",
+      "sha256": "e20c761f8e35bfbdfa36f30e3f2b85638934d9fa25c2535b1694b3744c9e6202"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-hundred.webp",
+      "sha256": "b9d693ea98a9628a99d37a0d1da013790b6e1d2dd5980620d01b3160b1cf31ed"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-information.webp",
+      "sha256": "9ed18209811705a663839a83515311f951d60726e471e193e51173bb3e9c022e"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-joy-tears.webp",
+      "sha256": "522dd9f93150c22c24cdf938c1e49be57e1d150ae33ffe42015a3798e303101b"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-kiss.webp",
+      "sha256": "274dbed041669d4b940d738dd91b148aad08c62d6cb912fedbb6768e9431ae6a"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-laugh.webp",
+      "sha256": "0b29e4180de432faa4d570326103ba0e6adb1f9ea90826b27fe2736260a89cfb"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-left-fist.webp",
+      "sha256": "421e53e1354dadae834777e18141370f4c7c6030251f1fc5b6e36e7c8d9ab3c7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-light-bulb.webp",
+      "sha256": "903f20b29073c41ef0cc800718b11e6c272cf5856a564e05828e2349fb8efc2b"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-locked.webp",
+      "sha256": "80f74ec1cc2827009298b0d031027f5918fbcc9009ae68ab174f53877c2eded7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-loudly-crying.webp",
+      "sha256": "6dbbefeb436a1694907b636e42b36b96c7264795428d05c58618eaf552aa0323"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-love-you-gesture.webp",
+      "sha256": "f03e66dcfcd7eedc44505e764b8110d2c0f6aee056ac3df5f897c2e677215e06"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-lying.webp",
+      "sha256": "dadaae652eb4e0fe88d32a2b130825404635a93d617950d0a1f25c7075b9429d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-magnifying-glass.webp",
+      "sha256": "d0cfb0b941dd36c08e77dd0c6a3b0da134654ec1e2df7b222bc8c1fefbe796b7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-medical-mask.webp",
+      "sha256": "b88abdf9980fbff3fc808f1c768830943ea0a2539e7b4b75b5dee6470c5b88df"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-mobile-phone.webp",
+      "sha256": "21b9ad8b310214339ef0571d2969711bb98cc352f28bfeabea147c8033468d8f"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-money-bag.webp",
+      "sha256": "c92c26a1008706457ac7001c0a7fbb1ef764f621be481f7d3bf44a2f38a6d23d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-nauseated.webp",
+      "sha256": "8734c102f5c012e941464df53ce9aadff4974c9484450d802457af637eb89f1e"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-neutral.webp",
+      "sha256": "f566cfe983d0cc8e09e22b8e09b1f52b7357e21de58232bf6732fa9cd5554fa1"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-no-mouth.webp",
+      "sha256": "94d800154a597d1384d73158041c8ecf43d13a90135838a25c12eb1e6ca64887"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-ok-hand.webp",
+      "sha256": "867003ef75c2e6fed367c9f491bef59473df945b3c8427c1621d2c9584e751e1"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-oncoming-fist.webp",
+      "sha256": "f7d7bc19625c8a7a5cd56205d337239543aa9734030f468bebd67932481d8341"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-open-hands.webp",
+      "sha256": "a121571107d4e31b160677d5dcbed8b83b0bd41a7de3625d8ba38d5b002c03c7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-package.webp",
+      "sha256": "c0de624f64c438349f0a0b4bb371b8c5ee6a3399190a819bde3f3aee892304d1"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-party-popper.webp",
+      "sha256": "f98f546dfb1f3aaf7fed7c82587a66e1bd582671a9b9eab03df0fcfa135db7ac"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-party.webp",
+      "sha256": "e1ae154e833c7d094bc86938ec2f01dc2d862ee215ea99a6d84722388d9e567f"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-pleading.webp",
+      "sha256": "fb45fe66f8cac72111736570afbc5eb63a9f3e920ccc2e50459ebca6b63870ff"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-rage.webp",
+      "sha256": "0d78963823fc291a3dc768e3800aaddf422d76359bb6f03283a072208412d873"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-raised-back-hand.webp",
+      "sha256": "62424561f4e6257e471ff25f9fd81e516ac5015427afc514f5bc684713a62ef3"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-raised-eyebrow.webp",
+      "sha256": "780d7f0d174542fd0ae7e7b5e2a97102609e7a34869d50cb31303c8a09c09e4f"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-raised-hand.webp",
+      "sha256": "4536958c3087ac1e4e98e057a28c06b86eaea554e78d2b6d427df01410bd16a8"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-raising-hands.webp",
+      "sha256": "a75727d2f42cbac0fd16e4408fa34f39a23dc1254c7e421537e8838e0c6da60b"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-red-heart.webp",
+      "sha256": "740dfe320667623a96fab188ece19b74517f1da44b8b225c6b344f09eae2a92e"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-relieved.webp",
+      "sha256": "3a98795d73ad477d38f2db5638043ab8d5811148cea698e9582621549089f8d7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-right-fist.webp",
+      "sha256": "3399bdf2a4bb0ea5cc8b4676cc9bc8b981ccd89d3a6536e865d33b6a4a00207a"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-robot.webp",
+      "sha256": "94d09d521befdbdc8078785d536ba7eff15e89ff2c8eec84847e82af2e80a16f"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-rocket.webp",
+      "sha256": "00a84d01ec28b01a500972172a2a289886e34e308ccc7ee5e03d5975bb7ae0f7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-sad.webp",
+      "sha256": "54d8e5e04dfdcf9565e58b4c5d1878ff515700a16e4ad39ec29f9b1560bc9af8"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-scream.webp",
+      "sha256": "41834668763dfe5c379dca39903f830885d8844483bf5ecaa3bbdc0588943af9"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-shushing.webp",
+      "sha256": "ac9ec4419d4fc12d4a72c78690fd3333255e96e6298d527329fee9d9cc28a190"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-sleeping.webp",
+      "sha256": "9c693bc8f21932f85fe897105a72b673c30098871d2cc05131284830a80e830e"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-sleepy.webp",
+      "sha256": "3a9b4572b466dfa3c09114fb2d316aa550c81936dcfbf16be603dd68e14bb807"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-smile.webp",
+      "sha256": "c5ff8e753f1a943181e1af4bd8e5b660cda316762b1dc601997c9bb402aa2499"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-smiley.webp",
+      "sha256": "359e9c49737aa826f26937c0f3e26b7552641f54f500b82842b12b86df3c6816"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-smiling-hearts.webp",
+      "sha256": "12dabe5ddcbae32c2c64b8df4db6c90677dbccae1233a4e0756fd17899de4ffc"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-smiling-horns.webp",
+      "sha256": "e7f55f129ada94fdafe35c8911362401894eae46bd65765bac91b6eadd9a3dd9"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-smirk.webp",
+      "sha256": "d59f1d0a0f0c524e5fa048f1ccda8a1b34e9acf3be1307c6fde0396f2117ab98"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-sparkles.webp",
+      "sha256": "232f8f6b68423418034dee5d319af99eefb994343f0527beacf92333c2b66e94"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-star.webp",
+      "sha256": "eb31cae91efccd2bd78b3eba87887c738c3edd45dedb87c4d590693b308ba0e9"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-sweat-smile.webp",
+      "sha256": "4ac4f162abb1bd5e165d4625709ae1abd0adf3617e7ba15c04f75654e8980670"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-telephone.webp",
+      "sha256": "58c6175437f3d4e7e2371030d03ed0503020854726f57f3de56083fb940774c2"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-thermometer.webp",
+      "sha256": "9dbb5d7b006924f9175932b68a0c4485009ba90a0bc4291fd593b3dea1d63b32"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-thinking.webp",
+      "sha256": "9691376d34d8ff049d8f37b16fa9b7ccc7175cde776be238d9ce4080af512add"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-thumb-down.webp",
+      "sha256": "4f28b95b5c9d0a50bb1d14c3faed026ffc8f6cdde362ae80db870ec6545ff74f"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-thumb-up.webp",
+      "sha256": "7a0c7eb641df92ca258601f6e3032f89e5d4a1699aa2a053a311af1cbe8859eb"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-trophy.webp",
+      "sha256": "b37e48a44525ee82de824451274698b7780aa7bba854427e27c4f686380e91ef"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-unamused.webp",
+      "sha256": "711bd43ee28b8864ac03bb3d0deb99282ffcbf2f9e63f4ce50144008d1da3a67"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-victory.webp",
+      "sha256": "688ff41f31dca99bcb8c15245caa13e8f43aa5fbe5c743dcc36c8515b0c0bf08"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-warning.webp",
+      "sha256": "b1575103fd03fc5ee31213a772695c29bff3aed16998da4a61c646b3e2620060"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-wave.webp",
+      "sha256": "7c438d9f7d69162ca263ab27807629f0605786ec5700ce2ba90bbffa656a175d"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-weary.webp",
+      "sha256": "6c6f47e494a81dca1f504954721e098d5778a1644ba4df0f83a31a87b20f30d6"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-wink.webp",
+      "sha256": "c18f2caba9e92cf1aa5cc539ef568a32e4d656ccbd71a8bd2ec57451ed63c9b7"
+    },
+    {
+      "relative": "chat-stickers/noto-webp/noto-worried.webp",
+      "sha256": "b998ff319e5595c5bb0af16dd1f4e2206142ec2d5b2ec31f4192571e202340d9"
+    },
+    {
+      "relative": "chat-stickers/progress-thumb.jpg",
+      "sha256": "b4bf1038a77880e7b0aa1b863a5bcb7ef2c195a121212bd1895d98af2b0b1ea8"
+    },
+    {
+      "relative": "chat-stickers/progress.jpg",
+      "sha256": "3ace04b5b9f0c083f1f8a905d06b3db55fe4af2dbb995a712c2aa94c9a02bb0c"
+    },
+    {
+      "relative": "chat-stickers/stock-radar-thumb.jpg",
+      "sha256": "80b1e1b010c65e5e512fb33d9c7d4d6fa33a1fd6de28fdc1d846f1573732da8f"
+    },
+    {
+      "relative": "chat-stickers/stock-radar.jpg",
+      "sha256": "275eab1ee0ce6cef8fef4d35404d28e256536bab853fa66a0a310f632a142171"
+    },
+    {
+      "relative": "chat-stickers/v2-checking-thumb.jpg",
+      "sha256": "88644baaef5a8dfbc423453562bb59d7f3634fb220967dc59944516e8b01c8a7"
+    },
+    {
+      "relative": "chat-stickers/v2-checking.jpg",
+      "sha256": "6181afaa0e85f8f2b9ff07ceae275e7876776d703d4844b52e454ce27e363088"
+    },
+    {
+      "relative": "chat-stickers/v2-received-thumb.jpg",
+      "sha256": "ddaea6e4ec7e7de2534ec5a7b4b0fd93a88bb8263606614cd92c1b9763de11ea"
+    },
+    {
+      "relative": "chat-stickers/v2-received.jpg",
+      "sha256": "86d9224c368b56fe6d2288ff648455f42ab38b35f7fa63ee33dda0f71f8458a5"
+    },
+    {
+      "relative": "chat-stickers/v2-shipped-thumb.jpg",
+      "sha256": "0f086c88af479f1ae085a9e2e4bc50d6a8690f7c872587768a05ac24febbadcc"
+    },
+    {
+      "relative": "chat-stickers/v2-shipped.jpg",
+      "sha256": "4dd2f62117da53f7aa32da8f9b6b797a8b1a0ceb0e2f170ac634b7b15db3ef1f"
+    },
+    {
+      "relative": "chat-stickers/v2-thanks-thumb.jpg",
+      "sha256": "b2d37d8ae74eeb244d42cb551656ad3b7911b73a237517a0929a85c4f4580935"
+    },
+    {
+      "relative": "chat-stickers/v2-thanks.jpg",
+      "sha256": "7562630ccee88064100f41fdf586c43e191fcfc1982e7020d869f401162035ae"
+    },
+    {
+      "relative": "chat-stickers/v2-wait-thumb.jpg",
+      "sha256": "e3514f203194782225f068b182058a9e1f5200a247d7fbc5e6813e6bfdf898dc"
+    },
+    {
+      "relative": "chat-stickers/v2-wait.jpg",
+      "sha256": "1705a133125622374f0ac26f19d439269055c556be6b2138fb2a62f0dfb7aacd"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-amazing.png",
+      "sha256": "8762f7ef0f80d66f9cb63cede5a3a1259fb098b93ab4d1d427d4be8344a1fe2c"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-angry.png",
+      "sha256": "5eeecb99502daf026e80588a46ecf008115fc66d00c77568e8be27821fdb53fe"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-cheer.png",
+      "sha256": "410bc56fcdbbceb654df7cf3abd0cf729a45a4939f1d859086d7eecaaaf3ffcb"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-goodnight.png",
+      "sha256": "2547d04bb09724d03124205301c75fe7ecc3819cebf6ffdacca7b5e7b46116f3"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-hardwork.png",
+      "sha256": "3ad3daadeab696901b2296fa55d0748fa8b73cb6a2558d82054cd67fa4217a21"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-hi.png",
+      "sha256": "585e3e04d9bd8f64ad524890e3bd0d675d751a41f4f57efe369d60eb36ee97e2"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-hug.png",
+      "sha256": "1a66a2dce8b0f9e744fb32fd7bcc41107d6336d6405775008a8e674250f2910c"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-okay.png",
+      "sha256": "ffe0567d4fe74b44df9398ca08d4086e2708cedaae52e877f1dc717aec8c2239"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-received.png",
+      "sha256": "df7a8b7d7957ee06f13edcdcdd6aa40703ef5e5f06581b146bab207f380a3114"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-shocked.png",
+      "sha256": "338dc72a7fdb1fba37dfdb14831b37e3d3df66372482cef21570025a1dac03d4"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-thanks.png",
+      "sha256": "cee6c4488f945b92f48038480d8b6fe1b6d8bcaa0dc7757d085f374add938959"
+    },
+    {
+      "relative": "chat-stickers/yayatuan/yayatuan-wronged.png",
+      "sha256": "9bdfd8080bee30fc2def202849f1052a3613a2414164057b9cb1ff3442f1cbbd"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "status": 200,
+      "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "status": 200,
+      "sha256": "615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "status": 200,
+      "sha256": "a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "status": 200,
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4",
+      "contentType": "text/css"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-sticker-tabs/business.png",
+      "status": 200,
+      "sha256": "068c7fe6b4d553f3f188ee0e2acbffcb0d237eb300553a40c78f7a79253962c0",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-sticker-tabs/emoji.png",
+      "status": 200,
+      "sha256": "debba6a5f7220e42453fc6e7d9144fc14daa66afcf488851fcf5bb6cf27a65f2",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-sticker-tabs/yayatuan.png",
+      "status": 200,
+      "sha256": "dbddeb73cdcf74a18b8068b99ced8f8dd4183f97cf3453d22e0af683c46ab99c",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/close-loop-thumb.jpg",
+      "status": 200,
+      "sha256": "17b556433ec1b7d796e6d481174654acca73aa5746be36a70d97768eb151096d",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/close-loop.jpg",
+      "status": 200,
+      "sha256": "0c2b2b32262e89505b4bfe4ce8fa072c0555d4a92a1fb4923fa6c95074048b56",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-angry.png",
+      "status": 200,
+      "sha256": "806c860f37f9e889a734b81049d6c68b76ea37b9336ec25bd5d525e3ceb55705",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-awkward.png",
+      "status": 200,
+      "sha256": "80ded0399ebab01e759e3b402af6d739e47f454eae77d93ec9e59b3359859678",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-bye.png",
+      "status": 200,
+      "sha256": "09aaad23f9d219a49709a8dde17480c6134d41cbc5a79e06a8397e3fa813d239",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-cheer.png",
+      "status": 200,
+      "sha256": "0b3c011945e7e8e2f3358a836c51d8d626443cb84944c8a29bdf0d22a4e6acd9",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-clap.png",
+      "status": 200,
+      "sha256": "e3859fbe1b04c8af5d18f359ea461d7d2c84ea920a7328f4d68692bdef15d7bc",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-cool.png",
+      "status": 200,
+      "sha256": "4d7b50cccf1194588b12049d9838510d6e6998ca2689f88109d0922a2cbf86f5",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-cry.png",
+      "status": 200,
+      "sha256": "fdcfc3e17e75b1a8d80d1672e58ae410ed71442eaf5a3e4fc4a722210a65c01d",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-dizzy.png",
+      "status": 200,
+      "sha256": "c42d10a53e1d163a9e9239c883a52253d632a45414e70b53257af27eaf1a1823",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-eye-roll.png",
+      "status": 200,
+      "sha256": "7148de475c7a61833f98489b855e08b4c6e830201b2887cb53b531592e672909",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-handshake.png",
+      "status": 200,
+      "sha256": "456ed335e1683d3d2bfc0e7894824ba82518595f3dffb7903c1ac7c070202827",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-heart-eyes.png",
+      "status": 200,
+      "sha256": "44ca8188a837d0cb33d4767f8f20eccce0c45ca39a4e57431d2df311bbea4af6",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-joy.png",
+      "status": 200,
+      "sha256": "e5b707983da4c2fa34ef274a16350c559c8efcd4c11fa1ccf6f1626ef2ee34cc",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-kiss.png",
+      "status": 200,
+      "sha256": "824647fd6f107de3cbe183aba4f3814340f95e802d7067a51fc91cee670bf816",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-laugh.png",
+      "status": 200,
+      "sha256": "86fa05b7db9d8b105595fd9952f37f298b2dae506624a9936899a5586d043000",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-ok.png",
+      "status": 200,
+      "sha256": "adbc271f660dac46477b18f84ddb3fdfd5044a102c8d368a1cf2ddd94fdbde64",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-playful.png",
+      "status": 200,
+      "sha256": "a179df352d111a66641893380f549be6e24bd8d32f1d18e541e23e896c3f08ab",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-please.png",
+      "status": 200,
+      "sha256": "204bba0cb42414209d3a03071153506c4179778e4d8ed4988089f491abaf59fe",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-proud.png",
+      "status": 200,
+      "sha256": "955d1d711e19570c4d9f0ffec24b0f70cd77bf268ce3de9b892fa4807110f489",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-question.png",
+      "status": 200,
+      "sha256": "68047c5c91ede12f680b1c1fc03595995dcb40f257b5263dd924c9b699a7f3ad",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-rage.png",
+      "status": 200,
+      "sha256": "0b3581d2415b8252e0cb8e4755cbc1e17eefa2b585ce6323991838a08d11aba3",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-sad.png",
+      "status": 200,
+      "sha256": "bbd58b9304d5d5805992caf040abddf4349c1a05add07da9c2d9aca83fc849cb",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-salute.png",
+      "status": 200,
+      "sha256": "2df3f9867b3451b6b6d0c85afe00139ccde8fd62d2fb03bfbd1b7081b63bca73",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-shocked.png",
+      "status": 200,
+      "sha256": "4d02f0bd36ca7808cad395693716c9c764e79259dda3277b9cf450480357cdf1",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-shy.png",
+      "status": 200,
+      "sha256": "799e5b7c3dd825ee918865f5712b9a3e0a6264b8beec445cb8f3cf5218fd4b0f",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-sleepy.png",
+      "status": 200,
+      "sha256": "5001e92ff7644fa2ddd3bb0ac9826dd1916566ef8fafc8d334c2620ae2a27c1b",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-smile.png",
+      "status": 200,
+      "sha256": "f6b5f2d1134d3b5b203654e6e1353c1da3d85c7c9ee0eba6b4398a1dac4873c1",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-sob.png",
+      "status": 200,
+      "sha256": "8972531a56cb3e607b586637a1e68dc00f3791a885b0c4f1fb2fbed0a79f55b6",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-speechless.png",
+      "status": 200,
+      "sha256": "792f3a9c9a9f67d6a56483f59942a632f3f1f2b805d8ebeaf686c2c409e0ea95",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-sweat.png",
+      "status": 200,
+      "sha256": "41169a2c28ed3e0e994a955aa56f74e66d0bcada996c04ef88c2a0d27f352037",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-thinking.png",
+      "status": 200,
+      "sha256": "ba5df61385076db085ec9077e3b480841a4379de4bafbdb5dc9e0bf43dfb824d",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-thumb-up.png",
+      "status": 200,
+      "sha256": "b90559769d3c7961bb58bee61aa53b1dcd26928b96043bab5cfc54fa2983432d",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/emoji-wink.png",
+      "status": 200,
+      "sha256": "4c464cc0c09ae145bd8ce9453e9b4cf61e55dc277288ec6d6f23e6ca18382eba",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/LICENSE-APACHE-2.0.txt",
+      "status": 200,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "contentType": "text/plain"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/NOTICE.md",
+      "status": 200,
+      "sha256": "976a9ebd48401ab874c926311b73567cee48afc7837637d6868967daa1c74e60",
+      "contentType": "text/markdown"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-alarm-clock.svg",
+      "status": 200,
+      "sha256": "19f0db9d5e9465e5fc97afde4c65f9415548088bccb38d8e9a6244279f05ebf5",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-angel.svg",
+      "status": 200,
+      "sha256": "2c86acde97249bc72f5ccbb952b0229da93367fd97e7f03e961f1c5cf8eb0ba1",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-angry.svg",
+      "status": 200,
+      "sha256": "31efac37a51fa060330f5b03bdaaf0a875b1270aa355dcee4a6760fa5b8860cd",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-anguished.svg",
+      "status": 200,
+      "sha256": "313acceeb0b6592f99b583442607830fcf162b6407983dcc220e4d41ec9d1a3c",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-beaming.svg",
+      "status": 200,
+      "sha256": "fb19d8afc300438b5d4921f0a306cf07122f3deab6a9d3b940a6bc8c80a9bc9a",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-bell.svg",
+      "status": 200,
+      "sha256": "6594e3db7bd9ce3a9a5a3e98a43eef75456da9ddd926994b39947285006c0d88",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-blush.svg",
+      "status": 200,
+      "sha256": "fdd7e8f4c8653d709319462cb5d54a6973e15042d6cf7c4c860c5c7776b7059e",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-calendar.svg",
+      "status": 200,
+      "sha256": "be2d062f483768d0199fe9e93680872281984eb3f302fd3cada1b246f59a5e4e",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-call-me.svg",
+      "status": 200,
+      "sha256": "ef0480668a00c405e246677bc12683b24920eecafc52fcd9af35dcc3cf7bbbfc",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-check-mark.svg",
+      "status": 200,
+      "sha256": "10d5be93c52a1fc0bcd195dee9485445daeb9f2398f9f58e513e3c27f95a52d0",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-clap.svg",
+      "status": 200,
+      "sha256": "34265e9431a758f6c4d3e88365b35a3e338cee0b1d84cfe9682a5779e52f452f",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-cool.svg",
+      "status": 200,
+      "sha256": "98f1d7f1406ee3ab299a93586be1de0b0987bcbf946fabed082d96699e27e2a8",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-cross-mark.svg",
+      "status": 200,
+      "sha256": "0ccbebbd79d7244d142eff2838125e21c8100d51bbb29a0ad17ee7ca7fdc0c3c",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-crossed-fingers.svg",
+      "status": 200,
+      "sha256": "a0c6ad4619f8d9682bff0cb6b7a63c727599d33138b47e5d63cfa8f614a911d0",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-delivery-truck.svg",
+      "status": 200,
+      "sha256": "cd431fc9d61c11d49f9378bebef8e58ba6c94b5ef82cda44f4dfc8fa13744937",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-dizzy-face.svg",
+      "status": 200,
+      "sha256": "086c8b737bc4817cd08c49da917607024bedb5656bd0a9ac4c422b517f8072c4",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-envelope.svg",
+      "status": 200,
+      "sha256": "5c65f30b8456ec49a0f9bd7fc61c3718de6a08ee139256e2eca4d01992a697ab",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-exploding-head.svg",
+      "status": 200,
+      "sha256": "9756b17ba39d4af1efe566ced02b182bbe99a37d049d5e9bb68bbbd383b426dd",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-expressionless.svg",
+      "status": 200,
+      "sha256": "dc2636e6eeb944460fd0a6ea51d3e32e3cb04ad7e525be59cc216488e1dadd24",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-eye-roll.svg",
+      "status": 200,
+      "sha256": "dcb421412a6b94a0db189ca1a6bec6397167e67cfee5fbec38c566eaac31f0e5",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-fearful.svg",
+      "status": 200,
+      "sha256": "243f3429de32c0d07f5ac5b15b5b6a1820b12368ebd923ce6a2728f96d674876",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-fire.svg",
+      "status": 200,
+      "sha256": "189d06b95de39a43a55d2294b58759addb5dbc35051931e3809d5ece9bff1fd5",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-fist.svg",
+      "status": 200,
+      "sha256": "5d4e29b3c20963f39add4659c60a240bdca99f88ec01f81376a92cf2325cf19e",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-flexed-biceps.svg",
+      "status": 200,
+      "sha256": "7dc3422399832437476f9ba9e0badbf63a8bf955694b5a568770ce95c97b7a25",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-flushed.svg",
+      "status": 200,
+      "sha256": "79f451edd62fddf9c0490b72c5ef738cfe9420410f745e0a7689bcaf94c5549f",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-folded-hands.svg",
+      "status": 200,
+      "sha256": "3eb0ad703c9051666db5c387d292abec4f8319a5c774945745846c5163a7db5d",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-frown.svg",
+      "status": 200,
+      "sha256": "67a6102efadfbc850ad77625ccd25484cc5fcea53b827d20d249ce16414c6dc2",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-gift.svg",
+      "status": 200,
+      "sha256": "f8df9f99dd7e8582de860c15f037a141f1b7f4c531e5f80f1624d5aa472ba38b",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-grimacing.svg",
+      "status": 200,
+      "sha256": "abd20a005f87335bdbef10ac65a9b7604fb76c88f3a501fbbd0ba0df5aadb43c",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-grinning.svg",
+      "status": 200,
+      "sha256": "544b36625a90af0b952ead586044d76c00b47e112200533b9b5439c163152d66",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-handshake.svg",
+      "status": 200,
+      "sha256": "f20707b7dcb0704be9b456d526aacb42c10acbb72e61fd8a69e2a64734029321",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-heart-eyes.svg",
+      "status": 200,
+      "sha256": "d621a55c839b758a62e2722564dab703f7ad4598466f52f62648ca70b7dfb541",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-horns.svg",
+      "status": 200,
+      "sha256": "38c5301d1af4e68a3e90dcb5031548dbd06bb0f7902da72a14f45a0a983ede14",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-hourglass.svg",
+      "status": 200,
+      "sha256": "b0cb20e290c53c17c223b82d48925157d2ec7a8e699d5318b615c7dd53592c27",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-hugging.svg",
+      "status": 200,
+      "sha256": "112355c0ab7dd1b03e64f5ce6229a845082f7b3a46adb6cbdd9544be68234af6",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-hundred.svg",
+      "status": 200,
+      "sha256": "929d452a207acc4cb53f18fe4695a4a3620d665a32f1f8123e5064be3de50581",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-information.svg",
+      "status": 200,
+      "sha256": "5bd75469fae1d49bd910a4ed64593cad0aa236c92e3784c4abb5bc5287c2225b",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-joy-tears.svg",
+      "status": 200,
+      "sha256": "b553c8c7d447edbd684c436bdf49208ab142f3fc7004eb98fbe8ab6dc68451ab",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-kiss.svg",
+      "status": 200,
+      "sha256": "e9bd062a90885f5703e151ebd0041879b82881d46ae21fd97bac0364062587a2",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-laugh.svg",
+      "status": 200,
+      "sha256": "fd4fa55eeb9c57bc4358398b10ed7875249cf9301ee5f2896d1ce2e0df22c0ba",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-left-fist.svg",
+      "status": 200,
+      "sha256": "9d3c3a6361cdf55817ed5639f2acc031288ea072184a793877d12d2d68b0a1a8",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-light-bulb.svg",
+      "status": 200,
+      "sha256": "4c3d9c210c03271ebe63b9f86ab3e9a33d36483ed5920e116d7efed6c095def7",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-locked.svg",
+      "status": 200,
+      "sha256": "953a5dce94ecf72594a97c2ad2ccbf4afbec2d54361b6fe228ee73081b0bbaa9",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-loudly-crying.svg",
+      "status": 200,
+      "sha256": "b8b0845817217b19602544b7f5d0a681fd29f5d15564540de442c49e963f57c7",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-love-you-gesture.svg",
+      "status": 200,
+      "sha256": "a95cef9bb153f5a50d22d630f8b019bf0a0715599c0891281451d6384e662137",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-lying.svg",
+      "status": 200,
+      "sha256": "01b5933e2520404f8011bf26d80c5460808b13ed43d663af63aa1b404987827d",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-magnifying-glass.svg",
+      "status": 200,
+      "sha256": "c4a1cc029264ab60dfec3e6e6c6493138b57c6de51e8efddd1e8be400ed7ad49",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-medical-mask.svg",
+      "status": 200,
+      "sha256": "99d2b652e5ebba4badcec39d4c6d88e23889852ca12839adb3519c742a72caa5",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-mobile-phone.svg",
+      "status": 200,
+      "sha256": "e363c1e6e9fa46e8064892468a5d188d4651f14dce222cd32798dd6621ba8840",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-money-bag.svg",
+      "status": 200,
+      "sha256": "c6a2392833576f7eb22b16290982d40eea27269817b76262d6f5ec76e90807bf",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-nauseated.svg",
+      "status": 200,
+      "sha256": "6a1197b82740b13d1774716951bfc0f808494d52ce1e4e5bc6da4c0b966c3e58",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-neutral.svg",
+      "status": 200,
+      "sha256": "0d6f6357cd40e831116083376c4d1236fe781e59231d87ccd66cec79839aa212",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-no-mouth.svg",
+      "status": 200,
+      "sha256": "d65ac81236d1fd8124c68525b84df9736132196613ab0b950bcf6eef4fdda6bd",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-ok-hand.svg",
+      "status": 200,
+      "sha256": "affb072fa77f011abbd228fe264c97d164ad8a94671507a79d447d252ab699c1",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-oncoming-fist.svg",
+      "status": 200,
+      "sha256": "5b8a6be4ec0edc112c334e9e3903e125cb0c134aa1b7ada0f501a45108b7c245",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-open-hands.svg",
+      "status": 200,
+      "sha256": "4eff49ea08f7b7aac75059309175079b5c63ec4fbec075b8de335df7cf00bdec",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-package.svg",
+      "status": 200,
+      "sha256": "18a3972cdb05953cfc2a587af3e52fe649c9f215c691e84a9325caf0684059df",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-party-popper.svg",
+      "status": 200,
+      "sha256": "7268b46f76ce17366732005dd6528c4dd37a39f239a4c7761b468719642c011f",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-party.svg",
+      "status": 200,
+      "sha256": "4da128d998c66e5f14761c92fd9c61264fdcc0c6840edaf3436fdbd8aa47f5a2",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-pleading.svg",
+      "status": 200,
+      "sha256": "7ee641669ff26130c22eac8b9dc63638ce884531ffbe9af317d2b974f40f123d",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-rage.svg",
+      "status": 200,
+      "sha256": "1646eb245c45d4159fade1bf05d43246f632dc6976f8ce0ddedf11f7b2cc97e9",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-raised-back-hand.svg",
+      "status": 200,
+      "sha256": "ab2047b417dfe16bdd8324630aa4c3b54800ea93bfb1a24c48a80f20e9a411b2",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-raised-eyebrow.svg",
+      "status": 200,
+      "sha256": "9decabdd87af390d9a97f98a429ce007eefd5f5786aff1779210a2d3f3ca12a5",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-raised-hand.svg",
+      "status": 200,
+      "sha256": "301904282d7ba800a4ee9863dad658f2c4c6b2c3b5326df9f2db38666824d02c",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-raising-hands.svg",
+      "status": 200,
+      "sha256": "ec89c9a4ea2a348886d2ea4a4711d79526f792acb06ee71da6a590438ca1c897",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-red-heart.svg",
+      "status": 200,
+      "sha256": "280a633e0e72c7f45a0bdbc819d55d3de71dc47439d3024a0b9d3d7c76642023",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-relieved.svg",
+      "status": 200,
+      "sha256": "635d51fd28352143f29e6d1de15d93600de4acdf799f3579eadfd97f5d3a7484",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-right-fist.svg",
+      "status": 200,
+      "sha256": "c09cee94bf290eced3a98649c9c9154841cb93691c14fd1d037cc8a82adf6394",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-robot.svg",
+      "status": 200,
+      "sha256": "1624b41c060b59d02e7112faeea8c933501845df5c21d674a5e0abcacc2c875c",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-rocket.svg",
+      "status": 200,
+      "sha256": "12fa559cc0d22b47060ae6cbaee1274cd9731f8665c3edc88f5ba12dcb7755cc",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-sad.svg",
+      "status": 200,
+      "sha256": "013f523dc0de817c4a7aff5abd5552a9a9490b1d53e4d398267f0b2cde90fd84",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-scream.svg",
+      "status": 200,
+      "sha256": "0cdebcbcba7edbc42abf9796db6a9968ca15e2a92b7ae1fa39622d07800a619d",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-shushing.svg",
+      "status": 200,
+      "sha256": "94ba3b190ab0f7b50dfd35776e7bb9bdd3d0c93c512889e648b5344299058dfc",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-sleeping.svg",
+      "status": 200,
+      "sha256": "d3934f23e44d0c3d404ca53dce557dcf1d5f34f4ea013df79c82eb691162b27f",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-sleepy.svg",
+      "status": 200,
+      "sha256": "4f7063edd1ef5f2a6e411dcde73ef2b2acf35536fc9be5d40f14261cbd314650",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-smile.svg",
+      "status": 200,
+      "sha256": "57f531a34e0c021cd6c989a2c68b15979d2a34b5bf3ae3fc0bd68b243824d5b2",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-smiley.svg",
+      "status": 200,
+      "sha256": "a27a299e4be6840946a2a6f9ae79ab059083ebc40fcd46c1056ba0d05c965196",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-smiling-hearts.svg",
+      "status": 200,
+      "sha256": "ea04061b31c3fc1bd188b43061d4d07213863f4e1659175c4a5d2c7357bc478e",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-smiling-horns.svg",
+      "status": 200,
+      "sha256": "f87c7f779393ed43dcf73543c994d97d941c1ba3ce22cebd642983e9e00ef5ed",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-smirk.svg",
+      "status": 200,
+      "sha256": "068460414193d024f90c52bda092ce301e36caeb29c6406231fdd3e9f83f2109",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-sparkles.svg",
+      "status": 200,
+      "sha256": "e17f4ea67fb41fd082235eae90f03722980342d478c817e1359ec068d2fa64ab",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-star.svg",
+      "status": 200,
+      "sha256": "35ba477f2cd01990a2712384b2ad5c2f9b0ec1def9ad94aaec139ed27f5286cf",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-sweat-smile.svg",
+      "status": 200,
+      "sha256": "1f80f40a64d55cfdba803529f09a6baea75f921e7b274d292bff0358b13036ea",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-telephone.svg",
+      "status": 200,
+      "sha256": "a120b110f9a02295523339fe92600c828daf870450666bab17a70332186f7bcd",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-thermometer.svg",
+      "status": 200,
+      "sha256": "157cbeaa43685b9f47ae936db13380ad10e2f0132336c360f9c5aad7daa75ca2",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-thinking.svg",
+      "status": 200,
+      "sha256": "b393f008e46a8813060545984a801d2304573860aaedb828da3ea20520d83a68",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-thumb-down.svg",
+      "status": 200,
+      "sha256": "06a70158ec233b780ba54bffd2d56d555288fbf9eb055e5c7a20e00967655213",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-thumb-up.svg",
+      "status": 200,
+      "sha256": "c30d8e01a118cb2dce565d9153cb885111fade63c8191770cce4ced236dfb98a",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-trophy.svg",
+      "status": 200,
+      "sha256": "58ee1c738abfdd3559d68b953a6675a1c9d9296cde6d5248d90872d413209faf",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-unamused.svg",
+      "status": 200,
+      "sha256": "53efda47803eb7591daf3012555d6a8a249375790a36caeeff5a5675458f9b59",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-victory.svg",
+      "status": 200,
+      "sha256": "3754df0f62d32bb39963e37a30616547b25380e653107e708bd498a92c6ce46a",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-warning.svg",
+      "status": 200,
+      "sha256": "b7902e78af706c1ca1292e14393f876d28b8eb1164a50d54545c461d08c6ab07",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-wave.svg",
+      "status": 200,
+      "sha256": "5ffa4704bf0bb9a5724f67c647f793bb584e075c19177c21e1aefa8fd65bf016",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-weary.svg",
+      "status": 200,
+      "sha256": "82cf1ea480e759b4bb8beb57e1282219d01d129005d531b3744500a7e48bbc55",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-wink.svg",
+      "status": 200,
+      "sha256": "12f6e171841c75ee34110fd80e1c08d6bd6f29e510e0c26272cf013093bf4bbd",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto/noto-worried.svg",
+      "status": 200,
+      "sha256": "fb7a6d16ad134de28deef446386bb93907a1eb5fb9507f9fe84fc1e8c7c7a472",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-alarm-clock.webp",
+      "status": 200,
+      "sha256": "f9fe9d81acca8ce6955c133f9ae8d056bbeef53efc419f1c99ecd442d6f75e55",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-angel.webp",
+      "status": 200,
+      "sha256": "f8bce18836f90596cf80f58f6e08469a6c1c868acba216d7ebb4f9f7088f9f79",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-angry.webp",
+      "status": 200,
+      "sha256": "825adc5699419abcea7937094573681c71e0e9b5715489d78d4cb5b9788557bc",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-anguished.webp",
+      "status": 200,
+      "sha256": "623b24887d15a9d9fba8516877607dfbf7ad1c8ddd231baac760fc053974341d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-beaming.webp",
+      "status": 200,
+      "sha256": "c6842c26b7263d86ea73b9d7f24950de195281f6d9446b75e65a781acb2425f8",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-bell.webp",
+      "status": 200,
+      "sha256": "4d470179c047f9413f9766b79a4d01fefffed71f243b1791ba28b1347d32422c",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-blush.webp",
+      "status": 200,
+      "sha256": "20b5b752814ce0822b64205216ce21c4c155e7d0bea6bc33a44a0c94d68af6ac",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-calendar.webp",
+      "status": 200,
+      "sha256": "1414a97dff73ac1188c409088f3ff06840f23aab6350c489b22bb95a078f832d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-call-me.webp",
+      "status": 200,
+      "sha256": "d88571ab9744d6ecd1196b3cdf41e284e5467676f0532229377fea973afb894b",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-check-mark.webp",
+      "status": 200,
+      "sha256": "0018ae8288bb1ea7dff2dbf9b2d26dedb216c8a397191b260b20dca1e8abd30d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-clap.webp",
+      "status": 200,
+      "sha256": "1ff5e0a9865412e607743170b72d6dd71a208028e2cc654d54f7dbed8bd652cc",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-cool.webp",
+      "status": 200,
+      "sha256": "78a4af318950ea69ba3b0bf39b9ff33fd87ed0d9291d20a0dea7ad3feaa2aff0",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-cross-mark.webp",
+      "status": 200,
+      "sha256": "4e127036d7add04216e480cc7e6b98777b23ba16dcb7411b3b7ed74c1d9922b3",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-crossed-fingers.webp",
+      "status": 200,
+      "sha256": "f31d8be99fc32a05ba7db1697627b5dc6345a7ec5d66e1c13659a7483f4ae68a",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-delivery-truck.webp",
+      "status": 200,
+      "sha256": "6eba038e68f993a2ab2b649e6671bce7ce9c1bdfa75b034ed65f8cd1bfeec231",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-dizzy-face.webp",
+      "status": 200,
+      "sha256": "6bfda7b77e90808ac98861b59126d9a25489226b423b609c8bfe46086f4cc191",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-envelope.webp",
+      "status": 200,
+      "sha256": "8d61a9d410ed8c24345fbd4fa8156e668b2a662daf57e7b0036b223160d5068e",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-exploding-head.webp",
+      "status": 200,
+      "sha256": "7072083224af5440624da72f1ab57ff8106bb0e52c865659a738383d6a23d094",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-expressionless.webp",
+      "status": 200,
+      "sha256": "28a090c32e4a33ae0756164636c603d4b82d83b08ada5243015b1324a7d35744",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-eye-roll.webp",
+      "status": 200,
+      "sha256": "ba552625820fc1f89c0cd6e4b65b384131589a05bee833b03aab7350631f1534",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-fearful.webp",
+      "status": 200,
+      "sha256": "18d6993a627997537172e7195f20bd88f433d042e58df84967e248c0821aa531",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-fire.webp",
+      "status": 200,
+      "sha256": "af242959d6cd860df8257d01d18a87a600e498f76729a832fb3d71f8cf212708",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-fist.webp",
+      "status": 200,
+      "sha256": "a46ec2c16f0da561bf3347ae93b4dac416b0947911337fcb1e6bf21e159e7da8",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-flexed-biceps.webp",
+      "status": 200,
+      "sha256": "a6cd4f6f0aa03cfda20f90457b5910c90b321064efeed3c0ea7e1f8024a6892a",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-flushed.webp",
+      "status": 200,
+      "sha256": "ef9ec5e913607407fd19e1efbdc0f69b128e25e42e1ffbe0b86ed0ebcad48f30",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-folded-hands.webp",
+      "status": 200,
+      "sha256": "8c9230418a08bb6296988e9cdaa040997d7799a46a29fdc3d2929d69f087be4a",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-frown.webp",
+      "status": 200,
+      "sha256": "a1375b2dd989f27d17c24e95b2c8738f59748b589bafc30ca564627afb40a304",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-gift.webp",
+      "status": 200,
+      "sha256": "44a558610b79446ccb2af15c942f6db8070e66825eea9ea606a4c34775d22857",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-grimacing.webp",
+      "status": 200,
+      "sha256": "7345abd616cb2b8b301984bd37dfea64ec554436ed24c9ea82eb1f469a32783f",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-grinning.webp",
+      "status": 200,
+      "sha256": "a4872d747ed0043bfc35c58ca4836b583158d530e7ac30609db3dc2f8d015db9",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-handshake.webp",
+      "status": 200,
+      "sha256": "a3a5eb339bab69b1c208a8e7751128f17469e846cf8541a0688072c75d23a720",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-heart-eyes.webp",
+      "status": 200,
+      "sha256": "5162093600a9906304b8f43ec314e4243cbc15b6feab930821379de91989b1ca",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-horns.webp",
+      "status": 200,
+      "sha256": "00a849009b0dcec68dabc3c2fa0d07c203e8a405aa199d066716b0dcd281a05d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-hourglass.webp",
+      "status": 200,
+      "sha256": "6e25ddd1785353397438fb5f097f9b24789ddd6168a833ec3a4079d0d9ccc546",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-hugging.webp",
+      "status": 200,
+      "sha256": "e20c761f8e35bfbdfa36f30e3f2b85638934d9fa25c2535b1694b3744c9e6202",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-hundred.webp",
+      "status": 200,
+      "sha256": "b9d693ea98a9628a99d37a0d1da013790b6e1d2dd5980620d01b3160b1cf31ed",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-information.webp",
+      "status": 200,
+      "sha256": "9ed18209811705a663839a83515311f951d60726e471e193e51173bb3e9c022e",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-joy-tears.webp",
+      "status": 200,
+      "sha256": "522dd9f93150c22c24cdf938c1e49be57e1d150ae33ffe42015a3798e303101b",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-kiss.webp",
+      "status": 200,
+      "sha256": "274dbed041669d4b940d738dd91b148aad08c62d6cb912fedbb6768e9431ae6a",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-laugh.webp",
+      "status": 200,
+      "sha256": "0b29e4180de432faa4d570326103ba0e6adb1f9ea90826b27fe2736260a89cfb",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-left-fist.webp",
+      "status": 200,
+      "sha256": "421e53e1354dadae834777e18141370f4c7c6030251f1fc5b6e36e7c8d9ab3c7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-light-bulb.webp",
+      "status": 200,
+      "sha256": "903f20b29073c41ef0cc800718b11e6c272cf5856a564e05828e2349fb8efc2b",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-locked.webp",
+      "status": 200,
+      "sha256": "80f74ec1cc2827009298b0d031027f5918fbcc9009ae68ab174f53877c2eded7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-loudly-crying.webp",
+      "status": 200,
+      "sha256": "6dbbefeb436a1694907b636e42b36b96c7264795428d05c58618eaf552aa0323",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-love-you-gesture.webp",
+      "status": 200,
+      "sha256": "f03e66dcfcd7eedc44505e764b8110d2c0f6aee056ac3df5f897c2e677215e06",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-lying.webp",
+      "status": 200,
+      "sha256": "dadaae652eb4e0fe88d32a2b130825404635a93d617950d0a1f25c7075b9429d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-magnifying-glass.webp",
+      "status": 200,
+      "sha256": "d0cfb0b941dd36c08e77dd0c6a3b0da134654ec1e2df7b222bc8c1fefbe796b7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-medical-mask.webp",
+      "status": 200,
+      "sha256": "b88abdf9980fbff3fc808f1c768830943ea0a2539e7b4b75b5dee6470c5b88df",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-mobile-phone.webp",
+      "status": 200,
+      "sha256": "21b9ad8b310214339ef0571d2969711bb98cc352f28bfeabea147c8033468d8f",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-money-bag.webp",
+      "status": 200,
+      "sha256": "c92c26a1008706457ac7001c0a7fbb1ef764f621be481f7d3bf44a2f38a6d23d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-nauseated.webp",
+      "status": 200,
+      "sha256": "8734c102f5c012e941464df53ce9aadff4974c9484450d802457af637eb89f1e",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-neutral.webp",
+      "status": 200,
+      "sha256": "f566cfe983d0cc8e09e22b8e09b1f52b7357e21de58232bf6732fa9cd5554fa1",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-no-mouth.webp",
+      "status": 200,
+      "sha256": "94d800154a597d1384d73158041c8ecf43d13a90135838a25c12eb1e6ca64887",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-ok-hand.webp",
+      "status": 200,
+      "sha256": "867003ef75c2e6fed367c9f491bef59473df945b3c8427c1621d2c9584e751e1",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-oncoming-fist.webp",
+      "status": 200,
+      "sha256": "f7d7bc19625c8a7a5cd56205d337239543aa9734030f468bebd67932481d8341",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-open-hands.webp",
+      "status": 200,
+      "sha256": "a121571107d4e31b160677d5dcbed8b83b0bd41a7de3625d8ba38d5b002c03c7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-package.webp",
+      "status": 200,
+      "sha256": "c0de624f64c438349f0a0b4bb371b8c5ee6a3399190a819bde3f3aee892304d1",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-party-popper.webp",
+      "status": 200,
+      "sha256": "f98f546dfb1f3aaf7fed7c82587a66e1bd582671a9b9eab03df0fcfa135db7ac",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-party.webp",
+      "status": 200,
+      "sha256": "e1ae154e833c7d094bc86938ec2f01dc2d862ee215ea99a6d84722388d9e567f",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-pleading.webp",
+      "status": 200,
+      "sha256": "fb45fe66f8cac72111736570afbc5eb63a9f3e920ccc2e50459ebca6b63870ff",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-rage.webp",
+      "status": 200,
+      "sha256": "0d78963823fc291a3dc768e3800aaddf422d76359bb6f03283a072208412d873",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-raised-back-hand.webp",
+      "status": 200,
+      "sha256": "62424561f4e6257e471ff25f9fd81e516ac5015427afc514f5bc684713a62ef3",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-raised-eyebrow.webp",
+      "status": 200,
+      "sha256": "780d7f0d174542fd0ae7e7b5e2a97102609e7a34869d50cb31303c8a09c09e4f",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-raised-hand.webp",
+      "status": 200,
+      "sha256": "4536958c3087ac1e4e98e057a28c06b86eaea554e78d2b6d427df01410bd16a8",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-raising-hands.webp",
+      "status": 200,
+      "sha256": "a75727d2f42cbac0fd16e4408fa34f39a23dc1254c7e421537e8838e0c6da60b",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-red-heart.webp",
+      "status": 200,
+      "sha256": "740dfe320667623a96fab188ece19b74517f1da44b8b225c6b344f09eae2a92e",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-relieved.webp",
+      "status": 200,
+      "sha256": "3a98795d73ad477d38f2db5638043ab8d5811148cea698e9582621549089f8d7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-right-fist.webp",
+      "status": 200,
+      "sha256": "3399bdf2a4bb0ea5cc8b4676cc9bc8b981ccd89d3a6536e865d33b6a4a00207a",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-robot.webp",
+      "status": 200,
+      "sha256": "94d09d521befdbdc8078785d536ba7eff15e89ff2c8eec84847e82af2e80a16f",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-rocket.webp",
+      "status": 200,
+      "sha256": "00a84d01ec28b01a500972172a2a289886e34e308ccc7ee5e03d5975bb7ae0f7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-sad.webp",
+      "status": 200,
+      "sha256": "54d8e5e04dfdcf9565e58b4c5d1878ff515700a16e4ad39ec29f9b1560bc9af8",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-scream.webp",
+      "status": 200,
+      "sha256": "41834668763dfe5c379dca39903f830885d8844483bf5ecaa3bbdc0588943af9",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-shushing.webp",
+      "status": 200,
+      "sha256": "ac9ec4419d4fc12d4a72c78690fd3333255e96e6298d527329fee9d9cc28a190",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-sleeping.webp",
+      "status": 200,
+      "sha256": "9c693bc8f21932f85fe897105a72b673c30098871d2cc05131284830a80e830e",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-sleepy.webp",
+      "status": 200,
+      "sha256": "3a9b4572b466dfa3c09114fb2d316aa550c81936dcfbf16be603dd68e14bb807",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-smile.webp",
+      "status": 200,
+      "sha256": "c5ff8e753f1a943181e1af4bd8e5b660cda316762b1dc601997c9bb402aa2499",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-smiley.webp",
+      "status": 200,
+      "sha256": "359e9c49737aa826f26937c0f3e26b7552641f54f500b82842b12b86df3c6816",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-smiling-hearts.webp",
+      "status": 200,
+      "sha256": "12dabe5ddcbae32c2c64b8df4db6c90677dbccae1233a4e0756fd17899de4ffc",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-smiling-horns.webp",
+      "status": 200,
+      "sha256": "e7f55f129ada94fdafe35c8911362401894eae46bd65765bac91b6eadd9a3dd9",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-smirk.webp",
+      "status": 200,
+      "sha256": "d59f1d0a0f0c524e5fa048f1ccda8a1b34e9acf3be1307c6fde0396f2117ab98",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-sparkles.webp",
+      "status": 200,
+      "sha256": "232f8f6b68423418034dee5d319af99eefb994343f0527beacf92333c2b66e94",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-star.webp",
+      "status": 200,
+      "sha256": "eb31cae91efccd2bd78b3eba87887c738c3edd45dedb87c4d590693b308ba0e9",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-sweat-smile.webp",
+      "status": 200,
+      "sha256": "4ac4f162abb1bd5e165d4625709ae1abd0adf3617e7ba15c04f75654e8980670",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-telephone.webp",
+      "status": 200,
+      "sha256": "58c6175437f3d4e7e2371030d03ed0503020854726f57f3de56083fb940774c2",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-thermometer.webp",
+      "status": 200,
+      "sha256": "9dbb5d7b006924f9175932b68a0c4485009ba90a0bc4291fd593b3dea1d63b32",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-thinking.webp",
+      "status": 200,
+      "sha256": "9691376d34d8ff049d8f37b16fa9b7ccc7175cde776be238d9ce4080af512add",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-thumb-down.webp",
+      "status": 200,
+      "sha256": "4f28b95b5c9d0a50bb1d14c3faed026ffc8f6cdde362ae80db870ec6545ff74f",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-thumb-up.webp",
+      "status": 200,
+      "sha256": "7a0c7eb641df92ca258601f6e3032f89e5d4a1699aa2a053a311af1cbe8859eb",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-trophy.webp",
+      "status": 200,
+      "sha256": "b37e48a44525ee82de824451274698b7780aa7bba854427e27c4f686380e91ef",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-unamused.webp",
+      "status": 200,
+      "sha256": "711bd43ee28b8864ac03bb3d0deb99282ffcbf2f9e63f4ce50144008d1da3a67",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-victory.webp",
+      "status": 200,
+      "sha256": "688ff41f31dca99bcb8c15245caa13e8f43aa5fbe5c743dcc36c8515b0c0bf08",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-warning.webp",
+      "status": 200,
+      "sha256": "b1575103fd03fc5ee31213a772695c29bff3aed16998da4a61c646b3e2620060",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-wave.webp",
+      "status": 200,
+      "sha256": "7c438d9f7d69162ca263ab27807629f0605786ec5700ce2ba90bbffa656a175d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-weary.webp",
+      "status": 200,
+      "sha256": "6c6f47e494a81dca1f504954721e098d5778a1644ba4df0f83a31a87b20f30d6",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-wink.webp",
+      "status": 200,
+      "sha256": "c18f2caba9e92cf1aa5cc539ef568a32e4d656ccbd71a8bd2ec57451ed63c9b7",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/noto-webp/noto-worried.webp",
+      "status": 200,
+      "sha256": "b998ff319e5595c5bb0af16dd1f4e2206142ec2d5b2ec31f4192571e202340d9",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/progress-thumb.jpg",
+      "status": 200,
+      "sha256": "b4bf1038a77880e7b0aa1b863a5bcb7ef2c195a121212bd1895d98af2b0b1ea8",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/progress.jpg",
+      "status": 200,
+      "sha256": "3ace04b5b9f0c083f1f8a905d06b3db55fe4af2dbb995a712c2aa94c9a02bb0c",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/stock-radar-thumb.jpg",
+      "status": 200,
+      "sha256": "80b1e1b010c65e5e512fb33d9c7d4d6fa33a1fd6de28fdc1d846f1573732da8f",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/stock-radar.jpg",
+      "status": 200,
+      "sha256": "275eab1ee0ce6cef8fef4d35404d28e256536bab853fa66a0a310f632a142171",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-checking-thumb.jpg",
+      "status": 200,
+      "sha256": "88644baaef5a8dfbc423453562bb59d7f3634fb220967dc59944516e8b01c8a7",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-checking.jpg",
+      "status": 200,
+      "sha256": "6181afaa0e85f8f2b9ff07ceae275e7876776d703d4844b52e454ce27e363088",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-received-thumb.jpg",
+      "status": 200,
+      "sha256": "ddaea6e4ec7e7de2534ec5a7b4b0fd93a88bb8263606614cd92c1b9763de11ea",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-received.jpg",
+      "status": 200,
+      "sha256": "86d9224c368b56fe6d2288ff648455f42ab38b35f7fa63ee33dda0f71f8458a5",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-shipped-thumb.jpg",
+      "status": 200,
+      "sha256": "0f086c88af479f1ae085a9e2e4bc50d6a8690f7c872587768a05ac24febbadcc",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-shipped.jpg",
+      "status": 200,
+      "sha256": "4dd2f62117da53f7aa32da8f9b6b797a8b1a0ceb0e2f170ac634b7b15db3ef1f",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-thanks-thumb.jpg",
+      "status": 200,
+      "sha256": "b2d37d8ae74eeb244d42cb551656ad3b7911b73a237517a0929a85c4f4580935",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-thanks.jpg",
+      "status": 200,
+      "sha256": "7562630ccee88064100f41fdf586c43e191fcfc1982e7020d869f401162035ae",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-wait-thumb.jpg",
+      "status": 200,
+      "sha256": "e3514f203194782225f068b182058a9e1f5200a247d7fbc5e6813e6bfdf898dc",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/v2-wait.jpg",
+      "status": 200,
+      "sha256": "1705a133125622374f0ac26f19d439269055c556be6b2138fb2a62f0dfb7aacd",
+      "contentType": "image/jpeg"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-amazing.png",
+      "status": 200,
+      "sha256": "8762f7ef0f80d66f9cb63cede5a3a1259fb098b93ab4d1d427d4be8344a1fe2c",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-angry.png",
+      "status": 200,
+      "sha256": "5eeecb99502daf026e80588a46ecf008115fc66d00c77568e8be27821fdb53fe",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-cheer.png",
+      "status": 200,
+      "sha256": "410bc56fcdbbceb654df7cf3abd0cf729a45a4939f1d859086d7eecaaaf3ffcb",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-goodnight.png",
+      "status": 200,
+      "sha256": "2547d04bb09724d03124205301c75fe7ecc3819cebf6ffdacca7b5e7b46116f3",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-hardwork.png",
+      "status": 200,
+      "sha256": "3ad3daadeab696901b2296fa55d0748fa8b73cb6a2558d82054cd67fa4217a21",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-hi.png",
+      "status": 200,
+      "sha256": "585e3e04d9bd8f64ad524890e3bd0d675d751a41f4f57efe369d60eb36ee97e2",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-hug.png",
+      "status": 200,
+      "sha256": "1a66a2dce8b0f9e744fb32fd7bcc41107d6336d6405775008a8e674250f2910c",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-okay.png",
+      "status": 200,
+      "sha256": "ffe0567d4fe74b44df9398ca08d4086e2708cedaae52e877f1dc717aec8c2239",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-received.png",
+      "status": 200,
+      "sha256": "df7a8b7d7957ee06f13edcdcdd6aa40703ef5e5f06581b146bab207f380a3114",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-shocked.png",
+      "status": 200,
+      "sha256": "338dc72a7fdb1fba37dfdb14831b37e3d3df66372482cef21570025a1dac03d4",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-thanks.png",
+      "status": 200,
+      "sha256": "cee6c4488f945b92f48038480d8b6fe1b6d8bcaa0dc7757d085f374add938959",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/chat-stickers/yayatuan/yayatuan-wronged.png",
+      "status": 200,
+      "sha256": "9bdfd8080bee30fc2def202849f1052a3613a2414164057b9cb1ff3442f1cbbd",
+      "contentType": "image/png"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/happy-cooperation-Cvc9Rmd9.webp",
+      "status": 200,
+      "sha256": "f63d4c4881c38c3653c2617237f4ed4769d38e0310bccfba0431a68862a4ba94",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/happy-cooperation-thumb-CpFeNlTC.webp",
+      "status": 200,
+      "sha256": "5c97bf6dbc10ed3813b468921a79828f240d1d168c30d7005bf8ce1ba1997096",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/holiday-greeting-C1EEQsmY.webp",
+      "status": 200,
+      "sha256": "6194a39031a7df90c6655e58f17fc078d231ab69cbbabd68ef5beafc180fd825",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/holiday-greeting-thumb-DAdPDoY_.webp",
+      "status": 200,
+      "sha256": "83001240e442997ebd5e09586dfbbb249983d423076daa0594ea2dd42b3fe18b",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/inventory-check-By9RLT9V.webp",
+      "status": 200,
+      "sha256": "74ddf73eb6921c44f24767ca74834b88349b5ec65fc8c33e2a952977215de558",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/inventory-check-thumb-D8PUxxNq.webp",
+      "status": 200,
+      "sha256": "aa1c88998d7a4be18d5f163b94a88e39610529e3e10b92bb5844292e878f3e50",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/logo-header-mark-B6bxRozu.webp",
+      "status": 200,
+      "sha256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/logo-home-wordmark-CMd_I7up.webp",
+      "status": 200,
+      "sha256": "5e8c12caaa7c388f9bb2d371fe2e13ed550dbd23553e6959c92e5b8faf3cd3b1",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/please-wait-CjP8mrRD.webp",
+      "status": 200,
+      "sha256": "63893421d7e24223e2f6896ec3b1f2481ac0f97611ef09cade0a7fcefc059994",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/quote-now-Di10ewxz.webp",
+      "status": 200,
+      "sha256": "b0d94b5d0ab6d2b1dda254a7cb640351d3b05558222e984d275762cf7294fd43",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/quote-now-thumb-EB-j3liN.webp",
+      "status": 200,
+      "sha256": "4942215a19757033eeeb031932397069e6ec98200a6c015a8564c648400af2ed",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/received-aCUmm3cU.webp",
+      "status": 200,
+      "sha256": "e10eac3cf070730565e0198dd2b2b7fed835d2fadd6619afbc1d4da1be3ec86d",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shipped-D6XA9OIb.webp",
+      "status": 200,
+      "sha256": "f050a2f358d4c995abc6e6e860fbcdabafe7acd60ccc2bf0b6b97e018fdd4ead",
+      "contentType": "image/webp"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/thanks-xX8q4H8I.webp",
+      "status": 200,
+      "sha256": "93fefc163ca68fc4e227de013d3932b3c39572d6315fa5f40e3ff5ed5f0b097a",
+      "contentType": "image/webp"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee",
+      "contentType": "text/html"
+    }
+  ],
+  "sourceTests": 405,
+  "actualUITests": 10,
+  "nativeChatTests": 17,
+  "allProtectedFilesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "allProcessesUnchanged": true,
+  "databaseOperations": 0,
+  "backendChanges": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "loggedInBusinessInteractionVerified": false
+}

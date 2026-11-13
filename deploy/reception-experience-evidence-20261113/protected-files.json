@@ -1,0 +1,18 @@
+[
+  {
+    "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "sha256": "aa3b208401045baac11bc7806e97b1332d63bc5e650c763ebaaa6c49dfeeb0c0"
+  },
+  {
+    "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "sha256": "d26807c0d5a443e88fda62133325fc2fceef1275db6ee5f9d6f9c93e3db71e83"
+  },
+  {
+    "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+    "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+  },
+  {
+    "path": "/etc/nginx/conf.d/dianzi51-admin-subdomain.conf",
+    "sha256": "987cf4987f65f6a13923b7b3edc7148b3bf788812a20133a0dc222deb6486aea"
+  }
+]

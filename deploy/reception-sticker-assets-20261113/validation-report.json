@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "publicRoot": "/home/ubuntu/work/51dianzi-platform--manager/client/public",
+  "publicFiles": 257,
+  "publicBytes": 1826600,
+  "missing": 0,
+  "missingResources": [],
+  "hashMismatchCount": 0,
+  "hashMismatches": [],
+  "invalidFileCount": 0,
+  "invalidFiles": [],
+  "conflictCount": 0,
+  "errors": [],
+  "catalogPacks": {
+    "EMOJI_CHAT_STICKERS": 32,
+    "YAYATUAN_CHAT_STICKERS": 12,
+    "BUSINESS_CHAT_STICKERS": 16,
+    "NOTO_CHAT_STICKERS": 96
+  },
+  "catalogStickerCount": 156,
+  "referenceCoverage": {
+    "src": 156,
+    "thumb": 156,
+    "tab": 4,
+    "picker-icon-alias": 1
+  },
+  "uniquePublicCatalogUrls": 159,
+  "bundledModuleFiles": 16,
+  "bundledModuleBytes": 186148,
+  "rasterPublicFilesDecoded": 159,
+  "svgPublicFilesXmlParsed": 96,
+  "unmanifestedTargetFiles": [],
+  "directories": {
+    "chat-sticker-tabs": {
+      "files": 3,
+      "bytes": 2659,
+      "catalogReferencedFiles": 3
+    },
+    "chat-stickers": {
+      "files": 48,
+      "bytes": 717453,
+      "catalogReferencedFiles": 48
+    },
+    "chat-stickers/noto": {
+      "files": 98,
+      "bytes": 574583,
+      "catalogReferencedFiles": 96
+    },
+    "chat-stickers/noto-webp": {
+      "files": 96,
+      "bytes": 313286,
+      "catalogReferencedFiles": 0
+    },
+    "chat-stickers/yayatuan": {
+      "files": 12,
+      "bytes": 218619,
+      "catalogReferencedFiles": 12
+    }
+  },
+  "note": "Local files only; no assertions about live online availability or Vite-generated hashed import URLs."
+}
