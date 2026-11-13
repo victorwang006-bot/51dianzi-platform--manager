@@ -27,6 +27,7 @@ import {
 } from "./adminWorkspaceNavigationModel";
 import { getAdminListLocationLayout } from "./adminListLocationLayout";
 import InquiryReceptionNavigationBadge from "./InquiryReceptionNavigationBadge";
+import { getSalesOrderNavigationContext } from "@/lib/salesOrderWorkspace";
 import "./AdminWorkspaceNavigation.css";
 import "./AdminListPage.css";
 
@@ -122,24 +123,29 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   location,
 }: Pick<AdminWorkspaceTabsProps<T>, "items" | "location">) {
   const { activeWorkspace, activeItem, route } = getAdminWorkspaceNavigationState(items, location);
-  if (!activeWorkspace || !activeItem) return null;
-  const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
-  const customer = activeItem.path === "/workbench/customers";
-  const reception = activeItem.path === "/workbench/inquiries";
-  const sales = activeItem.path === "/workbench/orders";
-  const tab = channel ? channelTabForLocation(location) : null;
-  const entry = !channel
-    ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id).find(entry =>
-      entry.kind === "group" && entry.items.some(item => item.path === activeItem.path))
-    : null;
-  const labels = channel
-    ? ["库存列表", ...(channelViewForLocation(location) === "channels" ? ["渠道库存"] : []),
-      ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
-    : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
-    : reception ? ["询价接待"]
-    : sales ? ["销售订单"]
-    : activeWorkspace.id === "business" && entry?.kind === "group" ? [entry.label, activeItem.label]
-    : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
+  const salesContext = getSalesOrderNavigationContext(items, location);
+  if (!salesContext.active && (!activeWorkspace || !activeItem)) return null;
+  if (/^\/workbench\/(?:orders|sales-orders|outbound)(?:[/?#]|$)/.test(location) && !salesContext.active) return null;
+  // An authorized outbound object can represent seller-only /orders. This is
+  // display context only, never a synthesized CRM navigation item or grant.
+  const labels = salesContext.active ? ["销售订单", salesContext.label!] : (() => {
+    if (!activeWorkspace || !activeItem) return [];
+    const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
+    const customer = activeItem.path === "/workbench/customers";
+    const reception = activeItem.path === "/workbench/inquiries";
+    const tab = channel ? channelTabForLocation(location) : null;
+    const entry = !channel
+      ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id).find(entry =>
+        entry.kind === "group" && entry.items.some(item => item.path === activeItem.path))
+      : null;
+    return channel
+      ? ["库存列表", ...(channelViewForLocation(location) === "channels" ? ["渠道库存"] : []),
+        ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
+      : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
+      : reception ? ["询价接待"]
+      : activeWorkspace.id === "business" && entry?.kind === "group" ? [entry.label, activeItem.label]
+      : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
+  })();
   return (
     <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location"
       data-admin-list-location-layout={getAdminListLocationLayout(location, labels)}>
@@ -172,9 +178,10 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const customerItem = items.find(item => item.path === "/workbench/customers");
   const channelItem = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE);
   const receptionItem = items.find(item => item.path === "/workbench/inquiries");
-  const salesItem = items.find(item => item.path === "/workbench/orders");
+  const salesContext = getSalesOrderNavigationContext(items, location);
+  const salesItem = salesContext.item;
   const filteredBusinessItems = state.workspaces.find(workspace => workspace.id === "business")
-    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries" && item.path !== "/workbench/orders") ?? [];
+    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries" && item.path !== "/workbench/orders" && item.path !== "/workbench/outbound") ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
   const operationsEntries = groupAdminOperationsNavigationItems(
     state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
@@ -182,7 +189,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
   const customerActive = !!customerItem && state.route?.canonicalPath === "/workbench/customers";
   const receptionActive = !!receptionItem && state.route?.canonicalPath === "/workbench/inquiries";
-  const salesActive = !!salesItem && state.route?.canonicalPath === "/workbench/orders";
+  const salesActive = !!salesItem && salesContext.active;
   // Promote only already parent-authorized groups. Their canonical business
   // routes and the original item objects remain untouched.
   const workspaces: { id: UnifiedWorkspaceId; workspaceId: AdminWorkspaceId; label: string; items: readonly T[] }[] = [
@@ -512,7 +519,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             id={`${id}-trigger`}
             type="button"
             className="admin-workspace-nav__tab admin-workspace-nav__workspace admin-workspace-nav__workspace-trigger"
-            title={workspace.id === "inventory-management" ? "入库与出库" : undefined}
+            title={workspace.id === "inventory-management" ? "入库管理" : undefined}
             data-workspace-nav-target={workspace.id}
             data-navigation-level="1"
             data-workspace-dropdown-trigger={workspace.id}

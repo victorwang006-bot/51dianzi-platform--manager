@@ -270,11 +270,11 @@ describe("sales-orders UI unification", () => {
       setDraftKeyword: vi.fn(), setKeyword: vi.fn(), setPage: vi.fn() };
     evaluate<() => void>(routeEffect, route)();
     expect(route.deepLinkedDemandNoRef.current).toBe("D-21"); expect(route.setCandidateApplied).toHaveBeenCalledWith("D-21");
-    expect(navigation).toHaveBeenCalledWith("/sales-orders?keyword=SO-11&keep=1", { replace: true });
+    expect(navigation).toHaveBeenCalledWith(`/orders?keyword=SO-11&keep=1&orderSource=business${window.location.hash}`, { replace: true });
     expect(route.setKeyword).not.toHaveBeenCalled();
     navigation.mockClear(); evaluate<() => void>(routeEffect, { ...route, search: "?keyword=%20SO-11%20&keep=1" })();
     expect(route.setDraftKeyword).toHaveBeenCalledWith("SO-11"); expect(route.setKeyword).toHaveBeenCalledWith("SO-11"); expect(route.setPage).toHaveBeenCalledWith(1);
-    expect(navigation).toHaveBeenCalledWith("/sales-orders?keep=1", { replace: true });
+    expect(navigation).toHaveBeenCalledWith(`/orders?keep=1&orderSource=business${window.location.hash}`, { replace: true });
     navigation.mockClear(); evaluate<() => void>(routeEffect, { ...route, embedded: { customer: { id: 10 } } })(); expect(navigation).not.toHaveBeenCalled();
     const listMemo = collect(ts.isVariableDeclaration).find(node => node.name.getText(source) === "listInput")!.initializer as ts.CallExpression;
     const list = (env: Record<string, unknown>) => evaluate<() => unknown>(listMemo.arguments[0], { PAGE_SIZE: 20, keyword: "SO-11", page: 2, status: "cancelled", customerId: undefined, ...env })();

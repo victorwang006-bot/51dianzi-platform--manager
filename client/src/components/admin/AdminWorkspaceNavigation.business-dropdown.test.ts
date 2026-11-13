@@ -15,12 +15,19 @@ function button(t: string) { const n = host.querySelector<HTMLButtonElement>(`bu
 async function click(t: string) { await act(async () => button(t).click()); }
 const panel = () => host.querySelector<HTMLDivElement>('[data-workspace-dropdown="panel"]');
 describe("原业务子项移至一级管理菜单的回归", () => {
-  it.each([["inventory-management", "/workbench/inbound"], ["inventory-management", "/workbench/outbound"], ["procurement-management", "/workbench/procurement-demands"], ["procurement-management", "/workbench/procurement-orders"]])
+  it.each([["inventory-management", "/workbench/inbound"], ["procurement-management", "/workbench/procurement-demands"], ["procurement-management", "/workbench/procurement-orders"]])
     ("%s → %s保留业务上下文、badge与原对象", async (parent, path) => {
       await render(path); await click(parent); const original = items.find(i => i.path === path)!;
       expect(button(path).querySelector('[data-business-context="business"]')).not.toBeNull(); expect(button(path).querySelector('[data-active-render="true"]')).not.toBeNull(); expect(button(path).querySelector('[data-badge="original"]')).not.toBeNull();
       await act(async () => button(path).focus()); expect(onPreload).toHaveBeenCalledWith(original); await click(path); expect(onNavigate.mock.calls).toEqual([[original]]); expect(onNavigate.mock.calls[0][0]).toBe(original); expect(panel()).toBeNull();
     });
+  it("单商城授权提升一级销售，保留badge、preload与原seller对象，不生成库存重复项", async () => {
+    const original = items.find(item => item.path === "/workbench/outbound")!;
+    await render(original.path, [original]); expect(button("sales-orders").querySelector('[data-badge="original"]')).not.toBeNull();
+    expect(button("sales-orders").getAttribute("aria-current")).toBe("page"); expect(host.querySelector('[data-workspace-nav-target="inventory-management"]')).toBeNull();
+    await act(async () => button("sales-orders").focus()); expect(onPreload).toHaveBeenCalledWith(original);
+    await click("sales-orders"); expect(onNavigate.mock.calls).toEqual([[original]]); expect(onNavigate.mock.calls[0][0]).toBe(original);
+  });
   it("仅一个入库许可仍保留原对象，不合成出库或采购入口", async () => {
     await render("/workbench/inbound", items.filter(i => i.path === "/workbench/inbound")); await click("inventory-management"); expect(host.querySelectorAll('[data-workspace-dropdown-item]')).toHaveLength(1); expect(host.querySelector('[data-workspace-nav-target="procurement-management"]')).toBeNull(); expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
   });

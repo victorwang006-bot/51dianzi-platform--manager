@@ -117,11 +117,11 @@ export default function CustomerDemands() {
   const openDemand = (row: SalesDemandSummary) => setActiveDemand(row);
   const handleNext = (row: SalesDemandSummary) => {
     if (row.workflowStage === "quote_confirmed") {
-      navigate(`/sales-orders?demandNo=${encodeURIComponent(row.demandNo)}`);
+      navigate(`/orders?orderSource=business&demandNo=${encodeURIComponent(row.demandNo)}`);
       return;
     }
     if (row.workflowStage === "customer_confirmed") {
-      navigate(`/sales-orders?keyword=${encodeURIComponent(row.demandNo)}`);
+      navigate(`/orders?orderSource=business&keyword=${encodeURIComponent(row.demandNo)}`);
       return;
     }
   };

@@ -1,0 +1,110 @@
+[
+  {
+    "id": 0,
+    "name": "pm2-logrotate",
+    "pid": 1572,
+    "status": "online",
+    "script": "/root/.pm2/modules/pm2-logrotate/node_modules/pm2-logrotate/app.js",
+    "cwd": "/root/.pm2/modules/pm2-logrotate/node_modules/pm2-logrotate",
+    "environmentHash": "e7cac24fc74b06585822e3ebdc010d3e6edbc4535bcb0eef2a35942374529013"
+  },
+  {
+    "id": 190,
+    "name": "dianzi51",
+    "pid": 1715850,
+    "status": "online",
+    "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+    "environmentHash": "df80613ea6e21bc72369e84c524681c346474a55a33d824f16ad095305a86c03"
+  },
+  {
+    "id": 191,
+    "name": "dianzi51-admin",
+    "pid": 1715912,
+    "status": "online",
+    "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "cwd": "/opt/releases/20261031-wechat-chat-entry-v33/admin",
+    "environmentHash": "34520c45d2e0e8d9106cb16529846600894535a5f3a3af41a19b936297320ee4"
+  },
+  {
+    "id": 192,
+    "name": "dianzi51-admin",
+    "pid": 1715926,
+    "status": "online",
+    "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "cwd": "/opt/releases/20261031-wechat-chat-entry-v33/admin",
+    "environmentHash": "34520c45d2e0e8d9106cb16529846600894535a5f3a3af41a19b936297320ee4"
+  },
+  {
+    "id": 193,
+    "name": "dianzi51",
+    "pid": 1715851,
+    "status": "online",
+    "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+    "environmentHash": "df80613ea6e21bc72369e84c524681c346474a55a33d824f16ad095305a86c03"
+  },
+  {
+    "id": 194,
+    "name": "dianzi51",
+    "pid": 1715878,
+    "status": "online",
+    "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+    "environmentHash": "df80613ea6e21bc72369e84c524681c346474a55a33d824f16ad095305a86c03"
+  },
+  {
+    "id": 200,
+    "name": "dianzi51",
+    "pid": 1715879,
+    "status": "online",
+    "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+    "environmentHash": "df80613ea6e21bc72369e84c524681c346474a55a33d824f16ad095305a86c03"
+  },
+  {
+    "id": 201,
+    "name": "dianzi51-inventory-import",
+    "pid": 917237,
+    "status": "online",
+    "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/inventoryImportWorker.js",
+    "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+    "environmentHash": "5b0ba20484a2cac3f6c40baebc5e9a75628c80c98f6341e03789c7f619a63590"
+  },
+  {
+    "id": 202,
+    "name": "dianzi51-inventory-publish",
+    "pid": 517051,
+    "status": "online",
+    "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/inventoryPublishWorker.js",
+    "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+    "environmentHash": "aa438bf42029c802191fff8d2f2b0abd06077651b61f3c7a8cc8d123f85e4bc9"
+  },
+  {
+    "id": 203,
+    "name": "dianzi51-refund",
+    "pid": 517102,
+    "status": "online",
+    "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/refundWorker.js",
+    "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+    "environmentHash": "55e0634d9b95ef17044f3ac3ac14f267d34c50baea7fff6bbf34cb225d56e02a"
+  },
+  {
+    "id": 204,
+    "name": "dianzi51-chat-sync",
+    "pid": 517067,
+    "status": "online",
+    "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/chatSyncWorker.js",
+    "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+    "environmentHash": "9fa506d2cebc5969e5958e2f54a1589be51d48d648e2542bb4aea2c1f3bdb4ff"
+  },
+  {
+    "id": 205,
+    "name": "dianzi51-forum-quotes",
+    "pid": 1684200,
+    "status": "online",
+    "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/forumQuoteWorker.js",
+    "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+    "environmentHash": "03a6b28246cbaaea607ffc8d9e5e3951ea2c8f101f4af1068ed93810faaf8837"
+  }
+]

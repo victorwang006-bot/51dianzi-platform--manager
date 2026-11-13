@@ -1,0 +1,86 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T12:39:38.175333+00:00",
+  "htmlSha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "sha256": "6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "sha256": "06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "sha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c"
+    },
+    {
+      "relative": "assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "status": 200,
+      "sha256": "6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "status": 200,
+      "sha256": "06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "status": 200,
+      "sha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "status": 200,
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders",
+      "status": 200,
+      "sha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/outbound",
+      "status": 200,
+      "sha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    }
+  ],
+  "sourceTests": 742,
+  "actualUITests": 27,
+  "allProtectedFilesUnchanged": true,
+  "allProcessesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "loggedInOrderMutationTested": false
+}

@@ -7,7 +7,7 @@ import { AdminWorkspaceTabs, type AdminModuleTabsProps } from "./AdminWorkspaceN
 import { ADMIN_WORKBENCH_NAVIGATION_GROUPS, getAdminWorkbenchNavigationRoute } from "./adminWorkbenchNavigationModel";
 const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(g => g.paths).map(path => Object.freeze({ path, label: getAdminWorkbenchNavigationRoute(path)?.label ?? path, chunk: path, merchantContext: Object.freeze({ merchantId: 31 }) }));
 type Item = typeof items[number];
-const management = { "inventory-management": ["/workbench/inbound", "/workbench/outbound"], "procurement-management": ["/workbench/procurement-demands", "/workbench/procurement-orders"] };
+const management = { "inventory-management": ["/workbench/inbound"], "procurement-management": ["/workbench/procurement-demands", "/workbench/procurement-orders"] };
 const operations = { "basic-data": ["/merchants", "/materials", "/portal-users"], "transactions-services": ["/orders", "/messages", "/reviews"], "data-monitoring": ["/analytics", "/exception-logs"] };
 let host: HTMLDivElement, root: Root;
 const onNavigate = vi.fn(), onPreload = vi.fn();
@@ -81,9 +81,13 @@ describe("20261113 一级管理下拉与运营三级提醒", () => {
   });
   it("管理一级键盘直达二级，上下循环、Home/End、Esc回父，Tab无陷阱", async () => {
     await render(); await key("inventory-management", "ArrowDown"); expect(document.activeElement).toBe(button("/workbench/inbound"));
-    await key("/workbench/inbound", "ArrowDown"); expect(document.activeElement).toBe(button("/workbench/outbound")); await key("/workbench/outbound", "ArrowDown"); expect(document.activeElement).toBe(button("/workbench/inbound"));
-    await key("/workbench/inbound", "End"); expect(document.activeElement).toBe(button("/workbench/outbound")); expect((await key("/workbench/outbound", "Tab")).defaultPrevented).toBe(false);
-    await key("/workbench/outbound", "Escape"); expect(panel()).toBeNull(); expect(document.activeElement).toBe(button("inventory-management")); await key("procurement-management", "ArrowUp"); expect(document.activeElement).toBe(button("/workbench/procurement-orders"));
+    await key("/workbench/inbound", "ArrowDown"); expect(document.activeElement).toBe(button("/workbench/inbound"));
+    await key("/workbench/inbound", "End"); expect(document.activeElement).toBe(button("/workbench/inbound")); expect((await key("/workbench/inbound", "Tab")).defaultPrevented).toBe(false);
+    await key("/workbench/inbound", "Escape"); expect(panel()).toBeNull(); expect(document.activeElement).toBe(button("inventory-management"));
+    await key("procurement-management", "ArrowUp"); expect(document.activeElement).toBe(button("/workbench/procurement-orders"));
+    await key("/workbench/procurement-orders", "ArrowDown"); expect(document.activeElement).toBe(button("/workbench/procurement-demands"));
+    await key("/workbench/procurement-demands", "ArrowUp"); expect(document.activeElement).toBe(button("/workbench/procurement-orders"));
+    await key("/workbench/procurement-orders", "Home"); expect(document.activeElement).toBe(button("/workbench/procurement-demands"));
   });
   it("运营原三级键盘进入、返回、Escape及移动返回不变", async () => {
     await render("/messages"); await key("operations", "ArrowDown"); expect(document.activeElement).toBe(button("group:basic-data")); await key("group:basic-data", "ArrowDown"); await key("group:transactions-services", "ArrowRight"); expect(document.activeElement).toBe(button("/orders"));

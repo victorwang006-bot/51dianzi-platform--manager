@@ -395,7 +395,8 @@ function SalesOrdersContent({
       setCandidateApplied(demandNo);
       setCandidatePage(1);
       params.delete("demandNo");
-      navigate(`/sales-orders${params.size ? `?${params}` : ""}`, {
+      params.set("orderSource", "business");
+      navigate(`/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`, {
         replace: true,
       });
       return;
@@ -405,7 +406,8 @@ function SalesOrdersContent({
       setKeyword(orderKeyword);
       setPage(1);
       params.delete("keyword");
-      navigate(`/sales-orders${params.size ? `?${params}` : ""}`, {
+      params.set("orderSource", "business");
+      navigate(`/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`, {
         replace: true,
       });
     }

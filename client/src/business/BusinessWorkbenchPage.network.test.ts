@@ -742,6 +742,63 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     vi.unstubAllGlobals();
   });
 
+  function salesResponse(call: FetchCall, capabilities: string[]) {
+    if (call.pathname === "/api/business-trpc/context") return trpcResult({
+      ...verifiedContext, workbenchCapabilities: capabilities,
+    });
+    const procedures = businessProcedures(call);
+    if (procedures.some(procedure => /^(?:order\.|crmSalesOrder\.|enterprise\.me)/.test(procedure))) {
+      return trpcBatchResult(...procedures.map(procedure => {
+        if (procedure === "order.sellerOrders" || procedure === "order.expressCos") return [];
+        if (procedure === "crmSalesOrder.list" || procedure === "crmSalesOrder.candidates") return { items: [], total: 0 };
+        if (procedure === "enterprise.me") return { currentUserId: 7002, enterprise: { id: 88001 }, isOwner: false, permissionKeys: [] };
+        throw new Error(`UNEXPECTED_ORDER_FIXTURE_PROCEDURE:${procedure}`);
+      }));
+    }
+    return successfulWorkbenchResponse(call);
+  }
+
+  it.each([
+    ["/workbench/orders?merchantId=30061", ["marketplace.seller"], "mall", "order.sellerOrders"],
+    ["/workbench/orders?orderSource=business", ["crm.sales_orders"], "business", "crmSalesOrder.list"],
+    ["/workbench/sales-orders?demandNo=XQ-41", ["crm.sales_orders", "marketplace.seller"], "business", "crmSalesOrder.candidates"],
+    ["/workbench/outbound?merchantId=30061&status=paid#detail", ["marketplace.seller"], "mall", "order.sellerOrders"],
+  ])("sales consolidation %s renders original %s page only inside verified BFF scope", async (path, capabilities, source, procedure) => {
+    const network = installNetwork(call => salesResponse(call, capabilities as string[]));
+    mounted = await mountWorkbench(path as string);
+    await waitFor(() => expect(mounted?.container.querySelector(`[data-sales-order-workspace][data-order-source="${source}"]`)).not.toBeNull());
+    await waitFor(() => expect(network.calls.some(call => businessProcedures(call).includes(procedure as string))).toBe(true));
+    expect(mounted.container.querySelector('[data-business-context-verification="verified"]')).not.toBeNull();
+    const procedures = network.calls.flatMap(businessProcedures);
+    expect(procedures.some(item => (source === "mall" ? /^crmSalesOrder\./ : /^order\./).test(item))).toBe(false);
+    for (const call of network.calls.filter(call => call.pathname.startsWith("/api/business-trpc/") && call.pathname !== "/api/business-trpc/merchants")) {
+      expect(call.headers.get("x-business-merchant-id")).toBe("30061"); expect(call.credentials).toBe("include");
+      expect(call.headers.has("cookie") || call.headers.has("x-admin-id")).toBe(false);
+    }
+    expect(network.calls.every(call => call.pathname === "/api/trpc/auth.me" || call.pathname.startsWith("/api/business-trpc/"))).toBe(true);
+    if (path === "/workbench/outbound?merchantId=30061&status=paid#detail") {
+      expect(window.location.pathname).toBe("/workbench/orders"); expect(window.location.hash).toBe("#detail");
+      expect(new URLSearchParams(window.location.search).get("status")).toBe("paid");
+    }
+    if (procedure === "crmSalesOrder.candidates") {
+      await waitFor(() => expect(new URLSearchParams(window.location.search).has("demandNo")).toBe(false));
+      expect(new URLSearchParams(window.location.search).get("orderSource")).toBe("business");
+      expect(mounted.container.textContent).toContain("录入销售订单");
+    }
+  });
+
+  it.each([
+    ["/workbench/orders?orderSource=mall", ["crm.sales_orders"]],
+    ["/workbench/orders?orderSource=business", ["marketplace.seller"]],
+    ["/workbench/outbound?merchantId=30061", ["crm.sales_orders"]],
+  ])("sales consolidation %s cannot borrow the other granted source", async (path, capabilities) => {
+    const network = installNetwork(call => salesResponse(call, capabilities as string[]));
+    mounted = await mountWorkbench(path as string);
+    await waitFor(() => expect(mounted?.container.textContent).toContain("当前商户未获该业务模块访问范围"));
+    expect(network.calls.flatMap(businessProcedures).some(procedure => /^(?:order\.|crmSalesOrder\.)/.test(procedure))).toBe(false);
+    expect(`${window.location.pathname}${window.location.search}`).toBe(path);
+  });
+
   it.each(["domain", "upstream"] as const)(
     "cancels requests from %s without AbortSignal.any and releases both listeners",
     source => {
@@ -917,11 +974,11 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
       Array.from(
         mounted.container.querySelectorAll("[data-channel-inventory-host] h1")
       ).map(title => title.textContent)
-    ).toEqual(["渠道库存"]);
+    ).toEqual(["库存列表"]);
     const addMaterial = Array.from(
       mounted.container.querySelectorAll<HTMLButtonElement>("button")
     ).find(button => button.textContent === "单条上传");
-    expect(addMaterial?.disabled).toBe(true);
+    expect(addMaterial).toBeUndefined();
     for (const call of network.calls.filter(
       call => call.pathname !== "/api/trpc/auth.me"
     )) {
@@ -999,12 +1056,12 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     ).toBe(true);
   });
 
-  it.each(["单条上传", "上传库存"])(
-    "reads source options only after filter focus and upload channels only after opening %s through the real BFF",
-    async uploadLabel => {
+  it.each([false, true])(
+    "reads source options only after filter focus and does not infer a flat-list upload entry from write scope %s through the real BFF",
+    async canWrite => {
       const network = installNetwork(call =>
         legacyChannelInventoryResponse(call, {
-          canWrite: true,
+          canWrite,
           canFilterSource: true,
         })
       );
@@ -1049,36 +1106,14 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
         )
       ).toBe(false);
 
-      const upload = Array.from(
+      // Flat inventory no longer carries the legacy standalone upload controls.
+      // A write proof must not fabricate those retired controls or eagerly read
+      // upload channels; actual channel-row upload keeps its independent gate.
+      for (const label of ["单条上传", "上传库存"]) expect(Array.from(
         mounted.container.querySelectorAll<HTMLButtonElement>("button")
-      ).find(button => button.textContent === uploadLabel);
-      expect(upload).toBeTruthy();
-      expect(upload!.disabled).toBe(false);
-      await act(async () => upload!.click());
-      await waitFor(() => {
-        expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-        expect(
-          network.calls.some(call =>
-            call.pathname.includes("channelInventory.listChannels")
-          )
-        ).toBe(true);
-      });
-      const channelRequests = network.calls.filter(call =>
-        call.pathname.includes("channelInventory.listChannels")
-      );
-      expect(channelRequests).toHaveLength(1);
-      expect(
-        businessProcedureInput(
-          channelRequests[0],
-          "channelInventory.listChannels"
-        )
-      ).toEqual({
-        expectedEnterpriseId: 1,
-        expectedActorUserId: 397751,
-        active: true,
-        page: 1,
-        pageSize: 100,
-      });
+      ).find(button => button.textContent === label)).toBeUndefined();
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      expect(network.calls.filter(call => call.pathname.includes("channelInventory.listChannels"))).toHaveLength(0);
       for (const call of network.calls.filter(
         call => call.pathname !== "/api/trpc/auth.me"
       )) {
@@ -2745,9 +2780,9 @@ describe("BusinessWorkbenchPage BFF bootstrap and context network behavior", () 
     mounted = await mountWorkbench("/workbench/channel-inventory");
     await waitFor(() => expect(mounted?.container.textContent).toContain("SHARED-TEST-502"));
     expect(mounted.container.querySelector("td.ci-material-recorder-col")?.textContent).toBe("Jack");
-    expect(mounted.container.querySelectorAll("thead th")).toHaveLength(10);
-    expect(mounted.container.querySelector("thead")?.textContent).toContain("所属行业");
-    for (const label of ["单条上传", "上传库存"]) expect(Array.from(mounted.container.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent === label)?.disabled).toBe(true);
+    expect(mounted.container.querySelectorAll("thead th")).toHaveLength(9);
+    expect(mounted.container.querySelector("th.ci-material-recorder-col")?.textContent).toBe("负责人");
+    for (const label of ["单条上传", "上传库存"]) expect(Array.from(mounted.container.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent === label)).toBeUndefined();
     expect(mounted.container.querySelector("textarea")).toBeNull();
     expect(network.calls.some(call => /officialChannelInventory|channelInventory\.(getTeamMaterialForEdit|createMaterial|notesList)/.test(call.pathname))).toBe(false);
   });

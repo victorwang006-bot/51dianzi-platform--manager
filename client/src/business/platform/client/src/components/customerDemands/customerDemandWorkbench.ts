@@ -12,7 +12,7 @@ export function matchesCustomerDemand(detail: { id: number; customerId: number }
   return Boolean(detail && demandId && detail.id === demandId && detail.customerId === customerId);
 }
 
-/** Legacy standalone routes remain unchanged; embedded consumers receive the exact demand ID too. */
+/** Standalone links pin the CRM source; embedded consumers receive the exact demand ID too. */
 export function customerDemandOrderPath(intent: CustomerDemandOrderIntent, action: "create" | "view"): string {
-  return `/sales-orders?${action === "create" ? "demandNo" : "keyword"}=${encodeURIComponent(intent.demandNo)}`;
+  return `/orders?orderSource=business&${action === "create" ? "demandNo" : "keyword"}=${encodeURIComponent(intent.demandNo)}`;
 }

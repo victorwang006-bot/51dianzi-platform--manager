@@ -43,12 +43,12 @@ describe("20261113 已批准八项一级入口", () => {
     await render(undefined, [...items].reverse());
     expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "sales-orders", "inventory-management", "procurement-management", "operations", "organization"]);
     expect(button("sales-orders").textContent).toBe("销售订单");
-    expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("入库与出库");
+    expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("入库管理");
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     expect(DEFAULT_ADMIN_PATH).toBe(CHANNEL_INVENTORY_ROUTE);
     await click("inventory-management");
-    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.getAttribute("data-workspace-dropdown-item"))).toEqual(["/workbench/inbound", "/workbench/outbound"]);
-    for (const path of ["/workbench/orders", "/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries"]) expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull();
+    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.getAttribute("data-workspace-dropdown-item"))).toEqual(["/workbench/inbound"]);
+    for (const path of ["/workbench/orders", "/workbench/outbound", "/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries"]) expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
   });
   it.each([1280, 390].flatMap(width => ["customers", "inquiries", "sales-orders"].map(target => [width, target] as const)))
@@ -71,10 +71,11 @@ describe("20261113 已批准八项一级入口", () => {
   it.each([
     ["/workbench/customers/88?merchantId=31", "customers", ["客户列表"]],
     ["/workbench/customer-demands", "customers", ["客户列表", "客户需求"]],
-    ["/workbench/orders", "sales-orders", ["销售订单"]],
-    ["/workbench/sales-orders/88?merchantId=31", "sales-orders", ["销售订单"]],
+    ["/workbench/orders", "sales-orders", ["销售订单", "商城订单"]],
+    ["/workbench/orders?orderSource=business", "sales-orders", ["销售订单", "业务订单"]],
+    ["/workbench/sales-orders/88?merchantId=31", "sales-orders", ["销售订单", "业务订单"]],
     ["/workbench/inbound", "inventory-management", ["库存管理", "入库管理"]],
-    ["/workbench/outbound", "inventory-management", ["库存管理", "出库管理"]],
+    ["/workbench/outbound", "sales-orders", ["销售订单", "商城订单"]],
     ["/workbench/procurement/orders/88", "procurement-management", ["采购管理", "采购订单"]],
     ["/workbench/procurement-demands", "procurement-management", ["采购管理", "采购需求"]],
     ["/workbench/inquiries/88", "inquiries", ["询价接待"]],
@@ -84,9 +85,19 @@ describe("20261113 已批准八项一级入口", () => {
   });
   it.each(["/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries", "/workbench/orders", "/workbench/inbound", "/workbench/procurement-orders"])
     ("%s撤权不制造目标、默认跳转或空业务菜单", async path => {
-      await render(path, items.filter(item => item.path !== path)); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
+      await render(path === "/workbench/orders" ? `${path}?orderSource=business` : path, items.filter(item => item.path !== path)); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
       await render(path, []); expect(host.querySelector("nav")).toBeNull(); expect(onNavigate).not.toHaveBeenCalled();
     });
+  it.each([1280, 390])("%s宽度seller-only保留原outbound对象、preload与上下文", async width => {
+    Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
+    const seller = items.find(item => item.path === "/workbench/outbound")!;
+    await render("/workbench/orders?orderSource=mall&merchantId=31#detail", [seller]);
+    expect(primaryTargets()).toEqual(["sales-orders"]); expect(activeTargets()).toEqual(["sales-orders"]); expect(locationLabels()).toEqual(["销售订单", "商城订单"]);
+    await act(async () => button("sales-orders").focus()); expect(onPreload.mock.calls[0][0]).toBe(seller);
+    await click("sales-orders"); expect(onNavigate.mock.calls).toEqual([[seller]]); expect(onNavigate.mock.calls[0][0]).toBe(seller);
+    await render("/workbench/orders?orderSource=business", [seller]); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
+    await render("/workbench/outbound", items.filter(item => item !== seller)); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
+  });
   it("单销售、单入库授权只出现原允许入口", async () => {
     const sale = items.find(item => item.path === "/workbench/orders")!;
     await render(sale.path, [sale]); expect(primaryTargets()).toEqual(["sales-orders"]); await click("sales-orders"); expect(onNavigate.mock.calls[0][0]).toBe(sale);

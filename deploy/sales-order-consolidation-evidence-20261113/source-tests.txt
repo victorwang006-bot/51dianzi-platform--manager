@@ -1,0 +1,63 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+ RUN  v2.1.9 /home/ubuntu/work/51dianzi-platform--manager
+
+stderr | client/src/business/BusinessWorkbenchPage.network.test.ts > BusinessWorkbenchPage BFF bootstrap and context network behavior > sales consolidation /workbench/sales-orders?demandNo=XQ-41 renders original [ 'crm.sales_orders', 'marketplace.seller' ] page only inside verified BFF scope
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ client/src/business/BusinessWorkbenchPage.network.test.ts (75 tests) 12929ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > preserves the customer draft and expanded form after visiting another backend page with the same identity 609ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > keeps a real editable customer input and scroll position through coalesced restore checks and same-identity responses 505ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > still sends a real customer command to the BFF during background verification and closes on its 403 894ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > requires a new context proof after empty merchant scope is revoked and later restored, without trusting retained identity proofs 676ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > requires a new context proof after forbidden merchant scope is revoked and later restored, without trusting retained identity proofs 479ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > replaces enterprise cache scope when the same bound account moves to another BFF-proven enterprise 555ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > fails closed for an unclassified domain 403 without claiming a proven session revocation across routes 302ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > uses a stable authorization version through a same context recheck 527ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > uses a stable authorization version through a server-permission-revision context recheck 309ms
+   ✓ BusinessWorkbenchPage BFF bootstrap and context network behavior > does not reverify during ordinary focus, visible browsing or same-identity auth refresh after the old 30-second lease 466ms
+ ✓ client/src/business/platform/client/src/components/customerDemands/CustomerDemandWorkbench.test.ts (60 tests) 2688ms
+ ✓ client/src/business/platform/client/src/pages/ChannelInventoryHost.navigation.render.test.ts (70 tests) 6977ms
+   ✓ ChannelInventoryHost top-dropdown URL intent > follows real back/forward, restores materials on bare home and does not push an effect loop 370ms
+   ✓ ChannelInventoryHost top-dropdown URL intent > does not discard an editor on the same tab intent, but URL tab changes invalidate and abort an old editor request 531ms
+   ✓ approved Host ciView and More entry contract > follows back/forward across explicit views without a second push or stale channel selection 304ms
+ ✓ client/src/business/platform/client/src/pages/CustomerDetail.memory.test.ts (80 tests) 7314ms
+ ✓ client/src/components/DashboardLayout.navigation.test.ts (39 tests) 585ms
+stderr | client/src/components/DashboardLayout.navigation.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+ ✓ client/src/components/admin/ui-unification-tests/sales-orders.test.ts (12 tests) 858ms
+ ✓ client/src/components/admin/adminWorkspaceNavigation.render.test.ts (31 tests) 472ms
+ ✓ client/src/business/platform/client/src/pages/CrmSalesOrders.customer.test.ts (29 tests) 1914ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.unified-dropdown.test.ts (27 tests) 578ms
+ ✓ client/src/business/platform/client/src/components/customers/useCustomerNavigationGuard.test.ts (25 tests) 2245ms
+   ✓ current customer SPA navigation guard using REAL wouter browser location + pageMemory > legacy untracked same-document native back restores without state replacement or a sentinel entry 608ms
+   ✓ current customer SPA navigation guard using REAL wouter browser location + pageMemory > legacy untracked same-document native forward restores without state replacement or a sentinel entry 652ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.primary-entries.test.ts (35 tests) 487ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.location.test.ts (54 tests) 219ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.location-layout.source.test.ts (13 tests) 122ms
+ ✓ client/src/business/SalesOrderWorkspace.render.test.ts (14 tests) 236ms
+ ✓ client/src/components/DashboardLayout.messages.test.ts (3 tests) 227ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.business-dropdown.test.ts (9 tests) 168ms
+ ✓ client/src/lib/salesOrderWorkspace.test.ts (29 tests) 17ms
+ ✓ client/src/components/admin/adminWorkspaceNavigationModel.test.ts (52 tests) 30ms
+ ✓ client/src/components/admin/adminWorkbenchNavigationModel.test.ts (10 tests) 14ms
+ ✓ client/src/business/BusinessWorkbenchPage.contract.test.ts (9 tests) 161ms
+ ✓ client/src/business/BusinessContextGate.focus.test.ts (1 test) 319ms
+   ✓ BusinessContextGate silent restore verification boundary > keeps the previously verified tree mounted and editable during background verification; commands still reach server authorization 318ms
+ ✓ client/src/business/BusinessWorkbenchAccessGate.render.test.ts (4 tests) 235ms
+ ✓ client/src/lib/businessNavigation.test.ts (10 tests) 56ms
+ ✓ client/src/business/BusinessOutboundNativeStyles.test.ts (5 tests) 8ms
+ ✓ client/src/components/admin/adminListLocationLayout.test.ts (46 tests) 12ms
+
+ Test Files  25 passed (25)
+      Tests  742 passed (742)
+   Start at  12:27:45
+   Duration  81.21s (transform 6.69s, setup 0ms, collect 24.84s, tests 38.87s, environment 8.91s, prepare 2.11s)
+

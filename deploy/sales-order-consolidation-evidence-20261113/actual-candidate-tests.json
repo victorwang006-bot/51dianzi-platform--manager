@@ -1,0 +1,129 @@
+{
+  "status": "PASS",
+  "actualCandidatePatchBytesExecuted": true,
+  "inputs": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "sha256": "06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "sha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "sha256": "6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d"
+    }
+  ],
+  "results": [
+    {
+      "name": "bundle0: actual route default mall with two tabs and explicit history",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: manual business tab stays original CRM and identity memory",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: seller-only orders uses mall not CRM gate",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: explicit revoked business denied without page mount or fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: revoke active mall on same URL closes original page",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: unknown duplicate empty explicit source all fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: old CRM alias/deep-links cannot be intercepted by mall memory",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: identity change does not inherit another actor preference",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: old outbound preserves raw search/hash under exact seller gate",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: no grant mounts neither order page",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual CRM link expressions use canonical business and preserve consumption params",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual route default mall with two tabs and explicit history",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: manual business tab stays original CRM and identity memory",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: seller-only orders uses mall not CRM gate",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: explicit revoked business denied without page mount or fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: revoke active mall on same URL closes original page",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: unknown duplicate empty explicit source all fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: old CRM alias/deep-links cannot be intercepted by mall memory",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: identity change does not inherit another actor preference",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: old outbound preserves raw search/hash under exact seller gate",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: no grant mounts neither order page",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual CRM link expressions use canonical business and preserve consumption params",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: two sources highlight sales and have distinct breadcrumbs",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: remove duplicate mall from inventory, keep original inbound object",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: seller-only entry uses exact outbound object and no inventory duplication",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: inquiries and operations reuse their parent badges",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: revoked snapshot removes open menus and unauthorized source context",
+      "status": "PASS"
+    }
+  ],
+  "diBoundary": "Original order pages replaced by inert render spies; original production RouteGate and inserted source/navigation capsules executed. Real BFF integration covered by 742 source tests; no live order mutation."
+}

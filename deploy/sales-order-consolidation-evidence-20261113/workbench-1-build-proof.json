@@ -1,0 +1,14 @@
+{
+  "beforeSha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247",
+  "sha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c",
+  "patches": 7,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "beforeUrl": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+  "url": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+  "wrapperSourceSha256": "09395a93210566ecea51883c5f6bcbecdac6c64f5d2a477cba3b17eb734d4ee8",
+  "allPriorChatCodeUnchanged": true,
+  "originalOrderOperationsUnchanged": true,
+  "originalAccessProviderUnchanged": true,
+  "approvedCRMNavigationExpressions": 5
+}

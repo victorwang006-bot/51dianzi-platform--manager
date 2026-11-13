@@ -15,6 +15,7 @@ import { Route, Router, Switch, useLocation, useSearch } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
 import BusinessUserRecordsPage from "./BusinessUserRecordsPage";
 import BusinessContentFrame from "./BusinessContentFrame";
+import SalesOrderWorkspace, { LegacyOutboundRoute } from "./SalesOrderWorkspace";
 import {
   BusinessScopeProvider,
   useBusinessScope,
@@ -480,6 +481,11 @@ function businessRouteRequirement(
 
 function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
   const [location] = useLocation();
+  // Sales sources enforce their exact original capability inside the wrapper;
+  // the legacy CRM requirement must not pre-deny a seller-only /orders entry.
+  const pathname = location.split(/[?#]/, 1)[0];
+  if (pathname === "/orders" || pathname === "/sales-orders") return <SalesOrderWorkspace />;
+  if (pathname === "/outbound") return <LegacyOutboundRoute />;
   const requirement = businessRouteRequirement(location);
   const routes = (
     <Switch>

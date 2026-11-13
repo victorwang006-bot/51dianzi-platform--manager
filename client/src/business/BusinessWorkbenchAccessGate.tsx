@@ -75,7 +75,7 @@ export function BusinessWorkbenchAccessProvider({
   );
 }
 
-function useBusinessWorkbenchAccess(): BusinessWorkbenchAccess {
+export function useBusinessWorkbenchAccess(): BusinessWorkbenchAccess {
   const access = useContext(BusinessWorkbenchAccessContext);
   if (!access) {
     throw new Error("BusinessWorkbenchAccessProvider is required before rendering a workbench route");

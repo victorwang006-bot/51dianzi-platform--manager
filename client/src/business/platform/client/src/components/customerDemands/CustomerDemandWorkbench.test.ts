@@ -134,8 +134,8 @@ describe("客户集中需求与采购报价", () => {
   it("standalone callbacks remain optional and retain old route parameters under real order permission", async () => {
     runtime.enterprise = state({ isOwner: false, permissionKeys: ["sales.business_orders"] });
     render(h(CustomerDemandDialog, { customer, demandId: 41, mode: "view", onClose: vi.fn() }));
-    await click("填写成交报价 / 生成订单"); expect(runtime.navigate).toHaveBeenCalledWith("/sales-orders?demandNo=XQ-41");
-    await click("查看销售订单"); expect(runtime.navigate).toHaveBeenCalledWith("/sales-orders?keyword=XQ-41");
+    await click("填写成交报价 / 生成订单"); expect(runtime.navigate).toHaveBeenCalledWith("/orders?orderSource=business&demandNo=XQ-41");
+    await click("查看销售订单"); expect(runtime.navigate).toHaveBeenCalledWith("/orders?orderSource=business&keyword=XQ-41");
   });
   it("customer permission does not expose order actions or query orders", () => {
     render(h(CustomerDemandDialog, { customer, demandId: 41, canManageOrders: false, onClose: vi.fn() }));
@@ -224,7 +224,7 @@ describe("客户集中需求与采购报价", () => {
   });
   it("binding helpers are ID-based and preserve encoded standalone routes; quoteSave remains absent here", () => {
     expect(matchesCustomerDemand(detail(), 12, 41)).toBe(true); expect(matchesCustomerDemand(detail(), 13, 41)).toBe(false); expect(matchesCustomerDemand(detail(), 12, 42)).toBe(false);
-    expect(customerDemandOrderPath({ demandId: 41, demandNo: "XQ / 41" }, "create")).toBe("/sales-orders?demandNo=XQ%20%2F%2041");
+    expect(customerDemandOrderPath({ demandId: 41, demandNo: "XQ / 41" }, "create")).toBe("/orders?orderSource=business&demandNo=XQ%20%2F%2041");
     const source = readFileSync(new NodeURL("./CustomerDemandDialog.tsx", import.meta.url), "utf8"); expect(source).not.toContain("quoteSave.useMutation"); expect(source).toContain("aliveRef.current");
   });
 });

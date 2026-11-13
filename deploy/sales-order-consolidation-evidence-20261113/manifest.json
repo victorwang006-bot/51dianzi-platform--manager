@@ -1,0 +1,135 @@
+{
+  "ownerTask": "4kOS3RBCdJO2Kn7BhbvH6T",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "sha256": "6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "sha256": "06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "sha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c"
+    },
+    {
+      "relative": "assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7"
+    }
+  ],
+  "coreAssetPaths": [
+    "assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+    "assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+    "assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+    "assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css"
+  ],
+  "beforeHtmlSha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2",
+  "driverSha256": "151911ecae6db60de8a1fbc645bc105b5c6401d424c0348c44fcad41453558ac",
+  "evidenceHashes": {
+    "actual-candidate-tests.json": "221356b30fe24c26d8e0b899f4ef59901c738be9f8f17ed37fede8ccd9f51e9a",
+    "dependency-resolution-proof.json": "ddf280b37a6b0f159fdff0dcf53e144d9753a9e85fb2803cd7693c58a65a8579",
+    "html-build-proof.json": "b54c7ee11e1d6154056fce10eb21a98a91cdfcba610ed264655d03c48ad76899",
+    "layout-build-proof.json": "2f8c165568532aaf72c32ae501820177cdec19fcc513cf0286975d543c6af958",
+    "workbench-0-build-proof.json": "6ccc2b1e5a384dd12a0464589b9c21e52f93280a8cd7a79c6886c8b918b0f93c",
+    "workbench-1-build-proof.json": "808a207ef1dbafb29d47da68bfc2f143f7167562ff319f850ac35bb4c3265cd5",
+    "workbench-0-patches.json": "2104c821b9628db95e7a1fbd7716cd52439496adec764b260fc0614f0430934b",
+    "workbench-1-patches.json": "fdc92ccacf8ce8886516ea0afe1779618299d27ed3d3e3c35a6d0de8433e5528",
+    "layout-patches.json": "d38c550c3c4e6c54c111c4bca2f9e483fbffdbfa3c857b31f6303a9a61fc6481",
+    "source-tests.log": "8fb194879439358b70d75f1db02fee30e1d9bd268a661c289c5ffa4459f764c3",
+    "tsc.log": "e855cc9c6f45b0a21965a89b6a14605d032575bb82f4482b99d49ac25ec0d5d0"
+  },
+  "sourceTestCount": 742,
+  "sourceTestFailures": 0,
+  "tscPassed": true,
+  "protectedPaths": [
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+    "/etc/nginx/conf.d/dianzi51-admin-subdomain.conf"
+  ],
+  "baselineAssets": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "sha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247"
+    },
+    {
+      "relative": "assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+      "sha256": "66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "sha256": "615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502"
+    },
+    {
+      "relative": "assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "sha256": "a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c"
+    },
+    {
+      "relative": "assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4"
+    },
+    {
+      "relative": "assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd"
+    }
+  ],
+  "dependencies": [
+    "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+    "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+    "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+    "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+  ]
+}

@@ -356,7 +356,7 @@ describe("正式后台顶部布局集成", () => {
     const host = document.createElement("div");
     host.innerHTML = renderLayout();
     expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent))
-      .toEqual(["销售订单"]);
+      .toEqual(["销售订单", "业务订单"]);
     expect(host.querySelector('[data-workspace-nav-target="sales-orders"]')?.getAttribute("aria-current")).toBe("page");
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     expect(host.querySelector('[data-workspace-dropdown="panel"]')).toBeNull();

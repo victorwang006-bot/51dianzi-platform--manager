@@ -1,0 +1,56 @@
+[
+  {
+    "start": 5338,
+    "end": 5338,
+    "before": "",
+    "after": "\nlet __d51_so_instance;function __d51_so_get(){if(!__d51_so_instance){const __soLive={React:c,jsx:e,useLocation:on,useSearch:ec,useBusinessScope:Qa,useBusinessWorkbenchAccess:Ty,BusinessWorkbenchRouteGate:Uy,CrmSalesOrders:op,OutboundManagement:KI};var __SO_EXPORTS=(()=>{var f=Object.defineProperty;var C=Object.getOwnPropertyDescriptor;var I=Object.getOwnPropertyNames;var N=Object.prototype.hasOwnProperty;var G=(s,e)=>{for(var r in e)f(s,r,{get:e[r],enumerable:!0})},T=(s,e,r,o)=>{if(e&&typeof e==\"object\"||typeof e==\"function\")for(let t of I(e))!N.call(s,t)&&t!==r&&f(s,t,{get:()=>e[t],enumerable:!(o=C(e,t))||o.enumerable});return s};var U=s=>T(f({},\"__esModule\",{value:!0}),s);var P={};G(P,{LegacyOutboundRoute:()=>A,SalesOrderWorkspace:()=>O});var S=__soLive.React.useEffect;var b=__soLive.useLocation,h=__soLive.useSearch;var v=__soLive.useBusinessScope;var w=__soLive.BusinessWorkbenchRouteGate,_=__soLive.useBusinessWorkbenchAccess;var g=__soLive.CrmSalesOrders;var k=__soLive.OutboundManagement;var R=[{value:\"mall\",label:\"\\u5546\\u57CE\\u8BA2\\u5355\",capability:\"marketplace.seller\"},{value:\"business\",label:\"\\u4E1A\\u52A1\\u8BA2\\u5355\",capability:\"crm.sales_orders\"}];function x(s){return s===\"mall\"||s===\"business\"}function y(s){let e=s.indexOf(\"#\"),r=e<0?s:s.slice(0,e),o=r.indexOf(\"?\");return{pathname:o<0?r:r.slice(0,o),search:o<0?\"\":r.slice(o+1),hash:e<0?\"\":s.slice(e)}}function L(s,e,r){let{pathname:o,search:t}=y(s),a=new URLSearchParams(t),c=a.getAll(\"orderSource\");if(c.length){let d=c.length===1&&x(c[0])?c[0]:null;return d?{source:d,explicit:!0,allowed:e[d]}:{source:null,explicit:!0,allowed:!1}}if(/(?:^|\\/)sales-orders(?:\\/|$)/.test(o)||a.has(\"demandNo\")||a.has(\"keyword\"))return{source:\"business\",explicit:!1,allowed:e.business};let i=x(r)&&e[r]?r:e.mall?\"mall\":e.business?\"business\":null;return i?{source:i,explicit:!1,allowed:!0}:{source:null,explicit:!1,allowed:!1}}function m(s,e,r=\"/orders\"){let{search:o,hash:t}=y(s),a=o.split(\"&\").filter(c=>c?!new URLSearchParams(c).has(\"orderSource\"):!1);return a.push(`orderSource=${e}`),`${r}?${a.join(\"&\")}${t}`}function $(s){return`d51:sales-order-source:v1:${s}`}function B(s){if(!s||typeof window>\"u\")return null;try{let e=window.localStorage.getItem($(s));return x(e)?e:null}catch{return null}}function W(s,e){if(!(!s||typeof window>\"u\"))try{window.localStorage.setItem($(s),e)}catch{}}var{jsx:l,jsxs:E,Fragment:J}=__soLive.jsx;function O(){let[s,e]=b(),r=h(),{contextVerification:o}=v(),t=_(),a=o.identity,c=typeof window>\"u\"?\"\":window.location.hash,i=`${s.split(/[?#]/,1)[0]}${r?`?${r}`:\"\"}${c}`,d={mall:t.readCapabilities.includes(\"marketplace.seller\"),business:t.readCapabilities.includes(\"crm.sales_orders\")},p=L(i,d,B(a)),n=p.source;return S(()=>{if(!(!n||!p.allowed)&&(W(a,n),!p.explicit)){if(typeof window<\"u\"&&window.location.search.replace(/^\\?/,\"\")!==r.replace(/^\\?/,\"\"))return;e(m(i,n,s.split(/[?#]/,1)[0]),{replace:!0})}},[a,n,p.allowed,p.explicit,i,s,e,r]),E(\"section\",{\"data-sales-order-workspace\":\"\",\"data-order-source\":n??\"invalid\",children:[l(\"nav\",{className:\"admin-workspace-nav__tabs admin-workspace-nav__tabs--modules\",\"aria-label\":\"\\u9500\\u552E\\u8BA2\\u5355\\u6765\\u6E90\",children:R.filter(u=>d[u.value]).map(u=>l(\"button\",{type:\"button\",className:\"admin-workspace-nav__tab admin-workspace-nav__module\",\"data-order-source-tab\":u.value,\"data-active\":n===u.value?\"true\":\"false\",\"aria-current\":n===u.value?\"page\":void 0,onClick:()=>e(m(i,u.value)),children:u.label},u.value))}),n?l(w,{capability:n===\"mall\"?\"marketplace.seller\":\"crm.sales_orders\",children:n===\"mall\"?l(k,{readOnly:!1}):l(g,{})}):l(\"section\",{className:\"m-5 rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950\",role:\"status\",children:p.explicit?\"\\u672A\\u8BC6\\u522B\\u7684\\u9500\\u552E\\u8BA2\\u5355\\u6765\\u6E90\\uFF1B\\u7CFB\\u7EDF\\u4E0D\\u4F1A\\u6539\\u7528\\u5176\\u4ED6\\u6765\\u6E90\\u6743\\u9650\\u3002\":\"\\u5F53\\u524D\\u5546\\u6237\\u672A\\u83B7\\u9500\\u552E\\u8BA2\\u5355\\u8BBF\\u95EE\\u8303\\u56F4\\u3002\"})]})}function j(){let[s,e]=b(),r=h(),o=typeof window>\"u\"?\"\":window.location.hash,t=`${s}${r?`?${r}`:\"\"}${o}`;return S(()=>{e(m(t,\"mall\"),{replace:!0})},[t,e]),l(\"section\",{className:\"m-5 text-sm text-muted-foreground\",role:\"status\",children:\"\\u6B63\\u5728\\u6253\\u5F00\\u5546\\u57CE\\u8BA2\\u5355\\u2026\"})}function A(){return l(w,{capability:\"marketplace.seller\",children:l(j,{})})}return U(P);})();\n\n__d51_so_instance=__SO_EXPORTS;}return __d51_so_instance;}\n",
+    "reason": "source-bound sales container using original contexts/pages",
+    "afterStart": 5338,
+    "afterEnd": 9755
+  },
+  {
+    "start": 128105,
+    "end": 129382,
+    "before": "let[r]=Ss(),a=Pi(r),p=Jt(Ns,{children:[u(E,{path:\"/\",component:vr}),u(E,{path:\"/inventory\",component:vr}),u(E,{path:\"/publish/:id/edit\",component:Ws}),u(E,{path:\"/publish\",component:uo}),u(E,{path:\"/inbound\",component:co}),u(E,{path:\"/channel-inventory\",component:Ti}),u(E,{path:\"/customers/new/:id\",component:cr}),u(E,{path:\"/customers/new\",component:cr}),u(E,{path:\"/customers/:id\",component:Gs}),u(E,{path:\"/customers\",component:js}),u(E,{path:\"/customer-demands\",component:zs}),u(E,{path:\"/orders\",component:lr}),u(E,{path:\"/sales-orders\",component:lr}),u(E,{path:\"/outbound\",component:Bi}),u(E,{path:\"/chat\",children:()=>u(en,{canReply:s})}),u(E,{path:\"/procurement-demands\",component:hr}),u(E,{path:\"/procurement/demands\",component:hr}),u(E,{path:\"/procurement-orders/quote\",component:Qe}),u(E,{path:\"/procurement-orders/accepted\",component:Qe}),u(E,{path:\"/procurement-orders/create\",component:Qe}),u(E,{path:\"/procurement-orders\",component:Qe}),u(E,{path:\"/procurement/orders\",component:Qe}),u(E,{path:\"/demand-quotes\",component:Qs}),u(E,{path:\"/add-user\",component:Ps}),u(E,{path:\"/user-records\",component:Rs}),u(E,{path:\"/company-info\",component:ir}),u(E,{path:\"/company\",component:ir}),u(E,{path:\"/inquiries\",children:()=>u(en,{canReply:s})}),u(E,{component:Ai})]});",
+    "after": "let[r]=Ss();const __soPath=r.split(/[?#]/,1)[0];if(__soPath===\"/orders\"||__soPath===\"/sales-orders\")return u(__d51_so_get().SalesOrderWorkspace,{});if(__soPath===\"/outbound\")return u(__d51_so_get().LegacyOutboundRoute,{});let a=Pi(r),p=Jt(Ns,{children:[u(E,{path:\"/\",component:vr}),u(E,{path:\"/inventory\",component:vr}),u(E,{path:\"/publish/:id/edit\",component:Ws}),u(E,{path:\"/publish\",component:uo}),u(E,{path:\"/inbound\",component:co}),u(E,{path:\"/channel-inventory\",component:Ti}),u(E,{path:\"/customers/new/:id\",component:cr}),u(E,{path:\"/customers/new\",component:cr}),u(E,{path:\"/customers/:id\",component:Gs}),u(E,{path:\"/customers\",component:js}),u(E,{path:\"/customer-demands\",component:zs}),u(E,{path:\"/orders\",component:lr}),u(E,{path:\"/sales-orders\",component:lr}),u(E,{path:\"/outbound\",component:Bi}),u(E,{path:\"/chat\",children:()=>u(en,{canReply:s})}),u(E,{path:\"/procurement-demands\",component:hr}),u(E,{path:\"/procurement/demands\",component:hr}),u(E,{path:\"/procurement-orders/quote\",component:Qe}),u(E,{path:\"/procurement-orders/accepted\",component:Qe}),u(E,{path:\"/procurement-orders/create\",component:Qe}),u(E,{path:\"/procurement-orders\",component:Qe}),u(E,{path:\"/procurement/orders\",component:Qe}),u(E,{path:\"/demand-quotes\",component:Qs}),u(E,{path:\"/add-user\",component:Ps}),u(E,{path:\"/user-records\",component:Rs}),u(E,{path:\"/company-info\",component:ir}),u(E,{path:\"/company\",component:ir}),u(E,{path:\"/inquiries\",children:()=>u(en,{canReply:s})}),u(E,{component:Ai})]});",
+    "reason": "sales routes early branch before old CRM-only gate",
+    "afterStart": 132522,
+    "afterEnd": 134013
+  },
+  {
+    "start": 1838214,
+    "end": 1838249,
+    "before": "`/sales-orders${J.size?`?${J}`:\"\"}`",
+    "after": "(()=>{J.set(\"orderSource\",\"business\");return `/orders?${J}${typeof window===\"undefined\"?\"\":window.location.hash}`;})()",
+    "reason": "source-bound CRM demand deep-link/consumption URL only",
+    "afterStart": 1842845,
+    "afterEnd": 1842963
+  },
+  {
+    "start": 1838315,
+    "end": 1838350,
+    "before": "`/sales-orders${J.size?`?${J}`:\"\"}`",
+    "after": "(()=>{J.set(\"orderSource\",\"business\");return `/orders?${J}${typeof window===\"undefined\"?\"\":window.location.hash}`;})()",
+    "reason": "source-bound CRM demand deep-link/consumption URL only",
+    "afterStart": 1843029,
+    "afterEnd": 1843147
+  },
+  {
+    "start": 2053072,
+    "end": 2053130,
+    "before": "`/sales-orders?demandNo=${encodeURIComponent(L.demandNo)}`",
+    "after": "`/orders?orderSource=business&demandNo=${encodeURIComponent(L.demandNo)}`",
+    "reason": "source-bound CRM demand deep-link/consumption URL only",
+    "afterStart": 2057869,
+    "afterEnd": 2057942
+  },
+  {
+    "start": 2053184,
+    "end": 2053241,
+    "before": "`/sales-orders?keyword=${encodeURIComponent(L.demandNo)}`",
+    "after": "`/orders?orderSource=business&keyword=${encodeURIComponent(L.demandNo)}`",
+    "reason": "source-bound CRM demand deep-link/consumption URL only",
+    "afterStart": 2057996,
+    "afterEnd": 2058068
+  }
+]
