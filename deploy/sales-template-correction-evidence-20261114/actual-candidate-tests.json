@@ -1,0 +1,89 @@
+{
+  "status": "PASS",
+  "actualCandidateBytesExecuted": true,
+  "tests": 13,
+  "failed": 0,
+  "results": [
+    {
+      "name": "all five candidate hashes match recorded manifest",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: exact business baseline including original wrapper/native module",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: exact inverse preserves every byte outside approved edits",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual mall renders independent filter, export toolbar, original eight columns and status dots",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual next/previous pagination keeps all filtered results exportable",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: actual status selector filters rows without changing underlying fixture data",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: exact business baseline including original wrapper/native module",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: exact inverse preserves every byte outside approved edits",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual mall renders independent filter, export toolbar, original eight columns and status dots",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual next/previous pagination keeps all filtered results exportable",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: actual status selector filters rows without changing underlying fixture data",
+      "status": "PASS"
+    },
+    {
+      "name": "stylesheet is exclusively scoped to mall and never targets restored business page",
+      "status": "PASS"
+    },
+    {
+      "name": "entry/homepage and import-map dependency preservation proofs pass",
+      "status": "PASS"
+    }
+  ],
+  "inputs": [
+    {
+      "relative": "index.html",
+      "sha256": "917a7e100fa6e3493a29437b6df23e50d88c4efa71e39906f361a13de954ba03"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-sales-business-template-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+      "sha256": "3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js",
+      "sha256": "e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3"
+    },
+    {
+      "relative": "assets/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css",
+      "sha256": "0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24"
+    }
+  ],
+  "productionWrites": 0,
+  "networkCalls": 0,
+  "coverageLimits": [
+    "Actual mall roots execute under inert fixture IO; no production APIs or writes.",
+    "Business native/page wrapper byte restoration verified against exact pre-redesign files; original business module retained.",
+    "No production browser pixel/computed-style or logged-in acceptance claimed."
+  ]
+}

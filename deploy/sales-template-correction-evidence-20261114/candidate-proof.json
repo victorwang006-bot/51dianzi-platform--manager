@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "businessNativeExactlyRestored": true,
+  "businessSourceExactlyRestored": true,
+  "unrelatedNativeBytesUnchanged": true,
+  "mallOperationsUnchanged": true,
+  "scopeAndArchiveUnchanged": true,
+  "navigationAssetUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "workbenches": [
+    {
+      "url": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+      "businessNativeSha256": "8fa754a9f90c313281fbb4be1e6003dadee9a8e7252fcb7b8f30fb9bc54b7093"
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js",
+      "businessNativeSha256": "b84d06f53ecf514688b41269b535a49d65e0fc8cacf9a4786b23e95ce46fe589"
+    }
+  ],
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "917a7e100fa6e3493a29437b6df23e50d88c4efa71e39906f361a13de954ba03"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-sales-business-template-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+      "sha256": "3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js",
+      "sha256": "e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3"
+    },
+    {
+      "relative": "assets/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css",
+      "sha256": "0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24"
+    }
+  ]
+}

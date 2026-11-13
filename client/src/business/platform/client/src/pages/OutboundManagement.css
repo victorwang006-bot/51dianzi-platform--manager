@@ -1,4 +1,157 @@
-/* Outbound-only layout details; typography and controls use the shared admin theme. */
+/* Mall-only overrides: use the original business list tokens, never global CRM rules. */
+.aui-page.erp-ui.sales-order-page {
+  min-width: 0;
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-filter-card {
+  margin: 0 0 12px;
+  padding: 8px;
+  border: 1px solid var(--admin-color-border, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-filter-card > div {
+  min-width: 0;
+  width: 100%;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-toolbar .crm-input,
+.aui-page.erp-ui.sales-order-page .sales-order-compact-button {
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-toolbar .crm-input {
+  padding: 6px 10px;
+  color: var(--admin-color-text, #1f2937);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-compact-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-compact-button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-compact-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Export stays in the list toolbar; search/status/advanced filters have their own card. */
+.aui-page.erp-ui.sales-order-page .sales-order-list-toolbar {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
+  border-radius: 0;
+  background: #fff;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-table th {
+  height: var(--admin-content-table-head-height, 32px);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
+  background: #f8fafc;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-content-font-caption, 11px);
+  font-weight: 500;
+  line-height: var(--admin-content-caption-line-height, 1.5);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-table tbody tr {
+  height: 56px;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-table td {
+  height: auto;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+  vertical-align: middle;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-table .font-semibold {
+  font-weight: 500;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-table .text-muted-foreground {
+  color: var(--admin-color-muted, #64748b);
+  font-size: var(--admin-content-font-caption, 11px);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-content-font-body, 12px);
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-status-dot {
+  background: transparent;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.aui-page.erp-ui.sales-order-page .inbound-row-menu {
+  width: auto;
+  height: var(--admin-content-control-height, 32px);
+  min-height: var(--admin-content-control-height, 32px);
+  border: 0;
+  border-radius: 0;
+  padding: 0 8px;
+  background: transparent;
+  color: #185fa5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+}
+
+.aui-page.erp-ui.sales-order-page .inbound-row-menu:hover {
+  background: rgb(24 95 165 / 0.05);
+  color: #0c447c;
+}
+
+.aui-page.erp-ui.sales-order-page .sales-order-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--admin-color-border, #e2e8f0);
+  color: var(--admin-color-muted, #64748b);
+  font-size: var(--admin-content-font-caption, 11px);
+}
+
 .aui-page.erp-ui.sales-order-page .sales-order-numeric {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -20,21 +173,8 @@
   flex-wrap: wrap;
 }
 
-/* Unified compact order list: toolbar belongs to the table card. */
-.aui-page.erp-ui.sales-order-page .sales-order-list-toolbar {
-  margin: 0;
-  border: 0;
-  border-bottom: 1px solid #e8edf2;
-  border-radius: 0;
-  padding: 8px 10px;
-  background: #fff;
-}
 .aui-page.erp-ui.sales-order-page .sales-order-readonly-note {
   margin: 0 0 8px;
-  font-size: 12px;
-  color: #64748b;
-}
-.aui-page.erp-ui.sales-order-page .sales-order-pagination {
-  gap: 8px;
-  flex-wrap: wrap;
+  font-size: var(--admin-content-font-body, 12px);
+  color: var(--admin-color-muted, #64748b);
 }

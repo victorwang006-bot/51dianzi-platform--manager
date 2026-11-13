@@ -16,6 +16,8 @@ const runtime = vi.hoisted(() => ({
   confirmOfflineRefund: vi.fn(),
   error: vi.fn(),
   invalidate: vi.fn(),
+  exportedRows: vi.fn(),
+  writeFile: vi.fn(),
 }));
 vi.mock("@/business/api/business-trpc", () => ({
   trpc: {
@@ -39,6 +41,14 @@ vi.mock("@/business/BusinessContentFrame", () => ({ default: ({ children }: { ch
 vi.mock("@/business/platform/client/src/components/LogisticsDialog", () => ({ default: () => null }));
 vi.mock("@/business/platform/client/src/components/WaybillOcrUploader", () => ({ default: () => null }));
 vi.mock("sonner", () => ({ toast: { error: runtime.error, success: vi.fn(), warning: vi.fn() } }));
+vi.mock("xlsx", () => ({
+  utils: {
+    json_to_sheet: (rows: unknown[]) => { runtime.exportedRows(rows); return {}; },
+    book_new: () => ({}),
+    book_append_sheet: vi.fn(),
+  },
+  writeFile: runtime.writeFile,
+}));
 
 import OutboundManagement, { canMutateOutboundOrder } from "@/business/platform/client/src/pages/OutboundManagement";
 
@@ -76,6 +86,13 @@ async function fill(selector: string, value: string) {
 async function render(readOnly = false) { await act(async () => root.render(createElement(OutboundManagement, { readOnly }))); }
 async function openDetail(id = 1) { await click(button(`TEST-${id}`)); }
 function dialog() { return host.querySelector<HTMLElement>('[role="dialog"][aria-modal="true"]')!; }
+async function selectStatus(value: string) {
+  const select = host.querySelector<HTMLSelectElement>('[aria-label="商城订单状态"]')!;
+  await act(async () => {
+    select.value = value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
 
 beforeEach(() => {
   Object.assign(globalThis, { React, IS_REACT_ACT_ENVIRONMENT: true });
@@ -89,18 +106,26 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
 
 describe("outbound unified presentation", () => {
-  it("uses shared page primitives and preserves status/tab-panel relationships and columns", async () => {
+  it("keeps a separate filter card, list export toolbar, mall columns and text actions", async () => {
     await render();
     expect(host.querySelector("section.aui-page")?.getAttribute("data-admin-ui-system")).toBe("channel-inventory");
-    expect(host.querySelector(".aui-page-header h1")?.textContent).toBe("线上订单");
-    expect(host.querySelector("nav.aui-page-tabs")?.getAttribute("aria-label")).toBe("线上订单状态");
-    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(7);
-    expect(host.querySelector(".aui-filterbar")).not.toBeNull();
-    expect(host.querySelector(".aui-data-panel")?.getAttribute("aria-labelledby")).toBe("sales-order-tab-all");
+    expect(host.querySelector(".aui-page-header")).toBeNull();
+    expect(host.querySelector("h1.sr-only")?.textContent).toBe("商城订单");
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    const filterCard = host.querySelector(".aui-filterbar.sales-order-filter-card")!;
+    expect(filterCard.parentElement).toBe(host.querySelector(".aui-page"));
+    expect(host.querySelector(".aui-data-panel .aui-filterbar")).toBeNull();
+    expect(host.querySelector(".aui-data-panel")?.getAttribute("aria-label")).toBe("商城订单列表");
+    expect(host.querySelectorAll('[aria-label="商城订单状态"] option')).toHaveLength(7);
+    expect(button("导出筛选结果").closest(".sales-order-list-toolbar")?.parentElement).toBe(host.querySelector(".aui-data-panel"));
     expect(Array.from(host.querySelectorAll("th")).map(node => node.textContent)).toEqual(["", "订单 / 日期", "客户 / 收货人", "商品明细", "含税金额", "配送 / 物流", "状态", "操作"]);
     expect(host.querySelector("th.sales-order-numeric")?.textContent).toBe("含税金额");
     expect(host.querySelector("td.sales-order-numeric")?.textContent).toContain("¥1,200.00");
-    expect(button("导出选中").disabled).toBe(true);
+    expect(host.querySelector(".sales-order-status-dot")?.getAttribute("aria-hidden")).toBe("true");
+    expect(host.querySelector(".sales-order-status")?.textContent).toContain("待发货");
+    expect(host.querySelector("tbody .crm-badge")).toBeNull();
+    expect(host.querySelector('[aria-label="操作 TEST-1"]')?.textContent).toBe("更多");
+    expect(button("导出筛选结果").disabled).toBe(false);
   });
 
   it("keeps draft filters unapplied until Enter, then resets filters and selected orders", async () => {
@@ -113,27 +138,61 @@ describe("outbound unified presentation", () => {
     await act(async () => host.querySelector("input.crm-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     expect(host.querySelector("tbody")?.textContent).not.toContain("TEST-1");
     expect(host.querySelector("tbody")?.textContent).toContain("TEST-2");
-    expect(button("导出选中").disabled).toBe(true);
+    expect(button("导出筛选结果").disabled).toBe(false);
     await click(button("重置"));
     expect(host.querySelector("tbody")?.textContent).toContain("TEST-1");
   });
 
-  it("preserves page size, page selection, status keyboard navigation and after-sales aggregation", async () => {
+  it("preserves page size, page selection, status selection and after-sales aggregation", async () => {
     runtime.orders = Array.from({ length: 12 }, (_, index) => order(index + 1, { status: index === 10 ? "refund" : index === 11 ? "refunded" : "paid" }));
     await render();
     expect(host.querySelectorAll("tbody tr")).toHaveLength(10);
-    await click(button("2", host.querySelector(".sales-order-pagination")!));
+    expect(button("上一页").disabled).toBe(true);
+    await click(button("下一页"));
     expect(host.querySelector("tbody")?.textContent).toContain("TEST-11");
+    expect(button("下一页").disabled).toBe(true);
     await click(host.querySelector<HTMLInputElement>('[aria-label="选择本页全部订单"]')!);
     expect(button("导出选中（2）").disabled).toBe(false);
-    await click(host.querySelector<HTMLElement>("#sales-order-tab-after_sales")!);
+    await selectStatus("after_sales");
     expect(host.querySelectorAll("tbody tr")).toHaveLength(2);
-    expect(host.querySelector("#sales-order-tab-after_sales")?.getAttribute("aria-selected")).toBe("true");
-    expect(button("导出选中").disabled).toBe(true);
+    expect(host.querySelector<HTMLSelectElement>('[aria-label="商城订单状态"]')?.value).toBe("after_sales");
+    expect(button("导出筛选结果").disabled).toBe(false);
     expect(host.querySelector(".sales-order-pagination")?.textContent).toContain("第 1 / 1 页");
-    await act(async () => host.querySelector("#sales-order-tab-after_sales")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true })));
-    expect(host.querySelector("#sales-order-tab-all")?.getAttribute("aria-selected")).toBe("true");
+    await selectStatus("all");
+    expect(host.querySelector<HTMLSelectElement>('[aria-label="商城订单状态"]')?.value).toBe("all");
     expect(host.querySelectorAll("tbody tr")).toHaveLength(10);
+  });
+
+  it("exports the complete applied filter across pages, not draft filters or only the current page", async () => {
+    runtime.orders = Array.from({ length: 12 }, (_, index) => order(index + 1, { status: index === 11 ? "pending" : "paid" }));
+    await render();
+    await selectStatus("paid");
+    await fill('[placeholder="搜索订单号或型号"]', "PART-1");
+    await click(button("导出筛选结果"));
+    expect(runtime.exportedRows).toHaveBeenCalledTimes(1);
+    expect(runtime.exportedRows.mock.calls[0][0]).toHaveLength(11);
+    expect(runtime.exportedRows.mock.calls[0][0].map((row: Record<string, unknown>) => row.订单号)).toContain("TEST-11");
+    expect(runtime.exportedRows.mock.calls[0][0].map((row: Record<string, unknown>) => row.订单号)).not.toContain("TEST-12");
+    expect(runtime.writeFile).toHaveBeenCalledTimes(1);
+    expect(runtime.writeFile.mock.calls[0][1]).toMatch(/^商城订单_.*\.xlsx$/);
+  });
+
+  it("exports selected orders across pages and retains every selected product, receiver and logistics field", async () => {
+    runtime.orders = Array.from({ length: 11 }, (_, index) => order(index + 1));
+    runtime.orders[0] = order(1, { expressCo: "顺丰速运", expressNo: "SF123456", items: [
+      { id: 10, partNumber: "PART-1", unitPrice: "12.00", qty: 100 },
+      { id: 11, partNumber: "PART-EXTRA", unitPrice: "20.00", qty: 8 },
+    ] });
+    await render();
+    await click(host.querySelector<HTMLInputElement>('[aria-label="选择订单 TEST-1"]')!);
+    await click(button("下一页"));
+    await click(host.querySelector<HTMLInputElement>('[aria-label="选择订单 TEST-11"]')!);
+    await click(button("导出选中（2）"));
+    const rows = runtime.exportedRows.mock.calls[0][0] as Array<Record<string, unknown>>;
+    expect(rows.map(row => row.订单号)).toEqual(["TEST-1", "TEST-1", "TEST-11"]);
+    expect(rows[1]).toMatchObject({ 料号型号: "PART-EXTRA", 数量: 8, 收货人: "收货人", 联系电话: "13800000000", 快递公司: "顺丰速运", 快递单号: "SF123456", 状态: "待发货" });
+    expect(runtime.ship).not.toHaveBeenCalled();
+    expect(runtime.confirmPay).not.toHaveBeenCalled();
   });
 
   it("retains advanced receiver, tracking and date filters", async () => {
@@ -206,7 +265,7 @@ describe("outbound unified presentation", () => {
     await render(true);
     expect(canMutateOutboundOrder(true)).toBe(false);
     expect(canMutateOutboundOrder(false)).toBe(true);
-    expect(host.textContent).toContain("（只读）");
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("当前为只读模式");
     await click(host.querySelector<HTMLElement>('[aria-label="操作 TEST-1"]')!);
     const menu = host.querySelector("#sales-order-actions-1")!;
     expect(menu.querySelector("a")?.getAttribute("href")).toBe("/api/orders/1/contract");

@@ -20,13 +20,11 @@ function styleSelectors(css: string) {
 }
 
 describe("BusinessOutboundNativeStyles", () => {
-  it("removes standalone page headers while keeping the accessible mall title and original action names", () => {
+  it("restores the business header while mall stays a compact list and original actions keep their names", () => {
     const business = source("./platform/client/src/pages/CrmSalesOrders.tsx");
-    expect(outbound).not.toMatch(/<AdminPageHeader\b/);
-    expect(business).not.toMatch(/<AdminPageHeader\b/);
-    expect(outbound).toContain('<h1 className="sr-only">商城订单</h1>');
-    expect(outbound).toMatch(/<AdminDataPanel\b[\s\S]*?<AdminFilterBar\b/);
-    expect(business).toMatch(/<AdminDataPanel\b[\s\S]*?<AdminFilterBar\b/);
+    expect(outbound).not.toMatch(/<AdminPageHeader\s+list\s+title="商城订单"/);
+    expect(outbound).toContain('aria-label="商城订单"');
+    expect(business).toMatch(/<AdminPageHeader\s+list\s+title="业务订单"/);
     expect(outbound).toContain("导出选中");
     expect(business).toContain("录入销售订单");
     expect(business).toContain('title="确认取消销售订单？"');
@@ -99,11 +97,7 @@ describe("BusinessOutboundNativeStyles", () => {
     ])
       expect(styles).toContain(declaration);
 
-    expect(outbound).not.toContain('className="sales-order-status-tabs"');
-    expect(outbound).toMatch(/<select aria-label="商城订单状态"[\s\S]*?value=\{filters.status\}[\s\S]*?selectStatus\(event.target.value\)/);
-    expect(outbound).toContain("SALES_ORDER_STATUS_TABS.map");
     for (const className of [
-      "sales-order-list-toolbar",
       "sales-order-toolbar",
       "sales-order-table",
       "sales-order-pagination",

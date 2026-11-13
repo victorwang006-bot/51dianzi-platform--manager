@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "../../../../api/business-trpc";
 import PlatformLayout from "../../../../BusinessContentFrame";
-import { ChevronDown, Download } from "lucide-react";
+import { ChevronDown, Download, Search } from "lucide-react";
 import { ORDER_STATUS_META } from "../../../shared/cartUtils";
 import LogisticsDialog from "../components/LogisticsDialog";
 import WaybillOcrUploader from "../components/WaybillOcrUploader";
@@ -516,13 +516,13 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
       <AdminPage className="erp-ui sales-order-page" aria-label="商城订单" data-testid="sales-order-inventory-style">
         <h1 className="sr-only">商城订单</h1>
         {readOnly && <p role="status" className="sales-order-readonly-note">当前为只读模式，不能收款、发货、取消或处理退款。</p>}
-        <AdminDataPanel id="sales-order-panel" aria-label="商城订单列表" className="sales-order-table-card overflow-hidden">
         <AdminFilterBar
-          className="sales-order-toolbar sales-order-list-toolbar"
+          className="sales-order-toolbar sales-order-filter-card"
           onKeyDown={event => { if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") applyFilters(); }}>
           <div className="flex flex-wrap items-center gap-2">
             <input
-              className="crm-input w-[220px]"
+              aria-label="搜索商城订单"
+              className="crm-input w-[320px] max-w-full"
               placeholder="搜索订单号或型号"
               value={filterInput.kw}
               onChange={event => setFilterInput(current => ({ ...current, kw: event.target.value }))}
@@ -538,18 +538,8 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
               更多筛选{hasAdvancedFilterInput ? " · 已选" : ""}
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showMoreFilters ? "rotate-180" : ""}`} />
             </button>
-            <button type="button" className="sales-order-compact-button text-[#185FA5]" onClick={applyFilters}>筛选</button>
+            <button type="button" className="sales-order-compact-button" onClick={applyFilters}><Search className="h-3.5 w-3.5" />筛选</button>
             <button type="button" className="sales-order-compact-button" disabled={!hasAnyFilterInput} onClick={resetFilters}>重置</button>
-            <button type="button" className="sales-order-compact-button ml-auto" disabled={exporting || isLoading || list.length === 0}
-              onClick={async () => {
-                const epoch = exportEpoch.current;
-                setExporting(true);
-                await exportToExcel(selectedIds.size > 0 ? list.filter(order => selectedIds.has(order.id)) : list, () => exportEpoch.current === epoch);
-                if (exportEpoch.current === epoch) setExporting(false);
-              }}>
-              <Download className="h-3.5 w-3.5" />
-              {exporting ? "导出中…" : selectedIds.size > 0 ? `导出选中（${list.filter(order => selectedIds.has(order.id)).length}）` : "导出筛选结果"}
-            </button>
           </div>
           {showMoreFilters && <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2" data-testid="sales-order-advanced-filters">
             <input
@@ -572,6 +562,19 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           </div>}
         </AdminFilterBar>
 
+        <AdminDataPanel id="sales-order-panel" aria-label="商城订单列表" className="sales-order-table-card overflow-hidden">
+          <div className="sales-order-list-toolbar">
+            <button type="button" className="sales-order-compact-button ml-auto" disabled={exporting || isLoading || list.length === 0}
+              onClick={async () => {
+                const epoch = exportEpoch.current;
+                setExporting(true);
+                await exportToExcel(selectedIds.size > 0 ? list.filter(order => selectedIds.has(order.id)) : list, () => exportEpoch.current === epoch);
+                if (exportEpoch.current === epoch) setExporting(false);
+              }}>
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? "导出中…" : selectedIds.size > 0 ? `导出选中（${list.filter(order => selectedIds.has(order.id)).length}）` : "导出筛选结果"}
+            </button>
+          </div>
           <div className="sales-order-table-viewport overflow-x-auto">
             <table className="crm-table sales-order-table min-w-[1040px] table-fixed">
               <colgroup>
@@ -605,8 +608,8 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
                     </div> : <span className="text-muted-foreground">—</span>}</td>
                     <td className="sales-order-numeric"><div className="font-medium tabular-nums text-slate-800">¥{fmtMoney(num(order.totalAmount))}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={`含税额 ¥${fmtMoney(num(order.taxAmount))} · ${num(order.shippingFee) === 0 ? "包邮" : `运费 ¥${fmtMoney(num(order.shippingFee))}`}`}>含税额 ¥{fmtMoney(num(order.taxAmount))} · {num(order.shippingFee) === 0 ? "包邮" : `运费 ¥${fmtMoney(num(order.shippingFee))}`}</div></td>
                     <td>{order.deliveryMethod === "pickup" || order.expressCo === "自提" ? <><div className="font-medium text-[#185FA5]">上门自提</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={order.pickupAddress || order.receiverAddress}>{order.pickupAddress || order.receiverAddress}</div></> : order.expressNo ? <><div className="truncate font-medium text-slate-700">{order.expressCo || "快递"}</div><button type="button" className="crm-link mt-0.5 block truncate text-[11px]" onClick={() => setLogisticsOrder(order)}>{order.expressNo}</button></> : <><div className="text-slate-700">等待发货</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={order.receiverAddress}>{order.receiverAddress}</div></>}</td>
-                    <td><span className={`crm-badge whitespace-nowrap ${STATUS_BADGE[order.status] ?? "bg-[#f5f5f5] text-[#999]"}`}>{statusLabel}</span>{order.statusNote && <div className="mt-1 truncate text-[11px] text-muted-foreground" title={order.statusNote}>{order.statusNote}</div>}</td>
-                    <td className="text-right"><button type="button" className="inbound-row-menu" aria-label={`操作 ${order.orderNo}`} aria-haspopup="dialog" aria-controls={`sales-order-actions-${order.id}`} aria-expanded={openMenu?.order.id === order.id} onClick={event => { event.stopPropagation(); toggleMoreMenu(order, event.currentTarget); }}>…</button></td>
+                    <td><span className="sales-order-status whitespace-nowrap"><span className={`sales-order-status-dot ${STATUS_BADGE[order.status] ?? "text-[#999]"}`} aria-hidden="true">●</span><span className="font-medium text-slate-700">{statusLabel}</span></span>{order.statusNote && <div className="mt-1 truncate text-[11px] text-muted-foreground" title={order.statusNote}>{order.statusNote}</div>}</td>
+                    <td className="text-right"><button type="button" className="inbound-row-menu admin-row-action" aria-label={`操作 ${order.orderNo}`} aria-haspopup="dialog" aria-controls={`sales-order-actions-${order.id}`} aria-expanded={openMenu?.order.id === order.id} onClick={event => { event.stopPropagation(); toggleMoreMenu(order, event.currentTarget); }}>更多</button></td>
                   </tr>;
                 })}
               </tbody>
@@ -614,8 +617,11 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
           </div>
           <div className="sales-order-pagination">
             <span>共 {list.length} 条，每页 {PAGE_SIZE} 条 · 含税合计 {sumMallOrderAmounts(list.map(order => order.totalAmount))}</span>
-            <div className="flex gap-1">{Array.from({ length: totalPages }, (_, index) => index + 1).slice(Math.max(0, safePage - 3), Math.max(0, safePage - 3) + 5).map(value => <button key={value} type="button" onClick={() => setPage(value)} className={value === safePage ? "h-7 w-7 rounded-md bg-[#185FA5] text-white" : "h-7 w-7 rounded-md border bg-white hover:bg-slate-50"}>{value}</button>)}</div>
-            <span>第 {safePage} / {totalPages} 页</span>
+            <div className="flex items-center gap-2">
+              <button type="button" className="sales-order-compact-button" disabled={safePage <= 1 || isLoading} onClick={() => setPage(safePage - 1)}>上一页</button>
+              <span className="min-w-[64px] text-center">第 {safePage} / {totalPages} 页</span>
+              <button type="button" className="sales-order-compact-button" disabled={safePage >= totalPages || isLoading} onClick={() => setPage(safePage + 1)}>下一页</button>
+            </div>
           </div>
         </AdminDataPanel>
 

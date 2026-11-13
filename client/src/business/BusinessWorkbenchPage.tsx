@@ -503,8 +503,8 @@ function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
       <Route path="/customers/:id" component={CustomerDetail} />
       <Route path="/customers" component={CustomerList} />
       <Route path="/customer-demands" component={CustomerDemands} />
-      <Route path="/orders" component={() => <CrmSalesOrders />} />
-      <Route path="/sales-orders" component={() => <CrmSalesOrders />} />
+      <Route path="/orders" component={CrmSalesOrders} />
+      <Route path="/sales-orders" component={CrmSalesOrders} />
       <Route path="/outbound" component={BusinessOutboundRoute} />
       <Route path="/chat">{() => <BusinessChatRoute canReply={canReply} />}</Route>
       <Route path="/procurement-demands" component={ProcurementDemands} />
