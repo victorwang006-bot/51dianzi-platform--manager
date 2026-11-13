@@ -1,0 +1,212 @@
+{
+  "status": "PASS",
+  "overallStatus": "PASS",
+  "acceptancePassed": true,
+  "candidateHtmlSha256": "bb8352b73b02af4ff941caaba300aa09b0faf8451c2df23a1d963ce6479f5eb7",
+  "recordedAtUtc": "2026-11-13T00:25:52.826493+00:00",
+  "scenarioCount": 15,
+  "routes": [
+    "inventory",
+    "customers",
+    "merchants",
+    "staff",
+    "workbench-alias"
+  ],
+  "viewportWidths": [
+    1440,
+    1024,
+    390
+  ],
+  "pageErrors": 0,
+  "realBusinessNetworkRequests": 0,
+  "realAccountLogin": false,
+  "realPermissionOrAuthenticatedBusinessValidation": false,
+  "actualProductionRootAndModulesRendered": true,
+  "miniComponentFixtureUsed": false,
+  "actualCustomerFunction": {
+    "name": "ez",
+    "sourceExactMatch": true,
+    "sha256": "962d459bb6f55c3d69630be5b43b405fc55a60e5860fa943cb2057fb66125d26",
+    "moduleURL": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js",
+    "moduleSha256": "6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b"
+  },
+  "scopeAndEntryActuallySameToolbar": true,
+  "sharedToolbarControlHeightDesktop": 36,
+  "sharedToolbarControlHeightMobile": 40,
+  "sharedToolbarNextPanelGap": 12,
+  "breadcrumbHeight": 20,
+  "breadcrumbBottomMargin": 8,
+  "inventoryNativeControlsPreserved": true,
+  "customerExpandCollapseAndEntryOpenClosePassed": true,
+  "submittedForm": false,
+  "networkActionsAreLocalReplayOrSyntheticOnly": true,
+  "metrics": [
+    {
+      "page": "inventory",
+      "width": 1440,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 7,
+      "controlHeights": [
+        34
+      ],
+      "documentScrollWidth": 1440
+    },
+    {
+      "page": "inventory",
+      "width": 1024,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 7,
+      "controlHeights": [
+        34
+      ],
+      "documentScrollWidth": 1024
+    },
+    {
+      "page": "inventory",
+      "width": 390,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 7,
+      "controlHeights": [
+        34
+      ],
+      "documentScrollWidth": 390
+    },
+    {
+      "page": "customers",
+      "width": 1440,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        36
+      ],
+      "documentScrollWidth": 1440
+    },
+    {
+      "page": "customers",
+      "width": 1024,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        36
+      ],
+      "documentScrollWidth": 1024
+    },
+    {
+      "page": "customers",
+      "width": 390,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        40
+      ],
+      "documentScrollWidth": 390
+    },
+    {
+      "page": "merchants",
+      "width": 1440,
+      "locationMode": "list-breadcrumb",
+      "firstToolbarDistanceFromMainTop": 206,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        36
+      ],
+      "documentScrollWidth": 1440
+    },
+    {
+      "page": "merchants",
+      "width": 1024,
+      "locationMode": "list-breadcrumb",
+      "firstToolbarDistanceFromMainTop": 206,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        36
+      ],
+      "documentScrollWidth": 1024
+    },
+    {
+      "page": "merchants",
+      "width": 390,
+      "locationMode": "list-breadcrumb",
+      "firstToolbarDistanceFromMainTop": 206,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        40
+      ],
+      "documentScrollWidth": 390
+    },
+    {
+      "page": "staff",
+      "width": 1440,
+      "locationMode": "list-breadcrumb",
+      "firstToolbarDistanceFromMainTop": 40,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        36
+      ],
+      "documentScrollWidth": 1440
+    },
+    {
+      "page": "staff",
+      "width": 1024,
+      "locationMode": "list-breadcrumb",
+      "firstToolbarDistanceFromMainTop": 40,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        36
+      ],
+      "documentScrollWidth": 1024
+    },
+    {
+      "page": "staff",
+      "width": 390,
+      "locationMode": "list-breadcrumb",
+      "firstToolbarDistanceFromMainTop": 40,
+      "toolbarNextPanelGap": 12,
+      "controlHeights": [
+        40
+      ],
+      "documentScrollWidth": 390
+    },
+    {
+      "page": "workbench-alias",
+      "width": 1440,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 7,
+      "controlHeights": [
+        34
+      ],
+      "documentScrollWidth": 1440
+    },
+    {
+      "page": "workbench-alias",
+      "width": 1024,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 7,
+      "controlHeights": [
+        34
+      ],
+      "documentScrollWidth": 1024
+    },
+    {
+      "page": "workbench-alias",
+      "width": 390,
+      "locationMode": "root-hidden",
+      "firstToolbarDistanceFromMainTop": 12,
+      "toolbarNextPanelGap": 7,
+      "controlHeights": [
+        34
+      ],
+      "documentScrollWidth": 390
+    }
+  ],
+  "boundary": "完整真实 HTML/JS/CSS/React root 使用浏览器静态候选覆盖及合成 API 渲染；不等同真实账号认证业务验收。库存专用控件保持原样；商户队列为合成拒绝状态、商户及员工为空列表，不能声称已核对真实商户队列业务数据。",
+  "publicationStatus": "NOT_PUBLISHED_PENDING_EXACT_FIXED_CANDIDATE_APPROVAL"
+}

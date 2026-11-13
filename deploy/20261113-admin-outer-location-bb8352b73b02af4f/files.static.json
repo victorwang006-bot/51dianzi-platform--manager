@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "asset",
+    "url": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+    "targetRelative": "assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+    "file": "/home/ubuntu/task-recovery/inventory-layout-fix-20261113/candidate/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+    "sha256": "db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9"
+  },
+  {
+    "kind": "asset",
+    "url": "/assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+    "targetRelative": "assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+    "file": "/home/ubuntu/task-recovery/inventory-layout-fix-20261113/candidate/assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+    "sha256": "8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d"
+  },
+  {
+    "kind": "asset",
+    "url": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+    "targetRelative": "assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+    "file": "/home/ubuntu/task-recovery/inventory-layout-fix-20261113/candidate/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+    "sha256": "cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa"
+  },
+  {
+    "kind": "asset",
+    "url": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js",
+    "targetRelative": "assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js",
+    "file": "/home/ubuntu/task-recovery/inventory-layout-fix-20261113/candidate/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js",
+    "sha256": "6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b",
+    "beforeURL": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175.js"
+  },
+  {
+    "kind": "html",
+    "url": "/index.html",
+    "targetRelative": "index.html",
+    "file": "/home/ubuntu/task-recovery/inventory-layout-fix-20261113/candidate/index.html",
+    "sha256": "bb8352b73b02af4ff941caaba300aa09b0faf8451c2df23a1d963ce6479f5eb7"
+  }
+]

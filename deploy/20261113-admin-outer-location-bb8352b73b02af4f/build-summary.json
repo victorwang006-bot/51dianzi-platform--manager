@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "changedAssets": 4,
+  "changedHTML": 1,
+  "oldAssetsPreserved": true,
+  "apiOrWorkerChanged": false,
+  "htmlSha256": "bb8352b73b02af4ff941caaba300aa09b0faf8451c2df23a1d963ce6479f5eb7",
+  "actualDashboardURL": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js",
+  "newDashboardURL": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+  "helperURL": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+  "cssURL": "/assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+  "completeStaticFileCount": 121
+}

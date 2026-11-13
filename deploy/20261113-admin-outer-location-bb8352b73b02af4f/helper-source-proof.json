@@ -1,0 +1,27 @@
+{
+  "sourceFile": "/home/ubuntu/work/51dianzi-platform--manager/client/src/components/admin/adminListLocationLayout.ts",
+  "sourceSha256": "a8af7e7ba6702e896fcca728658adf5a666e259cc232388de61898da6e8801ad",
+  "compiledSha256": "db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9",
+  "compilerInputs": {
+    "client/src/lib/channelInventoryNavigation.ts": {
+      "bytes": 7074,
+      "imports": [],
+      "format": "esm"
+    },
+    "client/src/components/admin/adminListLocationLayout.ts": {
+      "bytes": 887,
+      "imports": [
+        {
+          "path": "client/src/lib/channelInventoryNavigation.ts",
+          "kind": "import-statement",
+          "original": "../../lib/channelInventoryNavigation"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "sourceCSSFile": "/home/ubuntu/work/51dianzi-platform--manager/client/src/components/DashboardLayout.css",
+  "sourceCSSSha256": "a0d92e9c00de9535bb98c65cc7eaaeadb0770d6c7c718b846689706bfe019c2d",
+  "cssDeltaSha256": "8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d",
+  "oldCSSSourceBytesRetained": true
+}

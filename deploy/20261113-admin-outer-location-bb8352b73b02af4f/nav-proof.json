@@ -1,0 +1,42 @@
+{
+  "beforeURL": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js",
+  "afterURL": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+  "beforeSha256": "c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd",
+  "afterSha256": "cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa",
+  "patches": [
+    {
+      "label": "new pure display helper import",
+      "start": 0,
+      "end": 0,
+      "before": "",
+      "after": "import {getAdminListLocationLayout as __d51ListLocationLayout} from \"/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js\";\n"
+    },
+    {
+      "label": "only additional location-layout display marker",
+      "start": 44349,
+      "end": 44349,
+      "before": "",
+      "after": "\"data-admin-list-location-layout\":__d51ListLocationLayout(location,labels),"
+    }
+  ],
+  "inverse": [
+    {
+      "label": "new pure display helper import",
+      "start": 0,
+      "end": 167,
+      "before": "import {getAdminListLocationLayout as __d51ListLocationLayout} from \"/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js\";\n",
+      "after": ""
+    },
+    {
+      "label": "only additional location-layout display marker",
+      "start": 44516,
+      "end": 44591,
+      "before": "\"data-admin-list-location-layout\":__d51ListLocationLayout(location,labels),",
+      "after": ""
+    }
+  ],
+  "forwardReverseFullBytes": true,
+  "oldLabelsAuthBranchesAndEveryOriginalPropByteRetained": true,
+  "onlyImportAndDisplayMarkerAdded": true,
+  "oldMenuAndAllOtherFunctionsUnchanged": true
+}
