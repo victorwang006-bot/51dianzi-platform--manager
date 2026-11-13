@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -82,6 +83,7 @@ const BusinessScopeContext = createContext<BusinessScopeValue | null>(null);
 export const CUSTOMER_ENTRY_DRAFTS_INVALIDATED_EVENT =
   "d51:customer-entry-drafts-invalidated";
 let activeStorageScope: string | null = null;
+const storageScopeOwners = new Map<string, Set<symbol>>();
 const ignoreAuthorizationError = (_error: unknown) => {};
 
 export function businessStorageScope(): string | null {
@@ -106,6 +108,7 @@ export function BusinessScopeProvider({
   contextVerificationState,
   authorizationVersion,
   onAuthorizationError = ignoreAuthorizationError,
+  storageOwner = true,
   children,
 }: {
   merchantId: number;
@@ -115,6 +118,8 @@ export function BusinessScopeProvider({
   contextVerificationState: BusinessContextVerification["state"];
   authorizationVersion?: string;
   onAuthorizationError?: (error: unknown) => void;
+  /** Navigation reads share authorization, never publish a page's draft identity. */
+  storageOwner?: boolean;
   children: ReactNode;
 }) {
   const frontUser = staffPrincipal.user;
@@ -154,20 +159,36 @@ export function BusinessScopeProvider({
 
   // Publish before descendants synchronously restore drafts. There is no
   // fallback key: a cache is always partitioned by the real staff and merchant.
-  activeStorageScope = storageScope;
+  // Only a newly published verified proof may become current. An older mounted
+  // provider must not restore itself merely because an unrelated sibling leaves.
+  const publishedStorageProof = useRef<string | null>(null);
+  const storageProof = `${storageScope}|${effectiveVersion}`;
+  if (!storageOwner) publishedStorageProof.current = null;
+  else if (publishedStorageProof.current !== storageProof) {
+    activeStorageScope = storageScope;
+    publishedStorageProof.current = storageProof;
+  }
 
   useEffect(() => {
+    if (!storageOwner) return;
+    const owner = Symbol("business-storage-scope-owner");
+    const owners = storageScopeOwners.get(storageScope) ?? new Set<symbol>();
+    owners.add(owner);
+    storageScopeOwners.set(storageScope, owners);
     activeStorageScope = storageScope;
     setPageMemoryScope(storageScope);
     return () => {
       // Ordinary navigation outside the workbench is not an abandonment.
       // The Gate and global auth invalidate only confirmed binding/access loss.
-      if (activeStorageScope === storageScope) {
+      owners.delete(owner);
+      if (!owners.size) storageScopeOwners.delete(storageScope);
+      // Never restore a different old scope when the current generation leaves.
+      if (activeStorageScope === storageScope && !owners.size) {
         activeStorageScope = null;
         setPageMemoryScope(null);
       }
     };
-  }, [storageScope]);
+  }, [storageScope, storageOwner, effectiveVersion]);
 
   return (
     <BusinessScopeContext.Provider value={value}>

@@ -76,9 +76,8 @@ const BUSINESS_MODULE_ENTRIES = [
   {
     kind: "group",
     id: "customers",
-    label: "销售与询价",
+    label: "销售管理",
     paths: [
-      "/workbench/inquiries",
       "/workbench/orders",
     ],
   },

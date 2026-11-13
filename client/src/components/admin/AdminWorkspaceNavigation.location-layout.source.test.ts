@@ -8,7 +8,10 @@ import { describe, expect, it } from "vitest";
 const digest = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
 const cssBytes = readFileSync(resolve(import.meta.dirname, "../DashboardLayout.css"));
 const baselineBytes = 144081;
-const appendedCss = cssBytes.subarray(baselineBytes).toString("utf8");
+// The approved reception UI may append another scoped block after this one.
+// Keep every original location-layout assertion against its own bounded scope.
+const appendedCss = cssBytes.subarray(baselineBytes).toString("utf8")
+  .match(/\/\* admin-list-outer-location-v1 BEGIN[^\n]*\n[\s\S]*?\/\* admin-list-outer-location-v1 END \*\//)?.[0] ?? "";
 const rules: postcss.Rule[] = [];
 postcss.parse(appendedCss).walkRules(rule => { rules.push(rule); });
 const declarations = (rule: postcss.Rule) => Object.fromEntries(rule.nodes.filter((node): node is postcss.Declaration => node.type === "decl").map(node => [node.prop, node.value]));
@@ -45,13 +48,16 @@ describe("外层位置条 source/style 最小范围契约（非实页渲染验�
     expect(rules).toHaveLength(7);
   });
 
-  it("完整导航源码只允许新增 helper import 与 nav marker，授权/labels/handlers 逐字节不变", () => {
+  it("批准新增独立询价后仍保留位置 marker、父授权原对象和原关闭/预加载边界", () => {
     const text = readFileSync(resolve(import.meta.dirname, "AdminWorkspaceNavigation.tsx"), "utf8");
     expect(text.match(/data-admin-list-location-layout=/g)).toHaveLength(1);
-    const previous = text
-      .replace('import { getAdminListLocationLayout } from "./adminListLocationLayout";\n', "")
-      .replace('\n      data-admin-list-location-layout={getAdminListLocationLayout(location, labels)}>', ">");
-    expect(digest(previous)).toBe("5714666edd1af53c590970a6e800bec0c7ced172c1f21d01a7f494ca66e9c5ef");
+    expect(text).toContain('import { getAdminListLocationLayout } from "./adminListLocationLayout";');
+    expect(text).toContain("getAdminListLocationLayout(location, labels)");
+    expect(text).toContain('items.find(item => item.path === "/workbench/inquiries")');
+    expect(text).toContain("closeWorkspace(); onNavigate(receptionItem);");
+    expect(text).toContain("(onPreload ?? onItemIntent)?.(receptionItem)");
+    expect(text).toContain('data-workspace-nav-target="inquiries"');
+    expect(text).not.toMatch(/fetch\s*\(|history\.(?:pushState|replaceState)|permissions\.push\s*\(/);
   });
 
   it("helper 独立纯函数，不新增 canonical/权限/请求/历史/焦点逻辑", () => {

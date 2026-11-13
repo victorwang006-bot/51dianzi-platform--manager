@@ -88,6 +88,25 @@ function discard(client: QueryClient) {
   client.clear();
 }
 
+const businessQueryClientConsumers = new WeakMap<QueryClient, number>();
+/** Navigation and content share the exact authorized cache. Ordinary unmount
+ * cancels reads only when the final consumer leaves; revocation/dispose above
+ * still abort and clear immediately, irrespective of this reference count. */
+export function retainBusinessQueryClient(client: QueryClient): () => void {
+  businessQueryClientConsumers.set(client, (businessQueryClientConsumers.get(client) ?? 0) + 1);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    const remaining = Math.max(0, (businessQueryClientConsumers.get(client) ?? 1) - 1);
+    if (remaining) businessQueryClientConsumers.set(client, remaining);
+    else {
+      businessQueryClientConsumers.delete(client);
+      void client.cancelQueries();
+    }
+  };
+}
+
 export class BusinessWorkbenchSession {
   readonly discovery = newQueryClient();
   readonly context = newQueryClient();

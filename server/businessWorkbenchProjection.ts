@@ -14,7 +14,7 @@ export const BUSINESS_WORKBENCH_CAPABILITIES = [
 ] as const;
 
 export type BusinessWorkbenchCapability = (typeof BUSINESS_WORKBENCH_CAPABILITIES)[number];
-export type BusinessWorkbenchModule = "context" | "inventory" | "customers" | "procurement" | "users" | "orders";
+export type BusinessWorkbenchModule = "context" | "inventory" | "inquiries" | "customers" | "procurement" | "users" | "orders";
 
 type ScopeLike = { modulePermissions: readonly string[] };
 import type { OfficialInventoryPermissions } from "./platformBusinessApi";
@@ -47,7 +47,7 @@ const CAPABILITY_RULES: readonly CapabilityProjectionRule[] = [
   { capability: "procurement.demands", readModule: "procurement", writeModule: "procurement" },
   { capability: "procurement.orders", readModule: "procurement", writeModule: "procurement" },
   // Reception remains constrained by the front's fixed inquiry policy.
-  { capability: "inquiry.receive", readModule: "inventory", writeModule: "inventory" },
+  { capability: "inquiry.receive", readModule: "inquiries", writeModule: "inquiries" },
   // Member visibility and mutation have independent users read/write gates.
   { capability: "enterprise.members.manage", readModule: "users", writeModule: "users" },
   // Marketplace mutations still require the original front sellerId record gate.
@@ -55,6 +55,9 @@ const CAPABILITY_RULES: readonly CapabilityProjectionRule[] = [
 ];
 
 function scopeAllows(scope: ScopeLike, module: BusinessWorkbenchModule, mode: "read" | "write") {
+  if (module === "inquiries" && !scope.modulePermissions.some(key => key.startsWith("business.inquiries."))) {
+    return scope.modulePermissions.includes(`business.inventory.${mode}`);
+  }
   return scope.modulePermissions.includes(`business.${module}.${mode}`);
 }
 
@@ -71,7 +74,7 @@ export type BusinessWorkbenchProjection = Readonly<{
 }>;
 
 function moduleAvailability(scope: ScopeLike): BusinessWorkbenchProjection["moduleAvailability"] {
-  const modules: BusinessWorkbenchModule[] = ["context", "inventory", "customers", "procurement", "users", "orders"];
+  const modules: BusinessWorkbenchModule[] = ["context", "inventory", "inquiries", "customers", "procurement", "users", "orders"];
   return Object.fromEntries(modules.map(module => [module, {
     read: scopeAllows(scope, module, "read"),
     write: scopeAllows(scope, module, "write"),

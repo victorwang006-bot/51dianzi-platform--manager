@@ -7,9 +7,11 @@ import {
   addOfficialChannelStockNote,
   createOfficialChannelSource,
   createOfficialChannelStock,
+  configureOfficialChannelReception,
   exportOfficialChannelStocks,
   getOfficialChannelSource,
   getOfficialChannelStock,
+  getOfficialChannelReception,
   listOfficialChannelSources,
   listOfficialChannelStockNotes,
   listOfficialChannelStocks,
@@ -288,6 +290,13 @@ async function serviceCall<T>(callback: () => Promise<T>): Promise<T> {
         message: "官方渠道库存服务暂不可用",
       });
     }
+    if (code.startsWith("OFFICIAL_CHANNEL_RECEPTION_")) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message:
+          "接待待配置：请核对可信卖方企业、真实员工绑定、业务接待范围及询价接待权限",
+      });
+    }
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
       message: "当前官方渠道库存记录不满足操作条件",
@@ -306,6 +315,49 @@ const officialAdminProcedure = adminProcedure.use(({ ctx, next }) => {
  * and does not expose a public-search, cart, or standard enquiry endpoint.
  */
 export const officialChannelInventoryRouter = router({
+  getReception: officialAdminProcedure
+    .input(z.object({ stockId: idSchema }).strict())
+    .query(({ ctx, input }) =>
+      serviceCall(() =>
+        getOfficialChannelReception(actorFromContext(ctx), input.stockId)
+      )
+    ),
+
+  configureReception: officialAdminProcedure
+    .input(
+      z
+        .object({
+          stockId: idSchema,
+          merchantId: idSchema,
+          routingMode: z.enum(["owner", "explicit"]),
+          recipientAdminUserId: idSchema.optional(),
+          expectedRevision: revisionSchema,
+          expectedResponsibilityVersion: z
+            .number()
+            .int()
+            .min(0)
+            .max(2_147_483_646),
+          requestId: requestIdSchema,
+          reason: z.string().trim().min(1).max(1_000),
+        })
+        .strict()
+        .superRefine((value, ctx) => {
+          if (
+            (value.routingMode === "explicit") !==
+            (value.recipientAdminUserId !== undefined)
+          )
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "仅明确分工模式需要指定接待员工",
+            });
+        })
+    )
+    .mutation(({ ctx, input }) =>
+      serviceCall(() =>
+        configureOfficialChannelReception(actorFromContext(ctx), input)
+      )
+    ),
+
   listSources: officialAdminProcedure
     .input(
       z

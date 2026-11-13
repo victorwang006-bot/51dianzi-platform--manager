@@ -168,6 +168,27 @@ afterEach(() => {
 });
 
 describe("BFF workbench projection response", () => {
+  it("独立接待scope可以转发原企业收件箱与回复，不要求库存权限", async () => {
+    scopePermissions = ["business.context.read", "business.inquiries.read", "business.inquiries.write"];
+    dbMocks.recordBusinessCommandAccess = vi.fn().mockResolvedValue(undefined);
+    const api = await import("./platformBusinessApi");
+    const caller = businessRouter.createCaller(context());
+    await caller.enterprise.inquiryInbox({ status: "all", page: 1, pageSize: 20 });
+    await caller.chat.sendMessage({ conversationId: 91, content: "企业接待回复", clientMessageId: "reply_key_12345" });
+    expect(api.callPlatformBusinessCommand).toHaveBeenCalledWith(expect.objectContaining({ method: "enterprise.inquiryInbox", staffUserId: 202, bindingVersion: 7 }));
+    expect(api.callPlatformBusinessCommand).toHaveBeenCalledWith(expect.objectContaining({ method: "chat.sendMessage", staffUserId: 202, bindingVersion: 7 }));
+    expect(scopePermissions).not.toContain("business.inventory.read");
+    expect(dbMocks.withBusinessAuthorizationFence).toHaveBeenCalledTimes(2);
+  });
+
+  it("显式接待只读scope不能借库存写权限回复", async () => {
+    scopePermissions = ["business.context.read", "business.inquiries.read", "business.inventory.read", "business.inventory.write"];
+    const caller = businessRouter.createCaller(context());
+    await expect(caller.chat.sendMessage({ conversationId: 91, content: "不可回复" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const api = await import("./platformBusinessApi");
+    expect(api.callPlatformBusinessCommand).not.toHaveBeenCalled();
+  });
+
   it("selected context 对 raw enabledModules/workbenchCapabilities 取 scope 交集，并把 receptionReady 一并收紧", async () => {
     const result = await businessRouter.createCaller(context()).context();
 

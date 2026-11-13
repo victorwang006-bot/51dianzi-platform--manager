@@ -28,7 +28,7 @@ export const NATIVE_TEAM_READ_METHODS: readonly string[] = [
   "channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource",
   "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit",
 ];
-export const NATIVE_FACTORY_PUBLISH_METHODS: readonly string[] = ["channelInventory.publishFactoryMaterial"];
+export const NATIVE_FACTORY_PUBLISH_METHODS: readonly string[] = ["channelInventory.publishFactoryMaterial", "channelInventory.previewFactoryMaterialReception"];
 export function officialInventoryMethodRequirement(method: string): "read" | "write" | "note" | "publish" | null {
   if (!isChannelInventoryBusinessMethodId(method)) return null;
   if (NATIVE_FACTORY_PUBLISH_METHODS.includes(method)) return "publish";

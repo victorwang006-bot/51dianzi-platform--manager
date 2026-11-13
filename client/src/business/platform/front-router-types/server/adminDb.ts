@@ -1659,3 +1659,33 @@ export async function readOfficialChannelPublications(): Promise<OfficialChannel
   if (rows.length >= 10001) throw new Error("OFFICIAL_PUBLICATION_READ_CAP_EXCEEDED");
   return rows;
 }
+
+/** Internal reception fence: SELECT-only shared locks, held until the front
+ * transaction has committed. Never reconnect/retry a lost lease mid-operation.
+ * A read account without locking-read privileges fails closed. */
+export type FactoryReceptionAdminLease = {
+  query<T extends Record<string, unknown>>(statement: string, params: unknown[]): Promise<T[]>;
+  release(): Promise<void>;
+};
+export async function acquireFactoryReceptionAdminLease(): Promise<FactoryReceptionAdminLease> {
+  const p = getAdminPool();
+  if (!p) throw new Error("FACTORY_RECEPTION_ADMIN_NOT_CONFIGURED");
+  const connection = await p.getConnection();
+  try {
+    await connection.query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
+    await connection.beginTransaction();
+  } catch (error) { connection.release(); throw error; }
+  let released = false;
+  return {
+    async query<T extends Record<string, unknown>>(statement: string, params: unknown[]) {
+      if (released || !/^\s*SELECT\b/i.test(statement)) throw new Error("FACTORY_RECEPTION_READ_LEASE_INVALID");
+      const [result] = await connection.query({ sql: statement, timeout: 15000 }, params);
+      return result as T[];
+    },
+    async release() {
+      if (released) return;
+      released = true;
+      try { await connection.rollback(); } finally { connection.release(); }
+    },
+  };
+}

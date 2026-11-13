@@ -5,6 +5,7 @@ import {
   OfficialLegacySourceClassification,
 } from "@/components/OfficialChannelLegacyControls";
 import OfficialInventoryOwnerTransfer from "@/components/OfficialInventoryOwnerTransfer";
+import OfficialInventoryReception, { officialReceptionDescription } from "@/components/OfficialInventoryReception";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -649,7 +650,7 @@ export default function OfficialChannelInventory() {
     team => team.status === "active"
   );
   const sourceDetail = readOfficialSource(sourceDetailQuery.data);
-  const stockDetail = readOfficialStock(stockDetailQuery.data);
+  const stockDetail = readOfficialStock(stockDetailQuery.data?.stock);
   const notesResult = readOfficialStockNotes(notesQuery.data);
   const notes = notesResult.items;
   const importRows = useMemo(
@@ -826,6 +827,12 @@ export default function OfficialChannelInventory() {
       stock.status === "published" ? offshelfStock : publishStock;
     const label = stock.status === "published" ? "下架" : "发布";
     try {
+      if (stock.status !== "published") {
+        const current = await trpcUtils.client.officialChannelInventory.getReception.query({ stockId: stock.id });
+        if (current.stockRevision !== stock.revision) throw new Error("库存责任或版本已变化，请刷新核对后再发布");
+        const prompt = `${officialReceptionDescription(current.reception)}。\n${current.reception.status === "pending" ? "本次只能发布展示，前台询价会被拦截；请先配置接待以便投递。" : "接待员工将在前台确认询价时再次核验。"}\n是否明确确认发布？`;
+        if (!window.confirm(prompt)) return;
+      }
       await mutation.mutateAsync({
         stockId: stock.id,
         expectedRevision: stock.revision,
@@ -1720,6 +1727,8 @@ export default function OfficialChannelInventory() {
                 未返回可核验的渠道库存详情。
               </p>
             )}
+            {stockDetail ? <OfficialInventoryReception key={stockDetail.id} stock={stockDetail}
+              isRealSuperAdmin={isInventoryServerSuperAdmin} teamsOverview={teamsOverview} /> : null}
             <DialogFooter>
               <OfficialInventoryOwnerTransfer
                 isRealSuperAdmin={isInventoryServerSuperAdmin}

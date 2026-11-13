@@ -1422,6 +1422,7 @@ export const inventoryRouter = router({
         const inventoryById = new Map(lockedRows.map(row => [row.id, row]));
         let transferredInquiryCount = 0;
         for (const inquiry of activeInquiries) {
+          if (inquiry.inventoryId == null) continue; // Factory sources are never ordinary inventory IDs.
           const inventory = inventoryById.get(inquiry.inventoryId);
           if (!inventory) continue;
           const buyerUserId = Number(inquiry.buyerUserId);

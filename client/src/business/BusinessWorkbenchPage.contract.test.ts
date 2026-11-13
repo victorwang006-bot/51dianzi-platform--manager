@@ -45,7 +45,7 @@ describe("BusinessWorkbenchPage native migration contract", () => {
     );
     expectCodeToContain(
       page,
-      "return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} scopeRevalidating={merchantList.isFetching} session={session} />"
+      "return <ScopedBusinessWorkbench merchantId={officialMerchant.id} routeBase={base} receptionObserver={receptionObserver} scopeRevalidating={merchantList.isFetching} session={session} />"
     );
     expect(page).not.toContain("merchants[0]");
     expect(page).not.toContain("MerchantSelection");
@@ -214,32 +214,44 @@ describe("BusinessWorkbenchPage native migration contract", () => {
   it("mounts only the narrow reception route after the separate BFF-ready capability", () => {
     const page = source("./BusinessWorkbenchPage.tsx");
     const scope = source("./BusinessScope.tsx");
+    const reception = source("./InquiryReception.tsx");
     expectCodeToContain(page, "sessionCapabilities.receptionReady !== true");
     expect(page).not.toContain("sessionCapabilities.chat !== true");
-    expectCodeToContain(page, "<ChatPage");
-    expectCodeToContain(page, "businessReception={{");
-    expectCodeToContain(page, 'requiredPermission: "inquiry.receive"');
-    expectCodeToContain(page, "BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES");
+    expectCodeToContain(page, "return <EnterpriseInquiryInbox canReply={canReply} />");
+    expectCodeToContain(reception, "<ChatPage");
+    expectCodeToContain(reception, "businessReception={{");
+    expectCodeToContain(reception, 'requiredPermission: "inquiry.receive"');
+    expectCodeToContain(reception, "BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES");
+    expectCodeToContain(reception, "receptionConversation={{ conversationId: selectedId!, onBack: () => openConversation(null), canReply }}");
+    expectCodeToContain(page, 'canReply={rawContext.merchant?.canWrite === true && hasExactCapability(rawContext.writeCapabilities, "inquiry.receive")}');
     expectCodeToContain(scope, "receptionReady?: boolean");
     expectCodeToContain(scope, "chat?: false");
   });
 
-  it("uses the permission-gated inquiry inbox as the entry and hands off to the original scoped chat route", () => {
+  it("uses the permission-gated independent inbox and legacy chat deep link for the same scoped original conversation", () => {
     const page = source("./BusinessWorkbenchPage.tsx");
     const inbox = source(
       "./platform/client/src/pages/EnterpriseInquiryInbox.tsx"
     );
+    const reception = source("./InquiryReception.tsx");
+    const hook = source("./useInquiryReception.ts");
     expectCodeToContain(
       page,
-      '<Route path="/inquiries" component={EnterpriseInquiryInbox} />'
+      '<Route path="/inquiries">{() => <BusinessChatRoute canReply={canReply} />}</Route>'
+    );
+    expectCodeToContain(
+      page,
+      '<Route path="/chat">{() => <BusinessChatRoute canReply={canReply} />}</Route>'
     );
     expectCodeToContain(
       page,
       'if (pathname === "/chat" || pathname === "/inquiries") return { capability: "inquiry.receive" };'
     );
-    expectCodeToContain(
-      inbox,
-      "href={`/chat?conversationId=${encodeURIComponent(String(conversationId))}`}"
-    );
+    expectCodeToContain(inbox, "return <InquiryReception canReply={canReply} />");
+    expectCodeToContain(reception, "receptionConversationId(search)");
+    expectCodeToContain(reception, 'params.set("conversationId", String(conversationId))');
+    expectCodeToContain(hook, "utils.client.enterprise.inquiryInbox.query");
+    expectCodeToContain(reception, "<BusinessContentFrame>");
+    expect(reception).not.toMatch(/<PlatformLayout|<MallNav/);
   });
 });

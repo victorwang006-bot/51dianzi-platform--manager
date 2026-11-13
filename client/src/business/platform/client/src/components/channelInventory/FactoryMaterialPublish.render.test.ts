@@ -2,8 +2,12 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const runtime = vi.hoisted(() => ({ publish: vi.fn(), hook: vi.fn(), complete: vi.fn(), authorizationError: vi.fn() }));
-vi.mock("../../../../../api/business-trpc", () => ({ trpc: { channelInventory: { publishFactoryMaterial: { useMutation: () => { runtime.hook(); return { mutateAsync: runtime.publish }; } } } } }));
+const runtime = vi.hoisted(() => ({ publish: vi.fn(), hook: vi.fn(), previewHook: vi.fn(), complete: vi.fn(), authorizationError: vi.fn(),
+  preview: { data: undefined as unknown, isFetching: false, error: null as unknown } }));
+vi.mock("../../../../../api/business-trpc", () => ({ trpc: { channelInventory: {
+  publishFactoryMaterial: { useMutation: () => { runtime.hook(); return { mutateAsync: runtime.publish }; } },
+  previewFactoryMaterialReception: { useQuery: (input: unknown, options: unknown) => { runtime.previewHook(input, options); return runtime.preview; } },
+} } }));
 import { factoryMaterialPublicPrice, useFactoryMaterialPublish, type FactoryMaterialPublishRow, type FactoryMaterialPublishResult } from "./FactoryMaterialPublish";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const original = { id: 901, revision: 4, partNumber: "SYNTHETIC-MODEL", brand: "TI", qty: 9, price: "1.230000000001", canPublish: true, publicationStatus: "unpublished" as const,
@@ -22,6 +26,8 @@ function click(element: Element) { act(() => element.dispatchEvent(new MouseEven
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); }
 beforeEach(() => {
   vi.clearAllMocks(); runtime.publish.mockReset().mockResolvedValue(receipt); runtime.complete.mockResolvedValue(undefined);
+  runtime.preview = { data: { reception: { status: "pending", recipientName: null, responsibilityVersion: 4,
+    reason: "首次发布尚无当前有效公开接待证据；发布后须重新核验真实员工与接待权限" } }, isFetching: false, error: null };
   props = { rows: [{ ...original }], authorized: true, available: true, proofReady: true, scopeKey: "enterprise-31-actor-7-v1", context: { expectedEnterpriseId: 31, expectedActorUserId: 7 } };
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
   vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Production publishing network forbidden in synthetic fixtures"); }));
@@ -117,4 +123,70 @@ it("allows cancelling a definite CAS conflict and separately confirming the fres
  props.rows = [{ ...original, revision: 5 }]; render(); click(button("发布")); click(button("确认发布")); await settle();
  const next = runtime.publish.mock.calls[1][0]; expect(next.expectedRevision).toBe(5); expect(next.requestId).not.toBe(first.requestId);
  expect(runtime.complete).toHaveBeenCalledTimes(1); expect(button("已发布").disabled).toBe(true);
+});
+
+it("missing reception evidence is pending, never defaulting to publishing actor or brand", () => {
+  render(); click(button("发布"));
+  expect(container.querySelector("[data-factory-reception-preview]")?.textContent).toContain("接待待配置");
+  expect(container.textContent).toContain("管理员代操作不会成为接待人");
+  expect(runtime.publish).not.toHaveBeenCalled();
+});
+it("shows trusted real employee behind the platform brand, but sends no recipient identity", async () => {
+  runtime.preview.data = { reception: { status: "ready", recipientName: "SYNTHETIC-REAL-STAFF", responsibilityVersion: 9, reason: null } };
+  render(); click(button("发布"));
+  expect(container.querySelector("[data-factory-reception-preview]")?.textContent).toContain("前台以51电子网工厂渠道接待展示，实际由SYNTHETIC-REAL-STAFF接待");
+  expect(runtime.publish).not.toHaveBeenCalled(); click(button("确认发布")); await settle();
+  for (const field of ["recipientName", "recipientAdminUserId", "recipientFrontendUserId", "reception"])
+    expect(runtime.publish.mock.calls[0][0]).not.toHaveProperty(field);
+});
+it.each([null, "", "   "])("ready hint without actual employee name %j remains pending", recipientName => {
+  props.rows = [{ ...original, reception: { status: "ready", recipientName, responsibilityVersion: 9 } }];
+  render(); click(button("发布")); expect(container.querySelector("[data-factory-reception-preview]")?.textContent).toContain("接待待配置");
+});
+
+it("queries only selected real material on demand, never list/receiver/owner fields", () => {
+  props.rows = [{ ...original }, { ...original, id: 902 }]; render();
+  expect(runtime.previewHook).not.toHaveBeenCalled();
+  click(button("发布"));
+  expect(runtime.previewHook).toHaveBeenCalledWith({ materialId: 901, expectedRevision: 4, expectedEnterpriseId: 31, expectedActorUserId: 7 },
+    expect.objectContaining({ staleTime: 0, gcTime: 0, retry: false, trpc: { abortOnUnmount: true } }));
+  expect(container.textContent).toContain("发布后须重新核验");
+  expect(runtime.publish).not.toHaveBeenCalled();
+});
+it("never trusts stale ready list metadata while current single-item evidence is pending", () => {
+  props.rows = [{ ...original, reception: { status: "ready", recipientName: "STALE-NAME", responsibilityVersion: 9 } }];
+  render(); click(button("发布")); expect(container.textContent).not.toContain("STALE-NAME");
+  expect(container.querySelector("[data-factory-reception-preview]")?.textContent).toContain("接待待配置");
+});
+it.each(["loading", "error", "malformed", "identity-leak"])("blocks final publish while preview is %s", state => {
+  if (state === "loading") runtime.preview.isFetching = true;
+  if (state === "error") runtime.preview.error = new Error("denied");
+  if (state === "malformed") runtime.preview.data = { reception: { status: "ready", recipientName: null, responsibilityVersion: 4 } };
+  if (state === "identity-leak") runtime.preview.data = { reception: { status: "ready", recipientName: "Staff", responsibilityVersion: 4, recipientUserId: 7 } };
+  render(); click(button("发布")); expect(button("确认发布").disabled).toBe(true);
+  click(button("确认发布")); expect(runtime.publish).not.toHaveBeenCalled();
+  expect(container.textContent).not.toContain("实际由Staff接待");
+});
+it("published-ready material supports authorized read-only actual employee preview without republishing", () => {
+  props.rows = [{ ...original, publicationStatus: "published" }];
+  runtime.preview.data = { reception: { status: "ready", recipientName: "CURRENT-ACTUAL-STAFF", responsibilityVersion: 11 } };
+  render(); expect(button("已发布").disabled).toBe(true); expect(runtime.previewHook).not.toHaveBeenCalled();
+  click(button("接待预览")); expect(container.textContent).toContain("实际由CURRENT-ACTUAL-STAFF接待");
+  expect(container.textContent).not.toContain("确认发布材料");
+  click(button("关闭")); expect(container.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.publish).not.toHaveBeenCalled();
+});
+it("discards a reception preview synchronously on enterprise or actor switch", () => {
+  runtime.preview.data = { reception: { status: "ready", recipientName: "OLD-SCOPE-STAFF", responsibilityVersion: 9 } };
+  render(); click(button("发布")); expect(container.textContent).toContain("OLD-SCOPE-STAFF");
+  props.context = { expectedEnterpriseId: 32, expectedActorUserId: 8 }; props.scopeKey = "new-scope";
+  render(); expect(container.querySelector('[role="dialog"]')).toBeNull(); expect(container.textContent).not.toContain("OLD-SCOPE-STAFF");
+  expect(runtime.publish).not.toHaveBeenCalled();
+});
+it("an uncertain write still retries its exact original UUID if preview later becomes unavailable", async () => {
+  runtime.publish.mockRejectedValueOnce(new Error("timeout")).mockResolvedValueOnce(receipt);
+  render(); click(button("发布")); click(button("确认发布")); await settle();
+  const first = runtime.publish.mock.calls[0][0];
+  runtime.preview.error = new Error("preview temporarily unavailable"); render();
+  expect(button("按原请求重试").disabled).toBe(false); click(button("按原请求重试")); await settle();
+  expect(runtime.publish.mock.calls[1][0]).toEqual(first); expect(runtime.complete).toHaveBeenCalledOnce();
 });

@@ -2823,7 +2823,7 @@ function normalizedBusinessScopeModules(input: readonly string[]) {
   if (values.length === 0 || values.length > 32 || new Set(values).size !== values.length) {
     throw new Error("BUSINESS_SCOPE_MODULES_INVALID");
   }
-  if (values.some(value => !/^business\.(context|inventory|customers|procurement|users|orders)\.(read|write)$/.test(value))) {
+  if (values.some(value => !/^business\.(context|inventory|inquiries|customers|procurement|users|orders)\.(read|write)$/.test(value))) {
     throw new Error("BUSINESS_SCOPE_MODULES_INVALID");
   }
   return [...values].sort();

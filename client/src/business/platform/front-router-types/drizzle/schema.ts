@@ -1272,6 +1272,13 @@ export const inventories = mysqlTable("inventories", {
     table.id,
     table.qtyOnSale,
   ),
+  publicPublishedIdx: index("inventories_public_published_idx").on(
+    table.status,
+    table.companyCatalogVisible,
+    table.publishedAt,
+    table.id,
+    table.qtyOnSale,
+  ),
   publicPartSearchIdx: index("inventories_public_part_search_idx").on(
     table.status,
     table.partNumberNormalized,
@@ -3103,7 +3110,18 @@ export const inventoryInquiries = mysqlTable(
   "inventory_inquiries",
   {
     id: int("id").autoincrement().primaryKey(),
-    inventoryId: int("inventoryId").notNull(),
+    inventoryId: int("inventoryId"),
+    /** Distinct source identity. NULL inventoryId for factory sources prevents accidental ordinary joins. */
+    sourceKind: varchar("sourceKind", { length: 32 }).default("inventory").notNull(),
+    sourcePublicId: varchar("sourcePublicId", { length: 64 }),
+    sourceRecordId: int("sourceRecordId"),
+    responsibilityVersion: int("responsibilityVersion", { unsigned: true }),
+    responsibilitySnapshot: varchar("responsibilitySnapshot", { length: 64 }),
+    receptionAdminUserId: int("receptionAdminUserId"),
+    receptionBindingVersion: int("receptionBindingVersion", { unsigned: true }),
+    receptionKind: varchar("receptionKind", { length: 32 }),
+    receptionBrand: varchar("receptionBrand", { length: 32 }),
+    factorySourceSnapshot: json("factorySourceSnapshot").$type<{ sourceFactoryName: string; sourceLabel: string; brand: string; assigneeName: string }>(),
     enterpriseId: int("enterpriseId"),
     sellerUserId: int("sellerUserId").notNull(),
     buyerUserId: int("buyerUserId").notNull(),
@@ -5320,17 +5338,28 @@ export const companyAgencyCertifications = mysqlTable("company_agency_certificat
   brands: json("brands").$type<string[]>().notNull(),
   objectKey: varchar("objectKey", {length:512}).notNull(), fileName: varchar("fileName",{length:160}).notNull(),
   mimeType: varchar("mimeType",{length:64}).notNull(), fileSha256: varchar("fileSha256",{length:64}).notNull(),
-  status: mysqlEnum("status",["active","cancelled"]).default("active").notNull(),
+  status: mysqlEnum("status",["active","cancelled","pending","rejected"]).default("active").notNull(),
+  source: mysqlEnum("source",["legacy","frontend","manual"]).default("legacy").notNull(),
+  authorizationIssuer: varchar("authorizationIssuer",{length:200}),
+  validFrom: date("validFrom",{mode:"string"}), validUntil: date("validUntil",{mode:"string"}),
+  supplementalNote: text("supplementalNote"), reviewReason: text("reviewReason"),
+  supersedesCertificationId: int("supersedesCertificationId"),
+  submittedAt: timestamp("submittedAt"), submittedBy: int("submittedBy"),
+  reviewedAt: timestamp("reviewedAt"), reviewedBy: int("reviewedBy"),
   revision: int("revision").default(1).notNull(), createdBy: int("createdBy").notNull(), updatedBy: int("updatedBy").notNull(),
   createdAt: timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(), updatedAt: timestamp("updatedAt").default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date()).notNull(),
-},table=>[index("agency_company_status_idx").on(table.companyId,table.status),index("agency_owner_status_idx").on(table.ownerUserId,table.status)]);
+},table=>[index("agency_company_status_idx").on(table.companyId,table.status),index("agency_owner_status_idx").on(table.ownerUserId,table.status),index("agency_company_version_idx").on(table.companyId,table.id)]);
 export const companyAgencyCertificationAudits = mysqlTable("company_agency_certification_audits", {
   id: int("id").autoincrement().primaryKey(), companyId:int("companyId").notNull(), ownerUserId:int("ownerUserId").notNull(), resultId:int("resultId").notNull(),
   action:varchar("action",{length:32}).notNull(), beforeValue:json("beforeValue"),afterValue:json("afterValue"),
+  actorSource: mysqlEnum("actorSource",["manager","frontend"]).default("manager").notNull(),
+  ipAddress:varchar("ipAddress",{length:64}),userAgent:varchar("userAgent",{length:512}),
   operatorId:int("operatorId").notNull(),operatorName:varchar("operatorName",{length:128}).notNull(),operatorRole:varchar("operatorRole",{length:64}).notNull(),
   requestId:varchar("requestId",{length:64}).notNull(),payloadHash:varchar("payloadHash",{length:64}).notNull(),createdAt:timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
-},table=>[uniqueIndex("agency_request_once").on(table.companyId,table.operatorId,table.requestId)]);
+},table=>[uniqueIndex("agency_request_once").on(table.companyId,table.actorSource,table.operatorId,table.requestId)]);
 export const companyAgencyDocumentViews = mysqlTable("company_agency_document_views", {
+  actorSource: mysqlEnum("actorSource",["manager","frontend"]).default("manager").notNull(),
+  ipAddress:varchar("ipAddress",{length:64}),userAgent:varchar("userAgent",{length:512}),
   id:int("id").autoincrement().primaryKey(),companyId:int("companyId").notNull(),certificationId:int("certificationId").notNull(),operatorId:int("operatorId").notNull(),operatorName:varchar("operatorName",{length:128}).notNull(),createdAt:timestamp("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -5379,4 +5408,50 @@ export const inventoryImportRepairAudits = mysqlTable("inventory_import_repair_a
     table.sourceJobId, table.sourceRowNumber, table.revision, table.id,
   ),
   repairJobIdx: index("inventory_import_repair_audit_repair_job_idx").on(table.repairJobId),
+}));
+
+/** Internal CLI-only supplier forum publishing. No public enrollment or future-supplier grant. */
+export const supplierForumRecommendationPolicies = mysqlTable("supplier_forum_recommendation_policies", {
+  id: int("id").primaryKey(), // singleton = 1; DB CHECK also enforces it
+  enabled: boolean("enabled").default(false).notNull(),
+  revision: int("revision", { unsigned: true }).default(1).notNull(),
+  grants: json("grants").$type<import("../server/services/supplierForumRecommendationModel").SupplierForumGrant[]>().notNull(),
+  lastPublishedEnterpriseId: int("lastPublishedEnterpriseId"),
+  stoppedAt: immutableBeijingDateTime("stoppedAt"),
+  updatedAt: immutableBeijingDateTime("updatedAt").default(DEFAULT_NOW).notNull(),
+}, table => ({ singleton: check("supplier_forum_policy_singleton", sql`${table.id} = 1`) }));
+export const supplierForumRecommendationRuns = mysqlTable("supplier_forum_recommendation_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  policyId: int("policyId").notNull(),
+  policyRevision: int("policyRevision", { unsigned: true }).notNull(),
+  publishDate: date("publishDate", { mode: "string" }).notNull(),
+  slotNo: int("slotNo").notNull(),
+  plannedAt: immutableBeijingDateTime("plannedAt").notNull(),
+  status: mysqlEnum("status", ["planned", "claimed", "published", "skipped", "failed"]).notNull(),
+  enterpriseId: int("enterpriseId"),
+  authorUserId: int("authorUserId"),
+  content: text("content"),
+  contentHash: char("contentHash", { length: 64 }),
+  sourceVersions: json("sourceVersions").$type<import("../server/services/supplierForumRecommendationModel").SupplierForumSourceVersion[]>().notNull(),
+  authorizationSnapshot: json("authorizationSnapshot").$type<import("../server/services/supplierForumRecommendationModel").SupplierForumGrant | null>(),
+  ruleVersion: varchar("ruleVersion", { length: 32 }),
+  clientMessageId: varchar("clientMessageId", { length: 64 }).notNull(),
+  messageId: int("messageId"),
+  leaseToken: char("leaseToken", { length: 36 }),
+  leaseUntil: immutableBeijingDateTime("leaseUntil"),
+  attempts: int("attempts", { unsigned: true }).default(0).notNull(),
+  errorCode: varchar("errorCode", { length: 64 }),
+  createdAt: immutableBeijingDateTime("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: immutableBeijingDateTime("updatedAt").default(DEFAULT_NOW).notNull(),
+}, table => ({
+  // One global persisted 12-slot plan, NOT twelve posts per supplier.
+  globalDaySlotUnique: uniqueIndex("supplier_forum_global_day_slot_unique").on(table.publishDate, table.slotNo),
+  clientKeyUnique: uniqueIndex("supplier_forum_client_key_unique").on(table.clientMessageId),
+  publishedHistoryIdx: index("supplier_forum_published_history_idx").on(table.status, table.publishDate),
+  singleton: check("supplier_forum_run_policy_singleton", sql`${table.policyId} = 1`),
+  slotRange: check("supplier_forum_slot_range", sql`${table.slotNo} BETWEEN 1 AND 12`),
+  slotDay: check("supplier_forum_slot_day", sql`DATE(${table.plannedAt}) = ${table.publishDate}`),
+  slotWindow: check("supplier_forum_slot_window", sql`TIME(${table.plannedAt}) >= '09:00:00' AND TIME(${table.plannedAt}) < '18:00:00' AND SECOND(${table.plannedAt}) = 0`),
+  slotBucket: check("supplier_forum_slot_bucket", sql`(HOUR(${table.plannedAt}) * 60 + MINUTE(${table.plannedAt})) BETWEEN (540 + (${table.slotNo} - 1) * 45) AND (570 + (${table.slotNo} - 1) * 45)`),
+  attemptCap: check("supplier_forum_attempt_cap", sql`${table.attempts} <= 2`),
 }));

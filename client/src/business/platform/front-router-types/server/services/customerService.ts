@@ -615,6 +615,50 @@ export async function submitAdminZhuomuniaoCooperationLead(params: {
 }
 
 /**
+ * 首页订单 Banner 的订货咨询。
+ *
+ * 与快速询价、在线客服、入驻和合作专题严格使用不同的 threadType，后台可独立
+ * 筛选与分派。clientMessageId 由前台服务端按账号与北京时间自然日固定生成，
+ * 因此网络重试会重放同一后台消息而不是增加未读数。
+ */
+export async function submitAdminOrderConsultationLead(params: {
+  clientMessageId: string;
+  portalUserId: number;
+  contactName: string;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  companyProfile?: {
+    companyName?: string | null;
+    creditCode?: string | null;
+    companyType?: string | null;
+    legalPerson?: string | null;
+    companyRole?: string | null;
+    regAddress?: string | null;
+    certLevel?: string | null;
+  } | null;
+  content: string;
+}): Promise<{ threadNo: string; deduplicated: boolean }> {
+  const result = await adminMessageApi<SubmitMessageResult & { deduplicated?: boolean }>(
+    "portal.submitMessage",
+    {
+      threadNo: null,
+      clientMessageId: params.clientMessageId,
+      subject: `订货咨询 - ${params.contactName}`,
+      contactName: params.contactName,
+      contactPhone: params.contactPhone ?? undefined,
+      contactEmail: normalizeEmail(params.contactEmail),
+      portalUserId: String(params.portalUserId),
+      threadType: "order_consultation",
+      companyProfile: params.companyProfile ?? null,
+      content: params.content,
+    },
+    "mutation",
+  );
+  if (!result?.threadNo) throw new Error("后台未返回订货咨询编号");
+  return { threadNo: result.threadNo, deduplicated: Boolean(result.deduplicated) };
+}
+
+/**
  * 企业申请 → 同步写入后台"商户管理"列表（portal.submitMerchant，x-portal-key 鉴权）。
  * 后台 merchants 表要求 contactEmail/businessLicense 必填，缺失时用占位值兜底。
  * 失败不阻塞主流程（记录日志），返回后台商户编号（失败返回 null）。

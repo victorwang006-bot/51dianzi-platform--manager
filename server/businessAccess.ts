@@ -19,6 +19,8 @@ export const BUSINESS_ADMIN_PERMISSIONS = [
   "business.context.read",
   "business.inventory.read",
   "business.inventory.write",
+  "business.inquiries.read",
+  "business.inquiries.write",
   "business.customers.read",
   "business.customers.write",
   "business.procurement.read",
@@ -29,7 +31,7 @@ export const BUSINESS_ADMIN_PERMISSIONS = [
   "business.orders.write",
 ] as const satisfies readonly AdminPermission[];
 
-export type BusinessModule = "context" | "inventory" | "customers" | "procurement" | "users" | "orders";
+export type BusinessModule = "context" | "inventory" | "inquiries" | "customers" | "procurement" | "users" | "orders";
 export type BusinessAccessMode = "read" | "write";
 
 export function businessScopePermission(
@@ -44,6 +46,12 @@ export function businessScopeAllows(
   module: BusinessModule,
   mode: BusinessAccessMode,
 ) {
+  // Legacy records already admitted reception through inventory. Preserve those
+  // exact grants until an explicit inquiry scope is configured; never grant any
+  // inventory permission to an inquiry-only employee, nor bypass explicit read-only.
+  if (module === "inquiries" && scope && !scope.modulePermissions.some(key => key.startsWith("business.inquiries."))) {
+    return scope.modulePermissions.includes(businessScopePermission("inventory", mode));
+  }
   return scope?.modulePermissions.includes(businessScopePermission(module, mode)) ?? false;
 }
 

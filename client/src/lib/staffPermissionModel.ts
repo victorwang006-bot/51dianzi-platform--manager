@@ -402,7 +402,7 @@ export function applyStaffErpPermissionTemplate(
 const ERP_SCOPE_REQUIREMENTS: Partial<Record<ErpPermissionKey, readonly string[]>> = {
   "inventory.manage": ["business.inventory.read", "business.inventory.write"],
   "inventory.publish": ["business.inventory.read", "business.inventory.write"],
-  "inquiry.receive": ["business.inventory.read", "business.inventory.write"],
+  "inquiry.receive": ["business.inquiries.read", "business.inquiries.write"],
   "sales_orders.manage": ["business.orders.read", "business.orders.write"],
   "inventory.inbound": ["business.inventory.read", "business.inventory.write"],
   "enterprise.members.manage": ["business.users.read", "business.users.write"],
@@ -670,7 +670,13 @@ export function evaluateBffReadiness(input: {
     return { state: "scope-unavailable", missingPermissions: ["business.context.read"], detail: "未找到该官方商户的 active BFF scope。" };
   }
   const required = requiredBffPermissions(member);
-  const missingPermissions = required.filter(permission => !scope.modulePermissions.includes(permission));
+  const hasExplicitReception = scope.modulePermissions.some(key => key.startsWith("business.inquiries."));
+  const missingPermissions = required.filter(permission => {
+    if (!hasExplicitReception && permission.startsWith("business.inquiries.")) {
+      return !scope.modulePermissions.includes(permission.replace("business.inquiries.", "business.inventory."));
+    }
+    return !scope.modulePermissions.includes(permission);
+  });
   if (missingPermissions.length) {
     return {
       state: "scope-incomplete",

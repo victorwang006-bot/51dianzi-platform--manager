@@ -767,7 +767,10 @@ export async function handoffEnterpriseMemberBusiness(input: {
         message: "成员业务集合已变化，请返回盘点步骤重新核对",
       });
     }
-    const inquiryInventoryIds = Array.from(new Set(inquiryRows.map(row => row.inventoryId)));
+    if (inquiryRows.some(row => row.inventoryId == null)) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "含工厂库存接待单，请先通过受控工厂接待交接完成处理；不能按普通库存改派" });
+    }
+    const inquiryInventoryIds = Array.from(new Set(inquiryRows.map(row => row.inventoryId).filter((id): id is number => id != null)));
     const inquiryInventoryRows: Array<{ id: number; partNumber: string }> = [];
     for (const inventoryIdBatch of chunks(inquiryInventoryIds)) {
       const rows = await tx
@@ -902,7 +905,7 @@ export async function handoffEnterpriseMemberBusiness(input: {
           }
           conversationId = await getOrCreateBusinessConversation(tx, frozenBuyer, nextOwnerParty);
         }
-        const partNumber = partNumberByInventoryId.get(inquiry.inventoryId) || `库存 #${inquiry.inventoryId}`;
+        const partNumber = (inquiry.inventoryId == null ? null : partNumberByInventoryId.get(inquiry.inventoryId)) || `库存 #${inquiry.inventoryId}`;
         const content = JSON.stringify({
           kind: "member_handoff",
           partNumber,

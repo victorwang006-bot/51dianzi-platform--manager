@@ -9,6 +9,7 @@ import { buildInquiryKey, parseSearchInquiry } from "../lib/searchInquiry";
 import { createClientMessageId } from "../lib/clientMessageId";
 import { createEnterpriseScopedTrpcClient } from "../lib/enterpriseTrpcClient";
 import { clearSessionQueryCache, installAuthSessionClearListener } from "../lib/authSessionEvents";
+import { INQUIRY_RECEPTION_CONVERSATION_OPTIONS } from "../../../../InquiryReceptionModel";
 import {
   isOperatingEnterprise,
   useEnterpriseSession,
@@ -337,6 +338,8 @@ export type BusinessReceptionConfig = Readonly<{
 
 type ChatPageProps = {
   businessReception?: BusinessReceptionConfig;
+  /** Content-only projection: keeps original message/attachment RPCs and never changes actor. */
+  receptionConversation?: { conversationId: number; onBack: () => void; canReply?: boolean };
   /** Wouter supplies this on front-route mounting; workbench direct mounting does not need it. */
   params?: { [routeParameter: number]: string | undefined };
 };
@@ -397,7 +400,7 @@ type ChatPageContentProps = ChatPageProps & {
   enterpriseScopeId: number | null;
 };
 
-function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }: ChatPageContentProps) {
+function ChatPageContent({ businessReception, receptionConversation, user, loading, enterpriseScopeId }: ChatPageContentProps) {
   const { logout } = useAuth();
   /*
    * 新标签页必须重新确认Cookie登录态。认证查询与受保护查询使用同一个
@@ -463,7 +466,10 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
   const inquiryKey = inquiryIntent ? buildInquiryKey(inquiryIntent) : null;
 
   // State
-  const [activeConvId, setActiveConvId] = useState<number | null>(null);
+  const [activeConvId, setActiveConvId] = useState<number | null>(receptionConversation?.conversationId ?? null);
+  useEffect(() => {
+    if (receptionConversation) setActiveConvId(receptionConversation.conversationId);
+  }, [receptionConversation?.conversationId]);
   const [filter, setFilter] = useState<"all" | "unread" | "pinned">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [msgInput, setMsgInput] = useState("");
@@ -611,6 +617,7 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
     enabled: primeProtectedChatQueries,
     refetchInterval: 5000, // 每5秒刷新
     refetchOnWindowFocus: true,
+    ...(receptionMode ? INQUIRY_RECEPTION_CONVERSATION_OPTIONS : {}),
   });
   useEffect(() => {
     if (!user || !targetConversationId || targetUserId || inquiryIntent || quoteChatDraft || wantService) return;
@@ -641,7 +648,7 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
 
   const messagesQuery = trpc.chat.getMessages.useQuery(
     { conversationId: activeConvId!, limit: 100 },
-    { enabled: !!activeConvId && !!user, refetchInterval: 3000 }
+    { enabled: !!activeConvId && !!user && (!receptionMode || (convListQuery.data ?? []).some(item => item.id === activeConvId)), refetchInterval: receptionMode ? 5000 : 3000, refetchOnReconnect: true }
   );
 
   const reviewStateQuery = trpc.publicReview.state.useQuery(
@@ -795,11 +802,14 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
   // 用户向上翻阅历史消息时，新消息必须保留数字角标，不能被后台轮询静默标记为已读。
   useEffect(() => {
     if (!activeConvId || !pageVisible || !messageListAtBottom) return;
+    // Opening a queue or selecting a URL is not viewing successfully rendered messages.
+    if (messagesQuery.isLoading || messagesQuery.isError || !messagesQuery.data || !msgListRef.current) return;
+    if (receptionMode && !(convListQuery.data ?? []).some(item => item.id === activeConvId)) return;
     markReadMut.mutate(
       { conversationId: activeConvId },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConvId, latestMessageId, pageVisible, messageListAtBottom]);
+  }, [activeConvId, latestMessageId, pageVisible, messageListAtBottom, messagesQuery.isLoading, messagesQuery.isError]);
 
   useEffect(() => {
     const list = msgListRef.current;
@@ -857,14 +867,14 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
 
   // ─── 当前活跃会话 ───
   const activeConv = useMemo(
-    () => (convListQuery.data ?? []).find((c) => c.id === activeConvId),
-    [convListQuery.data, activeConvId]
+    () => !convListQuery.isError ? (convListQuery.data ?? []).find((c) => c.id === activeConvId) : undefined,
+    [convListQuery.data, convListQuery.isError, activeConvId]
   );
 
   // 官方客服不参与商户信誉评价，相关入口全部隐藏
   const isServiceConv = !!activeConv && isServiceName(activeConv.otherUserOriginalName);
   const activeConversationBlocked = Boolean(
-    contactBlockState
+    receptionConversation?.canReply === false || contactBlockState
       && contactBlockState.conversationId === activeConvId
       && (contactBlockState.blockedByMe || contactBlockState.blockedByContact),
   );
@@ -2099,12 +2109,12 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f5] font-sans text-[13px]">
+    <div className={receptionConversation ? "inquiry-reception__embedded-chat font-sans text-[13px]" : "h-screen flex flex-col overflow-hidden bg-[#f5f5f5] font-sans text-[13px]"} data-reception-conversation={receptionConversation?.conversationId}>
       {/* Dashboard is the sole host chrome in the business workbench. */}
       {/* ── 主体三栏 ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── 左侧边栏 172px ── */}
-        <aside className="hidden lg:block w-[172px] min-w-[172px] bg-white border-r border-gray-200 py-2.5 overflow-y-auto">
+        {!receptionConversation ? <aside className="hidden lg:block w-[172px] min-w-[172px] bg-white border-r border-gray-200 py-2.5 overflow-y-auto">
           <div className="text-[11px] text-gray-400 px-3.5 pt-3 pb-1 tracking-wide">消息</div>
           {(["all", "unread", "pinned"] as const).map((s) => {
             const SectionIcon = s === "all" ? MessageCircle : s === "unread" ? Mail : Pin;
@@ -2304,10 +2314,10 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
               最近删除（{trashedGroups.length}）
             </button>
           ) : null}
-        </aside>
+        </aside> : null}
 
         {/* ── 会话列表 240px ── */}
-        <div className={`${showInquiryDeliveryCard ? "hidden md:flex" : activeConv ? "hidden md:flex" : "flex"} w-full md:w-[280px] md:min-w-[280px] lg:w-[240px] lg:min-w-[240px] bg-white border-r border-gray-200 flex-col`}>
+        {!receptionConversation ? <div className={`${showInquiryDeliveryCard ? "hidden md:flex" : activeConv ? "hidden md:flex" : "flex"} w-full md:w-[280px] md:min-w-[280px] lg:w-[240px] lg:min-w-[240px] bg-white border-r border-gray-200 flex-col`}>
           {/* 标题和搜索 */}
           <div className="px-3 pt-2.5 pb-2 border-b border-gray-100">
             <div className="flex items-center justify-between mb-2">
@@ -2516,10 +2526,9 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
               ))
             )}
           </div>
-        </div>
-
+        </div> : null}
         {/* ── 聊天窗口 ── */}
-        <div className={`${showInquiryDeliveryCard ? "flex" : activeConv ? "flex" : "hidden md:flex"} relative flex-1 flex-col min-w-0 bg-[#f0f2f5]`}>
+        <div className={`${receptionConversation || showInquiryDeliveryCard ? "flex" : activeConv ? "flex" : "hidden md:flex"} relative flex-1 flex-col min-w-0 bg-[#f0f2f5]`}>
           {showInquiryDeliveryCard ? (
             <div className="flex flex-1 items-center justify-center px-4 py-8">
               <section
@@ -2597,8 +2606,8 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
               <div className="bg-white border-b border-gray-200 px-3 md:px-4 h-12 flex items-center shrink-0">
                 <button
                   type="button"
-                  onClick={() => setActiveConvId(null)}
-                  className="md:hidden mr-2 w-8 h-8 inline-flex items-center justify-center rounded-md border-0 bg-transparent text-xl text-gray-600 hover:bg-gray-100"
+                  onClick={() => receptionConversation ? receptionConversation.onBack() : setActiveConvId(null)}
+                  className={`${receptionConversation ? "hidden" : "md:hidden"} mr-2 w-8 h-8 inline-flex items-center justify-center rounded-md border-0 bg-transparent text-xl text-gray-600 hover:bg-gray-100`}
                   aria-label="返回会话列表"
                 >
                   ←
@@ -2751,7 +2760,7 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
                 />
                 {activeConversationBlocked && (
                   <div className="border-b border-amber-100 bg-amber-50 px-3 py-2 text-center text-[11px] text-amber-800">
-                    该会话已被屏蔽，双方暂不能发送消息
+                    {receptionConversation?.canReply === false ? "当前企业范围仅可查看接待，不能回复或上传附件" : "该会话已被屏蔽，双方暂不能发送消息"}
                   </div>
                 )}
                 {replyingTo ? (
@@ -3022,14 +3031,14 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
                       </div>
                     </div>
                   ) : null}
-                  <button
+                  {!receptionMode ? <button
                     onClick={() => setShowQuoteModal(true)}
                     disabled={activeConversationBlocked}
                     className="text-[11px] text-[#185FA5] px-2 py-0.5 rounded hover:bg-[#e8f0fe] border border-[#b3cfe8] bg-white cursor-pointer font-medium disabled:cursor-not-allowed disabled:opacity-40"
                     title="发送报价单"
                   >
                     💰 发报价单
-                  </button>
+                  </button> : null}
                   {attachmentBusy ? (
                     <span className="ml-auto text-[10px] text-[#185FA5]">附件处理中…</span>
                   ) : null}
@@ -3590,7 +3599,7 @@ function ChatPageContent({ businessReception, user, loading, enterpriseScopeId }
           : undefined}
       />
 
-      {showQuoteModal && (
+      {showQuoteModal && !receptionMode && (
         <div className="fixed inset-0 bg-black/40 z-[1000] flex items-center justify-center">
           <div className="bg-white rounded-xl p-5 w-[calc(100vw-2rem)] max-w-[360px] shadow-xl">
             <h3 className="text-sm font-semibold mb-3.5 text-gray-900">💰 发送报价单</h3>

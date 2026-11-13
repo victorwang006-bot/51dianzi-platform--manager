@@ -9,6 +9,8 @@ const testState = vi.hoisted(() => {
   const mutationCalls: MutationCall[] = [];
   const forumEnabled: boolean[] = [];
   let search = "";
+  const account = { id: 8420103, name: "接待真实员工", crmAccess: true };
+  const personalEnterpriseList = { items: [], selectionRequired: false };
 
   const conversation = {
     id: 8422001,
@@ -31,6 +33,8 @@ const testState = vi.hoisted(() => {
   };
 
   const resultFor = (path: string): unknown => {
+    if (path === "auth.me") return account;
+    if (path === "enterprise.listForCurrentUser") return personalEnterpriseList;
     if (path === "chat.listConversations") return [conversation];
     if (path === "chat.listGroups") {
       return [{ id: 8424001, groupName: "已证明接待组", groupType: "manual", autoAssign: false, memberCount: 1, unreadCount: 1, partNumbers: [] }];
@@ -198,10 +202,11 @@ async function mountPage(): Promise<MountedPage> {
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
   });
   (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const [reactModule, { createRoot }, pageModule] = await Promise.all([
+  const [reactModule, { createRoot }, pageModule, { EnterpriseSessionProvider }] = await Promise.all([
     import("react"),
     import("react-dom/client"),
     import("./platform/client/src/pages/ChatPage"),
+    import("./platform/client/src/contexts/EnterpriseSessionContext"),
   ]);
   (globalThis as typeof globalThis & { React?: unknown }).React = reactModule;
   const container = dom.window.document.getElementById("root");
@@ -212,10 +217,13 @@ async function mountPage(): Promise<MountedPage> {
     async render(search, businessReception = receptionConfig) {
       testState.search = search;
       await act(async () => {
-        root.render(createElement(pageModule.default, {
+        const page = createElement(pageModule.default, {
           ...(businessReception ? { businessReception } : {}),
           key: search,
-        }));
+        });
+        // Reception remains on the real BFF surface. Only the ordinary personal
+        // fixture needs the App-owned enterprise session context.
+        root.render(businessReception ? page : createElement(EnterpriseSessionProvider, null, page));
       });
     },
     async unmount() {

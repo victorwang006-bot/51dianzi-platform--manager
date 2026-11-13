@@ -457,3 +457,22 @@
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 }
+
+/* Inquiry-only unread, rendered by the current authorized business cache. */
+.admin-workspace-nav .inquiry-reception-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #d32f2f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}

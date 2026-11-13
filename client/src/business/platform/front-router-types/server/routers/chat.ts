@@ -16,6 +16,7 @@ import {
   isServiceConversation,
   submitAdminComplaint,
   submitAdminOnboardingLead,
+  submitAdminOrderConsultationLead,
   submitAdminZhuomuniaoCooperationLead,
 } from "../services/customerService";
 import { resolveCrmTargetForUser } from "../services/enterpriseAccess";
@@ -38,6 +39,11 @@ import {
   getChatContactInventory,
   getChatContactProfile,
 } from "../services/chatContactPublicProfile";
+import { factoryConversationReceptionScopes } from "../services/factoryReceptionConversation";
+import type { TrpcContext } from "../_core/context";
+import type { User } from "../../drizzle/schema";
+import { factoryInventoryReception, startFactoryInventoryInquiryInput, FACTORY_RECEPTION, type FactoryReceptionLease } from "../services/factoryInventoryReception";
+import { requireFactoryBuyerEnterpriseRequest, requireFactoryInquiryBuyerOperatingIdentity } from "../services/factoryInquiryBuyerIdentity";
 import { resolveInventoryInquiryRecipient } from "../services/enterpriseBusinessHandoff";
 import {
   actorIdentityContextKey,
@@ -91,6 +97,19 @@ import {
   canWriteLegacyDirectConversationPreactivation,
 } from "../services/legacyChatPreactivationCompatibility";
 
+type InventoryInquiryCreationArgs = {
+  ctx: TrpcContext & { user: User };
+  input: { inventoryId: number | null; initiatorUserId: number; inquiryProtocol: "buyer-bound-v3";
+    qty: number | null; source?: "search" | "detail" | "recommend" | "quote" | "data_hub" | "company" | "factory_channel"; clientMessageId: string };
+  /** Only a server-side endpoint wrapper can set this; never parsed from ordinary input. */
+  factoryPublicId?: string;
+};
+type InventoryInquiryStartResult = {
+  ok: boolean; inquiryId: number; conversationId: number; assigneeUserId: number;
+  assigneeName: string; companyName: string | null; message: MessageRow; deduplicated: boolean;
+  receptionKind?: "factory_channel"; receptionBrand?: "51电子网"; receptionLabel?: string;
+};
+const inventoryInquiryCreation: { run?: (args: InventoryInquiryCreationArgs) => Promise<InventoryInquiryStartResult> } = {};
 async function requireDb() {
   const db = await getDb();
   if (!db)
@@ -1218,6 +1237,94 @@ export const chatRouter = router({
     };
   }),
 
+  /** 首页订单 Banner「咨询订货服务」：仅创建独立后台订货咨询，不伪装为普通客服或快速询价。 */
+  requestOrderConsultation: protectedProcedure.mutation(async ({ ctx }) => {
+    const myId = ctx.user.id;
+    const csUserId = await getServiceUserId();
+    if (myId === csUserId) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "客服账号不能提交订货咨询",
+      });
+    }
+
+    const db = await requireDb();
+    const clientMessageId = `order-${myId}-${formatBeijingDateCompact(new Date())}`;
+    const userResult = await db.execute(sql`
+      SELECT u.id, u.username, u.name, u.phone, u.email,
+             c.companyName, c.creditCode, c.companyType, c.legalPerson,
+             c.companyRole, c.regAddress, c.certLevel
+        FROM users u
+        LEFT JOIN companies c ON c.userId = u.id
+       WHERE u.id = ${myId}
+       LIMIT 1
+    `);
+    const userRows = (userResult as unknown as [
+      Array<{
+        id: number;
+        username: string | null;
+        name: string | null;
+        phone: string | null;
+        email: string | null;
+        companyName: string | null;
+        creditCode: string | null;
+        companyType: string | null;
+        legalPerson: string | null;
+        companyRole: string | null;
+        regAddress: string | null;
+        certLevel: string | null;
+      }>,
+      unknown,
+    ])[0];
+    const user = userRows[0];
+    if (!user)
+      throw new TRPCError({ code: "NOT_FOUND", message: "用户不存在" });
+
+    const contactName =
+      user.name?.trim() || user.username?.trim() || `用户#${myId}`;
+    const content = [
+      "【订货咨询】",
+      "用户通过首页订单 Banner 点击“咨询订货服务”。",
+      "",
+      `用户：${contactName}`,
+      `用户ID：${myId}`,
+      `手机号：${user.phone || "未填写"}`,
+      `邮箱：${user.email || "未填写"}`,
+      `企业名称：${user.companyName || "未填写"}`,
+      "来源：首页订单 Banner「咨询订货服务」",
+      "咨询需求：请工作人员联系确认所需型号、数量与期望交期。",
+      "",
+      "请订货服务工作人员及时跟进并联系客户确认型号、数量与交期。",
+    ].join("\n");
+
+    // 后台是唯一通知落点；其原子幂等保证重复点击不会生成重复未读。
+    const adminResult = await submitAdminOrderConsultationLead({
+      clientMessageId,
+      portalUserId: myId,
+      contactName,
+      contactPhone: user.phone,
+      contactEmail: user.email,
+      companyProfile: {
+        companyName: user.companyName,
+        creditCode: user.creditCode,
+        companyType: user.companyType,
+        legalPerson: user.legalPerson,
+        companyRole: user.companyRole,
+        regAddress: user.regAddress,
+        certLevel: user.certLevel,
+      },
+      content,
+    });
+
+    return {
+      ok: true as const,
+      status: adminResult.deduplicated
+        ? ("deduplicated" as const)
+        : ("created" as const),
+      threadNo: adminResult.threadNo,
+    };
+  }),
+
   contactProfile: protectedProcedure
     .input(
       z.object({
@@ -1786,6 +1893,7 @@ export const chatRouter = router({
     `)) as unknown as [ChatConversationListRow[], unknown];
       const rows = result[0];
       const serviceUserId = serviceUserIdForSort;
+      const factoryScopes = await factoryConversationReceptionScopes(db, rows.map(row => Number(row.id)), myId);
       const entries = rows.map(r => {
         const labels = chatContactLabels({
           companyName: r.otherCompanyName,
@@ -1798,6 +1906,10 @@ export const chatRouter = router({
         return {
           id: Number(r.id),
           canonicalConversationId: Number(r.id),
+          receptionScope: factoryScopes.get(Number(r.id))?.receptionScope ?? null,
+          receptionKind: factoryScopes.get(Number(r.id))?.receptionKind,
+          receptionBrand: factoryScopes.get(Number(r.id))?.receptionBrand,
+          receptionLabel: factoryScopes.get(Number(r.id))?.receptionLabel,
           aliasIds: new Array<number>(),
           /**
            * Legacy rows have no trustworthy business tuple and are read-only only
@@ -2302,7 +2414,10 @@ export const chatRouter = router({
           })
         );
       }
+      const reception = (await factoryConversationReceptionScopes(db, sourceConversationIds, myId)).get(canonicalConversationId);
       return {
+        receptionScope: reception?.receptionScope ?? null,
+        receptionKind: reception?.receptionKind, receptionBrand: reception?.receptionBrand, receptionLabel: reception?.receptionLabel,
         messages: orderedMessages.map(message => {
           const {
             quotedSenderId,
@@ -3528,10 +3643,12 @@ export const chatRouter = router({
         clientMessageId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
       })
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(inventoryInquiryCreation.run = async ({ ctx, input, factoryPublicId }: InventoryInquiryCreationArgs) => {
       type ExistingInventoryInquiry = MessageRow & {
         inquiryId: number;
-        inventoryId: number;
+        sourceKind?: string;
+        sourcePublicId?: string;
+        inventoryId: number | null;
         conversationId: number;
         assigneeUserId: number;
         assigneeName: string | null;
@@ -3563,6 +3680,9 @@ export const chatRouter = router({
       }
       const db = await requireDb();
       const buyerIdentity = await resolveActorBusinessIdentity(db, buyerUserId);
+      if (factoryPublicId) {
+        await requireFactoryInquiryBuyerOperatingIdentity(db, buyerUserId, buyerIdentity);
+      }
       const buyerIdentityContextKey = actorIdentityContextKey(
         buyerUserId,
         buyerIdentity
@@ -3574,6 +3694,7 @@ export const chatRouter = router({
       ) => {
         const existingInquiryResult = await executor.execute(sql`
           SELECT iq.id AS inquiryId, iq.inventoryId, iq.conversationId, iq.assigneeUserId,
+                 ${factoryPublicId ? sql`iq.sourceKind, iq.sourcePublicId,` : sql``}
                  m.id, m.senderId, m.clientMessageId, m.msgType, m.content, m.createdAt,
                  assignee.name AS assigneeName, assignee.username AS assigneeUsername,
                  e.companyName, c.user1Id, c.user2Id,
@@ -3612,7 +3733,9 @@ export const chatRouter = router({
       const existingInquiryResponse = (
         existingInquiry: ExistingInventoryInquiry
       ) => {
-        if (Number(existingInquiry.inventoryId) !== input.inventoryId) {
+        if (factoryPublicId
+          ? !["channel_material", "official_admin_inventory"].includes(existingInquiry.sourceKind ?? "") || existingInquiry.sourcePublicId !== factoryPublicId
+          : Number(existingInquiry.inventoryId) !== input.inventoryId) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "询价标识与物料不匹配",
@@ -3630,6 +3753,7 @@ export const chatRouter = router({
           companyName: existingInquiry.companyName,
           message: storedMessage(existingInquiry),
           deduplicated: true,
+          ...(factoryPublicId ? FACTORY_RECEPTION : {}),
         };
       };
       const existingBeforeRouting = await findExistingInquiry(db);
@@ -3637,7 +3761,11 @@ export const chatRouter = router({
         const existing = existingInquiryResponse(existingBeforeRouting);
         return { ok: true, ...existing };
       }
-      const inventoryResult = await db.execute(sql`
+      let factoryLease: FactoryReceptionLease | undefined;
+      try {
+      if (factoryPublicId) factoryLease = await factoryInventoryReception.open(db, factoryPublicId);
+      const factorySource = factoryLease?.source;
+      const inventoryResult = factorySource ? [[factorySource], []] : await db.execute(sql`
         SELECT i.id, i.userId AS sellerUserId, i.enterpriseId, i.ownerUserId,
                i.partNumber, i.brand, i.pkg, i.moq, i.qtyOnSale,
                e.companyName, e.superAdminUserId,
@@ -3660,7 +3788,7 @@ export const chatRouter = router({
           message: "该库存已下架或售罄",
         });
       }
-      const assigneeUserId = await resolveInventoryInquiryRecipient(db, {
+      const assigneeUserId = factorySource?.assigneeUserId ?? await resolveInventoryInquiryRecipient(db, {
         inventoryId: Number(inventory.id),
         enterpriseId:
           inventory.enterpriseId == null
@@ -3752,6 +3880,7 @@ export const chatRouter = router({
         quote: "需求报价",
         data_hub: "数据通",
         company: "企业主页",
+        factory_channel: "工厂渠道",
       };
       const requestedQty = storedInquiryQuantity(input.qty);
       const quantityText = inquiryQuantityText(input.qty);
@@ -3767,6 +3896,7 @@ export const chatRouter = router({
         buyerTradeCount,
         sourceLabel: input.source ? sourceLabels[input.source] : void 0,
         supplierQtyOnSale: Number(inventory.qtyOnSale),
+        ...(factorySource ? { ...FACTORY_RECEPTION, sourcePublicId: factorySource.publicId, sellerCompanyName: inventory.companyName } : {}),
       });
       const preview = `[询价单] ${inventory.partNumber} × ${quantityText}`;
       const user1Id = conversationUser1.userId;
@@ -3825,6 +3955,9 @@ export const chatRouter = router({
                 });
               }
             }
+            if (factoryLease) {
+              await factoryLease.verify(tx);
+            } else {
             const lockedInventoryResult = await tx.execute(sql`
               SELECT enterpriseId, userId AS sellerUserId, ownerUserId, status, qtyOnSale
                 FROM inventories
@@ -3885,6 +4018,7 @@ export const chatRouter = router({
                 code: "CONFLICT",
                 message: "询价接待规则或负责人已变化，请重试",
               });
+            }
             }
             const conversationId = await getOrCreateFrozenBusinessConversation(
               tx,
@@ -3963,7 +4097,8 @@ export const chatRouter = router({
               (inventoryId, enterpriseId, sellerUserId, buyerUserId,
                buyerEnterpriseId, buyerCompanyId, buyerCompanyNameSnapshot, buyerIdentityContextKey, assigneeUserId,
                conversationId, messageId, partNumber, partNumberNormalized,
-               requestedQty, source, clientMessageId)
+               requestedQty, source, clientMessageId
+               ${factorySource ? sql`, sourceKind, sourcePublicId, sourceRecordId, responsibilityVersion, responsibilitySnapshot, receptionAdminUserId, receptionBindingVersion, receptionKind, receptionBrand, factorySourceSnapshot` : sql``})
             VALUES
               (${inventory.id}, ${inventory.enterpriseId}, ${inventory.sellerUserId},
                ${buyerUserId}, ${buyerIdentity.enterpriseId},
@@ -3972,7 +4107,8 @@ export const chatRouter = router({
                ${assigneeUserId}, ${conversationId}, ${messageId},
                ${displayInquiryPartNumber(inventory.partNumber)},
                ${normalizeInquiryPartNumber(inventory.partNumber)},
-               ${requestedQty}, ${input.source ?? null}, ${clientMessageId})
+               ${requestedQty}, ${factorySource ? null : input.source ?? null}, ${clientMessageId}
+               ${factorySource ? sql`, ${factorySource.sourceKind}, ${factorySource.publicId}, ${factorySource.sourceId}, ${factorySource.responsibilityVersion}, ${factorySource.responsibilitySnapshot}, ${factorySource.adminUserId}, ${factorySource.bindingVersion}, ${FACTORY_RECEPTION.receptionKind}, ${FACTORY_RECEPTION.receptionBrand}, ${JSON.stringify({ sourceFactoryName: factorySource.sourceFactoryName, sourceLabel: factorySource.sourceLabel, brand: inventory.brand, assigneeName: assignee?.name?.trim() || assignee?.username?.trim() || "责任员工" })}` : sql``})
           `);
             const insertedInquiryResult = await tx.execute(
               sql`SELECT LAST_INSERT_ID() AS id`
@@ -4000,6 +4136,8 @@ export const chatRouter = router({
               messageResult as unknown as [MessageRow[], unknown]
             )[0][0];
             if (!message || !inquiryId) throw new Error("询价业务单写入失败");
+            // Shared admin source/binding locks still live; recheck immediately before front commit.
+            if (factoryLease) await factoryLease.verify(tx);
             return {
               inquiryId,
               conversationId,
@@ -4012,6 +4150,7 @@ export const chatRouter = router({
               companyName: inventory.companyName,
               message,
               deduplicated: false,
+              ...(factorySource ? FACTORY_RECEPTION : {}),
             };
           } finally {
             await tx
@@ -4038,6 +4177,33 @@ export const chatRouter = router({
         return existingInquiryResponse(committedInquiry);
       });
       return { ok: true, ...stored };
+      } finally { await factoryLease?.close().catch(() => undefined); }
+    }),
+
+  factoryReceptionContext: protectedProcedure
+    .input(z.object({ conversationId: z.number().int().positive() }).strict())
+    .query(async ({ ctx, input }) => {
+      const db = await requireDb();
+      await requireScopedConversation(db, ctx.user.id, input.conversationId, { write: false });
+      const scope = (await factoryConversationReceptionScopes(db, [input.conversationId], ctx.user.id)).get(input.conversationId);
+      return scope ?? { receptionScope: null };
+    }),
+
+  startFactoryInventoryInquiry: protectedProcedure
+    .input(startFactoryInventoryInquiryInput)
+    .mutation(async ({ ctx, input }) => {
+      requireFactoryBuyerEnterpriseRequest(ctx.user.id);
+      if (!inventoryInquiryCreation.run) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "询价服务未初始化" });
+      return inventoryInquiryCreation.run({ ctx, factoryPublicId: input.publicId,
+        input: { inventoryId: null, initiatorUserId: input.initiatorUserId,
+          inquiryProtocol: input.inquiryProtocol, qty: input.qty, clientMessageId: input.clientMessageId,
+          source: "factory_channel" } }).catch(error => {
+            const code = error?.code ?? error?.cause?.code;
+            if (["ER_BAD_FIELD_ERROR", "ER_NO_SUCH_TABLE"].includes(code)) {
+              throw new TRPCError({ code: "PRECONDITION_FAILED", message: "工厂库存询价接待schema尚未配置，请联系平台完成配置" });
+            }
+            throw error;
+          });
     }),
 
   sendInquiryCard: protectedProcedure

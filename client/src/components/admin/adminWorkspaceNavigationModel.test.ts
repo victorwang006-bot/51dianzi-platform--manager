@@ -28,14 +28,14 @@ const visible = (...paths: string[]) =>
   items.filter(item => paths.includes(item.path));
 
 describe("业务下拉展示分组（独立客户和库存不重复，不更改canonical和历史目标）", () => {
-  it("三组仅保留销售询价、出入库和采购，子项只出现一次", () => {
+  it("三组仅保留销售管理、出入库和采购，询价独立，子项只出现一次", () => {
     const entries = groupAdminBusinessNavigationItems([...items].reverse());
     expect(
       entries.map(entry =>
         entry.kind === "direct" ? entry.item.path : entry.label
       )
     ).toEqual([
-      "销售与询价",
+      "销售管理",
       "库存管理",
       "采购管理",
     ]);
@@ -45,7 +45,6 @@ describe("业务下拉展示分组（独立客户和库存不重复，不更改c
         : entry.items.map(item => item.path)
     );
     expect(groupedPaths).toEqual([
-      "/workbench/inquiries",
       "/workbench/orders",
       "/workbench/inbound",
       "/workbench/outbound",
@@ -53,7 +52,7 @@ describe("业务下拉展示分组（独立客户和库存不重复，不更改c
       "/workbench/procurement-orders",
     ]);
     expect([...groupedPaths].sort()).toEqual(
-      [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].filter(path => !["/workbench/customers", "/workbench/channel-inventory"].includes(path)).sort()
+      [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].filter(path => !["/workbench/customers", "/workbench/channel-inventory", "/workbench/inquiries"].includes(path)).sort()
     );
     expect(new Set(groupedPaths).size).toBe(groupedPaths.length);
     for (const entry of entries) {
@@ -72,13 +71,12 @@ describe("业务下拉展示分组（独立客户和库存不重复，不更改c
       entries.map(entry =>
         entry.kind === "group" ? entry.id : entry.item.path
       )
-    ).toEqual(["customers", "inventory"]);
+    ).toEqual(["inventory"]);
     expect(
       entries.flatMap(entry =>
         entry.kind === "group" ? entry.items : [entry.item]
       )
     ).toEqual([
-      authorized.find(item => item.path === "/workbench/inquiries"),
       authorized.find(item => item.path === "/workbench/outbound"),
     ]);
     expect(groupAdminBusinessNavigationItems([])).toEqual([]);

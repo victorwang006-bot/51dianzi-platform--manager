@@ -30,10 +30,10 @@ const items = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths).ma
   })
 );
 type Item = (typeof items)[number];
-const topIds = ["customers", "inventory", "business", "operations", "organization"];
+const topIds = ["customers", "inventory", "inquiries", "business", "operations", "organization"];
 const dropdownIds = ["business", "operations", "organization"];
 const groupedPaths = {
-  customers: ["/workbench/inquiries", "/workbench/orders"],
+  customers: ["/workbench/orders"],
   inventory: ["/workbench/inbound", "/workbench/outbound"],
   procurement: ["/workbench/procurement-demands", "/workbench/procurement-orders"],
 };
@@ -117,12 +117,12 @@ async function pointer(node: Element, type: "pointerover" | "pointerout", pointe
 }
 
 describe("统一导航下拉（new focused contract）", () => {
-  it("五个一级先客户列表/库存列表，业务/运营/组织保留不导航的下拉按钮", async () => {
+  it("六个一级先客户列表/库存列表/询价接待，业务/运营/组织保留不导航的下拉按钮", async () => {
     await render();
     expect(Array.from(host.querySelectorAll('[data-navigation-level="1"]')).map(node => node.getAttribute("data-workspace-nav-target")))
       .toEqual(topIds);
     expect(Array.from(host.querySelectorAll('[data-navigation-level="1"]')).map(node => node.textContent))
-      .toEqual(["客户列表", "库存列表", "业务工作台▾", "平台运营▾", "组织与权限▾"]);
+      .toEqual(["客户列表", "库存列表", "询价接待", "业务工作台▾", "平台运营▾", "组织与权限▾"]);
     expect(host.querySelector("a")).toBeNull();
     expect(host.querySelector('[data-admin-navigation="unified-dropdown"]')).not.toBeNull();
     for (const id of dropdownIds) {
@@ -163,7 +163,7 @@ describe("统一导航下拉（new focused contract）", () => {
       expect(document.activeElement).toBe(button("business"));
       expect(host.querySelectorAll('[data-navigation-level="1"][aria-expanded="true"]')).toHaveLength(1);
     }
-    for (const id of ["customers", "inventory"]) {
+    for (const id of ["customers", "inventory", "inquiries"]) {
       await pointer(button(id), "pointerover");
       expect(panel()).toBeNull();
       expect(document.activeElement).toBe(button("business"));
@@ -240,7 +240,7 @@ describe("统一导航下拉（new focused contract）", () => {
     await pointer(button("group:customers"), "pointerover", type);
     expect(panel(3)).toBeNull();
     await click("group:customers");
-    await click("/workbench/inquiries");
+    await click("/workbench/orders");
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
@@ -283,8 +283,8 @@ describe("统一导航下拉（new focused contract）", () => {
     await pointer(button("group:customers"), "pointerover");
     await pointer(panel(3)!, "pointerout", "mouse", document.body);
     if (action === "outside") await act(async () => document.body.click());
-    else if (action === "Escape") await key("/workbench/inquiries", "Escape");
-    else await click("/workbench/inquiries");
+    else if (action === "Escape") await key("/workbench/orders", "Escape");
+    else await click("/workbench/orders");
     expect(panel()).toBeNull();
     await click("operations");
     await act(async () => vi.advanceTimersByTime(300));
@@ -312,7 +312,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(host.querySelector(`[data-workspace-nav-target="${CHANNEL_INVENTORY_ROUTE}"]`)).toBeNull();
     await pointer(button("group:customers"), "pointerover");
     expect(leaves(3)).toEqual(groupedPaths.customers);
-    expect(button("group:customers").textContent).toBe("销售与询价›");
+    expect(button("group:customers").textContent).toBe("销售管理›");
     await click("group:customers");
     expect(leaves(3)).toEqual(groupedPaths.customers);
     expect(button("group:customers").getAttribute("data-active")).toBe("true");
@@ -350,6 +350,25 @@ describe("统一导航下拉（new focused contract）", () => {
       expect(panel()).toBeNull();
       expect(panel(3)).toBeNull();
     });
+
+  it("独立询价保留原三级测试的同一对象、preload和父回调前同步隐藏边界", async () => {
+    const original = items.find(item => item.path === "/workbench/inquiries")!;
+    const navigate = vi.fn((item: Item) => {
+      expect(item).toBe(original);
+      expect(host.querySelector<HTMLDivElement>('[data-workspace-dropdown="layer"]')?.hidden).toBe(true);
+      expect(button("business").getAttribute("aria-expanded")).toBe("false");
+    });
+    await render(undefined, { onNavigate: navigate });
+    await click("business"); await click("group:customers");
+    expect(leaves(3)).toEqual(["/workbench/orders"]);
+    expect(host.querySelector('[data-workspace-nav-target="/workbench/inquiries"]')).toBeNull();
+    onPreload.mockClear(); await act(async () => button("inquiries").focus());
+    await act(async () => button("inquiries").dispatchEvent(new MouseEvent("pointerover", { bubbles: true })));
+    expect(onPreload.mock.calls).toEqual([[original], [original]]);
+    await click("inquiries"); expect(navigate.mock.calls).toEqual([[original]]);
+    expect(navigate.mock.calls[0][0].merchantContext).toBe(original.merchantContext);
+    expect(panel()).toBeNull(); expect(panel(3)).toBeNull();
+  });
 
   it("公司信息及其别名不显示入口，仅有公司许可时不制造空业务工作区", async () => {
     await render();
@@ -512,7 +531,7 @@ describe("统一导航下拉（new focused contract）", () => {
     [CHANNEL_INVENTORY_ROUTE, "inventory"],
     ["/workbench/inventory", "inventory"],
     ["/workbench/sales-orders/8", "business"],
-    ["/workbench/chat/8", "business"],
+    ["/workbench/chat/8", "inquiries"],
     ["/materials/8", "operations"],
     ["/admins/8", "organization"],
     ["/profile", "organization"],
@@ -627,6 +646,8 @@ describe("统一导航下拉（new focused contract）", () => {
     await render();
     await act(async () => button("inventory").focus());
     await key("inventory", "ArrowRight");
+    expect(document.activeElement).toBe(button("inquiries"));
+    await key("inquiries", "ArrowRight");
     expect(document.activeElement).toBe(button("business"));
     expect((await key("business", "ArrowDown")).defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(button("group:customers"));
@@ -634,18 +655,20 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(document.activeElement).toBe(button("group:procurement"));
     await key("group:procurement", "Home");
     expect(document.activeElement).toBe(button("group:customers"));
-    await key("group:customers", "ArrowRight");
-    expect(document.activeElement).toBe(button("/workbench/inquiries"));
-    await key("/workbench/inquiries", "ArrowDown");
-    expect(document.activeElement).toBe(button("/workbench/orders"));
-    await key("/workbench/inquiries", "End");
-    expect(document.activeElement).toBe(button("/workbench/orders"));
-    expect((await key("/workbench/orders", "Tab")).defaultPrevented).toBe(false);
-    await key("/workbench/orders", "ArrowLeft");
+    await key("group:customers", "ArrowDown");
+    expect(document.activeElement).toBe(button("group:inventory"));
+    await key("group:inventory", "ArrowRight");
+    expect(document.activeElement).toBe(button("/workbench/inbound"));
+    await key("/workbench/inbound", "ArrowDown");
+    expect(document.activeElement).toBe(button("/workbench/outbound"));
+    await key("/workbench/inbound", "End");
+    expect(document.activeElement).toBe(button("/workbench/outbound"));
+    expect((await key("/workbench/outbound", "Tab")).defaultPrevented).toBe(false);
+    await key("/workbench/outbound", "ArrowLeft");
     expect(panel(3)).toBeNull();
-    expect(document.activeElement).toBe(button("group:customers"));
-    await key("group:customers", "Enter");
-    await key("/workbench/inquiries", "Escape");
+    expect(document.activeElement).toBe(button("group:inventory"));
+    await key("group:inventory", "Enter");
+    await key("/workbench/inbound", "Escape");
     expect(panel()).toBeNull();
     expect(panel(3)).toBeNull();
     expect(document.activeElement).toBe(button("business"));
@@ -669,7 +692,7 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(panel()?.hidden).toBe(false);
     expect(document.activeElement).toBe(button("group:inventory"));
     await click("group:customers");
-    await key("/workbench/inquiries", "ArrowLeft");
+    await key("/workbench/orders", "ArrowLeft");
     expect(document.activeElement).toBe(button("group:customers"));
     await act(async () => panel()!.querySelector<HTMLButtonElement>('[data-workspace-dropdown="close"]')!.click());
     expect(panel()).toBeNull();
@@ -759,8 +782,13 @@ describe("统一导航下拉（new focused contract）", () => {
     expect(appended).toContain('position: fixed');
     expect(appended).toContain('@media (max-width: 767px)');
     expect(appended).not.toMatch(/(?:^|\n)\s*(?:html|body|:root|\*)\s*[{,]/);
-    const rules = appended.replace(/\/\*[\s\S]*?\*\//g, "").split("*/").at(-1)!;
+    // Approved unread badge typography is confined to the inquiry badge, not
+    // the prior dropdown text or the global header/content.
+    const [dropdownCss, badgeCss] = appended.split("/* Inquiry-only unread,");
+    const rules = dropdownCss.replace(/\/\*[\s\S]*?\*\//g, "").split("*/").at(-1)!;
     expect(rules).not.toMatch(/font-(?:size|family)|line-height|admin-workspace-shell|Logo/);
+    expect(badgeCss).toContain(".admin-workspace-nav .inquiry-reception-nav-badge {");
+    expect(badgeCss).not.toMatch(/admin-workspace-shell|Logo|(?:^|\n)\s*(?:html|body|:root|\*)\s*[{,]/);
     const source = readFileSync(`${base}AdminWorkspaceNavigation.tsx`, "utf8");
     expect(source).not.toMatch(/from ["']react-dom|createPortal|flushSync/);
   });

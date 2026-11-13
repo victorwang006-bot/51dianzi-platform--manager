@@ -7,6 +7,7 @@
  */
 export const CHANNEL_INVENTORY_BUSINESS_METHOD_IDS = [
   "channelInventory.publishFactoryMaterial",
+  "channelInventory.previewFactoryMaterialReception",
   "channelInventory.deleteMaterials",
   "channelInventory.listDeletedMaterials",
   "channelInventory.restoreMaterial",
@@ -53,6 +54,7 @@ export const CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES: Readonly<Record<
   Readonly<{ mode: ChannelInventoryBusinessMethodMode; permission: "inventory.manage" | "inventory.publish" }>
 >> = {
   "channelInventory.publishFactoryMaterial": { mode: "write", permission: "inventory.publish" },
+  "channelInventory.previewFactoryMaterialReception": { mode: "read", permission: "inventory.publish" },
   "channelInventory.deleteMaterials": { mode: "write", permission: "inventory.manage" },
   "channelInventory.listDeletedMaterials": { mode: "read", permission: "inventory.manage" },
   "channelInventory.restoreMaterial": { mode: "write", permission: "inventory.manage" },

@@ -49,15 +49,15 @@ const locationLabels = () => [...host.querySelectorAll('[data-admin-navigation="
 const panels = () => host.querySelectorAll('[data-workspace-dropdown="panel"]');
 
 describe("已批准独立客户/库存一级入口（离线真实DOM）", () => {
-  it("即使父授权项逆序仍是客户、库存、业务、运营、组织，历史登录默认页不变", async () => {
+  it("即使父授权项逆序仍是客户、库存、询价、业务、运营、组织，历史登录默认页不变", async () => {
     await render(undefined, [...items].reverse());
-    expect(primaryTargets()).toEqual(["customers", "inventory", "business", "operations", "organization"]);
+    expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "business", "operations", "organization"]);
     expect(button("customers").textContent).toBe("客户列表"); expect(button("inventory").textContent).toBe("库存列表");
     expect(host.querySelector('[data-workspace-nav-target="channel"]')).toBeNull();
     expect(DEFAULT_ADMIN_PATH).toBe(CHANNEL_INVENTORY_ROUTE);
     await click("business"); await click("group:customers");
     expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(node => node.getAttribute("data-workspace-dropdown-item")))
-      .toEqual(["/workbench/inquiries", "/workbench/orders"]);
+      .toEqual(["/workbench/orders"]);
     expect(host.querySelector('[data-workspace-dropdown-item="/workbench/customers"]')).toBeNull();
     expect(host.querySelector(`[data-workspace-dropdown-item="${CHANNEL_INVENTORY_ROUTE}"]`)).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
@@ -101,7 +101,8 @@ describe("已批准独立客户/库存一级入口（离线真实DOM）", () => 
   it("方向键/首尾只移动一级焦点；客户原生Enter/Space未被拦截，触发时仅回调一次", async () => {
     await render(); await act(async () => button("customers").focus());
     await key("customers", "ArrowRight"); expect(document.activeElement).toBe(button("inventory"));
-    await key("inventory", "ArrowRight"); expect(document.activeElement).toBe(button("business"));
+    await key("inventory", "ArrowRight"); expect(document.activeElement).toBe(button("inquiries"));
+    await key("inquiries", "ArrowRight"); expect(document.activeElement).toBe(button("business"));
     await key("business", "End"); expect(document.activeElement).toBe(button("organization"));
     await key("organization", "ArrowRight"); expect(document.activeElement).toBe(button("customers"));
     await key("customers", "ArrowLeft"); expect(document.activeElement).toBe(button("organization"));
@@ -110,6 +111,31 @@ describe("已批准独立客户/库存一级入口（离线真实DOM）", () => 
     expect((await key("customers", " ")).defaultPrevented).toBe(false);
     expect(onNavigate).not.toHaveBeenCalled(); await click("customers"); expect(onNavigate).toHaveBeenCalledOnce();
   });
+  it.each([1280, 390])("%s宽度询价独立入口关闭旧两层，保留原对象/merchantContext和原生键盘行为", async width => {
+    Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
+    await render("/staff"); await click("business"); await click("group:inventory");
+    const original = items.find(item => item.path === "/workbench/inquiries")!;
+    onPreload.mockClear(); await act(async () => button("inquiries").focus());
+    expect(onPreload.mock.calls).toEqual([[original]]);
+    expect(button("inquiries").hasAttribute("aria-expanded")).toBe(false);
+    for (const value of ["Enter", " "]) expect((await key("inquiries", value)).defaultPrevented).toBe(false);
+    expect(onNavigate).not.toHaveBeenCalled(); await click("inquiries");
+    expect(onNavigate.mock.calls).toEqual([[original]]); expect(onNavigate.mock.calls[0][0]).toBe(original);
+    expect(onNavigate.mock.calls[0][0].merchantContext).toBe(original.merchantContext);
+    expect(panels()).toHaveLength(0); expect(activeTargets()).toEqual(["organization"]);
+  });
+  it.each(["/workbench/inquiries", "/workbench/inquiries/88?merchantId=31", "/workbench/chat?conversationId=88&merchantId=31#detail", "/workbench/chat/88"])
+    ("询价及旧chat深链%s仅高亮询价，撤权不合成接待入口或销售fallback", async location => {
+      const original = items.find(item => item.path === "/workbench/inquiries")!;
+      await render(location); expect(activeTargets()).toEqual(["inquiries"]); expect(locationLabels()).toEqual(["询价接待"]);
+      await click("business"); expect(button("group:customers").dataset.active).toBe("false");
+      await click("group:customers"); expect(host.querySelector('[data-workspace-dropdown-item="/workbench/inquiries"]')).toBeNull();
+      await render(location, [original]); expect(primaryTargets()).toEqual(["inquiries"]);
+      expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
+      await render(location, items.filter(item => item !== original));
+      expect(host.querySelector('[data-workspace-nav-target="inquiries"]')).toBeNull();
+      expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]); expect(panels()).toHaveLength(0);
+    });
   it("URL/query与同权限新快照立即使旧下拉失效，返回旧快照不会迟到重开", async () => {
     await render(); await key("business", "Enter"); await key("group:customers", "ArrowRight"); expect(panels()).toHaveLength(2);
     await render("/workbench/customers?merchantId=32"); expect(panels()).toHaveLength(0);
@@ -120,7 +146,7 @@ describe("已批准独立客户/库存一级入口（离线真实DOM）", () => 
   it("兼容ModuleTabs也不重复客户，快照改变取消菜单及延迟焦点", async () => {
     const view = (visibleItems: readonly Item[]) => createElement(AdminModuleTabs, { items: visibleItems, location: "/workbench/orders", onNavigate, onPreload });
     await act(async () => root.render(view(items))); await key("group:customers", "ArrowDown");
-    expect(document.activeElement).toBe(button("/workbench/inquiries"));
+    expect(document.activeElement).toBe(button("/workbench/orders"));
     expect(host.querySelector('[data-workspace-nav-target="/workbench/customers"]')).toBeNull();
     await act(async () => root.render(view([...items]))); expect(host.querySelector('[role="group"]')).toBeNull();
     await act(async () => root.render(view(items))); expect(host.querySelector('[role="group"]')).toBeNull();

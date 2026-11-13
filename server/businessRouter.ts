@@ -53,7 +53,7 @@ import { customerStarContextInputSchema, customerSetStarSchema, customerStarStat
 import { customerListInputSchema as customerListSchema } from "../client/src/business/platform/front-router-types/server/customerListInput";
 import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/business/platform/shared/channelInventoryManagement";
 import { channelInventoryListBusinessInputSchema } from "./channelInventoryListBusinessInput";
-import { publishFactoryMaterialInputSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
+import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInputSchema, previewFactoryMaterialReceptionResultSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
@@ -167,7 +167,7 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "crmSalesOrder.*", module: "orders", mode: "write" },
   { method: "purchaseOrder.*", module: "procurement", mode: "write" },
   { method: "enterprise.me", module: "context", mode: "read" },
-  { method: "enterprise.inquiryInbox", module: "inventory", mode: "read" },
+  { method: "enterprise.inquiryInbox", module: "inquiries", mode: "read" },
   { method: "enterprise.*", module: "users", mode: "write" },
   { method: "company.read.*", module: "context", mode: "read" },
   { method: "company.write.*", module: "users", mode: "write" },
@@ -175,8 +175,8 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "order.seller.write.*", module: "orders", mode: "write" },
   { method: "material.lookup", module: "inventory", mode: "read" },
   { method: "demand.receivedQuotes", module: "procurement", mode: "read" },
-  { method: "chat.read.*", module: "inventory", mode: "read" },
-  { method: "chat.write.*", module: "inventory", mode: "write" },
+  { method: "chat.read.*", module: "inquiries", mode: "read" },
+  { method: "chat.write.*", module: "inquiries", mode: "write" },
 ] as const satisfies readonly BusinessMethodCapability[];
 
 /** Resolve the mutable local binding for every BFF entry; revoked history is unusable. */
@@ -296,7 +296,8 @@ async function withCurrentBusinessAuthorization<T>(
     if (channel) {
       const notes = ["channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit"].includes(capability.method!);
       const publishing = capability.method === "channelInventory.publishFactoryMaterial";
-      const requirement = publishing ? "publish" : notes ? "note" : capability.mode === "write" || managementRead ? "write" : "read";
+      const receptionPreview = capability.method === "channelInventory.previewFactoryMaterialReception";
+      const requirement = publishing ? "publish" : receptionPreview ? "publish" : notes ? "note" : capability.mode === "write" || managementRead ? "write" : "read";
       if (!officialInventoryPermissions?.read || !officialInventoryPermissions[requirement]) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
     }
     const profileRead = ["channelInventory.listChannels", "channelInventory.getChannel"].includes(capability.method ?? "");
@@ -322,6 +323,10 @@ async function withCurrentBusinessAuthorization<T>(
     }
     if (managementRead && !businessScopeAllows(scope, "inventory", "write")) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的库存管理范围授权" });
+    }
+    if (capability.method === "channelInventory.previewFactoryMaterialReception"
+      && (!businessScopeAllows(scope, "context", "read") || !businessScopeAllows(scope, "inventory", "write"))) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的库存发布范围授权" });
     }
     // Customer supply is the intersection of current inventory and CRM scope.
     // It is deliberately absent from nativeReadMethods: an official inventory
@@ -420,6 +425,11 @@ async function forwardBusinessMethod(
     }
     // The new logical read-only source query retains the complete binding/scope
     // fence, but adds no production command-audit DML. Other methods are unchanged.
+    if (capability.method === "channelInventory.previewFactoryMaterialReception") {
+      const parsed = previewFactoryMaterialReceptionResultSchema.safeParse(result);
+      if (!parsed.success) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "接待预览结果无效，请重新核验" });
+      return parsed.data;
+    }
     if (capability.method === "channelInventory.getTeamMaterialSource" || capability.method === "customer.starContext"
       || capability.method === "crmSalesOrder.customerSummary" || capability.method === "crmSalesOrder.customerMaterials") return result;
     await db.recordBusinessCommandAccess({
@@ -463,6 +473,7 @@ function businessInputSchema(method: string): z.ZodTypeAny {
   if (method === "customer.list") return customerListSchema;
   if (method === "channelInventory.listTeamMaterials") return channelInventoryListBusinessInputSchema;
   if (method === "channelInventory.publishFactoryMaterial") return publishFactoryMaterialInputSchema;
+  if (method === "channelInventory.previewFactoryMaterialReception") return previewFactoryMaterialReceptionInputSchema;
   if (isCustomerSupplyBusinessMethod(method)) return CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS[method];
   if (CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method]) return CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method];
   return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method]
@@ -533,6 +544,7 @@ const inventoryBusinessRouter = router({
  */
 const channelInventoryBusinessRouter = router({
   publishFactoryMaterial: businessMutation("channelInventory.publishFactoryMaterial", "inventory"),
+  previewFactoryMaterialReception: businessQuery("channelInventory.previewFactoryMaterialReception", "inventory"),
   listChannels: businessQuery("channelInventory.listChannels", "inventory"),
   getChannel: businessQuery("channelInventory.getChannel", "inventory"),
   createChannel: businessMutation("channelInventory.createChannel", "inventory"),
@@ -691,7 +703,7 @@ const enterpriseBusinessRouter = router({
   userRecords: businessQuery("enterprise.userRecords", "users"),
   businessHandoffPreview: businessQuery("enterprise.businessHandoffPreview", "users"),
   businessHandoffState: businessQuery("enterprise.businessHandoffState", "users"),
-  inquiryInbox: businessQuery("enterprise.inquiryInbox", "inventory"),
+  inquiryInbox: businessQuery("enterprise.inquiryInbox", "inquiries"),
   handoffPreview: businessQuery("enterprise.handoffPreview", "users"),
   invite: businessMutation("enterprise.invite", "users"),
   revokeInvitation: businessMutation("enterprise.revokeInvitation", "users"),
@@ -765,8 +777,8 @@ const publicReviewBusinessRouter = router({
   markInboxRead: businessMutation("publicReview.markInboxRead", "users"),
   // These two reception-page methods are independently conversation-gated by
   // front internalBusiness before the original publicReview router is invoked.
-  state: businessQuery("publicReview.state", "inventory"),
-  create: businessMutation("publicReview.create", "inventory"),
+  state: businessQuery("publicReview.state", "inquiries"),
+  create: businessMutation("publicReview.create", "inquiries"),
 });
 
 /**
@@ -775,32 +787,32 @@ const publicReviewBusinessRouter = router({
  * before it calls every original chat procedure in this fixed list.
  */
 const chatBusinessRouter = router({
-  listConversations: businessQuery("chat.listConversations", "inventory"),
-  listGroups: businessQuery("chat.listGroups", "inventory"),
-  listTrashedGroups: businessQuery("chat.listTrashedGroups", "inventory"),
-  getMessages: businessQuery("chat.getMessages", "inventory"),
-  getAttachmentUrl: businessQuery("chat.getAttachmentUrl", "inventory"),
-  getTotalUnread: businessQuery("chat.getTotalUnread", "inventory"),
-  uploadAttachment: businessMutation("chat.uploadAttachment", "inventory"),
-  sendMessage: businessMutation("chat.sendMessage", "inventory"),
-  recallMessage: businessMutation("chat.recallMessage", "inventory"),
-  deleteMessageForMe: businessMutation("chat.deleteMessageForMe", "inventory"),
-  markRead: businessMutation("chat.markRead", "inventory"),
-  pinConversation: businessMutation("chat.pinConversation", "inventory"),
-  setRemarkName: businessMutation("chat.setRemarkName", "inventory"),
-  deleteConversation: businessMutation("chat.deleteConversation", "inventory"),
-  createGroup: businessMutation("chat.createGroup", "inventory"),
-  setGroupMembership: businessMutation("chat.setGroupMembership", "inventory"),
-  dissolveGroup: businessMutation("chat.dissolveGroup", "inventory"),
-  renameGroup: businessMutation("chat.renameGroup", "inventory"),
-  mergeGroups: businessMutation("chat.mergeGroups", "inventory"),
-  trashGroup: businessMutation("chat.trashGroup", "inventory"),
-  restoreGroup: businessMutation("chat.restoreGroup", "inventory"),
-  contactProfile: businessQuery("chat.contactProfile", "inventory"),
-  contactInventory: businessQuery("chat.contactInventory", "inventory"),
-  blockContact: businessMutation("chat.blockContact", "inventory"),
-  unblockContact: businessMutation("chat.unblockContact", "inventory"),
-  reportContact: businessMutation("chat.reportContact", "inventory"),
+  listConversations: businessQuery("chat.listConversations", "inquiries"),
+  listGroups: businessQuery("chat.listGroups", "inquiries"),
+  listTrashedGroups: businessQuery("chat.listTrashedGroups", "inquiries"),
+  getMessages: businessQuery("chat.getMessages", "inquiries"),
+  getAttachmentUrl: businessQuery("chat.getAttachmentUrl", "inquiries"),
+  getTotalUnread: businessQuery("chat.getTotalUnread", "inquiries"),
+  uploadAttachment: businessMutation("chat.uploadAttachment", "inquiries"),
+  sendMessage: businessMutation("chat.sendMessage", "inquiries"),
+  recallMessage: businessMutation("chat.recallMessage", "inquiries"),
+  deleteMessageForMe: businessMutation("chat.deleteMessageForMe", "inquiries"),
+  markRead: businessMutation("chat.markRead", "inquiries"),
+  pinConversation: businessMutation("chat.pinConversation", "inquiries"),
+  setRemarkName: businessMutation("chat.setRemarkName", "inquiries"),
+  deleteConversation: businessMutation("chat.deleteConversation", "inquiries"),
+  createGroup: businessMutation("chat.createGroup", "inquiries"),
+  setGroupMembership: businessMutation("chat.setGroupMembership", "inquiries"),
+  dissolveGroup: businessMutation("chat.dissolveGroup", "inquiries"),
+  renameGroup: businessMutation("chat.renameGroup", "inquiries"),
+  mergeGroups: businessMutation("chat.mergeGroups", "inquiries"),
+  trashGroup: businessMutation("chat.trashGroup", "inquiries"),
+  restoreGroup: businessMutation("chat.restoreGroup", "inquiries"),
+  contactProfile: businessQuery("chat.contactProfile", "inquiries"),
+  contactInventory: businessQuery("chat.contactInventory", "inquiries"),
+  blockContact: businessMutation("chat.blockContact", "inquiries"),
+  unblockContact: businessMutation("chat.unblockContact", "inquiries"),
+  reportContact: businessMutation("chat.reportContact", "inquiries"),
 });
 
 /** Separate from enterprise-chat scope: returns only the real bound staff's own cart count. */

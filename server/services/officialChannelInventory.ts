@@ -3,8 +3,18 @@ import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { adminUsers } from "../../drizzle/schema";
 import {
+  businessEnterpriseBindingFromMerchant,
+  getBusinessWorkbenchMerchantIds,
+} from "../businessAccess";
+import { withBusinessAuthorizationFence } from "../businessAuthorizationFence";
+import {
+  getPlatformBusinessContext,
+  type PlatformBusinessContext,
+} from "../platformBusinessApi";
+import {
   officialChannelAudits,
   officialChannelPublications,
+  officialChannelStockReception,
   officialChannelSources,
   officialChannelStockNotes,
   officialChannelStocks,
@@ -19,10 +29,10 @@ import {
 } from "./officialChannelAccess";
 
 /**
- * This module deliberately has no dependency on business-trpc, merchant scope,
- * ERP users, inventories, carts, or the public enquiry path.  It is the narrow
- * official-admin source of truth; a future public reader may read only the
- * dedicated official_channel_publications projection.
+ * Native official-admin source of truth. Safe public snapshots remain isolated;
+ * trusted enterprise/staff evidence is stored separately and rechecked by the
+ * front inquiry adapter. No carts, normal inventories or historical inquiries
+ * are written here.
  */
 
 export type OfficialInventoryActor = {
@@ -1294,95 +1304,115 @@ export async function publishOfficialChannelStock(
     requestId: string;
   }
 ) {
-  return withOfficialWrite(
-    actor,
-    "officialInventory.publish",
-    "official_stock_publish",
-    input.requestId,
-    input,
-    async (tx, access, payloadHash) => {
-      const stock = await stockById(tx, access, input.stockId, true);
-      assertStockAction(access, stock, "publish");
-      assertExpectedRevision(
-        stock.revision,
-        input.expectedRevision,
-        "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
-      );
-      if (stock.status === "published")
-        fail("OFFICIAL_CHANNEL_STOCK_ALREADY_PUBLISHED");
-      assertStockPublishFields(stock);
-      const teamId = ensureKnownTeam(stock);
-      await assertPublishableOwner(tx, stock);
-      const source = await sourceForStockTeam(
-        tx,
-        access,
-        stock.sourceId,
-        teamId
-      );
-      if (!source.publicationApproved)
-        fail("OFFICIAL_CHANNEL_SOURCE_NOT_PUBLICATION_APPROVED");
-      const [existingPublication] = await tx
-        .select({ stockId: officialChannelPublications.stockId })
-        .from(officialChannelPublications)
-        .where(eq(officialChannelPublications.stockId, stock.id))
-        .limit(1)
-        .for("update");
-      if (existingPublication)
-        fail("OFFICIAL_CHANNEL_PUBLICATION_STATE_CONFLICT");
-      const publishedAt = new Date();
-      const publicId = `ocp_${randomUUID().replace(/-/g, "")}`;
-      const batchId = `ocb_${randomUUID().replace(/-/g, "")}`;
-      const snapshot = buildOfficialChannelPublicProjection(stock, publicId);
-      await tx.insert(officialChannelPublications).values({
-        stockId: stock.id,
-        publicId,
-        snapshot,
-        batchId,
-        revision: 1,
-        publishedAt,
-        updatedAt: publishedAt,
-      });
-      const nextRevision = await casStock(tx, stock, {
-        status: "published",
-        publishedAt,
-      });
-      if (!source.everPublished) {
-        const sourceResult = await tx
-          .update(officialChannelSources)
-          .set({
-            everPublished: true,
-            revision: sql`${officialChannelSources.revision} + 1`,
-            updatedAt: publishedAt,
-          })
-          .where(
-            and(
-              eq(officialChannelSources.id, source.id),
-              eq(officialChannelSources.revision, source.revision)
-            )
-          );
-        if (Number((sourceResult as any)[0]?.affectedRows ?? 0) !== 1)
-          fail("OFFICIAL_CHANNEL_SOURCE_REVISION_CONFLICT");
+  return withPreparedOfficialReception(actor, input.stockId, {}, prepared =>
+    withOfficialWrite(
+      actor,
+      "officialInventory.publish",
+      "official_stock_publish",
+      input.requestId,
+      input,
+      async (tx, access, payloadHash) => {
+        const stock = await stockById(tx, access, input.stockId, true);
+        assertStockAction(access, stock, "publish");
+        assertExpectedRevision(
+          stock.revision,
+          input.expectedRevision,
+          "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
+        );
+        if (stock.status === "published")
+          fail("OFFICIAL_CHANNEL_STOCK_ALREADY_PUBLISHED");
+        assertStockPublishFields(stock);
+        const teamId = ensureKnownTeam(stock);
+        await assertPublishableOwner(tx, stock);
+        const source = await sourceForStockTeam(
+          tx,
+          access,
+          stock.sourceId,
+          teamId
+        );
+        assertExpectedRevision(
+          stock.revision,
+          prepared.stock.revision,
+          "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
+        );
+        const receptionConfig = await receptionConfigById(tx, stock.id, true);
+        assertExpectedRevision(
+          receptionConfig?.responsibilityVersion ?? 0,
+          prepared.config?.responsibilityVersion ?? 0,
+          "OFFICIAL_CHANNEL_RECEPTION_REVISION_CONFLICT"
+        );
+        await assertPreparedReceptionAuthority(tx, prepared);
+        if (!source.publicationApproved)
+          fail("OFFICIAL_CHANNEL_SOURCE_NOT_PUBLICATION_APPROVED");
+        const [existingPublication] = await tx
+          .select({ stockId: officialChannelPublications.stockId })
+          .from(officialChannelPublications)
+          .where(eq(officialChannelPublications.stockId, stock.id))
+          .limit(1)
+          .for("update");
+        if (existingPublication)
+          fail("OFFICIAL_CHANNEL_PUBLICATION_STATE_CONFLICT");
+        const publishedAt = new Date();
+        const publicId = `ocp_${randomUUID().replace(/-/g, "")}`;
+        const batchId = `ocb_${randomUUID().replace(/-/g, "")}`;
+        const snapshot = buildOfficialChannelPublicProjection(stock, publicId);
+        const reception = {
+          ...prepared.projection,
+          stockRevision: stock.revision + 1,
+        };
+        await tx.insert(officialChannelPublications).values({
+          stockId: stock.id,
+          publicId,
+          snapshot,
+          reception,
+          batchId,
+          revision: 1,
+          publishedAt,
+          updatedAt: publishedAt,
+        });
+        const nextRevision = await casStock(tx, stock, {
+          status: "published",
+          publishedAt,
+        });
+        if (!source.everPublished) {
+          const sourceResult = await tx
+            .update(officialChannelSources)
+            .set({
+              everPublished: true,
+              revision: sql`${officialChannelSources.revision} + 1`,
+              updatedAt: publishedAt,
+            })
+            .where(
+              and(
+                eq(officialChannelSources.id, source.id),
+                eq(officialChannelSources.revision, source.revision)
+              )
+            );
+          if (Number((sourceResult as any)[0]?.affectedRows ?? 0) !== 1)
+            fail("OFFICIAL_CHANNEL_SOURCE_REVISION_CONFLICT");
+        }
+        const result = {
+          stockId: stock.id,
+          status: "published" as const,
+          revision: nextRevision,
+          publicId,
+          batchId,
+          publishedAt: publishedAt.toISOString(),
+          reception,
+        };
+        await writeAudit(tx, {
+          action: "official_stock_publish",
+          targetId: stock.id,
+          actor,
+          requestId: input.requestId,
+          payloadHash,
+          beforeData: stockDto(stock, { detail: true }),
+          afterData: { snapshot },
+          result,
+        });
+        return result;
       }
-      const result = {
-        stockId: stock.id,
-        status: "published" as const,
-        revision: nextRevision,
-        publicId,
-        batchId,
-        publishedAt: publishedAt.toISOString(),
-      };
-      await writeAudit(tx, {
-        action: "official_stock_publish",
-        targetId: stock.id,
-        actor,
-        requestId: input.requestId,
-        payloadHash,
-        beforeData: stockDto(stock, { detail: true }),
-        afterData: { snapshot },
-        result,
-      });
-      return result;
-    }
+    )
   );
 }
 
@@ -1612,80 +1642,119 @@ export async function transferOfficialChannelStockOwner(
     requestId: string;
   }
 ) {
-  return withOfficialWrite(
+  return withPreparedOfficialReception(
     actor,
-    "officialInventory.write",
-    "official_stock_transfer_owner",
-    input.requestId,
-    input,
-    async (tx, access, payloadHash) => {
-      if (access?.isSuperAdmin !== true)
-        fail("OFFICIAL_CHANNEL_TRANSFER_SUPER_ADMIN_REQUIRED");
-      const stock = await stockById(tx, access, input.stockId, true);
-      const teamId = ensureKnownTeam(stock);
-      assertExpectedRevision(
-        stock.revision,
-        input.expectedRevision,
-        "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
-      );
-      const [target] = await tx
-        .select({
-          id: adminUsers.id,
-          displayName: adminUsers.displayName,
-          username: adminUsers.username,
-        })
-        .from(officialChannelTeamMembers)
-        .innerJoin(
-          adminUsers,
-          eq(adminUsers.id, officialChannelTeamMembers.adminUserId)
-        )
-        .innerJoin(
-          officialChannelTeams,
-          eq(officialChannelTeams.id, officialChannelTeamMembers.teamId)
-        )
-        .where(
-          and(
-            eq(officialChannelTeamMembers.teamId, teamId),
-            eq(officialChannelTeamMembers.adminUserId, input.targetAdminUserId),
-            eq(adminUsers.status, "active"),
-            eq(officialChannelTeams.status, "active")
-          )
-        )
-        .limit(1)
-        .for("update");
-      if (!target)
-        fail("OFFICIAL_CHANNEL_TRANSFER_TARGET_NOT_ACTIVE_IN_ORIGINAL_TEAM");
-      const nextRevision = await casStock(tx, stock, {
-        ownerAdminUserId: target.id,
-      });
-      const result = {
-        stockId: stock.id,
-        ownerAdminUserId: target.id,
-        responsibleName: target.displayName || target.username,
-        revision: nextRevision,
-        // Historical team and createdBy are intentionally absent from the patch and remain immutable.
-        teamId,
-      };
-      await writeAudit(tx, {
-        action: "official_stock_transfer_owner",
-        targetId: stock.id,
+    input.stockId,
+    { ownerAdminUserId: input.targetAdminUserId, nextResponsibility: true },
+    prepared =>
+      withOfficialWrite(
         actor,
-        requestId: input.requestId,
-        payloadHash,
-        beforeData: {
-          ownerAdminUserId: stock.ownerAdminUserId,
-          teamId,
-          createdByAdminUserId: stock.createdByAdminUserId,
-        },
-        afterData: {
-          ownerAdminUserId: target.id,
-          teamId,
-          reason: input.reason,
-        },
-        result,
-      });
-      return result;
-    }
+        "officialInventory.write",
+        "official_stock_transfer_owner",
+        input.requestId,
+        input,
+        async (tx, access, payloadHash) => {
+          if (access?.isSuperAdmin !== true)
+            fail("OFFICIAL_CHANNEL_TRANSFER_SUPER_ADMIN_REQUIRED");
+          const stock = await stockById(tx, access, input.stockId, true);
+          const teamId = ensureKnownTeam(stock);
+          assertExpectedRevision(
+            stock.revision,
+            input.expectedRevision,
+            "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
+          );
+          const [target] = await tx
+            .select({
+              id: adminUsers.id,
+              displayName: adminUsers.displayName,
+              username: adminUsers.username,
+            })
+            .from(officialChannelTeamMembers)
+            .innerJoin(
+              adminUsers,
+              eq(adminUsers.id, officialChannelTeamMembers.adminUserId)
+            )
+            .innerJoin(
+              officialChannelTeams,
+              eq(officialChannelTeams.id, officialChannelTeamMembers.teamId)
+            )
+            .where(
+              and(
+                eq(officialChannelTeamMembers.teamId, teamId),
+                eq(
+                  officialChannelTeamMembers.adminUserId,
+                  input.targetAdminUserId
+                ),
+                eq(adminUsers.status, "active"),
+                eq(officialChannelTeams.status, "active")
+              )
+            )
+            .limit(1)
+            .for("update");
+          if (!target)
+            fail(
+              "OFFICIAL_CHANNEL_TRANSFER_TARGET_NOT_ACTIVE_IN_ORIGINAL_TEAM"
+            );
+          assertExpectedRevision(
+            stock.revision,
+            prepared.stock.revision,
+            "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
+          );
+          const config = await receptionConfigById(tx, stock.id, true);
+          assertExpectedRevision(
+            config?.responsibilityVersion ?? 0,
+            prepared.config ? prepared.config.responsibilityVersion - 1 : 0,
+            "OFFICIAL_CHANNEL_RECEPTION_REVISION_CONFLICT"
+          );
+          await assertPreparedReceptionAuthority(tx, prepared);
+          const nextRevision = await casStock(tx, stock, {
+            ownerAdminUserId: target.id,
+          });
+          if (config)
+            await tx
+              .update(officialChannelStockReception)
+              .set({
+                responsibilityVersion: config.responsibilityVersion + 1,
+                updatedByAdminUserId: actor.adminUserId,
+                updatedAt: new Date(),
+              })
+              .where(eq(officialChannelStockReception.stockId, stock.id));
+          const reception = {
+            ...prepared.projection,
+            stockRevision: nextRevision,
+          };
+          await updatePublicationReception(tx, stock.id, reception);
+          const result = {
+            stockId: stock.id,
+            ownerAdminUserId: target.id,
+            responsibleName: target.displayName || target.username,
+            revision: nextRevision,
+            // Historical team and createdBy are intentionally absent from the patch and remain immutable.
+            teamId,
+            reception,
+            historicalInquiriesChanged: false,
+          };
+          await writeAudit(tx, {
+            action: "official_stock_transfer_owner",
+            targetId: stock.id,
+            actor,
+            requestId: input.requestId,
+            payloadHash,
+            beforeData: {
+              ownerAdminUserId: stock.ownerAdminUserId,
+              teamId,
+              createdByAdminUserId: stock.createdByAdminUserId,
+            },
+            afterData: {
+              ownerAdminUserId: target.id,
+              teamId,
+              reason: input.reason,
+            },
+            result,
+          });
+          return result;
+        }
+      )
   );
 }
 
@@ -1696,3 +1765,502 @@ export const officialChannelInventoryTestUtils = {
   assertStockPublishFields,
   stockPermissions,
 };
+
+export type OfficialReceptionProjection = {
+  schemaVersion: 1;
+  status: "ready" | "pending";
+  reason: string | null;
+  sellerEnterpriseId: number | null;
+  sellerMerchantId: number | null;
+  businessOwnerAdminUserId: number;
+  recipientAdminUserId: number | null;
+  recipientFrontendUserId: number | null;
+  bindingVersion: number | null;
+  responsibilityVersion: number;
+  stockRevision: number;
+  routingMode: "owner" | "explicit";
+  recipientName: string | null;
+};
+type ReceptionConfig = {
+  stockId: number;
+  merchantId: number;
+  sellerEnterpriseId: number;
+  routingMode: "owner" | "explicit";
+  recipientAdminUserId: number | null;
+  responsibilityVersion: number;
+};
+type ReceptionStock = {
+  id: number;
+  ownerAdminUserId: number;
+  teamId: number | null;
+  revision: number;
+};
+export type OfficialReceptionAuthority = Record<string, any>;
+export type OfficialReceptionDependencies = {
+  allowedMerchantIds: () => number[];
+  loadAuthority: (
+    stock: ReceptionStock,
+    config: ReceptionConfig
+  ) => Promise<OfficialReceptionAuthority | null>;
+  context: typeof getPlatformBusinessContext;
+};
+function receptionRecipient(stock: ReceptionStock, config: ReceptionConfig) {
+  return config.routingMode === "explicit"
+    ? config.recipientAdminUserId
+    : stock.ownerAdminUserId;
+}
+export function officialReceptionScopeAllows(modules: readonly string[]) {
+  if (!modules.includes("business.context.read")) return false;
+  const explicit = modules.some(
+    permission =>
+      typeof permission === "string" &&
+      permission.startsWith("business.inquiries.")
+  );
+  const family = explicit ? "inquiries" : "inventory";
+  return (
+    modules.includes(`business.${family}.read`) &&
+    modules.includes(`business.${family}.write`)
+  );
+}
+/** DI boundary: no name, uploader, publication actor or data-owner fallback exists. */
+export async function resolveOfficialReception(
+  stock: ReceptionStock,
+  config: ReceptionConfig | null,
+  deps: OfficialReceptionDependencies
+): Promise<{
+  projection: OfficialReceptionProjection;
+  authority: OfficialReceptionAuthority | null;
+}> {
+  const projection: OfficialReceptionProjection = {
+    schemaVersion: 1,
+    status: "pending",
+    reason: "SELLER_MAPPING_REQUIRED",
+    sellerEnterpriseId: config?.sellerEnterpriseId || null,
+    sellerMerchantId: config?.merchantId ?? null,
+    businessOwnerAdminUserId: stock.ownerAdminUserId,
+    recipientAdminUserId: null,
+    recipientFrontendUserId: null,
+    bindingVersion: null,
+    responsibilityVersion: config?.responsibilityVersion ?? 0,
+    stockRevision: stock.revision,
+    routingMode: config?.routingMode ?? "owner",
+    recipientName: null,
+  };
+  const pending = (
+    reason: string,
+    authority: OfficialReceptionAuthority | null = null
+  ) => ({ projection: { ...projection, reason }, authority });
+  if (!config) return pending("SELLER_MAPPING_REQUIRED");
+  if (!deps.allowedMerchantIds().includes(config.merchantId))
+    return pending("SELLER_OUT_OF_APPROVED_SCOPE");
+  if (
+    !isPositiveInt(stock.ownerAdminUserId) ||
+    !isPositiveInt(receptionRecipient(stock, config))
+  )
+    return pending("BUSINESS_OWNER_REQUIRED");
+  const authority = await deps.loadAuthority(stock, config);
+  // Both business owner and actual recipient must be active members of the original official team.
+  // A super-admin uploader is not evidence of employee responsibility: explicit handoff is required.
+  if (
+    !authority ||
+    authority.ownerStatus !== "active" ||
+    authority.ownerRole === "super_admin" ||
+    authority.recipientStatus !== "active" ||
+    authority.recipientRole === "super_admin" ||
+    authority.teamStatus !== "active" ||
+    authority.ownerTeamId !== stock.teamId ||
+    authority.recipientTeamId !== stock.teamId
+  ) {
+    return pending("ACTIVE_BUSINESS_EMPLOYEE_REQUIRED", authority);
+  }
+  if (
+    authority.bindingStatus !== "active" ||
+    !isPositiveInt(authority.frontUserId) ||
+    !isPositiveInt(authority.bindingVersion)
+  )
+    return pending("STAFF_BINDING_REQUIRED", authority);
+  const modules = Array.isArray(authority.modulePermissions)
+    ? authority.modulePermissions
+    : [];
+  if (
+    authority.scopeStatus !== "active" ||
+    !officialReceptionScopeAllows(modules)
+  )
+    return pending("RECEPTION_WORKBENCH_SCOPE_REQUIRED", authority);
+  let binding: ReturnType<typeof businessEnterpriseBindingFromMerchant>;
+  try {
+    binding = businessEnterpriseBindingFromMerchant(authority as any);
+  } catch {
+    return pending("TRUSTED_SELLER_BINDING_REQUIRED", authority);
+  }
+  let context: PlatformBusinessContext;
+  try {
+    context = await deps.context(binding, {
+      staffUserId: authority.frontUserId,
+      adminAccountId: receptionRecipient(stock, config)!,
+      bindingVersion: authority.bindingVersion,
+    });
+  } catch {
+    return pending("FRONT_RECEPTION_UNAVAILABLE", authority);
+  }
+  const principal = context.staffPrincipal;
+  if (
+    principal.status !== "ready" ||
+    principal.frontendUserId !== authority.frontUserId ||
+    principal.user.id !== authority.frontUserId ||
+    principal.user.loginDisabled ||
+    principal.adminAccountId !== receptionRecipient(stock, config) ||
+    principal.bindingVersion !== authority.bindingVersion ||
+    principal.enterpriseId !== context.enterpriseId ||
+    !isPositiveInt(context.enterpriseId) ||
+    (config.sellerEnterpriseId > 0 &&
+      context.enterpriseId !== config.sellerEnterpriseId)
+  ) {
+    return pending("TRUSTED_SELLER_OR_STAFF_CHANGED", authority);
+  }
+  projection.sellerEnterpriseId = context.enterpriseId;
+  if (
+    context.sessionCapabilities?.receptionReady !== true ||
+    !context.workbenchCapabilities?.includes("inquiry.receive")
+  )
+    return pending("INQUIRY_RECEIVE_REQUIRED", authority);
+  return {
+    authority,
+    projection: {
+      ...projection,
+      status: "ready",
+      reason: null,
+      recipientAdminUserId: receptionRecipient(stock, config),
+      recipientFrontendUserId: authority.frontUserId,
+      bindingVersion: authority.bindingVersion,
+      recipientName:
+        authority.recipientName ||
+        principal.user.name ||
+        principal.user.username ||
+        "责任员工",
+    },
+  };
+}
+
+async function loadOfficialReceptionAuthority(
+  tx: OfficialExecutor,
+  stock: ReceptionStock,
+  config: ReceptionConfig,
+  lock = false
+) {
+  const result = await tx.execute(sql`SELECT
+    owner.status AS ownerStatus, owner.adminRole AS ownerRole, otm.teamId AS ownerTeamId,
+    recipient.status AS recipientStatus, recipient.adminRole AS recipientRole,
+    recipient.sessionVersion AS recipientSessionVersion,
+    COALESCE(recipient.displayName, recipient.username) AS recipientName,
+    rtm.teamId AS recipientTeamId, t.status AS teamStatus,
+    b.frontUserId, b.status AS bindingStatus, b.bindingVersion,
+    s.status AS scopeStatus, s.scopeVersion, s.modulePermissions,
+    m.id, m.merchantNo, m.companyName, m.crmStatus, m.registrationRegion,
+    m.registrationIdentifier, m.businessLicense, m.crmOwnerPortalUserId
+    FROM official_channel_team_members otm
+    INNER JOIN admin_users owner ON owner.id = otm.adminUserId
+    INNER JOIN official_channel_teams t ON t.id = otm.teamId
+    INNER JOIN official_channel_team_members rtm ON rtm.adminUserId = ${receptionRecipient(stock, config)}
+    INNER JOIN admin_users recipient ON recipient.id = rtm.adminUserId
+    LEFT JOIN admin_business_staff_bindings b ON b.adminUserId = recipient.id
+    LEFT JOIN admin_business_merchant_scopes s ON s.adminUserId = recipient.id AND s.merchantId = ${config.merchantId}
+    INNER JOIN merchants m ON m.id = ${config.merchantId}
+    WHERE otm.adminUserId = ${stock.ownerAdminUserId} AND otm.teamId = ${stock.teamId}
+    LIMIT 1 ${lock ? sql`FOR UPDATE` : sql``}`);
+  const row = (result as any)?.[0]?.[0];
+  if (!row) return null;
+  let modulePermissions = row.modulePermissions;
+  if (typeof modulePermissions === "string") {
+    try {
+      modulePermissions = JSON.parse(modulePermissions);
+    } catch {
+      modulePermissions = [];
+    }
+  }
+  return { ...row, modulePermissions };
+}
+const receptionDependencies: OfficialReceptionDependencies = {
+  allowedMerchantIds: getBusinessWorkbenchMerchantIds,
+  loadAuthority: async (stock, config) =>
+    loadOfficialReceptionAuthority(await requireDb(), stock, config),
+  context: getPlatformBusinessContext,
+};
+async function receptionConfigById(
+  tx: OfficialExecutor,
+  stockId: number,
+  lock = false
+): Promise<ReceptionConfig | null> {
+  let query = tx
+    .select()
+    .from(officialChannelStockReception)
+    .where(eq(officialChannelStockReception.stockId, stockId))
+    .limit(1);
+  if (lock) query = query.for("update");
+  const [config] = await query;
+  return config ?? null;
+}
+type PreparedReception = Awaited<
+  ReturnType<typeof resolveOfficialReception>
+> & {
+  stock: ReceptionStock;
+  config: ReceptionConfig | null;
+};
+/** RPC runs without a leased Drizzle transaction; the existing account/scope
+ * fence spans issuance and write. CAS plus locked local-authority comparison
+ * rejects concurrent stock/config/account/merchant changes before projection write.
+ * This is not a distributed transaction: front must independently recheck its
+ * permission/membership at inquiry creation under its own authorization gate. */
+async function withPreparedOfficialReception<T>(
+  actor: OfficialInventoryActor,
+  stockId: number,
+  overrides: {
+    ownerAdminUserId?: number;
+    config?: ReceptionConfig;
+    nextResponsibility?: boolean;
+  },
+  run: (prepared: PreparedReception) => Promise<T>
+): Promise<T> {
+  const seed = await withOfficialRead(
+    actor,
+    "officialInventory.read",
+    async (tx, access) => ({
+      stock: await stockById(tx, access, stockId),
+      config: await receptionConfigById(tx, stockId),
+    })
+  );
+  const stock = {
+    ...seed.stock,
+    ...(overrides.ownerAdminUserId !== undefined
+      ? { ownerAdminUserId: overrides.ownerAdminUserId }
+      : {}),
+  };
+  const config =
+    overrides.config ??
+    (seed.config && overrides.nextResponsibility
+      ? {
+          ...seed.config,
+          responsibilityVersion: seed.config.responsibilityVersion + 1,
+        }
+      : seed.config);
+  const prepare = async () =>
+    run({
+      stock,
+      config,
+      ...(await resolveOfficialReception(stock, config, receptionDependencies)),
+    });
+  const recipient = config ? receptionRecipient(stock, config) : null;
+  return config && isPositiveInt(recipient)
+    ? withBusinessAuthorizationFence(
+        { adminUserId: recipient, merchantId: config.merchantId },
+        prepare
+      )
+    : prepare();
+}
+async function assertPreparedReceptionAuthority(
+  tx: OfficialExecutor,
+  prepared: PreparedReception
+) {
+  if (!prepared.config || !prepared.authority) return;
+  const current = await loadOfficialReceptionAuthority(
+    tx,
+    prepared.stock,
+    prepared.config,
+    true
+  );
+  if (canonicalJson(current) !== canonicalJson(prepared.authority))
+    fail("OFFICIAL_CHANNEL_RECEPTION_REVISION_CONFLICT");
+}
+async function updatePublicationReception(
+  tx: OfficialExecutor,
+  stockId: number,
+  projection: OfficialReceptionProjection
+) {
+  await tx
+    .update(officialChannelPublications)
+    .set({
+      reception: projection,
+      revision: sql`${officialChannelPublications.revision} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(officialChannelPublications.stockId, stockId));
+}
+
+export async function getOfficialChannelReception(
+  actor: OfficialInventoryActor,
+  stockId: number
+) {
+  return withPreparedOfficialReception(actor, stockId, {}, async prepared => {
+    // A read never silently repairs the receipt or upgrades an old publication.
+    // Fresh binding/permission readiness is not enough if the front adapter will
+    // reject the still-stale persisted responsibility/binding receipt.
+    const persisted = await withOfficialRead(
+      actor,
+      "officialInventory.read",
+      async (tx, access) => {
+        const stock = await stockById(tx, access, stockId);
+        const [publication] = await tx
+          .select({ reception: officialChannelPublications.reception })
+          .from(officialChannelPublications)
+          .where(eq(officialChannelPublications.stockId, stockId))
+          .limit(1);
+        return { stock, receipt: jsonObject(publication?.reception) };
+      }
+    );
+    let reception = prepared.projection;
+    if (persisted.stock.revision !== prepared.stock.revision)
+      reception = {
+        ...reception,
+        status: "pending",
+        reason: "RESPONSIBILITY_CHANGED_REFRESH_REQUIRED",
+      };
+    else if (
+      persisted.stock.status === "published" &&
+      reception.status === "ready"
+    ) {
+      const receipt = persisted.receipt;
+      const matching =
+        receipt?.schemaVersion === 1 &&
+        receipt.status === "ready" &&
+        receipt.reason === null &&
+        [
+          "stockRevision",
+          "responsibilityVersion",
+          "businessOwnerAdminUserId",
+          "recipientAdminUserId",
+          "recipientFrontendUserId",
+          "bindingVersion",
+          "sellerEnterpriseId",
+          "sellerMerchantId",
+          "routingMode",
+        ].every(
+          key =>
+            receipt[key] === reception[key as keyof OfficialReceptionProjection]
+        );
+      if (!matching)
+        reception = {
+          ...reception,
+          status: "pending",
+          reason: "RECEPTION_PROJECTION_REFRESH_REQUIRED",
+        };
+    }
+    return {
+      reception,
+      merchantId: prepared.config?.merchantId ?? null,
+      expectedResponsibilityVersion:
+        prepared.config?.responsibilityVersion ?? 0,
+      stockRevision: prepared.stock.revision,
+    };
+  });
+}
+export async function configureOfficialChannelReception(
+  actor: OfficialInventoryActor,
+  input: {
+    stockId: number;
+    merchantId: number;
+    routingMode: "owner" | "explicit";
+    recipientAdminUserId?: number;
+    expectedRevision: number;
+    expectedResponsibilityVersion: number;
+    requestId: string;
+    reason: string;
+  }
+) {
+  if (
+    input.routingMode === "explicit" &&
+    !isPositiveInt(input.recipientAdminUserId)
+  )
+    fail("OFFICIAL_CHANNEL_RECEPTION_RECIPIENT_REQUIRED");
+  if (input.routingMode === "owner" && input.recipientAdminUserId !== undefined)
+    fail("OFFICIAL_CHANNEL_RECEPTION_RECIPIENT_FORBIDDEN");
+  const nextConfig: ReceptionConfig = {
+    stockId: input.stockId,
+    merchantId: input.merchantId,
+    sellerEnterpriseId: 0,
+    routingMode: input.routingMode,
+    recipientAdminUserId: input.recipientAdminUserId ?? null,
+    responsibilityVersion: input.expectedResponsibilityVersion + 1,
+  };
+  return withPreparedOfficialReception(
+    actor,
+    input.stockId,
+    { config: nextConfig },
+    prepared =>
+      withOfficialWrite(
+        actor,
+        "officialInventory.write",
+        "official_stock_reception_configure",
+        input.requestId,
+        input,
+        async (tx, access, payloadHash) => {
+          if (access?.isSuperAdmin !== true)
+            fail("OFFICIAL_CHANNEL_RECEPTION_SUPER_ADMIN_REQUIRED");
+          const stock = await stockById(tx, access, input.stockId, true);
+          assertExpectedRevision(
+            stock.revision,
+            input.expectedRevision,
+            "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
+          );
+          assertExpectedRevision(
+            stock.revision,
+            prepared.stock.revision,
+            "OFFICIAL_CHANNEL_STOCK_REVISION_CONFLICT"
+          );
+          const previous = await receptionConfigById(tx, stock.id, true);
+          assertExpectedRevision(
+            previous?.responsibilityVersion ?? 0,
+            input.expectedResponsibilityVersion,
+            "OFFICIAL_CHANNEL_RECEPTION_REVISION_CONFLICT"
+          );
+          await assertPreparedReceptionAuthority(tx, prepared);
+          if (
+            prepared.projection.status !== "ready" ||
+            !isPositiveInt(prepared.projection.sellerEnterpriseId)
+          )
+            fail(
+              `OFFICIAL_CHANNEL_RECEPTION_${prepared.projection.reason ?? "PENDING"}`
+            );
+          const values = {
+            ...nextConfig,
+            sellerEnterpriseId: prepared.projection.sellerEnterpriseId,
+            updatedByAdminUserId: actor.adminUserId,
+            updatedAt: new Date(),
+          };
+          if (previous)
+            await tx
+              .update(officialChannelStockReception)
+              .set(values)
+              .where(
+                and(
+                  eq(officialChannelStockReception.stockId, stock.id),
+                  eq(
+                    officialChannelStockReception.responsibilityVersion,
+                    previous.responsibilityVersion
+                  )
+                )
+              );
+          else await tx.insert(officialChannelStockReception).values(values);
+          const revision = await casStock(tx, stock, {});
+          const reception = { ...prepared.projection, stockRevision: revision };
+          await updatePublicationReception(tx, stock.id, reception);
+          const result = {
+            stockId: stock.id,
+            revision,
+            reception,
+            historicalInquiriesChanged: false,
+          };
+          await writeAudit(tx, {
+            action: "official_stock_reception_configure",
+            targetId: stock.id,
+            actor,
+            requestId: input.requestId,
+            payloadHash,
+            beforeData: previous,
+            afterData: { reason: input.reason, reception },
+            result,
+          });
+          return result;
+        }
+      )
+  );
+}

@@ -224,8 +224,8 @@ export default function OfficialInventoryOwnerTransfer({
                 }}
               />
             </label>
-            <div className="rounded-md border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">
-              候选人仅来自该库存所属官方团队的当前活跃成员。交接只更新单一负责人；不会变更团队快照，也不会变更创建人。
+              <div className="rounded-md border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">
+              候选人仅来自该库存所属官方团队的当前活跃成员。交接更新库存当前业务负责人，不变更团队快照或创建人。未来询价仅在“负责人接待”模式下跟随新负责人；已有明确接待分工保留。已有询价不会自动改派，无合格接待人时显示待配置。
             </div>
             <label className="flex items-start gap-2 text-xs leading-5">
               <input

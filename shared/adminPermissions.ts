@@ -46,6 +46,8 @@ export const ADMIN_PERMISSIONS = [
   "business.context.read",
   "business.inventory.read",
   "business.inventory.write",
+  "business.inquiries.read",
+  "business.inquiries.write",
   "business.customers.read",
   "business.customers.write",
   "business.procurement.read",
@@ -86,6 +88,8 @@ export const ASSIGNABLE_ADMIN_PERMISSIONS = [
   "business.context.read",
   "business.inventory.read",
   "business.inventory.write",
+  "business.inquiries.read",
+  "business.inquiries.write",
   "business.customers.read",
   "business.customers.write",
   "business.procurement.read",
@@ -123,6 +127,7 @@ export function normalizeAssignedAdminPermissions(
   if (next.has("officialInventory.publish")) next.add("officialInventory.read");
   if (next.has("officialInventory.note")) next.add("officialInventory.read");
   if (next.has("business.inventory.write")) next.add("business.inventory.read");
+  if (next.has("business.inquiries.write")) next.add("business.inquiries.read");
   if (next.has("business.customers.write")) next.add("business.customers.read");
   if (next.has("business.procurement.write"))
     next.add("business.procurement.read");

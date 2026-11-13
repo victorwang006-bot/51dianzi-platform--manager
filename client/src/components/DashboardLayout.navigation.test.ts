@@ -59,7 +59,8 @@ vi.mock("@/lib/trpc", () => ({
     },
   },
 }));
-vi.mock("@tanstack/react-query", () => ({
+vi.mock("@tanstack/react-query", async importOriginal => ({
+  ...await importOriginal<typeof import("@tanstack/react-query")>(),
   useQuery: () => ({
     isPending: false,
     isSuccess: true,
@@ -240,7 +241,8 @@ describe("正式后台顶部布局集成", () => {
       await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="business"]')!.click());
       await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="group:customers"]')!.click());
       const paths = Array.from(container.querySelectorAll("[data-workspace-dropdown-item]")).map(node => node.getAttribute("data-workspace-dropdown-item"));
-      expect(paths).toEqual(["/workbench/inquiries", "/workbench/orders"]);
+      expect(paths).toEqual(["/workbench/orders"]);
+      expect(container.querySelector('[data-workspace-nav-target="inquiries"]')).not.toBeNull();
       expect(container.querySelector('[data-workspace-nav-target="customers"]')?.getAttribute("aria-current")).toBe("page");
       expect(container.querySelector('[data-workspace-nav-target="/workbench/customer-demands"]')).toBeNull();
       expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");
@@ -248,6 +250,42 @@ describe("正式后台顶部布局集成", () => {
     });
     expect(source).not.toContain('path: "/workbench/customer-demands"');
     expect(runtime.capabilities).toContain("customers.manage");
+  });
+
+  it("independent reception entry follows the authorized legacy chat route, preserves merchant navigation and disappears on revocation", async () => {
+    const previousLocation = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(null, "", "/workbench/chat?conversationId=88&merchantId=30061");
+    runtime.location = "/workbench/chat?conversationId=88&merchantId=30061";
+    runtime.capabilities = ["inquiry.receive", "crm.sales_orders"];
+    try {
+      await withMountedLayout(async container => {
+        const originalContent = container.querySelector('[data-real-content]');
+        const inquiry = container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="inquiries"]')!;
+        expect(inquiry.getAttribute("aria-current")).toBe("page");
+        expect(container.querySelector('[data-workspace-nav-target="business"]')?.getAttribute("data-active")).toBe("false");
+        expect(Array.from(container.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent)).toEqual(["询价接待"]);
+        await act(async () => inquiry.click());
+        expect(runtime.setLocation.mock.calls).toEqual([["/workbench/inquiries?merchantId=30061"]]);
+        expect(container.querySelector('[data-real-content]')).toBe(originalContent);
+        expect(runtime.capabilities).toEqual(["inquiry.receive", "crm.sales_orders"]);
+      });
+      runtime.capabilities = ["crm.sales_orders"];
+      const html = renderLayout();
+      expect(html).not.toContain('data-workspace-nav-target="inquiries"');
+      expect(html).not.toContain('data-admin-navigation="current-location"');
+      expect(runtime.capabilities).toEqual(["crm.sales_orders"]);
+    } finally {
+      window.history.replaceState(null, "", previousLocation);
+    }
+  });
+  it.each([[], ["inventory.channel"], ["inventory.publish"], ["customers.manage"]].map(capabilities => ({ capabilities })))("does not substitute inventory/customer grants $capabilities or native read for inquiry.receive", ({ capabilities }) => {
+    runtime.location = "/workbench/chat?conversationId=88";
+    runtime.capabilities = capabilities;
+    runtime.user.permissions = ["officialInventory.read"];
+    const html = renderLayout();
+    expect(html).not.toContain('data-workspace-nav-target="inquiries"');
+    expect(html).not.toContain('data-admin-navigation="current-location"');
+    expect(runtime.user.permissions).toEqual(["officialInventory.read"]);
   });
 
   it("customer entry is first, direct and merchant-aware without changing login/default landing or backend grants", async () => {
@@ -315,7 +353,7 @@ describe("正式后台顶部布局集成", () => {
     const host = document.createElement("div");
     host.innerHTML = renderLayout();
     expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent))
-      .toEqual(["业务工作台", "销售与询价", "销售订单"]);
+      .toEqual(["业务工作台", "销售管理", "销售订单"]);
     expect(host.querySelector('[data-workspace-nav-target="business"]')?.getAttribute("aria-current")).toBe("location");
     expect(host.querySelector('[data-workspace-dropdown="panel"]')).toBeNull();
     expect(host.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");

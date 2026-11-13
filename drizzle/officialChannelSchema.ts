@@ -221,6 +221,25 @@ export type OfficialChannelStock = typeof officialChannelStocks.$inferSelect;
 export type InsertOfficialChannelStock =
   typeof officialChannelStocks.$inferInsert;
 
+/** Explicit trusted seller mapping and future-inquiry routing only; never mutates historical inquiries. */
+export const officialChannelStockReception = mysqlTable(
+  "official_channel_stock_reception",
+  {
+    stockId: int("stockId").primaryKey(),
+    merchantId: int("merchantId").notNull(),
+    sellerEnterpriseId: int("sellerEnterpriseId").notNull(),
+    routingMode: mysqlEnum("routingMode", ["owner", "explicit"])
+      .default("owner")
+      .notNull(),
+    recipientAdminUserId: int("recipientAdminUserId"),
+    responsibilityVersion: int("responsibilityVersion", { unsigned: true })
+      .default(1)
+      .notNull(),
+    updatedByAdminUserId: int("updatedByAdminUserId").notNull(),
+    updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).notNull(),
+  }
+);
+
 /** V1 内部备注只追加，requestId 唯一以支持安全重试。 */
 export const officialChannelStockNotes = mysqlTable(
   "official_channel_stock_notes",
@@ -256,6 +275,8 @@ export const officialChannelPublications = mysqlTable(
     stockId: int("stockId").notNull(),
     publicId: varchar("publicId", { length: 64 }).notNull(),
     snapshot: json("snapshot").$type<Record<string, unknown>>().notNull(),
+    /** Private server-to-server authority evidence, NEVER spread into a public DTO. */
+    reception: json("reception").$type<Record<string, unknown> | null>(),
     batchId: varchar("batchId", { length: 64 }).notNull(),
     revision: int("revision", { unsigned: true }).default(1).notNull(),
     publishedAt: timestamp("publishedAt").default(DEFAULT_NOW).notNull(),

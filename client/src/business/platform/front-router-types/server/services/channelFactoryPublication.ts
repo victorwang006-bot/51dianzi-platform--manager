@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { publishFactoryMaterialSchema, publishFactoryMaterialResultSchema, type PublishFactoryMaterialInput, type PublishFactoryMaterialResult } from "../../../shared/channelFactoryPublication";
+import { publishFactoryMaterialSchema, publishFactoryMaterialResultSchema, previewFactoryMaterialReceptionInputSchema, previewFactoryMaterialReceptionResultSchema, type PublishFactoryMaterialInput, type PublishFactoryMaterialResult, type PreviewFactoryMaterialReceptionInput, type PreviewFactoryMaterialReceptionResult, type FactoryMaterialReceptionSummary } from "../../../shared/channelFactoryPublication";
 import { ChannelInventoryError, channelInventoryPayloadHash, resolveChannelInventoryAuthority, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type SqlResultRow } from "./channelInventory";
 import { currentReadExecutor, linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
 import { decodePublication } from "./factoryChannelSnapshot";
@@ -119,6 +119,20 @@ export async function readChannelMaterialPublications(db: SqlExecutor): Promise<
   return found.map(row => ({ publicId: String(row.publicId), snapshot: row.snapshot, publishedAt: row.publishedAt as Date | string }));
 }
 
+/** Internal-only source resolution; never serialize these identities to a public DTO. */
+export async function readChannelMaterialReceptionSource(db: SqlExecutor, publicId: string, lock = false): Promise<SqlResultRow | null> {
+  const found = rows(await db.execute(sql`SELECT p.public_id AS publicId, p.snapshot, p.published_at AS publishedAt,
+      m.id AS sourceId, c.name AS sourceFactoryName, m.enterprise_id AS enterpriseId, m.data_owner_user_id AS sellerUserId,
+      m.responsible_user_id AS ownerUserId, m.revision AS materialRevision,
+      c.revision AS channelRevision, source_a.id AS assignmentId, source_a.revision AS responsibilityVersion,
+      source_a.teamId, source_owner.id AS membershipId
+    ${SOURCE_FROM} INNER JOIN channel_material_publications p ON p.enterprise_id = m.enterprise_id AND p.material_id = m.id
+    WHERE p.public_id = ${publicId} AND ${PROJECTION_MATCH} AND ${sourceValid(lock)}
+    LIMIT 2 ${suffix(lock)}`));
+  if (found.length > 1) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "工厂库存来源不唯一，接待待配置" });
+  return found[0] ?? null;
+}
+
 /** Only the exact native InnoDB full-transaction rollback is automatically retried. */
 function deadlock(error: unknown): boolean {
   let current = error;
@@ -130,8 +144,54 @@ function deadlock(error: unknown): boolean {
   return false;
 }
 
-export function createChannelFactoryPublicationService({ getDb }: { getDb: () => Promise<SqlDatabase | null> }) {
+type ReceptionPreview = (db: SqlExecutor, publicId: string, expected: {
+  materialId: number; enterpriseId: number; responsibilityVersion: number;
+}) => Promise<FactoryMaterialReceptionSummary>;
+export function createChannelFactoryPublicationService({ getDb, previewReception }: {
+  getDb: () => Promise<SqlDatabase | null>; previewReception?: ReceptionPreview;
+}) {
   return {
+    async previewFactoryMaterialReception(scope: ChannelInventoryScope, raw: PreviewFactoryMaterialReceptionInput): Promise<PreviewFactoryMaterialReceptionResult> {
+      const parsed = previewFactoryMaterialReceptionInputSchema.safeParse(raw);
+      if (!parsed.success) fail("BAD_REQUEST", "接待预览请求字段无效");
+      const input = parsed.data;
+      if ((input.expectedEnterpriseId !== undefined && input.expectedEnterpriseId !== scope.enterpriseId)
+        || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) fail("FORBIDDEN", "企业或账号上下文不匹配");
+      if (!hasFactoryPublishProof(scope)) fail("FORBIDDEN", "未获明确的官方库存发布权限");
+      let db: SqlDatabase | null;
+      try { db = await getDb(); } catch { return fail("SERVICE_UNAVAILABLE", "接待预览服务暂不可用"); }
+      if (!db) fail("SERVICE_UNAVAILABLE", "接待预览服务暂不可用");
+      // Authorize only this real material. Do not enrich the list or acquire an
+      // admin lease while holding the front authority transaction's locks.
+      const current = await db.transaction(async nativeTx => {
+        const tx = currentReadExecutor(nativeTx);
+        const access = await resolveChannelInventoryAuthority(tx, scope, "stocks", false, true);
+        const companyGate = await linkedCompanyReadGate(tx, scope);
+        const found = rows(await tx.execute(sql`SELECT m.revision, source_a.revision AS responsibilityVersion,
+            p.public_id AS publicId
+          ${SOURCE_FROM} LEFT JOIN channel_material_publications p
+            ON p.enterprise_id = m.enterprise_id AND p.material_id = m.id AND ${PROJECTION_MATCH}
+          WHERE m.id = ${input.materialId} AND m.enterprise_id = ${scope.enterpriseId}
+            AND m.data_owner_user_id = ${scope.dataOwnerUserId} AND ${sourceValid(true)}
+            AND ${actorBoundary(scope, access.scope === "team", true)} AND ${companyGate} LIMIT 1 FOR UPDATE`))[0];
+        if (!found) fail("FORBIDDEN", "仅当前负责人或所属有效团队组长可核验有效库存接待");
+        if (Number(found.revision) !== input.expectedRevision) fail("CONFLICT", "库存已变化，请刷新后重新核验接待");
+        return found;
+      });
+      const responsibilityVersion = Number(current.responsibilityVersion);
+      if (!current.publicId) return previewFactoryMaterialReceptionResultSchema.parse({ reception: {
+        status: "pending", recipientName: null, responsibilityVersion,
+        reason: "首次发布或物料变更后尚无当前有效的公开接待证据；发布后须重新核验真实员工绑定与接待权限，未核验前不能确认询价可投递",
+      } });
+      const preview = previewReception ?? (async (executor, publicId, expected) => {
+        // Lazy composition avoids a static cycle with the source resolver.
+        const { factoryInventoryReception } = await import("./factoryInventoryReception");
+        return factoryInventoryReception.previewChannelMaterial(executor, publicId, expected);
+      });
+      return previewFactoryMaterialReceptionResultSchema.parse({ reception: await preview(db, String(current.publicId), {
+        materialId: input.materialId, enterpriseId: scope.enterpriseId, responsibilityVersion,
+      }) });
+    },
     async publishFactoryMaterial(scope: ChannelInventoryScope, raw: PublishFactoryMaterialInput): Promise<PublishFactoryMaterialResult> {
       const parsed = publishFactoryMaterialSchema.safeParse(raw);
       if (!parsed.success) fail("BAD_REQUEST", "发布请求字段无效");

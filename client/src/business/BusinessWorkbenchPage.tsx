@@ -2,6 +2,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import {
+  createContext,
+  useContext,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -30,7 +32,6 @@ import {
   businessNavigationHrefs,
   useBusinessLocation,
 } from "./api/business-wouter";
-import { BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES } from "./BusinessChatContract";
 import {
   BusinessWorkbenchAccessProvider,
   BusinessWorkbenchRouteGate,
@@ -43,11 +44,12 @@ import {
   isBusinessAuthorizationError,
   isBusinessSecurityError,
   resetBusinessWorkbenchSessionsForTests,
+  retainBusinessQueryClient,
   useBusinessWorkbenchSession,
   type BusinessWorkbenchSession,
 } from "./BusinessWorkbenchSession";
 import AddUser from "./platform/client/src/pages/AddUser";
-import ChatPage from "./platform/client/src/pages/ChatPage";
+import { useInquiryReceptionUnread } from "./useInquiryReception";
 import ChannelInventoryHost from "./platform/client/src/pages/ChannelInventoryHost";
 import CompanyInfo from "./platform/client/src/pages/CompanyInfo";
 import CrmSalesOrders from "./platform/client/src/pages/CrmSalesOrders";
@@ -70,9 +72,12 @@ export type BusinessWorkbenchPageProps = {
   merchantId?: number;
   /** Parent route base, normally /workbench. */
   routeBase?: string;
+  /** Internal observer shares the exact verified domain QueryClient with the page. */
+  receptionObserver?: boolean;
 };
 
 const OFFICIAL_ZHIJIE_MERCHANT_ID = 30061;
+const ReceptionObserverContext = createContext(false);
 
 export function __resetBusinessAuthorizationMemoryForTests() {
   resetBusinessWorkbenchSessionsForTests();
@@ -320,6 +325,8 @@ function AccessState({
   retrying?: boolean;
   retryTestId?: string;
 }) {
+  const observerOnly = useContext(ReceptionObserverContext);
+  if (observerOnly) return null;
   return (
     <section
       className="m-5 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
@@ -353,6 +360,8 @@ function BusinessLoadingState({
   label: string;
   testId: string;
 }) {
+  const observerOnly = useContext(ReceptionObserverContext);
+  if (observerOnly) return null;
   return (
     <section
       className="m-5 flex max-w-3xl items-center gap-3 rounded-lg border border-border bg-muted/30 px-5 py-4 text-sm text-muted-foreground"
@@ -390,24 +399,18 @@ function UnmatchedBusinessPath() {
   );
 }
 
-function BusinessChatRoute() {
+function BusinessChatRoute({ canReply = false }: { canReply?: boolean }) {
   const { sessionCapabilities } = useBusinessScope();
   if (sessionCapabilities.receptionReady !== true) {
-    return (
-      <AccessState
-        title="企业接待尚未完成安全就绪"
-        detail="只有当前企业重新核验真实绑定的前台员工已具备企业接待权限后，才会打开企业接待；系统不会启用个人聊天能力或改用后台账号、其他数据负责人。"
-      />
-    );
+    return <AccessState title="企业接待尚未完成安全就绪" detail="必须由当前企业核验真实绑定员工的 inquiry.receive；不会启用个人聊天或借用库存授权。" />;
   }
-  return (
-    <ChatPage
-      businessReception={{
-        requiredPermission: "inquiry.receive",
-        personalFlowMessages: BUSINESS_CHAT_PERSONAL_FLOW_MESSAGES,
-      }}
-    />
-  );
+  return <EnterpriseInquiryInbox canReply={canReply} />;
+}
+
+function ReceptionNavigationUnread() {
+  const { sessionCapabilities } = useBusinessScope();
+  const { total } = useInquiryReceptionUnread(sessionCapabilities.receptionReady === true);
+  return total > 0 ? <span className="inquiry-reception-nav-badge" aria-label={`${total} 条企业询价未读`}>{total > 99 ? "99+" : total}</span> : null;
 }
 
 /** The admin workbench is the explicitly selected full business mode. */
@@ -475,7 +478,7 @@ function businessRouteRequirement(
   return null;
 }
 
-function BusinessRoutes() {
+function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
   const [location] = useLocation();
   const requirement = businessRouteRequirement(location);
   const routes = (
@@ -497,7 +500,7 @@ function BusinessRoutes() {
       <Route path="/orders" component={CrmSalesOrders} />
       <Route path="/sales-orders" component={CrmSalesOrders} />
       <Route path="/outbound" component={BusinessOutboundRoute} />
-      <Route path="/chat" component={BusinessChatRoute} />
+      <Route path="/chat">{() => <BusinessChatRoute canReply={canReply} />}</Route>
       <Route path="/procurement-demands" component={ProcurementDemands} />
       <Route path="/procurement/demands" component={ProcurementDemands} />
       <Route path="/procurement-orders/quote" component={ProcurementOrders} />
@@ -513,7 +516,7 @@ function BusinessRoutes() {
       <Route path="/user-records" component={BusinessUserRecordsPage} />
       <Route path="/company-info" component={CompanyInfo} />
       <Route path="/company" component={CompanyInfo} />
-      <Route path="/inquiries" component={EnterpriseInquiryInbox} />
+      <Route path="/inquiries">{() => <BusinessChatRoute canReply={canReply} />}</Route>
       <Route component={UnmatchedBusinessPath} />
     </Switch>
   );
@@ -555,6 +558,8 @@ export function BusinessContextVerificationBoundary({
   identity: string;
   children: ReactNode;
 }) {
+  const observerOnly = useContext(ReceptionObserverContext);
+  if (observerOnly) return <>{children}</>;
   const revalidating = verificationState === "revalidating";
   return (
     <section
@@ -570,6 +575,7 @@ export function BusinessContextVerificationBoundary({
 function VerifiedBusinessWorkbench({
   merchantId,
   routeBase,
+  receptionObserver = false,
   principal,
   capabilities,
   rawContext,
@@ -579,6 +585,7 @@ function VerifiedBusinessWorkbench({
 }: {
   merchantId: number;
   routeBase: string;
+  receptionObserver?: boolean;
   principal: ReadyBusinessStaffPrincipal;
   capabilities: BusinessSessionCapabilities;
   rawContext: BusinessContextContract;
@@ -637,15 +644,7 @@ function VerifiedBusinessWorkbench({
     [resources, merchantId]
   );
 
-  useEffect(
-    () => () => {
-      // An ordinary route unmount cancels live reads, but a retained verified
-      // session may reuse completed domain data. Identity/access loss also aborts
-      // writes and clears the domain through session.invalidateAuthorization().
-      void queryClient.cancelQueries();
-    },
-    [queryClient]
-  );
+  useEffect(() => retainBusinessQueryClient(queryClient), [queryClient]);
 
   return (
     <trpc.Provider
@@ -662,6 +661,7 @@ function VerifiedBusinessWorkbench({
           contextVerificationState={verificationState}
           authorizationVersion={authorization}
           onAuthorizationError={reportAuthorizationError}
+          storageOwner={!receptionObserver}
         >
           <BusinessContextVerificationBoundary
             verificationState={verificationState}
@@ -678,7 +678,7 @@ function VerifiedBusinessWorkbench({
                 hook={useBusinessLocation}
                 hrefs={businessNavigationHrefs}
               >
-                <BusinessRoutes />
+                {receptionObserver ? (hasExactCapability(rawContext.workbenchCapabilities, "inquiry.receive") ? <ReceptionNavigationUnread /> : null) : <BusinessRoutes canReply={rawContext.merchant?.canWrite === true && hasExactCapability(rawContext.writeCapabilities, "inquiry.receive")} />}
               </Router>
             </BusinessWorkbenchAccessProvider>
           </BusinessContextVerificationBoundary>
@@ -691,11 +691,13 @@ function VerifiedBusinessWorkbench({
 function BusinessContextGate({
   merchantId,
   routeBase,
+  receptionObserver = false,
   scopeRevalidating = false,
   session,
 }: {
   merchantId: number;
   routeBase: string;
+  receptionObserver?: boolean;
   /** The merchant-scope BFF is rechecking an already verified selection. */
   scopeRevalidating?: boolean;
   session: BusinessWorkbenchSession;
@@ -795,6 +797,7 @@ function BusinessContextGate({
           key={retainedContext.verifiedBranchKey}
           merchantId={merchantId}
           routeBase={routeBase}
+          receptionObserver={receptionObserver}
           principal={retainedContext.principal}
           capabilities={retainedContext.capabilities}
           rawContext={retainedContext.rawContext}
@@ -866,6 +869,7 @@ function BusinessContextGate({
       key={currentVerifiedContext.verifiedBranchKey}
       merchantId={merchantId}
       routeBase={routeBase}
+          receptionObserver={receptionObserver}
       principal={currentVerifiedContext.principal}
       capabilities={currentVerifiedContext.capabilities}
       rawContext={currentVerifiedContext.rawContext}
@@ -879,11 +883,13 @@ function BusinessContextGate({
 function ScopedBusinessWorkbench({
   merchantId,
   routeBase,
+  receptionObserver = false,
   scopeRevalidating,
   session,
 }: {
   merchantId: number;
   routeBase: string;
+  receptionObserver?: boolean;
   scopeRevalidating: boolean;
   session: BusinessWorkbenchSession;
 }) {
@@ -893,12 +899,7 @@ function ScopedBusinessWorkbench({
     [merchantId]
   );
 
-  useEffect(
-    () => () => {
-      void queryClient.cancelQueries();
-    },
-    [queryClient]
-  );
+  useEffect(() => retainBusinessQueryClient(queryClient), [queryClient]);
 
   return (
     <businessScopeTrpc.Provider
@@ -909,6 +910,7 @@ function ScopedBusinessWorkbench({
         <BusinessContextGate
           merchantId={merchantId}
           routeBase={routeBase}
+          receptionObserver={receptionObserver}
           scopeRevalidating={scopeRevalidating}
           session={session}
         />
@@ -920,6 +922,7 @@ function ScopedBusinessWorkbench({
 function BusinessWorkbenchDiscovery({
   merchantId,
   routeBase,
+  receptionObserver = false,
   session,
 }: BusinessWorkbenchPageProps & { session: BusinessWorkbenchSession }) {
   const search = useSearch();
@@ -1043,6 +1046,7 @@ function BusinessWorkbenchDiscovery({
     <ScopedBusinessWorkbench
       merchantId={officialMerchant.id}
       routeBase={base}
+          receptionObserver={receptionObserver}
       scopeRevalidating={merchantList.isFetching}
       session={session}
     />
@@ -1053,6 +1057,7 @@ function BusinessWorkbenchDiscovery({
 function BusinessWorkbenchContent({
   merchantId,
   routeBase,
+  receptionObserver = false,
 }: BusinessWorkbenchPageProps) {
   const { session, retrySession } = useBusinessWorkbenchSession();
   return !session ? (
@@ -1077,6 +1082,7 @@ function BusinessWorkbenchContent({
       session={session}
       merchantId={merchantId}
       routeBase={routeBase}
+          receptionObserver={receptionObserver}
     />
   );
 }
@@ -1084,18 +1090,14 @@ function BusinessWorkbenchContent({
 function SessionBusinessWorkbenchContent({
   merchantId,
   routeBase,
+  receptionObserver = false,
   session,
 }: BusinessWorkbenchPageProps & { session: BusinessWorkbenchSession }) {
   const queryClient = session.discovery;
   const discoveryClient = useMemo(() => createBusinessScopeTrpcClient(), []);
   useSessionContextRevalidation(session);
 
-  useEffect(
-    () => () => {
-      void queryClient.cancelQueries();
-    },
-    [queryClient]
-  );
+  useEffect(() => retainBusinessQueryClient(queryClient), [queryClient]);
 
   return (
     <businessScopeTrpc.Provider
@@ -1106,6 +1108,7 @@ function SessionBusinessWorkbenchContent({
         <BusinessWorkbenchDiscovery
           merchantId={merchantId}
           routeBase={routeBase}
+          receptionObserver={receptionObserver}
           session={session}
         />
       </QueryClientProvider>
@@ -1121,4 +1124,9 @@ export default function BusinessWorkbenchPage(
       <BusinessWorkbenchContent {...props} />
     </DashboardLayout>
   );
+}
+
+/** Mount only beneath root admin auth and the parent-authorized inquiry item. */
+export function BusinessReceptionNavigationBadge() {
+  return <ReceptionObserverContext.Provider value={true}><BusinessWorkbenchContent receptionObserver /></ReceptionObserverContext.Provider>;
 }

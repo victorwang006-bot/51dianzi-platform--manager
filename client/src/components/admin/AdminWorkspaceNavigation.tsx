@@ -26,6 +26,7 @@ import {
   type AdminWorkspaceNavigationItem,
 } from "./adminWorkspaceNavigationModel";
 import { getAdminListLocationLayout } from "./adminListLocationLayout";
+import InquiryReceptionNavigationBadge from "./InquiryReceptionNavigationBadge";
 import "./AdminWorkspaceNavigation.css";
 import "./AdminListPage.css";
 
@@ -124,6 +125,7 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   if (!activeWorkspace || !activeItem) return null;
   const channel = activeItem.path === CHANNEL_INVENTORY_ROUTE;
   const customer = activeItem.path === "/workbench/customers";
+  const reception = activeItem.path === "/workbench/inquiries";
   const tab = channel ? channelTabForLocation(location) : null;
   const entry = !channel
     ? groupAdminWorkspaceModuleNavigationItems(activeWorkspace.items, activeWorkspace.id).find(entry =>
@@ -133,6 +135,7 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
     ? ["库存列表", ...(channelViewForLocation(location) === "channels" ? ["渠道库存"] : []),
       ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
     : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
+    : reception ? ["询价接待"]
     : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   return (
     <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location"
@@ -165,19 +168,21 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   const state = getAdminWorkspaceNavigationState(items, location);
   const customerItem = items.find(item => item.path === "/workbench/customers");
   const channelItem = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE);
+  const receptionItem = items.find(item => item.path === "/workbench/inquiries");
   const filteredBusinessItems = state.workspaces.find(workspace => workspace.id === "business")
-    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers") ?? [];
+    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries") ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
   const operationsEntries = groupAdminOperationsNavigationItems(
     state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
   );
   const channelActive = !!channelItem && state.route?.canonicalPath === CHANNEL_INVENTORY_ROUTE;
   const customerActive = !!customerItem && state.route?.canonicalPath === "/workbench/customers";
+  const receptionActive = !!receptionItem && state.route?.canonicalPath === "/workbench/inquiries";
   const workspaces: { id: UnifiedWorkspaceId; label: string; items: readonly T[] }[] =
     state.workspaces.flatMap(workspace => workspace.id === "business"
       ? businessEntries.length ? [{ ...workspace, items: filteredBusinessItems }] : []
       : [workspace]);
-  const activeWorkspaceId = ![CHANNEL_INVENTORY_ROUTE, "/workbench/customers"].includes(state.route?.canonicalPath ?? "")
+  const activeWorkspaceId = ![CHANNEL_INVENTORY_ROUTE, "/workbench/customers", "/workbench/inquiries"].includes(state.route?.canonicalPath ?? "")
     ? state.activeWorkspace?.id : null;
   const navRef = useRef<HTMLElement>(null);
   const triggerRefs = useRef(new Map<UnifiedWorkspaceId, HTMLButtonElement>());
@@ -410,7 +415,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     );
   }
 
-  if (!customerItem && !channelItem && !workspaces.length) return null;
+  if (!customerItem && !channelItem && !receptionItem && !workspaces.length) return null;
 
   return (
     <nav
@@ -452,6 +457,20 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
           }}
           onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
         >库存列表{renderBadge?.(channelItem)}</button>
+      ) : null}
+      {receptionItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          data-workspace-nav-target="inquiries" data-navigation-level="1"
+          data-active={receptionActive ? "true" : "false"} aria-current={receptionActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(receptionItem); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(receptionItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(receptionItem)}
+        >询价接待<InquiryReceptionNavigationBadge /></button>
       ) : null}
       {workspaces.map(workspace => {
         const isActive = workspace.id === activeWorkspaceId;

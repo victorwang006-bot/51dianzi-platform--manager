@@ -902,6 +902,31 @@ export async function getEnterpriseBusinessHandoffState(input: { actorUserId: nu
   };
 }
 
+/** Server-owned inquiry snapshot only; arbitrary message JSON is not evidence. */
+export function projectEnterpriseInquiryInboxRow(row: Record<string, any>) {
+  let snapshot = row.factorySourceSnapshot;
+  if (typeof snapshot === "string") { try { snapshot = JSON.parse(snapshot); } catch { snapshot = null; } }
+  const factory = row.sourceKind === "channel_material" || row.sourceKind === "official_admin_inventory";
+  const safeText = (value: unknown) => typeof value === "string" ? value.trim() || null : null;
+  const source = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
+  return {
+    id: Number(row.id), inventoryId: row.inventoryId == null ? null : Number(row.inventoryId),
+    partNumber: String(row.partNumber ?? ""), brand: factory ? safeText(source.brand) ?? "" : String(row.brand || ""),
+    quantity: factory ? (Number(row.requestedQty) > 0 ? Number(row.requestedQty) : null) : Number(row.quantity ?? 0),
+    // Legacy quantity means stock availability for ordinary inventory. Reception
+    // must use the persisted buyer request instead, including pending sentinel 0.
+    requestedQty: Number(row.requestedQty) > 0 ? Number(row.requestedQty) : null,
+    buyerName: String(row.buyerName ?? ""), buyerCompanyName: safeText(row.buyerCompanyName),
+    assigneeName: (factory ? safeText(source.assigneeName) : null) ?? safeText(row.assigneeName),
+    sourceKind: factory ? row.sourceKind as "channel_material" | "official_admin_inventory" : "inventory" as const,
+    sourcePublicId: factory ? safeText(row.sourcePublicId) : null,
+    sourceFactoryName: factory ? safeText(source.sourceFactoryName) : null,
+    sourceLabel: factory ? safeText(source.sourceLabel) ?? "工厂渠道" : "普通库存",
+    status: row.status as "open" | "replied" | "closed", createdAt: row.createdAt,
+    lastActivityAt: row.lastActivityAt, conversationId: Number(row.conversationId),
+  };
+}
+
 /** A receiver sees only their own inquiry assignments; inventoryDataScope never broadens this inbox. */
 export async function listEnterpriseInquiryInbox(input: {
   actorUserId: number;
@@ -926,24 +951,32 @@ export async function listEnterpriseInquiryInbox(input: {
     SELECT COUNT(*) AS total FROM inventory_inquiries iq
      WHERE iq.enterpriseId = ${scope.enterprise.id} ${assignee} ${statusFilter}
   `))[0];
-  const result = await db.execute(sql`
+  const selectInbox = (factorySchema: boolean) => db.execute(sql`
     SELECT iq.id, iq.inventoryId, COALESCE(i.partNumber, iq.partNumber, CONCAT('库存 #', iq.inventoryId)) AS partNumber,
            COALESCE(i.brand, '') AS brand, COALESCE(i.qtyStock, i.qtyOnSale, 0) AS quantity,
+           iq.requestedQty, iq.buyerCompanyNameSnapshot AS buyerCompanyName,
            COALESCE(NULLIF(TRIM(buyer.name), ''), NULLIF(TRIM(buyer.username), ''), CONCAT('用户', iq.buyerUserId)) AS buyerName,
+           COALESCE(NULLIF(TRIM(receiver.name), ''), NULLIF(TRIM(receiver.username), ''), '责任员工') AS assigneeName,
+           ${factorySchema ? sql`iq.sourceKind, iq.sourcePublicId, iq.factorySourceSnapshot,` : sql``}
            iq.status, iq.createdAt, iq.lastActivityAt, iq.conversationId
       FROM inventory_inquiries iq
       LEFT JOIN inventories i ON i.id = iq.inventoryId AND i.enterpriseId = iq.enterpriseId
       LEFT JOIN users buyer ON buyer.id = iq.buyerUserId
+      LEFT JOIN users receiver ON receiver.id = iq.assigneeUserId
      WHERE iq.enterpriseId = ${scope.enterprise.id} ${assignee} ${statusFilter}
      ORDER BY iq.lastActivityAt DESC, iq.id DESC
      LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
   `);
+  let result: unknown;
+  try { result = await selectInbox(true); }
+  catch (error) {
+    const e = error as { code?: string; cause?: { code?: string } };
+    if ((e.code ?? e.cause?.code) !== "ER_BAD_FIELD_ERROR") throw error;
+    result = await selectInbox(false); // additive rollout, no old assignment backfill
+  }
+
   return {
-    rows: rows<any>(result).map(row => ({
-      id: Number(row.id), inventoryId: Number(row.inventoryId), partNumber: String(row.partNumber), brand: String(row.brand || ""),
-      quantity: Number(row.quantity ?? 0), buyerName: String(row.buyerName), status: row.status as "open" | "replied" | "closed",
-      createdAt: row.createdAt, lastActivityAt: row.lastActivityAt, conversationId: Number(row.conversationId),
-    })),
+    rows: rows<any>(result).map(projectEnterpriseInquiryInboxRow),
     total: Number(totalRow?.total ?? 0), page, pageSize,
   };
 }

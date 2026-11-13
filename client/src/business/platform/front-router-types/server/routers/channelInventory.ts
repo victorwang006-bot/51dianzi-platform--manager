@@ -1,6 +1,6 @@
 import { createChannelInventoryManagementService } from "../services/channelInventoryManagement";
 import { createChannelFactoryPublicationService } from "../services/channelFactoryPublication";
-import { publishFactoryMaterialInputSchema } from "../../../shared/channelFactoryPublication";
+import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInputSchema } from "../../../shared/channelFactoryPublication";
 import * as managementSchemas from "../../../shared/channelInventoryManagement";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -14,10 +14,10 @@ import { teamMaterialSourceSchema } from "../../../shared/channelInventorySource
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
 import { createChannelTeamInventoryService } from "../services/channelTeamInventory";
 import { createChannelInventoryExportService } from "../services/channelInventoryExport";
-import { createCrmPermissionProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { requireCrmEnterpriseAccess } from "../services/enterpriseAccess";
 import { requireActiveEnterpriseScope, requireEnterprisePermission } from "../services/enterprisePermissions";
-import { officialInventoryGrantForDelegation } from "../services/internalBusinessOfficialGrant";
+import { officialInventoryGrantForDelegation, officialInventoryGrantForRequest, officialInventoryErpEntitled } from "../services/internalBusinessOfficialGrant";
 import {
   CHANNEL_INVENTORY_TYPES,
   ChannelInventoryError,
@@ -140,16 +140,29 @@ function asTrpcError(error: unknown): never {
  * using a no-op would break creator/current-owner and shared-note scope rules.
  */
 export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRecord) {
-  const procedure = createCrmPermissionProcedure("inventory.manage");
-  const readProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-    const native = officialInventoryGrantForDelegation(ctx.staffDelegation);
-    const crm = await requireCrmEnterpriseAccess({ user: ctx.user });
-    const permissionScope = native?.read ? await requireActiveEnterpriseScope(ctx.user.id) : await requireEnterprisePermission(ctx.user.id, "inventory.manage");
-    if (permissionScope.dataOwnerUserId !== crm.dataOwnerUserId) throw new TRPCError({ code: "CONFLICT", message: "企业数据归属已变化，请重新登录" });
-    return next({ ctx: { ...ctx, enterprisePermissionScope: permissionScope } });
-  });
-  const publishProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-    const proof = officialInventoryGrantForDelegation(ctx.staffDelegation);
+  function inventoryProcedure(management: boolean) {
+    return protectedProcedure.use(async ({ ctx, next, path }) => {
+      // Caller path may be root-prefixed or a local createCaller path. Namespace
+      // is fixed by this router, never selected from browser input.
+      const method = `channelInventory.${path.split(".").at(-1)}`;
+      const proof = officialInventoryGrantForRequest(ctx.staffDelegation, method);
+      if (ctx.staffDelegation && !proof) throw new TRPCError({ code: "FORBIDDEN", message: "渠道库存受信动作授权无效" });
+      if (ctx.staffDelegation && !officialInventoryErpEntitled(method, proof, "inventory.manage")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方管理资格" });
+      }
+      const crm = await requireCrmEnterpriseAccess({ user: ctx.user });
+      const permissionScope = ctx.staffDelegation
+        ? await requireActiveEnterpriseScope(ctx.user.id)
+        : await requireEnterprisePermission(ctx.user.id, "inventory.manage");
+      if (permissionScope.dataOwnerUserId !== crm.dataOwnerUserId) throw new TRPCError({ code: "CONFLICT", message: "企业数据归属已变化，请重新登录" });
+      // Preserve each native middleware's existing effective-user projection.
+      return next({ ctx: { ...ctx, ...(management ? { effectiveUserId: crm.dataOwnerUserId, enterprisePermission: "inventory.manage" as const } : {}), enterprisePermissionScope: permissionScope } });
+    });
+  }
+  const procedure = inventoryProcedure(true);
+  const readProcedure = inventoryProcedure(false);
+  const publishProcedure = protectedProcedure.use(async ({ ctx, next, path }) => {
+    const proof = officialInventoryGrantForRequest(ctx.staffDelegation, `channelInventory.${path.split(".").at(-1)}`);
     if (proof?.read !== true || proof.publish !== true) throw new TRPCError({ code: "FORBIDDEN", message: "未获明确的官方库存发布权限" });
     const crm = await requireCrmEnterpriseAccess({ user: ctx.user });
     const permissionScope = await requireActiveEnterpriseScope(ctx.user.id);
@@ -167,6 +180,10 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const publication = createChannelFactoryPublicationService({ getDb });
 
   return router({
+    previewFactoryMaterialReception: publishProcedure.input(previewFactoryMaterialReceptionInputSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await publication.previewFactoryMaterialReception(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     publishFactoryMaterial: publishProcedure.input(publishFactoryMaterialInputSchema).mutation(async ({ ctx, input }) => {
       try { assertExpectedContext(ctx, input); return await publication.publishFactoryMaterial(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }

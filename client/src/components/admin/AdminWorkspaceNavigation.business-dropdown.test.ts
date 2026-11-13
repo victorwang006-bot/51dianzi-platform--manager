@@ -53,12 +53,21 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
     expect(Array.from(panel()!.querySelectorAll<HTMLButtonElement>("[data-navigation-choice]")).map(b => b.dataset.workspaceNavTarget))
       .toEqual(["group:customers", "group:inventory", "group:procurement"]);
     expect(panel(3)).toBeNull(); expect(panel()!.textContent).not.toContain("渠道库存");
-    await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(2);
+    await click("group:customers"); expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(1);
+    expect(panel(3)!.textContent).not.toContain("询价接待");
     await click("group:inventory"); expect(host.querySelector('[data-business-submenu="customers"]')).toBeNull();
     expect(panel(3)!.querySelectorAll("[data-workspace-dropdown-item]")).toHaveLength(2);
   });
   it.each(groups)("%s → %s 只回传原授权对象一次且保留预加载", async (group, path) => {
-    await render(); await click("business"); await click(`group:${group}`);
+    await render();
+    if (path === "/workbench/inquiries") {
+      const original = items.find(item => item.path === path)!;
+      await act(async () => button("inquiries").focus()); expect(onPreload).toHaveBeenCalledWith(original);
+      await click("inquiries"); expect(onNavigate).toHaveBeenCalledTimes(1);
+      expect(onNavigate.mock.calls[0][0]).toBe(original); expect(panel()).toBeNull(); expect(panel(3)).toBeNull();
+      expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull(); return;
+    }
+    await click("business"); await click(`group:${group}`);
     const original = items.find(item => item.path === path)!;
     await act(async () => button(path).focus()); expect(onPreload).toHaveBeenCalledWith(original);
     await click(path); expect(onNavigate).toHaveBeenCalledTimes(1); expect(onNavigate).toHaveBeenCalledWith(original);
@@ -142,8 +151,8 @@ describe("业务分级下拉回归：已批准替代上一轮平铺方案", () =
   });
   it("键盘Enter进入二级、右键进入三级、左键返回、Escape关闭", async () => {
     await render(); await key("business", "Enter"); expect(document.activeElement).toBe(button("group:customers"));
-    await key("group:customers", "ArrowRight"); expect(document.activeElement).toBe(button("/workbench/inquiries"));
-    await key("/workbench/inquiries", "ArrowLeft"); expect(panel(3)).toBeNull(); expect(document.activeElement).toBe(button("group:customers"));
+    await key("group:customers", "ArrowRight"); expect(document.activeElement).toBe(button("/workbench/orders"));
+    await key("/workbench/orders", "ArrowLeft"); expect(panel(3)).toBeNull(); expect(document.activeElement).toBe(button("group:customers"));
     await key("group:customers", "Escape"); expect(panel()).toBeNull(); expect(document.activeElement).toBe(button("business"));
   });
   it("面板内部滚动不关，窗口resize关闭；Tab不设置键盘陷阱", async () => {
