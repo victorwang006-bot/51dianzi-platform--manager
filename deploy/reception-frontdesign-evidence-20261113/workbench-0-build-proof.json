@@ -1,0 +1,13 @@
+{
+  "beforeSha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5",
+  "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410",
+  "patches": 1,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "url": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+  "beforeUrl": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+  "uiSourceSha256": "44712017df935d976070935b5f5df150ecc962eb5889d8695eb6b1d4e43b164f",
+  "chatFunctionSha256": "77bf9ed046507c089d8cd70dcd9a3fb4ff3f602b59092341c6b628ce4e8660bc",
+  "chatHelpersSha256": "36dcd5f14f29cce37bf9353b45a9ef90ea98818bb50b8015061acd6e64a7f6fb",
+  "allPriorChatCodeUnchanged": true
+}

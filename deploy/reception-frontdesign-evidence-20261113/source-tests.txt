@@ -1,0 +1,45 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+ RUN  v2.1.9 /home/ubuntu/work/51dianzi-platform--manager
+
+ ✓ client/src/business/InquiryReception.render.test.ts (21 tests) 3895ms
+   ✓ 真实接待三栏与原conversation渲染DI > 同会话具体询价通过inquiryId选择，摘要不混来源；返回保留merchant URL 354ms
+   ✓ 真实头像与接待授权生命周期 > identity变化清本地物料/搜索/摘要，失败期间撤下旧私人内容 303ms
+   ✓ 真实头像与接待授权生命周期 > permission变化清本地物料/搜索/摘要，失败期间撤下旧私人内容 322ms
+   ✓ 真实头像与接待授权生命周期 > read-error变化清本地物料/搜索/摘要，失败期间撤下旧私人内容 335ms
+ ✓ client/src/components/DashboardLayout.navigation.test.ts (39 tests) 511ms
+stderr | client/src/components/DashboardLayout.navigation.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/home/ubuntu/work/51dianzi-platform--manager/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+ ✓ client/src/components/admin/adminWorkspaceNavigation.render.test.ts (31 tests) 470ms
+ ✓ client/src/business/BusinessReceptionNavigationBadge.network.test.ts (15 tests) 8488ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.unified-dropdown.test.ts (28 tests) 513ms
+ ✓ client/src/business/platform/client/src/components/chat/ChatPageDrafts.test.ts (13 tests) 1079ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.location.test.ts (54 tests) 261ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.location-layout.source.test.ts (13 tests) 125ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.primary-entries.test.ts (32 tests) 451ms
+ ✓ client/src/pages/Messages.refresh.test.ts (7 tests) 643ms
+ ✓ client/src/business/platform/client/src/components/chat/ConversationDraft.test.ts (13 tests) 205ms
+ ✓ client/src/components/DashboardLayout.messages.test.ts (3 tests) 214ms
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.business-dropdown.test.ts (9 tests) 161ms
+ ✓ client/src/business/BusinessReceptionStorageScope.test.ts (4 tests) 73ms
+ ✓ client/src/business/BusinessReceptionSharedCache.test.ts (3 tests) 16ms
+ ✓ client/src/components/admin/adminWorkspaceNavigationModel.test.ts (52 tests) 31ms
+ ✓ client/src/business/BusinessReceptionChatPage.render.test.ts (2 tests) 1555ms
+   ✓ Business reception ChatPage rendered behavior > renders and operates ordinary reception controls while personal service/private/buyer/forum/invitation flows do not request BFF procedures 1510ms
+ ✓ client/src/business/InquiryReceptionModel.test.ts (17 tests) 26ms
+ ✓ client/src/components/admin/adminListLocationLayout.test.ts (46 tests) 12ms
+ ✓ client/src/lib/adminMessageRefresh.test.ts (8 tests) 7ms
+ ✓ client/src/business/BusinessReceptionChatPage.contract.test.ts (2 tests) 4ms
+ ✓ client/src/business/InquiryReceptionSnapshot.test.ts (2 tests) 4ms
+
+ Test Files  22 passed (22)
+      Tests  414 passed (414)
+   Start at  10:48:57
+   Duration  39.21s (transform 5.39s, setup 0ms, collect 5.85s, tests 18.75s, environment 7.60s, prepare 1.79s)

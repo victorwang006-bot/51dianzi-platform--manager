@@ -1,0 +1,205 @@
+{
+  "status": "PASS",
+  "simulationOnly": true,
+  "fullProductionChatNotRendered": true,
+  "actualUIFactorySha256": "b77486ee3550233ad52b1d5ab019d724b0f910532bcf2f9db1179a26165730ad",
+  "cssSourceSha256": "0b25a8e2edced1d2bc17d40ebd05c0bfb4e0b481e51bf96383349264f305b76b",
+  "results": [
+    {
+      "name": "desktop",
+      "status": "PASS",
+      "metrics": {
+        "width": 1440,
+        "height": 813,
+        "scrollWidth": 1440,
+        "sidebar": {
+          "x": 0,
+          "y": 64,
+          "width": 172,
+          "height": 749,
+          "display": "flex"
+        },
+        "queue": {
+          "x": 172,
+          "y": 64,
+          "width": 240,
+          "height": 749,
+          "display": "flex"
+        },
+        "conversation": {
+          "x": 412,
+          "y": 64,
+          "width": 1028,
+          "height": 749,
+          "display": "flex"
+        },
+        "avatar": {
+          "x": 184,
+          "y": 188,
+          "width": 36,
+          "height": 36,
+          "display": "flex"
+        },
+        "row": {
+          "x": 172,
+          "y": 178,
+          "width": 239,
+          "height": 61,
+          "display": "flex"
+        },
+        "rowDirection": "row",
+        "empty": true,
+        "simulationOnly": true
+      },
+      "screenshot": "/home/ubuntu/work/reception-front-visual/desktop.png",
+      "screenshotSha256": "c2a111f213b24df93ca83d1ae2e72656bfcde5e6d41349acbc345d088bada592"
+    },
+    {
+      "name": "tablet",
+      "status": "PASS",
+      "metrics": {
+        "width": 900,
+        "height": 673,
+        "scrollWidth": 900,
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "queue": {
+          "x": 0,
+          "y": 64,
+          "width": 280,
+          "height": 609,
+          "display": "flex"
+        },
+        "conversation": {
+          "x": 280,
+          "y": 64,
+          "width": 620,
+          "height": 609,
+          "display": "flex"
+        },
+        "avatar": {
+          "x": 12,
+          "y": 190,
+          "width": 36,
+          "height": 36,
+          "display": "flex"
+        },
+        "row": {
+          "x": 0,
+          "y": 180,
+          "width": 279,
+          "height": 61,
+          "display": "flex"
+        },
+        "rowDirection": "row",
+        "empty": true,
+        "simulationOnly": true
+      },
+      "screenshot": "/home/ubuntu/work/reception-front-visual/tablet.png",
+      "screenshotSha256": "e769eda0a8f2c4ad9ae274ed033383a7dbc6f6d8f020c36e6de207f8be03a8b6"
+    },
+    {
+      "name": "mobile-queue",
+      "status": "PASS",
+      "metrics": {
+        "width": 500,
+        "height": 757,
+        "scrollWidth": 500,
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "queue": {
+          "x": 0,
+          "y": 64,
+          "width": 500,
+          "height": 693,
+          "display": "flex"
+        },
+        "conversation": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "avatar": {
+          "x": 12,
+          "y": 196,
+          "width": 36,
+          "height": 36,
+          "display": "flex"
+        },
+        "row": {
+          "x": 0,
+          "y": 186,
+          "width": 499,
+          "height": 61,
+          "display": "flex"
+        },
+        "rowDirection": "row",
+        "empty": true,
+        "simulationOnly": true
+      },
+      "screenshot": "/home/ubuntu/work/reception-front-visual/mobile-queue.png",
+      "screenshotSha256": "cc0143461b810a6a03369e3a5ef798e88288db2aade82de2ac9b84675f760562"
+    },
+    {
+      "name": "mobile-chat",
+      "status": "PASS",
+      "metrics": {
+        "width": 500,
+        "height": 757,
+        "scrollWidth": 500,
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "queue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "conversation": {
+          "x": 0,
+          "y": 64,
+          "width": 500,
+          "height": 693,
+          "display": "flex"
+        },
+        "avatar": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "flex"
+        },
+        "row": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "flex"
+        },
+        "rowDirection": "row",
+        "empty": false,
+        "simulationOnly": true
+      },
+      "screenshot": "/home/ubuntu/work/reception-front-visual/mobile-chat.png",
+      "screenshotSha256": "d119f5e033298b124f92ce2d6e536b4dec846fcb87bd33f52419b69b9f5c06cf"
+    }
+  ]
+}

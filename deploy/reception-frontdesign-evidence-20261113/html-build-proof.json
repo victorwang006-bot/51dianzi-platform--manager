@@ -1,0 +1,33 @@
+{
+  "beforeSha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+  "sha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2",
+  "exactInverse": true,
+  "preservedOldImportsAndScopes": true,
+  "clonedScopes": [
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "newScope": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js"
+    },
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "newScope": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js"
+    }
+  ],
+  "changes": [
+    {
+      "from": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "to": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "hits": 5
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "to": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "hits": 7
+    }
+  ],
+  "relocations": {
+    "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+    "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js"
+  },
+  "onlyNewStylesheet": "/assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css"
+}

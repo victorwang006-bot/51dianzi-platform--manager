@@ -1,0 +1,81 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T10:55:41.443533+00:00",
+  "manifestSha256": "73913d79e792dcc58948e75a74b6fe020519afa2e075aa2506e11637b3c17ad3",
+  "htmlSha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "sha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247"
+    },
+    {
+      "relative": "assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "status": 200,
+      "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "status": 200,
+      "sha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247",
+      "contentType": "text/javascript"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "status": 200,
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd",
+      "contentType": "text/css"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2",
+      "contentType": "text/html"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee",
+      "contentType": "text/html"
+    }
+  ],
+  "sourceTests": 414,
+  "actualUITests": 19,
+  "nativeChatTests": 17,
+  "allProtectedFilesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "allProcessesUnchanged": true,
+  "databaseOperations": 0,
+  "backendChanges": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "loggedInBusinessInteractionVerified": false
+}

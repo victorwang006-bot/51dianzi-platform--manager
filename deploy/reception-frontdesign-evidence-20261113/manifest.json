@@ -1,0 +1,117 @@
+{
+  "ownerTask": "IUpdaAmZm3xXTSJGJo5PDu",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "c03acfb822031d55cbcbf1321c3591059e1c46d4af5a18f44cbbaca72aa254b2"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "sha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247"
+    },
+    {
+      "relative": "assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd"
+    }
+  ],
+  "coreAssetPaths": [
+    "assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+    "assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+    "assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css"
+  ],
+  "stickerAssetPaths": [],
+  "beforeHtmlSha256": "22dab229778357cb339bf54ea72f867e88692832d5ac8fb40c5909eb9e602ac2",
+  "driverSha256": "34acebb42326899e4794c918ec61553b2d4a983b23e2183386943235e09723dd",
+  "evidenceHashes": {
+    "actual-ui-tests.json": "8b9f400e55b4ba7069b8c5c33cb3af228f80c0f9a79409d56aa4d8aa6ea4dc99",
+    "actual-chat-tests.json": "9abb358774152349e6c2d0b0c1647b9d95f897c349b141734bf04cd475fae101",
+    "layout-verification.json": "f48887fed9de47b94a68a542e123fc153cd34273ae8a346807d8d0dfcbfb51e7",
+    "html-build-proof.json": "750ae48e996c00a918d1f0a786897becde6bc35f2e89830a5c378b56f4bbf2c2",
+    "dependency-resolution-proof.json": "dbd20176e814240a3e98647049d7c7573721cb0c293ee4ac13c445eefd307981",
+    "workbench-0-build-proof.json": "b1393947ea5cb347684819c1d252ce58c4ba8eadb3d1ebfd9ac83384e9e601d4",
+    "workbench-1-build-proof.json": "eb20647d31083a7c7db43ce3667674790cbd0d478949b63c0f82a8efbe1bd11f",
+    "workbench-0-patches.json": "30c831a06722d53d5ec2005ddd5711031244afed500989381cb9abb16d3a2561",
+    "workbench-1-patches.json": "30c831a06722d53d5ec2005ddd5711031244afed500989381cb9abb16d3a2561",
+    "source-tests.log": "19ad4a7137914024d133cc0e0a7c4481cc3185a4b81bdd373db0329b20d99c7f",
+    "tsc.log": "e855cc9c6f45b0a21965a89b6a14605d032575bb82f4482b99d49ac25ec0d5d0"
+  },
+  "sourceTestCount": 414,
+  "sourceTestFailures": 0,
+  "actualUITestCount": 19,
+  "nativeChatTestCount": 17,
+  "nativeInputVerificationPassed": true,
+  "tscPassed": true,
+  "protectedPaths": [
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+    "/etc/nginx/conf.d/dianzi51-admin-subdomain.conf"
+  ],
+  "baselineAssets": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+      "sha256": "e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+      "sha256": "615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502"
+    },
+    {
+      "relative": "assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "sha256": "a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c"
+    },
+    {
+      "relative": "assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4"
+    }
+  ],
+  "existingCatalogImages": [],
+  "dependencies": [
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+    "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+    "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+  ]
+}

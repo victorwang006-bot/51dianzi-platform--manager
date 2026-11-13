@@ -1,0 +1,123 @@
+{
+  "status": "PASS",
+  "inputs": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "sha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247"
+    }
+  ],
+  "results": [
+    {
+      "name": "default three columns: two material groups, four inquiry rows, no dedup by conversation",
+      "status": "PASS"
+    },
+    {
+      "name": "right idle emoji without extra business/chat header; drawer default absent",
+      "status": "PASS"
+    },
+    {
+      "name": "unread: two unique conversations and five messages, not duplicate inquiry totals",
+      "status": "PASS"
+    },
+    {
+      "name": "left material click filters middle only; never navigate or mount/read Chat",
+      "status": "PASS"
+    },
+    {
+      "name": "all reset and real customer/model client-side search",
+      "status": "PASS"
+    },
+    {
+      "name": "only real pinned true is shown; missing/false cannot fabricate a pin or mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "avatar uses buyerId then otherUserId, never inquiry row id; no fabricated image URLs",
+      "status": "PASS"
+    },
+    {
+      "name": "actual row has two-line structure with short relative time and full date tooltip",
+      "status": "PASS"
+    },
+    {
+      "name": "source namespaces never merge same model or sentinel inventory IDs",
+      "status": "PASS"
+    },
+    {
+      "name": "customer URL preserves merchant/conversation/inquiry and original canReply false gate",
+      "status": "PASS"
+    },
+    {
+      "name": "summary remains hidden until accessible native drawer is requested",
+      "status": "PASS"
+    },
+    {
+      "name": "team own conversation never mounts Chat or transport",
+      "status": "PASS"
+    },
+    {
+      "name": "team outsider conversation never mounts Chat or claims participant",
+      "status": "PASS"
+    },
+    {
+      "name": "identity change synchronously masks old summary, queue and Chat before reset effect",
+      "status": "PASS"
+    },
+    {
+      "name": "authorization change synchronously masks old summary, queue and Chat before reset effect",
+      "status": "PASS"
+    },
+    {
+      "name": "error change synchronously masks old summary, queue and Chat before reset effect",
+      "status": "PASS"
+    },
+    {
+      "name": "revoke change synchronously masks old summary, queue and Chat before reset effect",
+      "status": "PASS"
+    },
+    {
+      "name": "refresh, sound and mobile/sidebar controls are reachable native state transitions",
+      "status": "PASS"
+    },
+    {
+      "name": "independent read-only source/CSS review: no new API owners and scoped three-column/responsive geometry",
+      "status": "PASS"
+    }
+  ],
+  "proofs": [
+    {
+      "url": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+      "sha256": "07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410",
+      "inverse": true,
+      "chatDataNoticeAndHelpersByteIdentical": true
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+      "sha256": "5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247",
+      "inverse": true,
+      "chatDataNoticeAndHelpersByteIdentical": true
+    },
+    {
+      "cssInput": "assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "cssMatchesLatestSource": true,
+      "sourceCssReviewOnly": true
+    }
+  ],
+  "actualCandidatePatchBytesExecuted": true,
+  "diBoundary": "existing authorized reception data/notice hooks and ChatPage transport mocked; actual compiled UI, grouping, sorting, avatar and native React DOM executed; not complete E2E",
+  "databaseOperations": 0,
+  "realMessagesSent": 0,
+  "readOnlyReview": {
+    "inquirySourceSha256": "44712017df935d976070935b5f5df150ecc962eb5889d8695eb6b1d4e43b164f",
+    "parentCssSha256": "0b25a8e2edced1d2bc17d40ebd05c0bfb4e0b481e51bf96383349264f305b76b",
+    "noNewQueriesOrMutations": true,
+    "readOnlyNeverMountsChat": true,
+    "sourceGroupingNamespacesPreserved": true,
+    "originalChatAndDataHooksByteIdentical": true,
+    "cssGeometryReviewedNotBrowserE2E": true
+  }
+}
