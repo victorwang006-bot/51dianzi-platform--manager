@@ -1,4 +1,4 @@
-export const DEFAULT_ADMIN_PATH = "/workbench/channel-inventory";
+export const DEFAULT_ADMIN_PATH = "/workbench/customers";
 
 /** 仅允许站内绝对路径，阻止外部地址与登录页循环回跳。 */
 export function normalizeAdminReturnPath(rawPath: string | null | undefined): string {

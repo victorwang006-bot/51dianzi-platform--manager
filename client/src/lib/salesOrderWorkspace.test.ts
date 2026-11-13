@@ -94,4 +94,18 @@ describe("导航只复用原父授权对象", () => {
     expect(getSalesOrderNavigationContext([business], "/workbench/sales-orders").label).toBe("业务订单");
     expect(getSalesOrderNavigationContext([mall, business], "/orders").active).toBe(false);
   });
+  it("dropdown entries 按商城/业务稳定排序，保留父原引用且不合成权限", () => {
+    const result = getSalesOrderNavigationContext([business, mall], "/workbench/orders?orderSource=business");
+    expect(result.entries.map(entry => [entry.source, entry.label])).toEqual([["mall", "商城订单"], ["business", "业务订单"]]);
+    expect(result.entries[0].item).toBe(mall); expect(result.entries[1].item).toBe(business);
+    expect(result.entries[0].item.chunk).toBe(mall.chunk); expect(result.entries[1].item.chunk).toBe(business.chunk);
+    expect(result.source).toBe("business");
+    expect(getSalesOrderNavigationContext([], "/workbench/orders").entries).toEqual([]);
+  });
+  it.each(["orderSource=business", "orderSource=unknown", "orderSource=mall&orderSource=business"])("seller-only %s 不产生无权来源 active", query => {
+    const result = getSalesOrderNavigationContext([mall], `/workbench/orders?${query}`);
+    expect(result.source).toBeNull(); expect(result.active).toBe(false); expect(result.label).toBeNull();
+    expect(result.entries).toEqual([{ source: "mall", label: "商城订单", item: mall }]);
+    expect(result.entries[0].item).toBe(mall);
+  });
 });

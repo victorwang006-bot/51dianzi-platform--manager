@@ -5,7 +5,6 @@ import { BusinessWorkbenchRouteGate, useBusinessWorkbenchAccess } from "./Busine
 import CrmSalesOrders from "./platform/client/src/pages/CrmSalesOrders";
 import OutboundManagement from "./platform/client/src/pages/OutboundManagement";
 import {
-  SALES_ORDER_SOURCES,
   readRememberedSalesOrderSource,
   rememberSalesOrderSource,
   resolveSalesOrderSource,
@@ -43,16 +42,6 @@ export default function SalesOrderWorkspace() {
 
   return (
     <section data-sales-order-workspace="" data-order-source={source ?? "invalid"}>
-      <nav className="admin-workspace-nav__tabs admin-workspace-nav__tabs--modules" aria-label="销售订单来源">
-        {SALES_ORDER_SOURCES.filter(entry => sources[entry.value]).map(entry => (
-          <button key={entry.value} type="button" className="admin-workspace-nav__tab admin-workspace-nav__module"
-            data-order-source-tab={entry.value} data-active={source === entry.value ? "true" : "false"}
-            aria-current={source === entry.value ? "page" : undefined}
-            onClick={() => navigate(salesOrderSourceTarget(current, entry.value))}>
-            {entry.label}
-          </button>
-        ))}
-      </nav>
       {source ? (
         <BusinessWorkbenchRouteGate capability={source === "mall" ? "marketplace.seller" : "crm.sales_orders"}>
           {source === "mall" ? <OutboundManagement readOnly={false} /> : <CrmSalesOrders />}

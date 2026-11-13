@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T13:50:21.420Z",
+  "liveAPISha256": "56f9a8e50070c3a17601b5c95f9459e014861cffca9aba5a836580c563d5cf14",
+  "archivedTestCount": 10,
+  "normalVisibleCount": 3,
+  "normalCancelledCount": 0,
+  "normalShippedCount": 3,
+  "allOriginalTablesUnchanged": true,
+  "probeDatabaseWrites": 0
+}

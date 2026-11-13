@@ -30,6 +30,8 @@ import {
 import { MessageSquare } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { buildBusinessNavigationTarget } from "@/lib/businessNavigation";
+import { DEFAULT_ADMIN_PATH } from "@/lib/adminRoutes";
+import { salesOrderSourceTarget, type SalesOrderSource } from "@/lib/salesOrderWorkspace";
 import {
   getAdminMessageUnreadQueryOptions,
   getAdminMessageUnreadTotal,
@@ -567,7 +569,14 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     markModuleSeen.mutate({ module: activeNotificationModule });
   }, [activeNotificationModule]);
 
-  const navigateToItem = (item: MenuItem, channelTab?: ChannelInventoryNavigationTab, channelView?: ChannelInventoryNavigationView) => {
+  const navigateToItem = (
+    item: MenuItem,
+    channelTab?: ChannelInventoryNavigationTab,
+    channelView?: ChannelInventoryNavigationView,
+    orderSource?: SalesOrderSource,
+  ) => {
+    // Display intents never replace the original parent-authorized menu object.
+    if (!visibleMenuItems.includes(item)) return;
     if (item.notificationModule) {
       lastMarkedModuleRef.current = item.notificationModule;
       markModuleSeen.mutate({ module: item.notificationModule });
@@ -579,7 +588,11 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
             `${window.location.pathname}${window.location.search}`,
             item.path
           );
-    if (navigationTarget !== null) setLocation(navigationTarget);
+    if (navigationTarget !== null) {
+      setLocation(orderSource === undefined
+        ? navigationTarget
+        : salesOrderSourceTarget(navigationTarget, orderSource, "/workbench/orders"));
+    }
   };
   const preloadItem = (item: MenuItem) => {
     if (item.chunk) preloadAdminRoute(item.chunk);
@@ -607,12 +620,12 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
         <header className="admin-workspace-shell__header">
           <a
             className="admin-workspace-shell__brand"
-            href="/workbench/channel-inventory"
-            aria-label="51电子网后台首页：库存列表"
+            href={DEFAULT_ADMIN_PATH}
+            aria-label="51电子网后台首页：客户列表"
             onClick={(event) => {
               if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
               event.preventDefault();
-              setLocation("/workbench/channel-inventory");
+              setLocation(DEFAULT_ADMIN_PATH);
             }}
           >
             <Logo className="h-9 w-auto shrink-0 object-contain" />

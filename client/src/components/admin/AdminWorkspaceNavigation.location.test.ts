@@ -66,7 +66,7 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
   ])("%s 只新增根布局 marker，保留原 nav 和当前名称", location => {
     const host = render(location);
     expect(layout(host)).toBe("root-hidden");
-    expect(labels(host)).toEqual([location.startsWith("/workbench/customers") ? "客户列表" : "库存列表"]);
+    expect(labels(host)).toEqual([location.startsWith(CHANNEL_INVENTORY_ROUTE) ? "库存列表" : "客户列表"]);
     expect(host.querySelectorAll('nav[data-admin-navigation="current-location"]')).toHaveLength(1);
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
     expect(host.querySelector('nav[hidden], nav[aria-hidden="true"]')).toBeNull();
@@ -97,7 +97,7 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
     ["/workbench/customers/88?merchantId=31", ["客户列表"]],
     ["/workbench/sales-orders/8", ["销售订单", "业务订单"]],
     ["/workbench/chat/8", ["询价接待"]],
-    ["/workbench", ["库存列表"]],
+    ["/workbench", ["客户列表"]],
     ["/workbench/outbound", ["销售订单", "商城订单"]],
     ["/workbench/procurement/orders/8", ["采购管理", "采购订单"]],
     ["/materials/8", ["平台运营", "基础资料", "物料数据库"]],

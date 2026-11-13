@@ -244,7 +244,8 @@ export function getClosedAdminEntryNavigationTarget(location: string): string | 
   const pathname = getAdminWorkspacePathname(location);
   const destination = pathname === "/role-templates" || pathname === "/permission-audit"
     ? "/staff"
-    : pathname === "/workbench" || pathname === "/workbench/inventory" ||
+    : pathname === "/workbench" ? "/workbench/customers"
+    : pathname === "/workbench/inventory" ||
         pathname === "/workbench/publish" || /^\/workbench\/publish\/[^/]+\/edit$/.test(pathname)
       ? "/workbench/channel-inventory" : null;
   if (!destination) return null;

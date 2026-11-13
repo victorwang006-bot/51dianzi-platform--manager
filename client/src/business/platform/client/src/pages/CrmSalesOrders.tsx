@@ -816,7 +816,7 @@ function SalesOrdersContent({
         {!embedded ? (
           <AdminPageHeader
             list
-            title="销售订单"
+            title="业务订单"
             description="客户需求形成的内部订单，不含网站自主下单。"
             actions={
               <Button

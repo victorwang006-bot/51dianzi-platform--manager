@@ -1,0 +1,57 @@
+{
+  "beforeSha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d",
+  "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1",
+  "exactInverse": true,
+  "preservedOldImportsAndScopes": true,
+  "clonedScopes": [
+    {
+      "oldScope": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "newScope": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js"
+    },
+    {
+      "oldScope": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "newScope": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js"
+    },
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "newScope": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js"
+    },
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "newScope": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js"
+    }
+  ],
+  "changes": [
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "to": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "hits": 29
+    },
+    {
+      "from": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "to": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+      "hits": 19
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "to": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+      "hits": 7
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "to": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+      "hits": 9
+    }
+  ],
+  "relocations": {
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+    "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+    "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+    "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js"
+  },
+  "onlyNewStylesheet": "/assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+  "entryRelocation": {
+    "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+    "to": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js"
+  }
+}

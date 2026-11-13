@@ -79,10 +79,8 @@ const { JSDOM } = requireAdmin("jsdom") as {
 };
 
 const legalWorkbenchRoutes = [
-  "/workbench",
-  "/workbench/inventory",
-  "/workbench/publish/item-12/edit",
-  "/workbench/publish",
+  // Retired/default entry redirects are covered in App.closedEntries.test.ts;
+  // only concrete open routes promise continuity without a redirect boundary.
   "/workbench/inbound",
   "/workbench/channel-inventory",
   "/workbench/customers/customer-12",

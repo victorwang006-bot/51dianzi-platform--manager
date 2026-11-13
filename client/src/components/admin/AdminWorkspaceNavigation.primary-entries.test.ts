@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminModuleTabs, AdminWorkspaceLocation, AdminWorkspaceTabs } from "./AdminWorkspaceNavigation";
 import { ADMIN_WORKBENCH_NAVIGATION_GROUPS, getAdminWorkbenchNavigationRoute } from "./adminWorkbenchNavigationModel";
 import { CHANNEL_INVENTORY_ROUTE } from "@/lib/channelInventoryNavigation";
-import { DEFAULT_ADMIN_PATH } from "@/lib/adminRoutes";
 
 const items = Object.freeze(ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(group => group.paths).map(path => Object.freeze({
   path, label: getAdminWorkbenchNavigationRoute(path)?.label ?? path,
@@ -39,23 +38,23 @@ const locationLabels = () => [...host.querySelectorAll('[data-admin-navigation="
 const panels = () => host.querySelectorAll('[data-workspace-dropdown="panel"]');
 
 describe("20261113 已批准八项一级入口", () => {
-  it("父授权项逆序不改变一级顺序，取消业务工作台且登录默认页不变", async () => {
+  it("父授权项逆序不改变一级顺序，取消业务工作台且销售统一下拉", async () => {
     await render(undefined, [...items].reverse());
     expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "sales-orders", "inventory-management", "procurement-management", "operations", "organization"]);
-    expect(button("sales-orders").textContent).toBe("销售订单");
+    expect(button("sales-orders").textContent).toBe("销售订单▾");
+    expect(button("sales-orders").dataset.workspaceDropdownTrigger).toBe("sales-orders");
     expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("入库管理");
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
-    expect(DEFAULT_ADMIN_PATH).toBe(CHANNEL_INVENTORY_ROUTE);
     await click("inventory-management");
     expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.getAttribute("data-workspace-dropdown-item"))).toEqual(["/workbench/inbound"]);
     for (const path of ["/workbench/orders", "/workbench/outbound", "/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries"]) expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
   });
-  it.each([1280, 390].flatMap(width => ["customers", "inquiries", "sales-orders"].map(target => [width, target] as const)))
+  it.each([1280, 390].flatMap(width => ["customers", "inquiries"].map(target => [width, target] as const)))
     ("%s宽度%s点击同步关闭旧层并保留同一授权对象与上下文", async (width, target) => {
       Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
       await render("/staff"); await click("operations"); await click("group:transactions-services");
-      const path = target === "customers" ? "/workbench/customers" : target === "inquiries" ? "/workbench/inquiries" : "/workbench/orders";
+      const path = target === "customers" ? "/workbench/customers" : "/workbench/inquiries";
       const original = items.find(item => item.path === path)!;
       await act(async () => button(target).focus()); expect(onPreload).toHaveBeenCalledWith(original);
       for (const value of ["Enter", " "]) expect((await key(target, value)).defaultPrevented).toBe(false);
@@ -94,19 +93,23 @@ describe("20261113 已批准八项一级入口", () => {
     await render("/workbench/orders?orderSource=mall&merchantId=31#detail", [seller]);
     expect(primaryTargets()).toEqual(["sales-orders"]); expect(activeTargets()).toEqual(["sales-orders"]); expect(locationLabels()).toEqual(["销售订单", "商城订单"]);
     await act(async () => button("sales-orders").focus()); expect(onPreload.mock.calls[0][0]).toBe(seller);
-    await click("sales-orders"); expect(onNavigate.mock.calls).toEqual([[seller]]); expect(onNavigate.mock.calls[0][0]).toBe(seller);
+    await click("sales-orders"); expect(onNavigate).not.toHaveBeenCalled();
+    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.textContent)).toEqual(["商城订单"]);
+    await click(seller.path); expect(onNavigate.mock.calls).toEqual([[seller, undefined, undefined, "mall"]]); expect(onNavigate.mock.calls[0][0]).toBe(seller);
     await render("/workbench/orders?orderSource=business", [seller]); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
     await render("/workbench/outbound", items.filter(item => item !== seller)); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
   });
   it("单销售、单入库授权只出现原允许入口", async () => {
     const sale = items.find(item => item.path === "/workbench/orders")!;
-    await render(sale.path, [sale]); expect(primaryTargets()).toEqual(["sales-orders"]); await click("sales-orders"); expect(onNavigate.mock.calls[0][0]).toBe(sale);
+    await render(sale.path, [sale]); expect(primaryTargets()).toEqual(["sales-orders"]); await click("sales-orders"); expect(onNavigate).not.toHaveBeenCalled();
+    expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.textContent)).toEqual(["业务订单"]);
+    await click(sale.path); expect(onNavigate.mock.calls).toEqual([[sale, undefined, undefined, "business"]]); expect(onNavigate.mock.calls[0][0]).toBe(sale);
     const inbound = items.find(item => item.path === "/workbench/inbound")!;
     await render(inbound.path, [inbound]); expect(primaryTargets()).toEqual(["inventory-management"]); await click("inventory-management");
     expect([...host.querySelectorAll('[data-workspace-dropdown-item]')].map(n => n.getAttribute("data-workspace-dropdown-item"))).toEqual([inbound.path]);
     await render(inbound.path, [{ ...inbound, path: `${inbound.path}?grant=all` }]); expect(host.querySelector("nav")).toBeNull();
   });
-  it("一级方向键只移焦点，销售Enter/Space沿用原生按钮", async () => {
+  it("一级方向键只移焦点，销售与其他 workspace 使用同一键盘菜单", async () => {
     await render(); await act(async () => button("inquiries").focus()); await key("inquiries", "ArrowRight"); expect(document.activeElement).toBe(button("sales-orders"));
     await key("sales-orders", "ArrowRight"); expect(document.activeElement).toBe(button("inventory-management"));
     await key("inventory-management", "End"); expect(document.activeElement).toBe(button("organization"));

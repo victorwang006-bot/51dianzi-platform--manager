@@ -498,7 +498,7 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
       <AdminPage className="erp-ui sales-order-page" data-testid="sales-order-inventory-style">
         <AdminPageHeader
           list
-          title="线上订单"
+          title="商城订单"
           description={readOnly ? "查看商城订单、订单动态与物流信息（只读）" : "管理商城订单、收款确认、发货物流与售后处理"}
           actions={
           <button

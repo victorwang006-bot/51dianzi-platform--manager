@@ -1,0 +1,16 @@
+{
+  "beforeSha256": "6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d",
+  "sha256": "60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17",
+  "patches": 10,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "beforeUrl": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+  "url": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+  "sourceSha256": "d889fbc108619494533c7720e6f24788cdbf84178f00822629fd3527e9e86d33",
+  "dashboardSourceSha256": "c510ae32b836f89644d92c2bbc1280f83a7728cdd8f1a756681de8d8a0446bf0",
+  "helperSourceSha256": "490dd1f4bbf25a78141fcc445c87bd169ba089d439fe7a93e627367b21c8a680",
+  "existingUnreadOwnerUnchanged": true,
+  "originalNavigationQualificationUnchanged": true,
+  "extraSourceFunctions": [],
+  "extraSourceConstants": []
+}

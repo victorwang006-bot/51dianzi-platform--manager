@@ -1,0 +1,20 @@
+[
+  {
+    "start": 431122,
+    "end": 431439,
+    "before": "pathname === \"/role-templates\" || pathname === \"/permission-audit\"\n        ? \"/staff\"\n        : pathname === \"/workbench\" || pathname === \"/workbench/inventory\" ||\n            pathname === \"/workbench/publish\" || /^\\/workbench\\/publish\\/[^/]+\\/edit$/.test(pathname)\n            ? \"/workbench/channel-inventory\" : null",
+    "after": "pathname === \"/workbench\" ? \"/workbench/customers\" : (pathname === \"/role-templates\" || pathname === \"/permission-audit\"\n        ? \"/staff\"\n        : pathname === \"/workbench\" || pathname === \"/workbench/inventory\" ||\n            pathname === \"/workbench/publish\" || /^\\/workbench\\/publish\\/[^/]+\\/edit$/.test(pathname)\n            ? \"/workbench/channel-inventory\" : null)",
+    "reason": "source-bound bare entry destination only; original merchant candidate validation unchanged",
+    "afterStart": 431122,
+    "afterEnd": 431494
+  },
+  {
+    "start": 432726,
+    "end": 432756,
+    "before": "\"/workbench/channel-inventory\"",
+    "after": "\"/workbench/customers\"",
+    "reason": "source-bound DEFAULT_ADMIN_PATH only",
+    "afterStart": 432781,
+    "afterEnd": 432803
+  }
+]

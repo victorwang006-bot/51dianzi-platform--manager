@@ -357,10 +357,42 @@ describe("正式后台顶部布局集成", () => {
     host.innerHTML = renderLayout();
     expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(node => node.lastElementChild?.textContent))
       .toEqual(["销售订单", "业务订单"]);
-    expect(host.querySelector('[data-workspace-nav-target="sales-orders"]')?.getAttribute("aria-current")).toBe("page");
+    expect(host.querySelector('[data-workspace-nav-target="sales-orders"]')?.getAttribute("aria-current")).toBe("location");
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     expect(host.querySelector('[data-workspace-dropdown="panel"]')).toBeNull();
     expect(host.querySelector("[data-real-content]")?.textContent).toBe("真实业务页面");
+  });
+
+  it.each([
+    { capabilities: ["marketplace.seller"], sources: ["mall"] },
+    { capabilities: ["crm.sales_orders"], sources: ["business"] },
+    { capabilities: ["marketplace.seller", "crm.sales_orders"], sources: ["mall", "business"] },
+  ])("real source leaves keep the original scope $capabilities and navigate canonically", async ({ capabilities, sources }) => {
+    const previousLocation = window.location.pathname + window.location.search + window.location.hash;
+    window.history.replaceState(null, "", "/workbench/customers?merchantId=31&returnTo=%2Forders#detail-9");
+    runtime.location = "/workbench/customers?merchantId=31";
+    runtime.capabilities = capabilities;
+    try {
+      await withMountedLayout(async container => {
+        const content = container.querySelector('[data-real-content]');
+        for (const source of sources) {
+          await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="sales-orders"]')!.click());
+          expect(Array.from(container.querySelectorAll('[data-order-source]')).map(node => node.getAttribute("data-order-source"))).toEqual(sources);
+          const leaf = container.querySelector<HTMLButtonElement>(`[data-order-source="${source}"]`)!;
+          expect(leaf.getAttribute("data-workspace-dropdown-item")).toBe(source === "mall" ? "/workbench/outbound" : "/workbench/orders");
+          expect(leaf.textContent).toBe(source === "mall" ? "商城订单" : "业务订单");
+          expect(runtime.setLocation).not.toHaveBeenCalled();
+          await act(async () => leaf.click());
+          expect(runtime.setLocation.mock.calls).toEqual([[`/workbench/orders?merchantId=31&orderSource=${source}`]]);
+          expect(container.querySelector('[data-real-content]')).toBe(content);
+          expect(container.querySelector('[data-workspace-dropdown="layer"]')).toBeNull();
+          runtime.setLocation.mockClear();
+        }
+        expect(runtime.capabilities).toEqual(capabilities);
+      });
+    } finally {
+      window.history.replaceState(null, "", previousLocation);
+    }
   });
 
   it("shows one direct inventory entry only with exact native read and the original bound route capability", async () => {
@@ -484,8 +516,10 @@ describe("正式后台顶部布局集成", () => {
     );
     expect(source).toContain('item.path === "/workbench/channel-inventory"');
     expect(source).toContain(
-      "if (navigationTarget !== null) setLocation(navigationTarget)"
+      "if (navigationTarget !== null) {"
     );
+    expect(source).toContain('salesOrderSourceTarget(navigationTarget, orderSource, "/workbench/orders")');
+    expect(source).toContain("if (!visibleMenuItems.includes(item)) return;");
   });
 
   it("does not add keys or replace the existing content element on navigation", () => {
@@ -523,23 +557,33 @@ describe("正式后台顶部布局集成", () => {
     expect(shellCss).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.admin-workspace-shell__header\s*\{[^}]*padding: 0 16px;/);
   });
 
-  it("makes the original Logo a keyboard-accessible home link to the default flat inventory list", () => {
+  it("makes the original Logo a keyboard-accessible customer home link even without customer permission", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
     runtime.setLocation.mockClear();
     act(() => root.render(createElement(DashboardLayout, null, createElement("article", null, "业务内容"))));
     const brand = host.querySelector<HTMLAnchorElement>("a.admin-workspace-shell__brand")!;
-    expect(brand.getAttribute("href")).toBe("/workbench/channel-inventory");
-    expect(brand.getAttribute("aria-label")).toContain("库存列表");
+    expect(brand.getAttribute("href")).toBe("/workbench/customers");
+    expect(brand.getAttribute("aria-label")).toContain("客户列表");
+    expect(host.querySelector('[data-workspace-nav-target="customers"]')).toBeNull();
     const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
     act(() => brand.dispatchEvent(click));
     expect(click.defaultPrevented).toBe(true);
-    expect(runtime.setLocation).toHaveBeenCalledWith("/workbench/channel-inventory");
+    expect(runtime.setLocation).toHaveBeenCalledWith("/workbench/customers");
+    expect(runtime.capabilities).toEqual([]);
+    expect(runtime.user.permissions).toEqual(["materials.read", "messages.read"]);
     runtime.setLocation.mockClear();
+    let preventedByBrand = true;
+    // Record the brand's behavior before the offline harness suppresses native
+    // browser navigation (jsdom does not implement Ctrl-click/new-tab routing).
+    host.addEventListener("click", event => {
+      preventedByBrand = event.defaultPrevented;
+      event.preventDefault();
+    }, { once: true });
     const alternateClick = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
     act(() => brand.dispatchEvent(alternateClick));
-    expect(alternateClick.defaultPrevented).toBe(false);
+    expect(preventedByBrand).toBe(false);
     expect(runtime.setLocation).not.toHaveBeenCalled();
     act(() => root.unmount());
     host.remove();

@@ -1,0 +1,153 @@
+{
+  "ownerTask": "4kOS3RBCdJO2Kn7BhbvH6T",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+      "sha256": "60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+      "sha256": "94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+      "sha256": "8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552"
+    },
+    {
+      "relative": "assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35"
+    }
+  ],
+  "coreAssetPaths": [
+    "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+    "assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+    "assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+    "assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+    "assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css"
+  ],
+  "beforeHtmlSha256": "df539e3e8b1c70cea82e26c9214c1b171dad66257fb836b481912db546a26e5d",
+  "driverSha256": "770a0da8c789353b681712fe3a1991baadaf73143bbab4e5308bf3883ae0c026",
+  "evidenceHashes": {
+    "actual-candidate-tests.json": "9469dd3205ccf04fa400d7056ff0ee3dba1319be3c97d6802474b0a7b2b76049",
+    "dependency-resolution-proof.json": "9f94131d63a4a2f51f2c19e556ab904884803c9c6e7ce3277a512ddbe703045e",
+    "entry-build-proof.json": "7a83309d2a56db62d752207e73717ac73165fa9c263945730a1d2c2c4ab9dedd",
+    "entry-patches.json": "3aaf60d1a7fedc066f769f8d146166930f49bb7339229956e2e2180c50acd461",
+    "layout-build-proof.json": "ef216fae3717f7fba8177dd75d86b387c520c4cb55435f647e219d5cd120a7e1",
+    "layout-patches.json": "3e8c5f37cbac11eeb16140b75460ede9e3ede31e314e9912f328d25ea3620c19",
+    "workbench-0-build-proof.json": "b9d2f80b73b048f06efd3b929a12a29054992428ff2288546042f7c6d1604958",
+    "workbench-0-patches.json": "0a698bfe03ea2e5e29bfe3283dc8e20b96e85d6c58e72b5faae49d95dc946bd3",
+    "workbench-1-build-proof.json": "11ce93f7a93827ede257b00d4dcc7316dd460a82ca6d4cdbe8d273646abfc83f",
+    "workbench-1-patches.json": "ed27f48916a2f141c5ff9a40fac16983879fcc4daf4b5aa9e9c241e51c286854",
+    "html-build-proof.json": "70484e67cdc09077d902eb0250c872626fe2828c583d7067b68543311cae65ca",
+    "css-build-proof.json": "45f9dd50c1d93bbc93eba416f5f86258033aef00e29503efbcdceea42851e469",
+    "wrapper-metafile.json": "4a72ea699f0eec4ddd033e81057cb84a03716e5b461057aec434f22f176840de",
+    "source-combined-tests.log": "a5ee7490804c7d831e68d1fb0aebec59ebd1c24ade8c769f255cb077688d4ede",
+    "source-combined-tsc.log": "6e84cd68fc6e86adda5787e6cc5f2fe4b6d536fd9f0f0fe656e03c2424abd1f9",
+    "source-home-handoff.md": "a0e0733c7c6a6e77706ea5f0cfa38f7df1a61a561e04c5af1d9e9143bdc2c0ae",
+    "source-navigation-handoff.md": "d05825a58c1c5cc9420f8bf43d70fdcb64b9b16459b61c06dc300a69ba1edcf5",
+    "protected-baseline.json": "64bf50cd63dc873cdc643100793ec5c07ecb65ee8d128fa3e4463cfaeecf2262",
+    "independent-review.md": "790624aa43a39cd17d67652d78d73e6a9b7ecbab52473318da6a41cd548762e7"
+  },
+  "sourceTestCount": 405,
+  "sourceTestFailures": 0,
+  "tscPassed": true,
+  "protectedPaths": [
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+    "/etc/nginx/conf.d/dianzi51-admin-subdomain.conf"
+  ],
+  "baselineAssets": [
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "sha256": "bb20946d992bbfe57de5e0bc0e2c255f920fdd3bf474c8e11332f37292e25903"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+      "sha256": "06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+      "sha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+      "sha256": "6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d"
+    },
+    {
+      "relative": "assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7"
+    }
+  ],
+  "dependencies": [
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Login-DVaqdbAB.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Materials-LZk-BqLV-composition-ef4bed4b523bf88c79ed6e6b74b5bb33c1f396168c352ee7755dd5d57c89b4dd.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Merchants-DmqmW2BQ-composition-446d3b3a8a98b300bed9893de6a79904fd2c7d6b3dd060d8c4df2b047ca38611-compact-4d276f53074f5efff22683c25a2f339ebf786b4515dfe56cbed5ef931357b487.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/MerchantDetail-certification-6172e7fe69db6830.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Messages-operations-unread-refresh-0b6e1ce42cff0667bf0929257e1103d4362920a322f12c4051bcee3ddc70fdbd.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/PortalUsers-C6ATutza-composition-1da389a5b265348bf99efa4fe3eef869c62bc08301e8612e415844ae9bb68ea8.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Admins-CJrmDzB1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Organization-DbNipmlr.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Orders-admin-header-8bf2e7a522e1-composition-16d10d139af13431bf594fa9ca327faab820bbe80423922aeeb14b30c18a6472.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-Bb1hTfdM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/ExceptionLogs-admin-header-8198e273e0d2-composition-ecaa95afb62cd7cdb3790794b89e28cf1f35fcdc6aa5fb50fdc706cc308de3d0.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Reviews-BmcUxzFU-composition-2c68b52011b4b0427f699c4aaa0c98e29f2add0873c2d92a6936278959564f8f.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Analytics-sIcKW5Kg-composition-a04f3f397520e01f9251b10de28b56d4fac771cbbd1635b5bd669f8492ee8134.js",
+    "/assets/OfficialChannelInventory-inquiry-reception-e73af3d5b8bc05ba2e9c8ec5c997d5304d04717aff2e383b6bc7c0cab78ca42b.js",
+    "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Forbidden-NB_Tozma.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/NotFound-C4qTsSNw.js",
+    "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+    "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+    "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+  ]
+}

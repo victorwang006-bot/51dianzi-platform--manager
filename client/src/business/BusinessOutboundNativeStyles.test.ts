@@ -20,6 +20,15 @@ function styleSelectors(css: string) {
 }
 
 describe("BusinessOutboundNativeStyles", () => {
+  it("page headers identify mall/business while original actions keep their names", () => {
+    const business = source("./platform/client/src/pages/CrmSalesOrders.tsx");
+    expect(outbound).toMatch(/<AdminPageHeader\s+list\s+title="商城订单"/);
+    expect(business).toMatch(/<AdminPageHeader\s+list\s+title="业务订单"/);
+    expect(outbound).toContain("导出选中");
+    expect(business).toContain("录入销售订单");
+    expect(business).toContain('title="确认取消销售订单？"');
+  });
+
   it("loads the isolated outbound stylesheet from the business content frame", () => {
     expect(frame).toContain('import "./BusinessOutboundNativeStyles.css";');
     expect(frame).toContain(

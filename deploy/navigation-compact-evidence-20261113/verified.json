@@ -1,0 +1,105 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-13T13:45:40.506298+00:00",
+  "htmlSha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+      "sha256": "60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+      "sha256": "94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+      "sha256": "8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552"
+    },
+    {
+      "relative": "assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "status": 200,
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+      "status": 200,
+      "sha256": "60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+      "status": 200,
+      "sha256": "94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+      "status": 200,
+      "sha256": "8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "status": 200,
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=mall",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=business",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "70e4a39af39169e8216843d8bb6e39b1e452841d3817a552b9ce4e6f8fb9dec1"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    }
+  ],
+  "sourceTests": 405,
+  "actualUITests": 46,
+  "allProtectedFilesUnchanged": true,
+  "allProcessesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "loggedInOrderMutationTested": false
+}

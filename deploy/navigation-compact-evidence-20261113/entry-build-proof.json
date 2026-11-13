@@ -1,0 +1,12 @@
+{
+  "beforeSha256": "bb20946d992bbfe57de5e0bc0e2c255f920fdd3bf474c8e11332f37292e25903",
+  "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74",
+  "patches": 2,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "beforeUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+  "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+  "defaultVariable": "$f",
+  "authAndPermissionRoutesUnchanged": true,
+  "sourceSha256": "9aee61124bdc6db122de6d0a27481b506bfa3d86b61530e340bbd32a14f68fab"
+}

@@ -316,7 +316,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     await click(`group:${group}`);
     expect(button(path).getAttribute("aria-current")).toBe("page");
     // This legacy fixture mounts both rows; production uses only the primary.
-    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(path === "/workbench/orders" ? 2 : 1);
+    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
   });
 
   it("渠道库存仍直达原回调、采购两项回传父原对象，公司信息不再显示", async () => {
@@ -682,7 +682,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     await render("/workbench/sales-orders/88?merchantId=3");
     await act(async () => button("inventory-management").click());
     expect(onNavigate).not.toHaveBeenCalled();
-    expect(button("sales-orders").getAttribute("aria-current")).toBe("page");
+    expect(button("sales-orders").getAttribute("aria-current")).toBe("location");
     expect(button("group:customers").dataset.active).toBe("true");
     await click("group:customers");
     expect(button("/workbench/orders").getAttribute("aria-current")).toBe(

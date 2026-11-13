@@ -368,7 +368,7 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: 212px;
+  width: 176px;
   max-width: calc(100vw - 16px);
   overflow: hidden;
   border: 1px solid #e5eaf0;
@@ -377,6 +377,16 @@
   color: var(--admin-color-secondary);
   box-shadow: 0 4px 12px rgb(39 79 120 / 12%);
   pointer-events: auto;
+}
+
+[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="sales-orders"],
+[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="inventory-management"],
+[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="procurement-management"] {
+  width: 160px;
+}
+
+[data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-panel[data-workspace="operations"][data-navigation-level="2"] {
+  width: 168px;
 }
 
 [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__workspace-content {
@@ -418,7 +428,7 @@
     right: 0;
     bottom: 0;
     left: auto !important;
-    width: 360px;
+    width: 360px !important;
     max-width: calc(100vw - 24px);
     max-height: 100vh !important;
     max-height: 100dvh !important;

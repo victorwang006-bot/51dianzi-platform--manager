@@ -1,0 +1,141 @@
+{
+  "inputs": {
+    "bridge:react": {
+      "bytes": 48,
+      "imports": [],
+      "format": "esm"
+    },
+    "bridge:wouter": {
+      "bytes": 75,
+      "imports": [],
+      "format": "esm"
+    },
+    "bridge:scope": {
+      "bytes": 56,
+      "imports": [],
+      "format": "esm"
+    },
+    "bridge:access": {
+      "bytes": 139,
+      "imports": [],
+      "format": "esm"
+    },
+    "bridge:crm": {
+      "bytes": 39,
+      "imports": [],
+      "format": "esm"
+    },
+    "bridge:mall": {
+      "bytes": 43,
+      "imports": [],
+      "format": "esm"
+    },
+    "client/src/lib/salesOrderWorkspace.ts": {
+      "bytes": 5177,
+      "imports": [],
+      "format": "esm"
+    },
+    "bridge:jsx": {
+      "bytes": 46,
+      "imports": [],
+      "format": "esm"
+    },
+    "client/src/business/SalesOrderWorkspace.tsx": {
+      "bytes": 3603,
+      "imports": [
+        {
+          "path": "bridge:react",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "bridge:wouter",
+          "kind": "import-statement",
+          "original": "wouter"
+        },
+        {
+          "path": "bridge:scope",
+          "kind": "import-statement",
+          "original": "./BusinessScope"
+        },
+        {
+          "path": "bridge:access",
+          "kind": "import-statement",
+          "original": "./BusinessWorkbenchAccessGate"
+        },
+        {
+          "path": "bridge:crm",
+          "kind": "import-statement",
+          "original": "./platform/client/src/pages/CrmSalesOrders"
+        },
+        {
+          "path": "bridge:mall",
+          "kind": "import-statement",
+          "original": "./platform/client/src/pages/OutboundManagement"
+        },
+        {
+          "path": "client/src/lib/salesOrderWorkspace.ts",
+          "kind": "import-statement",
+          "original": "../lib/salesOrderWorkspace"
+        },
+        {
+          "path": "bridge:jsx",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "navigation-order-wrapper.mjs": {
+      "bytes": 156,
+      "imports": [
+        {
+          "path": "client/src/business/SalesOrderWorkspace.tsx",
+          "kind": "import-statement",
+          "original": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/SalesOrderWorkspace.tsx"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "outputs": {
+    "stdin.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "navigation-order-wrapper.mjs",
+      "inputs": {
+        "navigation-order-wrapper.mjs": {
+          "bytesInOutput": 68
+        },
+        "bridge:react": {
+          "bytesInOutput": 31
+        },
+        "bridge:wouter": {
+          "bytesInOutput": 48
+        },
+        "bridge:scope": {
+          "bytesInOutput": 32
+        },
+        "bridge:access": {
+          "bytesInOutput": 80
+        },
+        "bridge:crm": {
+          "bytesInOutput": 30
+        },
+        "bridge:mall": {
+          "bytesInOutput": 34
+        },
+        "client/src/lib/salesOrderWorkspace.ts": {
+          "bytesInOutput": 1181
+        },
+        "bridge:jsx": {
+          "bytesInOutput": 42
+        },
+        "client/src/business/SalesOrderWorkspace.tsx": {
+          "bytesInOutput": 1500
+        }
+      },
+      "bytes": 3499
+    }
+  }
+}

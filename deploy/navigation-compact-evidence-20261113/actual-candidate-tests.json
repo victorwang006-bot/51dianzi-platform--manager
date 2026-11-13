@@ -1,0 +1,213 @@
+{
+  "status": "PASS",
+  "actualCandidatePatchBytesExecuted": true,
+  "inputs": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+      "sha256": "94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+      "sha256": "8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552"
+    },
+    {
+      "relative": "assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+      "sha256": "60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17"
+    },
+    {
+      "relative": "assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-customer-home-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    }
+  ],
+  "results": [
+    {
+      "name": "bundle0: default source remains original mall with zero duplicate inner tabs",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: explicit business URL selects original CRM and preserves verified identity memory",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: seller-only original access stays mall and never mounts CRM",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: explicit revoked business is denied without silent mall fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: withdrawing active mall permission unmounts original page on same URL",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: invalid duplicate and empty source values fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: old CRM and demand/keyword deep links remain business, not remembered mall",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: changing verified identity never inherits prior actor source preference",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: old outbound keeps raw search/hash under original seller gate",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: no grants mount neither original page nor tabs",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: page headers identify mall/business and old CRM canonical link expressions stay byte-identical",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: default source remains original mall with zero duplicate inner tabs",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: explicit business URL selects original CRM and preserves verified identity memory",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: seller-only original access stays mall and never mounts CRM",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: explicit revoked business is denied without silent mall fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: withdrawing active mall permission unmounts original page on same URL",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: invalid duplicate and empty source values fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: old CRM and demand/keyword deep links remain business, not remembered mall",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: changing verified identity never inherits prior actor source preference",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: old outbound keeps raw search/hash under original seller gate",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: no grants mount neither original page nor tabs",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: page headers identify mall/business and old CRM canonical link expressions stay byte-identical",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: sales opens a dropdown, does not navigate until a child is chosen",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: mall leaf passes the unchanged authorized outbound object and explicit fourth source intent",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: business leaf passes unchanged original CRM object and explicit business intent",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: both explicit sources and old outbound have correct primary highlight and breadcrumb",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: seller-only dropdown exposes only mall and never synthesizes a CRM item",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: permissions withdrawn on same URL remove open dropdown and its source context",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: inventory is 160px and only original inbound remains, not duplicate mall",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: procurement is 160px and organization is 176px",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: operations parent is 168px and child 176px aligned without oversized gap",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: right-edge submenu flips left with its own 176px width",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: inquiries and operations badges retain their original parent counts",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: Escape closes dropdown and restores primary trigger focus",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: keyboard activation opens sales and focuses first permitted source",
+      "status": "PASS"
+    },
+    {
+      "name": "actual nav: mobile keeps original drawer instead of desktop compact width",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Dashboard callback: source intent follows original object qualification and keeps raw query/hash",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Dashboard callback: refused navigation cannot be resurrected by a source intent",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Dashboard callback: cloned or withdrawn objects are rejected before any source navigation",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Dashboard callback: original channel tab/view arguments remain unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Logo: customer href and primary click use customer page, modifiers are preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "actual root default: bare admin entry redirects to customer list with replace",
+      "status": "PASS"
+    },
+    {
+      "name": "actual login return: ordinary login without next defaults to customers",
+      "status": "PASS"
+    },
+    {
+      "name": "actual login return: explicit order and inquiry next addresses preserve query/hash",
+      "status": "PASS"
+    },
+    {
+      "name": "actual login return: external targets and login loops are still rejected to safe customer default",
+      "status": "PASS"
+    },
+    {
+      "name": "actual closed bare workbench: customers while legacy inventory/publish stays inventory",
+      "status": "PASS"
+    }
+  ],
+  "diBoundary": "Executed exact production source factory/RouteGate/navigation capsule/root return helpers/Logo/source callback with inert original page and transport mocks. Preserves prior BFF authorization; no real order mutation or authenticated browser click acceptance."
+}

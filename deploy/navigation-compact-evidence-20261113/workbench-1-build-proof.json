@@ -1,0 +1,15 @@
+{
+  "beforeSha256": "f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c",
+  "sha256": "8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552",
+  "patches": 3,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "beforeUrl": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+  "url": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+  "wrapperSourceSha256": "12d774f8e0089da30b326acd504866120ae2d0e71f641438e340a07da294f251",
+  "allPriorChatCodeUnchanged": true,
+  "originalOrderOperationsUnchanged": true,
+  "originalAccessProviderUnchanged": true,
+  "originalRouteBranchesUnchanged": true,
+  "onlyPageHeaderTextChanged": true
+}

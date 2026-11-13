@@ -93,10 +93,14 @@ export function getSalesOrderNavigationContext<T extends { path: string }>(items
   const mallItem = items.find(item => item.path === "/workbench/outbound");
   const businessItem = items.find(item => item.path === "/workbench/orders");
   const item = businessItem ?? mallItem;
-  if (!isSales) return { item, active: false, label: null };
+  const entries: { source: SalesOrderSource; label: string; item: T }[] = SALES_ORDER_SOURCES.flatMap(entry => {
+    const authorizedItem = entry.value === "mall" ? mallItem : businessItem;
+    return authorizedItem ? [{ source: entry.value, label: entry.label, item: authorizedItem }] : [];
+  });
+  if (!isSales) return { item, entries, source: null, active: false, label: null };
   const selection = pathname === "/workbench/outbound" || pathname.startsWith("/workbench/outbound/")
     ? { source: "mall" as const, allowed: !!mallItem }
     : resolveSalesOrderSource(location, { mall: !!mallItem, business: !!businessItem });
-  return { item, active: selection.allowed,
+  return { item, entries, source: selection.allowed ? selection.source : null, active: selection.allowed,
     label: selection.allowed ? SALES_ORDER_SOURCES.find(entry => entry.value === selection.source)!.label : null };
 }

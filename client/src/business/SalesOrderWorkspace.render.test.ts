@@ -8,7 +8,7 @@ import SalesOrderWorkspace, { LegacyOutboundRoute } from "./SalesOrderWorkspace"
 import { BusinessScopeProvider } from "./BusinessScope";
 import { BusinessWorkbenchAccessProvider } from "./BusinessWorkbenchAccessGate";
 import { useBusinessLocation, businessNavigationHrefs } from "./api/business-wouter";
-import { salesOrderSourceStorageKey } from "../lib/salesOrderWorkspace";
+import { salesOrderSourceStorageKey, salesOrderSourceTarget } from "../lib/salesOrderWorkspace";
 
 const runtime = vi.hoisted(() => ({ mall: vi.fn(), business: vi.fn() }));
 vi.mock("./platform/client/src/pages/OutboundManagement", () => ({ default: (props: { readOnly?: boolean }) => {
@@ -56,19 +56,20 @@ afterEach(async () => {
 describe("SalesOrderWorkspace verified来源整合", () => {
   it("首次双授权默认mall，仍是原完整readOnly=false商城页", async () => {
     await render(["marketplace.seller", "crm.sales_orders"]);
-    expect(pages()).toEqual(["mall"]); expect(tabs()).toEqual(["mall", "business"]);
+    expect(pages()).toEqual(["mall"]); expect(tabs()).toEqual([]);
+    expect(host.querySelector('nav[aria-label="销售订单来源"]')).toBeNull();
     expect(runtime.mall).toHaveBeenCalledWith({ readOnly: false }); expect(runtime.business).not.toHaveBeenCalled();
     expect(new URLSearchParams(window.location.search).get("orderSource")).toBe("mall");
   });
   it.each([
     [["marketplace.seller"], "mall"], [["crm.sales_orders"], "business"],
-  ] as const)("单来源授权%s只显示自身页签，不扩大能力", async (capabilities, source) => {
-    await render([...capabilities]); expect(pages()).toEqual([source]); expect(tabs()).toEqual([source]);
+  ] as const)("单来源授权%s只显示自身原页，无重复页签且不扩大能力", async (capabilities, source) => {
+    await render([...capabilities]); expect(pages()).toEqual([source]); expect(tabs()).toEqual([]);
   });
-  it("来源切换和再次进入保留同一verified identity的记忆、query与hash", async () => {
+  it("父菜单明确来源路由切换和再次进入保留同一verified identity的记忆、query与hash", async () => {
     window.history.replaceState(null, "", "/workbench/orders?merchantId=30061&orderId=9&status=paid#detail-9");
     await render(["marketplace.seller", "crm.sales_orders"]);
-    await act(async () => host.querySelector<HTMLButtonElement>('[data-order-source-tab="business"]')!.click());
+    await navigate(salesOrderSourceTarget(`${window.location.pathname}${window.location.search}${window.location.hash}`, "business", "/workbench/orders"));
     expect(pages()).toEqual(["business"]); expect(window.location.hash).toBe("#detail-9");
     expect(new URLSearchParams(window.location.search).get("orderId")).toBe("9");
     expect(window.localStorage.getItem(salesOrderSourceStorageKey(identity))).toBe("business");
@@ -91,7 +92,7 @@ describe("SalesOrderWorkspace verified来源整合", () => {
   });
   it("撤销当前显式mall即拆除原mall页，不借CRM；再次缺省进入才选择仍获权business", async () => {
     await render(["marketplace.seller", "crm.sales_orders"]); expect(pages()).toEqual(["mall"]);
-    await render(["crm.sales_orders"]); expect(pages()).toEqual([]); expect(tabs()).toEqual(["business"]);
+    await render(["crm.sales_orders"]); expect(pages()).toEqual([]); expect(tabs()).toEqual([]);
     await navigate("/workbench/orders"); expect(pages()).toEqual(["business"]);
   });
   it("CRM历史alias和demandNo/keyword意图不落入商城", async () => {

@@ -132,7 +132,7 @@ describe("关闭四个独立入口的导航投影", () => {
   });
 
   it.each(oldUrls)("旧路径%s只保留仍可用的导航上下文", path => {
-    const destination = path.startsWith("/workbench") ? "/workbench/channel-inventory" : "/staff";
+    const destination = path === "/workbench" ? "/workbench/customers" : path.startsWith("/workbench") ? "/workbench/channel-inventory" : "/staff";
     expect(getClosedAdminEntryNavigationTarget(`${path}/?merchantId=30061#old-page`)).toBe(`${destination}?merchantId=30061`);
     expect(getAdminWorkspaceNavigationRoute(`${path}?merchantId=30061`)?.canonicalPath).toBe(destination);
     expect(getAdminWorkspaceNavigationRoute(path)?.isAlias).toBe(true);
@@ -152,12 +152,13 @@ describe("关闭四个独立入口的导航投影", () => {
     }
   });
 
-  it("真实菜单不渲染/预取关闭项，保留库存父组与其余组织入口", async () => {
+  it("真实菜单不渲染/预取关闭项，保留库存、销售原入口与其余组织入口", async () => {
     const preload = vi.fn();
     mounted = await mount("/workbench/inbound", createElement(AdminWorkspaceTabs, { items: inputs, location: "/workbench/inbound", onNavigate: vi.fn(), onPreload: preload }));
-    await mounted.click('[data-workspace-dropdown-trigger="business"]');
-    await mounted.click('[data-workspace-group="inventory"]');
-    expect([...mounted.container.querySelectorAll('[data-workspace-submenu="inventory"] [data-workspace-dropdown-item]')].map(node => node.getAttribute("data-workspace-dropdown-item"))).toEqual(["/workbench/inbound", "/workbench/outbound"]);
+    await mounted.click('[data-workspace-dropdown-trigger="inventory-management"]');
+    expect([...mounted.container.querySelectorAll('[data-workspace-dropdown-item]')].map(node => node.getAttribute("data-workspace-dropdown-item"))).toEqual(["/workbench/inbound"]);
+    await mounted.click('[data-workspace-dropdown-trigger="sales-orders"]');
+    expect([...mounted.container.querySelectorAll('[data-order-source]')].map(node => [node.getAttribute("data-order-source"), node.getAttribute("data-workspace-dropdown-item")])).toEqual([["mall", "/workbench/outbound"], ["business", "/workbench/orders"]]);
     await mounted.click('[data-workspace-dropdown-trigger="organization"]');
     expect([...mounted.container.querySelectorAll('[data-workspace="organization"] [data-workspace-dropdown-item]')].map(node => node.getAttribute("data-workspace-dropdown-item"))).toEqual(["/staff", "/teams", "/workbench/user-records"]);
     for (const path of retired) expect(mounted.container.querySelector(`[data-workspace-nav-target="${path}"]`)).toBeNull();
@@ -168,7 +169,7 @@ describe("关闭四个独立入口的导航投影", () => {
 describe("旧URL首次render即阻止旧页面挂载", () => {
   it.each(oldUrls)("直接URL %s replace到安全目标，旧页面零render", async path => {
     mounted = await mount(`${path}/?merchantId=30061&returnTo=https://evil.test#stale`);
-    const destination = path.startsWith("/workbench") ? "/workbench/channel-inventory" : "/staff";
+    const destination = path === "/workbench" ? "/workbench/customers" : path.startsWith("/workbench") ? "/workbench/channel-inventory" : "/staff";
     expect(window.location.pathname + window.location.search).toBe(`${destination}?merchantId=30061`);
     expect(window.location.hash).toBe("");
     expect(window.history.length).toBe(1);
@@ -179,7 +180,8 @@ describe("旧URL首次render即阻止旧页面挂载", () => {
     mounted = await mount(path.startsWith("/workbench") ? "/workbench/inbound?merchantId=8" : "/teams");
     runtime.screens = [];
     await mounted.navigate(`${path}?merchantId=30061`);
-    expect(runtime.screens.every(screen => screen.path === (path.startsWith("/workbench") ? "/workbench/channel-inventory" : "/staff"))).toBe(true);
+    const destination = path === "/workbench" ? "/workbench/customers" : path.startsWith("/workbench") ? "/workbench/channel-inventory" : "/staff";
+    expect(runtime.screens.every(screen => screen.path === destination)).toBe(true);
     expect(runtime.screens.length).toBeGreaterThan(0);
     expect(window.location.search).toBe("?merchantId=30061");
   });
