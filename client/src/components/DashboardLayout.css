@@ -2361,3 +2361,67 @@
   }
 }
 /* admin-global-header-v1 END */
+
+/* admin-list-outer-location-v1 BEGIN — append only; original CSS bytes immutable */
+@supports selector(:has(*)) {
+  /* Four authorized root lists only. Block flow removes historical main grid
+   * tracks, including F01/error-row and production fixed-height variants.
+   * Important is confined to geometry that older high-specificity rules own. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"]:is([data-admin-list-location-layout="root-hidden"], [data-admin-list-location-layout="list-breadcrumb"])) {
+    display: block !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    grid-auto-rows: auto;
+    padding-top: 12px !important;
+  }
+
+  /* Keep the real nav/labels/aria-current in the accessibility tree and in
+   * :has(> nav) contracts, but remove every visible title-row placeholder. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > nav[data-admin-navigation="current-location"][data-admin-list-location-layout="root-hidden"] {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Only the existing native context wrappers, not alerts, controls or tables.
+   * A hidden absolute nav must not leave subgrid rows below it (desktop/mobile). */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"][data-admin-list-location-layout="root-hidden"]) > section[data-business-context-verification],
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"][data-admin-list-location-layout="root-hidden"]) > section[data-business-context-verification] > div[data-business-context-content],
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"][data-admin-list-location-layout="root-hidden"]) > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content {
+    display: block !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    grid-auto-rows: auto;
+    grid-area: auto !important;
+    min-height: 0;
+    margin-block-start: 0;
+  }
+
+  /* Retain the customer page's own 12px list gap, removing only inherited
+   * subgrid/fixed tracks. No descendant filter/button/table rules are changed. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"][data-admin-list-location-layout="root-hidden"]) > section[data-business-context-verification] > div[data-business-context-content] > div.business-native-content > section.aui-page.customer-list-page {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: none !important;
+    grid-auto-rows: auto;
+  }
+
+  /* Merchant/staff real roots keep a compact, read-only breadcrumb. Details,
+   * channel archives/batches/trash and dialogs have no marker and are untouched. */
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content > nav[data-admin-navigation="current-location"][data-admin-list-location-layout="list-breadcrumb"] {
+    min-height: 20px;
+    padding: 0;
+    margin: 0 0 8px;
+    font-size: 12px;
+    line-height: 20px;
+  }
+}
+/* admin-list-outer-location-v1 END */

@@ -25,6 +25,7 @@ import {
   type AdminWorkspaceId,
   type AdminWorkspaceNavigationItem,
 } from "./adminWorkspaceNavigationModel";
+import { getAdminListLocationLayout } from "./adminListLocationLayout";
 import "./AdminWorkspaceNavigation.css";
 import "./AdminListPage.css";
 
@@ -134,7 +135,8 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
     : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
     : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   return (
-    <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location">
+    <nav aria-label="当前位置" className="admin-workspace-nav__location" data-admin-navigation="current-location"
+      data-admin-list-location-layout={getAdminListLocationLayout(location, labels)}>
       <ol>
         {labels.map((label, index) => (
           <li key={`${index}-${label}`}>
