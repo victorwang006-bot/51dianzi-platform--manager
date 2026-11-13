@@ -10,7 +10,11 @@ export const officialInventoryPermissionsSchema = z.object({
   /** Channel/source-sensitive reads: live official leader -> explicit bound staff.
    * ERP team and current channel assignment are independently rechecked. */
   channelProfileTeamRead: z.object({ ownerUserIds: z.array(z.number().int().safe().positive()).min(1).max(500)
-    .refine(ids => new Set(ids).size === ids.length) }).strict().optional(),
+    .refine(ids => new Set(ids).size === ids.length),
+    /** Only a freshly locked real backend super admin may issue this actor-only
+     * proof. The front still requires current business-team leadership. */
+    businessTeamLeaderRead: z.literal(true).optional(),
+  }).strict().refine(proof => !proof.businessTeamLeaderRead || proof.ownerUserIds.length === 1).optional(),
   authorizationVersion: z.string().min(8).max(160),
 }).strict();
 export type OfficialInventoryPermissions = z.infer<typeof officialInventoryPermissionsSchema>;

@@ -20,6 +20,28 @@ describe("native official leader -> explicit current staff bridge, no database",
     for (const text of ["official_channel_team_members", "t.status = 'active'", "a.status = 'active'", "b.status = 'active'", "LIMIT 501"]) expect(query).toContain(text);
     expect(state.calls.every(query => query.startsWith("SELECT"))).toBe(true);
   });
+  it("a freshly verified super admin uses an actor-only business-team proof without creating an official team", async () => {
+    state.access = { adminUserId: 303, isSuperAdmin: true, teamId: null, teamRole: null };
+    await withOfficialChannelProfileRead({} as never, 202, async proof => {
+      expect(state.inTransaction).toBe(true);
+      expect(proof).toEqual({ ownerUserIds: [202], businessTeamLeaderRead: true });
+    });
+    expect(loadOfficialAccess).toHaveBeenCalledWith(expect.anything(), { adminUserId: 303, sessionVersion: 7 }, "officialInventory.read");
+    expect(state.calls).toEqual([]);
+  });
+  it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])("super admin proof rejects an invalid staff binding %s", async staffUserId => {
+    state.access.isSuperAdmin = true;
+    const run = vi.fn();
+    await expect(withOfficialChannelProfileRead({} as never, staffUserId, run)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(run).not.toHaveBeenCalled();
+  });
+  it("revoked live native authority never reaches signing even for a super-admin snapshot", async () => {
+    state.access.isSuperAdmin = true;
+    vi.mocked(loadOfficialAccess).mockRejectedValueOnce(Object.assign(new Error("revoked"), { code: "FORBIDDEN" }));
+    const run = vi.fn();
+    await expect(withOfficialChannelProfileRead({} as never, 202, run)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(run).not.toHaveBeenCalled();
+  });
   it("ordinary native members gain no profile team projection", async () => {
     state.access.teamRole = "member";
     await withOfficialChannelProfileRead({} as never, 202, async proof => { expect(proof).toBeUndefined(); });

@@ -24,6 +24,15 @@ export async function withOfficialChannelProfileRead<T>(ctx: TrpcContext, staffU
   return database.transaction(async tx => {
     const access = await loadOfficialAccess(tx, officialActorFromContext(ctx), "officialInventory.read");
     if (!access.teamId && !access.isSuperAdmin && !allowUnassignedPublicRead) throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未配置有效官方团队" });
+    // A real super admin may use its existing business-team leadership. This is
+    // only an actor-bound proof; the front rechecks the active ERP leader and
+    // current channel assignment in the selected enterprise, never a global list.
+    if (access.isSuperAdmin) {
+      if (!Number.isSafeInteger(staffUserId) || staffUserId <= 0) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "渠道档案员工绑定已变化" });
+      }
+      return run({ ownerUserIds: [staffUserId], businessTeamLeaderRead: true });
+    }
     if (access.teamRole !== "leader" || !access.teamId) return run(undefined);
     const found = officialChannelProfileAuthorityRows(await tx.execute(sql`SELECT b.frontUserId AS ownerUserId
       FROM official_channel_team_members tm
