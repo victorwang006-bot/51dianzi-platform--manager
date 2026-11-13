@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "onlyGlobalBusinessUIChanged": true,
+  "unrelatedNativeBytesUnchanged": true,
+  "mallBytesUnchanged": true,
+  "embeddedBehaviorUnchanged": true,
+  "scopeAndArchiveUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "productionWrites": 0,
+  "files": 4,
+  "workbenches": [
+    {
+      "beforeSha256": "3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f",
+      "sha256": "d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59",
+      "patches": 7,
+      "exactInverse": true,
+      "allNonpatchBytesUnchanged": true,
+      "idx": 0,
+      "beforeUrl": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+      "url": "/assets/BusinessWorkbenchPage-business-compact-0-d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59.js",
+      "functionName": "op",
+      "embeddedSymbol": null,
+      "recordButton": "e.jsxs(te,{\"data-loc\":\"client/src/business/platform/client/src/pages/CrmSalesOrders.tsx:312\",type:\"button\",className:ao,onClick:()=>N(!0),children:[e.jsx(dn,{\"data-loc\":\"client/src/business/platform/client/src/pages/CrmSalesOrders.tsx:312\",className:\"mr-1 h-3.5 w-3.5\"}),\"录入销售订单\"]})",
+      "mallBytesUnchanged": true,
+      "hooksQueriesMutationSetupUnchanged": true,
+      "originalWrapperUnchanged": false,
+      "onlyGlobalBusinessUIChanged": true
+    },
+    {
+      "beforeSha256": "e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3",
+      "sha256": "bd4afc54e076ab0faa331a5844e40f80ff1a7513ed3756bfb5b0e4fae03bcd84",
+      "patches": 7,
+      "exactInverse": true,
+      "allNonpatchBytesUnchanged": true,
+      "idx": 1,
+      "beforeUrl": "/assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js",
+      "url": "/assets/BusinessWorkbenchPage-business-compact-1-bd4afc54e076ab0faa331a5844e40f80ff1a7513ed3756bfb5b0e4fae03bcd84.js",
+      "functionName": "sN",
+      "embeddedSymbol": "o",
+      "recordButton": "l(E,{type:\"button\",className:Rd,onClick:()=>V(!0),children:[s(Ct,{className:\"mr-1 h-3.5 w-3.5\"}),\"\\u5F55\\u5165\\u9500\\u552E\\u8BA2\\u5355\"]})",
+      "mallBytesUnchanged": true,
+      "hooksQueriesMutationSetupUnchanged": true,
+      "originalWrapperUnchanged": true,
+      "onlyGlobalBusinessUIChanged": true
+    }
+  ]
+}

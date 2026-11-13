@@ -1,0 +1,17 @@
+{
+  "beforeSha256": "3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f",
+  "sha256": "d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59",
+  "patches": 7,
+  "exactInverse": true,
+  "allNonpatchBytesUnchanged": true,
+  "idx": 0,
+  "beforeUrl": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+  "url": "/assets/BusinessWorkbenchPage-business-compact-0-d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59.js",
+  "functionName": "op",
+  "embeddedSymbol": null,
+  "recordButton": "e.jsxs(te,{\"data-loc\":\"client/src/business/platform/client/src/pages/CrmSalesOrders.tsx:312\",type:\"button\",className:ao,onClick:()=>N(!0),children:[e.jsx(dn,{\"data-loc\":\"client/src/business/platform/client/src/pages/CrmSalesOrders.tsx:312\",className:\"mr-1 h-3.5 w-3.5\"}),\"录入销售订单\"]})",
+  "mallBytesUnchanged": true,
+  "hooksQueriesMutationSetupUnchanged": true,
+  "originalWrapperUnchanged": false,
+  "onlyGlobalBusinessUIChanged": true
+}

@@ -118,10 +118,10 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("sales-orders UI unification", () => {
-  it("uses shared page, header, filters and data panels without the old oversized heading", () => {
+  it("uses shared page, filters and data panels with an accessible page label instead of a heading", () => {
     const names = collect((node): node is ts.JsxOpeningElement | ts.JsxSelfClosingElement => ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)).map(node => node.tagName.getText(source));
     expect(names.filter(name => name === "AdminPage")).toHaveLength(1);
-    expect(names.filter(name => name === "AdminPageHeader")).toHaveLength(1);
+    expect(names.filter(name => name === "AdminPageHeader")).toHaveLength(0);
     expect(names.filter(name => name === "AdminFilterBar")).toHaveLength(2);
     expect(names.filter(name => name === "AdminDataPanel")).toHaveLength(11);
     expect(pageText).not.toContain("text-[22px]");
@@ -291,18 +291,20 @@ describe("sales-orders UI unification", () => {
   it("renders original state-specific actions, amount values and pagination in the shared skeleton", () => {
     const document = renderPage();
     expect(document.querySelector("section.aui-page")?.getAttribute("data-admin-ui-system")).toBe("channel-inventory");
-    expect(document.querySelector("h1.aui-page-title")?.textContent).toBe("业务订单");
+    expect(document.querySelector("section.aui-page")?.getAttribute("aria-label")).toBe("业务订单");
+    expect(document.querySelector("h1")).toBeNull();
+    expect(document.querySelector(".aui-page-header")).toBeNull();
     expect(document.querySelector(".aui-filterbar input")?.getAttribute("aria-label")).toBe("搜索销售订单");
     expect(document.querySelector(".aui-data-panel .aui-filterbar")).toBeNull();
-    expect(buttons(document.querySelector(".aui-filterbar")!)).not.toContain("录入销售订单");
+    expect(buttons(document.querySelector(".aui-filterbar")!).slice(-2)).toEqual(["筛选", "录入销售订单"]);
     expect([...document.querySelectorAll(".crm-sales-orders-table th")].map(header => header.textContent?.trim())).toEqual([
-      "订单号", "客户 / 需求", "项目", "金额（含税）", "状态", "收款", "出货", "录入时间", "操作",
+      "订单号", "客户", "金额（含税）", "状态", "收款", "出货", "录入时间", "操作",
     ]);
     const rows = document.querySelectorAll(".crm-sales-orders-table tbody tr");
     expect(buttons(rows[0])).toEqual(["SO-11", "查看", "收款", "出货"]);
     expect(buttons(rows[1])).toEqual(["SO-12", "查看"]);
-    expect(rows[0].querySelectorAll("td")[3].classList.contains("text-right")).toBe(true);
-    expect(rows[0].querySelectorAll("td")[3].textContent).toBe("¥120");
+    expect(rows[0].querySelectorAll("td")[2].classList.contains("text-right")).toBe(true);
+    expect(rows[0].querySelectorAll("td")[2].textContent).toBe("¥120");
     expect(document.querySelector(".crm-sales-orders-pagination")?.textContent).toContain("第 1 / 3 页");
     expect(runtime.listInputs.at(-1)).toEqual({ keyword: "", page: 1, pageSize: 20 });
   });

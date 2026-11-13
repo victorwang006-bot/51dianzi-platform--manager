@@ -20,11 +20,13 @@ function styleSelectors(css: string) {
 }
 
 describe("BusinessOutboundNativeStyles", () => {
-  it("restores the business header while mall stays a compact list and original actions keep their names", () => {
+  it("keeps business and mall compact with accessible identifiers and original action names", () => {
     const business = source("./platform/client/src/pages/CrmSalesOrders.tsx");
     expect(outbound).not.toMatch(/<AdminPageHeader\s+list\s+title="商城订单"/);
     expect(outbound).toContain('aria-label="商城订单"');
-    expect(business).toMatch(/<AdminPageHeader\s+list\s+title="业务订单"/);
+    expect(business).not.toContain("<AdminPageHeader");
+    expect(business).not.toContain("<h1");
+    expect(business).toContain('embedded ? `${embedded.customer.name}订单与出货` : "业务订单"');
     expect(outbound).toContain("导出选中");
     expect(business).toContain("录入销售订单");
     expect(business).toContain('title="确认取消销售订单？"');

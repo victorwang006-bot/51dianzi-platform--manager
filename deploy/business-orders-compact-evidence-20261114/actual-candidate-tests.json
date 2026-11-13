@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "tests": 13,
+  "failed": 0,
+  "results": [
+    {
+      "name": "bundle0: exact inverse and unchanged hooks/mall/wrapper",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: global actual eight columns, demand preserved, project absent",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: original blue record follows filter, wrapping retained, click opens original state",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: page first effective child is filter; no heading or spacer; accessible page label",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle0: row actions/status/date/pagination and all dialogs unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: exact inverse and unchanged hooks/mall/wrapper",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: global actual eight columns, demand preserved, project absent",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: original blue record follows filter, wrapping retained, click opens original state",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: page first effective child is filter; no heading or spacer; accessible page label",
+      "status": "PASS"
+    },
+    {
+      "name": "bundle1: row actions/status/date/pagination and all dialogs unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "shared embedded write: actual nine-column and filter DOM byte-identical",
+      "status": "PASS"
+    },
+    {
+      "name": "shared embedded read-only: actual nine-column and filter DOM byte-identical",
+      "status": "PASS"
+    },
+    {
+      "name": "four asset hashes and untouched entry/importmap scopes/CSS",
+      "status": "PASS"
+    }
+  ],
+  "actualCandidateRenderNodesExecuted": true,
+  "networkCalls": 0,
+  "productionWrites": 0,
+  "coverageLimits": [
+    "Actual AST-extracted table/filter/page-label render nodes executed with inert local fixtures; no bundled application top-level or network access.",
+    "Embedded rendered table/filter DOM compared byte-for-byte to deployed baseline for both write/read-only permissions.",
+    "No production logged-in browser or pixel/computed-style acceptance claimed."
+  ]
+}

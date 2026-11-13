@@ -339,6 +339,18 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     render();
     expect(container.querySelector("[data-platform-layout]")).toBeNull();
     expect(container.querySelector("h1")).toBeNull();
+    const table = container.querySelector(".crm-sales-orders-table")!;
+    expect(Array.from(table.querySelectorAll("th"), item => item.textContent?.trim())).toEqual([
+      "订单号", "客户 / 需求", "项目", "金额（含税）", "状态", "收款", "出货", "录入时间", "操作",
+    ]);
+    expect(Array.from(table.querySelectorAll("col"), item => item.className)).toEqual([
+      "w-[14%]", "w-[18%]", "w-[8%]", "w-[10%]", "w-[9%]", "w-[10%]", "w-[9%]", "w-[8%]", "w-[14%]",
+    ]);
+    expect(table.querySelectorAll("tbody tr:first-child td")).toHaveLength(9);
+    expect(table.querySelectorAll("tbody tr:first-child td")[1].textContent).toContain("D-21");
+    expect(table.querySelectorAll("tbody tr:first-child td")[2].textContent).toBe("项目");
+    expect(button("筛选", container).nextElementSibling).toBe(button("成交确认 / 生成订单", container));
+    expect(container.textContent).not.toContain("录入销售订单");
     expect(
       container.querySelector(".crm-sales-orders-embedded")
     ).not.toBeNull();

@@ -20,7 +20,6 @@ import PlatformLayout from "../../../../BusinessContentFrame";
 import { trpc } from "../../../../api/business-trpc";
 import {
   AdminPage,
-  AdminPageHeader,
   AdminFilterBar,
   AdminDataPanel,
 } from "@/components/admin/UnifiedAdminPage";
@@ -810,26 +809,9 @@ function SalesOrdersContent({
       <AdminPage
         className={`crm-sales-orders-page min-w-0 space-y-3${embedded ? " crm-sales-orders-embedded" : ""}`}
         aria-label={
-          embedded ? `${embedded.customer.name}订单与出货` : undefined
+          embedded ? `${embedded.customer.name}订单与出货` : "业务订单"
         }
       >
-        {!embedded ? (
-          <AdminPageHeader
-            list
-            title="业务订单"
-            description="客户需求形成的内部订单，不含网站自主下单。"
-            actions={
-              <Button
-                type="button"
-                className={buttonClass}
-                onClick={() => setEntryOpen(true)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                录入销售订单
-              </Button>
-            }
-          />
-        ) : null}
         {embedded && !canWrite ? (
           <p role="status" className="crm-sales-orders-readonly-note">
             {embedded.customer.archivedAt
@@ -875,6 +857,16 @@ function SalesOrdersContent({
               <Search className="mr-1 h-3.5 w-3.5" />
               筛选
             </Button>
+            {!embedded ? (
+              <Button
+                type="button"
+                className={buttonClass}
+                onClick={() => setEntryOpen(true)}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                录入销售订单
+              </Button>
+            ) : null}
             {embedded && canWrite ? (
               <Button
                 type="button"
@@ -934,14 +926,14 @@ function SalesOrdersContent({
               >
                 <colgroup>
                   <col className="w-[14%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[10%]" />
+                  <col className="w-[18%]" style={embedded ? undefined : { width: "22%" }} />
+                  {embedded ? <col className="w-[8%]" /> : null}
+                  <col className="w-[10%]" style={embedded ? undefined : { width: "12%" }} />
                   <col className="w-[9%]" />
                   <col className="w-[10%]" />
                   <col className="w-[9%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[14%]" />
+                  <col className="w-[14%]" style={embedded ? undefined : { width: "16%" }} />
                 </colgroup>
                 <TableHeader>
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
@@ -949,11 +941,13 @@ function SalesOrdersContent({
                       订单号
                     </TableHead>
                     <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      客户 / 需求
+                      {embedded ? "客户 / 需求" : "客户"}
                     </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      项目
-                    </TableHead>
+                    {embedded ? (
+                      <TableHead className="h-8 px-2 text-[11px] text-slate-500">
+                        项目
+                      </TableHead>
+                    ) : null}
                     <TableHead className="h-8 px-2 text-right text-[11px] text-slate-500">
                       金额（含税）
                     </TableHead>
@@ -1005,12 +999,14 @@ function SalesOrdersContent({
                           {order.demandNo}
                         </div>
                       </TableCell>
-                      <TableCell
-                        className="admin-cell-primary min-w-0 truncate px-2 py-1.5"
-                        title={order.projectName || "—"}
-                      >
-                        {order.projectName || "—"}
-                      </TableCell>
+                      {embedded ? (
+                        <TableCell
+                          className="admin-cell-primary min-w-0 truncate px-2 py-1.5"
+                          title={order.projectName || "—"}
+                        >
+                          {order.projectName || "—"}
+                        </TableCell>
+                      ) : null}
                       <TableCell className="admin-cell-primary px-2 py-1.5 text-right tabular-nums">
                         {formatSalesOrderAmount(order.totalAmount)}
                       </TableCell>
