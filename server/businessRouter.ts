@@ -55,6 +55,7 @@ import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/busines
 import { channelInventoryListBusinessInputSchema } from "./channelInventoryListBusinessInput";
 import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInputSchema, previewFactoryMaterialReceptionResultSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
+import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
 const merchantListInput = z.object({
   page: z.number().int().min(1).max(100000).default(1),
   pageSize: z.number().int().min(1).max(100).default(50),
@@ -415,6 +416,12 @@ async function forwardBusinessMethod(
         errorType: error instanceof Error ? error.name : "UnknownError",
       });
       throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "业务服务暂时不可用，请稍后重试" });
+    }
+    if (capability.method === "order.sellerOrders") {
+      result = await applyBusinessTestOrderArchives(result, {
+        merchantId: merchant.id,
+        sellerUserId: staffBinding.frontUserId,
+      });
     }
     if (capability.method === "channelInventory.listTeamMaterials" && result && typeof result === "object") {
       const page = result as { items?: Record<string, unknown>[] };
