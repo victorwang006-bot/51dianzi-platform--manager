@@ -122,7 +122,6 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
     && openRef.current && lifecycle.current.key === session.key && lifecycle.current.generation === session.generation
     && (latest.current.isCurrent?.() ?? true));
   return <section className="customer-workbench-panel"><h2 className="admin-section-title">客户渠道库存</h2>
-    <p className="customer-detail-meta">上传库存自动归属本客户公司；与采购需求、BOM导入分开。</p>
     <div className="flex flex-wrap items-center gap-2">
       <button type="button" className="crm-btn crm-btn-primary" aria-disabled={!canUpload} aria-describedby={uploadReason ? descriptionId : undefined}
         onClick={openUpload}>上传库存表</button>
@@ -130,7 +129,7 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
     </div>
     {uploadReason ? <p id={descriptionId} className="customer-detail-meta">{uploadReason}</p> : null}
     {context?.disabledReason && context.disabledReason !== uploadReason && context.disabledReason !== settingsReason ? <p className="customer-detail-meta">{context.disabledReason}</p> : null}
-    {settingsReason ? <p className="customer-detail-meta">{settingsReason}</p> : context && (!authority.canWrite || !context.canUpload || props.archived) ? <p className="customer-detail-meta">供货设置入口可查看；编辑能力仍由原渠道页面核验，当前上传只读。</p> : null}
+    {settingsReason ? settingsReason === "当前上传负责人尚未绑定供货渠道，可在上传库存表中人工选择并确认关联现有渠道。" ? null : <p className="customer-detail-meta">{settingsReason}</p> : context && (!authority.canWrite || !context.canUpload || props.archived) ? <p className="customer-detail-meta">供货设置入口可查看；编辑能力仍由原渠道页面核验，当前上传只读。</p> : null}
     {authority.failed || contextQuery.isError || (readEnabled && summaryQuery.isError) ? <p role="alert">{summaryQuery.isError && readEnabled ? `读取客户供应库存失败：${errorMessage(summaryQuery.error)}` : "供货权限或关联核验失败。"} <button type="button" className="crm-link" onClick={retry}>重试供应库存</button></p>
       : !readEnabled ? <p className="customer-workbench-empty">暂无供应库存查看权限。</p>
       : !context ? <p className="customer-workbench-empty">正在核验客户供应渠道…</p> : null}

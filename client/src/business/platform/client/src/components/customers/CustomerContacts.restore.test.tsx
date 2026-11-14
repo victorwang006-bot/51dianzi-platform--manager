@@ -246,6 +246,9 @@ function configureFixtures() {
   vi.stubGlobal("fetch", vi.fn(forbidden));
   vi.stubGlobal("XMLHttpRequest", vi.fn(forbidden));
   vi.stubGlobal("WebSocket", vi.fn(forbidden));
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => setTimeout(() => callback(0), 0));
+  vi.stubGlobal("cancelAnimationFrame", (frame: number) => clearTimeout(frame));
+  HTMLElement.prototype.scrollIntoView ??= () => {};
   runtime.location = "/customers";
   runtime.supplyNative = { read: false, write: false, note: false, authorizationVersion: "v1" };
   runtime.supplySummary.mockReset().mockResolvedValue({ items: [], canWrite: false });
@@ -472,7 +475,9 @@ describe("business industry customer integration", () => {
     render(<CustomerDetail />);
     await settle();
     click(button("新增跟进"));
-    expect(document.querySelector('#customer-panel-followups')?.hasAttribute("hidden")).toBe(false);
+    expect(document.querySelector('#customer-panel-company')?.hasAttribute("hidden")).toBe(false);
+    expect(document.querySelector('#customer-followups')?.parentElement?.id).toBe("customer-panel-company");
+    expect(runtime.location).toContain("tab=company");
     change(required(document.querySelector('textarea[aria-label="跟进内容"]'), "missing follow-up") as HTMLTextAreaElement, "行业待补，正常追加跟进");
     click(button("保存跟进"));
     await settle();

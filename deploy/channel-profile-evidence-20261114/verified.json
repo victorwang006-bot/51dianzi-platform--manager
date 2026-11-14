@@ -1,0 +1,99 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-14T00:57:33.054490+00:00",
+  "htmlSha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-channel-profile-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js",
+      "sha256": "1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js",
+      "sha256": "537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-channel-profile-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "status": 200,
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js",
+      "status": 200,
+      "sha256": "1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js",
+      "status": 200,
+      "sha256": "537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=business",
+      "status": 200,
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=mall",
+      "status": 200,
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    }
+  ],
+  "customerInventoryCopyRemoved": true,
+  "ordersAndBomUnchanged": true,
+  "mallBytesUnchanged": true,
+  "allProtectedFilesUnchanged": true,
+  "allProcessesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "productionRecordWrites": 0,
+  "loggedInBrowserAcceptancePerformed": false,
+  "customerArchiveDefault": true,
+  "overviewRemoved": true,
+  "followupsMergedBelowContacts": true,
+  "legacyCustomerLinksCompatible": true,
+  "customerTabs": [
+    "客户档案",
+    "需求与报价",
+    "客户订单",
+    "渠道库存"
+  ]
+}

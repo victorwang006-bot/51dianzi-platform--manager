@@ -154,12 +154,11 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
       <button type="button" className="ci-button" disabled={!readable} onClick={() => void refresh()}>刷新库存</button>
       <span className="ci-filter-count">{result ? `${result.total} 条库存 · ${result.bindingCount} 个已确认可读渠道` : loading ? "正在读取库存条数…" : "库存条数不可用"}</span>
     </form>
-    <p className="ci-readonly">仅汇总本客户公司作为供货方的已确认绑定渠道库存；搜索不匹配采购需求，也不会展示其他公司的同型号库存。</p>
     <div className="ci-tablewrap ci-compact-tablewrap"><table className="ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable customer-channel-inventory-table">
       <colgroup><col /><col style={{ width: 100 }} /><col style={{ width: 96 }} /><col style={{ width: 104 }} /><col style={{ width: 128 }} /><col style={{ width: 112 }} /><col style={{ width: 148 }} /><col style={{ width: 140 }} /><col style={{ width: 216 }} /></colgroup>
       <thead><tr><th className="ci-material-part-col">型号</th><th className="ci-material-brand-col">品牌</th><th className="ci-material-recorder-col">负责人</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-lead-col">交期</th><th className="ci-material-date-col">更新时间</th><th className="ci-material-source-col">渠道来源</th><th className="ci-col-actions">操作</th></tr></thead>
       <tbody>
-        {!readable ? <tr><td colSpan={9} className="ci-empty">正在核验客户库存读取权限…</td></tr> : loading ? <tr><td colSpan={9} className="ci-empty">正在读取客户渠道库存…</td></tr> : error ? <tr><td colSpan={9} className="ci-empty ci-host-error" role="alert">{error}</td></tr> : !result ? <tr><td colSpan={9} className="ci-empty">客户库存范围尚未确认。</td></tr> : result.bindingCount === 0 ? <tr><td colSpan={9} className="ci-empty">当前没有可读取的已确认渠道库存。可能尚未绑定、暂无活动库存或当前来源权限不足；请核对权限和库存表，在渠道设置中人工选择并确认供货渠道。不能按公司名或需求型号自动关联。</td></tr> : !rows.length ? <tr><td colSpan={9} className="ci-empty">已确认绑定渠道暂无符合筛选条件的库存。</td></tr> : null}
+        {!readable ? <tr><td colSpan={9} className="ci-empty">正在核验客户库存读取权限…</td></tr> : loading ? <tr><td colSpan={9} className="ci-empty">正在读取客户渠道库存…</td></tr> : error ? <tr><td colSpan={9} className="ci-empty ci-host-error" role="alert">{error}</td></tr> : !result ? <tr><td colSpan={9} className="ci-empty">客户库存范围尚未确认。</td></tr> : result.bindingCount === 0 ? null : !rows.length ? <tr><td colSpan={9} className="ci-empty">已确认绑定渠道暂无符合筛选条件的库存。</td></tr> : null}
         {rows.map(row => {
           const updated = channelInventoryUpdatedAt(row.updatedAt);
           return <tr key={row.id}>

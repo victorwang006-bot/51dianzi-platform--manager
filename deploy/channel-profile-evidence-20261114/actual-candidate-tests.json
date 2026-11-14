@@ -1,0 +1,1325 @@
+{
+  "status": "PASS",
+  "actualCandidateBytesExecuted": true,
+  "results": [
+    {
+      "name": "module0: exact inverse, original imports, global business/mall/chat/access preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: exact inverse, original imports, global business/mall/chat/access preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: exact I1 uses full source default and preserves old inventory capsule",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: new tabs and legacy materials bookmark map to inventory",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: customer orders title, right header entry, original nine column order",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: demand BOM entry opens local import portal and no mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: actual bundled xlsx parses, maps, previews and appends selected BOM rows locally",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: actual bundled xls parses, maps, previews and appends selected BOM rows locally",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: source BOM template has seven whitelisted columns and append preserves existing rows",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: inventory transport includes exact actor enterprise customer, rejects foreign response",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: denied or archived customers cannot open BOM import",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: old overview/follow links and unknown routes resolve to profile",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: original new-follow flow opens in merged profile with no write",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: correction still opens original append-only form under contacts",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: zero binding removes long copy and blank row but keeps verified transport",
+      "status": "PASS"
+    },
+    {
+      "name": "module0: unbound upload visible explanation removed while settings guard/title retained",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: exact I1 uses full source default and preserves old inventory capsule",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: new tabs and legacy materials bookmark map to inventory",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: customer orders title, right header entry, original nine column order",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: demand BOM entry opens local import portal and no mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: actual bundled xlsx parses, maps, previews and appends selected BOM rows locally",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: actual bundled xls parses, maps, previews and appends selected BOM rows locally",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: source BOM template has seven whitelisted columns and append preserves existing rows",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: inventory transport includes exact actor enterprise customer, rejects foreign response",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: denied or archived customers cannot open BOM import",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: old overview/follow links and unknown routes resolve to profile",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: original new-follow flow opens in merged profile with no write",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: correction still opens original append-only form under contacts",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: zero binding removes long copy and blank row but keeps verified transport",
+      "status": "PASS"
+    },
+    {
+      "name": "module1: unbound upload visible explanation removed while settings guard/title retained",
+      "status": "PASS"
+    },
+    {
+      "name": "source pins, four file hashes, unchanged entry/style and HTML/importmap proofs",
+      "status": "PASS"
+    }
+  ],
+  "passed": 31,
+  "failed": 0,
+  "executed": [
+    {
+      "module": 0,
+      "unit": "exact appended getter/factory",
+      "sha256": "c0f015290d6d3fdbecc05de789c89e5883965aee4c270c590cfc0a7155e4aebd",
+      "bytes": 1142803
+    },
+    {
+      "module": 0,
+      "unit": "exact actual global inventory I1 route",
+      "sha256": "5f4c03de852ea9ef4d654327338376c4fcc843c8aa6fbdfd51f7cdad3f954e45"
+    },
+    {
+      "module": 1,
+      "unit": "exact appended getter/factory",
+      "sha256": "c0f015290d6d3fdbecc05de789c89e5883965aee4c270c590cfc0a7155e4aebd",
+      "bytes": 1142803
+    },
+    {
+      "module": 1,
+      "unit": "exact actual global inventory I1 route",
+      "sha256": "5f4c03de852ea9ef4d654327338376c4fcc843c8aa6fbdfd51f7cdad3f954e45"
+    }
+  ],
+  "mockNativeIO": {
+    "network": 0,
+    "mutations": 0,
+    "queryHooks": [
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": false
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "active": true,
+          "page": 1,
+          "pageSize": 100
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": false
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "active": true,
+          "page": 1,
+          "pageSize": 100
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.get",
+        "input": {
+          "id": 0
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": false
+      },
+      {
+        "path": "customerDemand.suggestPartNumbers",
+        "input": {
+          "keyword": "",
+          "limit": 8
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.get",
+        "input": {
+          "id": 0
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": false
+      },
+      {
+        "path": "customerDemand.suggestPartNumbers",
+        "input": {
+          "keyword": "",
+          "limit": 8
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.get",
+        "input": {
+          "id": 0
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.suggestPartNumbers",
+        "input": {
+          "keyword": "",
+          "limit": 8
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.customerSupplySummary",
+        "input": {
+          "customerIds": [
+            41
+          ],
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.customerSupplyContext",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": false
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "active": true,
+          "page": 1,
+          "pageSize": 100
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": false
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.listChannels",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "active": true,
+          "page": 1,
+          "pageSize": 100
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.get",
+        "input": {
+          "id": 0
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": false
+      },
+      {
+        "path": "customerDemand.suggestPartNumbers",
+        "input": {
+          "keyword": "",
+          "limit": 8
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.get",
+        "input": {
+          "id": 0
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": false
+      },
+      {
+        "path": "customerDemand.suggestPartNumbers",
+        "input": {
+          "keyword": "",
+          "limit": 8
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.get",
+        "input": {
+          "id": 0
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customerDemand.suggestPartNumbers",
+        "input": {
+          "keyword": "",
+          "limit": 8
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.list",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        },
+        "enabled": true
+      },
+      {
+        "path": "crmSalesOrder.get",
+        "input": {
+          "id": 1,
+          "customerId": 41
+        },
+        "enabled": false
+      },
+      {
+        "path": "crmSalesOrder.candidates",
+        "input": {
+          "keyword": "",
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 10
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "customer.context",
+        "enabled": true
+      },
+      {
+        "path": "customer.get",
+        "input": {
+          "id": 41
+        },
+        "enabled": true
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "customer.contactsList",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": false
+      },
+      {
+        "path": "enterprise.me",
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.customerSupplySummary",
+        "input": {
+          "customerIds": [
+            41
+          ],
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      },
+      {
+        "path": "channelInventory.customerSupplyContext",
+        "input": {
+          "customerId": 41,
+          "expectedActorUserId": 9,
+          "expectedEnterpriseId": 17
+        },
+        "enabled": true
+      }
+    ],
+    "transport": [
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      {
+        "path": "channelInventory.listTeamMaterials",
+        "input": {
+          "expectedEnterpriseId": 17,
+          "expectedActorUserId": 9,
+          "customerId": 41,
+          "page": 1,
+          "pageSize": 20
+        }
+      }
+    ],
+    "scrollIntoView": 2
+  },
+  "scopeReads": 38,
+  "pageMemoryReads": 6,
+  "coverageLimits": [
+    "Actual customer getter/factory and route code executed in React19/JSDOM with inert native bridges; production top-level imports and network never executed.",
+    "Original singletons are supplied by native fixtures; no new production provider/root/API client.",
+    "BOM XLS/XLSX and follow-up forms exercised locally without saves or production records.",
+    "CSS/API are unchanged; actual source scope and live bridge byte identity verified. No logged-in pixel acceptance claimed."
+  ]
+}

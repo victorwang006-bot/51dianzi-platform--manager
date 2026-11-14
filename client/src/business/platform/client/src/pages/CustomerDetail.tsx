@@ -21,7 +21,6 @@ import { BeijingDateTimePicker } from "../components/customers/BeijingDateTimePi
 import { CustomerDemandHistory } from "../components/customerDemands/CustomerDemandHistory";
 import { CustomerSalesOrders, type CustomerSalesOrderIntent } from "./CrmSalesOrders";
 import { CustomerWorkbenchContacts } from "../components/customers/CustomerWorkbenchContacts";
-import { CustomerWorkbenchOverview } from "../components/customers/CustomerWorkbenchOverview";
 import { CustomerWorkbenchSupply } from "../components/customers/CustomerWorkbenchSupply";
 import { CUSTOMER_WORKBENCH_TABS, customerWorkbenchLocation, customerWorkbenchTab, type CustomerWorkbenchTab, type CustomerDemandOrderLink } from "../components/customers/customerWorkbench";
 import { useCustomerWorkbenchOrders } from "../components/customers/useCustomerWorkbenchOrders";
@@ -236,10 +235,17 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
 
   useEffect(() => {
     const params = new URLSearchParams(search);
-    if (params.has("tab") && !CUSTOMER_WORKBENCH_TABS.some(item => item.id === params.get("tab"))) {
-      navigate(customerWorkbenchLocation(id, customerWorkbenchTab(search), search), { replace: true });
+    if (!CUSTOMER_WORKBENCH_TABS.some(item => item.id === params.get("tab"))) {
+      const location = customerWorkbenchLocation(id, customerWorkbenchTab(search), search);
+      navigate(params.get("tab") === "followups" ? `${location}#customer-followups` : location, { replace: true });
     }
   }, [id, search, navigate]);
+
+  useEffect(() => {
+    if (!customer || tab !== "company" || window.location.hash !== "#customer-followups") return;
+    const frame = requestAnimationFrame(() => document.getElementById("customer-followups")?.scrollIntoView({ block: "start" }));
+    return () => cancelAnimationFrame(frame);
+  }, [customer?.id, search, tab]);
 
   useEffect(() => {
     const protectDraft = (event: BeforeUnloadEvent) => {
@@ -279,16 +285,16 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
 
   const followFormRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
-    if (!customer || isArchived || tab !== "followups" || new URLSearchParams(search).get("follow") !== "1") return;
+    if (!customer || isArchived || tab !== "company" || new URLSearchParams(search).get("follow") !== "1") return;
     setFollowOpen(true);
   }, [customer?.id, isArchived, search, tab]);
 
   useEffect(() => {
-    if (!followOpen || tab !== "followups") return;
+    if (!followOpen || tab !== "company") return;
     const frame = requestAnimationFrame(() => {
       const field = followFormRef.current;
       if (!field) return;
-      if (new URLSearchParams(search).get("follow") === "1") field.closest("section")?.scrollIntoView({ block: "start" });
+      field.closest("section")?.scrollIntoView({ block: "start" });
       field.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
@@ -346,6 +352,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
       setConfirmDiscardFollow(true);
       return;
     }
+    commitTab("company");
     openFollowUp(item);
   };
 
@@ -538,7 +545,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         <div className="customer-workbench-top-buttons">
           <button type="button" className="crm-btn" title="回到进入详情前的页面，保留筛选、页码与位置" onClick={requestBack}>返回上一页</button>
           <button type="button" className="crm-btn crm-btn-primary" disabled={isArchived} onClick={() => guardAction(() => { commitTab("demands"); setCreateDemandToken(++createDemandSequence.current); })}>新增需求</button>
-          <button type="button" className="crm-btn" disabled={isArchived} onClick={() => guardAction(() => { commitTab("followups"); if (!followOpen) openFollowUp(); })}>新增跟进</button>
+          <button type="button" className="crm-btn" disabled={isArchived} onClick={() => guardAction(() => { commitTab("company"); if (!followOpen) openFollowUp(); })}>新增跟进</button>
           {canManageAll && <DropdownMenu open={moreOpen} onOpenChange={open => { if (!open) setMoreOpen(false); else guardAction(() => setMoreOpen(true)); }}><DropdownMenuTrigger asChild><button type="button" className="crm-btn">更多</button></DropdownMenuTrigger><DropdownMenuContent align="end">{!isArchived ? <><DropdownMenuItem onSelect={() => guardAction(() => setActionDialog("transfer"))}>转移负责人</DropdownMenuItem><DropdownMenuItem className="text-red-700" onSelect={() => guardAction(() => setActionDialog("archive"))}>归档客户</DropdownMenuItem></> : <DropdownMenuItem onSelect={() => guardAction(() => setActionDialog("restore"))}>恢复客户</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>}
         </div>
       </div>
@@ -547,8 +554,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
       {isArchived && <section className="mb-3 rounded-lg border border-[#F1D3A6] bg-[#FFF9ED] px-4 py-3 text-sm text-[#8A5A16]"><b>该客户已归档，当前为只读状态。</b> {customer.archiveReason ? `归档原因：${customer.archiveReason}` : ""} 仅管理员可恢复。</section>}
       {editError && <section className="mb-3 rounded-lg border border-[#F5C2C2] bg-[#FFF4F4] px-4 py-3 text-sm text-[#A32D2D]" role="alert">{editError}</section>}
 
-      <nav className="customer-workbench-tabs" role="tablist" aria-label="客户工作台">{CUSTOMER_WORKBENCH_TABS.map(item => <button type="button" role="tab" id={`customer-tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`customer-panel-${item.id}`} key={item.id} onClick={() => changeTab(item.id)}>{item.label}{item.id === "company" && basicDirty ? " · 未保存" : item.id === "followups" && followDirty ? " · 未保存" : ""}</button>)}</nav>
-      {tab === "overview" && <div role="tabpanel" id="customer-panel-overview" aria-labelledby="customer-tab-overview"><CustomerWorkbenchOverview key={workbenchIdentity} customer={customer} followUps={detail.followUps} canReadOrders={canReadOrders} onTab={changeTab} /></div>}
+      <nav className="customer-workbench-tabs" role="tablist" aria-label="客户工作台">{CUSTOMER_WORKBENCH_TABS.map(item => <button type="button" role="tab" id={`customer-tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`customer-panel-${item.id}`} key={item.id} onClick={() => changeTab(item.id)}>{item.label}{item.id === "company" && (basicDirty || followDirty) ? " · 未保存" : ""}</button>)}</nav>
       <div hidden={tab !== "company"} role="tabpanel" id="customer-panel-company" aria-labelledby="customer-tab-company">
       <section id="customer-base" className="customer-detail-basic mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -562,6 +568,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
               <span>电话：{customer.phone || "—"}</span>
               <span>所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
               <span>当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
+              <span>下次跟进：{formatCustomerDateTime(customer.nextFollowUpAt)}</span>
             </div>
             <p className="customer-detail-meta mt-1">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
           </div>
@@ -582,19 +589,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         </div>
         {tab === "company" && <CustomerWorkbenchContacts key={`${contactScope.identityKey}:${customer.id}`} customerId={customer.id} scope={contactScope.scope} scopeReady={contactScope.ready} />}
       </section>
-      </div>
-      <CustomerContactsManager key={workbenchIdentity} customerId={customer.id} open={contactsOpen} onClose={() => setContactsOpen(false)} scope={contactScope.scope} scopeReady={contactScope.ready} identityKey={contactScope.identityKey} onDirtyChange={setContactsDirty} onBusyChange={setContactsBusy} />
 
-      {tab === "demands" && <div id="customer-panel-demands" role="tabpanel" aria-labelledby="customer-tab-demands" className="mb-4">
-        <CustomerDemandHistory key={workbenchIdentity} customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} contextIdentityKey={workbenchIdentity} canRead={authorityReady} readOnly={isArchived} canManageOrders={canReadOrders} createRequestToken={createDemandToken} onCreateOrder={link => openCustomerOrders("create", link)} onViewOrders={link => openCustomerOrders("view", link)} onDirtyChange={setDemandsDirty} />
-      </div>}
-      {tab === "orders" && <section id="customer-panel-orders" role="tabpanel" aria-labelledby="customer-tab-orders" className="customer-workbench-panel">
-        {orderAuthority.failed && <p role="alert">订单权限核验失败。<button type="button" className="crm-link" onClick={() => void orderAuthority.refresh()}>重试核验</button></p>}
-        <CustomerSalesOrders customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} contextIdentityKey={workbenchIdentity} canRead={canReadOrders} canWrite={canReadOrders && !isArchived} readOnly={isArchived} intent={orderIntent} onIntentHandled={nonce => { if (isCurrentChildReceipt()) setOrderIntent(current => current?.nonce === nonce ? null : current); }} onDirtyChange={setOrdersDirty} onOrderChanged={() => { if (!isCurrentChildReceipt()) return; void utils.crmSalesOrder.customerSummary.invalidate({ customerId: customer.id }); if (isCurrentChildReceipt()) void utils.crmSalesOrder.customerMaterials.invalidate({ customerId: customer.id }); }} />
-      </section>}
-      {tab === "inventory" && <div id="customer-panel-inventory" role="tabpanel" aria-labelledby="customer-tab-inventory"><CustomerWorkbenchSupply key={workbenchIdentity} customerId={customer.id} scope={contactScope.scope} scopeReady={authorityReady} customerVersion={customer.version} archived={isArchived} isCurrent={isCurrentChildReceipt} onAction={guardAction} onOpenChange={open => { if (isCurrentChildReceipt()) supplyOpen.current = open; }} /></div>}
-
-      <div hidden={tab !== "followups"} role="tabpanel" id="customer-panel-followups" aria-labelledby="customer-tab-followups">
       <section id="customer-followups" className="customer-detail-followups mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
           <div><h2 className="admin-section-title">跟进记录</h2><p className="customer-detail-meta mt-1">跟进仅可追加；如需更正，请基于原记录追加一条更正说明。</p></div>
@@ -617,6 +612,17 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         <div className="customer-detail-follow-history divide-y divide-slate-100">{detail.followUps.length === 0 ? <p className="px-4 py-3 text-xs text-muted-foreground">暂无跟进记录</p> : detail.followUps.map(item => <FollowUpRow key={item.id} item={item} readOnly={isArchived} onCorrect={() => requestCorrection(item)} />)}</div>
       </section>
       </div>
+      <CustomerContactsManager key={workbenchIdentity} customerId={customer.id} open={contactsOpen} onClose={() => setContactsOpen(false)} scope={contactScope.scope} scopeReady={contactScope.ready} identityKey={contactScope.identityKey} onDirtyChange={setContactsDirty} onBusyChange={setContactsBusy} />
+
+      {tab === "demands" && <div id="customer-panel-demands" role="tabpanel" aria-labelledby="customer-tab-demands" className="mb-4">
+        <CustomerDemandHistory key={workbenchIdentity} customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} contextIdentityKey={workbenchIdentity} canRead={authorityReady} readOnly={isArchived} canManageOrders={canReadOrders} createRequestToken={createDemandToken} onCreateOrder={link => openCustomerOrders("create", link)} onViewOrders={link => openCustomerOrders("view", link)} onDirtyChange={setDemandsDirty} />
+      </div>}
+      {tab === "orders" && <section id="customer-panel-orders" role="tabpanel" aria-labelledby="customer-tab-orders" className="customer-workbench-panel">
+        {orderAuthority.failed && <p role="alert">订单权限核验失败。<button type="button" className="crm-link" onClick={() => void orderAuthority.refresh()}>重试核验</button></p>}
+        <CustomerSalesOrders customer={{ id: customer.id, name: customer.name, archivedAt: customer.archivedAt }} contextIdentityKey={workbenchIdentity} canRead={canReadOrders} canWrite={canReadOrders && !isArchived} readOnly={isArchived} intent={orderIntent} onIntentHandled={nonce => { if (isCurrentChildReceipt()) setOrderIntent(current => current?.nonce === nonce ? null : current); }} onDirtyChange={setOrdersDirty} onOrderChanged={() => { if (!isCurrentChildReceipt()) return; void utils.crmSalesOrder.customerSummary.invalidate({ customerId: customer.id }); if (isCurrentChildReceipt()) void utils.crmSalesOrder.customerMaterials.invalidate({ customerId: customer.id }); }} />
+      </section>}
+      {tab === "inventory" && <div id="customer-panel-inventory" role="tabpanel" aria-labelledby="customer-tab-inventory"><CustomerWorkbenchSupply key={workbenchIdentity} customerId={customer.id} scope={contactScope.scope} scopeReady={authorityReady} customerVersion={customer.version} archived={isArchived} isCurrent={isCurrentChildReceipt} onAction={guardAction} onOpenChange={open => { if (isCurrentChildReceipt()) supplyOpen.current = open; }} /></div>}
+
 
     </main>
 

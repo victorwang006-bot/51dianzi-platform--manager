@@ -30,7 +30,6 @@ vi.mock("../components/customerDemands/CustomerDemandHistory", () => ({ Customer
   return React.createElement("button", { onClick: () => props.onCreateOrder?.({ demandId: 901, demandNo: "D-SYNTHETIC" }) }, "synthetic-create-order");
 } }));
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: () => null }));
-vi.mock("../components/customers/CustomerWorkbenchOverview", () => ({ CustomerWorkbenchOverview: () => null }));
 vi.mock("../components/customers/CustomerWorkbenchContacts", () => ({ CustomerWorkbenchContacts: () => null }));
 vi.mock("../components/customers/CustomerWorkbenchSupply", () => ({ CustomerWorkbenchSupply: (props: any) => {
   runtime.supplyProps = props;
@@ -67,6 +66,7 @@ import CustomerDetail from "./CustomerDetail";
 import { toast } from "sonner";
 import * as customerUtils from "../components/customers/customerUtils";
 import * as memory from "../lib/pageMemory";
+HTMLElement.prototype.scrollIntoView ??= () => {};
 const nativeReplace = History.prototype.replaceState;
 const META = "__d51PageMemory";
 const defaults = { keyword: "", grade: "", stage: "", scope: "mine", assignedUserId: "", due: "all", archived: false, starredOnly: false };
@@ -106,6 +106,8 @@ beforeEach(() => {
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0));
   vi.stubGlobal("cancelAnimationFrame", (frame: number) => window.clearTimeout(frame));
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  vi.stubGlobal("fetch", vi.fn(() => { throw new Error("OFFLINE_NETWORK_FORBIDDEN"); }));
+  vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => { await act(async () => root.unmount()); memory.setPageMemoryScope(null); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -138,7 +140,7 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
   });
 
   it("binding/account identity changes cannot reuse a dirty editor for the same customer id", async () => {
-    await render(); await click("公司与联系人"); await click("展开"); await click("synthetic-edit"); expect(host.textContent).toContain("PRIVATE UNSAVED DRAFT");
+    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit"); expect(host.textContent).toContain("PRIVATE UNSAVED DRAFT");
     runtime.identity += "-new-binding"; runtime.detail = { customer: record({ name: "NEW IDENTITY DATA" }), followUps: [] };
     await render(); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT"); await click("展开");
     expect(host.querySelector("[data-editor-name]")?.textContent).toBe("NEW IDENTITY DATA");
@@ -147,19 +149,19 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
   });
 
   it("blocks reads/display while current contact authority is unavailable and clears private drafts", async () => {
-    await render(); await click("公司与联系人"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
     runtime.ready = false; await render(); expect(host.textContent).not.toContain("PRIVATE"); expect(runtime.getOptions.at(-1).enabled).toBe(false);
     runtime.ready = true; await render(); await click("展开"); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
     expect(runtime.getOptions.at(-1)).toMatchObject({ enabled: true, staleTime: 0, refetchOnMount: "always", placeholderData: undefined });
   });
 
-  it("renders six deep-link tabs and normalizes an invalid tab to overview without losing merchant", async () => {
+  it("renders four deep-link tabs and normalizes an invalid tab to the customer profile without losing merchant", async () => {
     nativeReplace.call(history, {}, "", "/workbench/customers/801?merchantId=30061&tab=bad&follow=1");
     await render();
-    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(6);
-    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("概览");
-    expect(window.location.search).toBe("?merchantId=30061&tab=overview");
-    await click("公司与联系人"); expect(window.location.search).toContain("tab=company");
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(4);
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("客户档案");
+    expect(window.location.search).toBe("?merchantId=30061&tab=company");
+    await click("客户档案"); expect(window.location.search).toContain("tab=company");
   });
 
   it("legacy material bookmark opens only the replacement customer inventory and preserves merchant", async () => {
@@ -188,13 +190,13 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
 
   it("blocks tab/back/new actions while a demand or order draft/transaction is dirty", async () => {
     runtime.canReadOrders = true; await render(); await click("客户订单");
-    runtime.ordersDirty = true; await render(); await click("概览");
+    runtime.ordersDirty = true; await render(); await click("需求与报价");
     expect(window.location.search).toContain("tab=orders"); expect(document.body.textContent).toContain("当前需求或订单尚未完成");
     const confirm = [...document.body.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "继续当前操作")!;
     await act(async () => confirm.click()); await click("返回上一页"); expect(window.location.search).toContain("tab=orders");
     runtime.ordersDirty = false; await render();
     const close = [...document.body.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "继续当前操作")!;
-    await act(async () => close.click()); await click("概览"); expect(window.location.search).toContain("tab=overview");
+    await act(async () => close.click()); await click("需求与报价"); expect(window.location.search).toContain("tab=demands");
     await click("需求与报价"); runtime.demandsDirty = true; await render(); await click("新增跟进"); expect(window.location.search).toContain("tab=demands");
   });
 
@@ -206,14 +208,14 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
   });
 
   it("requires explicit discard for company draft tab changes and keeps the editor on cancel", async () => {
-    await render(); await click("公司与联系人"); await click("展开"); await click("synthetic-edit");
-    await click("概览"); expect(window.location.search).toContain("tab=company");
+    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
+    await click("需求与报价"); expect(window.location.search).toContain("tab=company");
     expect(document.body.textContent).toContain("放弃未保存的客户修改");
     let cancel = [...document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(item => item.textContent === "取消")!;
     await act(async () => cancel.click()); expect(host.textContent).toContain("PRIVATE UNSAVED DRAFT");
-    await click("概览");
+    await click("需求与报价");
     const discard = [...document.body.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "放弃并继续")!;
-    await act(async () => discard.click()); expect(window.location.search).toContain("tab=overview"); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
+    await act(async () => discard.click()); expect(window.location.search).toContain("tab=demands"); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
   });
 });
 
@@ -237,7 +239,7 @@ async function bodyClick(label: string) {
 }
 async function beginMutation(name: string) {
   if (name === "updateBasic") {
-    await click("公司与联系人"); await click("展开"); await click("synthetic-edit"); await click("保存修改");
+    await click("客户档案"); await click("展开"); await click("synthetic-edit"); await click("保存修改");
   } else if (name === "addFollowUp") {
     await click("新增跟进");
     await input(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!, "SYNTHETIC FOLLOW DRAFT");
@@ -262,7 +264,7 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
     expect(runtime.getOptions.at(-1).enabled).toBe(true); expect(host.textContent).not.toContain("PRIVATE");
     runtime.detailFetching = false; await render(); expect(host.textContent).not.toContain("PRIVATE");
     runtime.detailFetched = true; runtime.detail = { customer: record({ name: "FRESH VERIFIED CUSTOMER" }), followUps: [] }; await render();
-    await click("公司与联系人"); await click("展开"); expect(host.querySelector('[data-editor-name]')?.textContent).toBe("FRESH VERIFIED CUSTOMER");
+    await click("客户档案"); await click("展开"); expect(host.querySelector('[data-editor-name]')?.textContent).toBe("FRESH VERIFIED CUSTOMER");
     expect(runtime.mutations.updateBasic.mutateAsync).not.toHaveBeenCalled();
   });
 
@@ -276,7 +278,7 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
   });
 
   it("keeps verified dirty company and follow editors mounted through ordinary context/detail refetch", async () => {
-    await render(); await click("公司与联系人"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
     runtime.contextFetching = true; runtime.detailFetching = true; await render();
     const editor = host.querySelector('[data-editor-name]');
     expect(editor?.textContent).toBe("PRIVATE UNSAVED DRAFT"); expect(host.textContent).not.toContain("加载客户详情中");
@@ -290,7 +292,7 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
   });
 
   it("clears a verified draft immediately on get denial and does not resurrect it on a later same-ID success", async () => {
-    await render(); await click("公司与联系人"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
     runtime.detailError = true; await render(); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
     runtime.detailError = false; runtime.detailFetched = false; runtime.detailFetching = true; await render(); expect(host.textContent).not.toContain("PRIVATE");
     runtime.detailFetched = true; runtime.detailFetching = false; await render(); await click("展开");
@@ -298,7 +300,7 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
   });
 
   it("new root authorization for the same actor/enterprise/customer requires new mount proof and clears drafts", async () => {
-    await render(); await click("公司与联系人"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
     runtime.authorizationVersion = "auth-B"; runtime.contextFetched = false; runtime.detailFetched = false; runtime.contextFetching = true; await render();
     expect(host.textContent).not.toContain("PRIVATE"); expect(runtime.getOptions.at(-1).enabled).toBe(false);
   });
@@ -344,16 +346,16 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
   });
 
   it.each([{ dirty: true, busy: false }, { dirty: false, busy: true }, { dirty: true, busy: true }])("wires contact dirty=$dirty/busy=$busy into tab/top/back/unload protection without forced cancel", async ({ dirty, busy }) => {
-    await render(); await click("公司与联系人"); await click("管理联系人");
+    await render(); await click("客户档案"); await click("管理联系人");
     runtime.contactsDirty = dirty; runtime.contactsBusy = busy; await render();
     expect(runtime.contactsProps.onDirtyChange).toEqual(expect.any(Function)); expect(runtime.contactsProps.onBusyChange).toEqual(expect.any(Function));
-    await click("概览"); expect(window.location.search).toContain("tab=company"); expect(runtime.contactsProps.open).toBe(true);
+    await click("需求与报价"); expect(window.location.search).toContain("tab=company"); expect(runtime.contactsProps.open).toBe(true);
     await bodyClick("继续当前操作"); await click("新增需求"); expect(window.location.search).toContain("tab=company");
     await bodyClick("继续当前操作"); await click("返回上一页"); expect(window.location.pathname).toBe("/workbench/customers/801");
     const unload = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(unload); expect(unload.defaultPrevented).toBe(true);
     expect(runtime.contactsProps.open).toBe(true); expect(host.textContent).toContain("synthetic-contact-editor");
-    await bodyClick("继续当前操作"); runtime.contactsDirty = false; runtime.contactsBusy = false; await render(); await click("概览");
-    expect(window.location.search).toContain("tab=overview");
+    await bodyClick("继续当前操作"); runtime.contactsDirty = false; runtime.contactsBusy = false; await render(); await click("需求与报价");
+    expect(window.location.search).toContain("tab=demands");
   });
 });
 
@@ -369,13 +371,13 @@ async function navigateOutside(method: "back" | "nativeBack" | "link" | "navigat
   });
 }
 async function makeDraft(module: string) {
-  if (module === "company") { await click("公司与联系人"); await click("展开"); await click("synthetic-edit"); }
+  if (module === "company") { await click("客户档案"); await click("展开"); await click("synthetic-edit"); }
   else if (module === "follow") {
     await click("新增跟进"); await input(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!, "SPA FOLLOW DRAFT");
   } else if (module === "demand") { await click("需求与报价"); runtime.demandsDirty = true; await render(); }
   else if (module === "order") { runtime.canReadOrders = true; await render(); await click("客户订单"); runtime.ordersDirty = true; await render(); }
-  else if (module === "contact") { await click("公司与联系人"); await click("管理联系人"); runtime.contactsDirty = true; await render(); }
-  else if (module === "contactBusy") { await click("公司与联系人"); await click("管理联系人"); runtime.contactsBusy = true; await render(); }
+  else if (module === "contact") { await click("客户档案"); await click("管理联系人"); runtime.contactsDirty = true; await render(); }
+  else if (module === "contactBusy") { await click("客户档案"); await click("管理联系人"); runtime.contactsBusy = true; await render(); }
   else { runtime.mutations[module].isPending = true; await render(); }
 }
 
@@ -417,11 +419,11 @@ describe.sequential("CustomerDetail real SPA navigation integration", () => {
 
   it("does not ask a second native confirmation after the shell explicitly discards a company draft", async () => {
     await render(); await makeDraft("company"); const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
-    await click("概览"); await bodyClick("放弃并继续"); expect(window.location.search).toContain("tab=overview"); expect(confirm).not.toHaveBeenCalled();
+    await click("需求与报价"); await bodyClick("放弃并继续"); expect(window.location.search).toContain("tab=demands"); expect(confirm).not.toHaveBeenCalled();
   });
 
   it("rechecks busy before executing a previously opened shell discard dialog", async () => {
-    await render(); await makeDraft("company"); await click("概览");
+    await render(); await makeDraft("company"); await click("需求与报价");
     runtime.contactsBusy = true; await render(); await bodyClick("放弃并继续");
     expect(window.location.search).toContain("tab=company"); expect(host.querySelector('[data-editor-name]')?.textContent).toBe("PRIVATE UNSAVED DRAFT");
     expect(document.body.textContent).toContain("执行中或结果待确认时不能离开");
@@ -456,7 +458,7 @@ describe.sequential("CustomerDetail supply session parent guard integration", ()
     expect(runtime.supplyProps.customerVersion).toBe(1); expect(runtime.supplyProps.archived).toBe(false);
     expect(runtime.supplyProps.isCurrent()).toBe(true);
     await click("synthetic-open-supply"); const url = window.location.href;
-    await click("概览"); expect(window.location.href).toBe(url);
+    await click("需求与报价"); expect(window.location.href).toBe(url);
     expect(document.body.textContent).toContain("供应库存上传"); await bodyClick("继续当前操作");
     await click("新增需求"); expect(window.location.href).toBe(url); await bodyClick("继续当前操作");
     await click("返回上一页"); expect(window.location.href).toBe(url); await bodyClick("继续当前操作");
@@ -464,7 +466,7 @@ describe.sequential("CustomerDetail supply session parent guard integration", ()
     await navigateOutside("navigate"); expect(window.location.href).toBe(url); expect(confirm).not.toHaveBeenCalled();
     const unload = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(unload); expect(unload.defaultPrevented).toBe(true);
     await bodyClick("继续当前操作"); await act(async () => runtime.supplyProps.onOpenChange(false));
-    await click("概览"); expect(window.location.search).toContain("tab=overview");
+    await click("需求与报价"); expect(window.location.search).toContain("tab=demands");
   });
   it("clears the live upload guard synchronously before the importer's completion navigate, without a sticky busy render", async () => {
     await render(); await click("渠道库存"); await click("synthetic-open-supply");
@@ -477,8 +479,139 @@ describe.sequential("CustomerDetail supply session parent guard integration", ()
     await render(); await click("渠道库存"); const old = runtime.supplyProps;
     runtime.authorizationVersion = "auth-B"; await render(); runtime.authorizationVersion = "auth-A"; await render();
     expect(old.isCurrent()).toBe(false); await act(async () => old.onOpenChange(true));
-    await click("概览"); expect(window.location.search).toContain("tab=overview");
+    await click("需求与报价"); expect(window.location.search).toContain("tab=demands");
     runtime.detail = { customer: record({ archivedAt: "2026-11-01", version: 2 }), followUps: [] };
     await render(); await click("渠道库存"); expect(runtime.supplyProps.archived).toBe(true); expect(runtime.supplyProps.customerVersion).toBe(2);
+  });
+});
+
+const followRecord = (changes: any = {}) => ({
+  id: 41, customerId: 801, authorUserId: 9, authorName: "ORIGINAL FOLLOW AUTHOR", method: "phone",
+  content: "ORIGINAL FOLLOW HISTORY", occurredAt: "2026-11-02T02:00:00Z", createdAt: "2026-11-02T02:01:00Z",
+  correctionOfId: null, ...changes,
+});
+
+describe.sequential("CustomerDetail consolidated customer profile", () => {
+  it("defaults to four tabs and stacks original basic, contacts and full follow-up sections without overview cards", async () => {
+    await render();
+    expect([...host.querySelectorAll('[role="tab"]')].map(item => item.textContent)).toEqual(["客户档案", "需求与报价", "客户订单", "渠道库存"]);
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.id).toBe("customer-tab-company");
+    expect(window.location.search).toBe("?merchantId=30061&tab=company");
+    const profile = host.querySelector('#customer-panel-company')!;
+    expect(profile.hasAttribute("hidden")).toBe(false);
+    expect([...profile.children].map(item => item.id)).toEqual(["customer-base", "customer-contacts", "customer-followups"]);
+    expect(host.querySelector('#customer-panel-overview')).toBeNull();
+    expect(host.querySelector('#customer-panel-followups')).toBeNull();
+    expect(host.querySelector('.customer-workbench-overview')).toBeNull();
+    expect(profile.textContent).toContain("主联系人：PRIVATE CONTACT");
+    expect(profile.textContent).toContain("当前阶段：跟进中");
+    expect(profile.textContent).toContain("所属行业：电子元器件");
+    expect(profile.textContent).toContain("暂无跟进记录");
+    expect(host.querySelectorAll('button')).not.toHaveLength(0);
+    expect([...host.querySelectorAll('button')].filter(item => item.textContent === "新增跟进")).toHaveLength(2); // Existing top and section buttons only.
+  });
+
+  it.each([null, "2026-11-20T00:00:00Z"])("uses only the existing nextFollowUpAt field in the summary: %s", async nextFollowUpAt => {
+    runtime.detail = { customer: record({ nextFollowUpAt }), followUps: [] };
+    await render();
+    expect(host.querySelector('.customer-detail-summary')?.textContent).toContain(`下次跟进：${customerUtils.formatCustomerDateTime(nextFollowUpAt)}`);
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it.each(["overview", "followups"])("normalizes old tab=%s to the profile while preserving source, merchant and historical records", async oldTab => {
+    runtime.detail = { customer: record(), followUps: [followRecord()] };
+    nativeReplace.call(history, {}, "", `/workbench/customers/801?merchantId=30061&tab=${oldTab}&source=list`);
+    await render(); await act(async () => { await delay(10); });
+    expect(window.location.search).toBe("?merchantId=30061&tab=company&source=list");
+    expect(window.location.hash).toBe(oldTab === "followups" ? "#customer-followups" : "");
+    expect(host.querySelector('#customer-panel-company')?.hasAttribute("hidden")).toBe(false);
+    expect(host.querySelector('#customer-followups')?.textContent).toContain("ORIGINAL FOLLOW HISTORY");
+    expect(host.querySelector('textarea[aria-label="跟进内容"]')).toBeNull();
+    if (oldTab === "followups") expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+  });
+
+  it.each(["follow=1", "tab=followups&follow=1"])("opens the original follow-up form for the old %s link", async query => {
+    nativeReplace.call(history, {}, "", `/workbench/customers/801?merchantId=30061&${query}`);
+    await render(); await act(async () => { await delay(10); });
+    const field = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!;
+    expect(field).not.toBeNull(); expect(field.closest('#customer-panel-company')).not.toBeNull();
+    expect(window.location.search).toContain("tab=company"); expect(window.location.search).toContain("follow=1");
+    expect(document.activeElement).toBe(field);
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("top follow entry switches from demand to profile and focuses the unchanged form", async () => {
+    await render(); await click("需求与报价"); await click("新增跟进");
+    await act(async () => { await delay(10); });
+    const field = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!;
+    expect(window.location.search).toContain("tab=company"); expect(document.activeElement).toBe(field);
+    expect(field.closest('section')?.id).toBe("customer-followups");
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+  });
+
+  it("retains the full historical row, expansion and append-only correction with identical request on retry", async () => {
+    const original = followRecord({ content: "ORIGINAL LONG HISTORY ".repeat(12) });
+    runtime.detail = { customer: record({ nextFollowUpAt: "2026-11-20T00:00:00Z", version: 7 }), followUps: [original] };
+    runtime.mutations.addFollowUp.mutateAsync.mockRejectedValueOnce(new Error("RETRY FOLLOW ERROR")).mockResolvedValue({ replayed: true });
+    await render(); await click("展开内容");
+    expect(host.querySelector('.customer-detail-followup-body')?.textContent).toBe(original.content);
+    await click("更正此记录");
+    expect(window.location.search).toContain("tab=company");
+    expect(host.textContent).toContain("将追加一条更正记录，原记录不会被修改。");
+    await input(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="更正说明"]')!, "APPENDED CORRECTION ONLY");
+    await click("追加更正");
+    const submitted = runtime.mutations.addFollowUp.mutateAsync.mock.calls[0][0];
+    expect(submitted).toMatchObject({ customerId: 801, correctionOfId: 41, content: "APPENDED CORRECTION ONLY", nextFollowUpAt: "2026-11-20T00:00:00Z" });
+    expect(submitted.requestId).toEqual(expect.any(String));
+    expect(host.textContent).toContain("RETRY FOLLOW ERROR");
+    await click("追加更正");
+    expect(runtime.mutations.addFollowUp.mutateAsync.mock.calls[1][0]).toEqual(submitted);
+    expect(toast.success).toHaveBeenCalledWith("跟进已确认保存");
+    expect(runtime.mutations.updateBasic.mutateAsync).not.toHaveBeenCalled();
+    expect(runtime.detail.followUps).toEqual([original]);
+    expect(host.querySelector('.customer-detail-followup-body')?.textContent).toBe(original.content);
+    expect(host.querySelector('#customer-followups')?.textContent).toContain("ORIGINAL FOLLOW AUTHOR");
+  });
+
+  it("marks follow draft on the single profile tab and keeps original discard protection for leaving", async () => {
+    await render(); await click("新增跟进");
+    const field = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!;
+    await input(field, "PROFILE FOLLOW DRAFT");
+    expect(host.querySelector('#customer-tab-company')?.textContent).toBe("客户档案 · 未保存");
+    await click("需求与报价");
+    expect(window.location.search).toContain("tab=company");
+    const cancel = [...document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(item => item.textContent === "取消")!;
+    await act(async () => cancel.click()); expect(field.value).toBe("PROFILE FOLLOW DRAFT");
+    await click("需求与报价"); await bodyClick("放弃并继续");
+    expect(window.location.search).toContain("tab=demands");
+    expect(host.querySelector('textarea[aria-label="跟进内容"]')).toBeNull();
+    expect(host.querySelector('#customer-tab-company')?.textContent).toBe("客户档案");
+  });
+
+  it("keeps the original dirty follow correction confirmation instead of overwriting a draft", async () => {
+    runtime.detail = { customer: record(), followUps: [followRecord()] };
+    await render(); await click("新增跟进");
+    const field = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!;
+    await input(field, "KEEP ORIGINAL DRAFT"); await click("更正此记录");
+    expect(field.value).toBe("KEEP ORIGINAL DRAFT");
+    expect(document.body.textContent).toContain("放弃未保存的跟进");
+    const cancel = [...document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(item => item.textContent === "取消")!;
+    await act(async () => cancel.click()); expect(field.value).toBe("KEEP ORIGINAL DRAFT");
+    await click("更正此记录"); await bodyClick("放弃并更正原记录");
+    expect(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="更正说明"]')?.value).toBe("");
+    expect(host.querySelector('#customer-followups')?.textContent).toContain("ORIGINAL FOLLOW HISTORY");
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("keeps archived legacy follow links read-only while exposing all original history", async () => {
+    runtime.detail = { customer: record({ archivedAt: "2026-11-01", archiveReason: "HISTORICAL ARCHIVE" }), followUps: [followRecord()] };
+    nativeReplace.call(history, {}, "", "/workbench/customers/801?merchantId=30061&tab=followups&follow=1");
+    await render(); await act(async () => { await delay(10); });
+    expect(host.textContent).toContain("该客户已归档，当前为只读状态。");
+    expect(host.textContent).toContain("HISTORICAL ARCHIVE"); expect(host.textContent).toContain("仅管理员可恢复。");
+    expect(host.querySelector('#customer-followups')?.textContent).toContain("ORIGINAL FOLLOW HISTORY");
+    expect(host.querySelector('textarea')).toBeNull(); expect(button("新增跟进").disabled).toBe(true);
+    expect([...host.querySelectorAll('button')].some(item => item.textContent === "更正此记录")).toBe(false);
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
   });
 });

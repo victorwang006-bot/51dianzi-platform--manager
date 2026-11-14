@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+'use strict';
+// Source-bound customer UI increment; all bytes outside the lazy factory initializer stay unchanged.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),ts=require('typescript'),C=require('./channel-copy-cleanup-core-20261114.cjs'),F=require('./channel-profile-factory-20261114.cjs');
+const {REPO,BASE,OUT,read,sha,parse,nodes,one,write,apply,finishHTML,top}=C;
+const copies=['上传库存自动归属本客户公司；与采购需求、BOM导入分开。','当前上传负责人尚未绑定供货渠道，可在上传库存表中人工选择并确认关联现有渠道。','仅汇总本客户公司作为供货方的已确认绑定渠道库存；搜索不匹配采购需求，也不会展示其他公司的同型号库存。','当前没有可读取的已确认渠道库存。可能尚未绑定、暂无活动库存或当前来源权限不足；请核对权限和库存表，在渠道设置中人工选择并确认供货渠道。不能按公司名或需求型号自动关联。'];
+const allowed=['client/src/business/platform/client/src/pages/CustomerDetail.tsx',...['customerWorkbench.ts','CustomerWorkbenchSupply.tsx','CustomerChannelInventory.tsx'].map(n=>'client/src/business/platform/client/src/components/customers/'+n)].sort();
+const prop=(obj,name)=>one(obj,n=>ts.isPropertyAssignment(n)&&n.parent===obj&&(ts.isIdentifier(n.name)||ts.isStringLiteral(n.name))&&n.name.text===name,'prop '+name);
+async function build(){
+ const reproduction=JSON.parse(read('/home/ubuntu/work/channel-copy-cleanup/baseline-factory-reproduction.json'));assert(reproduction.proofs.every(p=>p.exactBaselineReproduction),'old source must reproduce deployed factory exactly');
+ const r=await F.compileCustomerFactory(),newA=parse(r.code),newInit=one(newA,n=>ts.isVariableDeclaration(n)&&n.name.getText(newA)==='__CUSTOMER_WORKBENCH_EXPORTS','compiled factory').initializer;
+ const changed=Object.keys(r.sourceHashes).filter(f=>r.sourceHashes[f]!==reproduction.sourceHashes[f]).sort();assert.deepEqual(changed,allowed,'only four approved customer source files may differ from deployed source');
+ write('customer-factory.js',r.code);write('customer-factory-metafile.json',r.metafile);write('customer-source-hashes.json',r.sourceHashes);
+ const urls=JSON.parse(read(BASE+'/selected-urls.json')),records=[],relocations={},proofs=[];
+ for(const [idx,url]of urls.filter(x=>x.includes('BusinessWorkbenchPage')).entries()){
+  const before=read(BASE+url),a=parse(before),getter=top(a,'__CW_CUSTOMER_GET'),oldInit=one(getter,n=>ts.isVariableDeclaration(n)&&n.name.getText(a)==='__CUSTOMER_WORKBENCH_EXPORTS','actual customer factory').initializer;
+  const live=one(getter,n=>ts.isVariableDeclaration(n)&&n.name.getText(a)==='__customerLive','original singleton bridge').initializer;assert(ts.isObjectLiteralExpression(live));
+  for(const[k,v]of Object.entries(r.live))assert.equal(prop(live,k).initializer.getText(a),v,'same native bridge '+k);
+  assert.equal(sha(oldInit.getText(a)),reproduction.proofs[idx].oldSha256);
+  const result=apply(before,[{label:'source-bound approved customer archive layout and four visible inventory copy removals',start:oldInit.getStart(a),end:oldInit.end,before:oldInit.getText(a),after:newInit.getText(newA)}],`workbench-${idx}`),afterA=parse(result.after),protectedFunctionHashes={};
+  for(const name of ['op','uI','Iw','I1','KI','Ty','Ly','Uy','__d51_so_get','__d51_ir_w_get','__d51_rx_chat_helpers_get']){assert.equal(top(a,name).getText(a),top(afterA,name).getText(afterA));protectedFunctionHashes[name]=sha(top(a,name).getText(a))}
+  const nextGetter=top(afterA,'__CW_CUSTOMER_GET'),nextLive=one(nextGetter,n=>ts.isVariableDeclaration(n)&&n.name.getText(afterA)==='__customerLive','unchanged bridge').initializer;assert.equal(live.getText(a),nextLive.getText(afterA));
+  const nextUrl='/assets/BusinessWorkbenchPage-channel-profile-'+idx+'-'+sha(result.after)+'.js';write(nextUrl,result.after);records.push({relative:nextUrl.slice(1),sha256:sha(result.after)});relocations[url]=nextUrl;
+  const proof={...result.proof,beforeUrl:url,url:nextUrl,protectedFunctionHashes,factorySha256:sha(r.code),factoryInitializerSha256:sha(newInit.getText(newA)),sourceHashes:r.sourceHashes,changedSourceFiles:changed,baselineSourceByteReproduced:true,allOutsideFactoryBytesUnchanged:true,nativeSingletonBridgeByteIdentical:true,ordersAndBomSourceUnchanged:true,mallBytesUnchanged:true,onlyApprovedCustomerUIChanged:true};write(`workbench-${idx}-build-proof.json`,proof);proofs.push(proof);
+ }
+ const entryFrom=urls.find(x=>!x.includes('BusinessWorkbenchPage'));assert(entryFrom);const entry=read(BASE+entryFrom),entryTo=path.posix.dirname(entryFrom)+'/index-channel-profile-'+sha(entry)+'.js';write(entryTo,entry);records.unshift({relative:entryTo.slice(1),sha256:sha(entry)});relocations[entryFrom]=entryTo;write('entry-build-proof.json',{beforeUrl:entryFrom,url:entryTo,sha256:sha(entry),allBytesUnchanged:true});finishHTML(relocations,records,null,entryFrom);
+ for(const[f,pin]of Object.entries(r.sourceHashes))assert.equal(sha(fs.readFileSync(REPO+'/'+f)),pin,'frozen source '+f);
+ write('candidate-proof.json',{status:'PASS',onlyApprovedCustomerUIChanged:true,unrelatedNativeBytesUnchanged:true,mallBytesUnchanged:true,ordersAndBomUnchanged:true,scopeAndArchiveUnchanged:true,sourceSnapshotStable:true,sourceHashes:r.sourceHashes,changedSourceFiles:changed,baselineSourceByteReproduced:true,nativeSingletonBridgeByteIdentical:true,apiAndDatabaseChanges:0,workbenches:proofs.map(p=>({beforeUrl:p.beforeUrl,url:p.url,protectedFunctionHashes:p.protectedFunctionHashes})),files:records});console.log(JSON.stringify({status:'PASS',files:records.length,sourceFiles:Object.keys(r.sourceHashes).length,changedSourceFiles:changed,patchesPerWorkbench:1}));
+}
+module.exports={copies,allowed,prop,top};if(require.main===module)build().catch(e=>{console.error(e.stack);process.exitCode=1});

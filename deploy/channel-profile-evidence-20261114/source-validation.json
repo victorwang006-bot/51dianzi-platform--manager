@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "atUtc": "2026-11-14T00:56:12.125180+00:00",
+  "sourceInventoryTestsPassed": 46,
+  "sourceProfileTestsPassed": 195,
+  "sourceTestFailures": 0,
+  "tscPassed": true,
+  "actualCandidateGroupsPassed": 31,
+  "actualCandidateFailures": 0,
+  "sourcePinsVerified": 62,
+  "changedSourceFiles": [
+    "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx",
+    "client/src/business/platform/client/src/components/customers/customerWorkbench.ts",
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx"
+  ],
+  "reviewPassed": true,
+  "loggedInBrowserPixelAcceptance": false,
+  "noProductionTestWrites": true,
+  "sourceLogHashes": {
+    "source-tests.log": "d9222a223aa7a5004d168640c624119f859404592d37aa316d853acb5ddee8c0",
+    "profile-source-tests.log": "28d63d6d5d03743283248c4933ace575d0d7044985069ddc25b7c98929370325",
+    "profile-tsc.log": "9f27b83fb794d4d4f9d130b51ecff848ea0335de74165b8d594a72f3b7e2f283"
+  }
+}
