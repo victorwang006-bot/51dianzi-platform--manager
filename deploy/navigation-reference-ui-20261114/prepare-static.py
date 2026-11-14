@@ -85,6 +85,18 @@ def report_binding(obj, label, pins, pin_sha, html_sha, commit):
             D.require(obj['numTotalTests'] == passed, 'AFFECTED_TOTAL_MISMATCH')
 
 
+def virtual_css_source(name, row, pins):
+    prefix = 'client/src/business/platform/client/src/'
+    allowed = {prefix+'pages/ChannelInventoryHost.css', *[prefix+'components/channelInventory/'+n+'.css' for n in ('batch', 'layout', 'management', 'notes')]}
+    D.require(name.startswith('customer-css:'), 'CSS_VIRTUAL_PREFIX')
+    source = Path(name[len('customer-css:'):])
+    D.require(source.is_absolute() and source.is_relative_to(REPO), 'CSS_VIRTUAL_LOCATION')
+    relative = source.relative_to(REPO).as_posix()
+    D.require(relative in allowed and relative in pins, 'CSS_VIRTUAL_SOURCE_ALLOWLIST')
+    D.require(row == {'bytes': 0, 'imports': []}, 'CSS_VIRTUAL_MUST_BE_EMPTY')
+    return relative
+
+
 def slice16(data, a, b):
     encoded = data.decode().encode('utf-16-le')
     D.require(type(a) is int and type(b) is int and 0 <= a <= b and b*2 <= len(encoded), 'INVALID_JS_INTERVAL')
@@ -180,6 +192,11 @@ def prepare(args):
             D.require(path.resolve().is_relative_to(REPO.resolve()) and not any(p.is_symlink() for p in (path, *path.parents)), 'DEPENDENCY_SYMLINK')
             data = i.read(path)
             D.require(D.digest(data) == deps[name] and len(data) == row['bytes'], 'COMPILER_DEPENDENCY_BYTES')
+        elif name.startswith('customer-css:'):
+            relative = virtual_css_source(name, row, current)
+            data = i.read(D.regular(REPO, relative))
+            D.require(D.digest(data) == current[relative], 'CSS_VIRTUAL_SOURCE_SHA')
+            graph.add(relative)
         else:
             D.require(name.startswith('customer-native:') or name == 'customer-workbench-scoped-entry.mjs', 'UNKNOWN_VIRTUAL_INPUT')
     D.require(graph <= set(current), 'GRAPH_NOT_PINNED')

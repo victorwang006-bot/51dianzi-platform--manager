@@ -237,6 +237,24 @@ class StaticRelease(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 P.report_binding(bad, 'affected', pins, pin_sha, '3'*64, 'a'*40)
 
+    def test_actual_css_virtual_guards_are_empty_and_source_pinned(self):
+        prefix = 'client/src/business/platform/client/src/'
+        paths = [prefix+'pages/ChannelInventoryHost.css', *[prefix+'components/channelInventory/'+n+'.css' for n in ('batch', 'layout', 'management', 'notes')]]
+        pins = {name: '1'*64 for name in paths}
+        for name in paths:
+            virtual = 'customer-css:'+str(P.REPO/name)
+            self.assertEqual(P.virtual_css_source(virtual, {'bytes': 0, 'imports': []}, pins), name)
+            for row in ({'bytes': 1, 'imports': []}, {'bytes': 0, 'imports': [{'path': '/api'}]}):
+                with self.assertRaises(RuntimeError):
+                    P.virtual_css_source(virtual, row, pins)
+
+    def test_css_virtual_guard_rejects_unpinned_outside_and_other_sources(self):
+        name = 'client/src/business/platform/client/src/pages/ChannelInventoryHost.css'
+        pins = {name: '1'*64}
+        for virtual, bound in [('customer-css:'+str(P.REPO/name), {}), ('customer-css:/tmp/ChannelInventoryHost.css', pins), ('customer-css:'+str(P.REPO/'server/a.css'), pins), ('customer-css:relative.css', pins)]:
+            with self.assertRaises(RuntimeError):
+                P.virtual_css_source(virtual, {'bytes': 0, 'imports': []}, bound)
+
     def test_automatic_reference_proof_cannot_be_reused(self):
         front = D.load(self.root/'evidence/frontend-proof.json')
         qa = D.load(self.root/'evidence/native-tests.json')
