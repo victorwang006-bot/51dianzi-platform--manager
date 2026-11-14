@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "readonly": true,
+  "productionRecordWrites": 0,
+  "businessRecordsReturned": 0,
+  "mysqlVersion": "8.0.36",
+  "exactGeneratedAggregateAndPaginationSqlAccepted": true,
+  "explainPlanRows": 14
+}

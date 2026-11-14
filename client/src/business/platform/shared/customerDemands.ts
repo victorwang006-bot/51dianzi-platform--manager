@@ -90,8 +90,16 @@ export type CustomerDemandSummary = {
   itemCount: number; version: number; replyDueAt: string | null; submittedAt: string | null;
   /** Business revision, independent from the optimistic mutation version. */
   revision?: number;
-  /** All procurement quote headers, including stale quote revisions. */
+  /** Active procurement quote headers including stale revisions; withdrawn headers are excluded. */
   quoteCount?: number;
+  /** Active quote headers bound to the current demand revision; never inferred from quoteCount. */
+  currentQuoteCount?: number;
+  /** Current-revision decisions whose source quote version is still active and unchanged. */
+  acceptedQuoteCount?: number;
+  /** Unaccepted current quote versions with at least one material quantity still available. */
+  confirmableQuoteCount?: number;
+  activeOrderCount?: number;
+  workflowStage?: CustomerDemandWorkflowStage;
   /** Authoritative current actor capability; restrictions are described on the detail DTO. */
   canEdit?: boolean;
   hasActiveOrders?: boolean;

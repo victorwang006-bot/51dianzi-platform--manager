@@ -184,11 +184,9 @@ const OrdersRoute = () => (
   </PermissionGate>
 );
 const ProfileRoute = () => (
-  <PermissionGate permission="profile.manage">
-    <LazyScreen>
-      <LazyProfile />
-    </LazyScreen>
-  </PermissionGate>
+  <LazyScreen>
+    <LazyProfile />
+  </LazyScreen>
 );
 const ExceptionLogsRoute = () => (
   <PermissionGate permission="logs.read">

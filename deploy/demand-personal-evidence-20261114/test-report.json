@@ -1,0 +1,161 @@
+{
+  "pass": true,
+  "testCount": 34,
+  "tests": [
+    {
+      "name": "admin baseline/candidate SHA256 pins",
+      "pass": true
+    },
+    {
+      "name": "admin node --check (never execute API entrypoint)",
+      "pass": true
+    },
+    {
+      "name": "admin exact inverse and all outside-slot bytes unchanged",
+      "pass": true
+    },
+    {
+      "name": "admin non-target declaration byte guards independently rechecked",
+      "pass": true
+    },
+    {
+      "name": "admin every final source and source map compiler pin",
+      "pass": true
+    },
+    {
+      "name": "admin no copied native implementations in factory graph",
+      "pass": true
+    },
+    {
+      "name": "admin exact native argument positions and symbol captures",
+      "pass": true
+    },
+    {
+      "name": "admin real tRPC factory initialization before appRouter; zero DB/SMS effects",
+      "pass": true
+    },
+    {
+      "name": "admin commission caller and AuthGate with native real tRPC middleware",
+      "pass": true
+    },
+    {
+      "name": "front baseline/candidate SHA256 pins",
+      "pass": true
+    },
+    {
+      "name": "front node --check (never execute API entrypoint)",
+      "pass": true
+    },
+    {
+      "name": "front exact inverse and all outside-slot bytes unchanged",
+      "pass": true
+    },
+    {
+      "name": "front non-target declaration byte guards independently rechecked",
+      "pass": true
+    },
+    {
+      "name": "front every final source and source map compiler pin",
+      "pass": true
+    },
+    {
+      "name": "front no copied native implementations in factory graph",
+      "pass": true
+    },
+    {
+      "name": "front exact native argument positions and symbol captures",
+      "pass": true
+    },
+    {
+      "name": "front real tRPC factory initialization before appRouter; zero DB/SMS effects",
+      "pass": true
+    },
+    {
+      "name": "admin old auth outer roles/procedures/schemas and every other route property byte-identical",
+      "pass": true
+    },
+    {
+      "name": "actual old auth.updateProfile arrow rejects changed phone, keeps non-native FORBIDDEN and writes only name/email",
+      "pass": true
+    },
+    {
+      "name": "actual old auth.changePassword delegates same native account/input, clears cookie only after success, keeps non-native FORBIDDEN",
+      "pass": true
+    },
+    {
+      "name": "actual native create/consume SQL leaves all personal purposes untouched while ordinary reset still rate-limits and exhausts",
+      "pass": true
+    },
+    {
+      "name": "actual tree-shaken support source functions exclude personal rows without adding production slots",
+      "pass": true
+    },
+    {
+      "name": "actual factory personal service persistent password exhaustion reachable through old changePassword arrow",
+      "pass": true
+    },
+    {
+      "name": "actual legacy same-phone performs mock SMS delivery and consumes real SQL ticket, verified same-phone rejects without sending",
+      "pass": true
+    },
+    {
+      "name": "actual password change migrates only consumed current-phone/current-version receipt and never creates legacy proof or changes role/phone",
+      "pass": true
+    },
+    {
+      "name": "actual performance helper rechecks active/session/archive inside callback and does not forward revoked session",
+      "pass": true
+    },
+    {
+      "name": "negative handler baseline canonical rejects changed body and native namespace owner never falls back",
+      "pass": true
+    },
+    {
+      "name": "front demand changed declarations exactly frozen three owners",
+      "pass": true
+    },
+    {
+      "name": "native mapper module disambiguation and symbol-only edits fixture",
+      "pass": true
+    },
+    {
+      "name": "negative native mapper missing module export fails closed",
+      "pass": true
+    },
+    {
+      "name": "negative symbol capture detects local shadow rather than same-spelling global",
+      "pass": true
+    },
+    {
+      "name": "negative patch overlap and new-global collision fail closed",
+      "pass": true
+    },
+    {
+      "name": "negative factory native variable initialization guard detects TDZ/uninitialized values",
+      "pass": true
+    },
+    {
+      "name": "deterministic rebuild produces identical candidate and source map bytes",
+      "pass": true
+    }
+  ],
+  "apis": {
+    "admin": {
+      "baselineSha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442",
+      "candidateSha256": "d2756c5ff98b459cad79c3ff11643680c92f773ceeeb4469e88302a863369539",
+      "patchCount": 9,
+      "protectedDeclarations": 1083
+    },
+    "front": {
+      "baselineSha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735",
+      "candidateSha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+      "patchCount": 8,
+      "protectedDeclarations": 4064
+    }
+  },
+  "noAPIEntrypointExecution": true,
+  "noDatabaseNetworkAccess": true,
+  "noSmsNetworkAccess": true,
+  "noSSH": true,
+  "noProductSourceWrites": true
+}

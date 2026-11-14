@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "namespace": "personalCenter",
+  "identity": "仅当前 active ctx.adminAccount 对应 admin_users；不接受账号ID。业绩只经独立、当前有效的业务员工绑定、商户scope及前台真实权限，不把后台ID当业务用户ID。",
+  "profile": {
+    "kind": "query",
+    "input": null,
+    "output": {
+      "username": "string",
+      "displayName": "string",
+      "email": "string",
+      "phone": "string (本人完整号码；历史保存不代表已验证)",
+      "adminRole": "原始角色",
+      "phoneBinding": "legacy_unverified | verified_by_current_ticket (绑定成功响应确认；无schema不伪造历史已验证)"
+    }
+  },
+  "updateProfile": {
+    "kind": "mutation",
+    "input": {
+      "displayName": "trim string 1..128",
+      "email": "email或空串，max255"
+    },
+    "output": "同profile；明确不接受phone，不复用旧auth.updateProfile做手机绑定"
+  },
+  "changePassword": {
+    "kind": "mutation",
+    "input": {
+      "oldPassword": "string 1..128",
+      "newPassword": "string 8..128且不同于旧密码"
+    },
+    "output": {
+      "success": true,
+      "requiresRelogin": true
+    },
+    "security": "验证数据库当前原密码；CAS密码hash与sessionVersion；成功revoke所有旧session并clear cookie"
+  },
+  "requestPhoneCode": {
+    "kind": "mutation",
+    "input": {
+      "oldPassword": "string 1..128",
+      "phone": "中国大陆11位1[3-9]号码；+86/0086归一化"
+    },
+    "output": {
+      "success": true,
+      "ticketId": "UUID",
+      "maskedPhone": "string",
+      "expiresInSeconds": 300,
+      "retryAfterSeconds": 60
+    },
+    "security": "原密码验证、短信真实成功才返回成功、DB票据与账号锁发送限流、验证码purpose隔离、5次失败限制、原绑定与session版本验证；无配置SERVICE_UNAVAILABLE"
+  },
+  "bindPhone": {
+    "kind": "mutation",
+    "input": {
+      "oldPassword": "string 1..128",
+      "phone": "同requestPhoneCode",
+      "ticketId": "UUID",
+      "code": "6位数字"
+    },
+    "output": {
+      "success": true,
+      "phone": "归一化本人号码",
+      "requiresRelogin": true
+    },
+    "security": "消费DB单次ticket并CAS原绑定/密码/sessionVersion；事务内冲突检查，成功后sessionVersion+1并clear cookie"
+  },
+  "performance": {
+    "kind": "query",
+    "input": {
+      "month": "YYYY-MM",
+      "merchantId": "positive integer，可选；无选择且无法唯一确定商户时返回unavailable",
+      "page": "integer 1..100000，默认1",
+      "pageSize": "integer 1..50，默认10"
+    },
+    "output": {
+      "status": "available | unavailable",
+      "reason": "unavailable时的非泄露说明",
+      "month": "YYYY-MM",
+      "currency": "CNY",
+      "currencyLabel": "人民币（含税）",
+      "timezone": "Asia/Shanghai",
+      "orderCount": "available时number（本人创建、confirmed、createdAt落月）",
+      "orderAmount": "available时十进制string 4位",
+      "collectedAmount": "available时十进制string 4位，本人订单bank/cash付款按paymentDate落月，不包含monthly",
+      "monthlyBookedAmount": "available时十进制string 4位，monthly账期登记绝非现金回款",
+      "refundAmount": null,
+      "refundStatus": "unavailable（没有可核实退款账本）",
+      "basis": "精确scope/本人createdByUserId、confirmed、createdAt自然月及付款paymentDate口径，分页items不影响全量汇总",
+      "items": "available时array<{id:number,orderNumber:string,status:\"confirmed\",totalAmount:string(4位),createdAt:string(ISO),currencyLabel:\"人民币（含税）\"}>，所选月份本人confirmed订单",
+      "total": "available时number，与orderCount一致，SQL全量COUNT",
+      "page": "available时number",
+      "pageSize": "available时number"
+    },
+    "security": "不返回其他人资料/订单明细。不可用不返回0作为真实业绩。SQL全量聚合，不把前100条作为总数。 全部聚合与明细仅o.currency=CNY人民币订单，不混其他币种。"
+  },
+  "commission": {
+    "kind": "query",
+    "input": {
+      "month": "YYYY-MM"
+    },
+    "output": {
+      "status": "unconfigured",
+      "month": "YYYY-MM",
+      "amount": null,
+      "currency": "CNY",
+      "reason": "未配置可核实的提成规则与结算来源，暂不能计算真实提成"
+    }
+  },
+  "errorCodes": [
+    "UNAUTHORIZED 原密码错误或会话失效",
+    "BAD_REQUEST 参数不合法/验证码错误",
+    "CONFLICT 手机已占用/原密码或原绑定已变化",
+    "TOO_MANY_REQUESTS 发送频繁或验证码次数耗尽",
+    "SERVICE_UNAVAILABLE 短信/业务来源不可用"
+  ],
+  "deploymentNote": "业绩前台新增只读personalPerformance.summary，需父在前台source-bound增量部署该router及service并注册；未部署正确返回unavailable。API合同字段将在源码固定类型保持一致。"
+}

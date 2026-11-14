@@ -1,0 +1,163 @@
+{
+  "status": "PASS",
+  "reviewedAt": "2026-11-14T10:16:41+08:00",
+  "reviewType": "independent-read-only-targeted-final",
+  "scope": "Five confirmed issues in read-only-review-initial.md, current candidate/report pins, exact profile relocation, bounded activation and rollback contract only",
+  "productionDeployed": false,
+  "initialNotPassWasPreserved": true,
+  "newConfirmedIssues": [],
+  "issues": [
+    {
+      "id": 1,
+      "resolved": true,
+      "reason": "旧 auth.updateProfile 先经 profile/current 按同一账号校验 fresh active/sessionVersion/archive；手机号仅作等效同号比较，异号拒绝，写入对象仅 displayName/email，绝不写 phone。",
+      "sourceRefs": ["server/routers.ts:797-820", "server/personalCenterService.ts:91-120,168-176", "backend-candidate/admin-index.js:18454-18478", "backend-candidate/test-report.json:78-80"]
+    },
+    {
+      "id": 2,
+      "resolved": true,
+      "reason": "旧 auth.changePassword 委托同一 native account/input 到安全 service；fresh 验证后按 expected passwordHash/sessionVersion CAS，失败抛错，成功才 clearCookie 并返回 requiresRelogin:true。旧外层角色/procedure/schema 字节守卫通过。",
+      "sourceRefs": ["server/routers.ts:823-839", "server/personalCenterService.ts:124-163,192-221", "backend-candidate/admin-index.js:18095-18116,18480-18493", "backend-candidate/security-build-evidence.json:120-124", "backend-candidate/test-report.json:74-84"]
+    },
+    {
+      "id": 3,
+      "resolved": true,
+      "reason": "ordinary 五 helper 的选取、限流、批量失效、过期/耗尽/错误扣次数/成功消费及按 id mutation 均排除 AUTH/PHONE/VERIFIED 三用途。候选真实 create/consume 精确槽 source-bound 且分别引用隔离 helper 2/5 次；其余三个 support helper 仍 tree-shaken，未重新 materialize。",
+      "sourceRefs": ["server/db.ts:6226-6465", "backend-candidate/admin-manifest.json:patches/createPasswordResetCode,consumePasswordResetCode", "backend-candidate/admin-index.js:17826-17829", "backend-candidate/security-build-evidence.json:743-751", "backend-candidate/test-report.json:86-92"]
+    },
+    {
+      "id": 4,
+      "resolved": true,
+      "reason": "无当前 consumed receipt 的 legacy 同号可走真实 SMS 流程；当前 exact phone/version used receipt 同号拒绝。verified receipt 仅由成功 ticket 验证与账号/票据安全 CAS 产生；安全改密 CAS 成功后仅 UPDATE 已存在同账号、当前原号/版、used receipt 到新版本，无 INSERT/legacy 伪造，CAS loser 不迁移。",
+      "sourceRefs": ["server/personalCenterService.ts:192-221,223-323,342-408", "backend-candidate/admin-index.js:18104-18142", "backend-candidate/test-report.json:98-104", "security-remediation-handoff.md:35"]
+    },
+    {
+      "id": 5,
+      "resolved": true,
+      "reason": "新 performance callback 位于原 withCurrentBusinessAuthorization fence 回调内，等待并完成原 binding/scope 检查后，再 fresh SELECT active/sessionVersion/无 archive，失败不 forward。原 shared fence/helper、staff binding、merchant scope 与固定 method 未拓展。",
+      "sourceRefs": ["server/businessRouter.ts:290-309,317-325", "backend-candidate/admin-index.js:17797-17821", "backend-candidate/test-report.json:106-108", "security-remediation-handoff.md:36,38"]
+    }
+  ],
+  "freezePinMatch": true,
+  "freezePinMatchboolean": true,
+  "sourceFreezeSha256": "65a06726cca5910b7fb4f9e151e907aeae8727feaf6258431e46a39ca66851a9",
+  "frozenSourceHashes": {
+    "server/routers.ts": "ef5bff22fb6ee3e57b48b88d92fe974ca071ec505cf3b1b54912958a002649cc",
+    "server/db.ts": "7d9792ae990b34caafedd2b5fd750e1c8fcd1bec578ed678d75bca1b25d6136c",
+    "server/personalCenterService.ts": "0f85611c6365a4163601f1e488d4de4f3a0b78c0a218259e605bea54878c28af",
+    "server/businessRouter.ts": "ac1280c94c16e156ec7f17db466f6591af4e49dfeae8c89b10022a17b737bc60"
+  },
+  "candidateHashes": {
+    "backend-candidate/admin-index.js": "d2756c5ff98b459cad79c3ff11643680c92f773ceeeb4469e88302a863369539",
+    "backend-candidate/front-index.js": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+    "candidate/index.html": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0",
+    "candidate/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js": "3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2",
+    "candidate/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js": "123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568",
+    "candidate/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6",
+    "candidate/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+    "candidate/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+    "candidate/assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+  },
+  "candidateHashMatch": true,
+  "backendAllCurrentSourcePinsMatch": true,
+  "backendExactNewSlotHashesMatch": true,
+  "backendRealAllowlistedSourceMapContentMatches": true,
+  "existingVerifiedEvidence": {
+    "inverseByteExact": true,
+    "allOutsideSlotsByteIdentical": true,
+    "nativeSymbolCapturePreserved": true,
+    "nativeImplementationsCopied": false,
+    "protectedAdminDeclarations": 1083,
+    "protectedFrontDeclarations": 4064,
+    "protectedAdminRouteProperties": 1213,
+    "oldAuthRolesProceduresSchemasByteIdentical": true
+  },
+  "actualTestCounts": {
+    "securityMockFiles": 8,
+    "securityMockTestsPassed": 70,
+    "securityMockTestsFailed": 0,
+    "pnpmCheck": "PASS",
+    "backendActualCandidateGroupsPassed": 34,
+    "backendActualCandidateGroupsFailed": 0,
+    "profileActualWholeModuleGroupsPassed": 13,
+    "profileActualWholeModuleGroupsFailed": 0,
+    "quoteActualCandidateGroupsPassed": 101,
+    "quoteActualCandidateGroupsFailed": 0,
+    "customerActualCandidateGroupsPassed": 39,
+    "customerActualCandidateGroupsFailed": 0,
+    "testsRerunByFinalReviewer": 0
+  },
+  "profileReport": {
+    "path": "static-input/actual-profile-module-tests.json",
+    "sha256": "e205ed788dd4facbe58507b0750b228909a2c7a10358249677eede6201b8c167",
+    "currentCandidateHashesMatch": true,
+    "currentSourcePinsMatch": true,
+    "testScriptPinMatch": true,
+    "actualCompleteProfileModuleExecuted": true,
+    "wholeEntryExecuted": false,
+    "sourceOrWrapperRecompiled": false,
+    "exactRelocation": true,
+    "actualProfileOldIndexResolutionMethod": "global-imports",
+    "actualProfileScope": null,
+    "directoryPrefixRelocationUsed": false,
+    "htmlPinMatch": true,
+    "mockNetworkIO": 0,
+    "mockDatabaseIO": 0,
+    "mockSmsIO": 0
+  },
+  "adjacentReportPins": {
+    "quoteReportSha256": "8b8a80e826d808e256cdbcb64ac866c123a093112179518b8238cd1c34c0225a",
+    "customerReportSha256": "9c57bd42fd5af9d1fa371adfe6fe72d48d804f1c7843218b30caa57607ee0368",
+    "backendTestReportSha256": "09f6c6d5c00514c2249cfe020747b7df2fad04d4ee0be379002ceba45e215fe2",
+    "backendBuildEvidenceSha256": "2d5bddb9cdd2cb7327ac7ec08f0da63a8ca7a29aa74259db7a1f83a9999a7028",
+    "frontendCurrentSourcePinsMatch": true,
+    "quoteCurrentSourceSnapshotPinsMatch": true,
+    "quoteAndCustomerGetterHashesAgree": true,
+    "adjacentBehaviorReaudited": false
+  },
+  "activationReview": {
+    "status": "PASS",
+    "driver": "deploy/activate-demand-personal-20261114.py",
+    "driverSha256": "cfc3573c59c76eaab120dbc6fe7affbf755eb0991161f40de6f9998266098acf",
+    "reloadHelperSha256": "bb83ae9980ed9a2561b508a47daada315e0e28a215e8c09b9d72af086ee20d07",
+    "staticFiles": 7,
+    "apiFiles": 2,
+    "staticBoundBasis": "Current files.json exact seven, prepare script enforces len(files)==7; driver enforces exact manifest asset allowlist and hashes (driver generic outer cap is 14)",
+    "doubleLock": true,
+    "freshBaselineAndFinalCAS": true,
+    "exactOwnedRollback": true,
+    "rollbackPreservesForeignVersionAndRecoveryRequiredWindow": true,
+    "originalProcessIdsReloaded": 6,
+    "originalPathCwdEnvironmentPreserved": true,
+    "environmentOverlay": false,
+    "globalRestart": false,
+    "startupDumpChanged": false,
+    "databaseOperations": 0,
+    "anonymousProtectedApiHealthRequired": true,
+    "procurementRouteHealthRequired": true,
+    "healthChecksPerformedByReviewer": false,
+    "scriptExecutedByReviewer": false,
+    "sourceRefs": ["deploy/prepare-demand-personal-package-20261114.py:33-74", "deploy/activate-demand-personal-20261114.py:189-218,229-236,264-282,308-351,355-408", "deploy/reload-demand-personal-api-20261114.cjs:20-81"]
+  },
+  "productionWrites": 0,
+  "productionRecordWrites": 0,
+  "loggedInBrowserAcceptance": false,
+  "loggedInBrowserAcceptancePerformed": false,
+  "boundaries": {
+    "productionWrites": 0,
+    "productionDeployments": 0,
+    "productSourceWrites": 0,
+    "gitCommands": 0,
+    "sshOperations": 0,
+    "databaseAccesses": 0,
+    "networkOperations": 0,
+    "realSmsOperations": 0,
+    "loggedInBrowserAcceptance": false,
+    "onlyRequestedWorkEvidenceWasWritten": true
+  },
+  "limitations": [
+    "PASS is targeted predeployment security-closure/package-gate evidence, not production deployment, real SMS, DB integration or authenticated browser acceptance.",
+    "Existing verified tests/inverse/capture proofs were trusted and linked to current exact hashes; no whole-repository retest or whole-site investigation was performed.",
+    "The old initial not-pass report remains unchanged; this new result follows the frozen remediation and final candidate evidence rather than relabeling old evidence."
+  ]
+}

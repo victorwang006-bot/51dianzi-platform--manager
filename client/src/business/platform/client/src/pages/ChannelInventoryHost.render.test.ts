@@ -486,12 +486,12 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.sharedInputs).toHaveLength(0);
     const rows = document.querySelectorAll("tbody tr");
     expect(rows[0].textContent).toContain("查看来源");
-    expect(rows[1].textContent).toContain("查看来源");
+    expect(rows[1].querySelector(".ci-source-link")).toBeNull();
     expect(document.body.innerHTML).not.toContain("深圳代理");
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
     expect(runtime.sourceInputs).toHaveLength(0);
     expect(runtime.optionInputs).toHaveLength(0);
-    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
     expect(Array.from(rows[0].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "本人备注", "更多"]);
     for (const row of rows) {
       const publish = required(row.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing publish action");
@@ -758,7 +758,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     act(() => root?.render(React.createElement(ChannelInventoryHost)));
     await settle();
     expect(document.body.innerHTML).not.toContain("团队来源");
-    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("查看来源");
+    expect(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link")).toBeNull();
     expect(document.querySelector(".ci-source-dialog")).toBeNull();
   });
 
@@ -1459,8 +1459,8 @@ describe("channel industry required integration", () => {
     expect(runtime.updateChannel).not.toHaveBeenCalled();
     selectHostTab("materials");
     const peer = document.querySelectorAll("tbody tr")[1];
-    expect(peer.textContent).toContain("查看来源");
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    expect(peer.querySelector(".ci-source-link")).toBeNull();
+    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
     expect(required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing readonly publish").disabled).toBe(true);
     expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
     expect(peer.querySelector("select")).toBeNull();
@@ -1655,24 +1655,24 @@ describe("v11 real Host source authorization lifecycle", () => {
     expect(document.querySelector(".ci-source-dialog")?.textContent).not.toContain("暂无权限查看");
   });
 
-  it("keeps negative-hint links clickable and shows one stable in-dialog denial without granting edit or hiding collaboration", async () => {
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
+  it("hides negative-hint source entries without granting edit or hiding collaboration", async () => {
     renderHost();
-    const denied = link(1);
-    expect(denied.disabled).toBe(false);
-    expect(denied.classList.contains("ci-source-link-muted")).toBe(true);
-    click(denied); await settle();
+    expect(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link")).toBeNull();
+    await settle();
     expect(runtime.toastError).not.toHaveBeenCalled();
-    expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
+    expect(document.querySelector(".ci-source-dialog")).toBeNull();
     expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("备注（0）");
     expect(document.querySelectorAll("tbody tr")[1].textContent).not.toContain("编辑");
   });
 
-  it("a stale negative row hint cannot block newly authorized source access and does not grant stock edit", async () => {
+  it("a refreshed positive source hint enables a fresh server-authorized source read without granting stock edit", async () => {
     runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "新授予实时来源" });
-    renderHost(); click(link(1)); await settle();
+    renderHost();
+    expect(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link")).toBeNull();
+    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
+    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => row.id === 202 ? { ...row, canViewSource: true } : row) });
+    rerender(); click(link(1)); await settle();
     expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
     expect(document.querySelector(".ci-source-name")?.textContent).toBe("新授予实时来源");
     expect(runtime.toastError).not.toHaveBeenCalled();
@@ -1766,7 +1766,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
     const title = required(document.querySelector("h1.ci-sr-only"), "missing accessible title");
@@ -1792,7 +1792,7 @@ describe("v13 native channel read and original recorder contract", () => {
     result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
     expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([9, 9]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
@@ -1897,7 +1897,7 @@ describe("v14 industry and channel-row stock upload", () => {
     localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]);
+    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]);
     expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");

@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "compiledFactoryBytesExecuted": true,
+  "factorySha256": "f7feea8e426ba369c2c66d77781ee1f9bd58a76202f8262880fb31d2d1feb63b",
+  "sourceHashes": {
+    "node_modules/.pnpm/lucide-react@0.453.0_react@19.2.1/node_modules/lucide-react/dist/esm/icons/badge-check.js": "dd0f5e6c86c62404ab765989264657b86406ec838843c2766fe57e80009c7636",
+    "node_modules/.pnpm/lucide-react@0.453.0_react@19.2.1/node_modules/lucide-react/dist/esm/icons/refresh-cw.js": "a3dc2b2fa6bdd36169dccba5a6cae87951ba73145ab427a9c2cef31856b39b72",
+    "client/src/pages/Profile.tsx": "a10096ad664f3d1872698898b35e69845ed26e78f381de76b1f5b7b5aaed8acc",
+    "client/src/pages/Profile.css": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049",
+    "client/src/pages/profileModel.ts": "c2c25ee63c474e442c2a1db2a259a215fa0562ac279d1a67ccde1ec0c549ae9a"
+  },
+  "results": [
+    {
+      "name": "compiled source factory mounts personal center and four real tabs",
+      "status": "PASS"
+    },
+    {
+      "name": "security tab renders password and phone verification forms without mutation",
+      "status": "PASS"
+    },
+    {
+      "name": "commission and unavailable performance do not synthesize zero balances",
+      "status": "PASS"
+    },
+    {
+      "name": "source query keys are identity-specific and cleanup cancels old subject",
+      "status": "PASS"
+    }
+  ],
+  "boundary": "Exact frozen source factory executed in jsdom with original-native bridge contract mocks; synthetic TEST_ONLY fixture, zero transport/mutation; final Profile module still requires explicitly approved readonly HS export."
+}

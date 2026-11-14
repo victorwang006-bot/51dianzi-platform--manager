@@ -58,14 +58,14 @@ function required<T>(value: T | null | undefined): T {
   return value;
 }
 function button(label: string) {
-  return required(Array.from(container.querySelectorAll<HTMLButtonElement>("button"))
-    .find(item => item.textContent?.trim() === label));
+  return required(Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
+    .find(item => item.textContent?.trim() === label || item.getAttribute("aria-label") === label));
 }
 function click(element: Element) {
   act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })));
 }
 function setInput(label: string, value: string) {
-  const input = required(container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`));
+  const input = required(document.querySelector<HTMLInputElement>(`[aria-label="${label}"]`));
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -90,16 +90,16 @@ afterEach(() => {
 });
 describe("confirmed inventory search with the real TanStack Query cache", () => {
   it("executes an empty first-page Confirm and repeated same-key searches", async () => {
-    click(button("确定")); await settle(); expect(runtime.requests).toHaveLength(2);
-    click(button("确定")); await settle(); expect(runtime.requests).toHaveLength(3);
+    click(button("搜索")); await settle(); expect(runtime.requests).toHaveLength(2);
+    click(button("搜索")); await settle(); expect(runtime.requests).toHaveLength(3);
     expect(runtime.requests.every(input => input.page === 1 && input.brand === undefined)).toBe(true);
   });
   it("queries changed filters only after confirmation, never the old key, and re-searches normalized whitespace", async () => {
     setInput("筛选库存品牌", " TI "); expect(runtime.requests).toHaveLength(1);
-    click(button("确定")); await settle(); expect(runtime.requests).toHaveLength(2);
+    click(button("搜索")); await settle(); expect(runtime.requests).toHaveLength(2);
     expect(runtime.requests.at(-1)).toMatchObject({ brand: "TI", page: 1 });
     setInput("筛选库存品牌", "TI   "); expect(runtime.requests).toHaveLength(2);
-    click(button("确定")); await settle(); expect(runtime.requests).toHaveLength(3);
+    click(button("搜索")); await settle(); expect(runtime.requests).toHaveLength(3);
     expect(runtime.requests.at(-1)).toMatchObject({ brand: "TI", page: 1 });
   });
   it("uses Enter for a same-key search, ignores composing Enter, and queries page one only on pagination reset", async () => {
@@ -110,15 +110,17 @@ describe("confirmed inventory search with the real TanStack Query cache", () => 
     await settle(); expect(runtime.requests).toHaveLength(2);
     click(button("下一页")); await settle(); expect(runtime.requests.at(-1)?.page).toBe(2);
     const before = runtime.requests.length;
-    click(button("确定")); await settle();
+    click(button("搜索")); await settle();
     // Confirm must request the cached first page too, never the old page two.
     expect(runtime.requests).toHaveLength(before + 1);
     expect(runtime.requests.slice(before).every(item => item.page === 1)).toBe(true);
     expect(runtime.requests.at(-1)?.page).toBe(1);
   });
   it("does not explicitly refetch invalid batch drafts or after native read revocation", async () => {
-    setInput("筛选上传批次 ID", "invalid"); click(button("确定")); await settle();
+    click(button("高级库存筛选"));
+    setInput("筛选上传批次 ID", "invalid"); click(button("应用筛选")); await settle();
     expect(runtime.requests).toHaveLength(1); expect(container.textContent).toContain("上传批次 ID 须为正整数");
+    click(button("高级库存筛选"));
     setInput("筛选上传批次 ID", ""); runtime.scope.officialInventoryPermissions.read = false; renderHost();
     await settle(); expect(runtime.requests).toHaveLength(1);
     expect(container.textContent).not.toContain("SYNTHETIC-PART");

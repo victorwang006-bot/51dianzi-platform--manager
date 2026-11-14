@@ -9,7 +9,7 @@ export const CHANNEL_INVENTORY_COLUMNS = [
   { id: "leadTime", label: "交期", width: 112, defaultVisible: true },
   { id: "dateCode", label: "DC", width: 100, defaultVisible: false },
   { id: "updatedAt", label: "更新时间", width: 148, defaultVisible: true },
-  { id: "source", label: "来源", width: 140, defaultVisible: true },
+  { id: "source", label: "渠道来源", width: 140, defaultVisible: true },
   { id: "actions", label: "操作", width: 216, defaultVisible: true, fixed: true },
 ] as const;
 export type ChannelInventoryColumnId = typeof CHANNEL_INVENTORY_COLUMNS[number]["id"];

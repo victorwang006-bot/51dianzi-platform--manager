@@ -6222,6 +6222,13 @@ export async function revokeAdminUserSessions(
 
 export const RESET_CODE_MAX_ATTEMPTS = 5;
 
+/** Ordinary password/username recovery must never select or mutate personal-center security proof/budget rows. */
+function ordinaryPasswordResetPurposeCondition() {
+  return sql`NOT (${passwordResetCodes.target} = 'personal-auth:v1'
+    OR ${passwordResetCodes.target} LIKE 'personal-phone:v1:%'
+    OR ${passwordResetCodes.target} LIKE 'personal-phone-verified:v1:%')`;
+}
+
 /**
  * Create a reset code while serialising the per-account send window.  The row
  * lock removes the check-then-insert race that otherwise lets parallel calls
@@ -6260,6 +6267,7 @@ export async function createPasswordResetCode(input: {
         and(
           eq(passwordResetCodes.adminUserId, input.adminUserId),
           isNull(passwordResetCodes.usedAt),
+          ordinaryPasswordResetPurposeCondition(),
           // Compare on the database clock. Reading a MySQL TIMESTAMP into a JS
           // Date can shift by the connection timezone and silently bypass the
           // resend window even though both requests hit the same database.
@@ -6279,7 +6287,8 @@ export async function createPasswordResetCode(input: {
       .where(
         and(
           eq(passwordResetCodes.adminUserId, input.adminUserId),
-          isNull(passwordResetCodes.usedAt)
+          isNull(passwordResetCodes.usedAt),
+          ordinaryPasswordResetPurposeCondition()
         )
       );
     await tx.insert(passwordResetCodes).values({
@@ -6304,6 +6313,7 @@ export async function getActivePasswordResetCode(adminUserId: number) {
       and(
         eq(passwordResetCodes.adminUserId, adminUserId),
         isNull(passwordResetCodes.usedAt),
+        ordinaryPasswordResetPurposeCondition(),
         gt(passwordResetCodes.expiresAt, new Date())
       )
     )
@@ -6338,6 +6348,7 @@ export async function consumePasswordResetCode(input: {
     const codeConditions = [
       eq(passwordResetCodes.adminUserId, input.adminUserId),
       isNull(passwordResetCodes.usedAt),
+      ordinaryPasswordResetPurposeCondition(),
     ];
     if (input.target !== undefined)
       codeConditions.push(eq(passwordResetCodes.target, input.target));
@@ -6358,7 +6369,8 @@ export async function consumePasswordResetCode(input: {
         .where(
           and(
             eq(passwordResetCodes.id, record.id),
-            isNull(passwordResetCodes.usedAt)
+            isNull(passwordResetCodes.usedAt),
+            ordinaryPasswordResetPurposeCondition()
           )
         );
       return "INVALID";
@@ -6370,7 +6382,8 @@ export async function consumePasswordResetCode(input: {
         .where(
           and(
             eq(passwordResetCodes.id, record.id),
-            isNull(passwordResetCodes.usedAt)
+            isNull(passwordResetCodes.usedAt),
+            ordinaryPasswordResetPurposeCondition()
           )
         );
       return "ATTEMPTS_EXHAUSTED";
@@ -6391,6 +6404,7 @@ export async function consumePasswordResetCode(input: {
           and(
             eq(passwordResetCodes.id, record.id),
             isNull(passwordResetCodes.usedAt),
+            ordinaryPasswordResetPurposeCondition(),
             eq(passwordResetCodes.attempts, record.attempts)
           )
         );
@@ -6406,6 +6420,7 @@ export async function consumePasswordResetCode(input: {
         and(
           eq(passwordResetCodes.id, record.id),
           isNull(passwordResetCodes.usedAt),
+          ordinaryPasswordResetPurposeCondition(),
           eq(passwordResetCodes.attempts, record.attempts)
         )
       );
@@ -6433,6 +6448,7 @@ export async function incrementResetCodeAttempts(id: number) {
       and(
         eq(passwordResetCodes.id, id),
         isNull(passwordResetCodes.usedAt),
+        ordinaryPasswordResetPurposeCondition(),
         sql`${passwordResetCodes.attempts} < ${RESET_CODE_MAX_ATTEMPTS}`
       )
     );
@@ -6445,7 +6461,7 @@ export async function markResetCodeUsed(id: number) {
     .update(passwordResetCodes)
     .set({ usedAt: new Date() })
     .where(
-      and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt))
+      and(eq(passwordResetCodes.id, id), isNull(passwordResetCodes.usedAt), ordinaryPasswordResetPurposeCondition())
     );
 }
 /**

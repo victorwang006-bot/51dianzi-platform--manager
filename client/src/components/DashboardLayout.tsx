@@ -86,6 +86,8 @@ type MenuItem = {
   permission?: AdminPermission;
   /** Bound portal-staff projection only; never copied into adminPermissions. */
   workbenchCapability?: BusinessWorkbenchCapability;
+  /** Self-account access only; this is never a grant for business modules. */
+  selfAccount?: boolean;
   /** Display-only staff fallback; it is OR-ed with native admin permission. */
   fallbackWorkbenchCapability?: BusinessWorkbenchCapability;
   chunk?: AdminNavigationChunk;
@@ -284,6 +286,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
 ];
 
 menuGroups[menuGroups.length - 1].items.push(
+  { icon: User, label: "个人中心", path: "/profile", selfAccount: true, chunk: "profile", nested: false },
   { icon: Users, label: "团队管理", path: "/teams", permission: "admins.manage", chunk: "organization", nested: false },
   { icon: Settings2, label: "角色模板", path: "/role-templates", permission: "admins.manage", chunk: "organization", nested: false },
   { icon: ClipboardList, label: "授权审计", path: "/permission-audit", permission: "admins.manage", chunk: "organization", nested: false },
@@ -450,11 +453,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     data: businessNavigationQuery.data,
   });
   const workbenchCapabilities = businessNavigationState.workbenchCapabilities;
-  const canManageProfile = hasAdminPermission(
-    adminRole,
-    "profile.manage",
-    adminPermissions
-  );
+  const canManageProfile = user?.role === "admin";
   const accountRoleLabel =
     adminRoleLabels[(user as { adminRole?: string })?.adminRole ?? ""] ??
     "管理员";
@@ -483,6 +482,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
         );
 
       return (
+        (item.selfAccount === true && item.path === "/profile" && user?.role === "admin") ||
         hasNativeAdminPermission ||
         hasWorkbenchPermission ||
         hasFallbackWorkbenchPermission
@@ -679,7 +679,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
                   className="cursor-pointer"
                 >
                   <User className="mr-2 h-4 w-4" />
-                  <span>个人信息</span>
+                  <span>个人中心</span>
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem

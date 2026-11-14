@@ -1,6 +1,8 @@
 import { staffOrganizationRouter } from "./routers/staffOrganization";
 import { businessRouter } from "./businessRouter";
 import { officialTeamsRouter } from "./routers/officialTeams";
+import { personalCenterRouter } from "./personalCenterRouter";
+import { personalCenterService } from "./personalCenterService";
 import { officialChannelInventoryRouter } from "./routers/officialChannelInventory";
 import { officialChannelLegacyRouter } from "./routers/officialChannelLegacy";
 import { archiveStaff, previewStaffArchive } from "./staffArchive";
@@ -25,7 +27,6 @@ import {
   requestPasswordReset,
   requestUsernameRecovery,
   resetPasswordWithCode,
-  verifyPassword,
 } from "./adminAuth";
 import type { TrpcContext } from "./_core/context";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -720,9 +721,9 @@ export const materialInput = z.object({
     }
   }
 });
-
 export const appRouter = router({
   business: businessRouter,
+  personalCenter: personalCenterRouter,
   staffOrganization: staffOrganizationRouter,
   officialTeams: officialTeamsRouter,
   officialChannelInventory: officialChannelInventoryRouter,
@@ -798,10 +799,14 @@ export const appRouter = router({
         if (!account) {
           throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持编辑个人信息" });
         }
+        const fresh = await personalCenterService.profile(account);
+        const equivalentPhone = (phone: string) => phone.trim().replace(/^(?:\+86|0086)/, "");
+        if (equivalentPhone(input.phone) !== equivalentPhone(fresh.phone)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "请在个人中心验证手机号后绑定或更换" });
+        }
         await db.updateAdminUser(account.id, {
           displayName: input.displayName,
-          // 空串视为「清空绑定」，存 null 而非空字符串，避免找回密码时匹配到空值
-          phone: input.phone || null,
+          // Never rewrite phone: a stale legacy form must not overwrite a newly verified binding.
           email: input.email ? input.email.toLowerCase() : null,
         });
         const updated = await db.getAdminUserById(account.id);
@@ -825,24 +830,12 @@ export const appRouter = router({
         if (!account || !account.passwordHash) {
           throw new TRPCError({ code: "FORBIDDEN", message: "当前会话不支持修改密码" });
         }
-        const ok = await verifyPassword(input.oldPassword, account.passwordHash);
-        if (!ok) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "原密码错误" });
+        if (input.oldPassword.length > 128) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "原密码最多128位" });
         }
-        // 新旧相同必须显式拒绝：否则用户以为已改密，实际密码未变，
-        // 若其正因怀疑泄露而改密，会错认为风险已解除。
-        if (input.oldPassword === input.newPassword) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "新密码不能与当前密码相同" });
-        }
-        try {
-          await db.updateAdminUser(account.id, {
-            passwordHash: await hashPassword(input.newPassword),
-            actorAdminUserId: account.id,
-          });
-        } catch (error) {
-          throw mapAdminLifecycleError(error);
-        }
-        return { success: true } as const;
+        const result = await personalCenterService.changePassword(account, input);
+        ctx.res.clearCookie(COOKIE_NAME, { ...getSessionCookieOptions(ctx.req), maxAge: -1 });
+        return result;
       }),
     /** 找回密码：查询账号可用的验证渠道（脱敏手机号/邮箱） */
     resetChannels: publicProcedure

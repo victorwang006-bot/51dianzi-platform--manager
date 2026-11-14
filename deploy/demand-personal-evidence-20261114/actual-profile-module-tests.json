@@ -1,0 +1,1589 @@
+{
+  "status": "PASS",
+  "testScript": "deploy/test-demand-personal-profile-module-20261114.cjs",
+  "actualCandidateProfileModuleExecuted": true,
+  "entryWholeSourceExecuted": false,
+  "sourceOrWrapperRecompiled": false,
+  "results": [
+    {
+      "name": "current full BUILT candidate has four exact-hash records and current source pins",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "profileSourcePin": "a10096ad664f3d1872698898b35e69845ed26e78f381de76b1f5b7b5aaed8acc",
+        "profileUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js"
+      }
+    },
+    {
+      "name": "Entry HS implementation and every preexisting export remain byte-identical",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "originalHSsha256": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "actualHSsha256": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "otherExportCount": 75,
+        "originalHSByteIdentical": true,
+        "otherExportsByteIdentical": true,
+        "wholeEntryExecuted": false
+      }
+    },
+    {
+      "name": "old index specifier resolves to current Entry; existing scope mappings also target current Entry",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "htmlSha256Inspected": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0",
+        "actualProfileResolution": {
+          "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+          "matchedKey": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-8jluR_FO.js",
+          "method": "global-imports",
+          "scope": null
+        },
+        "existingScopeCases": [
+          {
+            "importer": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-inquiry-reception-0-818b5bf75ad00f457ee00975b0676074ee2fbdf6e5939ee89c90046ff0547844.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-inquiry-reception-0-818b5bf75ad00f457ee00975b0676074ee2fbdf6e5939ee89c90046ff0547844.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js"
+          },
+          {
+            "importer": "/assets/OfficialChannelInventory-inquiry-reception-e73af3d5b8bc05ba2e9c8ec5c997d5304d04717aff2e383b6bc7c0cab78ca42b.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/OfficialChannelInventory-inquiry-reception-e73af3d5b8bc05ba2e9c8ec5c997d5304d04717aff2e383b6bc7c0cab78ca42b.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-business-compact-0-d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-business-compact-0-d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-business-compact-1-bd4afc54e076ab0faa331a5844e40f80ff1a7513ed3756bfb5b0e4fae03bcd84.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-business-compact-1-bd4afc54e076ab0faa331a5844e40f80ff1a7513ed3756bfb5b0e4fae03bcd84.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-customer-workbench-0-32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-customer-workbench-0-32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-customer-workbench-1-74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-customer-workbench-1-74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js"
+          },
+          {
+            "importer": "/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js"
+          },
+          {
+            "importer": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+            "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+            "matchedKey": "/assets/index-8jluR_FO.js",
+            "method": "scope",
+            "scope": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js"
+          }
+        ],
+        "finalHTMLProfileMapping": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+        "finalHTMLHasCurrentProfile": true
+      }
+    },
+    {
+      "name": "execute actual module body with import-only fixtures and actual Entry HS hook",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 3,
+        "queryClientFixtureHookCalls": 5,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 3,
+        "queryClientFixtureHookCalls": 5,
+        "sessionListenerInstallations": 1
+      },
+      "evidence": {
+        "removedESDeclarations": [
+          {
+            "start": 23342,
+            "end": 23363,
+            "kind": "export-declaration-read-by-AST",
+            "sha256": "55e377ba4ee599c4d5de80fad57b279d15aa4ca973caf75321bf394a3297cae1"
+          },
+          {
+            "start": 689,
+            "end": 717,
+            "kind": "import",
+            "sha256": "259a75ef7cdda6a318de8b701471f18133ea11cb103d837bcb719c7693f5429d"
+          },
+          {
+            "start": 661,
+            "end": 689,
+            "kind": "import",
+            "sha256": "23592a989a03e88a136f6c2d81b2fa3ea31c7cdf2f0dc3e42911facc046bce04"
+          },
+          {
+            "start": 633,
+            "end": 661,
+            "kind": "import",
+            "sha256": "5d9ddd7d3bbddb828ec91ff196e77a36233eab57cd0314b8d925eb6496100e7f"
+          },
+          {
+            "start": 585,
+            "end": 633,
+            "kind": "import",
+            "sha256": "3fddc98dccdd6d2bc4777e643bbb57206e0f4b702b283d1214ec5f18e35ea01b"
+          },
+          {
+            "start": 546,
+            "end": 585,
+            "kind": "import",
+            "sha256": "9dc399cba0b93fd16f86edab251f9bd003af757cb2da5e96db3ae206914ad6eb"
+          },
+          {
+            "start": 506,
+            "end": 546,
+            "kind": "import",
+            "sha256": "ac00ba3218b875a940a18c8ac058c2ddd93c4fc0ceb3f516a3cf811689a28d46"
+          },
+          {
+            "start": 466,
+            "end": 506,
+            "kind": "import",
+            "sha256": "7b802181d1f034cbd7eb442d8e2373e6217288784c36226d7d05676c35b6795c"
+          },
+          {
+            "start": 426,
+            "end": 466,
+            "kind": "import",
+            "sha256": "61d7739f1e36add6947ddc44505331709aeb2033dce0b6749bd63d7cebb38b5c"
+          },
+          {
+            "start": 386,
+            "end": 426,
+            "kind": "import",
+            "sha256": "497a0705abcc171511719afc697d9696781e6f9bf07d1d2cf2aed3ea774c6bb9"
+          },
+          {
+            "start": 326,
+            "end": 386,
+            "kind": "import",
+            "sha256": "f6a6f55eee96ddcabae070754ba641e08237b8093fd6a740a8b40c4008a17242"
+          },
+          {
+            "start": 285,
+            "end": 326,
+            "kind": "import",
+            "sha256": "5bcef54a3a85ba804bc7987dbc3e603004749885c235f8c3b3d46e518fb9db97"
+          },
+          {
+            "start": 235,
+            "end": 285,
+            "kind": "import",
+            "sha256": "6d1298c17708a18e37716bdc2159757c6babdc99d43e0c08c40bc07ca8736c53"
+          },
+          {
+            "start": 0,
+            "end": 235,
+            "kind": "import",
+            "sha256": "d9dfcf6a510c83d11d7863cdf54710c759c9bcab64b66ffbc2045f18941b002b"
+          }
+        ],
+        "remainingModuleBytesPreserved": true,
+        "nativeMutationImportFromActualEntryExport": true,
+        "nativeMutationFunctionIsActualHS": true,
+        "independentFactoryCompiledOrEvaluated": false,
+        "actualDefaultLocalName": "G"
+      }
+    },
+    {
+      "name": "actual injected bridge references remain === native React/Auth/TRPC/scope/query fixtures",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 3,
+        "queryClientFixtureHookCalls": 5,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "NativeR": true,
+        "Auth": true,
+        "TRPC": true,
+        "BusinessScopeInheritedUnchanged": true,
+        "QueryProviderInheritedUnchanged": true,
+        "QueryClient": true,
+        "MutationHookEqualsActualHSExport": true,
+        "proofMethod": "Actual bridge AST bindings evaluated unchanged; actual default render observes same provider values and actual HS constructs four inert native observers."
+      }
+    },
+    {
+      "name": "actual default G renders four tabs and verified/unverified native profile labels",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 6,
+        "queryClientFixtureHookCalls": 10,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 3,
+        "queryClientFixtureHookCalls": 5,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "legacySameNumberAllowedByLabel": true,
+        "pendingVerificationPhoneLabel": "待验证手机号"
+      }
+    },
+    {
+      "name": "actual bound security forms reject invalid password/phone/ticket without mutation",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 21,
+        "queryClientFixtureHookCalls": 35,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 15,
+        "queryClientFixtureHookCalls": 25,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "invalidFormsPreventDefault": true,
+        "sameLegacyPhoneIsAcceptedAsVerificationCandidate": true,
+        "zeroMutationOnInvalidForms": true
+      }
+    },
+    {
+      "name": "actual native HS receives phone-code dispatch and bind form enforces current ticket binding",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 36,
+        "queryClientFixtureHookCalls": 60,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 15,
+        "queryClientFixtureHookCalls": 25,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "nativeHookActualHSExecuted": true,
+        "onlyLocalDispatchCount": 1,
+        "localTicketInjectedViaActualOnSuccess": true,
+        "editedPhoneInvalidatesTicketAndCode": true,
+        "bindNotDispatchedForDifferentNumber": true,
+        "loginAcceptanceClaim": false
+      }
+    },
+    {
+      "name": "actual performance and commission tabs keep unavailable data without synthetic balances",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 42,
+        "queryClientFixtureHookCalls": 70,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 6,
+        "queryClientFixtureHookCalls": 10,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "noSyntheticZeroBalances": true,
+        "realTabsAndEnableFlags": true
+      }
+    },
+    {
+      "name": "actual query/mutation callbacks reference seven real personalCenter API namespace names",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 3,
+        "mockedRpcMutations": 4,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 42,
+        "queryClientFixtureHookCalls": 70,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 3,
+        "mockedRpcMutations": 4,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "callbacksFromActualModule": true,
+        "references": [
+          {
+            "namespace": "personalCenter",
+            "name": "profile",
+            "method": "query"
+          },
+          {
+            "namespace": "personalCenter",
+            "name": "performance",
+            "method": "query"
+          },
+          {
+            "namespace": "personalCenter",
+            "name": "commission",
+            "method": "query"
+          },
+          {
+            "namespace": "personalCenter",
+            "name": "updateProfile",
+            "method": "mutate"
+          },
+          {
+            "namespace": "personalCenter",
+            "name": "changePassword",
+            "method": "mutate"
+          },
+          {
+            "namespace": "personalCenter",
+            "name": "requestPhoneCode",
+            "method": "mutate"
+          },
+          {
+            "namespace": "personalCenter",
+            "name": "bindPhone",
+            "method": "mutate"
+          }
+        ],
+        "mockedQueries": 3,
+        "mockedMutations": 4,
+        "actualIO": 0
+      }
+    },
+    {
+      "name": "actual source-compatible key prefix isolates same-ID different username and invalidates old callbacks",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 8,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 3,
+        "mockedRpcMutations": 4,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 48,
+        "queryClientFixtureHookCalls": 80,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 4,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 6,
+        "queryClientFixtureHookCalls": 10,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "sameNumericId": true,
+        "changedUsernameChangesIdentity": true,
+        "sourceModelSha256": "c2c25ee63c474e442c2a1db2a259a215fa0562ac279d1a67ccde1ec0c549ae9a",
+        "sourceCompatibleRoot": "personal-center-self",
+        "oldSubjectQueriesAndMutationVariablesRemoved": true,
+        "staleCallbacksNeverReachRPC": true
+      }
+    },
+    {
+      "name": "actual session-clear listener synchronously blocks old callbacks and preserves native contexts",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 8,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 3,
+        "mockedRpcMutations": 4,
+        "authRefreshFixtureCalls": 1,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 48,
+        "queryClientFixtureHookCalls": 80,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 1,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "synchronouslyInvalidated": true,
+        "cachedAuthDoesNotResurrectPage": true,
+        "noLoginAcceptanceClaim": true
+      }
+    },
+    {
+      "name": "all candidate/source hashes remain frozen and every real IO count is zero",
+      "status": "PASS",
+      "actualExecutedShas": {
+        "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+        "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+        "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+        "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+        "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+      },
+      "mockedNativeIOCounts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 8,
+        "mockedNativeMutationDispatches": 1,
+        "mockedRpcQueries": 3,
+        "mockedRpcMutations": 4,
+        "authRefreshFixtureCalls": 1,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 48,
+        "queryClientFixtureHookCalls": 80,
+        "sessionListenerInstallations": 1
+      },
+      "mockCountDelta": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHookObserverConstructors": 0,
+        "mockedNativeMutationDispatches": 0,
+        "mockedRpcQueries": 0,
+        "mockedRpcMutations": 0,
+        "authRefreshFixtureCalls": 0,
+        "authLogoutFixtureCalls": 0,
+        "routerNavigationFixtureCalls": 0,
+        "queryFixtureHookCalls": 0,
+        "queryClientFixtureHookCalls": 0,
+        "sessionListenerInstallations": 0
+      },
+      "evidence": {
+        "onlyScriptAndRequestedReportWritten": true,
+        "actualNativeIO": 0,
+        "blockedAttempts": 0,
+        "unchangedCandidateAndPinnedSourceHashes": true
+      }
+    }
+  ],
+  "actualExecutedShas": {
+    "profileWholeFile": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+    "entryWholeFileInspectedOnly": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+    "entryHSDeclaration": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+    "profileBodyWithESDeclarationsRemoved": "6fad3f0efad427508c59446d9dfc065ee044d33ee9a0e70aabee15984527246e",
+    "actualGWrapper": "78fc61b87ca4d3d0ec02268705de9a223337ec125412e221a762b7fc15e19994",
+    "actualInitializationWrapper": "22e9a347045f7cbc7d33ad0b81983ada67a649dd1087ee85f2f31a4784c0b8b9"
+  },
+  "mockedNativeIOCounts": {
+    "actualNetworkIO": 0,
+    "actualDatabaseIO": 0,
+    "actualSMSIO": 0,
+    "blockedNetworkAttempts": 0,
+    "nativeHookObserverConstructors": 8,
+    "mockedNativeMutationDispatches": 1,
+    "mockedRpcQueries": 3,
+    "mockedRpcMutations": 4,
+    "authRefreshFixtureCalls": 1,
+    "authLogoutFixtureCalls": 0,
+    "routerNavigationFixtureCalls": 0,
+    "queryFixtureHookCalls": 48,
+    "queryClientFixtureHookCalls": 80,
+    "sessionListenerInstallations": 1
+  },
+  "scope": {
+    "productSourceModified": false,
+    "buildersModified": false,
+    "gitUsed": false,
+    "sshUsed": false,
+    "databaseUsed": false,
+    "published": false,
+    "activation": false
+  },
+  "coverageLimits": [
+    "Only the final Profile module body, original G/default wrapper and initialization execute; ES imports are native fixtures and the export declaration is read by AST.",
+    "Entry whole source does not execute. Its exact HS declaration executes in isolation with native React and an inert local MutationObserver fixture; ql, batchCalls, error helpers are fixtures.",
+    "Auth/TRPC/business-scope/query provider implementations, transport, server authorization, credentials, SMS, DB and real login are not executed. No authentication/login acceptance claim.",
+    "Query/mutation callbacks may be explicitly invoked against TEST_ONLY local namespaces to prove references. Mock call counts are not network or production mutations.",
+    "jsdom establishes DOM/render/form behavior, not a real browser ESM loader, CSS visual acceptance, production provider correctness or end-to-end behavior.",
+    "Actual current Profile is in the versioned directory and resolves old index via global imports, not a Profile-specific scope. Existing relocated-root scopes are tested separately. No claim that actual Profile matched a scope."
+  ],
+  "inputs": [
+    {
+      "relative": "assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "sha256": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+      "sha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "sha256": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd"
+    },
+    {
+      "relative": "assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    }
+  ],
+  "sourcePins": [
+    {
+      "relative": "client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "sha256": "f61b0f914ef06b025cb2b9664abe391b4a3bdf079f8a7a82d34e02d552792196"
+    },
+    {
+      "relative": "client/src/components/admin/adminWorkspaceNavigationModel.ts",
+      "sha256": "1b29e9c020dde2850bd45440fe039f3997d2137e1b74ea7669eef47547adf3a7"
+    },
+    {
+      "relative": "client/src/components/DashboardLayout.tsx",
+      "sha256": "9c1d08ffed40ff8c0d6cf1fd31fc1afdbd3c33683b4f1b0299efd4bd83d7fad2"
+    },
+    {
+      "relative": "client/src/App.tsx",
+      "sha256": "1149d301ea6afd299e92cb2c13676b3d0898384a30fdc74c080acea7f42de2bb"
+    },
+    {
+      "relative": "client/src/pages/Profile.tsx",
+      "sha256": "a10096ad664f3d1872698898b35e69845ed26e78f381de76b1f5b7b5aaed8acc"
+    },
+    {
+      "relative": "client/src/pages/Profile.css",
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    },
+    {
+      "relative": "client/src/pages/profileModel.ts",
+      "sha256": "c2c25ee63c474e442c2a1db2a259a215fa0562ac279d1a67ccde1ec0c549ae9a"
+    },
+    {
+      "relative": "node_modules/.pnpm/lucide-react@0.453.0_react@19.2.1/node_modules/lucide-react/dist/esm/icons/badge-check.js",
+      "sha256": "dd0f5e6c86c62404ab765989264657b86406ec838843c2766fe57e80009c7636"
+    },
+    {
+      "relative": "node_modules/.pnpm/lucide-react@0.453.0_react@19.2.1/node_modules/lucide-react/dist/esm/icons/refresh-cw.js",
+      "sha256": "a3dc2b2fa6bdd36169dccba5a6cae87951ba73145ab427a9c2cef31856b39b72"
+    }
+  ],
+  "entryProof": {
+    "originalHSsha256": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+    "actualHSsha256": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+    "otherExportCount": 75,
+    "originalHSByteIdentical": true,
+    "otherExportsByteIdentical": true,
+    "wholeEntryExecuted": false
+  },
+  "importMap": {
+    "htmlSha256Inspected": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0",
+    "actualProfileResolution": {
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+      "matchedKey": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-8jluR_FO.js",
+      "method": "global-imports",
+      "scope": null
+    },
+    "existingScopeCases": [
+      {
+        "importer": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-inventory-navigation-b2f91048f3574631-composition-c06207d9a0ac6b30b4a03ab5ab220d3c31c2a3be3e5705d5f20d3e89840523dd-location-cfe13e6b00e6f2b5c43c899bb44568e0a9442945f1ef1efdf348cb1fce561aaa.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-inventory-navigation-65e7587c727cdee5-composition-1b8465a0c300f6a1e12a344ea765d6ebf40c962b356323fbe2798c67be0e0175-compact-6bafb37407c7536bbc69e32a140aed323dca92753574add6662d9cb383434b3b.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-inquiry-reception-0-818b5bf75ad00f457ee00975b0676074ee2fbdf6e5939ee89c90046ff0547844.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-inquiry-reception-0-818b5bf75ad00f457ee00975b0676074ee2fbdf6e5939ee89c90046ff0547844.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js"
+      },
+      {
+        "importer": "/assets/OfficialChannelInventory-inquiry-reception-e73af3d5b8bc05ba2e9c8ec5c997d5304d04717aff2e383b6bc7c0cab78ca42b.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/OfficialChannelInventory-inquiry-reception-e73af3d5b8bc05ba2e9c8ec5c997d5304d04717aff2e383b6bc7c0cab78ca42b.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-inquiry-reception-6941f67202002089eefc796c1004ae2f5fde62c01819012f462c28443fa94d7e.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-material-reception-0-d842eb484b836e7c1ca077138532603b68a0ad25f6a5098be75516accc62f8c0.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-material-reception-1-08aa5cab357fc9f124053648c8fc5aa1d49466a55500c33e1e54e2a68900c5d6.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-primary-menu-reminders-66cf69ae567feddd6347ab0ba2eb2540a4215a19ba892f715d189c490f9c5bf0.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-reception-experience-0-e2e707a099248de3290d51df154ced570e69f681eb51656510ec40dc67a3fcc5.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-reception-experience-1-615c0b6665367c84d38f6227338cfa0bbb77d4c101c1617c99185e9f59ba3502.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-front-chat-design-0-07d484d9107eca086912251a09073c3851791cdd253a4ab9acfbce05ad4d3410.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-front-chat-design-1-5193dcd8d242a27dbf25e6b3afe28cdfe76dda3fd2faf3061479db557c05a247.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-sales-order-consolidation-6b5a0600d9d285087c2da864f8fbe97ad92c5fd63ea81bcb52d3414822a9041d.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-sales-order-consolidation-0-06fa3cc974fb8c85a5b0b224ef7e5ee19de12b524b64dd25b30ffbb3f89d1c3e.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-sales-order-consolidation-1-f02389cc83655743c8f5db8b039280765922854fef5e30860d7f6a93784f024c.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-navigation-compact-60945cbc9ed151e4812f28d176fd5a654b9211cca0ce51b10d8ae9b1a5699e17.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-navigation-compact-0-94bca8b34c590c9c85278927bd791f8da669187decc5c7b3ea48f198171950fb.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-navigation-compact-1-8cc6ab47734cb88585a468fc3dccb6dbc779d985a1391c22d65a9c6411770552.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-sales-unified-0-31be602a15f94ce409c1bbc54f0a5d09a79bdb1b7b9851efca181eaf09ee6b7f.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-sales-unified-1-894acf8e4a61c53e1be216cee82073d72a2394a01060e4cf36256d4eeb2ef342.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-business-template-0-3511229d36b8dc59e541e111642f0387564f0c66d6c244eaf9f641a0ad8e2e3f.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-business-template-1-e52bc3e7a9a5d9cad6f417655eed7adb58ea3ca7ed82552e2ac2148e9b3277b3.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-business-compact-0-d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-business-compact-0-d600e4f28e7152b4ef4849ffa0064f45be310c755f587beb0522fc4753cfce59.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-business-compact-1-bd4afc54e076ab0faa331a5844e40f80ff1a7513ed3756bfb5b0e4fae03bcd84.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-business-compact-1-bd4afc54e076ab0faa331a5844e40f80ff1a7513ed3756bfb5b0e4fae03bcd84.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-customer-workbench-0-32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-customer-workbench-0-32b72e7da5b6898c4147f0d1f6483b52d1525e18189ef7453790971a4dc600c6.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-customer-workbench-1-74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-customer-workbench-1-74adce387cf83be198265f30cd52ab629c50ddbf730e201f380339b6dc8dca90.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js"
+      },
+      {
+        "importer": "/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js"
+      },
+      {
+        "importer": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+        "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "matchedKey": "/assets/index-8jluR_FO.js",
+        "method": "scope",
+        "scope": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js"
+      }
+    ],
+    "finalHTMLProfileMapping": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+    "finalHTMLHasCurrentProfile": true
+  },
+  "execution": {
+    "removedESDeclarations": [
+      {
+        "start": 23342,
+        "end": 23363,
+        "kind": "export-declaration-read-by-AST",
+        "sha256": "55e377ba4ee599c4d5de80fad57b279d15aa4ca973caf75321bf394a3297cae1"
+      },
+      {
+        "start": 689,
+        "end": 717,
+        "kind": "import",
+        "sha256": "259a75ef7cdda6a318de8b701471f18133ea11cb103d837bcb719c7693f5429d"
+      },
+      {
+        "start": 661,
+        "end": 689,
+        "kind": "import",
+        "sha256": "23592a989a03e88a136f6c2d81b2fa3ea31c7cdf2f0dc3e42911facc046bce04"
+      },
+      {
+        "start": 633,
+        "end": 661,
+        "kind": "import",
+        "sha256": "5d9ddd7d3bbddb828ec91ff196e77a36233eab57cd0314b8d925eb6496100e7f"
+      },
+      {
+        "start": 585,
+        "end": 633,
+        "kind": "import",
+        "sha256": "3fddc98dccdd6d2bc4777e643bbb57206e0f4b702b283d1214ec5f18e35ea01b"
+      },
+      {
+        "start": 546,
+        "end": 585,
+        "kind": "import",
+        "sha256": "9dc399cba0b93fd16f86edab251f9bd003af757cb2da5e96db3ae206914ad6eb"
+      },
+      {
+        "start": 506,
+        "end": 546,
+        "kind": "import",
+        "sha256": "ac00ba3218b875a940a18c8ac058c2ddd93c4fc0ceb3f516a3cf811689a28d46"
+      },
+      {
+        "start": 466,
+        "end": 506,
+        "kind": "import",
+        "sha256": "7b802181d1f034cbd7eb442d8e2373e6217288784c36226d7d05676c35b6795c"
+      },
+      {
+        "start": 426,
+        "end": 466,
+        "kind": "import",
+        "sha256": "61d7739f1e36add6947ddc44505331709aeb2033dce0b6749bd63d7cebb38b5c"
+      },
+      {
+        "start": 386,
+        "end": 426,
+        "kind": "import",
+        "sha256": "497a0705abcc171511719afc697d9696781e6f9bf07d1d2cf2aed3ea774c6bb9"
+      },
+      {
+        "start": 326,
+        "end": 386,
+        "kind": "import",
+        "sha256": "f6a6f55eee96ddcabae070754ba641e08237b8093fd6a740a8b40c4008a17242"
+      },
+      {
+        "start": 285,
+        "end": 326,
+        "kind": "import",
+        "sha256": "5bcef54a3a85ba804bc7987dbc3e603004749885c235f8c3b3d46e518fb9db97"
+      },
+      {
+        "start": 235,
+        "end": 285,
+        "kind": "import",
+        "sha256": "6d1298c17708a18e37716bdc2159757c6babdc99d43e0c08c40bc07ca8736c53"
+      },
+      {
+        "start": 0,
+        "end": 235,
+        "kind": "import",
+        "sha256": "d9dfcf6a510c83d11d7863cdf54710c759c9bcab64b66ffbc2045f18941b002b"
+      }
+    ],
+    "remainingModuleBytesPreserved": true,
+    "nativeMutationImportFromActualEntryExport": true,
+    "nativeMutationFunctionIsActualHS": true,
+    "independentFactoryCompiledOrEvaluated": false,
+    "actualDefaultLocalName": "G"
+  },
+  "bridgeIdentities": {
+    "NativeR": true,
+    "Auth": true,
+    "TRPC": true,
+    "BusinessScopeInheritedUnchanged": true,
+    "QueryProviderInheritedUnchanged": true,
+    "QueryClient": true,
+    "MutationHookEqualsActualHSExport": true,
+    "proofMethod": "Actual bridge AST bindings evaluated unchanged; actual default render observes same provider values and actual HS constructs four inert native observers."
+  },
+  "apiReferenceProbes": [
+    {
+      "namespace": "personalCenter",
+      "name": "profile",
+      "method": "query"
+    },
+    {
+      "namespace": "personalCenter",
+      "name": "performance",
+      "method": "query"
+    },
+    {
+      "namespace": "personalCenter",
+      "name": "commission",
+      "method": "query"
+    },
+    {
+      "namespace": "personalCenter",
+      "name": "updateProfile",
+      "method": "mutate"
+    },
+    {
+      "namespace": "personalCenter",
+      "name": "changePassword",
+      "method": "mutate"
+    },
+    {
+      "namespace": "personalCenter",
+      "name": "requestPhoneCode",
+      "method": "mutate"
+    },
+    {
+      "namespace": "personalCenter",
+      "name": "bindPhone",
+      "method": "mutate"
+    }
+  ],
+  "testScriptSha256": "7c152924f2c3f21b524314cf60f6ceb614ada0ddcfa444b34ff770b945125bdb",
+  "passed": 13,
+  "failed": 0
+}

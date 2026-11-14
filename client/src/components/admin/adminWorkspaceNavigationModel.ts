@@ -19,7 +19,7 @@ export function hasAdminChannelInventoryRead(user: {
   );
 }
 
-export type AdminWorkspaceId = "business" | "operations" | "organization";
+export type AdminWorkspaceId = "business" | "operations" | "personal" | "organization";
 export type AdminWorkspaceNavigationItem = AdminWorkbenchNavigationItem;
 
 export type AdminWorkspaceDefinition = {
@@ -194,6 +194,11 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
       paths: [...pathsForGroup("operations"), "/exception-logs"],
     },
     {
+      id: "personal",
+      label: "个人中心",
+      paths: ["/profile"],
+    },
+    {
       id: "organization",
       label: "组织与权限",
       paths: [
@@ -294,7 +299,7 @@ export function getAdminWorkspaceNavigationRoute(
 
   const workspaceId =
     route.canonicalPath === "/profile"
-      ? "organization"
+      ? "personal"
       : route.canonicalPath === "/workbench/company-info"
         ? "business" // Legacy route context only; never a visible menu item.
       : ADMIN_WORKSPACE_DEFINITIONS.find(workspace =>
@@ -306,7 +311,7 @@ export function getAdminWorkspaceNavigationRoute(
     pathname,
     canonicalPath: route.canonicalPath,
     workspaceId,
-    label: route.label,
+    label: route.canonicalPath === "/profile" ? "个人中心" : route.label,
     isAlias: route.isAlias || canonicalLocation !== pathname,
   };
 }

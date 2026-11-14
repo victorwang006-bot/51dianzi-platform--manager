@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "actualCandidatePatchBytesExecuted": true,
+  "inputs": [
+    {
+      "relative": "assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "sha256": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+      "sha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "sha256": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd"
+    },
+    {
+      "relative": "assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    }
+  ],
+  "results": [
+    {
+      "name": "actual capsule mounts personal direct primary between operations and organization",
+      "status": "PASS"
+    },
+    {
+      "name": "withdrawn profile item is never synthesized or highlighted",
+      "status": "PASS"
+    },
+    {
+      "name": "customer detail full current-location row removed while top customer remains",
+      "status": "PASS"
+    },
+    {
+      "name": "native message badge remains original parent render owner",
+      "status": "PASS"
+    },
+    {
+      "name": "route AST unchanged except profile workspace & label",
+      "status": "PASS"
+    },
+    {
+      "name": "real source navigation function gives personal route and original visible identity",
+      "status": "PASS"
+    },
+    {
+      "name": "actual Dashboard filter allows own profile for current admin but no unrelated grants",
+      "status": "PASS"
+    },
+    {
+      "name": "actual K2 mounts exact original AuthGate and profile page without profile.manage wrapper",
+      "status": "PASS"
+    }
+  ],
+  "sourceNavigationModuleSha256": "1b29e9c020dde2850bd45440fe039f3997d2137e1b74ea7669eef47547adf3a7",
+  "boundary": "Exact candidate capsule/filter/K2 executed in jsdom; native transports/providers inert; no authenticated mutation or activation."
+}

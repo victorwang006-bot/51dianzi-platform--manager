@@ -141,7 +141,7 @@ describe("inventory column preference and geometry", () => {
     }
   });
   it("renders defaults, synchronizes toggle/restore with cells/colgroup/empty/loading/error and keeps selection", () => {
-    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "所属公司 / 渠道来源", "操作"]); assertAligned();
+    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]); assertAligned();
     click(button("显示列")); expect(option("型号").disabled).toBe(true); expect(option("操作").disabled).toBe(true);
     click(option("DC")); click(option("序号")); click(option("所属行业")); click(option("品牌")); assertAligned();
     expect(firstCell("td.ci-material-dc-col").textContent).toBe(runtime.rows[0].dateCode);
@@ -204,17 +204,20 @@ describe("inventory column preference and geometry", () => {
 });
 
 
-it("explicitly displays authorized owning companies while retaining the all-company global query", () => {
+it("shows only permitted source entries and never projects company names from the global list DTO", () => {
   runtime.rows = [
-    { ...runtime.rows[0], id: 1, company: { id: 801, name: "已确认供货公司甲" } },
-    { ...runtime.rows[0], id: 2, company: { id: 802, name: "已确认供货公司乙" }, channelName: "不能猜为所属公司的私有来源" },
-    { ...runtime.rows[0], id: 3, company: null, channelName: "不能猜为所属公司的私有来源" },
+    { ...runtime.rows[0], id: 1, canViewSource: true, company: { id: 801, name: "已确认供货公司甲" } },
+    { ...runtime.rows[0], id: 2, canViewSource: false, company: { id: 802, name: "已确认供货公司乙" }, channelName: "不能猜为所属公司的私有来源" },
+    { ...runtime.rows[0], id: 3, canViewSource: undefined, company: null, channelName: "不能猜为所属公司的私有来源" },
   ];
   renderHost();
-  expect(headers()).toContain("所属公司 / 渠道来源");
-  expect([...document.querySelectorAll(".ci-inventory-company")].map(item => item.textContent)).toEqual([
-    "所属公司：已确认供货公司甲", "所属公司：已确认供货公司乙", "所属公司：未确认或不可查看",
-  ]);
+  expect(headers()).toContain("渠道来源");
+  const sourceCells = [...document.querySelectorAll("tbody .ci-material-source-col")];
+  expect(sourceCells.map(cell => cell.querySelector(".ci-source-link")?.textContent ?? "")).toEqual(["查看来源", "", ""]);
+  expect(document.querySelectorAll(".ci-inventory-company, .ci-source-link-muted")).toHaveLength(0);
+  expect(document.body.innerHTML).not.toContain("已确认供货公司甲");
+  expect(document.body.innerHTML).not.toContain("已确认供货公司乙");
+  expect(document.querySelector("thead")?.textContent).not.toContain("所属公司");
   expect(runtime.inputs.at(-1)?.customerId).toBeUndefined();
   expect(runtime.inputs.at(-1)?.channelId).toBeUndefined();
   expect(document.body.textContent).not.toContain("不能猜为所属公司的私有来源");

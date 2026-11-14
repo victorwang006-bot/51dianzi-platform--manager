@@ -23,6 +23,7 @@ import { outboundRouter } from "./routers/outbound";
 import { customerRouter } from "./routers/customer";
 import { customerDemandRouter } from "./routers/customerDemand";
 import { crmSalesOrderRouter } from "./routers/crmSalesOrder";
+import { personalPerformanceRouter } from "./routers/personalPerformance";
 import { purchaseOrderRouter } from "./routers/purchaseOrder";
 import { stockBoardRouter } from "./routers/stockBoard";
 import { importInventoryRouter } from "./routers/importInventory";
@@ -97,6 +98,7 @@ export const appRouter = router({
   customer: customerRouter,
   customerDemand: customerDemandRouter,
   crmSalesOrder: crmSalesOrderRouter,
+  personalPerformance: personalPerformanceRouter,
   purchaseOrder: purchaseOrderRouter,
   stockBoard: stockBoardRouter,
   importInventory: importInventoryRouter,

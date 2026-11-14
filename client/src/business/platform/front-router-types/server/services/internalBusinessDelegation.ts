@@ -11,6 +11,7 @@ import { inboundRouter } from "../routers/inbound";
 import { customerRouter } from "../routers/customer";
 import { customerDemandRouter } from "../routers/customerDemand";
 import { crmSalesOrderRouter } from "../routers/crmSalesOrder";
+import { personalPerformanceRouter } from "../routers/personalPerformance";
 import { purchaseOrderRouter } from "../routers/purchaseOrder";
 import { enterpriseRouter } from "../routers/enterprise";
 import { companyRouter } from "../routers/company";
@@ -86,6 +87,7 @@ export const BUSINESS_METHOD_IDS = [
   "crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.create", "crmSalesOrder.cancel",
   "crmSalesOrder.recordPayment", "crmSalesOrder.ship",
   "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials",
+  "personalPerformance.summary",
   "purchaseOrder.list", "purchaseOrder.get", "purchaseOrder.acceptedQuoteOptions", "purchaseOrder.inboundCandidates",
   "purchaseOrder.create", "purchaseOrder.updatePayment", "purchaseOrder.updateShipping", "purchaseOrder.linkInbound",
   "purchaseOrder.recordInvoice", "purchaseOrder.voidInvoice", "purchaseOrder.cancel",
@@ -190,6 +192,7 @@ for (const method of ["customerDemand.quoteList", "customerDemand.quoteHistory"]
 for (const method of ["crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER_READ;
 }
+BUSINESS_METHOD_CAPABILITIES["personalPerformance.summary"] = SALES_ORDER_READ;
 for (const method of ["crmSalesOrder.create", "crmSalesOrder.cancel", "crmSalesOrder.recordPayment", "crmSalesOrder.ship"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER;
 }
@@ -257,6 +260,7 @@ type DelegatedBusinessCallers = {
   customer: Record<string, RawBusinessProcedure>;
   customerDemand: Record<string, RawBusinessProcedure>;
   crmSalesOrder: Record<string, RawBusinessProcedure>;
+  personalPerformance: Record<string, RawBusinessProcedure>;
   purchaseOrder: Record<string, RawBusinessProcedure>;
   enterprise: Record<string, RawBusinessProcedure>;
   company: Record<string, RawBusinessProcedure>;
@@ -283,6 +287,7 @@ function buildCallers(context: TrpcContext): DelegatedBusinessCallers {
     customer: asFixedCaller(customerRouter.createCaller(context)),
     customerDemand: asFixedCaller(customerDemandRouter.createCaller(context)),
     crmSalesOrder: asFixedCaller(crmSalesOrderRouter.createCaller(context)),
+    personalPerformance: asFixedCaller(personalPerformanceRouter.createCaller(context)),
     purchaseOrder: asFixedCaller(purchaseOrderRouter.createCaller(context)),
     enterprise: asFixedCaller(enterpriseRouter.createCaller(context)),
     company: asFixedCaller(companyRouter.createCaller(context)),

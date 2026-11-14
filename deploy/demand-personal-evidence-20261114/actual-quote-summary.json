@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "passed": 101,
+  "failed": 0,
+  "executed": [
+    {
+      "module": 0,
+      "url": "/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js",
+      "candidateSha256": "3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2",
+      "candidateBytes": 4015335,
+      "getterSha256": "75707b4d888abc0c218674054c4b90e0964f649d89e4aa183b607177fd3885ab",
+      "getterBytes": 1177831,
+      "factorySha256": "af78fd3ed738566ef50455929246b920c947b06b2882ffeed0d3f11d50610cf7",
+      "factoryBytes": 1176082,
+      "load": "exactvm appended __CW_CUSTOMER_GET only",
+      "productionImportsExecuted": false
+    },
+    {
+      "module": 1,
+      "url": "/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+      "candidateSha256": "123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568",
+      "candidateBytes": 4858324,
+      "getterSha256": "75707b4d888abc0c218674054c4b90e0964f649d89e4aa183b607177fd3885ab",
+      "getterBytes": 1177831,
+      "factorySha256": "af78fd3ed738566ef50455929246b920c947b06b2882ffeed0d3f11d50610cf7",
+      "factoryBytes": 1176082,
+      "load": "exactvm appended __CW_CUSTOMER_GET only",
+      "productionImportsExecuted": false
+    }
+  ],
+  "productionWrites": 0,
+  "coverageLimits": null
+}

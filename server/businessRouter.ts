@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { sql } from "drizzle-orm";
 import { BusinessFailureCause } from "../shared/businessFailure";
 import { router, publicProcedure } from "./_core/trpc";
 import { readonlyQueryCorrelation } from "./_core/readonlyQueryTiming";
@@ -176,6 +177,7 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "customerDemand.sales.*", module: "customers", mode: "write" },
   { method: "customerDemand.procurement.*", module: "procurement", mode: "write" },
   { method: "crmSalesOrder.*", module: "orders", mode: "write" },
+  { method: "personalPerformance.summary", module: "orders", mode: "read" },
   { method: "purchaseOrder.*", module: "procurement", mode: "write" },
   { method: "enterprise.me", module: "context", mode: "read" },
   { method: "enterprise.inquiryInbox", module: "inquiries", mode: "read" },
@@ -283,6 +285,29 @@ type CurrentBusinessAuthorization = {
   merchant: Awaited<ReturnType<typeof assertBusinessMerchantAccess>>;
   officialInventoryPermissions?: OfficialInventoryPermissions;
 };
+
+/** Only this fixed SELECT aggregate can be called by personalCenter; no browser method/actor selector. */
+export async function readBusinessPersonalPerformance(ctx: TrpcContext, merchantId: number, input: { month: string; page?: number; pageSize?: number }) {
+  return withCurrentBusinessAuthorization(ctx, merchantId, { module: "orders", mode: "read", method: "personalPerformance.summary" },
+    async ({ account, staffBinding, scope, merchant }) => {
+      const database = await db.getDb();
+      if (!database) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "账户安全存储暂不可用" });
+      // The binding/scope fence may have waited behind a credential revocation.
+      // Check native session/status/archive again at this callback, never broaden shared business authorization.
+      const [freshAccounts] = await database.execute(sql`SELECT a.id FROM admin_users a
+        WHERE a.id = ${account.id} AND a.status = 'active' AND a.sessionVersion = ${account.sessionVersion}
+        AND NOT EXISTS (SELECT 1 FROM admin_staff_archives s WHERE s.adminUserId = a.id) LIMIT 1`);
+      if (!(freshAccounts as unknown as { id: number }[]).length)
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "登录状态已失效，请重新登录" });
+      if (!businessScopeAllows(scope, "customers", "read")) throw new TRPCError({ code: "FORBIDDEN", message: "未获本人客户业绩读取范围" });
+      return callPlatformBusinessCommand({
+        binding: businessEnterpriseBindingFromMerchant(merchant), staffUserId: staffBinding.frontUserId,
+        bindingVersion: staffBinding.bindingVersion,
+        adminActor: { id: account.id, name: account.displayName || account.username, role: account.adminRole },
+        requestId: randomUUID(), method: "personalPerformance.summary", params: { month: input.month, page: input.page ?? 1, pageSize: input.pageSize ?? 10 },
+      });
+    });
+}
 
 /**
  * The authorization linearization point covers fresh binding/scope reads and

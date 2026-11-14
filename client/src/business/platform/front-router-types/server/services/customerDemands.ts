@@ -93,6 +93,8 @@ type DemandRow = {
   customerName?: string | null; salesName?: string | null; procurementName?: string | null; itemCount?: number | string;
   firstPartNumber?: string | null; firstBrand?: string | null; firstQty?: number | string | null; firstQtyUnit?: string | null;
   firstDeliveryRequirement?: string | null; myActiveQuoteCount?: number | string; mySupplierCount?: number | string; myQuoteRoundCount?: number | string;
+  currentQuoteCount?: number | string; acceptedQuoteCount?: number | string;
+  confirmableQuoteCount?: number | string; activeOrderCount?: number | string;
 };
 type SalesDemandRow = DemandRow & {
   assignedUserId: number;
@@ -519,6 +521,10 @@ function mapItem(row: DemandItemRow): CustomerDemandItem {
 }
 
 function mapCustomerSummary(row: DemandRow): CustomerDemandSummary {
+  const currentQuoteCount = Number(row.currentQuoteCount ?? 0);
+  const acceptedQuoteCount = Number(row.acceptedQuoteCount ?? 0);
+  const activeOrderCount = Number(row.activeOrderCount ?? 0);
+  const workflow = deriveCustomerDemandWorkflow({ status: row.status, currentQuoteCount, acceptedQuoteCount, activeOrderCount });
   return {
     id: Number(row.id), demandNo: row.demandNo, customerId: Number(row.customerId), customerName: row.customerName ?? "",
     projectName: row.projectName ?? "", priority: row.priority, status: row.status,
@@ -527,7 +533,9 @@ function mapCustomerSummary(row: DemandRow): CustomerDemandSummary {
     procurementName: displayName(row.procurementName, row.procurementUserId == null ? null : Number(row.procurementUserId)),
     itemCount: Number(row.itemCount ?? 0), version: Number(row.version), revision: Number(row.revision ?? 1),
     quoteCount: Number((row as DemandRow & { quoteCount?: number | string }).quoteCount ?? 0),
-    hasActiveOrders: Boolean(Number((row as DemandRow & { activeOrderCount?: number | string }).activeOrderCount ?? 0)),
+    currentQuoteCount, acceptedQuoteCount, activeOrderCount, workflowStage: workflow.stage,
+    ...(row.confirmableQuoteCount == null ? {} : { confirmableQuoteCount: Number(row.confirmableQuoteCount) }),
+    hasActiveOrders: activeOrderCount > 0,
     replyDueAt: iso(row.replyDueAt), submittedAt: iso(row.submittedAt),
     createdAt: iso(row.createdAt) ?? new Date(0).toISOString(), updatedAt: iso(row.updatedAt) ?? new Date(0).toISOString(),
   };
@@ -603,6 +611,46 @@ function salesSummarySelect() {
              WHERE counted_item.enterpriseId = d.enterpriseId AND counted_item.demandId = d.id) AS itemCount,
            (SELECT COUNT(*) FROM crm_customer_demand_quotes quoted
              WHERE quoted.enterpriseId = d.enterpriseId AND quoted.demandId = d.id AND quoted.status = 'active') AS quoteCount,
+           (SELECT COUNT(*) FROM crm_customer_demand_quotes current_quote
+             WHERE current_quote.enterpriseId = d.enterpriseId AND current_quote.demandId = d.id
+               AND current_quote.customerId = d.customerId
+               AND current_quote.demandRevision = d.revision AND current_quote.status = 'active') AS currentQuoteCount,
+           (SELECT COUNT(*) FROM crm_customer_demand_quote_acceptances accepted_quote
+             INNER JOIN crm_customer_demand_quotes accepted_source
+              ON accepted_source.enterpriseId = accepted_quote.enterpriseId AND accepted_source.id = accepted_quote.quoteId
+              AND accepted_source.customerId = accepted_quote.customerId
+              AND accepted_source.demandId = accepted_quote.demandId AND accepted_source.version = accepted_quote.quoteVersion
+              AND accepted_source.demandRevision = accepted_quote.demandRevision AND accepted_source.status = 'active'
+            WHERE accepted_quote.enterpriseId = d.enterpriseId AND accepted_quote.customerId = d.customerId
+              AND accepted_quote.demandId = d.id AND accepted_quote.demandRevision = d.revision) AS acceptedQuoteCount,
+           (SELECT COUNT(*) FROM crm_customer_demand_quotes confirmable_quote
+             WHERE confirmable_quote.enterpriseId = d.enterpriseId AND confirmable_quote.customerId = d.customerId
+               AND confirmable_quote.demandId = d.id AND confirmable_quote.demandRevision = d.revision
+               AND confirmable_quote.status = 'active'
+               AND NOT EXISTS (SELECT 1 FROM crm_customer_demand_quote_acceptances own_acceptance
+                 WHERE own_acceptance.enterpriseId = confirmable_quote.enterpriseId
+                   AND own_acceptance.customerId = confirmable_quote.customerId AND own_acceptance.demandId = confirmable_quote.demandId
+                   AND own_acceptance.quoteId = confirmable_quote.id AND own_acceptance.quoteVersion = confirmable_quote.version
+                   AND own_acceptance.demandRevision = confirmable_quote.demandRevision)
+               AND EXISTS (SELECT 1 FROM crm_customer_demand_quote_items available_item
+                 INNER JOIN crm_customer_demand_items source_item
+                   ON source_item.enterpriseId = available_item.enterpriseId AND source_item.demandId = available_item.demandId
+                     AND source_item.id = available_item.demandItemId
+                 WHERE available_item.enterpriseId = confirmable_quote.enterpriseId AND available_item.demandId = confirmable_quote.demandId
+                   AND available_item.quoteId = confirmable_quote.id AND available_item.qty > 0
+                   AND source_item.qty > (SELECT COALESCE(SUM(used_item.qty), 0)
+                     FROM crm_customer_demand_quote_acceptance_items used_item
+                     INNER JOIN crm_customer_demand_quote_acceptances used_acceptance
+                       ON used_acceptance.enterpriseId = used_item.enterpriseId AND used_acceptance.id = used_item.acceptanceId
+                         AND used_acceptance.demandId = used_item.demandId
+                     INNER JOIN crm_customer_demand_quotes used_quote
+                       ON used_quote.enterpriseId = used_acceptance.enterpriseId AND used_quote.id = used_acceptance.quoteId
+                         AND used_quote.customerId = used_acceptance.customerId AND used_quote.demandId = used_acceptance.demandId
+                         AND used_quote.version = used_acceptance.quoteVersion AND used_quote.demandRevision = used_acceptance.demandRevision
+                         AND used_quote.status = 'active'
+                     WHERE used_item.enterpriseId = d.enterpriseId AND used_item.demandId = d.id
+                       AND used_acceptance.customerId = d.customerId AND used_acceptance.demandRevision = d.revision
+                       AND used_item.demandItemId = source_item.id))) AS confirmableQuoteCount,
            (SELECT COUNT(*) FROM crm_sales_orders active_order
              WHERE active_order.enterpriseId = d.enterpriseId AND active_order.customerId = d.customerId
                AND active_order.demandId = d.id AND active_order.status = 'confirmed') AS activeOrderCount
@@ -920,7 +968,7 @@ export async function listCustomerDemands(
   const input = checkedList(rawInput);
   const db = await requireDb();
   const access = await requireSalesAccess(db, scope);
-  await accessibleCustomer(db, scope, access.canManageAll, input.customerId);
+  const customer = await accessibleCustomer(db, scope, access.canManageAll, input.customerId);
   const assigneeGuard = sql` AND ${crmDemandCustomerWhere(scope, access.policy)}`;
   const offset = (input.page - 1) * input.pageSize;
   const count = resultRows<{ total: number | string }>(await db.execute(sql`
@@ -935,7 +983,8 @@ export async function listCustomerDemands(
      ORDER BY d.updatedAt DESC, d.id DESC
      LIMIT ${input.pageSize} OFFSET ${offset}
   `));
-  return { items: rows.map(mapCustomerSummary), total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
+  const canEdit = access.policy.customers.write && access.policy.demands.write && !customer.archivedAt;
+  return { items: rows.map(row => ({ ...mapCustomerSummary(row), canEdit })), total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
 }
 
 export async function listSalesDemands(scope: CustomerDemandScope, rawInput: unknown): Promise<SalesDemandPage> {

@@ -159,7 +159,7 @@ function ProcurementDemandDetailDialog({
               </div>
               <div className="mt-3">
                 <h3 className="admin-section-title mb-2">
-                  物料明细
+                  物料明细（共{detail.items.length}项）
                 </h3>
                 <div className="overflow-x-auto rounded border border-slate-200">
                   <table className="admin-table-readable procurement-demand-items w-full table-fixed">
@@ -195,7 +195,7 @@ function ProcurementDemandDetailDialog({
                           <td className="px-2 py-2">{item.brand || "—"}</td>
                           <td className="px-2 py-2">{item.pkg || "—"}</td>
                           <td className="admin-cell-primary px-2 py-2 text-right tabular-nums">
-                            {item.qty ?? "—"}
+                            {item.qty == null ? "待确认" : item.qty.toLocaleString("zh-CN")}
                           </td>
                           <td className="px-2 py-2">
                             {item.qtyUnit &&
@@ -208,7 +208,7 @@ function ProcurementDemandDetailDialog({
                           <td className="px-2 py-2">
                             {item.deliveryRequirement || "—"}
                           </td>
-                          <td className="px-2 py-2">{item.note || "—"}</td>
+                          <td className="whitespace-pre-wrap px-2 py-2">{item.note || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -409,7 +409,7 @@ export default function ProcurementDemands() {
                   </TableCell>
                   <TableCell>
                     <div className="admin-cell-primary procurement-demand-model" title={demand.firstPartNumber || undefined}>{demand.firstPartNumber || "—"}</div>
-                    {demand.itemCount > 1 ? <div className="admin-cell-secondary mt-0.5">共{demand.itemCount}项</div> : null}
+                    {demand.itemCount > 1 ? <button type="button" className="admin-cell-secondary mt-0.5 text-[#185FA5] hover:underline" aria-label={`查看需求 ${demand.demandNo} 的全部${demand.itemCount}项物料`} onClick={() => setOpenedId(demand.id)}>共{demand.itemCount}项 · 查看全部物料</button> : null}
                   </TableCell>
                   <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstBrand || undefined}>{demand.firstBrand || "—"}</TableCell>
                   <TableCell className="admin-cell-primary whitespace-nowrap text-right tabular-nums">{formatQty(demand.firstQty, demand.firstQtyUnit)}</TableCell>

@@ -124,6 +124,9 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
   location,
 }: Pick<AdminWorkspaceTabsProps<T>, "items" | "location">) {
   const { activeWorkspace, activeItem, route } = getAdminWorkspaceNavigationState(items, location);
+  // Customer details already own a compact customer header and back action.
+  // Remove this redundant full location row, not the top-level customer entry.
+  if (/^\/workbench\/customers\/[^/?#]+(?:[/?#]|$)/.test(location)) return null;
   const salesContext = getSalesOrderNavigationContext(items, location);
   if (!salesContext.active && (!activeWorkspace || !activeItem)) return null;
   if (/^\/workbench\/(?:orders|sales-orders|outbound)(?:[/?#]|$)/.test(location) && !salesContext.active) return null;
@@ -203,7 +206,11 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
         label: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? "入库管理" : entry.label,
         items: entry.items,
         directItem: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : []),
-    ...state.workspaces.filter(workspace => workspace.id !== "business").map(workspace => ({ ...workspace, workspaceId: workspace.id })),
+    ...state.workspaces.filter(workspace => workspace.id !== "business").map(workspace => ({
+      ...workspace,
+      workspaceId: workspace.id,
+      directItem: workspace.id === "personal" ? workspace.items[0] : undefined,
+    })),
   ];
   const activeWorkspaceId = state.activeWorkspace?.id === "business"
     ? workspaces.find(workspace => workspace.workspaceId === "business" && workspace.items.some(item => item.path === state.activeItem?.path))?.id ?? null
@@ -554,7 +561,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
           return (
             <button key={workspace.id} type="button"
               className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-              title="入库管理" data-workspace-nav-target={workspace.id} data-navigation-level="1"
+              title={workspace.label} data-workspace-nav-target={workspace.id} data-navigation-level="1"
               data-workspace-direct-item={item.path}
               data-active={isActive ? "true" : "false"} aria-current={isActive ? "page" : undefined}
               onClick={() => { closeWorkspace(); onNavigate(item); }}
@@ -564,7 +571,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                 (onPreload ?? onItemIntent)?.(item);
               }}
               onFocus={() => (onPreload ?? onItemIntent)?.(item)}
-            >入库管理{renderBadge?.(item)}</button>
+            >{workspace.label}{renderBadge?.(item)}</button>
           );
         }
         return (

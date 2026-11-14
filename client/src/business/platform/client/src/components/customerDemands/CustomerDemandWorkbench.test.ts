@@ -118,7 +118,7 @@ describe("客户集中需求与采购报价", () => {
     await click("关闭"); expect(host.querySelector('[role="dialog"]')).toBeNull();
   });
   it("materials and quote entry points lazily reuse real detail and sales quote APIs", async () => {
-    render(h(CustomerDemandHistory, { customer, canManageOrders: false })); await click("采购报价");
+    render(h(CustomerDemandHistory, { customer, canManageOrders: false })); await click("查看报价");
     expect(runtime.detailQuery).toHaveBeenCalledWith({ id: 41 }, expect.objectContaining({ enabled: true }));
     expect(runtime.quoteQuery).toHaveBeenCalledWith({ demandId: 41, audience: "sales", page: 1, pageSize: 10 });
     expect(host.textContent).toContain("SYNTHETIC-401"); expect(host.textContent).toContain("0.1234"); expect(host.textContent).toContain("第3轮");
@@ -144,7 +144,7 @@ describe("客户集中需求与采购报价", () => {
   it("archived customers cannot create/save/accept and retain readonly real quote rounds/history", async () => {
     render(h(CustomerDemandHistory, { customer: { ...customer, archivedAt: "2026-11-01" }, createRequestToken: 1, canManageOrders: true }));
     expect(button("新增需求").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')).toBeNull();
-    await click("采购报价"); expect(host.textContent).toContain("采购报价（只读）");
+    await click("查看报价"); expect(host.textContent).toContain("采购报价（只读）");
     expect(host.textContent).not.toContain("采用报价"); expect(host.textContent).not.toContain("填写成交报价 / 生成订单");
     expect(runtime.acceptHook).not.toHaveBeenCalled(); expect(runtime.withdrawHook).not.toHaveBeenCalled();
     await click("历史轮次（3）"); expect(runtime.historyQuery).toHaveBeenCalledWith({ quoteId: 501, audience: "sales", page: 1, pageSize: 10 }); expect(host.textContent).toContain("第1轮");
@@ -183,7 +183,7 @@ describe("客户集中需求与采购报价", () => {
     expect(host.querySelector<HTMLInputElement>("#demand-project")?.value).toBe("");
     await act(async () => finish({ id: 41, demandNo: "OLD-NO", version: 1, status: "draft" }));
     expect(host.textContent).not.toContain("OLD-NO"); expect(oldClose).not.toHaveBeenCalled(); expect(oldSaved).not.toHaveBeenCalled();
-    render(h(CustomerDemandHistory, { customer })); await click("下一页"); await click("物料");
+    render(h(CustomerDemandHistory, { customer })); await click("下一页"); await click("查看报价");
     runtime.list = state({ items: [row({ customerId: 13 })], total: 1, page: 1 });
     render(h(CustomerDemandHistory, { customer: { id: 13, name: "新客户" } }));
     expect(runtime.listQuery.mock.calls.at(-1)?.[0]).toMatchObject({ customerId: 13, page: 1 }); expect(host.querySelector('[role="dialog"]')).toBeNull();
@@ -417,7 +417,7 @@ describe("R1/R4 服务端首读证明与会话回执", () => {
     mutation.mockImplementationOnce(() => new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
     const props = { demandId: 41, customerId: 12, contextIdentityKey: "authorization:1", audience: operation === "accept" ? "sales" as const : "procurement" as const };
     render(h(DemandQuoteList, props));
-    if (operation === "accept") { await click("采用报价"); await click("确认采用"); }
+    if (operation === "accept") { await click("采用报价"); change('input[aria-label="SYNTHETIC-401采用数量"]', "100"); await click("确认采用"); }
     else { await click("撤回"); await click("确认撤回"); }
     const oldQuery = runtime.quotes;
     if (transition === "unmount") render(null);
@@ -503,7 +503,7 @@ describe("owned pending bridge 组件连接", () => {
       .mockImplementationOnce(() => new Promise(resolve => { finishFresh = resolve; }));
     const dirty = vi.fn();
     const props = { customer, demandId: 41, mode: "view" as const, onClose: vi.fn(), canManageOrders: true, onDirtyChange: dirty };
-    render(h(CustomerDemandDialog, props)); await click("采用报价"); await click("确认采用");
+    render(h(CustomerDemandDialog, props)); await click("采用报价"); change('input[aria-label="SYNTHETIC-401采用数量"]', "100"); await click("确认采用");
     const oldSession = runtime.acceptHook.mock.calls.at(-1)?.[0].meta.customerDemandSession;
     expect(dirty.mock.calls.at(-1)?.[0]).toBe(true);
     const oldQuery = runtime.quotes;
@@ -524,7 +524,7 @@ describe("owned pending bridge 组件连接", () => {
     expect(freshSession).not.toBe(oldSession);
     expect(dirty.mock.calls.at(-1)?.[0]).toBe(false);
     expect(button("关闭").disabled).toBe(false);
-    await click("采用报价"); await click("确认采用");
+    await click("采用报价"); change('input[aria-label="SYNTHETIC-401采用数量"]', "100"); await click("确认采用");
     expect(dirty.mock.calls.at(-1)?.[0]).toBe(true);
     runtime.toast.success.mockClear(); runtime.toast.error.mockClear(); runtime.invalidate.mockClear();
     await act(async () => { if (outcome === "success") finishOld({ acceptedQty: 100 }); else failOld(new Error("old result")); }); await settle();
@@ -557,5 +557,122 @@ describe("owned pending bridge 组件连接", () => {
     expect(runtime.accept.mock.calls[1][0]).toMatchObject({ demandId: 41, quoteId: 501, quoteVersion: 3, demandRevision: 2, requestId: expect.any(String), items: [{ demandItemId: 401, alternateNo: 1, qty: 37 }] });
     expect(runtime.toast.success).toHaveBeenCalledWith("该报价已采用");
     expect(dirty.mock.calls.at(-1)?.[0]).toBe(false);
+  });
+});
+
+
+describe("本轮客户需求精简与真实报价确认", () => {
+  it("keeps only view/confirm/edit actions and consistent header/body alignment without permanent procurement copy", () => {
+    render(h(CustomerDemandHistory, { customer }));
+    expect(host.textContent).not.toContain("内部采购需求");
+    expect(host.textContent).not.toContain("客户成交确认在订单区");
+    const cells = [...host.querySelectorAll("tbody tr:first-child td")];
+    const heads = [...host.querySelectorAll("thead th")];
+    expect(cells).toHaveLength(7); expect(heads).toHaveLength(7);
+    ["text-left", "text-left", "text-center", "text-center", "text-center", "text-left", "text-right"].forEach((alignment, index) => {
+      expect(cells[index].className).toContain(alignment); expect(heads[index].className).toContain(alignment);
+    });
+    expect([...cells[6].querySelectorAll("button")].map(node => node.textContent)).toEqual(["查看报价", "确认报价", "编辑"]);
+    expect(host.querySelector(".customer-demand-table-scroll")?.className).toContain("overflow-x-auto");
+  });
+
+  it.each([
+    [{ hasActiveOrders: false, currentQuoteCount: 0, acceptedQuoteCount: 0, quoteCount: 7 }, "待采购"],
+    [{ hasActiveOrders: false, status: "processing", currentQuoteCount: 0, acceptedQuoteCount: 0, quoteCount: 7 }, "采购处理中"],
+    [{ hasActiveOrders: false, currentQuoteCount: 2, acceptedQuoteCount: 0 }, "已报价"],
+    [{ hasActiveOrders: false, currentQuoteCount: 2, acceptedQuoteCount: 1 }, "报价已确认"],
+    [{ hasActiveOrders: true, currentQuoteCount: 2, acceptedQuoteCount: 1 }, "已关联订单"],
+    [{ hasActiveOrders: false, activeOrderCount: 1, currentQuoteCount: 2, acceptedQuoteCount: 1 }, "已关联订单"],
+    [{ hasActiveOrders: false, status: "draft", quoteCount: 0 }, "草稿"],
+  ])("renders authority-based state without inferring validity from historical quoteCount: %j", (flags, expected) => {
+    runtime.list = state({ items: [row(flags)], total: 1, page: 1 });
+    render(h(CustomerDemandHistory, { customer }));
+    expect(host.querySelector("tbody td:nth-child(4)")?.textContent).toBe(expected);
+  });
+
+  it.each([
+    [{ currentQuoteCount: 0, confirmableQuoteCount: 0 }, {}],
+    [{ currentQuoteCount: 2, acceptedQuoteCount: 2, confirmableQuoteCount: 0 }, {}],
+    [{ currentQuoteCount: 2, acceptedQuoteCount: 1, confirmableQuoteCount: 0 }, {}],
+    [{ currentQuoteCount: 5 }, {}],
+    [{ confirmableQuoteCount: 1, status: "draft" }, {}],
+    [{ confirmableQuoteCount: 1, canEdit: false }, {}],
+    [{ confirmableQuoteCount: 1 }, { readOnly: true }],
+    [{ confirmableQuoteCount: 1 }, { customer: { ...customer, archivedAt: "2026-11-01" } }],
+  ])("fixed confirm button fails closed for unavailable/legacy/permission/archive metadata %j", async (flags, props) => {
+    runtime.list = state({ items: [row(flags)], total: 1, page: 1 });
+    render(h(CustomerDemandHistory, { customer, ...props }));
+    expect(button("确认报价").disabled).toBe(true);
+    await click("确认报价"); expect(runtime.detailQuery).not.toHaveBeenCalled(); expect(runtime.accept).not.toHaveBeenCalled();
+  });
+
+  it("confirmation enters the real quote selection area without auto-adopting or hiding materials", async () => {
+    runtime.list = state({ items: [row({ hasActiveOrders: false, currentQuoteCount: 2, acceptedQuoteCount: 0, confirmableQuoteCount: 2 })], total: 1, page: 1 });
+    runtime.quotes = state({ items: [quote(), quote({ id: 502, version: 4 })], total: 2, page: 1 });
+    render(h(CustomerDemandHistory, { customer, canManageOrders: false }));
+    expect(button("确认报价").disabled).toBe(false); await click("确认报价");
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("请先选择下方一份当前有效报价");
+    expect(host.textContent).toContain("物料明细"); expect(host.textContent).toContain("SYNTHETIC-401");
+    expect(runtime.accept).not.toHaveBeenCalled(); expect(runtime.navigate).not.toHaveBeenCalled();
+    const secondCard = host.querySelector('[aria-label="报价 502"]')!;
+    await act(async () => [...secondCard.querySelectorAll<HTMLButtonElement>("button")].find(node => node.textContent === "采用报价")!.click());
+    expect(host.textContent).toContain("报价 #502 · 需求 V2 · 第4轮");
+    expect(host.querySelector<HTMLInputElement>('input[aria-label="SYNTHETIC-401采用数量"]')?.value).toBe("");
+    await click("确认采用"); expect(runtime.accept).not.toHaveBeenCalled(); expect(host.textContent).toContain("请填写至少一项采用数量");
+    change('input[aria-label="SYNTHETIC-401采用数量"]', "21"); await click("确认采用");
+    expect(runtime.accept).toHaveBeenCalledOnce();
+    expect(runtime.accept).toHaveBeenCalledWith(expect.objectContaining({ demandId: 41, quoteId: 502, quoteVersion: 4, demandRevision: 2, items: [{ demandItemId: 401, alternateNo: 1, qty: 21 }] }));
+    expect(runtime.invalidate).toHaveBeenCalledWith({ customerId: 12 });
+    expect(runtime.invalidate).toHaveBeenCalledWith({ id: 41 });
+    expect(runtime.save).not.toHaveBeenCalled(); expect(runtime.navigate).not.toHaveBeenCalled();
+  });
+
+  it.each(["materials", "quotes"] as const)("legacy %s deep-link keeps both material and quote sections in document order", section => {
+    render(h(CustomerDemandDialog, { customer, demandId: 41, mode: "view", initialSection: section, canManageOrders: false, onClose: vi.fn() }));
+    const headings = [...host.querySelectorAll("h3")].map(node => node.textContent);
+    expect(headings.indexOf("物料明细")).toBeLessThan(headings.indexOf("采购报价"));
+    expect(host.querySelector('[data-testid="demand-item-0-qty"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="报价 501"]')).not.toBeNull();
+  });
+
+  it("explicit alternate selection clears quantity, only chosen material/plan is adopted", async () => {
+    const firstItem = quote().items[0];
+    runtime.quotes = state({ items: [quote({ items: [firstItem, { ...firstItem, alternateNo: 2, qty: 60, unitPrice: "0.2000" }, { ...firstItem, demandItemId: 402, partNumber: "SYNTHETIC-402" }] })], total: 1, page: 1 });
+    render(h(DemandQuoteList, { demandId: 41, customerId: 12, audience: "sales" })); await click("采用报价");
+    change('input[aria-label="SYNTHETIC-401采用数量"]', "40");
+    const select = host.querySelector<HTMLSelectElement>('select[aria-label="SYNTHETIC-401报价方案"]')!;
+    act(() => { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!.set!.call(select, "2"); select.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(host.querySelector<HTMLInputElement>('input[aria-label="SYNTHETIC-401采用数量"]')?.value).toBe("");
+    expect(host.querySelector<HTMLInputElement>('input[aria-label="SYNTHETIC-402采用数量"]')?.value).toBe("");
+    change('input[aria-label="SYNTHETIC-401采用数量"]', "31"); await click("确认采用");
+    expect(runtime.accept.mock.calls[0][0].items).toEqual([{ demandItemId: 401, alternateNo: 2, qty: 31 }]);
+  });
+
+  it.each([
+    { status: "withdrawn" },
+    { demandRevision: 1, currentDemandRevision: 2, needsReconfirmation: false },
+    { isAccepted: true },
+    { items: [{ ...quote().items[0], availableToAcceptQty: 0 }] },
+  ])("QuoteCard has no adopt action for unavailable/withdrawn/stale/currently accepted quote %j", flags => {
+    runtime.quotes = state({ items: [quote(flags)], total: 1, page: 1 });
+    render(h(DemandQuoteList, { demandId: 41, audience: "sales" }));
+    expect([...host.querySelectorAll("button")].some(node => node.textContent === "采用报价")).toBe(false);
+  });
+
+  it.each([
+    { version: 4 }, { needsReconfirmation: true }, { demandRevision: 1 }, { status: "withdrawn" }, { isAccepted: true },
+  ])("a refreshed quote cannot be adopted through an already open old selection: %j", flags => {
+    const props = { demandId: 41, customerId: 12, audience: "sales" as const };
+    render(h(DemandQuoteList, props)); act(() => button("采用报价").click()); change('input[aria-label="SYNTHETIC-401采用数量"]', "50");
+    runtime.quotes = state({ items: [quote(flags)], total: 1, page: 1 }); render(h(DemandQuoteList, props));
+    act(() => button("确认采用").click()); expect(runtime.accept).not.toHaveBeenCalled(); expect(host.textContent).toContain("报价版本已变化");
+  });
+
+  it("rechecks refreshed remaining quantity while retaining the local editor", async () => {
+    const props = { demandId: 41, customerId: 12, audience: "sales" as const };
+    render(h(DemandQuoteList, props)); await click("采用报价"); change('input[aria-label="SYNTHETIC-401采用数量"]', "50");
+    runtime.quotes = state({ items: [quote({ items: [{ ...quote().items[0], availableToAcceptQty: 20 }] })], total: 1, page: 1 }); render(h(DemandQuoteList, props));
+    await click("确认采用"); expect(runtime.accept).not.toHaveBeenCalled(); expect(host.textContent).toContain("最多可采用 20");
+    change('input[aria-label="SYNTHETIC-401采用数量"]', "20"); await click("确认采用"); expect(runtime.accept.mock.calls[0][0].items[0].qty).toBe(20);
   });
 });

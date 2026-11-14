@@ -16,7 +16,6 @@ import { InventoryChannelSelector, type InventoryChannelAvailability } from "../
 import { useFactoryMaterialPublish, type FactoryMaterialPublishRow } from "../components/channelInventory/FactoryMaterialPublish";
 import { materialUploadBatchAssociation, type MaterialUploadBatchProjection } from "../components/channelInventory/management";
 import type { InventoryManagementClient, InventoryTab, ReadableInventoryChannel, UploadBatchInput } from "../components/channelInventory/management";
-import { inventoryCompanyLabel, type InventoryCompanyProjection } from "../components/channelInventory/company";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
@@ -1311,7 +1310,7 @@ export default function ChannelInventoryHost() {
   sourceScopeRef.current = sourceScopeKey;
   useEffect(() => { setSourceDetail(null); }, [sourceScopeKey]);
   const openSource = (material: TeamMaterial) => {
-    if (!sourceContextVerified || !isCurrent() || !contextCurrent || materialsQuery.isError || enterpriseQuery.isError) return;
+    if (material.canViewSource !== true || !sourceContextVerified || !isCurrent() || !contextCurrent || materialsQuery.isError || enterpriseQuery.isError) return;
     setSourceDetail({ materialId: material.id, scopeKey: sourceScopeKey });
   };
   const canWriteChannels = nativeWrite && hasInventoryWrite && ready && contextCurrent && sourceIdentityCurrent && !enterpriseQuery.isError
@@ -1711,7 +1710,7 @@ export default function ChannelInventoryHost() {
                 {columnVisible("leadTime") ? <th className="ci-material-lead-col">交期</th> : null}
                 {columnVisible("dateCode") ? <th className="ci-material-dc-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>DC{sortArrow("dateCode")}</button></th> : null}
                 {columnVisible("updatedAt") ? <th className="ci-material-date-col" title="更新时间（北京时间）">更新时间</th> : null}
-                {columnVisible("source") ? <th className="ci-material-source-col">所属公司 / 渠道来源</th> : null}
+                {columnVisible("source") ? <th className="ci-material-source-col">渠道来源</th> : null}
                 <th className="ci-col-actions">操作</th>
               </tr></thead>
               <tbody>
@@ -1734,7 +1733,7 @@ export default function ChannelInventoryHost() {
                     {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
                     {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
                     {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}
-                    {columnVisible("source") ? <td className="ci-material-source-col"><span className="ci-subtext ci-inventory-company" title={inventoryCompanyLabel(material as TeamMaterial & InventoryCompanyProjection)}>所属公司：{inventoryCompanyLabel(material as TeamMaterial & InventoryCompanyProjection)}</span><button type="button" className={`ci-inline-link ci-source-link${material.canViewSource ? "" : " ci-source-link-muted"}`} onClick={() => openSource(material)}>查看来源</button>{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td> : null}
+                    {columnVisible("source") ? <td className="ci-material-source-col">{material.canViewSource === true ? <button type="button" className="ci-inline-link ci-source-link" onClick={() => openSource(material)}>查看来源</button> : null}{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td> : null}
                     <td className="ci-col-actions"><div className="ci-row-actions">{publishing.action(material)}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button>{material.isMine && nativeNote ? <button type="button" className="ci-inline-link" aria-label={`本人备注：${material.partNumber}`} disabled={!privateNotesAllowed} onClick={() => openPrivateNotes(material.id)}>本人备注</button> : null}{material.canEdit && !material.readOnly || deletion.eligible.some(row => row.id === material.id) ? <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger><DropdownMenuContent className="ci-channel-actions-menu" align="end">{material.canEdit && !material.readOnly ? <DropdownMenuItem disabled={busy !== null || !canWriteMaterials} onSelect={() => void openMaterialEdit(material)}>编辑</DropdownMenuItem> : null}{deletion.eligible.some(row => row.id === material.id) ? <DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem> : null}</DropdownMenuContent></DropdownMenu> : null}</div></td>
                   </tr>
                   );

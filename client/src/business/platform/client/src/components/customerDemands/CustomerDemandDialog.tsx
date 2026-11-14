@@ -48,6 +48,8 @@ export type CustomerDemandDialogProps = {
   readOnly?: boolean;
   canManageOrders?: boolean;
   initialSection?: "materials" | "quotes";
+  /** Opens the existing selection area; never accepts all quotes or creates an order. */
+  initialQuoteConfirm?: boolean;
   onCreateOrder?: (intent: CustomerDemandOrderIntent) => void;
   onViewOrders?: (intent: CustomerDemandOrderIntent) => void;
   onDirtyChange?: (dirty: boolean) => void;
@@ -96,7 +98,7 @@ export function CustomerDemandDialog(props: CustomerDemandDialogProps) {
   return <CustomerDemandDialogSession key={sessionKey} {...props} />;
 }
 
-function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClose, onSaved, contextIdentityKey, readOnly: externalReadOnly = false, canManageOrders, initialSection, onCreateOrder, onViewOrders, onDirtyChange }: CustomerDemandDialogProps) {
+function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClose, onSaved, contextIdentityKey, readOnly: externalReadOnly = false, canManageOrders, initialSection, initialQuoteConfirm = false, onCreateOrder, onViewOrders, onDirtyChange }: CustomerDemandDialogProps) {
   const [, navigate] = useLocation();
   const aliveRef = useRef(true);
   const quoteSessionRef = useRef({});
@@ -262,12 +264,12 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
   useEffect(() => () => { onDirtyChange?.(false); }, [onDirtyChange]);
 
   useEffect(() => {
-    if (!detail || scrolledRef.current || !initialSection) return;
-    const target = initialSection === "quotes" ? quoteSectionRef.current : materialSectionRef.current;
+    if (!detail || scrolledRef.current || (!initialSection && !initialQuoteConfirm)) return;
+    const target = initialQuoteConfirm || initialSection === "quotes" ? quoteSectionRef.current : materialSectionRef.current;
     if (!target) return;
     scrolledRef.current = true;
     target.scrollIntoView?.({ block: "start" });
-  }, [detail, initialSection]);
+  }, [detail, initialSection, initialQuoteConfirm]);
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -573,7 +575,9 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
             <textarea id="demand-note" value={form.note} disabled={fieldDisabled} onChange={event => updateHeader("note", event.target.value)} placeholder="提供给采购的需求说明，请勿填写客户联系方式" className="min-h-16 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#185FA5] focus:ring-1 focus:ring-[#185FA5]/25 disabled:bg-slate-50" maxLength={2000} />
           </div>
           {!readOnly && updatingSubmitted && <div className="mt-3"><label htmlFor="demand-change-reason" className={labelClass}>变更说明 <span className="text-red-600">*</span></label><input id="demand-change-reason" maxLength={500} value={changeReason} disabled={fieldDisabled} onChange={event => { setChangeReason(event.target.value); dirtyRef.current = true; setDirty(true); setFieldErrors({}); }} placeholder="说明本次修改原因，便于采购确认" className={`${compactInput} w-full`} /></div>}
-          {activeDemandId && detail && effectiveStatus !== "draft" && <div ref={quoteSectionRef} className="mt-3 border-t border-slate-200 pt-3"><p className="mb-2 text-[11px] leading-5 text-slate-500">以下为采购报价。销售采用会记录采购报价轮次、方案和数量，不代表已向客户发送或客户已确认销售价格。旧轮次仅供追溯，需求变更后需采购重新确认。</p>{immutable || detail.canEdit !== true ? <ReadOnlyDemandQuotes key={activeDemandId} demandId={activeDemandId} customerId={customer.id} contextIdentityKey={contextIdentityKey} /> : <DemandQuoteList key={activeDemandId} demandId={activeDemandId} customerId={customer.id} contextIdentityKey={contextIdentityKey} canWrite={detail.canEdit === true} mutationSession={quoteSessionRef.current} audience="sales" />}
+          {activeDemandId && detail && effectiveStatus !== "draft" && <div ref={quoteSectionRef} className="mt-3 border-t border-slate-200 pt-3">
+            {initialQuoteConfirm && <p role="status" className="mb-2 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-[#185FA5]">确认报价：请先选择下方一份当前有效报价，点击“采用报价”，核对需求版本、报价轮次及各物料方案，填写本次采用数量后确认。多份报价分别选择，不会自动全部采用；此操作不等于客户销售成交，也不会生成订单。</p>}
+            <p className="mb-2 text-[11px] leading-5 text-slate-500">以下为采购报价。销售采用会记录采购报价轮次、方案和数量，不代表已向客户发送或客户已确认销售价格。旧轮次仅供追溯，需求变更后需采购重新确认。</p>{immutable || detail.canEdit !== true ? <ReadOnlyDemandQuotes key={activeDemandId} demandId={activeDemandId} customerId={customer.id} contextIdentityKey={contextIdentityKey} /> : <DemandQuoteList key={activeDemandId} demandId={activeDemandId} customerId={customer.id} contextIdentityKey={contextIdentityKey} canWrite={detail.canEdit === true} mutationSession={quoteSessionRef.current} audience="sales" />}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2"><p className="min-w-0 flex-1 text-[11px] leading-5 text-slate-500">已采用有效采购报价后，在订单区填写成交数量、销售含税单价、交期和确认说明，明确客户确认后才生成订单。</p>{canUseOrders ? <div className="flex shrink-0 gap-2">{!immutable && <Button type="button" size="sm" className="h-8 bg-[#185FA5] px-3 text-xs hover:bg-[#0C447C]" disabled={pending || awaitingReplay || dirty} onClick={() => openOrders("create")}>填写成交报价 / 生成订单</Button>}{detail.hasActiveOrders && <Button type="button" size="sm" variant="outline" className="h-8 bg-white px-3 text-xs" disabled={pending || awaitingReplay || dirty} onClick={() => openOrders("view")}>查看销售订单</Button>}</div> : <span className="text-[11px] text-slate-500">当前账号无销售订单权限</span>}</div>
           </div>}
           {activeDemandId && detail && <DemandRevisionHistory key={activeDemandId} demandId={activeDemandId} />}

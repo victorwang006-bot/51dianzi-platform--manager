@@ -52,6 +52,11 @@ function parsePositiveInteger(value: string) {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+function isCurrentQuote(quote: DemandQuote) {
+  return quote.status === "active" && !quote.needsReconfirmation &&
+    (quote.currentDemandRevision ?? quote.demandRevision ?? 1) === (quote.demandRevision ?? 1);
+}
+
 /**
  * Procurement sees every caller-owned supplier option (including withdrawn history).
  * Sales sees active options and explicitly allocates accepted quantity per material.
@@ -79,6 +84,7 @@ function DemandQuoteReadSession(props: DemandQuoteListProps & { identityKey: str
 
 function DemandQuoteListSession({
   demandId,
+  customerId,
   audience,
   onCreate,
   onEdit,
@@ -136,6 +142,7 @@ function DemandQuoteListSession({
   const refreshRelated = () =>
     Promise.allSettled([
       utils.customerDemand.quoteList.invalidate({ demandId }),
+      ...(customerId == null ? [] : [utils.customerDemand.list.invalidate({ customerId })]),
       utils.customerDemand.procurementList?.invalidate?.(),
       utils.customerDemand.get?.invalidate?.({ id: demandId }),
       utils.customerDemand.salesList?.invalidate?.(),
@@ -194,17 +201,14 @@ function DemandQuoteListSession({
   });
 
   const openAccept = (quote: DemandQuote) => {
-    if (!receiptGuard.isCurrent()) return;
+    if (!receiptGuard.isCurrent() || !isCurrentQuote(quote) || quote.isAccepted || acceptMutation.isPending) return;
     const initial: Record<number, string> = {};
     const alternates: Record<number, number> = {};
     quote.items.forEach(item => {
       if (alternates[item.demandItemId] != null) return;
       alternates[item.demandItemId] = item.alternateNo ?? 1;
-      const available = Math.min(
-        item.qty,
-        item.availableToAcceptQty ?? item.qty
-      );
-      initial[item.demandItemId] = available > 0 ? String(available) : "";
+      // Selecting a quote is not consent to adopt every material's maximum quantity.
+      initial[item.demandItemId] = "";
     });
     setAcceptAlternate(alternates);
     setAcceptQty(initial);
@@ -237,7 +241,7 @@ function DemandQuoteListSession({
   const confirmAccept = () => {
     if (!receiptGuard.isCurrent() || !acceptingQuote || acceptMutation.isPending) return;
     const currentQuote = quotes.find(quote => quote.id === acceptingQuote.id);
-    if (!currentQuote || currentQuote.version !== acceptingQuote.version || currentQuote.needsReconfirmation || currentQuote.status === "withdrawn") {
+    if (!currentQuote || currentQuote.version !== acceptingQuote.version || !isCurrentQuote(currentQuote) || currentQuote.isAccepted || currentQuote.demandRevision !== acceptingQuote.demandRevision) {
       setAcceptError("报价版本已变化，请关闭后重新选择当前报价");
       return;
     }
@@ -247,9 +251,11 @@ function DemandQuoteListSession({
       const raw = acceptQty[item.demandItemId]?.trim() ?? "";
       if (!raw) continue;
       const qty = parsePositiveInteger(raw);
+      const currentItem = currentQuote.items.find(option => option.demandItemId === item.demandItemId && (option.alternateNo ?? 1) === (item.alternateNo ?? 1));
+      if (!currentItem) { setAcceptError("报价方案已变化，请关闭后重新选择当前报价"); return; }
       const available = Math.min(
-        item.qty,
-        item.availableToAcceptQty ?? item.qty
+        currentItem.qty,
+        currentItem.availableToAcceptQty ?? currentItem.qty
       );
       if (qty == null) {
         setAcceptError(
@@ -381,8 +387,8 @@ function DemandQuoteListSession({
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-xs text-slate-500">
                   {audience === "sales"
-                    ? `第${acceptingQuote.version}轮，可只采用部分数量`
-                    : `${acceptingQuote.supplierName} · 第${acceptingQuote.version}轮；可只采用部分数量`}
+                    ? `报价 #${acceptingQuote.id} · 需求 V${acceptingQuote.demandRevision ?? 1} · 第${acceptingQuote.version}轮，请明确填写本次采用数量`
+                    : `${acceptingQuote.supplierName} · 报价 #${acceptingQuote.id} · 需求 V${acceptingQuote.demandRevision ?? 1} · 第${acceptingQuote.version}轮；请明确填写本次采用数量`}
                 </DialogDescription>
               </div>
               <button
@@ -436,25 +442,13 @@ function DemandQuoteListSession({
                                   const alternateNo = Number(
                                     event.target.value
                                   );
-                                  const selected = acceptingQuote.items.find(
-                                    option =>
-                                      option.demandItemId ===
-                                        item.demandItemId &&
-                                      (option.alternateNo ?? 1) === alternateNo
-                                  )!;
                                   setAcceptAlternate(current => ({
                                     ...current,
                                     [item.demandItemId]: alternateNo,
                                   }));
                                   setAcceptQty(current => ({
                                     ...current,
-                                    [item.demandItemId]: String(
-                                      Math.min(
-                                        selected.qty,
-                                        selected.availableToAcceptQty ??
-                                          selected.qty
-                                      )
-                                    ),
+                                    [item.demandItemId]: "",
                                   }));
                                   setAcceptError("");
                                 }}
@@ -485,6 +479,7 @@ function DemandQuoteListSession({
                               <input
                                 aria-label={`${item.partNumber}采用数量`}
                                 inputMode="numeric"
+                                placeholder="留空不采用"
                                 value={acceptQty[item.demandItemId] ?? ""}
                                 disabled={
                                   available <= 0 || acceptMutation.isPending
@@ -506,7 +501,7 @@ function DemandQuoteListSession({
                 </table>
               </div>
               <p className="mt-2 text-[11px] text-slate-500">
-                每个需求行只选择一个方案；备选不累计。采用后记录人员、轮次、方案及数量；改价后需重新采用。
+                每个需求行只选择一个方案；备选不累计，数量留空的物料不采用。采用后记录人员、时间、需求版本、报价轮次、方案及数量；改价后需重新采用。此操作不确认客户成交，也不生成销售订单。
               </p>
               {acceptError ? (
                 <p
@@ -801,7 +796,7 @@ function QuoteCard({
           ) : null}
           {audience === "sales" &&
           !quote.isAccepted &&
-          !quote.needsReconfirmation &&
+          isCurrentQuote(quote) &&
           hasAvailable ? (
             <Button
               type="button"
@@ -814,7 +809,7 @@ function QuoteCard({
           ) : null}
           {audience === "sales" &&
           !quote.isAccepted &&
-          !quote.needsReconfirmation &&
+          isCurrentQuote(quote) &&
           !hasAvailable ? (
             <span className="px-2 text-[11px] text-slate-400">
               需求数量已满足

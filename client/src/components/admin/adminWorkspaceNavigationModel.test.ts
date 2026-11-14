@@ -16,7 +16,7 @@ import {
 const officialPaths = ADMIN_WORKBENCH_NAVIGATION_GROUPS.flatMap(
   group => group.paths
 );
-const items = officialPaths.map(path => ({
+const items = [...officialPaths, "/profile"].map(path => ({
   path,
   label: `label:${path}`,
   permission: `permission:${path}`,
@@ -142,7 +142,7 @@ describe("正式后台顶部工作区菜单", () => {
     const paths = ADMIN_WORKSPACE_DEFINITIONS.flatMap(
       workspace => workspace.paths
     );
-    const expectedPaths = officialPaths.filter(path => !["/workbench/company-info", "/workbench/inventory", "/workbench/publish", "/role-templates", "/permission-audit"].includes(path));
+    const expectedPaths = [...officialPaths.filter(path => !["/workbench/company-info", "/workbench/inventory", "/workbench/publish", "/role-templates", "/permission-audit"].includes(path)), "/profile"];
     expect([...paths].sort()).toEqual([...expectedPaths].sort());
     expect(new Set(paths).size).toBe(expectedPaths.length);
     expect(
@@ -150,7 +150,7 @@ describe("正式后台顶部工作区菜单", () => {
         workspace => workspace.items
       )
     ).toHaveLength(expectedPaths.length);
-    expect(paths).not.toContain("/profile");
+    expect(paths).toContain("/profile");
     expect(paths).not.toContain("/admins");
     expect(paths).not.toContain("/workbench/add-user");
     expect(paths).not.toContain("/unregistered-team-demo");
@@ -182,6 +182,7 @@ describe("正式后台顶部工作区菜单", () => {
     expect(groups.map(group => [group.id, group.label])).toEqual([
       ["business", "业务工作台"],
       ["operations", "平台运营"],
+      ["personal", "个人中心"],
       ["organization", "组织与权限"],
     ]);
     expect(groups[1].items.map(item => item.path)).toEqual([
@@ -194,7 +195,8 @@ describe("正式后台顶部工作区菜单", () => {
       "/analytics",
       "/exception-logs",
     ]);
-    expect(groups[2].items.map(item => item.path)).toEqual([
+    expect(groups[2].items.map(item => item.path)).toEqual(["/profile"]);
+    expect(groups[3].items.map(item => item.path)).toEqual([
       "/staff",
       "/teams",
       "/workbench/user-records",
@@ -313,7 +315,7 @@ describe("实际路由驱动两级选中态", () => {
       "/workbench/procurement-orders",
     ],
     ["/workbench/demand-quotes", "business", "/workbench/procurement-demands"],
-    ["/workbench", "business", "/workbench/channel-inventory"],
+    ["/workbench", "business", "/workbench/customers"],
   ])("%s 归属 %s 并选中 %s", (location, workspaceId, canonicalPath) => {
     const state = getAdminWorkspaceNavigationState(items, location);
     expect(state.route).toMatchObject({ workspaceId, canonicalPath });
@@ -322,22 +324,18 @@ describe("实际路由驱动两级选中态", () => {
     expect(getAdminWorkspaceForLocation(location)?.id).toBe(workspaceId);
   });
 
-  it("个人资料属于组织，但不伪造菜单、不错误选中员工页", () => {
+  it("个人中心独立归属并选中本人入口，不错误选中员工页", () => {
     const state = getAdminWorkspaceNavigationState(
       items,
       "/profile?tab=security"
     );
     expect(state.route).toMatchObject({
-      workspaceId: "organization",
+      workspaceId: "personal",
       canonicalPath: "/profile",
     });
-    expect(state.activeWorkspace?.id).toBe("organization");
-    expect(state.activeItem).toBeNull();
-    expect(state.activeWorkspace?.items.map(item => item.path)).toEqual([
-      "/staff",
-      "/teams",
-      "/workbench/user-records",
-    ]);
+    expect(state.activeWorkspace?.id).toBe("personal");
+    expect(state.activeItem).toBe(items.find(item => item.path === "/profile"));
+    expect(state.activeWorkspace?.items.map(item => item.path)).toEqual(["/profile"]);
   });
 
   it.each([

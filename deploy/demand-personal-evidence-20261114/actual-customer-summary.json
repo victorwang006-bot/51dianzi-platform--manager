@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "passed": 39,
+  "failed": 0,
+  "executed": [
+    {
+      "module": 0,
+      "unit": "exact appended getter/factory",
+      "sha256": "75707b4d888abc0c218674054c4b90e0964f649d89e4aa183b607177fd3885ab",
+      "bytes": 1177831
+    },
+    {
+      "module": 0,
+      "unit": "exact actual global inventory I1 route",
+      "sha256": "5f4c03de852ea9ef4d654327338376c4fcc843c8aa6fbdfd51f7cdad3f954e45"
+    },
+    {
+      "module": 1,
+      "unit": "exact appended getter/factory",
+      "sha256": "75707b4d888abc0c218674054c4b90e0964f649d89e4aa183b607177fd3885ab",
+      "bytes": 1177831
+    },
+    {
+      "module": 1,
+      "unit": "exact actual global inventory I1 route",
+      "sha256": "5f4c03de852ea9ef4d654327338376c4fcc843c8aa6fbdfd51f7cdad3f954e45"
+    }
+  ],
+  "coverageLimits": [
+    "Actual customer getter/factory and route code executed in React19/JSDOM with inert native bridges; production top-level imports and network never executed.",
+    "Original singletons are supplied by native fixtures; no new production provider/root/API client.",
+    "BOM XLS/XLSX and follow-up forms exercised locally without saves or production records.",
+    "Old CSS/API unchanged; new style strictly scoped to customer profile. Actual source/live bridge verified. No production login acceptance claimed."
+  ]
+}

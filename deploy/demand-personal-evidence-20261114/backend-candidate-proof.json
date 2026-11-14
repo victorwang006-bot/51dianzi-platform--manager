@@ -1,0 +1,298 @@
+{
+  "status": "PASS",
+  "sourceBound": true,
+  "unrelatedBytesUnchanged": true,
+  "apis": {
+    "admin": {
+      "file": "/home/ubuntu/work/demand-personal-center/backend-candidate/admin-index.js",
+      "manifest": "/home/ubuntu/work/demand-personal-center/backend-candidate/admin-manifest.json",
+      "map": "/home/ubuntu/work/demand-personal-center/backend-candidate/admin-factory.js.map",
+      "baselineSha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442",
+      "candidateSha256": "d2756c5ff98b459cad79c3ff11643680c92f773ceeeb4469e88302a863369539",
+      "patchCount": 9,
+      "exactInverse": true,
+      "untouchedDeclarations": 1083,
+      "nativeFactoryInputs": [
+        "server/personalCenterRouter.ts",
+        "server/personalCenterService.ts",
+        "client/src/business/platform/shared/personalPerformance.ts"
+      ]
+    },
+    "front": {
+      "file": "/home/ubuntu/work/demand-personal-center/backend-candidate/front-index.js",
+      "manifest": "/home/ubuntu/work/demand-personal-center/backend-candidate/front-manifest.json",
+      "map": "/home/ubuntu/work/demand-personal-center/backend-candidate/front-factory.js.map",
+      "baselineSha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735",
+      "candidateSha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+      "patchCount": 8,
+      "exactInverse": true,
+      "untouchedDeclarations": 4064,
+      "nativeFactoryInputs": [
+        "client/src/business/platform/front-router-types/server/routers/personalPerformance.ts",
+        "client/src/business/platform/front-router-types/server/services/personalPerformance.ts",
+        "client/src/business/platform/shared/personalPerformance.ts"
+      ]
+    }
+  },
+  "actualCandidateTestCount": 34,
+  "sourceHashes": {
+    "client/src/business/platform/client/src/components/customerDemands/customerDemandBom.ts": "d71d9ef81cfe471d599bd0f299fd2a990cca34b99132fb8af6a8fce746042369",
+    "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx": "8b92a082814683d4194196f7987af352b52f70623a82c46fa45a66b01f367f8e",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx": "c4355cb121b860b416b50a4d95e785b1ef0800729e385ca5cbde228c2102c726",
+    "client/src/business/platform/client/src/components/customers/customerWorkbench.ts": "e4a0920983393ed0fd2bf3362921f5f4bd8421c4b180eb3413c331dd918bdee2",
+    "client/src/business/platform/client/src/pages/ChannelInventoryHost.tsx": "3a8b44d86afbc28a89cb9bb4ed52bd35b437a69478127c0a121d4618ed131ec2",
+    "client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog.tsx": "5b0d89bcd901a420e163f2490a3568c5d941413a9052398dff7c86c5f977de69",
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx": "12082babf7cccb58b85d43f6752bbc835d8c995064b660b0a650061c181f04df",
+    "client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "d5b4ba7e984a4d252c0bc0656652b21a038bb869d215fcb1d4519c618f3dbf81",
+    "client/src/business/platform/client/src/components/customerDemands/CustomerDemandHistory.tsx": "f9ffbfa925f1d55696d9c58372cff067b0e5e4ea3ce7e21b1528af7893f05df0",
+    "client/src/business/platform/client/src/components/channelInventory/FactoryMaterialPublish.tsx": "ddc4d2274bddd5f52bbbfc6585e66977567366f6ea26e6c1920a4e572ac7dcca",
+    "client/src/business/platform/client/src/pages/CrmSalesOrders.tsx": "06d8ff185f3b7d7a8cd25b5bffb95540edeb27bdcb1b995c5277d28f460f3723",
+    "client/src/business/platform/client/src/components/customerDemands/CustomerDemandBomDialog.tsx": "c223fac6046db428df9a62693d22b30f0ab4f6560d758140e73bae61b6df97b8",
+    "client/src/business/platform/shared/customerDemands.ts": "f39b2e0761d724c5d8dfbdac73d74ba9c44df1499c718f454c958e4f4226d383",
+    "client/src/business/platform/client/src/components/channelInventory/ChannelInventoryManagementPanel.tsx": "615d2e201b379131f2e801419ab8ff947db545933859795865f55cc0bf3d6911",
+    "client/src/business/platform/client/src/components/channelInventory/management.ts": "0018c1df0576be9748efef0c3949fed79e0a9c0f458160e238f4a058e34eaf3a",
+    "client/src/business/platform/shared/channelFactoryPublication.ts": "445a1c175b3b58c93d58bcbc1b08fea6f527541ec416f4081f4895ae9817ff86",
+    "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.css": "2b24b2c9d6971a6fef4f9d9844df3ba8998ae2236411eab7234c7c6957dee667",
+    "client/src/business/platform/client/src/components/customers/customerUtils.ts": "5ca326f84097262968ff9a8cf9a06750a9438dccd8093a109a204e6e99ed619e",
+    "client/src/business/platform/shared/businessIndustry.ts": "c5b414014ca5a40af330b9c4e90ab878c90ac74aa66f908a4a4be3566656d0d3",
+    "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.tsx": "0c21a1f1e5ef641040ecc2f978e9e0e738c42e13ad31326184bb8482d92ddb2f",
+    "client/src/business/platform/client/src/components/customers/customerSupply.ts": "0ae0888553541f33015bbfbff06da85da85e2474d80385b7a1e7b8b7a8efd715",
+    "client/src/business/platform/client/src/components/customers/customerContacts.ts": "39212e5d40736347c36dce797d8815934b468daf0c1f5038775033b4fba07e74",
+    "client/src/business/platform/client/src/components/channelInventory/CollaborationNotesPanel.tsx": "d10e35166df099d587f51d5e7e11b1f28d9e0c4abf4cb8f247473616a1fbafaa",
+    "client/src/business/platform/client/src/components/channelInventory/ChannelInventorySourcePanel.tsx": "55ffbce22cd56eba80d13a0f709f0505359264aae929b16abc4ce4755f11f643",
+    "client/src/business/platform/client/src/components/customers/ConfirmDialog.tsx": "adddc08673e1554ac1d84aeb7aab1efe76bfe31fbcff68d14245ad4dbbab280e",
+    "client/src/business/platform/shared/beijingTime.ts": "f0150cfce5acb2259c647e75cde937ee20b41a1202f3fb181c80f07d8acc0820",
+    "client/src/business/platform/client/src/components/customerDemands/useDemandReadSession.ts": "a6e5d261f19c3b5a507e223048e788d7c478c79ca194eb01d30582cd89042914",
+    "client/src/business/platform/client/src/components/channelInventory/management.css": "6180ba0776bef02e9c256c349be63feeb15235246fb3340121d9dbd2b7cd9980",
+    "client/src/business/platform/client/src/pages/ProcurementDemands.css": "5682b5255e97cda0db34f99b5ce2f5e3e1ce1340150f9467cec649bfa583fb5d",
+    "client/src/lib/channelInventoryNavigation.ts": "20509a6940df5f5323f739d44f04f834e6405513fb8f0658779cc2021895001a",
+    "client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog.tsx": "a02c88ec6bb4f41539154428c6266331ca3575131f9b60ec09e56b0eef985141",
+    "client/src/business/platform/client/src/components/customerDemands/DemandQuoteList.tsx": "eb056e1093c328942aa248d149db10611eff02eb610f87a5a98ddbe6f00c5c58",
+    "client/src/business/platform/shared/customerContacts.ts": "a54fc3fa24f4400c0ea893f06d6871394da53dfc8786c7f4e21b0100c9ff3a37",
+    "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.css": "cdab24dfb95838f39ce512da3e704ee8b39b32dd01b94254eebda45c6acf3743",
+    "client/src/business/platform/shared/crmCustomers.ts": "54dc250afdda8e3890eef218374555761a32cc9eeeccff630b9913b56d62b0e0",
+    "client/src/business/platform/client/src/components/customers/CustomerDetailCompact.css": "6c8e160eee2a93b07664ced40cd85bcf7f045c0df18590f17d4ce9870e804245",
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "5f80dfa7810a3a9ef04e1c5441781a2b9125a20e21c63ce9e8f8f7bf6669fce3",
+    "client/src/business/platform/client/src/components/channelInventory/bridge.ts": "fe345e64c27887d8f517da437d07cd7ef56aa3cd217b1770d99b7b306ab73af1",
+    "client/src/business/platform/client/src/components/customers/CustomerSupplySingleEntry.tsx": "52287190ec496971d2316bbdcdaf7c028038e39d567a3a1ca900135aadba6d8f",
+    "client/src/business/platform/client/src/pages/CustomerDetailReadability.css": "73a368ebc9ae5389eaeea06a5050defcd785d26c5e76ab63b05a6584eda16c77",
+    "client/src/business/platform/client/src/pages/CrmSalesOrders.css": "974493067ba06d237ffa31644b840870ed0017405ead5b0aca13a2c3b9081058",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbench.css": "73f59b02dc6bc0ba0c9bb246dbc9b7ea4d7b19cf710d745f3b63cf712abb541d",
+    "client/src/business/platform/client/src/pages/CustomerProfileCompact.css": "15117b330a367455929d59556923061317dc3fb441b9743392f1d965c8fba343",
+    "client/src/business/platform/shared/crmSalesOrders.ts": "d0651e726042b64584871a6753a9f6e1ec42bb67a28a10458bb64de403429c78",
+    "client/src/business/platform/client/src/hooks/useSalesOrderSession.ts": "9c79be7d49488658d950bc9606c6b0df51810fcbb75f4208b7e78b38556d130f",
+    "client/src/business/platform/client/src/components/customerDemands/useDemandQuotePending.ts": "a9f8eb1e524ba822db0ab8963d175be1b67009db0259d3171aca2100b0d2c4bb",
+    "client/src/business/platform/client/src/components/customers/BeijingDateTimePicker.tsx": "cc761bdbeb5d41c82b6ae97a4abf169319306dd099fd6a6bc4f570064ede6010",
+    "client/src/business/platform/client/src/components/customerDemands/DemandPartNumberInput.tsx": "70b715f3b954317a0824de5f18f0032340c9b411aecc006f1363ade5ad0e9e5e",
+    "client/src/business/platform/client/src/components/customerDemands/DemandRevisionHistory.tsx": "5520c13c888b9ec5518c1f135ef8392b66e3470719f4d3b959e99f1e883fcddc",
+    "client/src/business/platform/client/src/components/customerDemands/ReadOnlyDemandQuotes.tsx": "c2ab120608fec79c748cfbb26a08a2ea7cc362d15cff1bac4124fa3163c6323e",
+    "client/src/business/platform/client/src/components/customerDemands/customerDemandWorkbench.ts": "5500e53763986091b287dde939b29bc86266bc975413c39845b9070af3fd725b",
+    "client/src/business/platform/client/src/components/channelInventory/layout.css": "66b647841a9cf507ed81d0141cb14b1fd2d5325ff7198bd7b14cd41324e4b6b9",
+    "client/src/business/platform/client/src/components/channelInventory/batch.css": "0170e97c95feaf3a5fcbfc04238bf5afa5145e04660f7f224571706b2f4beeea",
+    "client/src/business/platform/client/src/components/channelInventory/import.ts": "b416b0374c640bd6a445165e1bc0f214e415cfef3810065fc816f77445ea504e",
+    "client/src/business/platform/client/src/components/channelInventory/notes.css": "f883826707deba3baa45eae83e424a77228b76936a4c5f08707f597d55a207d1",
+    "client/src/business/platform/shared/customerDemandQuotes.ts": "b9ac52aeb15419ac7d3d41e7af7333554187937d2e1a4c57bc8f14da831e0542",
+    "client/src/business/platform/client/src/pages/ChannelInventoryHost.css": "b18e709179eb6e2966d2fcad3b1a3330b0c986681aa0ac25ffbfc89e0b55843b",
+    "client/src/business/platform/client/src/components/customers/useCustomerWorkbenchOrders.ts": "7faccc94b7dac81778914f4284813a2b787fbf860f117b87932c42d2140207b8",
+    "client/src/business/platform/client/src/components/customers/CustomerFields.tsx": "1b31ba3bd9a10aeb9f164490062df4fc162b8a9d38bcf47b8f3c039ddb877824",
+    "client/src/business/platform/client/src/components/customers/useCustomerNavigationGuard.ts": "47ab15dd73ec1b1e3674c3fcecd5e9c4930c9028c5ede30a2f9debe06f0ba42e",
+    "client/src/business/platform/client/src/components/customers/CustomerContactsManager.tsx": "8358a73f9730b549e557665e0871f9f1a5f4b4d653d837c2810b1db02c8256eb",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbenchContacts.tsx": "63b9ada92582ec3e6ba9ae4b921199ad78675b6eaa9cd505764e8993eec4da80",
+    "client/src/business/platform/client/src/components/channelInventory/queue.ts": "5443edad3d247f0bd99fc1d88ac7275852a6b21709e08e16f63e9d19c6727d9a",
+    "client/src/business/platform/client/src/components/channelInventory/InventoryChannelSelector.tsx": "e3928a44a74c49e600fcc7b55de89a89c5c55673d14864ee410dde3d3a540a95",
+    "client/src/business/platform/client/src/pages/channelInventoryColumns.ts": "6ff65ab7a936f20b7d9e5fd83beb05ef67d5319481e338876cd4d66a5660b689",
+    "client/src/business/platform/client/src/components/customers/CustomerContactFields.tsx": "8dc830e18846f21039bc64292c001d4410aab18ce9007d4e2a2d9c19a5d67251",
+    "client/src/components/admin/AdminWorkspaceNavigation.tsx": "f61b0f914ef06b025cb2b9664abe391b4a3bdf079f8a7a82d34e02d552792196",
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "1b29e9c020dde2850bd45440fe039f3997d2137e1b74ea7669eef47547adf3a7",
+    "client/src/components/DashboardLayout.tsx": "9c1d08ffed40ff8c0d6cf1fd31fc1afdbd3c33683b4f1b0299efd4bd83d7fad2",
+    "client/src/App.tsx": "1149d301ea6afd299e92cb2c13676b3d0898384a30fdc74c080acea7f42de2bb",
+    "client/src/pages/Profile.tsx": "a10096ad664f3d1872698898b35e69845ed26e78f381de76b1f5b7b5aaed8acc",
+    "client/src/pages/Profile.css": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049",
+    "client/src/pages/profileModel.ts": "c2c25ee63c474e442c2a1db2a259a215fa0562ac279d1a67ccde1ec0c549ae9a",
+    "server/businessRouter.ts": "ac1280c94c16e156ec7f17db466f6591af4e49dfeae8c89b10022a17b737bc60",
+    "server/db.ts": "7d9792ae990b34caafedd2b5fd750e1c8fcd1bec578ed678d75bca1b25d6136c",
+    "server/routers.ts": "ef5bff22fb6ee3e57b48b88d92fe974ca071ec505cf3b1b54912958a002649cc",
+    "server/personalCenterRouter.ts": "a3076ad2958f8f51d6872c7a43baf54c18e4d61890401786118be01b4f9bc920",
+    "server/personalCenterService.ts": "0f85611c6365a4163601f1e488d4de4f3a0b78c0a218259e605bea54878c28af",
+    "client/src/business/platform/shared/personalPerformance.ts": "19a014843e8b0005810e1d58a257734768dbea8f3409c5c00728539ec281f0ef",
+    "client/src/business/platform/front-router-types/server/services/customerDemands.ts": "0051ebb34efbf060cb70447f22517339ead0f57dc6e53defe7b0ec0567e601e7",
+    "client/src/business/platform/front-router-types/server/services/internalBusinessDelegation.ts": "905be67a93633ae1aea267c799a7d7dc6c3ca0e5615e9dc90dce1b857b11e0e2",
+    "client/src/business/platform/front-router-types/server/routers.ts": "c02d118bb80a3b40aea42099b1baa67bab9f27b862560d35e71f97284b355a88",
+    "client/src/business/platform/front-router-types/server/routers/personalPerformance.ts": "966cd14095a096880c7439de718cc47c0558d4fa7f36033227b38133cc197d95",
+    "client/src/business/platform/front-router-types/server/services/personalPerformance.ts": "2e4d4fce8a20ce57b147fb3b125b8ecc78598de080b77d4249b3b2780b000ba0"
+  },
+  "manifests": {
+    "admin": {
+      "exactInverse": {
+        "byteExact": true,
+        "sha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442",
+        "unchangedBytes": 1543893,
+        "allOutsideSlotsByteIdentical": true
+      },
+      "protectedDeclarationCount": 1083,
+      "initializationBeforeAppRouter": true,
+      "sourceRuntimeDeltaAudit": {
+        "db": [
+          "ordinaryPasswordResetPurposeCondition",
+          "createPasswordResetCode",
+          "getActivePasswordResetCode",
+          "consumePasswordResetCode",
+          "incrementResetCodeAttempts",
+          "markResetCodeUsed"
+        ],
+        "demand": [
+          "mapCustomerSummary",
+          "salesSummarySelect",
+          "listCustomerDemands"
+        ],
+        "demandShared": [],
+        "business": [
+          "BUSINESS_METHOD_CAPABILITIES",
+          "readBusinessPersonalPerformance"
+        ],
+        "delegation": [
+          "BUSINESS_METHOD_IDS",
+          "buildCallers"
+        ],
+        "adminRoutes": [
+          "appRouter"
+        ],
+        "frontRoutes": [
+          "appRouter"
+        ]
+      },
+      "globalCaptureChecks": [
+        {
+          "slot": "business.personalPerformance.capability",
+          "checkedSites": 0,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "readBusinessPersonalPerformance",
+          "checkedSites": 10,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "ordinaryPasswordResetPurposeCondition",
+          "checkedSites": 4,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "createPasswordResetCode",
+          "checkedSites": 24,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "consumePasswordResetCode",
+          "checkedSites": 55,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "auth.updateProfile.handler",
+          "checkedSites": 6,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "auth.changePassword.handler",
+          "checkedSites": 5,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "appRouter.personalCenter",
+          "checkedSites": 1,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "admin.newNativeFactory",
+          "checkedSites": 21,
+          "nativeBindingsPreserved": true
+        }
+      ]
+    },
+    "front": {
+      "exactInverse": {
+        "byteExact": true,
+        "sha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735",
+        "unchangedBytes": 5749501,
+        "allOutsideSlotsByteIdentical": true
+      },
+      "protectedDeclarationCount": 4064,
+      "initializationBeforeAppRouter": true,
+      "sourceRuntimeDeltaAudit": {
+        "db": [
+          "ordinaryPasswordResetPurposeCondition",
+          "createPasswordResetCode",
+          "getActivePasswordResetCode",
+          "consumePasswordResetCode",
+          "incrementResetCodeAttempts",
+          "markResetCodeUsed"
+        ],
+        "demand": [
+          "mapCustomerSummary",
+          "salesSummarySelect",
+          "listCustomerDemands"
+        ],
+        "demandShared": [],
+        "business": [
+          "BUSINESS_METHOD_CAPABILITIES",
+          "readBusinessPersonalPerformance"
+        ],
+        "delegation": [
+          "BUSINESS_METHOD_IDS",
+          "buildCallers"
+        ],
+        "adminRoutes": [
+          "appRouter"
+        ],
+        "frontRoutes": [
+          "appRouter"
+        ]
+      },
+      "globalCaptureChecks": [
+        {
+          "slot": "mapCustomerSummary",
+          "checkedSites": 7,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "salesSummarySelect",
+          "checkedSites": 1,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "listCustomerDemands",
+          "checkedSites": 13,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "delegation.personalPerformance.methodId",
+          "checkedSites": 0,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "delegation.personalPerformance.readCapability",
+          "checkedSites": 2,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "buildCallers.personalPerformance",
+          "checkedSites": 2,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "appRouter.personalPerformance",
+          "checkedSites": 1,
+          "nativeBindingsPreserved": true
+        },
+        {
+          "slot": "front.newNativeFactory",
+          "checkedSites": 8,
+          "nativeBindingsPreserved": true
+        }
+      ]
+    }
+  },
+  "productionRecordWrites": 0,
+  "databaseMigrations": 0,
+  "bundleWholeAPI": false
+}
