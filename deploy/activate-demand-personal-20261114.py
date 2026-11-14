@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 
 TASK = "CKSZQ7sVc7tADM21c3LWpu"
-ROOT = Path("/opt/ops/20261114-demand-personal-center-CKSZQ7s")
+ROOT = Path("/opt/ops/20261114-demand-personal-center-CKSZQ7s-r2")
 PUBLIC = Path("/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public")
 COORD = Path("/opt/ops/51-project-release-coordination-20261027.json")
 APIS = {
@@ -135,7 +135,7 @@ def get(url):
 def protected_api_health(process_name):
     url = "https://admin.51dianzi.com/api/trpc/personalCenter.profile" if process_name == "dianzi51-admin" else \
         "https://www.51dianzi.com/api/trpc/personalPerformance.summary?input=%7B%22json%22%3A%7B%22month%22%3A%222026-11%22%7D%7D"
-    request = urllib.request.Request(url, headers={"Cache-Control": "no-cache", "Accept": "application/json"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Cache-Control": "no-cache", "Accept": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             code, body = response.status, response.read()

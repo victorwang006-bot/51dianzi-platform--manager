@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "passed": 8,
+  "failed": 0,
+  "results": [
+    {
+      "name": "front real unauthorized accepted",
+      "status": "PASS"
+    },
+    {
+      "name": "admin real forbidden accepted",
+      "status": "PASS"
+    },
+    {
+      "name": "old UA guard generic 403 never counts as registration",
+      "status": "PASS"
+    },
+    {
+      "name": "missing route 404 rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "anonymous success 200 rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "server failure rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "non-JSON auth response rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "only UA and new private attempt namespace changed; all lock/CAS/rollback/PM2 safeguards identical",
+      "status": "PASS"
+    }
+  ],
+  "driverSha256": "3ff1c2320496ffa3449090ea945a28d25e205fc417b77d15aaa0a30d37d4beee",
+  "reloadHelperSha256": "d702c91bba08a814a7d6f4525292a9e8c9387487367d09dff7b8bcdd9fdbbf19",
+  "actualNetworkIO": 0,
+  "productionRecordWrites": 0,
+  "protectionRequirementsRelaxed": false
+}

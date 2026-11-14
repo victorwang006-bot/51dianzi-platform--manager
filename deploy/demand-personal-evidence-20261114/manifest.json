@@ -2,7 +2,7 @@
   "ownerTask": "CKSZQ7sVc7tADM21c3LWpu",
   "scope": "customer demand quote workflow; native personal center safety and own performance; inventory source presentation and full procurement material access",
   "sourceBaseCommit": "8bf6bd516dc16348f20769eb8292df287b7b4da0",
-  "preparedAtSourceCommit": "8bf6bd516dc16348f20769eb8292df287b7b4da0",
+  "preparedAtSourceCommit": "54da35b3114d0b099b07946e65a46f4bf7328c63",
   "files": [
     {
       "relative": "index.html",
@@ -58,7 +58,7 @@
     }
   ],
   "beforeHtmlSha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618",
-  "driverSha256": "cfc3573c59c76eaab120dbc6fe7affbf755eb0991161f40de6f9998266098acf",
+  "driverSha256": "3ff1c2320496ffa3449090ea945a28d25e205fc417b77d15aaa0a30d37d4beee",
   "evidenceHashes": {
     "candidate-proof.json": "d18a5446a44f2f67d1560532c9dc0d1b098082d76aed47a44f37dac58d9e4657",
     "backend-candidate-proof.json": "48c8afa9955d5969e726f34dc418eb050ef9462c6afbd0972c10c25331791875",
@@ -73,7 +73,9 @@
     "source-validation-final.json": "d9edf928e2ab406082c8b1b4dfb5928750c815c7975afdf0b9c1a252048aae14",
     "live-performance-sql-explain.json": "fe8a80a9b581c9ec9fe5a9fd19fa817afe969028df978cc6f4ae5e5ce67b165b",
     "account-contract.json": "b2a3a5ed1f7225b2dce201b8a897f7cbd7f6ef23c1e6536cf6485ee16abee430",
-    "reload-demand-personal-api-20261114.cjs": "bb83ae9980ed9a2561b508a47daada315e0e28a215e8c09b9d72af086ee20d07"
+    "reload-demand-personal-api-20261114.cjs": "d702c91bba08a814a7d6f4525292a9e8c9387487367d09dff7b8bcdd9fdbbf19",
+    "read-only-review-retry.json": "e7e5e3cb79fae1998002f44e713a606a09a769a40958e7ebf1bfe632b9d0dea7",
+    "retry-health-tests.json": "8d1ad548d98c73381a114ce55e4db42d4ae79d70966adba35be9b3902f5fc258"
   },
   "protectedFiles": [
     {

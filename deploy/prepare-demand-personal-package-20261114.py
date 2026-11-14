@@ -34,6 +34,14 @@ def main():
     validation = load(WORK / 'source-validation-final.json')
     assert review['status'] == 'PASS' and validation['status'] == 'PASS'
     assert validation['tscPassed'] and validation['sourceTestFailures'] == 0
+    retry = None
+    if review['activationReview']['driverSha256'] != sha(DRIVER):
+        retry = load(WORK / 'read-only-review-retry.json')
+        health_retry = load(WORK / 'retry-health-tests.json')
+        assert retry['status'] == health_retry['status'] == 'PASS'
+        assert retry['driverSha256'] == health_retry['driverSha256'] == sha(DRIVER)
+        assert retry['reloadHelperSha256'] == health_retry['reloadHelperSha256'] == sha(RELOAD)
+        assert retry['productSourcePinsUnchanged'] and not health_retry['protectionRequirementsRelaxed']
     actual = load(CANDIDATE / 'actual-candidate-tests.json')
     quotes = load(CANDIDATE / 'actual-quote-candidate-tests.json')
     profile = load(STATIC / 'actual-profile-module-tests.json')
@@ -121,6 +129,8 @@ def main():
         BACKEND / 'test-report.json', WORK / 'read-only-review-final.json',
         WORK / 'source-validation-final.json', WORK / 'live-performance-sql-explain.json',
         WORK / 'account-contract.json', RELOAD]
+    if retry:
+        evidence_paths += [WORK / 'read-only-review-retry.json', WORK / 'retry-health-tests.json']
     evidence_hashes = {}
     for source in evidence_paths:
         shutil.copy2(source, PACKAGE / source.name)

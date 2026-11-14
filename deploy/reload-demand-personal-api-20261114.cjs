@@ -2,7 +2,7 @@
 // Server-only: exact original ids, no global PM2 restart/save or environment overlay.
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const ROOT = '/opt/ops/20261114-demand-personal-center-CKSZQ7s';
+const ROOT = '/opt/ops/20261114-demand-personal-center-CKSZQ7s-r2';
 const TASK = 'CKSZQ7sVc7tADM21c3LWpu';
 const APIS = {
   dianzi51: '/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js',
