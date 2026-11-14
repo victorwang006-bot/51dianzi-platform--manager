@@ -18,7 +18,7 @@ describe("public reference strict presentation model", () => {
     const quote = fixtureQuote("lcsc");
     quote.tiers[0].unitPrice = "0.099999999999";
     expect(channelReferenceMaximumTier(quote)).toEqual({ minQuantity: 5000, unitPrice: "0.099999999999" });
-    expect(channelReferencePrice(quote)).toBe("CNY 0.099999999999 · ≥5,000");
+    expect(channelReferencePrice(quote)).toBe("0.099999999999，库存2");
     quote.stockQuantity = 0; expect(channelReferenceLookupResult({ items: [{ ...result().items[0], references: { lcsc: quote, ickey: fixtureQuote("ickey") } }] }, rows).items[0].references.lcsc.stockQuantity).toBe(0);
   });
   it.each([null, "USD", "HKD"] as const)("does not display or convert a %s quote as CNY", currency => {

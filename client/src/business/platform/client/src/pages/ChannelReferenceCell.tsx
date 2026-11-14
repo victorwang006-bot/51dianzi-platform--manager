@@ -15,7 +15,7 @@ export function ChannelReferenceCell({ source, quote }: { source: ChannelReferen
     return <span className="ci-reference-placeholder" data-source={source}>暂未匹配</span>;
   }
   return <span className="admin-cell-primary" data-source={source}
-    style={{ display: "block", fontSize: 11, lineHeight: "16px", overflowWrap: "anywhere" }}>
+    style={{ display: "block", fontSize: 11, lineHeight: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
     {channelReferencePrice(quote)}
   </span>;
 }

@@ -4,6 +4,7 @@ import * as fs from "node:fs/promises";
 import * as childProcess from "node:child_process";
 import type { ChannelReferenceQuote, ChannelReferenceSource } from "../../shared/channelReference";
 import { ChannelReferenceSnapshotUnavailableError, createChannelReferenceSnapshotService, type ChannelReferenceSnapshotDocument, type ChannelReferenceSnapshotEvidence } from "./snapshot";
+import { VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS } from "../../shared/channelReferenceBrand";
 
 vi.mock("node:fs/promises", async importOriginal => ({
   ...await importOriginal<typeof import("node:fs/promises")>(),
@@ -184,6 +185,12 @@ describe("durable source-only public-web batch snapshot", () => {
 });
 
 describe("finite actual brand directions and ASCII-width proof only", () => {
+  it.each(VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS)("accepts approved entire literal %s => %s without rewriting observed identity", async (input, observed) => {
+    const q = await brandQuote(input, observed);
+    expect(q.status).toBe("ok"); expect(q.matchedBrand).toBe(observed);
+    expect(await brandQuote(input, observed, "explicit_alias", "same brand")).toEqual(empty("lcsc", "unavailable"));
+    expect(await brandQuote(input, observed, "exact", null)).toEqual(empty("lcsc", "unavailable"));
+  });
   it.each(actualBrandCases)("checks actual whole literal %s => %s (%s)", async (rawBrand, observed, brandMatch, status) => {
     const q = await brandQuote(rawBrand, observed, brandMatch, brandMatch === "exact" ? null : observed);
     expect(q.status).toBe(status);
@@ -208,7 +215,7 @@ describe("finite actual brand directions and ASCII-width proof only", () => {
     ["Yageo", "国巨(Yageo)"], ["Infineon", "Infineon/英飞凌"],
     ["Murata", "Ｍurata"], ["ＫＯＡ", "KOA"], ["KOA", "ⓀⓄⒶ"], ["KOA", "𝐊𝐎𝐀"],
     ["长电", "CJ(江苏长电/长晶)"], ["長電", "CJ/江苏长晶(长电)"],
-    ["ON", "onsemi"], ["TI", "Texas Instruments"], ["MCHP", "Microchip"],
+    ["MCHP", "Microchip"], ["JSCJ", "CJ/江苏长晶(长电)"], ["JSCJ", "长电"],
     ["ADI", "Analog Devices/Linear Technology"], ["ADI", "ADI/LINEAR"],
     ["瑞隆", "RUILON(瑞隆源)"], ["成都芯进", "CrossChip/成都芯进电子"],
     ["金升阳", "MORNSUN/广州金升阳科技"], ["LINEAR", "ADI(亚德诺)/LINEAR"],

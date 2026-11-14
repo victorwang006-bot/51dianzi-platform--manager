@@ -157,7 +157,7 @@ describe("inventory column preference and geometry", () => {
     click(option("DC")); click(option("序号")); click(option("所属行业")); click(option("品牌")); assertAligned();
     expect(firstCell("td.ci-material-dc-col").textContent).toBe(runtime.rows[0].dateCode);
     expect(document.querySelector("td.ci-material-brand-col")).toBeNull();
-    expect(document.querySelector<HTMLTableColElement>('col[data-column="partNumber"]')?.style.width).toBe("");
+    expect(document.querySelector<HTMLTableColElement>('col[data-column="partNumber"]')?.style.width).toBe("220px");
     expect(document.querySelector<HTMLTableColElement>('col[data-column="updatedAt"]')?.style.width).toBe("148px");
     click(button("恢复默认")); assertAligned(); expect(headers()).toHaveLength(11);
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
@@ -205,12 +205,31 @@ describe("inventory column preference and geometry", () => {
     expect(document.querySelector(".ci-updated-at-popover")?.textContent).toBe("2026-11-10 12:34:56（北京时间）");
     expect(firstCell("time").getAttribute("datetime")).toBe("2026-11-10T12:34:56+08:00");
     click(button("显示列")); click(option("品牌")); expect(document.querySelector(".ci-updated-at-popover")).toBeNull();
-    click(firstCell(".ci-part-number-trigger")); expect(document.querySelector('[aria-label="完整型号"]')?.textContent).toBe(runtime.rows[0].partNumber);
+    expect(firstCell(".ci-part-number-text").getAttribute("aria-label")).toBe(runtime.rows[0].partNumber);
+    expect(firstCell(".ci-part-copy-button").getAttribute("aria-label")).toBe(`复制完整型号：${runtime.rows[0].partNumber}`);
+    expect(document.querySelector('[aria-label="完整型号"]')).toBeNull();
     setIdentity(8, 31); expect(document.querySelector('[role=tooltip]')).toBeNull();
     click(button("显示列")); click(option("DC")); act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     click(required(document.querySelector('[aria-label="按 Date Code 排序"]'))); expect(runtime.inputs.at(-1)).toMatchObject({ sortBy: "dateCode", sortDirection: "asc", page: 1 });
     click(button("下一页")); expect(runtime.inputs.at(-1)).toMatchObject({ page: 2, sortBy: "dateCode" });
     click(button("显示列")); click(option("DC")); expect(runtime.inputs.at(-1)).toMatchObject({ page: 2, sortBy: "dateCode" });
+  });
+  it("keeps the flat table budget and colgroup content-independent across page 1/2 while the footer stays outside the scroller", () => {
+    renderHost();
+    const widths = () => [...document.querySelectorAll<HTMLTableColElement>(".ci-compact-stock-table col")].map(col => col.style.width);
+    const budget = () => required(document.querySelector<HTMLTableElement>(".ci-compact-stock-table")).style.getPropertyValue("--ci-stock-min-width");
+    const firstWidths = widths(), firstBudget = budget();
+    expect(firstWidths.every(Boolean)).toBe(true);
+    expect(document.querySelector(".ci-flat-view")).not.toBeNull();
+    expect(document.querySelector(".ci-tablewrap .ci-pagination")).toBeNull();
+    expect(document.querySelector(".ci-pagination")?.previousElementSibling?.classList.contains("ci-tablewrap")).toBe(true);
+    click(button("2"));
+    runtime.rows[0] = { ...runtime.rows[0], id: 21, partNumber: "Short/Exact-Suffix", brand: "A".repeat(400), originalRecorderName: "负责人".repeat(100) };
+    renderHost(); expect(runtime.inputs.at(-1)).toMatchObject({ page: 2, pageSize: 20, expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(widths()).toEqual(firstWidths); expect(budget()).toBe(firstBudget);
+    expect(document.querySelector('.ci-pagination [aria-current="page"]')?.textContent).toBe("2");
+    expect(firstCell(".ci-part-number-text").textContent).toBe("Short/Exact-Suffix");
+    runtime.loading = true; renderHost(); expect(widths()).toEqual(firstWidths); expect(budget()).toBe(firstBudget);
   });
 });
 

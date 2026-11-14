@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import type { ChannelReferenceLookupResult, ChannelReferenceQuote, ChannelReferenceSource } from "../../shared/channelReference";
 import { allowedReferencePageUrl } from "./publicPage";
 import { emptyReferenceQuote } from "./worker";
-import { normalizeLcscBrand, normalizeLcscPartNumber } from "./lcscPage";
+import { matchesLcscBrand, normalizeLcscBrand, normalizeLcscPartNumber } from "./lcscPage";
+import { matchChannelReferenceBrand } from "../../shared/channelReferenceBrand";
 
 export type ReferenceMaterial = { materialId: number; partNumber: string; brand: string };
 const CACHE_TTL = 20 * 60_000;
@@ -21,13 +22,14 @@ function matchesReferenceIdentity(source: ChannelReferenceSource, partNumber: st
   if (source === "lcsc") {
     return !!normalizeLcscPartNumber(expected.partNumber) && !!normalizeLcscBrand(expected.brand)
       && normalizeLcscPartNumber(partNumber) === normalizeLcscPartNumber(expected.partNumber)
-      && normalizeLcscBrand(brand) === normalizeLcscBrand(expected.brand);
+      && matchesLcscBrand(expected.brand, brand);
   }
   // Conservative subset of ickeyPage's clean+toUpperCase exact comparison:
-  // no NFKC, entity aliases, zero-width removal, brand aliases or suffix removal.
+  // no NFKC, entity decoding, zero-width or suffix removal. Only approved brand edges.
   const exact = (value: string) => value.replace(/\s+/g, " ").trim().toUpperCase();
   return !!exact(expected.partNumber) && !!exact(expected.brand)
-    && exact(partNumber) === exact(expected.partNumber) && exact(brand) === exact(expected.brand);
+    && exact(partNumber) === exact(expected.partNumber)
+    && matchChannelReferenceBrand(expected.brand, brand, { profile: "ickey", normalize: exact }) !== null;
 }
 export function validCachedReference(value: unknown, source: ChannelReferenceSource, expected: { partNumber: string; brand: string }): value is ChannelReferenceQuote {
   if (!value || typeof value !== "object") return false;

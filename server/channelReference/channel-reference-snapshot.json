@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "collectionMode": "public-web-batch",
-  "generatedAt": "2026-11-14T11:49:29.921Z",
+  "generatedAt": "2026-11-14T15:20:29.000Z",
   "records": [
     {
       "partNumber": "GRM32EB31C476KE15L",
@@ -3675,24 +3675,24 @@
           "unitPrice": "25.2"
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:22:13.023Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:22:13.023Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
@@ -4603,48 +4603,77 @@
       "brand": "TE",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:23:14.936Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "T92S7D12-24",
+          "matchedBrand": "TE Connectivity(泰科电子)",
+          "productCode": "C5292056",
+          "pageUrl": "https://item.szlcsc.com/6036145.html",
+          "stockQuantity": 223,
+          "unitPrice": "20.68",
+          "tierQuantity": 90,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "29.67"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "25.57"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "23.14"
+            },
+            {
+              "minQuantity": 90,
+              "unitPrice": "20.68"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:23:14.936Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:24:12.100Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:24:12.100Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "T92S7D12-24",
+          "observedPartNumber": "T92S7D12-24",
+          "expectedBrand": "TE",
+          "observedBrand": "TE Connectivity(泰科电子)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "TE Connectivity(泰科电子)",
+          "pageUrl": "https://item.szlcsc.com/6036145.html",
+          "collectedAt": "2026-11-14T09:23:14.936Z",
+          "observedMaxQuantity": 90,
+          "observedMaxUnitPrice": "20.68",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -5373,49 +5402,91 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:00.403Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "matchedPartNumber": "X9555WR-2x03-6TV01",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C49296865",
+          "pageUrl": "https://item.szlcsc.com/51750006.html",
+          "stockQuantity": 455,
+          "unitPrice": "0.5282",
+          "tierQuantity": 5040,
+          "tiers": [
+            {
+              "minQuantity": 5040,
+              "unitPrice": "0.5282"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": "托盘",
+          "fetchedAt": "2026-11-14T09:25:00.403Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:26.349Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "matchedPartNumber": "X9555WR-2x03-6TV01",
+          "matchedBrand": "XKB CONNECTION/中国星坤",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/1003001029306343/X9555WR-2x03-6TV01.html",
+          "stockQuantity": 5040,
+          "unitPrice": "0.377",
+          "tierQuantity": 15120,
+          "tiers": [
+            {
+              "minQuantity": 5040,
+              "unitPrice": "0.4084"
+            },
+            {
+              "minQuantity": 10080,
+              "unitPrice": "0.3927"
+            },
+            {
+              "minQuantity": 15120,
+              "unitPrice": "0.377"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:26:26.349Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
-        "ickey": null
+        "lcsc": {
+          "expectedPartNumber": "X9555WR-2x03-6TV01",
+          "observedPartNumber": "X9555WR-2x03-6TV01",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/51750006.html",
+          "collectedAt": "2026-11-14T09:25:00.403Z",
+          "observedMaxQuantity": 5040,
+          "observedMaxUnitPrice": "0.5282",
+          "maxTierConfirmed": true
+        },
+        "ickey": {
+          "expectedPartNumber": "X9555WR-2x03-6TV01",
+          "observedPartNumber": "X9555WR-2x03-6TV01",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB CONNECTION/中国星坤",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB CONNECTION/中国星坤",
+          "pageUrl": "https://www.ickey.cn/detail/1003001029306343/X9555WR-2x03-6TV01.html",
+          "collectedAt": "2026-11-14T09:26:26.349Z",
+          "observedMaxQuantity": 15120,
+          "observedMaxUnitPrice": "0.377",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -5443,24 +5514,24 @@
           "unitPrice": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:27:04.196Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:27:04.196Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
@@ -5473,49 +5544,111 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:09.540Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "X5511FV-25-C70D30-1000",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2883521",
+          "pageUrl": "https://item.szlcsc.com/3094013.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "4.24",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "7.5"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "6.23"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "5.54"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "4.75"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "4.4"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "4.24"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:25:09.540Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:05.371Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "X5511FV-25-C70D30-1000",
+          "matchedBrand": "XKB CONNECTION/中国星坤",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/1003001028548349/X5511FV-25-C70D30-1000.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "3.5721",
+          "tierQuantity": 3000,
+          "tiers": [
+            {
+              "minQuantity": 1000,
+              "unitPrice": "3.8698"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "3.7209"
+            },
+            {
+              "minQuantity": 3000,
+              "unitPrice": "3.5721"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:26:05.371Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
-        "ickey": null
+        "lcsc": {
+          "expectedPartNumber": "X5511FV-25-C70D30-1000",
+          "observedPartNumber": "X5511FV-25-C70D30-1000",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3094013.html",
+          "collectedAt": "2026-11-14T09:25:09.540Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "4.24",
+          "maxTierConfirmed": true
+        },
+        "ickey": {
+          "expectedPartNumber": "X5511FV-25-C70D30-1000",
+          "observedPartNumber": "X5511FV-25-C70D30-1000",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB CONNECTION/中国星坤",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB CONNECTION/中国星坤",
+          "pageUrl": "https://www.ickey.cn/detail/1003001028548349/X5511FV-25-C70D30-1000.html",
+          "collectedAt": "2026-11-14T09:26:05.371Z",
+          "observedMaxQuantity": 3000,
+          "observedMaxUnitPrice": "3.5721",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -5573,49 +5706,111 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:02.399Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-15H-C60D30R2",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C725907",
+          "pageUrl": "https://item.szlcsc.com/772356.html",
+          "stockQuantity": 55,
+          "unitPrice": "0.9418",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "1.8391"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "1.4563"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "1.2923"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.0876"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.9964"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.9418"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:25:02.399Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:59.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-15H-C60D30R2",
+          "matchedBrand": "XKB CONNECTION/中国星坤",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/1003001028552040/X6511WR-15H-C60D30R2.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "1.3214",
+          "tierQuantity": 6000,
+          "tiers": [
+            {
+              "minQuantity": 2000,
+              "unitPrice": "1.4315"
+            },
+            {
+              "minQuantity": 4000,
+              "unitPrice": "1.3765"
+            },
+            {
+              "minQuantity": 6000,
+              "unitPrice": "1.3214"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:25:59.000Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
-        "ickey": null
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-15H-C60D30R2",
+          "observedPartNumber": "X6511WR-15H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/772356.html",
+          "collectedAt": "2026-11-14T09:25:02.399Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.9418",
+          "maxTierConfirmed": true
+        },
+        "ickey": {
+          "expectedPartNumber": "X6511WR-15H-C60D30R2",
+          "observedPartNumber": "X6511WR-15H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB CONNECTION/中国星坤",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB CONNECTION/中国星坤",
+          "pageUrl": "https://www.ickey.cn/detail/1003001028552040/X6511WR-15H-C60D30R2.html",
+          "collectedAt": "2026-11-14T09:25:59.000Z",
+          "observedMaxQuantity": 6000,
+          "observedMaxUnitPrice": "1.3214",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -5623,49 +5818,91 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:03.406Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-25H-C60D30R2",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2883713",
+          "pageUrl": "https://item.szlcsc.com/3094205.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "1.54",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.54"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:25:03.406Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:11.847Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-25H-C60D30R2",
+          "matchedBrand": "XKB CONNECTION/中国星坤",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/1003001028550846/X6511WR-25H-C60D30R2.html",
+          "stockQuantity": 10000,
+          "unitPrice": "2.2024",
+          "tierQuantity": 6000,
+          "tiers": [
+            {
+              "minQuantity": 2000,
+              "unitPrice": "2.3859"
+            },
+            {
+              "minQuantity": 4000,
+              "unitPrice": "2.2941"
+            },
+            {
+              "minQuantity": 6000,
+              "unitPrice": "2.2024"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:26:11.847Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
-        "ickey": null
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-25H-C60D30R2",
+          "observedPartNumber": "X6511WR-25H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3094205.html",
+          "collectedAt": "2026-11-14T09:25:03.406Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "1.54",
+          "maxTierConfirmed": true
+        },
+        "ickey": {
+          "expectedPartNumber": "X6511WR-25H-C60D30R2",
+          "observedPartNumber": "X6511WR-25H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB CONNECTION/中国星坤",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB CONNECTION/中国星坤",
+          "pageUrl": "https://www.ickey.cn/detail/1003001028550846/X6511WR-25H-C60D30R2.html",
+          "collectedAt": "2026-11-14T09:26:11.847Z",
+          "observedMaxQuantity": 6000,
+          "observedMaxUnitPrice": "2.2024",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -5757,48 +5994,85 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:21.489Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X5511FV-12-C70D30-1000",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2684743",
+          "pageUrl": "https://item.szlcsc.com/2783312.html",
+          "stockQuantity": 1290,
+          "unitPrice": "2.18",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "4.39"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "3.58"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "3.18"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "2.54"
+            },
+            {
+              "minQuantity": 400,
+              "unitPrice": "2.3"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "2.18"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": "袋装",
+          "fetchedAt": "2026-11-14T09:25:21.489Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:51.622Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:26:51.622Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X5511FV-12-C70D30-1000",
+          "observedPartNumber": "X5511FV-12-C70D30-1000",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/2783312.html",
+          "collectedAt": "2026-11-14T09:25:21.489Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "2.18",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -5807,24 +6081,49 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:01.964Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X5511FV-32-C70D30-1000",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2684740",
+          "pageUrl": "https://item.szlcsc.com/2783309.html",
+          "stockQuantity": 139,
+          "unitPrice": "5.18",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "9.33"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "7.71"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "6.83"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "5.83"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "5.38"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "5.18"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": "袋装",
+          "fetchedAt": "2026-11-14T09:26:01.964Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -5848,7 +6147,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X5511FV-32-C70D30-1000",
+          "observedPartNumber": "X5511FV-32-C70D30-1000",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/2783309.html",
+          "collectedAt": "2026-11-14T09:26:01.964Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "5.18",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -5857,24 +6168,49 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:14.845Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X9555WR-2x13-6TV01",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2682221",
+          "pageUrl": "https://item.szlcsc.com/2776444.html",
+          "stockQuantity": 180,
+          "unitPrice": "1.0211",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "2.0348"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "1.6024"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "1.417"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.1858"
+            },
+            {
+              "minQuantity": 2500,
+              "unitPrice": "1.0829"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "1.0211"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:26:14.845Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -5898,7 +6234,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X9555WR-2x13-6TV01",
+          "observedPartNumber": "X9555WR-2x13-6TV01",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/2776444.html",
+          "collectedAt": "2026-11-14T09:26:14.845Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "1.0211",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -5907,24 +6255,49 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:18.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-12H-C60D30R2",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C725904",
+          "pageUrl": "https://item.szlcsc.com/772353.html",
+          "stockQuantity": 449,
+          "unitPrice": "1.49",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "2.85"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "2.27"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "2.02"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.71"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.57"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.49"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": "1000个/袋",
+          "fetchedAt": "2026-11-14T09:26:18.000Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -5948,7 +6321,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-12H-C60D30R2",
+          "observedPartNumber": "X6511WR-12H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/772353.html",
+          "collectedAt": "2026-11-14T09:26:18.000Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "1.49",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -6007,49 +6392,99 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:32.215Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-20H-C60D30R2",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2883708",
+          "pageUrl": "https://item.szlcsc.com/3094200.html",
+          "stockQuantity": 9,
+          "unitPrice": "1.3",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.5"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.37"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.3"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": "袋装",
+          "fetchedAt": "2026-11-14T09:26:32.215Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:27:23.688Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-20H-C60D30R2",
+          "matchedBrand": "XKB CONNECTION/中国星坤",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/1003001028550845/X6511WR-20H-C60D30R2.html",
+          "stockQuantity": 10000,
+          "unitPrice": "1.7619",
+          "tierQuantity": 6000,
+          "tiers": [
+            {
+              "minQuantity": 2000,
+              "unitPrice": "1.9087"
+            },
+            {
+              "minQuantity": 4000,
+              "unitPrice": "1.8353"
+            },
+            {
+              "minQuantity": 6000,
+              "unitPrice": "1.7619"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:27:23.688Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
-        "ickey": null
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-20H-C60D30R2",
+          "observedPartNumber": "X6511WR-20H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3094200.html",
+          "collectedAt": "2026-11-14T09:26:32.215Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "1.3",
+          "maxTierConfirmed": true
+        },
+        "ickey": {
+          "expectedPartNumber": "X6511WR-20H-C60D30R2",
+          "observedPartNumber": "X6511WR-20H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB CONNECTION/中国星坤",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB CONNECTION/中国星坤",
+          "pageUrl": "https://www.ickey.cn/detail/1003001028550845/X6511WR-20H-C60D30R2.html",
+          "collectedAt": "2026-11-14T09:27:23.688Z",
+          "observedMaxQuantity": 6000,
+          "observedMaxUnitPrice": "1.7619",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -6057,49 +6492,91 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:26:20.441Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-32H-C60D30R2",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2883720",
+          "pageUrl": "https://item.szlcsc.com/3094212.html",
+          "stockQuantity": 1000,
+          "unitPrice": "3.43",
+          "tierQuantity": 800,
+          "tiers": [
+            {
+              "minQuantity": 800,
+              "unitPrice": "3.43"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:26:20.441Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:27:34.913Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-32H-C60D30R2",
+          "matchedBrand": "XKB CONNECTION/中国星坤",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/1003001028550849/X6511WR-32H-C60D30R2.html",
+          "stockQuantity": 4000,
+          "unitPrice": "2.819",
+          "tierQuantity": 6000,
+          "tiers": [
+            {
+              "minQuantity": 2000,
+              "unitPrice": "3.0539"
+            },
+            {
+              "minQuantity": 4000,
+              "unitPrice": "2.9365"
+            },
+            {
+              "minQuantity": 6000,
+              "unitPrice": "2.819"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:27:34.913Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
-        "ickey": null
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-32H-C60D30R2",
+          "observedPartNumber": "X6511WR-32H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3094212.html",
+          "collectedAt": "2026-11-14T09:26:20.441Z",
+          "observedMaxQuantity": 800,
+          "observedMaxUnitPrice": "3.43",
+          "maxTierConfirmed": true
+        },
+        "ickey": {
+          "expectedPartNumber": "X6511WR-32H-C60D30R2",
+          "observedPartNumber": "X6511WR-32H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB CONNECTION/中国星坤",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB CONNECTION/中国星坤",
+          "pageUrl": "https://www.ickey.cn/detail/1003001028550849/X6511WR-32H-C60D30R2.html",
+          "collectedAt": "2026-11-14T09:27:34.913Z",
+          "observedMaxQuantity": 6000,
+          "observedMaxUnitPrice": "2.819",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -6224,48 +6701,65 @@
       "brand": "地博",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:27:00.381Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "DB2EKM-3.81-2P-GN-S",
+          "matchedBrand": "DORABO(地博电气)",
+          "productCode": "C395682",
+          "pageUrl": "https://item.szlcsc.com/376429.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "0.9951",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.9951"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:27:00.381Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:28:30.743Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:28:30.743Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "DB2EKM-3.81-2P-GN-S",
+          "observedPartNumber": "DB2EKM-3.81-2P-GN-S",
+          "expectedBrand": "地博",
+          "observedBrand": "DORABO(地博电气)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "DORABO(地博电气)",
+          "pageUrl": "https://item.szlcsc.com/376429.html",
+          "collectedAt": "2026-11-14T09:27:00.381Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.9951",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -6575,48 +7069,85 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:27:40.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X1321FR-2x05-C43D24",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2881891",
+          "pageUrl": "https://item.szlcsc.com/3092383.html",
+          "stockQuantity": 1662,
+          "unitPrice": "1.4",
+          "tierQuantity": 1001,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "2.79"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "2.22"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "1.98"
+            },
+            {
+              "minQuantity": 91,
+              "unitPrice": "1.61"
+            },
+            {
+              "minQuantity": 455,
+              "unitPrice": "1.48"
+            },
+            {
+              "minQuantity": 1001,
+              "unitPrice": "1.4"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": "管装",
+          "fetchedAt": "2026-11-14T09:27:40.000Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:28:08.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "access_restricted",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T15:20:29.000Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X1321FR-2x05-C43D24",
+          "observedPartNumber": "X1321FR-2x05-C43D24",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3092383.html",
+          "collectedAt": "2026-11-14T09:27:40.000Z",
+          "observedMaxQuantity": 1001,
+          "observedMaxUnitPrice": "1.4",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -6625,48 +7156,85 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:28:08.366Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
+          "status": "ok",
+          "matchedPartNumber": "X6511WR-30H-C60D30R2",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "productCode": "C2883718",
+          "pageUrl": "https://item.szlcsc.com/3094210.html",
+          "stockQuantity": 2506,
+          "unitPrice": "1.67",
+          "tierQuantity": 800,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "2.43"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "2.16"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "2.02"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.89"
+            },
+            {
+              "minQuantity": 400,
+              "unitPrice": "1.72"
+            },
+            {
+              "minQuantity": 800,
+              "unitPrice": "1.67"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
           "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "packaging": "400个/盒",
+          "fetchedAt": "2026-11-14T09:28:08.366Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:29:19.406Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:29:19.406Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-30H-C60D30R2",
+          "observedPartNumber": "X6511WR-30H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3094210.html",
+          "collectedAt": "2026-11-14T09:28:08.366Z",
+          "observedMaxQuantity": 800,
+          "observedMaxUnitPrice": "1.67",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -8789,24 +9357,24 @@
           "unitPrice": "0.8338"
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:35:10.248Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:35:10.248Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {
@@ -8881,24 +9449,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:33:29.023Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "ES1G",
+          "matchedBrand": "onsemi(安森美)",
+          "productCode": "C124478",
+          "pageUrl": "https://item.szlcsc.com/125753.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "0.3901",
+          "tierQuantity": 7500,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "0.7936"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "0.62"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "0.5333"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "0.4682"
+            },
+            {
+              "minQuantity": 2500,
+              "unitPrice": "0.4161"
+            },
+            {
+              "minQuantity": 7500,
+              "unitPrice": "0.3901"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": "编带",
+          "fetchedAt": "2026-11-14T09:33:29.023Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -8922,7 +9515,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "ES1G",
+          "observedPartNumber": "ES1G",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/125753.html",
+          "collectedAt": "2026-11-14T09:33:29.023Z",
+          "observedMaxQuantity": 7500,
+          "observedMaxUnitPrice": "0.3901",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -10368,24 +10973,49 @@
       "brand": "TECHFUSE台湾陆海",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:37:19.570Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "nSMD010",
+          "matchedBrand": "台湾陆海",
+          "productCode": "C70065",
+          "pageUrl": "https://item.szlcsc.com/71160.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "0.092",
+          "tierQuantity": 21000,
+          "tiers": [
+            {
+              "minQuantity": 20,
+              "unitPrice": "0.1867"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "0.1435"
+            },
+            {
+              "minQuantity": 600,
+              "unitPrice": "0.1243"
+            },
+            {
+              "minQuantity": 3500,
+              "unitPrice": "0.1017"
+            },
+            {
+              "minQuantity": 10500,
+              "unitPrice": "0.0959"
+            },
+            {
+              "minQuantity": 21000,
+              "unitPrice": "0.092"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": "编带",
+          "fetchedAt": "2026-11-14T09:37:19.570Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -10409,7 +11039,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "nSMD010",
+          "observedPartNumber": "nSMD010",
+          "expectedBrand": "TECHFUSE台湾陆海",
+          "observedBrand": "台湾陆海",
+          "brandMatch": "explicit_alias",
+          "literalReason": "台湾陆海",
+          "pageUrl": "https://item.szlcsc.com/71160.html",
+          "collectedAt": "2026-11-14T09:37:19.570Z",
+          "observedMaxQuantity": 21000,
+          "observedMaxUnitPrice": "0.092",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -10869,24 +11511,29 @@
       "brand": "中科微",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:38:40.645Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "AT2659S",
+          "matchedBrand": "杭州中科微",
+          "productCode": "C883443",
+          "pageUrl": "https://item.szlcsc.com/948531.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "0.2403",
+          "tierQuantity": 6000,
+          "tiers": [
+            {
+              "minQuantity": 6000,
+              "unitPrice": "0.2403"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": "编带",
+          "fetchedAt": "2026-11-14T09:38:40.645Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -10910,7 +11557,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "AT2659S",
+          "observedPartNumber": "AT2659S",
+          "expectedBrand": "中科微",
+          "observedBrand": "杭州中科微",
+          "brandMatch": "explicit_alias",
+          "literalReason": "杭州中科微",
+          "pageUrl": "https://item.szlcsc.com/948531.html",
+          "collectedAt": "2026-11-14T09:38:40.645Z",
+          "observedMaxQuantity": 6000,
+          "observedMaxUnitPrice": "0.2403",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -12048,24 +12707,41 @@
           "unitPrice": "1.793"
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:42:55.590Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "matchedPartNumber": "TPS2051BD",
+          "matchedBrand": "Texas Instruments",
+          "productCode": null,
+          "pageUrl": "https://www.ickey.cn/detail/100330146527279/TPS2051BD.html",
+          "stockQuantity": 282,
+          "unitPrice": "3.4899",
+          "tierQuantity": 100000,
+          "tiers": [
+            {
+              "minQuantity": 500,
+              "unitPrice": "4.3349"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "4.1662"
+            },
+            {
+              "minQuantity": 10000,
+              "unitPrice": "3.7521"
+            },
+            {
+              "minQuantity": 100000,
+              "unitPrice": "3.4899"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "included",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:42:55.590Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": true,
+          "message": null
         }
       },
       "evidence": {
@@ -12082,7 +12758,19 @@
           "observedPartNumber": "TPS2051BD",
           "pageUrl": "https://item.szlcsc.com/1647378.html"
         },
-        "ickey": null
+        "ickey": {
+          "expectedPartNumber": "TPS2051BD",
+          "observedPartNumber": "TPS2051BD",
+          "expectedBrand": "TI",
+          "observedBrand": "Texas Instruments",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Texas Instruments",
+          "pageUrl": "https://www.ickey.cn/detail/100330146527279/TPS2051BD.html",
+          "collectedAt": "2026-11-14T09:42:55.590Z",
+          "observedMaxQuantity": 100000,
+          "observedMaxUnitPrice": "3.4899",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -12224,24 +12912,41 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:41:45.344Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "LM2596DSADJG",
+          "matchedBrand": "onsemi(安森美)",
+          "productCode": "C92134",
+          "pageUrl": "https://item.szlcsc.com/93324.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "11.26",
+          "tierQuantity": 100,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "19.71"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "16.97"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "13.02"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "11.26"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:41:45.344Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -12265,7 +12970,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "LM2596DSADJG",
+          "observedPartNumber": "LM2596DSADJG",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/93324.html",
+          "collectedAt": "2026-11-14T09:41:45.344Z",
+          "observedMaxQuantity": 100,
+          "observedMaxUnitPrice": "11.26",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -13110,24 +13827,24 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:44:57.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:44:57.000Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
           "currency": null,
@@ -13311,24 +14028,29 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:44:59.203Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "lcsc",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ok",
+          "matchedPartNumber": "MC74ACT08DR2G",
+          "matchedBrand": "onsemi(安森美)",
+          "productCode": "C233452",
+          "pageUrl": "https://item.szlcsc.com/233216.html",
           "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "unitPrice": "0.621",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.621"
+            }
+          ],
+          "currency": "CNY",
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:44:59.203Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         },
         "ickey": {
           "currency": "CNY",
@@ -13357,7 +14079,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "MC74ACT08DR2G",
+          "observedPartNumber": "MC74ACT08DR2G",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/233216.html",
+          "collectedAt": "2026-11-14T09:44:59.203Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.621",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "explicit_alias",
           "collectedAt": "2026-11-14T09:46:52.488Z",
@@ -13587,24 +14321,24 @@
           "unitPrice": "5.29"
         },
         "ickey": {
-          "currency": null,
-          "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:46:41.365Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
-          "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
+          "status": "ambiguous",
+          "matchedPartNumber": null,
+          "matchedBrand": null,
+          "productCode": null,
+          "pageUrl": null,
           "stockQuantity": null,
-          "taxStatus": "unknown",
+          "unitPrice": null,
           "tierQuantity": null,
           "tiers": [],
+          "currency": null,
           "unit": null,
-          "unitPrice": null
+          "taxStatus": "unknown",
+          "packaging": null,
+          "fetchedAt": "2026-11-14T09:46:41.365Z",
+          "expiresAt": null,
+          "stockInsufficientForTier": false,
+          "message": null
         }
       },
       "evidence": {

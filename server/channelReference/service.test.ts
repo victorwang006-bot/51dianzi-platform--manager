@@ -252,3 +252,17 @@ describe("real webpage adapter evidence", () => {
     } finally { await svc.idle(); await rm(dir, { recursive: true, force: true }); }
   });
 });
+
+describe("approved directed brand cache identities", () => {
+  it.each(sources)("%s accepts XKB's exact approved whole literal, preserving quote identity", source => {
+    const q = { ...positive(source, Date.now()), matchedBrand: "XKB Connection/中国星坤" };
+    expect(validCachedReference(q, source, { ...expected, brand: "XKB" })).toBe(true);
+    for (const brand of ["XKB Other/中国星坤", "XKB Connection/中国星坤/Other", "XKB Connection"]) {
+      expect(validCachedReference({ ...q, matchedBrand: brand }, source, { ...expected, brand: "XKB" })).toBe(false);
+    }
+    expect(q.matchedBrand).toBe("XKB Connection/中国星坤");
+    expect(validCachedReference({ ...q, matchedBrand: "ST(先科)" }, source, { ...expected, brand: "ST" })).toBe(false);
+    expect(validCachedReference({ ...q, matchedBrand: "CJ/江苏长晶(长电)" }, source, { ...expected, brand: "JSCJ" })).toBe(false);
+    for (const mpn of ["P-1-TR", "P/1", "P -1"]) expect(validCachedReference({ ...q, matchedPartNumber: mpn }, source, { ...expected, brand: "XKB" })).toBe(false);
+  });
+});

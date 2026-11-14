@@ -491,8 +491,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
     expect(runtime.sourceInputs).toHaveLength(0);
     expect(runtime.optionInputs).toHaveLength(0);
-    expect(Array.from(rows[1].querySelectorAll("button")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
-    expect(Array.from(rows[0].querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "本人备注", "更多"]);
+    expect(rows[1].querySelector(".ci-part-copy-button")).not.toBeNull();
+    expect(Array.from(rows[1].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
+    expect(Array.from(rows[0].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "本人备注", "更多"]);
     for (const row of rows) {
       const publish = required(row.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing publish action");
       expect(publish.disabled).toBe(true);
@@ -533,7 +534,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     renderHost();
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.textContent).not.toContain("团队来源");
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
     const publish = required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing peer publish");
     expect(publish.disabled).toBe(true);
     expect(publish.title).toBe("当前账号没有该材料的发布权限");
@@ -1460,7 +1461,7 @@ describe("channel industry required integration", () => {
     selectHostTab("materials");
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.querySelector(".ci-source-link")).toBeNull();
-    expect(Array.from(peer.querySelectorAll("button")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
+    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
     expect(required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing readonly publish").disabled).toBe(true);
     expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
     expect(peer.querySelector("select")).toBeNull();
@@ -2561,7 +2562,7 @@ describe("v18 single collaboration-note entry", () => {
 
 describe("approved channel inventory part-number density", () => {
   const longPart = "SYNTHETIC-STM32F429ZIT6-TR/REV-B-INDUSTRIAL-EXTENDED-PACKAGE-2601";
-  const partTrigger = () => required(document.querySelector<HTMLSpanElement>(".ci-part-number-trigger"), "missing part-number trigger");
+  const partTrigger = () => required(document.querySelector<HTMLSpanElement>(".ci-part-number-text"), "missing part-number text");
   const panel = () => document.querySelector<HTMLElement>(".ci-part-number-popover");
   const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
 
@@ -2586,69 +2587,39 @@ describe("approved channel inventory part-number density", () => {
     expect(required(row.closest("table"), "missing table").style.getPropertyValue("--ci-stock-min-width")).toBe(`${channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false).minWidth}px`);
   });
 
-  it("portals complete hover text outside the scroller and sticky layer with unchanged business inputs", async () => {
+  it("offers a lightweight complete-value copy button instead of a large duplicate hover panel", () => {
     const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
     result.data.items[0] = { ...result.data.items[0], partNumber: longPart };
     renderHost();
     const inputs = runtime.materialInputs.length;
     act(() => partTrigger().dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
-    expect(panel()?.textContent).toBe(longPart);
-    expect(panel()?.parentElement).toBe(document.body);
-    expect(panel()?.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
-    expect(getComputedStyle(required(panel(), "missing portal")).position).toBe("fixed");
-    expect(getComputedStyle(required(panel(), "missing portal")).zIndex).toBe("80");
-    act(() => partTrigger().dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body })));
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 150)); });
+    const copy = required(document.querySelector<HTMLButtonElement>(".ci-part-copy-button"), "missing copy button");
+    expect(copy.getAttribute("aria-label")).toBe(`复制完整型号：${longPart}`);
+    expect(copy.type).toBe("button"); expect(partTrigger().hasAttribute("title")).toBe(false);
+    act(() => copy.focus()); expect(document.activeElement).toBe(copy);
     expect(panel()).toBeNull(); expect(runtime.materialInputs.length).toBe(inputs);
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled(); expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
     expect(runtime.createMaterial).not.toHaveBeenCalled(); expect(runtime.updateMaterial).not.toHaveBeenCalled();
   });
 
-  it("supports keyboard focus, Escape, Enter/Space toggle and blur without truncating the accessible value", () => {
-    renderHost(); const trigger = partTrigger();
-    act(() => trigger.focus()); expect(panel()?.textContent).toBe(trigger.textContent);
-    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    expect(panel()).toBeNull(); expect(trigger.getAttribute("aria-expanded")).toBe("false");
-    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
-    expect(panel()).not.toBeNull();
-    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true })));
-    expect(panel()).toBeNull();
-    act(() => trigger.blur()); act(() => trigger.focus()); expect(panel()).not.toBeNull();
-    act(() => trigger.blur()); expect(panel()).toBeNull();
-  });
-
-  it("supports touch-style click toggle, outside dismissal and viewport/table-scroll dismissal", () => {
-    renderHost(); const trigger = partTrigger();
-    click(trigger); expect(panel()).not.toBeNull(); click(trigger); expect(panel()).toBeNull();
-    click(trigger); act(() => document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))); expect(panel()).toBeNull();
-    click(trigger); act(() => required(document.querySelector(".ci-tablewrap"), "missing scroller").dispatchEvent(new Event("scroll"))); expect(panel()).toBeNull();
-    click(trigger); act(() => window.dispatchEvent(new Event("resize"))); expect(panel()).toBeNull();
-  });
-
-  it("retains panel scrolling for arbitrarily long full values but closes on data, page, view and identity changes", async () => {
-    renderHost(); click(partTrigger());
-    act(() => required(panel(), "missing portal").dispatchEvent(new Event("scroll"))); expect(panel()).not.toBeNull();
+  it("keeps no duplicate part panel on data, page, view or identity changes", async () => {
+    renderHost(); expect(panel()).toBeNull();
     const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
     result.data.items[0] = { ...result.data.items[0], partNumber: longPart }; rerender(); expect(panel()).toBeNull();
-    click(partTrigger()); click(button("下一页")); expect(panel()).toBeNull();
-    click(partTrigger()); runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] }); rerender(); await settle(); expect(panel()).toBeNull();
-    click(partTrigger()); selectHostView("channels"); await settle(); expect(panel()).toBeNull();
+    click(button("下一页")); expect(panel()).toBeNull();
+    runtime.enterpriseMe = query({ currentUserId: 8, enterprise: { id: 32 }, permissionKeys: ["inventory.manage"] }); rerender(); await settle(); expect(panel()).toBeNull();
+    selectHostView("channels"); await settle(); expect(panel()).toBeNull();
   });
 
-  it.each([320, 390, 768, 1024, 1560])("clamps the portal within a synthetic %spx viewport without changing table budgets", width => {
+  it.each([320, 390, 768, 1024, 1560])("keeps copy overlay inside the part cell at a synthetic %spx viewport without changing table budgets", width => {
     vi.stubGlobal("innerWidth", width); Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
-    Object.defineProperty(window, "innerHeight", { configurable: true, value: 700 });
-    const rect = (left: number, top: number, w: number, h: number) => ({ x: left, y: top, left, top, width: w, height: h, right: left + w, bottom: top + h, toJSON: () => ({}) });
-    const spy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function () {
-      return this.classList.contains("ci-part-number-popover") ? rect(0, 0, Math.min(520, width - 16), 96) : rect(width - 30, 660, 22, 20);
-    });
-    renderHost(); click(partTrigger());
-    const popover = required(panel(), "missing positioned portal");
-    const left = Number.parseFloat(popover.style.left); const top = Number.parseFloat(popover.style.top);
-    expect(left).toBeGreaterThanOrEqual(8); expect(left + Math.min(520, width - 16)).toBeLessThanOrEqual(width - 8);
-    expect(top).toBeGreaterThanOrEqual(8); expect(top + 96).toBeLessThanOrEqual(692);
-    expect(Number.parseFloat(popover.style.maxWidth)).toBeLessThanOrEqual(width - 16);
-    spy.mockRestore();
+    renderHost();
+    const copy = required(document.querySelector<HTMLButtonElement>(".ci-part-copy-button"), "missing copy button");
+    const style = getComputedStyle(copy);
+    expect(style.position).toBe("absolute"); expect(style.right).toBe("0px");
+    expect(copy.closest("td")).toBe(partTrigger().closest("td")); expect(panel()).toBeNull();
+    expect(required(document.querySelector<HTMLTableElement>(".ci-compact-stock-table"), "missing table").style.getPropertyValue("--ci-stock-min-width"))
+      .toBe(`${channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false).minWidth}px`);
   });
 });
 

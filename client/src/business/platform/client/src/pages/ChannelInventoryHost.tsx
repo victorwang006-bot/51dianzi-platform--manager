@@ -166,6 +166,49 @@ export function channelInventoryUpdatedAt(value: Date | string | null | undefine
   };
 }
 
+/** Flat-view only: copy the untouched identifier without a large duplicate tooltip. */
+export function ChannelInventoryCopyPartNumber({ partNumber, resetKey }: { partNumber: string; resetKey: string }) {
+  const [feedback, setFeedback] = useState("");
+  const current = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    current.current += 1; setFeedback("");
+    return () => { current.current += 1; clearTimeout(timer.current); };
+  }, [partNumber, resetKey]);
+  const copy = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    const generation = current.current;
+    const button = event.currentTarget;
+    let copied = false;
+    try {
+      if (window.isSecureContext && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(partNumber); copied = true;
+      }
+    } catch { /* A denied secure clipboard may still permit a user-initiated local copy. */ }
+    if (generation !== current.current) return;
+    if (!copied) {
+      const field = document.createElement("textarea");
+      field.value = partNumber; field.readOnly = true;
+      field.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+      try {
+        document.body.append(field); field.select();
+        copied = typeof document.execCommand === "function" && document.execCommand("copy");
+      } catch { copied = false; }
+      finally { field.remove(); button.focus({ preventScroll: true }); }
+    }
+    clearTimeout(timer.current); setFeedback(copied ? "已复制" : "复制失败，请重试");
+    timer.current = setTimeout(() => setFeedback(""), 1800);
+  };
+  return <span className="ci-part-copy">
+    <span className="ci-cell-title admin-cell-primary ci-part-number-text" aria-label={partNumber}>{partNumber || "—"}</span>
+    <button type="button" className="ci-part-copy-button" aria-label={`复制完整型号：${partNumber}`} disabled={!partNumber}
+      onClick={event => void copy(event)} onKeyDown={event => event.stopPropagation()}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V4H4v12h4" /></svg>
+    </button>
+    <span className={feedback ? "ci-copy-feedback" : "ci-sr-only"} role="status" aria-live="polite">{feedback}</span>
+  </span>;
+}
+
 /** Presentation only: retain the complete value and escape the table's clipping/sticky context. */
 export function ChannelInventoryPartNumber({ partNumber, resetKey, displayValue, kind }: {
   partNumber: string; resetKey: string; displayValue?: string; kind?: "time" | "dc";
@@ -399,19 +442,48 @@ function validateMaterialForm(form: MaterialForm, creating = true) {
   return errors;
 }
 
-function Pagination({
+export function channelInventoryPageNumbers(page: number, pageCount: number): (number | "ellipsis")[] {
+  const count = Math.max(1, Math.floor(pageCount));
+  const current = Math.max(1, Math.min(count, Math.floor(page)));
+  const pages = Array.from(new Set([1, count, ...Array.from({ length: 5 }, (_, index) => current + index - 2)]))
+    .filter(value => value >= 1 && value <= count).sort((a, b) => a - b);
+  const result: (number | "ellipsis")[] = [];
+  for (const value of pages) {
+    const last = result.at(-1);
+    if (typeof last === "number" && value - last > 1) result.push("ellipsis");
+    result.push(value);
+  }
+  return result;
+}
+
+export function Pagination({
   page,
   pageCount,
   total,
   onPage,
   label,
+  pageNumbers = false,
+  loading = false,
 }: {
   page: number;
   pageCount: number;
   total: number;
   onPage: (page: number) => void;
   label: string;
+  pageNumbers?: boolean;
+  loading?: boolean;
 }) {
+  if (pageNumbers) return <nav className="ci-pagination ci-pagination-numbered" aria-label={`${label}分页`} aria-busy={loading}>
+    <span className="ci-pagination-summary">共 {total} 条，第 {page} / {pageCount} 页</span>
+    <div className="ci-pagination-controls">
+      <button type="button" className="ci-button" disabled={loading || page <= 1} onClick={() => onPage(page - 1)}>上一页</button>
+      {channelInventoryPageNumbers(page, pageCount).map((value, index) => value === "ellipsis"
+        ? <span className="ci-pagination-ellipsis" key={`ellipsis-${index}`} aria-hidden="true">…</span>
+        : <button type="button" className="ci-button ci-page-number" key={value} aria-label={`第 ${value} 页`} aria-current={value === page ? "page" : undefined}
+          disabled={loading || value === page} onClick={() => onPage(value)}>{value}</button>)}
+      <button type="button" className="ci-button" disabled={loading || page >= pageCount} onClick={() => onPage(page + 1)}>下一页</button>
+    </div>
+  </nav>;
   return (
     <nav className="ci-pagination" aria-label={`${label}分页`}>
       <span>共 {total} 条，第 {page} / {pageCount} 页</span>
@@ -1625,7 +1697,7 @@ export default function ChannelInventoryHost() {
   }
 
   return (
-    <section className="ci-page ci-host" aria-label="渠道库存管理" data-channel-inventory-host>
+    <section className={`ci-page ci-host${tab === "materials" && inventoryView === "flat" ? " ci-flat-host" : ""}`} aria-label="渠道库存管理" data-channel-inventory-host>
       <h1 className="ci-sr-only">{tab === "materials" ? inventoryView === "channels" ? "渠道库存" : "库存列表" : tab === "channels" ? "历史渠道整理" : tab === "batches" ? "上传记录" : "已删除库存"}</h1>
       {batchReturn}
 
@@ -1703,7 +1775,7 @@ export default function ChannelInventoryHost() {
           <Pagination page={supplyLink ? 1 : channelPage} pageCount={channelPageCount} total={displayedChannelTotal} onPage={setChannelPage} label="渠道" />
         </section>
       ) : tab === "materials" ? (
-        <section className="ci-panel" aria-label="渠道库存列表">
+        <section className={`ci-panel${inventoryView === "flat" ? " ci-flat-view" : ""}`} aria-label="渠道库存列表">
           <form className="ci-toolbar" aria-label="材料筛选" onSubmit={event => { event.preventDefault(); confirmMaterialFilters(); }} onKeyDown={event => {
             if (event.key === "Enter" && !event.nativeEvent.isComposing && (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)) { event.preventDefault(); confirmMaterialFilters(); }
           }}>
@@ -1749,7 +1821,7 @@ export default function ChannelInventoryHost() {
             <table className={`ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable${showDeleteSelection ? " ci-stock-managed-table" : ""}`} style={{ "--ci-stock-min-width": `${columnLayout.minWidth}px` } as React.CSSProperties}>
               <colgroup>
                 {showDeleteSelection ? <col style={{ width: 40 }} /> : null}
-                {columnLayout.visible.map(column => <col key={column.id} data-column={column.id} style={column.id === "partNumber" ? undefined : { width: column.width }} />)}
+                {columnLayout.visible.map(column => <col key={column.id} data-column={column.id} style={inventoryView !== "flat" && column.id === "partNumber" ? undefined : { width: column.width }} />)}
               </colgroup>
               <thead><tr>
                 {showDeleteSelection ? <th className="ci-selection-col"><input type="checkbox" className="ci-selection-checkbox" aria-label="全选当前页可删除库存" disabled={!deletion.eligible.length || deletion.busy} checked={Boolean(deletion.eligible.length && deletion.selected.length === deletion.eligible.length)} ref={element => { if (element) element.indeterminate = deletion.selected.length > 0 && deletion.selected.length < deletion.eligible.length; }} onChange={deletion.selectAll} /></th> : null}
@@ -1779,7 +1851,7 @@ export default function ChannelInventoryHost() {
                   <tr key={material.id}>
                     {showDeleteSelection ? <td className="ci-selection-col">{deletion.eligible.some(row => row.id === material.id) ? <input type="checkbox" className="ci-selection-checkbox" aria-label={`选择删除库存：${material.partNumber}`} disabled={deletion.busy} checked={deletion.selected.some(row => row.id === material.id)} onChange={() => deletion.toggle(material.id)} /> : null}</td> : null}
                     {columnVisible("index") ? <td className="ci-number ci-row-index">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td> : null}
-                    <td className="ci-material-part-col"><ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} /></td>
+                    <td className="ci-material-part-col">{inventoryView === "flat" ? <ChannelInventoryCopyPartNumber key={presentationScopeKey} partNumber={material.partNumber} resetKey={presentationScopeKey} /> : <ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} />}</td>
                     {columnVisible("brand") ? <td className="ci-material-brand-col" title={material.brand}>{material.brand || "—"}</td> : null}
                     {columnVisible("recorder") ? <td className="ci-material-recorder-col admin-cell-primary" title={(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}>{(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}</td> : null}
                     {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
@@ -1798,7 +1870,7 @@ export default function ChannelInventoryHost() {
               </tbody>
             </table>
           </div>
-          {!materialsQuery.isError && uploadBatchFilterValid && !readableChannelStockDenied && materialTotalKnown ? <Pagination page={materialPage} pageCount={materialPageCount} total={materialTotal} onPage={setMaterialPage} label="渠道库存" /> : <p className="ci-readonly">{materialsQuery.isLoading ? "正在读取库存分页…" : "库存分页条数不可用。"}</p>}
+          {!materialsQuery.isError && uploadBatchFilterValid && !readableChannelStockDenied && materialTotalKnown ? <Pagination page={materialPage} pageCount={materialPageCount} total={materialTotal} onPage={setMaterialPage} label="渠道库存" pageNumbers={inventoryView === "flat"} loading={inventoryView === "flat" && (materialsQuery.isLoading || materialsQuery.isFetching || !contextCurrent || !sourceIdentityCurrent)} /> : <p className="ci-readonly">{materialsQuery.isLoading ? "正在读取库存分页…" : "库存分页条数不可用。"}</p>}
           </>}
         </section>
       ) : expectedContext && contextCurrent && sourceIdentityCurrent ? <ChannelInventoryManagementPanel key={`${identity}:${tab}`} mode={tab} client={managementClient} context={expectedContext} canWrite={managementCanWrite} isCurrent={isCurrent} listState={tab === "batches" ? batchListState : undefined} onListStateChange={tab === "batches" ? setBatchListState : undefined} focusBatchId={focusBatchId} onClearBatchFocus={() => navigate(channelInventoryBatchListLocation(batchListState, true))} onViewBatch={viewUploadBatch} onComplete={refreshMaterials} onAuthorizationError={businessScope.onAuthorizationError} /> : null}

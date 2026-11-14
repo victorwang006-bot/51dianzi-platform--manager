@@ -56,8 +56,9 @@ export function channelReferencePrice(quote: ChannelReferenceQuote) {
   if (!channelReferenceHasPrice(quote) || quote.currency !== "CNY") return "暂未匹配";
   const tier = channelReferenceMaximumTier(quote);
   const price = tier?.unitPrice ?? quote.unitPrice;
-  const threshold = tier?.minQuantity ?? quote.tierQuantity;
-  return `CNY ${price} · ≥${threshold!.toLocaleString("zh-CN")}`;
+  // Keep the decimal verbatim; marketplace stock is unrelated to the material's qty or tier threshold.
+  const stock = quote.stockQuantity === null ? "库存未披露" : `库存${quote.stockQuantity}`;
+  return `${price}，${stock}`;
 }
 export function channelReferenceHasPending(result: ChannelReferenceLookupResult) {
   return result.items.some(row => row.references.lcsc.status === "pending" || row.references.ickey.status === "pending");

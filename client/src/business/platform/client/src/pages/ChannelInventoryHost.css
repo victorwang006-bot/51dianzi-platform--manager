@@ -222,3 +222,68 @@
 
 /* Phase one: read-only reference placeholders; no fetching or loading UI. */
 .ci-page.ci-host .ci-reference-placeholder { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); white-space: nowrap; }
+
+/* Flat inventory only: contain intrinsic table widths through the flex ancestor chain.
+ * Do not add a scrollbar's pixel width to a viewport/inline max-width. */
+.admin-workspace-shell__main:has(.ci-flat-host),
+[data-business-context-verification]:has(.ci-flat-host),
+[data-business-context-content]:has(.ci-flat-host),
+.business-native-content:has(.ci-flat-host),
+.ci-page.ci-host.ci-flat-host,
+.ci-page.ci-host .ci-flat-view {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.ci-page.ci-host .ci-flat-view { overflow: visible; }
+.ci-page.ci-host .ci-flat-view > .ci-tablewrap { overflow-x: auto; }
+.ci-page.ci-host .ci-flat-view .ci-compact-stock-table {
+  width: max(100%, var(--ci-stock-min-width));
+  table-layout: fixed;
+}
+.ci-page.ci-host .ci-flat-view .ci-compact-stock-table :is(th, td) { min-width: 0; }
+.ci-page.ci-host .ci-flat-view > .ci-pagination {
+  box-sizing: border-box; min-width: 0; width: 100%; max-width: 100%;
+}
+/* The document is the shell's vertical scroller. Reserve its gutter only while
+ * this flat Host is mounted; never change global body overflow or other pages. */
+@supports (scrollbar-gutter: stable) {
+  html:has([data-channel-inventory-host].ci-flat-host) { scrollbar-gutter: stable; }
+}
+.ci-page.ci-host .ci-pagination-numbered .ci-pagination-summary { min-width: 0; }
+.ci-page.ci-host .ci-pagination-controls {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex-wrap: wrap; min-width: 0; max-width: 100%; gap: 4px;
+}
+.ci-page.ci-host .ci-pagination-numbered .ci-pagination-ellipsis { margin: 0; width: auto; padding: 0 3px; }
+.ci-page.ci-host .ci-pagination-numbered .ci-page-number { min-width: 28px; padding-right: 8px; padding-left: 8px; }
+.ci-page.ci-host .ci-pagination-numbered .ci-page-number[aria-current="page"] {
+  color: #fff; background: #185fa5; border-color: #185fa5; opacity: 1;
+}
+.ci-page.ci-host .ci-flat-view .ci-part-copy { position: relative; display: block; min-width: 0; max-width: 100%; }
+.ci-page.ci-host .ci-flat-view .ci-part-number-text {
+  display: block; max-width: 100%; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal;
+}
+.ci-page.ci-host .ci-part-copy-button {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: 0; border-radius: 4px; padding: 0;
+  color: #185fa5; background: #fff; cursor: pointer; opacity: 0; pointer-events: none;
+}
+.ci-page.ci-host .ci-part-copy:is(:hover, :focus-within) .ci-part-copy-button { opacity: 1; pointer-events: auto; }
+.ci-page.ci-host .ci-copy-feedback {
+  position: absolute; z-index: 4; right: 0; top: 100%; margin: 0;
+  border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 5px;
+  color: #475569; background: #fff; font-size: 11px; white-space: nowrap;
+}
+@media (hover: none), (pointer: coarse) {
+  .ci-page.ci-host .ci-part-copy-button { opacity: 1; pointer-events: auto; }
+}
+@media (max-width: 680px) {
+  .ci-page.ci-host .ci-pagination-controls { width: 100%; gap: 3px; }
+  .ci-page.ci-host .ci-pagination-controls .ci-button { flex-shrink: 1; min-width: 0; padding-right: 6px; padding-left: 6px; }
+  .ci-page.ci-host .ci-pagination-numbered .ci-pagination-ellipsis { width: auto; margin: 0; }
+  .ci-page.ci-host .ci-part-copy-button { opacity: 1; pointer-events: auto; }
+}

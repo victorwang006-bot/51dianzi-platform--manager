@@ -88,7 +88,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     expect(input.listInput).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1, pageSize: 20 });
     expect(options.signal).toBeInstanceOf(AbortSignal); expect(Object.keys(input)).toEqual(["listInput", "materialIds", "refresh"]);
     expect([...document.querySelectorAll("thead th")].map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
-    expect(referenceCells().map(cell => cell.textContent)).toEqual(["CNY 0.000000012345 · ≥5,000", "CNY 0.000000012345 · ≥5,000"]);
+    expect(referenceCells().map(cell => cell.textContent)).toEqual(["0.000000012345，库存5", "0.000000012345，库存5"]);
     for (const cell of referenceCells()) expect(cell.querySelector("button, a, [role=status], [role=dialog]")).toBeNull();
     expect(document.body.textContent).not.toContain("INTERNAL_DIAGNOSTIC_NOT_UI"); expect(document.body.textContent).not.toContain("不足此档");
     expect(document.querySelector("td.ci-material-price-col")?.textContent).toBe("¥1.234567890123未税"); expect(document.querySelector("td.ci-material-qty-col")?.textContent).toBe("9");
@@ -101,8 +101,8 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
         tiers: [{ minQuantity: 1000, unitPrice: "0.3334" }, { minQuantity: 3000, unitPrice: "0.3283" }, { minQuantity: 5000, unitPrice: "0.3206" }, { minQuantity: 39000, unitPrice: "0.3026" }] };
       result.items[0].references.lcsc.tiers[1].unitPrice = "0.099999999999"; return result;
     });
-    await render(); expect(referenceCells()[1].textContent).toBe("CNY 0.3026 · ≥39,000");
-    expect(referenceCells()[0].textContent).toBe("CNY 0.099999999999 · ≥5,000");
+    await render(); expect(referenceCells()[1].textContent).toBe("0.3026，库存5000");
+    expect(referenceCells()[0].textContent).toBe("0.099999999999，库存5");
     expect(referenceCells()[1].textContent).not.toContain("5,000"); expect(referenceCells()[1].textContent).not.toContain("/个");
   });
   it.each(["pending", "not_found", "ambiguous", "price_unavailable", "access_restricted", "unavailable"] as const)("%s shows only 暂未匹配 even if its payload still contains a price", async status => {
@@ -125,7 +125,22 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
   it("does not infer stock 0, a unit or tax when maximum-tier price is available", async () => {
     const value = quote("lcsc"); value.stockQuantity = null; value.unit = null; value.taxStatus = "unknown";
     await act(async () => root.render(React.createElement(ChannelReferenceCell, { source: "lcsc", quote: value })));
-    expect(host.textContent).toBe("CNY 0.000000012345 · ≥5,000"); expect(host.querySelector("button, a")).toBeNull();
+    expect(host.textContent).toBe("0.000000012345，库存未披露"); expect(host.querySelector("button, a, [title]")).toBeNull();
+  });
+  it("shows exact FNR/ICKey-like strings using marketplace stock, never native qty or maximum-tier thresholds", async () => {
+    runtime.lookup.mockImplementation(async input => {
+      const result = response(input);
+      result.items[0].references.lcsc = { ...quote("lcsc"), stockQuantity: 0, tiers: [{ minQuantity: 5000, unitPrice: "1.0901" }] };
+      result.items[0].references.ickey = { ...quote("ickey"), stockQuantity: 1550, tiers: [{ minQuantity: 100, unitPrice: "1.1234" }, { minQuantity: 39000, unitPrice: "1.9642" }] };
+      return result;
+    });
+    await render(); expect(referenceCells().map(cell => cell.textContent)).toEqual(["1.0901，库存0", "1.9642，库存1550"]);
+    for (const cell of referenceCells()) {
+      expect(cell.querySelector("[title], button, a, [role=tooltip]")).toBeNull();
+      expect(cell.innerHTML).not.toMatch(/CNY|≥|39000|5000|\/个/);
+      expect(cell.querySelector<HTMLElement>("span")?.style.whiteSpace).toBe("nowrap");
+    }
+    expect(document.querySelector("td.ci-material-qty-col")?.textContent).toBe("9");
   });
   it.each(["loading", "fetching", "placeholder", "wrongPage", "error", "enterpriseLoading", "enterpriseError"] as const)("does not create a reference client while the native proof is %s", async field => {
     runtime[field] = true; await render(); expect(runtime.lookup).not.toHaveBeenCalled(); expect(runtime.createClient).not.toHaveBeenCalled();
@@ -222,6 +237,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     const pending = deferred<ChannelReferenceLookupResult>(); runtime.lookup.mockImplementationOnce(() => pending.promise);
     await render(); const signal = runtime.lookup.mock.calls[0][1].signal; runtime.scope.officialInventoryPermissions.read = false;
     await render(); expect(signal.aborted).toBe(true); expect(document.body.textContent).toContain("当前账号没有渠道库存查看权限");
+    expect(document.querySelector(".ci-part-copy-button")).toBeNull();
     await act(async () => pending.reject(new Error("LATE_AUTH_ERROR"))); expect(runtime.scope.onAuthorizationError).not.toHaveBeenCalled();
     runtime.scope.officialInventoryPermissions.read = true; const next = deferred<ChannelReferenceLookupResult>(); runtime.lookup.mockImplementationOnce(() => next.promise);
     await render(); const nextSignal = runtime.lookup.mock.calls.at(-1)?.[1].signal; await act(async () => root.render(null)); expect(nextSignal.aborted).toBe(true);

@@ -54,6 +54,14 @@ function document(body: string, scripts = embedded()): string {
   return `<html><head><title>GRM32EB31C476KE15L-立创商城</title>${scripts}</head><body>${body}</body></html>`;
 }
 const RENDERED = document(`${IDENTITY_DOM}<span title="嘉立创库存78">SMT补贴 嘉立创库存78</span><span>下单最高享92折</span>${panel()}${RECOMMENDATIONS}`);
+it("synthetic approved XKB full literal is matched without changing original MPN/observed brand", () => {
+  const html = RENDERED.replaceAll("muRata(村田)", "XKB Connection(中国星坤)");
+  const expected = { ...EXPECTED, brand: "XKB" };
+  const found = parseLcscProductPage(html, URL, expected);
+  expect(found.status).toBe("ok"); expect(found.brand).toBe("XKB Connection(中国星坤)");
+  expect(found.matchedPartNumber).toBe(EXPECTED.partNumber);
+  expect(parseLcscProductPage(html.replaceAll("XKB Connection(中国星坤)", "XKB Connection(中国星坤)/Other"), URL, expected).status).toBe("unmatched");
+});
 const TIERS = [
   { minQuantity: 5, unitPrice: "2.3068" },
   { minQuantity: 50, unitPrice: "1.865" },

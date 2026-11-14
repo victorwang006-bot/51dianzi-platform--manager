@@ -2,6 +2,7 @@ import { constants } from "node:fs";
 import { open } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import type { ChannelReferenceLookupResult, ChannelReferenceQuote, ChannelReferenceSource } from "../../shared/channelReference";
+import { matchChannelReferenceBrand } from "../../shared/channelReferenceBrand";
 
 const SNAPSHOT_FILE = new URL("./channel-reference-snapshot.json", import.meta.url);
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -58,8 +59,6 @@ function price(value: unknown): value is string {
   return typeof value === "string" && value.length <= 64 && /^\d+(?:\.\d+)?$/.test(value) && /[1-9]/.test(value);
 }
 const mpn = (value: string) => value.trim().toUpperCase();
-// Brand proof only: fold fullwidth ASCII, not general Unicode compatibility forms.
-const brand = (value: string) => value.replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/\s/g, "").toUpperCase();
 const identityKey = (partNumber: string, rawBrand: string) => JSON.stringify([partNumber, rawBrand]);
 
 function detailUrl(source: ChannelReferenceSource, value: unknown): value is string {
@@ -77,87 +76,10 @@ function detailUrl(source: ChannelReferenceSource, value: unknown): value is str
   } catch { return false; }
 }
 
-// Finite directional [expected, entire observed literal] allowlist; never split names.
-// 66 directions / 57 literals: legacy pairs plus evidence-backed positive raw
-// research-final-original.json difference (2026-11-14); Geehy and substring-only CJ excluded.
-// ST belongs to 意法半导体 only; 先科 -> ST(先科) does not imply ST -> ST(先科).
-// Slash literals are individually hardcoded; no fuzzy, typo correction or transitivity.
-const ALIAS_LITERALS = [
-  ["MURATA", "MURATA(村田)"],
-  ["MURATA", "村田(MURATA)"],
-  ["村田", "MURATA(村田)"],
-  ["村田", "村田(MURATA)"],
-  ["TI", "TI(德州仪器)"],
-  ["TI", "德州仪器(TI)"],
-  ["德州仪器", "TI(德州仪器)"],
-  ["德州仪器", "德州仪器(TI)"],
-  ["TEXASINSTRUMENTS", "TEXASINSTRUMENTS(德州仪器)"],
-  ["TEXASINSTRUMENTS", "德州仪器(TEXASINSTRUMENTS)"],
-  ["德州仪器", "TEXASINSTRUMENTS(德州仪器)"],
-  ["德州仪器", "德州仪器(TEXASINSTRUMENTS)"],
-  ["YAGEO", "YAGEO(国巨)"],
-  ["康奈特", "CNNT/康奈特"],
-  ["伊萨普兰", "ISABELLENHUETTE(伊萨普兰)"],
-  ["VISHAY", "VISHAY(威世)"],
-  ["FH", "FH(风华)"],
-  ["FH", "FH/广东风华高科"],
-  ["WALSIN", "WALSIN(华新科)"],
-  ["承兴", "CHENGX(承兴)"],
-  ["HUAWEI", "HUAWEI(华威集团)"],
-  ["云星", "YUNXING(云星)"],
-  ["顺络", "SUNLORD(顺络)"],
-  ["SUNLORD", "SUNLORD(顺络)"],
-  ["CJIANG", "CJIANG(长江微电)"],
-  ["MORNSUN", "MORNSUN(金升阳)"],
-  ["MORNSUN", "MORNSUN/广州金升阳科技"],
-  ["金航标", "KINGHELM(金航标)"],
-  ["金航标", "KINGHELM/深圳金航标电子"],
-  ["明硕", "MINTRON(明硕)"],
-  ["RAINSUN", "RAINSUN(霖昱微)"],
-  ["灿科盟", "CKMTW(灿科盟)"],
-  ["XFCN", "XFCN(兴飞)"],
-  ["兆星", "MEGASTAR(兆星)"],
-  ["INFINEON", "INFINEON(英飞凌)"],
-  ["ST", "ST(意法半导体)"],
-  ["先科", "ST(先科)"],
-  ["PRISEMI", "PRISEMI(芯导)"],
-  ["PRISEMI", "PRISEMI/上海芯导电子"],
-  ["BRIGHTKING", "BRIGHTKING(君耀电子)"],
-  ["扬杰", "YANGJIE(扬杰)"],
-  ["MDD", "MDD(辰达半导体)"],
-  ["FAILONG", "FAILONG/广东惠伦晶体"],
-  ["TST", "TST(嘉硕)"],
-  ["ON", "ON(安森美)"],
-  ["BROADCOM", "BROADCOM(博通)"],
-  ["LITEON", "LITEON(光宝)"],
-  ["LITEON", "LITEON(台湾光宝)"],
-  ["MICRONE", "MICRONE(南京微盟)"],
-  ["3PEAK", "3PEAK(思瑞浦)"],
-  ["UMW", "UMW(友台半导体)"],
-  ["UMW", "UMW/友台半导体"],
-  ["英飞凌", "INFINEON(英飞凌)"],
-  ["瑞隆源", "RUILON(瑞隆源)"],
-  ["成都芯进", "CROSSCHIP(成都芯进)"],
-  ["金升阳", "MORNSUN(金升阳)"],
-  ["ADI", "ADI(亚德诺)"],
-  ["ADI", "ADI(亚德诺)/LINEAR"],
-  ["昂宝", "OB(昂宝)"],
-  ["台湾强茂", "PANJIT/台湾强茂"],
-  ["NXP", "NXP(恩智浦)"],
-  ["LEM", "LEM(莱姆)"],
-  ["IXYS", "LITTELFUSE/IXYS"],
-  ["长电", "CJ/江苏长晶(长电)"],
-  ["圣邦微", "SGMICRO(圣邦微)"],
-  ["INTEL", "INTEL/ALTERA"],
-] as const;
 function brandProof(expected: string, observed: string, evidence: ChannelReferenceSnapshotEvidence): boolean {
-  const wanted = brand(expected), seen = brand(observed);
-  if (!wanted || !seen) return false;
-  if (wanted === seen) return evidence.brandMatch === "exact" && evidence.literalReason === null;
-  if (evidence.brandMatch !== "explicit_alias" || evidence.literalReason !== observed) return false;
-  // Preserve rejection of mixed/unpaired parenthesis styles; no component parsing.
-  if ((observed.includes("(") !== observed.includes(")")) || (observed.includes("（") !== observed.includes("）"))) return false;
-  return ALIAS_LITERALS.some(([raw, literal]) => wanted === raw && seen === literal);
+  const match = matchChannelReferenceBrand(expected, observed, { profile: "snapshot" });
+  return match === "exact" ? evidence.brandMatch === "exact" && evidence.literalReason === null
+    : match === "explicit_alias" && evidence.brandMatch === "explicit_alias" && evidence.literalReason === observed;
 }
 
 const QUOTE_KEYS = ["source", "status", "matchedPartNumber", "matchedBrand", "productCode", "pageUrl", "stockQuantity", "unitPrice", "tierQuantity", "tiers", "currency", "unit", "taxStatus", "packaging", "fetchedAt", "expiresAt", "stockInsufficientForTier", "message"] as const;
@@ -233,6 +155,24 @@ function parseSnapshot(bytes: Uint8Array, now: number): Map<string, Record<Chann
     records.set(key, references);
   }
   return records;
+}
+
+/** Read-only offline audit. Unlike lookup's fail-closed fallback, reports every
+ * rejected target/source explicitly using the very same quote/schema validator. */
+export function validateChannelReferenceSnapshot(bytes: Uint8Array, now = Date.now()) {
+  parseSnapshot(bytes, now); // Actual document/identity/limit checks; throws on malformed input.
+  const doc = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as ChannelReferenceSnapshotDocument;
+  const results = doc.records.flatMap(record => SOURCES.map(source => {
+    const quote = validateQuote(record.references[source], record.evidence[source], source, record, Date.parse(doc.generatedAt));
+    return { partNumber: record.partNumber, brand: record.brand, source,
+      inputStatus: record.references[source].status, valid: quote !== null,
+      why: quote === null ? "actual validateQuote rejected quote/evidence identity, shape, URL, time or tier proof"
+        : quote.status === "ok" ? "actual validateQuote accepted whole identity, literal proof, URL, original time and maximum-tier consistency"
+          : "actual validateQuote accepted clean negative source with null evidence" };
+  }));
+  return { recordCount: doc.records.length, sourceCount: results.length,
+    positiveCount: results.filter(r => r.valid && r.inputStatus === "ok").length,
+    allValid: results.every(r => r.valid), results };
 }
 
 export function createChannelReferenceSnapshotService(options: {

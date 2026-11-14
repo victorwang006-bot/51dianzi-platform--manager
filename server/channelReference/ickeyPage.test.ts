@@ -34,6 +34,14 @@ function parse(body: string, requested = expected) { return parseIckeySearchPage
 const syntheticShell = `<html><head><title>${MPN}价格_库存</title><script type="application/ld+json">{"@type":"CollectionPage","hasPart":{"itemListElement":[]}}</script></head><body><input value="${MPN}" name="keyword"><div id="searchResult"></div><div id="searchNoResultTmpl" class="d-n hide shengge-hide"><div class="search-no-result-news">很抱歉，未找到“${MPN}”相关商品</div></div><script type="text/x-dot-template">${row()}</script><template id="productItem"><div v-for="item in list">{{ item.stock || 0 }} ￥{{item.rmb}}</div></template><div style="display:none" id="captcha">请完成安全验证</div></body></html>`;
 
 describe("ICKey strict product identity and SKU isolation", () => {
+  it("synthetic approved XKB rows preserve whole brand and distinct goods remain ambiguous", () => {
+    const request = { ...expected, brand: "XKB" };
+    const found = parse(row({ brand: "XKB Connection/中国星坤" }), request);
+    expect(found.status).toBe("ok"); expect(found.matchedBrand).toBe("XKB Connection/中国星坤");
+    expect(parse(row({ brand: "XKB Connection/中国星坤/Other" }), request).status).toBe("unmatched");
+    const multiple = parse(row({ brand: "XKB Connection/中国星坤", sku: "ONE" }) + row({ brand: "XKB CONNECTION/中国星坤", sku: "TWO" }), request);
+    expect(multiple.status).toBe("ambiguous"); expect(multiple.stockQuantity).toBeNull(); expect(multiple.tiers).toEqual([]);
+  });
   it("preserves the exact suffix and full decimal strings on a uniquely matched row", () => {
     const result = parse(row());
     expect(result).toEqual({ source: "ickey", pageUrl: url, matchedPartNumber: MPN, matchedBrand: "Murata", productCode: "SYNTHETIC-SKU-1", packaging: "1210", stockQuantity: 12345, currency: "CNY", unit: "片", taxStatus: "included", tiers: [{ minQuantity: 1, unitPrice: "0.008760" }, { minQuantity: 100, unitPrice: "0.0075" }, { minQuantity: 1000, unitPrice: "0.006250" }], status: "ok" });

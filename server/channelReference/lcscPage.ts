@@ -3,6 +3,8 @@
  * No network, DOM runtime, script evaluation, private endpoints or price inference.
  * The observed SSR SEO price has NO quantity threshold and is deliberately ignored.
  */
+import { matchChannelReferenceBrand, normalizeLegacyLcscBrandLiteral } from "../../shared/channelReferenceBrand";
+
 export type LcscPageStatus =
   | "ok"
   | "unmatched"
@@ -78,10 +80,11 @@ export function normalizeLcscPartNumber(value: string): string {
 /** Explicit observed alias family only. Unknown brands remain strict full strings. */
 export function normalizeLcscBrand(value: string): string {
   const normalized = clean(value).toLowerCase().replace(/\s+/g, "");
-  if (["murata", "村田", "murata(村田)", "村田(murata)"].includes(normalized)) {
-    return "murata";
-  }
-  return normalized;
+  return normalizeLegacyLcscBrandLiteral(normalized);
+}
+/** Directed whole-literal check; canonicalization is deliberately not extended. */
+export function matchesLcscBrand(expected: string, observed: string): boolean {
+  return matchChannelReferenceBrand(expected, observed, { profile: "lcsc", normalize: normalizeLcscBrand }) !== null;
 }
 
 function record(value: unknown): JsonRecord | null {
@@ -270,8 +273,8 @@ export function parseLcscProductPage(
       result.warnings.push("conflicting_main_product_identity");
       return result;
     }
-    const target = `${normalizeLcscPartNumber(expected.partNumber)}|${normalizeLcscBrand(expected.brand)}`;
-    if (!keys.has(target)) { result.status = "unmatched"; return result; }
+    if (!identities.every(identity => normalizeLcscPartNumber(identity.partNumber) === normalizeLcscPartNumber(expected.partNumber)
+      && matchesLcscBrand(expected.brand, identity.brand))) { result.status = "unmatched"; return result; }
     result.matchedPartNumber = identities[0].partNumber;
     result.brand = identities[0].brand;
     result.productCode = identities.find(identity => identity.productCode)?.productCode ?? null;

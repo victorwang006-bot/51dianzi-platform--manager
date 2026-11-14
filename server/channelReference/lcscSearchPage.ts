@@ -5,6 +5,7 @@
  * A HTTP challenge or a JS shell is not evidence that a product is unmatched.
  */
 import {
+  matchesLcscBrand,
   normalizeLcscBrand,
   normalizeLcscPartNumber,
   type LcscExpectedProduct,
@@ -336,7 +337,7 @@ export function parseLcscSearchPage(html: string, url: string, expected: LcscExp
         } catch { /* Not a brand link. */ }
       }
       if (!brandValues.size) continue;
-      if (!Array.from(brandValues).some(value => normalizeLcscBrand(value) === normalizeLcscBrand(expected.brand))) continue;
+      if (!Array.from(brandValues).some(value => matchesLcscBrand(expected.brand, value))) continue;
       if (new Set(Array.from(brandValues).map(normalizeLcscBrand)).size > 1) return { ...result, status: "ambiguous", warnings: ["conflicting_search_row_brand"] };
       const links = productLinks(row, nodes, url);
       const exact = links.filter(node => [node.text, node.attrs.title ?? ""].some(value => normalizeLcscPartNumber(value) === target));
@@ -403,7 +404,7 @@ export function parseLcscSearchPage(html: string, url: string, expected: LcscExp
     const definitelyAbsent = explicitEmpty || (selfLinks.length > 0 && !anchors.some(anchor => selfLinks.includes(anchor)))
       || (rows.size > 0 && Array.from(rows).every(row => {
         const brands = values(row, nodes, ["品牌", "品牌名称"]);
-        return brands.length > 0 && brands.every(brand => normalizeLcscBrand(brand) !== normalizeLcscBrand(expected.brand));
+        return brands.length > 0 && brands.every(brand => !matchesLcscBrand(expected.brand, brand));
       }));
     return { ...result, status: definitelyAbsent ? "unmatched" : "price_unavailable",
       warnings: definitelyAbsent ? [] : ["recognizable_exact_self_operated_offer_not_in_public_html"] };

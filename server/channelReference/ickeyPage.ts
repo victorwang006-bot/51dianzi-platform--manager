@@ -5,6 +5,8 @@
  * snapshot when available. Only the observed search-row structures are supported;
  * an unverified standalone product-page layout deliberately fails closed.
  */
+import { matchChannelReferenceBrand } from "../../shared/channelReferenceBrand";
+
 export type IckeyPageStatus =
   | "ok" | "unmatched" | "ambiguous" | "price_unavailable"
   | "access_restricted" | "parse_error";
@@ -335,7 +337,7 @@ export function parseIckeySearchPage(html: string, pageUrl: string, expected: Ic
     const candidates = [...normalRows.map(n => candidate(n, root, "normal")), ...vueRows.map(n => candidate(n, root, "vue"))]
       .filter((c): c is Candidate => c !== null);
     const matches = candidates.filter(c => exact(c.matchedPartNumber!) === exact(expected.partNumber)
-      && exact(c.matchedBrand!) === exact(expected.brand));
+      && matchChannelReferenceBrand(expected.brand, c.matchedBrand!, { profile: "ickey", normalize: exact }) !== null);
     if (!matches.length) {
       if (candidates.length || normalRows.length || vueRows.length) return empty("unmatched");
       const confirmedNoResult = all.some(n => hasClass(n, "search-no-result-news")

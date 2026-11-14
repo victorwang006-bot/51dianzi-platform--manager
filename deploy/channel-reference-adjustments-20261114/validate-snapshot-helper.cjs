@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+async function validate(dir,manifestHash){
+ const root=path.resolve(dir),bytes=fs.readFileSync(path.join(root,'manifest.json'));assert.equal(sha(bytes),manifestHash);const m=JSON.parse(bytes);assert.equal(m.contractVersion,'channel-reference-adjustments-v1');assert.equal(m.fixtureOnly,false);
+ for(const r of m.runtimeHelpers){const f=path.join(root,r.relative);assert(fs.lstatSync(f).isFile()&&!fs.lstatSync(f).isSymbolicLink());assert.equal(sha(fs.readFileSync(f)),r.sha256);}
+ const dataBytes=fs.readFileSync(path.join(root,'channel-reference-snapshot.json')),data=JSON.parse(dataBytes);assert.deepEqual(Object.keys(data).sort(),['schemaVersion','collectionMode','generatedAt','records'].sort());assert.equal(data.schemaVersion,1);assert.equal(data.collectionMode,'public-web-batch');assert(Array.isArray(data.records));
+ // This module has already been compiled from the pinned read-only snapshot graph.
+ // Default lookup is deliberately used: no injected fake reader, HTTP or DB.
+ const {pathToFileURL}=require('node:url');const helper=await import(pathToFileURL(path.join(root,'channel-reference-service.mjs')).href);assert.equal(typeof helper.lookupChannelReferences,'function');const counts={},results=[];
+ for(let offset=0;offset<data.records.length;offset+=20){const records=data.records.slice(offset,offset+20),materials=records.map((r,i)=>({materialId:offset+i+1,partNumber:r.partNumber,brand:r.brand})),response=await helper.lookupChannelReferences(materials,{refresh:false});assert.deepEqual(Object.keys(response),['items']);assert.equal(response.items.length,materials.length);
+ for(let i=0;i<records.length;i++){const item=response.items[i],record=records[i];assert.deepEqual(Object.keys(item).sort(),['materialId','partNumber','brand','references'].sort());for(const k of ['materialId','partNumber','brand'])assert.equal(item[k],materials[i][k]);assert.deepEqual(Object.keys(item.references).sort(),['ickey','lcsc']);for(const source of ['lcsc','ickey']){const q=item.references[source];assert.deepEqual(q,record.references[source],'ACTUAL_DEFAULT_LOADER_REJECTED_OR_CHANGED '+JSON.stringify([record.partNumber,record.brand,source]));counts[source+':'+q.status]=(counts[source+':'+q.status]||0)+1;if(q.status==='ok'){assert.equal(typeof q.unitPrice,'string');assert.equal(q.unitPrice,q.tiers.at(-1).unitPrice);assert.equal(q.tierQuantity,q.tiers.at(-1).minQuantity);}results.push({rawPairSource:[record.partNumber,record.brand,source],quoteSha256:sha(Buffer.from(JSON.stringify(q))),status:q.status});}}
+ }
+ assert.equal(sha(fs.readFileSync(path.join(root,'manifest.json'))),manifestHash);assert.equal(sha(fs.readFileSync(path.join(root,'channel-reference-snapshot.json'))),sha(dataBytes));return {contractVersion:'channel-adjustments-actual-helper-validation-v1',status:'PASS',fixtureOnly:false,ready:false,manifestSha256:manifestHash,sourceHashes:m.sourceHashes,helperHashes:m.runtimeHelpers,snapshotSha256:sha(dataBytes),recordCount:data.records.length,sourceRecordsChecked:results.length,statusCounts:counts,defaultRealSiblingLoaderUsed:true,readonly:true,http:false,db:false,businessWrites:0,uiReadyClaim:false,results};
+}
+if(require.main===module){const a=process.argv.slice(2);assert(a.length===4&&a[0]==='--candidate'&&a[2]==='--manifest-sha256');validate(a[1],a[3]).then(r=>console.log(JSON.stringify(r,null,2))).catch(e=>{console.error('READONLY_HELPER_VALIDATION_ABORT: '+e.message);process.exitCode=1;});}
+module.exports={validate};
