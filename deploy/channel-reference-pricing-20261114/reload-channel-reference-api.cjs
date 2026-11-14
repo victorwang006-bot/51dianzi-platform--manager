@@ -41,7 +41,11 @@ function verifyHelpers(manifest) {
     if (relative === 'manifest.json' || /^(browser\/|channel-reference-worker|worker-metafile)/.test(relative) || !/^[0-9a-f]{64}$/.test(hash) || sha(safeFile(relative)) !== hash) fail();
   }
   for (const [relative, hash] of Object.entries(manifest.sourceHashes)) {
-    if (!/^(client|server|shared)\//.test(relative) || !/^[0-9a-f]{64}$/.test(hash) || sha(safeFile('source-snapshot/' + relative)) !== hash) fail();
+    const allowed = /^(client|server|shared)\//.test(relative)
+      || (['package.json', 'pnpm-lock.yaml', 'tsconfig.json'].includes(relative)
+        && manifest.priorSourceHashes?.[relative] === hash && Array.isArray(manifest.newSourceGraphPaths)
+        && !manifest.newSourceGraphPaths.includes(relative));
+    if (!allowed || !/^[0-9a-f]{64}$/.test(hash) || sha(safeFile('source-snapshot/' + relative)) !== hash) fail();
   }
   const binding = manifest.snapshotBinding, readiness = json(safeFile('snapshot-readiness-proof.json'));
   if (!binding || binding.snapshotFile !== 'channel-reference-snapshot.json' || binding.fileSha256 !== sha(helperPath(binding.snapshotFile))
