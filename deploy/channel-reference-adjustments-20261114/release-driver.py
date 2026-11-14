@@ -84,7 +84,11 @@ class IO:
         handles=[]
         try:
             for p in LOCKS:
-                q=self.path(p);no_symlinks(q)
+                q=self.path(p);need(not q.is_symlink(),'SYMLINK_REFUSED '+str(q))
+                if q.parent.is_symlink():
+                    need(q.parent==self.path('/var/lock') and q.parent.resolve(strict=True)==self.path('/run/lock'),'SYMLINK_REFUSED '+str(q.parent))
+                    q=self.path('/run/lock')/q.name
+                no_symlinks(q);need(stat.S_ISREG(q.stat().st_mode),'REGULAR_LOCK_FILE_REQUIRED '+str(q))
                 f=open(q,'r+b');fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB);handles.append(f)
             yield
         finally:

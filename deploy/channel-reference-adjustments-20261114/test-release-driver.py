@@ -2,10 +2,11 @@
 """Offline fake filesystem + fake RPC ONLY; no production paths are touched."""
 import importlib.util, pathlib, tempfile, json, copy, unittest, hashlib, builtins, contextlib
 WORK=pathlib.Path('/home/ubuntu/work/channel-reference-adjustments-20261114/deploy-prep')
+OUTPUT=WORK.parent/'lock-alias-fix'
 REPO=pathlib.Path(__file__).parent
 spec=importlib.util.spec_from_file_location('newrelease',REPO/'release-driver.py');D=importlib.util.module_from_spec(spec);spec.loader.exec_module(D)
 class FakeIO(D.IO):
-    def __init__(self):self.tmp=tempfile.TemporaryDirectory(prefix='driver-fixture-',dir=WORK);self.base=pathlib.Path(self.tmp.name);self.writes=[];self.drift_open=False
+    def __init__(self):self.tmp=tempfile.TemporaryDirectory(prefix='driver-fixture-',dir=OUTPUT);self.base=pathlib.Path(self.tmp.name);self.writes=[];self.drift_open=False
     def path(self,p):
         q=pathlib.Path(p)
         if str(q).startswith(str(self.base)+'/') or q==self.base:return q
@@ -63,6 +64,36 @@ class Tests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             with self.f.io.locks():pass
         self.assertFalse(self.f.io.exists(D.LOCKS[1]))
+    def test_standard_lock_parent_alias_existing_canonical_files_no_creation(self):
+        io=self.f.io;parent=io.path('/var/lock');canonical=io.path('/run/lock');canonical.parent.mkdir(parents=True);parent.rename(canonical);parent.symlink_to(canonical,target_is_directory=True)
+        targets=[canonical/pathlib.Path(p).name for p in D.LOCKS];before={p:(p.stat().st_dev,p.stat().st_ino,p.read_bytes()) for p in targets};seen=[];real=builtins.open
+        def opened(p,mode='r',*a,**k):
+            f=real(p,mode,*a,**k);s=D.os.fstat(f.fileno());seen.append((pathlib.Path(p),mode,s.st_dev,s.st_ino));return f
+        from unittest.mock import patch
+        with patch('builtins.open',opened):
+            with io.locks():pass
+        self.assertEqual(seen,[(p,'r+b',before[p][0],before[p][1]) for p in targets]);self.assertEqual({p:(p.stat().st_dev,p.stat().st_ino,p.read_bytes()) for p in targets},before);self.assertEqual(set(canonical.iterdir()),set(targets));self.assertEqual(io.writes,[])
+        targets[1].unlink()
+        with self.assertRaises(FileNotFoundError):
+            with io.locks():pass
+        self.assertFalse(targets[1].exists());self.assertTrue(parent.is_symlink())
+    def test_unexpected_lock_parent_alias_refused(self):
+        io=self.f.io;parent=io.path('/var/lock');other=io.path('/other');parent.rename(other);parent.symlink_to(other,target_is_directory=True)
+        from unittest.mock import patch
+        with patch('builtins.open') as opened:
+            with self.assertRaisesRegex(RuntimeError,'SYMLINK_REFUSED '+str(parent)):
+                with io.locks():pass
+            opened.assert_not_called()
+        self.assertEqual(io.writes,[])
+    def test_lock_leaf_symlink_through_standard_parent_refused(self):
+        io=self.f.io;parent=io.path('/var/lock');canonical=io.path('/run/lock');canonical.parent.mkdir(parents=True);parent.rename(canonical);parent.symlink_to(canonical,target_is_directory=True)
+        leaf=canonical/pathlib.Path(D.LOCKS[0]).name;other=canonical/'other-existing-lock';leaf.rename(other);leaf.symlink_to(other)
+        from unittest.mock import patch
+        with patch('builtins.open') as opened:
+            with self.assertRaisesRegex(RuntimeError,'SYMLINK_REFUSED '+str(io.path(D.LOCKS[0]))):
+                with io.locks():pass
+            opened.assert_not_called()
+        self.assertEqual(other.read_bytes(),b'existing lock');self.assertEqual(io.writes,[])
     def test_plan_has_zero_writes_and_zero_reload(self):
         before=self.f.snapshot();r=self.f.engine.plan();self.assertEqual(r['writes'],0);self.assertEqual(before,self.f.snapshot());self.assertEqual(self.f.calls,[])
     def test_success_exact_targets_sequential_intents_and_frozen_other10(self):
@@ -130,4 +161,7 @@ class Tests(unittest.TestCase):
         self.f.engine.state=original;self.f.engine.state['ownerTask']='foreign'
         with self.assertRaisesRegex(RuntimeError,'OWNERSHIP'):self.f.engine.owned_coord()
 if __name__=='__main__':
-    suite=unittest.defaultTestLoader.loadTestsFromTestCase(Tests);result=unittest.TextTestRunner(verbosity=2).run(suite);report={'contractVersion':'channel-adjustments-fake-driver-qa-v1','status':'PASS' if result.wasSuccessful() else 'FAIL','fixtureOnly':True,'productionRPC':False,'db':False,'ssh':False,'count':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'testedDriverSha256':hashlib.sha256((REPO/'release-driver.py').read_bytes()).hexdigest(),'testNames':unittest.defaultTestLoader.getTestCaseNames(Tests)};(WORK/'fake-driver-qa.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2));raise SystemExit(not result.wasSuccessful())
+    OUTPUT.mkdir(parents=True,exist_ok=True)
+    suite=unittest.defaultTestLoader.loadTestsFromTestCase(Tests);result=unittest.TextTestRunner(verbosity=2).run(suite);report={'contractVersion':'channel-adjustments-fake-driver-qa-v1','status':'PASS' if result.wasSuccessful() else 'FAIL','fixtureOnly':True,'productionRPC':False,'db':False,'ssh':False,'count':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),'testedDriverSha256':hashlib.sha256((REPO/'release-driver.py').read_bytes()).hexdigest(),'testNames':unittest.defaultTestLoader.getTestCaseNames(Tests)}
+    with (OUTPUT/'fake-driver-qa.json').open('x') as f:f.write(json.dumps(report,indent=2)+'\n')
+    print(json.dumps(report,indent=2));raise SystemExit(not result.wasSuccessful())
