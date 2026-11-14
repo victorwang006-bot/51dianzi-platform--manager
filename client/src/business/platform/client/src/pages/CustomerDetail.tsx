@@ -29,6 +29,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import "../components/customers/CustomerDetailCompact.css";
 import "./CustomerDetailReadability.css";
 import "../components/customers/CustomerWorkbench.css";
+import "./CustomerProfileCompact.css";
 import {
   beijingDateTimeLocalToIso,
   errorMessage,
@@ -536,7 +537,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   const isCurrentChildReceipt = captureReceiptGuard();
 
   return <PlatformLayout>
-    <main className="erp-ui customer-detail-compact customer-detail-readable customer-workbench">
+    <main className="erp-ui customer-detail-compact customer-detail-readable customer-workbench customer-profile-tight">
       <div className="customer-detail-top-actions mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2"><h1 className="admin-page-title customer-detail-name">{customer.name}</h1><span className={`crm-badge ${customer.grade === "A" ? "bg-[#FCEBEB] text-[#A32D2D]" : customer.grade === "B" ? "bg-[#FFF7E6] text-[#B8741A]" : "bg-[#e8f0fe] text-[#185FA5]"}`}>{customer.grade}级</span>{isArchived && <span className="crm-badge bg-slate-100 text-slate-500">已归档</span>}</div>
@@ -545,7 +546,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         <div className="customer-workbench-top-buttons">
           <button type="button" className="crm-btn" title="回到进入详情前的页面，保留筛选、页码与位置" onClick={requestBack}>返回上一页</button>
           <button type="button" className="crm-btn crm-btn-primary" disabled={isArchived} onClick={() => guardAction(() => { commitTab("demands"); setCreateDemandToken(++createDemandSequence.current); })}>新增需求</button>
-          <button type="button" className="crm-btn" disabled={isArchived} onClick={() => guardAction(() => { commitTab("company"); if (!followOpen) openFollowUp(); })}>新增跟进</button>
+          {tab !== "company" && <button type="button" className="crm-btn" disabled={isArchived} onClick={() => guardAction(() => { commitTab("company"); if (!followOpen) openFollowUp(); })}>新增跟进</button>}
           {canManageAll && <DropdownMenu open={moreOpen} onOpenChange={open => { if (!open) setMoreOpen(false); else guardAction(() => setMoreOpen(true)); }}><DropdownMenuTrigger asChild><button type="button" className="crm-btn">更多</button></DropdownMenuTrigger><DropdownMenuContent align="end">{!isArchived ? <><DropdownMenuItem onSelect={() => guardAction(() => setActionDialog("transfer"))}>转移负责人</DropdownMenuItem><DropdownMenuItem className="text-red-700" onSelect={() => guardAction(() => setActionDialog("archive"))}>归档客户</DropdownMenuItem></> : <DropdownMenuItem onSelect={() => guardAction(() => setActionDialog("restore"))}>恢复客户</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>}
         </div>
       </div>
@@ -557,42 +558,36 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
       <nav className="customer-workbench-tabs" role="tablist" aria-label="客户工作台">{CUSTOMER_WORKBENCH_TABS.map(item => <button type="button" role="tab" id={`customer-tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`customer-panel-${item.id}`} key={item.id} onClick={() => changeTab(item.id)}>{item.label}{item.id === "company" && (basicDirty || followDirty) ? " · 未保存" : ""}</button>)}</nav>
       <div hidden={tab !== "company"} role="tabpanel" id="customer-panel-company" aria-labelledby="customer-tab-company">
       <section id="customer-base" className="customer-detail-basic mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="admin-section-title">基础信息</h2>
-              {basicDirty && <span className="text-[13px] text-amber-700" role="status">未保存</span>}
-            </div>
-            <div className="customer-detail-summary mt-2 flex flex-wrap gap-x-4 gap-y-1">
-              <span>主联系人：{customer.contactName || "—"}</span>
-              <span>电话：{customer.phone || "—"}</span>
-              <span>所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
-              <span>当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
-              <span>下次跟进：{formatCustomerDateTime(customer.nextFollowUpAt)}</span>
-            </div>
-            <p className="customer-detail-meta mt-1">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
+        <div className="customer-profile-heading">
+          <div className="customer-profile-heading-title">
+            <h2 className="admin-section-title">客户资料</h2>
+            {basicDirty && <span className="text-[13px] text-amber-700" role="status">未保存</span>}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="customer-profile-heading-actions">
+            {!isArchived && !basicExpanded && <button type="button" className="crm-btn" aria-controls="customer-base-editor" onClick={() => setBasicExpanded(true)}>编辑资料</button>}
             {!isArchived && basicExpanded && <button type="button" className="crm-btn crm-btn-primary" disabled={!form || updateMutation.isPending || !contactScope.ready} onClick={() => void submitUpdate()}>{updateMutation.isPending ? "保存中…" : "保存修改"}</button>}
-            <button type="button" className="crm-btn" aria-expanded={basicExpanded} aria-controls="customer-base-editor" onClick={() => setBasicExpanded(open => !open)}>{basicExpanded ? "收起" : "展开"}</button>
+            <button type="button" className="crm-btn crm-btn-primary" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
+            <button type="button" className="crm-btn" aria-expanded={basicExpanded} aria-controls="customer-base-editor" onClick={() => setBasicExpanded(open => !open)}>{basicExpanded ? "收起" : "展开详情"}</button>
           </div>
         </div>
-        {basicExpanded && <div id="customer-base-editor" className="border-t border-slate-100 p-4 sm:p-5">
+        <div className="customer-detail-summary customer-profile-summary">
+          <span>所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
+          <span>当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
+          <span>下次跟进：{formatCustomerDateTime(customer.nextFollowUpAt)}</span>
+        </div>
+        {basicExpanded && <div id="customer-base-editor" className="customer-profile-editor">
+          <p className="customer-detail-meta customer-profile-version">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
           {form ? <CustomerFields value={form} onChange={next => { formDirty.current = true; setBasicDirty(true); setForm(current => current ? typeof next === "function" ? next(current) : next : current); }} members={contextQuery.data?.members ?? []} canManageAll={canManageAll} allowAssigneeChange={false} currentAssigneeName={currentAssignee} includeLegacyContactFields={false} fieldErrors={fieldErrors} disabled={isArchived || updateMutation.isPending || !contactScope.ready} /> : null}
         </div>}
-      </section>
-
-      <section id="customer-contacts" className="mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div><h2 className="admin-section-title">联系人</h2></div>
-          <button type="button" className="crm-btn crm-btn-primary" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
+        <div id="customer-contacts" className="customer-profile-contacts">
+          <h3 className="customer-profile-contacts-title">联系人</h3>
+          {tab === "company" && <CustomerWorkbenchContacts key={`${contactScope.identityKey}:${customer.id}`} customerId={customer.id} scope={contactScope.scope} scopeReady={contactScope.ready} />}
         </div>
-        {tab === "company" && <CustomerWorkbenchContacts key={`${contactScope.identityKey}:${customer.id}`} customerId={customer.id} scope={contactScope.scope} scopeReady={contactScope.ready} />}
       </section>
 
       <section id="customer-followups" className="customer-detail-followups mb-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-          <div><h2 className="admin-section-title">跟进记录</h2><p className="customer-detail-meta mt-1">跟进仅可追加；如需更正，请基于原记录追加一条更正说明。</p></div>
+        <div className="customer-profile-heading customer-profile-follow-heading">
+          <div className="customer-profile-heading-title"><h2 className="admin-section-title">跟进记录</h2></div>
           {!isArchived && !followOpen && <button type="button" className="crm-btn crm-btn-primary" onClick={() => openFollowUp()}>新增跟进</button>}
         </div>
         {!isArchived && followOpen && <div className="customer-detail-followup-form border-b border-slate-100 p-4">
@@ -640,7 +635,17 @@ function FollowUpRow({ item, readOnly, onCorrect }: { item: CustomerFollowUp; re
   const [expanded, setExpanded] = useState(false);
   const canExpand = item.content.length > 160 || item.content.split("\n").length > 3;
   const content = !expanded && canExpand ? `${item.content.slice(0, 160)}…` : item.content;
-  return <article className="px-4 py-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="crm-badge bg-[#e8f0fe] text-[#185FA5]">{CUSTOMER_FOLLOW_LABELS[item.method]}</span>{item.correctionOfId && <span className="crm-badge bg-[#FFF7E6] text-[#B8741A]">更正 # {item.correctionOfId}</span>}<span className="customer-detail-meta">{item.authorName}</span></div><p className="customer-detail-followup-body mt-2 whitespace-pre-wrap">{content}</p>{canExpand && <button type="button" className="crm-link admin-row-action customer-detail-history-action mt-1" onClick={() => setExpanded(open => !open)}>{expanded ? "收起内容" : "展开内容"}</button>}</div><div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1"><time className="customer-detail-meta whitespace-nowrap">{formatCustomerDateTime(item.occurredAt)}</time>{!readOnly && <button type="button" className="crm-link admin-row-action customer-detail-history-action" onClick={onCorrect}>更正此记录</button>}</div></div></article>;
+  return <article className="customer-profile-follow-record">
+    <div className="customer-profile-follow-meta">
+      <span className="customer-detail-meta">{item.authorName}</span>
+      <span className="crm-badge bg-[#e8f0fe] text-[#185FA5]">{CUSTOMER_FOLLOW_LABELS[item.method]}</span>
+      {item.correctionOfId && <span className="crm-badge bg-[#FFF7E6] text-[#B8741A]">更正 # {item.correctionOfId}</span>}
+      <time className="customer-detail-meta whitespace-nowrap">{formatCustomerDateTime(item.occurredAt)}</time>
+      {!readOnly && <button type="button" className="crm-link admin-row-action customer-detail-history-action" onClick={onCorrect}>更正此记录</button>}
+    </div>
+    <p className="customer-detail-followup-body whitespace-pre-wrap">{content}</p>
+    {canExpand && <button type="button" className="crm-link admin-row-action customer-detail-history-action" onClick={() => setExpanded(open => !open)}>{expanded ? "收起内容" : "展开内容"}</button>}
+  </article>;
 }
 
 function ErrorState({ message, onBack, onRetry }: { message: string; onBack: () => void; onRetry?: () => void }) {

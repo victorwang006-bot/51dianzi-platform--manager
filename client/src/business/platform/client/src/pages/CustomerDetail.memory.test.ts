@@ -3,6 +3,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Router, Route, Link, useLocation } from "wouter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { parse as parseCss } from "postcss";
 const runtime = vi.hoisted(() => ({
   identity: "", ready: true, contextError: false, detailError: false,
   enterpriseId: 31, detail: null as any, getOptions: [] as any[],
@@ -14,6 +16,7 @@ const runtime = vi.hoisted(() => ({
   orderSummaryInvalidate: vi.fn(), orderMaterialsInvalidate: vi.fn(),
   canReadOrders: false, ordersDirty: false, demandsDirty: false, demandProps: null as any, orderProps: null as any,
   supplyProps: null as any,
+  workbenchContactsProps: null as any, fieldsProps: null as any,
 }));
 vi.mock("../hooks/usePageIdentity", () => ({ usePageIdentity: () => runtime.identity }));
 vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({ contextVerification: { authorizationVersion: runtime.authorizationVersion } }) }));
@@ -30,7 +33,14 @@ vi.mock("../components/customerDemands/CustomerDemandHistory", () => ({ Customer
   return React.createElement("button", { onClick: () => props.onCreateOrder?.({ demandId: 901, demandNo: "D-SYNTHETIC" }) }, "synthetic-create-order");
 } }));
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: () => null }));
-vi.mock("../components/customers/CustomerWorkbenchContacts", () => ({ CustomerWorkbenchContacts: () => null }));
+vi.mock("../components/customers/CustomerWorkbenchContacts", () => ({ CustomerWorkbenchContacts: (props: any) => {
+  runtime.workbenchContactsProps = props;
+  return React.createElement("div", { className: "customer-workbench-contacts" },
+    React.createElement("article", {},
+      React.createElement("div", {}, React.createElement("strong", {}, runtime.detail.customer.contactName)),
+      React.createElement("p", { className: "customer-detail-meta" }, "SYNTHETIC POSITION"),
+      React.createElement("p", {}, runtime.detail.customer.phone)));
+} }));
 vi.mock("../components/customers/CustomerWorkbenchSupply", () => ({ CustomerWorkbenchSupply: (props: any) => {
   runtime.supplyProps = props;
   const [, navigate] = useLocation();
@@ -44,9 +54,12 @@ vi.mock("./CrmSalesOrders", () => ({ CustomerSalesOrders: (props: any) => {
   React.useEffect(() => { props.onDirtyChange?.(runtime.ordersDirty); }, [runtime.ordersDirty, props.onDirtyChange]);
   return React.createElement("p", { "data-order-read": props.canRead, "data-order-write": props.canWrite }, "synthetic-orders");
 } }));
-vi.mock("../components/customers/CustomerFields", () => ({ CustomerFields: ({ value, onChange }: any) => React.createElement("div", {},
-  React.createElement("span", { "data-editor-name": true }, value.name),
-  React.createElement("button", { onClick: () => onChange({ ...value, name: "PRIVATE UNSAVED DRAFT" }) }, "synthetic-edit")) }));
+vi.mock("../components/customers/CustomerFields", () => ({ CustomerFields: (props: any) => {
+  runtime.fieldsProps = props;
+  return React.createElement("div", {},
+    React.createElement("span", { "data-editor-name": true }, props.value.name),
+    React.createElement("button", { disabled: props.disabled, onClick: () => props.onChange({ ...props.value, name: "PRIVATE UNSAVED DRAFT" }) }, "synthetic-edit"));
+} }));
 vi.mock("../components/customers/customerContacts", () => ({
   useCustomerContactScope: () => ({ ready: runtime.ready, scope: runtime.ready ? { actorUserId: 7, enterpriseId: runtime.enterpriseId, canManageAll: false } : null,
     identityKey: `${runtime.identity}:${runtime.enterpriseId}:${runtime.ready}` }),
@@ -102,6 +115,7 @@ beforeEach(() => {
   runtime.detail = { customer: record(), followUps: [] };
   runtime.canReadOrders = false; runtime.ordersDirty = false; runtime.demandsDirty = false; runtime.demandProps = null; runtime.orderProps = null;
   runtime.supplyProps = null;
+  runtime.workbenchContactsProps = null; runtime.fieldsProps = null;
   memory.setPageMemoryScope(null); nativeReplace.call(history, {}, "", "/workbench/customers/801?merchantId=30061");
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0));
   vi.stubGlobal("cancelAnimationFrame", (frame: number) => window.clearTimeout(frame));
@@ -140,18 +154,18 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
   });
 
   it("binding/account identity changes cannot reuse a dirty editor for the same customer id", async () => {
-    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit"); expect(host.textContent).toContain("PRIVATE UNSAVED DRAFT");
+    await render(); await click("客户档案"); await click("展开详情"); await click("synthetic-edit"); expect(host.textContent).toContain("PRIVATE UNSAVED DRAFT");
     runtime.identity += "-new-binding"; runtime.detail = { customer: record({ name: "NEW IDENTITY DATA" }), followUps: [] };
-    await render(); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT"); await click("展开");
+    await render(); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT"); await click("展开详情");
     expect(host.querySelector("[data-editor-name]")?.textContent).toBe("NEW IDENTITY DATA");
     const raw = sessionStorage.getItem("51dianzi:page-memory:v1:" + runtime.identity)!;
     expect(raw).not.toContain("PRIVATE"); expect(raw).not.toContain("NEW IDENTITY DATA");
   });
 
   it("blocks reads/display while current contact authority is unavailable and clears private drafts", async () => {
-    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开详情"); await click("synthetic-edit");
     runtime.ready = false; await render(); expect(host.textContent).not.toContain("PRIVATE"); expect(runtime.getOptions.at(-1).enabled).toBe(false);
-    runtime.ready = true; await render(); await click("展开"); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
+    runtime.ready = true; await render(); await click("展开详情"); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
     expect(runtime.getOptions.at(-1)).toMatchObject({ enabled: true, staleTime: 0, refetchOnMount: "always", placeholderData: undefined });
   });
 
@@ -208,7 +222,7 @@ describe.sequential("actual CustomerDetail memory and authorization rendering", 
   });
 
   it("requires explicit discard for company draft tab changes and keeps the editor on cancel", async () => {
-    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开详情"); await click("synthetic-edit");
     await click("需求与报价"); expect(window.location.search).toContain("tab=company");
     expect(document.body.textContent).toContain("放弃未保存的客户修改");
     let cancel = [...document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(item => item.textContent === "取消")!;
@@ -239,7 +253,7 @@ async function bodyClick(label: string) {
 }
 async function beginMutation(name: string) {
   if (name === "updateBasic") {
-    await click("客户档案"); await click("展开"); await click("synthetic-edit"); await click("保存修改");
+    await click("客户档案"); await click("展开详情"); await click("synthetic-edit"); await click("保存修改");
   } else if (name === "addFollowUp") {
     await click("新增跟进");
     await input(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!, "SYNTHETIC FOLLOW DRAFT");
@@ -264,7 +278,7 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
     expect(runtime.getOptions.at(-1).enabled).toBe(true); expect(host.textContent).not.toContain("PRIVATE");
     runtime.detailFetching = false; await render(); expect(host.textContent).not.toContain("PRIVATE");
     runtime.detailFetched = true; runtime.detail = { customer: record({ name: "FRESH VERIFIED CUSTOMER" }), followUps: [] }; await render();
-    await click("客户档案"); await click("展开"); expect(host.querySelector('[data-editor-name]')?.textContent).toBe("FRESH VERIFIED CUSTOMER");
+    await click("客户档案"); await click("展开详情"); expect(host.querySelector('[data-editor-name]')?.textContent).toBe("FRESH VERIFIED CUSTOMER");
     expect(runtime.mutations.updateBasic.mutateAsync).not.toHaveBeenCalled();
   });
 
@@ -278,13 +292,13 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
   });
 
   it("keeps verified dirty company and follow editors mounted through ordinary context/detail refetch", async () => {
-    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开详情"); await click("synthetic-edit");
     runtime.contextFetching = true; runtime.detailFetching = true; await render();
     const editor = host.querySelector('[data-editor-name]');
     expect(editor?.textContent).toBe("PRIVATE UNSAVED DRAFT"); expect(host.textContent).not.toContain("加载客户详情中");
     runtime.contextFetching = false; runtime.detailFetching = false; runtime.detail = { customer: record({ name: "SERVER NEW NAME", version: 2 }), followUps: [] }; await render();
     expect(host.querySelector('[data-editor-name]')).toBe(editor); expect(editor?.textContent).toBe("PRIVATE UNSAVED DRAFT");
-    await click("新增跟进"); await bodyClick("放弃并继续");
+    await click("需求与报价"); await bodyClick("放弃并继续"); await click("新增跟进");
     const follow = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!;
     await input(follow, "LOCAL FOLLOW DRAFT");
     runtime.contextFetching = true; runtime.detailFetching = true; await render();
@@ -292,15 +306,15 @@ describe.sequential("CustomerDetail mount proof and asynchronous shell safety", 
   });
 
   it("clears a verified draft immediately on get denial and does not resurrect it on a later same-ID success", async () => {
-    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开详情"); await click("synthetic-edit");
     runtime.detailError = true; await render(); expect(host.textContent).not.toContain("PRIVATE UNSAVED DRAFT");
     runtime.detailError = false; runtime.detailFetched = false; runtime.detailFetching = true; await render(); expect(host.textContent).not.toContain("PRIVATE");
-    runtime.detailFetched = true; runtime.detailFetching = false; await render(); await click("展开");
+    runtime.detailFetched = true; runtime.detailFetching = false; await render(); await click("展开详情");
     expect(host.querySelector('[data-editor-name]')?.textContent).toBe("SYNTHETIC CURRENT CUSTOMER");
   });
 
   it("new root authorization for the same actor/enterprise/customer requires new mount proof and clears drafts", async () => {
-    await render(); await click("客户档案"); await click("展开"); await click("synthetic-edit");
+    await render(); await click("客户档案"); await click("展开详情"); await click("synthetic-edit");
     runtime.authorizationVersion = "auth-B"; runtime.contextFetched = false; runtime.detailFetched = false; runtime.contextFetching = true; await render();
     expect(host.textContent).not.toContain("PRIVATE"); expect(runtime.getOptions.at(-1).enabled).toBe(false);
   });
@@ -371,7 +385,7 @@ async function navigateOutside(method: "back" | "nativeBack" | "link" | "navigat
   });
 }
 async function makeDraft(module: string) {
-  if (module === "company") { await click("客户档案"); await click("展开"); await click("synthetic-edit"); }
+  if (module === "company") { await click("客户档案"); await click("展开详情"); await click("synthetic-edit"); }
   else if (module === "follow") {
     await click("新增跟进"); await input(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!, "SPA FOLLOW DRAFT");
   } else if (module === "demand") { await click("需求与报价"); runtime.demandsDirty = true; await render(); }
@@ -492,23 +506,193 @@ const followRecord = (changes: any = {}) => ({
 });
 
 describe.sequential("CustomerDetail consolidated customer profile", () => {
-  it("defaults to four tabs and stacks original basic, contacts and full follow-up sections without overview cards", async () => {
+  it("defaults to four tabs and only two main sections with contacts inside the customer data card", async () => {
     await render();
     expect([...host.querySelectorAll('[role="tab"]')].map(item => item.textContent)).toEqual(["客户档案", "需求与报价", "客户订单", "渠道库存"]);
     expect(host.querySelector('[role="tab"][aria-selected="true"]')?.id).toBe("customer-tab-company");
     expect(window.location.search).toBe("?merchantId=30061&tab=company");
     const profile = host.querySelector('#customer-panel-company')!;
     expect(profile.hasAttribute("hidden")).toBe(false);
-    expect([...profile.children].map(item => item.id)).toEqual(["customer-base", "customer-contacts", "customer-followups"]);
+    expect([...profile.children].map(item => item.id)).toEqual(["customer-base", "customer-followups"]);
+    expect(profile.querySelectorAll('section')).toHaveLength(2);
+    expect(profile.querySelector('#customer-base h2')?.textContent).toBe("客户资料");
+    expect(profile.querySelector('#customer-contacts')?.tagName).toBe("DIV");
+    expect(profile.querySelector('#customer-contacts')?.parentElement?.id).toBe("customer-base");
     expect(host.querySelector('#customer-panel-overview')).toBeNull();
     expect(host.querySelector('#customer-panel-followups')).toBeNull();
     expect(host.querySelector('.customer-workbench-overview')).toBeNull();
-    expect(profile.textContent).toContain("主联系人：PRIVATE CONTACT");
+    expect(profile.querySelector('#customer-contacts')?.textContent).toContain("PRIVATE CONTACT");
+    expect(profile.querySelector('#customer-contacts')?.textContent).toContain("PRIVATE PHONE");
+    expect(profile.querySelector('.customer-detail-summary')?.children).toHaveLength(3);
+    expect(profile.querySelector('.customer-detail-summary')?.textContent).not.toMatch(/PRIVATE CONTACT|PRIVATE PHONE|主联系人：|电话：/);
     expect(profile.textContent).toContain("当前阶段：跟进中");
     expect(profile.textContent).toContain("所属行业：电子元器件");
     expect(profile.textContent).toContain("暂无跟进记录");
+    expect(profile.textContent).not.toContain("跟进仅可追加；如需更正，请基于原记录追加一条更正说明。");
+    expect(profile.textContent).not.toContain("上次更新");
+    expect(profile.querySelector('#customer-base-editor')).toBeNull();
     expect(host.querySelectorAll('button')).not.toHaveLength(0);
-    expect([...host.querySelectorAll('button')].filter(item => item.textContent === "新增跟进")).toHaveLength(2); // Existing top and section buttons only.
+    expect([...host.querySelectorAll('button')].filter(item => item.textContent === "新增跟进")).toHaveLength(1);
+    expect(button("新增跟进").closest('.customer-profile-heading')?.parentElement?.id).toBe("customer-followups");
+    expect(host.querySelector('main.customer-profile-tight')).not.toBeNull();
+  });
+
+  it("editing data opens the original inline editor and contacts remain mounted when details collapse", async () => {
+    runtime.detail = { customer: record({ version: 7 }), followUps: [] };
+    await render();
+    const contacts = host.querySelector('#customer-contacts .customer-workbench-contacts');
+    expect(button("编辑资料").closest('.customer-profile-heading')?.parentElement?.id).toBe("customer-base");
+    expect(button("管理联系人").closest('.customer-profile-heading')?.parentElement?.id).toBe("customer-base");
+    expect(button("管理联系人").disabled).toBe(false);
+    expect(runtime.workbenchContactsProps).toMatchObject({ customerId: 801, scopeReady: true, scope: { actorUserId: 7, enterpriseId: 31 } });
+    await click("编辑资料");
+    expect(host.querySelector('[data-editor-name]')?.closest('#customer-base-editor')).not.toBeNull();
+    expect(host.querySelector('#customer-base-editor')?.textContent).toContain("版本 7 · 上次更新");
+    expect(button("收起").getAttribute("aria-expanded")).toBe("true");
+    expect(host.querySelector('#customer-contacts .customer-workbench-contacts')).toBe(contacts);
+    expect(runtime.fieldsProps).toMatchObject({ allowAssigneeChange: false, includeLegacyContactFields: false, disabled: false });
+    expect(runtime.mutations.updateBasic.mutateAsync).not.toHaveBeenCalled();
+    await click("收起");
+    expect(host.querySelector('#customer-base-editor')).toBeNull();
+    expect(host.querySelector('#customer-base')?.textContent).not.toContain("上次更新");
+    expect(host.querySelector('#customer-contacts .customer-workbench-contacts')).toBe(contacts);
+    expect(host.querySelector('#customer-contacts')?.textContent).toContain("PRIVATE PHONE");
+    expect(button("展开详情").getAttribute("aria-expanded")).toBe("false");
+    await click("管理联系人");
+    expect(runtime.contactsProps.open).toBe(true); expect(host.querySelector('#customer-base-editor')).toBeNull();
+  });
+
+  it("details collapse preserves the original dirty form and save uses its captured version", async () => {
+    runtime.detail = { customer: record({ version: 7 }), followUps: [] };
+    await render(); await click("编辑资料"); await click("synthetic-edit"); await click("收起");
+    expect(host.querySelector('#customer-tab-company')?.textContent).toBe("客户档案 · 未保存");
+    expect(host.querySelector('#customer-base [role="status"]')?.textContent).toBe("未保存");
+    const unload = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    await click("编辑资料");
+    expect(host.querySelector('[data-editor-name]')?.textContent).toBe("PRIVATE UNSAVED DRAFT");
+    await click("保存修改");
+    expect(runtime.mutations.updateBasic.mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ customerId: 801, version: 7, confirmDuplicate: false, requestId: expect.any(String) }));
+    expect(host.querySelector('#customer-tab-company')?.textContent).toBe("客户档案");
+  });
+
+  it("pending basic writes disable the original editor and save without hiding contacts", async () => {
+    await render(); await click("编辑资料");
+    runtime.mutations.updateBasic.isPending = true; await render();
+    expect(button("保存中…").disabled).toBe(true); expect(button("synthetic-edit").disabled).toBe(true);
+    expect(runtime.fieldsProps.disabled).toBe(true);
+    expect(host.querySelector('#customer-contacts')?.textContent).toContain("PRIVATE CONTACT");
+    await click("保存中…"); expect(runtime.mutations.updateBasic.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("archived data remains viewable but never offers edit or save, and contact management keeps its original scope gate", async () => {
+    runtime.detail = { customer: record({ archivedAt: "2026-11-01" }), followUps: [] };
+    await render();
+    expect([...host.querySelectorAll('button')].some(item => item.textContent === "编辑资料")).toBe(false);
+    await click("展开详情");
+    expect(runtime.fieldsProps.disabled).toBe(true); expect(button("synthetic-edit").disabled).toBe(true);
+    expect([...host.querySelectorAll('button')].some(item => item.textContent === "保存修改")).toBe(false);
+    expect(host.querySelector('#customer-base-editor')?.textContent).toContain("上次更新");
+    expect(host.querySelector('#customer-contacts')?.textContent).toContain("PRIVATE CONTACT");
+    expect(button("管理联系人").disabled).toBe(false);
+    await click("管理联系人"); expect(runtime.contactsProps.open).toBe(true);
+    runtime.ready = false; await render();
+    expect(host.querySelector('#customer-panel-company')).toBeNull();
+    expect(host.textContent).not.toContain("PRIVATE CONTACT");
+    expect(runtime.mutations.updateBasic.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("the only company follow-up entry still opens the original form without replacing a basic draft", async () => {
+    await render(); await click("编辑资料"); await click("synthetic-edit");
+    expect(host.querySelector('.customer-workbench-top-buttons')?.textContent).not.toContain("新增跟进");
+    await click("新增跟进");
+    expect(host.querySelector('textarea[aria-label="跟进内容"]')?.closest('section')?.id).toBe("customer-followups");
+    expect(host.querySelector('[data-editor-name]')?.textContent).toBe("PRIVATE UNSAVED DRAFT");
+    expect(document.body.textContent).not.toContain("放弃未保存的客户修改？");
+    expect([...host.querySelectorAll('button')].some(item => item.textContent === "新增跟进")).toBe(false);
+    await click("取消");
+    expect([...host.querySelectorAll('button')].filter(item => item.textContent === "新增跟进")).toHaveLength(1);
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it.each(["需求与报价", "客户订单", "渠道库存"])("keeps the original guarded top follow shortcut on %s only", async label => {
+    await render(); await click(label);
+    const top = host.querySelector<HTMLButtonElement>('.customer-workbench-top-buttons button:nth-child(3)')!;
+    expect(top.textContent).toBe("新增跟进");
+    runtime.contactsBusy = true; await render(); await click("新增跟进");
+    expect(host.querySelector('#customer-panel-company')?.hasAttribute("hidden")).toBe(true);
+    expect(host.querySelector('textarea[aria-label="跟进内容"]')).toBeNull();
+    await bodyClick("继续当前操作"); runtime.contactsBusy = false; await render();
+    await act(async () => top.click()); await act(async () => { await delay(10); });
+    expect(window.location.search).toContain("tab=company");
+    const field = host.querySelector<HTMLTextAreaElement>('textarea[aria-label="跟进内容"]')!;
+    expect(field).not.toBeNull(); expect(document.activeElement).toBe(field);
+    expect(host.querySelector('.customer-workbench-top-buttons')?.textContent).not.toContain("新增跟进");
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("puts author, method, correction badge, time and correction action in one row with body below", async () => {
+    const original = followRecord({ correctionOfId: 12, content: "FIRST LINE\nSECOND LINE" });
+    runtime.detail = { customer: record(), followUps: [original] };
+    await render();
+    const article = host.querySelector('.customer-profile-follow-record')!;
+    const meta = article.querySelector('.customer-profile-follow-meta')!;
+    expect([...meta.children].map(item => item.tagName)).toEqual(["SPAN", "SPAN", "SPAN", "TIME", "BUTTON"]);
+    expect(meta.children[0].textContent).toBe("ORIGINAL FOLLOW AUTHOR");
+    expect(meta.children[1].textContent).toBe("电话");
+    expect(meta.children[2].textContent).toBe("更正 # 12");
+    expect(meta.querySelector('time')?.textContent).toBe(customerUtils.formatCustomerDateTime(original.occurredAt));
+    expect(button("更正此记录").parentElement).toBe(meta);
+    const body = article.querySelector('.customer-detail-followup-body')!;
+    expect(body.previousElementSibling).toBe(meta); expect(body.textContent).toBe(original.content);
+    expect(body.classList.contains("whitespace-pre-wrap")).toBe(true);
+    await click("更正此记录");
+    expect(host.querySelector('textarea[aria-label="更正说明"]')).not.toBeNull();
+    expect(host.textContent).toContain("将追加一条更正记录，原记录不会被修改。");
+    expect(runtime.detail.followUps).toEqual([original]);
+  });
+
+  it.each([
+    { content: "x".repeat(160), expandable: false },
+    { content: "x".repeat(161), expandable: true },
+    { content: "one\ntwo\nthree", expandable: false },
+    { content: "one\ntwo\nthree\nfour", expandable: true },
+  ])("keeps the exact existing history expansion threshold for $content", async ({ content, expandable }) => {
+    runtime.detail = { customer: record(), followUps: [followRecord({ content })] };
+    await render();
+    expect([...host.querySelectorAll('button')].some(item => item.textContent === "展开内容")).toBe(expandable);
+    expect(host.querySelector('.customer-detail-followup-body')?.textContent).toBe(expandable ? `${content.slice(0, 160)}…` : content);
+    if (expandable) {
+      await click("展开内容"); expect(host.querySelector('.customer-detail-followup-body')?.textContent).toBe(content);
+      await click("收起内容"); expect(host.querySelector('.customer-detail-followup-body')?.textContent).toBe(`${content.slice(0, 160)}…`);
+    }
+    expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("qualifies every new CSS rule by this page and limits compact controls to the profile headings", () => {
+    const css = parseCss(readFileSync("client/src/business/platform/client/src/pages/CustomerProfileCompact.css", "utf8"));
+    const scope = ".erp-ui.customer-workbench.customer-profile-tight";
+    const rules = new Map<string, Record<string, string>>();
+    css.walkRules(rule => {
+      expect(rule.selector.startsWith(scope)).toBe(true);
+      if (rule.selector !== scope) expect(rule.selector).toContain("#customer-panel-company");
+      expect(rule.selector).not.toMatch(/#customer-panel-(?:demands|orders|inventory)|customer-workbench-top-buttons|customer-list|dropdown/);
+      const declarations: Record<string, string> = {};
+      rule.walkDecls(declaration => { declarations[declaration.prop] = declaration.value; });
+      rules.set(rule.selector, { ...rules.get(rule.selector), ...declarations });
+      if (rule.selector.endsWith(".customer-profile-heading .crm-btn") || rule.selector.endsWith(".customer-profile-follow-record .customer-detail-history-action")) {
+        rule.walkDecls("min-height", declaration => { expect(declaration.important).toBe(true); });
+        rule.walkDecls("height", declaration => { expect(declaration.important).toBe(true); });
+      }
+    });
+    expect(rules.get(scope)).toMatchObject({ width: "100%", "max-width": "none", "text-align": "left" });
+    expect(rules.get(`${scope} #customer-panel-company .customer-profile-heading`)).toMatchObject({ display: "flex", "flex-wrap": "wrap", width: "100%", "max-width": "none", "text-align": "left", height: "auto", "min-height": "0" });
+    expect(rules.get(`${scope} #customer-panel-company .customer-profile-heading .crm-btn`)).toMatchObject({ height: "32px", "font-size": "14px" });
+    expect(rules.get(`${scope} #customer-panel-company #customer-contacts .customer-workbench-contacts`)).toMatchObject({ "flex-direction": "column" });
+    expect(rules.get(`${scope} #customer-panel-company #customer-contacts .customer-workbench-contacts > article`)).toMatchObject({ display: "flex", "flex-wrap": "wrap", width: "100%", height: "auto" });
+    expect(rules.get(`${scope} #customer-panel-company #customer-contacts .customer-workbench-contacts > article > p`)).toMatchObject({ "font-size": "15px", "overflow-wrap": "anywhere" });
+    expect(rules.get(`${scope} #customer-panel-company #customer-followups .customer-detail-followup-body`)).toMatchObject({ "white-space": "pre-wrap", "font-size": "15px" });
+    expect(css.nodes.some(node => node.type === "atrule" && node.name === "media" && node.params === "(max-width: 680px)")).toBe(true);
   });
 
   it.each([null, "2026-11-20T00:00:00Z"])("uses only the existing nextFollowUpAt field in the summary: %s", async nextFollowUpAt => {
@@ -610,7 +794,8 @@ describe.sequential("CustomerDetail consolidated customer profile", () => {
     expect(host.textContent).toContain("该客户已归档，当前为只读状态。");
     expect(host.textContent).toContain("HISTORICAL ARCHIVE"); expect(host.textContent).toContain("仅管理员可恢复。");
     expect(host.querySelector('#customer-followups')?.textContent).toContain("ORIGINAL FOLLOW HISTORY");
-    expect(host.querySelector('textarea')).toBeNull(); expect(button("新增跟进").disabled).toBe(true);
+    expect(host.querySelector('textarea')).toBeNull();
+    expect([...host.querySelectorAll('button')].some(item => item.textContent === "新增跟进")).toBe(false);
     expect([...host.querySelectorAll('button')].some(item => item.textContent === "更正此记录")).toBe(false);
     expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
   });

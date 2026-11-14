@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "atUtc": "2026-11-14T01:25:02.121199+00:00",
+  "sourceProfileTestsPassed": 213,
+  "sourceTestFailures": 0,
+  "tscPassed": true,
+  "actualCandidateGroupsPassed": 35,
+  "actualCandidateFailures": 0,
+  "sourcePinsVerified": 63,
+  "changedSourceFiles": [
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx",
+    "client/src/business/platform/client/src/pages/CustomerProfileCompact.css"
+  ],
+  "reviewPassed": true,
+  "offlineDesktopAndNarrowLayoutPassed": true,
+  "loggedInBrowserPixelAcceptance": false,
+  "noProductionTestWrites": true,
+  "sourceLogHashes": {
+    "source-tests.log": "93ac0d006fc27391920404b0bf7f3040b90e69a1698134cfb28d20746846f28d",
+    "tsc.log": "7df89d1bc99e776ddd1fe57edf366b397740ee7912982deb835584d0b9cf09b8"
+  }
+}

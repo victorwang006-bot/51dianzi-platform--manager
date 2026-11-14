@@ -447,7 +447,7 @@ describe("business industry customer integration", () => {
     render(<CustomerDetail />);
     await settle();
     expect(document.body.textContent).toContain("所属行业：未设置");
-    click(button("展开"));
+    click(button("展开详情"));
     const industry = required(document.querySelector<HTMLSelectElement>('[data-customer-field="industryCode"]'), "missing basic industry");
     expect(industry.value).toBe("");
     click(button("保存修改"));
@@ -466,7 +466,7 @@ describe("business industry customer integration", () => {
     runtime.location = "/customers/801?tab=company";
     render(<CustomerDetail />);
     await settle();
-    click(button("展开"));
+    click(button("展开详情"));
     expect(document.querySelector<HTMLSelectElement>('[data-customer-field="industryCode"]')?.value).toBe("medical");
     expect(document.body.textContent).toContain("所属行业：医疗电子");
   });
@@ -528,6 +528,96 @@ describe("business industry customer integration", () => {
     expect(validateCustomerForm(form).success).toBe(true);
     const record = (runtime.listQuery as { data: { items: Parameters<typeof recordToCustomerForm>[0][] } }).data.items[1];
     expect(recordToCustomerForm(record).industryCode).toBe("");
+  });
+});
+
+
+describe("compact customer profile real contacts integration", () => {
+  function prepareProfile() {
+    runtime.location = "/customers/801?tab=company";
+    const detail = (runtime.detailQuery as { data: { customer: object; followUps: unknown[] } }).data;
+    runtime.detailQuery = query({ ...detail, customer: { ...detail.customer, industryCode: "automotive" } });
+    const contacts = (runtime.contactsQuery as { data: { customer: object; contacts: Array<Record<string, unknown>> } }).data;
+    runtime.contactsQuery = query({ ...contacts, customer: { ...contacts.customer, id: 801 }, contacts: [
+      { ...contacts.contacts[0], methods: [{ type: "mobile", value: "13800138000" }, { type: "email", value: "primary@example.com" }, { type: "landline", value: "010-12345678" }] },
+      { ...contacts.contacts[1], methods: [{ type: "wechat", value: "synthetic_wechat" }, { type: "email", value: "secondary@example.com" }] },
+      contacts.contacts[2],
+    ] });
+  }
+
+  it("keeps every active contact method in one article per contact and removes duplicated summary contact fields", async () => {
+    prepareProfile(); render(<CustomerDetail />); await settle();
+    const profile = required(document.querySelector('#customer-panel-company'), "missing profile");
+    expect(profile.querySelectorAll('section')).toHaveLength(2);
+    const contacts = required(profile.querySelector('#customer-contacts'), "missing contacts");
+    expect(contacts.tagName).toBe("DIV"); expect(contacts.parentElement?.id).toBe("customer-base");
+    const articles = contacts.querySelectorAll('article');
+    expect(articles).toHaveLength(2);
+    expect(articles[0].querySelector('strong')?.textContent).toBe("主联系人");
+    expect(articles[0].querySelector('.crm-badge')?.textContent).toBe("主联系人");
+    expect(Array.from(articles[0].children).map(item => item.tagName)).toEqual(["DIV", "P", "P"]);
+    expect(articles[0].querySelector('.customer-detail-meta')?.textContent).toBe("采购部 · 经理");
+    expect(articles[0].querySelector('p:last-child')?.textContent).toBe("手机：13800138000；邮箱：primary@example.com；座机：010-12345678");
+    expect(articles[1].querySelector('p:last-child')?.textContent).toBe("微信：synthetic_wechat；邮箱：secondary@example.com");
+    expect(contacts.textContent).not.toContain("历史联系人"); expect(contacts.textContent).not.toContain("old@example.com");
+    const summary = required(profile.querySelector('.customer-detail-summary'), "missing summary");
+    expect(summary.children).toHaveLength(3); expect(summary.textContent).toContain("所属行业：汽车电子");
+    expect(summary.textContent).not.toMatch(/旧联系人一|13800138000|主联系人：|电话：/);
+    expect(new Map(runtime.contactsInputs.map(input => [JSON.stringify(input), input])).size).toBe(1);
+    expect(runtime.contactsInputs.at(-1)).toEqual({ customerId: 801, expectedActorUserId: 7, expectedEnterpriseId: 31 });
+  });
+
+  it("never hides contacts with basic details, puts version only in the original editor and opens the existing manager from the data heading", async () => {
+    prepareProfile(); render(<CustomerDetail />); await settle();
+    const contacts = required(document.querySelector('#customer-contacts .customer-workbench-contacts'), "missing active contacts");
+    expect(document.querySelector('#customer-base-editor')).toBeNull();
+    expect(document.querySelector('#customer-base')?.textContent).not.toContain("上次更新");
+    click(button("编辑资料")); await settle();
+    const editor = required(document.querySelector('#customer-base-editor'), "missing inline editor");
+    expect(editor.textContent).toContain("版本 1 · 上次更新");
+    expect(editor.querySelector('[data-customer-field="industryCode"]')).not.toBeNull();
+    expect(document.querySelector('#customer-contacts .customer-workbench-contacts')).toBe(contacts);
+    click(button("收起")); await settle();
+    expect(document.querySelector('#customer-base-editor')).toBeNull();
+    expect(document.querySelector('#customer-contacts .customer-workbench-contacts')).toBe(contacts);
+    expect(contacts.textContent).toContain("primary@example.com");
+    const manage = button("管理联系人");
+    expect(manage.closest('.customer-profile-heading')?.parentElement?.id).toBe("customer-base");
+    click(manage); await settle();
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.body.textContent).toContain("添加联系人");
+    expect(document.querySelector('#customer-base-editor')).toBeNull();
+    expect(runtime.updateBasic).not.toHaveBeenCalled(); expect(runtime.contactsEdit).not.toHaveBeenCalled();
+  });
+
+  it("only mounts the original full contact reader on company while other tabs retain their top follow-up shortcut", async () => {
+    prepareProfile(); render(<CustomerDetail />); await settle();
+    expect(document.querySelector('#customer-contacts article')).not.toBeNull();
+    click(button("需求与报价")); await settle();
+    expect(document.querySelector('#customer-panel-company')?.hasAttribute("hidden")).toBe(true);
+    expect(document.querySelector('#customer-contacts article')).toBeNull();
+    expect(button("新增跟进").closest('.customer-workbench-top-buttons')).not.toBeNull();
+    click(button("客户档案")); await settle();
+    expect(document.querySelector('#customer-contacts article')).not.toBeNull();
+    expect(document.querySelector('.customer-workbench-top-buttons')?.textContent).not.toContain("新增跟进");
+    expect(button("新增跟进").closest('section')?.id).toBe("customer-followups");
+  });
+
+  it("preserves original contact loading, error, retry and empty hints inside the data card", async () => {
+    prepareProfile();
+    const data = (runtime.contactsQuery as { data: { contacts: unknown[] } }).data;
+    runtime.contactsQuery = query(data, { isFetching: true });
+    const view = render(<CustomerDetail />); await settle();
+    expect(document.querySelector('#customer-contacts [role="status"]')?.textContent).toBe("正在读取联系人…");
+    const retry = vi.fn().mockResolvedValue({ error: null });
+    runtime.contactsQuery = query(data, { isError: true, error: new Error("CONTACT READ DENIED"), refetch: retry });
+    view.rerender(<CustomerDetail />); await settle();
+    expect(document.querySelector('#customer-contacts [role="alert"]')?.textContent).toContain("读取联系人失败：CONTACT READ DENIED");
+    click(button("重试")); await settle(); expect(retry).toHaveBeenCalledOnce();
+    runtime.contactsQuery = query({ ...data, contacts: [] }); view.rerender(<CustomerDetail />); await settle();
+    expect(document.querySelector('#customer-contacts')?.textContent).toContain("暂无有效联系人，可在管理联系人中维护。");
+    expect(button("管理联系人").disabled).toBe(false);
+    expect(runtime.updateBasic).not.toHaveBeenCalled();
   });
 });
 

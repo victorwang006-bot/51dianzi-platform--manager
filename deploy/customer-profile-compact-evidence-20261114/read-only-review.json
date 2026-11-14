@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "issues": [],
+  "verified": [
+    {
+      "check": "批准范围及冻结证据身份",
+      "result": "符合 TODO-customer-profile-compact-20261114.md 的 2026-11-14 09:03:59 批准方案。baseline 为 37014f0831eae3f1e8099c69366d0947b752de18；保存的 index-before.html 实测 SHA-256 为 0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8。"
+    },
+    {
+      "check": "冻结源码及两处测试哈希",
+      "result": "本次只读实测的四个文件 SHA-256 全部与 source-integrity.json 一致：CustomerDetail.tsx=12082babf7cccb58b85d43f6752bbc835d8c995064b660b0a650061c181f04df；CustomerProfileCompact.css=15117b330a367455929d59556923061317dc3fb441b9743392f1d965c8fba343；CustomerDetail.memory.test.ts=5670fdbc9d38fd9adb32b4fb1de86794b3c4f1a6a646d3168d651c11b042f486；CustomerContacts.restore.test.tsx=0c1c1af8c7f128304b26335f985151a2009c6f1d4f541920b3e7482c1e54b384。"
+    },
+    {
+      "check": "合卡、摘要、展开及关键入口",
+      "result": "CustomerDetail.tsx:558-608 的 company 面板仅有客户资料及跟进记录两个主要 section；联系人嵌在客户资料卡片内且位于 basicExpanded 条件之外。摘要仅行业、阶段、nextFollowUpAt；无重复姓名/电话摘要。版本与更新时间仅在原展开编辑区域内。原保存按钮、CustomerFields props、联系人 reader 的 company-only mount/key/customerId/scope/scopeReady 和管理入口的 scope gate 均保留。company 顶部新增跟进入口已去重，其他三个 tab 的原 guardAction 捷径保留。"
+    },
+    {
+      "check": "handlers、dialogs、其他面板字节守卫",
+      "result": "已阅读 source-change.patch、实际页面关键挂接、source-integrity.json 及 validate-source.py 的比较范围。已有字节证据明确覆盖新增 CSS import 之外 main return 前全部代码、需求/订单/库存 JSX 与 callbacks、全部 shell 确认弹窗、原跟进 editor 与历史 mapping、CustomerFields 与联系人 manager props。没有发现绕过原权限、归档、dirty/busy、SPA/beforeunload、请求幂等或导航保护的改动。四 tab/default/legacy 链接逻辑所在前置代码及 customerWorkbench.ts 保持。"
+    },
+    {
+      "check": "实际更正提示及历史内容保留",
+      "result": "唯一常驻跟进说明已删除；实际更正的“将追加一条更正记录，原记录不会被修改。”原样保留。FollowUpRow 仅调整 DOM/classes，作者/方式/更正标记/时间/更正操作同一 metadata 容器，正文下一行；readOnly/onCorrect、原 useState、160 字符或超过三行的展开条件和内容派生未改变。"
+    },
+    {
+      "check": "全部新增 CSS 作用域及紧凑布局",
+      "result": "逐条阅读新增 CSS，33 条规则选择器均受 .erp-ui.customer-workbench.customer-profile-tight 限定；除批准可接受的页面 root width/min-width/max-width/text-align 局部例外外，全部同时限定 #customer-panel-company。按钮重要级联仅在本档案标题/历史记录内，无公共菜单、列表、顶部捷径或其他 tab 控件选择器。标题左对齐；卡片间距 12px；内边距 12–16px；联系人逐行横排并 wrap，保留全部联系方式；窄屏换行及长字段断行规则明确，不依靠縮小字号实现紧凑布局。"
+    },
+    {
+      "check": "关键旧 CSS 与受保护业务源码 pins",
+      "result": "只读抽核 15 个关键文件，均与 baseline-factory-reproduction.json 的 pins 一致，包含三个原客户 CSS、CrmSalesOrders.css、CustomerWorkbenchContacts/CustomerContactsManager/CustomerFields、customerWorkbench/useCustomerNavigationGuard/useCustomerWorkbenchOrders、客户 BOM helper/dialog、CrmSalesOrders、ChannelInventoryHost 与 CustomerChannelInventory。没有发现改变原 CSS、BOM、客户订单、库存精确绑定或权限源码的迹象。"
+    },
+    {
+      "check": "已有测试与类型检查证据",
+      "result": "source-tests.log 为 7 files / 213 tests passed / EXIT_CODE=0；tsc.log 为 tsc --noEmit --incremental false / EXIT_CODE=0。阅读两个测试补丁，原断言主要适配文案、合卡及去重入口，新增原 inline 编辑/版本保存、收起保留 dirty、pending/归档、其他 tab guard、历史长内容和真实联系人联系方式/过滤/加载提示覆盖；未发现删减权限保护以取得 PASS。未重跑测试或类型检查。"
+    },
+    {
+      "check": "source-bound 增量 factory 与 HTML 核心逻辑静态核对",
+      "result": "已有 baseline-factory-reproduction.json 证明两线上 module 的旧 initializer 精确复现且 SHA-256 相同。静态阅读新 build/core/factory 脚本：实际构建入口只编译当前源码，限制变化 pins 为 1 TSX+1 CSS；仅替换两 module 的 __CUSTOMER_WORKBENCH_EXPORTS initializer，断言 __customerLive bridge 全字节相同及外围 native functions 相同；entry JS 按原字节新路径复制；HTML 仅入口/importmap 重定位、必要等价 scope 克隆和新增一个 CSS link，并断言精确逆向、旧 imports/scopes 与实际依赖解析保持。未执行这些脚本。"
+    },
+    {
+      "check": "激活守卫静态核对",
+      "result": "activate-customer-profile-compact-20261114.py 限制 HTML+3JS+1CSS 共五文件/四资源，校验路径与候选/driver/evidence hashes，并强制 candidate proof、CSS proof、offline visual、actual candidate tests、tsc/source-tests/review PASS。双锁、coord 关闭与任务所有权、fresh HTML CAS、旧 API/main HTML/nginx protectedFiles、旧 assets、process/env 快照及失败精确 HTML 逆向均有守卫；仅新增资源不覆盖旧资源，不含进程 reload 或 API/DB mutation。此为静态审查，不表示已激活。"
+    }
+  ],
+  "limits": [
+    "PASS 仅表示当前冻结源码、已有证据及已阅读构建/激活逻辑的只读审查未发现阻断缺陷，不等同于候选执行验证或生产发布完成。",
+    "审查首次列出的现有证据尚未包含 candidate 产物、actual-candidate-tests.json、visual-layout-tests.json、manifest 或 verified；未等待、轮询或因尚未生成这些父级后续产物判 FAIL，亦未宣称其已通过。",
+    "本次未执行 Git 操作、源码修改、测试、类型检查、build、浏览器、network 或部署；仅读取文件、核实有限关键 hashes，并按要求写入本审查 JSON。",
+    "未复做完整仓库/所有 assets/全生产保护检查；其他业务保护依据现有字节证据、有限关键源码 pins 及静态增量/发布守卫，不扩展到新审计范围。",
+    "未实测 CSS 渲染及不同 viewport 布局，未做登录后真实页面验收；父级仍须完成候选实际行为及 offline layout 证据后才满足脚本激活先决条件。"
+  ]
+}

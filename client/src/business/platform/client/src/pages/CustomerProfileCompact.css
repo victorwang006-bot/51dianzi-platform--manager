@@ -1,0 +1,305 @@
+/* Only this detail page opts in; shared menus, lists and other tabs stay untouched. */
+.erp-ui.customer-workbench.customer-profile-tight {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company > :is(#customer-base, #customer-followups) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 16px;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading .admin-section-title {
+  display: block;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading .crm-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  /* AdminReadability sets role heights with !important; contain this override. */
+  height: 32px !important;
+  min-height: 32px !important;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 0 16px 12px;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 24px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary > span {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-editor {
+  box-sizing: border-box;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-version {
+  margin: 0 0 12px;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-contacts {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 8px 16px;
+  border-top: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-contacts-title {
+  margin: 0 0 2px;
+  padding: 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: left;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+  gap: 4px 16px;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  font-size: 15px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article + article {
+  border-top: 1px solid #f1f5f9;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article > p {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  font-size: 15px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article > p.customer-detail-meta {
+  font-size: 14px;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .crm-badge {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-empty {
+  margin: 0;
+  padding: 6px 0;
+  font-size: 14px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-follow-heading {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-detail-followup-form {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 12px 16px;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record {
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 10px 16px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta .customer-detail-meta {
+  min-width: 0;
+  font-size: 14px;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-detail-followup-body {
+  margin: 4px 0 0;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record .customer-detail-history-action {
+  min-height: 32px !important;
+  height: auto !important;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+@media (max-width: 680px) {
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading {
+    padding: 8px 12px;
+  }
+
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading-actions {
+    justify-content: flex-start;
+  }
+
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company :is(.customer-profile-summary, .customer-profile-editor, .customer-profile-contacts, .customer-detail-followup-form, .customer-profile-follow-record) {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta time {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

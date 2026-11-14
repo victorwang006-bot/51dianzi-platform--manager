@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "allRulesCustomerProfileScoped": true,
+  "oldStylesUnchanged": true,
+  "sourceSha256": "15117b330a367455929d59556923061317dc3fb441b9743392f1d965c8fba343",
+  "url": "/assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+  "sha256": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f",
+  "ruleCount": 33
+}

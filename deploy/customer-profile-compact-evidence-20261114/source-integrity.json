@@ -1,0 +1,109 @@
+{
+  "checks": [
+    {
+      "check": "All code before the page main return, except the new CSS import",
+      "status": "PASS",
+      "bytes": 25223
+    },
+    {
+      "check": "Demand/order/inventory JSX and callbacks",
+      "status": "PASS",
+      "bytes": 2102
+    },
+    {
+      "check": "All shell confirmation dialogs and correction/discard bindings",
+      "status": "PASS",
+      "bytes": 3732
+    },
+    {
+      "check": "Follow-up editor, content/save/cancel bindings and full history mapping",
+      "status": "PASS",
+      "bytes": 4217
+    },
+    {
+      "check": "CustomerFields props, permissions, dirty and form callbacks",
+      "status": "PASS",
+      "bytes": 479
+    },
+    {
+      "check": "Contact reader key, exact customer/scope props and company-only mount",
+      "status": "PASS",
+      "bytes": 187
+    },
+    {
+      "check": "Contact manager props, identity and dirty/busy callbacks",
+      "status": "PASS",
+      "bytes": 297
+    },
+    {
+      "check": "Header follow-up button original openFollowUp callback and guards",
+      "status": "PASS",
+      "bytes": 142
+    },
+    {
+      "check": "FollowUpRow original expansion hooks, threshold and content derivation",
+      "status": "PASS",
+      "bytes": 83
+    },
+    {
+      "check": "Other-tab top follow shortcut preserves its entire original guardAction chain",
+      "status": "PASS",
+      "bytes": 202
+    },
+    {
+      "check": "All new CSS selectors are page-qualified and otherwise company-panel-only",
+      "status": "PASS",
+      "selectors": 33
+    }
+  ],
+  "new_classes": [
+    "customer-profile-contacts",
+    "customer-profile-contacts-title",
+    "customer-profile-editor",
+    "customer-profile-follow-heading",
+    "customer-profile-follow-meta",
+    "customer-profile-follow-record",
+    "customer-profile-heading",
+    "customer-profile-heading-actions",
+    "customer-profile-heading-title",
+    "customer-profile-summary",
+    "customer-profile-tight",
+    "customer-profile-version"
+  ],
+  "files": [
+    {
+      "file": "client/src/business/platform/client/src/pages/CustomerDetail.tsx",
+      "absolute_path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/pages/CustomerDetail.tsx",
+      "kind": "source",
+      "sha256": "12082babf7cccb58b85d43f6752bbc835d8c995064b660b0a650061c181f04df",
+      "added_lines": 35,
+      "removed_lines": 30
+    },
+    {
+      "file": "client/src/business/platform/client/src/pages/CustomerProfileCompact.css",
+      "absolute_path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/pages/CustomerProfileCompact.css",
+      "kind": "source",
+      "sha256": "15117b330a367455929d59556923061317dc3fb441b9743392f1d965c8fba343",
+      "added_lines": 305,
+      "removed_lines": 0
+    },
+    {
+      "file": "client/src/business/platform/client/src/pages/CustomerDetail.memory.test.ts",
+      "absolute_path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/pages/CustomerDetail.memory.test.ts",
+      "kind": "test",
+      "sha256": "5670fdbc9d38fd9adb32b4fb1de86794b3c4f1a6a646d3168d651c11b042f486",
+      "added_lines": 207,
+      "removed_lines": 22
+    },
+    {
+      "file": "client/src/business/platform/client/src/components/customers/CustomerContacts.restore.test.tsx",
+      "absolute_path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/components/customers/CustomerContacts.restore.test.tsx",
+      "kind": "test",
+      "sha256": "0c1c1af8c7f128304b26335f985151a2009c6f1d4f541920b3e7482c1e54b384",
+      "added_lines": 92,
+      "removed_lines": 2
+    }
+  ],
+  "source_target_count": 2,
+  "modified_test_count": 2
+}

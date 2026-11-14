@@ -1,0 +1,438 @@
+{
+  "status": "PASS",
+  "actualCandidateDOM": true,
+  "original23StylesAndScopedIncrement": true,
+  "offlineChromium": true,
+  "productionLoginUsed": false,
+  "productionRecordWrites": 0,
+  "externalRequestsBlocked": 0,
+  "results": [
+    {
+      "width": 1440,
+      "status": "PASS",
+      "before": {
+        "viewport": 1440,
+        "scrollWidth": 1440,
+        "base": {
+          "x": 16,
+          "y": 211.796875,
+          "width": 1408,
+          "height": 159.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "16px",
+          "textAlign": "start"
+        },
+        "heading": {
+          "x": 392.90625,
+          "y": 224.796875,
+          "width": 68,
+          "height": 25.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "0px",
+          "textAlign": "start"
+        },
+        "contacts": {
+          "x": 16,
+          "y": 387.296875,
+          "width": 1408,
+          "height": 175,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "16px",
+          "textAlign": "start"
+        },
+        "follow": {
+          "x": 16,
+          "y": 578.296875,
+          "width": 1408,
+          "height": 202.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "16px",
+          "textAlign": "start"
+        },
+        "contactRows": [
+          {
+            "x": 33,
+            "y": 452.296875,
+            "width": 677,
+            "height": 101,
+            "display": "block"
+          },
+          {
+            "x": 730,
+            "y": 452.296875,
+            "width": 677,
+            "height": 101,
+            "display": "block"
+          }
+        ],
+        "sectionCount": 3,
+        "editor": null
+      },
+      "after": {
+        "viewport": 1440,
+        "scrollWidth": 1440,
+        "base": {
+          "x": 16,
+          "y": 211.796875,
+          "width": 1408,
+          "height": 200,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "heading": {
+          "x": 33,
+          "y": 224.796875,
+          "width": 68,
+          "height": 24,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "contacts": {
+          "x": 17,
+          "y": 296.796875,
+          "width": 1406,
+          "height": 114,
+          "display": "block",
+          "paddingLeft": "16px",
+          "paddingTop": "8px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "follow": {
+          "x": 16,
+          "y": 423.796875,
+          "width": 1408,
+          "height": 132.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "contactRows": [
+          {
+            "x": 33,
+            "y": 329.796875,
+            "width": 1374,
+            "height": 36,
+            "display": "flex"
+          },
+          {
+            "x": 33,
+            "y": 365.796875,
+            "width": 1374,
+            "height": 37,
+            "display": "flex"
+          }
+        ],
+        "sectionCount": 2,
+        "editor": null
+      },
+      "expanded": {
+        "viewport": 1440,
+        "scrollWidth": 1440,
+        "base": {
+          "x": 16,
+          "y": 211.796875,
+          "width": 1408,
+          "height": 963,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "heading": {
+          "x": 33,
+          "y": 224.796875,
+          "width": 68,
+          "height": 24,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "contacts": {
+          "x": 17,
+          "y": 1059.796875,
+          "width": 1406,
+          "height": 114,
+          "display": "block",
+          "paddingLeft": "16px",
+          "paddingTop": "8px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "follow": {
+          "x": 16,
+          "y": 1186.796875,
+          "width": 1408,
+          "height": 132.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "contactRows": [
+          {
+            "x": 33,
+            "y": 1092.796875,
+            "width": 1374,
+            "height": 36,
+            "display": "flex"
+          },
+          {
+            "x": 33,
+            "y": 1128.796875,
+            "width": 1374,
+            "height": 37,
+            "display": "flex"
+          }
+        ],
+        "sectionCount": 2,
+        "editor": {
+          "x": 17,
+          "y": 296.796875,
+          "width": 1406,
+          "height": 763,
+          "display": "block",
+          "paddingLeft": "16px",
+          "paddingTop": "12px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        }
+      }
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "before": {
+        "viewport": 390,
+        "scrollWidth": 390,
+        "base": {
+          "x": 12,
+          "y": 207.796875,
+          "width": 366,
+          "height": 215.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "16px",
+          "textAlign": "start"
+        },
+        "heading": {
+          "x": 29,
+          "y": 220.796875,
+          "width": 68,
+          "height": 25.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "0px",
+          "textAlign": "start"
+        },
+        "contacts": {
+          "x": 12,
+          "y": 439.296875,
+          "width": 366,
+          "height": 300,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "16px",
+          "textAlign": "start"
+        },
+        "follow": {
+          "x": 12,
+          "y": 755.296875,
+          "width": 366,
+          "height": 274.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "16px",
+          "textAlign": "start"
+        },
+        "contactRows": [
+          {
+            "x": 29,
+            "y": 504.296875,
+            "width": 332,
+            "height": 125,
+            "display": "block"
+          },
+          {
+            "x": 29,
+            "y": 629.296875,
+            "width": 332,
+            "height": 101,
+            "display": "block"
+          }
+        ],
+        "sectionCount": 3,
+        "editor": null
+      },
+      "after": {
+        "viewport": 390,
+        "scrollWidth": 390,
+        "base": {
+          "x": 12,
+          "y": 207.796875,
+          "width": 366,
+          "height": 340,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "heading": {
+          "x": 25,
+          "y": 216.796875,
+          "width": 68,
+          "height": 24,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "contacts": {
+          "x": 13,
+          "y": 352.796875,
+          "width": 364,
+          "height": 194,
+          "display": "block",
+          "paddingLeft": "12px",
+          "paddingTop": "8px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "follow": {
+          "x": 12,
+          "y": 559.796875,
+          "width": 366,
+          "height": 132.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "contactRows": [
+          {
+            "x": 25,
+            "y": 385.796875,
+            "width": 340,
+            "height": 88,
+            "display": "flex"
+          },
+          {
+            "x": 25,
+            "y": 473.796875,
+            "width": 340,
+            "height": 65,
+            "display": "flex"
+          }
+        ],
+        "sectionCount": 2,
+        "editor": null
+      },
+      "expanded": {
+        "viewport": 390,
+        "scrollWidth": 390,
+        "base": {
+          "x": 12,
+          "y": 207.796875,
+          "width": 366,
+          "height": 1614,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "heading": {
+          "x": 25,
+          "y": 220.796875,
+          "width": 68,
+          "height": 24,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "contacts": {
+          "x": 13,
+          "y": 1626.796875,
+          "width": 364,
+          "height": 194,
+          "display": "block",
+          "paddingLeft": "12px",
+          "paddingTop": "8px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        },
+        "follow": {
+          "x": 12,
+          "y": 1833.796875,
+          "width": 366,
+          "height": 132.5,
+          "display": "block",
+          "paddingLeft": "0px",
+          "paddingTop": "0px",
+          "marginBottom": "12px",
+          "textAlign": "left"
+        },
+        "contactRows": [
+          {
+            "x": 25,
+            "y": 1659.796875,
+            "width": 340,
+            "height": 88,
+            "display": "flex"
+          },
+          {
+            "x": 25,
+            "y": 1747.796875,
+            "width": 340,
+            "height": 65,
+            "display": "flex"
+          }
+        ],
+        "sectionCount": 2,
+        "editor": {
+          "x": 13,
+          "y": 320.796875,
+          "width": 364,
+          "height": 1306,
+          "display": "block",
+          "paddingLeft": "12px",
+          "paddingTop": "12px",
+          "marginBottom": "0px",
+          "textAlign": "left"
+        }
+      }
+    }
+  ],
+  "coverageLimits": [
+    "Layout uses real candidate React DOM snapshots and all current CSS with local fixture data, not a production logged-in session. Native menus/dialog styling not pixel-accepted."
+  ]
+}

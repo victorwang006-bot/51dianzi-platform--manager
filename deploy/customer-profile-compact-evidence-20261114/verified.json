@@ -1,0 +1,110 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-14T01:26:42.692476+00:00",
+  "htmlSha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+      "sha256": "6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+      "sha256": "edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c"
+    },
+    {
+      "relative": "assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+      "sha256": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "status": 200,
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+      "status": 200,
+      "sha256": "6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+      "status": 200,
+      "sha256": "edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+      "status": 200,
+      "sha256": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=business",
+      "status": 200,
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=mall",
+      "status": 200,
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618"
+    },
+    {
+      "url": "https://www.51dianzi.com/",
+      "status": 200,
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    }
+  ],
+  "customerInventoryCopyRemoved": true,
+  "ordersAndBomUnchanged": true,
+  "mallBytesUnchanged": true,
+  "allProtectedFilesUnchanged": true,
+  "allProcessesUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 0,
+  "databaseOperations": 0,
+  "permissionChanges": 0,
+  "processReloads": 0,
+  "productionRecordWrites": 0,
+  "loggedInBrowserAcceptancePerformed": false,
+  "customerArchiveDefault": true,
+  "overviewRemoved": true,
+  "followupsMergedBelowContacts": true,
+  "customerProfileCompact": true,
+  "companyAndContactsInOneCard": true,
+  "legacyCustomerLinksCompatible": true,
+  "customerTabs": [
+    "客户档案",
+    "需求与报价",
+    "客户订单",
+    "渠道库存"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "beforeSha256": "0826fd3d36191498fd371a455d28bfcb2fda7f8646e8eb787466488ddbb151a8",
+  "sha256": "204e6bcfa2e6096cc17a892bcdbc56c014d3d0588e8987ac5daca3676d8b9618",
+  "exactInverse": true,
+  "preservedOldImportsAndScopes": true,
+  "clonedScopes": [
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js",
+      "newScope": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js"
+    },
+    {
+      "oldScope": "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js",
+      "newScope": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js"
+    },
+    {
+      "oldScope": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-channel-profile-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "newScope": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js"
+    }
+  ],
+  "changes": [
+    {
+      "from": "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js",
+      "to": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+      "hits": 13
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js",
+      "to": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+      "hits": 20
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-channel-profile-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "to": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "hits": 60
+    }
+  ],
+  "relocations": {
+    "/assets/BusinessWorkbenchPage-channel-profile-0-1b0c3c791323a0546f752ad2b7ec3b8d4d8de8347910ea5f8a52766055b8e4eb.js": "/assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+    "/assets/BusinessWorkbenchPage-channel-profile-1-537aa35ba043e9e859c00bdf4d91640ff8ebd09534659da4b9491ed954093f8e.js": "/assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-channel-profile-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js"
+  },
+  "onlyNewStylesheet": "/assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+  "entryRelocation": {
+    "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-channel-profile-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+    "to": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js"
+  }
+}
