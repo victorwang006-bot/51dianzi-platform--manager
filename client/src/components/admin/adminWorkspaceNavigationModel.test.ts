@@ -181,11 +181,11 @@ describe("正式后台顶部工作区菜单", () => {
     const groups = groupAdminWorkspaceNavigationItems(items);
     expect(groups.map(group => [group.id, group.label])).toEqual([
       ["business", "业务工作台"],
-      ["operations", "平台运营"],
       ["personal", "个人中心"],
+      ["operations", "平台运营"],
       ["organization", "组织与权限"],
     ]);
-    expect(groups[1].items.map(item => item.path)).toEqual([
+    expect(groups[2].items.map(item => item.path)).toEqual([
       "/merchants",
       "/materials",
       "/orders",
@@ -195,7 +195,7 @@ describe("正式后台顶部工作区菜单", () => {
       "/analytics",
       "/exception-logs",
     ]);
-    expect(groups[2].items.map(item => item.path)).toEqual(["/profile"]);
+    expect(groups[1].items.map(item => item.path)).toEqual(["/profile"]);
     expect(groups[3].items.map(item => item.path)).toEqual([
       "/staff",
       "/teams",

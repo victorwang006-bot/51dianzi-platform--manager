@@ -1,0 +1,1318 @@
+{
+  "status": "PASS",
+  "reviewKind": "independent-read-only-implementation-review",
+  "reviewedAtUtc": "2026-11-14T03:39:31.695173+00:00",
+  "repository": "/home/ubuntu/work/51dianzi-platform--manager",
+  "head": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+  "approvedTodoSha256": "e9adbc628d52dfb3bcc9b3df07a827b0f1742ddc237d0f8035bf2167e005e0c7",
+  "summary": "独立单点复核PASS：BIND-DRIVER-EXEC-BEFORE-HASH-001已修复，双锁及coord/verified拒绝早于driver读取/执行，hash先于exec，compile执行同一份已验字节无driver重读TOCTOU。隔离12项spy全部PASS，漂移恶意顶层sentinel不执行且正确模块非main。仅重核既有源/候选/工具/证据hash未漂移；原产品、activation、package及全部QA PASS结论和实限保留，未重新审产品、未打包、无生产验收。",
+  "productSourceCandidateReview": "PASS",
+  "activationDriverReview": "PASS",
+  "releasePackageReview": "PASS",
+  "finalQaAcceptanceClaimed": false,
+  "productionAcceptanceClaimed": false,
+  "issues": [],
+  "pendingQa": [],
+  "checks": [
+    {
+      "id": "scope-and-freeze",
+      "status": "PASS",
+      "method": "git rev-parse/status/diff只读、实际文件SHA256及冻结契约核对",
+      "detail": "HEAD仍5abd；产品增量仅导航definitions顺序、Profile.tsx/Profile.css/profileModel.ts、Staff.tsx/StaffStatusDialog/staffStatusUi、db.ts/routers.ts。无schema/migration或其他业务源码改动。frontend19和backend4源pins逐文件等于实际工作树；shared/adminPermissions重叠去重。"
+    },
+    {
+      "id": "navigation-and-dashboard",
+      "status": "PASS",
+      "references": [
+        "client/src/components/admin/adminWorkspaceNavigationModel.ts:188-207",
+        "client/src/pages/Profile.tsx:92-108",
+        "frontend-candidate/layout-build-proof.json"
+      ],
+      "detail": "仅personal/operations对调。Profile内容不再挂pc-page-header，原DashboardLayout包裹仍在；Layout candidate只替换definitions initializer，导航胶囊其余部分及Dashboard非patch字节保护。没有创建新的root/provider。"
+    },
+    {
+      "id": "profile-real-info-two-tabs",
+      "status": "PASS",
+      "references": [
+        "client/src/pages/Profile.tsx:31-34",
+        "client/src/pages/Profile.tsx:400-456",
+        "client/src/pages/profileModel.ts:34-37"
+      ],
+      "detail": "默认个人资料与业绩与提成两个tab，真实profile字段紧凑同卡；缺失字段明确未设置。密码状态来自auth.me.loginMethod，不伪造hasPassword；phoneBinding仍区分legacy_unverified和verified_by_current_ticket。"
+    },
+    {
+      "id": "profile-seven-api-and-scope",
+      "status": "PASS",
+      "references": [
+        "client/src/pages/Profile.tsx:63-179",
+        "client/src/pages/Profile.tsx:187-292",
+        "server/personalCenterRouter.ts:13-98",
+        "client/src/business/platform/client/src/lib/authSessionEvents.ts:7-42"
+      ],
+      "detail": "profile/performance/commission/updateProfile/changePassword/requestPhoneCode/bindPhone原七RPC namespace及原input保留；dialogEpoch/phoneRevision不发给服务端。原身份+epoch查询键、同步scopeRef撤销、fresh auth恢复、unmount cancel/remove self queries与mutation清理保持。清会话事件同步dispatch。"
+    },
+    {
+      "id": "profile-native-security-lifecycle",
+      "status": "PASS",
+      "references": [
+        "client/src/pages/Profile.tsx:150-165",
+        "client/src/pages/Profile.tsx:298-372",
+        "client/src/pages/Profile.tsx:514-575",
+        "frontend-candidate/profile-build-proof.json"
+      ],
+      "detail": "原密码/确认密码及SMS一次ticket原表单转现有Dialog；关闭同步递增epoch/revision并清输入/ticket/error及mutation缓存。securityBusy ref与securityInFlight在关闭重开时继续防重，onSettled才解除。SMS晚到回调须当前主体、当前opening和revision一致；号码改走再改回不恢复旧ticket。已确认cooldown不因关闭清零。真实native input Dialog/Close导出链经实际baseline AST及SHA确认，未用无焦点/ESC/portal能力的假UI替代。"
+    },
+    {
+      "id": "profile-security-logout",
+      "status": "PASS",
+      "references": [
+        "client/src/pages/Profile.tsx:235-249",
+        "client/src/_core/hooks/useAuth.ts:35-58",
+        "server/personalCenterRouter.ts:45-75",
+        "server/_core/context.ts:24-27"
+      ],
+      "detail": "改密或绑定成功只对当前主体走原auth.logout、清原header token和会话广播后navigate login；等待logout后的canFinishLogout阻止旧主体覆盖新主体导航。原服务端安全成功clearCookie及sessionVersion撤销链不变。"
+    },
+    {
+      "id": "performance-and-commission",
+      "status": "PASS",
+      "references": [
+        "client/src/pages/Profile.tsx:196-215",
+        "client/src/pages/Profile.tsx:460-510",
+        "server/personalCenterRouter.ts:77-97"
+      ],
+      "detail": "同month同时启用本人业绩与提成，两块loading/error/retry独立；本人订单数/销售额/已回款、10条分页、切月page1与无跨月placeholder保持。统计口径和服务端原来源未改；账期不当现金回款，未知退款不造0，提成amount:null、尚未配置，不新增比例或计算。"
+    },
+    {
+      "id": "staff-readonly-row-actions",
+      "status": "PASS",
+      "references": [
+        "client/src/pages/Staff.tsx:1118-1265",
+        "client/src/pages/Staff.css",
+        "client/src/lib/staffStatusUi.ts:19-47"
+      ],
+      "detail": "状态只读、原六列h-14与200px操作栏保持，配置权限|启停|删除紧凑。启停只用row.admin原生ID，不按姓名手机号推导身份；纯前台成员无启停。admins.manage、自停、archive、locked及未核实另一有效超管UI保护存在；已知超管样本仅保守client hint，服务端锁完整集合权威判断。原删除离职归档条件/流程未改。"
+    },
+    {
+      "id": "staff-confirm-and-readback",
+      "status": "PASS",
+      "references": [
+        "client/src/components/admin/StaffStatusDialog.tsx:16-78",
+        "client/src/pages/Staff.tsx:1294-1325"
+      ],
+      "detail": "明确目标name/username、实际2至500字原因和仅后台访问/会话影响；busy ref阻止同轮双击，actor/session epoch挡迟到回调。写成功后实际adminUser.list.query回读目标状态才关闭；readback失败saved gate禁止重复写且不伪造已核验成功。"
+    },
+    {
+      "id": "both-status-entry-transaction-fence",
+      "status": "PASS",
+      "references": [
+        "server/routers.ts:3283-3340",
+        "server/db.ts:6666-6723",
+        "server/db.ts:6833-6845"
+      ],
+      "detail": "update.status和toggleStatus都运行时要求expectedStatus/reason，认证注入native actor/version/audit，toggle委托update。事务先完整非archive active超管集合锁，再ID顺序actor/target FOR UPDATE，fresh actor active/archive/sessionVersion/admins.manage grants复核。同一函数强制self/last-effective-super/archive及locked离开locked禁令，封locked→disabled→active绕过。"
+    },
+    {
+      "id": "status-cas-and-audit",
+      "status": "PASS",
+      "references": [
+        "server/db.ts:6737-6788",
+        "server/routers.ts:322-333",
+        "live-audit-schema-readonly.json"
+      ],
+      "detail": "实际变化SQL where同时匹配id/expectedStatus/锁读existing.sessionVersion，affectedRows必须恰为1；异常结果在审计/销售投影前抛CONFLICT并回滚。audit_logs同事务记录真实ctx.user.id、fresh native actor name/role、服务器时间、username/status/sessionVersion before及status/sessionVersion after、trimmed实际reason。已提供schema列完整容纳这些字段，无migration。"
+    },
+    {
+      "id": "status-isolation-and-original-auth",
+      "status": "PASS",
+      "references": [
+        "server/db.ts:6725-6730",
+        "server/db.ts:6740-6788",
+        "server/db.ts:5799-5855",
+        "server/_core/context.ts:24-87",
+        "client/src/pages/Staff.tsx:781-800"
+      ],
+      "detail": "status-only仅status、SQL sessionVersion+1、audit及原sales identity sync，随后return，未重写密码/grants/scopes/customerowner/frontend/enterprise；同状态专用命令no-op。启用仍加版本，旧token不恢复。原auth context要求active且版本一致，原权限保存只发送角色/permissions，未发送不变status或触发reason错误。"
+    },
+    {
+      "id": "frontend-candidate-independent-bytes",
+      "status": "PASS",
+      "method": "独立只读Node AST/字符串分区/SHA/逆补丁检查；未运行测试套件或writer",
+      "detail": "Layout/Profile/Staff实际candidate逐patch对应baseline与patch证明；独立逆向重建精确baseline，所有unchangedPartitions逐段字节及SHA相等。现有imports/specifiers/exports保持，Profile仅原specifier增量native Dialog绑定。候选四runtime文件SHA与实际文件及sourcepins一致。"
+    },
+    {
+      "id": "final-html-independent-map-and-inverse",
+      "status": "PASS",
+      "method": "独立读取最终83500 HTML、真实baseline与三模块AST，重算mapping及逆向",
+      "detail": "原imports/scopes key保留，values仅三批准relocation；恰增三个旧实际URL alias及一个Layout scope clone。移除新增CSS、逆向map后可精确重建baseline HTML字节；原stylesheet和native module entry未改。全部45有效specifier与dependency proof一致，Entry/BW/客户及其他mapping非批准值不变。"
+    },
+    {
+      "id": "backend-candidate-independent-bytes",
+      "status": "PASS",
+      "method": "独立检查15个实际AST slot哈希、所有outside分区与逆向baseline",
+      "detail": "admin candidate SHA0f2bc，baseline d2756；15slots之外逐段精确相等并能逆向回完整原admin字节。不是整appRouter/auth/factory替换。23个canonical source guard、原native authfactory/personal handlers保护及native symbol capture/TDZ证明已读；原frontAPI db920实际本地baseline字节相等，未生成front candidate。"
+    },
+    {
+      "id": "existing-directed-source-tests-and-tsc",
+      "status": "PASS",
+      "references": [
+        "source-validation-final.json",
+        "navigation-tests.log",
+        "profile-ui-tests.log",
+        "staff-tests-cas-final.log",
+        "parent-tsc-final.log"
+      ],
+      "detail": "已读父最终冻结验证status PASS/tscPassed true，255=86Nav+34Profile+135Staff、0 failures、21compiledpins与本轮源pins一致；日志SHA与已经读取日志一致。未重跑全站或旧交付套件。"
+    },
+    {
+      "id": "existing-actual-candidate-tests",
+      "status": "PASS",
+      "references": [
+        "frontend-candidate/tests.json",
+        "backend-candidate/test-report.json"
+      ],
+      "detail": "现有前端15 PASS实际G/Staff wrapper/native input Dialog body/原HS执行，ES声明之外候选body未重编；native fixture身份与七RPC unwrap、同步撤销、关闭清敏感及Staff payload/readback已覆盖。现有后端45 PASS执行实际candidate native AST、真实tRPC factory和MySQL方言SQL映射到node:sqlite :memory:，CAS loss及audit rollback覆盖。报告candidate/source hashes已核对。"
+    },
+    {
+      "id": "activation-and-reload-exact-scope",
+      "status": "PASS",
+      "references": [
+        "deploy/profile-staff-20261114/activate-profile-staff-20261114.py",
+        "deploy/profile-staff-20261114/reload-profile-staff-api-20261114.cjs",
+        "activation-tests.json"
+      ],
+      "detail": "限定5static与1原adminAPI、191/192逐滚动；双非阻塞锁/共享coord/fresh HTML与API CAS及证据hash守卫。独立worker和四front PID逐行精确比较，path/cwd/ENV frozen；frontAPI/protectedFiles/110old assets前后哈希检查。持久化reload intent先于滚动，只精确恢复本任务字节及原id；恢复失败保持coordoccupied，不覆盖foreign版本、不global restart/save/start daemon。12项现有纯合成PASS且driver/helper hash与当前源码一致。"
+    },
+    {
+      "id": "strict-readonly-auth-health",
+      "status": "PASS",
+      "references": [
+        "deploy/profile-staff-20261114/activate-profile-staff-20261114.py:128-154",
+        "deploy/profile-staff-20261114/test-activation.py:161-169"
+      ],
+      "detail": "Mozilla/5.0无Cookie/Authorization GET仅personalCenter.profile/adminUser.list，必须401/403且真实JSON中有UNAUTHORIZED/FORBIDDEN；generic403、404、200或HTML不能假PASS。没有SMS/改密/启停/业务写health调用。"
+    },
+    {
+      "id": "package-manifest-boundaries",
+      "status": "PASS",
+      "references": [
+        "deploy/profile-staff-20261114/prepare-package.py:29-123"
+      ],
+      "detail": "最新prepare已完整成功生成temp包。5static+1admin且无frontcandidate；84旧/22本轮唯一pins合100，6旧覆盖16新增，100全部repo逐SHA且路径无symlink逃逸；17evidence包括binder与reload报告逐SHA；110assets和12process基线完整保留，3protected加frontAPI共4；zero migrations/front reload/productionwrites；tar29项命名空间、无穿越/链接/重名及全部文件hash通过。原FAIL和review html/frontend4/admin/frontOriginal摘要hash漂移4负向病例全部在输出写前拒绝。temp全清理且真实W/tools未变。不是实际项目通过或生产验收。",
+      "method": "当前prepare静态只读及全输出重定向temp的真实schema main诊断"
+    },
+    {
+      "id": "completed-integrated-native-dialog-qa",
+      "status": "PASS",
+      "references": [
+        "frontend-candidate/integrated-tests.json"
+      ],
+      "detail": "按父完成通知读取最终12/0 PASS报告；精确绑定83500HTML与四candidate SHA，63旧imports/48旧scopes/25旧styles及45有效依赖。actualProfileG/Staff/native input Dialog与HS fixture执行，firstFocus、Tab端点、外部trap、ESC返回trigger、中文Close与敏感清除，以及Staff current/deleted/archive/locked/self/last-effective-super边界已过。Layout只实际initializer capsule执行，非fullDOM或生产浏览器验收。"
+    },
+    {
+      "id": "source-binder-permission-path-process-boundaries",
+      "status": "PASS",
+      "references": [
+        "deploy/profile-staff-20261114/bind-source.py:21-57"
+      ],
+      "detail": "原metadata-only固定路径/source/runtime/process边界结论保留。当前第31-35行双锁、coord verified owner/shared=false及verified.json先于driver，第37行只读一次driver_bytes、第38行SHA比manifest、第39-40行非main ModuleType以同字节compile/exec。独立AST和12隔离in-memory spy通过：drift sentinel不执行；锁/coord/verified/request拒绝均不读取或exec driver；读取后路径内容替换仍仅执行已验原字节；save2仅元数据。实际driver仅AST检查，未执行真实driver/helper或PM2。真实Gitshow sourceSnapshot/server verified/100pins及在线process/runtime字节仍须后续真实来源绑定执行，不冒称生产验收。"
+    }
+  ],
+  "sourceHashes": {
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+    "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+    "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+    "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+    "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+    "client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+    "client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+    "client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+    "client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+    "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+    "client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+    "shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+    "client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+    "client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+    "client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+    "client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+    "client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+    "client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22",
+    "server/db.ts": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+    "server/routers.ts": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973",
+    "server/adminAuth.ts": "38ee5804059fb1a7518c79cfcf61653f76db0bba71764eeb7159e61ce0ded847",
+    "client/src/components/DashboardLayout.tsx": "9c1d08ffed40ff8c0d6cf1fd31fc1afdbd3c33683b4f1b0299efd4bd83d7fad2",
+    "client/src/components/ui/dialog.tsx": "3ffd83bd2940c1191fde091bc47311aebc2b79d78824965a5c446115e58190aa",
+    "client/src/_core/hooks/useAuth.ts": "a20f26aa48bf3a0edf853a722e1c7866fde1dc4fb5c90d8c9a262948b62ac705",
+    "client/src/lib/trpc.ts": "d883ad43f46eaf73342924feaf5342ce601d04abe1a828076625071931cc0ef3",
+    "client/src/business/platform/client/src/lib/authSessionEvents.ts": "5e84cb4d8418333f32d770c65ea6e7b9925a2715dfb52f9dfe9da63b07532f01",
+    "server/_core/context.ts": "be78a436144e2039f181643178b600c6323048028725a3faa2517822fe6f3164",
+    "server/personalCenterRouter.ts": "a3076ad2958f8f51d6872c7a43baf54c18e4d61890401786118be01b4f9bc920",
+    "server/personalCenterService.ts": "0f85611c6365a4163601f1e488d4de4f3a0b78c0a218259e605bea54878c28af",
+    "drizzle/schema.ts": "1c39545f96a46170b4d42edabc7d5802c5290267b9de7b503b0179635b421857"
+  },
+  "candidateHashes": {
+    "html": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51",
+    "admin": "0f2bc286a3a1d6643544cc5270c113214795de3531e66123164b296a857a8ad8",
+    "frontOriginal": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+    "frontend4": {
+      "assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js": "6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0",
+      "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73",
+      "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24",
+      "assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55"
+    }
+  },
+  "activationReview": {
+    "status": "PASS",
+    "driverSha256": "ad0c21bca14d87ff6475083b15cf8c843d75029cae51cb96c4c08bec848216be",
+    "reloadHelperSha256": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+    "activationTestScriptSha256": "24ab6528e19bafb85e98fcc8bd865dad408370fb8fbd85bbd3a42a8616e3713c",
+    "activationReportSha256": "14a5490b5a73c2ba6a096cb215b5d5a3fa0cb1dafc3c24cf401c7a9e500a02db",
+    "existingSyntheticTestsPassed": 12,
+    "existingSyntheticTestsFailed": 0,
+    "driverOrHelperExecutedByReviewer": false,
+    "releaseAppliedByReviewer": false
+  },
+  "toolHashes": {
+    "deploy/profile-staff-20261114/core.cjs": "fd5b887b17c33695f8fc3370a7077dd4b69f20c7fca716ed537c8ce17f220555",
+    "deploy/profile-staff-20261114/frontend-build.cjs": "b2e13065d8b65e1eabbf07a0951560b3a235f4868685c765b3d8c32572fa4a8e",
+    "deploy/profile-staff-20261114/frontend-factory.cjs": "a8d226e4ff822a195681f2abde014f9b608ba50eba2bc15daeb2c7fd8aeda79a",
+    "deploy/profile-staff-20261114/backend-build.cjs": "64335ee033a69356225c83865a559b375e13bc4f61b0aef48bb99e8bcb370026",
+    "deploy/profile-staff-20261114/backend-native.cjs": "2d3e298d76ac6108d63ca0b079c16f39509f62368305bf44206ede01711c0b63",
+    "deploy/profile-staff-20261114/merge.cjs": "af0c3e0f687e2f87a7a47a25d3ee6289b8f9d4db7733c7be1e41ea6e28b52d83",
+    "deploy/profile-staff-20261114/prepare-package.py": "d7c9fdbffcd3ebca0fb8604b4700d4d6d97e48a7d5b1afd0bc472ea505e487e3",
+    "deploy/profile-staff-20261114/bind-source.py": "97406c29aebcae2e7085d9562527484ed10ffaf7ddb2aee0b1b6bfe9e114a418"
+  },
+  "evidenceHashes": {
+    "frontend-candidate/frontend-parts.json": "c22c4d2739bc4684ed1cfbaa5ebaf094a4c93b55a3524613651063327aa4872b",
+    "frontend-candidate/tests.json": "3b4e5bfdbf162846a77cd0e65d11dc63d6e4a6fff506a865ca9bd1ad13c2921b",
+    "frontend-candidate/merged-summary.json": "0df6c8cdf7489bf3be033a2316b60213e8045e3acf3ef1caec1523890af70e58",
+    "frontend-candidate/html-build-proof.json": "02370f2f5c6ba3542403ff825002189fb8488fcdb029f2924dbac2b0d9910417",
+    "frontend-candidate/dependency-resolution-proof.json": "a50d7ea81eb59830119a5f6e316a864b0b9845691eeb90980f845c260c930d01",
+    "backend-candidate/admin-manifest.json": "db842b81b008cf1445061c2e37528c1c9ccb0cfd4c5db987b48b764e5b668198",
+    "backend-candidate/test-report.json": "17b571fe12cd8f8f151e5093949e0ea9fdb9aa736e10678a1d9d33de63a8ae4e",
+    "backend-candidate/summary.json": "ccc27e0983aad4ecd077188c033b6871f254fa7eb4dc63c81a82b9bf46a4e854",
+    "staff-status-contract.json": "8d9e3ed069312edb18b0b786320346a71d64bf6d9fe81d2f9883c17f2069a185",
+    "predeploy-baseline.json": "994b375f7a5a87e1509405c77ef8505f00ea49580584928d9d640784fe1cde2e",
+    "live-baseline-current.json": "f66386bbe4278798dbcb97c3feb0a85d094f318e012d7ab4e3181884b4e99f6b",
+    "live-audit-schema-readonly.json": "32937d053614ad3501ea88640d1daf377c1bb4e85168bf3b147110fe8e61d128",
+    "frontend-candidate/integrated-tests.json": "0d353ffe1af36501f9bdd98e6cf9ecab5cae1ec10cb0495b0cbd6d830b30ad8e",
+    "source-validation-final.json": "4f97ccaada2ed9f2314f4f1c9484d88f1521ba26be717e1808a3a9e1ee221551"
+  },
+  "limits": [
+    "审查产品行为通过源码链路、真实候选字节/AST和已有源绑定报告核对；不是生产浏览器或登录验收。",
+    "Profile源UI测试虽用真实仓库Dialog/Radix，但auth/RPC/logout/navigation/Layout为mock；实际candidate前端测试仍使用本地Auth/TRPC/query/native primitive fixtures，未执行全Entry或浏览器ESM loader。",
+    "后端candidate测试以node:sqlite :memory:执行MySQL方言SQL并去掉FOR UPDATE；它不是多连接MySQL锁、死锁或真实DB集成验证。审计schema证据只有列，不含业务数据。",
+    "predeploy-baseline110旧assets只有9个可在本轮本地目录直接逐文件核实；其余使用父捕获SHA与driver前后生产只读校验契约，不冒称本审查已访问生产或校验全部生产字节。",
+    "原客户/BOM/报价确认/精确库存/客户9列/global8列/商城通过nonpatch字节和不变mapping保护核对；没有重跑旧全站套件或业务写测。",
+    "当前binder单点执行边界已修复并通过独立AST与隔离in-memory spy复核；原PACKAGE-PROOF-SHAPE-001 PASS作为历史复核保留。没有扩大package schema或追加产品要求。",
+    "原12/0 integrated及255source/tsc/15actualfront/45backend QA PASS保留且hash重核，本轮未重跑；新增reload报告/日志25/0已读并与原helper SHA绑定，仅VM inert PM2 fixtures，不是nativeGod或生产验收。",
+    "隔离诊断只有temp review.status置PASS；摘要hash负向病例同样只改temp。临时包不是可发布的真实项目PASS证据，全部temp已删除，真实输入/候选/proofs/EVIDENCE未写。",
+    "Git当前HEAD仍5abd。binder依赖父后续提供的真实GitHub main验证request和gitshow逐pin快照，本轮没有source-snapshot目录，不能声称已检查未来快照、服务器目录权限或生产源绑定。实际100repo源pin无路径逃逸/符号链接且SHA一致。",
+    "binder快照守卫目前是词法client/server/shared/无..约束；后续私有source归档必须只含manifest实际Git源pin且无越界链接。本轮未触达任何服务端路径。",
+    "本次只运行已读binder代码的隔离spy：虚拟Path/open/flock/process/save，不访问真实锁或服务器driver路径；正确冻结driver仅AST检查其顶层惰性与__main__ guard。samebytes结论限于driver字节读/验/执行边界，不声称其他manifest/request/runtime文件的全局原子快照。"
+  ],
+  "reviewerWrites": [
+    "/home/ubuntu/work/profile-staff-20261114/read-only-review-package-initial.json",
+    "/home/ubuntu/work/profile-staff-20261114/read-only-review-final.json",
+    "/home/ubuntu/work/profile-staff-20261114/read-only-review-binder-initial.json"
+  ],
+  "reviewerNetworkCalls": 0,
+  "reviewerProductionRecordWrites": 0,
+  "reviewerGitWrites": 0,
+  "finalCandidateQaEvidenceInspected": true,
+  "completedSupplementalQa": {
+    "status": "PASS",
+    "passed": 12,
+    "failed": 0,
+    "reportSha256": "0d353ffe1af36501f9bdd98e6cf9ecab5cae1ec10cb0495b0cbd6d830b30ad8e",
+    "testScriptSha256": "f15d0def76f691548492f1cd37cbbb85566db21c98568263c5b39dd5029e7590",
+    "htmlSha256": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51",
+    "effectiveDependencies": 45,
+    "actualProfileAndStaffDefaultBodies": {
+      "Profile": true,
+      "Staff": true
+    },
+    "nativeDialogModuleBodyExecuted": true,
+    "actualLayoutInitializerCapsuleExecuted": true,
+    "fullLayoutDOMExecuted": false,
+    "actualProductionRecordWrites": 0,
+    "limits": [
+      "JSDOM local React DOM, not browser/production acceptance; no browser ESM loader or visual/layout acceptance.",
+      "Exact candidate Profile default G and Staff default body execute with read-only existing helper local Auth/TRPC/Query/Dashboard fixtures. Whole native DashboardLayout/nativeApp/Entry do not execute.",
+      "Actual baseline input/Dialog module body executes; installed local Radix primitives are fixtures, not production Radix chunk byte execution.",
+      "Tab tests exercise native Radix boundary wrapping and focus trap; JSDOM does not implement browser default intermediate Tab traversal.",
+      "ERP import values are inert local empty-permission fixtures; no ERP permission editing, source transpilation, database authorization, archive transaction, SMS transport, login, or production account is tested."
+    ]
+  },
+  "previousReviewSha256": "aa7e1ea42aafa0e5b2571b5c1e231a7ded18da76ca6d7e4af1f5ed821eface69",
+  "resolvedIssues": [
+    {
+      "id": "PACKAGE-PROOF-SHAPE-001",
+      "severity": "BLOCKER",
+      "scope": "release-packaging-tool-not-product",
+      "file": "deploy/profile-staff-20261114/prepare-package.py",
+      "lines": [
+        52,
+        53
+      ],
+      "fileSha256": "2f78c0458f2b1e4d72463c78abab5a63a646d427c6927b64e17f070f91606609",
+      "title": "包生成器把CSS和protectedFiles当成JS逆补丁证明，必然抛KeyError",
+      "detail": "实际frontend-parts.json的proofs包含layout/profile/staff三个JS proof、css对象以及protectedFiles数组。52行遍历parts['proofs'].values()，53行无差别索引exactInverse等五个JS字段。前三个对象通过后，css对象没有exactInverse，抛KeyError('exactInverse')；若只绕过CSS，protectedFiles数组仍无法用字符串索引。上游报告全PASS后，prepare仍不能生成manifest/tar包。此缺陷不在产品或activation/reload代码中。",
+      "reproduction": "只读加载W/frontend-candidate/frontend-parts.json，依次对parts['proofs'].items()中的每个proof读取exactInverse/allNonpatchBytesUnchanged/allOldSpecifiersPreserved/allOldImportBindingsPreserved/exportsByteIdentical。真实数据输出shape为layout:dict, profile:dict, staff:dict, css:dict, protectedFiles:list；在css读取exactInverse时复现KeyError。未执行prepare-package.py，未生成或修改包。",
+      "expected": "JS逆补丁字段只校验实际layout/profile/staff证明；CSS和protectedFiles必须按各自真实schema单独校验，而不是套用JS proof形状。",
+      "reportedImmediately": true,
+      "previousObservedFileSha256": "87a37cfadd58606290eea6ca925fcb8951d8e198454a597caca47570746e1c51",
+      "latestRecheck": "父新增reload-test门禁后再次只读核对，当前2f78版本仅移动该循环到52-53行，同一css缺exactInverse确定性缺陷仍存在。",
+      "resolutionStatus": "RESOLVED",
+      "resolvedAtUtc": "2026-11-14T03:36:33.968609+00:00",
+      "resolvedByPrepareSha256": "d7c9fdbffcd3ebca0fb8604b4700d4d6d97e48a7d5b1afd0bc472ea505e487e3",
+      "resolution": "当前prepare只对layout/profile/staff应用JS proof字段；CSS独立scope/原stylesheet/hash验证，protectedFiles数组逐项unchanged/baseline hash验证。真实input temp全重定向main成功且原FAIL门禁被拒绝。"
+    },
+    {
+      "id": "BIND-DRIVER-EXEC-BEFORE-HASH-001",
+      "severity": "BLOCKER",
+      "scope": "server-only-source-metadata-tool-not-product",
+      "file": "deploy/profile-staff-20261114/bind-source.py",
+      "lines": [
+        29,
+        30,
+        31,
+        34,
+        35
+      ],
+      "fileSha256": "e45f40e75f628a28e223deea8a847e9436bd96bc6db00fdda22a5c13cd50e19b",
+      "title": "binder先执行driver模块再验SHA，执行发生在双锁之前",
+      "detail": "第30行spec.loader.exec_module(driver)执行该路径全部顶层Python代码，第31行才校验driver SHA，第34-35行才取得双锁。driver drift即使最终抛DRIVER_DRIFT，也已经执行未经hash授权的模块，不能保证SHA失败分支不发生运行副作用。当前冻结driver顶层无副作用不等于漂移分支fail-closed。本问题仅针对新binder的权限/进程执行边界。",
+      "reproduction": "只读源码与importlib.exec_module语义/顺序确认；未改driver、未运行binder/driver或PM2。",
+      "expected": "先校验driver字节SHA，再导入；建议执行同一份已验SHA字节避免两次读取间漂移。其余owner/verified双锁coordfalse、runtime/protected/assets/source/12process门禁全部保留。不需要修改driver/helper或产品。",
+      "reportedImmediately": true,
+      "resolutionStatus": "RESOLVED",
+      "resolvedAtUtc": "2026-11-14T03:39:31.695173+00:00",
+      "resolvedByBinderSha256": "97406c29aebcae2e7085d9562527484ed10ffaf7ddb2aee0b1b6bfe9e114a418",
+      "resolution": "删除importlib；request/manifest验证后先双非阻塞锁及coord owner/status/shared=false与verified门禁，再只读一次driver_bytes并与manifest SHA比较。types.ModuleType非__main__，__file__原路径；compile/exec直接使用同一份已验字节。10拒绝路径及2同字节/非main成功spy全部PASS，无漂移恶意顶层sentinel、main或真实driverIO。"
+    }
+  ],
+  "packageFixRecheck": {
+    "status": "PASS",
+    "scope": "confirmed package shape fix plus latest candidate summary hash gates only; binder review FAIL",
+    "atUtc": "2026-11-14T03:36:33.968609+00:00",
+    "prepareSha256": "d7c9fdbffcd3ebca0fb8604b4700d4d6d97e48a7d5b1afd0bc472ea505e487e3",
+    "bindSourceSha256": "e45f40e75f628a28e223deea8a847e9436bd96bc6db00fdda22a5c13cd50e19b",
+    "reloadReportSha256": "1d4d633ac340aedca536288d9f42c93cc96af6fdd6d33f8b6b3ec93c59f6897b",
+    "reloadLogSha256": "d63799ee1b8d4a2eacc40f5b3fe5102af6db7228d6428c71e1e56f54cde840f1",
+    "reloadHelperSha256": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+    "existingReloadVmReport": {
+      "status": "PASS",
+      "passed": 25,
+      "failed": 0,
+      "actualHelperCodeExecuted": true,
+      "installedPM2OrNativeGodExecuted": false,
+      "rerunByReviewer": false
+    },
+    "previousSourceHashesRetainedAndRechecked": 31,
+    "previousEvidenceHashesRetainedAndRechecked": 14,
+    "candidateHashesUnchanged": true,
+    "activationDriverAndHelperUnchanged": true,
+    "realWorkAndToolsUnchangedAfterExercise": true,
+    "productTestSuitesRerun": false,
+    "binderExecuted": false,
+    "realPackageGenerated": false,
+    "realEvidenceWritten": false,
+    "productionAcceptanceClaimed": false,
+    "diagnosticOnly": true,
+    "realFailReviewGateRejected": true,
+    "reviewCandidateHashNegativeGatesRejected": [
+      "html",
+      "frontend4",
+      "admin",
+      "frontOriginal"
+    ],
+    "temporaryAllOutputRootsRedirected": true,
+    "temporaryReviewOnlyChange": "status FAIL -> PASS in temp copy for successful run; negative cases alter temp candidate summary only",
+    "temporaryDirectory": "/tmp/profile-staff-package-readonly-h24x8pm7",
+    "temporaryDirectoryRemoved": true,
+    "diagnosticStaticFiles": 5,
+    "diagnosticAdminFiles": 1,
+    "diagnosticFrontCandidateFiles": 0,
+    "oldSourcePins": 84,
+    "currentUniqueSourcePins": 22,
+    "compiledSourcePins": 21,
+    "mergedSourcePins": 100,
+    "oldPinsOverridden": 6,
+    "newPinsAdded": 16,
+    "allMergedPinsMatchActualRepository": true,
+    "sourcePinPathsSafeInActualRepository": true,
+    "diagnosticEvidenceFiles": 17,
+    "diagnosticArchiveMembers": 29,
+    "diagnosticManifestSha256": "dfb26027d4a6e7248dcf2dcfba350bfcb7d922bce83e9573e283375bccc93ad8",
+    "diagnosticArchiveSha256": "e8a8db83f55994d0b1ad84f0bac7c3a2a03c7611fb2ae93876882a165118a7a6",
+    "diagnosticAllPackageEvidenceAndArchiveHashesVerified": true,
+    "diagnosticArchiveNamespaceSafe": true,
+    "baselineAssetsRetained": 110,
+    "baselineAssetsDirectlyAvailableAndMatchedLocally": 9,
+    "baselineProcessesRetained": 12,
+    "protectedFilesIncludingFrontApi": 4,
+    "databaseMigrations": 0
+  },
+  "binderFixRecheck": {
+    "status": "PASS",
+    "atUtc": "2026-11-14T03:39:31.695173+00:00",
+    "scope": "ONLY confirmed BIND-DRIVER-EXEC-BEFORE-HASH-001; AST and isolated in-memory spies plus current byte hashes; no product rereview",
+    "initialReviewSha256": "aa7e1ea42aafa0e5b2571b5c1e231a7ded18da76ca6d7e4af1f5ed821eface69",
+    "initialReviewByteIdenticalBackup": "/home/ubuntu/work/profile-staff-20261114/read-only-review-binder-initial.json",
+    "currentexactSHA": {
+      "binder": "97406c29aebcae2e7085d9562527484ed10ffaf7ddb2aee0b1b6bfe9e114a418",
+      "driver": "ad0c21bca14d87ff6475083b15cf8c843d75029cae51cb96c4c08bec848216be",
+      "prepare": "d7c9fdbffcd3ebca0fb8604b4700d4d6d97e48a7d5b1afd0bc472ea505e487e3",
+      "reloadHelper": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+      "unchangedFileHashes": {
+        "source:client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+        "source:client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+        "source:client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+        "source:client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+        "source:client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+        "source:client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+        "source:client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+        "source:client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+        "source:client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+        "source:client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+        "source:client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+        "source:shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+        "source:client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+        "source:client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+        "source:client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+        "source:client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+        "source:client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+        "source:client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+        "source:client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22",
+        "source:server/db.ts": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+        "source:server/routers.ts": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973",
+        "source:server/adminAuth.ts": "38ee5804059fb1a7518c79cfcf61653f76db0bba71764eeb7159e61ce0ded847",
+        "source:client/src/components/DashboardLayout.tsx": "9c1d08ffed40ff8c0d6cf1fd31fc1afdbd3c33683b4f1b0299efd4bd83d7fad2",
+        "source:client/src/components/ui/dialog.tsx": "3ffd83bd2940c1191fde091bc47311aebc2b79d78824965a5c446115e58190aa",
+        "source:client/src/_core/hooks/useAuth.ts": "a20f26aa48bf3a0edf853a722e1c7866fde1dc4fb5c90d8c9a262948b62ac705",
+        "source:client/src/lib/trpc.ts": "d883ad43f46eaf73342924feaf5342ce601d04abe1a828076625071931cc0ef3",
+        "source:client/src/business/platform/client/src/lib/authSessionEvents.ts": "5e84cb4d8418333f32d770c65ea6e7b9925a2715dfb52f9dfe9da63b07532f01",
+        "source:server/_core/context.ts": "be78a436144e2039f181643178b600c6323048028725a3faa2517822fe6f3164",
+        "source:server/personalCenterRouter.ts": "a3076ad2958f8f51d6872c7a43baf54c18e4d61890401786118be01b4f9bc920",
+        "source:server/personalCenterService.ts": "0f85611c6365a4163601f1e488d4de4f3a0b78c0a218259e605bea54878c28af",
+        "source:drizzle/schema.ts": "1c39545f96a46170b4d42edabc7d5802c5290267b9de7b503b0179635b421857",
+        "tool:deploy/profile-staff-20261114/core.cjs": "fd5b887b17c33695f8fc3370a7077dd4b69f20c7fca716ed537c8ce17f220555",
+        "tool:deploy/profile-staff-20261114/frontend-build.cjs": "b2e13065d8b65e1eabbf07a0951560b3a235f4868685c765b3d8c32572fa4a8e",
+        "tool:deploy/profile-staff-20261114/frontend-factory.cjs": "a8d226e4ff822a195681f2abde014f9b608ba50eba2bc15daeb2c7fd8aeda79a",
+        "tool:deploy/profile-staff-20261114/backend-build.cjs": "64335ee033a69356225c83865a559b375e13bc4f61b0aef48bb99e8bcb370026",
+        "tool:deploy/profile-staff-20261114/backend-native.cjs": "2d3e298d76ac6108d63ca0b079c16f39509f62368305bf44206ede01711c0b63",
+        "tool:deploy/profile-staff-20261114/merge.cjs": "af0c3e0f687e2f87a7a47a25d3ee6289b8f9d4db7733c7be1e41ea6e28b52d83",
+        "tool:deploy/profile-staff-20261114/prepare-package.py": "d7c9fdbffcd3ebca0fb8604b4700d4d6d97e48a7d5b1afd0bc472ea505e487e3",
+        "evidence:frontend-candidate/frontend-parts.json": "c22c4d2739bc4684ed1cfbaa5ebaf094a4c93b55a3524613651063327aa4872b",
+        "evidence:frontend-candidate/tests.json": "3b4e5bfdbf162846a77cd0e65d11dc63d6e4a6fff506a865ca9bd1ad13c2921b",
+        "evidence:frontend-candidate/merged-summary.json": "0df6c8cdf7489bf3be033a2316b60213e8045e3acf3ef1caec1523890af70e58",
+        "evidence:frontend-candidate/html-build-proof.json": "02370f2f5c6ba3542403ff825002189fb8488fcdb029f2924dbac2b0d9910417",
+        "evidence:frontend-candidate/dependency-resolution-proof.json": "a50d7ea81eb59830119a5f6e316a864b0b9845691eeb90980f845c260c930d01",
+        "evidence:backend-candidate/admin-manifest.json": "db842b81b008cf1445061c2e37528c1c9ccb0cfd4c5db987b48b764e5b668198",
+        "evidence:backend-candidate/test-report.json": "17b571fe12cd8f8f151e5093949e0ea9fdb9aa736e10678a1d9d33de63a8ae4e",
+        "evidence:backend-candidate/summary.json": "ccc27e0983aad4ecd077188c033b6871f254fa7eb4dc63c81a82b9bf46a4e854",
+        "evidence:staff-status-contract.json": "8d9e3ed069312edb18b0b786320346a71d64bf6d9fe81d2f9883c17f2069a185",
+        "evidence:predeploy-baseline.json": "994b375f7a5a87e1509405c77ef8505f00ea49580584928d9d640784fe1cde2e",
+        "evidence:live-baseline-current.json": "f66386bbe4278798dbcb97c3feb0a85d094f318e012d7ab4e3181884b4e99f6b",
+        "evidence:live-audit-schema-readonly.json": "32937d053614ad3501ea88640d1daf377c1bb4e85168bf3b147110fe8e61d128",
+        "evidence:frontend-candidate/integrated-tests.json": "0d353ffe1af36501f9bdd98e6cf9ecab5cae1ec10cb0495b0cbd6d830b30ad8e",
+        "evidence:source-validation-final.json": "4f97ccaada2ed9f2314f4f1c9484d88f1521ba26be717e1808a3a9e1ee221551",
+        "candidate:html": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51",
+        "candidate:admin": "0f2bc286a3a1d6643544cc5270c113214795de3531e66123164b296a857a8ad8",
+        "candidate:frontOriginal": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+        "candidate:assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js": "6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0",
+        "candidate:assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73",
+        "candidate:assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24",
+        "candidate:assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55",
+        "driver": "ad0c21bca14d87ff6475083b15cf8c843d75029cae51cb96c4c08bec848216be",
+        "reloadHelper": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+        "activationTestScript": "24ab6528e19bafb85e98fcc8bd865dad408370fb8fbd85bbd3a42a8616e3713c",
+        "activationReport": "14a5490b5a73c2ba6a096cb215b5d5a3fa0cb1dafc3c24cf401c7a9e500a02db",
+        "reloadReport": "1d4d633ac340aedca536288d9f42c93cc96af6fdd6d33f8b6b3ec93c59f6897b",
+        "reloadLog": "d63799ee1b8d4a2eacc40f5b3fe5102af6db7228d6428c71e1e56f54cde840f1"
+      }
+    },
+    "staticChecks": {
+      "noImportlib": true,
+      "requestManifestBeforeLocks": true,
+      "bothLocksAndCoordVerifiedOwnerBeforeDriverRead": true,
+      "activationVerifiedBeforeDriverRead": true,
+      "singleDriverRead": true,
+      "hashBeforeExec": true,
+      "shaAndCompileUseSameDriverBytesVariable": true,
+      "nonMainModuleName": "verified_profile_staff_driver",
+      "originalDriverFileAttribute": true,
+      "actualFrozenDriverTopLevelInertByAst": true,
+      "actualDriverExecuted": false
+    },
+    "spyPassed": 12,
+    "spyFailed": 0,
+    "spyResults": [
+      {
+        "case": "driver_drift_sentinel",
+        "status": "PASS",
+        "rejection": "DRIVER_DRIFT",
+        "driverByteReads": 1,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "read",
+            "/virtual/root/activate-profile-staff-20261114.py"
+          ],
+          [
+            "driver_hash"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "first_lock_refused",
+        "status": "PASS",
+        "rejection": "SPY_LOCK_REFUSED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "second_lock_refused",
+        "status": "PASS",
+        "rejection": "SPY_LOCK_REFUSED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "coord_shared_active",
+        "status": "PASS",
+        "rejection": "VERIFIED_WINDOW_REQUIRED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "coord_foreign_owner",
+        "status": "PASS",
+        "rejection": "VERIFIED_WINDOW_REQUIRED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "coord_not_verified",
+        "status": "PASS",
+        "rejection": "VERIFIED_WINDOW_REQUIRED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "activation_not_verified",
+        "status": "PASS",
+        "rejection": "ACTIVATION_NOT_VERIFIED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "request_sha_refused",
+        "status": "PASS",
+        "rejection": "SOURCE_REQUEST_CHANGED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ]
+        ]
+      },
+      {
+        "case": "request_owner_refused",
+        "status": "PASS",
+        "rejection": "SOURCE_OWNER_CHANGED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ]
+        ]
+      },
+      {
+        "case": "request_github_unverified",
+        "status": "PASS",
+        "rejection": "GIT_SOURCE_PINS_NOT_VERIFIED",
+        "driverByteReads": 0,
+        "verifiedDriverExecCount": 0,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 0,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ]
+        ]
+      },
+      {
+        "case": "samebytes_after_read_swap",
+        "status": "PASS",
+        "rejection": null,
+        "driverByteReads": 1,
+        "verifiedDriverExecCount": 1,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 2,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "read",
+            "/virtual/root/activate-profile-staff-20261114.py"
+          ],
+          [
+            "driver_hash"
+          ],
+          [
+            "module_create",
+            "verified_profile_staff_driver"
+          ],
+          [
+            "compile_samebytes"
+          ],
+          [
+            "exec_verified"
+          ],
+          [
+            "driver_top",
+            "verified_profile_staff_driver",
+            "/virtual/root/activate-profile-staff-20261114.py"
+          ],
+          [
+            "read",
+            "/virtual/public/index.html"
+          ],
+          [
+            "read",
+            "/virtual/admin.js"
+          ],
+          [
+            "read",
+            "/virtual/front.js"
+          ],
+          [
+            "read",
+            "/virtual/public/assets/old.js"
+          ],
+          [
+            "read",
+            "/virtual/root/source-snapshot/client/src/x.ts"
+          ],
+          [
+            "processes"
+          ],
+          [
+            "read",
+            "/virtual/root/process-before.json"
+          ],
+          [
+            "compatible",
+            12,
+            12
+          ],
+          [
+            "save",
+            "/virtual/root/git-source-receipt.json"
+          ],
+          [
+            "save",
+            "/virtual/coord.json"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      },
+      {
+        "case": "correct_nonmain_metadata_only",
+        "status": "PASS",
+        "rejection": null,
+        "driverByteReads": 1,
+        "verifiedDriverExecCount": 1,
+        "sentinelExecuted": false,
+        "mainCalled": false,
+        "realDriverIO": false,
+        "realLockFileIO": false,
+        "metadataSaveSpyCount": 2,
+        "eventTrace": [
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/git-source-request.json"
+          ],
+          [
+            "read",
+            "/virtual/root/manifest.json"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "open_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "lock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "read",
+            "/virtual/coord.json"
+          ],
+          [
+            "read",
+            "/virtual/root/verified.json"
+          ],
+          [
+            "read",
+            "/virtual/root/activate-profile-staff-20261114.py"
+          ],
+          [
+            "driver_hash"
+          ],
+          [
+            "module_create",
+            "verified_profile_staff_driver"
+          ],
+          [
+            "compile_samebytes"
+          ],
+          [
+            "exec_verified"
+          ],
+          [
+            "driver_top",
+            "verified_profile_staff_driver",
+            "/virtual/root/activate-profile-staff-20261114.py"
+          ],
+          [
+            "read",
+            "/virtual/public/index.html"
+          ],
+          [
+            "read",
+            "/virtual/admin.js"
+          ],
+          [
+            "read",
+            "/virtual/front.js"
+          ],
+          [
+            "read",
+            "/virtual/public/assets/old.js"
+          ],
+          [
+            "read",
+            "/virtual/root/source-snapshot/client/src/x.ts"
+          ],
+          [
+            "processes"
+          ],
+          [
+            "read",
+            "/virtual/root/process-before.json"
+          ],
+          [
+            "compatible",
+            12,
+            12
+          ],
+          [
+            "save",
+            "/virtual/root/git-source-receipt.json"
+          ],
+          [
+            "save",
+            "/virtual/coord.json"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-production-code.lock"
+          ],
+          [
+            "unlock_spy",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ],
+          [
+            "close",
+            "/var/lock/dianzi51-public-deploy.lock"
+          ]
+        ]
+      }
+    ],
+    "sourceHashesRetainedAndRechecked": 31,
+    "evidenceHashesRetainedAndRechecked": 14,
+    "candidateHashesUnchanged": true,
+    "driverAndHelperHashesUnchanged": true,
+    "packageFixRecheckRetainedUnmodifiedHistoricalEvidence": true,
+    "productTestSuitesRerun": false,
+    "actualDriverOrHelperExecuted": false,
+    "realBinderProductionExecution": false,
+    "realLockFileIO": false,
+    "realPackageGenerated": false,
+    "reviewerNetworkCalls": 0,
+    "reviewerGitWrites": 0,
+    "productionRecordWrites": 0,
+    "productionAcceptanceClaimed": false,
+    "temporaryDirectory": "/home/ubuntu/work/profile-staff-20261114/qa-temp",
+    "temporaryDirectoryRemoved": true
+  }
+}

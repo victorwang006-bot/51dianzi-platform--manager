@@ -189,14 +189,14 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
       ],
     },
     {
-      id: "operations",
-      label: "平台运营",
-      paths: [...pathsForGroup("operations"), "/exception-logs"],
-    },
-    {
       id: "personal",
       label: "个人中心",
       paths: ["/profile"],
+    },
+    {
+      id: "operations",
+      label: "平台运营",
+      paths: [...pathsForGroup("operations"), "/exception-logs"],
     },
     {
       id: "organization",

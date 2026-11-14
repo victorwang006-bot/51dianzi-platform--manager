@@ -1,0 +1,500 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "name": "current candidate hashes, canonical 5abd baseline and frozen source hashes are exact",
+      "status": "PASS",
+      "evidence": {
+        "fourRuntimeFilesOnly": true,
+        "EntryAndBWUnchanged": true,
+        "profileOldCanonicalCompileByteIdentical": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 0,
+        "localMutationDispatches": 0,
+        "localRPCReferenceProbes": 0,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual G renders exactly two tabs, single details list and inline security status",
+      "status": "PASS",
+      "evidence": {
+        "twoTabs": true,
+        "noRepeatedPageTitle": true,
+        "inlineSecurity": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 0,
+        "localRPCReferenceProbes": 0,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual combined tab enables both source callbacks on shared month",
+      "status": "PASS",
+      "evidence": {
+        "sameMonth": "2026-10",
+        "pageReset": 1,
+        "noSyntheticCommission": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 0,
+        "localRPCReferenceProbes": 0,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual native password Dialog guards empty form and closes clearing secrets",
+      "status": "PASS",
+      "evidence": {
+        "nativeUIOnly": true,
+        "emptyInvalidRejected": true,
+        "secretsClearedOnReopen": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 0,
+        "localRPCReferenceProbes": 0,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual phone Dialog sends one local HS payload and stale ticket cannot revive after close",
+      "status": "PASS",
+      "evidence": {
+        "actualHSExecuted": true,
+        "localPayload": {
+          "oldPassword": "TEST_ONLY_OLD",
+          "phone": "13800000000"
+        },
+        "staleDialogEpochBlocked": true,
+        "actualSMSIO": 0
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 0,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual callbacks retain seven personalCenter namespace references and unwrap security request payload",
+      "status": "PASS",
+      "evidence": {
+        "actualCallbackReferences": [
+          "profile",
+          "performance",
+          "commission",
+          "updateProfile",
+          "changePassword",
+          "requestPhoneCode",
+          "bindPhone"
+        ],
+        "signalForwarded": true,
+        "actualNetworkIO": 0
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual existing singleton bridge identities remain exactly native fixtures",
+      "status": "PASS",
+      "evidence": {
+        "nativeReactAuthTRPCQueryAndDialogReferenceIdentity": true,
+        "noNewProviderOrRoot": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 0,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Profile actual session listener invalidates old callbacks synchronously with no logout/navigation",
+      "status": "PASS",
+      "evidence": {},
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Staff actual route default renders native dashboard rows with readonly status and compact actions",
+      "status": "PASS",
+      "evidence": {
+        "sameNativeDashboardScope": true,
+        "readonlyBadge": true,
+        "compact200pxActionColumn": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Staff actual self and locked guards are disabled, confirmation requires actual reason",
+      "status": "PASS",
+      "evidence": {
+        "selfAndLockedGuard": true,
+        "targetNameUsernameConfirmed": true,
+        "trimmedReasonRequired": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 0,
+        "localStaffReadbacks": 0,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Staff actual toggle payload baseline/reason, duplicate gate and authoritative list readback",
+      "status": "PASS",
+      "evidence": {
+        "actualCompiledStaffPayload": {
+          "id": 810003,
+          "status": "disabled",
+          "expectedStatus": "active",
+          "reason": "本地停用验证"
+        },
+        "synchronousDoubleClickBlocked": true,
+        "nativeAdminUserListReadback": {
+          "page": 1,
+          "pageSize": 20,
+          "archiveStatus": "current"
+        },
+        "noEnterpriseOrFrontendMutation": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 1,
+        "localStaffReadbacks": 1,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Staff actual confirmed status write cannot repeat when readback fails",
+      "status": "PASS",
+      "evidence": {
+        "savedGatePreventsRepeat": true,
+        "failedReadbackNotReportedAsConfirmedStatus": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 2,
+        "localStaffReadbacks": 2,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Staff actual actor/session epoch prevents stale success readback and closes dialog",
+      "status": "PASS",
+      "evidence": {
+        "actorEpochGuardExecuted": true,
+        "noStaleReadbackOrDialogResurrection": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 3,
+        "localStaffReadbacks": 2,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "Staff actual native client/hook bridge identities are same contexts, no provider or business client recreation",
+      "status": "PASS",
+      "evidence": {
+        "actualNativeReferencesIdentical": true,
+        "businessClientsInheritedAsExactReferences": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 3,
+        "localStaffReadbacks": 2,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    },
+    {
+      "name": "all runtime files/source pins remain unchanged, real IO and blocked attempts remain zero",
+      "status": "PASS",
+      "evidence": {
+        "actualIO": 0,
+        "noBlockedAttempt": true
+      },
+      "counts": {
+        "actualNetworkIO": 0,
+        "actualDatabaseIO": 0,
+        "actualSMSIO": 0,
+        "blockedNetworkAttempts": 0,
+        "nativeHSObserverConstructors": 4,
+        "localMutationDispatches": 1,
+        "localRPCReferenceProbes": 7,
+        "localStaffStatusMutations": 3,
+        "localStaffReadbacks": 2,
+        "authRefreshFixture": 1,
+        "authLogoutFixture": 0,
+        "routerFixture": 0
+      }
+    }
+  ],
+  "counts": {
+    "actualNetworkIO": 0,
+    "actualDatabaseIO": 0,
+    "actualSMSIO": 0,
+    "blockedNetworkAttempts": 0,
+    "nativeHSObserverConstructors": 4,
+    "localMutationDispatches": 1,
+    "localRPCReferenceProbes": 7,
+    "localStaffStatusMutations": 3,
+    "localStaffReadbacks": 2,
+    "authRefreshFixture": 1,
+    "authLogoutFixture": 0,
+    "routerFixture": 0
+  },
+  "actualModuleWrappersExecuted": {
+    "Profile": true,
+    "Staff": true,
+    "Layout": false
+  },
+  "sourceOrCandidateWrapperRecompiled": false,
+  "limits": [
+    "Actual candidate module bodies execute after removing only ES import/export declarations; all import values are explicit native/test-only local fixtures.",
+    "Entry full body/provider/transport is not executed; exact preexisting HS declaration executes in isolation with inert local MutationObserver and native React/query context.",
+    "Native dialog wrapper functions may execute exactly from the downloaded current shared chunk with installed Radix primitive fixtures; production Radix dependency modules and browser ESM loader are not end-to-end tested.",
+    "No authentication/login, real status authorization, SQL transaction, real SMS, network transport, production or visual browser acceptance is claimed."
+  ],
+  "scope": {
+    "productSourceModified": false,
+    "network": false,
+    "ssh": false,
+    "database": false,
+    "gitWrites": false,
+    "published": false,
+    "activation": false,
+    "parentHTMLMergeNotTouched": true
+  },
+  "candidateFiles": [
+    {
+      "relative": "assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+      "sha256": "6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+      "sha256": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js",
+      "sha256": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24"
+    },
+    {
+      "relative": "assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+      "sha256": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55"
+    }
+  ],
+  "sourceHashes": {
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+    "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+    "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+    "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+    "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+    "client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+    "client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+    "client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+    "client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+    "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+    "client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+    "shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+    "client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+    "client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+    "client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+    "client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+    "client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+    "client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22"
+  },
+  "entry": {
+    "wholeFileSha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+    "HSsha256": "2ee77a17674278834200e8fa8103ff7c3e286dc22e4d6e218e46644feae5b67c",
+    "existingReadonlyHSExport": true,
+    "EntryNotModified": true,
+    "wholeEntryExecuted": false
+  },
+  "nativeDialog": {
+    "actualInputWholeSha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699",
+    "actualModuleBodySha256": "79282e5177549269eee4aa15d87c3287ce942f5739041270e70ff915baa909d2",
+    "actualNativeInputAndDialogModuleBodyExecuted": true,
+    "onlyESDeclarationsRemoved": true,
+    "actualWrapperExportReferences": true,
+    "productionRadixBodiesNotBundled": true,
+    "primitiveFixtures": "installed @radix-ui/react-dialog on same test React singleton; not production dependency byte execution",
+    "nativeImportRoles": [
+      {
+        "local": "b",
+        "role": "Dialog"
+      },
+      {
+        "local": "w",
+        "role": "DialogPortal"
+      },
+      {
+        "local": "R",
+        "role": "DialogOverlay"
+      },
+      {
+        "local": "v",
+        "role": "Content"
+      },
+      {
+        "local": "D",
+        "role": "Close"
+      },
+      {
+        "local": "j",
+        "role": "DialogTitle"
+      },
+      {
+        "local": "E",
+        "role": "Description"
+      }
+    ]
+  },
+  "profileExecution": {
+    "wholeSha256": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73",
+    "bodySha256": "01b2c3d4c8475fe9e41154840b7bc8efe86b1d185bf485e73c9a19163e3a1dcb",
+    "actualDefaultLocal": "G",
+    "wrapper": "function G(){return __personalProfileGet().Profile();}",
+    "onlyESDeclarationsRemoved": true
+  },
+  "staffExecution": {
+    "wholeSha256": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24",
+    "bodySha256": "32be271938d7429e1e0b3c790ebcc3b8bdd8f53e70495573b0a495e9d11b5e67",
+    "originalDefaultLocal": "Aa",
+    "onlyESDeclarationsRemoved": true
+  },
+  "passed": 15,
+  "failed": 0,
+  "testScriptSha256": "d7750149f4ff4b9a7da0801a0748e9fc871632a5aced265ec2e60dd1bb7e94a5"
+}

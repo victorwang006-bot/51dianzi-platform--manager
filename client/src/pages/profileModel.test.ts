@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  currentShanghaiMonth, decimalAmount, normalizeMainlandPhone, passwordError,
+  currentShanghaiMonth, decimalAmount, normalizeMainlandPhone, passwordError, passwordStatus,
   personalCenterIdentity, personalCenterQueryPrefix, presentValue, roleLabel, validMonth,
 } from "./profileModel";
 
@@ -16,6 +16,12 @@ describe("personal center self-scoped model", () => {
     expect(currentShanghaiMonth(new Date("2026-10-31T16:00:00Z"))).toBe("2026-11");
     expect(validMonth("2026-11")).toBe(true);
     expect(validMonth("2026-13")).toBe(false);
+  });
+  it("reports only the authoritative password login method without fabricating password configuration", () => {
+    expect(passwordStatus("password")).toBe("账号密码登录");
+    expect(passwordStatus(undefined)).toBe("密码状态暂不可核实");
+    expect(passwordStatus(null)).toBe("密码状态暂不可核实");
+    expect(passwordStatus("oauth")).toBe("密码状态暂不可核实");
   });
   it("validates original/new/confirmed password with minimum eight characters", () => {
     expect(passwordError({ oldPassword: "", newPassword: "abc12345", confirmPassword: "abc12345" })).toContain("原密码");

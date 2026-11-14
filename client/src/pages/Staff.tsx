@@ -7,6 +7,7 @@ import {
   readCachedStaffBusinessTeams,
 } from "@/components/admin/StaffTeamSummary";
 import StaffArchiveDialog from "@/components/admin/StaffArchiveDialog";
+import StaffStatusDialog from "@/components/admin/StaffStatusDialog";
 import StaffPermissionSheet, {
   type StaffEnterpriseEditorAccess,
   type StaffPermissionSheetSection,
@@ -73,10 +74,11 @@ import {
   type StaffSaveOutcome,
 } from "@/lib/staffPermissionModel";
 import { readOfficialTeamsOverview } from "@/lib/officialChannelInventoryUi";
+import { staffStatusAction, type StaffStatusTarget } from "@/lib/staffStatusUi";
 import { trpc } from "@/lib/trpc";
 import { hasAdminPermission } from "@shared/adminPermissions";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, RefreshCw, Trash2, Users } from "lucide-react";
+import { Plus, RefreshCw, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSearch } from "wouter";
@@ -263,6 +265,7 @@ export default function Staff() {
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<{ id: number; name: string } | null>(null);
+  const [statusTarget, setStatusTarget] = useState<StaffStatusTarget | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -271,6 +274,7 @@ export default function Staff() {
   useEffect(() => {
     setSelectedRow(null);
     setArchiveTarget(null);
+    setStatusTarget(null);
     setCreateOpen(false);
     setSaving(false);
   }, [accountId]);
@@ -282,6 +286,7 @@ export default function Staff() {
         setSessionGeneration(sessionEpoch.current);
         setSelectedRow(null);
         setArchiveTarget(null);
+        setStatusTarget(null);
         setCreateOpen(false);
         setSaving(false);
       }),
@@ -299,6 +304,15 @@ export default function Staff() {
     { page, pageSize: PAGE_SIZE, archiveStatus: status === "deleted" ? "deleted" : "current" },
     { enabled: canManageAdmin, retry: false, refetchOnWindowFocus: false }
   );
+  // A separately read native current-account sample can prove another effective
+  // super exists. If incomplete/unavailable, fail closed; the server locks ALL supers.
+  const superAdminsQuery = trpc.adminUser.list.useQuery(
+    { page: 1, pageSize: 100, archiveStatus: "current" },
+    { enabled: canManageAdmin, retry: false, refetchOnWindowFocus: false }
+  );
+  const knownActiveSuperCount = superAdminsQuery.isSuccess && !superAdminsQuery.isFetching
+    ? (superAdminsQuery.data.data as unknown as StaffAdminAccount[]).filter(account => !account.archive && account.status === "active" && account.adminRole === "super_admin").length
+    : null;
   const adminAccounts = (adminUsersQuery.data?.data ??
     []) as unknown as StaffAdminAccount[];
   // Official teams are intentionally native-admin data. They are never merged
@@ -610,6 +624,10 @@ export default function Staff() {
   );
 
   const adminUpdate = trpc.adminUser.update.useMutation();
+  const adminStatusUpdate = trpc.adminUser.toggleStatus.useMutation();
+  const currentStatusAccount = adminAccounts.find(account => account.id === statusTarget?.id);
+  const currentStatusAction = staffStatusAction(currentStatusAccount, accountId, canManageAdmin, knownActiveSuperCount);
+  const statusAllowed = Boolean(currentStatusAction?.allowed && currentStatusAccount?.status === statusTarget?.expectedStatus);
 
   const refreshBusinessMembers = async () => {
     await Promise.all([
@@ -945,6 +963,7 @@ export default function Staff() {
   const refresh = async () => {
     await Promise.all([
       canManageAdmin ? adminUsersQuery.refetch() : Promise.resolve(),
+      canManageAdmin ? superAdminsQuery.refetch() : Promise.resolve(),
       officialTeamsQuery.refetch(),
       operationsQuery.refetch(),
       queryClient.invalidateQueries({ queryKey: staffQueryPrefix(accountId) }),
@@ -1099,6 +1118,7 @@ export default function Staff() {
                       row.member?.displayName ||
                       row.admin?.username ||
                       "未命名员工";
+                    const statusAction = staffStatusAction(row.admin, accountId, canManageAdmin, knownActiveSuperCount);
                     const showEnterpriseStatus = Boolean(
                       row.member &&
                         (row.member.status === "suspended" || !adminStatus)
@@ -1214,20 +1234,29 @@ export default function Staff() {
                         >
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             className="h-8 px-2 text-xs"
                             disabled={Boolean(row.admin?.archive)}
                             onClick={() => openStaffSheet(row, "erp")}
                           >
-                            <Pencil className="mr-1 h-3.5 w-3.5" />
                             配置权限
                           </Button>
-                          {canManageAdmin && row.admin && row.admin.id !== accountId && !row.member?.isOwner && row.admin.archive?.state !== "completed" ? (
-                            <Button size="sm" variant="outline" className="ml-1 h-8 px-2 text-xs text-destructive"
-                              onClick={() => setArchiveTarget({ id: row.admin!.id, name: displayName })}>
-                              <Trash2 className="mr-1 h-3.5 w-3.5" />
-                              {row.admin.archive ? "重试离职" : "删除用户"}
+                          {statusAction ? <>
+                            <span aria-hidden="true" className="text-muted-foreground">|</span>
+                            <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-xs"
+                              data-staff-status-action disabled={!statusAction.allowed || saving || Boolean(statusTarget)}
+                              title={statusAction.reason ?? `${statusAction.label}后台账号 ${row.admin!.username}`}
+                              aria-label={`${statusAction.label}后台账号 ${row.admin!.username}`}
+                              onClick={() => { if (statusAction.allowed && statusAction.target) setStatusTarget(statusAction.target); }}>
+                              {statusAction.label}
                             </Button>
+                          </> : null}
+                          {canManageAdmin && row.admin && row.admin.id !== accountId && !row.member?.isOwner && row.admin.archive?.state !== "completed" ? (
+                            <><span aria-hidden="true" className="text-muted-foreground">|</span>
+                            <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-destructive"
+                              onClick={() => setArchiveTarget({ id: row.admin!.id, name: displayName })}>
+                              {row.admin.archive ? "重试离职" : "删除"}
+                            </Button></>
                           ) : null}
                         </TableCell>
                       </TableRow>
@@ -1261,6 +1290,37 @@ export default function Staff() {
             </a>
           ) : null}
         </AdminDataPanel>
+
+        <StaffStatusDialog
+          key={`staff-status:${accountId}:${sessionGeneration}`}
+          open={Boolean(statusTarget) && canManageAdmin}
+          actorKey={`${accountId}:${sessionGeneration}`}
+          target={statusTarget}
+          allowed={statusAllowed}
+          onOpenChange={open => { if (!open) setStatusTarget(null); }}
+          mutate={async input => {
+            const actorId = accountId;
+            const epoch = sessionEpoch.current;
+            if (!statusAllowed || !canManageAdmin || currentAccount.current !== actorId || !actorId)
+              throw new Error("操作者权限或目标状态已变化，请刷新核验");
+            const result = await adminStatusUpdate.mutateAsync(input);
+            if (currentAccount.current !== actorId || sessionEpoch.current !== epoch)
+              throw new Error("操作者会话已变化，请重新登录核验");
+            return result;
+          }}
+          readBack={async id => {
+            const actorId = accountId;
+            const epoch = sessionEpoch.current;
+            const listInput = { page, pageSize: PAGE_SIZE, archiveStatus: status === "deleted" ? "deleted" as const : "current" as const };
+            const latest = await trpcUtils.client.adminUser.list.query(listInput);
+            if (currentAccount.current !== actorId || sessionEpoch.current !== epoch)
+              throw new Error("操作者会话已变化，请重新登录核验");
+            trpcUtils.adminUser.list.setData(listInput, latest);
+            await Promise.all([trpcUtils.adminUser.list.invalidate(), trpcUtils.salesStaff.list.invalidate()]);
+            const account = latest.data.find(account => account.id === id);
+            return account ? { id: account.id, status: account.status } : null;
+          }}
+        />
 
         <StaffArchiveDialog
           key={`staff-archive:${accountId}:${sessionGeneration}`}

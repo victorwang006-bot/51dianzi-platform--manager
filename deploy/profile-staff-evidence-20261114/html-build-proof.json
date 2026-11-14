@@ -1,0 +1,39 @@
+{
+  "beforeSha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0",
+  "sha256": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51",
+  "exactInverse": true,
+  "preservedOldImportsAndScopes": true,
+  "clonedScopes": [
+    {
+      "oldScope": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "newScope": "/assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js"
+    }
+  ],
+  "changes": [
+    {
+      "from": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "to": "/assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+      "hits": 38,
+      "dynamicOwners": []
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "to": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+      "hits": 1,
+      "dynamicOwners": []
+    },
+    {
+      "from": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+      "to": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js",
+      "hits": 2,
+      "dynamicOwners": []
+    }
+  ],
+  "relocations": {
+    "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js": "/assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js"
+  },
+  "onlyNewStylesheet": "/assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+  "entryRelocation": null
+}

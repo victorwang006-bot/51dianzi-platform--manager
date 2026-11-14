@@ -488,7 +488,7 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     ).toBeNull();
   });
 
-  it("深层真实业务路由更新选中态；组织别名和个人资料不创建假模块", async () => {
+  it("深层业务和组织别名选中真实模块；未授权个人入口不误选组织", async () => {
     await render("/workbench/procurement-orders/accepted?merchantId=3");
     expect(button("group:procurement").dataset.active).toBe("true");
     await click("group:procurement");
@@ -501,24 +501,11 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
       host.querySelector('[data-workspace-nav-target="/admins"]')
     ).toBeNull();
     await render("/profile");
-    expect(button("organization").getAttribute("aria-current")).toBe(
-      "location"
-    );
+    expect(button("organization").getAttribute("aria-current")).toBeNull();
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(0);
     expect(
       host.querySelectorAll('[data-admin-navigation="module-tabs"] button')
-    ).toHaveLength(3);
-    expect(
-      Array.from(
-        host.querySelectorAll<HTMLButtonElement>(
-          '[data-admin-navigation="module-tabs"] button'
-        )
-      ).map(node => node.dataset.workspaceNavTarget)
-    ).toEqual([
-      "/staff",
-      "/teams",
-      "/workbench/user-records",
-    ]);
+    ).toHaveLength(0);
   });
 
   it.each(["/teams"])(

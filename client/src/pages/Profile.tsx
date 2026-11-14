@@ -3,6 +3,7 @@ import { installAuthSessionClearListener } from "@/business/platform/client/src/
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +19,7 @@ import {
   messageOf,
   normalizeMainlandPhone,
   passwordError,
+  passwordStatus,
   personalCenterIdentity,
   personalCenterQueryPrefix,
   presentValue,
@@ -28,11 +30,11 @@ import "./Profile.css";
 
 const TABS = [
   { key: "profile", label: "个人资料" },
-  { key: "security", label: "账号安全" },
-  { key: "performance", label: "我的业绩" },
-  { key: "commission", label: "我的提成" },
+  { key: "performance", label: "业绩与提成" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
+type SecurityDialog = "password" | "phone";
+type SecurityRequest<T> = { input: T; dialogEpoch: number; phoneRevision?: number };
 const EMPTY_PASSWORD = { oldPassword: "", newPassword: "", confirmPassword: "" };
 const EMPTY_PHONE = { oldPassword: "", phone: "", code: "" };
 
@@ -66,6 +68,8 @@ export default function Profile() {
   const [sessionCleared, setSessionCleared] = useState(false);
   const clearingRef = useRef(0);
   const identity = auth.user ? personalCenterIdentity(auth.user) : null;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
   const scope = identity && !auth.loading && !auth.error && !sessionCleared ? `${identity}:${epoch}` : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
@@ -87,7 +91,6 @@ export default function Profile() {
 
   return <DashboardLayout>
     <section className="personal-center" aria-label="个人中心">
-      <header className="pc-page-header"><h1 className="aui-page-title">个人中心</h1></header>
       {auth.loading ? <LoadingPanel /> : auth.error ?
         <Failure error={auth.error} retry={() => { void auth.refresh(); }} /> :
         identity && !sessionCleared ? <ProfileSession
@@ -96,18 +99,23 @@ export default function Profile() {
           epoch={epoch}
           refresh={auth.refresh}
           logout={auth.logout}
+          loginMethod={auth.user?.loginMethod}
           isCurrent={() => scopeRef.current === scope}
+          canFinishLogout={() => scopeRef.current === scope || (scopeRef.current === null &&
+            (identityRef.current === identity || identityRef.current === null))}
         /> : <div className="pc-state">登录状态已失效，请重新登录。</div>}
     </section>
   </DashboardLayout>;
 }
 
-function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
+function ProfileSession({ identity, epoch, refresh, logout, loginMethod, isCurrent, canFinishLogout }: {
   identity: string;
   epoch: number;
   refresh: ReturnType<typeof useAuth>["refresh"];
   logout: ReturnType<typeof useAuth>["logout"];
+  loginMethod?: string | null;
   isCurrent(): boolean;
+  canFinishLogout(): boolean;
 }) {
   const rpc = trpc.useUtils().client.personalCenter;
   const queryClient = useQueryClient();
@@ -121,6 +129,13 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
   const [draft, setDraft] = useState({ displayName: "", email: "" });
   const [password, setPassword] = useState(EMPTY_PASSWORD);
   const [phone, setPhone] = useState(EMPTY_PHONE);
+  const [dialog, setDialog] = useState<SecurityDialog | null>(null);
+  const dialogRef = useRef<SecurityDialog | null>(null);
+  const dialogEpoch = useRef(0);
+  const phoneRevision = useRef(0);
+  const returnFocus = useRef<HTMLButtonElement | null>(null);
+  const securityBusy = useRef(false);
+  const [securityInFlight, setSecurityInFlight] = useState(false);
   const [securityError, setSecurityError] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [relogin, setRelogin] = useState(false);
@@ -135,6 +150,18 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
   function currentSession() { return live.current && isCurrent(); }
   function assertCurrentSession() {
     if (!currentSession()) throw new Error("登录主体已变化，请重新加载个人中心");
+  }
+  function currentDialog<T>(kind: SecurityDialog, request: SecurityRequest<T>) {
+    return currentSession() && dialogRef.current === kind && dialogEpoch.current === request.dialogEpoch &&
+      (request.phoneRevision === undefined || request.phoneRevision === phoneRevision.current);
+  }
+  function finishSecurity() {
+    securityBusy.current = false;
+    if (currentSession()) setSecurityInFlight(false);
+  }
+  function beginSecurity() {
+    securityBusy.current = true;
+    setSecurityInFlight(true);
   }
 
   useEffect(() => {
@@ -182,7 +209,7 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
       assertCurrentSession();
       return rpc.commission.query({ month }, { signal });
     },
-    enabled: tab === "commission" && validMonth(month),
+    enabled: tab === "performance" && validMonth(month),
     retry: false, gcTime: 0, staleTime: 0, placeholderData: undefined,
     refetchOnWindowFocus: false,
   });
@@ -217,25 +244,31 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
     // useAuth.logout also clears the native header token and broadcasts the
     // session reset; even an already-revoked logout must end at the login page.
     try { await logout(); } catch { /* Already revoked by the successful mutation. */ }
-    navigate("/login", { replace: true });
+    // logout itself can be slow. Never redirect a different/newly mounted
+    // subject after awaiting it; allow the intentional cleared-session unmount.
+    if (canFinishLogout()) navigate("/login", { replace: true });
   }
   const changePassword = useMutation({
     mutationKey: [...prefix, "change-password"], gcTime: 0,
-    mutationFn: (input: { oldPassword: string; newPassword: string }) => {
+    mutationFn: ({ input }: SecurityRequest<{ oldPassword: string; newPassword: string }>) => {
       assertCurrentSession();
       return rpc.changePassword.mutate(input);
     },
     onSuccess: () => requireLogin("密码已修改，请使用新密码重新登录"),
-    onError: error => { if (currentSession()) setSecurityError(messageOf(error)); },
+    onError: (error, request) => { if (currentDialog("password", request)) setSecurityError(messageOf(error)); },
+    onSettled: finishSecurity,
   });
   const requestCode = useMutation({
     mutationKey: [...prefix, "phone-code"], gcTime: 0,
-    mutationFn: (input: { oldPassword: string; phone: string }) => {
+    mutationFn: ({ input }: SecurityRequest<{ oldPassword: string; phone: string }>) => {
       assertCurrentSession();
       return rpc.requestPhoneCode.mutate(input);
     },
-    onSuccess: (result, input) => {
-      if (!currentSession()) return;
+    onSuccess: (result, request) => {
+      // A ticket belongs to this opening AND the exact phone/password revision.
+      // Closing/reopening, or editing away and back, must never revive it.
+      if (!currentDialog("phone", request)) return;
+      const { input } = request;
       const requestedAt = Date.now();
       setNow(requestedAt);
       setRetryAt(requestedAt + result.retryAfterSeconds * 1000);
@@ -244,21 +277,53 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
       setPhone(current => ({ ...current, code: "" }));
       setSecurityError(null);
     },
-    onError: error => { if (currentSession()) setSecurityError(messageOf(error)); },
+    onError: (error, request) => { if (currentDialog("phone", request)) setSecurityError(messageOf(error)); },
+    onSettled: finishSecurity,
   });
   const bindPhone = useMutation({
     mutationKey: [...prefix, "bind-phone"], gcTime: 0,
-    mutationFn: (input: { oldPassword: string; phone: string; ticketId: string; code: string }) => {
+    mutationFn: ({ input }: SecurityRequest<{ oldPassword: string; phone: string; ticketId: string; code: string }>) => {
       assertCurrentSession();
       return rpc.bindPhone.mutate(input);
     },
     onSuccess: () => requireLogin("手机号已验证并更新，请重新登录"),
-    onError: error => { if (currentSession()) setSecurityError(messageOf(error)); },
+    onError: (error, request) => { if (currentDialog("phone", request)) setSecurityError(messageOf(error)); },
+    onSettled: finishSecurity,
   });
-  const securityPending = changePassword.isPending || requestCode.isPending || bindPhone.isPending || relogin;
+  const securityPending = securityInFlight || changePassword.isPending || requestCode.isPending || bindPhone.isPending || relogin;
   const profile = profileQuery.data;
   const performance = performanceQuery.data;
   const commission = commissionQuery.data;
+
+  function clearSecurityForm() {
+    setPassword(EMPTY_PASSWORD);
+    setPhone(EMPTY_PHONE);
+    setTicket(null);
+    setSecurityError(null);
+    // Removing observer/cache variables does not cancel a submitted server
+    // mutation. securityBusy continues blocking duplicates until onSettled.
+    changePassword.reset(); requestCode.reset(); bindPhone.reset();
+    for (const mutation of queryClient.getMutationCache().findAll({ mutationKey: prefix })) {
+      if (mutation.options.mutationKey?.at(-1) !== "update-profile") queryClient.getMutationCache().remove(mutation);
+    }
+  }
+  function openSecurity(kind: SecurityDialog, trigger: HTMLButtonElement) {
+    if (!currentSession() || relogin) return;
+    ++dialogEpoch.current;
+    ++phoneRevision.current;
+    dialogRef.current = kind;
+    returnFocus.current = trigger;
+    clearSecurityForm();
+    setDialog(kind);
+  }
+  function closeSecurity() {
+    // Invalidate synchronously: a promise may settle before React commits.
+    ++dialogEpoch.current;
+    ++phoneRevision.current;
+    dialogRef.current = null;
+    clearSecurityForm();
+    setDialog(null);
+  }
 
   function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -271,32 +336,36 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
   }
   function savePassword(event: FormEvent) {
     event.preventDefault();
-    if (securityPending) return;
+    if (!currentSession() || dialogRef.current !== "password" || securityBusy.current || securityPending) return;
     const error = passwordError(password);
     setSecurityError(error);
     if (error) return;
-    changePassword.mutate({ oldPassword: password.oldPassword, newPassword: password.newPassword });
+    beginSecurity();
+    changePassword.mutate({ input: { oldPassword: password.oldPassword, newPassword: password.newPassword }, dialogEpoch: dialogEpoch.current });
   }
   function sendCode() {
-    if (securityPending || cooldown > 0) return;
+    if (!currentSession() || dialogRef.current !== "phone" || securityBusy.current || securityPending || cooldown > 0) return;
     const normalized = normalizeMainlandPhone(phone.phone);
     if (!phone.oldPassword) { setSecurityError("请输入原密码以验证身份"); return; }
     if (!normalized) { setSecurityError("请输入有效的中国大陆手机号"); return; }
     setSecurityError(null);
     setTicket(null);
-    requestCode.mutate({ oldPassword: phone.oldPassword, phone: normalized });
+    beginSecurity();
+    requestCode.mutate({ input: { oldPassword: phone.oldPassword, phone: normalized }, dialogEpoch: dialogEpoch.current, phoneRevision: phoneRevision.current });
   }
   function savePhone(event: FormEvent) {
     event.preventDefault();
-    if (securityPending) return;
+    if (!currentSession() || dialogRef.current !== "phone" || securityBusy.current || securityPending) return;
     const normalized = normalizeMainlandPhone(phone.phone);
     if (!normalized || !phone.oldPassword) { setSecurityError("请填写原密码及有效的新手机号"); return; }
     if (!ticket || ticket.phone !== normalized || ticketExpired) { setSecurityError("请先获取当前新手机号的有效验证码"); return; }
     if (!/^\d{6}$/.test(phone.code)) { setSecurityError("请输入6位短信验证码"); return; }
     setSecurityError(null);
-    bindPhone.mutate({ oldPassword: phone.oldPassword, phone: normalized, ticketId: ticket.ticketId, code: phone.code });
+    beginSecurity();
+    bindPhone.mutate({ input: { oldPassword: phone.oldPassword, phone: normalized, ticketId: ticket.ticketId, code: phone.code }, dialogEpoch: dialogEpoch.current, phoneRevision: phoneRevision.current });
   }
   function editPhone(field: "oldPassword" | "phone", value: string) {
+    ++phoneRevision.current;
     setPhone(current => ({ ...current, [field]: value, code: "" }));
     setTicket(null);
     setSecurityError(null);
@@ -324,7 +393,7 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
     </div>
 
     <div id={`pc-panel-${tab}`} role="tabpanel" aria-labelledby={`pc-tab-${tab}`} className="pc-panel">
-      {(tab === "profile" || tab === "security") && (profileQuery.isPending ? <LoadingPanel /> :
+      {tab === "profile" && (profileQuery.isPending ? <LoadingPanel /> :
         profileQuery.isError ? <Failure error={profileQuery.error} retry={() => { void profileQuery.refetch(); }} pending={profileQuery.isFetching} /> : !profile ?
           <div className="pc-state">暂无法读取个人资料。</div> : null)}
 
@@ -341,6 +410,8 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
         </CardHeader>
         <CardContent className="pc-card-content">
           <dl className="pc-details">
+            <div><dt>用户名称</dt><dd>{presentValue(profile.displayName)}</dd></div>
+            <div><dt>联系邮箱</dt><dd>{presentValue(profile.email)}</dd></div>
             <div><dt>真实姓名</dt><dd>{sourcedField(profile, "realName")}</dd></div>
             <div><dt>登录账号</dt><dd>{presentValue(profile.username)}</dd></div>
             <div><dt>角色</dt><dd>{roleLabel(profile.adminRole)}</dd></div>
@@ -365,79 +436,37 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
             <div className="pc-actions"><Button type="button" variant="outline" size="sm" disabled={updateProfile.isPending}
               onClick={() => { setEditing(false); setDraft({ displayName: "", email: "" }); setProfileError(null); }}>取消</Button>
               <Button type="submit" size="sm" disabled={updateProfile.isPending}>
-                {updateProfile.isPending ? <Loader2 className="animate-spin" /> : <Save />}保存资料
-              </Button>
-            </div>
-          </form> : <dl className="pc-details pc-contact-details">
-            <div><dt>用户名称</dt><dd>{presentValue(profile.displayName)}</dd></div>
-            <div><dt>联系邮箱</dt><dd>{presentValue(profile.email)}</dd></div>
-          </dl>}
+                  {updateProfile.isPending ? <Loader2 className="animate-spin" /> : <Save />}保存资料
+                </Button>
+              </div>
+          </form> : null}
         </CardContent>
+        <div className="pc-security-status" aria-label="账号安全状态">
+          <div className="pc-security-item"><KeyRound aria-hidden="true" /><div><span>登录密码</span>
+            <small>{passwordStatus(loginMethod)}</small></div>
+            <Button size="sm" variant="outline" disabled={relogin}
+              onClick={event => openSecurity("password", event.currentTarget)}>修改密码</Button></div>
+          <div className="pc-security-item"><Phone aria-hidden="true" /><div><span>绑定手机</span>
+            <small>{!profile.phone ? "未绑定" : profile.phoneBinding === "verified_by_current_ticket" ? "已验证" : "未验证"}</small></div>
+            <Button size="sm" variant="outline" disabled={relogin}
+              onClick={event => openSecurity("phone", event.currentTarget)}>
+              {profile.phoneBinding === "verified_by_current_ticket" ? "更换手机号" : "验证与绑定手机"}
+            </Button></div>
+        </div>
       </Card>}
 
-      {tab === "security" && profile && !profileQuery.isError && <>
-        {securityError && <p className="pc-error pc-error-banner" role="alert">{securityError}</p>}
-        {relogin && <p className="pc-state" role="status">安全设置已更新，正在退出并前往登录页…</p>}
-        <div className="pc-security-grid">
-          <Card className="pc-card"><CardHeader className="pc-card-header"><CardTitle><KeyRound />修改密码</CardTitle></CardHeader>
-            <CardContent className="pc-card-content"><form onSubmit={savePassword} className="pc-security-form">
-              <div className="pc-field"><Label htmlFor="pc-old-password">原密码</Label>
-                <Input id="pc-old-password" type="password" autoComplete="current-password" maxLength={128} required
-                  disabled={securityPending} value={password.oldPassword} onChange={event => setPassword(value => ({ ...value, oldPassword: event.target.value }))} />
-              </div>
-              <div className="pc-field"><Label htmlFor="pc-new-password">新密码</Label>
-                <Input id="pc-new-password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required placeholder="至少8个字符"
-                  disabled={securityPending} value={password.newPassword} onChange={event => setPassword(value => ({ ...value, newPassword: event.target.value }))} />
-              </div>
-              <div className="pc-field"><Label htmlFor="pc-confirm-password">确认新密码</Label>
-                <Input id="pc-confirm-password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required
-                  disabled={securityPending} value={password.confirmPassword} onChange={event => setPassword(value => ({ ...value, confirmPassword: event.target.value }))} />
-              </div>
-              <div className="pc-actions"><Button type="submit" size="sm" disabled={securityPending}>
-                {changePassword.isPending ? <Loader2 className="animate-spin" /> : <KeyRound />}修改并重新登录
-              </Button></div>
-            </form></CardContent>
-          </Card>
-          <Card className="pc-card"><CardHeader className="pc-card-header"><CardTitle><Phone />{profile.phoneBinding === "verified_by_current_ticket" ? "更换手机号" : "验证与绑定手机"}</CardTitle></CardHeader>
-            <CardContent className="pc-card-content"><form onSubmit={savePhone} className="pc-security-form">
-              <p className="pc-muted">当前手机号：{presentValue(profile.phone)}{profile.phone && profile.phoneBinding !== "verified_by_current_ticket" ? "（未验证）" : ""}</p>
-              <div className="pc-field"><Label htmlFor="pc-phone-password">原密码验证身份</Label>
-                <Input id="pc-phone-password" type="password" autoComplete="current-password" maxLength={128} required
-                  disabled={securityPending} value={phone.oldPassword} onChange={event => editPhone("oldPassword", event.target.value)} />
-              </div>
-              <div className="pc-field"><Label htmlFor="pc-phone">待验证手机号</Label>
-                <Input id="pc-phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={16} required placeholder={profile.phoneBinding === "verified_by_current_ticket" ? "中国大陆新手机号" : "可验证当前号码或绑定新号码"}
-                  disabled={securityPending} value={phone.phone} onChange={event => editPhone("phone", event.target.value)} />
-              </div>
-              <div className="pc-field"><Label htmlFor="pc-phone-code">短信验证码</Label>
-                <div className="pc-code-row"><Input id="pc-phone-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required
-                  disabled={securityPending || !ticket || ticketExpired} value={phone.code}
-                  onChange={event => setPhone(value => ({ ...value, code: event.target.value.replace(/\D/g, "").slice(0, 6) }))} />
-                  <Button type="button" variant="outline" size="sm" onClick={sendCode}
-                    disabled={securityPending || cooldown > 0 || !phone.oldPassword || !normalizeMainlandPhone(phone.phone)}>
-                    {requestCode.isPending ? <Loader2 className="animate-spin" /> : null}
-                    {cooldown > 0 ? `${cooldown}秒后重发` : "获取验证码"}
-                  </Button>
-                </div>
-              </div>
-              {ticket && <p className="pc-muted" role="status">{ticketExpired ? "验证码已过期，请重新获取。" : `验证码已发送至 ${ticket.maskedPhone}`}</p>}
-              <div className="pc-actions"><Button type="submit" size="sm"
-                disabled={securityPending || !ticket || ticketExpired || !/^\d{6}$/.test(phone.code)}>
-                {bindPhone.isPending ? <Loader2 className="animate-spin" /> : <BadgeCheck />}验证并{profile.phone ? "更换" : "绑定"}
-              </Button></div>
-            </form></CardContent>
-          </Card>
-        </div>
-      </>}
+      {relogin && <p className="pc-state" role="status">安全设置已更新，正在退出并前往登录页…</p>}
 
-      {(tab === "performance" || tab === "commission") && <div className="pc-filter">
+      {tab === "performance" && <div className="pc-filter">
         <Label htmlFor="pc-month">月份</Label><Input id="pc-month" type="month" value={month}
           onChange={event => {
             if (validMonth(event.target.value)) { setMonth(event.target.value); setPage(1); }
           }} />
         <span className="pc-muted">北京时间</span>
       </div>}
-      {tab === "performance" && (performanceQuery.isPending ? <LoadingPanel /> : performanceQuery.isError ?
+      {tab === "performance" && <section className="pc-results" aria-label="我的业绩">
+        <h2 className="pc-section-title">我的业绩</h2>
+        {performanceQuery.isPending ? <LoadingPanel /> : performanceQuery.isError ?
         <Failure error={performanceQuery.error} retry={() => { void performanceQuery.refetch(); }} pending={performanceQuery.isFetching} /> :
         performance?.status === "unavailable" ? <div className="pc-state">{performance.reason || "当前暂无可核实的本人业绩来源。"}</div> :
         performance?.status === "available" ? <>
@@ -470,12 +499,80 @@ function ProfileSession({ identity, epoch, refresh, logout, isCurrent }: {
             <p>账期登记：{decimalAmount(performance.monthlyBookedAmount)} {performance.currency}（不计入现金回款）</p>
             <p>退款：暂无可核实账本，不以0代替。</p>
           </details>
-        </> : <div className="pc-state">暂无可核实的业绩数据。</div>)}
-      {tab === "commission" && (commissionQuery.isPending ? <LoadingPanel /> : commissionQuery.isError ?
+        </> : <div className="pc-state">暂无可核实的业绩数据。</div>}
+      </section>}
+      {tab === "performance" && <section className="pc-results" aria-label="我的提成">
+        <h2 className="pc-section-title">我的提成</h2>
+        {commissionQuery.isPending ? <LoadingPanel /> : commissionQuery.isError ?
         <Failure error={commissionQuery.error} retry={() => { void commissionQuery.refetch(); }} pending={commissionQuery.isFetching} /> :
         <Card className="pc-card"><CardHeader className="pc-card-header"><CardTitle>尚未配置</CardTitle></CardHeader>
           <CardContent className="pc-card-content"><p className="pc-muted">{commission?.reason || "尚未配置可核实的个人提成规则与结算来源。"}</p></CardContent>
-        </Card>)}
+        </Card>}
+      </section>}
     </div>
+
+    <Dialog open={dialog !== null} onOpenChange={open => { if (!open) closeSecurity(); }}>
+      <DialogContent className="personal-center pc-security-dialog" showCloseButton={false} aria-modal="true"
+        onOpenAutoFocus={event => {
+          event.preventDefault();
+          document.getElementById(dialog === "password" ? "pc-old-password" : "pc-phone-password")?.focus();
+        }}
+        onCloseAutoFocus={event => {
+          event.preventDefault();
+          if (currentSession() && returnFocus.current?.isConnected) returnFocus.current.focus();
+        }}>
+        <DialogHeader><DialogTitle>{dialog === "password" ? "修改密码" : profile?.phoneBinding === "verified_by_current_ticket" ? "更换手机号" : "验证与绑定手机"}</DialogTitle>
+          <DialogDescription>需验证原密码。安全设置更新成功后将退出，请重新登录。</DialogDescription>
+        </DialogHeader>
+        {securityError && <p className="pc-error pc-error-banner" role="alert">{securityError}</p>}
+        {securityPending && <p className="pc-muted" role="status">正在处理，请勿重复提交。关闭弹窗不会撤销已提交的操作。</p>}
+        {dialog === "password" && <form onSubmit={savePassword} className="pc-security-form">
+              <div className="pc-field"><Label htmlFor="pc-old-password">原密码</Label>
+                <Input id="pc-old-password" type="password" autoComplete="current-password" maxLength={128} required
+                  disabled={securityPending} value={password.oldPassword} onChange={event => setPassword(value => ({ ...value, oldPassword: event.target.value }))} />
+              </div>
+              <div className="pc-field"><Label htmlFor="pc-new-password">新密码</Label>
+                <Input id="pc-new-password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required placeholder="至少8个字符"
+                  disabled={securityPending} value={password.newPassword} onChange={event => setPassword(value => ({ ...value, newPassword: event.target.value }))} />
+              </div>
+              <div className="pc-field"><Label htmlFor="pc-confirm-password">确认新密码</Label>
+                <Input id="pc-confirm-password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required
+                  disabled={securityPending} value={password.confirmPassword} onChange={event => setPassword(value => ({ ...value, confirmPassword: event.target.value }))} />
+              </div>
+              <div className="pc-actions"><DialogClose asChild><Button type="button" size="sm" variant="outline">关闭</Button></DialogClose>
+                <Button type="submit" size="sm" disabled={securityPending}>
+                {changePassword.isPending ? <Loader2 className="animate-spin" /> : <KeyRound />}修改并重新登录
+              </Button></div>
+        </form>}
+        {dialog === "phone" && profile && <form onSubmit={savePhone} className="pc-security-form">
+              <p className="pc-muted">当前手机号：{presentValue(profile.phone)}{profile.phone && profile.phoneBinding !== "verified_by_current_ticket" ? "（未验证）" : ""}</p>
+              <div className="pc-field"><Label htmlFor="pc-phone-password">原密码验证身份</Label>
+                <Input id="pc-phone-password" type="password" autoComplete="current-password" maxLength={128} required
+                  disabled={securityPending} value={phone.oldPassword} onChange={event => editPhone("oldPassword", event.target.value)} />
+              </div>
+              <div className="pc-field"><Label htmlFor="pc-phone">待验证手机号</Label>
+                <Input id="pc-phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={16} required placeholder={profile.phoneBinding === "verified_by_current_ticket" ? "中国大陆新手机号" : "可验证当前号码或绑定新号码"}
+                  disabled={securityPending} value={phone.phone} onChange={event => editPhone("phone", event.target.value)} />
+              </div>
+              <div className="pc-field"><Label htmlFor="pc-phone-code">短信验证码</Label>
+                <div className="pc-code-row"><Input id="pc-phone-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required
+                  disabled={securityPending || !ticket || ticketExpired} value={phone.code}
+                  onChange={event => setPhone(value => ({ ...value, code: event.target.value.replace(/\D/g, "").slice(0, 6) }))} />
+                  <Button type="button" variant="outline" size="sm" onClick={sendCode}
+                    disabled={securityPending || cooldown > 0 || !phone.oldPassword || !normalizeMainlandPhone(phone.phone)}>
+                    {requestCode.isPending ? <Loader2 className="animate-spin" /> : null}
+                    {cooldown > 0 ? `${cooldown}秒后重发` : "获取验证码"}
+                  </Button>
+                </div>
+              </div>
+              {ticket && <p className="pc-muted" role="status">{ticketExpired ? "验证码已过期，请重新获取。" : `验证码已发送至 ${ticket.maskedPhone}`}</p>}
+              <div className="pc-actions"><DialogClose asChild><Button type="button" size="sm" variant="outline">关闭</Button></DialogClose>
+                <Button type="submit" size="sm"
+                disabled={securityPending || !ticket || ticketExpired || !/^\d{6}$/.test(phone.code)}>
+                {bindPhone.isPending ? <Loader2 className="animate-spin" /> : <BadgeCheck />}验证并{profile.phone ? "更换" : "绑定"}
+              </Button></div>
+        </form>}
+      </DialogContent>
+    </Dialog>
   </>;
 }

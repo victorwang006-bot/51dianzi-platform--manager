@@ -5,8 +5,6 @@
   min-width: 0;
   color: #334155;
 }
-.personal-center .pc-page-header { padding: 0; }
-.personal-center .pc-page-header h1 { margin: 0; font-size: 18px; font-weight: 600; }
 .personal-center .pc-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -46,17 +44,25 @@
 .personal-center .pc-identity > div { min-width: 0; overflow-wrap: anywhere; }
 .personal-center .pc-avatar { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; background: #eaf2fe; color: #185fa5; font-size: 18px; font-weight: 600; }
 .personal-center .pc-muted { color: #64748b; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-.personal-center .pc-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 24px; }
-.personal-center .pc-details dt { margin-bottom: 4px; color: #64748b; font-size: 12px; }
-.personal-center .pc-details dd { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.personal-center .pc-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; }
+.personal-center .pc-details > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.personal-center .pc-details dt { flex: 0 0 60px; color: #64748b; font-size: 12px; }
+.personal-center .pc-details dd { min-width: 0; margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .personal-center .pc-inline-status { display: inline-block; margin-left: 8px; color: #64748b; font-size: 11px; }
-.personal-center .pc-contact-details, .personal-center .pc-edit-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+.personal-center .pc-edit-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
 .personal-center .pc-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .personal-center .pc-field { display: flex; flex-direction: column; min-width: 0; gap: 6px; }
 .personal-center .pc-field label { font-size: 12px; line-height: 1.5; }
 .personal-center input { height: 34px; font-size: 13px; }
 .personal-center .pc-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.personal-center .pc-security-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.personal-center .pc-security-status { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 16px; border-top: 1px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 8px 8px; }
+.personal-center .pc-security-item { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; }
+.personal-center .pc-security-item > svg { flex-shrink: 0; width: 16px; height: 16px; color: #185fa5; }
+.personal-center .pc-security-item > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; min-width: 0; flex: 1; font-size: 13px; }
+.personal-center .pc-security-item small { color: #64748b; font-size: 12px; }
+.personal-center.pc-security-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; gap: 16px; }
+.personal-center.pc-security-dialog [data-slot="dialog-title"] { font-size: 16px; line-height: 1.5; }
+.personal-center.pc-security-dialog [data-slot="dialog-description"] { font-size: 12px; line-height: 1.6; }
 .personal-center .pc-security-form { display: flex; flex-direction: column; gap: 12px; }
 .personal-center .pc-security-form .pc-actions { margin-top: 4px; }
 .personal-center .pc-code-row { display: flex; align-items: center; gap: 8px; }
@@ -69,6 +75,8 @@
 .personal-center .pc-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .personal-center .pc-filter label { font-size: 12px; }
 .personal-center .pc-filter input { width: 160px; }
+.personal-center .pc-results { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.personal-center .pc-section-title { margin: 0; font-size: 14px; font-weight: 600; }
 .personal-center .pc-stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .personal-center .pc-stat { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
 .personal-center .pc-stat > span { color: #64748b; font-size: 12px; }
@@ -84,8 +92,7 @@
 .personal-center .pc-table .pc-center { text-align: center; }
 .personal-center .pc-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 12px 16px; color: #64748b; font-size: 12px; }
 @media (max-width: 767px) {
-  .personal-center .pc-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .personal-center .pc-security-grid { grid-template-columns: minmax(0, 1fr); }
+  .personal-center .pc-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
   .personal-center .pc-stat-grid { grid-template-columns: minmax(0, 1fr); }
   .personal-center .pc-stat { gap: 5px; padding: 14px 16px; }
   .personal-center .pc-stat strong { font-size: 20px; }
@@ -93,6 +100,6 @@
 @media (max-width: 420px) {
   .personal-center .pc-tabs button { flex: 1 1 40%; padding-inline: 8px; }
   .personal-center .pc-form-grid { grid-template-columns: minmax(0, 1fr); }
-  .personal-center .pc-details { column-gap: 12px; }
-  .personal-center .pc-card-header, .personal-center .pc-card-content { padding: 12px; }
+  .personal-center .pc-details { grid-template-columns: minmax(0, 1fr); }
+  .personal-center .pc-card-header, .personal-center .pc-card-content, .personal-center .pc-security-status { padding: 12px; }
 }

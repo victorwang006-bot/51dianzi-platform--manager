@@ -19,11 +19,11 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
 describe("个人中心独立导航及客户详情紧凑位置", () => {
-  it("个人中心位于平台运营右侧，保留原授权条目对象", async () => {
+  it("个人中心位于平台运营左侧，保留原授权条目对象", async () => {
     const onNavigate = vi.fn();
     await act(async () => root.render(React.createElement(WorkspaceTabs, { items, location: "/profile", onNavigate })));
     const buttons = [...host.querySelectorAll<HTMLButtonElement>('button[data-navigation-level="1"]')];
-    expect(buttons.map(button => button.textContent?.replace("▾", "").trim())).toEqual(["客户列表", "平台运营", "个人中心", "组织与权限"]);
+    expect(buttons.map(button => button.textContent?.replace("▾", "").trim())).toEqual(["客户列表", "个人中心", "平台运营", "组织与权限"]);
     const personal = buttons.find(button => button.dataset.workspaceDirectItem === "/profile")!;
     expect(personal.getAttribute("aria-current")).toBe("page");
     expect(personal.hasAttribute("aria-expanded")).toBe(false);
@@ -47,5 +47,7 @@ describe("个人中心独立导航及客户详情紧凑位置", () => {
     expect(host.querySelector('[data-admin-navigation="current-location"]')?.textContent).toContain("客户列表");
     await act(async () => root.render(React.createElement(AdminWorkspaceLocation, { items, location: "/analytics" })));
     expect(host.querySelector('[data-admin-navigation="current-location"]')?.textContent).toContain("平台运营");
+    await act(async () => root.render(React.createElement(AdminWorkspaceLocation, { items, location: "/profile" })));
+    expect(host.querySelector('[data-admin-navigation="current-location"]')?.textContent).toContain("个人中心");
   });
 });

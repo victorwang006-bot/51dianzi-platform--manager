@@ -1,0 +1,146 @@
+{
+  "baseHead": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+  "state": "final-freeze",
+  "nativeOwners": {
+    "account": "drizzle/schema.ts adminUsers (admin_users)",
+    "statusLifecycle": "server/db.ts updateAdminUser; toggleAdminUserStatus delegates to it",
+    "authorization": "adminManageProcedure admins.manage plus original complete effective-super row lock first, then native actor+target FOR UPDATE ordered by id, then fresh actor archive/grants/sessionVersion verification; no new advisory-lock namespace",
+    "revocation": "adminUsers.sessionVersion SQL + 1 on actual status change",
+    "salesIdentity": "existing syncAdminUserSalesIdentity retained",
+    "archive": "adminStaffArchives presence prevents mutation",
+    "audit": "existing auditLogs (audit_logs), same transaction; NOT adminUserPermissionAudits",
+    "frontendAndEnterprise": "independent, never status-mutated by Staff account toggle"
+  },
+  "toggleStatus": {
+    "router": "adminUser.toggleStatus",
+    "input": {
+      "id": "positive integer",
+      "status": "active | disabled",
+      "expectedStatus": "active | disabled | locked; REQUIRED at runtime",
+      "reason": "trimmed 2..500 characters; REQUIRED at runtime"
+    },
+    "result": {
+      "success": true
+    },
+    "typeCompatibility": "expectedStatus/reason schema fields optional plus refinement requiring them at runtime, to avoid editing out-of-scope legacy Admins.tsx. Legacy calls without baseline/reason fail BAD_REQUEST; Staff always supplies both."
+  },
+  "genericUpdate": {
+    "router": "adminUser.update",
+    "status": "active | disabled | locked (existing type preserved)",
+    "expectedStatus": "required whenever status supplied, same runtime validation as dedicated toggle",
+    "reason": "required whenever status supplied; role/permissions/password-only inputs unchanged",
+    "statusGuard": "shared updateAdminUser transaction checks stale baseline, archive, self-disable, last effective super-admin and locked-to-active forbidden; no toggle-only bypass"
+  },
+  "errors": {
+    "ADMIN_STATUS_EXPECTED_REQUIRED": "BAD_REQUEST",
+    "ADMIN_STATUS_REASON_REQUIRED": "BAD_REQUEST",
+    "ADMIN_STATUS_CONFLICT": "CONFLICT",
+    "ADMIN_USER_LOCKED": "PRECONDITION_FAILED",
+    "ADMIN_ACTOR_FORBIDDEN": "FORBIDDEN",
+    "ADMIN_ACTOR_SESSION_STALE": "UNAUTHORIZED",
+    "ADMIN_USER_NOT_FOUND": "NOT_FOUND (existing)",
+    "ADMIN_USER_ARCHIVED": "PRECONDITION_FAILED (existing)",
+    "ADMIN_SELF_DISABLE_FORBIDDEN": "BAD_REQUEST (existing)",
+    "LAST_SUPER_ADMIN_FORBIDDEN": "BAD_REQUEST (existing)"
+  },
+  "constraints": "No Git writes, network/SSH/production DB, schema/migration, Profile/Nav/deploy or other business source changes. Only mock/in-memory directed tests.",
+  "dbInputsActual": {
+    "updateAdminUser": "existing input extended with expectedStatus?, reason?, statusAudit?: MaterialAuditActor, actorSessionVersion?: number; externally reachable management routes inject authenticated actor and version",
+    "toggleAdminUserStatus": "existing (id,status,actorAdminUserId?) positional contract preserved with optional fourth options {expectedStatus?,reason?,statusAudit?,actorSessionVersion?}; validates runtime via updateAdminUser",
+    "statusRuntimeRequirements": "Both status paths require expectedStatus, trimmed 2..500-char reason, authenticated native actor, safe actorSessionVersion, statusAudit.operatorId. Archived targets reject all mutation; locked targets reject every ordinary status transition away from locked (including locked→disabled→active bypass)."
+  },
+  "uiActual": "readonly status badge, existing h-14 row and 200px action column; compact 配置权限 | 停用/启用 | 删除; target name/username confirmation, reason, synchronous duplicate-submit gate, actor epoch guard, real adminUser.list readback; self/archive/locked and only-last-possible-active-super guarded in UI, authoritative full-set continuity server-side; an independent native list sample page=1/pageSize=100 proves >1 effective super; unavailable or insufficient sample conservatively disables active-super stop. Runtime server counts and locks every non-archived active super.",
+  "statusOnly": "No-op unchanged status: no writes/audit. Actual status change: status/sessionVersion +1, generic audit and existing sales identity sync only; no password/permissions/sales scope/frontend/enterprise/ownership/archive writes. Non-status role/permissions/password cleanup path kept unchanged after shared actor guard.",
+  "auditActual": {
+    "table": "audit_logs",
+    "action": "admin.status.update",
+    "operatorId": "authenticated ctx.user.id",
+    "operatorNameRole": "fresh locked native actor displayName/username and adminRole",
+    "beforeValue": [
+      "username",
+      "status",
+      "sessionVersion",
+      "actorAdminUserId"
+    ],
+    "afterValue": [
+      "status",
+      "sessionVersion"
+    ],
+    "note": "trimmed real reason",
+    "createdAt": "server Date in same transaction",
+    "schemaReference": "live-audit-schema-readonly.json supplied by parent; no migration"
+  },
+  "legacyCompatibility": "Out-of-scope Admins.tsx not edited. Inferred optional expectedStatus/reason retains compilation; old baseline-free toggle is intentionally rejected BAD_REQUEST. Role/permissions/password-only update is unchanged and needs no reason.",
+  "sourcePins": [
+    {
+      "relativeFile": "client/src/pages/Staff.tsx",
+      "sourceSha256": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+      "revision": null
+    },
+    {
+      "relativeFile": "client/src/components/admin/StaffStatusDialog.tsx",
+      "sourceSha256": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+      "revision": null
+    },
+    {
+      "relativeFile": "client/src/lib/staffStatusUi.ts",
+      "sourceSha256": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+      "revision": null
+    },
+    {
+      "relativeFile": "server/db.ts",
+      "sourceSha256": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+      "revision": null
+    },
+    {
+      "relativeFile": "server/routers.ts",
+      "sourceSha256": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973",
+      "revision": null
+    }
+  ],
+  "frozenAt": "2026-11-14T03:15:19.001575Z",
+  "sourceFreeze": {
+    "status": "FROZEN_SOURCE_READY_FOR_BACKEND_FINALRUN",
+    "sources": [
+      {
+        "relativeFile": "client/src/pages/Staff.tsx",
+        "sourceSha256": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+        "revision": null
+      },
+      {
+        "relativeFile": "client/src/components/admin/StaffStatusDialog.tsx",
+        "sourceSha256": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+        "revision": null
+      },
+      {
+        "relativeFile": "client/src/lib/staffStatusUi.ts",
+        "sourceSha256": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+        "revision": null
+      },
+      {
+        "relativeFile": "server/db.ts",
+        "sourceSha256": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+        "revision": null
+      },
+      {
+        "relativeFile": "server/routers.ts",
+        "sourceSha256": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973",
+        "revision": null
+      }
+    ]
+  },
+  "statusWriteCAS": {
+    "where": [
+      "adminUsers.id === target id",
+      "adminUsers.status === input.expectedStatus",
+      "adminUsers.sessionVersion === locked existing.sessionVersion"
+    ],
+    "writeResult": "MySQL result[0].affectedRows must equal exactly 1 on every actual status change; otherwise ADMIN_STATUS_CONFLICT throws before audit/projections, rolling back entire transaction",
+    "nonStatusPath": "existing id-only SQL and cleanup semantics unchanged"
+  },
+  "validation": {
+    "priorDirectedTests": "133/133 PASS",
+    "casDirectedTests": "running, staff-tests-cas-final.log",
+    "casTsc": "running, staff-tsc-cas-final.log"
+  }
+}

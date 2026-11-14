@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "passed": 25,
+  "failed": 0,
+  "reloadHelperSha256": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+  "actualNetworkIO": 0,
+  "actualPM2Operations": 0,
+  "actualDatabaseIO": 0,
+  "environmentOverlay": false,
+  "actualHelperCodeExecuted": true,
+  "installedPM2OrNativeGodExecuted": false,
+  "scope": "VM helper body with inert PM2 RPC fixtures only"
+}

@@ -1,0 +1,497 @@
+{
+  "pass": true,
+  "testCount": 45,
+  "tests": [
+    {
+      "name": "live d2756c5 baseline / exact candidate / untouched front db920 SHA256 pins",
+      "pass": true
+    },
+    {
+      "name": "node --check candidate only, no API/server entrypoint execution",
+      "pass": true
+    },
+    {
+      "name": "independent inverse byteExact and every allOutsideSlotsByteIdentical segment",
+      "pass": true
+    },
+    {
+      "name": "all untouched declarations/routes and personal securefactory remain exact bytes",
+      "pass": true
+    },
+    {
+      "name": "all final freeze/sourcePins relativeFile sourceSha256 revision:null match live source",
+      "pass": true
+    },
+    {
+      "name": "5abd canonical source guards include actual native retained lifecycle functions",
+      "pass": true
+    },
+    {
+      "name": "deterministic final rebuild exact bytes, live symbol captures and TDZ checked independently",
+      "pass": true
+    },
+    {
+      "name": "negative canonical changes real body, shorthand keys and namespace owner fail closed",
+      "pass": true
+    },
+    {
+      "name": "negative outside-slot tamper, local capture and overlap fail closed",
+      "pass": true
+    },
+    {
+      "name": "exact candidate input and handler/native DB owner execution, mocked getDb only, zero startup IO",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects missing expectedStatus before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects missing reason before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects empty reason before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects short reason before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects long reason before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects zero id before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects negative id before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects fractional id before any transaction",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus input rejects locked destination before any transaction",
+      "pass": true
+    },
+    {
+      "name": "generic update input rejects status missing expectedStatus without bypass",
+      "pass": true
+    },
+    {
+      "name": "generic update input rejects status missing reason without bypass",
+      "pass": true
+    },
+    {
+      "name": "generic update input rejects status empty reason without bypass",
+      "pass": true
+    },
+    {
+      "name": "unauthenticated and ordinary users cannot reach management mutation",
+      "pass": true
+    },
+    {
+      "name": "native transaction rejects direct DB self-disable and route maps BAD_REQUEST",
+      "pass": true
+    },
+    {
+      "name": "native complete-set last effective super-admin excludes archived rows",
+      "pass": true
+    },
+    {
+      "name": "last super-admin generic status update cannot bypass continuity",
+      "pass": true
+    },
+    {
+      "name": "archived target blocks both routes without sales/session/audit drift",
+      "pass": true
+    },
+    {
+      "name": "ordinary unlock is forbidden in both routes and direct DB owner",
+      "pass": true
+    },
+    {
+      "name": "expectedStatus stale baseline rejects with CONFLICT in both routes",
+      "pass": true
+    },
+    {
+      "name": "native DB runtime requires expectedStatus and reason independently of Zod",
+      "pass": true
+    },
+    {
+      "name": "current actor row, not cached super role/grants, denies revoked manager",
+      "pass": true
+    },
+    {
+      "name": "current actor status revoked despite cached active context",
+      "pass": true
+    },
+    {
+      "name": "current native explicit admins.manage grant works, revoked grant rejects cached permission",
+      "pass": true
+    },
+    {
+      "name": "current actor sessionVersion stale context rejects before writes",
+      "pass": true
+    },
+    {
+      "name": "current actor archive rejects before writes",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus actual success disables native admin, SQL increments once, syncs sales only, audits and list readback",
+      "pass": true
+    },
+    {
+      "name": "update actual success disables native admin, SQL increments once, syncs sales only, audits and list readback",
+      "pass": true
+    },
+    {
+      "name": "enable transition revokes stale tokens, does not restore session or change grants/password/front",
+      "pass": true
+    },
+    {
+      "name": "repeated stale request cannot bump sessionVersion or create duplicate audit",
+      "pass": true
+    },
+    {
+      "name": "status same as baseline does not bump native sessionVersion",
+      "pass": true
+    },
+    {
+      "name": "toggleStatus SQL affectedRows CAS loss maps CONFLICT and rolls back every projection/audit",
+      "pass": true
+    },
+    {
+      "name": "update SQL affectedRows CAS loss maps CONFLICT and rolls back every projection/audit",
+      "pass": true
+    },
+    {
+      "name": "native status audit insertion failure rolls back admin/session/sales/scopes atomically",
+      "pass": true
+    },
+    {
+      "name": "missing target is NOT_FOUND, no account created or side effect",
+      "pass": true
+    },
+    {
+      "name": "status-only calls never hash/reset password, grant new permissions or touch frontend member/customer owners",
+      "pass": true
+    }
+  ],
+  "admin": {
+    "baselineSha256": "d2756c5ff98b459cad79c3ff11643680c92f773ceeeb4469e88302a863369539",
+    "candidateSha256": "0f2bc286a3a1d6643544cc5270c113214795de3531e66123164b296a857a8ad8",
+    "patchCount": 15
+  },
+  "front": {
+    "sha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+    "unchanged": true,
+    "rebuilt": false,
+    "deployed": false
+  },
+  "sourcePinsMatch": true,
+  "sourceFreezeSha256": "8d9e3ed069312edb18b0b786320346a71d64bf6d9fe81d2f9883c17f2069a185",
+  "executedCandidateOwners": [
+    {
+      "runtimeName": "beijingTime2",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "d585798ff7ff884f5f90f35baf96a6843acc7b7e99fb239803dd45c64593ed94",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "timestamp2",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "00d40598d1ca38e82fcce54bef14e090296736413e6eee110a47d241ce0dd7b7",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "DEFAULT_NOW2",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "95412a7759527df3e57982f8e67badff4436e8a4f7bc53f9c78a69695daa2ab8",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUsers",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "1bb84f7da4666f0f5bd5aaec7b9e9c1334c3483c3258f7fb0d469ad701330cfa",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminStaffArchives",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "8d9e05a87f094da264e2f7eb27076f38da297d87fbaac202bec8be84ac3e1fe0",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUserPermissions",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "acb51179ad9edddfddb0affd9bd67d7a877332164e77e940151b01c3cb63d4c0",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUserSalesScopes",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "b48bbf1bae362a6a01926f4f242e451631e8866a017c568995bf3ea030357ae0",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "salesStaff",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "7c59d6c2b38b680a3171c7b045d63a2ce7fac312204be458d8881b32d2c6e1ec",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "auditLogs",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "c11b0f4adcfe2a26e1b82c69787fadf41fe948933568bba9ea2bc7848f89220d",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUserPermissionAudits",
+      "module": "drizzle/schema.ts",
+      "candidateDeclarationSha256": "15e97d3a85f56d45dc0c31609e0c0d75e771862d661b68fbafb49dbd76dce3a0",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "lockActiveSuperAdmins",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "8de3554edda9e7dd97bcf73a776782078b0a50ddaa3c9ab9030f247c31aa978c",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "ADMIN_PERMISSIONS",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "2e664139a640cddb382b8eb8246d3d44f5bf6077a09cb5212f86eac3f63a1136",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "isAdminPermission",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "cd4a692ebf46e0d174c4c18d250c911abe1ff4590ffbe878252b897529bba9e4",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "ADMIN_ROLES",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "9391964fffefb3759e9db779eb0500a95e5314a6976428aaa156fc5f8141df16",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "isAdminRole",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "22ee95a312935910cf8d85ad694b7e932c66d4a744daf76ca1460ec8246bd8b0",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "ROLE_PERMISSIONS",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "423c458243a56ba2fcfc11bc57088c8704b169f81d5cb50be975b0d70e18a5dd",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "getAdminRolePermissions",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "591afb6308ad609ed94b5e7a47c9708c6e462dba8f4386f5af1229ca8396d3b6",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "resolveAdminPermissions",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "0991dcafd5f5d42050b00a1f4df476dc85c1482235d6bff1904c69a87df84db2",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "hasAdminPermission",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "affdafe5df641980d396493ea4f8ca3f198369257152acf0b62157423e3f665a",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "assertSuperAdminContinuity",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "c5f1f71ae629cf0cd9ac944f2fd478ffbca5b9405b01ae9fd4b278e70589ac78",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "getSalesScopesForUpdate",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "3109049a5e60e408a5e10608087987494b6f4bd98796ad82f4219c14b8ed8411",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "salesIdentityCode",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "54cd0b8b2e21ff2ecbb715e5ab38d6761ce63c4ddfa02e21b31592dbc244edf1",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "syncAdminUserSalesIdentity",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "c770d047b9e422ff9e28ec50709ab761186f6a09bf1387cdaae354aa1160d634",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "normalizeSalesStaffCodes",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "841e7b764d2a2743c25d8d39f85cbc2c81d74310189d2d042359267fd27c6f97",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "replaceAdminUserSalesScopes",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "67aa4b16644b7e76220c426ec3dda702eb096cf8f337c4252b66658fe7611e14",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "ASSIGNABLE_ADMIN_PERMISSIONS",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "4b47b83ea9fb57428f53275cd305f88e5279803ea24a681f263acda4fc4ba47d",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "isAssignableAdminPermission",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "1cd572448c0485a2d0a4609949f81181ecf05aac73aac9ffcb1ee7a22022a0f7",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "normalizeAssignedAdminPermissions",
+      "module": "shared/adminPermissions.ts",
+      "candidateDeclarationSha256": "036008f5ce2ef05626561c39c40da7896b5c414dc2ab4d72fdddc84bb2380bcb",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "replaceAdminUserPermissions",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "a08b9ee2651aefd2494b5a0c65f48c5a8f2f4040a92e558f272d5990d6b4859e",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "insertAdminUserPermissionAudit",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "71ba4f7385c2668e71f19ca93a00d83381a8db25d538375b2a2601346131b669",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "updateAdminUser",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "373a10fef88c120f348e5bedff1ee0d23d6145fa2851e0780889b582e81e1682",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "toggleAdminUserStatus",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "2ddc65252cdff7dc42e634b169ed4c6c653fb979b3b70d0d678961887951e22f",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "mapAdminLifecycleError",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "1a006fa2ad1e189fd5b5f26662346244a63d9440d3140f6dcb9411ecf61f330e",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "auditActorFromContext",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "1b4cd399ae1c797bc89f8edb3c15c66cd4392821d6aa8df577026f2b832da50d",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "permissionAuditFromContext",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "5e67616d04a89b26fa9d53039c6767555f9104ac0c8478caa98958594ed63c88",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "toAdminUserDto",
+      "module": "server/adminUserDto.ts",
+      "candidateDeclarationSha256": "dbeeef63993872357c6649dfa5c318d57078d0f77c55c6c1e65db863161c73b9",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "getAdminUsers",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "3b90c75e79b10e442802286f2f490351d2f23b89c82aae6211d73d3a7c0f0d8c",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "getAdminUserById",
+      "module": "server/db.ts",
+      "candidateDeclarationSha256": "80a8536c34d9c91e075aa8d857bf7e6d8918e4c9cf57d59cfbc63516855c5d55",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminProcedure2",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "caa0597024004c091376990ba168f82627ab2518b9c2826d0e02f310cb063963",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminPermissionProcedure",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "0e05f4fa69f4382d11127598ddfe28e1775283ba58ec44a7753beff721cfd199",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminManageProcedure",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "8d0b81fe4927ed2a1c454b2c021b5fb81fc729a729bf2ff968be23a61ca4c62b",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminPermissionInput",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "17ba9de2f8f30a43704958635b57ea522147344548ca24ef0cd589564761bb27",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "assertHasBusinessPermission",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "abd26ce77af5807bf291b094128b65f284d153b4285e5f3a0cc6633e97fd560f",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "pageInput",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "7ad530354041108e0ff06bff2a09232779ace9efe0ed0c81b6379a983a80b98a",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUser.update",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "10a4bbd7ae4c0cafab576679ec683016c228f7bb07e31d1296295348c6bd18e0",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUser.toggleStatus",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "4ce6f5f7a82e365d26a9a5e9f52eb5992ff23d327788feb146746c92bef00e2b",
+      "candidateBytes": true
+    },
+    {
+      "runtimeName": "adminUser.list",
+      "module": "server/routers.ts",
+      "candidateDeclarationSha256": "46b571aec46c61fdb7186c2c510d7f27bab322016c6d4ded25ab6e4f951ef1f3",
+      "candidateBytes": true
+    }
+  ],
+  "offlineBoundaries": [
+    "getDb -> node:sqlite :memory:",
+    "protectedProcedure -> offline authenticated tRPC boundary",
+    "router -> real tRPC factory",
+    "hashPassword -> forbidden mock"
+  ],
+  "noNativeAPIEntrypointExecution": true,
+  "noDatabaseNetworkAccess": true,
+  "noSmsNetworkAccess": true,
+  "noProductionAccountWrites": true,
+  "noSSH": true,
+  "noProductSourceWrites": true,
+  "noGitWrites": true,
+  "noNetwork": true
+}

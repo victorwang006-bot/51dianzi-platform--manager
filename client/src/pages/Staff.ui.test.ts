@@ -164,4 +164,20 @@ describe("staff UI contracts", () => {
     expect(page).toContain("runGuardedStaffErpMutation");
     expect(page).toContain("onSave={saveSelected}");
   });
+  it("keeps 配置权限 | 停用/启用 | 删除 compact and the state badges strictly read-only", () => {
+    const actions = cell("data-staff-action-cell");
+    const statusCell = cell("data-staff-status>");
+    expect(actions.indexOf("配置权限")).toBeLessThan(actions.indexOf("data-staff-status-action"));
+    expect(actions.indexOf("data-staff-status-action")).toBeLessThan(actions.indexOf('"删除"'));
+    expect(actions).toContain('className="h-8 px-2 text-xs"');
+    expect(actions).toContain("statusAction.allowed");
+    expect(statusCell).toContain("<StatusBadge");
+    expect(statusCell).not.toContain("onClick"); expect(statusCell).not.toContain("<Button"); expect(statusCell).not.toContain("<select");
+    const statusFlow = sourceBetween(page, "<StaffStatusDialog", "<StaffArchiveDialog");
+    expect(statusFlow).toContain("adminStatusUpdate.mutateAsync(input)");
+    expect(statusFlow).toContain("trpcUtils.client.adminUser.list.query(listInput)");
+    expect(statusFlow).toContain("sessionEpoch.current !== epoch");
+    expect(statusFlow).not.toContain("domainClient"); expect(statusFlow).not.toContain("scopeClient");
+    expect(statusFlow).not.toContain("enterprise"); expect(statusFlow).not.toContain("archive.mutate");
+  });
 });

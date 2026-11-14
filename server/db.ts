@@ -67,7 +67,7 @@ import {
 } from "../drizzle/schema";
 import type { AdminNotificationModule } from "../shared/adminModuleNotifications";
 import { ENV } from "./_core/env";
-import { normalizeAssignedAdminPermissions } from "../shared/adminPermissions";
+import { hasAdminPermission, normalizeAssignedAdminPermissions } from "../shared/adminPermissions";
 import {
   canonicalAdminUsername,
   normalizeAdminUsername,
@@ -6651,9 +6651,13 @@ export async function updateAdminUser(
     permissions?: string[];
     permissionAudit?: AdminPermissionAuditInput;
     status?: AdminLifecycleStatus;
+    expectedStatus?: AdminLifecycleStatus;
+    reason?: string;
+    statusAudit?: MaterialAuditActor;
     passwordHash?: string;
     /** Authenticated actor; supplied by externally reachable lifecycle routes. */
     actorAdminUserId?: number | null;
+    actorSessionVersion?: number;
   }
 ) {
   const db = await getDb();
@@ -6664,17 +6668,45 @@ export async function updateAdminUser(
     // This serializes competing “remove one of two” operations without a
     // target-row lock inversion/deadlock.
     const activeSuperAdmins = await lockActiveSuperAdmins(tx);
-    const [existing] = await tx
+    // Reuse the native account-row authorization fence: every management
+    // update locks both actor and target, in deterministic order, until commit.
+    // A role/grant revoke or status change that won the lock invalidates old requests.
+    const accountIds = Array.from(new Set([id, ...(input.actorAdminUserId ? [input.actorAdminUserId] : [])])).sort((a, b) => a - b);
+    const accounts = await tx
       .select()
       .from(adminUsers)
-      .where(eq(adminUsers.id, id))
-      .limit(1)
+      .where(inArray(adminUsers.id, accountIds))
+      .orderBy(asc(adminUsers.id))
       .for("update");
+    const existing = accounts.find(account => account.id === id);
     if (!existing) throw new Error("ADMIN_USER_NOT_FOUND");
 
     const archived = await tx.select({ id: adminStaffArchives.id }).from(adminStaffArchives)
       .where(eq(adminStaffArchives.adminUserId, id)).limit(1);
     if (archived.length) throw new Error("ADMIN_USER_ARCHIVED");
+    const actor = accounts.find(account => account.id === input.actorAdminUserId);
+    if (input.actorAdminUserId != null) {
+      if (!actor || actor.status !== "active") throw new Error("ADMIN_ACTOR_FORBIDDEN");
+      if (input.actorSessionVersion !== undefined && actor.sessionVersion !== input.actorSessionVersion)
+        throw new Error("ADMIN_ACTOR_SESSION_STALE");
+      const actorArchive = await tx.select({ id: adminStaffArchives.id }).from(adminStaffArchives)
+        .where(eq(adminStaffArchives.adminUserId, actor.id)).limit(1);
+      if (actorArchive.length) throw new Error("ADMIN_ACTOR_FORBIDDEN");
+      const grants = await tx.select({ permission: adminUserPermissions.permission }).from(adminUserPermissions)
+        .where(eq(adminUserPermissions.adminUserId, actor.id)).orderBy(asc(adminUserPermissions.id)).for("update");
+      // admins.manage is a native system capability, never inferred from a front identity.
+      if (!hasAdminPermission(actor.adminRole, "admins.manage", grants.map(row => row.permission)))
+        throw new Error("ADMIN_ACTOR_FORBIDDEN");
+    }
+    if (input.status !== undefined) {
+      if (input.expectedStatus === undefined) throw new Error("ADMIN_STATUS_EXPECTED_REQUIRED");
+      if (input.expectedStatus !== existing.status) throw new Error("ADMIN_STATUS_CONFLICT");
+      if (!input.reason || input.reason.trim().length < 2 || input.reason.trim().length > 500)
+        throw new Error("ADMIN_STATUS_REASON_REQUIRED");
+      if (!actor || !Number.isSafeInteger(input.actorSessionVersion) || !input.statusAudit?.operatorId)
+        throw new Error("ADMIN_ACTOR_FORBIDDEN");
+      if (existing.status === "locked" && input.status !== "locked") throw new Error("ADMIN_USER_LOCKED");
+    }
     const nextRole = input.adminRole ?? existing.adminRole;
     const nextStatus = input.status ?? existing.status;
     if (input.actorAdminUserId === id) {
@@ -6690,7 +6722,11 @@ export async function updateAdminUser(
       nextRole,
       nextStatus
     );
-    const currentScopes = await getSalesScopesForUpdate(tx, id);
+    // A status-only command must not rewrite grants, scopes or credentials.
+    const statusOnly = input.status !== undefined &&
+      [input.displayName, input.email, input.phone, input.adminRole, input.salesStaffCodes, input.permissions, input.passwordHash].every(value => value === undefined);
+    if (statusOnly && nextStatus === existing.status) return;
+    const currentScopes = statusOnly ? [] : await getSalesScopesForUpdate(tx, id);
 
     const set: Record<string, unknown> = {};
     if (input.displayName !== undefined) set.displayName = input.displayName;
@@ -6710,7 +6746,33 @@ export async function updateAdminUser(
     if (mustRevokeSessions)
       set.sessionVersion = sql`${adminUsers.sessionVersion} + 1`;
     if (Object.keys(set).length > 0) {
-      await tx.update(adminUsers).set(set).where(eq(adminUsers.id, id));
+      const statusChanged = input.status !== undefined && nextStatus !== existing.status;
+      const result = await tx.update(adminUsers).set(set).where(statusChanged
+        ? and(eq(adminUsers.id, id), eq(adminUsers.status, input.expectedStatus!), eq(adminUsers.sessionVersion, existing.sessionVersion))
+        : eq(adminUsers.id, id));
+      // A locked read is not a substitute for checking the actual CAS write.
+      // Never create a success audit or projections for a zero-row update.
+      if (statusChanged && Number((result as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0) !== 1)
+        throw new Error("ADMIN_STATUS_CONFLICT");
+    }
+    if (input.status !== undefined && nextStatus !== existing.status) {
+      await tx.insert(auditLogs).values({
+        // Identity is authenticated server-side; name/role come from the locked native row.
+        operatorId: input.statusAudit!.operatorId,
+        operatorName: (actor!.displayName || actor!.username).slice(0, 64),
+        operatorRole: actor!.adminRole,
+        action: "admin.status.update",
+        module: "admin_users",
+        targetType: "admin_user",
+        targetId: String(id),
+        beforeValue: { username: existing.username, status: existing.status, sessionVersion: existing.sessionVersion, actorAdminUserId: actor!.id },
+        afterValue: { status: nextStatus, sessionVersion: existing.sessionVersion + (mustRevokeSessions ? 1 : 0) },
+        ipAddress: input.statusAudit?.ipAddress ?? null,
+        userAgent: input.statusAudit?.userAgent ?? null,
+        result: "success",
+        note: input.reason!.trim(),
+        createdAt: new Date(),
+      });
     }
 
     const ownSalesStaffCode = await syncAdminUserSalesIdentity(tx, {
@@ -6723,6 +6785,7 @@ export async function updateAdminUser(
       adminRole: nextRole,
       status: nextStatus,
     });
+    if (statusOnly) return;
     let nextScopes: string[] = [];
     if (nextRole === "merchant_mgr") {
       const requestedCodes = await normalizeSalesStaffCodes(
@@ -6770,9 +6833,15 @@ export async function updateAdminUser(
 export async function toggleAdminUserStatus(
   id: number,
   status: "active" | "disabled",
-  actorAdminUserId?: number | null
+  actorAdminUserId?: number | null,
+  options: {
+    expectedStatus?: AdminLifecycleStatus;
+    reason?: string;
+    statusAudit?: MaterialAuditActor;
+    actorSessionVersion?: number;
+  } = {}
 ) {
-  return updateAdminUser(id, { status, actorAdminUserId });
+  return updateAdminUser(id, { ...options, status, actorAdminUserId });
 }
 
 /**

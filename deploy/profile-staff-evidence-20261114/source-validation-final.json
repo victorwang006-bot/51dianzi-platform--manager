@@ -1,0 +1,79 @@
+{
+  "status": "PASS",
+  "atUtc": "2026-11-14T03:21:57.318129+00:00",
+  "sourceBaseCommit": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+  "tscPassed": true,
+  "tscCommand": "env -u DATABASE_URL -u TEST_DATABASE_URL pnpm check",
+  "tscLogSha256": "6e84cd68fc6e86adda5787e6cc5f2fe4b6d536fd9f0f0fe656e03c2424abd1f9",
+  "sourceTestsPassed": 255,
+  "sourceTestFailures": 0,
+  "testLogs": {
+    "navigation-tests.log": {
+      "sha256": "a3f065117e694f0ef3e63e192a6939f6bb3b13486e81023495d00c7160e37a3d",
+      "passed": 86,
+      "failed": 0
+    },
+    "profile-ui-tests.log": {
+      "sha256": "a1d55d5e57f6fb0b8a073b6de1920771be1cb82aa51672823b6a3ce78b01fa3a",
+      "passed": 34,
+      "failed": 0
+    },
+    "staff-tests-cas-final.log": {
+      "sha256": "1911796ddd9357ee5dcad37bf7282246e7f430b34626e36bdbef0f813d125f13",
+      "passed": 135,
+      "failed": 0
+    }
+  },
+  "compiledSourceHashes": {
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+    "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+    "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+    "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+    "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+    "client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+    "client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+    "client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+    "client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+    "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+    "client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+    "shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+    "client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+    "client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+    "client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+    "client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+    "client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+    "client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22",
+    "server/db.ts": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+    "server/routers.ts": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973"
+  },
+  "checkedChangedSourceAndTestHashes": {
+    "client/src/components/admin/PersonalCenterNavigation.test.ts": "632cc5d431e004660b467e5c4713402c90725265a9c7d31cce76f5e634b810da",
+    "client/src/components/admin/adminWorkspaceNavigation.render.test.ts": "114129b9cd11a4dc637e4903649b3e376c1c1d4b27927e0582e642ad02571ecc",
+    "client/src/components/admin/adminWorkspaceNavigationModel.test.ts": "cca9086cdd0e31ec73e40b28ddf51d1e2ab021837a3835125d912a4731957b0c",
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+    "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+    "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+    "client/src/pages/Profile.ui.test.ts": "4e4f4d11b28268c0b9d5d89464b79e0d996f55141f3a81e4da969b39589c1a58",
+    "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+    "client/src/pages/Staff.ui.test.ts": "f48f9dade37b1a2b6ac5ffb7ae43d2a3fdb00ff6c96d54b86cea954bb15f58b7",
+    "client/src/pages/profileModel.test.ts": "e4c9f0f75586deb17ee747175c077da851957b9980eef759b4d1c679d5e7ac3f",
+    "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+    "server/db.ts": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+    "server/routers.ts": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973",
+    "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+    "client/src/components/admin/StaffStatusDialog.test.ts": "0dbe645901cfa0a797643fe6bcd3946ee3cdc84604df3fcecddf2e23f2788aea",
+    "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+    "client/src/lib/staffStatusUi.test.ts": "04a19ed2c32dca07c509cbf8ad3e1c74afbc3732a1efa0b4ec6a8beb92e6c959",
+    "server/staffStatus.lifecycle.test.ts": "bdb19b8747fccd44d9a16e81c2f38a1df17684f457ec4982229a5e6cb5714a0f",
+    "server/staffStatus.router.test.ts": "1ce610155bf587364b4a284be1de6d3d6d0b0f3ae8e8de704c2c3bd834480990"
+  },
+  "sourceFreezeContractSha256": "8d9e3ed069312edb18b0b786320346a71d64bf6d9fe81d2f9883c17f2069a185",
+  "productionAccountWrites": 0,
+  "databaseMigrations": 0,
+  "actualNetworkInSourceTests": 0,
+  "limits": [
+    "Source UI/transaction tests use inert mocks or memory fixtures; no real SMS, password, production status or DB writes.",
+    "Actual candidate module/native DB tests are separately gated; this is not browser production acceptance."
+  ]
+}

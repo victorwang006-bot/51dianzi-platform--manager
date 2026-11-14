@@ -1,0 +1,1530 @@
+{
+  "status": "PASS",
+  "sourceBound": true,
+  "unrelatedNativeBytesUnchanged": true,
+  "mallOperationsUnchanged": true,
+  "scopeAndArchiveUnchanged": true,
+  "latestGlobalOrdersBytesPreserved": true,
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51"
+    },
+    {
+      "relative": "assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+      "sha256": "6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+      "sha256": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js",
+      "sha256": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24"
+    },
+    {
+      "relative": "assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+      "sha256": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55"
+    }
+  ],
+  "sourceHashes": {
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+    "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+    "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+    "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+    "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+    "client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+    "client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+    "client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+    "client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+    "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+    "client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+    "shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+    "client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+    "client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+    "client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+    "client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+    "client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+    "client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22"
+  },
+  "allOldStylesheetsRetained": true,
+  "nativeEntryAndBWUnchanged": true,
+  "exactHtmlInverse": true,
+  "effectiveDependenciesValidated": 45,
+  "actualModuleTestsPassed": 15,
+  "integratedTestReportSha256": "0d353ffe1af36501f9bdd98e6cf9ecab5cae1ec10cb0495b0cbd6d830b30ad8e",
+  "profileAndStaffProofs": {
+    "layout": {
+      "beforeSha256": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6",
+      "sha256": "6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0",
+      "exactInverse": true,
+      "allNonpatchBytesUnchanged": true,
+      "allOldSpecifiersPreserved": true,
+      "importsByteIdentical": true,
+      "allOldImportBindingsPreserved": true,
+      "exportsByteIdentical": true,
+      "oldSpecifiers": [
+        "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+        "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+        "./index-8jluR_FO.js",
+        "./index-CKHSh4Pc.js"
+      ],
+      "unchangedPartitions": [
+        {
+          "beforeStart": 0,
+          "beforeEnd": 46752,
+          "afterStart": 0,
+          "afterEnd": 46752,
+          "sha256": "0d706cd45a742748fc81d55ffc0b23d45e01bf893b12ebd3eaeb9d3d24a04ff4"
+        },
+        {
+          "beforeStart": 47263,
+          "beforeEnd": 96780,
+          "afterStart": 47253,
+          "afterEnd": 96770,
+          "sha256": "ee8bbc8623ba1e871add453a581007cfcec4b8aada7d8a1053329c0eed391650"
+        }
+      ],
+      "patches": [
+        {
+          "start": 46752,
+          "end": 47263,
+          "afterStart": 46752,
+          "afterEnd": 47253,
+          "beforeSha256": "49234071bd7c057fe09ade6fed85e36b6d063c67d80062c3b7a6a3d577b2e63c",
+          "afterSha256": "f91cb492555f4ff754a9fd62f2730f4481987363eee56a3df08258d053579f37",
+          "reason": "frozen 5abd source model ADMIN_WORKSPACE_DEFINITIONS initializer recompiled; original native helper le retained, component/navigation/dashboard/permissions all nonpatch protected"
+        }
+      ],
+      "encoding": "UTF-8 hashes; JS character offsets",
+      "beforeUrl": "/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "url": "/assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+      "sourceModelSha256": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+      "oldCanonicalSourceSha256": "1b29e9c020dde2850bd45440fe039f3997d2137e1b74ea7669eef47547adf3a7",
+      "sourceBase": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+      "onlyWorkspaceDefinitionsInitializer": true,
+      "navCapsuleRestAndDashboardByteProtected": true
+    },
+    "profile": {
+      "beforeSha256": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd",
+      "sha256": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73",
+      "exactInverse": true,
+      "allNonpatchBytesUnchanged": true,
+      "allOldSpecifiersPreserved": true,
+      "importsByteIdentical": false,
+      "allOldImportBindingsPreserved": true,
+      "exportsByteIdentical": true,
+      "oldSpecifiers": [
+        "./index-8jluR_FO.js",
+        "./DashboardLayout-DfHnpqnr.js",
+        "./button-CJNcu3ZB.js",
+        "./card-CHbeaHH4.js",
+        "./input-CQXSswZV.js",
+        "./label-gKwYwH3S.js",
+        "./index-CKHSh4Pc.js",
+        "./phone-BqXAsUMx.js",
+        "./mail-rvpPVrVf.js",
+        "./loader-circle-DDYTq62H.js",
+        "./index-h_rcmx-z.js",
+        "./index-Dp3hShr1.js",
+        "./index-CisAFFfx.js"
+      ],
+      "unchangedPartitions": [
+        {
+          "beforeStart": 0,
+          "beforeEnd": 399,
+          "afterStart": 0,
+          "afterEnd": 399,
+          "sha256": "62dafed7bbb769cebc12adaa97d3851cda13636fc1e7ad20d405356a03e87040"
+        },
+        {
+          "beforeStart": 399,
+          "beforeEnd": 661,
+          "afterStart": 588,
+          "afterEnd": 850,
+          "sha256": "ffae9dfb15e99af8a96176640711a5b1026cd7414357e066255d439ba200f461"
+        },
+        {
+          "beforeStart": 689,
+          "beforeEnd": 1781,
+          "afterStart": 920,
+          "afterEnd": 2012,
+          "sha256": "8c5d9e598f81b672939a2de06de9dfd9ee569a0731b616051186a129dedfdfff"
+        },
+        {
+          "beforeStart": 2165,
+          "beforeEnd": 2197,
+          "afterStart": 2668,
+          "afterEnd": 2700,
+          "sha256": "50d284d60af8f5d61df0ef2cf052b10f4b57c6c40082fc8c0f410696cf3ad665"
+        },
+        {
+          "beforeStart": 23197,
+          "beforeEnd": 23364,
+          "afterStart": 27042,
+          "afterEnd": 27209,
+          "sha256": "fc9ebe71573a06fbd8a2b53105717779240faaf6232821e82b14db61776b198f"
+        }
+      ],
+      "patches": [
+        {
+          "start": 399,
+          "end": 399,
+          "afterStart": 399,
+          "afterEnd": 588,
+          "beforeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "afterSha256": "155518904aaaf54e6af8bbd9df1361baa7dc04ed1e67a708ae0b45aad8662188",
+          "reason": "readonly actual native Dialog exports appended to same original specifier; all preexisting bindings retained"
+        },
+        {
+          "start": 661,
+          "end": 689,
+          "afterStart": 850,
+          "afterEnd": 920,
+          "beforeSha256": "23592a989a03e88a136f6c2d81b2fa3ea31c7cdf2f0dc3e42911facc046bce04",
+          "afterSha256": "ea70d8ccb7eedade75d0f9e38722fc40731a3f2469f786867afccf9fcfa4ae16",
+          "reason": "preexisting side-effect import becomes additive named readonly actual native Close export; same specifier and native initialization retained"
+        },
+        {
+          "start": 1781,
+          "end": 2165,
+          "afterStart": 2012,
+          "afterEnd": 2668,
+          "beforeSha256": "0727dd7a1b9ed647d57389cde66dd64ea9d01b9eb5beda5dbde89966f39d8ed1",
+          "afterSha256": "628d9643ee9f114534dfb85f8e9a8d24b4e1e269fe71da7e8087f4d8d6b980aa",
+          "reason": "original React/Auth/tRPC/queryclient/root bridge retained; only exact existing native Dialog references added"
+        },
+        {
+          "start": 2197,
+          "end": 23197,
+          "afterStart": 2700,
+          "afterEnd": 27042,
+          "beforeSha256": "39da7e0c346458dcb28427e7ded10d58d19aeccdf9128370fd9a2909555af53f",
+          "afterSha256": "3c6390db11b5538a386f45905775d97cc1a898ef4a55de2c83df8feaf375a51f",
+          "reason": "replace only existing getter factory initializer with frozen Profile source graph; exact original G and lazy singleton wrapper retained"
+        }
+      ],
+      "encoding": "UTF-8 hashes; JS character offsets",
+      "beforeUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+      "sourceBase": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+      "canonicalOldProfileSourceSha256": "a10096ad664f3d1872698898b35e69845ed26e78f381de76b1f5b7b5aaed8acc",
+      "canonicalOldFactorySha256": "39da7e0c346458dcb28427e7ded10d58d19aeccdf9128370fd9a2909555af53f",
+      "oldFactoryCanonicalByteIdentical": true,
+      "GWrapperByteIdentical": true,
+      "defaultExportByteIdentical": true,
+      "sameGetterLazySingleton": true,
+      "dialog": {
+        "specifier": "./input-CQXSswZV.js",
+        "resolvedNativeUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/input-CQXSswZV.js",
+        "sha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699",
+        "exports": {
+          "Dialog": "D",
+          "DialogContent": "a",
+          "DialogHeader": "b",
+          "DialogTitle": "c",
+          "DialogDescription": "d",
+          "DialogClose": "a"
+        },
+        "pairs": [
+          {
+            "local": "O",
+            "exported": "D"
+          },
+          {
+            "local": "I",
+            "exported": "I"
+          },
+          {
+            "local": "S",
+            "exported": "a"
+          },
+          {
+            "local": "z",
+            "exported": "b"
+          },
+          {
+            "local": "F",
+            "exported": "c"
+          },
+          {
+            "local": "_",
+            "exported": "d"
+          },
+          {
+            "local": "P",
+            "exported": "e"
+          },
+          {
+            "local": "T",
+            "exported": "f"
+          },
+          {
+            "local": "C",
+            "exported": "u"
+          }
+        ],
+        "closeSpecifier": "./index-Dp3hShr1.js",
+        "closeResolvedUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+        "closeAssetSha256": "200e0a72f6e0f4565401c96c52d4964d13e9be86d81520839d7bd5b997399654",
+        "exactNativeCloseLocal": "D",
+        "closeBinding": {
+          "specifier": "./index-Dp3hShr1.js",
+          "exported": "a",
+          "local": "D"
+        },
+        "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+        "additionalReadOnlyImports": [
+          {
+            "specifier": "./input-CQXSswZV.js",
+            "names": [
+              "D as __profileStaffNativeDialog",
+              "a as __profileStaffNativeDialogContent",
+              "b as __profileStaffNativeDialogHeader",
+              "c as __profileStaffNativeDialogTitle",
+              "d as __profileStaffNativeDialogDescription"
+            ]
+          },
+          {
+            "specifier": "./index-Dp3hShr1.js",
+            "names": [
+              "a as __profileStaffNativeDialogClose"
+            ]
+          }
+        ]
+      },
+      "sourceHashes": {
+        "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+        "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+        "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76"
+      },
+      "dependencySourceHashes": {
+        "node_modules/.pnpm/lucide-react@0.453.0_react@19.2.1/node_modules/lucide-react/dist/esm/icons/badge-check.js": "dd0f5e6c86c62404ab765989264657b86406ec838843c2766fe57e80009c7636",
+        "node_modules/.pnpm/lucide-react@0.453.0_react@19.2.1/node_modules/lucide-react/dist/esm/icons/refresh-cw.js": "a3dc2b2fa6bdd36169dccba5a6cae87951ba73145ab427a9c2cef31856b39b72"
+      },
+      "bridge": {
+        "props": {
+          "React": "P",
+          "jsx": "e",
+          "useAuth": "k",
+          "trpc": "p",
+          "toast": "r",
+          "DashboardLayout": "S",
+          "Button": "u",
+          "Card": "x",
+          "CardHeader": "m",
+          "CardContent": "j",
+          "CardTitle": "w",
+          "Input": "c",
+          "Label": "o",
+          "Skeleton": "F",
+          "User": "N",
+          "Phone": "E",
+          "Loader2": "v",
+          "KeyRound": "y",
+          "Save": "U",
+          "createLucideIcon": "C",
+          "useQuery": "__personalQuery",
+          "useMutation": "__personalMutation",
+          "useQueryClient": "__personalQueryClient",
+          "useLocation": "__personalLocation",
+          "installAuthSessionClearListener": "__personalSessionListener",
+          "Dialog": "__profileStaffNativeDialog",
+          "DialogContent": "__profileStaffNativeDialogContent",
+          "DialogHeader": "__profileStaffNativeDialogHeader",
+          "DialogTitle": "__profileStaffNativeDialogTitle",
+          "DialogDescription": "__profileStaffNativeDialogDescription",
+          "DialogClose": "__profileStaffNativeDialogClose"
+        },
+        "evidence": [
+          {
+            "property": "React",
+            "local": "P",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "r",
+              "local": "P"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "jsx",
+            "local": "e",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "j",
+              "local": "e"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "useAuth",
+            "local": "k",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "u",
+              "local": "k"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "trpc",
+            "local": "p",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "t",
+              "local": "p"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "toast",
+            "local": "r",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "b",
+              "local": "r"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "DashboardLayout",
+            "local": "S",
+            "binding": {
+              "specifier": "./DashboardLayout-DfHnpqnr.js",
+              "exported": "D",
+              "local": "S"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Button",
+            "local": "u",
+            "binding": {
+              "specifier": "./button-CJNcu3ZB.js",
+              "exported": "B",
+              "local": "u"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Card",
+            "local": "x",
+            "binding": {
+              "specifier": "./card-CHbeaHH4.js",
+              "exported": "C",
+              "local": "x"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "CardHeader",
+            "local": "m",
+            "binding": {
+              "specifier": "./card-CHbeaHH4.js",
+              "exported": "a",
+              "local": "m"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "CardContent",
+            "local": "j",
+            "binding": {
+              "specifier": "./card-CHbeaHH4.js",
+              "exported": "b",
+              "local": "j"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "CardTitle",
+            "local": "w",
+            "binding": {
+              "specifier": "./card-CHbeaHH4.js",
+              "exported": "c",
+              "local": "w"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Input",
+            "local": "c",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "I",
+              "local": "c"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Label",
+            "local": "o",
+            "binding": {
+              "specifier": "./label-gKwYwH3S.js",
+              "exported": "L",
+              "local": "o"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Skeleton",
+            "local": "F",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "S",
+              "local": "F"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "User",
+            "local": "N",
+            "binding": {
+              "specifier": "./index-CKHSh4Pc.js",
+              "exported": "U",
+              "local": "N"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Phone",
+            "local": "E",
+            "binding": {
+              "specifier": "./phone-BqXAsUMx.js",
+              "exported": "P",
+              "local": "E"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Loader2",
+            "local": "v",
+            "binding": {
+              "specifier": "./loader-circle-DDYTq62H.js",
+              "exported": "L",
+              "local": "v"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "KeyRound",
+            "local": "y",
+            "binding": null,
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Save",
+            "local": "U",
+            "binding": null,
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "createLucideIcon",
+            "local": "C",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "c",
+              "local": "C"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "useQuery",
+            "local": "__personalQuery",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "s",
+              "local": "__personalQuery"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "useMutation",
+            "local": "__personalMutation",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "__personalNativeUseMutation",
+              "local": "__personalMutation"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "useQueryClient",
+            "local": "__personalQueryClient",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "p",
+              "local": "__personalQueryClient"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "useLocation",
+            "local": "__personalLocation",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "l",
+              "local": "__personalLocation"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "installAuthSessionClearListener",
+            "local": "__personalSessionListener",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "q",
+              "local": "__personalSessionListener"
+            },
+            "method": "existing actual getter __profileLive property initializer byte-preserved"
+          },
+          {
+            "property": "Dialog",
+            "local": "__profileStaffNativeDialog",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "D"
+            },
+            "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+            "nativeAssetSha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699"
+          },
+          {
+            "property": "DialogContent",
+            "local": "__profileStaffNativeDialogContent",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "a"
+            },
+            "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+            "nativeAssetSha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699"
+          },
+          {
+            "property": "DialogHeader",
+            "local": "__profileStaffNativeDialogHeader",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "b"
+            },
+            "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+            "nativeAssetSha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699"
+          },
+          {
+            "property": "DialogTitle",
+            "local": "__profileStaffNativeDialogTitle",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "c"
+            },
+            "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+            "nativeAssetSha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699"
+          },
+          {
+            "property": "DialogDescription",
+            "local": "__profileStaffNativeDialogDescription",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "d"
+            },
+            "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+            "nativeAssetSha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699"
+          },
+          {
+            "property": "DialogClose",
+            "local": "__profileStaffNativeDialogClose",
+            "binding": {
+              "specifier": "./index-Dp3hShr1.js",
+              "exported": "a"
+            },
+            "method": "actual current input chunk export AST + exact dialog-close JSX target import chain; native Close export verified from current dependency bytes",
+            "nativeAssetSha256": "200e0a72f6e0f4565401c96c52d4964d13e9be86d81520839d7bd5b997399654"
+          }
+        ]
+      },
+      "usedBridges": [
+        "@tanstack/react-query",
+        "client/src/_core/hooks/useAuth",
+        "client/src/business/platform/client/src/lib/authSessionEvents",
+        "client/src/components/DashboardLayout",
+        "client/src/components/ui/button",
+        "client/src/components/ui/card",
+        "client/src/components/ui/dialog",
+        "client/src/components/ui/input",
+        "client/src/components/ui/label",
+        "client/src/components/ui/skeleton",
+        "client/src/lib/trpc",
+        "lucide-react",
+        "react",
+        "react/jsx-runtime",
+        "sonner",
+        "wouter"
+      ],
+      "checks": {
+        "noCopiedReact": true,
+        "noCopiedAuth": true,
+        "noCopiedQueryProvider": true,
+        "noNewRoot": true,
+        "noNewApiClient": true,
+        "nativeBusinessClientsReused": false,
+        "nativeProfileDialog": true
+      }
+    },
+    "staff": {
+      "beforeSha256": "6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388",
+      "sha256": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24",
+      "exactInverse": true,
+      "allNonpatchBytesUnchanged": true,
+      "allOldSpecifiersPreserved": true,
+      "importsByteIdentical": true,
+      "allOldImportBindingsPreserved": true,
+      "exportsByteIdentical": true,
+      "oldSpecifiers": [
+        "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+        "./index-8jluR_FO.js",
+        "./button-CJNcu3ZB.js",
+        "./input-CQXSswZV.js",
+        "./label-gKwYwH3S.js",
+        "./schemas-CWwXnU9Q.js",
+        "./badge-nRLPbtbu.js",
+        "./sheet-De64i5Sw.js",
+        "./select-CbYk8WeG.js",
+        "./erpPermissions-Bcn5P1RI.js",
+        "./shared-BUxb-QlJ.js",
+        "./officialChannelInventoryUi-Ii7908fJ.js",
+        "./external-link-D3MS9--y.js",
+        "./UnifiedAdminPage-DIGRdaLW.js",
+        "./DashboardLayout-DfHnpqnr.js",
+        "./table-BdXs25t8.js",
+        "./refresh-cw-BXprVxBP.js",
+        "./plus-C6siVq_e.js",
+        "./pencil-CsXmiusw.js",
+        "./trash-2-DVhh5q4W.js",
+        "./index-h_rcmx-z.js",
+        "./index-Dp3hShr1.js",
+        "./index-CKHSh4Pc.js",
+        "./index-CisAFFfx.js",
+        "./index-BRp97hgM.js",
+        "./index-DgUTVUJa.js",
+        "./index-DqlifW_A.js",
+        "./chevron-right-56l-KeF7.js"
+      ],
+      "unchangedPartitions": [
+        {
+          "beforeStart": 0,
+          "beforeEnd": 77455,
+          "afterStart": 0,
+          "afterEnd": 77455,
+          "sha256": "0457a0b46b1170d7509f8ef12445905e1b7832fd6bed7e878390f34ee2d1d0df"
+        },
+        {
+          "beforeStart": 98391,
+          "beforeEnd": 98414,
+          "afterStart": 185138,
+          "afterEnd": 185161,
+          "sha256": "fa2b5a595e9664457a2d5b543d8c6df1081edcb7a83c04031d839d43e3c56c9f"
+        }
+      ],
+      "patches": [
+        {
+          "start": 77455,
+          "end": 98391,
+          "afterStart": 77455,
+          "afterEnd": 185138,
+          "beforeSha256": "4d80bdf3d3495eba4ffe7bf78097df197a789a5436c79ea05489b2ae33314520",
+          "afterSha256": "b99a9e1b641104a80a4a3092be5544926d0f6b9587d4e6c204134c6fed08f769",
+          "reason": "exact original native route default local delegates source-compiled Staff graph inside lazy factory; original imports/exports/helpers byte protected"
+        }
+      ],
+      "encoding": "UTF-8 hashes; JS character offsets",
+      "beforeUrl": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js",
+      "sourceBase": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+      "canonicalOldSourceSha256": "2ac4b6425e0a690cad770f7e216ae3e50b7cb30273fef6792f3d946eb74fe637",
+      "originalDefaultLocal": "Aa",
+      "defaultExportByteIdentical": true,
+      "sourceHashes": {
+        "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+        "client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+        "client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+        "client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+        "client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+        "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+        "client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+        "shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+        "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+        "client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+        "client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+        "client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+        "client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+        "client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+        "client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22"
+      },
+      "dependencySourceHashes": {},
+      "bridge": {
+        "props": {
+          "React": "c",
+          "jsx": "e",
+          "trpc": "ye",
+          "toast": "Ie",
+          "useAuth": "zs",
+          "useSearch": "Vs",
+          "useQueryClient": "Gs",
+          "installAuthSessionClearListener": "Ws",
+          "useQuery": "Te",
+          "createBusinessScopeTrpcClient": "Js",
+          "createBusinessTrpcClient": "Ys",
+          "useQueries": "ls",
+          "Skeleton": "We",
+          "Button": "oe",
+          "Input": "Fe",
+          "Dialog": "Rs",
+          "DialogContent": "Cs",
+          "DialogHeader": "Es",
+          "DialogTitle": "Ds",
+          "DialogDescription": "Os",
+          "DialogFooter": "ks",
+          "Label": "Ee",
+          "Checkbox": "ss",
+          "Sheet": "Zs",
+          "SheetContent": "Xs",
+          "SheetHeader": "et",
+          "SheetTitle": "st",
+          "SheetDescription": "tt",
+          "SheetFooter": "at",
+          "Badge": "ke",
+          "formatDateTime": "dt",
+          "EmptyState": "mt",
+          "StatusBadge": "ds",
+          "Pagination": "ft",
+          "AdminPage": "gt",
+          "AdminDataPanel": "us",
+          "DashboardLayout": "yt",
+          "Users": "Pt",
+          "Table": "jt",
+          "TableHeader": "Nt",
+          "TableRow": "ps",
+          "TableHead": "Me",
+          "TableBody": "wt",
+          "TableCell": "Ae",
+          "RefreshCw": "It",
+          "Plus": "Rt",
+          "Pencil": "Ct",
+          "Trash2": "Et",
+          "ExternalLink": "St",
+          "CompactListToolbar": "__d51CompactListToolbar",
+          "z": "{object:Re,array:Le,boolean:Ms,number:ge,enum:As,string:we}"
+        },
+        "evidence": [
+          {
+            "property": "React",
+            "local": "c",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "r"
+            },
+            "semanticAnchor": "original Aa hooks and ea=c.forwardRef"
+          },
+          {
+            "property": "jsx",
+            "local": "e",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "j"
+            },
+            "semanticAnchor": "original e.jsx/e.jsxs calls"
+          },
+          {
+            "property": "trpc",
+            "local": "ye",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "t"
+            },
+            "semanticAnchor": "original Aa native .adminUser.list.useQuery and .useUtils"
+          },
+          {
+            "property": "toast",
+            "local": "Ie",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "b"
+            },
+            "semanticAnchor": "original refresh native toast.success"
+          },
+          {
+            "property": "useAuth",
+            "local": "zs",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "u"
+            },
+            "semanticAnchor": "original Aa user destructure"
+          },
+          {
+            "property": "useSearch",
+            "local": "Vs",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "o"
+            },
+            "semanticAnchor": "original Aa native search before merchant selection"
+          },
+          {
+            "property": "useQueryClient",
+            "local": "Gs",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "p"
+            },
+            "semanticAnchor": "original Aa native invalidateQueries and removeQueries"
+          },
+          {
+            "property": "installAuthSessionClearListener",
+            "local": "Ws",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "q"
+            },
+            "semanticAnchor": "original Aa listener epoch and dialog reset"
+          },
+          {
+            "property": "useQuery",
+            "local": "Te",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "s"
+            },
+            "semanticAnchor": "original Aa navigation queryFn business.navigation"
+          },
+          {
+            "property": "createBusinessScopeTrpcClient",
+            "local": "Js",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "v"
+            },
+            "semanticAnchor": "original Aa useMemo client whose .context.query and .organization use verified merchant"
+          },
+          {
+            "property": "createBusinessTrpcClient",
+            "local": "Ys",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "w"
+            },
+            "semanticAnchor": "original Aa useMemo client whose .enterprise.me and .enterprise.members use verified merchant"
+          },
+          {
+            "property": "useQueries",
+            "local": "ls",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "x"
+            },
+            "semanticAnchor": "original Aa queries array for exact staff bindings and merchant scopes"
+          },
+          {
+            "property": "Skeleton",
+            "local": "We",
+            "binding": {
+              "specifier": "./index-8jluR_FO.js",
+              "exported": "S"
+            },
+            "semanticAnchor": "original JSX Staff.tsx loading h-12"
+          },
+          {
+            "property": "Button",
+            "local": "oe",
+            "binding": {
+              "specifier": "./button-CJNcu3ZB.js",
+              "exported": "B"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Input",
+            "local": "Fe",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "I"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Dialog",
+            "local": "Rs",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "D"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "DialogContent",
+            "local": "Cs",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "a"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "DialogHeader",
+            "local": "Es",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "b"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "DialogTitle",
+            "local": "Ds",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "c"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "DialogDescription",
+            "local": "Os",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "d"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "DialogFooter",
+            "local": "ks",
+            "binding": {
+              "specifier": "./input-CQXSswZV.js",
+              "exported": "e"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Label",
+            "local": "Ee",
+            "binding": {
+              "specifier": "./label-gKwYwH3S.js",
+              "exported": "L"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Checkbox",
+            "local": "ss",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "C"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Sheet",
+            "local": "Zs",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "S"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "SheetContent",
+            "local": "Xs",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "a"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "SheetHeader",
+            "local": "et",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "b"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "SheetTitle",
+            "local": "st",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "c"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "SheetDescription",
+            "local": "tt",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "d"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "SheetFooter",
+            "local": "at",
+            "binding": {
+              "specifier": "./sheet-De64i5Sw.js",
+              "exported": "e"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Badge",
+            "local": "ke",
+            "binding": {
+              "specifier": "./badge-nRLPbtbu.js",
+              "exported": "B"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "formatDateTime",
+            "local": "dt",
+            "binding": {
+              "specifier": "./shared-BUxb-QlJ.js",
+              "exported": "f"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "EmptyState",
+            "local": "mt",
+            "binding": {
+              "specifier": "./shared-BUxb-QlJ.js",
+              "exported": "E"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "StatusBadge",
+            "local": "ds",
+            "binding": {
+              "specifier": "./shared-BUxb-QlJ.js",
+              "exported": "S"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Pagination",
+            "local": "ft",
+            "binding": {
+              "specifier": "./shared-BUxb-QlJ.js",
+              "exported": "a"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "AdminPage",
+            "local": "gt",
+            "binding": {
+              "specifier": "./UnifiedAdminPage-DIGRdaLW.js",
+              "exported": "A"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "AdminDataPanel",
+            "local": "us",
+            "binding": {
+              "specifier": "./UnifiedAdminPage-DIGRdaLW.js",
+              "exported": "c"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "DashboardLayout",
+            "local": "yt",
+            "binding": {
+              "specifier": "./DashboardLayout-DfHnpqnr.js",
+              "exported": "D"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Users",
+            "local": "Pt",
+            "binding": {
+              "specifier": "./DashboardLayout-DfHnpqnr.js",
+              "exported": "U"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Table",
+            "local": "jt",
+            "binding": {
+              "specifier": "./table-BdXs25t8.js",
+              "exported": "T"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "TableHeader",
+            "local": "Nt",
+            "binding": {
+              "specifier": "./table-BdXs25t8.js",
+              "exported": "a"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "TableRow",
+            "local": "ps",
+            "binding": {
+              "specifier": "./table-BdXs25t8.js",
+              "exported": "b"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "TableHead",
+            "local": "Me",
+            "binding": {
+              "specifier": "./table-BdXs25t8.js",
+              "exported": "c"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "TableBody",
+            "local": "wt",
+            "binding": {
+              "specifier": "./table-BdXs25t8.js",
+              "exported": "d"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "TableCell",
+            "local": "Ae",
+            "binding": {
+              "specifier": "./table-BdXs25t8.js",
+              "exported": "e"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "RefreshCw",
+            "local": "It",
+            "binding": {
+              "specifier": "./refresh-cw-BXprVxBP.js",
+              "exported": "R"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Plus",
+            "local": "Rt",
+            "binding": {
+              "specifier": "./plus-C6siVq_e.js",
+              "exported": "P"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Pencil",
+            "local": "Ct",
+            "binding": {
+              "specifier": "./pencil-CsXmiusw.js",
+              "exported": "P"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "Trash2",
+            "local": "Et",
+            "binding": {
+              "specifier": "./trash-2-DVhh5q4W.js",
+              "exported": "T"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "ExternalLink",
+            "local": "St",
+            "binding": {
+              "specifier": "./external-link-D3MS9--y.js",
+              "exported": "E"
+            },
+            "semanticAnchor": "actual baseline JSX data-loc matched unchanged source UI import semantics; exact declaration export read by AST"
+          },
+          {
+            "property": "CompactListToolbar",
+            "local": "__d51CompactListToolbar",
+            "binding": {
+              "specifier": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+              "exported": "CompactListToolbar",
+              "local": "__d51CompactListToolbar"
+            },
+            "semanticAnchor": "original current compact toolbar wrapper retained"
+          },
+          {
+            "property": "z.object",
+            "local": "Re",
+            "binding": {
+              "specifier": "./schemas-CWwXnU9Q.js",
+              "exported": "o"
+            },
+            "semanticAnchor": "original native object/array/boolean/number/enum/string schema calls in kt and Tt declarations"
+          },
+          {
+            "property": "z.array",
+            "local": "Le",
+            "binding": {
+              "specifier": "./schemas-CWwXnU9Q.js",
+              "exported": "a"
+            },
+            "semanticAnchor": "original native object/array/boolean/number/enum/string schema calls in kt and Tt declarations"
+          },
+          {
+            "property": "z.boolean",
+            "local": "Ms",
+            "binding": {
+              "specifier": "./schemas-CWwXnU9Q.js",
+              "exported": "b"
+            },
+            "semanticAnchor": "original native object/array/boolean/number/enum/string schema calls in kt and Tt declarations"
+          },
+          {
+            "property": "z.number",
+            "local": "ge",
+            "binding": {
+              "specifier": "./schemas-CWwXnU9Q.js",
+              "exported": "n"
+            },
+            "semanticAnchor": "original native object/array/boolean/number/enum/string schema calls in kt and Tt declarations"
+          },
+          {
+            "property": "z.enum",
+            "local": "As",
+            "binding": {
+              "specifier": "./schemas-CWwXnU9Q.js",
+              "exported": "_"
+            },
+            "semanticAnchor": "original native object/array/boolean/number/enum/string schema calls in kt and Tt declarations"
+          },
+          {
+            "property": "z.string",
+            "local": "we",
+            "binding": {
+              "specifier": "./schemas-CWwXnU9Q.js",
+              "exported": "s"
+            },
+            "semanticAnchor": "original native object/array/boolean/number/enum/string schema calls in kt and Tt declarations"
+          }
+        ]
+      },
+      "usedBridges": [
+        "@tanstack/react-query",
+        "client/src/_core/hooks/useAuth",
+        "client/src/business/api/business-trpc",
+        "client/src/business/platform/client/src/components/ui/CompactListToolbar",
+        "client/src/business/platform/client/src/lib/authSessionEvents",
+        "client/src/components/DashboardLayout",
+        "client/src/components/admin/UnifiedAdminPage",
+        "client/src/components/admin/shared",
+        "client/src/components/ui/badge",
+        "client/src/components/ui/button",
+        "client/src/components/ui/checkbox",
+        "client/src/components/ui/dialog",
+        "client/src/components/ui/input",
+        "client/src/components/ui/label",
+        "client/src/components/ui/sheet",
+        "client/src/components/ui/skeleton",
+        "client/src/components/ui/table",
+        "client/src/lib/trpc",
+        "lucide-react",
+        "react",
+        "react/jsx-runtime",
+        "sonner",
+        "wouter",
+        "zod"
+      ],
+      "checks": {
+        "noCopiedReact": true,
+        "noCopiedAuth": true,
+        "noCopiedQueryProvider": true,
+        "noNewRoot": true,
+        "noNewApiClient": true,
+        "nativeBusinessClientsReused": true,
+        "nativeProfileDialog": false
+      }
+    },
+    "css": {
+      "sha256": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55",
+      "selectors": [
+        ".personal-center",
+        ".personal-center .pc-tabs",
+        ".personal-center .pc-tabs button",
+        ".personal-center .pc-tabs button[aria-selected=\"true\"]",
+        ".personal-center .pc-tabs button:focus-visible",
+        ".personal-center .pc-panel",
+        ".personal-center .pc-card",
+        ".personal-center .pc-card-header",
+        ".personal-center .pc-card-header [data-slot=\"card-title\"]",
+        ".personal-center .pc-card-header svg",
+        ".personal-center .pc-card-content",
+        ".personal-center .pc-identity",
+        ".personal-center .pc-identity > div",
+        ".personal-center .pc-avatar",
+        ".personal-center .pc-muted",
+        ".personal-center .pc-details",
+        ".personal-center .pc-details > div",
+        ".personal-center .pc-details dt",
+        ".personal-center .pc-details dd",
+        ".personal-center .pc-inline-status",
+        ".personal-center .pc-edit-form",
+        ".personal-center .pc-form-grid",
+        ".personal-center .pc-field",
+        ".personal-center .pc-field label",
+        ".personal-center input",
+        ".personal-center .pc-actions",
+        ".personal-center .pc-security-status",
+        ".personal-center .pc-security-item",
+        ".personal-center .pc-security-item > svg",
+        ".personal-center .pc-security-item > div",
+        ".personal-center .pc-security-item small",
+        ".personal-center.pc-security-dialog",
+        ".personal-center.pc-security-dialog [data-slot=\"dialog-title\"]",
+        ".personal-center.pc-security-dialog [data-slot=\"dialog-description\"]",
+        ".personal-center .pc-security-form",
+        ".personal-center .pc-security-form .pc-actions",
+        ".personal-center .pc-code-row",
+        ".personal-center .pc-code-row input",
+        ".personal-center .pc-error",
+        ".personal-center .pc-error-banner",
+        ".personal-center .pc-state",
+        ".personal-center .pc-state--error",
+        ".personal-center .pc-loading",
+        ".personal-center .pc-filter",
+        ".personal-center .pc-filter label",
+        ".personal-center .pc-filter input",
+        ".personal-center .pc-results",
+        ".personal-center .pc-section-title",
+        ".personal-center .pc-stat-grid",
+        ".personal-center .pc-stat",
+        ".personal-center .pc-stat > span",
+        ".personal-center .pc-stat strong",
+        ".personal-center .pc-stat small",
+        ".personal-center .pc-basis",
+        ".personal-center .pc-basis p + p",
+        ".personal-center .pc-table-scroll",
+        ".personal-center .pc-table",
+        ".personal-center .pc-table th",
+        ".personal-center .pc-table th",
+        ".personal-center .pc-table td",
+        ".personal-center .pc-table .pc-numeric",
+        ".personal-center .pc-table .pc-center",
+        ".personal-center .pc-pagination",
+        ".personal-center .pc-details",
+        ".personal-center .pc-stat-grid",
+        ".personal-center .pc-stat",
+        ".personal-center .pc-stat strong",
+        ".personal-center .pc-tabs button",
+        ".personal-center .pc-form-grid",
+        ".personal-center .pc-details",
+        ".personal-center .pc-card-header",
+        ".personal-center .pc-card-content",
+        ".personal-center .pc-security-status",
+        "[data-staff-page] .staff-management-table-scroll",
+        "[data-staff-page] .staff-management-table-scroll > [data-slot=\"table-container\"]",
+        "[data-staff-page] .staff-management-table",
+        "[data-staff-page] .staff-management-table th",
+        "[data-staff-page] .staff-management-table td",
+        "[data-staff-page] .staff-management-table tbody tr",
+        "[data-staff-page] .staff-management-table tbody td",
+        "[data-staff-page] .staff-management-table tbody tr:hover td",
+        "[data-staff-page] .staff-action-head",
+        "[data-staff-page] .staff-action-cell",
+        "[data-staff-page] .staff-action-cell",
+        "[data-staff-page] .staff-action-cell > button",
+        "[data-staff-page] .staff-avatar",
+        "[data-staff-page] .staff-association-action",
+        "[data-staff-page] .staff-erp-more",
+        "[data-staff-page] .staff-association-action",
+        "[data-staff-page] .staff-association-action:hover",
+        "[data-staff-page] .staff-association-action:focus-visible",
+        "[data-staff-page] .staff-erp-tags",
+        "[data-staff-page] .staff-erp-tag",
+        "[data-staff-page] .staff-erp-more",
+        "[data-staff-page] .staff-erp-tag",
+        "[data-staff-page] .staff-erp-more",
+        "[data-staff-page] .staff-erp-more:hover",
+        "[data-staff-page] .staff-erp-more:focus-visible",
+        "[data-staff-page] .staff-action-head",
+        "[data-staff-page] .staff-action-cell",
+        "[data-staff-page] .staff-action-head",
+        "[data-staff-page] .staff-action-cell",
+        "[data-staff-page] .staff-management-table tbody tr:hover .staff-action-cell",
+        "[data-staff-permission-sheet] .staff-permission-panel[hidden]",
+        "[data-staff-permission-sheet] [data-slot=\"sheet-title\"]",
+        "body[data-admin-readability=\"true\"]\n  [data-staff-permission-sheet]\n  .staff-permission-panel\n  h3",
+        "[data-staff-permission-sheet] .staff-permission-footer [data-slot=\"button\"]",
+        "[data-staff-permission-sheet] .staff-permission-tabs",
+        "[data-staff-permission-sheet] .staff-permission-identity",
+        "[data-staff-permission-sheet] .staff-permission-footer",
+        "[data-staff-permission-sheet] .staff-platform-matrix > div",
+        "[data-staff-permission-sheet] .staff-platform-matrix > div > p",
+        "[data-staff-permission-sheet] .staff-platform-matrix > div > div",
+        "[data-staff-permission-sheet] .staff-platform-matrix label",
+        "[data-staff-permission-sheet] .staff-permission-template",
+        "[data-staff-permission-sheet] .staff-permission-template label",
+        "[data-staff-permission-sheet] .staff-permission-template select",
+        "[data-staff-permission-sheet] .staff-permission-template select:disabled",
+        "[data-staff-permission-sheet] .staff-permission-advanced",
+        "[data-staff-permission-sheet] .staff-permission-advanced summary",
+        "[data-staff-permission-sheet] .staff-permission-advanced[open] > :not(summary)",
+        "[data-staff-permission-sheet] .staff-permission-service-keys",
+        "[data-staff-permission-sheet] .staff-permission-template",
+        "[data-staff-permission-sheet] .staff-permission-template button",
+        ".official-team-settings",
+        ".official-team-settings__assignment-fields",
+        ".official-team-settings__assignment-fields label",
+        ".official-team-settings__assignment-fields select",
+        ".official-team-settings__assignment-fields select:disabled",
+        ".official-team-settings__assignment",
+        ".official-team-settings__permissions",
+        ".official-team-settings__permission",
+        ".official-team-settings__system-grant",
+        ".official-team-settings__notice",
+        ".official-team-settings__notice.is-error",
+        ".official-team-settings__save-error",
+        ".official-team-settings__save-error",
+        ".official-team-settings__assignment-fields",
+        ".official-team-settings__permissions",
+        ".official-team-settings__advanced",
+        ".official-team-settings__advanced summary",
+        ".official-team-settings__advanced[open] > :not(summary)",
+        ".official-team-settings__scope-list",
+        ".official-team-settings__scope-list > div",
+        ".official-team-settings__scope-list dd",
+        ".official-team-settings__export",
+        ".official-team-settings__export > span"
+      ],
+      "sourceScoped": true,
+      "baselineStylesheetUnchanged": true
+    },
+    "protectedFiles": [
+      {
+        "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+        "sha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32",
+        "unchanged": true
+      },
+      {
+        "relative": "assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+        "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049",
+        "unchanged": true
+      }
+    ]
+  },
+  "loggedInBrowserAcceptancePerformed": false
+}

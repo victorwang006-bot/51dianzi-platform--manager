@@ -661,6 +661,24 @@ function mapAdminLifecycleError(error: unknown): unknown {
   if (message === "ADMIN_USER_ARCHIVED") {
     return new TRPCError({ code: "PRECONDITION_FAILED", message: "用户已离职归档，不能重新启用或修改历史身份" });
   }
+  if (message === "ADMIN_STATUS_EXPECTED_REQUIRED") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "请刷新读取账号当前状态后再操作" });
+  }
+  if (message === "ADMIN_STATUS_REASON_REQUIRED") {
+    return new TRPCError({ code: "BAD_REQUEST", message: "请填写2至500字的启停原因" });
+  }
+  if (message === "ADMIN_STATUS_CONFLICT") {
+    return new TRPCError({ code: "CONFLICT", message: "账号状态已被其他操作修改，请刷新核验后再操作" });
+  }
+  if (message === "ADMIN_USER_LOCKED") {
+    return new TRPCError({ code: "PRECONDITION_FAILED", message: "锁定账号不能通过普通启用解锁，请使用专门的安全处理流程" });
+  }
+  if (message === "ADMIN_ACTOR_FORBIDDEN") {
+    return new TRPCError({ code: "FORBIDDEN", message: "操作者账号已停用、归档或后台管理权限已变化，请重新登录核验" });
+  }
+  if (message === "ADMIN_ACTOR_SESSION_STALE") {
+    return new TRPCError({ code: "UNAUTHORIZED", message: "操作者会话已撤销，请重新登录" });
+  }
   return error;
 }
 
@@ -3271,8 +3289,12 @@ export const appRouter = router({
       salesStaffCodes: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{1,64}$/)).max(100).optional(),
       permissions: adminPermissionInput.optional(),
       status: z.enum(["active", "disabled", "locked"]).optional(),
+      expectedStatus: z.enum(["active", "disabled", "locked"]).optional(),
+      reason: z.string().trim().min(2).max(500).optional(),
       /** 传入则重置该账号的登录密码 */
       password: z.string().min(8, "密码至少 8 位").max(128).optional(),
+    }).refine(input => input.status === undefined || (input.expectedStatus !== undefined && input.reason !== undefined), {
+      message: "启停账号必须提交读取时的状态和操作原因", path: ["expectedStatus"],
     })).mutation(async ({ ctx, input }) => {
       const { id, password, ...rest } = input;
       if (rest.permissions !== undefined) {
@@ -3285,6 +3307,8 @@ export const appRouter = router({
           ...rest,
           ...(password ? { passwordHash: await hashPassword(password) } : {}),
           actorAdminUserId: ctx.adminAccount?.id ?? null,
+          actorSessionVersion: ctx.adminAccount?.sessionVersion,
+          statusAudit: auditActorFromContext(ctx),
           permissionAudit: permissionAuditFromContext(ctx),
         });
       } catch (error) {
@@ -3293,11 +3317,22 @@ export const appRouter = router({
       return { success: true };
     }),
     toggleStatus: adminManageProcedure.input(z.object({
-      id: z.number(),
+      id: z.number().int().positive(),
       status: z.enum(["active", "disabled"]),
+      // Optional in the inferred DTO only for old out-of-scope editors; runtime
+      // refinement deliberately rejects their unsafe baseline-free status writes.
+      expectedStatus: z.enum(["active", "disabled", "locked"]).optional(),
+      reason: z.string().trim().min(2).max(500).optional(),
+    }).refine(input => input.expectedStatus !== undefined && input.reason !== undefined, {
+      message: "启停账号必须提交读取时的状态和操作原因", path: ["expectedStatus"],
     })).mutation(async ({ ctx, input }) => {
       try {
-        await db.toggleAdminUserStatus(input.id, input.status, ctx.adminAccount?.id ?? null);
+        await db.toggleAdminUserStatus(input.id, input.status, ctx.adminAccount?.id ?? null, {
+          expectedStatus: input.expectedStatus,
+          reason: input.reason,
+          actorSessionVersion: ctx.adminAccount?.sessionVersion,
+          statusAudit: auditActorFromContext(ctx),
+        });
       } catch (error) {
         throw mapAdminLifecycleError(error);
       }

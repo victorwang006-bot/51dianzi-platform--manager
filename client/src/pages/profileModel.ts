@@ -31,6 +31,11 @@ export function validMonth(month: string) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(month);
 }
 
+/** auth.me exposes the authenticated login method, not a hasPassword flag. */
+export function passwordStatus(loginMethod: string | null | undefined): string {
+  return loginMethod === "password" ? "账号密码登录" : "密码状态暂不可核实";
+}
+
 export function passwordError(password: {
   oldPassword: string;
   newPassword: string;

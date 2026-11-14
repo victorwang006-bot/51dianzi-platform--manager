@@ -1,0 +1,798 @@
+{
+  "ownerTask": "CKSZQ7sVc7tADM21c3LWpu",
+  "scope": "compact two-tab personal center, native security dialogs, workspace order swap; guarded/audited native admin status toggle only",
+  "sourceBaseCommit": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+  "preparedAtSourceCommit": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
+  "preparedAtUtc": "2026-11-14T03:40:02.868942+00:00",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51"
+    },
+    {
+      "relative": "assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+      "sha256": "6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+      "sha256": "89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js",
+      "sha256": "587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24"
+    },
+    {
+      "relative": "assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+      "sha256": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55"
+    }
+  ],
+  "coreAssetPaths": [
+    "assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+    "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-profile-staff-89e21d19ad99792f57a8435442f7e9be1f765f5ab7b263e0110aa445c2ee9b73.js",
+    "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-profile-staff-587c3d58baec0e41b8e46560b35bb734ed01985240fb45452db365450cafda24.js",
+    "assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css"
+  ],
+  "backendFiles": [
+    {
+      "processName": "dianzi51-admin",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "relative": "api/admin-index.js",
+      "sha256": "0f2bc286a3a1d6643544cc5270c113214795de3531e66123164b296a857a8ad8",
+      "beforeSha256": "d2756c5ff98b459cad79c3ff11643680c92f773ceeeb4469e88302a863369539"
+    }
+  ],
+  "beforeHtmlSha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0",
+  "driverSha256": "ad0c21bca14d87ff6475083b15cf8c843d75029cae51cb96c4c08bec848216be",
+  "evidenceHashes": {
+    "candidate-proof.json": "65739991834391b57a3f155bab8dcfcd713d0458df7c6fe97a983da13fd4ebb1",
+    "backend-candidate-proof.json": "22148518bbd7f8cb11c5fbc7de7e4c0abc14d82be3383fc98fab6c64c5488310",
+    "frontend-parts.json": "c22c4d2739bc4684ed1cfbaa5ebaf094a4c93b55a3524613651063327aa4872b",
+    "html-build-proof.json": "02370f2f5c6ba3542403ff825002189fb8488fcdb029f2924dbac2b0d9910417",
+    "dependency-resolution-proof.json": "a50d7ea81eb59830119a5f6e316a864b0b9845691eeb90980f845c260c930d01",
+    "static-dependencies.json": "9bb8085b9fa21353046ceee8704cb8f7249ff966daabbc8247b1ccd0a2e7cf32",
+    "tests.json": "3b4e5bfdbf162846a77cd0e65d11dc63d6e4a6fff506a865ca9bd1ad13c2921b",
+    "integrated-tests.json": "0d353ffe1af36501f9bdd98e6cf9ecab5cae1ec10cb0495b0cbd6d830b30ad8e",
+    "test-report.json": "17b571fe12cd8f8f151e5093949e0ea9fdb9aa736e10678a1d9d33de63a8ae4e",
+    "read-only-review-final.json": "0b9a12c54dcc6420747603676d1a3b950648d9e9ef96c939dfc235a263f865f5",
+    "source-validation-final.json": "4f97ccaada2ed9f2314f4f1c9484d88f1521ba26be717e1808a3a9e1ee221551",
+    "activation-tests.json": "14a5490b5a73c2ba6a096cb215b5d5a3fa0cb1dafc3c24cf401c7a9e500a02db",
+    "staff-status-contract.json": "8d9e3ed069312edb18b0b786320346a71d64bf6d9fe81d2f9883c17f2069a185",
+    "live-audit-schema-readonly.json": "32937d053614ad3501ea88640d1daf377c1bb4e85168bf3b147110fe8e61d128",
+    "reload-profile-staff-api-20261114.cjs": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+    "reload-tests.json": "1d4d633ac340aedca536288d9f42c93cc96af6fdd6d33f8b6b3ec93c59f6897b",
+    "bind-source.py": "97406c29aebcae2e7085d9562527484ed10ffaf7ddb2aee0b1b6bfe9e114a418"
+  },
+  "protectedFiles": [
+    {
+      "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+      "sha256": "2ba38fe28288e2a2068a440d190a8e6fe9f3ca5096800e39cec27d9e7b98b7ee"
+    },
+    {
+      "path": "/etc/nginx/conf.d/dianzi51-admin-subdomain.conf",
+      "sha256": "987cf4987f65f6a13923b7b3edc7148b3bf788812a20133a0dc222deb6486aea"
+    },
+    {
+      "path": "/root/.pm2/dump.pm2",
+      "sha256": "553f4cdabea88011777b14ddebc528abf2edf27a6276bf20910d2fbbcfb00199"
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "sha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9"
+    }
+  ],
+  "baselineAssets": [
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Admins-CQBILEnf.css",
+      "sha256": "2217ba6dd33ca6e9dadb25d5847414066024e4a2f012fc9d086acdca2d8d9817"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/BusinessWorkbenchPage-Y3iALNaz.css",
+      "sha256": "60ae8ddc4e159c3a114d52a4a842fea94e132146368d1e65fb6afcefdab37ff4"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/DashboardLayout-DJvFUGq1.css",
+      "sha256": "0d7c518bbaa7983d4491180b997e8ef3405512910439a623d71ebcbf04024d39"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/OfficialChannelInventory-B3svVubH.css",
+      "sha256": "97e9809c813bff80e1055f67fa6d3f44a6bcbc1eef21b84bb42da98ef39ecf46"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Organization-BeydBhl0.css",
+      "sha256": "609df9bc7929ffe4b8429e03a35e9bced2c712cb96b35519c3322666d6f990a3"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-Bb1hTfdM.js",
+      "sha256": "46ea23ddd27ecf0b1a8d7840ad9e5b454fa06a4d02a5a110c20615e76b617e9e"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-B6N8oQSr.css",
+      "sha256": "c1e6521669d1c1ed21685eaa56ecaa7bbe608f4c976382160d9bdb5418d0f1f3"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BeaydR4L.css",
+      "sha256": "87a9e4c8f3507ff46da85a5655232556fa33de184cf6f4a05347127c8be8d1ad"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-profile-compact-7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74.js",
+      "sha256": "7a350b978fbf40eba4228bf3fe325fc620469d7792f2af6f59cd640a4d14fd74"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/procurement-demands-navigation-403b8716333e170e.css",
+      "sha256": "403b8716333e170e448e7fbaf7d4812f49fd8311c762b5a5ca2352f3a60d5085"
+    },
+    {
+      "relative": "assets/Admins-7itF0IWS.css",
+      "sha256": "c7bb7def2077942d44b8153ce84b3197b9ed15027ae0add1a74f7936fb28a85b"
+    },
+    {
+      "relative": "assets/Admins-CQBILEnf.css",
+      "sha256": "2217ba6dd33ca6e9dadb25d5847414066024e4a2f012fc9d086acdca2d8d9817"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-72Mfrlsh.css",
+      "sha256": "d27427f06abda5c7a78c0882c2af3a2ec4e2dcd32e03d4dc2dcc4b477e52eb87"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-7y4f7P23.css",
+      "sha256": "b6627fa2de80d9f161a1ccfd37cbdd3aa9efc7779f3bec7d6dc785a596ee0d59"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-B-GEUq7K.css",
+      "sha256": "54cd924773690826a1ac364487c81444138597ad515ea23049c65eaef640f4a1"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-BY-jqVeV.css",
+      "sha256": "6341320494a426de95f4496a5a804bd5806887638ef9129a3fcde29308923470"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-BfCKWAFG.css",
+      "sha256": "478f74df048b4786ecc11b403235977fb91f2588cd7e3487d95e25bcbaab4a96"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-BvrR0LI5.css",
+      "sha256": "7c7e0ed070e5d84d4b076ffacac57dc0edb1b631e92060e0b7ede63dad4c4c0f"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-C3xDkthM.css",
+      "sha256": "630fbf72c1841c0cde933820a680b909ef85e751a5d13a24b5a078ad4e0364ce"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-CB17loB8.css",
+      "sha256": "d3904c2ef9f96cccd1ddcbeea8c654f76868cd7db3af8c96ff9feed167492b26"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-CvGot7JD.css",
+      "sha256": "0de4066e0baa5381e5354edc83f60ddeac51bc635a8489545e5a52de15e08c5d"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-D9-RwdP2.css",
+      "sha256": "d97fc6a863dde39246eb39174866f539e8c603c870dcf9b573be11a9b34b9504"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-DFB3FWjf.css",
+      "sha256": "78b0e7b64bccfa012d1f67c5294ab2c5b94cf3721fe3e996e4cae532762631c4"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-DSIq1wEj.css",
+      "sha256": "0a5d878352d3f0e2825be21f61914e8feb482da294d56403c6c1ec4cae4f06c3"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-Dfe2xiwj.css",
+      "sha256": "3bac1ac98aadbb59e28a9df2a75e1d69647b275e9152af96b238279a52860f7e"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-Dgz1TEMr.css",
+      "sha256": "c76c0ff5c288ef02cfac0b88e3ce786134413c7fcd6fce355030fdccf2501c9a"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-DnkGIroY.css",
+      "sha256": "c6d9560d767b681275ffa5600beb63411172847ac27b1c0296c1f6bc5355e7a7"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-Dqda06Le.css",
+      "sha256": "e0910ef119ed67e8671c24effd685021cd5bfcbf3a0c265d495a0a20bae7efbe"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-DvXp_wz5.css",
+      "sha256": "6e6aaaa00b17413a680a1e1dcb4990b6942248bfe9f0ca344f5f8e34657c09ae"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-profile-compact-0-6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87.js",
+      "sha256": "6d27465361c3e0953af78c936324a204b8ec8eff5fb484d0e60f19a107bdbc87"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-profile-compact-1-edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c.js",
+      "sha256": "edfbf5c87592e5705519e0c19ddb2bd811d406d73d3598bcbadeed0c6cb9c02c"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-rsCA-xDb.css",
+      "sha256": "b89b13114b61f17c0b4243c31123704bc3c7759156f7fbea392cc1cdfd3882c8"
+    },
+    {
+      "relative": "assets/DashboardLayout-BPf_XHax.css",
+      "sha256": "f0257262da741eaa4acf6b5ae2e7e5b3d157e7bc5d09868a209be369e387d4d4"
+    },
+    {
+      "relative": "assets/DashboardLayout-C5vzw2Fu.css",
+      "sha256": "a06dc0fa661904578bed190f0b1fe12e98fa6e477c4da4f00cebd393ed2b430c"
+    },
+    {
+      "relative": "assets/DashboardLayout-CbSKIm6Y.css",
+      "sha256": "0f260139624b2f00221472618b25f4a3987725a52914c9693116a4000f46c3a3"
+    },
+    {
+      "relative": "assets/DashboardLayout-Cp1UvHLj.css",
+      "sha256": "871ae4c15615906d72d372270c3b4a2e25989afdc05e16372235620f6e157724"
+    },
+    {
+      "relative": "assets/DashboardLayout-CyFpdeJf.css",
+      "sha256": "ed52e5220de071499f8488a33e1997b367bea733c11bd1f6fe5493c9a9a0926f"
+    },
+    {
+      "relative": "assets/DashboardLayout-D0rcufcJ.css",
+      "sha256": "52810f467b8bdad14014e76153f10ebe3df000ac733cdbd70bfd6130ca59788a"
+    },
+    {
+      "relative": "assets/DashboardLayout-DY2BHhD-.css",
+      "sha256": "6404056d1c7472b061903b0c7dc261dd94602280b3a923b8b9396450ef4847bd"
+    },
+    {
+      "relative": "assets/DashboardLayout-sales-unified-62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386.js",
+      "sha256": "62b76d71b8be9e7451e25fc9dc63a9ce910a8e9d2c2ecf1510a2841d72d4c386"
+    },
+    {
+      "relative": "assets/OfficialChannelInventory-B3svVubH.css",
+      "sha256": "97e9809c813bff80e1055f67fa6d3f44a6bcbc1eef21b84bb42da98ef39ecf46"
+    },
+    {
+      "relative": "assets/OfficialChannelInventory-D0GwCxgC.css",
+      "sha256": "d9a9827ba003e16253ada3e73700cab1909e601e7709ce6bbc5b46b154833d45"
+    },
+    {
+      "relative": "assets/Organization-AnHvFZs_.css",
+      "sha256": "0c32e904b88e2396f68c59e15ae350e26ca3191a0230e66da1cc3c346e543205"
+    },
+    {
+      "relative": "assets/Organization-BeydBhl0.css",
+      "sha256": "609df9bc7929ffe4b8429e03a35e9bced2c712cb96b35519c3322666d6f990a3"
+    },
+    {
+      "relative": "assets/Organization-DDU_-9aU.css",
+      "sha256": "6f6804579935ca78b5155ab2c4caac212ee52234727cc958e376f98800497199"
+    },
+    {
+      "relative": "assets/Organization-wP8AIpAp.css",
+      "sha256": "b92a9de1ab7484a13a5433b251ea65413832e8fff08eb1bed4c8cacbdded9f08"
+    },
+    {
+      "relative": "assets/Staff-B6N8oQSr.css",
+      "sha256": "c1e6521669d1c1ed21685eaa56ecaa7bbe608f4c976382160d9bdb5418d0f1f3"
+    },
+    {
+      "relative": "assets/Staff-B8P_xh1m.css",
+      "sha256": "c99d40ba2ddd5f6aa7e70cfaec62febb765924d204168ec396b11da5771ffe28"
+    },
+    {
+      "relative": "assets/Staff-C23nm3As.css",
+      "sha256": "ad1e96eacdb9da3d1f9191623abe7b221664d1c41deb0e6d03a05f89a579a692"
+    },
+    {
+      "relative": "assets/Staff-CokrYJLg.css",
+      "sha256": "f5955d8cf971a8681d5f329c0e5fcb20df6234146f6f835c07fcbe1d7d98b38f"
+    },
+    {
+      "relative": "assets/Staff-DOiFrmhD.css",
+      "sha256": "ba7cd8f8c2d936d751aa12247e28458a5fc742146d41d4713008bf4e877c9faf"
+    },
+    {
+      "relative": "assets/Staff-vGcOeYmH.css",
+      "sha256": "483077c1b47dd293d5d68708498160200474754e038bc6fd38e354069e71d2ed"
+    },
+    {
+      "relative": "assets/admin-global-header-8fb5bd555322.css",
+      "sha256": "8fb5bd555322ed40d748e4a4217f06f8a5ff750fccf8dfaae36dc36589c5842e"
+    },
+    {
+      "relative": "assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+      "sha256": "8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d"
+    },
+    {
+      "relative": "assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+      "sha256": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe"
+    },
+    {
+      "relative": "assets/admin-workbench-compact-194389615e884867.css",
+      "sha256": "194389615e8848675383024d7f856bbe892d140b2c24d0a2340d4780bc38719b"
+    },
+    {
+      "relative": "assets/channel-inventory-management-6180ba0776bef02e.css",
+      "sha256": "6180ba0776bef02e9c256c349be63feeb15235246fb3340121d9dbd2b7cd9980"
+    },
+    {
+      "relative": "assets/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css",
+      "sha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007"
+    },
+    {
+      "relative": "assets/composition-admin-67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60.css",
+      "sha256": "67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60"
+    },
+    {
+      "relative": "assets/composition-inventory-58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3.css",
+      "sha256": "58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3"
+    },
+    {
+      "relative": "assets/customer-list-header-d608d923a66f.css",
+      "sha256": "d608d923a66f8e343a0212e46b1017fa3ccbc9baff7bab490d9f8bd4946bca20"
+    },
+    {
+      "relative": "assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+      "sha256": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f"
+    },
+    {
+      "relative": "assets/customer-workbench-1bc41785d5ab.css",
+      "sha256": "1bc41785d5ab2453c96bfd97e08b04c03670449bb91c092828389e4b6bb7f328"
+    },
+    {
+      "relative": "assets/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css",
+      "sha256": "57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827"
+    },
+    {
+      "relative": "assets/index-B-W7mDBB.css",
+      "sha256": "9d005f7baf422d7095f522f8ebdc1f34c8e9de23d2fcd28cad8b451a6f45098f"
+    },
+    {
+      "relative": "assets/index-B4yW0Vs5.css",
+      "sha256": "8017bb0fe73fdfd31cc5624b00a0d312166e3e2d37ee5562a5d881c25796d36a"
+    },
+    {
+      "relative": "assets/index-BGZ42qK0.css",
+      "sha256": "01a74843df034ee075220405741487886ce7fe0c25f16341022856a00d450170"
+    },
+    {
+      "relative": "assets/index-BMm7278C.css",
+      "sha256": "1163a9b3e9594ecd14ee51783392ac8c025128f0638c4e101229f4ec2a13a821"
+    },
+    {
+      "relative": "assets/index-BNbJ3WNj.css",
+      "sha256": "79122decb5a6906cfb753f1dcae2f8b73747b34694b88472039c662ca7296f31"
+    },
+    {
+      "relative": "assets/index-BSJK0oxG.css",
+      "sha256": "aa08e5c7375a7c1396b9dfa093693176c35b1a2960d37d5e8dcd5b63166f4b22"
+    },
+    {
+      "relative": "assets/index-BVsBB2Cp.css",
+      "sha256": "a14e84853ccd4493e6d4198d7c6fe44af3126b19005c0a84d37c043e4c6f9636"
+    },
+    {
+      "relative": "assets/index-BpHNkzjs.css",
+      "sha256": "5526139bf6d9ba29988d7ba20ba7ecdb677c87d6c4e9673ac908a5c285aad72e"
+    },
+    {
+      "relative": "assets/index-BqsNx8pp.css",
+      "sha256": "55a32da6eb9e7957646e2f679f9429fd2f28ee19d1b80b47aa30009c81c9df1c"
+    },
+    {
+      "relative": "assets/index-C0vPar7R.css",
+      "sha256": "871768387861545514e30d482d34a3cf7a15a0f783bde72c998ab89e2863b5d2"
+    },
+    {
+      "relative": "assets/index-C4tc0XgJ.css",
+      "sha256": "8f3dd127d1ec9bfb6ee401d5c990b2f615b1c6df22351b93595095ddf37931db"
+    },
+    {
+      "relative": "assets/index-C5pG8Sfv.css",
+      "sha256": "24fd69c07b8400d7934cbf2fe0e9e1fb51510ea27a8406b6eee2dd3c5fd751a6"
+    },
+    {
+      "relative": "assets/index-CJdYpNhT.css",
+      "sha256": "f2b0cf8a34631dfbcb39fa8784828c73e28e1db7dbac59c5d893a38424730d1d"
+    },
+    {
+      "relative": "assets/index-CPlAGZqK.css",
+      "sha256": "186133d735a198ca630041c2ec9259200fccd31a2d058504babcc05d477843d6"
+    },
+    {
+      "relative": "assets/index-CRklyfv2.css",
+      "sha256": "4164f8d612123c60a03bcfc7db1c362899ddcd1c1443bccb4b0aa1a78d13cf63"
+    },
+    {
+      "relative": "assets/index-CSw_i-ew.css",
+      "sha256": "e5904600980c966be00c2fd404f590f3b1e18c2629bf738c380b90d8aefd3be6"
+    },
+    {
+      "relative": "assets/index-D5Gg4nqs.css",
+      "sha256": "3485ea746301dd6775ec84a766a05a429a01785d3185894016ff03be4ac2ddab"
+    },
+    {
+      "relative": "assets/index-DFo-YONl.css",
+      "sha256": "2596ea544884714539a260783a7dd7b2cf0f19e8a3b200904bb5d55cdce58376"
+    },
+    {
+      "relative": "assets/index-DwkmMNfR.css",
+      "sha256": "0c4c0719b68d5dc2dd58690abbbf0dd672519faf2ca915e1620445983a34b57e"
+    },
+    {
+      "relative": "assets/index-DzhtgGQa.css",
+      "sha256": "8513e7fdadaefe19746e683dcc6bdae604787e1f3002b38e2e4458fda844be6f"
+    },
+    {
+      "relative": "assets/index-J1dKdkIE.css",
+      "sha256": "672eb5a4084c8dfea85ed1b253775c48341fecbc4548140a87adfe8823ab9082"
+    },
+    {
+      "relative": "assets/index-JzCzUOCt.css",
+      "sha256": "d51fe87d4742b9534eb7da5db3502e3c892a2c225d5cf41831868b05b3bd5708"
+    },
+    {
+      "relative": "assets/index-pbS5krrL.css",
+      "sha256": "ceca6b4634b4d6439f99c8aa38b7c1754415c60287b3b9ab333a9be63b924c92"
+    },
+    {
+      "relative": "assets/index-qflbh-hy.css",
+      "sha256": "747a27b1db75704d467328a678fc703796a77601c6a3991e236e0a655be685c5"
+    },
+    {
+      "relative": "assets/inquiry-reception-7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc.css",
+      "sha256": "7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc"
+    },
+    {
+      "relative": "assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4"
+    },
+    {
+      "relative": "assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd"
+    },
+    {
+      "relative": "assets/inventory-columns-ba0c8aa45192096f.css",
+      "sha256": "ba0c8aa45192096f53979c509733dba55a6b0bd7051eb9576a78d5ff3add2436"
+    },
+    {
+      "relative": "assets/inventory-density-03dae7d34255.css",
+      "sha256": "03dae7d34255efb97c625272233bbad7831dbe8085268184c54a1f0a04ea11ac"
+    },
+    {
+      "relative": "assets/inventory-overlay-0551f32fcd334ced.css",
+      "sha256": "0551f32fcd334ced8270979fe467e011f95095c8700cdf03da663ca4f7695f7e"
+    },
+    {
+      "relative": "assets/inventory-time-compact-ab7377762ccd.css",
+      "sha256": "ab7377762ccd427fcc1cd54c04121856198863e1e6bdb6212a3caf581f4bc72c"
+    },
+    {
+      "relative": "assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35"
+    },
+    {
+      "relative": "assets/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css",
+      "sha256": "0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24"
+    },
+    {
+      "relative": "assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7"
+    },
+    {
+      "relative": "assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "sha256": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28"
+    },
+    {
+      "relative": "assets/workbench-dropdown-db9a38c798c52dd6.css",
+      "sha256": "db9a38c798c52dd6c905db76fb7224eb36db221339db4a4dfb610b2dd3d9e96e"
+    },
+    {
+      "relative": "assets/workspace-hierarchy-e7d8dc9d788ea1bb.css",
+      "sha256": "e7d8dc9d788ea1bb9710dac406fd972067957d49b83ce2e5a901703d0547ab69"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js",
+      "sha256": "3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+      "sha256": "123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568"
+    },
+    {
+      "relative": "assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "sha256": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+      "sha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "sha256": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd"
+    },
+    {
+      "relative": "assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Staff-BH-uh95x-composition-a561e0c0343cce3c7119ee3f7a676e2e7067adbf5b7e4f517871cd4f3288c804-compact-6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388.js",
+      "sha256": "6d5cf1dc8681b1aed7ef96602ac860fab04a1792fdd0ac2de545959adcb3e388"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/input-CQXSswZV.js",
+      "sha256": "e284a25c09447511d4ed191a782b695e969e2538d1fb2333243c9b484891a699"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "sha256": "200e0a72f6e0f4565401c96c52d4964d13e9be86d81520839d7bd5b997399654"
+    }
+  ],
+  "baselineProcesses": [
+    {
+      "id": 0,
+      "name": "pm2-logrotate",
+      "pid": 1572,
+      "status": "online",
+      "script": "/root/.pm2/modules/pm2-logrotate/node_modules/pm2-logrotate/app.js",
+      "cwd": "/root/.pm2/modules/pm2-logrotate/node_modules/pm2-logrotate",
+      "execMode": "fork_mode",
+      "environmentHash": "1aec90bf4b2185183bc2d801c78689fcb774f832235307f4c16f3aedd5082ead"
+    },
+    {
+      "id": 190,
+      "name": "dianzi51",
+      "pid": 1758607,
+      "status": "online",
+      "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+      "execMode": "cluster_mode",
+      "environmentHash": "4d568170222c11138538444e668c5c7e8f21b0392d3e7fb9cb63f8a53b26e34e"
+    },
+    {
+      "id": 191,
+      "name": "dianzi51-admin",
+      "pid": 1758727,
+      "status": "online",
+      "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "cwd": "/opt/releases/20261031-wechat-chat-entry-v33/admin",
+      "execMode": "cluster_mode",
+      "environmentHash": "f8b03831197b9707c2141eec345c73c1b5cc80a2c0374ffdfa809f1126547849"
+    },
+    {
+      "id": 192,
+      "name": "dianzi51-admin",
+      "pid": 1758862,
+      "status": "online",
+      "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "cwd": "/opt/releases/20261031-wechat-chat-entry-v33/admin",
+      "execMode": "cluster_mode",
+      "environmentHash": "f8b03831197b9707c2141eec345c73c1b5cc80a2c0374ffdfa809f1126547849"
+    },
+    {
+      "id": 193,
+      "name": "dianzi51",
+      "pid": 1758635,
+      "status": "online",
+      "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+      "execMode": "cluster_mode",
+      "environmentHash": "4d568170222c11138538444e668c5c7e8f21b0392d3e7fb9cb63f8a53b26e34e"
+    },
+    {
+      "id": 194,
+      "name": "dianzi51",
+      "pid": 1758663,
+      "status": "online",
+      "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+      "execMode": "cluster_mode",
+      "environmentHash": "4d568170222c11138538444e668c5c7e8f21b0392d3e7fb9cb63f8a53b26e34e"
+    },
+    {
+      "id": 200,
+      "name": "dianzi51",
+      "pid": 1758691,
+      "status": "online",
+      "script": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "cwd": "/opt/releases/20261031-forum-quote-v34/front",
+      "execMode": "cluster_mode",
+      "environmentHash": "4d568170222c11138538444e668c5c7e8f21b0392d3e7fb9cb63f8a53b26e34e"
+    },
+    {
+      "id": 201,
+      "name": "dianzi51-inventory-import",
+      "pid": 917237,
+      "status": "online",
+      "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/inventoryImportWorker.js",
+      "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+      "execMode": "fork_mode",
+      "environmentHash": "1b64c220a321d849d3c465077331a62f45edf68a393bfb2ced2078213a22df97"
+    },
+    {
+      "id": 202,
+      "name": "dianzi51-inventory-publish",
+      "pid": 517051,
+      "status": "online",
+      "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/inventoryPublishWorker.js",
+      "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+      "execMode": "fork_mode",
+      "environmentHash": "38ff8aa680bc6dbaec060568df9aa841bd02a3d5367614d0da70fcbee8f533cb"
+    },
+    {
+      "id": 203,
+      "name": "dianzi51-refund",
+      "pid": 517102,
+      "status": "online",
+      "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/refundWorker.js",
+      "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+      "execMode": "fork_mode",
+      "environmentHash": "d6fbb581ad2f941a732603e8c6490c53faf86d79d9e377840671022a81370dab"
+    },
+    {
+      "id": 204,
+      "name": "dianzi51-chat-sync",
+      "pid": 517067,
+      "status": "online",
+      "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/chatSyncWorker.js",
+      "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+      "execMode": "fork_mode",
+      "environmentHash": "5df394e1bce3f2723cb4ec382d11f7a2aab090f64e09dbbf452dd44904b6a420"
+    },
+    {
+      "id": 205,
+      "name": "dianzi51-forum-quotes",
+      "pid": 1684200,
+      "status": "online",
+      "script": "/opt/releases/20261018-multi-enterprise-v1/web/dist/forumQuoteWorker.js",
+      "cwd": "/opt/releases/20261018-multi-enterprise-v1/web",
+      "execMode": "fork_mode",
+      "environmentHash": "a81aa4c1c2ae24cbcab8ed1227b797e8586b6f5ae88782928888bf649418c3f2"
+    }
+  ],
+  "untouchedFrontApiSha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+  "dependencies": [
+    "/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+    "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+    "/assets/DashboardLayout-profile-staff-6022861f031d078852509cb4e2c2d32ce8468cc80b10685dad94309a8bab6ac0.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/button-CJNcu3ZB.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/card-CHbeaHH4.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/input-CQXSswZV.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/label-gKwYwH3S.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/phone-BqXAsUMx.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+    "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/badge-nRLPbtbu.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/sheet-De64i5Sw.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/select-CbYk8WeG.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shared-BUxb-QlJ-composition-96cad69e7ffdcf5bf52602ae5a39e720e66b72c7d547e84d90f06ec33cc7cf81.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/officialChannelInventoryUi-Ii7908fJ.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/table-BdXs25t8.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js"
+  ],
+  "sourceHashes": {
+    "client/src/business/platform/client/src/components/customerDemands/customerDemandBom.ts": "d71d9ef81cfe471d599bd0f299fd2a990cca34b99132fb8af6a8fce746042369",
+    "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx": "8b92a082814683d4194196f7987af352b52f70623a82c46fa45a66b01f367f8e",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx": "c4355cb121b860b416b50a4d95e785b1ef0800729e385ca5cbde228c2102c726",
+    "client/src/business/platform/client/src/components/customers/customerWorkbench.ts": "e4a0920983393ed0fd2bf3362921f5f4bd8421c4b180eb3413c331dd918bdee2",
+    "client/src/business/platform/client/src/pages/ChannelInventoryHost.tsx": "3a8b44d86afbc28a89cb9bb4ed52bd35b437a69478127c0a121d4618ed131ec2",
+    "client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog.tsx": "5b0d89bcd901a420e163f2490a3568c5d941413a9052398dff7c86c5f977de69",
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx": "12082babf7cccb58b85d43f6752bbc835d8c995064b660b0a650061c181f04df",
+    "client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "d5b4ba7e984a4d252c0bc0656652b21a038bb869d215fcb1d4519c618f3dbf81",
+    "client/src/business/platform/client/src/components/customerDemands/CustomerDemandHistory.tsx": "f9ffbfa925f1d55696d9c58372cff067b0e5e4ea3ce7e21b1528af7893f05df0",
+    "client/src/business/platform/client/src/components/channelInventory/FactoryMaterialPublish.tsx": "ddc4d2274bddd5f52bbbfc6585e66977567366f6ea26e6c1920a4e572ac7dcca",
+    "client/src/business/platform/client/src/pages/CrmSalesOrders.tsx": "06d8ff185f3b7d7a8cd25b5bffb95540edeb27bdcb1b995c5277d28f460f3723",
+    "client/src/business/platform/client/src/components/customerDemands/CustomerDemandBomDialog.tsx": "c223fac6046db428df9a62693d22b30f0ab4f6560d758140e73bae61b6df97b8",
+    "client/src/business/platform/shared/customerDemands.ts": "f39b2e0761d724c5d8dfbdac73d74ba9c44df1499c718f454c958e4f4226d383",
+    "client/src/business/platform/client/src/components/channelInventory/ChannelInventoryManagementPanel.tsx": "615d2e201b379131f2e801419ab8ff947db545933859795865f55cc0bf3d6911",
+    "client/src/business/platform/client/src/components/channelInventory/management.ts": "0018c1df0576be9748efef0c3949fed79e0a9c0f458160e238f4a058e34eaf3a",
+    "client/src/business/platform/shared/channelFactoryPublication.ts": "445a1c175b3b58c93d58bcbc1b08fea6f527541ec416f4081f4895ae9817ff86",
+    "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.css": "2b24b2c9d6971a6fef4f9d9844df3ba8998ae2236411eab7234c7c6957dee667",
+    "client/src/business/platform/client/src/components/customers/customerUtils.ts": "5ca326f84097262968ff9a8cf9a06750a9438dccd8093a109a204e6e99ed619e",
+    "client/src/business/platform/shared/businessIndustry.ts": "c5b414014ca5a40af330b9c4e90ab878c90ac74aa66f908a4a4be3566656d0d3",
+    "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.tsx": "0c21a1f1e5ef641040ecc2f978e9e0e738c42e13ad31326184bb8482d92ddb2f",
+    "client/src/business/platform/client/src/components/customers/customerSupply.ts": "0ae0888553541f33015bbfbff06da85da85e2474d80385b7a1e7b8b7a8efd715",
+    "client/src/business/platform/client/src/components/customers/customerContacts.ts": "39212e5d40736347c36dce797d8815934b468daf0c1f5038775033b4fba07e74",
+    "client/src/business/platform/client/src/components/channelInventory/CollaborationNotesPanel.tsx": "d10e35166df099d587f51d5e7e11b1f28d9e0c4abf4cb8f247473616a1fbafaa",
+    "client/src/business/platform/client/src/components/channelInventory/ChannelInventorySourcePanel.tsx": "55ffbce22cd56eba80d13a0f709f0505359264aae929b16abc4ce4755f11f643",
+    "client/src/business/platform/client/src/components/customers/ConfirmDialog.tsx": "adddc08673e1554ac1d84aeb7aab1efe76bfe31fbcff68d14245ad4dbbab280e",
+    "client/src/business/platform/shared/beijingTime.ts": "f0150cfce5acb2259c647e75cde937ee20b41a1202f3fb181c80f07d8acc0820",
+    "client/src/business/platform/client/src/components/customerDemands/useDemandReadSession.ts": "a6e5d261f19c3b5a507e223048e788d7c478c79ca194eb01d30582cd89042914",
+    "client/src/business/platform/client/src/components/channelInventory/management.css": "6180ba0776bef02e9c256c349be63feeb15235246fb3340121d9dbd2b7cd9980",
+    "client/src/business/platform/client/src/pages/ProcurementDemands.css": "5682b5255e97cda0db34f99b5ce2f5e3e1ce1340150f9467cec649bfa583fb5d",
+    "client/src/lib/channelInventoryNavigation.ts": "20509a6940df5f5323f739d44f04f834e6405513fb8f0658779cc2021895001a",
+    "client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog.tsx": "a02c88ec6bb4f41539154428c6266331ca3575131f9b60ec09e56b0eef985141",
+    "client/src/business/platform/client/src/components/customerDemands/DemandQuoteList.tsx": "eb056e1093c328942aa248d149db10611eff02eb610f87a5a98ddbe6f00c5c58",
+    "client/src/business/platform/shared/customerContacts.ts": "a54fc3fa24f4400c0ea893f06d6871394da53dfc8786c7f4e21b0100c9ff3a37",
+    "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.css": "cdab24dfb95838f39ce512da3e704ee8b39b32dd01b94254eebda45c6acf3743",
+    "client/src/business/platform/shared/crmCustomers.ts": "54dc250afdda8e3890eef218374555761a32cc9eeeccff630b9913b56d62b0e0",
+    "client/src/business/platform/client/src/components/customers/CustomerDetailCompact.css": "6c8e160eee2a93b07664ced40cd85bcf7f045c0df18590f17d4ce9870e804245",
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "5f80dfa7810a3a9ef04e1c5441781a2b9125a20e21c63ce9e8f8f7bf6669fce3",
+    "client/src/business/platform/client/src/components/channelInventory/bridge.ts": "fe345e64c27887d8f517da437d07cd7ef56aa3cd217b1770d99b7b306ab73af1",
+    "client/src/business/platform/client/src/components/customers/CustomerSupplySingleEntry.tsx": "52287190ec496971d2316bbdcdaf7c028038e39d567a3a1ca900135aadba6d8f",
+    "client/src/business/platform/client/src/pages/CustomerDetailReadability.css": "73a368ebc9ae5389eaeea06a5050defcd785d26c5e76ab63b05a6584eda16c77",
+    "client/src/business/platform/client/src/pages/CrmSalesOrders.css": "974493067ba06d237ffa31644b840870ed0017405ead5b0aca13a2c3b9081058",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbench.css": "73f59b02dc6bc0ba0c9bb246dbc9b7ea4d7b19cf710d745f3b63cf712abb541d",
+    "client/src/business/platform/client/src/pages/CustomerProfileCompact.css": "15117b330a367455929d59556923061317dc3fb441b9743392f1d965c8fba343",
+    "client/src/business/platform/shared/crmSalesOrders.ts": "d0651e726042b64584871a6753a9f6e1ec42bb67a28a10458bb64de403429c78",
+    "client/src/business/platform/client/src/hooks/useSalesOrderSession.ts": "9c79be7d49488658d950bc9606c6b0df51810fcbb75f4208b7e78b38556d130f",
+    "client/src/business/platform/client/src/components/customerDemands/useDemandQuotePending.ts": "a9f8eb1e524ba822db0ab8963d175be1b67009db0259d3171aca2100b0d2c4bb",
+    "client/src/business/platform/client/src/components/customers/BeijingDateTimePicker.tsx": "cc761bdbeb5d41c82b6ae97a4abf169319306dd099fd6a6bc4f570064ede6010",
+    "client/src/business/platform/client/src/components/customerDemands/DemandPartNumberInput.tsx": "70b715f3b954317a0824de5f18f0032340c9b411aecc006f1363ade5ad0e9e5e",
+    "client/src/business/platform/client/src/components/customerDemands/DemandRevisionHistory.tsx": "5520c13c888b9ec5518c1f135ef8392b66e3470719f4d3b959e99f1e883fcddc",
+    "client/src/business/platform/client/src/components/customerDemands/ReadOnlyDemandQuotes.tsx": "c2ab120608fec79c748cfbb26a08a2ea7cc362d15cff1bac4124fa3163c6323e",
+    "client/src/business/platform/client/src/components/customerDemands/customerDemandWorkbench.ts": "5500e53763986091b287dde939b29bc86266bc975413c39845b9070af3fd725b",
+    "client/src/business/platform/client/src/components/channelInventory/layout.css": "66b647841a9cf507ed81d0141cb14b1fd2d5325ff7198bd7b14cd41324e4b6b9",
+    "client/src/business/platform/client/src/components/channelInventory/batch.css": "0170e97c95feaf3a5fcbfc04238bf5afa5145e04660f7f224571706b2f4beeea",
+    "client/src/business/platform/client/src/components/channelInventory/import.ts": "b416b0374c640bd6a445165e1bc0f214e415cfef3810065fc816f77445ea504e",
+    "client/src/business/platform/client/src/components/channelInventory/notes.css": "f883826707deba3baa45eae83e424a77228b76936a4c5f08707f597d55a207d1",
+    "client/src/business/platform/shared/customerDemandQuotes.ts": "b9ac52aeb15419ac7d3d41e7af7333554187937d2e1a4c57bc8f14da831e0542",
+    "client/src/business/platform/client/src/pages/ChannelInventoryHost.css": "b18e709179eb6e2966d2fcad3b1a3330b0c986681aa0ac25ffbfc89e0b55843b",
+    "client/src/business/platform/client/src/components/customers/useCustomerWorkbenchOrders.ts": "7faccc94b7dac81778914f4284813a2b787fbf860f117b87932c42d2140207b8",
+    "client/src/business/platform/client/src/components/customers/CustomerFields.tsx": "1b31ba3bd9a10aeb9f164490062df4fc162b8a9d38bcf47b8f3c039ddb877824",
+    "client/src/business/platform/client/src/components/customers/useCustomerNavigationGuard.ts": "47ab15dd73ec1b1e3674c3fcecd5e9c4930c9028c5ede30a2f9debe06f0ba42e",
+    "client/src/business/platform/client/src/components/customers/CustomerContactsManager.tsx": "8358a73f9730b549e557665e0871f9f1a5f4b4d653d837c2810b1db02c8256eb",
+    "client/src/business/platform/client/src/components/customers/CustomerWorkbenchContacts.tsx": "63b9ada92582ec3e6ba9ae4b921199ad78675b6eaa9cd505764e8993eec4da80",
+    "client/src/business/platform/client/src/components/channelInventory/queue.ts": "5443edad3d247f0bd99fc1d88ac7275852a6b21709e08e16f63e9d19c6727d9a",
+    "client/src/business/platform/client/src/components/channelInventory/InventoryChannelSelector.tsx": "e3928a44a74c49e600fcc7b55de89a89c5c55673d14864ee410dde3d3a540a95",
+    "client/src/business/platform/client/src/pages/channelInventoryColumns.ts": "6ff65ab7a936f20b7d9e5fd83beb05ef67d5319481e338876cd4d66a5660b689",
+    "client/src/business/platform/client/src/components/customers/CustomerContactFields.tsx": "8dc830e18846f21039bc64292c001d4410aab18ce9007d4e2a2d9c19a5d67251",
+    "client/src/components/admin/AdminWorkspaceNavigation.tsx": "f61b0f914ef06b025cb2b9664abe391b4a3bdf079f8a7a82d34e02d552792196",
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "d40cd19b1051de8fdd5af4baebc62406cfc6af17d372095be6fd56eb5e3fcfee",
+    "client/src/components/DashboardLayout.tsx": "9c1d08ffed40ff8c0d6cf1fd31fc1afdbd3c33683b4f1b0299efd4bd83d7fad2",
+    "client/src/App.tsx": "1149d301ea6afd299e92cb2c13676b3d0898384a30fdc74c080acea7f42de2bb",
+    "client/src/pages/Profile.tsx": "ccb45610c51288a0a171f03fb775761bd91761d9488af802b8e64554e1f1fcda",
+    "client/src/pages/Profile.css": "b3083f0e34d7a33af5837ae1710ab0f1b83bcc35ddc66344d13bd74ec37aadee",
+    "client/src/pages/profileModel.ts": "4b6b9e7755e36264b4ba39aac054aa93703166cfd7ceac34ab724746455abc76",
+    "server/businessRouter.ts": "ac1280c94c16e156ec7f17db466f6591af4e49dfeae8c89b10022a17b737bc60",
+    "server/db.ts": "dee3db30269c44465a54343ca4eef7bc7bac4996da7105e16b1d95d39a9620b6",
+    "server/routers.ts": "caab1312a9058ee982357d4f44c334711dbcf047e6840047eb0c4094bf849973",
+    "server/personalCenterRouter.ts": "a3076ad2958f8f51d6872c7a43baf54c18e4d61890401786118be01b4f9bc920",
+    "server/personalCenterService.ts": "0f85611c6365a4163601f1e488d4de4f3a0b78c0a218259e605bea54878c28af",
+    "client/src/business/platform/shared/personalPerformance.ts": "19a014843e8b0005810e1d58a257734768dbea8f3409c5c00728539ec281f0ef",
+    "client/src/business/platform/front-router-types/server/services/customerDemands.ts": "0051ebb34efbf060cb70447f22517339ead0f57dc6e53defe7b0ec0567e601e7",
+    "client/src/business/platform/front-router-types/server/services/internalBusinessDelegation.ts": "905be67a93633ae1aea267c799a7d7dc6c3ca0e5615e9dc90dce1b857b11e0e2",
+    "client/src/business/platform/front-router-types/server/routers.ts": "c02d118bb80a3b40aea42099b1baa67bab9f27b862560d35e71f97284b355a88",
+    "client/src/business/platform/front-router-types/server/routers/personalPerformance.ts": "966cd14095a096880c7439de718cc47c0558d4fa7f36033227b38133cc197d95",
+    "client/src/business/platform/front-router-types/server/services/personalPerformance.ts": "2e4d4fce8a20ce57b147fb3b125b8ecc78598de080b77d4249b3b2780b000ba0",
+    "client/src/pages/Staff.tsx": "fcbcee85e458b797b18e6007b2cb9f4289a4ac589c432518cd80b930c30098e0",
+    "client/src/pages/Staff.css": "fc21d27fe5385028eae76c5bb46e97254a2c89e2a35d3a94486a1c4ce3b98a14",
+    "client/src/components/admin/StaffArchiveDialog.tsx": "f947504a2aa642814b870470e444db28a45a86b69ab9286a41e3799f85981cda",
+    "client/src/components/admin/CreateStaffDialog.tsx": "4c1baf674a0c91306a9fd947477b2805778cdc4a1f8d4e73defd1166c1b8f9cc",
+    "client/src/components/admin/StaffTeamSummary.tsx": "8b046a975fc3bb562c6575f5391a360cccc0cc5276dfc4f05d08ef5331e684cc",
+    "client/src/components/admin/StaffStatusDialog.tsx": "4c68fcdda8e4be4d909e73b8c66b1db9b0c083c99f23f53efa8bbcc224f5f637",
+    "client/src/components/admin/StaffPermissionSheet.tsx": "d9ff8113c9a5ed65f2a7916b46fe3106f08cc06d82b178be55b054193c725adf",
+    "shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "client/src/lib/staffStatusUi.ts": "a6e6207156183bfcf3d3baf53b43790577c608ca74c9669d513fc2ab3fb4c7fa",
+    "client/src/lib/officialChannelInventoryUi.ts": "b3217ee38c0a1ce454a420877f74edfd41523d97787818a54d2d9050c8b27ec1",
+    "client/src/lib/staffPermissionModel.ts": "57f9cb42c83ace2c3338a20232d6815708299e0e303c1d65238a301748f5ca6c",
+    "client/src/business/platform/shared/erpPermissions.ts": "2634f6a2644d0a42ad56ce72debfb343fa9a98bb52f2f4ef2f7a226f7c4fb89d",
+    "client/src/components/admin/StaffPermissionSheet.css": "7f10c19f77a0d63f62dfab2e7f1cf225a193975cd6682e2a66c2e02ecbb012d0",
+    "client/src/components/admin/OfficialTeamPermissionSection.tsx": "5b5056e1f0f61a2349801810f8be49466399b4f66b04eda8b9efeed8cac1ca98",
+    "client/src/components/admin/OfficialTeamPermissionSection.css": "24b7f0cc4e3acc7e4c6bc3230e3eb71da2ecf83f280eb4a709dd7a66f6f3ff22",
+    "server/adminAuth.ts": "38ee5804059fb1a7518c79cfcf61653f76db0bba71764eeb7159e61ce0ded847"
+  },
+  "tscPassed": true,
+  "sourceTestFailures": 0,
+  "candidateTestsPassed": true,
+  "backendCandidateTestsPassed": true,
+  "reviewPassed": true,
+  "productionRecordWrites": 0,
+  "databaseMigrations": 0,
+  "onlyAdminOriginalProcessIds": [
+    191,
+    192
+  ],
+  "frontReloadInstances": 0
+}

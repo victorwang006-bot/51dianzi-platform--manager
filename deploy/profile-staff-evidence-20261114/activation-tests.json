@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "passed": 12,
+  "failed": 0,
+  "driverSha256": "ad0c21bca14d87ff6475083b15cf8c843d75029cae51cb96c4c08bec848216be",
+  "reloadHelperSha256": "97ce1de391fc7c6a7fd4c9addd0ac2a56a9ab73a34f8a3a0c512e2c929438406",
+  "actualNetworkIO": 0,
+  "productionRecordWrites": 0,
+  "syntheticFilesystemAndProcessFixturesOnly": true,
+  "strictAuthenticationHealthRetained": true,
+  "frontAPIAndFourFrontPIDsProtected": true,
+  "globalRestart": false
+}

@@ -1,0 +1,82 @@
+{
+  "readonly": true,
+  "productionRecordWrites": 0,
+  "table": "audit_logs",
+  "columns": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO"
+    },
+    {
+      "Field": "operatorId",
+      "Type": "int",
+      "Null": "YES"
+    },
+    {
+      "Field": "operatorName",
+      "Type": "varchar(64)",
+      "Null": "YES"
+    },
+    {
+      "Field": "operatorRole",
+      "Type": "varchar(32)",
+      "Null": "YES"
+    },
+    {
+      "Field": "action",
+      "Type": "varchar(128)",
+      "Null": "NO"
+    },
+    {
+      "Field": "module",
+      "Type": "varchar(64)",
+      "Null": "YES"
+    },
+    {
+      "Field": "targetType",
+      "Type": "varchar(64)",
+      "Null": "YES"
+    },
+    {
+      "Field": "targetId",
+      "Type": "varchar(64)",
+      "Null": "YES"
+    },
+    {
+      "Field": "beforeValue",
+      "Type": "json",
+      "Null": "YES"
+    },
+    {
+      "Field": "afterValue",
+      "Type": "json",
+      "Null": "YES"
+    },
+    {
+      "Field": "ipAddress",
+      "Type": "varchar(64)",
+      "Null": "YES"
+    },
+    {
+      "Field": "userAgent",
+      "Type": "text",
+      "Null": "YES"
+    },
+    {
+      "Field": "result",
+      "Type": "enum('success','failed','blocked')",
+      "Null": "YES"
+    },
+    {
+      "Field": "note",
+      "Type": "text",
+      "Null": "YES"
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO"
+    }
+  ]
+}
