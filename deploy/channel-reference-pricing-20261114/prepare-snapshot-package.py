@@ -576,6 +576,7 @@ def prepare(input_path):
         # immutable byte reader, never change ROOT or formal evidence fields.
         class MemoryFile:
             def __init__(self, path): self.path = path
+            def __fspath__(self): return str(self.path)
             def read_bytes(self): return memory_bytes(self.path)
         d.inside = lambda base_path, name, regular=False: MemoryFile(Path(base_path) / relative(name))
         d.verify_snapshot(manifest)
