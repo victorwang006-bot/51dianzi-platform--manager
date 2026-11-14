@@ -198,14 +198,15 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   // Promote only already parent-authorized groups. Their canonical business
   // routes and the original item objects remain untouched.
   const workspaces: { id: UnifiedWorkspaceId; workspaceId: AdminWorkspaceId; label: string; items: readonly T[]; directItem?: T }[] = [
-    ...(salesContext.entries.length ? [{ id: "sales-orders" as const, workspaceId: "business" as const,
-      label: "销售订单", items: salesContext.entries.map(entry => entry.item) }] : []),
     ...businessEntries.flatMap(entry => entry.kind === "group" && (entry.id === "inventory" || entry.id === "procurement")
       ? [{ id: (entry.id === "inventory" ? "inventory-management" : "procurement-management") as UnifiedWorkspaceId,
         workspaceId: "business" as const,
         label: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? "入库管理" : entry.label,
         items: entry.items,
-        directItem: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : []),
+        directItem: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : [])
+      .sort((left, right) => left.id === "procurement-management" ? -1 : right.id === "procurement-management" ? 1 : 0),
+    ...(salesContext.entries.length ? [{ id: "sales-orders" as const, workspaceId: "business" as const,
+      label: "销售订单", items: salesContext.entries.map(entry => entry.item) }] : []),
     ...state.workspaces.filter(workspace => workspace.id !== "business").map(workspace => ({
       ...workspace,
       workspaceId: workspace.id,

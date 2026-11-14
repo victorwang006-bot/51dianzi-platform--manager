@@ -40,7 +40,7 @@ const panels = () => host.querySelectorAll('[data-workspace-dropdown="panel"]');
 describe("20261113 已批准八项一级入口", () => {
   it("父授权项逆序不改变一级顺序，取消业务工作台且销售统一下拉", async () => {
     await render(undefined, [...items].reverse());
-    expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "sales-orders", "inventory-management", "procurement-management", "operations", "organization"]);
+    expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "procurement-management", "inventory-management", "sales-orders", "operations", "organization"]);
     expect(button("sales-orders").textContent).toBe("销售订单▾");
     expect(button("sales-orders").dataset.workspaceDropdownTrigger).toBe("sales-orders");
     expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("入库管理");
@@ -51,6 +51,14 @@ describe("20261113 已批准八项一级入口", () => {
     expect(panels()).toHaveLength(0);
     for (const path of ["/workbench/orders", "/workbench/outbound", "/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries"]) expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull();
     expect(onNavigate.mock.calls).toEqual([[items.find(item => item.path === "/workbench/inbound")]]);
+  });
+  it("保留个人中心时，四业务入口与两侧既有入口按真实授权顺序排列", async () => {
+    const profile: Item = Object.freeze({ path: "/profile", label: "个人中心", permission: "synthetic:/profile", chunk: "chunk:/profile", merchantContext: Object.freeze({ merchantId: 31, returnTo: "/orders" }) });
+    await render("/profile", [...items, profile].reverse());
+    expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "procurement-management", "inventory-management", "sales-orders", "personal", "operations", "organization"]);
+    expect(activeTargets()).toEqual(["personal"]);
+    await render("/profile", [...items, profile].filter(item => item.path !== "/workbench/procurement-orders" && item.path !== "/workbench/procurement-demands"));
+    expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "inventory-management", "sales-orders", "personal", "operations", "organization"]);
   });
   it.each([1280, 390].flatMap(width => ["customers", "inquiries"].map(target => [width, target] as const)))
     ("%s宽度%s点击同步关闭旧层并保留同一授权对象与上下文", async (width, target) => {
@@ -70,7 +78,7 @@ describe("20261113 已批准八项一级入口", () => {
       await click("inventory"); expect(onNavigate.mock.calls).toEqual([[original, "materials", "flat"]]); expect(onNavigate.mock.calls[0][0]).toBe(original);
     });
   it.each([
-    ["/workbench/customers/88?merchantId=31", "customers", ["客户列表"]],
+    ["/workbench/customers/88?merchantId=31", "customers", []],
     ["/workbench/customer-demands", "customers", ["客户列表", "客户需求"]],
     ["/workbench/orders", "sales-orders", ["销售订单", "商城订单"]],
     ["/workbench/orders?orderSource=business", "sales-orders", ["销售订单", "业务订单"]],
@@ -112,9 +120,10 @@ describe("20261113 已批准八项一级入口", () => {
     await render(inbound.path, [{ ...inbound, path: `${inbound.path}?grant=all` }]); expect(host.querySelector("nav")).toBeNull();
   });
   it("一级方向键只移焦点，销售与其他 workspace 使用同一键盘菜单", async () => {
-    await render(); await act(async () => button("inquiries").focus()); await key("inquiries", "ArrowRight"); expect(document.activeElement).toBe(button("sales-orders"));
-    await key("sales-orders", "ArrowRight"); expect(document.activeElement).toBe(button("inventory-management"));
-    await key("inventory-management", "End"); expect(document.activeElement).toBe(button("organization"));
+    await render(); await act(async () => button("inquiries").focus()); await key("inquiries", "ArrowRight"); expect(document.activeElement).toBe(button("procurement-management"));
+    await key("procurement-management", "ArrowRight"); expect(document.activeElement).toBe(button("inventory-management"));
+    await key("inventory-management", "ArrowRight"); expect(document.activeElement).toBe(button("sales-orders"));
+    await key("sales-orders", "End"); expect(document.activeElement).toBe(button("organization"));
     await key("organization", "ArrowRight"); expect(document.activeElement).toBe(button("customers"));
     await key("customers", "ArrowLeft"); expect(document.activeElement).toBe(button("organization"));
     await key("organization", "Home"); expect(document.activeElement).toBe(button("customers")); expect(onNavigate).not.toHaveBeenCalled();

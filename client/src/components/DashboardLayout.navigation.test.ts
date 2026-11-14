@@ -300,7 +300,7 @@ describe("正式后台顶部布局集成", () => {
     try {
       await withMountedLayout(async container => {
         expect(Array.from(container.querySelectorAll('[data-navigation-level="1"]')).map(node => node.getAttribute("data-workspace-nav-target")))
-          .toEqual(["customers", "inventory", "sales-orders"]);
+          .toEqual(["customers", "inventory", "sales-orders", "personal"]);
         await act(async () => container.querySelector<HTMLButtonElement>('[data-workspace-nav-target="customers"]')!.click());
         expect(runtime.setLocation.mock.calls).toEqual([["/workbench/customers?merchantId=31"]]);
         expect(container.querySelector('[data-real-content]')?.textContent).toBe("真实业务页面");

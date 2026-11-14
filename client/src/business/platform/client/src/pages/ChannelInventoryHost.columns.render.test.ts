@@ -121,12 +121,23 @@ describe("real inventory timestamp wire contract", () => {
 
 describe("inventory column preference and geometry", () => {
   it("defaults, fixed columns and normalization are bounded to this page and real actor/enterprise", () => {
-    expect(DEFAULT_CHANNEL_INVENTORY_COLUMNS).toEqual(["partNumber", "brand", "recorder", "qty", "price", "leadTime", "updatedAt", "source", "actions"]);
+    expect(DEFAULT_CHANNEL_INVENTORY_COLUMNS).toEqual(["partNumber", "brand", "recorder", "qty", "price", "refLcsc", "refIckey", "leadTime", "updatedAt", "source", "actions"]);
     expect(normalizeChannelInventoryColumns(["dateCode", "unknown", "dateCode"])).toEqual(["partNumber", "dateCode", "actions"]);
     expect(normalizeChannelInventoryColumns({ brand: false })).toEqual(DEFAULT_CHANNEL_INVENTORY_COLUMNS);
     for (const [actor, enterprise] of [[undefined, 31], [0, 31], [7, -1], [7, NaN]]) expect(channelInventoryColumnsStorageKey(actor, enterprise)).toBeNull();
     expect(channelInventoryColumnsStorageKey(7, 31)).not.toBe(channelInventoryColumnsStorageKey(8, 31));
     expect(channelInventoryColumnsStorageKey(7, 31)).not.toBe(channelInventoryColumnsStorageKey(7, 32));
+  });
+  it("migrates a v1 preference once, preserves all previous hidden columns and never reopens a later hidden reference", () => {
+    const key = required(channelInventoryColumnsStorageKey(7, 31));
+    expect(key).toContain("inventory-columns:v2:");
+    const old = key.replace("inventory-columns:v2:", "inventory-columns:v1:");
+    localStorage.setItem(old, JSON.stringify(["partNumber", "dateCode", "actions"]));
+    expect(readChannelInventoryColumns(key)).toEqual(["partNumber", "refLcsc", "refIckey", "dateCode", "actions"]);
+    expect(JSON.parse(localStorage.getItem(old)!)).toEqual(["partNumber", "dateCode", "actions"]);
+    saveChannelInventoryColumns(key, ["partNumber", "dateCode", "actions"]);
+    expect(readChannelInventoryColumns(key)).toEqual(["partNumber", "dateCode", "actions"]);
+    renderHost(); expect(headers()).toEqual(["型号", "DC", "操作"]);
   });
   it("accounts for every visible subset and the non-hideable selection width without percentages", () => {
     const optional = CHANNEL_INVENTORY_COLUMNS.filter(column => !("fixed" in column));
@@ -141,14 +152,14 @@ describe("inventory column preference and geometry", () => {
     }
   });
   it("renders defaults, synchronizes toggle/restore with cells/colgroup/empty/loading/error and keeps selection", () => {
-    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "交期", "更新时间", "渠道来源", "操作"]); assertAligned();
+    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]); assertAligned();
     click(button("显示列")); expect(option("型号").disabled).toBe(true); expect(option("操作").disabled).toBe(true);
     click(option("DC")); click(option("序号")); click(option("所属行业")); click(option("品牌")); assertAligned();
     expect(firstCell("td.ci-material-dc-col").textContent).toBe(runtime.rows[0].dateCode);
     expect(document.querySelector("td.ci-material-brand-col")).toBeNull();
     expect(document.querySelector<HTMLTableColElement>('col[data-column="partNumber"]')?.style.width).toBe("");
     expect(document.querySelector<HTMLTableColElement>('col[data-column="updatedAt"]')?.style.width).toBe("148px");
-    click(button("恢复默认")); assertAligned(); expect(headers()).toHaveLength(9);
+    click(button("恢复默认")); assertAligned(); expect(headers()).toHaveLength(11);
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
     expect(document.querySelector('[aria-label="当前页批量删除"]')?.textContent).toContain("已选 1 条");
@@ -165,13 +176,13 @@ describe("inventory column preference and geometry", () => {
     localStorage.setItem(keyC, JSON.stringify(["partNumber", "qty", "actions"]));
     const get = vi.spyOn(Storage.prototype, "getItem"), set = vi.spyOn(Storage.prototype, "setItem");
     runtime.scope.contextVerification.state = "revalidating"; renderHost();
-    expect(get).not.toHaveBeenCalled(); expect(button("显示列").disabled).toBe(true); expect(headers()).toHaveLength(9);
+    expect(get).not.toHaveBeenCalled(); expect(button("显示列").disabled).toBe(true); expect(headers()).toHaveLength(11);
     runtime.scope.contextVerification.state = "verified"; renderHost();
     expect(headers()).toEqual(["型号", "DC", "操作"]); expect(set).not.toHaveBeenCalled();
     click(button("显示列")); setIdentity(8, 31, false);
-    expect(document.querySelector(".ci-columns-popover")).toBeNull(); expect(headers()).toHaveLength(9); expect(get).not.toHaveBeenCalledWith(keyB);
+    expect(document.querySelector(".ci-columns-popover")).toBeNull(); expect(headers()).toHaveLength(11); expect(get).not.toHaveBeenCalledWith(keyB);
     runtime.enterprise.currentUserId = 8; renderHost(); expect(headers()).toEqual(["型号", "品牌", "操作"]);
-    setIdentity(8, 32, false); expect(headers()).toHaveLength(9); expect(get).not.toHaveBeenCalledWith(keyC);
+    setIdentity(8, 32, false); expect(headers()).toHaveLength(11); expect(get).not.toHaveBeenCalledWith(keyC);
     runtime.enterprise.enterprise.id = 32; renderHost(); expect(headers()).toEqual(["型号", "可供数量", "操作"]);
     click(button("显示列")); click(option("DC")); expect(set).toHaveBeenLastCalledWith(keyC, JSON.stringify(["partNumber", "qty", "dateCode", "actions"]));
     setIdentity(7, 31); expect(headers()).toEqual(["型号", "DC", "操作"]);
@@ -183,7 +194,7 @@ describe("inventory column preference and geometry", () => {
     expect(readChannelInventoryColumns(key)).toEqual(DEFAULT_CHANNEL_INVENTORY_COLUMNS); expect(() => saveChannelInventoryColumns(key, [])).not.toThrow();
     renderHost(); click(button("显示列")); click(option("DC")); expect(headers()).toContain("DC"); get.mockRestore();
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
-    click(option("品牌")); expect(headers()).not.toContain("品牌"); click(button("恢复默认")); expect(headers()).toHaveLength(9);
+    click(option("品牌")); expect(headers()).not.toContain("品牌"); click(button("恢复默认")); expect(headers()).toHaveLength(11);
   });
   it("retains full DC/model/time Portals and closes on column/scope changes without altering sort/page/batch inputs", () => {
     renderHost(); click(button("显示列")); click(option("DC"));

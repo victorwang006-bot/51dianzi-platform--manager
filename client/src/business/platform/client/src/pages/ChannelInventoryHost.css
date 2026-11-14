@@ -219,3 +219,6 @@
 .ci-inventory-advanced .ci-button { min-height: 34px; border: 1px solid #185fa5; border-radius: 6px; padding: 5px 12px; background: #185fa5; color: #fff; font: inherit; cursor: pointer; }
 .ci-inventory-advanced .ci-button:disabled { opacity: .5; cursor: not-allowed; }
 .ci-inventory-advanced :is(input, select, button):focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+
+/* Phase one: read-only reference placeholders; no fetching or loading UI. */
+.ci-page.ci-host .ci-reference-placeholder { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); white-space: nowrap; }

@@ -20,6 +20,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
 import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, type ChannelInventoryColumnId } from "./channelInventoryColumns";
+import { ChannelReferenceCell } from "./ChannelReferenceCell";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
 import "../components/channelInventory/notes.css";
@@ -1707,6 +1708,8 @@ export default function ChannelInventoryHost() {
                 {columnVisible("industry") ? <th className="ci-material-industry-col">所属行业</th> : null}
                 {columnVisible("qty") ? <th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button ci-quantity-sort-button" aria-label="按可供数量排序" aria-describedby="ci-quantity-sort-status" title={`${quantitySortLabel}；${quantitySortNext}`} onClick={() => cycleSort("qty")}>可供数量{quantitySortIcon}</button></th> : null}
                 {columnVisible("price") ? <th className="ci-material-price-col">报价 CNY</th> : null}
+                {columnVisible("refLcsc") ? <th className="ci-material-reference-col" title="立创商城公共网页参考">渠道参考一</th> : null}
+                {columnVisible("refIckey") ? <th className="ci-material-reference-col" title="云汉芯城公共网页参考">渠道参考二</th> : null}
                 {columnVisible("leadTime") ? <th className="ci-material-lead-col">交期</th> : null}
                 {columnVisible("dateCode") ? <th className="ci-material-dc-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>DC{sortArrow("dateCode")}</button></th> : null}
                 {columnVisible("updatedAt") ? <th className="ci-material-date-col" title="更新时间（北京时间）">更新时间</th> : null}
@@ -1730,6 +1733,8 @@ export default function ChannelInventoryHost() {
                     {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
                     {columnVisible("qty") ? <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td> : null}
                     {columnVisible("price") ? <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td> : null}
+                    {columnVisible("refLcsc") ? <td className="ci-material-reference-col" data-reference-source="lcsc"><ChannelReferenceCell source="lcsc" /></td> : null}
+                    {columnVisible("refIckey") ? <td className="ci-material-reference-col" data-reference-source="ickey"><ChannelReferenceCell source="ickey" /></td> : null}
                     {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
                     {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
                     {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}
