@@ -1,0 +1,162 @@
+{
+  "status": "verified",
+  "atUtc": "2026-11-14T02:30:18.823479+00:00",
+  "htmlSha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0",
+  "files": [
+    {
+      "relative": "index.html",
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js",
+      "sha256": "3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2"
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+      "sha256": "123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568"
+    },
+    {
+      "relative": "assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "sha256": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+      "sha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32"
+    },
+    {
+      "relative": "assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "sha256": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd"
+    },
+    {
+      "relative": "assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    }
+  ],
+  "backendFiles": [
+    {
+      "processName": "dianzi51-admin",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "relative": "api/admin-index.js",
+      "sha256": "d2756c5ff98b459cad79c3ff11643680c92f773ceeeb4469e88302a863369539",
+      "beforeSha256": "7c3f46be547e356fd35b853efa6cec2bed77cf23e393aa9003b646f2797eb442"
+    },
+    {
+      "processName": "dianzi51",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "relative": "api/front-index.js",
+      "sha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+      "beforeSha256": "51dd6c3116ee2e8b2cd52c10c69274f168e2c0a094485fefc38948825ac1e735"
+    }
+  ],
+  "publicAssets": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-demand-personal-0-3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2.js",
+      "status": 200,
+      "sha256": "3abd725c29e88aa312f6eaebbdd880b2cbddb343ed2576582796b6411df1dac2"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-demand-personal-1-123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568.js",
+      "status": 200,
+      "sha256": "123b91a2ce39bbe8662602f9eaf251ab595009c40b218d27b789c8c7c9120568"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-demand-personal-90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6.js",
+      "status": 200,
+      "sha256": "90cf6370a77109f418f2313b10619a7d924611c19f261684234b72e03fb5f8f6"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32.js",
+      "status": 200,
+      "sha256": "ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Profile-demand-personal-26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd.js",
+      "status": 200,
+      "sha256": "26929e3bc4a5d5955f6191797062a70a08fab3c34935b57f7865b7b1cea9febd"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "status": 200,
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/login",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/profile",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/customers",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/procurement-demands",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/channel-inventory",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=business",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/orders?orderSource=mall",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    },
+    {
+      "url": "https://admin.51dianzi.com/workbench/inquiries",
+      "status": 200,
+      "sha256": "0cb7babc8f5bcb9eaf64d51e7ae98fe25f4666bec4c323bbc538b0e54998e3b0"
+    }
+  ],
+  "unrelatedNativeBytesUnchanged": true,
+  "mallOperationsUnchanged": true,
+  "scopeAndArchiveUnchanged": true,
+  "latestGlobalOrdersBytesPreserved": true,
+  "allProtectedFilesUnchanged": true,
+  "independentWorkersUnchanged": true,
+  "apiPathsAndEnvironmentsUnchanged": true,
+  "oldAssetsUnchanged": true,
+  "backendChanges": 2,
+  "databaseOperations": 0,
+  "permissionAssignmentsChanged": 0,
+  "rollingReloadInstances": 6,
+  "globalRestart": false,
+  "startupDumpChanged": false,
+  "productionRecordWrites": 0,
+  "loggedInBrowserAcceptancePerformed": false,
+  "newProtectedApiHealth": [
+    {
+      "url": "https://www.51dianzi.com/api/trpc/personalPerformance.summary?input=%7B%22json%22%3A%7B%22month%22%3A%222026-11%22%7D%7D",
+      "status": 401,
+      "newRouteRegistered": true,
+      "anonymousAccessDenied": true,
+      "productionRecordWrites": 0
+    },
+    {
+      "url": "https://admin.51dianzi.com/api/trpc/personalCenter.profile",
+      "status": 401,
+      "newRouteRegistered": true,
+      "anonymousAccessDenied": true,
+      "productionRecordWrites": 0
+    }
+  ]
+}
