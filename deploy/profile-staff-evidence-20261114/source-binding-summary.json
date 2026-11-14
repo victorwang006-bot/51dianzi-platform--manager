@@ -1,0 +1,23 @@
+{
+  "status": "VERIFIED_GITHUB_ECS_SOURCE_MATCH",
+  "atUtc": "2026-11-14T03:45:14.345435+00:00",
+  "deployedAtUtc": "2026-11-14T03:41:35.636697+00:00",
+  "sourceCommit": "3af2b4414a313c5afa86642d1de5d6a62f85545c",
+  "sourceFiles": 100,
+  "allGitSourcePinsMatchRuntimeManifest": true,
+  "ecsSourceSnapshotHashesVerified": true,
+  "htmlSha256": "83500e995e5cdeebeba90b8cc59be93e8e45ff2dadd933e27fdb4671b154eb51",
+  "adminApiSha256": "0f2bc286a3a1d6643544cc5270c113214795de3531e66123164b296a857a8ad8",
+  "frontApiSha256": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+  "publicAssetsAndOldAssetsVerified": true,
+  "protectedFilesUnchanged": true,
+  "originalFrontPIDsAndWorkersUnchanged": true,
+  "allOnline": true,
+  "sharedReleaseActive": false,
+  "rollingReloadInstances": 2,
+  "frontReloadInstances": 0,
+  "productionRecordWrites": 0,
+  "databaseMigrations": 0,
+  "loggedInBrowserAcceptancePerformed": false,
+  "finalGitReference": "See the latest /opt/ops/20261114-profile-staff-CKSZQ7s/git-source-receipt.json; this summary records the stable source code commit, not its own self-referential documentation commit."
+}

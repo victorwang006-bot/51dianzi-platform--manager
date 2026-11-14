@@ -18,7 +18,7 @@ Staff 保留紧凑只读状态及“配置权限 | 停用/启用 | 删除”。�
 
 255 定向源码测试与非增量类型检查通过；15 前端实际候选、45 后端实际候选、12 补充原生弹窗/集成检查、12 合成发布检查、25 helper VM 检查通过。两处发布工具阻塞已真实独立复核修复；最终审查 PASS。
 
-最终 Git 文档版本的 ECS 源码快照绑定尚在进行；最后交付项保持未完成。
+100 个真实 Git 源码 blob 与 ECS source-snapshot、runtime manifest 逐项 hash 匹配。后续仅完成文档提交，不重新编译或重载；最新 Git main 的精确引用以 OPS/git-source-receipt.json 为准。
 
 ## 验证边界
 
