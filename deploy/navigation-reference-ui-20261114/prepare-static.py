@@ -246,7 +246,18 @@ def prepare(args):
     D.require(all(css[k] is True for k in ('oldPrefixByteIdentical', 'onlyReferenceSelectors', 'allOldStylesheetAssetsByteRetained')) and current[css['sourcePath']] == css['sourceSha256'] and file_map[parts['cssUrl'].lstrip('/')] == css['newCssSha256'], 'SCOPED_CSS_BINDING')
     html_check(i.payload['index-before.html'], i.payload['candidate/index.html'], evidence['html-patches.json'], reloc, parts['cssUrl'])
     dependencies = evidence['static-dependencies.json']
-    D.require(isinstance(dependencies, list) and dependencies and len(dependencies) == len(set(dependencies)) and len(dependencies) <= 512 and set(dependencies) <= {'/'+n for n in baseline_assets} | {'/'+n for n in file_map if n != 'index.html'}, 'STATIC_DEPENDENCY_SCOPE')
+    D.require(isinstance(dependencies, list) and dependencies and len(dependencies) == len(set(dependencies)) and len(dependencies) <= 512, 'STATIC_DEPENDENCY_SCOPE')
+    known = {'/'+n for n in baseline_assets} | {'/'+n for n in file_map if n != 'index.html'}
+    dependency_files = []
+    for url in dependencies:
+        D.require(isinstance(url, str) and url.startswith('/assets/'), 'STATIC_DEPENDENCY_PREFIX')
+        relative = D.safe(url.lstrip('/')).as_posix()
+        if url not in known:
+            data = i.read(D.regular(baseline_dir, relative))
+            h = D.digest(data)
+            captured = {row['capturedNativeSha256'] for row in evidence['dependency-resolution-proof.json']['checks'] if row['resolved'] == url}
+            D.require(captured == {h}, 'OLD_DEPENDENCY_CAPTURE_BINDING')
+            dependency_files.append({'relative': relative, 'sha256': h})
     for name in ('static-release.py', 'prepare-static.py'):
         i.add(name, i.read(TOOLS/name))
     for name in BUILDER_TOOLS:
@@ -254,6 +265,7 @@ def prepare(args):
     receipt = {'status': 'PREPARED_GIT_SOURCE_MATCH', 'sourceCommit': commit, 'gitCommit': commit, 'branch': 'main', 'sourceHashes': hashes, 'sourceBlobIds': blobs, 'sourceFiles': len(hashes), 'previousSourceFiles': 100, 'intentionalFrontendOverrides': sorted(k for k in intentional if k in prior_pins and hashes[k] != prior_pins[k]), 'frontendCompilerGraph': sorted(graph), 'files': files, 'htmlSha256': front['htmlSha256'], 'adminApiSha256': D.API_SHA['admin'], 'frontApiSha256': D.API_SHA['front']}
     i.add('git-source-receipt.json', D.encoded(receipt))
     manifest = {'schema': 1, 'phase': 'phase1-static-navigation-reference-ui', 'ownerTask': D.TASK, 'opsRoot': str(D.ROOT), 'publicRoot': str(D.PUBLIC), 'sourceCommit': commit, 'sourceBranch': 'main', 'beforeHtmlSha256': D.BEFORE_SHA, 'htmlSha256': front['htmlSha256'], 'files': files, 'sourceHashes': hashes, 'sourceBlobIds': blobs, 'dependencies': dependencies, 'packageHashes': {n: D.digest(data) for n, data in sorted(i.payload.items())}}
+    manifest['dependencyFiles'] = dependency_files
     i.add('manifest.json', D.encoded(manifest))
     i.unchanged()
     D.require(not args.output.exists() and not args.output.resolve().is_relative_to(REPO) and not str(args.output.resolve()).startswith('/opt/'), 'NEW_OFFLINE_OUTPUT_OUTSIDE_REPO_REQUIRED')

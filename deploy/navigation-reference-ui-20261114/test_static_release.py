@@ -103,6 +103,7 @@ class StaticRelease(unittest.TestCase):
         front.update(status='PASS', phase='ui-only', referenceFetchDisabled=True, noNewReferenceTransport=True, typeOnlyDependencies={}, files=files, sourceHashes=pins['sourceHashes'], htmlSha256=D.digest(self.after), beforeHtmlSha256=D.BEFORE_SHA, actualCandidateQA={'reportSha256': D.digest(payload['evidence/native-tests.json']), 'passed': 9, 'failed': 0})
         payload['evidence/frontend-proof.json'] = D.encoded(front)
         self.manifest = {'schema': 1, 'phase': 'phase1-static-navigation-reference-ui', 'ownerTask': D.TASK, 'opsRoot': str(self.root), 'publicRoot': str(self.public), 'sourceCommit': 'a'*40, 'sourceBranch': 'main', 'beforeHtmlSha256': D.BEFORE_SHA, 'htmlSha256': D.digest(self.after), 'files': files, 'sourceHashes': sources, 'sourceBlobIds': blobs, 'packageHashes': {k: D.digest(v) for k, v in payload.items()}}
+        self.manifest['dependencies'] = ['/assets/old-0.js']
         for name, data in payload.items():
             p = self.root/name
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -254,6 +255,24 @@ class StaticRelease(unittest.TestCase):
         for virtual, bound in [('customer-css:'+str(P.REPO/name), {}), ('customer-css:/tmp/ChannelInventoryHost.css', pins), ('customer-css:'+str(P.REPO/'server/a.css'), pins), ('customer-css:relative.css', pins)]:
             with self.assertRaises(RuntimeError):
                 P.virtual_css_source(virtual, {'bytes': 0, 'imports': []}, bound)
+
+    def test_additional_old_native_dependencies_are_only_read_and_hash_checked(self):
+        target = self.public/'assets/old-native-lazy.js'
+        target.write_bytes(b'unchanged old native module')
+        m = dict(self.manifest, dependencies=['/assets/old-native-lazy.js'], dependencyFiles=[{'relative': 'assets/old-native-lazy.js', 'sha256': D.sha(target)}])
+        self.assertEqual(D.additional_dependency_pins(m, self.baseline), {'assets/old-native-lazy.js': D.sha(target)})
+        before = target.read_bytes()
+        with patch.object(D, 'atomic', side_effect=AssertionError('dependency check cannot write')):
+            D.check_dependency_files(m)
+        self.assertEqual(target.read_bytes(), before)
+        target.write_bytes(b'foreign change')
+        with self.assertRaisesRegex(RuntimeError, 'OLD_NATIVE_DEPENDENCY_CHANGED'):
+            D.check_dependency_files(m)
+
+    def test_additional_old_dependency_must_be_in_exact_declared_asset_graph(self):
+        for m in [dict(self.manifest, dependencyFiles=[{'relative': 'assets/unrelated.js', 'sha256': '1'*64}]), dict(self.manifest, dependencies=['/assets/../api/trpc']), dict(self.manifest, dependencies=['https://search.ickey.cn/'])]:
+            with self.assertRaises(RuntimeError):
+                D.additional_dependency_pins(m, self.baseline)
 
     def test_automatic_reference_proof_cannot_be_reused(self):
         front = D.load(self.root/'evidence/frontend-proof.json')

@@ -247,6 +247,24 @@ def validate_proofs(front, qa, files):
     require(qa['passed'] == 9 and front['actualCandidateQA']['passed'] == 9 and front['actualCandidateQA']['failed'] == 0, 'NINE_ACTUAL_CANDIDATE_CHECKS')
 
 
+def additional_dependency_pins(m, baseline):
+    dependencies = m['dependencies']
+    require(isinstance(dependencies, list) and 0 < len(dependencies) <= 512 and len(dependencies) == len(set(dependencies)), 'DEPENDENCY_LIST')
+    for url in dependencies:
+        require(isinstance(url, str) and url.startswith('/assets/'), 'DEPENDENCY_ASSET_PREFIX')
+        safe(url.lstrip('/'))
+    rows = m.get('dependencyFiles', [])
+    extra = rows_map(rows, 'relative') if rows else {}
+    known = {r['relative'] for r in baseline['baselineAssets']} | {r['relative'] for r in m['files'] if r['relative'] != 'index.html'}
+    require(set(extra).isdisjoint(known) and set(dependencies) <= {'/'+r for r in known | set(extra)} and all('/'+r in dependencies for r in extra), 'DEPENDENCY_FILE_SCOPE')
+    return extra
+
+
+def check_dependency_files(m):
+    for row in m.get('dependencyFiles', []):
+        require(sha(regular(PUBLIC, row['relative'])) == row['sha256'], 'OLD_NATIVE_DEPENDENCY_CHANGED')
+
+
 def package(root, expected_sha):
     root = Path(root)
     manifest_path = regular(root, 'manifest.json')
@@ -282,6 +300,12 @@ def package(root, expected_sha):
     baseline = load(root/'baseline.json')
     validate_baseline(baseline)
     require(sha(root/'index-before.html') == BEFORE_SHA and set(assets).isdisjoint(rows_map(baseline['baselineAssets'], 'relative')), 'ADDITIVE_SCOPE')
+    extra = additional_dependency_pins(m, baseline)
+    if extra:
+        require('evidence/dependency-resolution-proof.json' in m['packageHashes'], 'OLD_DEPENDENCY_PROOF_REQUIRED')
+        dependency_proof = load(root/'evidence/dependency-resolution-proof.json')
+        for relative, h in extra.items():
+            require({r['capturedNativeSha256'] for r in dependency_proof['checks'] if r['resolved'] == '/'+relative} == {h}, 'OLD_DEPENDENCY_PROOF_SHA')
     front, qa = load(root/'evidence/frontend-proof.json'), load(root/'evidence/native-tests.json')
     require(front['actualCandidateQA']['reportSha256'] == sha(root/'evidence/native-tests.json'), 'RAW_QA_SHA')
     validate_proofs(front, qa, files)
@@ -324,6 +348,7 @@ def final_checks(root, m, b):
     for r in m['files']:
         require(sha(regular(PUBLIC, r['relative'])) == r['sha256'], 'LIVE_CANDIDATE_CHANGED')
     check_files(b)
+    check_dependency_files(m)
     rows = processes()
     validate_processes(rows)
     require(rows == b['processes'], 'ANY_PROCESS_CHANGED')
@@ -344,6 +369,7 @@ def apply(root, m, b, mh):
             require(sha(regular(PUBLIC, 'index.html')) == BEFORE_SHA, 'BASELINE_HTML_CAS')
             require(processes() == b['processes'], 'BASELINE_PROCESS_CAS')
             check_files(b)
+            check_dependency_files(m)
             require(get(HOME)[0]['sha256'] == b['homepage']['sha256'], 'HOME_BASELINE_CAS')
             for route in ROUTES:
                 require(get(ADMIN+route)[0]['sha256'] == BEFORE_SHA, 'ROUTE_BASELINE_CAS')
@@ -380,6 +406,7 @@ def apply(root, m, b, mh):
                     verify_http_asset(r['relative'], r['sha256'])
             require(owned(load(COORD), record) and sha(regular(PUBLIC, 'index.html')) == BEFORE_SHA and processes() == b['processes'], 'HTML_LAST_CAS')
             check_files(b)
+            check_dependency_files(m)
             data = regular(root/'candidate', 'index.html').read_bytes()
             require(digest(data) == m['htmlSha256'], 'CANDIDATE_HTML_CHANGED')
             atomic(PUBLIC/'index.html', data)
