@@ -6,7 +6,9 @@ import { createPortal } from "react-dom";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../front-router-types/server/routers";
 import { formatBeijingDateTime, formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
-import { trpc } from "../../../../api/business-trpc";
+import { createBusinessScopeTrpcClient, trpc } from "../../../../api/business-trpc";
+import type { ChannelReferenceRow } from "@shared/channelReference";
+import { startChannelReferenceLookup } from "./channelReferenceModel";
 import { useBusinessScope } from "../../../../BusinessScope";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
 import { CollaborationNotesPanel } from "../components/channelInventory/CollaborationNotesPanel";
@@ -1300,6 +1302,56 @@ export default function ChannelInventoryHost() {
   const displayedChannels = supplyLink ? exactReady && exactTarget ? [exactTarget] : [] : channelResult?.items ?? [];
   const displayedChannelTotal = supplyLink ? displayedChannels.length : channelResult?.total ?? 0;
   const materialRows = materialResult?.items ?? [];
+  // Only the current, settled native page can authorize public reference work.
+  // Wait for scoped preferences too: hidden saved columns must never start IO.
+  const referencesShown = columnVisible("refLcsc") || columnVisible("refIckey");
+  const referenceRows = materialRows.map(row => ({ id: row.id, partNumber: row.partNumber, brand: row.brand }));
+  const referenceAllowed = ready && nativeRead && sourceContextVerified && sourceIdentityCurrent && contextCurrent
+    && columnsContextVerified && columnPreference.key === columnsKey && referencesShown
+    && !enterpriseQuery.isLoading && !enterpriseQuery.isFetching && !enterpriseQuery.isError
+    && tab === "materials" && !browsingChannelsOnly && Boolean(materialResult)
+    && tabSearchRef.current === search && (!readChannelInventoryTabIntent(search) || readChannelInventoryTabIntent(search) === tab)
+    && !materialsQuery.isLoading && !materialsQuery.isFetching && !materialsQuery.isPlaceholderData && !materialsQuery.isError
+    && materialResult?.page === materialInput.page && materialResult?.pageSize === PAGE_SIZE
+    && Number.isSafeInteger(businessScope.merchantId) && businessScope.merchantId > 0
+    && referenceRows.length > 0 && referenceRows.length <= PAGE_SIZE
+    && referenceRows.every(row => Number.isSafeInteger(row.id) && row.id > 0)
+    && new Set(referenceRows.map(row => row.id)).size === referenceRows.length;
+  const referenceKey = referenceAllowed ? JSON.stringify({
+    identity, authority: sourceAuthorityKey, merchantId: businessScope.merchantId,
+    tab, view: inventoryView, search, page: materialPage, filters: materialFilters, order: materialSort,
+    listInput: materialInput, rows: referenceRows, columnsShown: visibleColumns,
+  }) : "";
+  const referenceRunKey = referenceKey ? JSON.stringify([referenceKey, 0]) : "";
+  const referenceCurrentRef = useRef(referenceRunKey);
+  referenceCurrentRef.current = referenceRunKey;
+  const referencePendingRef = useRef(false);
+  const [referenceState, setReferenceState] = useState<{ key: string; items: ChannelReferenceRow[]; busy: boolean }>({ key: "", items: [], busy: false });
+  const currentReferences = new Map((referenceAllowed && referenceState.key === referenceRunKey ? referenceState.items : []).map(row => [row.materialId, row.references]));
+  useEffect(() => {
+    referencePendingRef.current = false;
+    setReferenceState({ key: referenceRunKey, items: [], busy: Boolean(referenceRunKey) });
+    if (!referenceRunKey) return;
+    // This BFF-only client is deliberately separate from the front-domain trpc/utils.
+    const referenceClient = createBusinessScopeTrpcClient(businessScope.merchantId);
+    const current = () => referenceCurrentRef.current === referenceRunKey;
+    const cancel = startChannelReferenceLookup({
+      rows: referenceRows, refresh: false, isCurrent: current,
+      lookup: (refresh, signal) => referenceClient.channelReference.lookup.query({
+        listInput: materialInput, materialIds: referenceRows.map(row => row.id), refresh,
+      }, { signal }),
+      onData: result => setReferenceState(state => ({ ...state, key: referenceRunKey, items: result.items })),
+      onBusy: busy => { referencePendingRef.current = busy; setReferenceState(state => ({ ...state, key: referenceRunKey, busy })); },
+      onError: error => {
+        referencePendingRef.current = false;
+        setReferenceState({ key: referenceRunKey, items: [], busy: false });
+        businessScope.onAuthorizationError(error);
+      },
+      onStopped: () => { referencePendingRef.current = false; },
+    });
+    return () => { cancel(); referencePendingRef.current = false; };
+    // The serialized boundary contains every captured request/identity/row/column input.
+  }, [referenceRunKey]);
   // Row hints and list refresh snapshots are never authorization or a reason to
   // destroy an independently reauthorized source dialog.
   const sourceScopeKey = JSON.stringify({
@@ -1733,8 +1785,8 @@ export default function ChannelInventoryHost() {
                     {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
                     {columnVisible("qty") ? <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td> : null}
                     {columnVisible("price") ? <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td> : null}
-                    {columnVisible("refLcsc") ? <td className="ci-material-reference-col" data-reference-source="lcsc"><ChannelReferenceCell source="lcsc" /></td> : null}
-                    {columnVisible("refIckey") ? <td className="ci-material-reference-col" data-reference-source="ickey"><ChannelReferenceCell source="ickey" /></td> : null}
+                    {columnVisible("refLcsc") ? <td className="ci-material-reference-col" data-reference-source="lcsc"><ChannelReferenceCell key={referenceRunKey} source="lcsc" quote={currentReferences.get(material.id)?.lcsc} /></td> : null}
+                    {columnVisible("refIckey") ? <td className="ci-material-reference-col" data-reference-source="ickey"><ChannelReferenceCell key={referenceRunKey} source="ickey" quote={currentReferences.get(material.id)?.ickey} /></td> : null}
                     {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
                     {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
                     {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}

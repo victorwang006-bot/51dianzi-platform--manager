@@ -54,6 +54,7 @@ import { customerStarContextInputSchema, customerSetStarSchema, customerStarStat
 import { customerListInputSchema as customerListSchema } from "../client/src/business/platform/front-router-types/server/customerListInput";
 import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/business/platform/shared/channelInventoryManagement";
 import { channelInventoryListBusinessInputSchema } from "./channelInventoryListBusinessInput";
+import { createChannelReferenceRouter, channelReferenceMaterialIdsSchema, type ApprovedChannelReferenceMaterial } from "./channelReferenceRouter";
 import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInputSchema, previewFactoryMaterialReceptionResultSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
@@ -505,6 +506,87 @@ async function forwardBusinessMethod(
   });
 }
 
+// Parse only the attested page/identity fields we need; private DTO fields never
+// reach the webpage service. A genuine missing identity is the explicit empty
+// string, not a guessed brand/model or the literal string "null".
+const channelReferenceApprovedPageSchema = z.object({
+  items: z.array(z.object({
+    id: z.number().int().safe().positive(),
+    partNumber: z.string().max(128).refine(value => !/[\u0000-\u001f\u007f]/.test(value)).nullable().transform(value => value?.trim() ?? ""),
+    brand: z.string().max(64).refine(value => !/[\u0000-\u001f\u007f]/.test(value)).nullable().transform(value => value?.trim() ?? ""),
+    canViewSource: z.boolean(),
+    company: z.object({ id: z.number().int().safe().positive() }).nullable().optional(),
+  })).max(100),
+  total: z.number().int().safe().nonnegative(),
+  page: z.number().int().safe().positive(),
+  pageSize: z.number().int().safe().min(1).max(100),
+  pageCount: z.number().int().safe().nonnegative(),
+  customerId: z.number().int().safe().positive().optional(),
+  bindingCount: z.number().int().safe().nonnegative().optional(),
+});
+
+/** Fixed list read only: no recorder-name SELECT, extra sample or command-audit
+ * DML. Uses the SAME current merchant/staff/native official/customer chain as
+ * the original list; the caller must await its lock release before webpage IO. */
+export async function readApprovedChannelReferenceMaterials(
+  ctx: TrpcContext,
+  listInput: z.output<typeof channelInventoryListBusinessInputSchema>,
+  materialIds: number[],
+): Promise<ApprovedChannelReferenceMaterial[]> {
+  const params = channelInventoryListBusinessInputSchema.parse(listInput);
+  const requestedIds = channelReferenceMaterialIdsSchema.parse(materialIds);
+  const merchantId = businessMerchantIdFromContext(ctx);
+  const customerInventory = params.customerId !== undefined;
+  return withCurrentBusinessAuthorization(ctx, merchantId,
+    { method: "channelInventory.listTeamMaterials", module: "inventory", mode: "read", customerInventory },
+    async ({ staffBinding, scope, merchant, officialInventoryPermissions }) => {
+      const binding = businessEnterpriseBindingFromMerchant(merchant);
+      const actor = businessAuditActor(ctx);
+      let result: unknown;
+      try {
+        result = await callPlatformBusinessCommand({
+          binding, staffUserId: staffBinding.frontUserId, bindingVersion: staffBinding.bindingVersion,
+          adminActor: { id: actor.operatorId, name: actor.operatorName, role: actor.operatorRole },
+          requestId: randomUUID(), method: "channelInventory.listTeamMaterials", params,
+          officialInventoryPermissions: officialInventoryPermissions ? { ...officialInventoryPermissions,
+            write: officialInventoryPermissions.write && businessScopeAllows(scope, "inventory", "write"),
+            publish: officialInventoryPermissions.publish === true && businessScopeAllows(scope, "inventory", "write") } : undefined,
+        });
+      } catch (error) {
+        if (error instanceof PlatformBusinessPublicError) {
+          throw new TRPCError({ code: error.code, message: error.message, cause: error });
+        }
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "库存读取授权核验暂时不可用，请稍后重试" });
+      }
+      const parsed = channelReferenceApprovedPageSchema.safeParse(result);
+      if (!parsed.success) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "库存列表结果无效，请刷新后重试" });
+      const proof = parsed.data;
+      if (proof.page !== params.page || proof.pageSize !== params.pageSize || proof.items.length > params.pageSize
+        || proof.pageCount !== Math.ceil(proof.total / params.pageSize)
+        || proof.items.length > Math.max(0, proof.total - (params.page - 1) * params.pageSize)
+        || new Set(proof.items.map(item => item.id)).size !== proof.items.length) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "库存当前页范围未能确认，请刷新后重试" });
+      }
+      // Repeat every existing customer proof check. Native official read MUST
+      // NOT bypass the local inventory + CRM scope intersection in this mode.
+      if (customerInventory && (proof.customerId !== params.customerId || proof.bindingCount === undefined
+        || (proof.bindingCount === 0 && (proof.items.length !== 0 || proof.total !== 0))
+        || proof.items.some(item => item.canViewSource !== true || (item.company != null && item.company.id !== proof.customerId)))) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "客户库存范围未能确认，请刷新后重试" });
+      }
+      const currentRows = new Map(proof.items.map(item => [item.id, item]));
+      // Reject the WHOLE request, including mixed allowed+injected IDs. Do not
+      // fetch getMaterial/source, expand pageSize, or consult a client cache.
+      if (requestedIds.some(id => !currentRows.has(id))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "库存行不在当前可读页面内，请刷新后重试" });
+      }
+      return requestedIds.map(materialId => {
+        const item = currentRows.get(materialId)!;
+        return { materialId, partNumber: item.partNumber, brand: item.brand };
+      });
+    });
+}
+
 /** Fixed mirrored DTOs for the only added customer-contact BFF methods. */
 const CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "customer.createMulti": createMultiSchema,
@@ -930,6 +1012,8 @@ const cartBusinessRouter = router({
   count: businessQuery("cart.count", "inventory"),
 });
 
+const channelReferenceBusinessRouter = createChannelReferenceRouter(readApprovedChannelReferenceMaterials);
+
 const staffBindingsRouter = router({
   current: publicProcedure
     .input(z.object({ adminUserId: z.number().int().positive().optional() }).optional())
@@ -1216,6 +1300,7 @@ export const businessRouter = router({
   merchantScopes: merchantScopesRouter,
   inventory: inventoryBusinessRouter,
   channelInventory: channelInventoryBusinessRouter,
+  channelReference: channelReferenceBusinessRouter,
   importInventory: importInventoryBusinessRouter,
   inbound: inboundBusinessRouter,
   customer: customerBusinessRouter,
