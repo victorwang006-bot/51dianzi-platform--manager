@@ -2,8 +2,8 @@
   "ownerTask": "CKSZQ7sVc7tADM21c3LWpu",
   "scope": "compact two-tab personal center, native security dialogs, workspace order swap; guarded/audited native admin status toggle only",
   "sourceBaseCommit": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
-  "preparedAtSourceCommit": "5abd9a35cc4ff53d008f49bff88f54a1f47c1d0c",
-  "preparedAtUtc": "2026-11-14T03:40:02.868942+00:00",
+  "preparedAtSourceCommit": "3af2b4414a313c5afa86642d1de5d6a62f85545c",
+  "preparedAtUtc": "2026-11-14T03:40:16.758417+00:00",
   "files": [
     {
       "relative": "index.html",
