@@ -223,6 +223,18 @@
 /* Phase one: read-only reference placeholders; no fetching or loading UI. */
 .ci-page.ci-host .ci-reference-placeholder { color: #64748b; font-size: var(--admin-content-font-caption, 11px); line-height: var(--admin-content-caption-line-height, 16px); white-space: nowrap; }
 
+/* Reference-only evidence controls do not reserve additional table width. */
+.ci-page.ci-host .ci-reference-context { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-width: 0; max-width: 100%; margin: 0 0 6px; color: #64748b; font-size: 11px; }
+.ci-page.ci-host .ci-reference-context > span { min-width: 0; overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-reference-evidence-entry { display: block; height: 18px; margin-top: 1px; }
+.ci-page.ci-host .ci-reference-evidence-button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 18px; padding: 0; border: 0; border-radius: 3px; color: #64748b; background: transparent; cursor: pointer; }
+.ci-page.ci-host .ci-reference-evidence-button:hover { color: #185fa5; background: #eef6ff; }
+.ci-reference-evidence-popover { z-index: 80; box-sizing: border-box; width: 320px; max-width: calc(100vw - 16px); max-height: var(--radix-popover-content-available-height); overflow-y: auto; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #334155; font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12px; line-height: 18px; box-shadow: 0 6px 20px rgb(35 53 72 / .15); }
+.ci-reference-evidence-popover p { margin: 6px 0 0; }
+.ci-reference-evidence-popover a { color: #185fa5; text-decoration: underline; }
+.ci-reference-evidence-popover a:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+.ci-reference-evidence-hash { overflow-wrap: anywhere; font-size: 11px; }
+
 /* Flat inventory only: contain intrinsic table widths through the flex ancestor chain.
  * Do not add a scrollbar's pixel width to a viewport/inline max-width. */
 .admin-workspace-shell__main:has(.ci-flat-host),

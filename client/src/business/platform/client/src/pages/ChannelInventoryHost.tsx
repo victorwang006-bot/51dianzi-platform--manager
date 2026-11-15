@@ -8,7 +8,8 @@ import type { AppRouter } from "../../../front-router-types/server/routers";
 import { formatBeijingDateTime, formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
 import { createBusinessScopeTrpcClient, trpc } from "../../../../api/business-trpc";
 import type { ChannelReferenceRow } from "@shared/channelReference";
-import { startChannelReferenceLookup } from "./channelReferenceModel";
+import type { ChannelReferenceRefreshDiagnostic } from "@shared/channelReferenceRefresh";
+import { startChannelReferenceRefresh, channelReferenceRefreshMessage, ChannelReferenceBindingError } from "./ChannelInventoryHost.referenceRefresh";
 import { useBusinessScope } from "../../../../BusinessScope";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
 import { CollaborationNotesPanel } from "../components/channelInventory/CollaborationNotesPanel";
@@ -1398,30 +1399,56 @@ export default function ChannelInventoryHost() {
   const referenceCurrentRef = useRef(referenceRunKey);
   referenceCurrentRef.current = referenceRunKey;
   const referencePendingRef = useRef(false);
-  const [referenceState, setReferenceState] = useState<{ key: string; items: ChannelReferenceRow[]; busy: boolean }>({ key: "", items: [], busy: false });
+  const referenceCancelRef = useRef<(() => void) | null>(null);
+  const referenceLatestItemsRef = useRef<{ key: string; items: ChannelReferenceRow[] }>({ key: "", items: [] });
+  if (referenceLatestItemsRef.current.key !== referenceRunKey) referenceLatestItemsRef.current = { key: referenceRunKey, items: [] };
+  const [referenceState, setReferenceState] = useState<{ key: string; items: ChannelReferenceRow[]; diagnostics: ChannelReferenceRefreshDiagnostic[]; busy: boolean; message: string }>({ key: "", items: [], diagnostics: [], busy: false, message: "" });
   const currentReferences = new Map((referenceAllowed && referenceState.key === referenceRunKey ? referenceState.items : []).map(row => [row.materialId, row.references]));
-  useEffect(() => {
-    referencePendingRef.current = false;
-    setReferenceState({ key: referenceRunKey, items: [], busy: Boolean(referenceRunKey) });
-    if (!referenceRunKey) return;
+  const currentDiagnostics = new Map((referenceAllowed && referenceState.key === referenceRunKey ? referenceState.diagnostics : []).map(d => [`${d.materialId}:${d.source}`, d]));
+  const runReferenceLookup = (manual: boolean) => {
+    if (!referenceRunKey || referenceCurrentRef.current !== referenceRunKey || !referenceAllowed) return;
+    referenceCancelRef.current?.();
+    referencePendingRef.current = true;
+    setReferenceState(state => ({ key: referenceRunKey, items: manual && state.key === referenceRunKey ? state.items : [], diagnostics: [], busy: true, message: manual ? "正在重查当前页未匹配来源" : "正在读取保存记录" }));
     // This BFF-only client is deliberately separate from the front-domain trpc/utils.
     const referenceClient = createBusinessScopeTrpcClient(businessScope.merchantId);
     const current = () => referenceCurrentRef.current === referenceRunKey;
-    const cancel = startChannelReferenceLookup({
-      rows: referenceRows, refresh: false, isCurrent: current,
+    referenceCancelRef.current = startChannelReferenceRefresh({
+      rows: referenceRows, refresh: manual, isCurrent: current,
+      previousItems: manual ? referenceLatestItemsRef.current.items : [],
       lookup: (refresh, signal) => referenceClient.channelReference.lookup.query({
         listInput: materialInput, materialIds: referenceRows.map(row => row.id), refresh,
       }, { signal }),
-      onData: result => setReferenceState(state => ({ ...state, key: referenceRunKey, items: result.items })),
+      onData: result => {
+        referenceLatestItemsRef.current = { key: referenceRunKey, items: result.items };
+        setReferenceState(state => ({ ...state, key: referenceRunKey, items: result.items, diagnostics: result.refreshDiagnostics ?? [], message: channelReferenceRefreshMessage(result, manual) }));
+      },
       onBusy: busy => { referencePendingRef.current = busy; setReferenceState(state => ({ ...state, key: referenceRunKey, busy })); },
       onError: error => {
         referencePendingRef.current = false;
-        setReferenceState({ key: referenceRunKey, items: [], busy: false });
+        const invalid = error instanceof ChannelReferenceBindingError || ["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "PRECONDITION_FAILED"].includes(errorCode(error));
+        if (invalid) referenceLatestItemsRef.current = { key: referenceRunKey, items: [] };
+        setReferenceState(state => ({ ...state, key: referenceRunKey, items: invalid ? [] : state.items, diagnostics: [], busy: false,
+          message: invalid ? "当前授权或参考响应核验失败，已清除参考记录" : manual ? "未确认重查完成：参考请求失败，请稍后重试" : "保存参考记录读取失败" }));
         businessScope.onAuthorizationError(error);
       },
-      onStopped: () => { referencePendingRef.current = false; },
+      onStopped: () => {
+        referencePendingRef.current = false;
+        setReferenceState(state => ({ ...state, busy: false, message: manual ? "未确认重查完成：已达到90秒，已停止等待" : "保存参考记录读取超时，已停止等待" }));
+      },
     });
-    return () => { cancel(); referencePendingRef.current = false; };
+  };
+  const recheckUnmatchedReferences = () => {
+    if (!referenceAllowed || referencePendingRef.current || referenceCurrentRef.current !== referenceRunKey) return;
+    // The ref lock is taken synchronously before any promise or React render.
+    referencePendingRef.current = true;
+    runReferenceLookup(true);
+  };
+  useEffect(() => {
+    referencePendingRef.current = false;
+    setReferenceState({ key: referenceRunKey, items: [], diagnostics: [], busy: Boolean(referenceRunKey), message: "" });
+    if (referenceRunKey) runReferenceLookup(false);
+    return () => { referenceCancelRef.current?.(); referenceCancelRef.current = null; referencePendingRef.current = false; };
     // The serialized boundary contains every captured request/identity/row/column input.
   }, [referenceRunKey]);
   // Row hints and list refresh snapshots are never authorization or a reason to
@@ -1817,6 +1844,10 @@ export default function ChannelInventoryHost() {
           {!uploadBatchFilterValid ? <p className="ci-error" role="alert">上传批次 ID 须为正整数，未扩大展示其他库存。</p> : null}
           {readableChannelStockDenied ? <p className="ci-error" role="alert">当前渠道库存来源读取失败或权限已改变，未展示其他渠道库存。请返回渠道列表重新核验。</p> : null}
           {showDeleteSelection && deletion.selected.length ? <div className="ci-toolbar ci-selection-toolbar" role="group" aria-label="当前页批量删除"><span>已选 {deletion.selected.length} 条</span><button type="button" className="ci-button ci-danger-link" disabled={deletion.busy} onClick={() => deletion.requestDelete()}>批量删除</button><span className="ci-readonly">仅当前页，不跨页选择</span></div> : null}{deletion.feedback}
+          {referencesShown ? <div className="ci-reference-context" aria-label="当前页渠道参考" aria-busy={referenceAllowed && referenceState.key === referenceRunKey && referenceState.busy}>
+            <button type="button" className="ci-inline-link" disabled={!referenceAllowed || referenceState.key !== referenceRunKey || referenceState.busy} onClick={recheckUnmatchedReferences}>重查未匹配</button>
+            <span role="status" aria-live="polite">{referenceAllowed && referenceState.key === referenceRunKey ? referenceState.message || "保存记录（非实时）" : "当前页尚未完成权限核验，未发起重查"}</span>
+          </div> : null}
           <div className="ci-tablewrap ci-compact-tablewrap">
             <table className={`ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable${showDeleteSelection ? " ci-stock-managed-table" : ""}`} style={{ "--ci-stock-min-width": `${columnLayout.minWidth}px` } as React.CSSProperties}>
               <colgroup>
@@ -1857,8 +1888,8 @@ export default function ChannelInventoryHost() {
                     {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
                     {columnVisible("qty") ? <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td> : null}
                     {columnVisible("price") ? <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td> : null}
-                    {columnVisible("refLcsc") ? <td className="ci-material-reference-col" data-reference-source="lcsc"><ChannelReferenceCell key={referenceRunKey} source="lcsc" quote={currentReferences.get(material.id)?.lcsc} /></td> : null}
-                    {columnVisible("refIckey") ? <td className="ci-material-reference-col" data-reference-source="ickey"><ChannelReferenceCell key={referenceRunKey} source="ickey" quote={currentReferences.get(material.id)?.ickey} /></td> : null}
+                    {columnVisible("refLcsc") ? <td className="ci-material-reference-col" data-reference-source="lcsc"><ChannelReferenceCell key={referenceRunKey} source="lcsc" partNumber={material.partNumber} quote={currentReferences.get(material.id)?.lcsc} diagnostic={currentDiagnostics.get(`${material.id}:lcsc`)} /></td> : null}
+                    {columnVisible("refIckey") ? <td className="ci-material-reference-col" data-reference-source="ickey"><ChannelReferenceCell key={referenceRunKey} source="ickey" partNumber={material.partNumber} quote={currentReferences.get(material.id)?.ickey} diagnostic={currentDiagnostics.get(`${material.id}:ickey`)} /></td> : null}
                     {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
                     {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
                     {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}

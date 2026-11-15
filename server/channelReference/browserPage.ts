@@ -13,7 +13,7 @@ export { waitReferenceRequestPermit } from "./requestPacing";
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
 export type PublicRenderedPage = { html: string; url: string };
-export async function readPublicReferencePage(source: ChannelReferenceSource, url: string, binary = fileURLToPath(new URL("./browser/chrome-headless-shell-linux64/chrome-headless-shell", import.meta.url)), diagnose?: (event: { stage: string; host?: string; type?: string; status?: number; code?: string }) => void): Promise<PublicRenderedPage> {
+export async function readPublicReferencePage(source: ChannelReferenceSource, url: string, binary = fileURLToPath(new URL("./browser/chrome-headless-shell-linux64/chrome-headless-shell", import.meta.url)), diagnose?: (event: { stage: string; host?: string; type?: string; status?: number; code?: string }) => void, settle?: (page: PublicRenderedPage) => "quote" | "settled" | false): Promise<PublicRenderedPage> {
   const trace = (event: Parameters<NonNullable<typeof diagnose>>[0]) => { try { diagnose?.(event); } catch {} };
   await assertReferenceRobots(source, url);
   const deadline = Date.now() + 55_000;
@@ -65,6 +65,9 @@ export async function readPublicReferencePage(source: ChannelReferenceSource, ur
     ws = new WebSocket(endpoint);
     await new Promise<void>((resolve, reject) => { const timer = setTimeout(() => reject(new Error("Browser connection timeout")), 5_000); ws!.addEventListener("open", () => { clearTimeout(timer); resolve(); }, { once: true }); ws!.addEventListener("error", () => { clearTimeout(timer); reject(new Error("Browser connection failed")); }, { once: true }); });
     let session = "", mainTargetId = "", userAgent = "", domReady = false;
+    let retainedQuote: PublicRenderedPage | null = null;
+    const publicDocuments = new Map<string, string>();
+    const settlePage = (page: PublicRenderedPage) => { try { return settle?.(page) ?? false; } catch { return false; } };
     const sessions = new Map<string, Promise<void>>();
     const targetSessions = new Map<string, string>();
     let resolveMainSession!: (sessionId: string) => void;
@@ -122,6 +125,23 @@ export async function readPublicReferencePage(source: ChannelReferenceSource, ur
       if (message.method === "Page.domContentEventFired" && message.sessionId === session) { domReady = true; trace({ stage: "dom-ready" }); }
       if (message.method === "Network.responseReceived") trace({ stage: "response", type: message.params?.type, status: message.params?.response?.status });
       if (message.method === "Network.loadingFailed") trace({ stage: "loading-failed", type: message.params?.type, code: message.params?.errorText });
+      if (settle && message.method === "Network.responseReceived" && message.sessionId === session && message.params?.type === "Document" && message.params?.response?.status === 200 && typeof message.params?.requestId === "string" && message.params.response.url === url && allowedReferencePageUrl(source, message.params.response.url)) {
+        publicDocuments.set(message.params.requestId, message.params.response.url);
+      }
+      if (settle && message.method === "Network.loadingFinished" && message.sessionId === session && publicDocuments.has(message.params?.requestId)) {
+        const requestId = message.params.requestId, documentUrl = publicDocuments.get(requestId)!;
+        publicDocuments.delete(requestId);
+        // This is the already-fetched public Document body, not a new GET/API.
+        // Retain only parser-confirmed exact positive rows; still wait normally
+        // for DOM, and a later challenge overrides all retained evidence.
+        void command("Network.getResponseBody", { requestId }, session).then(body => {
+          if (closed || typeof body.body !== "string") return;
+          const html = body.base64Encoded ? Buffer.from(body.body, "base64").toString("utf8") : body.body;
+          if (Buffer.byteLength(html) > MAX_REFERENCE_HTML_BYTES) return;
+          const page = { html, url: documentUrl };
+          if (settlePage(page) === "quote") retainedQuote = page;
+        }).catch(() => {});
+      }
       if (message.method === "Network.responseReceived" && [203, 401, 403, 429].includes(message.params.response.status)) {
         try {
           if (allowedReferenceResourceHost(source, new URL(message.params.response.url).hostname)) {
@@ -167,15 +187,20 @@ export async function readPublicReferencePage(source: ChannelReferenceSource, ur
       // Synchronous page scripts can block evaluation while their ordinary
       // resources are paced. Wait for parsing instead of timing them out early.
       if (!domReady) continue;
-      const value = await command("Runtime.evaluate", { expression: "JSON.stringify({html:document.documentElement.outerHTML,url:location.href,ready:document.readyState,text:document.body?.innerText||''})", returnByValue: true }, session);
+      let value;
+      try { value = await command("Runtime.evaluate", { expression: "JSON.stringify({html:document.documentElement.outerHTML,url:location.href,ready:document.readyState,text:document.body?.innerText||''})", returnByValue: true }, session); }
+      catch (error) { if (violation) throw violation; if (!settle || closed) throw error; continue; }
       if (typeof value.result?.value !== "string") continue;
       result = JSON.parse(value.result.value);
       if (!result || Buffer.byteLength(result.html) > MAX_REFERENCE_HTML_BYTES) throw new Error("Webpage too large");
       if (!allowedReferencePageUrl(source, result.url)) throw new PublicPageRestrictedError("Public webpage redirect denied");
       if (/验证码|访问过于频繁|安全验证|访问受限|人机验证|captcha|challenge validation/i.test(result.text)) throw new PublicPageRestrictedError("Public webpage access restricted");
-      if (result.ready === "complete" && (/\d+\+\s*[¥￥]/.test(result.text) || /[¥￥]\s*\d+\.\d+/.test(result.text) || /未找到.+相关商品|没有找到|自营结果数\s*0/.test(result.text))) break;
+      const settled = settlePage(result);
+      if (settled === "quote") retainedQuote = { html: result.html, url: result.url };
+      if (result.ready === "complete" && (settle ? settled !== false : (/\d+\+\s*[¥￥]/.test(result.text) || /[¥￥]\s*\d+\.\d+/.test(result.text) || /未找到.+相关商品|没有找到|自营结果数\s*0/.test(result.text)))) break;
     }
     if (violation) throw violation;
+    if (retainedQuote && !closed) return retainedQuote;
     if (!result || closed) throw new Error("Public webpage deadline");
     return { html: result.html, url: result.url };
   } catch (error) {

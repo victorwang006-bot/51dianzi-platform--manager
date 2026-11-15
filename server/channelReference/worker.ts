@@ -1,8 +1,11 @@
+import { createHash } from "node:crypto";
 import type { ChannelReferenceQuote, ChannelReferenceSource } from "../../shared/channelReference";
 import { parseLcscSearchPage } from "./lcscSearchPage";
 import { parseIckeySearchPage } from "./ickeyPage";
 import { referenceSearchUrl, allowedReferencePageUrl, PublicPageRestrictedError } from "./publicPage";
 import { readPublicReferencePage } from "./browserPage";
+import { validCachedReference } from "./quoteValidation";
+import type { PublicReferenceEvidence } from "./nativeWorker";
 
 export function emptyReferenceQuote(source: ChannelReferenceSource, status: ChannelReferenceQuote["status"] = "pending"): ChannelReferenceQuote {
   return { source, status, matchedPartNumber: null, matchedBrand: null, productCode: null, pageUrl: null, stockQuantity: null, unitPrice: null, tierQuantity: null, tiers: [], currency: null, unit: null, taxStatus: "unknown", packaging: null, fetchedAt: null, expiresAt: null, stockInsufficientForTier: false, message: null };
@@ -27,16 +30,27 @@ export function parseReferenceQuote(source: ChannelReferenceSource, html: string
   } else quote.status = "price_unavailable";
   return quote;
 }
-export async function fetchPublicReferenceQuote(source: ChannelReferenceSource, expected: { partNumber: string; brand: string }): Promise<ChannelReferenceQuote> {
+export async function fetchPublicReferenceEvidence(source: ChannelReferenceSource, expected: { partNumber: string; brand: string }): Promise<PublicReferenceEvidence> {
   try {
-    const page = await readPublicReferencePage(source, referenceSearchUrl(source, expected.partNumber));
-    return parseReferenceQuote(source, page.html, page.url, expected);
+    const page = await readPublicReferencePage(source, referenceSearchUrl(source, expected.partNumber), undefined, undefined, candidate => {
+      const quote = parseReferenceQuote(source, candidate.html, candidate.url, expected);
+      // Missing price/JS shells are not settled results. Wait normally for the
+      // full exact card or explicit no-results; challenges remain a hard stop.
+      if (!validCachedReference(quote, source, expected)) return false;
+      return quote.status === "ok" ? "quote" : ["not_found", "ambiguous"].includes(quote.status) ? "settled" : false;
+    });
+    const quote = parseReferenceQuote(source, page.html, page.url, expected);
+    if (!validCachedReference(quote, source, expected)) throw new Error("Invalid parsed public quote");
+    return { quote, sourceSha256: createHash("sha256").update(page.html).digest("hex"), sourcePageUrl: page.url };
   } catch (e) {
     const quote = emptyReferenceQuote(source, e instanceof PublicPageRestrictedError ? "access_restricted" : "unavailable");
     const fetchedAt = Date.now();
     quote.fetchedAt = new Date(fetchedAt).toISOString(); quote.expiresAt = new Date(fetchedAt + 20 * 60_000).toISOString();
-    return quote;
+    return { quote, sourceSha256: null, sourcePageUrl: null };
   }
+}
+export async function fetchPublicReferenceQuote(source: ChannelReferenceSource, expected: { partNumber: string; brand: string }): Promise<ChannelReferenceQuote> {
+  return (await fetchPublicReferenceEvidence(source, expected)).quote;
 }
 
 // Dedicated finite child process. It has no application/database/account imports.
@@ -45,6 +59,7 @@ if (process.argv[2] === "--public-reference-page") {
   if (!["lcsc", "ickey"].includes(source) || !partNumber.trim() || !brand.trim() || partNumber.length > 128 || brand.length > 64 || /[\u0000-\u001f\u007f]/.test(partNumber + brand)) {
     process.stderr.write("Invalid public reference request\n"); process.exitCode = 2;
   } else {
-    fetchPublicReferenceQuote(source as ChannelReferenceSource, { partNumber, brand }).then(q => { process.stdout.write(JSON.stringify(q) + "\n"); }).catch(() => { process.stderr.write("Public reference unavailable\n"); process.exitCode = 1; });
+    const fetch = process.argv[6] === "--evidence" ? fetchPublicReferenceEvidence : fetchPublicReferenceQuote;
+    fetch(source as ChannelReferenceSource, { partNumber, brand }).then(q => { process.stdout.write(JSON.stringify(q) + "\n"); }).catch(() => { process.stderr.write("Public reference unavailable\n"); process.exitCode = 1; });
   }
 }

@@ -1,63 +1,22 @@
-import { mkdir, readFile, rename, writeFile, lstat, readdir, unlink, rm } from "node:fs/promises";
-import { createHash, randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
+import { mkdir, readFile, rename, writeFile, lstat, readdir, unlink } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
 import type { ChannelReferenceLookupResult, ChannelReferenceQuote, ChannelReferenceSource } from "../../shared/channelReference";
-import { allowedReferencePageUrl } from "./publicPage";
 import { emptyReferenceQuote } from "./worker";
-import { matchesLcscBrand, normalizeLcscBrand, normalizeLcscPartNumber } from "./lcscPage";
-import { matchChannelReferenceBrand } from "../../shared/channelReferenceBrand";
+import { referenceCacheKey, validCachedReference } from "./quoteValidation";
+import { fetchNativeReferenceQuote } from "./nativeWorker";
+import { createChannelReferenceSnapshotService } from "./snapshot";
+import { createFileConfiguredChannelReferenceService } from "./manualRefreshConfig";
+export { referenceCacheKey, validCachedReference } from "./quoteValidation";
 
 export type ReferenceMaterial = { materialId: number; partNumber: string; brand: string };
 const CACHE_TTL = 20 * 60_000;
 const SOURCES: ChannelReferenceSource[] = ["lcsc", "ickey"];
-export function referenceCacheKey(source: ChannelReferenceSource, partNumber: string, brand: string): string {
-  // Raw trimmed identities are never broader than either provider's matching.
-  // Isolate old NFKC-folded cache entries, even in a caller-supplied directory.
-  return createHash("sha256").update(JSON.stringify(["page-reference-v2", source, partNumber.trim(), brand.trim()])).digest("hex");
-}
-function matchesReferenceIdentity(source: ChannelReferenceSource, partNumber: string, brand: string, expected: { partNumber: string; brand: string }): boolean {
-  if (source === "lcsc") {
-    return !!normalizeLcscPartNumber(expected.partNumber) && !!normalizeLcscBrand(expected.brand)
-      && normalizeLcscPartNumber(partNumber) === normalizeLcscPartNumber(expected.partNumber)
-      && matchesLcscBrand(expected.brand, brand);
-  }
-  // Conservative subset of ickeyPage's clean+toUpperCase exact comparison:
-  // no NFKC, entity decoding, zero-width or suffix removal. Only approved brand edges.
-  const exact = (value: string) => value.replace(/\s+/g, " ").trim().toUpperCase();
-  return !!exact(expected.partNumber) && !!exact(expected.brand)
-    && exact(partNumber) === exact(expected.partNumber)
-    && matchChannelReferenceBrand(expected.brand, brand, { profile: "ickey", normalize: exact }) !== null;
-}
-export function validCachedReference(value: unknown, source: ChannelReferenceSource, expected: { partNumber: string; brand: string }): value is ChannelReferenceQuote {
-  if (!value || typeof value !== "object") return false;
-  const q = value as ChannelReferenceQuote;
-  if (q.source !== source || !["ok", "not_found", "ambiguous", "price_unavailable", "access_restricted", "unavailable"].includes(q.status)) return false;
-  if (!q.fetchedAt || !q.expiresAt || !Number.isFinite(Date.parse(q.fetchedAt)) || !Number.isFinite(Date.parse(q.expiresAt)) || Date.parse(q.expiresAt) - Date.parse(q.fetchedAt) !== CACHE_TTL) return false;
-  if (q.stockQuantity !== null && (!Number.isSafeInteger(q.stockQuantity) || q.stockQuantity < 0)) return false;
-  if (!Array.isArray(q.tiers) || q.tiers.length > 50) return false;
-  let previous = 0;
-  for (const t of q.tiers) {
-    if (!Number.isSafeInteger(t.minQuantity) || t.minQuantity <= previous || typeof t.unitPrice !== "string" || t.unitPrice.length > 64 || !/^\d+(?:\.\d+)?$/.test(t.unitPrice) || !/[1-9]/.test(t.unitPrice)) return false;
-    previous = t.minQuantity;
-  }
-  if (q.pageUrl !== null && (typeof q.pageUrl !== "string" || !allowedReferencePageUrl(source, q.pageUrl))) return false;
-  for (const key of ["matchedPartNumber", "matchedBrand", "productCode", "packaging", "unit"] as const) if (q[key] !== null && (typeof q[key] !== "string" || q[key]!.length > 256 || /[\u0000-\u001f\u007f]/.test(q[key]!))) return false;
-  // Matched identities also accompany price_unavailable: never reuse another
-  // product's stock/metadata. Identity-free negative quotes remain cacheable.
-  if (q.matchedPartNumber !== null || q.matchedBrand !== null) {
-    if (!q.matchedPartNumber || !q.matchedBrand || !matchesReferenceIdentity(source, q.matchedPartNumber, q.matchedBrand, expected)) return false;
-  }
-  if (!["included", "excluded", "unknown"].includes(q.taxStatus) || ![null, "CNY", "USD", "HKD"].includes(q.currency) || typeof q.stockInsufficientForTier !== "boolean" || q.message !== null) return false;
-  if (q.status === "ok") {
-    const max = q.tiers.at(-1);
-    if (!max || q.unitPrice !== max.unitPrice || q.tierQuantity !== max.minQuantity || !q.pageUrl || !q.currency || !q.matchedPartNumber || !q.matchedBrand || q.stockInsufficientForTier !== (q.stockQuantity !== null && q.stockQuantity < max.minQuantity)) return false;
-  } else if (q.unitPrice !== null || q.tierQuantity !== null) return false;
-  return true;
-}
 
+/** Existing explicit adapter/cache factory, retained for compatible offline callers.
+ * Production uses the fixed-file snapshot-first coordinator below, never this
+ * cache-miss-triggered adapter. No construction/import-time IO occurs here. */
 export function createChannelReferenceService(options: {
   cacheDirectory?: string;
   fetchQuote?: (source: ChannelReferenceSource, expected: { partNumber: string; brand: string }) => Promise<ChannelReferenceQuote | null>;
@@ -72,49 +31,7 @@ export function createChannelReferenceService(options: {
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const stat = await lstat(directory); if (!stat.isDirectory() || stat.isSymbolicLink() || process.getuid && stat.uid !== process.getuid()) throw new Error("Untrusted reference cache");
   }
-  async function nativeFetch(source: ChannelReferenceSource, expected: { partNumber: string; brand: string }): Promise<ChannelReferenceQuote | null> {
-    const key = referenceCacheKey(source, expected.partNumber, expected.brand);
-    const worker = fileURLToPath(new URL("./channel-reference-worker.mjs", import.meta.url));
-    return new Promise((resolve, reject) => {
-      // Kernel locks release on process exit, including admin reload/crash. There
-      // are at most two public browser children globally (one per provider).
-      const child = spawn("/usr/bin/flock", ["-n", "-E", "75", join(directory, key + ".job.lock"), "/usr/bin/flock", "-n", "-E", "75", join(directory, source + ".provider.lock"), process.execPath, worker, "--public-reference-page", source, expected.partNumber, expected.brand], { detached: true, stdio: ["ignore", "pipe", "pipe"], env: { PATH: "/usr/bin:/bin", HOME: tmpdir(), LANG: "C.UTF-8" } });
-      const ownedBrowsers: Array<{ pid: number; profile: string }> = [];
-      async function terminateOwnedChildren(killWorker = true) {
-        if (killWorker && child.pid) { try { process.kill(-child.pid, "SIGKILL"); } catch {} }
-        for (const b of ownedBrowsers) {
-          const command = await readFile("/proc/" + b.pid + "/cmdline", "utf8").catch(() => "");
-          if (command.split("\u0000").includes("--user-data-dir=" + b.profile)) { try { process.kill(-b.pid, "SIGKILL"); } catch {} }
-          await rm(b.profile, { recursive: true, force: true }).catch(() => {});
-        }
-      }
-      let text = "", excessive = false;
-      const timer = setTimeout(() => { void terminateOwnedChildren(); reject(new Error("Reference child timeout")); }, 75_000);
-      child.stdout.on("data", (b: Buffer) => { text += b.toString("utf8"); if (text.length > 32_000) { excessive = true; void terminateOwnedChildren(); } });
-      let stderr = "";
-      child.stderr.on("data", (b: Buffer) => {
-        stderr = (stderr + b.toString("utf8")).slice(-8000);
-        for (const line of stderr.split("\n")) if (line.startsWith("CHREF_BROWSER ")) {
-          try { const value = JSON.parse(line.slice(14)); if (Number.isSafeInteger(value.pid) && value.pid > 1 && typeof value.profile === "string" && /^\/tmp\/51-public-reference-[A-Za-z0-9]+$/.test(value.profile) && !ownedBrowsers.some(x => x.pid === value.pid)) ownedBrowsers.push(value); } catch {}
-        }
-      });
-      child.once("error", e => { clearTimeout(timer); void terminateOwnedChildren(false).finally(() => reject(e)); });
-      child.once("exit", code => {
-        clearTimeout(timer);
-        void (async () => {
-          // The worker is gone: never kill a potentially reused worker PID.
-          // Only its explicitly reported, cmdline-verified browser can remain.
-          await terminateOwnedChildren(false);
-          if (code === 75) { resolve(null); return; }
-          if (code !== 0 || excessive) throw new Error("Reference child unavailable");
-          const quote: unknown = JSON.parse(text);
-          if (!validCachedReference(quote, source, expected)) throw new Error("Invalid reference child result");
-          resolve(quote);
-        })().catch(reject);
-      });
-    });
-  }
-  const fetchQuote = options.fetchQuote ?? nativeFetch;
+  const fetchQuote = options.fetchQuote ?? ((source, expected) => fetchNativeReferenceQuote(directory, source, expected));
   async function cached(key: string, source: ChannelReferenceSource, expected: { partNumber: string; brand: string }) {
     try { const value: unknown = JSON.parse(await readFile(join(directory, key + ".json"), "utf8")); return validCachedReference(value, source, expected) ? value : null; } catch { return null; }
   }
@@ -155,6 +72,10 @@ export function createChannelReferenceService(options: {
   }
   return { lookup, idle: async () => { await Promise.all(Array.from(jobs.values())); } };
 }
-import { createChannelReferenceSnapshotService } from "./snapshot";
-const service = createChannelReferenceSnapshotService();
+
+// The only production entry. File loading is lazy after approved snapshot input
+// validation; absent/invalid/disabled configuration is safely snapshot-only.
+// No ENV fallback, configurable path, timer, watcher or import-time IO.
+const snapshot = createChannelReferenceSnapshotService();
+const service = createFileConfiguredChannelReferenceService({ baseLookup: snapshot.lookup });
 export const lookupChannelReferences = service.lookup;

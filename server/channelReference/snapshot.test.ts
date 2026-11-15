@@ -427,9 +427,20 @@ describe("fixed native file reader and default export binding", () => {
     const handle = mockHandle("{}"); handle.read.mockRejectedValue(new Error("read failed")); await expect(createChannelReferenceSnapshotService().lookup(materials())).rejects.toThrow("snapshot unavailable"); expect(handle.close).toHaveBeenCalledOnce();
     vi.mocked(fs.open).mockRejectedValue(new Error("ENOENT or ELOOP")); await expect(createChannelReferenceSnapshotService().lookup(materials())).rejects.toThrow("snapshot unavailable"); expect(childProcess.spawn).not.toHaveBeenCalled(); expect(globalThis.fetch).not.toHaveBeenCalled();
   });
-  it("service default lookup is snapshot-only while old factory stays available", async () => {
+  it("service default lookup stays snapshot-only with fail-closed lazy private config while old factory stays available", async () => {
     const handle = mockHandle(JSON.stringify(document())); const { lookupChannelReferences, createChannelReferenceService } = await import("./service");
-    expect(typeof createChannelReferenceService).toBe("function"); const result = await lookupChannelReferences(materials(), { refresh: true }); expect(result.items[0].references.lcsc.status).toBe("ok"); expect(handle.close).toHaveBeenCalledOnce();
+    expect(typeof createChannelReferenceService).toBe("function"); expect(fs.open).not.toHaveBeenCalled();
+    const result = await lookupChannelReferences(materials(), { refresh: true });
+    expect(result.items[0].references.lcsc.status).toBe("ok");
+    // Final file-config integration validates/sanitizes the approved snapshot
+    // first, before config IO, and the disabled manual coordinator reads it again.
+    // Both are read-only, closed; neither can queue an unvalidated live fallback.
+    expect(fs.open).toHaveBeenCalledTimes(2); expect(handle.close).toHaveBeenCalledTimes(2);
+    for (const [url, flags] of vi.mocked(fs.open).mock.calls) {
+      expect(String(url)).toBe(new URL("./channel-reference-snapshot.json", import.meta.url).href);
+      expect(flags).toBe(constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    }
+    expect(result.items[0].references).toEqual(document().records[0].references);
     for (const method of [fs.mkdir, fs.readFile, fs.writeFile, fs.rename, fs.readdir, childProcess.spawn, globalThis.fetch]) expect(method).not.toHaveBeenCalled();
   });
 });

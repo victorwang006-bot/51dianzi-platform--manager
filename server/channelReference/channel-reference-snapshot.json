@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "collectionMode": "public-web-batch",
-  "generatedAt": "2026-11-14T15:20:29.000Z",
+  "generatedAt": "2026-11-15T01:40:06.000Z",
   "records": [
     {
       "partNumber": "GRM32EB31C476KE15L",
@@ -3583,24 +3583,41 @@
       "brand": "WIMA",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:21:03.321Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T01:38:39.000Z",
+          "matchedBrand": "WIMA",
+          "matchedPartNumber": "MKP1O124704F00MSSD",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "1200个/袋",
+          "pageUrl": "https://item.szlcsc.com/21908313.html",
+          "productCode": "C20568817",
           "source": "lcsc",
-          "status": "unavailable",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "status": "ok",
+          "stockInsufficientForTier": true,
+          "stockQuantity": 0,
+          "taxStatus": "included",
+          "tierQuantity": 1200,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "5.5"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "2.2"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "2.12"
+            },
+            {
+              "minQuantity": 1200,
+              "unitPrice": "2.09"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "2.09"
         },
         "ickey": {
           "currency": "CNY",
@@ -3629,7 +3646,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "MKP1O124704F00MSSD",
+          "observedPartNumber": "MKP1O124704F00MSSD",
+          "expectedBrand": "WIMA",
+          "observedBrand": "WIMA",
+          "brandMatch": "exact",
+          "literalReason": null,
+          "pageUrl": "https://item.szlcsc.com/21908313.html",
+          "collectedAt": "2026-11-15T01:38:39.000Z",
+          "observedMaxQuantity": 1200,
+          "observedMaxUnitPrice": "2.09",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "exact",
           "collectedAt": "2026-11-14T09:23:01.917Z",
@@ -5352,24 +5381,49 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:24:34.537Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T01:38:42.000Z",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "matchedPartNumber": "X6511WR-05H-C60D30R2",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "袋装",
+          "pageUrl": "https://item.szlcsc.com/743990.html",
+          "productCode": "C706868",
           "source": "lcsc",
-          "status": "price_unavailable",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "status": "ok",
+          "stockInsufficientForTier": true,
+          "stockQuantity": 260,
+          "taxStatus": "included",
+          "tierQuantity": 4000,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "1.1254"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "0.8837"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "0.7801"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "0.6508"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.5933"
+            },
+            {
+              "minQuantity": 4000,
+              "unitPrice": "0.5587"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.5587"
         },
         "ickey": {
           "currency": null,
@@ -5393,7 +5447,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X6511WR-05H-C60D30R2",
+          "observedPartNumber": "X6511WR-05H-C60D30R2",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/743990.html",
+          "collectedAt": "2026-11-15T01:38:42.000Z",
+          "observedMaxQuantity": 4000,
+          "observedMaxUnitPrice": "0.5587",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -5656,24 +5722,49 @@
       "brand": "JST",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:04.430Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T01:40:06.000Z",
+          "matchedBrand": "JST",
+          "matchedPartNumber": "B2B-XH-A(LF)(SN)",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "盒装；1000个/盒",
+          "pageUrl": "https://item.szlcsc.com/169360.html",
+          "productCode": "C158012",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 488100,
+          "taxStatus": "included",
+          "tierQuantity": 20000,
+          "tiers": [
+            {
+              "minQuantity": 20,
+              "unitPrice": "0.2387"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "0.1858"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "0.1623"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.1446"
+            },
+            {
+              "minQuantity": 10000,
+              "unitPrice": "0.1376"
+            },
+            {
+              "minQuantity": 20000,
+              "unitPrice": "0.1328"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.1328"
         },
         "ickey": {
           "currency": null,
@@ -5697,7 +5788,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "B2B-XH-A(LF)(SN)",
+          "observedPartNumber": "B2B-XH-A(LF)(SN)",
+          "expectedBrand": "JST",
+          "observedBrand": "JST",
+          "brandMatch": "exact",
+          "literalReason": null,
+          "pageUrl": "https://item.szlcsc.com/169360.html",
+          "collectedAt": "2026-11-15T01:40:06.000Z",
+          "observedMaxQuantity": 20000,
+          "observedMaxUnitPrice": "0.1328",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -14179,24 +14282,37 @@
       "brand": "TI",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:45:39.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-14T16:51:23.000Z",
+          "matchedBrand": "TI(德州仪器)",
+          "matchedPartNumber": "TL432IDBZT",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "250个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/1939269.html",
+          "productCode": "C1848456",
           "source": "lcsc",
-          "status": "unavailable",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "status": "ok",
+          "stockInsufficientForTier": true,
+          "stockQuantity": 15,
+          "taxStatus": "included",
+          "tierQuantity": 30,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "5.23"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "4.24"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "3.75"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "3.75"
         },
         "ickey": {
           "currency": null,
@@ -14220,7 +14336,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "TL432IDBZT",
+          "observedPartNumber": "TL432IDBZT",
+          "expectedBrand": "TI",
+          "observedBrand": "TI(德州仪器)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "TI(德州仪器)",
+          "pageUrl": "https://item.szlcsc.com/1939269.html",
+          "collectedAt": "2026-11-14T16:51:23.000Z",
+          "observedMaxQuantity": 30,
+          "observedMaxUnitPrice": "3.75",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -17910,24 +18038,33 @@
       "brand": "ST",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T10:50:49.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-14T16:46:27.438Z",
+          "matchedBrand": "ST(意法半导体)",
+          "matchedPartNumber": "STE145N65M5",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "10个/管",
+          "pageUrl": "https://item.szlcsc.com/3362658.html",
+          "productCode": "C2970194",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 44,
+          "taxStatus": "included",
+          "tierQuantity": 30,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "191.09"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "184.21"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "184.21"
         },
         "ickey": {
           "currency": null,
@@ -17951,7 +18088,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "STE145N65M5",
+          "observedPartNumber": "STE145N65M5",
+          "expectedBrand": "ST",
+          "observedBrand": "ST(意法半导体)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "ST(意法半导体)",
+          "pageUrl": "https://item.szlcsc.com/3362658.html",
+          "collectedAt": "2026-11-14T16:46:27.438Z",
+          "observedMaxQuantity": 30,
+          "observedMaxUnitPrice": "184.21",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },

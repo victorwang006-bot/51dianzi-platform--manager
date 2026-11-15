@@ -13,9 +13,10 @@ export const normalizeChannelReferenceBrand = (value: string): string => value
 export function normalizeLegacyLcscBrandLiteral(normalized: string): string {
   return ["murata", "村田", "murata(村田)", "村田(murata)"].includes(normalized) ? "murata" : normalized;
 }
-// Preserve all historical snapshot directions. Provider legacy behavior remains
-// in the provider's existing normalizer; ICKey does not inherit LCSC's Murata family.
-const LEGACY_SNAPSHOT_ALIASES = [
+// Approved historical whole literals, not inferred manufacturer families. The
+// first four Murata directions remain LCSC/snapshot-only; ICKey must not inherit
+// LCSC's old family normalizer. All other explicit literals apply to both sources.
+export const VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS = [
   ["MURATA", "MURATA(村田)"],
   ["MURATA", "村田(MURATA)"],
   ["村田", "MURATA(村田)"],
@@ -192,6 +193,8 @@ export function matchChannelReferenceBrand(expected: string, observed: string, o
   const direct = (pairs: readonly (readonly [string, string])[]) => pairs.some(
     ([input, literal]) => wanted === normalize(input) && seen === normalize(literal));
   if (direct(VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS)) return "explicit_alias";
-  return (options.profile ?? "snapshot") === "snapshot" && direct(LEGACY_SNAPSHOT_ALIASES)
-    ? "explicit_alias" : null;
+  const historical = (options.profile ?? "snapshot") === "ickey"
+    ? VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS.slice(4)
+    : VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS;
+  return direct(historical) ? "explicit_alias" : null;
 }

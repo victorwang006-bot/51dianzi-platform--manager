@@ -30,7 +30,10 @@ export type ChannelReferenceRow = {
   brand: string;
   references: Record<ChannelReferenceSource, ChannelReferenceQuote>;
 };
-export type ChannelReferenceLookupResult = { items: ChannelReferenceRow[] };
+export type ChannelReferenceLookupResult = {
+  items: ChannelReferenceRow[];
+  refreshDiagnostics?: import("./channelReferenceRefresh").ChannelReferenceRefreshDiagnostic[];
+};
 
 export const CHANNEL_REFERENCE_SOURCE_LABELS: Record<ChannelReferenceSource, string> = {
   lcsc: "立创商城",

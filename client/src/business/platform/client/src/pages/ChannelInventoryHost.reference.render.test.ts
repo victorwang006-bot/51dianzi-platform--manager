@@ -59,10 +59,54 @@ function response(input: { listInput: Record<string, unknown>; materialIds: numb
 }
 function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: Error) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 function referenceCells() { return [...document.querySelectorAll<HTMLElement>("tbody td[data-reference-source]")]; }
-function placeholders(count = 2) {
+const sourceLabels = { lcsc: "立创商城", ickey: "云汉芯城" } as const;
+function readonlySourceOpener(cell: HTMLElement, source: ChannelReferenceSource) {
+  const buttons = cell.querySelectorAll<HTMLButtonElement>("button"); expect(buttons).toHaveLength(1);
+  const opener = required(buttons[0]); expect(opener.type).toBe("button"); expect(opener.disabled).toBe(false);
+  expect(opener.classList.contains("ci-reference-evidence-button")).toBe(true);
+  expect(opener.getAttribute("aria-label")).toBe(`查看${sourceLabels[source]}参考来源`);
+  expect(opener.getAttribute("aria-expanded")).toBe("false"); expect(opener.textContent).toBe("");
+  expect(opener.querySelectorAll("svg")).toHaveLength(1); expect(opener.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  const compact = required(cell.querySelector<HTMLElement>(`span[data-source="${source}"]`));
+  expect(compact.style.whiteSpace).toBe("nowrap"); expect(compact.nextElementSibling?.contains(opener)).toBe(true);
+  expect(cell.querySelector("a, input, select, textarea, form, [title], [role=tooltip], [role=status], [role=dialog]")).toBeNull();
+  expect(document.querySelector(".ci-reference-evidence-popover, .ci-reference-popover, .ci-reference-spinner")).toBeNull();
+  return opener;
+}
+async function inspectReadonlySource(cell: HTMLElement, source: ChannelReferenceSource, status: ChannelReferenceStatus, pageUrl = quote(source).pageUrl, partNumber: string | null = "PART-1-1") {
+  const opener = readonlySourceOpener(cell, source), compactText = cell.textContent;
+  const calls = [runtime.lookup.mock.calls.length, runtime.mutation.mock.calls.length, runtime.invalidate.mock.calls.length, runtime.refetch.mock.calls.length];
+  await act(async () => { opener.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); });
+  expect(document.querySelector(".ci-reference-evidence-popover, [role=tooltip]")).toBeNull();
+  await click(opener);
+  const panels = document.querySelectorAll<HTMLElement>(".ci-reference-evidence-popover"); expect(panels).toHaveLength(1);
+  const panel = required(panels[0]); expect(panel.getAttribute("aria-label")).toBe(`${sourceLabels[source]}参考来源`);
+  expect(panel.textContent).toContain("保存记录，非实时库存或报价；不修改原库存和业务报价。");
+  expect(panel.textContent).toContain("2026-11-14 12:00:00"); expect(panel.textContent).toContain("北京时间");
+  expect(panel.textContent).not.toMatch(/5000|39000|≥|数量档|不足此档|INTERNAL_DIAGNOSTIC_NOT_UI/);
+  if (partNumber) expect(panel.textContent).not.toContain(partNumber);
+  expect(panel.querySelector("button, input, select, textarea, form, [title], [role=tooltip]")).toBeNull();
+  const links = [...panel.querySelectorAll<HTMLAnchorElement>("a")];
+  const expectedLinks = [...(pageUrl ? [{ href: pageUrl, text: status === "ok" ? "准确匹配商品页（保存报价来源）" : "来源页面（非已匹配报价）" }] : [])];
+  if (partNumber) {
+    const search = new URL(source === "lcsc" ? "https://so.szlcsc.com/global.html" : "https://search.ickey.cn/");
+    search.searchParams.set(source === "lcsc" ? "k" : "keyword", partNumber);
+    expectedLinks.push({ href: search.href, text: "完整型号公开搜索（非匹配商品）" });
+  }
+  expect(links.map(link => ({ href: link.href, text: link.textContent }))).toEqual(expectedLinks);
+  for (const link of links) { expect(link.target).toBe("_blank"); expect(link.rel).toBe("noopener noreferrer"); expect(link.getAttribute("referrerpolicy")).toBe("no-referrer"); }
+  expect(cell.textContent).toBe(compactText); expect(cell.querySelector("a")).toBeNull(); expect(fetch).not.toHaveBeenCalled();
+  expect([runtime.lookup.mock.calls.length, runtime.mutation.mock.calls.length, runtime.invalidate.mock.calls.length, runtime.refetch.mock.calls.length]).toEqual(calls);
+  await click(opener); readonlySourceOpener(cell, source);
+}
+function placeholders(count = 2, acceptedSource = false) {
   const cells = referenceCells(); expect(cells).toHaveLength(count);
-  for (const cell of cells) { expect(cell.textContent).toBe("暂未匹配"); expect(cell.querySelector("button, a, [role=status], [role=dialog]")).toBeNull(); }
-  expect(document.querySelector(".ci-reference-spinner, .ci-reference-popover")).toBeNull();
+  for (const cell of cells) {
+    expect(cell.textContent).toBe("暂未匹配");
+    if (acceptedSource) readonlySourceOpener(cell, cell.dataset.referenceSource as ChannelReferenceSource);
+    else expect(cell.querySelector("button, a, [title], [role=tooltip], [role=status], [role=dialog]")).toBeNull();
+  }
+  expect(document.querySelector(".ci-reference-spinner, .ci-reference-popover, .ci-reference-evidence-popover")).toBeNull();
 }
 function columnOption(label: string) { return required([...document.querySelectorAll<HTMLLabelElement>(".ci-columns-options label")].find(item => item.querySelector("span")?.firstChild?.textContent === label)?.querySelector("input")); }
 beforeEach(() => {
@@ -89,7 +133,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     expect(options.signal).toBeInstanceOf(AbortSignal); expect(Object.keys(input)).toEqual(["listInput", "materialIds", "refresh"]);
     expect([...document.querySelectorAll("thead th")].map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
     expect(referenceCells().map(cell => cell.textContent)).toEqual(["0.000000012345，库存5", "0.000000012345，库存5"]);
-    for (const cell of referenceCells()) expect(cell.querySelector("button, a, [role=status], [role=dialog]")).toBeNull();
+    for (const cell of referenceCells()) await inspectReadonlySource(cell, cell.dataset.referenceSource as ChannelReferenceSource, "ok");
     expect(document.body.textContent).not.toContain("INTERNAL_DIAGNOSTIC_NOT_UI"); expect(document.body.textContent).not.toContain("不足此档");
     expect(document.querySelector("td.ci-material-price-col")?.textContent).toBe("¥1.234567890123未税"); expect(document.querySelector("td.ci-material-qty-col")?.textContent).toBe("9");
     expect(runtime.invalidate).not.toHaveBeenCalled();
@@ -105,8 +149,9 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     expect(referenceCells()[0].textContent).toBe("0.099999999999，库存5");
     expect(referenceCells()[1].textContent).not.toContain("5,000"); expect(referenceCells()[1].textContent).not.toContain("/个");
   });
-  it.each(["pending", "not_found", "ambiguous", "price_unavailable", "access_restricted", "unavailable"] as const)("%s shows only 暂未匹配 even if its payload still contains a price", async status => {
-    runtime.lookup.mockImplementation(async input => response(input, status)); await render(); placeholders();
+  it.each(["pending", "not_found", "ambiguous", "price_unavailable", "access_restricted", "unavailable"] as const)("%s keeps compact 暂未匹配 and only a readonly saved-source opener even if its payload contains a price", async status => {
+    runtime.lookup.mockImplementation(async input => response(input, status)); await render(); placeholders(2, true);
+    for (const cell of referenceCells()) await inspectReadonlySource(cell, cell.dataset.referenceSource as ChannelReferenceSource, status);
   });
   it("a successful response without a public price has no stock, link or detail opener", async () => {
     runtime.lookup.mockImplementation(async input => { const result = response(input); for (const row of result.items) for (const value of Object.values(row.references)) { value.unitPrice = null; value.tiers = []; value.tierQuantity = null; } return result; });
@@ -125,7 +170,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
   it("does not infer stock 0, a unit or tax when maximum-tier price is available", async () => {
     const value = quote("lcsc"); value.stockQuantity = null; value.unit = null; value.taxStatus = "unknown";
     await act(async () => root.render(React.createElement(ChannelReferenceCell, { source: "lcsc", quote: value })));
-    expect(host.textContent).toBe("0.000000012345，库存未披露"); expect(host.querySelector("button, a, [title]")).toBeNull();
+    expect(host.textContent).toBe("0.000000012345，库存未披露"); readonlySourceOpener(host, "lcsc");
   });
   it("shows exact FNR/ICKey-like strings using marketplace stock, never native qty or maximum-tier thresholds", async () => {
     runtime.lookup.mockImplementation(async input => {
@@ -136,9 +181,9 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     });
     await render(); expect(referenceCells().map(cell => cell.textContent)).toEqual(["1.0901，库存0", "1.9642，库存1550"]);
     for (const cell of referenceCells()) {
-      expect(cell.querySelector("[title], button, a, [role=tooltip]")).toBeNull();
+      readonlySourceOpener(cell, cell.dataset.referenceSource as ChannelReferenceSource);
       expect(cell.innerHTML).not.toMatch(/CNY|≥|39000|5000|\/个/);
-      expect(cell.querySelector<HTMLElement>("span")?.style.whiteSpace).toBe("nowrap");
+      expect(cell.querySelector<HTMLElement>("span[data-source]")?.style.whiteSpace).toBe("nowrap");
     }
     expect(document.querySelector("td.ci-material-qty-col")?.textContent).toBe("9");
   });
@@ -219,12 +264,13 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     await click(button("下一页")); expect(runtime.lookup.mock.calls.at(-1)?.[0].refresh).toBe(false);
     await click(button("上一页")); expect(runtime.lookup.mock.calls.at(-1)?.[0].refresh).toBe(false); expect(runtime.invalidate).not.toHaveBeenCalled();
   });
-  it("pending remains only 暂未匹配, polls every 4s and stops at 90s without a collection button", async () => {
-    vi.useFakeTimers(); runtime.lookup.mockImplementation(async input => response(input, "pending")); await render(); placeholders();
+  it("pending keeps compact 暂未匹配 with a readonly source opener, polls every 4s and stops at 90s without automatic collection", async () => {
+    vi.useFakeTimers(); runtime.lookup.mockImplementation(async input => response(input, "pending")); await render(); placeholders(2, true);
     await act(async () => { await vi.advanceTimersByTimeAsync(3999); }); expect(runtime.lookup).toHaveBeenCalledTimes(1);
     await act(async () => { await vi.advanceTimersByTimeAsync(1); }); expect(runtime.lookup).toHaveBeenCalledTimes(2);
-    await act(async () => { await vi.advanceTimersByTimeAsync(86000); }); placeholders(); const count = runtime.lookup.mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(86000); }); placeholders(2, true); const count = runtime.lookup.mock.calls.length;
     await act(async () => { await vi.advanceTimersByTimeAsync(120000); }); expect(runtime.lookup).toHaveBeenCalledTimes(count);
+    expect(runtime.lookup.mock.calls.every(([input]) => input.refresh === false)).toBe(true);
     expect(vi.getTimerCount()).toBe(0); expect(document.body.textContent).not.toContain("更新参考");
   });
   it("a never-resolving request is aborted at 90s and late success is ignored", async () => {
@@ -273,14 +319,33 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
       expect(createHash("sha256").update(source.slice(index, source.indexOf(end, index))).digest("hex")).toBe(hash);
     }
   });
-  it("source keeps the BFF namespace separate and introduces no reference detail UI or client material DTO", () => {
+  it("source keeps BFF reads separate and permits only validated readonly source Popover links, without cell IO or business mutation", async () => {
     const source = readFileSync("client/src/business/platform/client/src/pages/ChannelInventoryHost.tsx", "utf8");
     const cell = readFileSync("client/src/business/platform/client/src/pages/ChannelReferenceCell.tsx", "utf8");
     expect(source).toContain("referenceClient.channelReference.lookup.query"); expect(source).not.toContain("utils.client.channelReference");
     expect(source).toContain("listInput: materialInput, materialIds: referenceRows.map(row => row.id), refresh");
-    expect(cell).not.toMatch(/Popover|href=|stockQuantity|stockInsufficient|tiers\.map|fetch\(|setInterval|spinner/);
+    expect(cell).toContain('import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover"');
+    expect(cell).toContain("channelReferencePageUrl(quote.pageUrl, source)");
+    expect(cell.match(/href=\{[^}]+\}/g)).toEqual(["href={safePage}", "href={search.href}"]);
+    expect(cell.match(/rel="noopener noreferrer" referrerPolicy="no-referrer"/g)).toHaveLength(2);
+    expect(cell).toContain("来源页面（非已匹配报价）"); expect(cell).toContain("完整型号公开搜索（非匹配商品）");
+    expect(cell).not.toMatch(/stockQuantity|stockInsufficient|tiers\.map|fetch\s*\(|setInterval|spinner|useMutation|mutate(?:Async)?\s*\(|invalidate|refetch|createBusinessScopeTrpcClient|listTeamMaterials|materialDTO|download|export.*(?:csv|xlsx)/i);
     expect(source).toContain('<button type="button" className="ci-button" onClick={() => void refreshMaterials()}>刷新</button>');
     expect(source).not.toContain("更新参考"); expect(source).not.toContain("refreshReferences");
-    expect(source).toContain("rows: referenceRows, refresh: false, isCurrent: current");
+    expect(source).toContain("rows: referenceRows, refresh: manual, isCurrent: current");
+    expect(source).toContain("if (referenceRunKey) runReferenceLookup(false)");
+    const manualHandler = source.slice(source.indexOf("  const recheckUnmatchedReferences ="), source.indexOf("  useEffect(() => {", source.indexOf("  const recheckUnmatchedReferences =")));
+    expect(manualHandler).toContain("if (!referenceAllowed || referencePendingRef.current || referenceCurrentRef.current !== referenceRunKey) return");
+    expect(manualHandler).toContain("referencePendingRef.current = true"); expect(manualHandler).toContain("runReferenceLookup(true)");
+    expect(source.match(/runReferenceLookup\(true\)/g)).toHaveLength(1);
+    // Exercise rejected URLs in the existing source-guard case; no added test or network access.
+    for (const provider of ["lcsc", "ickey"] as const) {
+      const providerHost = provider === "lcsc" ? "item.szlcsc.com" : "search.ickey.cn";
+      for (const url of [`http://${providerHost}/product`, `https://${providerHost}.evil.example/product`, `https://user:password@${providerHost}/product`, `https://${providerHost}:444/product`, quote(provider === "lcsc" ? "ickey" : "lcsc").pageUrl]) {
+        const value = { ...quote(provider), pageUrl: url };
+        await act(async () => root.render(React.createElement(ChannelReferenceCell, { source: provider, quote: value })));
+        await inspectReadonlySource(host, provider, "ok", null, null);
+      }
+    }
   });
 });
