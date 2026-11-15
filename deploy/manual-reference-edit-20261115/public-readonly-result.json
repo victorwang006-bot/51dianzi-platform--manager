@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "businessWrites": 0,
+  "productionAccountLogin": false,
+  "requests": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-0-manual-reference-edit-1445a10289098e91f2d5039bc6b8da3846957c3b6ac52b1498042fb80ebdc97c.js",
+      "httpStatus": 200,
+      "bytes": 4850458,
+      "expectedSha256": "1445a10289098e91f2d5039bc6b8da3846957c3b6ac52b1498042fb80ebdc97c",
+      "sha256": "1445a10289098e91f2d5039bc6b8da3846957c3b6ac52b1498042fb80ebdc97c",
+      "pass": true
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-1-manual-reference-edit-a368256fff471bacfc790b82976683ec15f498df604a5733b625d7b1967883b4.js",
+      "httpStatus": 200,
+      "bytes": 5693447,
+      "expectedSha256": "a368256fff471bacfc790b82976683ec15f498df604a5733b625d7b1967883b4",
+      "sha256": "a368256fff471bacfc790b82976683ec15f498df604a5733b625d7b1967883b4",
+      "pass": true
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/ChannelInventoryHost-manual-reference-edit-7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c.css",
+      "httpStatus": 200,
+      "bytes": 808,
+      "expectedSha256": "7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c",
+      "sha256": "7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c",
+      "pass": true
+    },
+    {
+      "url": "https://admin.51dianzi.com/",
+      "httpStatus": 200,
+      "bytes": 659892,
+      "expectedSha256": "91076621fcf5ad16ade69a6a49f143dbfa2034967febdfbc23a99f1b518f7cf9",
+      "sha256": "91076621fcf5ad16ade69a6a49f143dbfa2034967febdfbc23a99f1b518f7cf9",
+      "pass": true
+    }
+  ]
+}

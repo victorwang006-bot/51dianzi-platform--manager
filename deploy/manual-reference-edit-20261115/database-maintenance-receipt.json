@@ -1,0 +1,42 @@
+{
+  "contractVersion": "manual-reference-independent-schema-receipt-v1",
+  "approved": true,
+  "fixtureOnly": false,
+  "status": "VERIFIED",
+  "table": "channel_inventory_manual_references",
+  "root": "/opt/ops/20261115-manual-reference-schema-v2-JfFQcJM",
+  "requestId": "1fa93d87-1d02-4af7-98b6-b51cd76059b5",
+  "databaseWrites": 1,
+  "businessWrites": 0,
+  "existingTableWrites": 0,
+  "manualRowsAtVerify": 0,
+  "protectedUnchanged": true,
+  "processReloads": 0,
+  "coordinatorWrites": 0,
+  "sourceRunnerSha256": "a2fb64929aabddef823abf2d4527da53a8668474a2cee445bdf89fb9069147ae",
+  "sqlSha256": "9330afcdf24e1cc69eba70f8a382b3f4215a5c41a6ac50d7e5380da6ccc70793",
+  "independentReviewSha256": "6976d8d24d28f3ba80b176cc78d5ebbdcd1e2c89a5380a8f917e916f0e62f9e4",
+  "intentSha256": "cb0875b5c4db88d321fd293a0a8f8f53c0612dc7846b4485f9343e7f22a46c8c",
+  "planSha256": "074ecf534fc67ce4ab81a7fdcc98bce2ef7e8cf0ec085a802e64ad90a5216171",
+  "applySha256": "3bddccb78cb398da57b27da8f7b21068ba9be40425c039ccf9893a12543159e7",
+  "verifySha256": "fa4d96b5abf4a2e26ffc2a083d15c16db1a2f7f643d1c9e10f4c8367ce13f1ce",
+  "protectedSnapshot": {
+    "channel_inventory_materials": {
+      "count": 394,
+      "sha256": "3fa5b647c98bd0db293417827e50607ee0d314c772046f6a4c6c7f326029b75e"
+    },
+    "channel_inventory_channels": {
+      "count": 27,
+      "sha256": "81c22858cfce8468ca22fda39945bc9801d68f14b44527aefb521cf6216b7c6a"
+    },
+    "crm_customers": {
+      "count": 1300,
+      "sha256": "ea4d29847b4b0d9cb5cf6cb4c32a11a50b60871c9ec29744d795e05626788343"
+    },
+    "crm_customer_supply_channels": {
+      "count": 15,
+      "sha256": "73731293b13fdce52d364113324fc8535966c4b205f1cf97c9ec938e7bfd806e"
+    }
+  },
+  "maintenanceMode": "One additive CREATE TABLE only; no backfill and no production account write test; old plan-only v1 ROOT retained without DDL."
+}

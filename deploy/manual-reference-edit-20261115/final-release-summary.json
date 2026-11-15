@@ -1,0 +1,63 @@
+{
+  "status": "VERIFIED_APPLIED",
+  "verifiedAtBeijing": "2026-11-15 18:37",
+  "manifestSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+  "functionalCommit": "6d882af5f437dda3b8dca353df806c5c94245e29",
+  "sourceCount": 178,
+  "hostSourceCount": 27,
+  "packageCount": 383,
+  "targets": [
+    190,
+    193,
+    194,
+    200,
+    191,
+    192
+  ],
+  "allOnline": true,
+  "other6Unchanged": true,
+  "windowClosed": true,
+  "publicResources": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-0-manual-reference-edit-1445a10289098e91f2d5039bc6b8da3846957c3b6ac52b1498042fb80ebdc97c.js",
+      "httpStatus": 200,
+      "sha256": "1445a10289098e91f2d5039bc6b8da3846957c3b6ac52b1498042fb80ebdc97c"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-1-manual-reference-edit-a368256fff471bacfc790b82976683ec15f498df604a5733b625d7b1967883b4.js",
+      "httpStatus": 200,
+      "sha256": "a368256fff471bacfc790b82976683ec15f498df604a5733b625d7b1967883b4"
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/ChannelInventoryHost-manual-reference-edit-7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c.css",
+      "httpStatus": 200,
+      "sha256": "7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c"
+    },
+    {
+      "url": "https://admin.51dianzi.com/",
+      "httpStatus": 200,
+      "sha256": "91076621fcf5ad16ade69a6a49f143dbfa2034967febdfbc23a99f1b518f7cf9"
+    }
+  ],
+  "databaseWrites": 1,
+  "businessDataWrites": 0,
+  "schemaRoot": "/opt/ops/20261115-manual-reference-schema-v2-JfFQcJM",
+  "protectedBusinessSnapshotUnchanged": true,
+  "referenceSuccessSourcesPreserved": 213,
+  "referenceHelpers": [
+    {
+      "relative": "channel-reference-service.mjs",
+      "sha256": "a1a6d7c1ae48443c5f1208674fa6d611c8e2306bd107b80e6c9c68076e244034"
+    },
+    {
+      "relative": "channel-reference-snapshot.json",
+      "sha256": "a00f52da7e423addf6b40508c972ad34df0eecec71250b1206ce9cb35c5ae436"
+    },
+    {
+      "relative": "channel-reference-worker.mjs",
+      "sha256": "b98ee88584bc240c0a9df06983577cb38d1504e689a656d817b6a08ef06c1e42"
+    }
+  ],
+  "productionAccountE2E": false,
+  "uiNormalClaim": false
+}

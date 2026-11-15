@@ -1,0 +1,332 @@
+{
+  "contractVersion": "manual-reference-edit-affected-native-qa-v1",
+  "status": "PASS",
+  "fixtureOnly": false,
+  "manifestSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+  "inputContractSha256": "8a6c6c15a8cda4f740cbe6a62ee0eb9a954f053f055464a500cd1846a3ef5bc5",
+  "candidatePath": "/home/ubuntu/work/manual-reference-edit-20261115/deploy/candidate",
+  "ownerTask": "JfFQcJMqqFudyf4S9Egg7M",
+  "reviewedAt": "2026-11-15T10:29:36.836949+00:00",
+  "scope": "code-only actual native artifact mapping + source behavioral regressions; affected paths only; not production/account/MySQL/E2E/activation or schema approval",
+  "readonly": true,
+  "http": false,
+  "db": false,
+  "businessWrites": 0,
+  "productionAccountE2E": false,
+  "productionDatabaseWriteTests": false,
+  "wholeAcquiredBundleExecuted": false,
+  "productionBrowserE2E": false,
+  "productionActivationExecuted": false,
+  "applicationSourceModified": false,
+  "candidateModifiedByReviewer": false,
+  "ssh": false,
+  "reload": false,
+  "commit": false,
+  "manifestBeforeSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+  "manifestAfterSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+  "allCandidateFilesBeforeAfterByteIdentical": true,
+  "actualCandidateMapping": {
+    "status": "PASS",
+    "manifestSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+    "inputContractSha256": "8a6c6c15a8cda4f740cbe6a62ee0eb9a954f053f055464a500cd1846a3ef5bc5",
+    "packageFileCount": 383,
+    "manifestIncludedFileCount": 384,
+    "allPackageFullSha256Verified": true,
+    "immutableCandidate": true,
+    "sourceFinalPinsSha256": "ae2d898dae880bec075b80c30adefa03862908116f02be70b016e3b59d2cf943",
+    "sourceFileCount": 178,
+    "sourceFinalLiveCandidateExact": true,
+    "backend": [
+      {
+        "kind": "front",
+        "beforeSha256": "132c2a9924da37ccb50fadeb014865400df5cddf8d2255594631041cb1718538",
+        "afterSha256": "f13e9335870a50a1ca1cde8de56faff8203457adac3a72d33b209a37bf0c92b4",
+        "rawProofSha256": "78e412d061f57be784f336b37f08c59daab1ef15192dd8638ef9b670f0646981",
+        "spanCount": 9,
+        "removedByteLength": 0,
+        "fullForwardInverse": true,
+        "allExistingBytesPreserved": true,
+        "existingOwnerOrderPreserved": true,
+        "changedOwners": [
+          "authorizedMaterial",
+          "createChannelInventoryCollaborationService",
+          "createChannelTeamInventoryService",
+          "teamMaterialFrom",
+          "teamMaterialPublicFrom",
+          "teamMaterialPublicUpdateFields"
+        ],
+        "addedOwners": [
+          "channelInventoryManualReferenceValuesFrom",
+          "readChannelInventoryManualReferences",
+          "upsertChannelInventoryManualReferences"
+        ],
+        "protectedOwnerCount": 42,
+        "sourceFragmentCandidateBytesExact": true
+      },
+      {
+        "kind": "admin",
+        "beforeSha256": "50f425a421f4ad44f4a9f91744ec168b61c2103303ba54d0cc7fe67576563b9f",
+        "afterSha256": "4aa7750025df07ea292ebe235f62b32fb0f8ce0b9e69a4e8f66f450a16f99831",
+        "rawProofSha256": "e98e76d4db7c505eef3bc77fe915fe7b09b0e1d9c8e98fb49435d8b9610b11fb",
+        "spanCount": 1,
+        "removedByteLength": 0,
+        "fullForwardInverse": true,
+        "allExistingBytesPreserved": true,
+        "existingOwnerOrderPreserved": true,
+        "changedOwners": [
+          "teamMaterialPublicUpdateFields"
+        ],
+        "addedOwners": [],
+        "protectedOwnerCount": 5,
+        "sourceFragmentCandidateBytesExact": true
+      }
+    ],
+    "sourceAstEsbuildRecompiledExactEvidenceFileCount": 25,
+    "hosts": [
+      {
+        "beforeSha256": "83a10e90dadf90d070c4fffee0507e518a148b3a925e381ffca2db9cd5f352e4",
+        "afterSha256": "1445a10289098e91f2d5039bc6b8da3846957c3b6ac52b1498042fb80ebdc97c",
+        "getterOnly": true,
+        "fullInverse": true,
+        "liveBindingsAndImportsPreserved": true
+      },
+      {
+        "beforeSha256": "3890478c39c7bb5fc2db7944cd989b45d5a2b59663683e50a71ceb53b492b4fb",
+        "afterSha256": "a368256fff471bacfc790b82976683ec15f498df604a5733b625d7b1967883b4",
+        "getterOnly": true,
+        "fullInverse": true,
+        "liveBindingsAndImportsPreserved": true
+      }
+    ],
+    "hostProductionInputCount": 27,
+    "newModules": [
+      "client/src/business/platform/client/src/pages/ChannelInventoryManualReferenceFields.tsx",
+      "client/src/business/platform/client/src/pages/manualReferenceEdit.ts"
+    ],
+    "htmlEffectiveDependenciesPreserved": true,
+    "cssOverlayRules": 6,
+    "allOldCssSourcePrefixBytesPreserved": true,
+    "referenceHelpersUnchanged": true,
+    "wholeAcquiredBundleExecuted": false
+  },
+  "isolatedFragmentQA": {
+    "status": "PASS",
+    "fixtureOnly": true,
+    "actualPatchedBundlesParsedOnly": true,
+    "wholeBundleExecution": false,
+    "sourceFinalExactlyMatches": true,
+    "sourceHashes": {
+      "client/src/business/platform/shared/channelInventoryCollaboration.ts": "638435a9114ce2b8335350cf69b684a68fcafa62746e15a21c2ee073c74909d0",
+      "client/src/business/platform/front-router-types/server/services/channelInventoryCollaboration.ts": "c8954f5336bef9d65316f9bc2b94cefb6cba5541a0a9d03692b1f6ae099e971e",
+      "client/src/business/platform/front-router-types/server/services/channelTeamInventory.ts": "79f91355e00f1cf7e3aa40b23b4e4ca06dd1bd367d265058f261b13627383a4c",
+      "client/src/business/platform/front-router-types/server/services/channelInventoryManualReference.ts": "27c2460afff5d461dc0efb60cce0a820ca30473bca0bc8decf0a79ad2882103b"
+    },
+    "lexicalBindingChecks": [
+      {
+        "kind": "front",
+        "wholeSyntax": true,
+        "checks": [
+          "manualReferenceLcsc binds z59",
+          "manualReferenceIckey binds z59",
+          {
+            "helper": "channelInventoryManualReferenceValuesFrom",
+            "sqlBinding": 0,
+            "errorBinding": 1
+          },
+          {
+            "helper": "readChannelInventoryManualReferences",
+            "sqlBinding": 4,
+            "errorBinding": 1
+          },
+          {
+            "helper": "upsertChannelInventoryManualReferences",
+            "sqlBinding": 8,
+            "errorBinding": 0
+          },
+          {
+            "span": "schema-manual-two-prices",
+            "resolvedIdentifierCount": 2
+          },
+          {
+            "span": "manual-sql-helpers",
+            "resolvedIdentifierCount": 96
+          },
+          {
+            "span": "teamMaterialPublicFrom-manual-projection",
+            "resolvedIdentifierCount": 2
+          },
+          {
+            "span": "authorized-manual-after-gates",
+            "resolvedIdentifierCount": 6
+          },
+          {
+            "span": "manual-upsert-after-cas",
+            "resolvedIdentifierCount": 5
+          },
+          {
+            "span": "manual-read-before-audit",
+            "resolvedIdentifierCount": 6
+          },
+          {
+            "span": "teamMaterialFrom-manual-projection",
+            "resolvedIdentifierCount": 2
+          },
+          {
+            "span": "list-authorized-batch-manual-read",
+            "resolvedIdentifierCount": 7
+          },
+          {
+            "span": "list-manual-price-enrichment",
+            "resolvedIdentifierCount": 3
+          }
+        ]
+      },
+      {
+        "kind": "admin",
+        "wholeSyntax": true,
+        "checks": [
+          "manualReferenceLcsc binds z6",
+          "manualReferenceIckey binds z6"
+        ]
+      }
+    ],
+    "syntheticFragmentChecks": 62,
+    "productionExecuted": false
+  },
+  "sourceBehavioralRegressions": {
+    "status": "PASS",
+    "actualCurrentSourceCompiled": true,
+    "sourceMatchesFinalCandidatePins": true,
+    "fixtureOnly": true,
+    "productionDatabaseWriteTests": false,
+    "totalTests": 68,
+    "passedTests": 68,
+    "failedTests": 0,
+    "backendActualSourceTransactionFixtureTests": 35,
+    "frontendAffectedExactDecimalOverlayTests": 33,
+    "files": [
+      {
+        "path": "/home/ubuntu/work/51dianzi-platform--manager/server/channelInventoryManualReference.test.ts",
+        "sha256": "3998b6ef7c1cc8f78627dd7c29aa0fcf1c3fe8cfc9171111b3ea2acdf8400174",
+        "tests": 35,
+        "status": "passed"
+      },
+      {
+        "path": "/home/ubuntu/work/51dianzi-platform--manager/client/src/business/platform/client/src/pages/manualReferenceEdit.render.test.ts",
+        "sha256": "0e5e14336ec755a74c095933fbb54125b1bd80559b158e67818d4b0c3423fcf1",
+        "tests": 33,
+        "status": "passed"
+      }
+    ],
+    "full606UiAnd437BackendSuitesRerun": false,
+    "covers": "precise decimals/zero/null/omission; scoped authorized reads; original authority+CRM gates; CAS/manual/audit rollback; UUID replay and actor metadata; manual display priority/auto fallback; identity retention confirmation"
+  },
+  "driverHost27Closure": {
+    "status": "PASS",
+    "manifestSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+    "inputContractSha256": "8a6c6c15a8cda4f740cbe6a62ee0eb9a954f053f055464a500cd1846a3ef5bc5",
+    "actualCandidateReadOnlyLoaderUsed": true,
+    "requireFinal": false,
+    "finalApprovalOrSchemaReceiptValidated": false,
+    "inMemoryNonfinalLookupEnvelopeOnly": true,
+    "productionActivationExecuted": false,
+    "readonly": true,
+    "writes": 0,
+    "outsideCandidateReads": 0,
+    "originalBlockingManifestSha256": "3abc489ceab4da1e1a4338127c5ec971124c879ac66935e084adb9b31de0e5c1",
+    "originalBlocker": "load_package required Host25 despite actual Host27",
+    "blockerClosed": true,
+    "priorHostCount": 25,
+    "finalHostCount": 27,
+    "exactTwoNewModules": [
+      "client/src/business/platform/client/src/pages/ChannelInventoryManualReferenceFields.tsx",
+      "client/src/business/platform/client/src/pages/manualReferenceEdit.ts"
+    ],
+    "threeWayExpectedHostEquality": true,
+    "onlyOneDriverLineChanged": true,
+    "changedPackageFiles": [
+      "input-contract.json",
+      "parent-source-review.json",
+      "release-driver.py"
+    ],
+    "driverSha256": "8d4c1fc45164f83c180b20ac2395f39ce2aa243175b8fbdadf80832bb69aae19"
+  },
+  "blockingFindings": [],
+  "closedFindings": [
+    {
+      "severity": "blocking-before-fix",
+      "originalManifestSha256": "3abc489ceab4da1e1a4338127c5ec971124c879ac66935e084adb9b31de0e5c1",
+      "finding": "load_package required Host25 despite actual Host27",
+      "closedInManifestSha256": "f7e5c57fe2dcd3916c848da69e0da93cd7f7f9610a06e29fa1a25519730f1623",
+      "evidence": "actual candidate load_package(require_final=False) PASS; original one driver line only, exact prior25+2 named modules and three-way expectedHost equality; only input/review/driver package changes"
+    }
+  ],
+  "schemaReviewIncluded": false,
+  "approvalUse": "Only parent code release approval. Independent schema VERIFIED receipt, parent final approval, live drift guards and production release remain separate gates. No claim of real account save.",
+  "fixtureOnlyMeaning": "Top-level false means this receipt binds the actual immutable candidate package; it does not mean production E2E. Nested isolatedFragmentQA and source fixtures remain fixtureOnly:true.",
+  "limitations": [
+    "Acquired API and Host bundles were parsed/mapped/compared, not imported or executed as complete running apps.",
+    "62 new fragment checks use synthetic dependencies; 35 source transaction checks use an explicit offline SQL fixture, not real MySQL concurrency/locking.",
+    "33 frontend tests use jsdom and actual affected source, not a signed-in native production browser.",
+    "No authenticated account save, production database write, runtime reload, deployment, or schema approval was performed by this reviewer.",
+    "Readonly load_package uses an in-memory nonfinal lookup envelope and require_final=False; it does not validate external final approval/schema receipts or perform activation."
+  ],
+  "evidencePins": [
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/final-candidate-before-sha256.json",
+      "sha256": "acbaaafb743afc55b537b03af225dc6af47a94f25ae710d77b49e6d3074ef61e"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/final-candidate-after-sha256.json",
+      "sha256": "acbaaafb743afc55b537b03af225dc6af47a94f25ae710d77b49e6d3074ef61e"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/final-candidate-after-all-review-sha256.json",
+      "sha256": "acbaaafb743afc55b537b03af225dc6af47a94f25ae710d77b49e6d3074ef61e"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/actual-candidate-mapping.json",
+      "sha256": "64d506507b4bc640c27097ce9951a2ccb4144ea409764435b470a64e18f447b4"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/actual-candidate-mapping.log",
+      "sha256": "64d506507b4bc640c27097ce9951a2ccb4144ea409764435b470a64e18f447b4"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/driver-load-package-readonly.json",
+      "sha256": "209c6b12929be7ee6badfe1eb4ab7fa44073093ea4bd01443da3ead63bf4e90b"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/driver-load-package-readonly.log",
+      "sha256": "209c6b12929be7ee6badfe1eb4ab7fa44073093ea4bd01443da3ead63bf4e90b"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/source-affected-tests.json",
+      "sha256": "28efdaf91983e30ebecccb13a235740514a4617bf752751736aa8fd33b9d541f"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/source-affected-tests.log",
+      "sha256": "46036e5257e57604c2494e26bb7e6d5193c474abde68b081c7477c733d71f380"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/isolated-fragment-qa.json",
+      "sha256": "723149e3f19088694a550ff64494c25e690ac1bf2339ab51fe3601e210b537c2"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/isolated-fragment-qa.log",
+      "sha256": "723149e3f19088694a550ff64494c25e690ac1bf2339ab51fe3601e210b537c2"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/recompiled-backend.log",
+      "sha256": "c7d5142a19209bd03c32b735ce1330404e290908df86231725a943a420aafbff"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/verify-actual-candidate.cjs",
+      "sha256": "ce55b7fc4a19332cce1e30ebc5062570b2aadd9a204569f0acdd4dabb1416d61"
+    },
+    {
+      "file": "/home/ubuntu/work/manual-reference-edit-20261115/affected-native-qa-evidence/verify-driver-load-package.py",
+      "sha256": "e32fbaf908b9e5fd6e14133629a1a4876a3a0d8402636803fb8a965fc364dec7"
+    }
+  ]
+}
