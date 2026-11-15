@@ -26,6 +26,8 @@ import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelIn
 import { ChannelReferenceCell } from "./ChannelReferenceCell";
 import { ChannelInventoryManualReferenceFields } from "./ChannelInventoryManualReferenceFields";
 import { manualReferenceDraftFrom, manualReferenceValidation, manualReferencePatch, manualReferenceRetentionKey } from "./manualReferenceEdit";
+import { MaterialEditPanel, type MaterialForm } from "./ChannelInventoryMaterialEditPanel";
+export { MaterialEditPanel } from "./ChannelInventoryMaterialEditPanel";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
 import "../components/channelInventory/notes.css";
@@ -69,18 +71,6 @@ type ChannelForm = {
   notes: string;
 };
 
-type MaterialForm = {
-  channelId: string;
-  partNumber: string;
-  brand: string;
-  qty: string;
-  dateCode: string;
-  price: string;
-  taxIncluded: "unknown" | "included" | "excluded";
-  leadTime: string;
-  note: string;
-};
-
 type ChannelEditor =
   | { mode: "create" }
   | { mode: "edit"; channel: Channel };
@@ -119,7 +109,7 @@ function channelTypeLabel(type: ChannelType) {
   return CHANNEL_TYPES.find(item => item.value === type)?.label ?? type;
 }
 
-function createRequestId() {
+export function createRequestId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
@@ -341,11 +331,11 @@ function errorCode(error: unknown) {
   return typeof code === "string" ? code : "";
 }
 
-function errorMessage(error: unknown, fallback: string) {
+export function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-function definitiveWriteFailure(error: unknown) {
+export function definitiveWriteFailure(error: unknown) {
   return new Set([
     "BAD_REQUEST",
     "CONFLICT",
@@ -384,7 +374,7 @@ function channelFormFrom(channel: Channel): ChannelForm {
   };
 }
 
-function materialFormFrom(material: PublicMaterial): MaterialForm {
+export function materialFormFrom(material: PublicMaterial): MaterialForm {
   return {
     channelId: material.channelId === null ? "" : String(material.channelId),
     partNumber: material.partNumber,
@@ -403,7 +393,7 @@ function materialFormFrom(material: PublicMaterial): MaterialForm {
   };
 }
 
-function materialInputFromForm(
+export function materialInputFromForm(
   form: MaterialForm,
 ): Omit<MaterialCreateInput, "requestId" | "expectedEnterpriseId" | "expectedActorUserId"> {
   const channelId = Number(form.channelId);
@@ -425,7 +415,7 @@ function materialInputFromForm(
   };
 }
 
-function validateMaterialForm(form: MaterialForm, creating = true) {
+export function validateMaterialForm(form: MaterialForm, creating = true) {
   const errors: string[] = [];
   const channelId = Number(form.channelId);
   const quantity = form.qty.trim();
@@ -1968,29 +1958,20 @@ export default function ChannelInventoryHost() {
       ) : null}
 
       {materialEditor && canWriteMaterials && sourceContextVerified && contextCurrent && (materialEditor.mode === "create" || editableRowsRef.current.has(materialEditor.material.id)) ? (
-        <div className="ci-modal-backdrop" role="presentation">
-          <section ref={materialDialogRef} className="ci-host-dialog ci-host-material-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-material-editor-title" onKeyDown={event => {
+        <MaterialEditPanel mode={materialEditor.mode} form={materialForm} setForm={setMaterialForm}
+          onIdentityChange={() => setManualReferenceConfirmation("")} busy={busy === "material"} retryLocked={materialRetryLocked}
+          channels={activeChannels} nativeNote={nativeNote} message={message} dialogRef={materialDialogRef}
+          context={expectedContext!} scopeKey={identity} isCurrent={isCurrent}
+          onClose={() => { invalidateEditSession(); setMaterialEditor(null); }} onSubmit={() => void submitMaterial()}
+          onKeyDown={event => {
             if (event.key === "Escape" && busy !== "material" && !materialRetryLocked) { event.preventDefault(); invalidateEditSession(); setMaterialEditor(null); }
             if (event.key !== "Tab") return;
             const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)'));
             const first = controls[0]; const last = controls.at(-1);
             if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
             if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-          }}>
-            <header><div><h2 id="ci-material-editor-title">{materialEditor.mode === "create" ? "单条上传" : "编辑渠道库存"}</h2></div><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" disabled={busy === "material" || materialRetryLocked} onClick={() => { invalidateEditSession(); setMaterialEditor(null); }}>×</button></header>
-            <div className="ci-dialog-scroll">
-            {materialEditor.mode === "create" && !activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
-            <fieldset className="ci-form-grid" disabled={busy === "material" || materialRetryLocked}>
-              <label className="ci-field"><span>型号 *</span><input required value={materialForm.partNumber} maxLength={128} onChange={event => { setMaterialForm(current => ({ ...current, partNumber: event.target.value })); setManualReferenceConfirmation(""); }} /></label>
-              <label className="ci-field"><span>品牌 *</span><input required value={materialForm.brand} maxLength={64} onChange={event => { setMaterialForm(current => ({ ...current, brand: event.target.value })); setManualReferenceConfirmation(""); }} /></label>
-              {materialEditor.mode === "create" ? <label className="ci-field"><span>关联渠道 *</span><select required aria-label="关联渠道" value={materialForm.channelId} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label> : <label className="ci-field"><span>关联渠道（不可更换）</span><input aria-label="关联渠道" readOnly disabled value="关联渠道由服务端保留" /></label>}
-              <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
-              <label className="ci-field"><span>Date Code</span><input maxLength={32} value={materialForm.dateCode} onChange={event => setMaterialForm(current => ({ ...current, dateCode: event.target.value }))} /></label>
-              <label className="ci-field"><span>报价 CNY</span><input inputMode="decimal" placeholder="面议" value={materialForm.price} onChange={event => setMaterialForm(current => ({ ...current, price: event.target.value }))} /></label>
-              <label className="ci-field"><span>税务口径</span><select value={materialForm.taxIncluded} onChange={event => setMaterialForm(current => ({ ...current, taxIncluded: event.target.value as MaterialForm["taxIncluded"] }))}><option value="unknown">待确认</option><option value="included">含税</option><option value="excluded">未税</option></select></label>
-              <label className="ci-field"><span>交期</span><input maxLength={64} placeholder="待确认" value={materialForm.leadTime} onChange={event => setMaterialForm(current => ({ ...current, leadTime: event.target.value }))} /></label>
-              {nativeNote && materialEditor.mode === "create" ? <label className="ci-field ci-form-wide"><span>备注（仅本人）</span><textarea placeholder="仅本人可见，不共享" value={materialForm.note} maxLength={2000} rows={2} onChange={event => setMaterialForm(current => ({ ...current, note: event.target.value }))} /></label> : null}
-              {materialEditor.mode === "edit" ? <ChannelInventoryManualReferenceFields draft={manualReferenceDraft}
+          }}
+          manualFields={materialEditor.mode === "edit" ? <ChannelInventoryManualReferenceFields draft={manualReferenceDraft}
                 autoReferences={materialRows.some(row => row.id === materialEditor.material.id && row.partNumber === materialEditor.material.partNumber && row.brand === materialEditor.material.brand)
                   ? currentReferences.get(materialEditor.material.id) : undefined} partNumber={materialEditor.material.partNumber}
                 locked={busy === "material" || materialRetryLocked} retentionRequired={Boolean(manualRetentionKey)}
@@ -2002,13 +1983,8 @@ export default function ChannelInventoryHost() {
                   if (busy === "material" || materialRetryLocked || materialSubmitPendingRef.current) return;
                   setManualReferenceConfirmation(confirmed ? manualRetentionKey : "");
                 }} /> : null}
-            </fieldset>
-            {nativeNote && materialEditor.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(materialEditor.material.id)?.isMine ? <div className="ci-private-entry"><button type="button" className="ci-inline-link" disabled={busy === "material" || materialRetryLocked || !privateNotesAllowed} onClick={() => openPrivateNotes(materialEditor.material.id, true)}>本人备注历史（私有）</button><small>独立私人历史，不随公共库存共享。</small></div> : null}
-            {message ? <p className="ci-error" role="alert">{message}</p> : null}
-            </div>
-            <footer><button type="button" className="ci-button" disabled={busy === "material" || materialRetryLocked} onClick={() => { invalidateEditSession(); setMaterialEditor(null); }}>取消</button><button type="button" className="ci-button ci-primary" disabled={busy === "material" || (materialEditor.mode === "create" && !activeChannels.length)} onClick={() => void submitMaterial()}>{busy === "material" ? "保存中…" : materialRetryLocked ? "按原请求重试" : materialEditor.mode === "create" ? "上传库存" : "保存修改"}</button></footer>
-          </section>
-        </div>
+          privateEntry={nativeNote && materialEditor.mode === "edit" && materialEditor.isMine && collaborationRowsRef.current.get(materialEditor.material.id)?.isMine ? <div className="ci-private-entry"><button type="button" className="ci-inline-link" disabled={busy === "material" || materialRetryLocked || !privateNotesAllowed} onClick={() => openPrivateNotes(materialEditor.material.id, true)}>本人备注历史（私有）</button><small>独立私人历史，不随公共库存共享。</small></div> : null}
+        />
       ) : null}
 
       {batchOpen && canWriteMaterials && contextCurrent && tab === "materials" ? <BatchUpload key={`${identity}:${batchSession}`} channels={batchChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={batchTarget?.id} onClose={() => { invalidateEditSession(); clearBatch(); }} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onCreateBatch={submitUploadBatch} onComplete={() => { if (batchCurrent()) void refreshMaterials(); }} isCurrent={batchCurrent} /> : null}

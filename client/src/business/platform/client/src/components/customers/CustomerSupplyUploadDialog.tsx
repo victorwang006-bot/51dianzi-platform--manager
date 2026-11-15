@@ -168,12 +168,23 @@ function CustomerSupplyUploadSession(props: Props) {
     const data = initialSession(props.customerId, context);
     frozen.current = data; setSessionData(data); setConfirmedExisting(false); setMessage("");
   };
+  const complete = () => {
+    if (!current()) return;
+    // One identity-isolated QueryClient covers global/channel/page inventory keys.
+    // Cache refresh failures must never turn an acknowledged receipt into a retry.
+    void Promise.allSettled([
+      utils.channelInventory.listTeamMaterials.invalidate(),
+      utils.channelInventory.listChannels.invalidate(),
+      utils.channelInventory.listUploadBatches.invalidate(),
+    ]);
+    props.onComplete();
+  };
   const viewResults = (entries: BatchEntry[]) => {
     if (!current()) return;
     const channelId = completedSupplyChannel(entries, props.customerId);
     if (!channelId) { setMessage("成功回执渠道不一致，已阻止跳转，请核实原批次。"); return; }
     // Close the real portal before navigating, never on the first successful row.
-    props.onComplete(); props.onClose(); navigate(supplyLocation(channelId, "materials"));
+    complete(); props.onClose(); navigate(supplyLocation(channelId, "materials"));
   };
   if (!currentRef.current || invalidated) return null;
   const upload = context && sessionData ? <BatchUpload
@@ -185,7 +196,7 @@ function CustomerSupplyUploadSession(props: Props) {
     customerSourceReady={contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp}
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
-    renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} />}
+    renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} isCurrent={current} />}
     sourceDetails={(!context.channel && !sourceLocked) || message ? <div className="customer-supply-details">
       {!context.channel && !sourceLocked ? <details className="customer-supply-existing">
         <summary>关联现有渠道（可选）</summary>
@@ -284,7 +295,7 @@ function CustomerSupplyUploadSession(props: Props) {
         } finally { requests.current.delete(abort); }
       } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
     }}
-    onComplete={() => { if (current()) props.onComplete(); }}
+    onComplete={complete}
     onFinish={result => { if (result.complete && result.entries.length && current()) viewResults(result.entries); }}
     onViewResults={viewResults}
   /> : null;

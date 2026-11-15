@@ -43,6 +43,7 @@ vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({
   onAuthorizationError: runtime.authorizationError,
 }) }));
 vi.mock("../../../../api/business-trpc", () => ({ trpc: {
+  customerDemand: { suggestPartNumbers: { useQuery: () => ({ data: [], isFetching: false, isError: false }) } },
   useUtils: () => runtime.utils,
   enterprise: { me: { useQuery: () => ({ data: { enterprise: { id: runtime.enterpriseId }, currentUserId: runtime.actorId, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: runtime.enterpriseFailed, refetch: runtime.authorityRetry }) } },
   customer: {
@@ -106,6 +107,7 @@ beforeEach(() => {
   runtime.create.mockReset().mockResolvedValue({ item: { id: 901 }, idempotent: false, channelId: 411, customerId: 801 });
   runtime.navigate.mockReset(); runtime.authorizationError.mockReset(); runtime.authorityRetry.mockReset();
   runtime.utils = { client: { customer: { starContext: { query: runtime.starContext }, setStar: { mutate: runtime.setStar }, list: { query: runtime.starList } }, channelInventory: { customerSupplySummary: { query: runtime.summary }, customerSupplyContext: { query: runtime.context }, createCustomerMaterial: { mutate: runtime.create } } },
+    channelInventory: { listTeamMaterials: { invalidate: vi.fn().mockResolvedValue(undefined) }, listChannels: { invalidate: vi.fn().mockResolvedValue(undefined) }, listUploadBatches: { invalidate: vi.fn().mockResolvedValue(undefined) } },
     customer: { contactsSummary: { reset: vi.fn().mockResolvedValue(undefined) }, contactsList: { reset: vi.fn().mockResolvedValue(undefined) }, list: { invalidate: vi.fn().mockResolvedValue(undefined) } } };
   document.body.dataset.adminReadability = "true";
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);

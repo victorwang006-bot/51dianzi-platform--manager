@@ -12,6 +12,8 @@ const runtime = vi.hoisted(() => ({
   native: { read: true, write: true, note: true, authorizationVersion: "v1" },
   authorityOptions: vi.fn(),
   invalidateContext: vi.fn(), invalidateSummary: vi.fn(),
+  invalidateMaterials: vi.fn(), invalidateChannels: vi.fn(), invalidateBatches: vi.fn(),
+  suggest: vi.fn(), suggestions: {} as Record<string, { data: { id: number; partNumber: string; brand: string; package: string }[]; isFetching: boolean; isError: boolean }>,
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers", runtime.navigate] }));
 vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({
@@ -19,12 +21,16 @@ vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({
   officialInventoryPermissions: runtime.native, onAuthorizationError: runtime.onAuthorizationError,
 }) }));
 vi.mock("../../../../../api/business-trpc", () => ({ trpc: {
+  customerDemand: { suggestPartNumbers: { useQuery: (input: { keyword: string }, options: unknown) => {
+    runtime.suggest(input, options); return runtime.suggestions[input.keyword] ?? { data: [], isFetching: false, isError: false };
+  } } },
   enterprise: { me: { useQuery: (_: unknown, options: unknown) => { runtime.authorityOptions(options); return { data: { enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: false, refetch: vi.fn() }; } } },
   channelInventory: {
     customerSupplyContext: { useQuery: () => ({ data: runtime.context, isError: false, isFetching: false, isPlaceholderData: false, isFetchedAfterMount: true, refetch: runtime.readContext }) },
     customerSupplySummary: { useQuery: () => ({ data: { items: [{ customerId: 801, channelId: null, canViewStock: false, materialCount: 0 }] }, isError: false, isFetching: false, isPlaceholderData: false, isFetchedAfterMount: true, refetch: vi.fn() }) },
   },
-  useUtils: () => ({ channelInventory: { customerSupplyContext: { invalidate: runtime.invalidateContext }, customerSupplySummary: { invalidate: runtime.invalidateSummary } }, client: { channelInventory: {
+  useUtils: () => ({ channelInventory: { customerSupplyContext: { invalidate: runtime.invalidateContext }, customerSupplySummary: { invalidate: runtime.invalidateSummary },
+    listTeamMaterials: { invalidate: runtime.invalidateMaterials }, listChannels: { invalidate: runtime.invalidateChannels }, listUploadBatches: { invalidate: runtime.invalidateBatches } }, client: { channelInventory: {
     customerSupplyContext: { query: runtime.readContext }, createCustomerUploadBatch: { mutate: runtime.createBatch }, createCustomerMaterial: { mutate: runtime.create },
     listChannels: { query: runtime.listChannels }, getChannel: { query: runtime.getChannel },
   } } }),
@@ -94,6 +100,8 @@ beforeEach(() => {
   runtime.navigate.mockReset(); runtime.close.mockReset(); runtime.complete.mockReset(); runtime.onAuthorizationError.mockReset();
   runtime.authorityOptions.mockReset();
   runtime.invalidateContext.mockReset(); runtime.invalidateSummary.mockReset();
+  runtime.invalidateMaterials.mockReset(); runtime.invalidateChannels.mockReset(); runtime.invalidateBatches.mockReset();
+  runtime.suggest.mockReset(); runtime.suggestions = {};
   sessionStorage.clear(); vi.stubGlobal("confirm", vi.fn(() => true));
 });
 afterEach(async () => { if (root) await act(async () => root?.unmount()); container?.remove(); root = null; container = null; document.body.replaceChildren(); vi.unstubAllGlobals(); vi.useRealTimers(); });
@@ -192,12 +200,14 @@ describe("customer supply real portal and reused importer", () => {
     await act(async () => { finish(receipt()); }); await settle();
     expect(runtime.create).toHaveBeenCalledTimes(3); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
+    expect(runtime.invalidateMaterials).toHaveBeenCalledWith(); expect(runtime.invalidateChannels).toHaveBeenCalledWith(); expect(runtime.invalidateBatches).toHaveBeenCalledWith();
     for (const [dto] of runtime.create.mock.calls) { expect(dto).not.toHaveProperty("channelId"); expect(dto).toMatchObject({ customerId: 801, expectedCustomerVersion: 4, sourceProfile: { type: "factory" } }); }
   });
   it("retains partial/unknown failures and receipts, restores original metadata and retries the exact request", async () => {
     runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.resolve(receipt()); }).mockRejectedValueOnce(new Error("response lost"));
     render(); await setupUpload(); await upload(); click(button("确认上传 3 条")); await settle();
     expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("response lost");
+    expect(runtime.invalidateMaterials).toHaveBeenCalled(); expect(runtime.invalidateChannels).toHaveBeenCalled(); expect(runtime.invalidateBatches).toHaveBeenCalled();
     const original = runtime.create.mock.calls[1][0]; const savedKey = required(sessionStorage.key(0));
     expect(savedKey).toContain(customerSupplySessionSuffix(identity, 801));
     const saved = JSON.parse(required(sessionStorage.getItem(savedKey)));
@@ -417,6 +427,49 @@ async function openSingle(values: Record<string, string> = {}) {
   for (const [field, value] of Object.entries(values)) enterSingle(field, value);
 }
 function previewSingle() { click(button("预览单条物料")); }
+
+describe("real upload Dialog wires single-entry suggestion guards", () => {
+  const candidate = { id: 21, partNumber: "STM32F103", brand: "ST", package: "LQFP" };
+  async function suggest() {
+    runtime.suggestions.ST = { data: [candidate], isFetching: false, isError: false };
+    await openSingle({ "单条型号": "ST", "单条品牌": "MANUAL-BRAND" });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 240)); });
+    expect(runtime.suggest).toHaveBeenLastCalledWith({ keyword: "ST", limit: 8 }, expect.objectContaining({ enabled: true }));
+    expect(container?.querySelector('[role="option"]')).toBeNull(); // real Popover inside real Dialog Portal
+    return required(document.body.querySelector<HTMLButtonElement>('[role="option"]'));
+  }
+  function oldClick(element: Element) {
+    return (element as any)[Object.keys(element).find(key => key.startsWith("__reactProps$"))!].onClick as () => void;
+  }
+  it("selects a real candidate into the draft only, with the original controls disabled on preview", async () => {
+    click(await suggest());
+    expect(singleField("单条型号").value).toBe(candidate.partNumber); expect(singleField("单条品牌").value).toBe(candidate.brand);
+    previewSingle(); expect(document.querySelector(".ci-batch-preview")?.textContent).toContain(candidate.partNumber);
+    expect(document.querySelector<HTMLFieldSetElement>(".customer-supply-single fieldset")?.disabled).toBe(true);
+    expect(singleField("单条型号").matches(":disabled")).toBe(true); expect(singleField("单条品牌").matches(":disabled")).toBe(true);
+    expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it.each(["fetching", "network-error"])("blocks retained candidate data and its old click in actual Portal during %s, keeping manual entry", async state => {
+    const option = await suggest(), staleClick = oldClick(option), data = runtime.suggestions.ST.data;
+    runtime.suggestions.ST = { data, isFetching: state === "fetching", isError: state === "network-error" };
+    act(() => root?.render(React.createElement(Harness, { key: String(generation) })));
+    expect(runtime.suggestions.ST.data).toBe(data); expect(document.querySelector('[role="option"]')).toBeNull();
+    act(() => staleClick());
+    act(() => singleField("单条型号").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+    expect(singleField("单条型号").value).toBe("ST"); expect(singleField("单条品牌").value).toBe("MANUAL-BRAND");
+    enterSingle("单条型号", "HAND-ENTERED"); enterSingle("单条品牌", "HAND-BRAND");
+    expect(singleField("单条型号").value).toBe("HAND-ENTERED"); expect(singleField("单条品牌").value).toBe("HAND-BRAND");
+    expect(runtime.create).not.toHaveBeenCalled();
+  });
+  it("rejects current-invalidated candidate clicks before any Dialog rerender, without a test-injected single-entry isCurrent", async () => {
+    const option = await suggest(), staleClick = oldClick(option);
+    runtime.current = false; // Only the real Dialog's caller guard changes. No render/unmount.
+    act(() => staleClick()); click(option);
+    act(() => singleField("单条型号").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+    expect(singleField("单条型号").value).toBe("ST"); expect(singleField("单条品牌").value).toBe("MANUAL-BRAND");
+    expect(runtime.create).not.toHaveBeenCalled(); expect(runtime.createBatch).not.toHaveBeenCalled();
+  });
+});
 
 describe("customer single material upload uses the customer batch transaction", () => {
   it("has explicit accessible table/single switches and defaults to unchanged file upload", async () => {

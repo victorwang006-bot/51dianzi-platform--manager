@@ -1,11 +1,8 @@
-.customer-channel-inventory { margin-top: 16px; }
+/* The ci-host / ci-flat-view classes use the existing Host's compact typography,
+ * table, reference and edit/more rules. Column widths come only from its model. */
+.customer-channel-inventory { box-sizing: border-box; margin-top: 16px; width: 100%; max-width: 100%; min-width: 0; }
 .customer-channel-inventory .ci-toolbar { flex-wrap: wrap; }
-.customer-channel-inventory-table { --ci-stock-min-width: 1164px; }
-.customer-channel-inventory-table th, .customer-channel-inventory-table td { vertical-align: middle; }
-.customer-channel-inventory .ci-readonly { margin: 10px 0 14px; }
-.customer-channel-inventory .ci-row-actions { flex-wrap: wrap; }
 .customer-channel-inventory .ci-filter-count { margin-left: auto; }
-.customer-channel-inventory .ci-material-part-col { min-width: 220px; }
 .customer-channel-inventory .ci-empty { white-space: normal; }
 .customer-channel-inventory .ci-pagination { flex-wrap: wrap; }
 .customer-channel-settings { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

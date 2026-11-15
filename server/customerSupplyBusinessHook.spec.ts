@@ -5,18 +5,93 @@ import type { AppRouter } from "../client/src/business/platform/front-router-typ
 import { createBusinessTrpcClient } from "../client/src/business/api/business-trpc";
 import type { TrpcContext } from "./_core/context";
 import { verifyOfficialInventoryGrant } from "../client/src/business/platform/front-router-types/server/services/internalBusinessOfficialGrant";
-import { signedOfficialInventoryGrantSchema } from "../client/src/business/platform/shared/internalBusinessOfficialInventory";
+import { signedOfficialInventoryGrantSchema } from "../shared/internalBusinessOfficialInventory";
 
-const state = vi.hoisted(() => ({ crmScope: true, nativeWrite: true, paths: [] as string[], forwarded: [] as Record<string, unknown>[], audit: vi.fn() }));
-vi.mock("./db", () => ({
-  withBusinessAuthorizationFence: async (_key: unknown, operation: () => Promise<unknown>) => operation(),
-  getAdminUserById: async () => ({ id: 303, status: "active", adminRole: "merchant_mgr", sessionVersion: 1 }),
-  getAdminUserPermissions: async () => ["officialInventory.read", ...(state.nativeWrite ? ["officialInventory.write"] : [])],
-  getActiveBusinessStaffBinding: async () => ({ frontUserId: 202, bindingVersion: 7 }),
-  getActiveBusinessMerchantScope: async () => ({ scopeVersion: 4, modulePermissions: ["business.inventory.read", "business.inventory.write", ...(state.crmScope ? ["business.customers.read"] : [])] }),
-  getBusinessWorkbenchMerchantById: async () => ({ id: 51, merchantNo: "fixture", companyName: "fixture", crmStatus: "enabled", registrationRegion: "CN", businessLicense: "SYNTHETIC-CREDIT", crmOwnerPortalUserId: "101" }),
-  recordBusinessCommandAccess: async (input: unknown) => state.audit(input),
+const state = vi.hoisted(() => ({
+  crmScope: true, nativeWrite: true, lockedNativeRead: true, lockedSessionVersion: 1, archivedActor: false, leaderBound: true,
+  fenceHeld: false, profileHeld: false, tables: [] as string[], authoritySql: [] as string[],
+  paths: [] as string[], forwarded: [] as Record<string, unknown>[], audit: vi.fn(),
 }));
+// Exercise the actual withOfficialChannelProfileRead/loadOfficialAccess chain.
+// Only the three fixed SELECT builders and two read-only authority SQL queries
+// exist here: no MySQL connection, permissive query fallback or write methods.
+vi.mock("./db", async () => {
+  const { getTableName } = await import("drizzle-orm");
+  const { MySqlDialect } = await import("drizzle-orm/mysql-core");
+  const dialect = new MySqlDialect();
+  const permissions = () => ["officialInventory.read", ...(state.nativeWrite ? ["officialInventory.write"] : [])];
+  const tx = {
+    select: (projection: Record<string, unknown>) => {
+      let tableName = "";
+      let predicate: any;
+      const query = {
+        from: (table: any) => { tableName = getTableName(table); state.tables.push(tableName); return query; },
+        where: (value: any) => { predicate = value; return query; },
+        limit: (limit: number) => { expect(limit).toBe(1); return query; },
+        innerJoin: (table: any, condition: any) => {
+          expect(tableName).toBe("official_channel_team_members"); expect(getTableName(table)).toBe("official_channel_teams");
+          expect(dialect.sqlToQuery(condition).params).toEqual([]); return query;
+        },
+        orderBy: () => { expect(tableName).toBe("admin_user_permissions"); return query; },
+        for: async (lock: string) => {
+          expect(lock).toBe("update"); expect(state.fenceHeld).toBe(true); expect(state.profileHeld).toBe(true);
+          const compiled = dialect.sqlToQuery(predicate);
+          expect(compiled.params).toEqual([303]);
+          if (tableName === "admin_users") {
+            expect(Object.keys(projection)).toEqual(["id", "adminRole", "status", "sessionVersion"]);
+            expect(compiled.sql).toBe("`admin_users`.`id` = ?");
+            return [{ id: 303, status: "active", adminRole: "merchant_mgr", sessionVersion: state.lockedSessionVersion }];
+          }
+          if (tableName === "admin_user_permissions") {
+            expect(Object.keys(projection)).toEqual(["permission"]);
+            expect(compiled.sql).toBe("`admin_user_permissions`.`adminUserId` = ?");
+            return (state.lockedNativeRead ? permissions() : []).map(permission => ({ permission }));
+          }
+          if (tableName === "official_channel_team_members") {
+            expect(Object.keys(projection)).toEqual(["teamId", "role", "teamStatus"]);
+            expect(compiled.sql).toBe("`official_channel_team_members`.`adminUserId` = ?");
+            return [{ teamId: 71, role: "leader", teamStatus: "active" }];
+          }
+          throw new Error(`Unexpected official authorization SELECT: ${tableName}`);
+        },
+      };
+      return query;
+    },
+    execute: async (statement: any) => {
+      expect(state.fenceHeld).toBe(true); expect(state.profileHeld).toBe(true);
+      const compiled = dialect.sqlToQuery(statement), text = compiled.sql.replace(/\s+/g, " ").trim();
+      state.authoritySql.push(text);
+      if (text === "SELECT archived.id FROM admin_staff_archives archived WHERE archived.adminUserId = ? LIMIT 1 FOR UPDATE") {
+        expect(compiled.params).toEqual([303]); return [state.archivedActor ? [{ id: 1 }] : []];
+      }
+      if (text.startsWith("SELECT b.frontUserId AS ownerUserId, a.id AS recorderAdminAccountId FROM official_channel_team_members tm")) {
+        expect(compiled.params).toEqual([71]);
+        expect(text).toContain("t.status = 'active'"); expect(text).toContain("a.status = 'active'");
+        expect(text).toContain("b.status = 'active'"); expect(text).toContain("archived.adminUserId = a.id");
+        expect(text).toContain("duplicate_tm.id <> tm.id"); expect(text).toContain("duplicate_b.id <> b.id");
+        expect(text).toContain("ORDER BY b.frontUserId LIMIT 501");
+        return [state.leaderBound ? [{ ownerUserId: 202, recorderAdminAccountId: 303 }] : []];
+      }
+      throw new Error(`Unexpected official authorization SQL (SELECT-only fixture): ${text}`);
+    },
+  };
+  return {
+    withBusinessAuthorizationFence: async (key: unknown, operation: () => Promise<unknown>) => {
+      expect(key).toEqual({ adminUserId: 303, merchantId: 51 }); expect(state.fenceHeld).toBe(false); state.fenceHeld = true;
+      try { return await operation(); } finally { state.fenceHeld = false; }
+    },
+    getDb: async () => ({ transaction: async (operation: (transaction: typeof tx) => Promise<unknown>) => {
+      expect(state.fenceHeld).toBe(true); expect(state.profileHeld).toBe(false); state.profileHeld = true;
+      try { return await operation(tx); } finally { state.profileHeld = false; }
+    } }),
+    getAdminUserById: async () => ({ id: 303, status: "active", adminRole: "merchant_mgr", sessionVersion: 1 }),
+    getAdminUserPermissions: async () => permissions(),
+    getActiveBusinessStaffBinding: async () => ({ frontUserId: 202, bindingVersion: 7 }),
+    getActiveBusinessMerchantScope: async () => ({ scopeVersion: 4, modulePermissions: ["business.inventory.read", "business.inventory.write", ...(state.crmScope ? ["business.customers.read"] : [])] }),
+    getBusinessWorkbenchMerchantById: async () => ({ id: 51, merchantNo: "fixture", companyName: "fixture", crmStatus: "enabled", registrationRegion: "CN", businessLicense: "SYNTHETIC-CREDIT", crmOwnerPortalUserId: "101" }),
+    recordBusinessCommandAccess: async (input: unknown) => state.audit(input),
+  };
+});
 import { businessRouter } from "./businessRouter";
 
 // These assignments are checked by pnpm check (the .spec.ts is intentionally
@@ -63,10 +138,12 @@ function assertCanonicalOutputTypes(summary: Outputs["customerSupplySummary"], c
 void assertCanonicalOutputTypes;
 
 function ctx(req: Request): TrpcContext {
-  return { user: { id: 303, role: "admin" }, adminAccount: { id: 303, status: "active", username: "fixture", adminRole: "merchant_mgr" }, req: { headers: { "x-business-merchant-id": req.headers.get("x-business-merchant-id") ?? undefined }, ip: "127.0.0.1" }, res: {} } as unknown as TrpcContext;
+  return { user: { id: 303, role: "admin" }, adminAccount: { id: 303, status: "active", sessionVersion: 1, username: "fixture", adminRole: "merchant_mgr" }, req: { headers: { "x-business-merchant-id": req.headers.get("x-business-merchant-id") ?? undefined }, ip: "127.0.0.1" }, res: {} } as unknown as TrpcContext;
 }
 beforeEach(() => {
   state.crmScope = true; state.nativeWrite = true; state.paths = []; state.forwarded = []; state.audit.mockReset();
+  state.lockedNativeRead = true; state.lockedSessionVersion = 1; state.archivedActor = false; state.leaderBound = true;
+  state.fenceHeld = false; state.profileHeld = false; state.tables = []; state.authoritySql = [];
   vi.stubEnv("NODE_ENV", "test"); vi.stubEnv("BUSINESS_WORKBENCH_MERCHANT_IDS", "51");
   vi.stubEnv("PLATFORM_API_BASE", "https://front-fixture.invalid"); vi.stubEnv("PORTAL_API_KEY", "synthetic-local-key");
   vi.stubGlobal("fetch", async (input: string | URL | Request, init?: RequestInit) => {
@@ -77,6 +154,7 @@ beforeEach(() => {
       expect(req.headers.get("x-business-merchant-id")).toBe("51");
       return fetchRequestHandler({ endpoint: "/api/business-trpc", router: businessRouter, req, createContext: () => ctx(req) });
     }
+    expect(state.fenceHeld).toBe(true); expect(state.profileHeld).toBe(true);
     expect(url.origin).toBe("https://front-fixture.invalid");
     expect(url.pathname).toBe("/api/trpc/internalBusiness.execute");
     const payload = (await req.json())["0"].json as Record<string, unknown>;
@@ -88,6 +166,9 @@ beforeEach(() => {
     const permissions = verifyOfficialInventoryGrant(grant, target);
     expect(permissions).toMatchObject({ read: true, write: state.nativeWrite, note: false, customerScopeRead: true,
       authorizationVersion: expect.stringMatching(/^official-inventory-v1:/) });
+    expect(permissions.channelProfileTeamRead).toEqual({ ownerUserIds: [202] });
+    if (state.nativeWrite) expect(permissions.channelMaterialManagement).toEqual({ leaderAdminAccountId: 303, recorderBindings: [{ adminAccountId: 303, staffUserId: 202 }] });
+    else expect(permissions.channelMaterialManagement).toBeUndefined();
     expect(() => verifyOfficialInventoryGrant(grant, { ...target, method: "channelInventory.createChannel" })).toThrow("渠道库存受信授权无效");
     expect(() => verifyOfficialInventoryGrant(grant, { ...target, requestId: "different-http-request" })).toThrow("渠道库存受信授权无效");
     expect(() => verifyOfficialInventoryGrant({ ...grant, permissions: { ...grant.permissions, customerScopeRead: false } }, target)).toThrow("渠道库存受信授权无效");
@@ -99,7 +180,7 @@ beforeEach(() => {
     return new Response(JSON.stringify([{ result: { data: { json: response } } }]), { status: 200, headers: { "content-type": "application/json" } });
   });
 });
-afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+afterEach(() => { expect(state.fenceHeld).toBe(false); expect(state.profileHeld).toBe(false); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("real typed business hook client -> HTTP BFF -> fixed signed RPC", () => {
   it("all three hooks have exact inferable inputs/outputs and use only the precise inventory RPC paths", async () => {
@@ -129,5 +210,15 @@ describe("real typed business hook client -> HTTP BFF -> fixed signed RPC", () =
     await client.channelInventory.customerSupplyContext.query(contextInput);
     await expect(client.channelInventory.createCustomerMaterial.mutate(createInput)).rejects.toMatchObject({ data: { code: "FORBIDDEN" } });
     expect(state.forwarded).toHaveLength(1);
+  });
+
+  it.each(["archived-actor", "stale-session", "locked-native-read", "missing-leader-binding"])("the real profile snapshot rejects %s before forwarding or audit", async failure => {
+    if (failure === "archived-actor") state.archivedActor = true;
+    if (failure === "stale-session") state.lockedSessionVersion = 2;
+    if (failure === "locked-native-read") state.lockedNativeRead = false;
+    if (failure === "missing-leader-binding") state.leaderBound = false;
+    await expect(createBusinessTrpcClient(51).channelInventory.customerSupplyContext.query(contextInput)).rejects.toMatchObject({ data: { code: "FORBIDDEN" } });
+    expect(state.paths).toEqual(["channelInventory.customerSupplyContext"]);
+    expect(state.tables[0]).toBe("admin_users"); expect(state.forwarded).toEqual([]); expect(state.audit).not.toHaveBeenCalled();
   });
 });

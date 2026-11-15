@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useBusinessScope } from "../../../../../BusinessScope";
 import { emptyDraft, validateDraft, type Draft } from "../channelInventory/import";
 import { Button } from "../channelInventory/bridge";
+import { DemandPartNumberInput } from "../customerDemands/DemandPartNumberInput";
 
-type Props = { onPreview: (draft: Draft) => void; disabled: boolean };
+type Props = { onPreview: (draft: Draft) => void; disabled: boolean; isCurrent?: () => boolean };
 
 /** No network writes here: the parent importer owns preview, confirmation and recovery. */
-export function CustomerSupplySingleEntry({ onPreview, disabled }: Props) {
+export function CustomerSupplySingleEntry({ onPreview, disabled, isCurrent }: Props) {
   const business = useBusinessScope();
   const canAddNote = business.officialInventoryPermissions.note;
   const [draft, setDraft] = useState<Draft>({ ...emptyDraft });
@@ -14,19 +15,26 @@ export function CustomerSupplySingleEntry({ onPreview, disabled }: Props) {
   const partNumber = useRef<HTMLInputElement>(null);
   useEffect(() => { if (!disabled) partNumber.current?.focus(); }, [disabled]);
   const update = (field: keyof Draft, value: string) => {
+    if (disabled || isCurrent?.() === false) return;
     setDraft(current => ({ ...current, [field]: value }));
     setErrors([]);
   };
   return <form className="customer-supply-single" onSubmit={event => {
     event.preventDefault();
-    if (disabled) return;
+    if (disabled || isCurrent?.() === false) return;
     const value = { ...draft, note: canAddNote ? draft.note : "" };
     const issues = validateDraft(value);
     setErrors(issues);
     if (!issues.length) onPreview(value);
   }}>
     <fieldset className="customer-supply-single-fields" disabled={disabled}>
-      <label className="ci-field"><span>型号 *</span><input ref={partNumber} aria-label="单条型号" required maxLength={128} value={draft.partNumber} onChange={event => update("partNumber", event.target.value)} /></label>
+      <label className="ci-field"><span>型号 *</span><DemandPartNumberInput value={draft.partNumber} disabled={disabled} isCurrent={isCurrent}
+        rowIndex={0} className="" ariaLabel="单条型号" inputRef={partNumber} required testId="customer-supply-single-partNumber"
+        onChange={value => update("partNumber", value)} onSelect={item => {
+          if (disabled || isCurrent?.() === false) return;
+          setDraft(current => ({ ...current, partNumber: item.partNumber, brand: item.brand.trim() ? item.brand : current.brand }));
+          setErrors([]);
+        }} /></label>
       <label className="ci-field"><span>品牌 *</span><input aria-label="单条品牌" required maxLength={64} value={draft.brand} onChange={event => update("brand", event.target.value)} /></label>
       <label className="ci-field"><span>可供数量</span><input aria-label="单条可供数量" inputMode="numeric" placeholder="待确认" value={draft.qty} onChange={event => update("qty", event.target.value)} /></label>
       <label className="ci-field"><span>报价 CNY</span><input aria-label="单条报价 CNY" inputMode="decimal" placeholder="面议" value={draft.price} onChange={event => update("price", event.target.value)} /></label>
