@@ -86,7 +86,7 @@ describe("20261113 已批准八项一级入口", () => {
     ["/workbench/inbound", "inventory-management", ["采购入库"]],
     ["/workbench/outbound", "sales-orders", ["销售订单", "商城订单"]],
     ["/workbench/procurement/orders/88", "inventory-management", ["采购入库"]],
-    ["/workbench/procurement-demands", "procurement-management", ["采购管理", "采购需求"]],
+    ["/workbench/procurement-demands", "procurement-management", ["采购需求", "采购需求"]],
     ["/workbench/inquiries/88", "inquiries", ["询价接待"]],
     ["/workbench/chat/88", "inquiries", ["询价接待"]],
   ])("%s 路由高亮%s且面包屑移除业务工作台", async (location, target, labels) => {

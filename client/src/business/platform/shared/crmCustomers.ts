@@ -71,7 +71,34 @@ export const customerUpdateSchema = z.object({
   id: z.number().int().positive(), data: customerDataSchema, version: z.number().int().positive(),
   confirmDuplicate: z.boolean().default(false),
 });
-export const customerListSchema = z.object({
+/** Real calendar dates only; CRM uses MySQL DATETIME's 1000–9999 year domain. */
+const customerUpdatedDateSchema = z.iso.date({ error: "请输入有效日期（YYYY-MM-DD）" })
+  .refine(value => value >= "1000-01-01", "日期不能早于1000-01-01");
+export const customerUpdatedRangeSchema = z.object({
+  updatedFrom: customerUpdatedDateSchema.optional(),
+  // Reject overflow instead of producing an invalid SQL boundary or widening the range.
+  updatedTo: customerUpdatedDateSchema.refine(value => value < "9999-12-31", "结束日期不能晚于9999-12-30").optional(),
+}).refine(value => value.updatedFrom === undefined || value.updatedTo === undefined || value.updatedFrom <= value.updatedTo, {
+  message: "开始日期不能晚于结束日期", path: ["updatedTo"],
+});
+
+/** Beijing natural days: inclusive local midnight, exclusive midnight after the end day.
+ * UTC arithmetic is only calendar arithmetic; these strings are Beijing DATETIME wall clocks. */
+export function customerUpdatedSqlBounds(input: z.input<typeof customerUpdatedRangeSchema>) {
+  const range = customerUpdatedRangeSchema.parse(input);
+  let updatedBefore: string | undefined;
+  if (range.updatedTo !== undefined) {
+    const nextDay = new Date(`${range.updatedTo}T00:00:00.000Z`);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    updatedBefore = `${nextDay.toISOString().slice(0, 10)} 00:00:00`;
+  }
+  return {
+    updatedFrom: range.updatedFrom === undefined ? undefined : `${range.updatedFrom} 00:00:00`,
+    updatedBefore,
+  };
+}
+
+export const customerListSchema = customerUpdatedRangeSchema.safeExtend({
   keyword: optionalText(128), grade: z.enum(CUSTOMER_GRADES).optional(), stage: z.enum(CUSTOMER_STAGES).optional(),
   scope: z.enum(["mine", "all"]).default("mine"), assignedUserId: z.number().int().positive().optional(),
   starUserId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),

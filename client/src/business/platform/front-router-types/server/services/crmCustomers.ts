@@ -63,7 +63,7 @@ export async function syncCrmCustomerAssignmentOwner(tx: CrmSqlExecutor, enterpr
 }
 import { customerOwnershipQuerySchema, type CustomerOwnershipQuery, type CustomerOwnershipResult } from "../../../shared/customerOwnership";
 import { consumeCustomerOwnershipQuota } from "../customerOwnershipQuota";
-import { customerDataSchema } from "../../../shared/crmCustomers";
+import { customerDataSchema, customerUpdatedRangeSchema, customerUpdatedSqlBounds } from "../../../shared/crmCustomers";
 import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../shared/businessIndustry";
 function validateWriteData(data: CustomerData): CustomerData {
   const checked = customerDataSchema.safeParse(data);
@@ -633,11 +633,15 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   scope: "mine" | "all"; assignedUserId?: number; archived: boolean; due: "all" | "today" | "overdue";
   page: number; pageSize: number; starUserId?: number; starredOnly?: boolean; starMode?: "assignee";
   expectedEnterpriseId?: number; expectedActorUserId?: number;
+  updatedFrom?: string; updatedTo?: string;
 }) {
   if ((input.expectedEnterpriseId !== undefined && input.expectedEnterpriseId !== scope.enterpriseId)
     || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "账号或企业已切换，请刷新后重试" });
   }
+  const updatedRange = customerUpdatedRangeSchema.safeParse({ updatedFrom: input.updatedFrom, updatedTo: input.updatedTo });
+  if (!updatedRange.success) throw new TRPCError({ code: "BAD_REQUEST", message: updatedRange.error.issues[0]?.message ?? "更新日期范围无效", cause: updatedRange.error });
+  const updatedBounds = customerUpdatedSqlBounds(updatedRange.data);
   if (input.starMode === "assignee" && input.starUserId !== undefined) throw new TRPCError({ code: "BAD_REQUEST", message: "负责人口径不能同时选择星标归属" });
   const starUserId = input.starUserId ?? scope.actorUserId;
   const assigneeMode = input.starMode === "assignee";
@@ -677,6 +681,9 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   }
   if (input.grade) conditions.push(sql`c.grade = ${input.grade}`);
   if (input.stage) conditions.push(sql`c.stage = ${input.stage}`);
+  // c.updatedAt is Beijing DATETIME text, not a UTC instant or a contact/follow-up timestamp.
+  if (updatedBounds.updatedFrom !== undefined) conditions.push(sql`c.updatedAt >= ${updatedBounds.updatedFrom}`);
+  if (updatedBounds.updatedBefore !== undefined) conditions.push(sql`c.updatedAt < ${updatedBounds.updatedBefore}`);
   const beijingToday = sql`DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00'))`;
   if (input.due === "today") conditions.push(sql`c.nextFollowUpAt IS NOT NULL AND DATE(c.nextFollowUpAt) = ${beijingToday}`);
   if (input.due === "overdue") conditions.push(sql`c.nextFollowUpAt IS NOT NULL AND DATE(c.nextFollowUpAt) < ${beijingToday}`);

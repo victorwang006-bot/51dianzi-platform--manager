@@ -74,7 +74,7 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
     },
     {
       id: "procurement",
-      label: "采购管理",
+      label: "采购需求",
       paths: [
         "/workbench/procurement-demands",
       ],

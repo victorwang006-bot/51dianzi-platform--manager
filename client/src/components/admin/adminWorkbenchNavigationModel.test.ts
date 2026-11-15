@@ -153,7 +153,7 @@ describe("后台工作台导航分组", () => {
       },
       {
         id: "procurement",
-        label: "采购管理",
+        label: "采购需求",
         items: [
           item("/workbench/procurement-demands"),
         ],

@@ -93,7 +93,7 @@ const BUSINESS_MODULE_ENTRIES = [
   {
     kind: "group",
     id: "procurement",
-    label: "采购管理",
+    label: "采购需求",
     paths: pathsForGroup("procurement"),
   },
 ] as const;

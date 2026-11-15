@@ -13,6 +13,7 @@ const runtime = vi.hoisted(() => ({
   starContext: vi.fn(), setStar: vi.fn(), targets: [] as { userId: number; name: string }[],
   starList: vi.fn(), delegatedRows: {} as Record<number, any[]>,
   listInputs: [] as any[], listPending: false, listFetching: false, customerContextError: false,
+  listError: false, listRefetch: vi.fn(), createFormProps: null as any,
   listOptions: [] as any[],
   remembered: {} as Record<string, unknown>,
   canManageAll: false, canReadAll: false, members: [] as { userId: number; name: string }[],
@@ -32,7 +33,7 @@ vi.mock("../hooks/useCustomerCreateDraft", () => ({
   useCustomerCreateDraftIdentity: () => ({ key: "synthetic-once-identity" }),
   useCustomerCreateDraft: () => ({ completion: null, consumeCompletion: vi.fn() }),
 }));
-vi.mock("../components/customers/CustomerCreateForm", () => ({ CustomerCreateForm: () => null }));
+vi.mock("../components/customers/CustomerCreateForm", () => ({ CustomerCreateForm: (props: any) => { runtime.createFormProps = props; return null; } }));
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: ({ customer }: any) => React.createElement("div", { "data-testid": "synthetic-demand-open" }, customer.name) }));
 vi.mock("../../../../api/business-auth", () => ({ useAuth: () => ({ user: { id: runtime.actorId }, loading: false, isAuthenticated: true }) }));
 vi.mock("../../../../api/business-enterprise-session", () => ({ useOptionalEnterpriseSession: () => ({ activeEnterprise: { enterpriseId: runtime.enterpriseId, memberStatus: "active", accessStatus: "enabled" } }) }));
@@ -48,7 +49,7 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   enterprise: { me: { useQuery: () => ({ data: { enterprise: { id: runtime.enterpriseId }, currentUserId: runtime.actorId, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: runtime.enterpriseFailed, refetch: runtime.authorityRetry }) } },
   customer: {
     context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, canReadAll: runtime.canReadAll || runtime.canManageAll, members: runtime.members }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
-    list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: false, refetch: vi.fn() }; } },
+    list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: runtime.listError, error: new Error("synthetic list error"), refetch: runtime.listRefetch }; } },
     contactsSummary: { useQuery: () => ({ data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } }) },
     contactsList: { useQuery: () => ({ data: { contacts: [] }, isPending: false, isError: false, refetch: vi.fn() }) },
   },
@@ -89,6 +90,7 @@ beforeEach(() => {
   runtime.rows = [row(801, { name: "合成超长客户名称用于检验姓名截断后星标仍完整可达有限公司", isStarred: true, starRevision: 2 }), row(802, { industryCode: null, contactName: "合成补档联系人", nextFollowUpAt: null }), row(803, { archivedAt: "2026-11-01", nextFollowUpAt: "2026-11-02T09:00:00+08:00" })];
   runtime.authVersion = "v1"; runtime.enterpriseFailed = false; runtime.enterpriseId = 31; runtime.actorId = 7;
   runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.listInputs = []; runtime.listPending = false; runtime.listFetching = false; runtime.customerContextError = false;
+  runtime.listError = false; runtime.listRefetch.mockReset(); runtime.createFormProps = null;
   runtime.listOptions = [];
   runtime.remembered = {};
   runtime.canManageAll = false; runtime.canReadAll = false; runtime.members = [];
@@ -568,5 +570,260 @@ describe("authorized read-scope entry", () => {
       expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", starMode: "assignee", page: 1 });
       expect(runtime.canManageAll).toBe(false); expect(runtime.setStar).not.toHaveBeenCalled();
     } finally { HTMLElement.prototype.scrollIntoView = oldScroll; }
+  });
+});
+
+describe("actual CustomerList updated-date filters", () => {
+  const legacyFilters = { keyword: "", grade: "", stage: "", scope: "mine", assignedUserId: "", due: "all", archived: false, starredOnly: false };
+  const appliedDates = { updatedFrom: "2026-10-01", updatedTo: "2026-10-31" };
+  const draftDates = { updatedFrom: "2026-11-01", updatedTo: "2026-11-16" };
+  function dateInput(side: "开始" | "结束") {
+    const input = host.querySelector<HTMLInputElement>(`input[aria-label="更新时间${side}日期"]`);
+    if (!input) throw new Error(`missing date input: ${side}`);
+    return input;
+  }
+  async function changeDate(side: "开始" | "结束", value: string) {
+    const input = dateInput(side);
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+  async function enter(element: Element) {
+    await act(async () => { element.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })); });
+  }
+  function noDates(input: unknown) {
+    expect(input).not.toHaveProperty("updatedFrom");
+    expect(input).not.toHaveProperty("updatedTo");
+  }
+  function restoredDates() {
+    runtime.remembered = { appliedFilters: { ...legacyFilters, ...appliedDates }, draftFilters: { ...legacyFilters, ...draftDates }, moreFiltersOpen: true, page: 2 };
+  }
+
+  it("places one unobtrusive native date group after stage/owner/archive and before the original confirm button", async () => {
+    runtime.canManageAll = true;
+    runtime.remembered = { appliedFilters: { ...legacyFilters, scope: "all" }, draftFilters: { ...legacyFilters, scope: "all" } };
+    await render(); expect(host.querySelector('input[type="date"]')).toBeNull();
+    await click(button("更多筛选"));
+    const expanded = host.querySelector("#customer-list-more-filters")!;
+    const dateGroup = expanded.querySelector('.customer-list-updated-dates[role="group"][aria-label="更新时间"]')!;
+    expect(Array.from(expanded.children)).toEqual([
+      expanded.querySelector('[aria-label="按客户阶段筛选"]'),
+      expanded.querySelector('[aria-label="按负责人筛选"]'),
+      expanded.querySelector('[aria-label="按归档状态筛选"]'),
+      dateGroup, button("确定", expanded),
+    ]);
+    expect(dateGroup.querySelector(".customer-list-caption")?.textContent).toBe("更新时间");
+    expect(dateGroup.querySelectorAll('input[type="date"]')).toHaveLength(2);
+    for (const side of ["开始", "结束"] as const) {
+      expect(dateInput(side).type).toBe("date"); expect(dateInput(side).value).toBe("");
+      expect(dateInput(side).classList.contains("customer-list-control")).toBe(true);
+      expect(dateInput(side).getAttribute("aria-invalid")).toBeNull();
+    }
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("keeps edits and collapse/reopen as drafts without changing the applied query, page, summary or invalidation", async () => {
+    runtime.remembered = { appliedFilters: { ...legacyFilters, ...appliedDates }, page: 2, moreFiltersOpen: true };
+    await render(); const before = runtime.listInputs.at(-1); const summaryCalls = runtime.summary.mock.calls.length;
+    await changeDate("开始", draftDates.updatedFrom); await changeDate("结束", draftDates.updatedTo);
+    expect(runtime.listInputs.at(-1)).toBe(before); expect(before).toMatchObject({ ...appliedDates, page: 2 });
+    await click(button("更多筛选")); expect(host.querySelector('input[type="date"]')).toBeNull();
+    await click(button("更多筛选"));
+    expect(dateInput("开始").value).toBe(draftDates.updatedFrom); expect(dateInput("结束").value).toBe(draftDates.updatedTo);
+    expect(runtime.listInputs.at(-1)).toBe(before); expect(runtime.summary).toHaveBeenCalledTimes(summaryCalls);
+    expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(runtime.setStar).not.toHaveBeenCalled();
+  });
+
+  it.each(["搜索", "确定", "搜索Enter", "开始Enter", "结束Enter"])("applies the same complete date draft with %s and returns to page one", async mode => {
+    restoredDates();
+    runtime.remembered.draftFilters = { ...legacyFilters, ...draftDates, keyword: "  日期客户  ", grade: "C", stage: "quoted", due: "today", archived: true };
+    runtime.remembered.appliedFilters = { ...legacyFilters, ...appliedDates, starredOnly: true };
+    await render(); expect(runtime.listInputs.at(-1)).toMatchObject({ ...appliedDates, page: 2, starredOnly: true });
+    if (mode === "搜索Enter") await enter(host.querySelector(".customer-list-search")!);
+    else if (mode === "开始Enter") await enter(dateInput("开始"));
+    else if (mode === "结束Enter") await enter(dateInput("结束"));
+    else await click(button(mode));
+    expect(runtime.listInputs.at(-1)).toEqual({ keyword: "日期客户", grade: "C", stage: "quoted", ...draftDates,
+      scope: "mine", starMode: "assignee", expectedEnterpriseId: 31, expectedActorUserId: 7,
+      archived: true, due: "today", starredOnly: true, page: 1, pageSize: 20 });
+    expect(dateInput("开始").value).toBe(draftDates.updatedFrom); expect(dateInput("结束").value).toBe(draftDates.updatedTo);
+    expect(host.querySelector("#customer-list-date-error")).toBeNull();
+  });
+
+  it.each(["updatedFrom", "updatedTo"] as const)("allows a one-sided %s and omits the empty opposite field", async key => {
+    runtime.remembered = { moreFiltersOpen: true, page: 2 };
+    await render(); noDates(runtime.listInputs.at(-1));
+    await changeDate(key === "updatedFrom" ? "开始" : "结束", "2026-11-16");
+    noDates(runtime.listInputs.at(-1)); await click(button("确定"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ [key]: "2026-11-16", page: 1 });
+    expect(runtime.listInputs.at(-1)).not.toHaveProperty(key === "updatedFrom" ? "updatedTo" : "updatedFrom");
+    expect(host.querySelector("#customer-list-date-error")).toBeNull();
+  });
+
+  it("applies clearing either or both dates only on submission, and reset remains available for applied dates", async () => {
+    restoredDates(); runtime.remembered.draftFilters = { ...legacyFilters, ...appliedDates };
+    await render(); const before = runtime.listInputs.at(-1);
+    await changeDate("开始", ""); expect(runtime.listInputs.at(-1)).toBe(before);
+    await click(button("搜索"));
+    expect(runtime.listInputs.at(-1)).not.toHaveProperty("updatedFrom"); expect(runtime.listInputs.at(-1).updatedTo).toBe(appliedDates.updatedTo);
+    const single = runtime.listInputs.at(-1);
+    await changeDate("结束", ""); expect(runtime.listInputs.at(-1)).toBe(single); expect(button("重置").disabled).toBe(false);
+    await click(button("确定")); noDates(runtime.listInputs.at(-1)); expect(button("重置").disabled).toBe(true);
+  });
+
+  it("resets both applied/draft dates and every condition while preserving all-company scope and original star semantics", async () => {
+    runtime.canManageAll = true; runtime.targets.push({ userId: 8, name: "合成组员" });
+    const filters = { ...legacyFilters, scope: "all", keyword: "客户", grade: "C", stage: "quoted", assignedUserId: "8", due: "overdue", archived: true, starredOnly: true };
+    runtime.remembered = { appliedFilters: { ...filters, ...appliedDates }, draftFilters: { ...filters, ...draftDates }, page: 2, moreFiltersOpen: true };
+    await render(); await click(button("重置"));
+    expect(runtime.listInputs.at(-1)).toEqual({ keyword: "", scope: "all", starMode: "assignee", expectedEnterpriseId: 31, expectedActorUserId: 7,
+      due: "all", archived: false, starredOnly: false, page: 1, pageSize: 20 });
+    expect(dateInput("开始").value).toBe(""); expect(dateInput("结束").value).toBe(""); expect(button("重置").disabled).toBe(true);
+    expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("");
+  });
+
+  it("enables reset for date-only drafts and clears them without switching mine scope", async () => {
+    runtime.remembered = { moreFiltersOpen: true }; await render(); expect(button("重置").disabled).toBe(true);
+    await changeDate("开始", "2026-11-16"); expect(button("重置").disabled).toBe(false); noDates(runtime.listInputs.at(-1));
+    await click(button("重置")); noDates(runtime.listInputs.at(-1)); expect(runtime.listInputs.at(-1).scope).toBe("mine");
+    expect(dateInput("开始").value).toBe(""); expect(dateInput("结束").value).toBe(""); expect(button("重置").disabled).toBe(true);
+  });
+
+  it.each(["搜索", "确定", "搜索Enter", "开始Enter", "结束Enter"])("blocks a reversed range with %s without changing query/page or fetching a summary, then allows correction", async mode => {
+    restoredDates(); runtime.remembered.draftFilters = { ...legacyFilters, keyword: "不得提交", updatedFrom: "2026-11-17", updatedTo: "2026-11-16" };
+    await render(); const before = runtime.listInputs.at(-1); const summaryCalls = runtime.summary.mock.calls.length;
+    if (mode === "搜索Enter") await enter(host.querySelector(".customer-list-search")!);
+    else if (mode === "开始Enter") await enter(dateInput("开始"));
+    else if (mode === "结束Enter") await enter(dateInput("结束"));
+    else await click(button(mode));
+    expect(runtime.listInputs.at(-1)).toBe(before); expect(before).toMatchObject({ ...appliedDates, keyword: "", page: 2 });
+    expect(runtime.summary).toHaveBeenCalledTimes(summaryCalls); expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled();
+    const alert = host.querySelector('#customer-list-date-error[role="alert"]')!;
+    expect(alert.textContent).toBe("更新时间开始日期不能晚于结束日期，请调整后再查询。");
+    for (const side of ["开始", "结束"] as const) {
+      expect(dateInput(side).getAttribute("aria-invalid")).toBe("true");
+      expect(dateInput(side).getAttribute("aria-describedby")).toBe(alert.id);
+    }
+    await click(button("更多筛选")); expect(host.querySelector('#customer-list-date-error[role="alert"]')).not.toBeNull();
+    await click(button("更多筛选")); await changeDate("开始", "2026-11-16");
+    expect(host.querySelector("#customer-list-date-error")).toBeNull(); expect(runtime.listInputs.at(-1)).toBe(before);
+    await click(button("搜索"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ keyword: "不得提交", updatedFrom: "2026-11-16", updatedTo: "2026-11-16", page: 1 });
+  });
+
+  it("reset clears reversed drafts and their error without changing the chosen scope", async () => {
+    restoredDates(); runtime.remembered.draftFilters = { ...legacyFilters, updatedFrom: "2026-11-17", updatedTo: "2026-11-16" };
+    await render(); await click(button("确定")); expect(host.querySelector("#customer-list-date-error")).not.toBeNull();
+    await click(button("重置")); noDates(runtime.listInputs.at(-1)); expect(host.querySelector("#customer-list-date-error")).toBeNull();
+    expect(dateInput("开始").value).toBe(""); expect(dateInput("结束").value).toBe(""); expect(runtime.listInputs.at(-1).scope).toBe("mine");
+  });
+
+  it("restores legacy filter objects without new fields as empty controlled dates and preserves their complete original conditions", async () => {
+    const old = { keyword: "  旧对象  ", grade: "B", stage: "quoted", scope: "mine", assignedUserId: "", due: "overdue", archived: true };
+    runtime.remembered = { appliedFilters: old, draftFilters: old, moreFiltersOpen: true, page: 2 };
+    await render(); noDates(runtime.listInputs.at(-1)); expect(dateInput("开始").value).toBe(""); expect(dateInput("结束").value).toBe("");
+    await click(button("确定"));
+    expect(runtime.listInputs.at(-1)).toEqual({ keyword: "旧对象", grade: "B", stage: "quoted", scope: "mine", starMode: "assignee",
+      expectedEnterpriseId: 31, expectedActorUserId: 7, due: "overdue", archived: true, starredOnly: false, page: 1, pageSize: 20 });
+    await click(button("重置")); noDates(runtime.listInputs.at(-1)); expect(button("重置").disabled).toBe(true);
+  });
+
+  it.each(["2026-02-29", "2026-11-31", "2026-1-01", "not-a-date", "0000-01-01", "0999-12-31", null, 0, false])("pauses invalid restored dates and rejects submission of %s without silently querying a broader range", async invalid => {
+    runtime.remembered = { appliedFilters: { ...legacyFilters, updatedFrom: invalid }, draftFilters: { ...legacyFilters, updatedFrom: invalid, keyword: "不能应用" }, moreFiltersOpen: true, page: 2 };
+    await render(); noDates(runtime.listInputs.at(-1)); const before = runtime.listInputs.at(-1);
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
+    expect(host.textContent).not.toMatch(/共\s*40\s*条/); expect(runtime.restoreCalls).not.toContain(true);
+    expect(runtime.summary).not.toHaveBeenCalled();
+    await click(button("搜索")); expect(runtime.listInputs.at(-1)).toBe(before); expect(before.page).toBe(2);
+    expect(host.querySelector('#customer-list-date-error[role="alert"]')?.textContent).toBe("请输入有效的更新时间日期（YYYY-MM-DD）。查询已暂停，请重置筛选或调整日期后重新查询。");
+    expect(runtime.listOptions.at(-1).enabled).toBe(false);
+    await click(button("重置")); expect(runtime.listOptions.at(-1).enabled).toBe(true); noDates(runtime.listInputs.at(-1));
+    expect(host.querySelector("#customer-list-date-error")).toBeNull(); expect(tableRows()).toHaveLength(3);
+  });
+
+  it("rejects the maximum end date whose inclusive day would overflow the server next-day boundary", async () => {
+    const invalid = { ...legacyFilters, updatedTo: "9999-12-31" };
+    runtime.remembered = { appliedFilters: invalid, draftFilters: invalid, moreFiltersOpen: true };
+    await render(); expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
+    const before = runtime.listInputs.at(-1); await click(button("确定")); expect(runtime.listInputs.at(-1)).toBe(before);
+    expect(host.querySelector("#customer-list-date-error")?.textContent).toContain("结束日期不能晚于9999-12-30");
+    await click(button("重置")); expect(runtime.listOptions.at(-1).enabled).toBe(true); noDates(runtime.listInputs.at(-1));
+  });
+
+  it("uses server-consistent input limits and submits the representable date-domain boundaries", async () => {
+    runtime.remembered = { moreFiltersOpen: true }; await render();
+    expect(dateInput("开始").min).toBe("1000-01-01"); expect(dateInput("结束").min).toBe("1000-01-01");
+    expect(dateInput("开始").max).toBe("9999-12-31"); expect(dateInput("结束").max).toBe("9999-12-30");
+    await changeDate("开始", "1000-01-01"); await changeDate("结束", "9999-12-30"); await click(button("确定"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ updatedFrom: "1000-01-01", updatedTo: "9999-12-30" });
+    expect(host.querySelector("#customer-list-date-error")).toBeNull();
+  });
+
+  it("pauses a reversed applied memory range even when collapsed, then resumes only after a valid draft is submitted", async () => {
+    const reversed = { ...legacyFilters, updatedFrom: "2026-11-17", updatedTo: "2026-11-16" };
+    runtime.remembered = { appliedFilters: reversed, draftFilters: reversed, page: 2 };
+    await render(); expect(host.querySelector('input[type="date"]')).toBeNull();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("table")).toBeNull();
+    expect(host.querySelector('#customer-list-date-error[role="alert"]')?.textContent).toBe("更新时间开始日期不能晚于结束日期，请调整后再查询。查询已暂停，请重置筛选或调整日期后重新查询。");
+    expect(runtime.restoreCalls).not.toContain(true); expect(runtime.summary).not.toHaveBeenCalled();
+    await click(button("更多筛选")); await changeDate("开始", "2026-11-01");
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("#customer-list-date-error")?.textContent).toContain("查询已暂停");
+    await click(button("确定")); expect(runtime.listOptions.at(-1).enabled).toBe(true);
+    expect(runtime.listInputs.at(-1)).toMatchObject({ updatedFrom: "2026-11-01", updatedTo: "2026-11-16", page: 1 });
+    expect(host.querySelector("#customer-list-date-error")).toBeNull(); expect(tableRows()).toHaveLength(3);
+  });
+
+  it("does not let a synthetic customer-save callback fetch a wider list while restored dates are invalid", async () => {
+    runtime.remembered = { appliedFilters: { ...legacyFilters, updatedFrom: "2026-11-17", updatedTo: "2026-11-16" } };
+    runtime.utils.customer.list.fetch = vi.fn().mockResolvedValue({ items: runtime.rows });
+    await render(); await click(button("录入客户")); expect(runtime.createFormProps).not.toBeNull();
+    await act(async () => { runtime.createFormProps.onSaved({ id: 899, mode: "close" }); });
+    expect(runtime.utils.customer.list.fetch).not.toHaveBeenCalled(); expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.querySelector("#customer-list-date-error")?.textContent).toContain("查询已暂停");
+    expect(button("录入客户").getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("does not expose a cached broad-query error retry while invalid memory dates pause the list", async () => {
+    runtime.remembered = { appliedFilters: { ...legacyFilters, updatedFrom: "2026-11-31" } };
+    runtime.listError = true; await render();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(host.textContent).not.toContain("synthetic list error");
+    expect(Array.from(host.querySelectorAll("button")).some(element => element.textContent?.trim() === "重试")).toBe(false);
+    expect(runtime.listRefetch).not.toHaveBeenCalled(); expect(host.querySelector("table")).toBeNull();
+    expect(host.querySelector("#customer-list-date-error")?.textContent).toContain("查询已暂停");
+  });
+
+  it("passes a valid leap day and same-day boundaries unchanged, never browser-local timestamps", async () => {
+    runtime.remembered = { moreFiltersOpen: true }; await render();
+    await changeDate("开始", "2024-02-29"); await changeDate("结束", "2024-02-29"); await click(button("确定"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ updatedFrom: "2024-02-29", updatedTo: "2024-02-29" });
+    expect(host.querySelector("#customer-list-date-error")).toBeNull();
+  });
+
+  it("keeps applied dates across page/star/scope permission changes without promoting date drafts or changing identity guards", async () => {
+    restoredDates(); runtime.canManageAll = true;
+    runtime.remembered.appliedFilters = { ...legacyFilters, ...appliedDates, scope: "all", assignedUserId: "8" };
+    runtime.remembered.draftFilters = { ...legacyFilters, ...draftDates, scope: "all", assignedUserId: "8" };
+    await render(); await click(button("上一页"));
+    expect(runtime.listInputs.at(-1)).toMatchObject({ ...appliedDates, scope: "all", assignedUserId: 8, page: 1 });
+    await click(host.querySelector('button[aria-label="仅看重点客户"]')!);
+    expect(runtime.listInputs.at(-1)).toMatchObject({ ...appliedDates, starredOnly: true, page: 1, starMode: "assignee" });
+    expect(dateInput("开始").value).toBe(draftDates.updatedFrom);
+    runtime.canManageAll = false; await render();
+    expect(runtime.listInputs.at(-1)).toMatchObject({ ...appliedDates, scope: "mine", starredOnly: true, expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(runtime.listInputs.at(-1)).not.toHaveProperty("assignedUserId"); expect(dateInput("结束").value).toBe(draftDates.updatedTo);
+    expect(runtime.setStar).not.toHaveBeenCalled();
+  });
+
+  it("uses only local compact control geometry and allows the date group to wrap at narrow widths", () => {
+    const parsed = postcss.parse(readFileSync("client/src/business/platform/client/src/pages/CustomerList.css", "utf8"));
+    const declarations = (selector: string) => {
+      const result: Record<string, string> = {};
+      parsed.walkRules(rule => { if (rule.selector === selector) rule.walkDecls(decl => { result[decl.prop] = decl.value; }); });
+      return result;
+    };
+    expect(declarations(".customer-list-page .customer-list-updated-dates")).toEqual({ display: "flex", "align-items": "center", "flex-wrap": "wrap", "min-width": "0", "max-width": "100%", gap: "6px" });
+    expect(declarations(".customer-list-page .customer-list-date-input")).toEqual({ flex: "0 0 136px", width: "136px", "min-width": "0", "max-width": "100%", "padding-inline": "8px" });
+    expect(declarations(".customer-list-page .customer-list-control")).toMatchObject({ height: "var(--admin-content-control-height, 32px)", "font-size": "var(--admin-content-font-body, 12px)", "border-radius": "6px" });
   });
 });

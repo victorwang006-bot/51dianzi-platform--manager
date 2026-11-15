@@ -63,6 +63,8 @@ type FilterState = {
   due: DueFilter;
   archived: boolean;
   starredOnly: boolean;
+  updatedFrom?: string;
+  updatedTo?: string;
 };
 
 const DEFAULT_FILTERS: FilterState = {
@@ -74,7 +76,29 @@ const DEFAULT_FILTERS: FilterState = {
   due: "all",
   archived: false,
   starredOnly: false,
+  updatedFrom: "",
+  updatedTo: "",
 };
+
+// Keep calendar dates as YYYY-MM-DD; the service owns Beijing-day boundaries.
+function updatedDateError({ updatedFrom, updatedTo }: Pick<FilterState, "updatedFrom" | "updatedTo">): string | null {
+  for (const value of [updatedFrom, updatedTo]) {
+    if (value === undefined || value === "") continue;
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < "1000-01-01") {
+      return "请输入有效的更新时间日期（YYYY-MM-DD）。";
+    }
+    const date = new Date(`${value}T00:00:00Z`);
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+      return "请输入有效的更新时间日期（YYYY-MM-DD）。";
+    }
+  }
+  if (updatedTo && updatedTo > "9999-12-30") {
+    return "更新时间结束日期不能晚于9999-12-30。";
+  }
+  return updatedFrom && updatedTo && updatedFrom > updatedTo
+    ? "更新时间开始日期不能晚于结束日期，请调整后再查询。"
+    : null;
+}
 
 const toolbarActionClass =
   "customer-list-control min-w-[64px] border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
@@ -123,6 +147,7 @@ export default function CustomerList() {
   const [appliedFilters, setAppliedFilters] =
     useRememberedState<FilterState>("appliedFilters", DEFAULT_FILTERS);
   const [moreFiltersOpen, setMoreFiltersOpen] = useRememberedState("moreFiltersOpen", false);
+  const [filterDateError, setFilterDateError] = useState<string | null>(null);
   const [page, setPage] = useRememberedState("page", 1);
   const canManageAll = contextQuery.data?.canManageAll ?? false;
   const canReadAll = contextQuery.data?.canReadAll ?? canManageAll;
@@ -149,13 +174,20 @@ export default function CustomerList() {
     setAppliedFilters(restrictToMine);
   }, [canReadAll, contextQuery.isLoading, contextQuery.isPending, contextQuery.data]);
 
+  const appliedDateError = updatedDateError(appliedFilters);
+  const dateFilterNotice = appliedDateError
+    ? `${filterDateError ?? appliedDateError}查询已暂停，请重置筛选或调整日期后重新查询。`
+    : filterDateError;
   const listInput = useMemo(() => {
     const scope = canReadAll ? appliedFilters.scope : "mine";
     const assignedUserId = Number(appliedFilters.assignedUserId);
+    const validUpdatedDates = !updatedDateError(appliedFilters);
     return {
       keyword: appliedFilters.keyword.trim(),
       ...(appliedFilters.grade ? { grade: appliedFilters.grade } : {}),
       ...(appliedFilters.stage ? { stage: appliedFilters.stage } : {}),
+      ...(validUpdatedDates && appliedFilters.updatedFrom ? { updatedFrom: appliedFilters.updatedFrom } : {}),
+      ...(validUpdatedDates && appliedFilters.updatedTo ? { updatedTo: appliedFilters.updatedTo } : {}),
       scope,
       ...(canReadAll &&
       scope === "all" &&
@@ -173,11 +205,11 @@ export default function CustomerList() {
     };
   }, [appliedFilters, canReadAll, page, contactScope.identityKey]);
   const listQuery = trpc.customer.list.useQuery(listInput, freshListOptions({
-    enabled: contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
+    enabled: !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
     placeholderData: undefined,
   }, d51Ready));
   // Never render a previous identity/enterprise page, including its old total.
-  const result = d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
+  const result = !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
     && !listQuery.isError && (appliedFilters.starredOnly !== true || stars.ready)
     && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
       && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
@@ -267,6 +299,8 @@ export default function CustomerList() {
   };
   const handleCustomerSaved = ({ id, mode }: { id: number; mode: CustomerCreateSaveMode }) => {
     if (mode === "close") collapseCreate(true);
+    // A saved customer must not bypass a paused, invalid remembered date range.
+    if (appliedDateError) return;
     const savedListInput = listInput;
     // Keep the current scope, filters and page. Never inject a record that does
     // not match the server's authoritative filtered result into this table.
@@ -304,10 +338,14 @@ export default function CustomerList() {
     key: K,
     value: FilterState[K]
   ) => {
+    if (key === "updatedFrom" || key === "updatedTo") setFilterDateError(null);
     setDraftFilters(current => ({ ...current, [key]: value }));
   };
 
   const applyFilters = () => {
+    const dateError = updatedDateError(draftFilters);
+    setFilterDateError(dateError);
+    if (dateError) return;
     const next = {
       ...draftFilters,
       keyword: draftFilters.keyword.trim(),
@@ -327,6 +365,7 @@ export default function CustomerList() {
     // Reset also clears starredOnly, without changing the assignee-star semantics.
     const scope = canReadAll ? appliedFilters.scope : "mine";
     const next = { ...DEFAULT_FILTERS, scope };
+    setFilterDateError(null);
     setDraftFilters(next);
     setAppliedFilters(next);
     setPage(1);
@@ -366,13 +405,17 @@ export default function CustomerList() {
       draftFilters.due !== "all" ||
       draftFilters.archived ||
       draftFilters.starredOnly === true ||
+      draftFilters.updatedFrom ||
+      draftFilters.updatedTo ||
       appliedFilters.keyword ||
       appliedFilters.grade ||
       appliedFilters.stage ||
       appliedFilters.assignedUserId ||
       appliedFilters.due !== "all" ||
       appliedFilters.archived ||
-      appliedFilters.starredOnly === true
+      appliedFilters.starredOnly === true ||
+      appliedFilters.updatedFrom ||
+      appliedFilters.updatedTo
   );
 
   const emptyMessage = appliedFilters.archived
@@ -477,6 +520,27 @@ export default function CustomerList() {
                 <SelectItem value="archived">已归档客户</SelectItem>
               </SelectContent>
             </Select>
+            <div className="customer-list-updated-dates" role="group" aria-label="更新时间"
+              onKeyDown={event => {
+                if (event.key === "Enter") { event.preventDefault(); applyFilters(); }
+              }}>
+              <span className="customer-list-caption">更新时间</span>
+              <Input type="date" min="1000-01-01" max="9999-12-31"
+                aria-label="更新时间开始日期"
+                aria-invalid={dateFilterNotice ? true : undefined}
+                aria-describedby={dateFilterNotice ? "customer-list-date-error" : undefined}
+                value={draftFilters.updatedFrom ?? ""}
+                onChange={event => updateDraft("updatedFrom", event.target.value)}
+                className="customer-list-control customer-list-date-input bg-white" />
+              <span className="customer-list-caption" aria-hidden="true">至</span>
+              <Input type="date" min="1000-01-01" max="9999-12-30"
+                aria-label="更新时间结束日期"
+                aria-invalid={dateFilterNotice ? true : undefined}
+                aria-describedby={dateFilterNotice ? "customer-list-date-error" : undefined}
+                value={draftFilters.updatedTo ?? ""}
+                onChange={event => updateDraft("updatedTo", event.target.value)}
+                className="customer-list-control customer-list-date-input bg-white" />
+            </div>
             <Button
               type="button"
               size="sm"
@@ -599,6 +663,12 @@ export default function CustomerList() {
           </div>
       </CompactListToolbar>
 
+      {dateFilterNotice ? (
+        <p id="customer-list-date-error" role="alert" className="customer-list-error customer-list-date-error">
+          {dateFilterNotice}
+        </p>
+      ) : null}
+
       {createOpen && (
         <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">
           <CustomerCreateForm
@@ -617,7 +687,7 @@ export default function CustomerList() {
           message={`无法读取客户权限：${errorMessage(contextQuery.error)}`}
           onRetry={() => contextQuery.refetch()}
         />
-      ) : listQuery.isError ? (
+      ) : listQuery.isError && !appliedDateError ? (
         <ErrorPanel
           message={errorMessage(listQuery.error)}
           onRetry={() => listQuery.refetch()}

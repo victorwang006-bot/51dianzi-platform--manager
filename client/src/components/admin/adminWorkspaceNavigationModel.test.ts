@@ -37,7 +37,7 @@ describe("业务下拉展示分组（独立客户和库存不重复，不更改c
     ).toEqual([
       "销售管理",
       "库存管理",
-      "采购管理",
+      "采购需求",
     ]);
     const groupedPaths = entries.flatMap(entry =>
       entry.kind === "direct"
@@ -49,8 +49,8 @@ describe("业务下拉展示分组（独立客户和库存不重复，不更改c
       "/workbench/inbound",
       "/workbench/outbound",
       "/workbench/procurement-demands",
-      "/workbench/procurement-orders",
     ]);
+    expect(groupedPaths).not.toContain("/workbench/procurement-orders");
     expect([...groupedPaths].sort()).toEqual(
       [...ADMIN_WORKSPACE_DEFINITIONS[0].paths].filter(path => !["/workbench/customers", "/workbench/channel-inventory", "/workbench/inquiries"].includes(path)).sort()
     );
@@ -173,8 +173,8 @@ describe("正式后台顶部工作区菜单", () => {
       "/workbench/outbound",
       "/workbench/inquiries",
       "/workbench/procurement-demands",
-      "/workbench/procurement-orders",
     ]);
+    expect(workspace.items.map(item => item.path)).not.toContain("/workbench/procurement-orders");
   });
 
   it("运营保留原七项并追加异常日志，组织包含五个真实菜单", () => {
@@ -283,17 +283,17 @@ describe("实际路由驱动两级选中态", () => {
     [
       "/workbench/procurement-orders/quote",
       "business",
-      "/workbench/procurement-orders",
+      "/workbench/inbound",
     ],
     [
       "/workbench/procurement-orders/accepted",
       "business",
-      "/workbench/procurement-orders",
+      "/workbench/inbound",
     ],
     [
       "/workbench/procurement-orders/create",
       "business",
-      "/workbench/procurement-orders",
+      "/workbench/inbound",
     ],
     ["/staff/7", "organization", "/staff"],
     ["/teams", "organization", "/teams"],
@@ -312,7 +312,7 @@ describe("实际路由驱动两级选中态", () => {
     [
       "/workbench/procurement/orders",
       "business",
-      "/workbench/procurement-orders",
+      "/workbench/inbound",
     ],
     ["/workbench/demand-quotes", "business", "/workbench/procurement-demands"],
     ["/workbench", "business", "/workbench/customers"],

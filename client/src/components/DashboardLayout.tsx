@@ -164,7 +164,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
     ],
   },
   {
-    label: "采购管理",
+    label: "采购需求",
     items: [
       {
         icon: ClipboardList,
