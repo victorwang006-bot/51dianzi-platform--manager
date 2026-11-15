@@ -320,22 +320,6 @@ function AppRoutes() {
           path={"/workbench/procurement-demands"}
           component={BusinessWorkbenchRoute}
         />
-        <Route
-          path={"/workbench/procurement-orders/quote"}
-          component={BusinessWorkbenchRoute}
-        />
-        <Route
-          path={"/workbench/procurement-orders/accepted"}
-          component={BusinessWorkbenchRoute}
-        />
-        <Route
-          path={"/workbench/procurement-orders/create"}
-          component={BusinessWorkbenchRoute}
-        />
-        <Route
-          path={"/workbench/procurement-orders"}
-          component={BusinessWorkbenchRoute}
-        />
         <Route path={"/workbench/add-user"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/user-records"}
@@ -348,7 +332,6 @@ function AppRoutes() {
         <Route path={"/workbench/customers/new/:id"} component={BusinessWorkbenchRoute} />
         <Route path={"/workbench/sales-orders"} component={BusinessWorkbenchRoute} />
         <Route path={"/workbench/procurement/demands"} component={BusinessWorkbenchRoute} />
-        <Route path={"/workbench/procurement/orders"} component={BusinessWorkbenchRoute} />
         <Route path={"/workbench/demand-quotes"} component={BusinessWorkbenchRoute} />
         <Route path={"/workbench/company"} component={BusinessWorkbenchRoute} />
         <Route path={"/404"} component={NotFoundRoute} />

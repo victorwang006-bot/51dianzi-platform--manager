@@ -81,7 +81,7 @@ const navigationItems: TestItem[] = [
   { path: "/portal-users", label: "平台用户", permission: "portalUsers.read" },
   {
     path: "/workbench/inbound",
-    label: "入库管理",
+    label: "采购入库",
     permission: "business.inventory.read",
   },
   {
@@ -156,7 +156,6 @@ describe("后台工作台导航分组", () => {
         label: "采购管理",
         items: [
           item("/workbench/procurement-demands"),
-          item("/workbench/procurement-orders"),
         ],
       },
       {
@@ -230,17 +229,17 @@ describe("后台工作台导航分组", () => {
     );
     expect(
       findAdminWorkbenchNavigationGroupId("/workbench/procurement-orders/quote")
-    ).toBe("procurement");
+    ).toBeNull();
     expect(
       findAdminWorkbenchNavigationGroupId(
         "/workbench/procurement-orders/accepted"
       )
-    ).toBe("procurement");
+    ).toBeNull();
     expect(
       findAdminWorkbenchNavigationGroupId(
         "/workbench/procurement-orders/create"
       )
-    ).toBe("procurement");
+    ).toBeNull();
     expect(findAdminWorkbenchNavigationGroupId("/staff/7")).toBe("system");
     expect(findAdminWorkbenchNavigationGroupId("/unrelated")).toBeNull();
 
@@ -350,7 +349,6 @@ describe("后台工作台导航分组", () => {
       "/workbench/inquiries",
       "/workbench/chat",
       "/workbench/procurement-demands",
-      "/workbench/procurement-orders",
       "/workbench/add-user",
       "/workbench/user-records",
       "/workbench/company-info",
@@ -360,7 +358,7 @@ describe("后台工作台导航分组", () => {
     );
     expect(
       isAdminBusinessWorkbenchPath("/workbench/procurement-orders/create")
-    ).toBe(true);
+    ).toBe(false);
     expect(isAdminBusinessWorkbenchPath("/workbench/add-user")).toBe(true);
     expect(isAdminBusinessWorkbenchPath("/workbench/channel-inventory")).toBe(
       false

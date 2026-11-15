@@ -72,6 +72,7 @@ export const BUSINESS_METHOD_IDS = [
   "importInventory.listFailedRows", "importInventory.pauseJob", "importInventory.resumeJob", "importInventory.retryFailedJob",
   "importInventory.cancelJob", "importInventory.repairList", "importInventory.repairClear",
   "importInventory.repairSave", "importInventory.repairSubmit",
+  "inbound.procurementBuyers",
   "inbound.uploadPhoto", "inbound.photos", "inbound.suggestPartNumbers", "inbound.overview", "inbound.list",
   "inbound.bulkCreate", "inbound.create", "inbound.update", "inbound.updateDetails", "inbound.paymentHistory",
   "inbound.markPaymentUnpaid", "inbound.recordPayment", "inbound.voidPayment", "inbound.receive", "inbound.cancelPreview",
@@ -165,6 +166,7 @@ for (const method of [
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = INVENTORY_PUBLISH;
 BUSINESS_METHOD_CAPABILITIES["inventory.reassign"] = MEMBER_MANAGE;
 for (const method of [
+  "inbound.procurementBuyers",
   "inbound.photos", "inbound.suggestPartNumbers", "inbound.overview", "inbound.list", "inbound.paymentHistory", "inbound.cancelPreview",
 ] as const) BUSINESS_METHOD_CAPABILITIES[method] = INVENTORY_INBOUND_READ;
 for (const method of [

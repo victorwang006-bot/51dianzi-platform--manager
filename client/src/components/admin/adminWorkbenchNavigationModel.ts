@@ -77,7 +77,6 @@ export const ADMIN_WORKBENCH_NAVIGATION_GROUPS: readonly AdminWorkbenchNavigatio
       label: "采购管理",
       paths: [
         "/workbench/procurement-demands",
-        "/workbench/procurement-orders",
       ],
     },
     {
@@ -150,7 +149,7 @@ export const ADMIN_WORKBENCH_NAVIGATION_ROUTE_ALIASES: readonly AdminWorkbenchNa
 const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
   "/workbench/inventory": "我的库存",
   "/workbench/publish": "发布库存",
-  "/workbench/inbound": "入库管理",
+  "/workbench/inbound": "采购入库",
   "/workbench/channel-inventory": "渠道库存",
   "/workbench/customers": "客户列表",
   "/workbench/customer-demands": "客户需求",
@@ -158,7 +157,6 @@ const NAVIGATION_LABEL_BY_PATH: Readonly<Record<string, string>> = {
   "/workbench/outbound": "出库管理",
   "/workbench/inquiries": "询价接待",
   "/workbench/procurement-demands": "采购需求",
-  "/workbench/procurement-orders": "采购订单",
   "/merchants": "商户管理",
   "/materials": "物料数据库",
   "/orders": "平台订单",
@@ -188,7 +186,6 @@ export const ADMIN_BUSINESS_WORKBENCH_PATHS = [
   "/workbench/inquiries",
   "/workbench/chat",
   "/workbench/procurement-demands",
-  "/workbench/procurement-orders",
   "/workbench/add-user",
   "/workbench/user-records",
   "/workbench/company-info",

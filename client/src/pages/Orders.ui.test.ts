@@ -30,7 +30,7 @@ describe("原站平台订单优化", () => {
     await render();
     expect(host.querySelector("h1")?.textContent).toBe("平台订单");
     expect(host.textContent).toContain("销售订单");
-    expect(host.textContent).toContain("采购订单");
+    expect(host.textContent).toContain("采购入库");
     expect(host.textContent).toContain("含取消、退款订单；非实收金额");
     expect(host.textContent).toContain("不随下方列表筛选条件改变");
     expect(host.textContent).toContain("¥12.00");

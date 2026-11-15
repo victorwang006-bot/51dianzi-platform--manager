@@ -43,10 +43,10 @@ describe("20261113 已批准八项一级入口", () => {
     expect(primaryTargets()).toEqual(["customers", "inventory", "inquiries", "procurement-management", "inventory-management", "sales-orders", "operations", "organization"]);
     expect(button("sales-orders").textContent).toBe("销售订单▾");
     expect(button("sales-orders").dataset.workspaceDropdownTrigger).toBe("sales-orders");
-    expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("入库管理");
+    expect(button("inventory").title).toBe("渠道物料查询"); expect(button("inventory-management").title).toBe("采购入库");
     expect(host.querySelector('[data-workspace-nav-target="business"]')).toBeNull();
     await click("inventory-management");
-    expect(button("inventory-management").textContent).toBe("入库管理");
+    expect(button("inventory-management").textContent).toBe("采购入库");
     expect(button("inventory-management").hasAttribute("aria-expanded")).toBe(false);
     expect(panels()).toHaveLength(0);
     for (const path of ["/workbench/orders", "/workbench/outbound", "/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries"]) expect(host.querySelector(`[data-workspace-dropdown-item="${path}"]`)).toBeNull();
@@ -83,9 +83,9 @@ describe("20261113 已批准八项一级入口", () => {
     ["/workbench/orders", "sales-orders", ["销售订单", "商城订单"]],
     ["/workbench/orders?orderSource=business", "sales-orders", ["销售订单", "业务订单"]],
     ["/workbench/sales-orders/88?merchantId=31", "sales-orders", ["销售订单", "业务订单"]],
-    ["/workbench/inbound", "inventory-management", ["入库管理"]],
+    ["/workbench/inbound", "inventory-management", ["采购入库"]],
     ["/workbench/outbound", "sales-orders", ["销售订单", "商城订单"]],
-    ["/workbench/procurement/orders/88", "procurement-management", ["采购管理", "采购订单"]],
+    ["/workbench/procurement/orders/88", "inventory-management", ["采购入库"]],
     ["/workbench/procurement-demands", "procurement-management", ["采购管理", "采购需求"]],
     ["/workbench/inquiries/88", "inquiries", ["询价接待"]],
     ["/workbench/chat/88", "inquiries", ["询价接待"]],
@@ -94,7 +94,7 @@ describe("20261113 已批准八项一级入口", () => {
   });
   it.each(["/workbench/customers", CHANNEL_INVENTORY_ROUTE, "/workbench/inquiries", "/workbench/orders", "/workbench/inbound", "/workbench/procurement-orders"])
     ("%s撤权不制造目标、默认跳转或空业务菜单", async path => {
-      await render(path === "/workbench/orders" ? `${path}?orderSource=business` : path, items.filter(item => item.path !== path)); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
+      await render(path === "/workbench/orders" ? `${path}?orderSource=business` : path, items.filter(item => item.path !== (path === "/workbench/procurement-orders" ? "/workbench/inbound" : path))); expect(activeTargets()).toEqual([]); expect(locationLabels()).toEqual([]);
       await render(path, []); expect(host.querySelector("nav")).toBeNull(); expect(onNavigate).not.toHaveBeenCalled();
     });
   it.each([1280, 390])("%s宽度seller-only保留原outbound对象、preload与上下文", async width => {

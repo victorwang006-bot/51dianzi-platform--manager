@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { ErpHelperText, ErpSegmentedControl } from "../erp/ErpFormControls";
 import { trpc } from "../../../../../api/business-trpc";
 import { toast } from "sonner";
+import { attachImportedProcurementBuyer, defaultProcurementBuyer, procurementBuyerDraftError, procurementBuyerOptionLabel, selectedProcurementBuyer, type ProcurementBuyerScope, type ProcurementBuyerDraftRow, type ProcurementBuyerInboundRow } from "./procurementBuyerSelection";
 import {
   INBOUND_BULK_FIELDS,
   INBOUND_BULK_FILE_MAX_BYTES,
@@ -37,12 +38,17 @@ type ImportSource = {
 };
 type MissingPriceConfirmation = {
   fingerprint: string;
-  rows: InboundBulkRow[];
-  missingRows: InboundBulkDraftRow[];
+  rows: ProcurementBuyerInboundRow[];
+  missingRows: ProcurementBuyerDraftRow[];
 };
+type ProcurementBulkCreateInput = Omit<InboundBulkCreateInput, "rows"> & { rows: ProcurementBuyerInboundRow[] };
 type RequestState = "idle" | "saving" | "uncertain";
 
 type BulkInboundFormProps = {
+  buyerScope: ProcurementBuyerScope | null;
+  buyerError?: string;
+  onRetryBuyers?: () => void;
+  buyerRetrying?: boolean;
   onSuccess: () => void;
   onCancel?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
@@ -103,7 +109,7 @@ function fieldErrorKey(rowKey: string, field: InboundBulkField) {
  * Batch inbound entry content only. It is intentionally rendered inside the
  * existing inbound modal, rather than opening a second page-level dialog.
  */
-export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChange }: BulkInboundFormProps) {
+export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, buyerRetrying = false, onSuccess, onCancel, onDirtyChange, onBusyChange }: BulkInboundFormProps) {
   const [status, setStatus] = useState<InboundStatus>("in_transit");
   const [inboundDate, setInboundDate] = useState(beijingToday);
   const [unitCostBasis, setUnitCostBasis] = useState<InboundPriceBasis>(CNY_TAX_INCLUDED);
@@ -115,7 +121,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
   const everUncertain = useRef(false);
   const [source, setSource] = useState<ImportSource | null>(null);
   const [mapping, setMapping] = useState<InboundBulkMapping>(() => suggestInboundBulkMapping([]));
-  const [drafts, setDrafts] = useState<InboundBulkDraftRow[]>([]);
+  const [drafts, setDrafts] = useState<ProcurementBuyerDraftRow[]>([]);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteValue, setPasteValue] = useState("");
   const [fileError, setFileError] = useState("");
@@ -126,7 +132,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
   const [isDirty, setIsDirty] = useState(false);
   const [clientRequestId, setClientRequestId] = useState(newClientRequestId);
   const [requestState, setRequestState] = useState<RequestState>("idle");
-  const [uncertainPayload, setUncertainPayload] = useState<InboundBulkCreateInput | null>(null);
+  const [uncertainPayload, setUncertainPayload] = useState<ProcurementBulkCreateInput | null>(null);
   const [saveError, setSaveError] = useState("");
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const workbookRef = useRef<import("xlsx").WorkBook | null>(null);
@@ -156,7 +162,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
     onBusyChange?.(false);
   }, [onBusyChange, onDirtyChange]);
 
-  const snapshot = () => JSON.stringify({ status, inboundDate, unitCostBasis, taxRate, drafts });
+  const snapshot = () => JSON.stringify({ status, inboundDate, unitCostBasis, taxRate, drafts, buyerScope });
 
   const markChanged = () => {
     if (locked) return false;
@@ -266,9 +272,10 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
       return;
     }
     if (!markChanged()) return;
-    setDrafts(next);
+    const attributed = next.map(row => attachImportedProcurementBuyer(row, buyerScope));
+    setDrafts(attributed);
     setMappingOpen(false);
-    setCellErrors({});
+    setCellErrors(Object.fromEntries(attributed.filter(row => row.buyerImportError).map(row => [fieldErrorKey(row.rowKey, "operator"), row.buyerImportError!])));
     setFileError("");
   };
 
@@ -280,7 +287,8 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
     }
     if (!markChanged()) return;
     const sourceRow = Math.max(1, ...drafts.map(row => row.sourceRow), ...(source?.rows.map((_, index) => index + 2) ?? [1])) + 1;
-    setDrafts(current => [...current, emptyInboundBulkRow(sourceRow)]);
+    const buyer = defaultProcurementBuyer(buyerScope);
+    setDrafts(current => [...current, { ...emptyInboundBulkRow(sourceRow), buyerUserId: buyer ? String(buyer.userId) : "", operator: buyer?.name ?? "" }]);
     setCellErrors({});
   };
 
@@ -294,6 +302,13 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
     });
   };
 
+  const updateBuyer = (rowKey: string, userId: string) => {
+    const buyer = selectedProcurementBuyer(buyerScope, userId);
+    if (!buyer || !buyerScope?.canChooseBuyer || !markChanged()) return;
+    setDrafts(current => current.map(row => row.rowKey === rowKey ? { ...row, buyerUserId: String(buyer.userId), operator: buyer.name, buyerImportError: undefined } : row));
+    setCellErrors(current => { const next = { ...current }; delete next[fieldErrorKey(rowKey, "operator")]; return next; });
+  };
+
   const removeDraft = (rowKey: string) => {
     if (!markChanged()) return;
     setDrafts(current => current.filter(row => row.rowKey !== rowKey));
@@ -301,6 +316,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
   };
 
   const validateBatchValues = () => {
+    if (!buyerScope) return buyerError || "采购员候选尚未核验，请重新获取";
     if (!validInboundDate(inboundDate)) return "请选择有效的北京日期";
     const numericTaxRate = Number(taxRate);
     if (!/^\d+(?:\.\d+)?$/.test(taxRate.trim()) || !Number.isFinite(numericTaxRate) || numericTaxRate < 0 || numericTaxRate > 13 || Math.round(numericTaxRate * 10) !== numericTaxRate * 10) {
@@ -316,15 +332,23 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
       setFormError(batchError);
       return null;
     }
-    const result = validateInboundBulkDraft(drafts, status);
+    // The shared schema may strip unknown fields during a rolling release;
+    // validate all existing fields, then explicitly attach trusted numeric IDs.
+    const normalized = drafts.map(row => ({ ...row, buyerUserId: Number(row.buyerUserId), operator: selectedProcurementBuyer(buyerScope, row.buyerUserId)?.name ?? row.operator }));
+    const result = validateInboundBulkDraft(normalized as unknown as InboundBulkDraftRow[], status);
     const nextErrors: Record<string, string> = {};
     for (const error of result.errors) nextErrors[fieldErrorKey(error.rowKey, error.field)] = error.message;
+    for (const row of drafts) { const error = procurementBuyerDraftError(row, buyerScope); if (error) nextErrors[fieldErrorKey(row.rowKey, "operator")] = error; }
     setCellErrors(nextErrors);
-    if (result.errors.length) {
-      setFormError(`请修正 ${result.errors.length} 处数据后再确认录入`);
+    if (Object.keys(nextErrors).length) {
+      setFormError(`请修正 ${Object.keys(nextErrors).length} 处数据后再确认录入`);
       return null;
     }
-    return result;
+    return { ...result, missingPriceRows: drafts.filter(row => !row.unitCost.trim()), rows: result.rows.map(row => {
+      const draft = drafts.find(draft => draft.sourceRow === row.sourceRow)!;
+      const buyer = selectedProcurementBuyer(buyerScope, draft.buyerUserId)!;
+      return { ...row, buyerUserId: buyer.userId, operator: buyer.name };
+    }) };
   };
 
   const completeSuccess = async (count: number) => {
@@ -348,10 +372,10 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
     onSuccess();
   };
 
-  const submitPayload = (payload: InboundBulkCreateInput) => {
+  const submitPayload = (payload: ProcurementBulkCreateInput) => {
     setRequestState("saving");
     setSaveError("");
-    bulkCreateMutation.mutate(payload, {
+    bulkCreateMutation.mutate(payload as InboundBulkCreateInput, {
       onSuccess: result => { void completeSuccess(result.count); },
       onError: error => {
         const code = errorCode(error);
@@ -397,6 +421,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
       setFormError("录入内容已变化，请重新确认未填写价格的行");
       return;
     }
+    if (!validateDrafts()) { setConfirmation(null); return; }
     submitPayload({
       clientRequestId,
       status,
@@ -433,6 +458,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
 
   return (
     <section className="erp-ui space-y-3" data-testid="inbound-bulk-form" aria-label="批量入库">
+      {buyerError && <ErpHelperText tone="danger">{buyerError}{onRetryBuyers && <> <button type="button" className="text-[#185FA5]" disabled={locked || buyerRetrying} onClick={onRetryBuyers}>重新获取</button></>}</ErpHelperText>}
       <div data-bulk-step="导入明细" className="inbound-entry-card">
         <div className="inbound-entry-card-title">1. 导入明细</div>
         <div className="grid gap-3 px-3 pb-3 lg:grid-cols-[minmax(360px,1fr)_auto] lg:items-stretch">
@@ -506,7 +532,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
       {source && <div className="inbound-entry-card p-3" data-testid="inbound-bulk-mapping">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div className="text-[13px] font-medium text-[#303642]">表头对应 <span className="font-normal text-[#8A94A3]">{source.name}{source.sheetName ? ` · ${source.sheetName}` : ""} · {nonBlankSourceRows} 行</span></div>
-          <div className="flex gap-2">{drafts.length > 0 && <button type="button" className="crm-btn crm-btn-sm" disabled={locked} onClick={() => setMappingOpen(value => !value)}>{mappingOpen ? "收起对应" : "修改对应"}</button>}{mappingOpen && <button type="button" className="crm-btn crm-btn-sm crm-btn-primary" disabled={locked || nonBlankSourceRows > INBOUND_BULK_MAX_ROWS} onClick={buildPreview}>预览</button>}</div>
+          <div className="flex gap-2">{drafts.length > 0 && <button type="button" className="crm-btn crm-btn-sm" disabled={locked} onClick={() => setMappingOpen(value => !value)}>{mappingOpen ? "收起对应" : "修改对应"}</button>}{mappingOpen && <button type="button" className="crm-btn crm-btn-sm crm-btn-primary" disabled={locked || !buyerScope || nonBlankSourceRows > INBOUND_BULK_MAX_ROWS} onClick={buildPreview}>预览</button>}</div>
         </div>
         <div hidden={!mappingOpen} className={mappingOpen ? "grid gap-x-3 gap-y-2 sm:grid-cols-2 lg:grid-cols-3" : "hidden"}>
           {INBOUND_BULK_FIELDS.map(field => <label key={field.key} className="flex items-center gap-2 text-[12px] text-slate-600">
@@ -525,7 +551,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
           <div className="text-[13px] font-semibold text-[#303642]">3. 明细预览 <span className="font-normal text-[#8A94A3]">{drafts.length} / {INBOUND_BULK_MAX_ROWS} 行</span></div>
           <div className="flex gap-2">
             <button type="button" className="crm-btn crm-btn-sm" aria-pressed={showOptionalColumns} onClick={() => setShowOptionalColumns(value => !value)}>{showOptionalColumns ? "收起更多字段" : "显示更多字段"}</button>
-            <button type="button" className="crm-btn crm-btn-sm" disabled={locked || drafts.length >= INBOUND_BULK_MAX_ROWS} onClick={addManualRow}>新增行</button>
+            <button type="button" className="crm-btn crm-btn-sm" disabled={locked || !buyerScope || drafts.length >= INBOUND_BULK_MAX_ROWS} onClick={addManualRow}>新增行</button>
           </div>
         </div>
         <div className="inbound-bulk-table-scroll overflow-auto">
@@ -540,10 +566,16 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
               {drafts.map(row => <tr key={row.rowKey}>
                 <td className="sticky left-0 z-20 w-[72px] min-w-[72px] whitespace-nowrap bg-white text-[12px] text-[#6B7280]">第{row.sourceRow}行</td>
                 {INBOUND_BULK_FIELDS.filter(field => showOptionalColumns || PRIORITY_FIELDS.has(field.key)).map(field => {
-                  const error = cellErrors[fieldErrorKey(row.rowKey, field.key)];
+                  const error = field.key === "operator" ? procurementBuyerDraftError(row, buyerScope) || cellErrors[fieldErrorKey(row.rowKey, field.key)] : cellErrors[fieldErrorKey(row.rowKey, field.key)];
                   const missingPrice = field.key === "unitCost" && showMissingPriceFocus && !row.unitCost.trim();
                   return <td key={field.key} className={`${field.key === "partNumber" ? "sticky left-[72px] z-10 min-w-[180px] bg-white" : "min-w-[122px]"} p-1.5 align-top`}>
-                    <input
+                    {field.key === "operator" ? <>
+                      <select aria-label={`第${row.sourceRow}行采购员`} className={`crm-input h-8 w-full min-w-[110px] px-2 text-[12px] ${error ? "border-[#C63C3C] bg-[#FFF8F8]" : ""}`} disabled={locked || !buyerScope || !buyerScope.canChooseBuyer} value={selectedProcurementBuyer(buyerScope, row.buyerUserId) ? row.buyerUserId : ""} onChange={event => updateBuyer(row.rowKey, event.target.value)}>
+                        <option value="">请选择有效采购员</option>
+                        {(buyerScope?.options ?? []).filter(option => buyerScope?.canChooseBuyer || option.userId === buyerScope?.actorUserId).map(option => <option key={option.userId} value={option.userId}>{procurementBuyerOptionLabel(option)}</option>)}
+                      </select>
+                      {row.buyerImportError && <div className="mt-1 text-[11px] text-[#6B7280]">导入采购员：{row.operator || "未填"}</div>}
+                    </> : <input
                       ref={missingPrice && row.rowKey === drafts.find(item => !item.unitCost.trim())?.rowKey ? missingPriceFocusRef : undefined}
                       aria-label={`第${row.sourceRow}行${field.label}`}
                       className={`crm-input h-8 w-full px-2 text-[12px] ${field.key === "partNumber" ? "min-w-[168px]" : "min-w-[110px]"} ${error || missingPrice ? "border-[#C63C3C] bg-[#FFF8F8]" : ""}`}
@@ -552,7 +584,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
                       maxLength={field.maxLength}
                       value={row[field.key]}
                       onChange={event => updateDraft(row.rowKey, field.key, event.target.value)}
-                    />
+                    />}
                     {error && <div className="mt-1 max-w-[140px] text-[11px] leading-4 text-[#C63C3C]">{error}</div>}
                   </td>;
                 })}
@@ -584,7 +616,7 @@ export function BulkInboundForm({ onSuccess, onCancel, onDirtyChange, onBusyChan
 
       <div className="inbound-entry-actions">
         {onCancel && <button type="button" className="crm-btn" disabled={locked} onClick={onCancel}>取消</button>}
-        <button type="button" className="crm-btn crm-btn-primary" disabled={locked || !drafts.length} onClick={requestSubmit}>{requestState === "saving" ? "录入中…" : "确认录入"}</button>
+        <button type="button" className="crm-btn crm-btn-primary" disabled={locked || !drafts.length || !buyerScope} onClick={requestSubmit}>{requestState === "saving" ? "录入中…" : "确认录入"}</button>
       </div>
     </section>
   );

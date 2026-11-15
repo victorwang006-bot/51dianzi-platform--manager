@@ -84,7 +84,6 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
   });
 
   it.each([
-    "/workbench/customers/88", "/workbench/customers/88/?merchantId=31#detail",
     "/workbench/channel-inventory/88", "/merchants/88", "/staff/88", "/admins/88", "/workbench/add-user",
   ])("%s 的原详情/别名 context 保留且不带根布局 marker", location => {
     const host = render(location);
@@ -93,15 +92,19 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
   });
 
+  it.each(["/workbench/customers/88", "/workbench/customers/88/?merchantId=31#detail"])("%s preserves the existing hidden customer detail context", location => {
+    expect(render(location).children).toHaveLength(0);
+  });
+
   it.each([
-    ["/workbench/customers/88?merchantId=31", ["客户列表"]],
+    ["/workbench/customers/88?merchantId=31", []],
     ["/workbench/sales-orders/8", ["销售订单", "业务订单"]],
     ["/workbench/chat/8", ["询价接待"]],
     ["/workbench", ["客户列表"]],
     ["/workbench/outbound", ["销售订单", "商城订单"]],
-    ["/workbench/inbound", ["入库管理"]],
-    ["/workbench/inbound/fixture-detail?fixture=true#entry", ["入库管理"]],
-    ["/workbench/procurement/orders/8", ["采购管理", "采购订单"]],
+    ["/workbench/inbound", ["采购入库"]],
+    ["/workbench/inbound/fixture-detail?fixture=true#entry", ["采购入库"]],
+    ["/workbench/procurement/orders/8", ["采购入库"]],
     ["/materials/8", ["平台运营", "基础资料", "物料数据库"]],
     ["/portal-users/8", ["平台运营", "基础资料", "平台用户"]],
     ["/orders/8", ["平台运营", "交易与服务", "平台订单"]],
@@ -155,7 +158,8 @@ describe("只读当前位置：不恢复第二行导航，不替代页面标题�
         await act(async () => root.render(view(location)));
         expect(document.activeElement).toBe(action);
         expect(host.querySelector("article")).toBe(page);
-        expect(host.querySelector('nav[aria-label="当前位置"]')).not.toBeNull();
+        if (location === "/workbench/customers/88") expect(host.querySelector('nav[aria-label="当前位置"]')).toBeNull();
+        else expect(host.querySelector('nav[aria-label="当前位置"]')).not.toBeNull();
       }
       await act(async () => root.render(view(`${CHANNEL_INVENTORY_ROUTE}?ciTab=batches`)));
       expect(labels(host)).toEqual(["库存列表", "上传批次"]);

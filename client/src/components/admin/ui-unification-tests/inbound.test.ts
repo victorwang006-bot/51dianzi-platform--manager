@@ -13,6 +13,11 @@ const fixture = vi.hoisted(() => ({
   refetch: vi.fn(),
   preview: vi.fn(),
   mutations: {} as Record<string, ReturnType<typeof vi.fn>>,
+  buyers: { data: undefined as unknown, isError: false, isFetching: false, isLoading: false, refetch: vi.fn() },
+  buyerQuery: vi.fn(),
+  actorId: 7002,
+  inventoryScopeAvailable: undefined as boolean | undefined,
+  inventoryValue: "300.00",
 }));
 
 vi.mock("@/business/BusinessContentFrame", () => ({
@@ -21,6 +26,7 @@ vi.mock("@/business/BusinessContentFrame", () => ({
 vi.mock("@/business/platform/client/src/components/inbound/BulkInboundForm", () => ({
   BulkInboundForm: () => createElement("div", { "data-testid": "bulk-form" }),
 }));
+vi.mock("@/business/BusinessScope", () => ({ useBusinessScope: () => ({ frontUser: { id: fixture.actorId } }) }));
 vi.mock("wouter", () => ({ useLocation: () => ["/inbound", fixture.navigate] }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/business/api/business-trpc", () => {
@@ -32,7 +38,8 @@ vi.mock("@/business/api/business-trpc", () => {
   } };
   const inbound = new Proxy({
     list: { useQuery: (input: unknown) => { fixture.listQuery(input); return { data: fixture.rows, isLoading: false, refetch: fixture.refetch }; } },
-    overview: { useQuery: () => ({ data: { totalPaidAmount: "120.00", totalInventoryValue: "300.00", totalInventoryValueComplete: true, inTransitPaidAmount: "20.00", receivedPaidAmount: "100.00", cancelledPaidAmount: "0.00", untrackedCount: 0 } }) },
+    overview: { useQuery: () => ({ data: { totalPaidAmount: "120.00", totalInventoryValue: fixture.inventoryValue, totalInventoryValueComplete: true, inventoryScopeAvailable: fixture.inventoryScopeAvailable, inTransitPaidAmount: "20.00", receivedPaidAmount: "100.00", cancelledPaidAmount: "0.00", untrackedCount: 0 } }) },
+    procurementBuyers: { useQuery: (_input: unknown, options: unknown) => { fixture.buyerQuery(options); return fixture.buyers; } },
     photos: { useQuery: () => ({ data: [], isFetching: false }) },
     paymentHistory: { useQuery: () => ({ data: undefined, isFetching: false, refetch: fixture.refetch }) },
     suggestPartNumbers: { useQuery: () => ({ data: [], isFetching: false }) },
@@ -70,6 +77,10 @@ function row(id: number, status = "in_transit") {
 beforeEach(() => {
   Object.assign(globalThis, { React, IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
+  fixture.actorId = 7002;
+  fixture.inventoryScopeAvailable = undefined;
+  fixture.inventoryValue = "300.00";
+  fixture.buyers = { data: { actorUserId: 7002, canChooseBuyer: false, teamId: 9, scope: "self", options: [{ userId: 7002, name: "采购员甲", username: "buyer-a" }, { userId: 7003, name: "采购员乙", username: "buyer-b" }] }, isError: false, isFetching: false, isLoading: false, refetch: vi.fn() };
   fixture.rows = [row(1), row(2, "received"), row(3, "cancelled")];
   fixture.preview.mockResolvedValue({ count: 2, ignoredCount: 0, paidCount: 0, paidAmount: "0.00", paymentFingerprint: "original-payment-fingerprint", rows: [] });
   host = document.createElement("div");
@@ -108,10 +119,29 @@ async function menu(id: number) {
 function lastQuery() { return fixture.listQuery.mock.calls.at(-1)?.[0]; }
 
 describe("inbound unified presentation and business regression", () => {
+  it("does not present unavailable procurement-scope inventory as a zero or global valuation", async () => {
+    fixture.inventoryScopeAvailable = false;
+    fixture.inventoryValue = "0.00";
+    await mount();
+    const card = host.querySelector<HTMLButtonElement>('button[title="当前采购范围不提供库存估值"]');
+    expect(card?.querySelector("strong")?.textContent).toBe("—");
+    expect(card?.textContent).not.toContain("¥");
+    expect(button("已付款项¥120.00")).toBeTruthy();
+  });
+
+  it("distinguishes an available real zero inventory valuation from an unavailable placeholder", async () => {
+    fixture.inventoryScopeAvailable = true;
+    fixture.inventoryValue = "0.00";
+    await mount();
+    const card = host.querySelector<HTMLButtonElement>('button[title="查看当前可用库存"]');
+    expect(card?.querySelector("strong")?.textContent).toBe("¥0.00");
+    expect(card?.querySelector("strong")?.textContent).not.toBe("—");
+  });
+
   it("uses the shared compact header, filter and data panel without dropping list columns or real quantities", async () => {
     await mount();
     expect(host.querySelector("section.aui-page.inbound-management-page")).not.toBeNull();
-    expect(host.querySelector(".aui-page-header h1")?.textContent).toBe("入库管理");
+    expect(host.querySelector(".aui-page-header h1")?.textContent).toBe("采购入库");
     expect(host.querySelectorAll("h1")).toHaveLength(1);
     expect(host.querySelector(".aui-filterbar.inbound-toolbar")).not.toBeNull();
     expect(host.querySelector(".aui-data-panel .inbound-list-table")).not.toBeNull();
@@ -206,17 +236,18 @@ describe("inbound unified presentation and business regression", () => {
 
   it("keeps the single-entry create payload and unpaid default unchanged", async () => {
     await mount();
-    await click(button("新建入库"));
-    const dialog = host.querySelector('[role="dialog"][aria-label="新建入库单"]')!;
+    await click(button("新建采购入库"));
+    const dialog = host.querySelector('[role="dialog"][aria-label="新建采购入库单"]')!;
     await click(button("保存为在途", dialog));
     expect(fixture.mutations.create).not.toHaveBeenCalled();
     await fill(dialog.querySelector<HTMLInputElement>("#inbound-part-number")!, "stm32f103");
     await fill(field("计划到货数量", dialog), "50");
     await fill(field("供应商名称", dialog), " 原供应商 ");
-    await fill(field("采购员", dialog), " 采购员甲 ");
+    expect(dialog.querySelector<HTMLSelectElement>('select[aria-label="采购员"]')!.value).toBe("7002");
+    expect(dialog.querySelector<HTMLSelectElement>('select[aria-label="采购员"]')!.disabled).toBe(true);
     await click(button("保存为在途", dialog));
     expect(fixture.mutations.create).toHaveBeenCalledWith(expect.objectContaining({
-      partNumber: "STM32F103", qty: 50, status: "in_transit", supplierName: "原供应商", operator: "采购员甲",
+      partNumber: "STM32F103", qty: 50, status: "in_transit", supplierName: "原供应商", operator: "采购员甲", buyerUserId: 7002,
       clientRequestId: expect.any(String), payment: { mode: "unpaid", amount: undefined, paymentDate: undefined, note: undefined },
     }));
   });
@@ -235,7 +266,7 @@ describe("inbound unified presentation and business regression", () => {
     expect(edit.querySelector<HTMLInputElement>("#inbound-part-number")!.disabled).toBe(true);
     expect(field("入库数量", edit).disabled).toBe(true);
     expect(field("供应商名称", edit).disabled).toBe(false);
-    expect(field("采购员", edit).disabled).toBe(false);
+    expect(field("采购员", edit).disabled).toBe(true);
   });
 
   it("scopes legacy size fixes to this page without scaling, important rules, or interaction overrides", () => {
@@ -254,5 +285,55 @@ describe("inbound unified presentation and business regression", () => {
     expect(source).toContain('onDirtyChange={setBulkDirty} onBusyChange={setBulkBusy}');
     expect(source).toContain('if (!editingRow && bulkDirty) { setConfirmBulkClose(true); return; }');
     expect(source).toContain('paymentFingerprint: batchCancelPreview.paymentFingerprint');
+  });
+});
+
+async function chooseBuyer(value: string) {
+  const select = host.querySelector<HTMLSelectElement>('select[aria-label="采购员"]')!;
+  await act(async () => { select.value = value; select.dispatchEvent(new Event("change", { bubbles: true })); });
+}
+async function fillNewInbound() {
+  await fill(host.querySelector<HTMLInputElement>("#inbound-part-number")!, "stm32");
+  await fill(field("计划到货数量"), "50");
+  await fill(field("供应商名称"), "供应商甲");
+}
+
+describe("single procurement buyer authorization and immutable history", () => {
+  it("leader defaults actor then can select only API options, submitting numeric front ID", async () => {
+    (fixture.buyers.data as any).canChooseBuyer = true;
+    await mount(); await click(button("新建采购入库")); await fillNewInbound();
+    const select = host.querySelector<HTMLSelectElement>('select[aria-label="采购员"]')!;
+    expect(select.disabled).toBe(false); expect(select.value).toBe("7002"); expect(select.textContent).toContain("采购员乙（buyer-b）");
+    await chooseBuyer("7003"); await click(button("保存为在途"));
+    expect(fixture.mutations.create).toHaveBeenCalledWith(expect.objectContaining({ buyerUserId: 7003, operator: "采购员乙" }));
+  });
+  it("candidate read error or front actor mismatch refuses creation without free text fallback", async () => {
+    fixture.buyers.isError = true;
+    await mount(); await click(button("新建采购入库")); await fillNewInbound();
+    expect(host.querySelector('input[aria-label="采购员"]')).toBeNull(); expect(button("保存为在途").disabled).toBe(true); expect(host.textContent).toContain("采购员候选读取失败");
+    fixture.buyers.isError = false; fixture.actorId = 6001; await mount();
+    expect(button("保存为在途").disabled).toBe(true); expect(fixture.mutations.create).not.toHaveBeenCalled();
+  });
+  it("candidate or permission change invalidates prior selection and never silently picks actor", async () => {
+    (fixture.buyers.data as any).canChooseBuyer = true;
+    await mount(); await click(button("新建采购入库")); await fillNewInbound(); await chooseBuyer("7003");
+    fixture.buyers.data = { ...(fixture.buyers.data as any), options: [{ userId: 7002, name: "采购员甲", username: "buyer-a" }] };
+    await mount(); expect(button("保存为在途").disabled).toBe(true); expect(host.querySelector<HTMLSelectElement>('select[aria-label="采购员"]')!.value).toBe("");
+    expect(fixture.mutations.create).not.toHaveBeenCalled();
+  });
+  it("known created buyer ID and original name are preserved even when absent from candidates", async () => {
+    fixture.rows = [{ ...row(1), buyerUserId: 7999, operator: "历史采购员" }];
+    await mount(); await click(button("编辑", await menu(1)));
+    expect(field("采购员").value).toBe("历史采购员"); expect(field("采购员").disabled).toBe(true);
+    expect(fixture.buyerQuery.mock.calls.every(([options]) => !options.enabled)).toBe(true);
+    await click(button("保存修改"));
+    expect(fixture.mutations.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ buyerUserId: 7999, operator: "历史采购员" }) }));
+  });
+  it("legacy unbound received row keeps exact operator without guessing a candidate ID", async () => {
+    fixture.rows = [{ ...row(2, "received"), operator: "采购员甲" }];
+    fixture.buyers.data = { ...(fixture.buyers.data as any), options: [{ userId: 7002, name: "新的可信姓名" }] };
+    await mount(); await click(button("编辑", await menu(2))); await click(button("保存修改"));
+    const payload = fixture.mutations.updateDetails.mock.calls.at(-1)![0];
+    expect(payload.operator).toBe("采购员甲"); expect(payload).not.toHaveProperty("buyerUserId");
   });
 });

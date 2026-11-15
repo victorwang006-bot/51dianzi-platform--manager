@@ -1,4 +1,5 @@
-import { router, createCrmPermissionProcedure } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { router, publicProcedure, createCrmPermissionProcedure } from "../_core/trpc";
 import {
   acceptedQuoteOptionsSchema, purchaseOrderCancelSchema, purchaseOrderCreateSchema,
   purchaseOrderIdSchema, purchaseOrderInboundCandidatesSchema, purchaseOrderInvoiceSchema,
@@ -11,7 +12,10 @@ import {
   recordPurchaseInvoice, updatePurchasePayment, updatePurchaseShipping, voidPurchaseInvoice,
 } from "../services/purchaseOrders";
 
-const procurementOrderProcedure = createCrmPermissionProcedure("procurement.orders");
+/** Closed before input/CRM/database access; unrelated demand/sales/mall routers are untouched. */
+const procurementOrderProcedure = publicProcedure.use(() => {
+  throw new TRPCError({ code: "NOT_FOUND", message: "采购订单接口已关闭，请使用采购入库" });
+}).concat(createCrmPermissionProcedure("procurement.orders"));
 function scopeFor(ctx: { user: { id: number }; enterprisePermissionScope: {
   enterprise: { id: number }; dataOwnerUserId: number;
 } }) {

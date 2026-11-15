@@ -179,7 +179,6 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "customerDemand.procurement.*", module: "procurement", mode: "write" },
   { method: "crmSalesOrder.*", module: "orders", mode: "write" },
   { method: "personalPerformance.summary", module: "orders", mode: "read" },
-  { method: "purchaseOrder.*", module: "procurement", mode: "write" },
   { method: "enterprise.me", module: "context", mode: "read" },
   { method: "enterprise.inquiryInbox", module: "inquiries", mode: "read" },
   { method: "enterprise.*", module: "users", mode: "write" },
@@ -791,6 +790,7 @@ const importInventoryBusinessRouter = router({
 });
 
 const inboundBusinessRouter = router({
+  procurementBuyers: businessQuery("inbound.procurementBuyers", "inventory"),
   uploadPhoto: businessMutation("inbound.uploadPhoto", "inventory"),
   photos: businessQuery("inbound.photos", "inventory"),
   suggestPartNumbers: businessQuery("inbound.suggestPartNumbers", "inventory"),
@@ -876,20 +876,23 @@ const crmSalesOrderBusinessRouter = router({
   ship: businessMutation("crmSalesOrder.ship", "orders"),
 });
 
-const purchaseOrderBusinessRouter = router({
-  list: businessQuery("purchaseOrder.list", "procurement"),
-  get: businessQuery("purchaseOrder.get", "procurement"),
-  acceptedQuoteOptions: businessQuery("purchaseOrder.acceptedQuoteOptions", "procurement"),
-  inboundCandidates: businessQuery("purchaseOrder.inboundCandidates", "procurement"),
-  create: businessMutation("purchaseOrder.create", "procurement"),
-  updatePayment: businessMutation("purchaseOrder.updatePayment", "procurement"),
-  updateShipping: businessMutation("purchaseOrder.updateShipping", "procurement"),
-  linkInbound: businessMutation("purchaseOrder.linkInbound", "procurement"),
-  recordInvoice: businessMutation("purchaseOrder.recordInvoice", "procurement"),
-  voidInvoice: businessMutation("purchaseOrder.voidInvoice", "procurement"),
-  cancel: businessMutation("purchaseOrder.cancel", "procurement"),
+/** Closed locally and in the original front router; never forward stale order actions. */
+const closedPurchaseOrderProcedure = publicProcedure.use(() => {
+  throw new TRPCError({ code: "NOT_FOUND", message: "采购订单接口已关闭，请使用采购入库" });
 });
-
+const purchaseOrderBusinessRouter = router({
+  list: closedPurchaseOrderProcedure.query(() => null),
+  get: closedPurchaseOrderProcedure.query(() => null),
+  acceptedQuoteOptions: closedPurchaseOrderProcedure.query(() => null),
+  inboundCandidates: closedPurchaseOrderProcedure.query(() => null),
+  create: closedPurchaseOrderProcedure.mutation(() => null),
+  updatePayment: closedPurchaseOrderProcedure.mutation(() => null),
+  updateShipping: closedPurchaseOrderProcedure.mutation(() => null),
+  linkInbound: closedPurchaseOrderProcedure.mutation(() => null),
+  recordInvoice: closedPurchaseOrderProcedure.mutation(() => null),
+  voidInvoice: closedPurchaseOrderProcedure.mutation(() => null),
+  cancel: closedPurchaseOrderProcedure.mutation(() => null),
+});
 const enterpriseBusinessRouter = router({
   me: businessQuery("enterprise.me", "context"),
   members: businessQuery("enterprise.members", "users"),

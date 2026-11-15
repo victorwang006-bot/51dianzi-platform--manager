@@ -12,7 +12,7 @@ const exactPageLabels: Readonly<Record<string, string>> = {
   "/company": "企业信息",
   "/profile": "我的信息",
   "/add-user": "用户与权限",
-  "/inbound": "入库管理",
+  "/inbound": "采购入库",
   "/outbound": "销售订单",
   "/stock-board": "库存看板",
   "/chat": "聊一聊",

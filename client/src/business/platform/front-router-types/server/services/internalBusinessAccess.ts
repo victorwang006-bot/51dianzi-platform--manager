@@ -442,16 +442,7 @@ export async function listInternalBusinessPurchaseOrders(input: {
   staffUserId: number;
   filters: z.infer<typeof purchaseOrderListSchema>;
 }) {
-  const principal = await requireInternalBusinessStaffPrincipal({
-    binding: input.binding,
-    staffUserId: input.staffUserId,
-    permission: "procurement.orders",
-  });
-  return listPurchaseOrders({
-    enterpriseId: principal.enterprise.enterpriseId,
-    ownerUserId: principal.enterprise.dataOwnerUserId,
-    actorUserId: principal.actorUserId,
-  }, input.filters);
+  throw new TRPCError({ code: "NOT_FOUND", message: "采购订单已停用，请使用采购入库" });
 }
 
 export async function listInternalBusinessSalesOrders(input: {

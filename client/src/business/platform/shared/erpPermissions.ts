@@ -40,8 +40,8 @@ export const ERP_PERMISSION_DEFINITIONS: Record<
     href: "/outbound",
   },
   "inventory.inbound": {
-    label: "入库管理",
-    description: "录入并管理入库单据",
+    label: "采购入库",
+    description: "按采购员及有效业务组录入并管理采购入库单据",
     href: "/inbound",
   },
   "inventory.dashboard": {
@@ -70,8 +70,8 @@ export const ERP_PERMISSION_DEFINITIONS: Record<
     href: "/procurement/demands",
   },
   "procurement.orders": {
-    label: "采购订单",
-    description: "登记本企业向供应商采购的订单与履约进度",
+    label: "采购订单（已停用）",
+    description: "接口已退役，请使用采购入库；保留历史权限值",
     href: "/procurement/orders",
   },
   "sales.business_orders": {
@@ -85,12 +85,12 @@ export const ERP_PERMISSION_DEFINITIONS: Record<
 export const ERP_PERMISSION_GROUPS: { title: string; keys: ErpPermissionKey[] }[] = [
   { title: "库存管理", keys: ["inventory.manage", "inventory.publish", "inventory.inbound"] },
   { title: "客户管理", keys: ["inquiry.receive", "customers.manage", "sales.business_orders", "sales_orders.manage", "customers.manage_all"] },
-  { title: "采购管理", keys: ["procurement.demands", "procurement.orders"] },
+  { title: "采购管理", keys: ["procurement.demands"] },
   { title: "用户中心", keys: ["enterprise.members.manage"] },
 ];
 
 export const ERP_VISIBLE_PERMISSION_KEYS = ERP_PERMISSION_KEYS.filter(
-  key => key !== "inventory.dashboard",
+  key => key !== "inventory.dashboard" && key !== "procurement.orders",
 ) as ErpPermissionKey[];
 
 export const ERP_PERMISSION_SET = new Set<string>(ERP_PERMISSION_KEYS);
