@@ -9,12 +9,14 @@ import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM }
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
 import { customerReadPolicy, linkedCompany, linkedCompanyReadGate, resolveCustomerSupplyReadPolicy } from "./customerSupplyCompany";
 import { assertCrmCustomerPolicy, crmCustomerPolicyWhere } from "./crmCustomers";
+import { channelInventoryManualReferenceValuesFrom, readChannelInventoryManualReferences } from "./channelInventoryManualReference";
 
 /** Deliberately independent of the private, source-bearing Material record. */
 export type TeamChannelMaterial = {
   id: number; uploadBatchId: number | null; canDelete: boolean; partNumber: string; brand: string; qty: number | null; dateCode: string | null;
   canViewUploadBatch: boolean;
   price: string | null; currency: "CNY"; taxIncluded: boolean | null; leadTime: string | null;
+  manualReferenceLcsc?: string | null; manualReferenceIckey?: string | null;
   industryCode: BusinessIndustryCode | null;
   revision: number; updatedAt: Date | string; createdAt: Date | string;
   isMine: boolean; canEdit: boolean; canEditMaterial: boolean; readOnly: boolean;
@@ -50,6 +52,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     canViewUploadBatch: row.uploadBatchId != null && bool(row.canViewUploadBatch),
     qty: row.qty == null ? null : Number(row.qty), dateCode: text(row.dateCode), price: text(row.price), currency: "CNY",
     taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded), leadTime: text(row.leadTime),
+    ...channelInventoryManualReferenceValuesFrom(row),
     industryCode: industry.success ? industry.data : null,
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, canEditMaterial: canEdit, readOnly: !canEdit, canViewCustomerSource: false, customerSource: null, customerSourceState: "restricted", canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
@@ -171,7 +174,9 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
         ;
       const projected = [];
       const publications = await factoryMaterialPublicationMetadata(tx, scope, items.map(row => Number(row.id)), access.scope === "team");
+      const manualReferences = await readChannelInventoryManualReferences(tx, scope, items.map(row => Number(row.id)));
       for (const row of items) {
+        Object.assign(row, manualReferences.get(Number(row.id)));
         const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
         const management = materialManagementProjection(row, access.write, company);
         row.canViewSource = management.canEditMaterial;

@@ -10,13 +10,14 @@ const state = vi.hoisted(() => ({
   scope: true, scopeReads: 0, revokeAtFinal: false, merchantEnabled: true,
   fenceHeld: false, nativeLocksHeld: false, fence: vi.fn(), tables: [] as string[],
   audit: vi.fn(), forwarded: [] as any[], result: {} as unknown, upstreamCode: null as null | string,
-  transportFailure: false, lookup: vi.fn(), serviceFailure: false,
+  transportFailure: false, lookup: vi.fn(), serviceFailure: false, archivedActor: false,
 }));
 
 // All original authorization functions execute. Only database/network/service
 // boundaries are mocked: never import a production entrypoint or open MySQL.
 vi.mock("./db", async () => {
   const { getTableName } = await import("drizzle-orm");
+  const { MySqlDialect } = await import("drizzle-orm/mysql-core");
   const tx = {
     select: () => {
       let tableName = "";
@@ -33,7 +34,19 @@ vi.mock("./db", async () => {
       };
       return query;
     },
-    execute: async () => { expect(state.nativeLocksHeld).toBe(true); return [state.peerIds.map(ownerUserId => ({ ownerUserId }))]; },
+    execute: async (statement: any) => {
+      expect(state.nativeLocksHeld).toBe(true);
+      const query = new MySqlDialect().sqlToQuery(statement);
+      const text = query.sql.replace(/\s+/g," ").trim();
+      if (text === "SELECT archived.id FROM admin_staff_archives archived WHERE archived.adminUserId = ? LIMIT 1 FOR UPDATE") {
+        expect(query.params).toEqual([303]); return [state.archivedActor ? [{id:1}] : []];
+      }
+      if (text.startsWith("SELECT b.frontUserId AS ownerUserId, a.id AS recorderAdminAccountId FROM official_channel_team_members tm")) {
+        expect(query.params).toEqual([state.membership?.teamId]);
+        return [state.peerIds.map(ownerUserId => ({ ownerUserId, recorderAdminAccountId: ownerUserId === 202 ? 303 : 404 }))];
+      }
+      throw new Error(`Unexpected authorization SQL: ${text}`);
+    },
   };
   return {
     withBusinessAuthorizationFence: async (key: unknown, run: () => Promise<unknown>) => {
@@ -92,6 +105,7 @@ beforeEach(() => {
   state.scopes = ["business.inventory.read", "business.customers.read"]; state.merchantEnabled = true;
   state.fenceHeld = false; state.nativeLocksHeld = false; state.result = page(); state.upstreamCode = null;
   state.transportFailure = false; state.serviceFailure = false; state.tables = []; state.forwarded = [];
+  state.archivedActor = false;
   state.fence.mockClear(); state.audit.mockClear(); state.lookup.mockClear();
   vi.stubEnv("NODE_ENV", "test"); vi.stubEnv("BUSINESS_WORKBENCH_MERCHANT_IDS", "51");
   vi.stubEnv("PLATFORM_API_BASE", "https://synthetic.invalid"); vi.stubEnv("PORTAL_API_KEY", "synthetic-channel-reference-key");
@@ -115,6 +129,11 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("channelReference.lookup fixed BFF and fresh current-page authorization", () => {
+  it("real actor archive query rejects before upstream/cache, rather than a peer-list mock fallback", async () => {
+    state.archivedActor = true;
+    await expect(call()).rejects.toMatchObject({code:"FORBIDDEN"});
+    expect(state.forwarded).toEqual([]); expect(state.lookup).not.toHaveBeenCalled();
+  });
   it("re-reads the complete original filter/page context, derives identities, releases both locks, and sends ONLY three fields", async () => {
     const filters = { expectedEnterpriseId: 31, expectedActorUserId: 202, channelId: 12, uploadBatchId: 88,
       industryCode: "automotive", partNumber: " STM32 ", brand: " ST ", page: 3, pageSize: 10, sortBy: "qty", sortDirection: "desc" } as const;

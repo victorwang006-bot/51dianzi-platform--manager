@@ -353,7 +353,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     await act(async () => { window.history.replaceState({}, "", "/channel-inventory?ciTab=channels"); window.dispatchEvent(new PopStateEvent("popstate")); });
     await render(); expect(runtime.lookup).not.toHaveBeenCalled();
   });
-  it("preserves original business hashes, allowing only exact approved stronger edit guards without rebaselining", () => {
+  it("preserves original business hashes, allowing only exact approved stronger edit guards and manual-reference additions without rebaselining", () => {
     const source = readFileSync("client/src/business/platform/client/src/pages/ChannelInventoryHost.tsx", "utf8");
     const pins = [
       ["  const materialInput:", "  const exactStockDenied", "444fd83744384098fbd7bedd3dca5b74d19db699b87b05e7c2b190bda0236525"],
@@ -371,9 +371,22 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
       ["      materialSubmitPendingRef.current = false;\n      materialUpdateRef.current = null;", "      materialUpdateRef.current = null;"],
       ["      if (current()) { materialSubmitPendingRef.current = false; setBusy(null); }", "      if (current()) setBusy(null);"],
     ];
+    // Manual references extend only the public edit; strip these exact additions,
+    // requiring each once, and keep all pre-existing payload/CAS/UUID hashes intact.
+    const manualReferenceAdditions = [
+      '      setManualReferenceDraft(manualReferenceDraftFrom(detail));\n      setManualReferenceConfirmation("");\n',
+      '  const manualRetentionKey = materialEditor?.mode === "edit"\n    ? manualReferenceRetentionKey(materialEditor.material, materialForm, manualReferenceDraft) : "";\n',
+      '    if (materialEditor.mode === "edit" && !materialUpdateRef.current) validation.push(...manualReferenceValidation(manualReferenceDraft));\n',
+      '    // The in-dialog confirmation is bound to this model/brand and the retained values, never a generic toast.\n    if (materialEditor.mode === "edit" && !materialUpdateRef.current && manualRetentionKey && manualReferenceConfirmation !== manualRetentionKey) return;\n',
+      '          ...manualReferencePatch(materialEditor.material, manualReferenceDraft),\n',
+    ];
     for (const [start, end, hash] of pins) {
       const index = source.indexOf(start); expect(index).toBeGreaterThanOrEqual(0);
       let protectedRegion = source.slice(index, source.indexOf(end, index));
+      if (start === "  const submitChannel =") for (const approved of manualReferenceAdditions) {
+        expect(protectedRegion.split(approved)).toHaveLength(2);
+        protectedRegion = protectedRegion.replace(approved, "");
+      }
       // Normalize only the three latest explicit backend grant changes; retain all
       // original CAS/payload/transaction hashes rather than accepting a new baseline.
       if (start === "  const submitChannel =") for (const [approved, original] of [

@@ -13,6 +13,8 @@ export const teamMaterialPublicUpdateFields = {
   qty: z.number().int().safe().min(0).max(2_147_483_647).nullable().optional(),
   dateCode: z.string().trim().max(32).nullable().optional(),
   price: z.string().trim().max(32).regex(/^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/, "价格格式无效").nullable().optional(),
+  manualReferenceLcsc: z.string().trim().max(32).regex(/^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/, "渠道参考价一格式无效").nullable().optional(),
+  manualReferenceIckey: z.string().trim().max(32).regex(/^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/, "渠道参考价二格式无效").nullable().optional(),
   taxIncluded: z.boolean().nullable().optional(),
   leadTime: z.string().trim().max(64).nullable().optional(),
 };

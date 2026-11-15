@@ -8,10 +8,12 @@ import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll, t
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../../../shared/channelInventoryCollaboration";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
 import { linkedCompany, projectMaterialCompany } from "./customerSupplyCompany";
+import { channelInventoryManualReferenceValuesFrom, readChannelInventoryManualReferences, upsertChannelInventoryManualReferences } from "./channelInventoryManualReference";
 /** Closed public projection; private legacy material/note/channel-contact fields are never selected. */
 export type TeamMaterialForEdit = {
   id: number; channelId: number | null; channelName: string | null; partNumber: string; brand: string;
   qty: number | null; dateCode: string | null; price: string | null; currency: "CNY";
+  manualReferenceLcsc?: string | null; manualReferenceIckey?: string | null;
   taxIncluded: boolean | null; leadTime: string | null; revision: number;
   createdAt: Date | string; updatedAt: Date | string; canEdit: true; canEditMaterial: true; readOnly: false;
 };
@@ -41,6 +43,7 @@ export function teamMaterialPublicFrom(row: SqlResultRow, canViewSource = bool(r
     channelName: canViewSource && row.channelName != null ? String(row.channelName) : null,
     partNumber: String(row.partNumber), brand: String(row.brand), qty: row.qty == null ? null : Number(row.qty),
     dateCode: text(row.dateCode), price: text(row.price), currency: "CNY", taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded),
+    ...channelInventoryManualReferenceValuesFrom(row),
     leadTime: text(row.leadTime), revision: Number(row.revision), createdAt: row.createdAt as Date | string,
     updatedAt: row.updatedAt as Date | string, canEdit: true, canEditMaterial: true, readOnly: false };
 }
@@ -73,6 +76,9 @@ export async function authorizedMaterial(tx: SqlExecutor, scope: ChannelInventor
   row.canViewSource = management.canEditMaterial;
   row.channelName = management.customerSource?.name ?? null;
   if (write && !management.canEditMaterial) fail("FORBIDDEN", "仅真实原始录入员工或其有效管理组长且具备库存写权限可编辑");
+  // Only enrich after the unchanged live authority/CRM/write gates. Read-only
+  // collaborators may read prices while source/customer fields remain hidden.
+  Object.assign(row, (await readChannelInventoryManualReferences(tx, scope, [Number(row.id)])).get(Number(row.id)));
   return row;
 }
 async function readNote(tx: SqlExecutor, scope: ChannelInventoryScope, noteId: number) {
@@ -186,9 +192,11 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
           WHERE id = ${input.id} AND enterprise_id = ${scope.enterpriseId} AND data_owner_user_id = ${scope.dataOwnerUserId}
             AND revision = ${input.expectedRevision} AND ${activeUnaliasedChannelMaterial}`);
         if (Number(header(changed).affectedRows) !== 1) conflict();
+        await upsertChannelInventoryManualReferences(tx, scope, input.id, input);
         const updated = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS} ${TEAM_MATERIAL_FROM}
           WHERE m.id = ${input.id} AND m.enterprise_id = ${scope.enterpriseId} AND m.data_owner_user_id = ${scope.dataOwnerUserId} LIMIT 1`))[0];
         if (!updated) notFound();
+        Object.assign(updated, (await readChannelInventoryManualReferences(tx, scope, [Number(updated.id)])).get(Number(updated.id)));
         updated.channelName = current.channelName;
         const item = await projectMaterialCompany(tx, scope, teamMaterialPublicFrom(updated, bool(current.canViewSource)));
         await audit(tx, scope, { materialId: input.id, action: "updateTeamMaterial", requestId, payloadHash: hash,

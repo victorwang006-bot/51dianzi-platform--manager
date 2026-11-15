@@ -64,6 +64,9 @@ beforeEach(() => {
     CREATE TABLE channel_inventory_material_management (enterprise_id INTEGER, material_id INTEGER, deleted_at TEXT);
     CREATE TABLE channel_inventory_upload_batch_materials (enterprise_id INTEGER, material_id INTEGER, batch_id INTEGER);
     CREATE TABLE channel_inventory_collaboration_notes (enterpriseId INTEGER, materialId INTEGER);
+    CREATE TABLE channel_inventory_manual_references (enterpriseId INTEGER, dataOwnerUserId INTEGER, materialId INTEGER,
+      manualReferenceLcsc TEXT, manualReferenceIckey TEXT, updatedByUserId INTEGER, updatedByAdminAccountId INTEGER, updatedAt TEXT,
+      PRIMARY KEY (enterpriseId, dataOwnerUserId, materialId));
     CREATE TABLE crm_customers (id INTEGER, enterpriseId INTEGER, assignedUserId INTEGER, name TEXT, industryCode TEXT, version INTEGER, archivedAt TEXT);
     CREATE TABLE crm_customer_supply_channels (enterpriseId INTEGER, dataOwnerUserId INTEGER, customerId INTEGER, inventoryResponsibleUserId INTEGER, channelId INTEGER);
     CREATE TABLE crm_customer_contact_primary (enterpriseId INTEGER, customerId INTEGER, primaryContactId TEXT, legacyContactPresent INTEGER);
@@ -147,6 +150,21 @@ describe("customer channel inventory server contract (offline real predicates)",
     expect(global.items.find(row => row.id===106)).toMatchObject({canViewSource:false,company:null});
     expect(global.items.find(row => row.id===109)).toMatchObject({canViewSource:false,company:null});
     expect(global.items.find(row => row.id===104)?.company).toEqual({id:2,name:"客户乙"});
+  });
+  it("actual SQL reads manual strings only for current visible scope/IDs, including source-hidden peer rows", async () => {
+    sqlite.exec(`INSERT INTO channel_inventory_manual_references VALUES
+      (1,99,106,'999999999999999.123456789012','0.000000000001',20,NULL,'2026-11-15'),
+      (1,99,107,'77',NULL,20,NULL,'2026-11-15'),
+      (2,99,106,'88',NULL,20,NULL,'2026-11-15'),
+      (1,999,106,'99',NULL,20,NULL,'2026-11-15');`);
+    const global = await service.listTeamMaterials(scope,input());
+    expect(global.items.find(row => row.id===106)).toMatchObject({manualReferenceLcsc:'999999999999999.123456789012',manualReferenceIckey:'0.000000000001',isMine:false,canEditMaterial:false,canViewSource:false,company:null});
+    expect(global.items.find(row => row.id===101)).toMatchObject({manualReferenceLcsc:null,manualReferenceIckey:null});
+    expect(global.items.some(row => row.id===107)).toBe(false);
+    const lookup = statements.find(q => q.sql.includes('FROM channel_inventory_manual_references'))!;
+    expect(lookup.params.slice(0,2)).toEqual([1,99]);
+    expect([...lookup.params.slice(2)].sort((a,b)=>Number(a)-Number(b))).toEqual([101,102,103,104,106,109]);
+    expect(lookup.sql).toContain('FOR UPDATE');
   });
   it("missing native CRM read hides company projection globally but denies customer mode", async () => {
     sqlite.exec("DELETE FROM enterprise_member_permissions WHERE permissionKey='customers.manage'");

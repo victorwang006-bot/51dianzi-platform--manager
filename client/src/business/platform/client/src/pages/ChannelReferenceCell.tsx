@@ -3,11 +3,17 @@ import type { ChannelReferenceQuote, ChannelReferenceSource } from "@shared/chan
 import type { ChannelReferenceRefreshDiagnostic } from "@shared/channelReferenceRefresh";
 import { channelReferenceHasPrice, channelReferenceMaximumTier, channelReferencePrice, channelReferencePageUrl, CHANNEL_REFERENCE_LABELS, CHANNEL_REFERENCE_STATUS_LABELS } from "./channelReferenceModel";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
+import { manualReferencePriceValid } from "./manualReferenceEdit";
 
-export function ChannelReferenceCell({ source, quote, partNumber }: {
+export function ChannelReferenceCell({ source, quote, partNumber, manualPrice }: {
   // Diagnostics remain a typed input; operational details are not reference-link presentation.
-  source: ChannelReferenceSource; quote?: ChannelReferenceQuote; partNumber?: string; diagnostic?: ChannelReferenceRefreshDiagnostic;
+  source: ChannelReferenceSource; quote?: ChannelReferenceQuote; partNumber?: string; diagnostic?: ChannelReferenceRefreshDiagnostic; manualPrice?: string | null;
 }) {
+  // A manual override is not a marketplace quote or evidence. Preserve every decimal digit, including zero.
+  if (manualReferencePriceValid(manualPrice)) return <span className="ci-reference-cell ci-reference-manual">
+    <span className="ci-reference-text admin-cell-primary" data-source={source} title={`¥${manualPrice}`} style={{ whiteSpace: "nowrap" }}>¥{manualPrice}</span>
+    <small className="ci-reference-manual-tag">手填</small>
+  </span>;
   const tier = quote ? channelReferenceMaximumTier(quote) : null;
   const price = tier?.unitPrice ?? quote?.unitPrice;
   const threshold = tier?.minQuantity ?? quote?.tierQuantity;

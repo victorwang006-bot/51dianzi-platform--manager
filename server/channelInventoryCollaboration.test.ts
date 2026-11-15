@@ -47,4 +47,16 @@ describe("fixed read-authorized collaboration BFF",()=>{
   it.each(["note","channelId","currency","responsibleUserId","enterpriseId","dataOwnerUserId"])("fixed schema rejects public update injected %s before forwarding",async field=>{
     state.scope.push("business.inventory.write");await expect(businessRouter.createCaller(ctx()).channelInventory.updateTeamMaterial({id:101,expectedRevision:1,qty:0,requestId:input.requestId,[field]:11})).rejects.toMatchObject({code:"BAD_REQUEST"});expect(state.transport).not.toHaveBeenCalled();expect(state.audit).not.toHaveBeenCalled();
   });
+  it("same shared schema forwards precise manual prices and explicit null without altering public capability",async()=>{
+    state.scope.push("business.inventory.write");
+    const params={id:101,expectedRevision:1,requestId:input.requestId,manualReferenceLcsc:"999999999999999.123456789012",manualReferenceIckey:null};
+    await businessRouter.createCaller(ctx()).channelInventory.updateTeamMaterial(params);
+    expect(JSON.parse(String(state.transport.mock.calls[0][1].body))["0"].json.params).toEqual(params);
+    expect(BUSINESS_METHOD_CAPABILITIES.find(c=>c.method==="channelInventory.updateTeamMaterial")?.mode).toBe("write");
+  });
+  it.each(["updatedByUserId","updatedByAdminAccountId","updatedAt"])("manual metadata %s cannot be injected through BFF",async field=>{
+    state.scope.push("business.inventory.write");
+    await expect(businessRouter.createCaller(ctx()).channelInventory.updateTeamMaterial({id:101,expectedRevision:1,requestId:input.requestId,manualReferenceLcsc:"1",[field]:11})).rejects.toMatchObject({code:"BAD_REQUEST"});
+    expect(state.transport).not.toHaveBeenCalled();expect(state.audit).not.toHaveBeenCalled();
+  });
 });

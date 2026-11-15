@@ -179,3 +179,129 @@ describe("flat direct edit preserves the existing public transaction", () => {
     expect(document.body.textContent).toContain("保存记录（非实时）");
   });
 });
+
+
+describe("manual references in the existing edit transaction", () => {
+  function manual(label: "一" | "二") { return required(document.querySelector<HTMLInputElement>(`[aria-label="渠道参考价${label}（CNY）"]`)); }
+  function reset(label: "一" | "二") { return required(document.querySelector<HTMLButtonElement>(`[aria-label="渠道参考价${label}恢复自动价"]`)); }
+  function confirm() { return required(document.querySelector<HTMLInputElement>('[aria-label="确认保留已有手填参考价"]')); }
+  it("reads manual fields from fresh edit detail, not the list or automatic display; untouched references are omitted", async () => {
+    runtime.rows = [{ ...row, manualReferenceLcsc: "8", manualReferenceIckey: "9" }];
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, manualReferenceLcsc: "0", manualReferenceIckey: "2.340000000001" });
+    await render(); await click(edit());
+    expect(manual("一").value).toBe("0"); expect(manual("二").value).toBe("2.340000000001");
+    expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).toBeNull();
+    await input(field("可供数量"), "10"); await click(button("保存修改"));
+    expect(runtime.update.mock.calls[0][0]).toMatchObject({ qty: 10, expectedRevision: 12 });
+    expect(runtime.update.mock.calls[0][0]).not.toHaveProperty("manualReferenceLcsc");
+    expect(runtime.update.mock.calls[0][0]).not.toHaveProperty("manualReferenceIckey");
+  });
+  it("keeps empty inputs while automatic reference is available and never stores it implicitly", async () => {
+    runtime.scope.merchantId = 55;
+    runtime.lookup.mockImplementation(async () => ({ items: [{ materialId: row.id, partNumber: row.partNumber, brand: row.brand, references: {
+      lcsc: { ...quote("lcsc"), status: "ok", matchedPartNumber: row.partNumber, matchedBrand: row.brand, currency: "CNY", unitPrice: "1.230000000001", tierQuantity: 10, stockQuantity: 50 }, ickey: quote("ickey"),
+    } }] }));
+    await render(); await click(edit());
+    expect(manual("一").value).toBe(""); expect(manual("二").value).toBe("");
+    expect(manual("一").placeholder).toContain("自动参考价"); expect(document.querySelector('[role="dialog"]')?.textContent).toContain("1.230000000001，库存50");
+    await click(button("保存修改")); expect(runtime.update.mock.calls[0][0]).not.toHaveProperty("manualReferenceLcsc");
+    expect(runtime.lookup.mock.calls.every(([input]) => input.refresh === false)).toBe(true);
+  });
+  it.each([["一", "manualReferenceLcsc", "0"], ["二", "manualReferenceIckey", "999999999999999.999999999999"]] as const)("saves only changed reference %s together with public fields and exact strings", async (label, key, value) => {
+    await render(); await click(edit()); await input(manual(label), value); await input(field("Date Code"), "2602"); await click(button("保存修改"));
+    expect(runtime.update).toHaveBeenCalledTimes(1);
+    const payload = runtime.update.mock.calls[0][0];
+    expect(payload).toMatchObject({ [key]: value, id: 101, expectedRevision: 12, expectedActorUserId: 7, expectedEnterpriseId: 31, dateCode: "2602", price: "0", partNumber: "ORIGINAL", brand: "TI" });
+    expect(payload).not.toHaveProperty(key === "manualReferenceLcsc" ? "manualReferenceIckey" : "manualReferenceLcsc");
+    for (const forbidden of ["channelId", "note", "responsibleUserId", "company", "references", "currency", "channelSource"]) expect(payload).not.toHaveProperty(forbidden);
+  });
+  it.each(["-1", "1e3", "1000000000000000", "0.1234567890123", "01"])("rejects %s in the dialog without any request", async value => {
+    await render(); await click(edit()); await input(manual("二"), value); await click(button("保存修改"));
+    expect(runtime.update).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"] [role="alert"]')?.textContent).toContain("渠道参考价二须为非负十进制");
+  });
+  it("explicit clearing and restore-auto each submit null; unchanged partner is omitted", async () => {
+    runtime.getEdit.mockResolvedValue({ ...detail, manualReferenceLcsc: "0", manualReferenceIckey: "2" });
+    await render(); await click(edit()); await input(manual("一"), ""); await click(button("保存修改"));
+    expect(runtime.update.mock.calls[0][0]).toMatchObject({ manualReferenceLcsc: null }); expect(runtime.update.mock.calls[0][0]).not.toHaveProperty("manualReferenceIckey");
+    await click(edit()); await click(reset("二")); expect(manual("二").value).toBe(""); await click(button("保存修改"));
+    expect(runtime.update.mock.calls[1][0]).toMatchObject({ manualReferenceIckey: null }); expect(runtime.update.mock.calls[1][0]).not.toHaveProperty("manualReferenceLcsc");
+    runtime.getEdit.mockResolvedValue(detail); await click(edit()); await click(reset("一")); await click(button("保存修改"));
+    expect(runtime.update.mock.calls[2][0]).toMatchObject({ manualReferenceLcsc: null });
+  });
+  it("requires in-dialog confirmation for model/brand changes retaining manual zero, resets confirmation on further identity change", async () => {
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, manualReferenceLcsc: "0", manualReferenceIckey: "2" });
+    await render(); await click(edit()); await input(field("型号"), "NEW-MODEL");
+    expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')?.textContent).toContain("重填或恢复自动价");
+    await click(button("保存修改")); expect(runtime.update).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"] [role="alert"]')).toBeNull();
+    await click(confirm()); expect(confirm().checked).toBe(true);
+    await input(field("品牌"), "ADI"); expect(confirm().checked).toBe(false); await click(button("保存修改")); expect(runtime.update).not.toHaveBeenCalled();
+    await click(confirm()); await click(button("保存修改")); expect(runtime.update.mock.calls[0][0]).toMatchObject({ partNumber: "NEW-MODEL", brand: "ADI" });
+    expect(runtime.update.mock.calls[0][0]).not.toHaveProperty("manualReferenceLcsc"); expect(runtime.update.mock.calls[0][0]).not.toHaveProperty("manualReferenceIckey");
+  });
+  it("allows re-entry/restore instead of retaining, but still requires confirmation while any existing manual reference is kept", async () => {
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, manualReferenceLcsc: "0", manualReferenceIckey: "2" });
+    await render(); await click(edit()); await input(field("品牌"), "ADI"); await click(reset("一"));
+    expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).not.toBeNull();
+    await input(manual("二"), "3.000000000001"); expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).toBeNull();
+    await click(button("保存修改")); expect(runtime.update.mock.calls[0][0]).toMatchObject({ brand: "ADI", manualReferenceLcsc: null, manualReferenceIckey: "3.000000000001" });
+  });
+  it("does not warn for qty/date/price edits, new manual values, or model reverted to original", async () => {
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, manualReferenceLcsc: "2" });
+    await render(); await click(edit()); await input(field("可供数量"), "3"); await input(field("报价"), "4");
+    expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).toBeNull();
+    await input(field("型号"), "OTHER"); expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).not.toBeNull();
+    await input(field("型号"), "ORIGINAL"); expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).toBeNull();
+    await click(button("取消")); await click(edit()); await input(field("型号"), "NEW"); await input(manual("一"), "1");
+    expect(document.querySelector('[aria-label="手填参考价型号品牌确认"]')).toBeNull(); await click(button("保存修改")); expect(runtime.update).toHaveBeenCalledTimes(1);
+  });
+  it("freezes manual payload and UUID while busy/unknown-result locked; input/reset cannot mutate retry", async () => {
+    const pending = deferred<unknown>(); runtime.update.mockReturnValueOnce(pending.promise).mockResolvedValueOnce({});
+    await render(); await click(edit()); await input(manual("一"), "0.000000000001");
+    await click(button("保存修改")); expect(manual("一").disabled).toBe(true); expect(reset("一").disabled).toBe(true);
+    const payload = runtime.update.mock.calls[0][0];
+    await input(manual("一"), "7"); await click(reset("一")); await input(manual("二"), "8");
+    await act(async () => pending.resolve(Promise.reject(new Error("lost receipt"))));
+    expect(manual("一").value).toBe("0.000000000001"); expect(manual("二").value).toBe(""); expect(reset("二").disabled).toBe(true);
+    await input(manual("一"), "9"); await click(reset("一")); expect(manual("一").value).toBe("0.000000000001");
+    await click(button("按原请求重试")); expect(runtime.update.mock.calls[1][0]).toEqual(payload);
+    expect(payload).toMatchObject({ manualReferenceLcsc: "0.000000000001", requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i) });
+    expect(payload).not.toHaveProperty("manualReferenceIckey");
+  });
+  it("read-only visible rows display manual reference prices without source or evidence disclosure", async () => {
+    runtime.rows = [{ ...row, canEditMaterial: false, canViewSource: false, manualReferenceLcsc: "0", manualReferenceIckey: "999999999999999.999999999999" }];
+    await render(); expect(edit().disabled).toBe(true);
+    expect(document.querySelector('[data-reference-source="lcsc"]')?.textContent).toBe("¥0手填");
+    expect(document.querySelector('[data-reference-source="ickey"]')?.textContent).toBe("¥999999999999999.999999999999手填");
+    expect(document.querySelectorAll('[data-reference-source] button, [data-reference-source] a')).toHaveLength(0);
+    expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("客户不可查看");
+    expect(document.body.innerHTML).not.toContain("授权真实客户"); await click(edit()); expect(runtime.getEdit).not.toHaveBeenCalled(); expect(runtime.source).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("manual reference detail binding and locked retention", () => {
+  it("does not present old list auto evidence as the current automatic reference for changed fresh detail identity", async () => {
+    runtime.scope.merchantId = 55;
+    runtime.lookup.mockImplementation(async () => ({ items: [{ materialId: row.id, partNumber: row.partNumber, brand: row.brand, references: {
+      lcsc: { ...quote("lcsc"), status: "ok", matchedPartNumber: row.partNumber, matchedBrand: row.brand, currency: "CNY", unitPrice: "7.123000000001", tierQuantity: 10, stockQuantity: 50 }, ickey: quote("ickey"),
+    } }] }));
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, partNumber: "FRESH-MODEL", brand: "ADI", manualReferenceLcsc: "0" });
+    await render(); expect(document.querySelector('[data-reference-source="lcsc"]')?.textContent).toContain("7.123000000001"); await click(edit());
+    expect(document.querySelector('[role="dialog"]')?.textContent).not.toContain("7.123000000001");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="渠道参考价一（CNY）"]')?.value).toBe("0");
+    expect(document.querySelector('[role="dialog"] .ci-reference-evidence-button')).toBeNull();
+  });
+  it("locks explicit retention checkbox throughout busy and unknown-result retry without changing the frozen request", async () => {
+    const pending = deferred<unknown>(); runtime.update.mockReturnValueOnce(pending.promise).mockResolvedValueOnce({});
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, manualReferenceLcsc: "0" });
+    await render(); await click(edit()); await input(field("品牌"), "ADI");
+    const checkbox = required(document.querySelector<HTMLInputElement>('[aria-label="确认保留已有手填参考价"]'));
+    await click(checkbox); await click(button("保存修改")); expect(checkbox.disabled).toBe(true);
+    const payload = runtime.update.mock.calls[0][0]; await click(checkbox);
+    await act(async () => pending.resolve(Promise.reject(new Error("unknown write receipt"))));
+    expect(checkbox.disabled).toBe(true); expect(checkbox.checked).toBe(true); await click(checkbox); expect(checkbox.checked).toBe(true);
+    await click(button("按原请求重试")); expect(runtime.update.mock.calls[1][0]).toEqual(payload);
+    expect(payload).not.toHaveProperty("manualReferenceLcsc");
+  });
+});

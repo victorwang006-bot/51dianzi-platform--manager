@@ -19,6 +19,7 @@ const parse = (text: string, kind = ts.ScriptKind.JS) => ts.createSourceFile("is
 const originalSf = parse(baseline.toString());
 const patchedSf = parse(patched.toString());
 const mirrorSf = parse(fs.readFileSync(mirrorPath, "utf8"), ts.ScriptKind.TS);
+const manualReferenceSf = parse(fs.readFileSync(path.resolve("client/src/business/platform/front-router-types/server/services/channelInventoryManualReference.ts"), "utf8"), ts.ScriptKind.TS);
 const finalArtifacts = "/home/ubuntu/work/customer-origin-edit-20261115/backend";
 const finalSf = parse(fs.readFileSync(path.join(finalArtifacts, "patched-front-index.js"), "utf8"));
 function nodes(root: ts.Node, predicate: (n: ts.Node) => boolean): ts.Node[] {
@@ -42,9 +43,11 @@ class OfflineError extends Error {
   constructor(public code: string, message: string) { super(message); }
 }
 const fail = (code: string, message: string): never => { throw new OfflineError(code, message); };
+const manualReferenceValuesFrom = evaluateFunction<(row: Record<string, unknown>) => { manualReferenceLcsc: string | null; manualReferenceIckey: string | null }>(topFunction(manualReferenceSf, "channelInventoryManualReferenceValuesFrom"), "channelInventoryManualReferenceValuesFrom", { ChannelInventoryError: OfflineError });
 const basicDeps = {
   bool6: bool, bool, text11: (v: unknown) => v == null ? null : String(v), text: (v: unknown) => v == null ? null : String(v),
   fail13: fail, fail, ChannelInventoryError: OfflineError,
+  channelInventoryManualReferenceValuesFrom: manualReferenceValuesFrom,
   businessIndustryCodeSchema: { safeParse: (v: unknown) => v === "automotive" ? { success: true, data: v } : { success: false } },
 };
 function evaluateFunction<T>(text: string, name: string, dependencies: Record<string, unknown> = basicDeps): T {
@@ -84,6 +87,11 @@ function harness(options: { rows?: Row[]; company?: Company; write?: boolean; le
     if (String(query).startsWith("SELECT COUNT(*) AS total")) return [[{ total: Object.prototype.hasOwnProperty.call(options, "total") ? options.total : data.length }]];
     if (String(query).startsWith("SELECT m.id, ")) return [data];
     if (String(query).startsWith("SELECT c.name, c.id AS companyChannelId")) return [[{ name: data[0]?.rawChannelName ?? data[0]?.authorizedChannelName, companyChannelId: data[0]?.companyChannelId }]];
+    if (String(query).trim().startsWith("SELECT materialId, manualReferenceLcsc, manualReferenceIckey")) {
+      expect(String(query)).toContain(`enterpriseId = ${currentScope.enterpriseId}`);
+      expect(String(query)).toContain(`dataOwnerUserId = ${currentScope.dataOwnerUserId}`);
+      return [[]];
+    }
     throw new Error("Unexpected synthetic SQL: " + query);
   }) };
   const getDb = async () => ({ transaction: async (fn: (tx: unknown) => unknown) => fn(tx) });
@@ -99,6 +107,7 @@ function harness(options: { rows?: Row[]; company?: Company; write?: boolean; le
     linkedCompany, linkedCompanyReadGate: async () => "SYNTHETIC_CURRENT_CRM_GATE",
     factoryMaterialPublicationMetadata: vi.fn(async () => new Map()),
     officialMaterialRecorderAdminAccountId: () => "NULL", getDb2: getDb,
+    readChannelInventoryManualReferences: evaluateFunction(topFunction(manualReferenceSf, "readChannelInventoryManualReferences"), "readChannelInventoryManualReferences", { ...basicDeps, sql: syntheticSql }),
     teamMaterialFrom: evaluateFunction<Projector>(options.original ? originalProjection : options.mirror ? mirrorProjection : actualProjection, "teamMaterialFrom"),
     teamMaterialSourceSchema: { safeParse: (raw: unknown) => ({ success: true, data: raw }) },
     SOURCE_FORBIDDEN_MESSAGE: "SYNTHETIC_SOURCE_FORBIDDEN", businessFailureOf: () => null, TRPCError71: OfflineError,
@@ -164,6 +173,9 @@ describe("actual bundle exact offline three-span patch", () => {
       const text = (v: unknown): string | null => v == null ? null : String(v);
       const fail = (code: string, message: string): never => { throw new Error(code + message); };
       const businessIndustryCodeSchema = { safeParse: (v: unknown): { success: true; data: BusinessIndustryCode } | { success: false } => v === "automotive" ? { success: true, data: v } : { success: false } };
+      type ChannelInventoryManualReferenceValues = { manualReferenceLcsc: string | null; manualReferenceIckey: string | null };
+      const ChannelInventoryError = class extends Error { constructor(code: string, message: string) { super(code + message); } };
+      ${topFunction(manualReferenceSf, "channelInventoryManualReferenceValuesFrom")}
       ${dto!.getText(mirrorSf)}
       ${mirrorProjection}`;
     const options: ts.CompilerOptions = { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, strict: true, noEmit: true, skipLibCheck: true, types: [] };
