@@ -5,7 +5,7 @@ import { LEGACY_CONFIRMATION_ACTION, LEGACY_CONFIRMATION_HASH_PATHS } from "./ch
 /** Correlated to material m. Only immutable native evidence or an independently
  * appended, fully attested legacy confirmation qualifies. This is NOT a row,
  * team, enterprise, module-read, write or private-notes authorization fence. */
-function originalActorClaims() {
+export function originalActorClaims() {
   const event = (alias: string) => {
     const a = sql.raw(alias);
     const json = (path: string) => sql`JSON_EXTRACT(${a}.after_data, ${`$.${path}`})`;

@@ -24,7 +24,7 @@ const runtime = vi.hoisted(() => {
     query, client, mutations: { createChannel: vi.fn(), updateChannel: vi.fn(), setChannelActive: vi.fn(), createMaterial: vi.fn(), updateTeamMaterial: vi.fn() },
     enterprise: null as unknown, team: null as unknown, channels: null as unknown,
     inputs: [] as Record<string, unknown>[], channelInputs: [] as Record<string, unknown>[],
-    scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "scope-31", frontUser: { role: "user" }, contextVerification: { state: "verified", identity: "scope-31", authorizationVersion: "auth-v1", readVersion: "read-v1" }, onAuthorizationError: vi.fn() },
+    scope: { officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: "native-v1" }, storageScope: "scope-31", frontUser: { id: 7, role: "user" }, staffPrincipal: { frontendUserId: 7, enterpriseId: 31 }, contextVerification: { state: "verified", identity: "scope-31", authorizationVersion: "auth-v1", readVersion: "read-v1" }, onAuthorizationError: vi.fn() },
     utils: { client: { channelInventory: client }, channelInventory: { listChannels: { invalidate }, listTeamMaterials: { invalidate }, listTeamSourceOptions: { invalidate }, notesList: { invalidate }, collaborationNotesList: { invalidate } } },
   };
 });
@@ -46,7 +46,7 @@ import ChannelInventoryHost from "./ChannelInventoryHost";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const context = { expectedEnterpriseId: 31, expectedActorUserId: 7 };
-const row = { id: 1, revision: 4, partNumber: "NAV-ONE", brand: "TI", qty: 9, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, industryCode: null, updatedAt: "2026-11-04T00:00:00Z", canDelete: true, canEdit: true, readOnly: false, canViewSource: false, isMine: true, noteCount: 0 };
+const row = { id: 1, revision: 4, partNumber: "NAV-ONE", brand: "TI", qty: 9, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, industryCode: null, updatedAt: "2026-11-04T00:00:00Z", canDelete: true, canEdit: true, readOnly: false, canViewSource: true, company: null, isMine: true, noteCount: 0 };
 const channel = { id: 11, name: "授权渠道", enterpriseId: 31, active: true, canEdit: true, readOnly: false, type: "factory", revision: 2 };
 const deleted = { id: 1, revision: 8, partNumber: "DELETED-NAV-ONE", brand: "TI", deletedAt: "2026-11-04T00:00:00Z", uploadBatchId: 81, canRestore: true };
 const batch = { id: 81, batchCode: "BATCH-81", name: null, fileName: "synthetic.xlsx", channelId: 11, channelName: "授权渠道", uploadedByName: "员工", createdAt: "2026-11-04T00:00:00Z", totalRows: 1, successCount: 1, remainingCount: 1, revision: 3, archived: false };
@@ -58,6 +58,7 @@ function required<T>(value: T | null | undefined): T { if (value == null) throw 
 function button(name: string) { return required(Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name)); }
 function click(element: Element) { act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))); }
 function materialMenuItem(name: string) {
+  if (name === "编辑") return required(document.querySelector<HTMLElement>('[aria-label^="编辑库存："]'));
   const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
   act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
   const menu = required(document.querySelector<HTMLElement>('.ci-channel-actions-menu[role="menu"]'));
@@ -216,6 +217,7 @@ describe("ChannelInventoryHost top-dropdown URL intent", () => {
   });
 
   it("legacy supply view uses the original relative bridge and independent source proof, without writing ciTab", async () => {
+    runtime.team = runtime.query(page([{ ...row, canViewSource: false }], { canWrite: true, canFilterSource: false }));
     setHostTestLocation("/workbench/channel-inventory?supplyChannelId=11&supplyTab=channels", "replace"); renderHost(); await settle();
     const trigger = required(document.querySelector<HTMLElement>('.ci-channel-table [data-slot="dropdown-menu-trigger"]'));
     act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
@@ -334,8 +336,19 @@ describe("durable exact batch navigation and return", () => {
   });
   it("shows only the exact server-readable reverse batch without exposing hidden IDs or guessing missing metadata", async () => {
     runtime.team = runtime.query(page([{ ...row, uploadBatchId: 81, canViewUploadBatch: true }, { ...row, id: 2, partNumber: "HIDDEN", uploadBatchId: 777777, canViewUploadBatch: false }, { ...row, id: 3, partNumber: "UNLINKED", uploadBatchId: null }, { ...row, id: 4, partNumber: "UNKNOWN" }], { canWrite: true, canFilterSource: false }));
-    renderHost(); expect(document.body.innerHTML).not.toContain("777777"); expect(document.body.textContent).toContain("来源批次当前不可查看"); expect(document.body.textContent).not.toContain("未关联上传批次"); expect(document.querySelectorAll("tbody tr")[2].querySelector("small.ci-batch-source")).toBeNull(); expect(document.body.textContent).toContain("批次信息不可用");
-    click(button("查看上传批次 #81")); await settle(); expect(new URLSearchParams(window.location.search).get("ciBatchFocusId")).toBe("81");
+    renderHost(); expect(document.body.innerHTML).not.toContain("777777");
+    const rowMenu = (index: number) => {
+      act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+      const trigger = required(document.querySelectorAll<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')[index]);
+      act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+      return required(document.querySelector<HTMLElement>('.ci-material-actions-menu'));
+    };
+    expect(rowMenu(1).textContent).toContain("来源批次当前不可查看"); expect(document.body.innerHTML).not.toContain("777777");
+    expect(rowMenu(2).textContent).not.toMatch(/未关联上传批次|查看上传批次/);
+    expect(rowMenu(3).textContent).toContain("批次信息不可用");
+    const visibleMenu = rowMenu(0);
+    click(required(Array.from(visibleMenu.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(item => item.textContent === "查看上传批次 #81")));
+    await settle(); expect(new URLSearchParams(window.location.search).get("ciBatchFocusId")).toBe("81");
     expect(document.querySelector("tbody")?.textContent).toContain("BATCH-81");
     expect(runtime.client.listUploadBatches.query).toHaveBeenCalledWith({ ...context, page: 1, pageSize: 100, archived: undefined, channelId: undefined }, { signal: expect.any(AbortSignal) });
   });

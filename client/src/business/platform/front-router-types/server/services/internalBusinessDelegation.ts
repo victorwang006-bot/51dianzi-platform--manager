@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { NATIVE_TEAM_READ_METHODS, NATIVE_FACTORY_PUBLISH_METHODS, officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../shared/internalBusinessOfficialInventory";
+import { NATIVE_TEAM_READ_METHODS, NATIVE_FACTORY_PUBLISH_METHODS, officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../../../../../shared/internalBusinessOfficialInventory";
 import { bindOfficialInventoryGrant, verifyOfficialInventoryGrant } from "./internalBusinessOfficialGrant";
 import type { Request, Response } from "express";
 import type { ErpPermissionKey } from "../../../shared/erpPermissions";

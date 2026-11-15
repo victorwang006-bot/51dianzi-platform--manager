@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { isBusinessFailure, type BusinessFailure } from "../shared/businessFailure";
-import type { OfficialInventoryPermissions } from "../client/src/business/platform/shared/internalBusinessOfficialInventory";
+import type { OfficialInventoryPermissions } from "../shared/internalBusinessOfficialInventory";
 
 export type PlatformBusinessBinding = {
   creditCode?: string;

@@ -8,7 +8,8 @@ import ts from "typescript";
 // Finite OFFLINE verification only. Actual acquired function bytes are isolated;
 // all authority/CRM/SQL dependencies are synthetic. This does not validate MySQL,
 // current production grants, HTTP, deployment, or the live authority resolver.
-const artifacts = "/home/ubuntu/work/inventory-compact-edit-20261115/backend";
+// Historical three-span artifacts recovered by exact inverse and original SHA.
+const artifacts = "/home/ubuntu/work/customer-origin-edit-20261115/backend/source-projection-history";
 const mirrorPath = path.resolve("client/src/business/platform/front-router-types/server/services/channelTeamInventory.ts");
 const baseline = fs.readFileSync(path.join(artifacts, "baseline-front-index.js"));
 const patched = fs.readFileSync(path.join(artifacts, "patched-front-index.js"));
@@ -18,6 +19,8 @@ const parse = (text: string, kind = ts.ScriptKind.JS) => ts.createSourceFile("is
 const originalSf = parse(baseline.toString());
 const patchedSf = parse(patched.toString());
 const mirrorSf = parse(fs.readFileSync(mirrorPath, "utf8"), ts.ScriptKind.TS);
+const finalArtifacts = "/home/ubuntu/work/customer-origin-edit-20261115/backend";
+const finalSf = parse(fs.readFileSync(path.join(finalArtifacts, "patched-front-index.js"), "utf8"));
 function nodes(root: ts.Node, predicate: (n: ts.Node) => boolean): ts.Node[] {
   const found: ts.Node[] = [];
   const walk = (node: ts.Node) => { if (predicate(node)) found.push(node); ts.forEachChild(node, walk); };
@@ -53,8 +56,9 @@ function evaluateFunction<T>(text: string, name: string, dependencies: Record<st
 type Row = Record<string, any>;
 type Projector = (row: Row, canWrite: boolean, leader: boolean) => Row;
 const projectors = [
-  ["actual-acquired-bundle AST projector", evaluateFunction<Projector>(actualProjection, "teamMaterialFrom")],
-  ["typed-mirror AST projector", evaluateFunction<Projector>(mirrorProjection, "teamMaterialFrom")],
+  ["historical actual-acquired-bundle AST projector", evaluateFunction<Projector>(actualProjection, "teamMaterialFrom"), false],
+  ["typed-mirror AST projector", evaluateFunction<Projector>(mirrorProjection, "teamMaterialFrom"), true],
+  ["FINAL actual-acquired-bundle AST projector", evaluateFunction<Projector>(topFunction(finalSf, "teamMaterialFrom"), "teamMaterialFrom"), true],
 ] as const;
 const row = (patch: Row = {}): Row => ({
   id: 101, companyChannelId: 22, currency: "CNY", partNumber: "PN-01", brand: "Brand", revision: 1,
@@ -98,6 +102,8 @@ function harness(options: { rows?: Row[]; company?: Company; write?: boolean; le
     teamMaterialFrom: evaluateFunction<Projector>(options.original ? originalProjection : options.mirror ? mirrorProjection : actualProjection, "teamMaterialFrom"),
     teamMaterialSourceSchema: { safeParse: (raw: unknown) => ({ success: true, data: raw }) },
     SOURCE_FORBIDDEN_MESSAGE: "SYNTHETIC_SOURCE_FORBIDDEN", businessFailureOf: () => null, TRPCError71: OfflineError,
+    teamMaterialManagementEligibility: () => "SYNTHETIC_MANAGEMENT_ELIGIBILITY",
+    materialManagementProjection: evaluateFunction(topFunction(finalSf, "materialManagementProjection"), "materialManagementProjection"),
   };
   const sf = options.original ? originalSf : options.mirror ? mirrorSf : patchedSf;
   const factory = evaluateFunction<(arg: { getDb: typeof getDb }) => { listTeamMaterials: (scope: unknown, input: unknown) => Promise<Row>; listTeamSourceOptions: unknown }>(topFunction(sf, "createChannelTeamInventoryService"), "createChannelTeamInventoryService", deps);
@@ -124,7 +130,7 @@ function applySpans(input: Buffer, spans: any[]) {
 describe("actual bundle exact offline three-span patch", () => {
   it("pins real bytes twice and recovers the full baseline with the inverse", () => {
     expect(hash(baseline)).toBe("db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9");
-    expect(hash(fs.readFileSync(manifest.actualBaselinePath))).toBe(manifest.beforeSha);
+    expect(hash(fs.readFileSync(path.join(artifacts, "baseline-front-index.js")))).toBe(manifest.beforeSha);
     expect(hash(patched)).toBe(manifest.afterSha);
     expect(manifest.spans).toHaveLength(3);
     expect(applySpans(baseline, manifest.spans).equals(patched)).toBe(true);
@@ -169,7 +175,7 @@ describe("actual bundle exact offline three-span patch", () => {
   });
 });
 
-for (const [label, project] of projectors) describe(label, () => {
+for (const [label, project, managementGate] of projectors) describe(label, () => {
   it("projects only positive safe channel id and literal authorized name", () => {
     const name = "  Literal %_'客户名称  ";
     const dto = project(row({ companyChannelId: "22", authorizedChannelName: name }), false, false);
@@ -189,12 +195,14 @@ for (const [label, project] of projectors) describe(label, () => {
   it("never infers a name from raw customer/channel fields or fake old DTO fields", () => {
     expect(project(row({ authorizedChannelName: undefined, companyName: "PRIVATE-COMPANY", channelName: "PRIVATE-CHANNEL", channelSource: { id: 99, name: "UNTRUSTED-DTOS" }, company: { id: 88, name: "UNTRUSTED-CUSTOMER" } }), false, false).channelSource).toBeNull();
   });
-  it.each([false, true])("keeps original owner/effective-leader AND write gate (write=%s)", canWrite => {
+  it.each([false, true])("uses explicit current function's management/legacy gate AND write (write=%s)", canWrite => {
     for (const isMine of [false, true]) for (const leader of [false, true]) {
-      const result = project(row({ isMine }), canWrite, leader);
-      expect(result.canEdit).toBe((isMine || leader) && canWrite);
-      expect(result.readOnly).toBe(!result.canEdit);
-      expect(result.canDelete).toBe(result.canEdit);
+      for (const canManageMaterial of [false, true]) {
+        const result = project(row({ isMine, canManageMaterial }), canWrite, leader);
+        expect(result.canEdit).toBe((managementGate ? canManageMaterial : isMine || leader) && canWrite);
+        expect(result.readOnly).toBe(!result.canEdit);
+        expect(result.canDelete).toBe(result.canEdit);
+      }
     }
   });
 });
@@ -265,9 +273,22 @@ describe("actual service with fake SQL/authority/CRM dependencies (not real-serv
     await expect(h.service.listTeamMaterials(currentScope, { page: 1, pageSize: 50, expectedActorUserId: 20 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(h.queries).toHaveLength(0);
   });
-  it("mirror three-logical-delta also projects authorized linked names in fake service", async () => {
-    const h = harness({ mirror: true, company: { linked: true, customer: { id: 700, name: "镜像授权客户" } } });
+  it("current mirror explicitly requires management+write to project authorized linked names in fake service", async () => {
+    const h = harness({ mirror: true, write: true, rows: [row({ canManageMaterial: true })], company: { linked: true, customer: { id: 700, name: "镜像授权客户" } } });
     const result = await h.service.listTeamMaterials(currentScope, { page: 1, pageSize: 50 });
     expect(result.items[0].channelSource).toEqual({ id: 22, name: "镜像授权客户" });
+    expect(result.items[0]).toMatchObject({ canEditMaterial: true, readOnly: false });
+  });
+});
+
+describe("FINAL actual source projector byte provenance", () => {
+  it("reads the final regenerated candidate, pins its real SHA and preserves guarded authorized-only source expression", () => {
+    const proof = JSON.parse(fs.readFileSync(path.join(finalArtifacts, "front-patchproof.json"), "utf8"));
+    expect(hash(fs.readFileSync(path.join(finalArtifacts, "patched-front-index.js")))).toBe(proof.afterSha256);
+    const finalProjection = topFunction(finalSf, "teamMaterialFrom");
+    expect(finalProjection).toContain("const canEdit = canWrite && bool6(row.canManageMaterial);");
+    expect(finalProjection).toContain("channelSource: canViewSource && Number.isSafeInteger(Number(row.companyChannelId))");
+    expect(method(finalSf, "listTeamMaterials")).toContain("row.canViewSource = materialManagementProjection(row, access2.write, company2).canEditMaterial");
+    expect(method(finalSf, "listTeamMaterials")).toContain("row.authorizedChannelName = materialManagementProjection(row, access2.write, company2).customerSource?.name ?? null");
   });
 });

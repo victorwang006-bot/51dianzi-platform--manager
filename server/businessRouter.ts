@@ -342,9 +342,9 @@ async function withCurrentBusinessAuthorization<T>(
     // batch and export paths; ERP leader labels alone are never official scope.
     // Keep unassigned ordinary public-stock reads compatible (no proof), while
     // the original profile endpoints still require a configured official team.
-    const withProfileRead = (run: (projection: OfficialInventoryPermissions["channelProfileTeamRead"]) => Promise<T>) =>
+    const withProfileRead = (run: (projection: OfficialInventoryPermissions["channelProfileTeamRead"], management?: OfficialInventoryPermissions["channelMaterialManagement"]) => Promise<T>) =>
       channel ? withOfficialChannelProfileRead(ctx, staffBinding.frontUserId, run, !profileRead) : run(undefined);
-    return withProfileRead(async channelProfileTeamRead => {
+    return withProfileRead(async (channelProfileTeamRead, channelMaterialManagement) => {
     const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
     const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
       && !capability.customerInventory && (contextProjection || profileRead || nativeReadMethods.includes(capability.method ?? ""));
@@ -379,6 +379,9 @@ async function withCurrentBusinessAuthorization<T>(
     const requestOfficialInventoryPermissions = officialInventoryPermissions ? {
       ...officialInventoryPermissions,
       customerScopeRead: businessScopeAllows(scope, "customers", "read"),
+      inventoryScopeWrite: officialInventoryPermissions.write === true && businessScopeAllows(scope, "inventory", "write"),
+      ...(channel && officialInventoryPermissions.write === true && businessScopeAllows(scope, "inventory", "write") ? { materialBusinessTeamLeaderWrite: { adminAccountId: account.id, staffUserId: staffBinding.frontUserId } } : {}),
+      ...(channelMaterialManagement && officialInventoryPermissions.write === true && businessScopeAllows(scope, "inventory", "write") ? { channelMaterialManagement } : {}),
       ...(channelProfileTeamRead ? { channelProfileTeamRead } : {}),
     } : undefined;
     return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions: requestOfficialInventoryPermissions });

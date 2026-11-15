@@ -43,7 +43,7 @@ import ChannelInventoryHost from "./ChannelInventoryHost";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root, host: HTMLDivElement;
 const row = { id: 101, uploadBatchId: null, revision: 4, partNumber: "ORIGINAL", brand: "TI", qty: 9, dateCode: "2601", price: "0", currency: "CNY", taxIncluded: false, leadTime: "现货", industryCode: null,
-  updatedAt: "2026-11-10 12:34:56", canEdit: true, canDelete: false, readOnly: false, isMine: false, noteCount: 0, canViewSource: true, channelSource: { id: 11, name: "授权真实渠道" } };
+  updatedAt: "2026-11-10 12:34:56", canEdit: true, canDelete: false, readOnly: false, isMine: false, noteCount: 0, canViewSource: true, channelSource: { id: 11, name: "LEGACY-CHANNEL-NEVER-CUSTOMER" }, company: { id: 111, name: "授权真实客户" } };
 const detail = { ...row, channelId: 11, revision: 12, channelName: "PRIVATE-CHANNEL-NOT-EDITABLE", note: "PRIVATE-NOTE-NOT-EDITABLE", responsibleUserId: 999 };
 function required<T>(value: T | null | undefined): T { if (value == null) throw new Error("Missing flat-edit fixture control"); return value; }
 function button(name: string) { return required([...document.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === name)); }
@@ -81,9 +81,11 @@ describe("flat direct edit preserves the existing public transaction", () => {
     runtime.scope.frontUser.role = "admin";
     runtime.rows = [{ ...row, isMine: true }, { ...row, id: 202, isMine: false }, { ...row, id: 303, canEdit: false }, { ...row, id: 404, readOnly: true }];
     await render();
-    expect(document.querySelectorAll('[aria-label^="编辑库存："]')).toHaveLength(2);
-    expect(edit(0).disabled).toBe(false); expect(edit(1).disabled).toBe(false);
-    expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(0);
+    expect(document.querySelectorAll('[aria-label^="编辑库存："]')).toHaveLength(4);
+    expect(edit(0).disabled).toBe(false); expect(edit(1).disabled).toBe(false); expect(edit(2).disabled).toBe(true); expect(edit(3).disabled).toBe(true);
+    expect(edit(2).title).toContain("只读"); expect(edit(3).title).toContain("只读");
+    expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(4);
+    await click(edit(2)); await click(edit(3)); expect(runtime.getEdit).not.toHaveBeenCalled();
     await click(edit(1)); expect(runtime.getEdit).toHaveBeenCalledWith({ id: 202, expectedActorUserId: 7, expectedEnterpriseId: 31 }, { signal: expect.any(AbortSignal) });
     expect(document.querySelector('[role="dialog"]')).toBeNull(); // Detail id 101 cannot open row 202.
   });
@@ -92,6 +94,26 @@ describe("flat direct edit preserves the existing public transaction", () => {
     runtime.scope.officialInventoryPermissions.write = true; runtime.canWrite = false; await render(); expect(edit().disabled).toBe(true); await click(edit());
     runtime.canWrite = true; runtime.scope.contextVerification.state = "revalidating"; await render(); expect(edit().disabled).toBe(true); await click(edit());
     expect(runtime.getEdit).not.toHaveBeenCalled(); expect(runtime.update).not.toHaveBeenCalled();
+  });
+  it.each([false, undefined, null, "true"])("returned canEditMaterial=%s supersedes legacy positive edit/owner/admin hints for both capabilities", async grant => {
+    runtime.scope.frontUser.role = "admin";
+    runtime.rows = [{ ...row, canEditMaterial: grant, isMine: true, recorderAdminAccountId: 7, originalRecorderName: "当前员工" }];
+    await render(); expect(edit().disabled).toBe(true);
+    expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("客户不可查看");
+    await click(edit()); expect(runtime.getEdit).not.toHaveBeenCalled();
+    expect(document.body.innerHTML).not.toContain("授权真实客户");
+  });
+  it("authorizes only from the new explicit grant and rechecks fresh detail grant before opening", async () => {
+    runtime.rows = [{ ...row, canEdit: false, canEditMaterial: true }];
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, canEditMaterial: false });
+    await render(); expect(edit().disabled).toBe(false); await click(edit());
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    runtime.getEdit.mockResolvedValueOnce({ ...detail, canEdit: false, canEditMaterial: true });
+    await click(edit()); expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    runtime.rows = [{ ...row, canEditMaterial: false }]; await render();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.innerHTML).not.toContain("授权真实客户");
+    expect(runtime.update).not.toHaveBeenCalled();
   });
   it("focuses model then brand and saves only unchanged public-field permissions with exact CAS/identity/UUID", async () => {
     await render(); await click(edit());
@@ -127,22 +149,33 @@ describe("flat direct edit preserves the existing public transaction", () => {
     runtime.enterprise.currentUserId = 8; runtime.enterprise.enterprise.id = 32; await render(); expect(document.querySelector('[role="dialog"]')).toBeNull();
     await act(async () => pendingWrite.resolve({})); expect(runtime.invalidate).not.toHaveBeenCalled();
   });
-  it("shows the source name without preloading details and still reauthorizes only the clicked materialId", async () => {
-    await render(); expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("授权真实渠道"); expect(runtime.source).not.toHaveBeenCalled();
-    await click(required(document.querySelector(".ci-source-link")));
-    expect(runtime.source).toHaveBeenCalledTimes(1); expect(runtime.source).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, materialId: 101 }, { signal: expect.any(AbortSignal) });
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("再次核验的真实渠道");
+  it("shows the customer source only from the authenticated list and never calls the legacy channel-source API", async () => {
+    await render(); expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("授权真实客户");
+    expect(runtime.source).not.toHaveBeenCalled(); expect(document.querySelector(".ci-source-link")).toBeNull();
+    expect(document.body.innerHTML).not.toContain("LEGACY-CHANNEL-NEVER-CUSTOMER");
+  });
+  it("masks source immediately when a fresh server row revokes edit/readOnly, regardless of old source/native/admin hints", async () => {
+    await render(); runtime.scope.frontUser.role = "admin";
+    runtime.rows = [{ ...row, canEdit: false, canViewSource: true }]; await render();
+    expect(edit().disabled).toBe(true); expect(edit().title).toContain("只读");
+    expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("客户不可查看");
+    await click(edit()); expect(runtime.getEdit).not.toHaveBeenCalled(); expect(runtime.source).not.toHaveBeenCalled();
+    runtime.rows = [{ ...row, readOnly: true }]; await render();
+    expect(document.body.innerHTML).not.toContain("授权真实客户");
+    expect(edit().disabled).toBe(true); expect(runtime.source).not.toHaveBeenCalled();
   });
   it("refreshes the real list after save and binds saved-reference reread to fresh id/model/brand with refresh:false", async () => {
     runtime.scope.merchantId = 55; await render(); expect(runtime.lookup).toHaveBeenCalledTimes(1);
     await click(edit()); await input(field("型号"), "NEW-MODEL"); await input(field("品牌"), "ADI");
-    runtime.invalidate.mockImplementation(async name => { if (name === "listTeamMaterials") runtime.rows = [{ ...row, revision: 13, partNumber: "NEW-MODEL", brand: "ADI" }]; });
+    runtime.invalidate.mockImplementation(async name => { if (name === "listTeamMaterials") runtime.rows = [{ ...row, revision: 13, partNumber: "NEW-MODEL", brand: "ADI", company: null, canViewSource: false, canEdit: false }]; });
     await click(button("保存修改")); await render();
     expect(runtime.lookup).toHaveBeenCalledTimes(2);
     expect(runtime.lookup.mock.calls.map(([input]) => input.refresh)).toEqual([false, false]);
     expect(runtime.lookup.mock.calls[1][0]).toEqual({ listInput: runtime.inputs.at(-1), materialIds: [101], refresh: false });
     expect(document.querySelector("td.ci-material-brand-col")?.textContent).toBe("ADI");
     expect(document.querySelector(".ci-part-number-text")?.textContent).toBe("NEW-MODEL");
+    expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("客户不可查看"); expect(edit().disabled).toBe(true);
+    expect(runtime.source).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("保存记录（非实时）");
   });
 });

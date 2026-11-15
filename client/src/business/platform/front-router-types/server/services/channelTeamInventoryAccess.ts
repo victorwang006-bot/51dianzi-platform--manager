@@ -1,9 +1,10 @@
+import { teamMaterialManagementEligibility } from "./channelMaterialManagement";
 import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { ChannelInventoryError, resolveChannelInventoryAuthority, type ChannelInventoryScope, type SqlExecutor, type SqlResultRow } from "./channelInventory";
 import { resolveBusinessModuleAccess } from "./businessModuleAccess";
 import { activeChannelMaterial } from "./channelInventoryManagementPersistence";
-import { teamMaterialSourceEligibility } from "./channelInventorySource";
+import { teamMaterialVisibilityEligibility as teamMaterialSourceEligibility } from "./channelInventorySource";
 
 export const teamInventoryRows = (result: unknown): SqlResultRow[] => {
   if (Array.isArray(result)) return (Array.isArray(result[0]) ? result[0] : result) as SqlResultRow[];
@@ -80,5 +81,5 @@ export async function resolveTeamInventoryVisibility(executor: SqlExecutor, scop
       }
     }
     const shared = eligible.length ? sql`(${peer} AND m.responsible_user_id IN (${sql.join(eligible.map(id => sql`${id}`), sql`, `)}))` : sql`FALSE`;
-    return { access, leader, predicates: [...base, sql`(m.responsible_user_id = ${scope.actorUserId} OR ${shared} OR ${scope.officialActor && member ? teamMaterialSourceEligibility(scope, options.lock === true) : sql`FALSE`})`] };
+    return { access, leader, predicates: [...base, sql`(m.responsible_user_id = ${scope.actorUserId} OR ${shared} OR ${scope.officialActor && member ? teamMaterialSourceEligibility(scope, options.lock === true) : sql`FALSE`} OR ${scope.officialActor && access.write && member ? teamMaterialManagementEligibility(scope, options.lock === true) : sql`FALSE`})`] };
   }

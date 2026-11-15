@@ -176,12 +176,13 @@ function required<T>(value: T | null | undefined, message: string): T {
 }
 
 function button(name: string) {
-  return required(
-    [...Array.from(document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')), ...Array.from(document.body.querySelectorAll("button"))].find(
-      item => item.textContent?.trim() === name,
-    ),
-    `missing button: ${name}`,
-  );
+  let found = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'), ...document.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent?.trim() === name);
+  if (!found && name.startsWith("备注（")) {
+    const rows = (runtime.teamQuery as { data: { items: { noteCount: number }[] } }).data.items;
+    const index = rows.findIndex(row => `备注（${row.noteCount}）` === name);
+    return materialMenuItem(name, index) as HTMLButtonElement;
+  }
+  return required(found, `missing button: ${name}`);
 }
 
 function expectNoGlobalUpload() {
@@ -253,7 +254,7 @@ async function settle() {
     await Promise.resolve();
     // Radix FocusScope restores focus in a timer after a portalled menu unmounts.
     // Wait for that real lifecycle, not just the React promise microtask.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 10));
   });
 }
 
@@ -405,7 +406,7 @@ function configureFixtures() {
   runtime.sourceQuery = query({ canFilterSource: false, items: [] });
   runtime.teamQuery = query({
     items: [
-      { id: 101, partNumber: "LM358DR", brand: "TI", qty: null, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, revision: 6, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", noteCount: 1, canAddNote: true, isMine: true, canEdit: true, readOnly: false, canViewSource: true },
+      { id: 101, partNumber: "LM358DR", brand: "TI", qty: null, dateCode: null, price: null, currency: "CNY", taxIncluded: null, leadTime: null, revision: 6, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", noteCount: 1, canAddNote: true, isMine: true, canEdit: true, readOnly: false, canViewSource: true, company: null },
       { id: 202, partNumber: "TEAM-SN74", brand: "NXP", qty: 100, dateCode: "2601", price: "1.20", currency: "CNY", taxIncluded: true, leadTime: "3天", revision: 2, updatedAt: "2026-10-03T01:00:00.000Z", createdAt: "2026-10-03T01:00:00.000Z", noteCount: 0, canAddNote: true, isMine: false, canEdit: false, readOnly: true, canViewSource: false },
     ], total: 40, page: 1, pageSize: 20, pageCount: 2, canWrite: true, canFilterSource: false,
   });
@@ -486,30 +487,19 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.materialInputs.at(-1)).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1 });
     expect(runtime.sharedInputs).toHaveLength(0);
     const rows = document.querySelectorAll("tbody tr");
-    expect(rows[0].textContent).toContain("查看来源");
-    expect(rows[1].querySelector(".ci-source-link")).toBeNull();
+    expect(rows[0].querySelector(".ci-material-source-col")?.textContent).toBe("未关联客户");
+    expect(rows[1].querySelector(".ci-material-source-col")?.textContent).toBe("客户不可查看");
     expect(document.body.innerHTML).not.toContain("深圳代理");
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
-    expect(runtime.sourceInputs).toHaveLength(0);
-    expect(runtime.optionInputs).toHaveLength(0);
-    expect(rows[1].querySelector(".ci-part-copy-button")).not.toBeNull();
-    expect(Array.from(rows[1].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
-    expect(Array.from(rows[0].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["查看来源", "编辑", "发布", "备注（1）", "本人备注"]);
-    for (const row of rows) {
-      const publish = required(row.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing publish action");
-      expect(publish.disabled).toBe(true);
-      expect(publish.title).toBe("当前账号没有该材料的发布权限");
-      click(publish);
-      expect(document.querySelector('[role="dialog"]')).toBeNull();
-    }
-    expect(rows[1].querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
-    expect(rows[1].querySelector("[title]:not(.ci-material-recorder-col):not(.ci-material-brand-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
+    expect(runtime.sourceInputs).toHaveLength(0); expect(runtime.optionInputs).toHaveLength(0);
+    for (const row of rows) expect(Array.from(row.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["编辑", "更多"]);
+    expect((materialMenuItem("编辑", 1) as HTMLButtonElement).disabled).toBe(true);
     expect(rows[1].querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(rows[1].querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
     const edit = materialMenuItem("编辑");
     expect(edit.closest("td.ci-col-actions")).not.toBeNull();
     expect(document.querySelector('[role="menu"]')).toBeNull();
-    expect(rows[0].querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect(rows[0].querySelector('[data-slot="dropdown-menu-trigger"]')).not.toBeNull();
     expect((edit as HTMLButtonElement).disabled).toBe(false);
     expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
   });
@@ -528,31 +518,18 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.materialInputs.at(-1)).toMatchObject({ channelId: undefined });
   });
 
-  it("reads leader peer source only on click but never peer editor or private detail", async () => {
+  it("a positive source hint never enables peer customer view/edit without the backend edit grant", async () => {
     const result = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
-    runtime.teamQuery = query({ ...result.data, canFilterSource: true, items: result.data.items.map(row => row.id === 202 ? { ...row, channelSource: { id: 22, name: "团队来源" }, canViewSource: true } : row) });
-    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
-    renderHost();
-    const peer = document.querySelectorAll("tbody tr")[1];
-    expect(peer.querySelector(".ci-source-link")?.textContent).toBe("团队来源");
-    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
-    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["团队来源", "发布", "备注（0）"]);
-    const publish = required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing peer publish");
-    expect(publish.disabled).toBe(true);
-    expect(publish.title).toBe("当前账号没有该材料的发布权限");
-    expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
-    runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "团队来源" });
-    click(required(peer.querySelector(".ci-source-link"), "missing source link"));
-    await settle();
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("团队来源");
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(peer.querySelector("[title]:not(.ci-material-recorder-col):not(.ci-material-brand-col):not([data-factory-publish-action]), [hidden], input")).toBeNull();
-    expect(publish.title).toBe("当前账号没有该材料的发布权限");
-    expect(peer.querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(peer.querySelector(".ci-material-recorder-col")?.textContent);
-    expect(runtime.getMaterial).not.toHaveBeenCalled();
+    runtime.teamQuery = query({ ...result.data, canFilterSource: true, items: result.data.items.map(row => row.id === 202 ? { ...row, channelSource: { id: 22, name: "团队渠道" }, company: { id: 772, name: "未授权客户" }, canViewSource: true } : row) });
+    renderHost(); const peer = document.querySelectorAll("tbody tr")[1];
+    expect(peer.querySelector(".ci-material-source-col")?.textContent).toBe("客户不可查看");
+    expect((materialMenuItem("编辑", 1) as HTMLButtonElement).disabled).toBe(true);
+    expect(document.body.innerHTML).not.toMatch(/未授权客户|团队渠道|772/);
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled(); expect(runtime.getMaterial).not.toHaveBeenCalled();
   });
 
   it("shows channel timestamps in Beijing even when the visitor timezone is UTC", () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "updatedAt"]));
     const previous = process.env.TZ;
     process.env.TZ = "UTC";
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -676,7 +653,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   });
 
   it("cycles server quantity sort default desc asc default, resets page and preserves server ordering/page count", async () => {
-    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode"]));
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode", "updatedAt"]));
     renderHost();
     const qty = required(document.querySelector<HTMLButtonElement>('[aria-label="按可供数量排序"]'), "missing qty sort");
     const dc = required(document.querySelector<HTMLButtonElement>('[aria-label="按 Date Code 排序"]'), "missing date sort");
@@ -747,22 +724,15 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(document.querySelector("tbody")?.textContent).not.toContain("LM358DR");
   });
 
-  it("does not show stale peer source when source permission is revoked", async () => {
+  it("does not retain a customer name when the current server row revokes source permission", async () => {
     const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
-    runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
-    runtime.teamQuery = query({ ...previous.data, canFilterSource: true, items: previous.data.items.map(row => row.id === 202 ? { ...row, canViewSource: true, channelSource: { id: 22, name: "团队来源" } } : row) });
-    renderHost();
-    runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "团队来源" });
-    click(required(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link"), "missing peer source")); await settle();
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("团队来源");
-    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => ({ ...row, canViewSource: false })), canFilterSource: false });
-    runtime.sourceQuery = query({ canFilterSource: false, items: [] });
-    runtime.scope.contextVerification.readVersion = "source-role-revoked-v2";
-    act(() => root?.render(React.createElement(ChannelInventoryHost)));
-    await settle();
-    expect(document.body.innerHTML).not.toContain("团队来源");
-    expect(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link")).toBeNull();
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
+    previous.data.items[0] = { ...previous.data.items[0], company: { id: 771, name: "真实CRM来源" } };
+    renderHost(); expect(document.body.textContent).toContain("真实CRM来源");
+    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => ({ ...row, canViewSource: false })) });
+    act(() => root?.render(React.createElement(ChannelInventoryHost))); await settle();
+    expect(document.body.innerHTML).not.toContain("真实CRM来源");
+    expect((materialMenuItem("编辑") as HTMLButtonElement).disabled).toBe(true);
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
   });
 
   it("does not open an public detail response arriving after permission revocation", async () => {
@@ -876,7 +846,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     // v20 explicitly widens quote/lead time without shrinking other columns.
     expect((stockTable as HTMLTableElement).style.getPropertyValue("--ci-stock-min-width")).toBe(`${channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false).minWidth}px`);
     expect(tableStyle.tableLayout).toBe("fixed");
-    expect((stockTable.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("216px");
+    expect((stockTable.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("112px");
     expect(headerStyle.paddingTop).toBe("6px");
     expect(headerStyle.paddingRight).toBe("6px");
     // jsdom preserves var() rather than resolving scoped admin tokens.
@@ -892,31 +862,31 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   });
 
   it("separates quote and lead-time headings/values using only local width and padding, leaving actions and all columns intact", () => {
-    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry", "leadTime", "updatedAt"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
     expect(table.querySelectorAll("thead th")).toHaveLength(12);
     for (const row of table.querySelectorAll("tbody tr")) {
       expect(row.querySelectorAll("td")).toHaveLength(12);
-      expect(row.querySelector(".ci-col-actions")?.textContent).toContain("备注（");
+      expect(row.querySelector(".ci-col-actions")?.textContent).toContain("更多");
     }
     for (const selector of ["th.ci-material-price-col", "td.ci-material-price-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing quote cell"));
-      expect((table.querySelector('col[data-column="price"]') as HTMLTableColElement).style.width).toBe("128px"); expect(style.paddingRight).toBe("6px"); expect(style.textAlign).toBe("center");
+      expect((table.querySelector('col[data-column="price"]') as HTMLTableColElement).style.width).toBe("110px"); expect(style.paddingRight).toBe("6px"); expect(style.textAlign).toBe("center");
     }
     for (const selector of ["th.ci-material-lead-col", "td.ci-material-lead-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing lead cell"));
       expect((table.querySelector('col[data-column="leadTime"]') as HTMLTableColElement).style.width).toBe("112px"); expect(style.paddingLeft).toBe("6px");
     }
     expect(getComputedStyle(required(table.closest(".ci-tablewrap"), "missing stock scroller")).overflowX).toBe("auto");
-    expect((table.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("96px");
+    expect((table.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("86px");
     expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
     const actions = getComputedStyle(required(table.querySelector("td.ci-col-actions"), "missing actions"));
-    expect((table.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("216px"); expect(actions.position).toBe("sticky"); expect(actions.right).toBe("0px");
+    expect((table.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("112px"); expect(actions.position).toBe("sticky"); expect(actions.right).toBe("0px");
   });
 
   it("gives industry and delivery the same regular body role while keeping model and supporting data hierarchy", () => {
-    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry", "leadTime", "updatedAt"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
     const industry = required(table.querySelector("td.ci-material-industry-col"), "missing industry cell");
@@ -938,6 +908,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
   });
 
   it("omits only unknown tax subtext, preserving negotiated/zero/precise prices, known tax flags and real lead-time fallbacks", () => {
+    localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "leadTime"]));
     const original = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
     const base = original.data.items[0];
     runtime.teamQuery = query({ ...original.data, items: [
@@ -1463,9 +1434,9 @@ describe("channel industry required integration", () => {
     selectHostTab("materials");
     const peer = document.querySelectorAll("tbody tr")[1];
     expect(peer.querySelector(".ci-source-link")).toBeNull();
-    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
-    expect(required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing readonly publish").disabled).toBe(true);
-    expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["编辑", "更多"]);
+    expect((materialMenuItem("编辑", 1) as HTMLButtonElement).disabled).toBe(true);
+    expect(peer.querySelector('[data-slot="dropdown-menu-trigger"]')).not.toBeNull();
     expect(peer.querySelector("select")).toBeNull();
     expect(document.querySelector("thead")?.textContent).toContain("所属行业");
   });
@@ -1475,7 +1446,7 @@ describe("channel industry required integration", () => {
 describe("v9 public inventory and collaboration integration", () => {
   it("allows a live team leader to edit peer public fields without private detail or writable channel options", async () => {
     const old = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
-    runtime.teamQuery = query({ ...old.data, items: old.data.items.map(row => row.id === 202 ? { ...row, canEdit: true, readOnly: false } : row) });
+    runtime.teamQuery = query({ ...old.data, items: old.data.items.map(row => row.id === 202 ? { ...row, canEdit: true, readOnly: false, canViewSource: true } : row) });
     runtime.channelQuery = query({ items: [], total: 0, page: 1, pageSize: 100, canWrite: false });
     runtime.getTeamMaterialForEdit.mockResolvedValueOnce({ id: 202, channelId: 22, channelName: "团队来源", partNumber: "TEAM-SN74", brand: "NXP", qty: 0, dateCode: "2601", price: "0", currency: "CNY", taxIncluded: false, leadTime: null, revision: 12, canEdit: true, readOnly: false });
     renderHost();
@@ -1502,8 +1473,8 @@ describe("v9 public inventory and collaboration integration", () => {
     renderHost();
     expectNoGlobalUpload();
     const peer = document.querySelectorAll("tbody tr")[1];
-    expect(peer.textContent).not.toContain("编辑");
-    click(required(Array.from(peer.querySelectorAll("button")).find(item => item.textContent === "备注（0）"), "missing unified readonly note entry"));
+    expect((materialMenuItem("编辑", 1) as HTMLButtonElement).disabled).toBe(true);
+    click(materialMenuItem("备注（0）", 1));
     await settle();
     const textarea = required(document.querySelector<HTMLTextAreaElement>("textarea"), "missing focused collaboration input");
     expect(document.activeElement).toBe(textarea);
@@ -1569,170 +1540,28 @@ describe("v9 public inventory and collaboration integration", () => {
 });
 
 
-describe("v11 real Host source authorization lifecycle", () => {
-  const link = (index = 0) => required(document.querySelectorAll("tbody tr")[index]?.querySelector<HTMLButtonElement>(".ci-source-link"), "missing clickable source link");
+describe("current Host CRM-source authorization lifecycle", () => {
   const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
-
-  it("keeps the actual dialog and focus through same-identity revalidation, masks old name and reads afresh on resume", async () => {
-    renderHost(); click(link()); await settle();
-    const dialog = document.querySelector(".ci-source-dialog"); const focused = document.activeElement;
-    runtime.scope.contextVerification = { ...runtime.scope.contextVerification, state: "revalidating" };
+  it.each(["canEditMaterial", "canEdit", "canViewSource", "readOnly"])("uses fresh backend %s denial for both source and editing without a legacy detail read", async field => {
+    const stock = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
+    stock.items[0] = { ...stock.items[0], company: { id: 771, name: "当前授权CRM客户" } };
+    renderHost(); expect(document.querySelector("td.ci-material-source-col")?.textContent).toBe("当前授权CRM客户");
+    stock.items[0] = { ...stock.items[0], [field]: field === "readOnly" };
     rerender(); await settle();
-    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
-    expect(document.activeElement).toBe(focused);
-    expect(document.querySelector(".ci-source-name")).toBeNull();
-    expect(dialog?.textContent).toContain("正在核验来源查看权限");
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(1);
-    runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "复核后实时来源" });
-    runtime.scope.contextVerification = { ...runtime.scope.contextVerification, state: "verified" };
-    rerender(); await settle();
-    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("复核后实时来源");
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2);
-    expect(runtime.toastError).not.toHaveBeenCalled();
-  });
-
-  it("does not use list refresh snapshots, metadata timestamps or negative row hints as source authorization", async () => {
-    renderHost(); click(link()); await settle();
-    const dialog = document.querySelector(".ci-source-dialog");
-    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
-    runtime.teamQuery = query(undefined, { isLoading: true, isFetching: true });
-    rerender(); await settle(); expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
-    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => ({ ...row, canViewSource: false })) });
-    (runtime.enterpriseMe as { data: { member: Record<string, unknown> } }).data.member.updatedAt = "2026-11-03T12:00:00Z";
-    rerender(); await settle();
-    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("实时核验来源");
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(1);
-  });
-
-  it.each(["authorizationVersion", "readVersion"] as const)("clears and aborts on a real changed %s even if identity stays the same", async field => {
-    let finish!: (value: { name: string }) => void;
-    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(link());
-    const signal = runtime.getTeamMaterialSource.mock.calls[0][1].signal as AbortSignal;
-    runtime.scope.contextVerification[field] = "changed-effective-authorization"; rerender(); await settle();
-    expect(signal.aborted).toBe(true); expect(document.querySelector(".ci-source-dialog")).toBeNull();
-    await act(async () => finish({ name: "STALE-AUTHORITY-SOURCE" }));
-    expect(document.body.textContent).not.toContain("STALE-AUTHORITY-SOURCE");
-  });
-
-  it("keeps exactly one denied state after NOT_FOUND and rerenders, then makes a new query on the next legal click", async () => {
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "NOT_FOUND", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
-    renderHost(); click(link()); await settle();
-    const dialog = document.querySelector(".ci-source-dialog");
-    rerender(); await settle(); rerender(); await settle();
-    expect(document.querySelector(".ci-source-dialog")).toBe(dialog);
-    expect(dialog?.textContent?.match(/暂无权限查看/g)).toHaveLength(1);
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(1); expect(runtime.toastError).not.toHaveBeenCalled();
-    click(required(document.querySelector('[aria-label="关闭渠道来源"]'), "missing close"));
-    click(link()); await settle();
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2);
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("实时核验来源");
-  });
-
-  it("coalesces focus bursts, masks the ready value, and rejects a late response from before revalidation", async () => {
-    renderHost(); click(link()); await settle();
-    let oldFinish!: (value: { name: string }) => void;
-    let newFinish!: (value: { name: string }) => void;
-    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { oldFinish = resolve; }))
-      .mockReturnValueOnce(new Promise(resolve => { newFinish = resolve; }));
-    await act(async () => { window.dispatchEvent(new Event("focus")); window.dispatchEvent(new Event("focus")); });
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2); expect(document.querySelector(".ci-source-name")).toBeNull();
-    const oldSignal = runtime.getTeamMaterialSource.mock.calls[1][1].signal as AbortSignal;
-    runtime.scope.contextVerification.state = "revalidating"; rerender(); await settle(); expect(oldSignal.aborted).toBe(true);
-    runtime.scope.contextVerification.state = "verified"; rerender(); await settle();
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(3);
-    await act(async () => newFinish({ name: "NEW-FOCUS-PROOF" }));
-    await act(async () => oldFinish({ name: "LATE-OLD-FOCUS-PROOF" }));
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("NEW-FOCUS-PROOF");
-  });
-
-  it.each(["AUTH_SESSION_INVALID", "STAFF_BINDING_INVALID", "TENANT_ACCESS_REVOKED"])("reports direct-read %s to the real session boundary and never retains old name", async businessFailure => {
-    renderHost(); click(link()); await settle();
-    const error = { data: { code: "FORBIDDEN", businessFailure } };
-    runtime.getTeamMaterialSource.mockRejectedValueOnce(error);
-    await act(async () => window.dispatchEvent(new Event("focus")));
-    expect(runtime.scope.onAuthorizationError).toHaveBeenCalledWith(error);
-    expect(document.querySelector(".ci-source-name")).toBeNull();
-    expect(document.querySelector(".ci-source-dialog")?.textContent).not.toContain("暂无权限查看");
-  });
-
-  it("hides negative-hint source entries without granting edit or hiding collaboration", async () => {
-    renderHost();
-    expect(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link")).toBeNull();
-    await settle();
-    expect(runtime.toastError).not.toHaveBeenCalled();
+    expect(document.body.innerHTML).not.toContain("当前授权CRM客户");
+    expect((materialMenuItem("编辑") as HTMLButtonElement).disabled).toBe(true);
     expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
-    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("备注（0）");
-    expect(document.querySelectorAll("tbody tr")[1].textContent).not.toContain("编辑");
   });
-
-  it("a refreshed positive source hint enables a fresh server-authorized source read without granting stock edit", async () => {
-    runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "新授予实时来源" });
-    renderHost();
-    expect(document.querySelectorAll("tbody tr")[1].querySelector(".ci-source-link")).toBeNull();
-    const previous = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
-    runtime.teamQuery = query({ ...previous.data, items: previous.data.items.map(row => row.id === 202 ? { ...row, canViewSource: true } : row) });
-    rerender(); click(link(1)); await settle();
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("新授予实时来源");
-    expect(runtime.toastError).not.toHaveBeenCalled();
-    expect(document.querySelectorAll("tbody tr")[1].textContent).not.toContain("编辑");
-    expect(document.querySelectorAll("tbody tr")[1].textContent).toContain("备注（0）");
-  });
-
-  it("handles fresh server denial despite an old positive row hint and never displays a stale name", async () => {
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
-    renderHost(); click(link()); await settle();
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledWith({ materialId: 101, expectedEnterpriseId: 31, expectedActorUserId: 7 }, { signal: expect.any(AbortSignal) });
-    expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
-    expect(runtime.toastError).not.toHaveBeenCalled();
-    expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
-    expect(document.body.innerHTML).not.toContain("实时核验来源");
-    expect(runtime.getMaterial).not.toHaveBeenCalled();
-  });
-
-  it("uses a fresh source API on each open, and focus rechecks cannot retain a revoked name", async () => {
-    renderHost(); click(link()); await settle();
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("实时核验来源");
-    click(required(document.querySelector('[aria-label="关闭渠道来源"]'), "missing source close"));
-    runtime.getTeamMaterialSource.mockResolvedValueOnce({ name: "再次实时核验" });
-    click(link()); await settle();
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(2);
-    expect(document.querySelector(".ci-source-name")?.textContent).toBe("再次实时核验");
-    runtime.getTeamMaterialSource.mockRejectedValueOnce({ data: { code: "FORBIDDEN", businessFailure: "BUSINESS_RESOURCE_FORBIDDEN" } });
-    await act(async () => window.dispatchEvent(new Event("focus")));
-    expect(runtime.getTeamMaterialSource).toHaveBeenCalledTimes(3);
-    expect(document.querySelector(".ci-source-dialog")).not.toBeNull();
-    expect(document.body.innerHTML).not.toContain("再次实时核验");
-    expect(runtime.toastError).not.toHaveBeenCalled();
-    expect(document.querySelector(".ci-source-dialog")?.textContent).toContain("暂无权限查看");
-  });
-
-  it.each(["actor", "enterprise", "binding", "team", "role", "read", "list-denial", "archive"])("aborts and clears source on %s, ignoring a late response", async change => {
-    let finish!: (value: { name: string }) => void;
-    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(link());
-    const signal = runtime.getTeamMaterialSource.mock.calls[0][1].signal as AbortSignal;
-    const enterprise = runtime.enterpriseMe as { data: Record<string, unknown> };
-    const material = runtime.teamQuery as { data: { items: Record<string, unknown>[] } };
-    if (change === "actor") enterprise.data.currentUserId = 8;
-    if (change === "enterprise") enterprise.data.enterprise = { id: 32 };
-    if (change === "binding") runtime.scope.storageScope = "new-binding";
-    if (change === "team") runtime.scope.contextVerification.readVersion = "team-revoked-v2";
-    if (change === "role") runtime.scope.frontUser.role = "changed-role";
-    if (change === "read") enterprise.data.permissionKeys = [];
-    if (change === "revalidating") runtime.scope.contextVerification.state = "revalidating";
-    if (change === "list-denial") runtime.teamQuery = query(undefined, { isError: true });
-    if (change === "row-revocation") runtime.teamQuery = query({ ...material.data, items: material.data.items.map(row => ({ ...row, canViewSource: false })) });
-    if (change === "archive") selectHostTab("channels"); else rerender();
-    await settle();
-    expect(signal.aborted).toBe(true);
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
-    await act(async () => { finish({ name: "LATE-PRIVATE-SOURCE" }); await Promise.resolve(); });
-    expect(document.body.innerHTML).not.toContain("LATE-PRIVATE-SOURCE");
+  it("masks source during same-identity revalidation and never grants it from a positive source hint alone", async () => {
+    const stock = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
+    stock.items[0] = { ...stock.items[0], company: { id: 771, name: "当前授权CRM客户" } };
+    stock.items[1] = { ...stock.items[1], canViewSource: true, company: { id: 772, name: "不能查看的CRM客户" } };
+    renderHost(); expect(document.body.textContent).not.toContain("不能查看的CRM客户");
+    runtime.scope.contextVerification.state = "revalidating"; rerender(); await settle();
+    expect(document.body.textContent).not.toContain("当前授权CRM客户");
+    runtime.scope.contextVerification.state = "verified"; rerender(); await settle();
+    expect(document.body.textContent).toContain("当前授权CRM客户");
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
   });
 
   it("does not discard an allowed public edit when only the narrower source filter right changes", async () => {
@@ -1769,7 +1598,7 @@ describe("v11 real Host source authorization lifecycle", () => {
 
   it("retains the complete column ordering/type/filter/control contract with the approved compact header and no demo content", () => {
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(item => item.textContent)).toEqual(["型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
     expect(document.querySelectorAll("h1,.ci-page-title")).toHaveLength(1);
     expect(document.querySelector(".ci-tabbar,.ci-heading-actions,.ci-inventory-view-controls")).toBeNull();
     const title = required(document.querySelector("h1.ci-sr-only"), "missing accessible title");
@@ -1795,22 +1624,22 @@ describe("v13 native channel read and original recorder contract", () => {
     result.data.items[0] = { ...result.data.items[0], originalRecorderName: "Jack", responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     result.data.items[1] = { ...result.data.items[1], originalRecorderName: null, responsibleName: "WRONG-RESPONSIBLE", latestEditorName: "WRONG-EDITOR" };
     renderHost();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
-    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([11, 11]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
+    expect(Array.from(document.querySelectorAll("tbody tr")).map(row => row.querySelectorAll("td").length)).toEqual([9, 9]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.textContent)).toEqual(["Jack", "待核实"]);
     expect(Array.from(document.querySelectorAll("td.ci-material-recorder-col")).map(cell => cell.getAttribute("title"))).toEqual(["Jack", "待核实"]);
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).whiteSpace).toBe("nowrap");
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).textOverflow).toBe("ellipsis");
-    expect((document.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("96px");
+    expect((document.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("86px");
     expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("var(--admin-content-font-caption, 12px)");
     expect(getComputedStyle(document.querySelector("tbody .ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 13px)");
     expect(document.body.textContent).not.toMatch(/WRONG-RESPONSIBLE|WRONG-EDITOR/);
   });
-  it.each(["loading", "error", "empty"])("uses default eleven-column colspan for %s without misaligning existing table", status => {
+  it.each(["loading", "error", "empty"])("uses default nine-column colspan for %s without misaligning existing table", status => {
     runtime.teamQuery = status === "loading" ? query(undefined, { isLoading: true }) : status === "error" ? query(undefined, { isError: true }) : query({ items: [], total: 0, pageCount: 1 });
     renderHost();
-    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("11");
-    expect(document.querySelectorAll("thead th")).toHaveLength(11);
+    expect(document.querySelector("tbody td")?.getAttribute("colspan")).toBe("9");
+    expect(document.querySelectorAll("thead th")).toHaveLength(9);
   });
   it("allows native read with no ERP edit permission, but cannot open uploads, edit or note forms even from stale writable row hints", async () => {
     runtime.scope.officialInventoryPermissions = { read: true, write: false, note: false, authorizationVersion: "native-read-only-v1" };
@@ -1849,18 +1678,13 @@ describe("v13 native channel read and original recorder contract", () => {
     expect(document.querySelector("table")).toBeNull();
     expect(runtime.materialInputs).toHaveLength(0);
   });
-  it.each(["read", "write", "note", "authorizationVersion"] as const)("invalidates an in-flight source on a changed native %s proof", async field => {
-    let finish!: (value: { name: string }) => void;
-    runtime.getTeamMaterialSource.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-    renderHost(); click(required(document.querySelector(".ci-source-link"), "missing source"));
-    const signal = runtime.getTeamMaterialSource.mock.calls[0][1].signal as AbortSignal;
-    if (field === "authorizationVersion") runtime.scope.officialInventoryPermissions.authorizationVersion = "native-grants-v2";
-    else runtime.scope.officialInventoryPermissions[field] = false;
-    rerender(); await settle();
-    expect(signal.aborted).toBe(true);
-    expect(document.querySelector(".ci-source-dialog")).toBeNull();
-    await act(async () => finish({ name: "STALE-NATIVE-SOURCE" }));
-    expect(document.body.textContent).not.toContain("STALE-NATIVE-SOURCE");
+  it.each(["read", "write"] as const)("masks the current customer on changed native %s denial without source IO", async field => {
+    const stock = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
+    stock.items[0] = { ...stock.items[0], company: { id: 771, name: "NATIVE-SOURCE-CUSTOMER" } };
+    renderHost(); expect(document.body.textContent).toContain("NATIVE-SOURCE-CUSTOMER");
+    runtime.scope.officialInventoryPermissions[field] = false; rerender(); await settle();
+    expect(document.body.textContent).not.toContain("NATIVE-SOURCE-CUSTOMER");
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
   });
   it("does not open a pending edit response after native write is revoked while read remains", async () => {
     let finish!: (value: unknown) => void;
@@ -1899,7 +1723,7 @@ describe("v14 industry and channel-row stock upload", () => {
     localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     renderHost();
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
-    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "来源客户", "所属行业", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
     expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
     expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 12px)");
     expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 13px)");
@@ -2436,23 +2260,19 @@ describe("v18 single collaboration-note entry", () => {
     writeFileSync(resolve(dir, fileName), `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>真实 ChannelInventoryHost DOM</title></head><body>${required(container, "missing rendered host").innerHTML}</body></html>\n`);
   };
 
-  it("has exactly one native text note button per row and keeps zero clickable", async () => {
-    renderHost();
-    const rows = Array.from(document.querySelectorAll("tbody tr"));
-    for (const row of rows) {
-      const entries = Array.from(row.querySelectorAll<HTMLButtonElement>(".ci-col-actions button")).filter(item => item.textContent?.startsWith("备注（"));
-      expect(entries).toHaveLength(1);
-      expect(entries[0].type).toBe("button");
-      expect(entries[0].className).toBe("ci-inline-link");
-      expect(entries[0].disabled).toBe(false);
-      expect(row.textContent).not.toContain("新增备注");
+  it("has exactly one native note menu entry per row and keeps zero clickable", async () => {
+    renderHost(); const rows = Array.from(document.querySelectorAll("tbody tr"));
+    for (const [index, row] of rows.entries()) {
+      const entry = materialMenuItem(`备注（${index ? 0 : 1}）`, index);
+      expect(entry.getAttribute("role")).toBe("menuitem");
+      expect(entry.hasAttribute("data-disabled")).toBe(false); expect(row.textContent).not.toContain("新增备注");
+      act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     }
-    click(button("备注（0）")); await settle();
+    click(materialMenuItem("备注（0）", 1)); await settle();
     expect(runtime.collaborationInputs.at(-1)).toMatchObject({ materialId: 202, expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(document.activeElement).toBe(document.querySelector("textarea"));
     expect(document.querySelector('[aria-label="协作备注历史"]')).not.toBeNull();
-    expect(document.querySelector('[aria-label="新增协作备注"]')).not.toBeNull();
-    expect(runtime.notesInputs).toHaveLength(0);
+    expect(document.querySelector('[aria-label="新增协作备注"]')).not.toBeNull(); expect(runtime.notesInputs).toHaveLength(0);
   });
 
   it.each(["row", "server", "native"])("leaves the unique history entry usable with %s add denial", async denial => {
@@ -2495,7 +2315,7 @@ describe("v18 single collaboration-note entry", () => {
     expect(input.value).toBe("");
     expect(dialog.querySelectorAll(".ci-note-entry")).toHaveLength(3);
     expect(dialog.querySelector('[aria-label="协作备注历史"]')?.textContent).toContain(saved.content);
-    expect(button("备注（3）").disabled).toBe(false);
+    expect((runtime.teamQuery as { data: { items: { noteCount: number }[] } }).data.items[0].noteCount).toBe(3);
     expect(runtime.collaborationAdd.mock.calls[0][0]).toMatchObject({ materialId: 101, content: saved.content });
     expect(runtime.notesInputs).toHaveLength(0);
   });
@@ -2583,8 +2403,8 @@ describe("approved channel inventory part-number density", () => {
     const brandStyle = getComputedStyle(required(row.querySelector("td.ci-material-brand-col"), "missing brand"));
     expect(brandStyle.whiteSpace).toBe("nowrap"); expect(brandStyle.textOverflow).toBe("ellipsis");
     expect(row.querySelector("small.ci-batch-source")).toBeNull();
-    expect(row.querySelector(".ci-source-link")?.textContent).toBe("查看来源");
-    expect(row.querySelectorAll("td")).toHaveLength(11);
+    expect(row.querySelector(".ci-material-source-col")?.textContent).toBe("未关联客户");
+    expect(row.querySelectorAll("td")).toHaveLength(9);
     expect(required(row.closest("table"), "missing table").style.getPropertyValue("--ci-stock-min-width")).toBe(`${channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false).minWidth}px`);
   });
 
@@ -2625,6 +2445,7 @@ describe("approved channel inventory part-number density", () => {
 });
 
 describe("approved inventory compact time presentation", () => {
+  beforeEach(() => localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "updatedAt"])));
   const trigger = () => required(document.querySelector<HTMLSpanElement>(".ci-updated-at-trigger"), "missing updated-at trigger");
   const panel = () => document.querySelector<HTMLElement>(".ci-updated-at-popover");
   const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
@@ -2685,13 +2506,13 @@ describe("approved inventory compact time presentation", () => {
 
   it("renders time independently from optional DC with a semantic complete Beijing timestamp", () => {
     const key = channelInventoryColumnsStorageKey(7, 31)!;
-    localStorage.setItem(key, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode"]));
+    localStorage.setItem(key, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode", "updatedAt"]));
     setFirst({ dateCode: "  2601 / REV-B  " }); renderHost();
     expect(document.querySelector("th.ci-material-date-col")?.textContent).toBe("更新时间");
     expect(document.querySelector("td.ci-material-dc-col")?.textContent).toBe("  2601 / REV-B  ");
     expect(document.querySelector("td.ci-material-date-col")?.textContent).not.toContain("2601");
     expect(trigger().closest("time")?.getAttribute("datetime")).toMatch(/T\d{2}:\d{2}:\d{2}\+08:00$/);
-    const layout = channelInventoryColumnLayout([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode"], false);
+    const layout = channelInventoryColumnLayout([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "dateCode", "updatedAt"], false);
     const table = required(document.querySelector<HTMLTableElement>(".ci-compact-stock-table"), "missing table");
     expect(table.style.getPropertyValue("--ci-stock-min-width")).toBe(`${layout.minWidth}px`);
     expect(table.querySelectorAll("col")).toHaveLength(layout.count);
@@ -2749,7 +2570,7 @@ describe("approved inventory compact time presentation", () => {
 // Recovered policy behavior, not a claim of byte identity with the missing final source.
 describe("20261112 recovered official Host write, private notes and export policy", () => {
   const rerender = () => act(() => root?.render(React.createElement(ChannelInventoryHost)));
-  const ownEntry = () => required(document.querySelector<HTMLButtonElement>('[aria-label="本人备注：LM358DR"]'), "missing independent private entry");
+  const ownEntry = () => materialMenuItem("本人备注") as HTMLButtonElement;
   const ownNotes = () => required(document.querySelector<HTMLElement>(".ci-private-notes-dialog"), "missing private notes dialog");
   const stock = () => (runtime.teamQuery as { data: { items: Record<string, unknown>[]; canWrite: boolean } }).data;
   const notes = () => runtime.notesQuery as { data: Record<string, any>; refetch: ReturnType<typeof vi.fn> };
@@ -2794,7 +2615,7 @@ describe("20261112 recovered official Host write, private notes and export polic
   });
   it("read+note without stock write opens an independent row panel and sends only authorized note Add/Edit", async () => {
     denyStockWrite(); renderHost();
-    expect(ownEntry().disabled).toBe(false);
+    expect(ownEntry().hasAttribute("data-disabled")).toBe(false);
     expect(document.querySelector('[aria-label="本人备注：TEAM-SN74"]')).toBeNull();
     expect(document.body.textContent).not.toContain("历史库存备注");
     click(ownEntry()); await settle();

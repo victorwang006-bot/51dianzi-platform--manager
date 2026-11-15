@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "fixtureOnly": true,
+  "count": 10,
+  "skipped": 0,
+  "testedReloaderSha256": "e3b6963307b0f2799be6ee39a7117edfd10ca3850599f99a3a9ab53c5a70ccec",
+  "productionExecuted": false
+}

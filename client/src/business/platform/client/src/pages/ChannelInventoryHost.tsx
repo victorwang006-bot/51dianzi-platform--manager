@@ -13,7 +13,7 @@ import { startChannelReferenceRefresh, channelReferenceRefreshMessage, ChannelRe
 import { useBusinessScope } from "../../../../BusinessScope";
 import { BatchUpload } from "../components/channelInventory/BatchUpload";
 import { CollaborationNotesPanel } from "../components/channelInventory/CollaborationNotesPanel";
-import { ChannelInventorySourcePanel } from "../components/channelInventory/ChannelInventorySourcePanel";
+import { ChannelInventoryCustomerSource } from "../components/channelInventory/ChannelInventorySourcePanel";
 import { ChannelInventoryManagementPanel, useMaterialDeletion } from "../components/channelInventory/ChannelInventoryManagementPanel";
 import { InventoryChannelSelector, type InventoryChannelAvailability } from "../components/channelInventory/InventoryChannelSelector";
 import { useFactoryMaterialPublish, type FactoryMaterialPublishRow } from "../components/channelInventory/FactoryMaterialPublish";
@@ -22,7 +22,7 @@ import type { InventoryManagementClient, InventoryTab, ReadableInventoryChannel,
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
-import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, channelInventorySourceLabel, type ChannelInventoryColumnId } from "./channelInventoryColumns";
+import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, channelInventoryMaterialEditGranted, channelInventoryMaterialAccess, type ChannelInventoryColumnId } from "./channelInventoryColumns";
 import { ChannelReferenceCell } from "./ChannelReferenceCell";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
@@ -768,7 +768,6 @@ export default function ChannelInventoryHost() {
   const [sourceRequestScope, setSourceRequestScope] = useState("");
   const [sourceOptionsRevision, setSourceOptionsRevision] = useState(0);
   const [sourcesState, setSourcesState] = useState<{ scope: string; data?: SourceOptions; isLoading: boolean; isError: boolean }>({ scope: "", isLoading: false, isError: false });
-  const [sourceDetail, setSourceDetail] = useState<{ materialId: number; scopeKey: string } | null>(null);
   const collaborationSessionRef = useRef(0);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"channel" | "material" | "status" | null>(null);
@@ -971,7 +970,7 @@ export default function ChannelInventoryHost() {
     clearBatch();
     setNotesMaterial(null);
     setCollaboration(null); collaborationSessionRef.current += 1;
-    setSourceRequested(false); setSourceDetail(null);
+    setSourceRequested(false);
     materialUpdateRef.current = null; setMaterialRetryLocked(false);
     setMessage("");
     channelCreateRef.current = null;
@@ -1039,7 +1038,6 @@ export default function ChannelInventoryHost() {
     setMaterialEditor(null); setChannelEditor(null); clearBatch(); setNotesMaterial(null);
     materialSubmitPendingRef.current = false; setBusy(current => current === "material" ? null : current);
     setCollaboration(null); collaborationSessionRef.current += 1;
-    setSourceDetail(null);
     materialUpdateRef.current = null; setMaterialRetryLocked(false);
     setMessage("");
     setDismissedSupplyLink(search);
@@ -1262,7 +1260,7 @@ export default function ChannelInventoryHost() {
   };
 
   const openMaterialEdit = async (material: TeamMaterial) => {
-    if (material.canEdit !== true || material.readOnly || !expectedContext || busy !== null || materialSubmitPendingRef.current
+    if (!channelInventoryMaterialAccess(material) || !editableRowsRef.current.has(material.id) || !expectedContext || busy !== null || materialSubmitPendingRef.current
       || !contextCurrent || !sourceContextVerified || !isCurrent() || !editAllowedRef.current) return;
     invalidateEditSession();
     const request = ++editRequestRef.current;
@@ -1272,7 +1270,7 @@ export default function ChannelInventoryHost() {
     try {
       // Public-only detail: leader editing must never fetch the legacy private endpoint.
       const detail = await utils.client.channelInventory.getTeamMaterialForEdit.query({ ...expectedContext, id: material.id }, { signal: abort.signal });
-      if (!isCurrent() || abort.signal.aborted || !editAllowedRef.current || request !== editRequestRef.current || detail.id !== material.id || !detail.canEdit || detail.readOnly || !editableRowsRef.current.has(material.id)) return;
+      if (!isCurrent() || abort.signal.aborted || !editAllowedRef.current || request !== editRequestRef.current || detail.id !== material.id || !channelInventoryMaterialEditGranted(detail) || !editableRowsRef.current.has(material.id)) return;
       setMaterialForm(materialFormFrom(detail));
       setMaterialEditor({ mode: "edit", material: detail, isMine: material.isMine });
     } catch (error) {
@@ -1284,7 +1282,7 @@ export default function ChannelInventoryHost() {
     if (!expectedContext || !isCurrent() || !materialEditor || busy || materialSubmitPendingRef.current || !sourceContextVerified || !contextCurrent) return;
     if (!editAllowedRef.current || materialsQuery.data?.canWrite !== true || (materialEditor.mode === "create"
       ? !optionChannels.some(channel => channel.id === Number(materialForm.channelId) && channel.active && channel.canEdit && !channel.readOnly)
-      : !editableRowsRef.current.has(materialEditor.material.id) || !materialEditor.material.canEdit || materialEditor.material.readOnly)) {
+      : !editableRowsRef.current.has(materialEditor.material.id) || !channelInventoryMaterialEditGranted(materialEditor.material))) {
       setMessage("关联渠道不可写或已停用，请刷新后重试。");
       return;
     }
@@ -1457,20 +1455,7 @@ export default function ChannelInventoryHost() {
     return () => { referenceCancelRef.current?.(); referenceCancelRef.current = null; referencePendingRef.current = false; };
     // The serialized boundary contains every captured request/identity/row/column input.
   }, [referenceRunKey]);
-  // Row hints and list refresh snapshots are never authorization or a reason to
-  // destroy an independently reauthorized source dialog.
-  const sourceScopeKey = JSON.stringify({
-    authority: sourceAuthorityKey, readable: sourceIdentityCurrent && ready && !enterpriseQuery.isError && !materialsQuery.isError && contextCurrent && !browsingChannelsOnly,
-    view: inventoryView, selectedChannel: inventoryView === "channels" ? currentReadableChannel?.id : undefined,
-    tab,
-  });
-  const sourceScopeRef = useRef(sourceScopeKey);
-  sourceScopeRef.current = sourceScopeKey;
-  useEffect(() => { setSourceDetail(null); }, [sourceScopeKey]);
-  const openSource = (material: TeamMaterial) => {
-    if (material.canViewSource !== true || !sourceContextVerified || !isCurrent() || !contextCurrent || materialsQuery.isError || enterpriseQuery.isError) return;
-    setSourceDetail({ materialId: material.id, scopeKey: sourceScopeKey });
-  };
+  // Source customers come only from the authorized list DTO. No legacy channel-name reads.
   const canWriteChannels = nativeWrite && hasInventoryWrite && ready && contextCurrent && sourceIdentityCurrent && !enterpriseQuery.isError
     && (supplyLink ? exactReady && exactTarget?.canEdit === true && !exactTarget.readOnly : !channelsQuery.isError && channelsQuery.data?.canWrite === true);
   // Export uses the effective management grant plus the existing readable
@@ -1492,7 +1477,7 @@ export default function ChannelInventoryHost() {
   const materialPageCount = materialTotals.pageCount;
   const materialTotalKnown = !browsingChannelsOnly && batchIntentReady && contextCurrent && (Boolean(materialResult) || materialTotalsRef.current.key === materialTotalsKey);
   const editAllowedRef = useRef(false);
-  editAllowedRef.current = canWriteMaterials;
+  editAllowedRef.current = canWriteMaterials && sourceContextVerified;
   batchActiveRef.current = batchOpen && tab === "materials" && canWriteMaterials && sourceIdentityCurrent
     && !enterpriseQuery.isError && !channelOptionsQuery.isError && channelOptionsQuery.data?.canWrite === true;
   const batchSession = batchSessionRef.current;
@@ -1553,7 +1538,7 @@ export default function ChannelInventoryHost() {
     canWriteMaterials, materialsQuery.isLoading, materialsQuery.isFetching, materialsQuery.isError, materialsQuery.data?.canWrite,
     channelOptionsQuery.isLoading, channelOptionsQuery.isFetching, channelOptionsQuery.isError, channelOptionsQuery.data, batchTarget, optionChannels]);
   const editableRowsRef = useRef(new Set<number>());
-  editableRowsRef.current = new Set(materialRows.filter(row => row.canEdit && !row.readOnly).map(row => row.id));
+  editableRowsRef.current = new Set(materialRows.filter(row => channelInventoryMaterialAccess(row)).map(row => row.id));
   const collaborationRowsRef = useRef(new Map<number, TeamMaterial>());
   collaborationRowsRef.current = new Map(materialRows.map(row => [row.id, row]));
   const privateNotesAllowed = ready && nativeRead && nativeNote && contextCurrent && sourceIdentityCurrent
@@ -1871,6 +1856,7 @@ export default function ChannelInventoryHost() {
                 <th className="ci-material-part-col">型号</th>
                 {columnVisible("brand") ? <th className="ci-material-brand-col">品牌</th> : null}
                 {columnVisible("recorder") ? <th className="ci-material-recorder-col">负责人</th> : null}
+                {columnVisible("source") ? <th className="ci-material-source-col" title="已确认关联的 CRM 客户；与公共渠道参考独立">来源客户</th> : null}
                 {columnVisible("industry") ? <th className="ci-material-industry-col">所属行业</th> : null}
                 {columnVisible("qty") ? <th className="ci-material-qty-col" aria-sort={sortAria("qty")}><button type="button" className="ci-sort-button ci-quantity-sort-button" aria-label="按可供数量排序" aria-describedby="ci-quantity-sort-status" title={`${quantitySortLabel}；${quantitySortNext}`} onClick={() => cycleSort("qty")}>可供数量{quantitySortIcon}</button></th> : null}
                 {columnVisible("price") ? <th className="ci-material-price-col">报价 CNY</th> : null}
@@ -1879,7 +1865,6 @@ export default function ChannelInventoryHost() {
                 {columnVisible("leadTime") ? <th className="ci-material-lead-col">交期</th> : null}
                 {columnVisible("dateCode") ? <th className="ci-material-dc-col" aria-sort={sortAria("dateCode")}><button type="button" className="ci-sort-button" aria-label="按 Date Code 排序" onClick={() => cycleSort("dateCode")}>DC{sortArrow("dateCode")}</button></th> : null}
                 {columnVisible("updatedAt") ? <th className="ci-material-date-col" title="更新时间（北京时间）">更新时间</th> : null}
-                {columnVisible("source") ? <th className="ci-material-source-col">渠道来源</th> : null}
                 <th className="ci-col-actions">操作</th>
               </tr></thead>
               <tbody>
@@ -1889,7 +1874,11 @@ export default function ChannelInventoryHost() {
                 {materialRows.map((material, index) => {
                   const batchAssociation = materialUploadBatchAssociation(material as TeamMaterial & MaterialUploadBatchProjection);
                   const updatedAt = channelInventoryUpdatedAt(material.updatedAt);
-                  const sourceLabel = channelInventorySourceLabel(material.canViewSource, columnsContextVerified ? material.channelSource : null);
+                  const materialAccess = channelInventoryMaterialAccess(material, columnsContextVerified && canWriteMaterials && sourceContextVerified);
+                  const editDisabledReason = !channelInventoryMaterialAccess(material)
+                    ? "只读：仅服务端授权的原始录入员工或管理范围内有效组长可编辑并查看来源客户"
+                    : !materialAccess ? "权限上下文未核验或库存写权限不可用"
+                    : busy !== null ? "正在处理操作，请稍候" : undefined;
                   return (
                   <tr key={material.id}>
                     {showDeleteSelection ? <td className="ci-selection-col">{deletion.eligible.some(row => row.id === material.id) ? <input type="checkbox" className="ci-selection-checkbox" aria-label={`选择删除库存：${material.partNumber}`} disabled={deletion.busy} checked={deletion.selected.some(row => row.id === material.id)} onChange={() => deletion.toggle(material.id)} /> : null}</td> : null}
@@ -1897,6 +1886,7 @@ export default function ChannelInventoryHost() {
                     <td className="ci-material-part-col">{inventoryView === "flat" ? <ChannelInventoryCopyPartNumber key={presentationScopeKey} partNumber={material.partNumber} resetKey={presentationScopeKey} /> : <ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} />}</td>
                     {columnVisible("brand") ? <td className="ci-material-brand-col" title={material.brand}>{material.brand || "—"}</td> : null}
                     {columnVisible("recorder") ? <td className="ci-material-recorder-col admin-cell-primary" title={(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}>{(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}</td> : null}
+                    {columnVisible("source") ? <td className="ci-material-source-col"><ChannelInventoryCustomerSource material={material} contextVerified={materialAccess} /></td> : null}
                     {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
                     {columnVisible("qty") ? <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td> : null}
                     {columnVisible("price") ? <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td> : null}
@@ -1905,13 +1895,32 @@ export default function ChannelInventoryHost() {
                     {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
                     {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
                     {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}
-                    {columnVisible("source") ? <td className="ci-material-source-col">{material.canViewSource === true ? <button type="button" className="ci-inline-link ci-source-link" onClick={() => openSource(material)}>{sourceLabel}</button> : "—"}{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td> : null}
                     <td className="ci-col-actions"><div className="ci-row-actions">
-                      {material.canEdit === true && !material.readOnly ? <button type="button" className="ci-inline-link" aria-label={`编辑库存：${material.partNumber}`} disabled={busy !== null || !canWriteMaterials || !contextCurrent || !sourceContextVerified} onClick={() => void openMaterialEdit(material)}>编辑</button> : null}
-                      {publishing.action(material)}
-                      <button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button>
-                      {material.isMine && nativeNote ? <button type="button" className="ci-inline-link" aria-label={`本人备注：${material.partNumber}`} disabled={!privateNotesAllowed} onClick={() => openPrivateNotes(material.id)}>本人备注</button> : null}
-                      {deletion.eligible.some(row => row.id === material.id) ? <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger><DropdownMenuContent className="ci-channel-actions-menu" align="end"><DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem></DropdownMenuContent></DropdownMenu> : null}
+                      <button type="button" className="ci-inline-link ci-edit-entry" aria-label={`编辑库存：${material.partNumber}`} title={editDisabledReason ?? "编辑公共库存，可补全型号和品牌"} disabled={Boolean(editDisabledReason)} onClick={() => void openMaterialEdit(material)}>编辑</button>
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger>
+                        <DropdownMenuContent className="ci-channel-actions-menu ci-material-actions-menu" align="end" onCloseAutoFocus={event => {
+                          // A selected action owns its new dialog focus; otherwise Radix
+                          // restores focus to More as usual on Escape/outside dismiss.
+                          const dialog = document.querySelector<HTMLElement>('[data-channel-inventory-host] [role="dialog"]');
+                          if (!dialog) return;
+                          event.preventDefault();
+                          const focused = document.activeElement instanceof HTMLElement && dialog.contains(document.activeElement) ? document.activeElement : null;
+                          // Menu teardown can blur a newly focused dialog in the same tick.
+                          // Preserve its chosen target after cleanup, never on later refetches.
+                          setTimeout(() => {
+                            if (!dialog.isConnected || dialog.contains(document.activeElement)) return;
+                            const emptyNoteInput = dialog.querySelector('.ci-note-empty') ? dialog.querySelector<HTMLTextAreaElement>('textarea:not(:disabled)') : null;
+                            (focused?.isConnected ? focused : emptyNoteInput ?? dialog).focus({ preventScroll: true });
+                          }, 0);
+                        }}>
+                          {React.Children.map(publishing.action(material).props.children, action => React.isValidElement<{ disabled?: boolean }>(action) ? <DropdownMenuItem asChild disabled={action.props.disabled}>{action}</DropdownMenuItem> : null)}
+                          <DropdownMenuItem onSelect={() => openCollaboration(material)}>备注（{material.noteCount}）</DropdownMenuItem>
+                          {material.isMine && nativeNote ? <DropdownMenuItem aria-label={`本人备注：${material.partNumber}`} disabled={!privateNotesAllowed} onSelect={() => openPrivateNotes(material.id)}>本人备注</DropdownMenuItem> : null}
+                          {batchAssociation.state === "linked" ? <DropdownMenuItem aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onSelect={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</DropdownMenuItem> : batchAssociation.state !== "unlinked" ? <DropdownMenuItem disabled>{batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</DropdownMenuItem> : null}
+                          {deletion.eligible.some(row => row.id === material.id) ? <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem></> : null}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div></td>
                   </tr>
                   );
@@ -1946,7 +1955,7 @@ export default function ChannelInventoryHost() {
         </div>
       ) : null}
 
-      {materialEditor && canWriteMaterials && contextCurrent ? (
+      {materialEditor && canWriteMaterials && sourceContextVerified && contextCurrent && (materialEditor.mode === "create" || editableRowsRef.current.has(materialEditor.material.id)) ? (
         <div className="ci-modal-backdrop" role="presentation">
           <section ref={materialDialogRef} className="ci-host-dialog ci-host-material-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-material-editor-title" onKeyDown={event => {
             if (event.key === "Escape" && busy !== "material" && !materialRetryLocked) { event.preventDefault(); invalidateEditSession(); setMaterialEditor(null); }
@@ -1981,7 +1990,6 @@ export default function ChannelInventoryHost() {
       {batchOpen && canWriteMaterials && contextCurrent && tab === "materials" ? <BatchUpload key={`${identity}:${batchSession}`} channels={batchChannels.filter(channel => channel.canEdit && !channel.readOnly).map(channel => ({ id: channel.id, name: channel.name, active: channel.active }))} channelTotal={channelOptionsQuery.data?.total ?? null} enterpriseId={enterpriseId!} actorUserId={actorUserId!} initialChannelId={batchTarget?.id} onClose={() => { invalidateEditSession(); clearBatch(); }} onDirtyChange={() => undefined} onBusyChange={() => undefined} onLoadMoreChannels={() => { const pages = channelOptionsQuery.data?.pageCount ?? 1; setOptionPage(current => Math.min(pages, current + 1)); }} loadingMoreChannels={channelOptionsQuery.isFetching} onCreate={submitBatchMaterial} onCreateBatch={submitUploadBatch} onComplete={() => { if (batchCurrent()) void refreshMaterials(); }} isCurrent={batchCurrent} /> : null}
       {notesMaterial && privateNotesAllowed && collaborationRowsRef.current.get(notesMaterial.id)?.isMine === true ? <PrivateNotesPanel key={`${identity}:${notesMaterial.id}`} materialId={notesMaterial.id} enterpriseId={enterpriseId!} actorUserId={actorUserId!} isCurrent={() => isCurrent() && privateNotesAllowedRef.current && collaborationRowsRef.current.get(notesMaterial.id)?.isMine === true} onClose={() => setNotesMaterial(null)} onComplete={() => { void refreshMaterials(); }} /> : null}
       {collaboration && contextCurrent && tab === "materials" && collaborationRowsRef.current.has(collaboration.material.id) ? <CollaborationNotesPanel key={`${identity}:${collaboration.material.id}:${collaboration.session}`} materialId={collaboration.material.id} partNumber={collaboration.material.partNumber} brand={collaboration.material.brand} enterpriseId={enterpriseId!} actorUserId={actorUserId!} canWriteNote={nativeNote} canAddNote={nativeNote && collaborationRowsRef.current.get(collaboration.material.id)?.canAddNote === true} isCurrent={() => isCurrent() && collaborationSessionRef.current === collaboration.session && collaborationRowsRef.current.has(collaboration.material.id)} onClose={() => { collaborationSessionRef.current += 1; setCollaboration(null); }} onComplete={() => void refreshMaterials()} /> : null}
-      {sourceDetail && sourceIdentityCurrent && sourceDetail.scopeKey === sourceScopeKey && contextCurrent && tab === "materials" ? <ChannelInventorySourcePanel key={`${sourceScopeKey}:${sourceDetail.materialId}`} materialId={sourceDetail.materialId} enterpriseId={enterpriseId!} actorUserId={actorUserId!} scopeKey={sourceScopeKey} active={sourceContextVerified} isCurrent={() => isCurrent() && sourceScopeRef.current === sourceDetail.scopeKey} onClose={() => setSourceDetail(null)} onAuthorizationError={businessScope.onAuthorizationError} /> : null}
     </section>
   );
 }

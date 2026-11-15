@@ -58,7 +58,7 @@ beforeEach(() => {
     CREATE TABLE enterprise_team_members (id INTEGER, enterpriseId INTEGER, teamId INTEGER, userId INTEGER, teamRole TEXT);
     CREATE TABLE enterprise_member_module_access (id INTEGER, enterpriseId INTEGER, userId INTEGER, module TEXT, readAllowed INTEGER, writeAllowed INTEGER, dataScope TEXT, revision INTEGER);
     CREATE TABLE enterprise_team_record_assignments (id INTEGER, enterpriseId INTEGER, recordType TEXT, recordId INTEGER, currentOwnerUserId INTEGER, createdByUserId INTEGER, teamId INTEGER, revision INTEGER);
-    CREATE TABLE channel_inventory_channels (id INTEGER, enterprise_id INTEGER, data_owner_user_id INTEGER, responsible_user_id INTEGER, name TEXT, industryCode TEXT);
+    CREATE TABLE channel_inventory_channels (id INTEGER, enterprise_id INTEGER, data_owner_user_id INTEGER, responsible_user_id INTEGER, name TEXT, industryCode TEXT, active INTEGER DEFAULT 1);
     CREATE TABLE channel_inventory_materials (id INTEGER, enterprise_id INTEGER, data_owner_user_id INTEGER, responsible_user_id INTEGER, channel_id INTEGER, part_number TEXT, brand TEXT, qty INTEGER, date_code TEXT, price TEXT, currency TEXT, tax_included INTEGER, lead_time TEXT, revision INTEGER, updated_at TEXT, created_at TEXT);
     CREATE TABLE channel_inventory_material_shares (enterprise_id INTEGER, material_id INTEGER, enabled INTEGER, owner_user_id INTEGER, share_team_id INTEGER, assignment_revision INTEGER, owner_membership_id INTEGER);
     CREATE TABLE channel_inventory_material_management (enterprise_id INTEGER, material_id INTEGER, deleted_at TEXT);
@@ -85,7 +85,7 @@ beforeEach(() => {
     [107, 1, 99, 20, 10, false], [108, 2, 99, 10, 10, true], [109, 1, 99, 10, 10, true],
   ] as const;
   for (const [id, enterprise, owner, actor, creator, shared] of fixtures) {
-    sqlite.prepare("INSERT INTO channel_inventory_channels VALUES (?,?,?,?,?,?)").run(id, enterprise, owner, actor, "STALE PRIVATE CHANNEL NAME", "automotive");
+    sqlite.prepare("INSERT INTO channel_inventory_channels (id,enterprise_id,data_owner_user_id,responsible_user_id,name,industryCode) VALUES (?,?,?,?,?,?)").run(id, enterprise, owner, actor, "STALE PRIVATE CHANNEL NAME", "automotive");
     sqlite.prepare("INSERT INTO channel_inventory_materials VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").run(id, enterprise, owner, actor, id, "SAME-PART", "TI", 12, "2440", "1.00", "CNY", 1, "现货", 1, "2026-11-13", "2026-11-12");
     sqlite.prepare("INSERT INTO enterprise_team_record_assignments VALUES (?,?,?,?,?,?,?,?)").run(id, enterprise, "channel_material", id, actor, creator, 7, 1);
     if (actor === 20 && shared) sqlite.prepare("INSERT INTO channel_inventory_material_shares VALUES (?,?,?,?,?,?,?)").run(enterprise, id, 1, actor, 7, 1, 12);
@@ -93,8 +93,10 @@ beforeEach(() => {
   const tx = { rollback: () => { throw new Error("rollback marker"); }, execute: async (query: SQL) => {
     const compiled = dialect.sqlToQuery(query); statements.push(compiled);
     // SQLite only stands in for result execution; production SQL itself is captured
-    // unchanged. MySQL current-read lock syntax is the only syntax stripped.
-    const executable = compiled.sql.replace(/\s+FOR UPDATE\b/g, "");
+    // unchanged. Strip MySQL locks and map ONLY the new scalar's exact BINARY
+    // comparison to SQLite's equivalent case-sensitive, non-padding collation.
+    const executable = compiled.sql.replace(/\s+FOR UPDATE\b/g, "")
+      .replace(/BINARY management_access\.dataScope = BINARY 'team'/g, "management_access.dataScope COLLATE BINARY = 'team'");
     return [sqlite.prepare(executable).all(...compiled.params.map(value => typeof value === "boolean" ? Number(value) : value) as never[])];
   } };
   const db: SqlDatabase = { execute: tx.execute, transaction: async fn => fn(tx) };
@@ -120,7 +122,7 @@ describe("customer channel inventory server contract (offline real predicates)",
     expect(totals).toHaveLength(1);
     expect(totals[0].sql).toContain("customer_inventory_link.customerId = ?");
     expect(totals[0].sql).toContain("customer_inventory_link.channelId = m.channel_id");
-    expect(totals[0].sql).toContain("source_a.recordType = 'channel_material'");
+    expect(totals[0].sql).toContain("management_a.recordType = 'channel_material'");
     expect(totals[0].sql).not.toContain("inventoryResponsibleUserId");
     expect(totals[0].sql).toContain("FOR UPDATE");
   });

@@ -1,3 +1,4 @@
+import { teamMaterialManagementEligibility, materialManagementProjection } from "./channelMaterialManagement";
 import { activeUnaliasedChannelMaterial } from "./channelInventoryManagementPersistence";
 import { sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -12,7 +13,7 @@ export type TeamMaterialForEdit = {
   id: number; channelId: number | null; channelName: string | null; partNumber: string; brand: string;
   qty: number | null; dateCode: string | null; price: string | null; currency: "CNY";
   taxIncluded: boolean | null; leadTime: string | null; revision: number;
-  createdAt: Date | string; updatedAt: Date | string; canEdit: true; readOnly: false;
+  createdAt: Date | string; updatedAt: Date | string; canEdit: true; canEditMaterial: true; readOnly: false;
 };
 export type CollaborationNote = {
   id: number; materialId: number; authorUserId: number; authorName: string; content: string;
@@ -41,7 +42,7 @@ export function teamMaterialPublicFrom(row: SqlResultRow, canViewSource = bool(r
     partNumber: String(row.partNumber), brand: String(row.brand), qty: row.qty == null ? null : Number(row.qty),
     dateCode: text(row.dateCode), price: text(row.price), currency: "CNY", taxIncluded: row.taxIncluded == null ? null : bool(row.taxIncluded),
     leadTime: text(row.leadTime), revision: Number(row.revision), createdAt: row.createdAt as Date | string,
-    updatedAt: row.updatedAt as Date | string, canEdit: true, readOnly: false };
+    updatedAt: row.updatedAt as Date | string, canEdit: true, canEditMaterial: true, readOnly: false };
 }
 export function collaborationNoteFrom(row: SqlResultRow, actorUserId: number): CollaborationNote {
   return { id: Number(row.id), materialId: Number(row.materialId), authorUserId: Number(row.authorUserId),
@@ -57,16 +58,21 @@ const PUBLIC_COLUMNS = sql`m.id, m.channel_id AS channelId, c.name AS channelNam
 /** Re-resolve real actor + complete original live share algorithm inside the actual transaction.
  * Locking reads include membership, team, owner permissions/module, share and assignment fences.
  */
-async function authorizedMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, materialId: number, write = false) {
+export async function authorizedMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, materialId: number, write = false) {
   const visibility = await resolveTeamInventoryVisibility(tx, scope, { lock: true, materialId });
+  if (write) visibility.predicates.push(teamMaterialManagementEligibility(scope, true));
   const row = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS}, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
-    ${teamMaterialSourceEligibility(scope, true)} AS canViewSource
+    ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
+    ${teamMaterialManagementEligibility(scope, true)} AS canManageMaterial
     ${TEAM_MATERIAL_FROM} WHERE ${teamInventoryAll(visibility.predicates)} LIMIT 1 FOR UPDATE`))[0];
   if (!row) notFound();
   const company = await linkedCompany(tx, scope, Number(row.channelId));
   if (write && company.linked && !company.customer) fail("FORBIDDEN", "关联客户不存在或无CRM访问权限");
   if (company.linked) { row.canViewSource = bool(row.canViewSource) && company.customer !== null; row.channelName = company.customer?.name ?? null; }
-  if (write && (!visibility.access.write || (!bool(row.isMine) && !visibility.leader))) fail("FORBIDDEN", "仅所属人或本库存团队有效组长且具备库存写权限可编辑");
+  const management = materialManagementProjection(row, visibility.access.write, company);
+  row.canViewSource = management.canEditMaterial;
+  row.channelName = management.customerSource?.name ?? null;
+  if (write && !management.canEditMaterial) fail("FORBIDDEN", "仅真实原始录入员工或其有效管理组长且具备库存写权限可编辑");
   return row;
 }
 async function readNote(tx: SqlExecutor, scope: ChannelInventoryScope, noteId: number) {
@@ -163,6 +169,7 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
         const prior = await priorAudit(tx, scope, requestId);
         if (prior) {
           const receipt = replay<TeamMaterialForEdit>(prior, "updateTeamMaterial", hash, scope.actorUserId, bool(current.canViewSource));
+          receipt.item.channelName = current.channelName == null ? null : String(current.channelName);
           return { ...receipt, item: await projectMaterialCompany(tx, scope, receipt.item) };
         }
         if (Number(current.revision) !== input.expectedRevision) conflict();
@@ -182,6 +189,7 @@ export function createChannelInventoryCollaborationService({ getDb }: { getDb: (
         const updated = rows(await tx.execute(sql`SELECT ${PUBLIC_COLUMNS} ${TEAM_MATERIAL_FROM}
           WHERE m.id = ${input.id} AND m.enterprise_id = ${scope.enterpriseId} AND m.data_owner_user_id = ${scope.dataOwnerUserId} LIMIT 1`))[0];
         if (!updated) notFound();
+        updated.channelName = current.channelName;
         const item = await projectMaterialCompany(tx, scope, teamMaterialPublicFrom(updated, bool(current.canViewSource)));
         await audit(tx, scope, { materialId: input.id, action: "updateTeamMaterial", requestId, payloadHash: hash,
           expectedRevision: input.expectedRevision, beforeData: teamMaterialPublicFrom(current), afterData: item });

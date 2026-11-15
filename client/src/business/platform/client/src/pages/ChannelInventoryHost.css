@@ -362,6 +362,10 @@
 .ci-page.ci-host .ci-source-link { min-height: 28px; max-width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: left; }
 .ci-page.ci-host .ci-material-source-col { overflow-wrap: anywhere; }
 .ci-page.ci-host .ci-source-content { min-height: 0; overflow-y: auto; padding: 12px; }
+.ci-page.ci-host .ci-customer-source-name { display: block; min-width: 0; max-width: 100%; color: #303642; font-size: var(--admin-content-font-body, 13px); line-height: var(--admin-content-line-height, 20px); white-space: normal; overflow-wrap: anywhere; }
+.ci-page.ci-host .ci-row-actions .ci-edit-entry { font-weight: 500; }
+.ci-material-actions-menu .ci-inline-link { width: 100%; min-height: 28px; padding: 4px 8px; color: #185fa5; font: inherit; text-align: left; }
+.ci-material-actions-menu .ci-inline-link:disabled { opacity: .5; cursor: not-allowed; }
 .ci-page.ci-host .ci-source-content p { margin: 0 0 6px; }
 .ci-page.ci-host .ci-source-name { color: #1e293b; font-size: 16px; font-weight: 500; line-height: 24px; overflow-wrap: anywhere; }
 .ci-channel-actions-menu [role="menuitem"] { min-height: 28px; border-radius: 4px; padding: 4px 8px; font-size: var(--admin-content-font-body, 13px); line-height: var(--admin-content-line-height, 20px); cursor: pointer; }

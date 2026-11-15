@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "fixtureOnly": true,
+  "tests": 18,
+  "skipped": 0,
+  "testedDriverSha256": "f21f7283de8c28c691b2956956cf404aa7282c5485c3ea547ff8ff7c0f02271c",
+  "productionExecuted": false
+}

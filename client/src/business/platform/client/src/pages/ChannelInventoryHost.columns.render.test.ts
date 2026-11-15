@@ -109,6 +109,7 @@ describe("real inventory timestamp wire contract", () => {
     } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous; }
   });
   it("rejects ambiguous, absent and invalid values without DC/current-time substitution", () => {
+    localStorage.setItem(required(channelInventoryColumnsStorageKey(7, 31)), JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "updatedAt"]));
     const invalid = [null, undefined, "", " ", "DC2026", new Date(NaN), "2026-11-10", "2026-11-10 12:34", "2026/11/10 12:34:56", " 2026-11-10 12:34:56", "2026-11-10 12:34:56\n", "2026-02-30 12:34:56", "2026-02-29T00:00:00", "1900-02-29 01:02:03", "0000-01-01 00:00:00", "2026-01-01 24:00:00", "2026-11-10 12:60:00", "2026-11-10 12:34:60", "2026-11-10 12:34:56.1234567", "2026-11-10T00:00:00+24:00", "2026-11-10T00:00:00+08:60", "2026-11-10T00:00:00Z "];
     for (const value of invalid) {
       expect(channelInventoryUpdatedAt(value)).toBeNull();
@@ -121,7 +122,7 @@ describe("real inventory timestamp wire contract", () => {
 
 describe("inventory column preference and geometry", () => {
   it("defaults, fixed columns and normalization are bounded to this page and real actor/enterprise", () => {
-    expect(DEFAULT_CHANNEL_INVENTORY_COLUMNS).toEqual(["partNumber", "brand", "recorder", "qty", "price", "refLcsc", "refIckey", "leadTime", "updatedAt", "source", "actions"]);
+    expect(DEFAULT_CHANNEL_INVENTORY_COLUMNS).toEqual(["partNumber", "brand", "recorder", "source", "qty", "price", "refLcsc", "refIckey", "actions"]);
     expect(normalizeChannelInventoryColumns(["dateCode", "unknown", "dateCode"])).toEqual(["partNumber", "dateCode", "actions"]);
     expect(normalizeChannelInventoryColumns({ brand: false })).toEqual(DEFAULT_CHANNEL_INVENTORY_COLUMNS);
     for (const [actor, enterprise] of [[undefined, 31], [0, 31], [7, -1], [7, NaN]]) expect(channelInventoryColumnsStorageKey(actor, enterprise)).toBeNull();
@@ -130,8 +131,8 @@ describe("inventory column preference and geometry", () => {
   });
   it("migrates a v1 preference once, preserves all previous hidden columns and never reopens a later hidden reference", () => {
     const key = required(channelInventoryColumnsStorageKey(7, 31));
-    expect(key).toContain("inventory-columns:v2:");
-    const old = key.replace("inventory-columns:v2:", "inventory-columns:v1:");
+    expect(key).toContain("inventory-columns:v3:");
+    const old = key.replace("inventory-columns:v3:", "inventory-columns:v1:");
     localStorage.setItem(old, JSON.stringify(["partNumber", "dateCode", "actions"]));
     expect(readChannelInventoryColumns(key)).toEqual(["partNumber", "refLcsc", "refIckey", "dateCode", "actions"]);
     expect(JSON.parse(localStorage.getItem(old)!)).toEqual(["partNumber", "dateCode", "actions"]);
@@ -152,14 +153,14 @@ describe("inventory column preference and geometry", () => {
     }
   });
   it("renders defaults, synchronizes toggle/restore with cells/colgroup/empty/loading/error and keeps selection", () => {
-    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]); assertAligned();
+    renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]); assertAligned();
     click(button("显示列")); expect(option("型号").disabled).toBe(true); expect(option("操作").disabled).toBe(true);
-    click(option("DC")); click(option("序号")); click(option("所属行业")); click(option("品牌")); assertAligned();
+    click(option("DC")); click(option("序号")); click(option("所属行业")); click(option("更新时间")); click(option("品牌")); assertAligned();
     expect(firstCell("td.ci-material-dc-col").textContent).toBe(runtime.rows[0].dateCode);
     expect(document.querySelector("td.ci-material-brand-col")).toBeNull();
     expect(document.querySelector<HTMLTableColElement>('col[data-column="partNumber"]')?.style.width).toBe("220px");
     expect(document.querySelector<HTMLTableColElement>('col[data-column="updatedAt"]')?.style.width).toBe("148px");
-    click(button("恢复默认")); assertAligned(); expect(headers()).toHaveLength(11);
+    click(button("恢复默认")); assertAligned(); expect(headers()).toHaveLength(9);
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
     expect(document.querySelector('[aria-label="当前页批量删除"]')?.textContent).toContain("已选 1 条");
@@ -176,13 +177,13 @@ describe("inventory column preference and geometry", () => {
     localStorage.setItem(keyC, JSON.stringify(["partNumber", "qty", "actions"]));
     const get = vi.spyOn(Storage.prototype, "getItem"), set = vi.spyOn(Storage.prototype, "setItem");
     runtime.scope.contextVerification.state = "revalidating"; renderHost();
-    expect(get).not.toHaveBeenCalled(); expect(button("显示列").disabled).toBe(true); expect(headers()).toHaveLength(11);
+    expect(get).not.toHaveBeenCalled(); expect(button("显示列").disabled).toBe(true); expect(headers()).toHaveLength(9);
     runtime.scope.contextVerification.state = "verified"; renderHost();
     expect(headers()).toEqual(["型号", "DC", "操作"]); expect(set).not.toHaveBeenCalled();
     click(button("显示列")); setIdentity(8, 31, false);
-    expect(document.querySelector(".ci-columns-popover")).toBeNull(); expect(headers()).toHaveLength(11); expect(get).not.toHaveBeenCalledWith(keyB);
+    expect(document.querySelector(".ci-columns-popover")).toBeNull(); expect(headers()).toHaveLength(9); expect(get).not.toHaveBeenCalledWith(keyB);
     runtime.enterprise.currentUserId = 8; renderHost(); expect(headers()).toEqual(["型号", "品牌", "操作"]);
-    setIdentity(8, 32, false); expect(headers()).toHaveLength(11); expect(get).not.toHaveBeenCalledWith(keyC);
+    setIdentity(8, 32, false); expect(headers()).toHaveLength(9); expect(get).not.toHaveBeenCalledWith(keyC);
     runtime.enterprise.enterprise.id = 32; renderHost(); expect(headers()).toEqual(["型号", "可供数量", "操作"]);
     click(button("显示列")); click(option("DC")); expect(set).toHaveBeenLastCalledWith(keyC, JSON.stringify(["partNumber", "qty", "dateCode", "actions"]));
     setIdentity(7, 31); expect(headers()).toEqual(["型号", "DC", "操作"]);
@@ -194,10 +195,10 @@ describe("inventory column preference and geometry", () => {
     expect(readChannelInventoryColumns(key)).toEqual(DEFAULT_CHANNEL_INVENTORY_COLUMNS); expect(() => saveChannelInventoryColumns(key, [])).not.toThrow();
     renderHost(); click(button("显示列")); click(option("DC")); expect(headers()).toContain("DC"); get.mockRestore();
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
-    click(option("品牌")); expect(headers()).not.toContain("品牌"); click(button("恢复默认")); expect(headers()).toHaveLength(11);
+    click(option("品牌")); expect(headers()).not.toContain("品牌"); click(button("恢复默认")); expect(headers()).toHaveLength(9);
   });
   it("retains full DC/model/time Portals and closes on column/scope changes without altering sort/page/batch inputs", () => {
-    renderHost(); click(button("显示列")); click(option("DC"));
+    renderHost(); click(button("显示列")); click(option("DC")); click(option("更新时间"));
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     const dc = firstCell(".ci-dc-trigger"); click(dc);
     expect(document.querySelector('[role=tooltip][aria-label="完整 DC"]')?.textContent).toBe(runtime.rows[0].dateCode);
@@ -234,52 +235,85 @@ describe("inventory column preference and geometry", () => {
 });
 
 
-it("renders only the authorized source object name and never guesses from company/channel names", () => {
+// Customer visibility and edit consume the same backend grants. The confirmed
+// CRM company projection must never fall back to the old channelSource name.
+it("renders only authorized CRM customer names; readonly/absent grants never leak IDs, names or legacy channel guesses", () => {
   runtime.rows = [
-    { ...runtime.rows[0], id: 1, canViewSource: true, channelSource: { id: 71, name: " 服务端授权渠道名称 " }, company: { id: 801, name: "已确认供货公司甲" } },
-    { ...runtime.rows[0], id: 2, canViewSource: false, channelSource: { id: 72, name: "DENIED-SOURCE" }, company: { id: 802, name: "已确认供货公司乙" }, channelName: "不能猜为所属公司的私有来源" },
-    { ...runtime.rows[0], id: 3, canViewSource: undefined, channelSource: { id: 73, name: "UNPROVEN-SOURCE" }, company: null, channelName: "不能猜为所属公司的私有来源" },
-    { ...runtime.rows[0], id: 4, canViewSource: true, channelSource: null },
+    { ...runtime.rows[0], id: 1, canViewSource: true, company: { id: 71, name: " 服务端授权客户原名 " }, channelSource: { id: 901, name: "LEGACY-CHANNEL" }, channelName: "CHANNEL-GUESS" },
+    { ...runtime.rows[0], id: 2, canEdit: false, canViewSource: true, company: { id: 98772, name: "DENIED-CUSTOMER" } },
+    { ...runtime.rows[0], id: 3, canEdit: undefined, canViewSource: true, company: { id: 98773, name: "UNPROVEN-CUSTOMER" } },
+    { ...runtime.rows[0], id: 4, readOnly: true, company: { id: 98774, name: "READONLY-CUSTOMER" } },
+    { ...runtime.rows[0], id: 5, canViewSource: true, company: null, channelName: "CHANNEL-NOT-CUSTOMER" },
+    { ...runtime.rows[0], id: 6, canViewSource: false, company: { id: 98776, name: "RESTRICTED-CUSTOMER" } },
+    { ...runtime.rows[0], id: 7, channelSource: { id: 98777, name: "LEGACY-ONLY" } },
   ];
   renderHost();
-  expect(headers()).toContain("渠道来源");
-  const sourceCells = [...document.querySelectorAll("tbody .ci-material-source-col")];
-  expect(sourceCells.map(cell => cell.textContent)).toEqual([" 服务端授权渠道名称 ", "—", "—", "查看来源"]);
-  expect(document.querySelectorAll(".ci-inventory-company, .ci-source-link-muted")).toHaveLength(0);
-  expect(document.body.innerHTML).not.toContain("已确认供货公司甲");
-  expect(document.body.innerHTML).not.toContain("已确认供货公司乙");
-  expect(document.body.innerHTML).not.toMatch(/DENIED-SOURCE|UNPROVEN-SOURCE/);
-  expect(document.querySelector("thead")?.textContent).not.toContain("所属公司");
+  expect(headers()).toContain("来源客户");
+  expect([...document.querySelectorAll("tbody .ci-material-source-col")].map(cell => cell.textContent)).toEqual([" 服务端授权客户原名 ", "客户不可查看", "客户不可查看", "客户不可查看", "未关联客户", "客户不可查看", "客户不可查看"]);
+  expect(document.body.innerHTML).not.toMatch(/DENIED-CUSTOMER|UNPROVEN-CUSTOMER|READONLY-CUSTOMER|RESTRICTED-CUSTOMER|LEGACY-|COMPANY-GUESS|CHANNEL-NOT-CUSTOMER|9877[23467]/);
+  expect(document.querySelector(".ci-source-link, .ci-source-dialog")).toBeNull();
   expect(runtime.inputs.at(-1)?.customerId).toBeUndefined();
-  expect(runtime.inputs.at(-1)?.channelId).toBeUndefined();
-  expect(document.body.textContent).not.toContain("不能猜为所属公司的私有来源");
   assertAligned();
 });
 
-it("hides and restores source in fixed colgroup/header/body order without altering other saved columns", () => {
+it("hides/restores source in matching colgroup/header/body order without overwriting any other saved columns", () => {
   const key = required(channelInventoryColumnsStorageKey(7, 31));
-  localStorage.setItem(key, JSON.stringify(["partNumber", "brand", "source", "actions"]));
-  runtime.rows[0] = { ...runtime.rows[0], canViewSource: true, channelSource: { id: 71, name: "真实来源" } };
-  renderHost(); expect(headers()).toEqual(["型号", "品牌", "渠道来源", "操作"]); assertAligned();
-  click(button("显示列")); click(option("渠道来源"));
-  expect(headers()).toEqual(["型号", "品牌", "操作"]); assertAligned();
+  localStorage.setItem(key, JSON.stringify(["partNumber", "brand", "recorder", "source", "actions"]));
+  runtime.rows[0] = { ...runtime.rows[0], canViewSource: true, company: { id: 71, name: "真实来源客户" } };
+  renderHost(); expect(headers()).toEqual(["型号", "品牌", "负责人", "来源客户", "操作"]); assertAligned();
+  click(button("显示列")); click(option("来源客户"));
+  expect(headers()).toEqual(["型号", "品牌", "负责人", "操作"]); assertAligned();
   expect(document.querySelector("tbody .ci-material-source-col")).toBeNull();
-  expect(document.body.textContent).not.toContain("真实来源");
-  click(option("渠道来源")); assertAligned();
-  expect([...document.querySelectorAll<HTMLTableColElement>("col[data-column]")].map(col => col.dataset.column)).toEqual(["partNumber", "brand", "source", "actions"]);
-  expect(firstCell("td.ci-material-source-col").textContent).toBe("真实来源");
-  expect(firstCell("td.ci-material-source-col").nextElementSibling?.className).toBe("ci-col-actions");
-  expect(document.querySelector<HTMLTableColElement>('col[data-column="actions"]')?.style.width).toBe("216px");
-  expect(JSON.parse(localStorage.getItem(key)!)).toEqual(["partNumber", "brand", "source", "actions"]);
+  expect(document.body.textContent).not.toContain("真实来源客户");
+  click(option("来源客户")); assertAligned();
+  expect([...document.querySelectorAll<HTMLTableColElement>("col[data-column]")].map(col => col.dataset.column)).toEqual(["partNumber", "brand", "recorder", "source", "actions"]);
+  expect(firstCell("td.ci-material-source-col").textContent).toBe("真实来源客户");
+  expect(firstCell("td.ci-material-source-col").previousElementSibling?.className).toContain("ci-material-recorder-col");
+  expect(document.querySelector<HTMLTableColElement>('col[data-column="actions"]')?.style.width).toBe("112px");
+  expect(JSON.parse(localStorage.getItem(key)!)).toEqual(["partNumber", "brand", "recorder", "source", "actions"]);
   runtime.scope.contextVerification.state = "revalidating"; renderHost();
-  expect(document.body.textContent).not.toContain("真实来源");
+  expect(document.body.textContent).not.toContain("真实来源客户");
   runtime.scope.contextVerification.state = "verified"; runtime.scope.staffPrincipal.enterpriseId = 99; renderHost();
-  expect(document.body.textContent).not.toContain("真实来源");
+  expect(document.body.textContent).not.toContain("真实来源客户");
 });
 
-it("bounds source labels to positive safe ids and original nonempty names, without coercing malformed DTOs", () => {
-  expect(channelInventorySourceLabel(true, { id: 1, name: " 真实原名 " })).toBe(" 真实原名 ");
-  for (const value of [null, undefined, "legacy-string", { id: "1", name: "FAKE" }, { id: 0, name: "FAKE" }, { id: -1, name: "FAKE" }, { id: Infinity, name: "FAKE" }, { id: 1, name: " " }, { id: 1, name: 123 }])
-    expect(channelInventorySourceLabel(true, value)).toBe("查看来源");
-  for (const grant of [false, undefined, null, 1, "true"]) expect(channelInventorySourceLabel(grant, { id: 1, name: "DENIED" })).toBe("—");
+it("bounds customer labels to exact server grants/state and safe ids; no malformed coercion or role/name inference", () => {
+  const allowed = { canEdit: true, readOnly: false, canViewSource: true, company: { id: 1, name: " 真实原名 " } };
+  expect(channelInventorySourceLabel(allowed)).toBe(" 真实原名 ");
+  for (const value of [undefined, "legacy-string", { id: "1", name: "FAKE" }, { id: 0, name: "FAKE" }, { id: -1, name: "FAKE" }, { id: Infinity, name: "FAKE" }, { id: 1, name: " " }, { id: 1, name: 123 }])
+    expect(channelInventorySourceLabel({ ...allowed, company: value })).toBe("客户不可查看");
+  for (const grant of [false, undefined, null, 1, "true"]) expect(channelInventorySourceLabel({ ...allowed, canEdit: grant })).toBe("客户不可查看");
+  for (const readOnly of [true, undefined, null, 0, "false"]) expect(channelInventorySourceLabel({ ...allowed, readOnly })).toBe("客户不可查看");
+  expect(channelInventorySourceLabel(allowed, false)).toBe("客户不可查看");
+  expect(channelInventorySourceLabel({ ...allowed, company: null })).toBe("未关联客户");
+  expect(channelInventorySourceLabel({ ...allowed, company: undefined })).toBe("客户不可查看");
+});
+
+it("rebases only the identical ordered v2 default; preserves positive and negative explicit selections and leaves old keys unchanged", () => {
+  const key = required(channelInventoryColumnsStorageKey(7, 31));
+  const oldKey = key.replace("inventory-columns:v3:", "inventory-columns:v2:");
+  const oldDefault = ["partNumber", "brand", "recorder", "qty", "price", "refLcsc", "refIckey", "leadTime", "updatedAt", "source", "actions"];
+  localStorage.setItem(oldKey, JSON.stringify(oldDefault));
+  expect(readChannelInventoryColumns(key)).toEqual(DEFAULT_CHANNEL_INVENTORY_COLUMNS);
+  expect(localStorage.getItem(oldKey)).toBe(JSON.stringify(oldDefault));
+  for (const explicit of [oldDefault.filter(id => id !== "refLcsc"), [...oldDefault, "dateCode"], ["partNumber", "updatedAt", "leadTime", "actions"], [...oldDefault].reverse()]) {
+    localStorage.removeItem(key); localStorage.setItem(oldKey, JSON.stringify(explicit));
+    expect(readChannelInventoryColumns(key)).toEqual(normalizeChannelInventoryColumns(explicit));
+    expect(localStorage.getItem(oldKey)).toBe(JSON.stringify(explicit));
+  }
+  localStorage.setItem(key, JSON.stringify(oldDefault));
+  expect(readChannelInventoryColumns(key)).toEqual(normalizeChannelInventoryColumns(oldDefault)); // explicit v3 old-default selection is never rebased
+});
+
+it.each([1280, 1300])("keeps the real default table budget <=1200px at %s without a fictitious sidebar; source precedes references/actions and selection has its own width", viewport => {
+  const layout = channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false);
+  expect(layout.minWidth).toBeLessThanOrEqual(1200);
+  expect(layout.minWidth + 32 + 2).toBeLessThan(viewport);
+  expect(layout.visible.map(col => col.id)).toEqual(DEFAULT_CHANNEL_INVENTORY_COLUMNS);
+  const sourceIndex = layout.visible.findIndex(col => col.id === "source");
+  expect(sourceIndex).toBe(layout.visible.findIndex(col => col.id === "recorder") + 1);
+  expect(layout.visible.slice(0, sourceIndex + 1).reduce((sum, col) => sum + col.width, 0)).toBeLessThan(600);
+  expect(channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, true).minWidth).toBe(layout.minWidth + 40);
+  renderHost(); expect(document.querySelector<HTMLTableElement>("table")?.style.getPropertyValue("--ci-stock-min-width")).toBe(`${layout.minWidth}px`);
+  assertAligned();
 });

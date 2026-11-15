@@ -196,9 +196,9 @@ describe("shared compact inventory/channel presentation is Host-only", () => {
   it("preserves source/action columns, horizontal scrolling and opaque sticky actions while source names may wrap", () => {
     const css = readFileSync(cssPath, "utf8");
     const columns = readFileSync("client/src/business/platform/client/src/pages/channelInventoryColumns.ts", "utf8");
-    expect(columns).toContain('{ id: "source", label: "渠道来源", width: 140, defaultVisible: true }');
+    expect(columns).toContain('{ id: "source", label: "来源客户", width: 140, defaultVisible: true }');
     const actionColumn = required(columns.match(/\{ id: "actions", label: "操作", width: (\d+), defaultVisible: true, fixed: true \}/));
-    expect(Number(actionColumn[1])).toBeGreaterThanOrEqual(216);
+    expect(Number(actionColumn[1])).toBe(112);
     expect(rule(css, ".ci-page.ci-host .ci-tablewrap")).toContain("overflow-x: auto");
     expect(rule(css, ".ci-page.ci-host .ci-table.ci-compact-stock-table.ci-stock-edit-table")).toContain("min-width: var(--ci-stock-min-width) !important");
     expect(rule(css, ".ci-page.ci-host .ci-table.ci-channel-table")).toContain("min-width: 1040px !important");

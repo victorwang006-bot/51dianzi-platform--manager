@@ -82,7 +82,7 @@ describe("customer-supply closed BFF transport", () => {
       expect(payload).toMatchObject({ method: full, staffUserId: 202, bindingVersion: 7, expectedOwnerUserId: 101, creditCode: "SYNTHETIC-CREDIT", adminActor: { id: 303, role: "merchant_mgr" } });
       expect(payload).not.toHaveProperty("officialInventoryPermissions");
       const permissions = verifyOfficialInventoryGrant(payload.officialInventoryGrant, { creditCode: payload.creditCode, expectedOwnerUserId: 101, staffUserId: 202, adminAccountId: 303, bindingVersion: 7, method: full, requestId: payload.requestId });
-      expect(permissions).toEqual({ read: true, write: true, note: true, publish: false, customerScopeRead: true, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
+      expect(permissions).toEqual({ read: true, write: true, note: true, publish: false, customerScopeRead: true, inventoryScopeWrite: true, materialBusinessTeamLeaderWrite: { adminAccountId: 303, staffUserId: 202 }, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
       expect(payload.params).toEqual(method === "createCustomerMaterial" ? createCustomerMaterialSchema.parse(create) : methodsInput[method]);
     }
     expect(state.fence).toHaveBeenCalledTimes(4); expect(state.fence).toHaveBeenCalledWith({ adminUserId: 303, merchantId: 51 });
@@ -107,8 +107,8 @@ describe("customer-supply closed BFF transport", () => {
     state.native = ["officialInventory.read", "officialInventory.note"];
     await businessRouter.createCaller(ctx()).channelInventory.customerSupplySummary(summary);
     const payload = lastPayload();
-    expect(payload.officialInventoryGrant.permissions).toEqual({ read: true, write: false, note: true, publish: false, customerScopeRead: true, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
-    expect(Object.keys(payload.officialInventoryGrant.permissions).sort()).toEqual(["authorizationVersion", "customerScopeRead", "note", "publish", "read", "write"]);
+    expect(payload.officialInventoryGrant.permissions).toEqual({ read: true, write: false, note: true, publish: false, customerScopeRead: true, inventoryScopeWrite: false, authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/) });
+    expect(Object.keys(payload.officialInventoryGrant.permissions).sort()).toEqual(["authorizationVersion", "customerScopeRead", "inventoryScopeWrite", "note", "publish", "read", "write"]);
     await expect(businessRouter.createCaller(ctx()).channelInventory.createCustomerMaterial(create)).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(state.transport).toHaveBeenCalledTimes(1);
   });
@@ -196,6 +196,7 @@ describe("legacy channel commands carry the fresh signed customer-scope overlay"
       adminAccountId: 303, bindingVersion: 7, method: `channelInventory.${method}`, requestId: payload.requestId };
     expect(verifyOfficialInventoryGrant(payload.officialInventoryGrant, target)).toEqual({
       read: true, write: true, note: true, publish: false, customerScopeRead: false,
+      inventoryScopeWrite: true, materialBusinessTeamLeaderWrite: { adminAccountId: 303, staffUserId: 202 },
       authorizationVersion: expect.stringMatching(/^official-inventory-v1:[a-f0-9]{64}$/),
     });
     expect(() => verifyOfficialInventoryGrant({ ...payload.officialInventoryGrant,

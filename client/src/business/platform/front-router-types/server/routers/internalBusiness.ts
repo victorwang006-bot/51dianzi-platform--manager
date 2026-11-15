@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { signedOfficialInventoryGrantSchema } from "../../../shared/internalBusinessOfficialInventory";
+import { signedOfficialInventoryGrantSchema } from "../../../../../../../shared/internalBusinessOfficialInventory";
 import { verifyOfficialInventoryGrant } from "../services/internalBusinessOfficialGrant";
 import { TRPCError } from "@trpc/server";
 import { BusinessServiceAuthenticationCause } from "../../../shared/businessFailure";

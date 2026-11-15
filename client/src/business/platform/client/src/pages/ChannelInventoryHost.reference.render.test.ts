@@ -135,7 +135,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     expect(input).toEqual({ listInput: runtime.inputs.at(-1), materialIds: [1], refresh: false });
     expect(input.listInput).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, page: 1, pageSize: 20 });
     expect(options.signal).toBeInstanceOf(AbortSignal); expect(Object.keys(input)).toEqual(["listInput", "materialIds", "refresh"]);
-    expect([...document.querySelectorAll("thead th")].map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
+    expect([...document.querySelectorAll("thead th")].map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
     expect(referenceCells().map(cell => cell.textContent)).toEqual(["0.000000012345，库存5", "0.000000012345，库存5"]);
     for (const cell of referenceCells()) await inspectReadonlySource(cell, cell.dataset.referenceSource as ChannelReferenceSource, "ok");
     expect(document.body.textContent).not.toContain("INTERNAL_DIAGNOSTIC_NOT_UI"); expect(document.body.textContent).not.toContain("不足此档");
@@ -374,6 +374,16 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     for (const [start, end, hash] of pins) {
       const index = source.indexOf(start); expect(index).toBeGreaterThanOrEqual(0);
       let protectedRegion = source.slice(index, source.indexOf(end, index));
+      // Normalize only the three latest explicit backend grant changes; retain all
+      // original CAS/payload/transaction hashes rather than accepting a new baseline.
+      if (start === "  const submitChannel =") for (const [approved, original] of [
+        ["!channelInventoryMaterialAccess(material) || !editableRowsRef.current.has(material.id)", "material.canEdit !== true || material.readOnly"],
+        ["!channelInventoryMaterialEditGranted(detail)", "!detail.canEdit || detail.readOnly"],
+        ["!channelInventoryMaterialEditGranted(materialEditor.material)", "!materialEditor.material.canEdit || materialEditor.material.readOnly"],
+      ]) {
+        expect(protectedRegion.split(approved)).toHaveLength(2);
+        protectedRegion = protectedRegion.replace(approved, original);
+      }
       if (start === "  const submitChannel =") for (const [approved, original] of editGuardHardening) {
         expect(protectedRegion.split(approved)).toHaveLength(2);
         protectedRegion = protectedRegion.replace(approved, original);

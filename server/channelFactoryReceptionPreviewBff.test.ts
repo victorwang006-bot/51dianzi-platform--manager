@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
-import { signedOfficialInventoryGrantSchema, canonicalOfficialInventoryJson } from "../client/src/business/platform/shared/internalBusinessOfficialInventory";
+import { signedOfficialInventoryGrantSchema, canonicalOfficialInventoryJson } from "../shared/internalBusinessOfficialInventory";
 const state = vi.hoisted(() => ({ permissions: [] as string[], scopes: [] as string[], binding: true, scope: true,
   accountActive: true, forwarded: [] as any[], result: undefined as unknown, audit: vi.fn() }));
 vi.mock("./services/officialChannelProfileRead", () => ({ withOfficialChannelProfileRead: async (_ctx: unknown, _staff: number, run: (proof: unknown) => Promise<unknown>) => run(undefined) }));

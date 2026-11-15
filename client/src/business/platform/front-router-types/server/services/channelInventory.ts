@@ -10,6 +10,8 @@ import { officialCreationEvidence } from "./channelInventoryOriginalActor";
 import type { BusinessFailure } from "../../../shared/businessFailure";
 import { projectChannelCompany, projectMaterialCompany, linkedCompanyReadGate, customerReadPolicy, linkedCompany, customerSupplyCompletion, hasCustomerScopeRead } from "./customerSupplyCompany";
 import { crmCustomerPolicyWhere } from "./crmCustomers";
+import { createChannelInventoryCollaborationService, authorizedMaterial } from "./channelInventoryCollaboration";
+import { channelCustomerMaterialReadGate, teamMaterialManagementEligibility, materialManagementProjection } from "./channelMaterialManagement";
 export const CHANNEL_INVENTORY_TYPES = ["factory", "agent", "trade", "other"] as const;
 export type ChannelInventoryType = (typeof CHANNEL_INVENTORY_TYPES)[number];
 export type TrustedCustomerCreationContext = Readonly<{ customerId: number; expectedCustomerVersion: number; sourceType: ChannelInventoryType }>;
@@ -52,7 +54,7 @@ export type ChannelInventoryScope = {
   dataOwnerUserId: number;
   actorUserId: number;
   /** Authenticated BFF context only, never expectedActorUserId or a browser header. */
-  officialActor?: { adminAccountId: number; bindingVersion: number; requestId: string; inventoryPermissions?: import("../../../shared/internalBusinessOfficialInventory").OfficialInventoryPermissions };
+  officialActor?: { adminAccountId: number; bindingVersion: number; requestId: string; inventoryPermissions?: import("../../../../../../../shared/internalBusinessOfficialInventory").OfficialInventoryPermissions };
   isOwner: boolean;
   inventoryDataScope: "own" | "enterprise";
   /** Server-derived snapshot only; it is rechecked under locks for every write. */
@@ -492,14 +494,29 @@ async function findChannel(tx: SqlExecutor, scope: ChannelInventoryScope, id: nu
   return row ? projectChannelCompany(tx, scope, channelFrom(row)) : null;
 }
 
+/** Official legacy reads keep their original inventory/note visibility, but
+ * source and edit flags share the same live write + management + CRM boundary. */
+async function projectOfficialMaterialManagement(tx: SqlExecutor, scope: ChannelInventoryScope, row: SqlResultRow, canWrite: boolean) {
+  const company = await linkedCompany(tx, scope, Number(row.channelId));
+  const projection = materialManagementProjection(row, canWrite, company);
+  return { ...materialFrom(row, projection.customerSource !== null), ...projection,
+    channelName: projection.customerSource?.name ?? null, company: projection.customerSource,
+    shareEnabled: canWrite && bool(row.shareEnabled) };
+}
+
 async function findMaterial(tx: SqlExecutor, scope: ChannelInventoryScope, id: number, lock = false, internal = false): Promise<ChannelMaterialRecord | null> {
   const suffix = lock ? sql` FOR UPDATE` : sql``;
   const row = rows(await tx.execute(sql`
-    SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, lock)} AS canViewSource
+    SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, lock)} AS canViewSource,
+      ${scope.officialActor ? teamMaterialManagementEligibility(scope, true) : sql`FALSE`} AS canManageMaterial
       ${MATERIAL_WITH_CHANNEL_FROM}
      WHERE ${whereAll(materialWithChannelScopePredicates(scope, [sql`m.id = ${id}`]))}
      LIMIT 1${suffix}
   `))[0];
+  if (row && scope.officialActor) {
+    const access = await resolveChannelInventoryAuthority(tx, scope, "stocks", false, true);
+    return projectOfficialMaterialManagement(tx, scope, row, access.write);
+  }
   return row ? (internal ? materialFrom(row, true) : projectMaterialCompany(tx, scope, materialFrom(row))) : null;
 }
 
@@ -587,6 +604,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       return database.transaction(async db => {
       const access = await resolveChannelInventoryAuthority(db, scope, "channels", false, true);
       const predicates = channelScopePredicates(scope);
+      predicates.push(await channelCustomerMaterialReadGate(db, scope));
       if (!hasCustomerScopeRead(scope)) predicates.push(await linkedCompanyReadGate(db, scope, "channel_inventory_channels"));
       if (input.name) {
         const policy = await customerReadPolicy(db, scope);
@@ -621,6 +639,9 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       try {
         return await db.transaction(async tx => {
         const access = await resolveChannelInventoryAuthority(tx, scope, "channels", false, true);
+        const allowed = rows(await tx.execute(sql`SELECT id FROM channel_inventory_channels
+          WHERE ${whereAll([...channelScopePredicates(scope), sql`id = ${id}`, await channelCustomerMaterialReadGate(tx, scope)])} LIMIT 1 FOR UPDATE`))[0];
+        if (!allowed) appError("NOT_FOUND", "渠道不存在或无权访问");
         const item = await findChannel(tx, scope, id, true);
         if (!item) appError("NOT_FOUND", "渠道不存在或无权访问");
         return { ...item, canEdit: access.write, readOnly: !access.write };
@@ -752,15 +773,20 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       if (input.brand) predicates.push(sql`m.brand LIKE ${literalSearch(input.brand)} ESCAPE '='`);
       const where = whereAll(predicates);
         const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${MATERIAL_WITH_CHANNEL_FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
-        const items = rows(await tx.execute(sql`
-          SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource ${MATERIAL_WITH_CHANNEL_FROM}
+        const materialRows = rows(await tx.execute(sql`
+          SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
+            ${scope.officialActor ? teamMaterialManagementEligibility(scope, true) : sql`FALSE`} AS canManageMaterial ${MATERIAL_WITH_CHANNEL_FROM}
            WHERE ${where}
            ORDER BY m.id DESC
            LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE
-        `)).map(row => ({ ...materialFrom(row), shareEnabled: access.write && bool(row.shareEnabled), canEdit: access.write, readOnly: !access.write }));
+        `));
+        const items = [];
+        for (const row of materialRows) items.push(scope.officialActor
+          ? await projectOfficialMaterialManagement(tx, scope, row, access.write)
+          : { ...materialFrom(row), shareEnabled: access.write && bool(row.shareEnabled), canEdit: access.write, readOnly: !access.write });
         const projected = [];
         const publications = await factoryMaterialPublicationMetadata(tx, scope, items.map(item => item.id), access.scope === "team");
-        for (const item of items) projected.push({ ...await projectMaterialCompany(tx, scope, item),
+        for (const item of items) projected.push({ ...(scope.officialActor ? item : await projectMaterialCompany(tx, scope, item)),
           ...(publications.get(item.id) ?? { canPublish: false, publicationStatus: "unpublished" as const }) });
         return { items: projected, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize), canWrite: access.write };
         });
@@ -777,7 +803,8 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
         const access = await resolveChannelInventoryAuthority(tx, scope, "stocks", false, true);
         const item = await findMaterial(tx, scope, id, true);
         if (!item) appError("NOT_FOUND", "库存条目不存在或无权访问");
-        return { ...item, shareEnabled: access.write && item.shareEnabled, canEdit: access.write, readOnly: !access.write };
+        return { ...item, shareEnabled: access.write && item.shareEnabled,
+          ...(scope.officialActor ? {} : { canEdit: access.write, readOnly: !access.write }) };
         });
       } catch (error) {
         if (error instanceof ChannelInventoryError) throw error;
@@ -896,7 +923,18 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
     },
 
     async updateMaterial(scope: ChannelInventoryScope, input: MaterialUpdateInput) {
+      if (scope.officialActor) {
+        // Strict public schema rejects note/channel/currency/responsibility fields.
+        // Reuse the signed request UUID; authorization precedes CAS and replay/DML.
+        const receipt = await createChannelInventoryCollaborationService({ getDb }).updateTeamMaterial(scope, {
+          ...input, requestId: scope.officialActor.requestId,
+        });
+        return receipt.item;
+      }
       return transactional(scope, async tx => {
+        // Native legacy path is only narrowed: keep its original owner/private
+        // field policy, but intersect the same material management/CRM/write gate.
+        await authorizedMaterial(tx, scope, input.id, true);
         // Raw source is server-internal only: changing the public projection must
         // not revoke the original owner's ability to edit ordinary stock fields.
         const current = await findMaterial(tx, scope, input.id, true, true);

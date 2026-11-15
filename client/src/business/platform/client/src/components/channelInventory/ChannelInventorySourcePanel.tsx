@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../front-router-types/server/routers";
 import { trpc } from "../../../../../api/business-trpc";
+import { channelInventorySourceLabel, type ChannelInventoryMaterialGrant } from "../../pages/channelInventoryColumns";
 
 type SourceInput = inferRouterInputs<AppRouter>["channelInventory"]["getTeamMaterialSource"];
 type SourceResult = inferRouterOutputs<AppRouter>["channelInventory"]["getTeamMaterialSource"];
@@ -130,4 +131,16 @@ export function ChannelInventorySourcePanel({ materialId, enterpriseId, actorUse
       <footer><button type="button" className="ci-button" onClick={onClose}>关闭</button></footer>
     </section>
   </div>;
+}
+
+
+/** The list's confirmed CRM customer is distinct from public reference channels.
+ * Never call the legacy channel-name API or retain names outside the current row.
+ * Rendering only the authorized label keeps denied ids/names out of DOM/tooltips. */
+export function ChannelInventoryCustomerSource({ material, contextVerified }: {
+  material: ChannelInventoryMaterialGrant;
+  contextVerified: boolean;
+}) {
+  const label = channelInventorySourceLabel(material, contextVerified);
+  return <span className="ci-customer-source-name" title={label}>{label}</span>;
 }

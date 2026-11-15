@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { canonicalOfficialInventoryJson, signedOfficialInventoryGrantSchema, officialInventoryMethodRequirement, NATIVE_TEAM_READ_METHODS, type OfficialInventoryPermissions, type SignedOfficialInventoryGrant } from "../../../shared/internalBusinessOfficialInventory";
+import { canonicalOfficialInventoryJson, signedOfficialInventoryGrantSchema, officialInventoryMethodRequirement, NATIVE_TEAM_READ_METHODS, type OfficialInventoryPermissions, type SignedOfficialInventoryGrant } from "../../../../../../../shared/internalBusinessOfficialInventory";
 import { CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES, isChannelInventoryBusinessMethodId } from "../../../shared/channelInventoryBusinessPolicy";
 import type { StaffDelegation } from "../_core/context";
 
@@ -57,6 +57,12 @@ export function verifyOfficialInventoryGrant(token: SignedOfficialInventoryGrant
     Object.freeze(grant.permissions.channelProfileTeamRead.ownerUserIds);
     Object.freeze(grant.permissions.channelProfileTeamRead);
   }
+  if (grant.permissions.channelMaterialManagement) {
+    for (const binding of grant.permissions.channelMaterialManagement.recorderBindings) Object.freeze(binding);
+    Object.freeze(grant.permissions.channelMaterialManagement.recorderBindings);
+    Object.freeze(grant.permissions.channelMaterialManagement);
+  }
+  if (grant.permissions.materialBusinessTeamLeaderWrite) Object.freeze(grant.permissions.materialBusinessTeamLeaderWrite);
   Object.freeze(grant.permissions);
   signedTargets.set(grant.permissions, { target: { ...target }, expiresAt: grant.expiresAt });
   return grant.permissions;

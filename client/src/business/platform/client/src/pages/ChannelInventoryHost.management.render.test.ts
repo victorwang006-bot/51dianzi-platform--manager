@@ -37,9 +37,17 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
 import ChannelInventoryHost from "./ChannelInventoryHost";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root; let container: HTMLDivElement;
-const row = { id: 1, revision: 4, channelId: 11, partNumber: "ONE", brand: "TI", qty: 9, dateCode: null, price: null, taxIncluded: null, leadTime: null, industryCode: null, updatedAt: "2026-11-04T00:00:00Z", canDelete: true, canEdit: true, readOnly: false, canViewSource: false, isMine: true, noteCount: 0, originalRecorderName: "原负责人" };
+const row = { id: 1, revision: 4, channelId: 11, partNumber: "ONE", brand: "TI", qty: 9, dateCode: null, price: null, taxIncluded: null, leadTime: null, industryCode: null, updatedAt: "2026-11-04T00:00:00Z", canDelete: true, canEdit: true, readOnly: false, canViewSource: true, company: null, isMine: true, noteCount: 0, originalRecorderName: "原负责人" };
 function required<T>(value: T | null | undefined): T { if (value == null) throw new Error("missing control"); return value; }
-function button(name: string) { return required(Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name)); }
+function button(name: string) {
+  let found = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name);
+  if (!found && ["发布", "已发布"].includes(name)) {
+    const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
+    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+    found = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name);
+  }
+  return required(found);
+}
 function click(element: Element) { act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))); }
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); }
 function renderHost() { act(() => root.render(React.createElement(ChannelInventoryHost))); }
@@ -59,22 +67,22 @@ afterEach(() => { act(() => root.unmount()); container.remove(); document.body.r
 describe("manager Host inventory-management bridge", () => {
   it("adds batches/trash without replacing original inventory columns or readonly row actions", () => {
     renderHost(); expect(document.querySelector('[role="tablist"], .ci-tabs')).toBeNull();
-    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
+    expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
     expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
-    expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(1);
-    expect(document.querySelectorAll('.ci-stock-edit-table [aria-label^="编辑库存："]')).toHaveLength(1);
+    expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(2);
+    expect(document.querySelectorAll('.ci-stock-edit-table [aria-label^="编辑库存："]')).toHaveLength(2);
     expect(document.querySelector(".ci-tabbar,.ci-inventory-view-controls")).toBeNull();
     const more = required(document.querySelector('.ci-toolbar[aria-label="材料筛选"] [aria-label="更多库存管理"]'));
     expect(more.previousElementSibling?.textContent).toBe("显示列");
     expect(more.nextElementSibling?.className).toBe("ci-filter-count");
     click(button("批量操作")); expect(button("取消选择").getAttribute("aria-pressed")).toBe("true");
     expect(document.querySelectorAll("tbody input[type=checkbox]")).toHaveLength(1);
-    expect(document.querySelectorAll("thead th")).toHaveLength(12);
-    for (const row of document.querySelectorAll("tbody tr")) expect(row.querySelectorAll("td")).toHaveLength(12);
+    expect(document.querySelectorAll("thead th")).toHaveLength(10);
+    for (const row of document.querySelectorAll("tbody tr")) expect(row.querySelectorAll("td")).toHaveLength(10);
     runtime.team = { ...(runtime.team as object), isLoading: true };
     renderHost();
-    expect(document.querySelectorAll("thead th")).toHaveLength(12);
-    expect(document.querySelector("tbody td.ci-empty")?.getAttribute("colspan")).toBe("12");
+    expect(document.querySelectorAll("thead th")).toHaveLength(10);
+    expect(document.querySelector("tbody td.ci-empty")?.getAttribute("colspan")).toBe("10");
   });
   it("sends single deletion through the existing bridge with the row revision and asserted identity", async () => {
     renderHost(); const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
@@ -101,7 +109,7 @@ describe("manager Host inventory-management bridge", () => {
     click(button("批量操作")); expect(required(document.querySelector<HTMLInputElement>('[aria-label="全选当前页可删除库存"]')).checked).toBe(false);
     const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
     act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
-    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["删除"]);
+    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["发布", "备注（0）", "本人备注", "批次信息不可用", "删除"]);
   });
   it.each(["view", "actor", "enterprise", "permission"])("clears selection mode on %s change", async change => {
     renderHost(); click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
@@ -134,7 +142,7 @@ describe("manager Host inventory-management bridge", () => {
   it("never displays the newly added delete/rename/archive/restore write entrances without native write grant", async () => {
     runtime.scope.officialInventoryPermissions.write = false; renderHost();
     expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull();
-    expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).not.toBeNull();
     expect(button("编辑").disabled).toBe(true);
     click(button("编辑")); expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.querySelectorAll('[role="menuitem"]')).toHaveLength(0);
@@ -143,7 +151,7 @@ describe("manager Host inventory-management bridge", () => {
   it.each(["user", "admin"])("%s publishes a server-authorized row only after final confirmation, without deriving authority from canEdit", async role => {
     runtime.scope.frontUser.role = role;
     runtime.team = runtime.query({ items: [{ ...row, canEdit: false, canDelete: false, readOnly: true, canPublish: true, publicationStatus: "unpublished", price: "2.50", note: "PRIVATE-INTEGRATION-NOTE", channelName: "PRIVATE-SOURCE" }], total: 1, page: 1, pageSize: 20, pageCount: 1, canWrite: false, canFilterSource: false });
-    renderHost(); expect(button("发布").disabled).toBe(false); expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toBeNull();
+    renderHost(); expect(button("发布").disabled).toBe(false); expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).not.toBeNull();
     click(button("发布")); expect(runtime.mutations.publishFactoryMaterial).not.toHaveBeenCalled();
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain("ONE");
     expect(document.body.innerHTML).not.toContain("PRIVATE-INTEGRATION-NOTE"); expect(document.body.innerHTML).not.toContain("PRIVATE-SOURCE");

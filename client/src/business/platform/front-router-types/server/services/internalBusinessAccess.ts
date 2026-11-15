@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import type { OfficialInventoryPermissions } from "../../../shared/internalBusinessOfficialInventory";
+import type { OfficialInventoryPermissions } from "../../../../../../../shared/internalBusinessOfficialInventory";
 import { BusinessFailureCause } from "../../../shared/businessFailure";
 import { and, eq, sql } from "drizzle-orm";
 import type { z } from "zod";

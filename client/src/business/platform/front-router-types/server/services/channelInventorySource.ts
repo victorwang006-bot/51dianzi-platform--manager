@@ -1,3 +1,4 @@
+import { teamMaterialManagementEligibility, materialManagementProjection } from "./channelMaterialManagement";
 import { sql, type SQL } from "drizzle-orm";
 import { businessFailureOf } from "../../../shared/businessFailure";
 import { officialMaterialCreator } from "./channelInventoryOriginalActor";
@@ -14,7 +15,7 @@ export const SOURCE_FORBIDDEN_MESSAGE = "暂无权限查看";
  * its pre-existing identity rule; neither branch infers creator from owner.
  * lock=true makes each authority subquery a current read, even with an RR view.
  */
-export function teamMaterialSourceEligibility(scope: ChannelInventoryScope, lock = false, leaderOnly = false): SQL {
+export function teamMaterialVisibilityEligibility(scope: ChannelInventoryScope, lock = false, leaderOnly = false): SQL {
   const suffix = lock ? sql` FOR UPDATE` : sql``;
   const creator = scope.officialActor ? sql`(${officialMaterialCreator(scope, lock)}
     AND EXISTS (SELECT 1 FROM enterprise_team_members original_reader
@@ -44,6 +45,10 @@ export function teamMaterialSourceEligibility(scope: ChannelInventoryScope, lock
       ))${suffix})`;
 }
 
+export function teamMaterialSourceEligibility(scope: ChannelInventoryScope, lock = false, leaderOnly = false): SQL {
+  return teamMaterialManagementEligibility(scope, lock);
+}
+
 export function createChannelInventorySourceService({ getDb }: { getDb: () => Promise<SqlDatabase | null> }) {
   return {
     async getTeamMaterialSource(scope: ChannelInventoryScope, raw: TeamMaterialSourceInput): Promise<TeamMaterialSource> {
@@ -60,13 +65,15 @@ export function createChannelInventorySourceService({ getDb }: { getDb: () => Pr
         // Logical read-only transaction. No audit DML or creator backfill.
         return await db.transaction(async tx => {
           const visibility = await resolveTeamInventoryVisibility(tx, scope, { lock: true, materialId: input.materialId });
-          const found = teamInventoryRows(await tx.execute(sql`SELECT c.name, c.id AS companyChannelId ${TEAM_MATERIAL_FROM}
+          if (!visibility.access.write) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
+          const found = teamInventoryRows(await tx.execute(sql`SELECT c.id AS companyChannelId, ${teamMaterialManagementEligibility(scope, true)} AS canManageMaterial ${TEAM_MATERIAL_FROM}
             WHERE ${teamInventoryAll([...visibility.predicates, teamMaterialSourceEligibility(scope, true), await linkedCompanyReadGate(tx, scope)])}
             LIMIT 1 FOR UPDATE`))[0];
           if (!found) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
           const company = await linkedCompany(tx, scope, Number(found.companyChannelId));
-          if (company.linked && !company.customer) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
-          return { name: company.linked ? String(company.customer?.name) : String(found.name) };
+          const source = materialManagementProjection(found, visibility.access.write, company).customerSource;
+          if (!source) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
+          return { name: source.name };
         });
       } catch (error) {
         if (businessFailureOf(error) && businessFailureOf(error) !== "BUSINESS_RESOURCE_FORBIDDEN") throw error;
