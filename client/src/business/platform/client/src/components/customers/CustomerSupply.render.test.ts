@@ -2,14 +2,17 @@
 import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import * as XLSX from "xlsx";
+import { webcrypto, createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCustomerMaterialSchema } from "../../../../shared/customerSupply";
 
 const runtime = vi.hoisted(() => ({
   context: null as unknown, current: true, navigate: vi.fn(), close: vi.fn(), complete: vi.fn(),
   readContext: vi.fn(), create: vi.fn(), createBatch: vi.fn(), listChannels: vi.fn(), getChannel: vi.fn(), onAuthorizationError: vi.fn(),
   native: { read: true, write: true, note: true, authorizationVersion: "v1" },
+  original: vi.fn(), historyGet: vi.fn(), prepare: vi.fn(), reconcile: vi.fn(), histories: new Map<string, any>(), committed: new Map<string, any>(),
   authorityOptions: vi.fn(),
   invalidateContext: vi.fn(), invalidateSummary: vi.fn(),
   invalidateMaterials: vi.fn(), invalidateChannels: vi.fn(), invalidateBatches: vi.fn(),
@@ -31,7 +34,8 @@ vi.mock("../../../../../api/business-trpc", () => ({ trpc: {
   },
   useUtils: () => ({ channelInventory: { customerSupplyContext: { invalidate: runtime.invalidateContext }, customerSupplySummary: { invalidate: runtime.invalidateSummary },
     listTeamMaterials: { invalidate: runtime.invalidateMaterials }, listChannels: { invalidate: runtime.invalidateChannels }, listUploadBatches: { invalidate: runtime.invalidateBatches } }, client: { channelInventory: {
-    customerSupplyContext: { query: runtime.readContext }, createCustomerUploadBatch: { mutate: runtime.createBatch }, createCustomerMaterial: { mutate: runtime.create },
+    customerSupplyContext: { query: runtime.readContext }, createCustomerUploadBatch: { mutate: runtime.createBatch }, createCustomerMaterial: { mutate: async (...args: any[]) => { createCustomerMaterialSchema.parse(args[0]); const result = await runtime.create(...args); runtime.committed.set(args[0].requestId, result); return result; } },
+    customerUploadOriginal: { mutate: runtime.original }, customerUploadHistoryGet: { query: runtime.historyGet }, customerUploadPrepareConfirmation: { mutate: runtime.prepare }, customerUploadReconcileBatch: { mutate: runtime.reconcile },
     listChannels: { query: runtime.listChannels }, getChannel: { query: runtime.getChannel },
   } } }),
 } }));
@@ -83,8 +87,48 @@ async function upload(rows = [["型号", "品牌"], ["ONE", "TI"], ["TWO", "TI"]
   Object.defineProperty(input, "files", { configurable: true, value: [file] });
   await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise(resolve => setTimeout(resolve, 40)); });
   click(button("预览并校验"));
+  const currency = document.body.querySelector<HTMLInputElement>('[aria-label="明确确认本次核对币种为CNY"]');
+  if (currency) click(currency);
+  const source = document.body.querySelector<HTMLSelectElement>('[aria-label="核对客户来源类型"]');
+  if (source) change(source, "factory");
+}
+function seedHistoricalExisting(entryMode: "table" | "single", phase: "preparation" | "unknown" = "preparation") {
+  const key = `d51-channel-inventory-batch-v1:7:31:${customerSupplySessionSuffix(identity, 801)}`;
+  const sourceProfile = { type: "agent", existingChannelId: 411 };
+  const sessionData = { customerId: 801, customerVersion: 4, sourceProfile, verifiedChannelRevision: 1 };
+  const requestId = "11111111-1111-4111-8111-111111111111";
+  const rowId = "22222222-2222-4222-8222-222222222222";
+  const name = entryMode === "single" ? "单条手工录入" : "historical.xlsx";
+  const draft = { partNumber: "ONE", brand: "TI", qty: "", price: "", currency: "CNY", taxIncluded: "unknown", leadTime: "", dateCode: "", note: "" };
+  const saved = phase === "preparation"
+    ? { version: 2, phase: "customer-source", enterpriseId: 31, actorUserId: 7,
+      preparation: { requestId, name, entryMode, sessionData, rows: [{ row: 2, requestId: rowId, draft }] } }
+    : { version: 1, enterpriseId: 31, actorUserId: 7, channelId: 411, name, entryMode, sessionData,
+      uploadBatch: { requestId, id: 501, batchCode: "BATCH-501" },
+      entries: [{ row: 2, requestId: rowId, payload: { ...payload, channelId: 411 }, uploadBatchId: 501, status: "unknown" }] };
+  sessionStorage.setItem(key, JSON.stringify(saved));
+  return { key, sourceProfile, requestId, rowId, name };
 }
 beforeEach(() => {
+  vi.stubGlobal("crypto", webcrypto);
+  runtime.histories.clear(); runtime.committed.clear();
+  runtime.original.mockReset().mockImplementation((dto: any) => {
+    const historyId = randomUUID(); const fileId = randomUUID();
+    const book = XLSX.read(Buffer.from(dto.file.base64, "base64"), { type: "buffer" });
+    const originalSheets = book.SheetNames.map((sheetName, sheetIndex) => ({ sheetIndex, sheetName, rows: XLSX.utils.sheet_to_json<any[]>(book.Sheets[sheetName], { header: 1, defval: "", raw: true, blankrows: true, range: 0 }).map((cells, i) => ({ rowNumber: i + 1, cells, originalContent: JSON.stringify(cells), originalRowHash: createHash("sha256").update(JSON.stringify(cells)).digest("hex") })) }));
+    const history = { historyId, customerId: 801, customerName: "同名客户", mode: dto.mode, state: dto.mode === "parse" ? "pending_parse" : "awaiting_confirmation", revision: 1, uploadedBy: { frontUserId: 7, adminAccountId: 1, displayName: "员工" }, createdAt: new Date().toISOString(), originalFile: { fileId, kind: "original", fileName: dto.file.fileName, byteSize: Buffer.from(dto.file.base64, "base64").length, mimeType: dto.file.mimeType, sha256: "a".repeat(64), createdAt: new Date().toISOString() }, latestVersionId: null, latestVersionNo: 0, access: "self", stats: { sourceRowCount: null, resultRowCount: 0, pendingCount: 0, excludedCount: 0, successCount: 0, unknownCount: 0, failedCount: 0, remainingMaterialCount: 0 }, capabilities: { canConfirm: true, canDownload: true, canManage: false, canUploadResult: false, canCancel: true } };
+    runtime.histories.set(historyId, { history, selectedVersion: null, versions: [], originalSheets, confirmation: null });
+    return Promise.resolve({ history, idempotent: false, duplicateWarning: false, submissionMessage: "已提交，等待解析" });
+  });
+  runtime.historyGet.mockReset().mockImplementation((dto: any) => Promise.resolve(runtime.histories.get(dto.historyId)));
+  runtime.prepare.mockReset().mockImplementation(async (dto: any) => {
+    const batch = await runtime.createBatch({ expectedEnterpriseId: dto.expectedEnterpriseId, expectedActorUserId: dto.expectedActorUserId, customerId: 801, expectedCustomerVersion: dto.expectedCustomerVersion, ...(dto.expectedChannelId ? { expectedChannelId: dto.expectedChannelId } : {}), ...(dto.expectedChannelRevision ? { expectedChannelRevision: dto.expectedChannelRevision } : {}), ...(dto.sourceProfile ? { sourceProfile: dto.sourceProfile } : {}), fileName: runtime.histories.get(dto.historyId).history.originalFile.fileName + " · synthetic", totalRows: dto.confirmedRows.length, requestId: dto.batchRequestId });
+    batch.batchCode = randomUUID(); // old service display UUID differs from idempotency requestId
+    const entries = dto.confirmedRows.map((row: any) => ({ logicalRowId: row.logicalRowId, rowId: row.rowId, rowRequestId: row.rowRequestId, uploadBatchId: batch.id, status: "pending", payload: { ...row.fields, expectedEnterpriseId: dto.expectedEnterpriseId, expectedActorUserId: dto.expectedActorUserId, customerId: 801, expectedCustomerVersion: dto.expectedCustomerVersion, ...(dto.sourceProfile ? { sourceProfile: dto.sourceProfile } : {}), channelId: batch.channelId, uploadBatchId: batch.id, requestId: row.rowRequestId } }));
+    const confirmationId = randomUUID(); const detail = runtime.histories.get(dto.historyId); detail.confirmation = { confirmationId, batchRequestId: dto.batchRequestId, batch, entries, versionId: null, excludedRows: dto.excludedRows, createdAt: new Date().toISOString() }; detail.history.revision++;
+    return { historyId: dto.historyId, revision: detail.history.revision, confirmationId, batch, entries };
+  });
+  runtime.reconcile.mockReset().mockImplementation((dto: any) => { const detail = runtime.histories.get(dto.historyId); const confirmation = detail.confirmation; const entries = confirmation.entries.map((entry: any) => { const actual = runtime.committed.get(entry.rowRequestId); return { ...entry, status: actual ? "success" : "unknown", ...(actual ? { receipt: { status: "success", materialId: actual.item.id, materialRevision: 1, channelId: actual.channelId, customerId: actual.customerId, uploadBatchId: 501, logicalRowId: entry.logicalRowId, rowRequestId: entry.rowRequestId } } : {}) }; }); confirmation.entries = entries; return Promise.resolve({ history: detail.history, batch: confirmation.batch, entries }); });
   runtime.current = true; runtime.context = context(); runtime.native = { read: true, write: true, note: true, authorizationVersion: "v1" };
   runtime.readContext.mockReset().mockImplementation(() => Promise.resolve(runtime.context));
   runtime.createBatch.mockReset().mockImplementation(dto => {
@@ -183,6 +227,9 @@ describe("customer supply real portal and reused importer", () => {
     render(); await setupUpload();
     expect(runtime.create).not.toHaveBeenCalled(); expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
     expect(document.querySelector('[aria-label="首次渠道类型"]')).toBeNull();
+    expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull();
+    expect(document.querySelector(".customer-supply-existing")).toBeNull();
+    for (const copy of ["客户供应来源", "选择现有渠道", "关联现有渠道", "请选择渠道", "同名客户"]) expect(document.querySelector('[role="dialog"]')?.textContent).not.toContain(copy);
     expect(button("选择库存表格").disabled).toBe(false); click(button("取消")); expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
   it("requires CRM industry completion without providing a guessed industry", async () => {
@@ -226,16 +273,16 @@ describe("customer supply real portal and reused importer", () => {
     expect(runtime.create).toHaveBeenCalledTimes(1); expect(runtime.navigate).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled(); expect(runtime.listChannels).not.toHaveBeenCalled();
     expect(Array.from(document.querySelectorAll("button")).some(item => item.textContent?.includes("查看已上传结果"))).toBe(false); click(button("取消")); expect(runtime.navigate).not.toHaveBeenCalled();
   });
-  it("cannot guess-bind an existing same-name channel; it needs manual ID selection and confirmation", async () => {
+  it("recovers an explicitly confirmed existing-channel table preparation without restoring its redundant selector", async () => {
+    const original = seedHistoricalExisting("table");
     render(); await setupUpload();
-    required(document.querySelector<HTMLDetailsElement>(".customer-supply-existing")).open = true;
-    const boxes = () => Array.from(document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
-    click(boxes()[0]); await settle();
-    const select = required(document.querySelector<HTMLSelectElement>('[aria-label="人工选择现有渠道"]')); expect(select.value).toBe(""); change(select, "411");
-    expect(runtime.getChannel).not.toHaveBeenCalled(); click(button("确认关联此渠道")); await settle();
+    expect(document.querySelector(".customer-supply-existing")).toBeNull();
+    expect(runtime.getChannel).not.toHaveBeenCalled(); expect(runtime.createBatch).not.toHaveBeenCalled();
+    click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
     expect(runtime.getChannel).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 411 }, { signal: expect.any(AbortSignal) });
-    await upload([["型号", "品牌"], ["ONE", "TI"]]); click(button("确认上传 1 条")); await settle();
-    expect(runtime.create.mock.calls[0][0].sourceProfile).toEqual({ type: "agent", existingChannelId: 411 }); expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("channelId");
+    expect(runtime.createBatch.mock.calls[0][0]).toMatchObject({ sourceProfile: original.sourceProfile, expectedChannelRevision: 1, requestId: original.requestId });
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ sourceProfile: original.sourceProfile, requestId: original.rowId, uploadBatchId: 501 });
+    expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("channelId"); expect(sessionStorage.getItem(original.key)).toBeNull();
   });
   it.each(["archive", "version", "active", "permission"])("rechecks and stops before submitting when fresh %s context changes", async kind => {
     render(); await setupUpload(); await upload([["型号", "品牌"], ["ONE", "TI"]]);
@@ -258,13 +305,12 @@ describe("customer supply real portal and reused importer", () => {
     expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("sourceProfile"); expect(runtime.listChannels).not.toHaveBeenCalled();
   });
   it("recovers a historical explicitly confirmed agent batch with original metadata and request ID", async () => {
-    runtime.create.mockRejectedValueOnce(new Error("unknown result")); render(); await setupUpload();
-    await upload([["型号", "品牌"], ["ONE", "TI"]]); click(button("确认上传 1 条")); await settle();
-    const key = required(sessionStorage.key(0)); const saved = JSON.parse(required(sessionStorage.getItem(key)));
-    saved.sessionData.sourceProfile = { type: "agent" }; sessionStorage.setItem(key, JSON.stringify(saved));
-    const original = runtime.create.mock.calls[0][0]; click(button("取消")); render(); await setupUpload();
-    click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
-    expect(runtime.create.mock.calls[1][0]).toEqual({ ...original, sourceProfile: { type: "agent" } });
+    runtime.context = { ...context(), channel };
+    const historical = seedHistoricalExisting("table", "unknown");
+    render(); await setupUpload(); click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.prepare).not.toHaveBeenCalled(); expect(runtime.original).not.toHaveBeenCalled();
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ requestId: historical.rowId, sourceProfile: historical.sourceProfile, expectedCustomerVersion: 4, uploadBatchId: 501 });
+    expect(runtime.createBatch).not.toHaveBeenCalled();
   });
   it("keeps same-window partial retry enabled without recreating the importer or losing its queue", async () => {
     runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.resolve(receipt()); }).mockRejectedValueOnce(new Error("unknown"));
@@ -335,7 +381,8 @@ describe("v22 stable customer upload portal and concise copy", () => {
       writeFileSync(fixture, `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>${document.body.outerHTML}</html>\n`);
     }
     expect(title.textContent).toBe("上传客户物料");
-    expect(dialog.textContent?.split("同名客户")).toHaveLength(2);
+    expect(dialog.textContent).not.toContain("同名客户");
+    expect(dialog.querySelector(".ci-batch-channel")).toBeNull();
     for (const copy of ["客户档案：", "首次默认工厂", "客户身份固定", "Excel / CSV", "确认前不提交", "首张 sheet", "沿用幂等逐行上传"]) expect(dialog.textContent).not.toContain(copy);
     const note = required(dialog.querySelector(".ci-batch-note"));
     expect(note.querySelector("summary")?.textContent).toBe("填写说明");
@@ -406,7 +453,9 @@ describe("v22 stable customer upload portal and concise copy", () => {
     expect(document.body.textContent).not.toContain("旧身份客户");
     expect(document.querySelector('[aria-label="上传库存表格"]')).toBeNull();
     await act(async () => { newFinish({ ...context(), customer: { ...context().customer, name: "新身份客户" } }); }); await setupUpload();
-    expect(document.body.textContent).toContain("新身份客户"); expect(document.body.textContent).not.toContain("旧身份客户");
+    expect(document.body.textContent).not.toContain("新身份客户"); expect(document.body.textContent).not.toContain("旧身份客户");
+    expect(button("选择库存表格").disabled).toBe(false);
+    expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull();
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1); expect(runtime.create).not.toHaveBeenCalled();
   });
 });
@@ -567,13 +616,14 @@ describe("customer single material upload uses the customer batch transaction", 
     runtime.context = { ...context(), channel: { ...channel, type } }; await openSingle(); previewSingle(); click(button("确认上传 1 条")); await settle();
     expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("sourceProfile"); expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("channelId");
   });
-  it("uses an explicitly verified existing channel in the same single upload transaction", async () => {
-    await openSingle(); required(document.querySelector<HTMLDetailsElement>(".customer-supply-existing")).open = true;
-    click(required(document.querySelector('input[type="checkbox"]'))); await settle();
-    change(required(document.querySelector<HTMLSelectElement>('[aria-label="人工选择现有渠道"]')), "411");
-    expect(button("预览单条物料").disabled).toBe(true); click(button("确认关联此渠道")); await settle();
-    previewSingle(); click(button("确认上传 1 条")); await settle();
-    expect(runtime.create.mock.calls[0][0]).toMatchObject({ customerId: 801, sourceProfile: { type: "agent", existingChannelId: 411 } });
+  it("restores explicitly verified existing-channel single preparation with the same UUID and CAS transaction", async () => {
+    const original = seedHistoricalExisting("single"); render(); await setupUpload();
+    expect(button("单条上传").disabled).toBe(true); expect(runtime.getChannel).not.toHaveBeenCalled();
+    click(button("恢复原批次")); expect(button("单条上传").getAttribute("aria-pressed")).toBe("true");
+    click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.createBatch.mock.calls[0][0]).toMatchObject({ sourceProfile: original.sourceProfile, expectedChannelRevision: 1, requestId: original.requestId });
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ customerId: 801, sourceProfile: original.sourceProfile, requestId: original.rowId, uploadBatchId: 501 });
+    expect(runtime.getChannel).toHaveBeenCalledTimes(2); expect(sessionStorage.getItem(original.key)).toBeNull();
   });
   it.each(["archive", "version", "permission", "active"])("rechecks fresh %s customer state before the single write", async kind => {
     await openSingle(); previewSingle(); const data = context();
@@ -621,7 +671,8 @@ describe("IR-01 directly mounted customer upload real batch regression", () => {
   it("uses the explicitly bound channel (never customer ID), creates one batch, and passes it to every table row", async () => {
     runtime.context = { ...context(), channel };
     render(); await setupUpload();
-    expect(required(document.querySelector<HTMLSelectElement>('[aria-label="批量关联渠道"]')).value).toBe("411");
+    expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull();
+    expect(document.querySelector(".ci-batch-channel")).toBeNull(); expect(runtime.listChannels).not.toHaveBeenCalled();
     await upload(); click(button("确认上传 3 条")); await settle();
     expect(runtime.createBatch).toHaveBeenCalledTimes(1);
     expect(runtime.createBatch.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7,
@@ -719,11 +770,54 @@ describe("IR-01 directly mounted customer upload real batch regression", () => {
   });
 });
 
+describe("historical existing-channel recovery after visible association removal", () => {
+  it.each(["table", "single"] as const)("keeps the original %s unknown row UUID, sourceProfile and real batch without creating another batch", async mode => {
+    const original = seedHistoricalExisting(mode, "unknown"); runtime.context = { ...context(), channel };
+    render(); await setupUpload();
+    expect(document.querySelector(".customer-supply-existing")).toBeNull(); expect(runtime.getChannel).not.toHaveBeenCalled();
+    click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).toHaveBeenCalledTimes(1);
+    expect(runtime.create.mock.calls[0][0]).toMatchObject({ sourceProfile: original.sourceProfile, requestId: original.rowId, uploadBatchId: 501 });
+    expect(runtime.getChannel).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 411 }, { signal: expect.any(AbortSignal) });
+    expect(runtime.navigate).toHaveBeenCalledTimes(1); expect(sessionStorage.getItem(original.key)).toBeNull();
+  });
+  it.each(["type", "revision", "permission", "enterprise", "inactive", "id"])("still rejects changed historical existing-channel %s before batch or row writes", async kind => {
+    const original = seedHistoricalExisting("table");
+    const changed = { ...channel, ...(kind === "type" ? { type: "trade" } : kind === "revision" ? { revision: 2 }
+      : kind === "permission" ? { canEdit: false } : kind === "enterprise" ? { enterpriseId: 32 }
+      : kind === "inactive" ? { active: false } : { id: 412 }) };
+    runtime.getChannel.mockResolvedValue(changed); render(); await setupUpload();
+    click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain(["type", "revision"].includes(kind) ? "所选渠道真实类型已变化" : "人工选择的渠道不可写或已停用");
+    expect(runtime.onAuthorizationError).toHaveBeenCalled(); expect(runtime.navigate).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(original.key)).not.toBeNull(); expect(button("表格上传").disabled).toBe(true);
+  });
+});
+
 describe("customer-detail supply entry uses the real existing upload portal", () => {
+  it("opens the same real Portal through the original list supply cell upload action without any source selector", async () => {
+    function ListEntry() {
+      const [open, setOpen] = useState(false);
+      return React.createElement(React.Fragment, null,
+        React.createElement(CustomerSupplyCell, { summary: { customerId: 801, channelId: null, materialCount: 0, canUpload: true, canViewStock: false, disabledReason: null },
+          canWrite: true, archived: false, loading: false, failed: false, onUpload: () => setOpen(true), onViewStock: vi.fn() }),
+        open ? React.createElement(CustomerSupplyUploadDialog, { customerId: 801, identity, isCurrent: () => runtime.current,
+          onClose: () => setOpen(false), onComplete: runtime.complete, onAuthorizationError: runtime.onAuthorizationError }) : null);
+    }
+    render(React.createElement(ListEntry)); expect(document.querySelector('[role="dialog"]')).toBeNull();
+    click(button("上传物料表")); await setupUpload(); expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull(); expect(runtime.listChannels).not.toHaveBeenCalled();
+    await upload([["型号", "品牌"], ["ONE", "TI"]]); click(button("确认上传 1 条")); await settle();
+    expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create.mock.calls[0][0]).toMatchObject({ customerId: 801, sourceProfile: { type: "factory" }, uploadBatchId: 501 });
+    expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.navigate).toHaveBeenCalledTimes(1);
+  });
   it("opens one existing portal from verified supply context and sends the original customer batch DTO", async () => {
     const onOpenChange = vi.fn();
     render(React.createElement(CustomerWorkbenchSupply, { customerId: 801, customerVersion: 4,
       scope: { enterpriseId: 31, actorUserId: 7, canManageAll: false }, scopeReady: true, onOpenChange }));
+    expect(document.querySelector("h2")?.nextElementSibling).toBe(button("上传库存表"));
+    expect(document.body.textContent).not.toContain("渠道设置"); expect(button("上传库存表").nextElementSibling).toBe(button("解析历史"));
     click(button("上传库存表")); await setupUpload();
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenChange).toHaveBeenLastCalledWith(true); click(button("单条上传"));
@@ -742,5 +836,31 @@ describe("customer-detail supply entry uses the real existing upload portal", ()
     expect(supplyLocation(411, "materials")).toBe("/channel-inventory?supplyChannelId=411&supplyTab=materials");
     expect(parseSupplyLocation(supplyLocation(411, "channels").split("?")[1])).toEqual({ channelId: 411, tab: "channels" });
     expect(() => supplyLocation(0, "materials")).toThrow();
+  });
+});
+
+describe("real persisted batch code and strict create boundary", () => {
+  it("keeps independent server batchCode and original idempotency UUID across unknown reopen", async () => {
+    runtime.create.mockRejectedValueOnce(new Error("lost row receipt"));
+    render(); await setupUpload(); await upload([["型号", "品牌"], ["ONE", "TI"]]);
+    click(button("确认上传 1 条")); await settle();
+    const confirmationInput = runtime.prepare.mock.calls[0][0];
+    const detail = Array.from(runtime.histories.values())[0];
+    expect(detail.confirmation.batch.batchCode).not.toBe(confirmationInput.batchRequestId);
+    const key = required(sessionStorage.key(0)); const saved = JSON.parse(required(sessionStorage.getItem(key)));
+    expect(saved.uploadBatch.requestId).toBe(confirmationInput.batchRequestId);
+    expect(saved.uploadBatch.batchCode).toBe(detail.confirmation.batch.batchCode);
+    const original = runtime.create.mock.calls[0][0];
+    expect(() => createCustomerMaterialSchema.parse(original)).not.toThrow();
+    expect(original).not.toHaveProperty("channelId");
+    const frozen = detail.confirmation.entries[0].payload;
+    const { channelId, ...strictPayload } = frozen;
+    expect(original).toEqual(strictPayload);
+    expect(createCustomerMaterialSchema.safeParse(frozen).success).toBe(false);
+    click(button("取消")); render(); await setupUpload();
+    click(button("恢复原批次")); click(button("按原批次继续 / 重试")); await settle();
+    expect(runtime.create.mock.calls[1][0]).toEqual(original);
+    expect(runtime.prepare).toHaveBeenCalledTimes(1); expect(runtime.createBatch).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.length).toBe(0); expect(runtime.navigate).toHaveBeenCalledTimes(1);
   });
 });

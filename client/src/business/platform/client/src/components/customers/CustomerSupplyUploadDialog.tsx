@@ -2,17 +2,22 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "../../../../../api/business-trpc";
 import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../../shared/businessIndustry";
-import { BatchUpload, batchUploadDialogStyle, type BatchUploadDialogControls } from "../channelInventory/BatchUpload";
+import { BatchUpload, batchUploadDialogStyle, type CustomerConfirmRows, type BatchUploadDialogControls } from "../channelInventory/BatchUpload";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from "../channelInventory/bridge";
 import type { BatchEntry } from "../channelInventory/queue";
 import { completedSupplyChannel, customerMaterialInput, customerSupplySessionSuffix, supplyLocation, supplyReceipt,
   type SourceProfile, type SupplyContext, type SupplyIdentity, type SupplyOutputs } from "./customerSupply";
+import { normalizeDraft, validateDraft } from "../channelInventory/import";
+import type { ConfirmationEntry } from "../../../../shared/customerUploadHistory";
+import type { ManagedBatchEntry } from "../channelInventory/management";
+import { CustomerParseUpload } from "./CustomerParseUpload";
+import { canonicalConfirmationPayload, fileInput, historySession, isUUID, originalReview, recoveryEntries, resultReview, uuid, type History, type HistoryDetail, type HistorySession, type ReviewRow, type Confirmation } from "./customerUploadHistory";
 import { CustomerSupplySingleEntry } from "./CustomerSupplySingleEntry";
 import "./CustomerSupplyUploadDialog.css";
 
 type Channel = SupplyOutputs["getChannel"];
-type SessionData = { customerId: number; customerVersion: SupplyContext["customer"]["version"]; sourceProfile?: SourceProfile; initialChannelId?: number; initialChannelRevision?: number; verifiedChannelRevision?: number };
-type Props = { customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void;
+type SessionData = { customerId: number; customerVersion: SupplyContext["customer"]["version"]; sourceProfile?: SourceProfile; initialChannelId?: number; initialChannelRevision?: number; verifiedChannelRevision?: number; sourceConfirmed?: boolean; history?: HistorySession };
+type Props = { initialFile?: File; initialHistory?: HistoryDetail; customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void;
   onComplete: () => void; onAuthorizationError: (error: unknown) => void };
 const SOURCE_TYPES = ["factory", "agent", "trade", "other"] as const;
 
@@ -25,6 +30,7 @@ function validSession(value: unknown, customerId: number, version: SessionData["
   return data.customerId === customerId && data.customerVersion === version
     && (data.initialChannelId === undefined || (Number.isSafeInteger(data.initialChannelId) && data.initialChannelId > 0))
     && [data.initialChannelRevision, data.verifiedChannelRevision].every(value => value === undefined || (Number.isSafeInteger(value) && value > 0))
+    && (!data.history || (isUUID(data.history.historyId) && isUUID(data.history.prepareRequestId) && Number.isSafeInteger(data.history.revision) && data.history.revision > 0))
     && (!profile || (SOURCE_TYPES.includes(profile.type)
       && (profile.existingChannelId === undefined || (Number.isSafeInteger(profile.existingChannelId) && profile.existingChannelId > 0))));
 }
@@ -103,6 +109,14 @@ function CustomerSupplyUploadSession(props: Props) {
         setContext(fresh);
         if (contextAllowed(fresh) && !frozen.current) {
           const data = initialSession(props.customerId, fresh);
+          if (props.initialHistory) {
+            if (props.initialHistory.history.customerId !== props.customerId || !props.initialHistory.history.capabilities.canConfirm) throw new Error("服务端未允许本账号确认此任务；管理账号不能冒充原上传者。");
+            data.history = historySession(props.initialHistory.history);
+            const confirmation = props.initialHistory.confirmation;
+            if (confirmation?.entries[0]?.payload.expectedCustomerVersion !== undefined && confirmation.entries[0].payload.expectedCustomerVersion !== fresh.customer.version) throw new Error("原确认客户版本已变化，请核实原批次，不能重建。");
+            if (confirmation?.entries[0]?.payload.sourceProfile) { data.sourceProfile = confirmation.entries[0].payload.sourceProfile; data.sourceConfirmed = true; }
+            if (confirmation) { recoveryEntries(confirmation); data.history.confirmationId = confirmation.confirmationId; }
+          }
           frozen.current = data; setSessionData(data);
         }
       } catch (error) {
@@ -168,6 +182,72 @@ function CustomerSupplyUploadSession(props: Props) {
     const data = initialSession(props.customerId, context);
     frozen.current = data; setSessionData(data); setConfirmedExisting(false); setMessage("");
   };
+  const standardAttachment = useRef<{ history: History; sessionData: SessionData; file: File; rows?: { row: number; metadata: ReviewRow }[] } | null>(null);
+  const originalOperation = useRef<{ requestId: string; mode: "standard" | "parse"; file: Awaited<ReturnType<typeof fileInput>> } | null>(null);
+  const prepared = useRef<ManagedBatchEntry[] | undefined>(undefined);
+  const canonicalEntries = useRef(new Map<string, ConfirmationEntry>(props.initialHistory?.confirmation?.entries.map(entry => [entry.rowRequestId, entry]) ?? []));
+  const persistOriginal = async (file: File, mode: "standard" | "parse"): Promise<History> => {
+    const data = frozen.current;
+    if (!current() || !data) throw new Error("客户上传会话已失效。");
+    const encoded = await fileInput(file);
+    if (!current()) throw new Error("当前身份已变化。");
+    const operationKey = `customer-upload-original:${customerSupplySessionSuffix(props.identity, props.customerId)}`;
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(encoded.base64)))).map(b => b.toString(16).padStart(2, "0")).join("");
+    if (!current()) throw new Error("当前身份已变化。");
+    let requestId: string;
+    const stored = sessionStorage.getItem(operationKey);
+    if (stored) {
+      const pending = JSON.parse(stored);
+      if (!isUUID(pending.requestId) || pending.hash !== hash || pending.mode !== mode || pending.fileName !== encoded.fileName || pending.customerVersion !== data.customerVersion) throw new Error("另一个原文件提交结果待确认，请恢复原文件/UUID或先核实服务端历史，不能重建上传。");
+      requestId = pending.requestId;
+    } else {
+      requestId = uuid(); sessionStorage.setItem(operationKey, JSON.stringify({ requestId, hash, mode, fileName: encoded.fileName, customerVersion: data.customerVersion }));
+    }
+    if (originalOperation.current && (originalOperation.current.requestId !== requestId || originalOperation.current.file.base64 !== encoded.base64)) throw new Error("原文件未知请求不能更换字节或UUID。");
+    originalOperation.current = { requestId, mode, file: encoded };
+    const fresh = await readContext();
+    if (!current() || !contextAllowed(fresh)) throw new Error("客户版本、渠道或上传权限已变化。");
+    const abort = controller();
+    try {
+      const result = await utils.client.channelInventory.customerUploadOriginal.mutate({ ...expected, customerId: props.customerId, expectedCustomerVersion: data.customerVersion, mode, file: encoded, requestId }, { signal: abort.signal });
+      if (!current()) throw new Error("提交结果待原身份核实，请保留原请求。");
+      if (result.history.customerId !== props.customerId || result.history.mode !== mode || !isUUID(result.history.historyId)) throw new Error("原文件任务回执身份不匹配。");
+      sessionStorage.removeItem(operationKey); originalOperation.current = null;
+      if (mode === "standard") { const next = { ...data, history: historySession(result.history) }; frozen.current = next; setSessionData(next); }
+      return result.history;
+    } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
+    finally { requests.current.delete(abort); }
+  };
+  const reconcileQueue = async (entries: ManagedBatchEntry[]): Promise<ManagedBatchEntry[]> => {
+    const data = frozen.current;
+    if (!data?.history?.confirmationId) return entries;
+    if (!current()) throw new Error("上传会话已变化。");
+    const abort = controller();
+    try {
+      const detail = await utils.client.channelInventory.customerUploadHistoryGet.query({ ...expected, historyId: data.history.historyId }, { signal: abort.signal });
+      if (!current() || detail.confirmation?.confirmationId !== data.history.confirmationId) throw new Error("服务端原确认映射不匹配。");
+      canonicalEntries.current = new Map(detail.confirmation.entries.map(entry => [entry.rowRequestId, entry]));
+      const result = await utils.client.channelInventory.customerUploadReconcileBatch.mutate({ ...expected, historyId: data.history.historyId, confirmationId: data.history.confirmationId, requestId: uuid() }, { signal: abort.signal });
+      if (!current()) throw new Error("结果待原身份核实。");
+      if (result.history.historyId !== data.history.historyId || result.batch.id !== uploadBatch.current?.id) throw new Error("核实结果与原批次不一致。");
+      if (result.batch.batchCode !== detail.confirmation.batch.batchCode || result.batch.channelId !== detail.confirmation.batch.channelId) throw new Error("核实结果批次身份与原持久确认不一致。");
+      const confirmed = recoveryEntries({ confirmationId: data.history.confirmationId, batchRequestId: detail.confirmation.batchRequestId, batch: result.batch, entries: entries.map((entry, i) => {
+        const actual = result.entries.find(row => row.rowRequestId === entry.requestId);
+        if (!actual) throw new Error("服务端缺少原UUID核实结果，不能自报成功。");
+        const canonical = canonicalEntries.current.get(entry.requestId);
+        if (!canonical || canonical.logicalRowId !== actual.logicalRowId || canonical.payload.channelId !== entry.payload.channelId) throw new Error("缺少完整原服务payload映射，不能补造CAS。");
+        return { ...canonical, ...actual };
+      }) });
+      data.history.revision = result.history.revision;
+      return confirmed.map((entry, i) => ({ ...entry, row: entries[i].row, ...(entry.status !== "success" && entries[i].error ? { error: entries[i].error } : {}) }));
+    } finally { requests.current.delete(abort); }
+  };
+  const initialRecovery = (() => {
+    if (!props.initialHistory?.confirmation || !sessionData) return undefined;
+    const confirmation = props.initialHistory.confirmation;
+    try { return { channelId: confirmation.batch.channelId, entries: recoveryEntries(confirmation), name: props.initialHistory.history.originalFile.fileName, sessionData, uploadBatch: { requestId: confirmation.batchRequestId, id: confirmation.batch.id, batchCode: confirmation.batch.batchCode } }; }
+    catch { return undefined; }
+  })();
   const complete = () => {
     if (!current()) return;
     // One identity-isolated QueryClient covers global/channel/page inventory keys.
@@ -193,22 +273,35 @@ function CustomerSupplyUploadSession(props: Props) {
     channels={context.channel ? [{ id: context.channel.id, name: context.customer.name,
       active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp }] : []}
     channelTotal={context.channel ? 1 : 0} initialChannelId={context.channel?.id}
-    customerSourceReady={contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp}
+    customerSourceReady={contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp && (!sessionData.history || ((!sessionData.history.otherSheetCount || sessionData.history.sourceScopeConfirmed) && (Boolean(context.channel) || sessionData.sourceConfirmed)))}
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
+    renderParseEntry={controls => <CustomerParseUpload {...controls} persistOriginal={persistOriginal} isCurrent={current} />}
+    onOriginalFilePersist={async file => {
+      const attachment = standardAttachment.current;
+      const history = props.initialHistory && props.initialFile === file ? props.initialHistory.history : attachment && attachment.file === file && !attachment.rows ? attachment.history : await persistOriginal(file, "standard");
+      if (!attachment || attachment.history.historyId !== history.historyId) standardAttachment.current = { history, sessionData: frozen.current!, file };
+      const abort = controller();
+      try {
+        const detail = await utils.client.channelInventory.customerUploadHistoryGet.query({ ...expected, historyId: history.historyId }, { signal: abort.signal });
+        if (!current()) throw new Error("上传会话已变化。");
+        const sourceExclusions = detail.originalSheets.flatMap(sheet => sheet.rows.filter(row => sheet.sheetIndex !== 0 || row.rowNumber === 1).map(row => ({ logicalRowId: uuid(), reason: sheet.sheetIndex === 0 ? "标准首表第1行为表头，不作为库存入库" : "员工明确确认：本次标准上传仅首表，此工作表不在本次正式导入范围；完整原表仍保留", sourceRefs: [{ sheetIndex: sheet.sheetIndex, sheetName: sheet.sheetName, rowNumber: row.rowNumber, originalRowHash: row.originalRowHash }] })));
+        const data = frozen.current!;
+        if (data.history) { data.history.sourceExclusions = sourceExclusions; data.history.otherSheetCount = Math.max(0, detail.originalSheets.length - 1); data.history.sourceScopeConfirmed = detail.originalSheets.length <= 1; }
+        frozen.current = data; setSessionData({ ...data });
+        const rows = originalReview(detail.originalSheets).map(row => ({ row: row.row, metadata: row }));
+        standardAttachment.current = { history, sessionData: data, file, rows };
+        return { sessionData: data, rows };
+      } finally { requests.current.delete(abort); }
+    }}
+    initialFile={props.initialFile}
+    initialRows={!props.initialHistory?.confirmation && props.initialHistory?.selectedVersion ? resultReview(props.initialHistory.selectedVersion).map(row => ({ row: row.row, draft: row.draft, metadata: row })) : undefined}
+    initialRecovery={initialRecovery}
+    preparedEntries={() => prepared.current}
+    reconcileQueue={reconcileQueue}
     renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} isCurrent={current} />}
-    sourceDetails={(!context.channel && !sourceLocked) || message ? <div className="customer-supply-details">
-      {!context.channel && !sourceLocked ? <details className="customer-supply-existing">
-        <summary>关联现有渠道（可选）</summary>
-        <label className="customer-supply-choice"><input type="checkbox" checked={chooseExisting} disabled={settingUp}
-          onChange={event => { resetSource(); setChooseExisting(event.target.checked); if (event.target.checked && !optionPage) void loadOptions(); }} />选择现有渠道</label>
-        {chooseExisting ? <>
-          <label className="ci-field"><span>人工选择现有渠道</span><select aria-label="人工选择现有渠道" disabled={settingUp || loadingOptions} value={existingId}
-            onChange={event => { resetSource(); setExistingId(event.target.value); }}><option value="">请选择渠道</option>{options.map(channel => <option key={channel.id} value={channel.id}>{channel.name} · #{channel.id}</option>)}</select></label>
-          {optionPage * 100 < optionTotal || (!optionPage && !loadingOptions) ? <button type="button" className="ci-inline-link" disabled={loadingOptions || settingUp} onClick={() => void loadOptions()}>加载更多现有渠道</button> : null}
-          <button type="button" className="ci-inline-link" disabled={!existingId || settingUp || confirmedExisting} onClick={() => void confirmExisting()}>{confirmedExisting ? "已确认关联身份" : settingUp ? "正在核验…" : "确认关联此渠道"}</button>
-        </> : null}
-      </details> : null}
+    renderConfirmationDetails={() => <>{sessionData.history?.sourceExclusions?.length ? <p className="ci-dialog-note">本次首表表头明确不入库（已记录原行证据及原因）。原文件包含全部工作表；{sessionData.history.otherSheetCount ? `${sessionData.history.otherSheetCount}张非首表不在本次标准导入范围。` : "无遗漏其他工作表。"}</p> : null}{sessionData.history?.otherSheetCount ? <label className="ci-dialog-note"><input aria-label="明确确认本次仅导入首工作表" type="checkbox" checked={sessionData.history.sourceScopeConfirmed === true} disabled={sourceLocked} onChange={e => { const data = { ...frozen.current!, history: { ...frozen.current!.history!, sourceScopeConfirmed: e.target.checked } }; frozen.current = data; setSessionData(data); }} />我已核对全部原工作表，本次仅导入首表；其他工作表按上述明确原因排除，原文件证据继续保留。</label> : null}{sessionData.history && !context.channel ? <label className="ci-field"><span>本次客户来源渠道类型（请人工明确确认）</span><select aria-label="核对客户来源类型" disabled={sourceLocked} value={sessionData.sourceConfirmed ? sessionData.sourceProfile?.type ?? "" : ""} onChange={e => { const type = e.target.value as SourceProfile["type"]; if (!SOURCE_TYPES.includes(type)) return; const data = { ...frozen.current!, sourceProfile: { type }, sourceConfirmed: true }; frozen.current = data; setSessionData(data); }}><option value="">请选择真实类型，不猜默认工厂</option><option value="factory">工厂</option><option value="agent">代理</option><option value="trade">贸易</option><option value="other">其他</option></select></label> : null}</>}
+    sourceDetails={message ? <div className="customer-supply-details">
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
     </div> : null}
     storageKeySuffix={customerSupplySessionSuffix(props.identity, props.customerId)} sessionData={sessionData}
@@ -219,11 +312,21 @@ function CustomerSupplyUploadSession(props: Props) {
       // Historical virtual queues have no proven batch association: never backfill them.
       && (!entries.length || entries.every(entry => Number.isSafeInteger((entry as BatchEntry & { uploadBatchId?: number }).uploadBatchId)
         && (entry as BatchEntry & { uploadBatchId?: number }).uploadBatchId! > 0 && entry.payload.channelId === context.channel?.id))
+      && (!props.initialHistory || (data as SessionData).history?.historyId === props.initialHistory.history.historyId)
       && (!entries.some(entry => entry.status === "success") || (completedSupplyChannel(entries, props.customerId) !== null
         && context.channel?.id === completedSupplyChannel(entries, props.customerId)))}
     onRestoreSession={(data, entries, batch) => {
       if (!validSession(data, props.customerId, context.customer.version)) return;
       frozen.current = data; setSessionData(data); setSourceLocked(true);
+      if (data.history && entries.length) {
+        canonicalEntries.current = new Map(entries.map(entry => {
+          const payload = canonicalConfirmationPayload(entry.payload);
+          const existing = canonicalEntries.current.get(entry.requestId);
+          if (existing) return [entry.requestId, existing];
+          // Session queue supplements server persistence, never supplies a new UUID/CAS.
+          return [entry.requestId, { rowRequestId: entry.requestId, rowId: "", logicalRowId: "", uploadBatchId: entry.uploadBatchId!, status: entry.status, payload }];
+        }));
+      }
       if (entries.length && batch?.id) uploadBatch.current = { channelId: entries[0].payload.channelId, id: batch.id };
       setChooseExisting(false); setConfirmedExisting(false);
     }}
@@ -231,7 +334,7 @@ function CustomerSupplyUploadSession(props: Props) {
     onBusyChange={busy => { if (busy) setSourceLocked(true); }}
     onLoadMoreChannels={() => undefined} loadingMoreChannels={false} isCurrent={current}
     receiptFromResult={response => supplyReceipt(response, props.customerId, uploadBatch.current?.channelId, uploadBatch.current?.id)}
-    onCreateCustomerBatch={async input => {
+    onCreateCustomerBatch={async (input, confirmation) => {
       try {
         const data = frozen.current;
         if (!current() || !data) throw new Error("客户或授权已变化，已停止上传。");
@@ -248,7 +351,37 @@ function CustomerSupplyUploadSession(props: Props) {
         if (!current()) throw new Error("上传会话已变化。");
         const abort = controller();
         try {
-          const batch = await utils.client.channelInventory.createCustomerUploadBatch.mutate({ ...expected,
+          let batch;
+          if (data.history && confirmation) {
+            if (data.history.otherSheetCount && !data.history.sourceScopeConfirmed) throw new Error("请明确确认本次仅导入首表，不能隐藏其他工作表。");
+            if (confirmation.batchRequestId !== input.requestId) throw new Error("确认批次必须沿用原UUID。");
+            const detail = await utils.client.channelInventory.customerUploadHistoryGet.query({ ...expected, historyId: data.history.historyId }, { signal: abort.signal });
+            if (!current() || !detail.history.capabilities.canConfirm) throw new Error("当前账号不能确认此任务，管理权限不代表可冒充上传者。");
+            const toConfirmed = (row: CustomerConfirmRows["confirmedDrafts"][number]) => {
+              const metadata = row.metadata as ReviewRow | undefined;
+              if (!metadata?.sourceRefs.length || !isUUID(metadata.logicalRowId) || !isUUID(metadata.rowId)) throw new Error("缺少真实来源证据，不能按索引猜测。");
+              const draft = normalizeDraft(row.draft);
+              if (row.draft.currency !== "CNY" || validateDraft(draft).length) throw new Error("确认字段仍有错误或币种未明确为CNY。");
+              return { logicalRowId: metadata.logicalRowId, rowId: metadata.rowId, rowRequestId: row.rowRequestId, sourceRefs: metadata.sourceRefs,
+                fields: { partNumber: draft.partNumber, brand: draft.brand, qty: draft.qty === "" ? null : Number(draft.qty), price: draft.price || null, currency: "CNY", taxIncluded: draft.taxIncluded === "true" ? true : draft.taxIncluded === "false" ? false : null, dateCode: draft.dateCode || null, leadTime: draft.leadTime || null, note: draft.note || null } };
+            };
+            if (!fresh.channel && !data.sourceConfirmed) throw new Error("请在预览确认阶段明确选择真实渠道类型，不默认猜工厂。");
+            const profile = data.sourceProfile;
+            if ((!fresh.channel && !profile) || (profile && !SOURCE_TYPES.includes(profile.type))) throw new Error("客户来源真实类型尚未确认。");
+            const result = await utils.client.channelInventory.customerUploadPrepareConfirmation.mutate({ ...expected, historyId: data.history.historyId, ...(data.history.versionId ? { versionId: data.history.versionId } : {}), expectedRevision: data.history.revision,
+              requestId: data.history.prepareRequestId, batchRequestId: confirmation.batchRequestId, expectedCustomerVersion: data.customerVersion,
+              ...(data.initialChannelId ? { expectedChannelId: data.initialChannelId } : {}), ...((data.initialChannelRevision ?? data.verifiedChannelRevision) ? { expectedChannelRevision: data.initialChannelRevision ?? data.verifiedChannelRevision } : {}), ...(profile ? { sourceProfile: profile } : {}),
+              resolvedIssues: confirmation.confirmedDrafts.flatMap(row => (row.metadata as ReviewRow).issues).filter(issue => issue.resolved && issue.resolution).map(issue => ({ issueId: issue.issueId, resolution: issue.resolution! })),
+              confirmedRows: confirmation.confirmedDrafts.map(toConfirmed), excludedRows: [...(data.history.sourceExclusions ?? []), ...confirmation.excludedRows.map(row => { const metadata = row.metadata as ReviewRow; if (!metadata?.logicalRowId || !row.reason.trim() || row.reason.length > 1000) throw new Error("排除行必须提供真实逻辑行和原因。"); return { logicalRowId: metadata.logicalRowId, reason: row.reason, sourceRefs: metadata.sourceRefs }; })] }, { signal: abort.signal });
+            if (!current()) throw new Error("确认结果待原身份核实，不会更换UUID。");
+            // Display code is generated by the old batch service independently from its idempotency UUID.
+            if (result.historyId !== data.history.historyId || !isUUID(result.batch.batchCode)) throw new Error("服务端批次任务身份或展示码无效。");
+            canonicalEntries.current = new Map(result.entries.map(entry => [entry.rowRequestId, entry]));
+            prepared.current = recoveryEntries({ confirmationId: result.confirmationId, batchRequestId: confirmation.batchRequestId, batch: result.batch, entries: result.entries });
+            data.history.confirmationId = result.confirmationId; data.history.revision = result.revision;
+            frozen.current = data; setSessionData({ ...data }); batch = result.batch;
+          } else if (data.history && confirmation === undefined && input.fileName !== "单条手工录入") throw new Error("历史确认缺少冻结原UUID和候选行，不能另建正式批次。");
+          else batch = await utils.client.channelInventory.createCustomerUploadBatch.mutate({ ...expected,
             customerId: props.customerId, expectedCustomerVersion: data.customerVersion,
             ...(data.initialChannelId ? { expectedChannelId: data.initialChannelId } : {}),
             ...((data.initialChannelRevision ?? data.verifiedChannelRevision) === undefined ? {} : { expectedChannelRevision: data.initialChannelRevision ?? data.verifiedChannelRevision }),
@@ -286,7 +419,17 @@ function CustomerSupplyUploadSession(props: Props) {
         const abort = controller();
         try {
           const receipt = await utils.client.channelInventory.createCustomerMaterial.mutate(
-            customerMaterialInput(payload, requestId, props.identity, props.customerId, data.customerVersion, data.sourceProfile, uploadBatchId), { signal: abort.signal });
+            (() => {
+              if (!data.history?.confirmationId) return customerMaterialInput(payload, requestId, props.identity, props.customerId, data.customerVersion, data.sourceProfile, uploadBatchId);
+              const entry = canonicalEntries.current.get(requestId);
+              if (!entry) throw new Error("原确认完整payload尚未核实，不能构造新CAS。");
+              const canonical = canonicalConfirmationPayload(entry.payload);
+              if (canonical.requestId !== requestId || canonical.customerId !== props.customerId || canonical.expectedCustomerVersion !== data.customerVersion || canonical.expectedEnterpriseId !== expected.expectedEnterpriseId || canonical.expectedActorUserId !== expected.expectedActorUserId || canonical.uploadBatchId !== uploadBatchId || canonical.channelId !== payload.channelId) throw new Error("服务端冻结payload/CAS身份不一致，已阻止重建。");
+              const keys = ["partNumber", "brand", "qty", "price", "currency", "taxIncluded", "leadTime", "dateCode", "note"] as const;
+              if (keys.some(key => canonical[key] !== payload[key])) throw new Error("队列字段与原服务payload不同，不允许unknown改写。");
+              const { channelId, ...originalPayload } = canonical;
+              return originalPayload;
+            })(), { signal: abort.signal });
           if (!current()) throw new Error("上传会话已变化，结果待原请求确认。");
           const checked = supplyReceipt(receipt, props.customerId, uploadBatch.current.channelId, uploadBatchId);
           if (receiptsChannel.current && receiptsChannel.current !== checked.channelId) throw new Error("回执渠道身份不一致，请核实原请求。");

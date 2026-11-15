@@ -74,7 +74,9 @@ describe("persistent upload batch attribution", () => {
   it("preserves fixed customer source mode without a batch callback", async () => {
     render({ onCreateBatch: undefined, fixedSource: true, sourceLabel: "客户固定来源" }); await prepare(); click(button("确认上传 2 条")); await settle();
     expect(createBatch).not.toHaveBeenCalled(); expect(create.mock.calls.every(call => call.length === 2)).toBe(true);
-    expect(required(document.querySelector<HTMLSelectElement>('[aria-label="批量关联渠道"]')).disabled).toBe(true);
+    expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull();
+    expect(document.querySelector(".ci-batch-channel")).toBeNull();
+    expect(create).toHaveBeenCalledTimes(2); expect(create.mock.calls.every(call => call[0].channelId === 11)).toBe(true);
   });
   it("blocks corrupt mixed attribution instead of inventing a new batch", async () => {
     create.mockRejectedValueOnce(new Error("unknown")); render(); await prepare(); click(button("确认上传 2 条")); await settle();

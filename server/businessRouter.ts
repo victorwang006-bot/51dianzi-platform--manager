@@ -50,6 +50,7 @@ import {
 import { teamMaterialForEditSchema, teamMaterialUpdateSchema, collaborationNotesListSchema, collaborationNotesAddSchema, collaborationNotesEditSchema } from "../client/src/business/platform/shared/channelInventoryCollaboration";
 import { teamMaterialSourceSchema } from "../client/src/business/platform/shared/channelInventorySource";
 import { CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS, isCustomerSupplyBusinessMethod } from "./customerSupplyBusinessInput";
+import { CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS, isCustomerUploadHistoryBusinessMethod } from "./customerUploadHistoryBusinessInput";
 import { customerStarContextInputSchema, customerSetStarSchema, customerStarStateInputSchema } from "../client/src/business/platform/shared/customerStars";
 import { customerListInputSchema as customerListSchema } from "../client/src/business/platform/front-router-types/server/customerListInput";
 import { CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS } from "../client/src/business/platform/shared/channelInventoryManagement";
@@ -148,6 +149,14 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.customerSupplyContext", module: "inventory", mode: "read" },
   { method: "channelInventory.createCustomerUploadBatch", module: "inventory", mode: "write" },
   { method: "channelInventory.createCustomerMaterial", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerUploadHistoryList", module: "inventory", mode: "read" },
+  { method: "channelInventory.customerUploadHistoryGet", module: "inventory", mode: "read" },
+  { method: "channelInventory.customerUploadOriginal", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerUploadManageMark", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerUploadResult", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerUploadDownload", module: "inventory", mode: "read" },
+  { method: "channelInventory.customerUploadPrepareConfirmation", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerUploadReconcileBatch", module: "inventory", mode: "write" },
   { method: "channelInventory.updateMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.listSharedMaterials", module: "inventory", mode: "read" },
   { method: "channelInventory.notesList", module: "inventory", mode: "read" },
@@ -369,7 +378,7 @@ async function withCurrentBusinessAuthorization<T>(
     // It is deliberately absent from nativeReadMethods: an official inventory
     // read grant never creates a CRM entry point or grants missing local scope.
     // The front repeats real CRM record visibility checks with the bound staff.
-    if ((isCustomerSupplyBusinessMethod(capability.method) || capability.customerInventory) && !businessScopeAllows(scope, "customers", "read")) {
+    if ((isCustomerSupplyBusinessMethod(capability.method) || isCustomerUploadHistoryBusinessMethod(capability.method) || capability.customerInventory) && !businessScopeAllows(scope, "customers", "read")) {
       throw new TRPCError({ code: "FORBIDDEN", message: "当前后台账号未获该商户的客户读取范围授权" });
     }
     // Request-local merchant overlay, never a native user grant. All channel
@@ -619,6 +628,7 @@ function businessInputSchema(method: string): z.ZodTypeAny {
   if (method === "channelInventory.publishFactoryMaterial") return publishFactoryMaterialInputSchema;
   if (method === "channelInventory.previewFactoryMaterialReception") return previewFactoryMaterialReceptionInputSchema;
   if (isCustomerSupplyBusinessMethod(method)) return CUSTOMER_SUPPLY_BUSINESS_INPUT_SCHEMAS[method];
+  if (isCustomerUploadHistoryBusinessMethod(method)) return CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS[method];
   if (CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method]) return CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS[method];
   return CUSTOMER_CONTACT_BUSINESS_INPUT_SCHEMAS[method] ?? CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS[method]
     ?? z.unknown();
@@ -637,6 +647,14 @@ function businessMutation(method: string, module: BusinessModule) {
 /** Only these two fixed collaboration commands use read authorization, but remain real
  * tRPC mutations and traverse the unchanged binding/scope fence and command audit. */
 function collaborationMutation(method: "channelInventory.collaborationNotesAdd" | "channelInventory.collaborationNotesEdit") {
+  return publicProcedure.input(businessInputSchema(method)).mutation(({ ctx, input }) =>
+    forwardBusinessMethod(ctx, input, { method, module: "inventory", mode: "read" }));
+}
+
+/** Fixed file download uses POST to keep private file identities out of URLs.
+ * This remains read-authorized and passes the unchanged binding/scope fence. */
+function customerUploadDownloadMutation() {
+  const method = "channelInventory.customerUploadDownload";
   return publicProcedure.input(businessInputSchema(method)).mutation(({ ctx, input }) =>
     forwardBusinessMethod(ctx, input, { method, module: "inventory", mode: "read" }));
 }
@@ -753,6 +771,14 @@ const channelInventoryBusinessRouter = router({
   customerSupplyContext: businessQuery("channelInventory.customerSupplyContext", "inventory"),
   createCustomerUploadBatch: businessMutation("channelInventory.createCustomerUploadBatch", "inventory"),
   createCustomerMaterial: businessMutation("channelInventory.createCustomerMaterial", "inventory"),
+  customerUploadHistoryList: businessQuery("channelInventory.customerUploadHistoryList", "inventory"),
+  customerUploadHistoryGet: businessQuery("channelInventory.customerUploadHistoryGet", "inventory"),
+  customerUploadOriginal: businessMutation("channelInventory.customerUploadOriginal", "inventory"),
+  customerUploadManageMark: businessMutation("channelInventory.customerUploadManageMark", "inventory"),
+  customerUploadResult: businessMutation("channelInventory.customerUploadResult", "inventory"),
+  customerUploadDownload: customerUploadDownloadMutation(),
+  customerUploadPrepareConfirmation: businessMutation("channelInventory.customerUploadPrepareConfirmation", "inventory"),
+  customerUploadReconcileBatch: businessMutation("channelInventory.customerUploadReconcileBatch", "inventory"),
   updateMaterial: businessMutation("channelInventory.updateMaterial", "inventory"),
   listSharedMaterials: businessQuery("channelInventory.listSharedMaterials", "inventory"),
   notesList: businessQuery("channelInventory.notesList", "inventory"),

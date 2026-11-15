@@ -57,14 +57,17 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
 
 describe("customer supply entry integration without broader API reads", () => {
-  it("removes the fixed title description node without adding spacing or replacing controls", async () => {
+  it("places the original title immediately before upload on one row without settings or placeholder actions", async () => {
     await render();
     expect(host.querySelector("h2")?.textContent).toBe("客户渠道库存");
     expect(host.textContent).not.toContain("上传库存自动归属本客户公司；与采购需求、BOM导入分开。");
-    expect(host.querySelector("h2")?.nextElementSibling?.tagName).toBe("DIV");
+    expect(host.querySelector("h2")?.nextElementSibling).toBe(button("上传库存表"));
+    expect(host.querySelector("h2")?.parentElement?.className).toBe("flex items-center gap-2");
+    expect(host.querySelector("h2")?.style.margin).toBe("0px");
     expect(host.querySelectorAll("p")).toHaveLength(0);
     expect(button("上传库存表").getAttribute("aria-disabled")).toBe("false");
-    expect(button("渠道设置").disabled).toBe(false); expect(button("渠道设置").getAttribute("title")).toBeNull();
+    expect(host.textContent).not.toContain("渠道设置");
+    expect(button("上传库存表").nextElementSibling).toBe(button("解析历史")); expect(host.textContent).not.toContain("解析上传");
   });
   it("uses exact scoped context and existing importer, never copies customer fields or invents another upload mode", async () => {
     const onOpenChange = vi.fn(); await render({ onOpenChange });
@@ -81,55 +84,56 @@ describe("customer supply entry integration without broader API reads", () => {
     await act(async () => state.dialog.onClose());
     expect(host.querySelector("[role=dialog]")).toBeNull(); expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
-  it("keeps zero-stock bound channel settings and inline inventory reachable despite masked summary channelId", async () => {
+  it("keeps zero-stock formal binding and inline inventory despite removing the settings entry", async () => {
     state.summary.items[0] = { customerId: 801, channelId: null, canViewStock: false, materialCount: 0 };
-    await render(); expect(button("渠道设置").disabled).toBe(false);
-    await click("渠道设置"); expect(state.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+    await render(); expect(host.textContent).not.toContain("渠道设置");
+    expect(state.context.channel).toMatchObject({ id: 411, revision: 2, type: "agent" });
+    expect(state.navigate).not.toHaveBeenCalled();
     expect(state.inventory.customerId).toBe(801); expect(state.inventory.enabled).toBe(true);
     expect(host.querySelector("[data-customer-inventory]")).not.toBeNull(); expect(host.textContent).not.toContain("回收站");
   });
-  it("retains read-only channel settings and material navigation without granting upload", async () => {
+  it("retains read-only inline inventory and actual denial without granting upload or settings access", async () => {
     state.write = false; state.context.canUpload = false; state.context.disabledReason = "真实只读原因";
-    await render(); expect(button("渠道设置").disabled).toBe(false);
+    await render(); expect(host.textContent).not.toContain("渠道设置");
     expect(button("上传库存表").getAttribute("aria-disabled")).toBe("true"); await click("上传库存表");
-    expect(host.querySelector("[role=dialog]")).toBeNull(); await click("渠道设置");
-    expect(state.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
-    expect(host.textContent).toContain("编辑能力仍由原渠道页面核验");
+    expect(host.querySelector("[role=dialog]")).toBeNull(); expect(state.navigate).not.toHaveBeenCalled();
+    expect(state.inventory.enabled).toBe(true); expect(state.inventory.isCurrent()).toBe(true);
+    expect(host.textContent).not.toContain("编辑能力仍由原渠道页面核验");
     expect(host.textContent).toContain("真实只读原因");
   });
   it("keeps native source-read independent from material-write, permitting only original context-approved upload", async () => {
     state.read = false; await render();
     expect(input("summary").options.enabled).toBe(false); expect(input("context").options.enabled).toBe(true);
-    expect(button("渠道设置").disabled).toBe(true); expect(host.textContent).not.toContain("查看供应库存");
+    expect(host.textContent).not.toContain("渠道设置"); expect(host.textContent).not.toContain("查看供应库存");
     await click("上传库存表"); expect(state.dialog.isCurrent()).toBe(true);
   });
-  it("offers manual existing-channel association only through the existing upload dialog when context proves unbound", async () => {
+  it("opens the existing customer upload without asking for a channel when context proves unbound", async () => {
     state.context.channel = null; state.summary.items[0] = { customerId: 801, channelId: null, canViewStock: false, materialCount: 0 };
-    await render(); expect(button("渠道设置").disabled).toBe(true);
+    await render(); expect(host.textContent).not.toContain("渠道设置");
     const reason = "当前上传负责人尚未绑定供货渠道，可在上传库存表中人工选择并确认关联现有渠道。";
-    expect(button("渠道设置").title).toBe(reason);
     expect(host.textContent).not.toContain(reason); expect(host.textContent).not.toContain("人工选择并确认关联现有渠道");
     expect(host.textContent).not.toContain("上传库存自动归属本客户公司；与采购需求、BOM导入分开。");
     expect(host.querySelectorAll("p")).toHaveLength(0);
     expect(button("上传库存表").getAttribute("aria-disabled")).toBe("false");
     expect(input("context").input.customerId).toBe(801); expect(input("context").options.enabled).toBe(true);
     expect(input("summary").input.customerIds).toEqual([801]); expect(input("summary").options.enabled).toBe(true);
-    await click("渠道设置"); expect(state.navigate).not.toHaveBeenCalled();
     await click("上传库存表"); expect(host.querySelector("[data-shared-importer]")).not.toBeNull();
     expect(state.dialog.customerId).toBe(801); expect(state.dialog.isCurrent()).toBe(true);
     expect(state.navigate).not.toHaveBeenCalled();
   });
-  it.each(["no-read", "context-error", "pending", "actual-denial"])("retains the visible %s settings reason and original disabled/title behavior", async kind => {
+  it.each(["no-read", "context-error", "pending", "actual-denial"])("retains actual %s feedback without settings-only copy", async kind => {
     let reason: string;
-    if (kind === "no-read") { state.read = false; reason = "暂无供货设置查看权限。"; }
-    else if (kind === "context-error") { state.flags.context = { isError: true, error: new Error("FORBIDDEN") }; reason = "供货设置读取失败，请重试。"; }
-    else if (kind === "pending") { state.context = null; reason = "正在核验客户供货关联…"; }
+    if (kind === "no-read") { state.read = false; reason = "暂无供应库存查看权限。"; }
+    else if (kind === "context-error") { state.flags.context = { isError: true, error: new Error("FORBIDDEN") }; reason = "读取供货设置失败：FORBIDDEN"; }
+    else if (kind === "pending") { state.context = null; reason = "正在核验客户供货设置…"; }
     else { state.context.channel = null; state.context.canUpload = false; state.context.disabledReason = "真实供货关联读取权限不足"; reason = state.context.disabledReason; }
     await render();
-    expect(button("渠道设置").disabled).toBe(true); expect(button("渠道设置").title).toBe(reason);
-    expect([...host.querySelectorAll("p")].some(node => node.textContent === reason)).toBe(true);
+    expect(host.textContent).not.toContain("渠道设置"); expect(host.textContent).toContain(reason);
+    expect(host.textContent).not.toContain("暂无供货设置查看权限。");
+    expect(host.textContent).not.toContain("正在核验客户供货关联…");
     expect(host.textContent).not.toContain("上传库存自动归属本客户公司；与采购需求、BOM导入分开。");
-    await click("渠道设置"); expect(state.navigate).not.toHaveBeenCalled();
+    expect(button("上传库存表").getAttribute("aria-disabled")).toBe(kind === "no-read" ? "false" : "true");
+    expect(state.navigate).not.toHaveBeenCalled();
   });
   it("does not interpret masked unreadable context as unbound or offer unauthorized association", async () => {
     state.context.channel = null; state.context.canUpload = false; state.context.disabledReason = "暂无权限读取关联库存来源，请联系有权人员确认";
@@ -147,13 +151,13 @@ describe("customer supply entry integration without broader API reads", () => {
     if (kind === "wrong-version") state.context.customer.version = 5;
     await render(); expect(button("上传库存表").getAttribute("aria-disabled")).toBe("true");
     await click("上传库存表"); expect(host.querySelector("[role=dialog]")).toBeNull();
-    if (["archived", "inactive", "disabled"].includes(kind)) expect(button("渠道设置").disabled).toBe(false);
-    else if (kind.startsWith("wrong")) expect(button("渠道设置").disabled).toBe(true);
+    expect(host.textContent).not.toContain("渠道设置"); expect(state.navigate).not.toHaveBeenCalled();
+    if (kind === "disabled") expect(host.textContent).toContain("负责人已变化");
   });
   it("rejects retained placeholder/unmounted context proof and keeps errors retryable", async () => {
     for (const flags of [{ isFetching: true }, { isPlaceholderData: true }, { isFetchedAfterMount: false }]) {
       state.flags.context = flags; await render(); await click("上传库存表");
-      expect(host.querySelector("[role=dialog]")).toBeNull(); expect(button("渠道设置").disabled).toBe(true);
+      expect(host.querySelector("[role=dialog]")).toBeNull(); expect(host.textContent).not.toContain("渠道设置");
     }
     const error = new Error("FORBIDDEN"); state.flags.context = { isError: true, error }; await render();
     expect(state.authorizationError).toHaveBeenCalledWith(error); await click("重试供应库存");
@@ -177,12 +181,13 @@ describe("customer supply entry integration without broader API reads", () => {
     await act(async () => { old.onComplete(); old.onClose(); });
     expect(state.invalidateContext).not.toHaveBeenCalled(); expect(state.invalidateSummary).not.toHaveBeenCalled();
   });
-  it("locks delayed parent-approved upload and settings actions to verified identity and binding", async () => {
+  it("locks delayed parent-approved upload to verified identity and live context after settings removal", async () => {
     let pending!: () => void; const onAction = (action: () => void) => { pending = action; };
-    await render({ onAction }); await click("渠道设置"); state.context.channel.id = 412; await render({ onAction });
-    await act(async () => pending()); expect(state.navigate).not.toHaveBeenCalled();
-    await click("上传库存表"); state.identityKey = "AUTH-B"; await render({ onAction });
+    await render({ onAction }); await click("上传库存表"); state.context.canUpload = false; await render({ onAction });
     await act(async () => pending()); expect(host.querySelector("[role=dialog]")).toBeNull();
+    state.context.canUpload = true; await render({ onAction });
+    await click("上传库存表"); state.identityKey = "AUTH-B"; await render({ onAction });
+    await act(async () => pending()); expect(host.querySelector("[role=dialog]")).toBeNull(); expect(state.navigate).not.toHaveBeenCalled();
   });
   it("cannot resurrect an AUTH-A importer after AUTH-A→B→A or leak old completion to a new importer", async () => {
     await render(); await click("上传库存表"); const old = state.dialog;
@@ -207,18 +212,19 @@ it("ends an ordinary closed session before reopening, suppressing old completion
   expect(state.invalidateContext).not.toHaveBeenCalled(); expect(state.invalidateSummary).not.toHaveBeenCalled();
 });
 
-it("suppresses only the fixed settings paragraph in source while retaining its reason, tooltip and query/action guards", () => {
+it("removes only settings-entry code and copy while preserving scoped reads, upload and session guards", () => {
   const source = readFileSync("client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx", "utf8");
   const reason = "当前上传负责人尚未绑定供货渠道，可在上传库存表中人工选择并确认关联现有渠道。";
   expect(source).not.toContain('<p className="customer-detail-meta">上传库存自动归属本客户公司；与采购需求、BOM导入分开。</p>');
-  expect(source).toContain(`: !boundChannelId ? context.canUpload ? "${reason}"`);
-  expect(source).toContain(`{settingsReason ? settingsReason === "${reason}" ? null : <p className="customer-detail-meta">{settingsReason}</p>`);
-  expect(source).toContain('disabled={Boolean(settingsReason)} title={settingsReason || undefined} onClick={viewSettings}>渠道设置');
+  expect(source).not.toContain(reason); expect(source).not.toContain("settingsReason");
+  expect(source).not.toContain("viewSettings"); expect(source).not.toContain("渠道设置");
   expect(source).toContain('aria-disabled={!canUpload} aria-describedby={uploadReason ? descriptionId : undefined}');
   expect(source).toContain("enabled: readEnabled, retry: false, staleTime: 0, placeholderData: undefined");
   expect(source).toContain("enabled: contextEnabled, retry: false, staleTime: 0, placeholderData: undefined");
   expect(source).toContain("withCustomerContactScope(scope, { customerId })");
   expect(source).toContain("withCustomerContactScope(scope, { customerIds: [customerId] })");
   expect(source).toContain("if (!identity || !context || !canUpload || openRef.current) return;");
-  expect(source).toContain("if (!identity || !readEnabled || !boundChannelId) return;");
+  expect(source).toContain("session.generation === lifecycle.current.generation");
+  expect(source).toContain("lifecycle.current.mounted && lifecycle.current.allowed");
+  expect(source).toContain("context.disabledReason !== uploadReason");
 });

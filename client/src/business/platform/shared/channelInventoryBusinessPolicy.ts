@@ -6,6 +6,14 @@
  * procedures rather than accepting a browser supplied procedure name.
  */
 export const CHANNEL_INVENTORY_BUSINESS_METHOD_IDS = [
+  "channelInventory.customerUploadHistoryList",
+  "channelInventory.customerUploadHistoryGet",
+  "channelInventory.customerUploadOriginal",
+  "channelInventory.customerUploadManageMark",
+  "channelInventory.customerUploadResult",
+  "channelInventory.customerUploadDownload",
+  "channelInventory.customerUploadPrepareConfirmation",
+  "channelInventory.customerUploadReconcileBatch",
   "channelInventory.publishFactoryMaterial",
   "channelInventory.previewFactoryMaterialReception",
   "channelInventory.deleteMaterials",
@@ -53,6 +61,14 @@ export const CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES: Readonly<Record<
   ChannelInventoryBusinessMethodId,
   Readonly<{ mode: ChannelInventoryBusinessMethodMode; permission: "inventory.manage" | "inventory.publish" }>
 >> = {
+  "channelInventory.customerUploadHistoryList": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.customerUploadHistoryGet": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.customerUploadOriginal": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.customerUploadManageMark": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.customerUploadResult": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.customerUploadDownload": { mode: "read", permission: "inventory.manage" },
+  "channelInventory.customerUploadPrepareConfirmation": { mode: "write", permission: "inventory.manage" },
+  "channelInventory.customerUploadReconcileBatch": { mode: "write", permission: "inventory.manage" },
   "channelInventory.publishFactoryMaterial": { mode: "write", permission: "inventory.publish" },
   "channelInventory.previewFactoryMaterialReception": { mode: "read", permission: "inventory.publish" },
   "channelInventory.deleteMaterials": { mode: "write", permission: "inventory.manage" },

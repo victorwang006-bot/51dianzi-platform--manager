@@ -8,6 +8,9 @@ import { businessIndustryCodeSchema } from "../../../shared/businessIndustry";
 import { createCustomerUploadBatchSchema, channelMaterialCreateFields, customerSupplySummarySchema, customerSupplyContextSchema, createCustomerMaterialSchema } from "../../../shared/customerSupply";
 import { createCustomerSupplyService } from "../services/customerSupply";
 import { getDb } from "../db";
+import * as historySchemas from "../../../shared/customerUploadHistory";
+import { createCustomerUploadHistoryService } from "../services/customerUploadHistory";
+import { createCustomerUploadPrivateStorage } from "../services/customerUploadPrivateStorage";
 import { createChannelInventoryCollaborationService } from "../services/channelInventoryCollaboration";
 import { createChannelInventorySourceService, SOURCE_FORBIDDEN_MESSAGE } from "../services/channelInventorySource";
 import { teamMaterialSourceSchema } from "../../../shared/channelInventorySource";
@@ -179,8 +182,43 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
   const management = createChannelInventoryManagementService({ getDb });
   const supply = createCustomerSupplyService({ getDb, registerTeamRecord });
   const publication = createChannelFactoryPublicationService({ getDb });
+  const historyService = createCustomerUploadHistoryService({ getDb, registerTeamRecord,
+    storage: createCustomerUploadPrivateStorage({ root: "/opt/apps/dianzi51-shared/private/customer-inventory-history" }) });
 
   return router({
+    customerUploadHistoryList: readProcedure.input(historySchemas.customerUploadHistoryListSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadHistoryList(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadHistoryGet: readProcedure.input(historySchemas.customerUploadHistoryGetSchema).query(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadHistoryGet(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadOriginal: procedure.input(historySchemas.customerUploadOriginalSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadOriginal(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadManageMark: procedure.input(historySchemas.customerUploadManageMarkSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadManageMark(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadResult: procedure.input(historySchemas.customerUploadResultSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadResult(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    // POST mutation with a fixed READ grant, never promoted to generic customer write.
+    customerUploadDownload: readProcedure.input(historySchemas.customerUploadDownloadSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadDownload(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadPrepareConfirmation: procedure.input(historySchemas.customerUploadPrepareConfirmationSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadPrepareConfirmation(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadReconcileBatch: procedure.input(historySchemas.customerUploadReconcileBatchSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadReconcileBatch(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     previewFactoryMaterialReception: publishProcedure.input(previewFactoryMaterialReceptionInputSchema).query(async ({ ctx, input }) => {
       try { assertExpectedContext(ctx, input); return await publication.previewFactoryMaterialReception(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }

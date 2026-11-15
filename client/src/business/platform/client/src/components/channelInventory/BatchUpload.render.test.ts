@@ -49,8 +49,28 @@ describe("channel batch opt-out regression after customer single entry extension
     expect(document.querySelector('[aria-label="客户物料上传方式"]')).toBeNull();
     expect(document.querySelector(".customer-supply-single")).toBeNull();
     expect(document.querySelector(".ci-batch-steps")?.textContent).toBe("1选文件2匹配字段3确认上传");
+    const selector = required(document.querySelector<HTMLSelectElement>('[aria-label="批量关联渠道"]'));
+    expect(selector.value).toBe("11"); expect(selector.disabled).toBe(false);
+    expect(document.querySelector(".ci-batch-channel")?.textContent).toContain("关联渠道 *");
+    expect(document.querySelector(".ci-batch-channel")?.textContent).toContain("本批使用同一渠道");
     expect(button("选择库存表格").disabled).toBe(false); expect(document.querySelector('[role="dialog"]')?.textContent).toContain("表格上传渠道库存");
     click(button("取消")); expect(close).toHaveBeenCalledTimes(1); expect(window.confirm).not.toHaveBeenCalled();
+  });
+  it("hides only the fixed-source presentation while keeping the original channel payload and dirty queue", async () => {
+    const dirty = vi.fn(); render({ fixedSource: true, sourceLabel: "客户固定来源", onDirtyChange: dirty });
+    expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull(); expect(document.querySelector(".ci-batch-channel")).toBeNull();
+    expect(document.querySelector('[role="dialog"]')?.textContent).not.toContain("客户固定来源");
+    await upload(); expect(dirty).toHaveBeenCalledWith(true); expect(create).not.toHaveBeenCalled();
+    click(button("确认上传 1 条")); await settle();
+    expect(create.mock.calls[0][0].channelId).toBe(11); expect(dirty).toHaveBeenLastCalledWith(false);
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
+  });
+  it("still lets standard channel mode choose another authorized channel for the original upload queue", async () => {
+    render({ channels: [{ id: 11, name: "原渠道", active: true }, { id: 12, name: "第二渠道", active: true }], channelTotal: 2 });
+    const selector = required(document.querySelector<HTMLSelectElement>('[aria-label="批量关联渠道"]'));
+    act(() => { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(selector, "12"); selector.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(selector.value).toBe("12"); await upload(); click(button("确认上传 1 条")); await settle();
+    expect(create.mock.calls[0][0].channelId).toBe(12); expect(create).toHaveBeenCalledTimes(1);
   });
   it("keeps original file mapping/preview columns and independent channel payload", async () => {
     render(); await upload();

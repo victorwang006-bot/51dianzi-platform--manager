@@ -165,8 +165,8 @@ describe("verified customer workbench read gates", () => {
         expect(state.inventory).toMatchObject({ customerId: 801, enabled: true, identity: { enterpriseId: 31, actorUserId: 7 } });
         expect(state.inventory).not.toHaveProperty("partNumber");
         expect(state.inventory).not.toHaveProperty("channelId");
-        await act(async () => [...host.querySelectorAll("button")].find(button => button.textContent?.includes("渠道设置")).click());
-        expect(state.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=channels");
+        expect([...host.querySelectorAll("button")].some(button => button.textContent?.includes("渠道设置"))).toBe(false);
+        expect(state.navigate).not.toHaveBeenCalled();
     });
     it("never shows foreign demand/order material or cached inventory when module grants are missing", async () => {
         state.demand.customerId = 802;

@@ -23,6 +23,8 @@ import "./batch.css";
 import "./layout.css";
 
 type Channel = { id: number; name: string; active: boolean };
+export type CustomerConfirmRows = { batchRequestId: string; sessionData?: unknown; confirmedDrafts: { row: number; rowRequestId: string; draft: Draft; metadata?: unknown }[]; excludedRows: { row: number; reason: string; metadata?: unknown }[] };
+export type CustomerInitialRecovery = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; uploadBatch: PersistentUploadBatch };
 type Grid = (string | number | null | undefined)[][];
 type Props = {
   channels: Channel[];
@@ -38,13 +40,22 @@ type Props = {
   onCreate: (payload: Payload, requestId: string, uploadBatchId?: number) => Promise<unknown>;
   onCreateBatch?: (input: UploadBatchInput) => Promise<UploadBatchReceipt>;
   /** Customer-only preparation: no virtual channel/placeholder material is ever queued. */
-  onCreateCustomerBatch?: (input: Omit<UploadBatchInput, "channelId">) => Promise<UploadBatchReceipt & { channelId: number }>;
+  onCreateCustomerBatch?: (input: Omit<UploadBatchInput, "channelId">, confirmation?: CustomerConfirmRows) => Promise<UploadBatchReceipt & { channelId: number }>;
   customerSourceReady?: boolean;
+  onOriginalFilePersist?: (file: File) => Promise<{ sessionData: unknown; rows: { row: number; metadata: unknown }[] }>;
+  initialRows?: { row: number; draft: Draft; metadata: unknown }[];
+  initialFile?: File;
+  initialRecovery?: CustomerInitialRecovery;
+  renderParseEntry?: (controls: { onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void }) => React.ReactNode;
+  /** Exact canonical server entries after prepare, not another importer. */
+  preparedEntries?: () => ManagedBatchEntry[] | undefined;
+  reconcileQueue?: (entries: ManagedBatchEntry[]) => Promise<ManagedBatchEntry[]>;
   onComplete: () => void;
   isCurrent: () => boolean;
   sourceLabel?: string;
   fixedSource?: boolean;
   sourceDetails?: React.ReactNode;
+  renderConfirmationDetails?: () => React.ReactNode;
   storageKeySuffix?: string;
   sessionData?: unknown;
   validateSavedSession?: (data: unknown, entries: BatchEntry[]) => boolean;
@@ -64,14 +75,14 @@ export const batchUploadDialogStyle: React.CSSProperties = {
   height: "min(85dvh, 680px)", maxHeight: "85dvh", display: "flex",
   flexDirection: "column", gap: "12px", overflow: "hidden", padding: "18px",
 };
-type CustomerPreparation = { rows: { row: number; requestId: string; draft: Draft }[]; requestId: string; name: string; sessionData?: unknown; entryMode: "table" | "single" };
+type CustomerPreparation = { confirmation?: CustomerConfirmRows; rows: { row: number; requestId: string; draft: Draft }[]; requestId: string; name: string; sessionData?: unknown; entryMode: "table" | "single" };
 type SavedBatch = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single"; uploadBatch?: PersistentUploadBatch };
 const storageKey = (props: Props) => `d51-channel-inventory-batch-v1:${props.actorUserId}:${props.enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
 function readSavedBatch(props: Props): { saved: SavedBatch | null; preparation?: CustomerPreparation; error: string; blocked: boolean } {
   const empty = { saved: null, error: "", blocked: false };
   try {
     const raw = sessionStorage.getItem(storageKey(props));
-    if (!raw) return empty;
+    if (!raw) return props.initialRecovery ? { saved: props.initialRecovery, error: "", blocked: false } : empty;
     const data = JSON.parse(raw);
     if (data.version === 2 && data.phase === "customer-source" && props.onCreateCustomerBatch
       && data.actorUserId === props.actorUserId && data.enterpriseId === props.enterpriseId) {
@@ -177,12 +188,22 @@ function BatchUploadSession(props: Props) {
   const [excluded, setExcluded] = useState<number[]>([]);
   const [entries, setEntries] = useState<BatchEntry[]>([]);
   const restoreBlocked = initial.blocked;
-  const [entryMode, setEntryMode] = useState<"table" | "single">("table");
+  const [entryMode, setEntryMode] = useState<"table" | "single" | "parse">("table");
+  const [parseDirty, setParseDirty] = useState(false);
+  const [parseBusy, setParseBusy] = useState(false);
+  const [edits, setEdits] = useState<Record<number, Draft>>({});
+  const [currencyConfirmed, setCurrencyConfirmed] = useState(false);
+  const excludedReasons = useRef<Record<number, string>>({});
+  const rowMetadata = useRef(new Map<number, unknown>(props.initialRows?.map(r => [r.row, r.metadata]) ?? []));
+  const importSession = useRef<unknown>(props.sessionData);
+  importSession.current = props.sessionData ?? importSession.current;
   const [saved, setSaved] = useState<SavedBatch | null>(initial.saved);
   const [savedPreparation, setSavedPreparation] = useState(initial.preparation);
   const [preparing, setPreparing] = useState<CustomerPreparation | undefined>();
   const resolvedChannel = useRef<Channel | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [retryFile, setRetryFile] = useState<File | null>(null);
+  const persistedFile = useRef<{ file: File; result: { sessionData: unknown; rows: { row: number; metadata: unknown }[] } } | null>(null);
   const mounted = useRef(true);
   const uploadBatch = useRef<PersistentUploadBatch | undefined>(undefined);
   const serial = useRef(0);
@@ -221,7 +242,7 @@ function BatchUploadSession(props: Props) {
           name,
           entries: next,
           ...(uploadBatch.current ? { uploadBatch: uploadBatch.current } : {}),
-          ...(latest.current.sessionData === undefined ? {} : { sessionData: latest.current.sessionData }),
+          ...(importSession.current === undefined ? {} : { sessionData: importSession.current }),
           ...(latest.current.renderSingleEntry ? { entryMode } : {}),
         })
       );
@@ -244,12 +265,12 @@ function BatchUploadSession(props: Props) {
     setRawGrid(originalValues);
     setMapping(suggestMapping(next[0]?.map(String) ?? []));
     setName(fileName);
-    setExcluded([]);
+    setExcluded([]); setEdits({}); setCurrencyConfirmed(false); excludedReasons.current = {};
     setError("");
     setStep(2);
     latest.current.onDirtyChange(true);
   };
-  const selectFile = async (file: File) => {
+  const selectFile = async (file: File, retry = false) => {
     const token = ++serial.current;
     setError("");
     if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
@@ -262,6 +283,13 @@ function BatchUploadSession(props: Props) {
     }
     setLoading(true);
     try {
+      if (latest.current.onOriginalFilePersist) {
+        const original = retry && persistedFile.current?.file === file ? persistedFile.current.result : await latest.current.onOriginalFilePersist(file);
+        persistedFile.current = { file, result: original };
+        if (!current() || token !== serial.current) return;
+        importSession.current = original.sessionData;
+        rowMetadata.current = new Map(original.rows.map(r => [r.row, r.metadata]));
+      }
       const XLSX = await import("xlsx");
       const buffer = await file.arrayBuffer();
       if (!current() || token !== serial.current) return;
@@ -287,6 +315,7 @@ function BatchUploadSession(props: Props) {
         throw new Error("每份表格最多40列，请删除无关列后重新上传。");
       const next = XLSX.utils.sheet_to_json<(string | number)[]>(sheet, {
         header: 1,
+        range: 0,
         defval: "",
         raw: false,
         blankrows: true,
@@ -295,6 +324,7 @@ function BatchUploadSession(props: Props) {
         sheet,
         {
           header: 1,
+          range: 0,
           defval: "",
           raw: true,
           blankrows: true,
@@ -303,8 +333,9 @@ function BatchUploadSession(props: Props) {
       if (next.length < 2)
         throw new Error("首行应为表头，且至少有一行库存数据。");
       if (current() && token === serial.current)
-        loadGrid(next, `${file.name} · ${sheetName}`, originalValues);
+        { loadGrid(next, `${file.name} · ${sheetName}`, originalValues); setRetryFile(null); }
     } catch (e) {
+      if (current() && token === serial.current) { setRetryFile(file); }
       if (current() && token === serial.current)
         setError(
           e instanceof Error ? e.message : "文件读取失败，请用模板整理后重试。"
@@ -313,6 +344,14 @@ function BatchUploadSession(props: Props) {
       if (current() && token === serial.current) setLoading(false);
     }
   };
+  useEffect(() => {
+    if (initial.saved || initial.preparation || initial.blocked) return;
+    if (props.initialRows?.length) {
+      loadGrid([fields.map(f => f.label), ...props.initialRows.map(r => fields.map(f => r.draft[f.key]))], props.initialFile?.name ?? "解析结果核对");
+      setEdits(Object.fromEntries(props.initialRows.map((r, i) => [i + 2, r.draft])));
+      rowMetadata.current = new Map(props.initialRows.map((r, i) => [i + 2, r.metadata]));
+    } else if (props.initialFile) void selectFile(props.initialFile);
+  }, []);
   const download = async () => {
     try {
       const XLSX = await import("xlsx");
@@ -325,9 +364,27 @@ function BatchUploadSession(props: Props) {
       if (current()) setError("模板生成失败，请稍后重试。");
     }
   };
-  const rows = mapGrid(grid, mapping, rawGrid).filter(
-    r => !excluded.includes(r.row)
-  );
+  const historyOptIn = rowMetadata.current.size > 0 && entryMode === "table";
+  const allRows = mapGrid(grid, mapping, rawGrid).map(r => {
+    let draft = edits[r.row] ?? r.draft;
+    if (historyOptIn && !edits[r.row] && mapping.currency < 0) draft = { ...draft, currency: "" };
+    if (currencyConfirmed) draft = { ...draft, currency: "CNY" };
+    const errors = validateDraft(draft);
+    const metadata = rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined;
+    if (historyOptIn && metadata?.issues?.some(issue => (issue.field === "source" || issue.field === "other") && !issue.resolved)) errors.push("来源或其他问题尚未填写核实依据");
+    if (historyOptIn && draft.currency.trim() !== "CNY") errors.push("币种待人工明确CNY；不能默认或换算外币");
+    if (historyOptIn && !rowMetadata.current.has(r.row)) errors.push("缺少服务端原行证据，不能猜测来源");
+    return { ...r, draft, errors };
+  });
+  const rows = allRows.filter(r => !excluded.includes(r.row));
+  const excludeRow = (row: number) => {
+    if (historyOptIn) {
+      const reason = window.prompt(`请填写原表第${row}行的排除原因（1至1000字）`);
+      if (!reason?.trim() || reason.trim().length > 1000) { setError("排除行必须填写1至1000字原因。"); return; }
+      excludedReasons.current[row] = reason.trim();
+    }
+    setExcluded(v => [...v, row]);
+  };
   const bad = rows.filter(r => r.errors.length);
   const mappingErrors = validateMapping(mapping);
   const selected = channels.find(c => c.id === Number(channelId))
@@ -335,13 +392,14 @@ function BatchUploadSession(props: Props) {
   const sourceReady = selected?.active || (props.onCreateCustomerBatch && props.customerSourceReady);
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
-  const modeLocked = busy || loading || hasQueue || !!preparing || !!savedPreparation || !!saved || restoreBlocked;
-  const changeMode = (mode: "table" | "single") => {
+  const modeLocked = busy || loading || parseBusy || hasQueue || !!preparing || !!savedPreparation || !!saved || restoreBlocked;
+  const changeMode = (mode: "table" | "single" | "parse") => {
     if (!current() || running.current || modeLocked || mode === entryMode) return;
+    if (parseDirty && !window.confirm("解析上传尚未提交，切换将关闭草稿，是否继续？")) return;
     if (grid.length && !window.confirm("切换上传方式将清除当前未提交的预览；单条录入草稿会保留。是否继续？")) return;
     serial.current += 1;
     setEntryMode(mode);
-    setGrid([]); setRawGrid([]); setExcluded([]); setName(""); setError(""); setStep(1);
+    setGrid([]); setRawGrid([]); setExcluded([]); setName(""); setError(""); setStep(1); setEdits({}); setCurrencyConfirmed(false); rowMetadata.current.clear();
   };
   const previewSingle = (draft: Draft) => {
     if (!current() || running.current || modeLocked || entryMode !== "single" || !sourceReady) return;
@@ -365,8 +423,11 @@ function BatchUploadSession(props: Props) {
         setError("请完成字段匹配并修正错误行。"); return;
       }
       if (latest.current.onCreateCustomerBatch) {
-        preparation = { requestId: uuid(), name, entryMode, sessionData: latest.current.sessionData,
+        preparation = { requestId: uuid(), name, entryMode: entryMode === "single" ? "single" : "table", sessionData: importSession.current,
           rows: rows.map(r => ({ row: r.row, requestId: uuid(), draft: r.draft })) };
+        if (historyOptIn) preparation.confirmation = { batchRequestId: preparation.requestId, sessionData: importSession.current,
+          confirmedDrafts: preparation.rows.map(r => ({ row: r.row, rowRequestId: r.requestId, draft: r.draft, metadata: rowMetadata.current.get(r.row) })),
+          excludedRows: allRows.filter(r => excluded.includes(r.row)).map(r => ({ row: r.row, reason: excludedReasons.current[r.row] ?? "", metadata: rowMetadata.current.get(r.row) })) };
         setPreparing(preparation);
       } else {
         if (!target) return;
@@ -392,15 +453,16 @@ function BatchUploadSession(props: Props) {
       if (preparation) {
         if (!latest.current.onCreateCustomerBatch) throw new Error("当前入口无法核验原客户批次。");
         const created = await latest.current.onCreateCustomerBatch({ fileName: preparation.name,
-          totalRows: preparation.rows.length, requestId: preparation.requestId });
+          totalRows: preparation.rows.length, requestId: preparation.requestId }, preparation.confirmation);
         if (!current()) return;
         if (!Number.isSafeInteger(created.channelId) || created.channelId <= 0 || !Number.isSafeInteger(created.id) || created.id <= 0
           || (target && created.channelId !== target.id)) throw new Error("客户批次回执渠道或批次无效，请按原请求重试。");
         target = { id: created.channelId, name: props.sourceLabel || "客户供应来源", active: true };
         resolvedChannel.current = target; setChannelId(String(target.id));
         uploadBatch.current = { requestId: preparation.requestId, id: created.id, batchCode: created.batchCode };
-        next = preparation.rows.map(row => ({ row: row.row, requestId: row.requestId,
+        next = (preparation.confirmation ? latest.current.preparedEntries?.() : undefined) ?? preparation.rows.map(row => ({ row: row.row, requestId: row.requestId,
           payload: toPayload(row.draft, created.channelId), uploadBatchId: created.id, status: "pending" }));
+        if (preparation.confirmation && (next.length !== preparation.rows.length || next.some((entry, i) => entry.requestId !== preparation!.rows[i].requestId || entry.payload.channelId !== created.channelId || (entry as ManagedBatchEntry).uploadBatchId !== created.id))) throw new Error("服务端确认队列与冻结UUID不匹配，不能重建批次。");
         setEntries(next);
         if (!persist(next, target.id)) return;
         setPreparing(undefined);
@@ -417,7 +479,7 @@ function BatchUploadSession(props: Props) {
         setEntries(next);
         if (!persist(next, target.id)) return;
       }
-      const result = await runBatch(next, {
+      let result = await runBatch(next, {
         submit: (payload, requestId) => uploadBatch.current?.id === undefined
           ? latest.current.onCreate(payload, requestId)
           : latest.current.onCreate(payload, requestId, uploadBatch.current.id),
@@ -430,6 +492,12 @@ function BatchUploadSession(props: Props) {
         },
       });
       if (!current()) return;
+      if (latest.current.reconcileQueue && importSession.current && entryMode === "table") {
+        const reconciled = await latest.current.reconcileQueue(result.entries as ManagedBatchEntry[]);
+        if (!current()) return;
+        result = { entries: reconciled, complete: reconciled.length > 0 && reconciled.every(entry => entry.status === "success"), reason: reconciled.every(entry => entry.status === "success") ? undefined : "error" };
+        if (!persist(reconciled, target.id)) return;
+      }
       setEntries(result.entries);
       props.onComplete();
       if (result.complete) {
@@ -466,6 +534,8 @@ function BatchUploadSession(props: Props) {
     }
   };
   const close = () => {
+    if (parseBusy) { setError("原文件提交结果待确认，请等待或按同一请求重试。"); return; }
+    if (parseDirty && !window.confirm("解析上传尚未提交，是否关闭草稿？")) return;
     if (running.current) {
       stop.current = true;
       setError("正在停止：当前请求完成后不再提交下一行，请稍候。");
@@ -491,13 +561,13 @@ function BatchUploadSession(props: Props) {
   };
   const restore = () => {
     if (savedPreparation) {
-      latest.current.onRestoreSession?.(savedPreparation.sessionData, []);
+      importSession.current = savedPreparation.sessionData; latest.current.onRestoreSession?.(savedPreparation.sessionData, []);
       setPreparing(savedPreparation); setName(savedPreparation.name); setEntryMode(savedPreparation.entryMode);
       setSavedPreparation(undefined); setStep(4); props.onDirtyChange(true);
       setError("已恢复原客户准备请求，将沿用原请求号确认渠道和批次。"); return;
     }
     if (!saved) return;
-    latest.current.onRestoreSession?.(saved.sessionData, saved.entries, saved.uploadBatch);
+    importSession.current = saved.sessionData; latest.current.onRestoreSession?.(saved.sessionData, saved.entries, saved.uploadBatch);
     setChannelId(String(saved.channelId));
     setEntries(saved.entries);
     setName(saved.name);
@@ -532,19 +602,21 @@ function BatchUploadSession(props: Props) {
             <div role="group" aria-label="客户物料上传方式" className="customer-supply-method-controls">
               <Button type="button" variant="outline" className={`ci-button${entryMode === "table" ? " ci-primary" : ""}`} aria-pressed={entryMode === "table"} disabled={modeLocked} onClick={() => changeMode("table")}>表格上传</Button>
               <Button type="button" variant="outline" className={`ci-button${entryMode === "single" ? " ci-primary" : ""}`} aria-pressed={entryMode === "single"} disabled={modeLocked} onClick={() => changeMode("single")}>单条上传</Button>
+              {props.renderParseEntry ? <Button type="button" variant="outline" className={`ci-button${entryMode === "parse" ? " ci-primary" : ""}`} aria-pressed={entryMode === "parse"} disabled={modeLocked} onClick={() => changeMode("parse")}>解析上传</Button> : null}
             </div>
             {modeLocked ? <p className="ci-dialog-note">请先完成或恢复原批次。</p> : null}
           </div> : null}
-          <div className="ci-batch-steps" style={{ padding: "0" }}>
+          {entryMode === "parse" && props.renderParseEntry ? props.renderParseEntry({ onDirtyChange: dirty => { setParseDirty(dirty); props.onDirtyChange(dirty); }, onBusyChange: setParseBusy }) : null}
+          {entryMode !== "parse" ? <div className="ci-batch-steps" style={{ padding: "0" }}>
             {(entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
               <span key={label} className={step >= (entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>
                 <b>{step > (entryMode === "single" && i === 1 ? 3 : i + 1) ? "✓" : i + 1}</b>
                 {label}
               </span>
             ))}
-          </div>
+          </div> : null}
           {props.sourceDetails}
-          <div className={`ci-batch-channel${props.fixedSource ? " ci-batch-fixed-source" : ""}`} style={{ gap: "12px", paddingBottom: "9px" }}>
+          {!props.fixedSource ? <div className="ci-batch-channel" style={{ gap: "12px", paddingBottom: "9px" }}>
             <label className="ci-field">
               <span>{props.sourceLabel ? "客户供应来源" : "关联渠道 *"}</span>
               {props.onCreateCustomerBatch && !channels.length ? <strong>{props.sourceLabel}</strong> : null}
@@ -568,7 +640,7 @@ function BatchUploadSession(props: Props) {
               <Icon kind="lock" size={14} />
               本批使用同一渠道
             </p> : null}
-          </div>
+          </div> : null}
           {channelTotal !== null && channels.length < channelTotal && (
             <p className="ci-dialog-note">
               已加载 {channels.length} / {channelTotal} 个渠道。
@@ -653,6 +725,7 @@ function BatchUploadSession(props: Props) {
                 选择库存表格
               </Button>
             </div>
+            {retryFile ? <Button type="button" className="ci-button" disabled={loading} onClick={() => void selectFile(retryFile, true)}>按原文件重试保存／读取</Button> : null}
             <button
               className="ci-batch-template"
               type="button"
@@ -716,6 +789,7 @@ function BatchUploadSession(props: Props) {
             )}
           </>
         )}
+        {(step === 3 || step === 4) ? props.renderConfirmationDetails?.() : null}
         {step === 3 && (
           <>
             <div className="ci-batch-summary">
@@ -729,6 +803,7 @@ function BatchUploadSession(props: Props) {
                 <small>已明确移除 {excluded.length} 行</small>
               )}
             </div>
+            {historyOptIn ? <label className="ci-dialog-note"><input type="checkbox" aria-label="明确确认本次核对币种为CNY" checked={currencyConfirmed} onChange={e => setCurrencyConfirmed(e.target.checked)} /> 我已核对本次所选物料币种为CNY（不自动换算外币）；未知数量、价格和税务口径请核对后编辑，或注明问题排除。</label> : null}
             {bad.length > 0 && (
               <div className="ci-error ci-batch-errors">
                 <div>
@@ -739,9 +814,7 @@ function BatchUploadSession(props: Props) {
                   variant="outline"
                   size="sm"
                   className="ci-button"
-                  onClick={() =>
-                    setExcluded(v => [...v, ...bad.map(r => r.row)])
-                  }
+                  onClick={() => { if (historyOptIn) bad.forEach(r => excludeRow(r.row)); else setExcluded(v => [...v, ...bad.map(r => r.row)]); }}
                 >
                   移除全部错误行
                 </Button>
@@ -758,6 +831,7 @@ function BatchUploadSession(props: Props) {
                     <th>税务口径</th>
                     {entryMode === "single" ? <><th>交期</th><th>Date Code</th><th>备注（仅本人）</th></> : null}
                     <th>校验</th>
+                    {historyOptIn ? <th>人工核对编辑</th> : null}
                     <th />
                   </tr>
                 </thead>
@@ -791,12 +865,15 @@ function BatchUploadSession(props: Props) {
                           <span className="ci-batch-green">✓ 通过</span>
                         )}
                       </td>
+                      {historyOptIn ? <td>{fields.map(f => <label key={f.key} className="ci-field"><span>{f.label}</span><input aria-label={`核对第${r.row}行${f.label}`} value={r.draft[f.key]} onChange={e => setEdits(v => ({ ...v, [r.row]: { ...r.draft, [f.key]: e.target.value } }))} /></label>)}
+                        {(rowMetadata.current.get(r.row) as { issues?: { issueId: string; message: string; resolved: boolean; resolution: string | null; field: string }[] } | undefined)?.issues?.map(issue => <label key={issue.issueId} className="ci-field"><span>{issue.message}</span><input aria-label={`核对问题${issue.issueId}`} maxLength={1000} defaultValue={issue.resolution ?? ""} placeholder="核对结果或明确保留未知的依据（必填）" onChange={e => { issue.resolution = e.target.value.trim() || null; issue.resolved = Boolean(issue.resolution); setEdits(v => ({ ...v, [r.row]: v[r.row] ?? r.draft })); if (issue.field === "source" && issue.resolved) setEdits(v => { const { sourceIssue, ...draft } = v[r.row] ?? r.draft; return { ...v, [r.row]: draft }; }); }} /></label>)}
+                        {r.draft.sourceIssue ? <button type="button" className="ci-inline-link" onClick={() => { const reason = window.prompt("请填写核验原始文本型号/来源精度的依据，无法核实请排除本行"); if (reason?.trim() && !((rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined)?.issues?.some(issue => issue.field === "source" && !issue.resolved))) { const { sourceIssue, ...draft } = r.draft; setEdits(v => ({ ...v, [r.row]: draft })); } }}>核实来源问题</button> : null}</td> : null}
                       <td>
                         <button
                           type="button"
                           title={`移除原表第${r.row}行`}
                           aria-label={`移除原表第${r.row}行`}
-                          onClick={() => setExcluded(v => [...v, r.row])}
+                          onClick={() => excludeRow(r.row)}
                         >
                           ×
                         </button>
