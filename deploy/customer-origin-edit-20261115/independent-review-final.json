@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "reviewedAt": "2026-11-15T07:20:31.480266Z",
+  "repo": "/home/ubuntu/work/51dianzi-platform--manager",
+  "supersedesForB1B2": "/home/ubuntu/work/customer-origin-edit-20261115/independent-review.md",
+  "scope": "只读最终定点复核：B1/B2、相关 actual/source 对齐、旧保存/sourceOptions/all-source DTO gate、参考字节不变；不扩展审查要求。",
+  "releaseDecision": {
+    "allowLimitedIncrementalCandidateRelease": true,
+    "statement": "明确允许本轮已限定范围的有限 incremental 候选发布；本次 B1/B2 不再构成阻断。",
+    "boundToFinalHashes": true,
+    "deploymentExecutedByReviewer": false,
+    "productionE2EApproval": false
+  },
+  "finalHashes": {
+    "frontBaseline": "6c217218ed880f3c5ba9f1086a12bd20bdc517615184d6a6fef023b87c59b995",
+    "frontFinal": "132c2a9924da37ccb50fadeb014865400df5cddf8d2255594631041cb1718538",
+    "adminBaseline": "dd81abecde638e62d544ada3add7e3b48d29219a4848e8f00b22896a99a3c900",
+    "adminFinal": "50f425a421f4ad44f4a9f91744ec168b61c2103303ba54d0cc7fe67576563b9f",
+    "frontPatchproof": "25278b1132d4a3e4cccd6b5037b77f153adae947a3a4a6309dbda0631d6eff1f",
+    "adminPatchproof": "333514ec8231a43691c20a3be85b2f19b4bec09442e3ce513b4f07ff390e28fa",
+    "finalSourceHashesManifest": "040ef49d36f801cb14350bb41ba9b1eba570381d1b338fad3d796cba11628a5c",
+    "finalTestReport": "94553bea3342abe6d3a58b957132a2036464eec9ae58083cab957751af017455",
+    "channelInventoryTs": "f597f2fa83c3ab4c63f4a717b9c6e89c8d613de52cb94c80d2c236ce373a1e95",
+    "channelMaterialManagementTs": "7830cb814acb69d16f96c5b11636bdc0442abefc02198d7a2ba1f93e8c3f31e7"
+  },
+  "findings": [
+    {
+      "id": "B1",
+      "status": "CLOSED",
+      "locations": ["channelInventory.ts:497-520", "channelInventory.ts:764-807"],
+      "finding": "仅 official 旧 findMaterial/listMaterials/getMaterial 使用 projectOfficialMaterialManagement，以当前 resolveChannelInventoryAuthority stocks.write 与共同 canManageMaterial SQL、linkedCompany/materialManagementProjection 相交。来源及 edit/readOnly 同 gate；list 不再二次 CRM helper 复活名称，get 不覆盖 official edit flags。",
+      "preserved": "原库存 WHERE/计数不因输出 gate 整体过滤，原可读 note 保留，native 旧读取/投影分支保留。",
+      "existingFinalRegressionEvidence": "6 条 B1 断言 passed，包括 signed write=1、实际 ERP writeAllowed=0 时 find/list/get 来源与 canEdit 同时拒绝而 stock/note 保留。"
+    },
+    {
+      "id": "B2",
+      "status": "CLOSED",
+      "locations": ["channelMaterialManagement.ts:70-103"],
+      "finding": "共同 SQL leader 分支现查 actor/user/enterprise/module=stocks 的最新 revision DESC,id DESC setting，并含 FOR UPDATE。严格 BINARY team 与有效安全整数 revision 才准入；self/enterprise/invalid 拒绝；缺 setting 默认 team 仅在当前有效唯一 team joins 中有效。creator OR 分支独立保留，不把 scope 限制错误加到 creator。",
+      "callers": "列表、来源 getter/options、打开编辑和保存共用该 SQL；实际 access.write 与 CRM gate 仍由调用方相交。",
+      "existingFinalRegressionEvidence": "8 条 B2 断言 passed，涵盖 actor-bound/paired leader、最新 setting/边界、creator 独立、actual SQL 结果串接 source/options/旧保存与 source 编译对齐。"
+    },
+    {
+      "id": "KEY_GATES",
+      "status": "PASS",
+      "finding": "旧 official updateMaterial 委托严格公共 updateTeamMaterial，signed UUID、schema 禁止私有/来源字段、授权先于 replay/CAS/DML 未退回；native 旧保存增加 authorizedMaterial 前置并保留原字段体。sourceOptions/getter 与 all-source DTO 的 company/customerSource/channelSource/canViewSource/edit/readOnly 保持 management+actual write+CRM 同步投影，无渠道名 fallback。"
+    },
+    {
+      "id": "REFERENCE_BYTES",
+      "status": "PASS",
+      "finding": "独立只读 inverse/untouched-byte 验证通过：front 27 spans、admin 3 spans；front 42 protected functions（含 38 price/reference 函数）与 baseline 原字节一致；admin readApprovedChannelReferenceMaterials/createChannelReferenceRouter 原字节一致。原 savedref 公共库存验证路径和已保存参考价读取未被本轮门禁替代。"
+    }
+  ],
+  "independentChecks": {
+    "currentFinalManifestPins": {"count": 45, "allMatch": true},
+    "sourceFreeze": {"count": 172, "repoDrift": [], "frozenSnapshotDrift": []},
+    "exactInverseRecoveredBothBaselines": true,
+    "untouchedByteIntervalsPreserved": true,
+    "wholeBundleParseOnly": true,
+    "compiledSourceEqualsActualAfterDeclaredSymbolMapping": ["officialMaterialRecorderStaffUserId", "teamMaterialManagementEligibility", "materialManagementProjection", "channelCustomerMaterialReadGate", "projectOfficialMaterialManagement", "findMaterial", "teamMaterialSourceEligibility", "listMaterials", "getMaterial", "getTeamMaterialSource", "listTeamSourceOptions"],
+    "oldSaveAndEditorActualGateChecked": true
+  },
+  "existingTests": {
+    "rerunByReviewer": false,
+    "backendFinal": {"files": 20, "tests": 442, "passed": 442, "failed": 0, "reportSuccess": true, "exitCodeFromHandoff": 0, "actualBoundaryTests": 67, "postTestHashesUnchangedFromEvidence": true},
+    "ui": {"files": 15, "tests": 652, "passed": 652, "failed": 0, "pending": 0, "tscExitCode": 0},
+    "nativeSourceSmoke": {"status": "PASS", "compileSourceCount": 25, "pinnedDependencyCount": 25, "dependencyDrift": [], "offlineSmokeOnly": true, "finalCandidate": false}
+  },
+  "evidence": [
+    "/home/ubuntu/work/customer-origin-edit-20261115/backend/FINAL-BACKEND-HANDOFF.md",
+    "/home/ubuntu/work/customer-origin-edit-20261115/backend/B1B2-EVIDENCE.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/backend/FINAL-SOURCE-HASHES.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/backend/B1B2-final-tests.report.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/backend/front-patchproof.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/backend/admin-patchproof.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/ui/affected-tests.report.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/ui/typecheck.exit",
+    "/home/ubuntu/work/customer-origin-edit-20261115/deploy/host-smoke/report.json",
+    "/home/ubuntu/work/customer-origin-edit-20261115/source-final-pins.json"
+  ],
+  "limitations": {
+    "codeOnly": true,
+    "noE2E": true,
+    "statement": "只读源码/离线 actual 字节、现有隔离权限与 CRM fixtures、SQLite 真值表及静态 inverse 证据，不代表生产账号 HTTP/E2E、MySQL 并发锁或发布后验证。native 烟测证据明确 finalCandidate=false，仅证明既有 source 编译链与当前 25 项依赖无 drift。未重复全量/限定测试、未做新 pentest。",
+    "applicationModified": false,
+    "sshUsed": false,
+    "externalOrLiveDbUsed": false,
+    "browserUsed": false,
+    "gitWriteUsed": false,
+    "gitReadOnlyStatusUsedOnce": true,
+    "onlyRequestedReportsWritten": true
+  }
+}

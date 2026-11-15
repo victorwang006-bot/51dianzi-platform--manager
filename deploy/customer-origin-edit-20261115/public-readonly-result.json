@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "checkedAtUtc": "2026-11-15T07:29:15.045124+00:00",
+  "manifestSha256": "cc7b6ba5c33892f09d29e11936fd7de4542f5da9bba62014b0be5f5fadd9776a",
+  "readonly": true,
+  "getRequests": 4,
+  "businessWrites": 0,
+  "authenticatedAccountE2E": false,
+  "checks": [
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-0-customer-origin-edit-83a10e90dadf90d070c4fffee0507e518a148b3a925e381ffca2db9cd5f352e4.js",
+      "httpStatus": 200,
+      "finalUrl": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-0-customer-origin-edit-83a10e90dadf90d070c4fffee0507e518a148b3a925e381ffca2db9cd5f352e4.js?customer_origin_release=cc7b6ba5c33892f0",
+      "contentType": "text/javascript",
+      "bytes": 4846574,
+      "sha256": "83a10e90dadf90d070c4fffee0507e518a148b3a925e381ffca2db9cd5f352e4",
+      "expectedSha256": "83a10e90dadf90d070c4fffee0507e518a148b3a925e381ffca2db9cd5f352e4",
+      "match": true
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-1-customer-origin-edit-3890478c39c7bb5fc2db7944cd989b45d5a2b59663683e50a71ceb53b492b4fb.js",
+      "httpStatus": 200,
+      "finalUrl": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-1-customer-origin-edit-3890478c39c7bb5fc2db7944cd989b45d5a2b59663683e50a71ceb53b492b4fb.js?customer_origin_release=cc7b6ba5c33892f0",
+      "contentType": "text/javascript",
+      "bytes": 5689563,
+      "sha256": "3890478c39c7bb5fc2db7944cd989b45d5a2b59663683e50a71ceb53b492b4fb",
+      "expectedSha256": "3890478c39c7bb5fc2db7944cd989b45d5a2b59663683e50a71ceb53b492b4fb",
+      "match": true
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/ChannelInventoryHost-customer-origin-edit-8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf.css",
+      "httpStatus": 200,
+      "finalUrl": "https://admin.51dianzi.com/assets/ChannelInventoryHost-customer-origin-edit-8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf.css?customer_origin_release=cc7b6ba5c33892f0",
+      "contentType": "text/css",
+      "bytes": 663,
+      "sha256": "8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf",
+      "expectedSha256": "8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf",
+      "match": true
+    },
+    {
+      "url": "https://admin.51dianzi.com/",
+      "httpStatus": 200,
+      "finalUrl": "https://admin.51dianzi.com/?customer_origin_release=cc7b6ba5c33892f0",
+      "contentType": "text/html",
+      "bytes": 647546,
+      "sha256": "d82c4cc0b8e4c36ffc01aded663b4def29263dc269db166830b22c40ac77e7a6",
+      "expectedSha256": "d82c4cc0b8e4c36ffc01aded663b4def29263dc269db166830b22c40ac77e7a6",
+      "match": true
+    }
+  ],
+  "scope": "Public delivered HTML and new static resources only; does not claim authenticated UI or save behavior."
+}

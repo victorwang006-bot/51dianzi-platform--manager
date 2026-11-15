@@ -10,4 +10,6 @@ ECS只读查证：共394物料，当前未删除332条；其中270条有严格�
 
 本目录保存固定本轮增量控制工具；发布必须使用父执行的真实基线与最终源码/AST/字节补丁审批，不得重放旧attempt、整包覆盖或全站restart。原所有资产、旧ROOT、三个参考helper与213份成功报价全量保留；手动采价默认关闭。最终实际状态以新ROOT的activation-state及父只读verify/公网资源哈希为准。
 
-当前文档记录候选准备与代码核验，正式上线状态待父发布回执补充。
+**已于2026-11-15 15:28北京时间上线。** 本轮ROOT `/opt/ops/20261115-customer-origin-edit-JfFQcJM` 状态verified，共享窗口关闭；6个目标实例全在线，其余6个进程不变；随后只读verify及后台HTML、两个新Host脚本和CSS公网HTTP200/完整SHA核验全部通过。功能代码提交为 `e64612bed89972ee3a1d16f8035d427413d1eb8d`。
+
+详细行为、历史记录范围、证据限制与工件SHA见 [上线与核验说明](./上线与核验说明.md)。`final-release-summary.json` 保存无密钥的真实发布摘要；`public-readonly-result.json` 保存公网资源核验；`independent-review-final.json/.md` 是最后两处边界关闭后的只读复核，不代表生产账号E2E。`source-final-pins.json` 保存172项本轮运行源码哈希；本目录后续文档不改变这些运行源码。
