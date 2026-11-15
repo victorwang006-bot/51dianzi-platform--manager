@@ -26,6 +26,8 @@ import { createCustomerSupplyService } from "../client/src/business/platform/fro
 import { inspectCustomerUploadFile } from "../client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage";
 import { channelInventoryPayloadHash, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type RegisterTeamRecord } from "../client/src/business/platform/front-router-types/server/services/channelInventory";
 import { CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS, customerUploadPrepareConfirmationSchema, type CustomerUploadPrepareConfirmationInput, type ResultRow, type SourceRef } from "../client/src/business/platform/shared/customerUploadHistory";
+import { confirmationIssueResolutions, fileInput, parseResult, resultReview, resultSubmission } from "../client/src/business/platform/client/src/components/customers/customerUploadHistory";
+import * as XLSX from "xlsx";
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 const dialect = new MySqlDialect();
 const scope = (actorUserId = 10): ChannelInventoryScope => ({ enterpriseId: 1, dataOwnerUserId: 99, actorUserId, isOwner: actorUserId === 99, inventoryDataScope: "enterprise", permissionSnapshot: true });
@@ -306,5 +308,69 @@ describe("customer history: receipt integrity and uncertain acknowledgement regr
     const a = await original(); const locator = sqlite.prepare("SELECT locator FROM customer_upload_files WHERE file_id=?").get(a.history.originalFile.fileId)!.locator as string;
     files.set(locator, Buffer.from("X,TI,2\nB,ST,3\n"));
     await expect(service.customerUploadDownload(scope(), { ...expected(), files: [{ historyId: a.history.historyId, fileId: a.history.originalFile.fileId }] })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE", message: expect.not.stringMatching(/locator|SECRET|\/opt\//) });
+  });
+});
+
+function crossLayerFile(current: Awaited<ReturnType<typeof get>>, lines: (string | number)[][]) {
+  const headers = ["型号", "品牌", "可供数量", "报价（CNY）", "币种", "税务口径", "原工作表", "原行号", "原内容"];
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([headers, ...lines.map((line, i) => [...line, current.originalSheets[0].sheetName, String(current.originalSheets[0].rows[i].rowNumber), current.originalSheets[0].rows[i].originalContent])]), "整理结果");
+  return new File([XLSX.write(book, { type: "array", bookType: "xlsx" })], "跨层结果.xlsx");
+}
+describe("actual frontend parser/helper -> actual history service cross-layer regressions", () => {
+  it("persists unknown candidate issues once and still rejects the old aggregate duplication", async () => {
+    const a = await original(); const current = await get(a.history.historyId);
+    const file = crossLayerFile(current, [["A", "TI", "待核实", "待议", "", "未知"], ["B", "ST", "3", "1", "CNY", "含税"]]);
+    const parsed = await parseResult(file, current.originalSheets); const normalizedFile = await fileInput(file);
+    expect(parsed.issues.length).toBeGreaterThan(0);
+    const base = { ...expected(20), historyId: a.history.historyId, expectedRevision: current.history.revision, parentVersionId: null, normalizedFile };
+    await expect(service.customerUploadResult(scope(20), { ...base, requestId: randomUUID(), rows: parsed.rows, issues: parsed.issues })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "问题归属或标识无效" });
+    expect(count("customer_upload_versions")).toBe(0);
+    const persisted = await service.customerUploadResult(scope(20), { ...base, requestId: randomUUID(), ...resultSubmission(parsed.rows, parsed.issues) });
+    expect(persisted.version.issues).toEqual([]);
+    expect(persisted.version.rows.flatMap(row => row.issues)).toEqual(parsed.issues);
+    expect(persisted.version.rows[0].candidate).toMatchObject({ qty: null, price: null, currency: null, taxIncluded: null });
+    expect((await get(a.history.historyId)).selectedVersion?.rows).toEqual(persisted.version.rows);
+    expect(count("channel_inventory_upload_batches")).toBe(0); expect(count("channel_inventory_materials")).toBe(0);
+  });
+  it.each([false, true])("prepares the remaining real row with explicit exclusion/global evidence and original UUID/CAS (manual=%s)", async manual => {
+    const originalFile = { ...inputFile, base64: Buffer.from("A,TI,2\nB,ST,3\nC,NXP,4\n").toString("base64") };
+    const a = await service.customerUploadOriginal(scope(), { ...expected(), customerId: 1, expectedCustomerVersion: 3, mode: "parse", file: originalFile, requestId: randomUUID() });
+    const current = await get(a.history.historyId);
+    const file = crossLayerFile(current, [["A", "TI", "2", "1", "CNY", "含税"], ["B", "ST", "待核实", "1", "", "含税"], ["C", "NXP", "4", "1", "", "含税"]]);
+    const parsed = await parseResult(file, current.originalSheets);
+    const global = { issueId: randomUUID(), rowId: null, field: "other" as const, message: "全表范围待核实", resolved: false, resolution: null };
+    const submission = resultSubmission(parsed.rows, [...parsed.issues, global]);
+    submission.rows[2].disposition = "excluded" as typeof submission.rows[2]["disposition"];
+    submission.rows[2].excludeReason = "原版本人工明确排除非供货报价";
+    if (manual) { const issue = submission.rows[2].issues[0]; issue.resolved = true; issue.resolution = "原版本已人工核实为外币，不能自动换算"; }
+    const r = await service.customerUploadResult(scope(20), { ...expected(20), historyId: a.history.historyId, expectedRevision: current.history.revision, requestId: randomUUID(), parentVersionId: null, normalizedFile: await fileInput(file), ...submission });
+    const v = (await get(a.history.historyId)).selectedVersion!;
+    const reviews = resultReview(v);
+    if (manual) { reviews[1].issues = reviews[1].issues.map(issue => ({ ...issue, resolved: true, resolution: `员工明确核对${issue.field}后决定排除` })); }
+    const excludedRows = [
+      { logicalRowId: v.rows[2].logicalRowId, reason: v.rows[2].excludeReason!, sourceRefs: v.rows[2].sourceRefs },
+      { logicalRowId: v.rows[1].logicalRowId, reason: "员工明确排除无法核实币种和数量的报价", sourceRefs: v.rows[1].sourceRefs },
+    ];
+    const confirmedRows = [{ logicalRowId: v.rows[0].logicalRowId, rowId: v.rows[0].rowId, rowRequestId: randomUUID(), sourceRefs: v.rows[0].sourceRefs, fields: v.rows[0].candidate }];
+    const base: CustomerUploadPrepareConfirmationInput = { ...expected(), historyId: a.history.historyId, versionId: v.versionId, expectedRevision: r.history.revision, expectedCustomerVersion: 3, sourceProfile: { type: "trade" }, requestId: randomUUID(), batchRequestId: randomUUID(), confirmedRows, excludedRows };
+    // The original confirmedDrafts-only input is genuinely rejected by the unchanged service.
+    await expect(service.customerUploadPrepareConfirmation(scope(), { ...base, resolvedIssues: [] })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "所有待确认问题须明确填写人工解决说明" });
+    expect(() => confirmationIssueResolutions(v, [reviews[0], reviews[1]], excludedRows)).toThrow("全局");
+    const resolvedIssues = confirmationIssueResolutions(v, [reviews[0], reviews[1]], excludedRows, [{ issueId: global.issueId, resolution: "员工已核对全部原工作表与本次确认范围" }]);
+    const output = await service.customerUploadPrepareConfirmation(scope(), { ...base, resolvedIssues });
+    expect(output.entries).toHaveLength(1); expect(output.entries[0].rowRequestId).toBe(confirmedRows[0].rowRequestId);
+    expect(output.entries[0].payload).toMatchObject({ requestId: confirmedRows[0].rowRequestId, expectedEnterpriseId: 1, expectedActorUserId: 10, customerId: 1, expectedCustomerVersion: 3, uploadBatchId: output.batch.id, sourceProfile: { type: "trade" } });
+    const frozen = (await get(a.history.historyId)).confirmation!;
+    expect(frozen.batchRequestId).toBe(base.batchRequestId); expect(frozen.resolvedIssues).toEqual(resolvedIssues); expect(frozen.excludedRows).toEqual(excludedRows);
+    expect(new Set(resolvedIssues.map(issue => issue.issueId)).size).toBe(resolvedIssues.length);
+    if (manual) expect(resolvedIssues).toContainEqual({ issueId: v.rows[2].issues[0].issueId, resolution: "原版本已人工核实为外币，不能自动换算" });
+    else for (const row of v.rows.slice(1)) for (const issue of row.issues) expect(resolvedIssues).toContainEqual({ issueId: issue.issueId, resolution: `明确排除此行：${excludedRows.find(excluded => excluded.logicalRowId === row.logicalRowId)!.reason}` });
+    expect(count("channel_inventory_materials")).toBe(0); expect(count("channel_inventory_upload_batches")).toBe(1);
+    const supply = createCustomerSupplyService({ getDb: async () => db, registerTeamRecord: register });
+    await supply.createCustomerMaterial(scope(), formalPayload(output.entries[0] as Parameters<typeof formalPayload>[0]));
+    const verified = await reconcile(a.history.historyId, output.confirmationId);
+    expect(verified.history.stats).toMatchObject({ successCount: 1, excludedCount: 2 }); expect(verified.history.state).toBe("imported");
+    expect(count("channel_inventory_materials")).toBe(1);
   });
 });

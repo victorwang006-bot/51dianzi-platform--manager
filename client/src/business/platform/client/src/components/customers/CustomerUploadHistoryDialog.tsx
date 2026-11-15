@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from "../cha
 import { batchUploadDialogStyle } from "../channelInventory/BatchUpload";
 import { customerSupplySessionSuffix, type SupplyIdentity } from "./customerSupply";
 import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
-import { downloadedFile, fileInput, historyStates, parseResult, resultGuide, savePrivateFile, uuid, type History, type HistoryDetail, type HistoryFile, type HistoryState, type ResultRow, type HistoryIssue } from "./customerUploadHistory";
+import { downloadedFile, fileInput, historyStates, parseResult, resultGuide, resultSubmission, savePrivateFile, uuid, type History, type HistoryDetail, type HistoryFile, type HistoryState, type ResultRow, type HistoryIssue } from "./customerUploadHistory";
 import "./CustomerUploadHistory.css";
 
 type Props = { customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void; onComplete: () => void; onAuthorizationError: (error: unknown) => void };
@@ -115,8 +115,8 @@ function HistorySession(props: Props) {
     try {
       const normalizedFile = await fileInput(resultFile); const problemFile = issuesFile ? await fileInput(issuesFile) : undefined;
       if (!current() || token !== detailSerial.current) return;
-      const rows = resultRows.map(row => ({ ...row, issues: resultIssues.filter(issue => issue.rowId === row.rowId), disposition: "pending" as const }));
-      const input = customerUploadResultSchema.parse({ ...expected, historyId: detail.history.historyId, expectedRevision: detail.history.revision, requestId: uuid(), parentVersionId: detail.history.latestVersionId, normalizedFile, ...(problemFile ? { issuesFile: problemFile } : {}), rows, issues: resultIssues });
+      const result = resultSubmission(resultRows, resultIssues);
+      const input = customerUploadResultSchema.parse({ ...expected, historyId: detail.history.historyId, expectedRevision: detail.history.revision, requestId: uuid(), parentVersionId: detail.history.latestVersionId, normalizedFile, ...(problemFile ? { issuesFile: problemFile } : {}), ...result });
       pending.current = { kind: "result", input }; running.current = false; await runPending();
     } catch (error) { fail(error); }
     finally { running.current = false; if (current()) setBusy(false); }

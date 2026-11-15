@@ -16,7 +16,7 @@ export type OriginalSheets = OriginalWorkbookManifest["sheets"];
 export type Confirmation = ConfirmationDto;
 export type HistoryDetail = CustomerUploadHistoryOutputs["channelInventory.customerUploadHistoryGet"];
 export const historyStates: Record<HistoryState, string> = { pending_parse: "待解析", parsing: "解析中", awaiting_confirmation: "待确认", partially_imported: "部分入库", imported: "已入库", parse_failed: "解析失败", cancelled: "已取消" };
-export type HistorySession = { historyId: string; revision: number; versionId?: string; originalFile: HistoryFile; confirmationId?: string; prepareRequestId: string; sourceExclusions?: { logicalRowId: string; reason: string; sourceRefs: SourceRef[] }[]; otherSheetCount?: number; sourceScopeConfirmed?: boolean };
+export type HistorySession = { historyId: string; revision: number; versionId?: string; originalFile: HistoryFile; confirmationId?: string; prepareRequestId: string; sourceExclusions?: { logicalRowId: string; reason: string; sourceRefs: SourceRef[] }[]; globalResolutions?: { issueId: string; resolution: string }[]; otherSheetCount?: number; sourceScopeConfirmed?: boolean };
 export type ReviewRow = { row: number; draft: Draft; rowId: string; logicalRowId: string; sourceRefs: SourceRef[]; issues: HistoryIssue[] };
 export function canonicalConfirmationPayload(value: unknown): ConfirmationEntry["payload"] {
   if (!value || typeof value !== "object" || !("currency" in value) || value.currency !== "CNY") throw new Error("服务端冻结payload缺少明确币种。");
@@ -101,5 +101,42 @@ export async function parseResult(file: File, manifest: OriginalSheets): Promise
     }
   }
   return { rows, issues };
+}
+// The editor uses an aggregate list; the wire format stores each issue only once.
+export function resultSubmission(rows: ResultRow[], issues: HistoryIssue[]) {
+  if (issues.some(issue => issue.rowId !== null && !rows.some(row => row.rowId === issue.rowId))) throw new Error("问题缺少归属结果行，不能丢弃问题。");
+  return { rows: rows.map(row => ({ ...row, issues: issues.filter(issue => issue.rowId === row.rowId), disposition: "pending" as const })), issues: issues.filter(issue => issue.rowId === null) };
+}
+export function confirmationIssueResolutions(version: Version | null, reviews: Pick<ReviewRow, "issues">[], excludedRows: { logicalRowId: string; reason: string }[], explicitIssues: { issueId: string; resolution: string }[] = []) {
+  const resolutions = new Map<string, string>();
+  const allIssues = version ? [...version.issues, ...version.rows.flatMap(row => row.issues)] : [];
+  const add = (issueId: string, resolution: string) => {
+    const reason = resolution.trim();
+    if (!isUUID(issueId) || !allIssues.some(issue => issue.issueId === issueId)) throw new Error("问题依据不属于当前结果版本。");
+    if (!reason || reason.length > 1000) throw new Error("问题处置依据须为1至1000字。");
+    if (resolutions.has(issueId) && resolutions.get(issueId) !== reason) throw new Error("同一问题ID存在不同处置依据，请核实后重试。");
+    resolutions.set(issueId, reason);
+  };
+  explicitIssues.forEach(issue => add(issue.issueId, issue.resolution));
+  for (const issue of reviews.flatMap(review => review.issues)) if (issue.resolved && issue.resolution) add(issue.issueId, issue.resolution);
+  const exclusions = new Map<string, string>();
+  for (const row of excludedRows) {
+    if (!isUUID(row.logicalRowId) || !row.reason.trim() || row.reason.length > 1000) throw new Error("排除行必须提供真实逻辑行和原因。");
+    if (exclusions.has(row.logicalRowId) && exclusions.get(row.logicalRowId) !== row.reason) throw new Error("同一排除行存在不同原因。");
+    exclusions.set(row.logicalRowId, row.reason);
+  }
+  for (const issue of allIssues) {
+    // Never overwrite an existing human resolution with an exclusion explanation.
+    if (issue.resolved && issue.resolution) add(issue.issueId, issue.resolution);
+    if (!resolutions.has(issue.issueId) && issue.rowId !== null) {
+      const row = version!.rows.find(row => row.rowId === issue.rowId);
+      const reason = row && exclusions.get(row.logicalRowId);
+      // Preserve the entire explicit reason within the old 1000-character bound.
+      // The excludedRows mapping already records the exclusion action and source.
+      if (reason) { const resolution = `明确排除此行：${reason}`; add(issue.issueId, resolution.length <= 1000 ? resolution : reason); }
+    }
+    if (!resolutions.has(issue.issueId)) throw new Error(issue.rowId === null ? "全局待确认问题须明确填写人工解决说明，排除行不能代替。" : "所有待确认问题须明确填写人工解决说明。");
+  }
+  return Array.from(resolutions, ([issueId, resolution]) => ({ issueId, resolution }));
 }
 export const resultGuide = { version: 1, taskBinding: "使用选中的historyId/任务UUID回传，不凭文件名猜任务", sourceColumns: ["原工作表", "原行号", "原内容"], candidateColumns: fields.map(f => f.label), rules: ["所有原工作表与原行证据完整保留", "结果仅一张表，最多1000行", "所有候选先pending；型号/品牌缺失人工补全", "数量与价格使用精确文本；币种/含税未知不得猜", "问题字段issueId,rowId,field,message,resolved,resolution；排除必须写原因", "已确认/unknown/成功批次先完成或核实，不回传新版本"] };

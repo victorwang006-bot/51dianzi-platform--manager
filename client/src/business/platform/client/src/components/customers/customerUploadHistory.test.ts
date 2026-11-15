@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 import { randomUUID } from "node:crypto";
-import { candidateDraft, canonicalConfirmationPayload, downloadedFile, fileInput, originalReview, parseResult, recoveryEntries, validateFile, type OriginalSheets } from "./customerUploadHistory";
+import { candidateDraft, canonicalConfirmationPayload, confirmationIssueResolutions, downloadedFile, fileInput, originalReview, parseResult, recoveryEntries, resultSubmission, validateFile, type HistoryIssue, type OriginalSheets, type Version } from "./customerUploadHistory";
 const ids = () => randomUUID();
 const manifest: OriginalSheets = [{ sheetIndex: 0, sheetName: "原库存", rows: [{ rowNumber: 1, originalRowHash: "a".repeat(64), originalContent: "表头证据", cells: ["型号"] }, { rowNumber: 8, originalRowHash: "b".repeat(64), originalContent: "完整原文1", cells: ["ONE", "TI"] }] }, { sheetIndex: 1, sheetName: "第二原表", rows: [{ rowNumber: 3, originalRowHash: "c".repeat(64), originalContent: "完整原文2", cells: ["TWO"] }] }];
 function workbook(rows: (string | number)[][], second = false) { const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "整理结果"); if (second) XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "第二结果"); return new File([XLSX.write(book, { type: "array", bookType: "xlsx" })], "整理.xlsx"); }
@@ -29,4 +29,63 @@ describe("private original uploads and canonical receipts", () => {
   it("rejects success without a real server receipt", () => { const payload = canonical(); expect(() => recoveryEntries({ confirmationId: ids(), batchRequestId: ids(), batch: { id: 501, batchCode: ids(), revision: 1, channelId: 411, customerId: 801 }, entries: [{ logicalRowId: ids(), rowId: ids(), rowRequestId: payload.requestId, uploadBatchId: 501, payload, status: "success" }] })).toThrow("回执"); });
   it("rejects mismatched original row UUID/batch membership", () => { const payload = canonical(); expect(() => recoveryEntries({ confirmationId: ids(), batchRequestId: ids(), batch: { id: 501, batchCode: ids(), revision: 1, channelId: 411, customerId: 801 }, entries: [{ logicalRowId: ids(), rowId: ids(), rowRequestId: ids(), uploadBatchId: 501, payload, status: "unknown" }] })).toThrow("UUID"); });
   it("private downloads return File bytes rather than public URLs and reject size mismatch", async () => { const file = downloadedFile({ fileName: "private.csv", mimeType: "text/csv", byteSize: 3, base64: btoa("abc") }); expect(await file.text()).toBe("abc"); expect(() => downloadedFile({ fileName: "private.csv", mimeType: "text/csv", byteSize: 4, base64: btoa("abc") })).toThrow("大小不匹配"); });
+});
+
+async function issueVersion(): Promise<Version> {
+  const line = row(); line[4] = "";
+  const parsed = await parseResult(workbook([headers, line]), manifest);
+  return { versionId: ids(), versionNo: 1, parentVersionId: null, createdAt: new Date().toISOString(), normalizedFile: null, issuesFile: null, rows: parsed.rows, issues: [] };
+}
+describe("unique issue ownership and complete human disposition", () => {
+  it("retains the UI aggregate and transmits edited row issues only within their row plus independent global issues", async () => {
+    const v = await issueVersion(); const aggregate = v.rows.flatMap(r => r.issues);
+    const global: HistoryIssue = { issueId: ids(), rowId: null, field: "other", message: "全表需核实", resolved: false, resolution: null };
+    const edited = aggregate.map(issue => ({ ...issue, resolved: true, resolution: "管理员已人工核对原文件" }));
+    const input = resultSubmission(v.rows, [...edited, global]);
+    expect(input.issues).toEqual([global]); expect(input.rows[0].issues).toEqual(edited);
+    expect(new Set([...input.issues, ...input.rows.flatMap(r => r.issues)].map(issue => issue.issueId)).size).toBe(edited.length + 1);
+    expect(aggregate.every(issue => !issue.resolved)).toBe(true); expect(v.rows[0].candidate.currency).toBeNull();
+  });
+  it("rejects orphan row issues instead of silently discarding them", async () => {
+    const v = await issueVersion();
+    expect(() => resultSubmission(v.rows, [{ ...v.rows[0].issues[0], rowId: ids() }])).toThrow("不能丢弃");
+  });
+  it("records each issue of an explicitly excluded row without changing unknown fields or the immutable issue", async () => {
+    const v = await issueVersion(); const before = structuredClone(v);
+    const output = confirmationIssueResolutions(v, [], [{ logicalRowId: v.rows[0].logicalRowId, reason: "原币种无法核实，本次不入库" }]);
+    expect(output).toEqual(v.rows[0].issues.map(issue => ({ issueId: issue.issueId, resolution: "明确排除此行：原币种无法核实，本次不入库" })));
+    expect(v).toEqual(before);
+  });
+  it("includes version-original excluded rows even when excluded metadata is absent", async () => {
+    const v = await issueVersion(); v.rows[0].disposition = "excluded"; v.rows[0].excludeReason = "人工确认非供货报价";
+    expect(confirmationIssueResolutions(v, [], [{ logicalRowId: v.rows[0].logicalRowId, reason: v.rows[0].excludeReason }])).toEqual(v.rows[0].issues.map(issue => ({ issueId: issue.issueId, resolution: "明确排除此行：人工确认非供货报价" })));
+  });
+  it("preserves original and locally edited manual resolutions rather than replacing them with exclusion text", async () => {
+    const v = await issueVersion(); const issue = v.rows[0].issues[0];
+    issue.resolved = true; issue.resolution = "原版本人工核对依据";
+    const output = confirmationIssueResolutions(v, [{ issues: [{ ...issue }] }], [{ logicalRowId: v.rows[0].logicalRowId, reason: "本次不入库" }]);
+    expect(output).toEqual([{ issueId: issue.issueId, resolution: "原版本人工核对依据" }]);
+    issue.resolved = false; issue.resolution = null;
+    expect(confirmationIssueResolutions(v, [{ issues: [{ ...issue, resolved: true, resolution: "员工已核对为外币" }] }], [{ logicalRowId: v.rows[0].logicalRowId, reason: "本次不入库" }])).toEqual([{ issueId: issue.issueId, resolution: "员工已核对为外币" }]);
+  });
+  it("never resolves an unknown global issue using an excluded row reason", async () => {
+    const v = await issueVersion(); const global: HistoryIssue = { issueId: ids(), rowId: null, field: "other", message: "全表范围待确认", resolved: false, resolution: null }; v.issues = [global];
+    const excluded = [{ logicalRowId: v.rows[0].logicalRowId, reason: "本行不入库" }];
+    expect(() => confirmationIssueResolutions(v, [], excluded)).toThrow("全局");
+    const output = confirmationIssueResolutions(v, [], excluded, [{ issueId: global.issueId, resolution: "员工核对全部来源与本次范围" }]);
+    expect(output).toContainEqual({ issueId: global.issueId, resolution: "员工核对全部来源与本次范围" });
+  });
+  it("deduplicates the same ID/reason and rejects differing evidence or foreign IDs", async () => {
+    const v = await issueVersion(); const issue = { ...v.rows[0].issues[0], resolved: true, resolution: "员工人工依据" };
+    expect(confirmationIssueResolutions(v, [{ issues: [issue, { ...issue }] }], [])).toEqual([{ issueId: issue.issueId, resolution: "员工人工依据" }]);
+    expect(() => confirmationIssueResolutions(v, [{ issues: [issue, { ...issue, resolution: "另一依据" }] }], [])).toThrow("不同处置依据");
+    expect(() => confirmationIssueResolutions(v, [], [], [{ issueId: ids(), resolution: "外部ID" }])).toThrow("不属于");
+    expect(() => confirmationIssueResolutions(v, [], [])).toThrow("所有待确认");
+  });
+  it("rejects blank or oversized exclusions without truncating evidence", async () => {
+    const v = await issueVersion();
+    for (const reason of [" ", "X".repeat(1001)]) expect(() => confirmationIssueResolutions(v, [], [{ logicalRowId: v.rows[0].logicalRowId, reason }])).toThrow();
+    const reason = "员工明确排除：".padEnd(1000, "据");
+    expect(confirmationIssueResolutions(v, [], [{ logicalRowId: v.rows[0].logicalRowId, reason }])).toEqual(v.rows[0].issues.map(issue => ({ issueId: issue.issueId, resolution: reason })));
+  });
 });

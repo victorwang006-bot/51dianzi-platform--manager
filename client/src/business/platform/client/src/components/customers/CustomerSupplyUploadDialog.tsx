@@ -11,7 +11,7 @@ import { normalizeDraft, validateDraft } from "../channelInventory/import";
 import type { ConfirmationEntry } from "../../../../shared/customerUploadHistory";
 import type { ManagedBatchEntry } from "../channelInventory/management";
 import { CustomerParseUpload } from "./CustomerParseUpload";
-import { canonicalConfirmationPayload, fileInput, historySession, isUUID, originalReview, recoveryEntries, resultReview, uuid, type History, type HistoryDetail, type HistorySession, type ReviewRow, type Confirmation } from "./customerUploadHistory";
+import { canonicalConfirmationPayload, confirmationIssueResolutions, fileInput, historySession, isUUID, originalReview, recoveryEntries, resultReview, uuid, type History, type HistoryDetail, type HistorySession, type ReviewRow, type Confirmation } from "./customerUploadHistory";
 import { CustomerSupplySingleEntry } from "./CustomerSupplySingleEntry";
 import "./CustomerSupplyUploadDialog.css";
 
@@ -61,6 +61,7 @@ function CustomerSupplyUploadSession(props: Props) {
   const [settingUp, setSettingUp] = useState(false);
   const [sourceLocked, setSourceLocked] = useState(false);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const [globalResolutions, setGlobalResolutions] = useState<Record<string, string>>({});
   const frozen = useRef<SessionData | null>(null);
   const receiptsChannel = useRef<number | null>(null);
   const uploadBatch = useRef<{ channelId: number; id: number } | null>(null);
@@ -112,6 +113,7 @@ function CustomerSupplyUploadSession(props: Props) {
           if (props.initialHistory) {
             if (props.initialHistory.history.customerId !== props.customerId || !props.initialHistory.history.capabilities.canConfirm) throw new Error("服务端未允许本账号确认此任务；管理账号不能冒充原上传者。");
             data.history = historySession(props.initialHistory.history);
+            data.history.sourceExclusions = props.initialHistory.selectedVersion?.rows.filter(row => row.disposition === "excluded").map(row => ({ logicalRowId: row.logicalRowId, reason: row.excludeReason ?? "", sourceRefs: row.sourceRefs })) ?? [];
             const confirmation = props.initialHistory.confirmation;
             if (confirmation?.entries[0]?.payload.expectedCustomerVersion !== undefined && confirmation.entries[0].payload.expectedCustomerVersion !== fresh.customer.version) throw new Error("原确认客户版本已变化，请核实原批次，不能重建。");
             if (confirmation?.entries[0]?.payload.sourceProfile) { data.sourceProfile = confirmation.entries[0].payload.sourceProfile; data.sourceConfirmed = true; }
@@ -267,13 +269,14 @@ function CustomerSupplyUploadSession(props: Props) {
     complete(); props.onClose(); navigate(supplyLocation(channelId, "materials"));
   };
   if (!currentRef.current || invalidated) return null;
+  const globalIssuesReady = Boolean(props.initialHistory?.confirmation) || (props.initialHistory?.selectedVersion?.issues ?? []).filter(issue => issue.rowId === null).every(issue => issue.resolved || Boolean(globalResolutions[issue.issueId]?.trim()));
   const upload = context && sessionData ? <BatchUpload
     key={`${props.identity.key}:${props.customerId}`}
     dialogMode="content" dialogControlsRef={uploadControls}
     channels={context.channel ? [{ id: context.channel.id, name: context.customer.name,
-      active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp }] : []}
+      active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp && globalIssuesReady }] : []}
     channelTotal={context.channel ? 1 : 0} initialChannelId={context.channel?.id}
-    customerSourceReady={contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp && (!sessionData.history || ((!sessionData.history.otherSheetCount || sessionData.history.sourceScopeConfirmed) && (Boolean(context.channel) || sessionData.sourceConfirmed)))}
+    customerSourceReady={contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp && (!sessionData.history || ((!sessionData.history.otherSheetCount || sessionData.history.sourceScopeConfirmed) && (Boolean(context.channel) || sessionData.sourceConfirmed))) && globalIssuesReady}
     enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId}
     sourceLabel={context.customer.name} fixedSource
     renderParseEntry={controls => <CustomerParseUpload {...controls} persistOriginal={persistOriginal} isCurrent={current} />}
@@ -295,12 +298,17 @@ function CustomerSupplyUploadSession(props: Props) {
       } finally { requests.current.delete(abort); }
     }}
     initialFile={props.initialFile}
-    initialRows={!props.initialHistory?.confirmation && props.initialHistory?.selectedVersion ? resultReview(props.initialHistory.selectedVersion).map(row => ({ row: row.row, draft: row.draft, metadata: row })) : undefined}
+    initialRows={!props.initialHistory?.confirmation && props.initialHistory?.selectedVersion ? resultReview(props.initialHistory.selectedVersion).filter(row => !sessionData.history?.sourceExclusions?.some(excluded => excluded.logicalRowId === row.logicalRowId)).map(row => ({ row: row.row, draft: row.draft, metadata: row })) : undefined}
     initialRecovery={initialRecovery}
     preparedEntries={() => prepared.current}
     reconcileQueue={reconcileQueue}
     renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} isCurrent={current} />}
-    renderConfirmationDetails={() => <>{sessionData.history?.sourceExclusions?.length ? <p className="ci-dialog-note">本次首表表头明确不入库（已记录原行证据及原因）。原文件包含全部工作表；{sessionData.history.otherSheetCount ? `${sessionData.history.otherSheetCount}张非首表不在本次标准导入范围。` : "无遗漏其他工作表。"}</p> : null}{sessionData.history?.otherSheetCount ? <label className="ci-dialog-note"><input aria-label="明确确认本次仅导入首工作表" type="checkbox" checked={sessionData.history.sourceScopeConfirmed === true} disabled={sourceLocked} onChange={e => { const data = { ...frozen.current!, history: { ...frozen.current!.history!, sourceScopeConfirmed: e.target.checked } }; frozen.current = data; setSessionData(data); }} />我已核对全部原工作表，本次仅导入首表；其他工作表按上述明确原因排除，原文件证据继续保留。</label> : null}{sessionData.history && !context.channel ? <label className="ci-field"><span>本次客户来源渠道类型（请人工明确确认）</span><select aria-label="核对客户来源类型" disabled={sourceLocked} value={sessionData.sourceConfirmed ? sessionData.sourceProfile?.type ?? "" : ""} onChange={e => { const type = e.target.value as SourceProfile["type"]; if (!SOURCE_TYPES.includes(type)) return; const data = { ...frozen.current!, sourceProfile: { type }, sourceConfirmed: true }; frozen.current = data; setSessionData(data); }}><option value="">请选择真实类型，不猜默认工厂</option><option value="factory">工厂</option><option value="agent">代理</option><option value="trade">贸易</option><option value="other">其他</option></select></label> : null}</>}
+    renderConfirmationDetails={() => <>
+      {sessionData.history?.sourceExclusions?.length ? sessionData.history.versionId ? <div className="ci-dialog-note">结果版本已明确排除的行（保留原证据及问题处置依据）：{sessionData.history.sourceExclusions.map(row => <p key={row.logicalRowId}>{row.sourceRefs.map(ref => `${ref.sheetName} #${ref.rowNumber}`).join("；")}：{row.reason}</p>)}</div> : <p className="ci-dialog-note">本次首表表头明确不入库（已记录原行证据及原因）。原文件包含全部工作表；{sessionData.history.otherSheetCount ? `${sessionData.history.otherSheetCount}张非首表不在本次标准导入范围。` : "无遗漏其他工作表。"}</p> : null}
+      {props.initialHistory?.selectedVersion?.issues.filter(issue => issue.rowId === null).map(issue => <label className="ci-field" key={issue.issueId}><span>全局问题：{issue.message}</span><input aria-label={`核对全局问题${issue.issueId}`} maxLength={1000} disabled={sourceLocked || issue.resolved} value={issue.resolved ? issue.resolution ?? "" : globalResolutions[issue.issueId] ?? ""} placeholder="须明确填写人工解决说明；排除行不能代替" onChange={e => { const values = { ...globalResolutions, [issue.issueId]: e.target.value }; const data = { ...frozen.current!, history: { ...frozen.current!.history!, globalResolutions: Object.entries(values).filter(([, resolution]) => resolution.trim()).map(([issueId, resolution]) => ({ issueId, resolution })) } }; frozen.current = data; setSessionData(data); setGlobalResolutions(values); }} /></label>)}
+      {sessionData.history?.otherSheetCount ? <label className="ci-dialog-note"><input aria-label="明确确认本次仅导入首工作表" type="checkbox" checked={sessionData.history.sourceScopeConfirmed === true} disabled={sourceLocked} onChange={e => { const data = { ...frozen.current!, history: { ...frozen.current!.history!, sourceScopeConfirmed: e.target.checked } }; frozen.current = data; setSessionData(data); }} />我已核对全部原工作表，本次仅导入首表；其他工作表按上述明确原因排除，原文件证据继续保留。</label> : null}
+      {sessionData.history && !context.channel ? <label className="ci-field"><span>本次客户来源渠道类型（请人工明确确认）</span><select aria-label="核对客户来源类型" disabled={sourceLocked} value={sessionData.sourceConfirmed ? sessionData.sourceProfile?.type ?? "" : ""} onChange={e => { const type = e.target.value as SourceProfile["type"]; if (!SOURCE_TYPES.includes(type)) return; const data = { ...frozen.current!, sourceProfile: { type }, sourceConfirmed: true }; frozen.current = data; setSessionData(data); }}><option value="">请选择真实类型，不猜默认工厂</option><option value="factory">工厂</option><option value="agent">代理</option><option value="trade">贸易</option><option value="other">其他</option></select></label> : null}
+    </>}
     sourceDetails={message ? <div className="customer-supply-details">
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
     </div> : null}
@@ -318,6 +326,7 @@ function CustomerSupplyUploadSession(props: Props) {
     onRestoreSession={(data, entries, batch) => {
       if (!validSession(data, props.customerId, context.customer.version)) return;
       frozen.current = data; setSessionData(data); setSourceLocked(true);
+      setGlobalResolutions(Object.fromEntries((data.history?.globalResolutions ?? []).map(issue => [issue.issueId, issue.resolution])));
       if (data.history && entries.length) {
         canonicalEntries.current = new Map(entries.map(entry => {
           const payload = canonicalConfirmationPayload(entry.payload);
@@ -368,11 +377,12 @@ function CustomerSupplyUploadSession(props: Props) {
             if (!fresh.channel && !data.sourceConfirmed) throw new Error("请在预览确认阶段明确选择真实渠道类型，不默认猜工厂。");
             const profile = data.sourceProfile;
             if ((!fresh.channel && !profile) || (profile && !SOURCE_TYPES.includes(profile.type))) throw new Error("客户来源真实类型尚未确认。");
+            const excludedRows = [...(data.history.sourceExclusions ?? []), ...confirmation.excludedRows.map(row => { const metadata = row.metadata as ReviewRow; if (!metadata?.logicalRowId || !row.reason.trim() || row.reason.length > 1000) throw new Error("排除行必须提供真实逻辑行和原因。"); return { logicalRowId: metadata.logicalRowId, reason: row.reason, sourceRefs: metadata.sourceRefs }; })];
+            const resolvedIssues = confirmationIssueResolutions(detail.selectedVersion, [...confirmation.confirmedDrafts, ...confirmation.excludedRows].map(row => row.metadata as ReviewRow), excludedRows, data.history.globalResolutions);
             const result = await utils.client.channelInventory.customerUploadPrepareConfirmation.mutate({ ...expected, historyId: data.history.historyId, ...(data.history.versionId ? { versionId: data.history.versionId } : {}), expectedRevision: data.history.revision,
               requestId: data.history.prepareRequestId, batchRequestId: confirmation.batchRequestId, expectedCustomerVersion: data.customerVersion,
               ...(data.initialChannelId ? { expectedChannelId: data.initialChannelId } : {}), ...((data.initialChannelRevision ?? data.verifiedChannelRevision) ? { expectedChannelRevision: data.initialChannelRevision ?? data.verifiedChannelRevision } : {}), ...(profile ? { sourceProfile: profile } : {}),
-              resolvedIssues: confirmation.confirmedDrafts.flatMap(row => (row.metadata as ReviewRow).issues).filter(issue => issue.resolved && issue.resolution).map(issue => ({ issueId: issue.issueId, resolution: issue.resolution! })),
-              confirmedRows: confirmation.confirmedDrafts.map(toConfirmed), excludedRows: [...(data.history.sourceExclusions ?? []), ...confirmation.excludedRows.map(row => { const metadata = row.metadata as ReviewRow; if (!metadata?.logicalRowId || !row.reason.trim() || row.reason.length > 1000) throw new Error("排除行必须提供真实逻辑行和原因。"); return { logicalRowId: metadata.logicalRowId, reason: row.reason, sourceRefs: metadata.sourceRefs }; })] }, { signal: abort.signal });
+              resolvedIssues, confirmedRows: confirmation.confirmedDrafts.map(toConfirmed), excludedRows }, { signal: abort.signal });
             if (!current()) throw new Error("确认结果待原身份核实，不会更换UUID。");
             // Display code is generated by the old batch service independently from its idempotency UUID.
             if (result.historyId !== data.history.historyId || !isUUID(result.batch.batchCode)) throw new Error("服务端批次任务身份或展示码无效。");
