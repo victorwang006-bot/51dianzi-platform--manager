@@ -56,14 +56,14 @@ describe("仅入库子页提升为一级直达", () => {
     await click("operations"); await click("group:transactions-services"); expect(panels()).toHaveLength(2);
     await click("inventory-management"); expect(navigate.mock.calls).toEqual([[inbound]]); expect(panels()).toHaveLength(0);
     expect(button("inventory-management").dataset.workspaceDirectItem).toBe(inbound.path);
-    expect(button("inventory-management").textContent).toBe("入库管理2");
+    expect(button("inventory-management").textContent).toBe("采购入库2");
     expect(button("inventory-management").hasAttribute("aria-expanded")).toBe(false);
     expect(button("inventory-management").hasAttribute("aria-controls")).toBe(false);
     expect(button("inventory-management").querySelector(".admin-workspace-nav__chevron")).toBeNull();
     expect(button("operations").dataset.active).toBe("true");
     await render("/workbench/inbound/fixture-detail?fixture=true#entry", { onNavigate: navigate });
     expect(button("inventory-management").getAttribute("aria-current")).toBe("page");
-    expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(li => li.textContent)).toEqual(["入库管理"]);
+    expect(Array.from(host.querySelectorAll('[data-admin-navigation="current-location"] li')).map(li => li.textContent)).toEqual(["采购入库"]);
     expect(host.querySelector("article")).toBe(page); expect(host.querySelector('[data-original-action]')).toBe(action);
   });
   it("hover只预加载原对象，关闭旧菜单并取消180ms任务，不导航或生成下拉", async () => {

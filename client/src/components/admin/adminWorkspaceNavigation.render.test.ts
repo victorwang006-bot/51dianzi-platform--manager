@@ -290,8 +290,8 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     ],
     [
       "/workbench/procurement/orders/8",
-      "procurement",
-      "/workbench/procurement-orders",
+      "inventory",
+      "/workbench/inbound",
     ],
     [
       "/workbench/demand-quotes/8",
@@ -307,6 +307,12 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
       expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
       expect(host.querySelector('[data-workspace-nav-target="/workbench/inquiries"]')).toBeNull(); return;
     }
+    if (location.startsWith("/workbench/procurement/orders")) {
+      expect(button("inventory-management").dataset.active).toBe("true");
+      expect(button("group:inventory").dataset.active).toBe("true");
+      expect(host.querySelector('[data-workspace-nav-target="/workbench/procurement-orders"]')).toBeNull();
+      return;
+    }
     expect(button(`group:${group}`).dataset.active).toBe("true");
     expect(
       host.querySelectorAll(
@@ -319,20 +325,18 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
   });
 
-  it("渠道库存仍直达原回调、采购两项回传父原对象，公司信息不再显示", async () => {
+  it("渠道库存仍直达原回调、保留采购需求而退休订单，公司信息不再显示", async () => {
     await render("/workbench/company?merchantId=31");
     expect(host.querySelector('[data-workspace-nav-target="/workbench/company-info"]')).toBeNull();
     await click("inventory");
     await click("group:procurement");
-    expect(host.querySelectorAll("[data-workspace-nav-child]")).toHaveLength(2);
+    expect(host.querySelectorAll("[data-workspace-nav-child]")).toHaveLength(1);
+    expect(host.querySelector('[data-workspace-nav-target="/workbench/procurement-orders"]')).toBeNull();
     await click("/workbench/procurement-demands");
-    await click("group:procurement");
-    await click("/workbench/procurement-orders");
-    expect(onNavigate).toHaveBeenCalledTimes(3);
+    expect(onNavigate).toHaveBeenCalledTimes(2);
     [
       "/workbench/channel-inventory",
       "/workbench/procurement-demands",
-      "/workbench/procurement-orders",
     ].forEach((path, index) => {
       expect(onNavigate.mock.calls[index][0]).toBe(
         items.find(item => item.path === path)
@@ -346,7 +350,6 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
     ["inventory", "/workbench/inbound"],
     ["inventory", "/workbench/outbound"],
     ["procurement", "/workbench/procurement-demands"],
-    ["procurement", "/workbench/procurement-orders"],
   ])(
     "分组%s中的%s严格回调父原对象一次，保留预加载且不自行拼URL",
     async (group, path) => {
@@ -490,11 +493,10 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
 
   it("深层业务和组织别名选中真实模块；未授权个人入口不误选组织", async () => {
     await render("/workbench/procurement-orders/accepted?merchantId=3");
-    expect(button("group:procurement").dataset.active).toBe("true");
-    await click("group:procurement");
-    expect(
-      button("/workbench/procurement-orders").getAttribute("aria-current")
-    ).toBe("page");
+    expect(button("inventory-management").dataset.active).toBe("true");
+    expect(button("group:inventory").dataset.active).toBe("true");
+    expect(button("group:procurement").dataset.active).toBe("false");
+    expect(host.querySelector('[data-workspace-nav-target="/workbench/procurement-orders"]')).toBeNull();
     await render("/admins/8");
     expect(button("/staff").getAttribute("aria-current")).toBe("page");
     expect(
@@ -623,9 +625,9 @@ describe("保留的ModuleTabs兼容API与新顶栏回归（正式布局不挂载
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
       );
     });
-    expect(document.activeElement).toBe(button("operations"));
+    expect(document.activeElement).toBe(button("inventory-management"));
     await act(async () =>
-      button("operations").dispatchEvent(
+      button("inventory-management").dispatchEvent(
         new KeyboardEvent("keydown", { key: "End", bubbles: true })
       )
     );

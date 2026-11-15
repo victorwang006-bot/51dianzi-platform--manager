@@ -321,9 +321,9 @@ export default function StaffPermissionSheet({
       {keys
         .filter(
           key =>
-            member?.isOwner ||
+            key !== "procurement.orders" && (member?.isOwner ||
             availableErpSet.has(key) ||
-            draft.erpPermissionKeys.includes(key)
+            draft.erpPermissionKeys.includes(key))
         )
         .map(key => (
           <label
@@ -337,10 +337,10 @@ export default function StaffPermissionSheet({
                 !canEditErpPermissions || busy || !availableErpSet.has(key)
               }
               onCheckedChange={() => updateErpPermission(key)}
-              aria-label={ERP_PERMISSION_DEFINITIONS[key].label}
+              aria-label={key === "inventory.inbound" ? "采购入库" : ERP_PERMISSION_DEFINITIONS[key].label}
             />
             <span className="min-w-0 font-medium">
-              {ERP_PERMISSION_DEFINITIONS[key].label}
+              {key === "inventory.inbound" ? "采购入库" : ERP_PERMISSION_DEFINITIONS[key].label}
             </span>
           </label>
         ))}
@@ -888,7 +888,7 @@ export default function StaffPermissionSheet({
                           "inventory.dashboard"
                         ) && (
                           <p className="text-xs text-muted-foreground">
-                            库存看板：历史授权保留，已并入入库管理，不在此单独调整。
+                            库存看板：历史授权保留，已并入采购入库，不在此单独调整。
                           </p>
                         )}
                       </details>

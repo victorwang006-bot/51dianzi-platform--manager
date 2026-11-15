@@ -33,6 +33,13 @@ import {
   type InboundBulkCreateInput,
   type InboundBulkCreateResult,
 } from "../../../shared/inboundBulk";
+import { inboundBuyerUserIdSchema } from "../../../shared/inboundProcurement";
+import {
+  inboundProcurementIdentity, resolveInboundProcurementAccess, inboundProcurementWhere,
+  procurementBuyerOptions, resolveInboundBuyerInTx, saveInboundProcurementOwnerInTx,
+  lockInboundProcurementOrder, assertInboundBuyerUnchanged,
+  type InboundProcurementIdentity, type InboundProcurementAccess,
+} from "../services/inboundProcurementAccess";
 import { createCrmPermissionProcedure, router } from "../_core/trpc";
 import { adminDbAvailable, dictLookup } from "../adminDb";
 import { getDb } from "../db";
@@ -149,7 +156,8 @@ const inboundDataObject = z.object({
   lotNumber: optionalTrimmed(64),
   supplierOrderNo: optionalTrimmed(64),
   inboundDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式须为 YYYY-MM-DD"),
-  operator: z.string().trim().min(1, "请输入采购员").max(64),
+  operator: z.string().trim().max(64).default(""),
+  buyerUserId: inboundBuyerUserIdSchema.optional(),
   location: optionalTrimmed(64),
   /** Excel 批量导入的仓库地址；与实际仓位 location 分开保存。 */
   warehouseAddress: optionalTrimmed(255),
@@ -233,6 +241,9 @@ export type InboundRow = {
   id: number;
   slipNo: string;
   userId: number;
+  buyerUserId?: number | null;
+  teamId?: number | null;
+  recordedByUserId?: number | null;
   partNumber: string;
   brand: string | null;
   qty: number;
@@ -323,6 +334,7 @@ function inboundPayloadHash(input: z.infer<typeof inboundCreateSchema>) {
   return createHash("sha256").update(JSON.stringify({
     ...inboundSnapshot(input),
     payment: input.payment,
+    ...(input.buyerUserId !== undefined ? { buyerUserId: input.buyerUserId } : {}),
   })).digest("hex");
 }
 
@@ -701,6 +713,7 @@ function inboundBulkPayloadHash(input: InboundBulkCreateInput) {
       procurementRegion: row.procurementRegion,
       location: row.location,
       note: row.note,
+      ...(row.buyerUserId !== undefined ? { buyerUserId: row.buyerUserId } : {}),
     })),
   })).digest("hex");
 }
@@ -728,10 +741,18 @@ export async function createInboundBulk(
   ownerUserId: number,
   actorUserId: number,
   input: InboundBulkCreateInput,
+  identity?: InboundProcurementIdentity,
 ): Promise<InboundBulkCreateResult> {
   input = inboundBulkCreateSchema.parse(input);
   const payloadHash = inboundBulkPayloadHash(input);
   return db.transaction(async tx => {
+    const access = await resolveInboundProcurementAccess(tx, identity, true);
+    if (access.ownerUserId !== ownerUserId || access.actorUserId !== actorUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
+    // Validate EVERY buyer before any batch/request/order/ledger write, in stable lock order.
+    const buyers = new Map<number, Awaited<ReturnType<typeof resolveInboundBuyerInTx>>>();
+    for (const buyerId of Array.from(new Set(input.rows.map(row => row.buyerUserId ?? actorUserId))).sort((a, b) => a - b)) {
+      buyers.set(buyerId, await resolveInboundBuyerInTx(tx, access, buyerId));
+    }
     let batchId = 0;
     try {
       const inserted = await tx.execute(sql`
@@ -754,6 +775,7 @@ export async function createInboundBulk(
     if (!batchId) {
       const prior = decodeInboundBulkResult(request.result);
       if (!prior) throw new TRPCError({ code: "CONFLICT", message: "批量入库请求正在处理或结果缺失，请稍后重试" });
+      for (const item of [...prior.items].sort((a, b) => a.id - b.id)) await lockInboundProcurementOrder(tx, access, item.id);
       return { ...prior, replayed: true };
     }
     if (Number(request.id) !== batchId) {
@@ -767,6 +789,7 @@ export async function createInboundBulk(
       ? [...input.rows].sort((left, right) => left.partNumber < right.partNumber ? -1 : left.partNumber > right.partNumber ? 1 : left.sourceRow - right.sourceRow)
       : input.rows;
     for (const row of rowsInWriteOrder) {
+      const buyer = buyers.get(row.buyerUserId ?? actorUserId)!;
       const priceMissing = row.unitCost === null;
       if (priceMissing) missingPriceCount += 1;
       const pricing = normalizeInboundPricing(row.unitCost ?? 0, input.unitCostBasis, input.taxRate);
@@ -783,12 +806,13 @@ export async function createInboundBulk(
            ${pricing.unitCost}, ${pricing.unitCostBasis}, ${pricing.taxRate}, ${pricing.unitCostTaxIncluded}, ${pricing.unitCostTaxExcluded},
            ${row.prodYear}, ${row.supplierName}, ${row.supplierContact || null}, NULL, NULL, NULL, NULL,
            ${input.status}, ${input.inboundDate}, ${received ? input.inboundDate : null}, ${received ? row.qty : null},
-           ${row.operator}, ${row.location || null}, ${row.warehouseAddress || null}, ${row.procurementRegion || null},
+           ${buyer.name}, ${row.location || null}, ${row.warehouseAddress || null}, ${row.procurementRegion || null},
            ${row.note || null}, ${JSON.stringify([])}, ${received ? sql`NOW()` : null}, ${received ? actorUserId : null}, 4,
            NOW(), ${actorUserId}, ${priceMissing}, ${batchId}, ${row.sourceRow})
       `);
       const id = insertId(inserted);
       if (!id) throw new Error("批量入库单写入失败");
+      await saveInboundProcurementOwnerInTx(tx, access, id, buyer);
       if (received) {
         await upsertStockLedgerInTx(
           tx, id, ownerUserId, row.partNumber, row.brand || null, row.qty,
@@ -801,7 +825,7 @@ export async function createInboundBulk(
           unitCost: pricing.unitCost, unitCostBasis: pricing.unitCostBasis, taxRate: pricing.taxRate,
           unitCostTaxIncluded: pricing.unitCostTaxIncluded, unitCostTaxExcluded: pricing.unitCostTaxExcluded,
           prodYear: row.prodYear, supplierName: row.supplierName, supplierContact: row.supplierContact || null,
-          inboundDate: input.inboundDate, operator: row.operator, location: row.location || null,
+          inboundDate: input.inboundDate, operator: buyer.name, buyerUserId: buyer.userId, recordedByUserId: actorUserId, teamId: buyer.teamId, location: row.location || null,
           warehouseAddress: row.warehouseAddress || null, procurementRegion: row.procurementRegion || null,
           note: row.note || null, priceMissing, bulkBatchId: batchId, bulkSourceRow: row.sourceRow,
         },
@@ -833,7 +857,10 @@ async function cancelInboundOrderInTx(
   refundConfirmed = false,
   expectedMovementVersion?: number,
   expectedPaymentFingerprint?: string,
+  access?: InboundProcurementAccess,
 ) {
+  if (!access) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库归属无法确认" });
+  await lockInboundProcurementOrder(tx, access, id);
   const result = await tx.execute(sql`
     SELECT * FROM inbound_orders WHERE id = ${id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
   `);
@@ -882,14 +909,19 @@ async function cancelInboundOrder(
   allowReceived = true,
   refundConfirmed = false,
   expectedPaymentFingerprint?: string,
+  identity?: InboundProcurementIdentity,
 ) {
-  return db.transaction(tx => cancelInboundOrderInTx(tx, ownerUserId, actorUserId, id, reason, allowReceived, refundConfirmed, undefined, expectedPaymentFingerprint));
+  return db.transaction(async tx => {
+    const access = await resolveInboundProcurementAccess(tx, identity, true);
+    if (access.ownerUserId !== ownerUserId || access.actorUserId !== actorUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
+    return cancelInboundOrderInTx(tx, ownerUserId, actorUserId, id, reason, allowReceived, refundConfirmed, undefined, expectedPaymentFingerprint, access);
+  });
 }
 
 type InboundCancelSelection = z.infer<typeof inboundCancelSelectionSchema>;
 type InboundCancelRow = Pick<InboundRow, "id" | "slipNo" | "partNumber" | "status" | "bulkBatchId">;
 
-async function resolveInboundCancelRows(executor: any, ownerUserId: number, selection: InboundCancelSelection, lock = false) {
+async function resolveInboundCancelRows(executor: any, ownerUserId: number, selection: InboundCancelSelection, access: InboundProcurementAccess, lock = false) {
   const scope = selection.ids
     ? sql`io.id IN (${sql.join(selection.ids.map(id => sql`${id}`), sql`, `)})`
     : sql`io.bulkBatchId = ${selection.bulkBatchId!}`;
@@ -907,11 +939,22 @@ async function resolveInboundCancelRows(executor: any, ownerUserId: number, sele
   if (rows.length > MAX_INBOUND_CANCEL_ROWS) {
     throw new TRPCError({ code: "BAD_REQUEST", message: `每次最多作废${MAX_INBOUND_CANCEL_ROWS}单` });
   }
+  // Do not filter a mixed batch into a subset: resolve the original full selection,
+  // then demand the SAME predicate for every row, including already-cancelled rows.
+  if (lock) {
+    for (const row of [...rows].sort((a, b) => a.id - b.id)) await lockInboundProcurementOrder(executor, access, row.id);
+  } else {
+    const visible = await executor.execute(sql`SELECT io.id FROM inbound_orders io
+      WHERE io.id IN (${sql.join(rows.map(row => sql`${row.id}`), sql`, `)}) AND ${inboundProcurementWhere(access)}`);
+    if ((visible as unknown as [Array<{ id: number }>, unknown])[0].length !== rows.length) throw new TRPCError({ code: "NOT_FOUND", message: "入库单不存在" });
+  }
   return rows;
 }
 
-export async function previewInboundCancellation(db: Awaited<ReturnType<typeof requireDb>>, ownerUserId: number, selection: InboundCancelSelection) {
-  const rows = await resolveInboundCancelRows(db, ownerUserId, selection);
+export async function previewInboundCancellation(db: Awaited<ReturnType<typeof requireDb>>, ownerUserId: number, selection: InboundCancelSelection, identity?: InboundProcurementIdentity) {
+  const access = await resolveInboundProcurementAccess(db, identity);
+  if (access.ownerUserId !== ownerUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
+  const rows = await resolveInboundCancelRows(db, ownerUserId, selection, access);
   const activeRows = rows.filter(row => row.status !== "cancelled");
   const payments = await loadActiveInboundPayments(db, ownerUserId, activeRows.map(row => row.id));
   const paidByOrder = new Map<number, bigint>();
@@ -945,9 +988,12 @@ export async function cancelInboundOrders(
   reason: string,
   refundConfirmed: boolean,
   expectedPaymentFingerprint: string,
+  identity?: InboundProcurementIdentity,
 ) {
   return db.transaction(async tx => {
-    const rows = await resolveInboundCancelRows(tx, ownerUserId, selection, true);
+    const access = await resolveInboundProcurementAccess(tx, identity, true);
+    if (access.ownerUserId !== ownerUserId || access.actorUserId !== actorUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
+    const rows = await resolveInboundCancelRows(tx, ownerUserId, selection, access, true);
     const activeRows = rows.filter(row => row.status !== "cancelled");
     if (!activeRows.length) return { success: true, count: 0, ignoredCount: rows.length, refundedPaymentCount: 0, refundedAmount: "0.00" } as const;
     const payments = await loadActiveInboundPayments(tx, ownerUserId, activeRows.map(row => row.id), true);
@@ -1008,6 +1054,7 @@ export async function cancelInboundOrders(
         refundConfirmed,
         row.status === "received" ? movementVersions.get(row.partNumber) : undefined,
         inboundPaymentFingerprint(paymentsByOrder.get(row.id) ?? []),
+        access,
       );
       refundedPaymentCount += result.refundedPaymentCount;
       refundedCents += inboundMoneyCents(result.refundedAmount);
@@ -1026,6 +1073,9 @@ export async function cancelInboundOrders(
 }
 
 export const inboundRouter = router({
+  /** Narrow inbound-only candidates, no personnel or full-inventory grant. */
+  procurementBuyers: inventoryInboundProcedure.query(async ({ ctx }) =>
+    procurementBuyerOptions(await requireDb(), inboundProcurementIdentity(ctx))),
   /** 上传入库实拍照片至企业私有目录；单据保存时再次校验对象归属。 */
   uploadPhoto: inventoryInboundProcedure
     .input(z.object({
@@ -1034,6 +1084,7 @@ export const inboundRouter = router({
       base64: z.string().min(1).max(Math.ceil(MAX_INBOUND_PHOTO_BYTES * 1.4) + 128),
     }))
     .mutation(async ({ ctx, input }) => {
+      await resolveInboundProcurementAccess(await requireDb(), inboundProcurementIdentity(ctx));
       const data = decodeInboundPhotoBase64(input.base64, input.mimeType);
       const extension = input.mimeType === "image/jpeg" ? "jpg" : input.mimeType.split("/")[1];
       const safeStem = input.fileName
@@ -1057,9 +1108,10 @@ export const inboundRouter = router({
     .input(z.object({ id: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       const db = await requireDb();
+      const access = await resolveInboundProcurementAccess(db, inboundProcurementIdentity(ctx));
       const result = await db.execute(sql`
         SELECT photos FROM inbound_orders
-         WHERE id = ${input.id} AND userId = ${ctx.effectiveUserId!}
+         WHERE id = ${input.id} AND ${inboundProcurementWhere(access, "inbound_orders")}
          LIMIT 1
       `);
       const row = (result as unknown as [[{ photos: unknown }], unknown])[0][0];
@@ -1076,7 +1128,8 @@ export const inboundRouter = router({
       keyword: z.string().max(100).transform(value => value.normalize("NFKC").trim().toUpperCase()),
       limit: z.number().int().min(1).max(12).default(8),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await resolveInboundProcurementAccess(await requireDb(), inboundProcurementIdentity(ctx));
       if (input.keyword.length < 2 || !adminDbAvailable()) return [];
       try {
         return await dictLookup(input.keyword, input.limit);
@@ -1089,7 +1142,8 @@ export const inboundRouter = router({
   /** 入库页顶部概览：采购付款与现有库存价值分开展示，避免把在途货款混入库存资产。 */
   overview: inventoryInboundProcedure.query(async ({ ctx }) => {
     const db = await requireDb();
-    const userId = ctx.effectiveUserId!;
+    const access = await resolveInboundProcurementAccess(db, inboundProcurementIdentity(ctx));
+    const userId = access.ownerUserId;
     const [stockResult, paymentResult] = await Promise.all([
       db.execute(sql`
         SELECT
@@ -1099,7 +1153,7 @@ export const inboundRouter = router({
           COALESCE(SUM(CASE WHEN currentQty > 0 AND (avgCost IS NULL OR costBasis IS NULL OR costBasis <> 'CNY_TAX_INCLUDED')
                             THEN 1 ELSE 0 END), 0) AS unknownValueRows
         FROM stock_ledger
-        WHERE userId = ${userId}
+        WHERE userId = ${userId} AND ${access.scope === "enterprise"}
       `),
       db.execute(sql`
         SELECT
@@ -1114,7 +1168,7 @@ export const inboundRouter = router({
           FROM inbound_orders io
           LEFT JOIN inbound_payment_entries pe
             ON pe.inboundOrderId = io.id AND pe.ownerUserId = io.userId
-          WHERE io.userId = ${userId}
+          WHERE ${inboundProcurementWhere(access)}
           GROUP BY io.id, io.status, io.paymentTrackedAt
         ) x
       `),
@@ -1139,14 +1193,15 @@ export const inboundRouter = router({
       untrackedCount: Number(payment?.untrackedCount ?? 0),
       totalInventoryValue: inboundMoneyStringFromCents(inboundMoneyCents(stock?.totalValue ?? "0")),
       totalInventoryQty: Number(stock?.totalQty ?? 0),
-      totalInventoryValueComplete: Number(stock?.unknownValueRows ?? 0) === 0,
+      totalInventoryValueComplete: access.scope === "enterprise" && Number(stock?.unknownValueRows ?? 0) === 0,
+      inventoryScopeAvailable: access.scope === "enterprise",
     };
   }),
 
   list: inventoryInboundProcedure.input(inboundFilterSchema).query(async ({ ctx, input }) => {
     const db = await requireDb();
-    const userId = ctx.effectiveUserId!;
-    const conditions = [sql`io.userId = ${userId}`];
+    const access = await resolveInboundProcurementAccess(db, inboundProcurementIdentity(ctx));
+    const conditions = [inboundProcurementWhere(access)];
     const cancelledPaymentFilter = input?.paymentCategory === "refunded" || input?.paymentCategory === "cancelled_pending";
     if (!input?.status && !cancelledPaymentFilter) conditions.push(sql`io.status <> 'cancelled'`);
     if (input?.partNumber) conditions.push(sql`io.partNumber LIKE ${`%${input.partNumber}%`}`);
@@ -1158,7 +1213,7 @@ export const inboundRouter = router({
     if (input?.dateFrom) conditions.push(sql`${effectiveDate} >= ${input.dateFrom}`);
     if (input?.dateTo) conditions.push(sql`${effectiveDate} <= ${input.dateTo}`);
     const result = await db.execute(sql`
-      SELECT io.*,
+      SELECT io.*, ipo.buyerUserId, ipo.teamId, ipo.recordedByUserId,
              (SELECT COALESCE(SUM(pe.amount), 0)
                 FROM inbound_payment_entries pe
                WHERE pe.inboundOrderId = io.id AND pe.ownerUserId = io.userId AND pe.voidedAt IS NULL) AS paidAmount,
@@ -1167,6 +1222,7 @@ export const inboundRouter = router({
                WHERE pe.inboundOrderId = io.id AND pe.ownerUserId = io.userId
                  AND pe.voidedAt IS NOT NULL AND pe.voidReason LIKE '线下退款：%') AS refundedPaymentCount
       FROM inbound_orders io
+      LEFT JOIN inbound_procurement_owners ipo ON ipo.inboundOrderId = io.id AND ipo.enterpriseId = ${access.enterpriseId} AND ipo.ownerUserId = io.userId
       WHERE ${sql.join(conditions, sql` AND `)}
       ORDER BY io.createdAt DESC
     `);
@@ -1179,7 +1235,7 @@ export const inboundRouter = router({
   /** Excel bulk submit is one transaction, never a client-side loop over create. */
   bulkCreate: inventoryInboundProcedure.input(inboundBulkCreateSchema).mutation(async ({ ctx, input }) => {
     const db = await requireDb();
-    return createInboundBulk(db, ctx.effectiveUserId!, ctx.user.id, input);
+    return createInboundBulk(db, ctx.effectiveUserId!, ctx.user.id, input, inboundProcurementIdentity(ctx));
   }),
 
   create: inventoryInboundProcedure.input(inboundCreateSchema).mutation(async ({ ctx, input }) => {
@@ -1191,6 +1247,8 @@ export const inboundRouter = router({
     const initialPayment = initialPaymentForCreate(input, pricing);
     const payloadHash = inboundPayloadHash(input);
     return db.transaction(async tx => {
+      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      const buyer = await resolveInboundBuyerInTx(tx, access, input.buyerUserId);
       try {
         await tx.execute(sql`
           INSERT INTO inbound_request_keys (ownerUserId, requestId, payloadHash)
@@ -1210,6 +1268,7 @@ export const inboundRouter = router({
       }
       const existingOrderId = Number(requestRow.inboundOrderId ?? 0);
       if (existingOrderId > 0) {
+        await lockInboundProcurementOrder(tx, access, existingOrderId);
         const priorResult = await tx.execute(sql`
           SELECT id, slipNo, status FROM inbound_orders
            WHERE id = ${existingOrderId} AND userId = ${ownerUserId} LIMIT 1
@@ -1234,13 +1293,14 @@ export const inboundRouter = router({
            ${input.prodYear ?? null}, ${input.supplierName ?? null}, ${input.supplierContact ?? null}, ${input.supplierPhone ?? null},
            ${input.packageType ?? null}, ${input.lotNumber ?? null}, ${input.supplierOrderNo ?? null},
            ${input.status}, ${input.inboundDate}, ${received ? input.inboundDate : null},
-           ${received ? input.qty : null}, ${input.operator ?? null}, ${input.location ?? null},
+           ${received ? input.qty : null}, ${buyer.name}, ${input.location ?? null},
            ${input.warehouseAddress ?? null}, ${input.procurementRegion ?? null}, false,
            ${input.note ?? null}, ${JSON.stringify(input.photos ?? [])},
            ${received ? sql`NOW()` : null}, ${received ? actorUserId : null}, 4, NOW(), ${actorUserId})
       `);
       const id = insertId(inserted);
       if (!id) throw new Error("入库单写入失败");
+      await saveInboundProcurementOwnerInTx(tx, access, id, buyer);
       if (initialPayment.payment) {
         const paymentHash = paymentPayloadHash({ inboundOrderId: id, actorUserId, ...initialPayment.payment });
         await tx.execute(sql`
@@ -1258,7 +1318,7 @@ export const inboundRouter = router({
         );
       }
       await addEvent(tx, id, ownerUserId, actorUserId, received ? "created_received" : "created_in_transit", null, {
-        after: inboundSnapshot(input),
+        after: { ...inboundSnapshot(input), operator: buyer.name, buyerUserId: buyer.userId, teamId: buyer.teamId, recordedByUserId: actorUserId },
         payment: { mode: input.payment.mode, payableAmount: initialPayment.payableAmount, paidAmount: initialPayment.paidAmount },
       });
       const bound = await tx.execute(sql`
@@ -1279,11 +1339,14 @@ export const inboundRouter = router({
       const actorUserId = ctx.user.id;
       assertOwnedInboundPhotos(input.data.photos, ownerUserId);
       return db.transaction(async tx => {
+        const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+        const ownership = await lockInboundProcurementOrder(tx, access, input.id);
         const result = await tx.execute(sql`
           SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
         `);
         const existing = (result as unknown as [InboundRow[], unknown])[0][0];
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "入库单不存在" });
+        assertInboundBuyerUnchanged(ownership.buyerUserId, input.data.buyerUserId);
         if (existing.status !== "in_transit") {
           throw new TRPCError({ code: "CONFLICT", message: "只有在途单可以修改；已入库记录请通过作废冲销处理。" });
         }
@@ -1310,7 +1373,7 @@ export const inboundRouter = router({
             supplierContact = ${input.data.supplierContact ?? null}, supplierPhone = ${input.data.supplierPhone ?? null},
             packageType = ${input.data.packageType ?? null}, lotNumber = ${input.data.lotNumber ?? null},
             supplierOrderNo = ${input.data.supplierOrderNo ?? null}, inboundDate = ${input.data.inboundDate},
-            operator = ${input.data.operator ?? null}, location = ${input.data.location ?? null},
+            operator = ${existing.operator}, location = ${input.data.location ?? null},
             warehouseAddress = ${input.data.warehouseAddress ?? existing.warehouseAddress ?? null},
             procurementRegion = ${input.data.procurementRegion ?? existing.procurementRegion ?? null},
             priceMissing = ${nextPriceMissing},
@@ -1321,6 +1384,7 @@ export const inboundRouter = router({
           before: existing,
           after: {
             ...inboundSnapshot(input.data),
+            operator: existing.operator,
             unitCost: pricing?.unitCost ?? null,
             unitCostBasis: pricing?.unitCostBasis ?? null,
             taxRate: pricing?.taxRate ?? null,
@@ -1345,7 +1409,8 @@ export const inboundRouter = router({
       packageType: z.string().trim().max(64),
       lotNumber: z.string().trim().max(64),
       supplierOrderNo: z.string().trim().max(64),
-      operator: z.string().trim().min(1, "请输入采购员").max(64),
+      operator: z.string().trim().max(64).default(""),
+      buyerUserId: inboundBuyerUserIdSchema.optional(),
       location: z.string().trim().min(1, "请输入存放仓位").max(64),
       note: z.string().trim().max(500),
       photos: z.array(inboundPhotoRefSchema).max(MAX_INBOUND_PHOTOS),
@@ -1356,11 +1421,14 @@ export const inboundRouter = router({
       const actorUserId = ctx.user.id;
       assertOwnedInboundPhotos(input.photos, ownerUserId);
       return db.transaction(async tx => {
+        const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+        const ownership = await lockInboundProcurementOrder(tx, access, input.id);
         const result = await tx.execute(sql`
           SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
         `);
         const existing = (result as unknown as [InboundRow[], unknown])[0][0];
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "入库单不存在" });
+        assertInboundBuyerUnchanged(ownership.buyerUserId, input.buyerUserId);
         if (existing.status !== "received") {
           throw new TRPCError({ code: "CONFLICT", message: "只有已入库单可以使用安全编辑" });
         }
@@ -1369,7 +1437,7 @@ export const inboundRouter = router({
             supplierName = ${input.supplierName || null}, supplierContact = ${input.supplierContact || null},
             supplierPhone = ${input.supplierPhone || null}, packageType = ${input.packageType || null},
             lotNumber = ${input.lotNumber || null}, supplierOrderNo = ${input.supplierOrderNo || null},
-            operator = ${input.operator || null}, location = ${input.location || null}, note = ${input.note || null},
+            operator = ${existing.operator}, location = ${input.location || null}, note = ${input.note || null},
             photos = ${JSON.stringify(input.photos)}, writeVersion = 4
           WHERE id = ${input.id} AND userId = ${ownerUserId} AND status = 'received'
         `);
@@ -1382,7 +1450,7 @@ export const inboundRouter = router({
             packageType: input.packageType || null,
             lotNumber: input.lotNumber || null,
             supplierOrderNo: input.supplierOrderNo || null,
-            operator: input.operator || null,
+            operator: existing.operator,
             location: input.location || null,
             note: input.note || null,
             photos: input.photos,
@@ -1397,15 +1465,17 @@ export const inboundRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await requireDb();
       const ownerUserId = ctx.effectiveUserId!;
+      const access = await resolveInboundProcurementAccess(db, inboundProcurementIdentity(ctx));
       const orderResult = await db.execute(sql`
-        SELECT io.*,
+        SELECT io.*, ipo.buyerUserId, ipo.teamId, ipo.recordedByUserId,
                (SELECT COALESCE(SUM(pe.amount), 0) FROM inbound_payment_entries pe
                  WHERE pe.inboundOrderId = io.id AND pe.ownerUserId = io.userId AND pe.voidedAt IS NULL) AS paidAmount,
                (SELECT COUNT(*) FROM inbound_payment_entries pe
                  WHERE pe.inboundOrderId = io.id AND pe.ownerUserId = io.userId
                    AND pe.voidedAt IS NOT NULL AND pe.voidReason LIKE '线下退款：%') AS refundedPaymentCount
           FROM inbound_orders io
-         WHERE io.id = ${input.id} AND io.userId = ${ownerUserId}
+          LEFT JOIN inbound_procurement_owners ipo ON ipo.inboundOrderId = io.id AND ipo.enterpriseId = ${access.enterpriseId} AND ipo.ownerUserId = io.userId
+         WHERE io.id = ${input.id} AND ${inboundProcurementWhere(access)}
          LIMIT 1
       `);
       const order = (orderResult as unknown as [InboundRow[], unknown])[0][0];
@@ -1429,6 +1499,8 @@ export const inboundRouter = router({
       const ownerUserId = ctx.effectiveUserId!;
       const actorUserId = ctx.user.id;
       return db.transaction(async tx => {
+        const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+        const ownership = await lockInboundProcurementOrder(tx, access, input.id);
         const result = await tx.execute(sql`
           SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
         `);
@@ -1459,6 +1531,8 @@ export const inboundRouter = router({
     const amountCents = inboundMoneyCents(amount);
     if (amountCents <= BigInt(0)) throw new TRPCError({ code: "BAD_REQUEST", message: "付款金额须大于0" });
     return db.transaction(async tx => {
+      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      await lockInboundProcurementOrder(tx, access, input.id);
       const orderResult = await tx.execute(sql`
         SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
       `);
@@ -1540,12 +1614,14 @@ export const inboundRouter = router({
     const ownerUserId = ctx.effectiveUserId!;
     const actorUserId = ctx.user.id;
     return db.transaction(async tx => {
+      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
       const lookupResult = await tx.execute(sql`
         SELECT inboundOrderId FROM inbound_payment_entries
          WHERE id = ${input.paymentId} AND ownerUserId = ${ownerUserId} LIMIT 1
       `);
       const lookup = (lookupResult as unknown as [[{ inboundOrderId: number }], unknown])[0][0];
       if (!lookup) throw new TRPCError({ code: "NOT_FOUND", message: "付款记录不存在" });
+      await lockInboundProcurementOrder(tx, access, Number(lookup.inboundOrderId));
       const orderResult = await tx.execute(sql`
         SELECT id FROM inbound_orders
          WHERE id = ${lookup.inboundOrderId} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
@@ -1582,6 +1658,8 @@ export const inboundRouter = router({
     const actorUserId = ctx.user.id;
     const payloadHash = receivePayloadHash(input);
     return db.transaction(async tx => {
+      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      await lockInboundProcurementOrder(tx, access, input.id);
       const result = await tx.execute(sql`
         SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
       `);
@@ -1642,14 +1720,14 @@ export const inboundRouter = router({
     .input(inboundCancelSelectionSchema)
     .query(async ({ ctx, input }) => {
       const db = await requireDb();
-      return previewInboundCancellation(db, ctx.effectiveUserId!, input);
+      return previewInboundCancellation(db, ctx.effectiveUserId!, input, inboundProcurementIdentity(ctx));
     }),
 
   cancelMany: inventoryInboundProcedure
     .input(inboundCancelManySchema)
     .mutation(async ({ ctx, input }) => {
       const db = await requireDb();
-      return cancelInboundOrders(db, ctx.effectiveUserId!, ctx.user.id, input, input.reason, input.refundConfirmed, input.paymentFingerprint);
+      return cancelInboundOrders(db, ctx.effectiveUserId!, ctx.user.id, input, input.reason, input.refundConfirmed, input.paymentFingerprint, inboundProcurementIdentity(ctx));
     }),
 
   cancel: inventoryInboundProcedure
@@ -1663,7 +1741,7 @@ export const inboundRouter = router({
       const db = await requireDb();
       const ownerUserId = ctx.effectiveUserId!;
       const actorUserId = ctx.user.id;
-      return cancelInboundOrder(db, ownerUserId, actorUserId, input.id, input.reason, true, input.refundConfirmed, input.paymentFingerprint);
+      return cancelInboundOrder(db, ownerUserId, actorUserId, input.id, input.reason, true, input.refundConfirmed, input.paymentFingerprint, inboundProcurementIdentity(ctx));
     }),
 
   /** 旧页面兼容入口：不再物理删除，统一转换为可审计作废。 */
@@ -1671,6 +1749,6 @@ export const inboundRouter = router({
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
       const db = await requireDb();
-      return cancelInboundOrder(db, ctx.effectiveUserId!, ctx.user.id, input.id, "旧版页面取消在途单", false);
+      return cancelInboundOrder(db, ctx.effectiveUserId!, ctx.user.id, input.id, "旧版页面取消在途单", false, false, undefined, inboundProcurementIdentity(ctx));
     }),
 });

@@ -220,10 +220,6 @@ const BUSINESS_ROUTE_ALIASES: readonly {
     canonicalPath: "/workbench/procurement-demands",
   },
   {
-    path: "/workbench/procurement/orders",
-    canonicalPath: "/workbench/procurement-orders",
-  },
-  {
     path: "/workbench/demand-quotes",
     canonicalPath: "/workbench/procurement-demands",
   },
@@ -250,6 +246,9 @@ export function getClosedAdminEntryNavigationTarget(location: string): string | 
   const destination = pathname === "/role-templates" || pathname === "/permission-audit"
     ? "/staff"
     : pathname === "/workbench" ? "/workbench/customers"
+    : isAdminWorkbenchNavigationRouteMatch(pathname, "/workbench/procurement-orders") ||
+        isAdminWorkbenchNavigationRouteMatch(pathname, "/workbench/procurement/orders")
+      ? "/workbench/inbound"
     : pathname === "/workbench/inventory" ||
         pathname === "/workbench/publish" || /^\/workbench\/publish\/[^/]+\/edit$/.test(pathname)
       ? "/workbench/channel-inventory" : null;

@@ -8,7 +8,7 @@ import { AdminWorkspaceTabs } from "./AdminWorkspaceNavigation";
 import { getAdminWorkspaceDropdownWidth } from "@/lib/adminWorkspaceDropdownWidth";
 
 // Fictional navigation labels only; layout mocks do not contact application APIs.
-const items = ["/workbench/outbound", "/workbench/orders", "/workbench/inbound", "/workbench/procurement-orders", "/messages", "/staff"]
+const items = ["/workbench/outbound", "/workbench/orders", "/workbench/inbound", "/workbench/procurement-demands", "/messages", "/staff"]
   .map(path => Object.freeze({ path, label: "虚构测试菜单", fixture: true }));
 let host: HTMLDivElement, root: Root;
 let widths: Record<string, number>;

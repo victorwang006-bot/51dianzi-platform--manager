@@ -115,7 +115,7 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
       },
       {
         icon: Warehouse,
-        label: "入库管理",
+        label: "采购入库",
         path: "/workbench/inbound",
         workbenchCapability: "inventory.inbound",
         nested: false,
@@ -171,13 +171,6 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         label: "采购需求",
         path: "/workbench/procurement-demands",
         workbenchCapability: "procurement.demands",
-        nested: false,
-      },
-      {
-        icon: ReceiptText,
-        label: "采购订单",
-        path: "/workbench/procurement-orders",
-        workbenchCapability: "procurement.orders",
         nested: false,
       },
     ],

@@ -65,7 +65,6 @@ import InboundManagement from "./platform/client/src/pages/InboundManagement";
 import MyInventory from "./platform/client/src/pages/MyInventory";
 import OutboundManagement from "./platform/client/src/pages/OutboundManagement";
 import ProcurementDemands from "./platform/client/src/pages/ProcurementDemands";
-import ProcurementOrders from "./platform/client/src/pages/ProcurementOrders";
 import PublishInventory from "./platform/client/src/pages/PublishInventory";
 
 export type BusinessWorkbenchPageProps = {
@@ -462,14 +461,6 @@ function businessRouteRequirement(
   ) {
     return { capability: "procurement.demands" };
   }
-  if (pathname === "/procurement-orders/create")
-    return { capability: "procurement.orders", requiresWrite: true };
-  if (
-    pathname.startsWith("/procurement-orders") ||
-    pathname === "/procurement/orders"
-  ) {
-    return { capability: "procurement.orders" };
-  }
   if (pathname === "/add-user")
     return { capability: "enterprise.members.manage", requiresWrite: true };
   if (pathname === "/user-records")
@@ -509,14 +500,6 @@ function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
       <Route path="/chat">{() => <BusinessChatRoute canReply={canReply} />}</Route>
       <Route path="/procurement-demands" component={ProcurementDemands} />
       <Route path="/procurement/demands" component={ProcurementDemands} />
-      <Route path="/procurement-orders/quote" component={ProcurementOrders} />
-      <Route
-        path="/procurement-orders/accepted"
-        component={ProcurementOrders}
-      />
-      <Route path="/procurement-orders/create" component={ProcurementOrders} />
-      <Route path="/procurement-orders" component={ProcurementOrders} />
-      <Route path="/procurement/orders" component={ProcurementOrders} />
       <Route path="/demand-quotes" component={DemandQuotes} />
       <Route path="/add-user" component={AddUser} />
       <Route path="/user-records" component={BusinessUserRecordsPage} />

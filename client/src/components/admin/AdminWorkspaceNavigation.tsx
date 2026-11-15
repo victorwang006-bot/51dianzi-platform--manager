@@ -147,7 +147,7 @@ export function AdminWorkspaceLocation<T extends AdminWorkspaceNavigationItem>({
         ...(tab !== "materials" ? [CHANNEL_INVENTORY_TABS.find(item => item.id === tab)!.label] : [])]
       : customer ? [activeItem.label, ...(route?.label && route.label !== activeItem.label ? [route.label] : [])]
       : reception ? ["询价接待"]
-      : activeItem.path === "/workbench/inbound" ? ["入库管理"]
+      : activeItem.path === "/workbench/inbound" ? ["采购入库"]
       : activeWorkspace.id === "business" && entry?.kind === "group" ? [entry.label, activeItem.label]
       : [activeWorkspace.label, ...(entry?.kind === "group" ? [entry.label] : []), activeItem.label];
   })();
@@ -201,7 +201,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     ...businessEntries.flatMap(entry => entry.kind === "group" && (entry.id === "inventory" || entry.id === "procurement")
       ? [{ id: (entry.id === "inventory" ? "inventory-management" : "procurement-management") as UnifiedWorkspaceId,
         workspaceId: "business" as const,
-        label: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? "入库管理" : entry.label,
+        label: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? "采购入库" : entry.label,
         items: entry.items,
         directItem: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : [])
       .sort((left, right) => left.id === "procurement-management" ? -1 : right.id === "procurement-management" ? 1 : 0),
@@ -585,7 +585,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             id={`${id}-trigger`}
             type="button"
             className="admin-workspace-nav__tab admin-workspace-nav__workspace admin-workspace-nav__workspace-trigger"
-            title={workspace.id === "inventory-management" ? "入库管理" : undefined}
+            title={workspace.id === "inventory-management" ? "采购入库" : undefined}
             data-workspace-nav-target={workspace.id}
             data-navigation-level="1"
             data-workspace-dropdown-trigger={workspace.id}

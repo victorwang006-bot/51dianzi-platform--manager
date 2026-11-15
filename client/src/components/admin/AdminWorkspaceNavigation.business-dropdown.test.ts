@@ -15,7 +15,7 @@ function button(t: string) { const n = host.querySelector<HTMLButtonElement>(`bu
 async function click(t: string) { await act(async () => button(t).click()); }
 const panel = () => host.querySelector<HTMLDivElement>('[data-workspace-dropdown="panel"]');
 describe("原业务子项移至一级管理菜单的回归", () => {
-  it.each([["procurement-management", "/workbench/procurement-demands"], ["procurement-management", "/workbench/procurement-orders"]])
+  it.each([["procurement-management", "/workbench/procurement-demands"]])
     ("%s → %s保留业务上下文、badge与原对象", async (parent, path) => {
       await render(path); await click(parent); const original = items.find(i => i.path === path)!;
       expect(button(path).querySelector('[data-business-context="business"]')).not.toBeNull(); expect(button(path).querySelector('[data-active-render="true"]')).not.toBeNull(); expect(button(path).querySelector('[data-badge="original"]')).not.toBeNull();

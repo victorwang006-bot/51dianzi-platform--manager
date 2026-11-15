@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { INBOUND_PRICE_BASES, MAX_INBOUND_UNIT_COST, MAX_INBOUND_TAX_RATE } from "./inboundPricing";
 import { MAX_INBOUND_QTY } from "./inboundPayment";
+import { inboundBuyerUserIdSchema } from "./inboundProcurement";
 
 export const INBOUND_BULK_MAX_ROWS = 200;
 export const INBOUND_BULK_FILE_MAX_BYTES = 5 * 1024 * 1024;
@@ -19,7 +20,7 @@ export const INBOUND_BULK_FIELDS = [
 ] as const;
 export type InboundBulkField = typeof INBOUND_BULK_FIELDS[number]["key"];
 export type InboundBulkMapping = Record<InboundBulkField, number | null>;
-export type InboundBulkDraftRow = Record<InboundBulkField, string> & { rowKey:string; sourceRow:number };
+export type InboundBulkDraftRow = Record<InboundBulkField, string> & { rowKey:string; sourceRow:number; buyerUserId?:string };
 const text = (max:number) => z.string().trim().max(max).default("");
 export function validInboundDate(value:string):boolean {
   if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
@@ -27,6 +28,7 @@ export function validInboundDate(value:string):boolean {
 }
 export const inboundBulkRowSchema=z.object({
   sourceRow:z.number().int().positive().max(1048576),
+  buyerUserId:inboundBuyerUserIdSchema.optional(),
   partNumber:z.string().max(128).transform(v=>v.normalize("NFKC").trim().toUpperCase()).pipe(z.string().min(1,"请填料号").max(128)),
   brand:text(64),qty:z.number().int("数量须为整数").positive("数量须大于0").max(MAX_INBOUND_QTY),
   prodYear:z.string().trim().min(1,"请填年份/DC").max(16),
