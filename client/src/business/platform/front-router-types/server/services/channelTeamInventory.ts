@@ -51,7 +51,7 @@ export function teamMaterialFrom(row: SqlResultRow, canWrite: boolean, leader: b
     industryCode: industry.success ? industry.data : null,
     revision: Number(row.revision), updatedAt: row.updatedAt as Date | string, createdAt: row.createdAt as Date | string,
     isMine, canEdit, readOnly: !canEdit, canViewSource, noteCount: Number(row.noteCount ?? 0), canAddNote: true,
-    channelSource: null, originalRecorderName: null, recorderAdminAccountId: null,
+    channelSource: canViewSource && Number.isSafeInteger(Number(row.companyChannelId)) && Number(row.companyChannelId) > 0 && typeof row.authorizedChannelName === "string" && row.authorizedChannelName.trim().length > 0 ? { id: Number(row.companyChannelId), name: row.authorizedChannelName } : null, originalRecorderName: null, recorderAdminAccountId: null,
     canPublish: false, publicationStatus: "unpublished",
     company: null,
   };
@@ -159,6 +159,7 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
       const items = rows(await tx.execute(sql`SELECT m.id, ${materialUploadBatchId} AS uploadBatchId, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
         m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision, c.industryCode AS industryCode, c.id AS companyChannelId,
+        CASE WHEN ${teamMaterialSourceEligibility(scope, true)} THEN c.name ELSE NULL END AS authorizedChannelName,
         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
         ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
@@ -170,6 +171,7 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       for (const row of items) {
         const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
         if (company.linked) { row.industryCode = company.customer?.industryCode ?? null; row.canViewSource = bool(row.canViewSource) && company.customer !== null; }
+        row.authorizedChannelName = bool(row.canViewSource) ? (company.linked ? company.customer?.name ?? null : row.authorizedChannelName) : null;
         if (input.customerId !== undefined && (!bool(row.canViewSource) || !company.customer || Number(company.customer.id) !== input.customerId)) fail("FORBIDDEN", "客户库存来源权限已变化，请刷新后重试");
         projected.push({ ...teamMaterialFrom(row, access.write, leader),
           company: bool(row.canViewSource) && company.customer ? { id: Number(company.customer.id), name: String(company.customer.name) } : null,

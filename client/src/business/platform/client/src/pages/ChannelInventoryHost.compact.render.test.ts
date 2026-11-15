@@ -134,7 +134,7 @@ describe("optional flat-only numbered pagination", () => {
   });
   it("scopes width/gutter constraints to the flat Host and preserves span/mobile pagination boundaries", () => {
     const css = readFileSync("client/src/business/platform/client/src/pages/ChannelInventoryHost.css", "utf8");
-    const flat = css.slice(css.indexOf("/* Flat inventory only:"));
+    const flat = css.slice(css.indexOf("/* Flat inventory only:"), css.indexOf("/* 2026-11-15 compact scoped overrides."));
     expect(flat).toContain(".business-native-content:has(.ci-flat-host)");
     expect(flat).toMatch(/min-width: 0;\s*max-width: 100%;\s*width: 100%;/);
     expect(flat).toContain("width: max(100%, var(--ci-stock-min-width))");
@@ -142,5 +142,75 @@ describe("optional flat-only numbered pagination", () => {
     expect(flat).not.toMatch(/100vw|17px|body\s*\{|^table\s*\{/m);
     expect(flat).toContain(".ci-pagination-numbered .ci-pagination-ellipsis { width: auto; margin: 0; }");
     expect(flat).toContain("@media (hover: none), (pointer: coarse)");
+  });
+});
+
+describe("shared compact inventory/channel presentation is Host-only", () => {
+  const cssPath = "client/src/business/platform/client/src/pages/ChannelInventoryHost.css";
+  function rule(css: string, selector: string) {
+    const start = css.lastIndexOf(`${selector} {`);
+    expect(start, `missing scoped rule ${selector}`).toBeGreaterThanOrEqual(0);
+    return css.slice(start + selector.length + 2, css.indexOf("}", start));
+  }
+  it("uses homepage 13/12 typography, 34px controls and common 40px rows / 32px heads / 6px padding without clipping multiline content", () => {
+    const css = readFileSync(cssPath, "utf8");
+    expect(rule(css, ".ci-page.ci-host")).toContain("--ci-control-height: 34px");
+    expect(rule(css, ".ci-page.ci-host")).toContain("--ci-table-head-height: 32px");
+    const table = rule(css, ".ci-page.ci-host .ci-table");
+    expect(table).toContain("font-size: var(--admin-content-font-body, 13px)");
+    const heading = rule(css, ".ci-page.ci-host .ci-table th");
+    expect(heading).toContain("height: var(--ci-table-head-height, 32px)");
+    expect(heading).toContain("font-size: var(--admin-content-font-caption, 12px)"); expect(heading).toContain("padding: 6px");
+    const cell = rule(css, ".ci-page.ci-host .ci-table td");
+    expect(cell).toContain("height: 40px"); expect(cell).toContain("padding: 6px");
+    expect(cell).toContain("white-space: normal"); expect(cell).toContain("overflow-wrap: anywhere");
+    expect(cell).not.toMatch(/max-height|overflow:\s*hidden|ellipsis|nowrap|line-clamp/);
+    expect(rule(css, ".ci-page.ci-host .ci-compact-stock-table td")).toContain("height: 40px");
+    const overrides = css.slice(css.indexOf("/* 2026-11-15 compact scoped overrides."));
+    expect(overrides).not.toMatch(/height:\s*48px|--admin-[\w-]+\s*:|zoom\s*:|transform\s*:\s*scale/);
+    expect(css).toContain(".ci-page.ci-host .ci-compact-stock-table td { height: 48px; padding-top: 6px; padding-bottom: 6px; }");
+    expect(css.indexOf("/* 2026-11-15 compact scoped overrides.")).toBeGreaterThan(css.indexOf("/* Flat inventory only:"));
+    for (const selector of [".ci-page.ci-host .ci-button", ".ci-page.ci-host .ci-field :is(input, select, textarea)"]) {
+      expect(rule(css, selector)).toContain("min-height: var(--ci-control-height, 34px)");
+      expect(rule(css, selector)).toContain("font-size: var(--admin-content-font-body, 13px)");
+    }
+    const toolbar = rule(css, ".ci-page.ci-host .ci-toolbar"); expect(toolbar).toContain("gap: 6px"); expect(toolbar).toContain("padding: 6px");
+    expect(rule(css, ".ci-page.ci-host .ci-form-grid")).toContain("gap: 6px");
+    expect(rule(css, ".ci-page.ci-host .ci-host-dialog > header")).toContain("padding: 12px");
+    expect(rule(css, ".ci-page.ci-host .ci-host-dialog > footer")).toContain("padding: 6px 12px");
+  });
+  it("keeps the reference price/stock and nonshrinking icon inline with ellipsis only on text", () => {
+    const css = readFileSync(cssPath, "utf8");
+    const wrapper = rule(css, ".ci-page.ci-host .ci-reference-cell");
+    for (const contract of ["display: inline-flex", "align-items: center", "flex-wrap: nowrap", "gap: 6px", "min-width: 0", "max-width: 100%", "white-space: nowrap"]) expect(wrapper).toContain(contract);
+    const text = rule(css, ".ci-page.ci-host .ci-reference-text");
+    for (const contract of ["min-width: 0", "overflow: hidden", "text-overflow: ellipsis", "white-space: nowrap"]) expect(text).toContain(contract);
+    expect(rule(css, ".ci-page.ci-host .ci-reference-evidence-button")).toContain("flex-shrink: 0");
+    const cell = readFileSync("client/src/business/platform/client/src/pages/ChannelReferenceCell.tsx", "utf8");
+    expect(cell).not.toContain("ci-reference-evidence-entry"); expect(cell).not.toContain("ci-reference-evidence-hash");
+    const portal = rule(css, ".ci-reference-evidence-popover");
+    expect(portal).toContain("font-size: var(--admin-content-font-body, 13px)"); expect(portal).toContain("width: 220px");
+    expect(portal).toContain("max-width: calc(100vw - 16px)"); expect(portal).toContain("max-height: var(--radix-popover-content-available-height)");
+    expect(css).toContain(".ci-reference-evidence-popover a:focus-visible");
+  });
+  it("preserves source/action columns, horizontal scrolling and opaque sticky actions while source names may wrap", () => {
+    const css = readFileSync(cssPath, "utf8");
+    const columns = readFileSync("client/src/business/platform/client/src/pages/channelInventoryColumns.ts", "utf8");
+    expect(columns).toContain('{ id: "source", label: "渠道来源", width: 140, defaultVisible: true }');
+    const actionColumn = required(columns.match(/\{ id: "actions", label: "操作", width: (\d+), defaultVisible: true, fixed: true \}/));
+    expect(Number(actionColumn[1])).toBeGreaterThanOrEqual(216);
+    expect(rule(css, ".ci-page.ci-host .ci-tablewrap")).toContain("overflow-x: auto");
+    expect(rule(css, ".ci-page.ci-host .ci-table.ci-compact-stock-table.ci-stock-edit-table")).toContain("min-width: var(--ci-stock-min-width) !important");
+    expect(rule(css, ".ci-page.ci-host .ci-table.ci-channel-table")).toContain("min-width: 1040px !important");
+    const actions = rule(css, ".ci-page.ci-host .ci-table :is(th, td).ci-col-actions");
+    for (const contract of ["position: sticky", "right: 0", "z-index: 2", "background: #fff"]) expect(actions).toContain(contract);
+    expect(rule(css, ".ci-page.ci-host .ci-row-actions")).toContain("flex-wrap: nowrap");
+    const source = rule(css, ".ci-page.ci-host .ci-source-link");
+    for (const contract of ["max-width: 100%", "min-width: 0", "white-space: normal", "overflow-wrap: anywhere"]) expect(source).toContain(contract);
+    expect(source).not.toMatch(/overflow:\s*hidden|ellipsis|line-clamp/);
+    const overrides = css.slice(css.indexOf("/* 2026-11-15 compact scoped overrides."));
+    expect(overrides).not.toMatch(/^\.ci-supply-location\s*\{|^\.ci-channel-table\s/m);
+    expect(css).toContain(".ci-columns-popover .ci-columns-options label");
+    expect(css).toContain(".ci-columns-popover .ci-columns-reset");
   });
 });

@@ -62,6 +62,7 @@ describe("manager Host inventory-management bridge", () => {
     expect(Array.from(document.querySelectorAll("thead th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
     expect(document.querySelectorAll("input[type=checkbox]")).toHaveLength(0);
     expect(document.querySelectorAll('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toHaveLength(1);
+    expect(document.querySelectorAll('.ci-stock-edit-table [aria-label^="编辑库存："]')).toHaveLength(1);
     expect(document.querySelector(".ci-tabbar,.ci-inventory-view-controls")).toBeNull();
     const more = required(document.querySelector('.ci-toolbar[aria-label="材料筛选"] [aria-label="更多库存管理"]'));
     expect(more.previousElementSibling?.textContent).toBe("显示列");
@@ -100,7 +101,7 @@ describe("manager Host inventory-management bridge", () => {
     click(button("批量操作")); expect(required(document.querySelector<HTMLInputElement>('[aria-label="全选当前页可删除库存"]')).checked).toBe(false);
     const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
     act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
-    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑", "删除"]);
+    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["删除"]);
   });
   it.each(["view", "actor", "enterprise", "permission"])("clears selection mode on %s change", async change => {
     renderHost(); click(button("批量操作")); click(required(document.querySelector('[aria-label="全选当前页可删除库存"]')));
@@ -133,10 +134,10 @@ describe("manager Host inventory-management bridge", () => {
   it("never displays the newly added delete/rename/archive/restore write entrances without native write grant", async () => {
     runtime.scope.officialInventoryPermissions.write = false; renderHost();
     expect(document.querySelector('[aria-label="全选当前页可删除库存"]')).toBeNull();
-    const trigger = required(document.querySelector<HTMLElement>('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]'));
-    act(() => trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
-    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑"]);
-    expect(document.querySelector('[role="menuitem"]')?.getAttribute("data-disabled")).not.toBeNull();
+    expect(document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect(button("编辑").disabled).toBe(true);
+    click(button("编辑")); expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelectorAll('[role="menuitem"]')).toHaveLength(0);
     selectHostTab("batches"); await settle(); expect(document.querySelectorAll(".ci-management-actions button")).toHaveLength(1);
   });
   it.each(["user", "admin"])("%s publishes a server-authorized row only after final confirmation, without deriving authority from canEdit", async role => {

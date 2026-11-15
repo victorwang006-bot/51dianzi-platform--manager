@@ -7,7 +7,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { sql } from "drizzle-orm";
 import { sharedMaterialFrom } from "../../../front-router-types/server/services/channelInventoryNotes";
 import type { Pool } from "mysql2/promise";
-import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout } from "./channelInventoryColumns";
+import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, channelInventorySourceLabel } from "./channelInventoryColumns";
 // Exercise only the original pure DTO projection; authorization/DB are outside this test.
 vi.mock("../../../front-router-types/server/services/channelInventory", () => ({ resolveChannelInventoryAuthority: vi.fn(), ChannelInventoryError: class extends Error {} }));
 vi.mock("../../../front-router-types/server/services/businessModuleAccess", () => ({ resolveBusinessModuleAccess: vi.fn() }));
@@ -70,7 +70,7 @@ beforeEach(() => {
   runtime.scope.storageScope = "scope-7-31"; runtime.scope.contextVerification = { state: "verified", identity: "scope-7-31", authorizationVersion: "auth-v1", readVersion: "read-v1" };
   runtime.enterprise = { enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], isOwner: true };
   runtime.loading = false; runtime.error = false; runtime.inputs = [];
-  runtime.rows = [{ id: 1, revision: 4, partNumber: "LONG-PART-".repeat(20), brand: "TI", qty: 9, dateCode: "  ORIGINAL DC: English / 24+  ", price: "0", taxIncluded: false, leadTime: "现货", industryCode: null,
+  runtime.rows = [{ id: 1, uploadBatchId: null, revision: 4, partNumber: "LONG-PART-".repeat(20), brand: "TI", qty: 9, dateCode: "  ORIGINAL DC: English / 24+  ", price: "0", taxIncluded: false, leadTime: "现货", industryCode: null,
     updatedAt: "2026-11-10 12:34:56.123", canDelete: true, canEdit: true, readOnly: false, canViewSource: false, isMine: true, noteCount: 0, originalRecorderName: "原负责人" }];
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
   vi.stubGlobal("fetch", vi.fn(() => { throw new Error("No production network in isolated column fixtures"); }));
@@ -234,22 +234,52 @@ describe("inventory column preference and geometry", () => {
 });
 
 
-it("shows only permitted source entries and never projects company names from the global list DTO", () => {
+it("renders only the authorized source object name and never guesses from company/channel names", () => {
   runtime.rows = [
-    { ...runtime.rows[0], id: 1, canViewSource: true, company: { id: 801, name: "已确认供货公司甲" } },
-    { ...runtime.rows[0], id: 2, canViewSource: false, company: { id: 802, name: "已确认供货公司乙" }, channelName: "不能猜为所属公司的私有来源" },
-    { ...runtime.rows[0], id: 3, canViewSource: undefined, company: null, channelName: "不能猜为所属公司的私有来源" },
+    { ...runtime.rows[0], id: 1, canViewSource: true, channelSource: { id: 71, name: " 服务端授权渠道名称 " }, company: { id: 801, name: "已确认供货公司甲" } },
+    { ...runtime.rows[0], id: 2, canViewSource: false, channelSource: { id: 72, name: "DENIED-SOURCE" }, company: { id: 802, name: "已确认供货公司乙" }, channelName: "不能猜为所属公司的私有来源" },
+    { ...runtime.rows[0], id: 3, canViewSource: undefined, channelSource: { id: 73, name: "UNPROVEN-SOURCE" }, company: null, channelName: "不能猜为所属公司的私有来源" },
+    { ...runtime.rows[0], id: 4, canViewSource: true, channelSource: null },
   ];
   renderHost();
   expect(headers()).toContain("渠道来源");
   const sourceCells = [...document.querySelectorAll("tbody .ci-material-source-col")];
-  expect(sourceCells.map(cell => cell.querySelector(".ci-source-link")?.textContent ?? "")).toEqual(["查看来源", "", ""]);
+  expect(sourceCells.map(cell => cell.textContent)).toEqual([" 服务端授权渠道名称 ", "—", "—", "查看来源"]);
   expect(document.querySelectorAll(".ci-inventory-company, .ci-source-link-muted")).toHaveLength(0);
   expect(document.body.innerHTML).not.toContain("已确认供货公司甲");
   expect(document.body.innerHTML).not.toContain("已确认供货公司乙");
+  expect(document.body.innerHTML).not.toMatch(/DENIED-SOURCE|UNPROVEN-SOURCE/);
   expect(document.querySelector("thead")?.textContent).not.toContain("所属公司");
   expect(runtime.inputs.at(-1)?.customerId).toBeUndefined();
   expect(runtime.inputs.at(-1)?.channelId).toBeUndefined();
   expect(document.body.textContent).not.toContain("不能猜为所属公司的私有来源");
   assertAligned();
+});
+
+it("hides and restores source in fixed colgroup/header/body order without altering other saved columns", () => {
+  const key = required(channelInventoryColumnsStorageKey(7, 31));
+  localStorage.setItem(key, JSON.stringify(["partNumber", "brand", "source", "actions"]));
+  runtime.rows[0] = { ...runtime.rows[0], canViewSource: true, channelSource: { id: 71, name: "真实来源" } };
+  renderHost(); expect(headers()).toEqual(["型号", "品牌", "渠道来源", "操作"]); assertAligned();
+  click(button("显示列")); click(option("渠道来源"));
+  expect(headers()).toEqual(["型号", "品牌", "操作"]); assertAligned();
+  expect(document.querySelector("tbody .ci-material-source-col")).toBeNull();
+  expect(document.body.textContent).not.toContain("真实来源");
+  click(option("渠道来源")); assertAligned();
+  expect([...document.querySelectorAll<HTMLTableColElement>("col[data-column]")].map(col => col.dataset.column)).toEqual(["partNumber", "brand", "source", "actions"]);
+  expect(firstCell("td.ci-material-source-col").textContent).toBe("真实来源");
+  expect(firstCell("td.ci-material-source-col").nextElementSibling?.className).toBe("ci-col-actions");
+  expect(document.querySelector<HTMLTableColElement>('col[data-column="actions"]')?.style.width).toBe("216px");
+  expect(JSON.parse(localStorage.getItem(key)!)).toEqual(["partNumber", "brand", "source", "actions"]);
+  runtime.scope.contextVerification.state = "revalidating"; renderHost();
+  expect(document.body.textContent).not.toContain("真实来源");
+  runtime.scope.contextVerification.state = "verified"; runtime.scope.staffPrincipal.enterpriseId = 99; renderHost();
+  expect(document.body.textContent).not.toContain("真实来源");
+});
+
+it("bounds source labels to positive safe ids and original nonempty names, without coercing malformed DTOs", () => {
+  expect(channelInventorySourceLabel(true, { id: 1, name: " 真实原名 " })).toBe(" 真实原名 ");
+  for (const value of [null, undefined, "legacy-string", { id: "1", name: "FAKE" }, { id: 0, name: "FAKE" }, { id: -1, name: "FAKE" }, { id: Infinity, name: "FAKE" }, { id: 1, name: " " }, { id: 1, name: 123 }])
+    expect(channelInventorySourceLabel(true, value)).toBe("查看来源");
+  for (const grant of [false, undefined, null, 1, "true"]) expect(channelInventorySourceLabel(grant, { id: 1, name: "DENIED" })).toBe("—");
 });

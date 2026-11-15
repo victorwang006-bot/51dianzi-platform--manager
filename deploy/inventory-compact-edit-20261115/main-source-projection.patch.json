@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Offline actual main-bundle list source projection only",
+  "actualBaselinePath": "/home/ubuntu/work/channel-reference-remediation-20261115/deploy-prep-v4/baseline-current-v4/front-index.js",
+  "retainedBaselinePath": "/home/ubuntu/work/inventory-compact-edit-20261115/backend/baseline-front-index.js",
+  "beforeSha": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+  "afterSha": "6c217218ed880f3c5ba9f1086a12bd20bdc517615184d6a6fef023b87c59b995",
+  "beforeByteLength": 5770278,
+  "afterByteLength": 5770821,
+  "byteOffsetConvention": "zero-based UTF-8 byte offsets in original baseline; inverse uses patched after offsets",
+  "spans": [
+    {
+      "id": "dto-authorized-channel-source",
+      "owner": "teamMaterialFrom",
+      "ownerBeforeSha256": "d1ba1d4520a4dcf24c8436930f4d12f2f0aa1480f7b41f2ee26782bbd0ae00e0",
+      "ownerBeforeByteStart": 5535829,
+      "ownerBeforeByteEnd": 5537189,
+      "offset": 5537051,
+      "removedByteLength": 4,
+      "insertedByteLength": 278,
+      "removed": "null",
+      "inserted": "canViewSource && Number.isSafeInteger(Number(row.companyChannelId)) && Number(row.companyChannelId) > 0 && typeof row.authorizedChannelName === \"string\" && row.authorizedChannelName.trim().length > 0 ? { id: Number(row.companyChannelId), name: row.authorizedChannelName } : null",
+      "beforeSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "insertedSha256": "78fec2e1f461b34cf74086fcee205e55acd0cb99791b4b305c0d3acdfbd3252e",
+      "contextBefore": "  createdAt: row.createdAt,\n    isMine,\n    canEdit,\n    readOnly: !canEdit,\n    canViewSource,\n    noteCount: Number(row.noteCount ?? 0),\n    canAddNote: true,\n    channelSource: ",
+      "contextAfter": ",\n    originalRecorderName: null,\n    recorderAdminAccountId: null,\n    canPublish: false,\n    publicationStatus: \"unpublished\"\n  };\n}",
+      "afterOffset": 5537051
+    },
+    {
+      "id": "sql-authorized-channel-name",
+      "owner": "createChannelTeamInventoryService",
+      "ownerBeforeSha256": "a9a0d45e38de79c234c4532365491d9bc25861419e5b738f55d1a0bd485ed52d",
+      "ownerBeforeByteStart": 5538904,
+      "ownerBeforeByteEnd": 5550958,
+      "offset": 5546880,
+      "removedByteLength": 0,
+      "insertedByteLength": 116,
+      "removed": "",
+      "inserted": "\n        CASE WHEN ${teamMaterialSourceEligibility(scope, true)} THEN c.name ELSE NULL END AS authorizedChannelName,",
+      "beforeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "insertedSha256": "05aa7f110859de1027f416d3a9d144a7128046cf2c3685ea17cd7ce84b2794af",
+      "contextBefore": " m.date_code AS dateCode,\n        m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision, c.industryCode AS industryCode, c.id AS companyChannelId,",
+      "contextAfter": "\n        (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,\n        m.updated_at AS upda",
+      "afterOffset": 5547154
+    },
+    {
+      "id": "loop-current-crm-source-name",
+      "owner": "createChannelTeamInventoryService",
+      "ownerBeforeSha256": "a9a0d45e38de79c234c4532365491d9bc25861419e5b738f55d1a0bd485ed52d",
+      "ownerBeforeByteStart": 5538904,
+      "ownerBeforeByteEnd": 5550958,
+      "offset": 5548099,
+      "removedByteLength": 0,
+      "insertedByteLength": 153,
+      "removed": "",
+      "inserted": "row.authorizedChannelName = bool6(row.canViewSource) ? (company2.linked ? company2.customer?.name ?? null : row.authorizedChannelName) : null;\n          ",
+      "beforeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "insertedSha256": "1e545d08a99e4ca94a06a868afe833dfa40cb09d13edb9fcfed4a17ed4ba5b17",
+      "contextBefore": "e = bool6(row.canViewSource) && company2.customer !== null;\n            row.canViewUploadBatch = bool6(row.canViewUploadBatch) && company2.customer !== null;\n          }\n          ",
+      "contextAfter": "if (input.customerId !== void 0 && (!bool6(row.canViewSource) || !company2.customer || Number(company2.customer.id) !== input.customerId)) fail13(\"FORBIDDEN\", \"\\u5BA2\\u6237\\u5E93\\u",
+      "afterOffset": 5548489
+    }
+  ],
+  "inverse": {
+    "beforeSha": "6c217218ed880f3c5ba9f1086a12bd20bdc517615184d6a6fef023b87c59b995",
+    "afterSha": "db920e472f854dd41ae6f610f2c0d1c37df28c5260afee4ab3f924b24c83c2c9",
+    "spans": [
+      {
+        "id": "dto-authorized-channel-source",
+        "owner": "teamMaterialFrom",
+        "offset": 5537051,
+        "removedByteLength": 278,
+        "insertedByteLength": 4,
+        "removed": "canViewSource && Number.isSafeInteger(Number(row.companyChannelId)) && Number(row.companyChannelId) > 0 && typeof row.authorizedChannelName === \"string\" && row.authorizedChannelName.trim().length > 0 ? { id: Number(row.companyChannelId), name: row.authorizedChannelName } : null",
+        "inserted": "null",
+        "beforeSha256": "78fec2e1f461b34cf74086fcee205e55acd0cb99791b4b305c0d3acdfbd3252e"
+      },
+      {
+        "id": "sql-authorized-channel-name",
+        "owner": "createChannelTeamInventoryService",
+        "offset": 5547154,
+        "removedByteLength": 116,
+        "insertedByteLength": 0,
+        "removed": "\n        CASE WHEN ${teamMaterialSourceEligibility(scope, true)} THEN c.name ELSE NULL END AS authorizedChannelName,",
+        "inserted": "",
+        "beforeSha256": "05aa7f110859de1027f416d3a9d144a7128046cf2c3685ea17cd7ce84b2794af"
+      },
+      {
+        "id": "loop-current-crm-source-name",
+        "owner": "createChannelTeamInventoryService",
+        "offset": 5548489,
+        "removedByteLength": 153,
+        "insertedByteLength": 0,
+        "removed": "row.authorizedChannelName = bool6(row.canViewSource) ? (company2.linked ? company2.customer?.name ?? null : row.authorizedChannelName) : null;\n          ",
+        "inserted": "",
+        "beforeSha256": "1e545d08a99e4ca94a06a868afe833dfa40cb09d13edb9fcfed4a17ed4ba5b17"
+      }
+    ]
+  },
+  "changedOwners": [
+    {
+      "name": "teamMaterialFrom",
+      "beforeSha256": "d1ba1d4520a4dcf24c8436930f4d12f2f0aa1480f7b41f2ee26782bbd0ae00e0",
+      "afterSha256": "b2f61f8538ff9179103f680a548975fbaa4d645d84ed8f1caefb811167fc1ece"
+    },
+    {
+      "name": "createChannelTeamInventoryService",
+      "beforeSha256": "a9a0d45e38de79c234c4532365491d9bc25861419e5b738f55d1a0bd485ed52d",
+      "afterSha256": "3b22a03a838477ee9846bdce67b97c817616983854d8ef2405bb9393bf3655c9"
+    }
+  ],
+  "verification": {
+    "actualFileDoublePinned": true,
+    "astOwnerPins": true,
+    "astUniqueTargets": true,
+    "exactThreeSpans": true,
+    "untouchedBytesEqual": true,
+    "fullInverseRecovered": true,
+    "wholeBundleAstParse": true
+  },
+  "scope": "No live DB/API, SSH, Git, UI, migrations, deployment or permission widening; mirrors are not production baseline"
+}

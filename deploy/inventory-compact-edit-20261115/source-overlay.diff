@@ -1,0 +1,27 @@
+--- actual-baseline/front-index.js
++++ offline-patched/front-index.js
+@@ -126573,7 +126573,7 @@
+     canViewSource,
+     noteCount: Number(row.noteCount ?? 0),
+     canAddNote: true,
+-    channelSource: null,
++    channelSource: canViewSource && Number.isSafeInteger(Number(row.companyChannelId)) && Number(row.companyChannelId) > 0 && typeof row.authorizedChannelName === "string" && row.authorizedChannelName.trim().length > 0 ? { id: Number(row.companyChannelId), name: row.authorizedChannelName } : null,
+     originalRecorderName: null,
+     recorderAdminAccountId: null,
+     canPublish: false,
+@@ -126691,6 +126691,7 @@
+         if (count == null || !Number.isSafeInteger(total) || total < 0) fail13("INTERNAL_SERVER_ERROR", "\u5E93\u5B58\u6570\u91CF\u6682\u65F6\u65E0\u6CD5\u6838\u5B9E");
+         const items = rows13(await tx.execute(sql87`SELECT m.id, ${materialUploadBatchId} AS uploadBatchId, ${channelMaterialCanViewUploadBatch(scope)} AS canViewUploadBatch, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
+         m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision, c.industryCode AS industryCode, c.id AS companyChannelId,
++        CASE WHEN ${teamMaterialSourceEligibility(scope, true)} THEN c.name ELSE NULL END AS authorizedChannelName,
+         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
+         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
+         ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
+@@ -126705,6 +126706,7 @@
+             row.canViewSource = bool6(row.canViewSource) && company2.customer !== null;
+             row.canViewUploadBatch = bool6(row.canViewUploadBatch) && company2.customer !== null;
+           }
++          row.authorizedChannelName = bool6(row.canViewSource) ? (company2.linked ? company2.customer?.name ?? null : row.authorizedChannelName) : null;
+           if (input.customerId !== void 0 && (!bool6(row.canViewSource) || !company2.customer || Number(company2.customer.id) !== input.customerId)) fail13("FORBIDDEN", "\u5BA2\u6237\u5E93\u5B58\u6765\u6E90\u6743\u9650\u5DF2\u53D8\u5316\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5");projected.push({
+             company: bool6(row.canViewSource) && company2.customer ? { id: Number(company2.customer.id), name: String(company2.customer.name) } : null,
+             ...teamMaterialFrom(row, access2.write, leader),

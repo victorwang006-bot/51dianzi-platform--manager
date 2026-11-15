@@ -68,7 +68,9 @@ function readonlySourceOpener(cell: HTMLElement, source: ChannelReferenceSource)
   expect(opener.getAttribute("aria-expanded")).toBe("false"); expect(opener.textContent).toBe("");
   expect(opener.querySelectorAll("svg")).toHaveLength(1); expect(opener.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   const compact = required(cell.querySelector<HTMLElement>(`span[data-source="${source}"]`));
-  expect(compact.style.whiteSpace).toBe("nowrap"); expect(compact.nextElementSibling?.contains(opener)).toBe(true);
+  expect(compact.style.whiteSpace).toBe("nowrap"); expect(compact.style.display).not.toBe("block");
+  expect(compact.parentElement?.classList.contains("ci-reference-cell")).toBe(true);
+  expect(compact.nextElementSibling).toBe(opener); expect(compact.parentElement?.querySelector("div")).toBeNull();
   expect(cell.querySelector("a, input, select, textarea, form, [title], [role=tooltip], [role=status], [role=dialog]")).toBeNull();
   expect(document.querySelector(".ci-reference-evidence-popover, .ci-reference-popover, .ci-reference-spinner")).toBeNull();
   return opener;
@@ -81,19 +83,21 @@ async function inspectReadonlySource(cell: HTMLElement, source: ChannelReference
   await click(opener);
   const panels = document.querySelectorAll<HTMLElement>(".ci-reference-evidence-popover"); expect(panels).toHaveLength(1);
   const panel = required(panels[0]); expect(panel.getAttribute("aria-label")).toBe(`${sourceLabels[source]}参考来源`);
-  expect(panel.textContent).toContain("保存记录，非实时库存或报价；不修改原库存和业务报价。");
-  expect(panel.textContent).toContain("2026-11-14 12:00:00"); expect(panel.textContent).toContain("北京时间");
+  expect(panel.querySelector("strong")?.textContent).toBe(sourceLabels[source]);
+  expect(panel.textContent).not.toMatch(/保存记录|非实时|不修改|自营|合作|海外|采集时间|北京时间|2026-11-14|最近尝试|最早重查|参考版本|SHA256/);
   expect(panel.textContent).not.toMatch(/5000|39000|≥|数量档|不足此档|INTERNAL_DIAGNOSTIC_NOT_UI/);
   if (partNumber) expect(panel.textContent).not.toContain(partNumber);
   expect(panel.querySelector("button, input, select, textarea, form, [title], [role=tooltip]")).toBeNull();
   const links = [...panel.querySelectorAll<HTMLAnchorElement>("a")];
-  const expectedLinks = [...(pageUrl ? [{ href: pageUrl, text: status === "ok" ? "准确匹配商品页（保存报价来源）" : "来源页面（非已匹配报价）" }] : [])];
+  const expectedLinks = [...(pageUrl ? [{ href: pageUrl, text: status === "ok" ? "商品页" : "来源页", label: `${sourceLabels[source]}${status === "ok" ? "准确匹配商品页（保存报价来源）" : "来源页面（非已匹配报价）"}` }] : [])];
   if (partNumber) {
     const search = new URL(source === "lcsc" ? "https://so.szlcsc.com/global.html" : "https://search.ickey.cn/");
     search.searchParams.set(source === "lcsc" ? "k" : "keyword", partNumber);
-    expectedLinks.push({ href: search.href, text: "完整型号公开搜索（非匹配商品）" });
+    expectedLinks.push({ href: search.href, text: "完整型号搜索", label: `${sourceLabels[source]}完整型号公开搜索（非匹配商品）` });
   }
-  expect(links.map(link => ({ href: link.href, text: link.textContent }))).toEqual(expectedLinks);
+  expect(links.map(link => ({ href: link.href, text: link.textContent, label: link.getAttribute("aria-label") }))).toEqual(expectedLinks);
+  expect([...panel.children].map(element => element.tagName)).toEqual(["STRONG", ...expectedLinks.map(() => "P")]);
+  expect(panel.textContent).toBe(sourceLabels[source] + expectedLinks.map(link => link.text).join(""));
   for (const link of links) { expect(link.target).toBe("_blank"); expect(link.rel).toBe("noopener noreferrer"); expect(link.getAttribute("referrerpolicy")).toBe("no-referrer"); }
   expect(cell.textContent).toBe(compactText); expect(cell.querySelector("a")).toBeNull(); expect(fetch).not.toHaveBeenCalled();
   expect([runtime.lookup.mock.calls.length, runtime.mutation.mock.calls.length, runtime.invalidate.mock.calls.length, runtime.refetch.mock.calls.length]).toEqual(calls);
@@ -161,6 +165,50 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     const value = quote("lcsc"); value.tiers = []; value.unitPrice = price;
     await act(async () => root.render(React.createElement(ChannelReferenceCell, { source: "lcsc", quote: value })));
     expect(host.textContent).toBe("暂未匹配"); expect(host.querySelector("button, a")).toBeNull();
+  });
+  it.each(["lcsc", "ickey"] as const)("%s keeps native keyboard focus, real portalled click/Escape and row-event isolation without hover IO", async source => {
+    const rowClick = vi.fn(), rowKey = vi.fn();
+    await act(async () => root.render(React.createElement("div", { onClick: rowClick, onKeyDown: rowKey },
+      React.createElement(ChannelReferenceCell, { source, quote: quote(source), partNumber: "Full/Part+Suffix" }))));
+    const opener = readonlySourceOpener(host, source);
+    act(() => opener.focus()); expect(document.activeElement).toBe(opener);
+    act(() => opener.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(rowKey).not.toHaveBeenCalled(); expect(document.querySelector(".ci-reference-evidence-popover")).toBeNull();
+    await act(async () => opener.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(document.querySelector(".ci-reference-evidence-popover")).toBeNull();
+    // jsdom has no native Enter -> click; use the native click to open the actual Radix primitive.
+    await click(opener);
+    const panel = required(document.querySelector<HTMLElement>(".ci-reference-evidence-popover"));
+    expect(panel.getAttribute("role")).toBe("dialog"); expect(host.contains(panel)).toBe(false);
+    expect(opener.getAttribute("aria-expanded")).toBe("true");
+    expect(opener.getAttribute("aria-controls")).toBe(panel.id);
+    const firstLink = required(panel.querySelector<HTMLAnchorElement>("a"));
+    // The unchanged Radix FocusScope initially focuses its content container.
+    expect(document.activeElement).toBe(panel);
+    act(() => firstLink.focus());
+    expect(document.activeElement).toBe(firstLink);
+    await click(required(panel.querySelector("strong"))); expect(rowClick).not.toHaveBeenCalled();
+    act(() => firstLink.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true })));
+    expect(rowKey).not.toHaveBeenCalled();
+    await act(async () => panel.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(document.querySelector(".ci-reference-evidence-popover")).toBeNull();
+    expect(opener.getAttribute("aria-expanded")).toBe("false"); expect(document.activeElement).toBe(opener);
+    expect(rowClick).not.toHaveBeenCalled(); expect(rowKey).not.toHaveBeenCalled();
+    expect(runtime.lookup).not.toHaveBeenCalled(); expect(runtime.mutation).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(["lcsc", "ickey"] as const)("%s labels a saved search/root as source rather than matched product and encodes the complete model", async source => {
+    const value = { ...quote(source), pageUrl: source === "lcsc" ? "https://www.szlcsc.com/" : "https://search.ickey.cn/" };
+    const fullModel = "  Model/Rev-B+Suffix&品牌  ";
+    await act(async () => root.render(React.createElement(ChannelReferenceCell, { source, quote: value, partNumber: fullModel })));
+    await click(readonlySourceOpener(host, source));
+    const panel = required(document.querySelector(".ci-reference-evidence-popover"));
+    expect(panel.textContent).toBe(`${sourceLabels[source]}来源页完整型号搜索`);
+    const links = [...panel.querySelectorAll<HTMLAnchorElement>("a")]; expect(links).toHaveLength(2);
+    expect(links[0].getAttribute("aria-label")).toBe(`${sourceLabels[source]}来源页面（非已匹配报价）`);
+    expect(links[1].getAttribute("aria-label")).toBe(`${sourceLabels[source]}完整型号公开搜索（非匹配商品）`);
+    expect(new URL(links[1].href).searchParams.get(source === "lcsc" ? "k" : "keyword")).toBe(fullModel);
+    expect(host.querySelector("a")).toBeNull(); expect(runtime.lookup).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
   });
   it("missing matched brand never displays a priced quote", async () => {
     const value = quote("ickey"); value.matchedBrand = null;
@@ -305,7 +353,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     await act(async () => { window.history.replaceState({}, "", "/channel-inventory?ciTab=channels"); window.dispatchEvent(new PopStateEvent("popstate")); });
     await render(); expect(runtime.lookup).not.toHaveBeenCalled();
   });
-  it("preserves the native queries, refresh, export and create/edit/filter handlers byte-for-byte", () => {
+  it("preserves original business hashes, allowing only exact approved stronger edit guards without rebaselining", () => {
     const source = readFileSync("client/src/business/platform/client/src/pages/ChannelInventoryHost.tsx", "utf8");
     const pins = [
       ["  const materialInput:", "  const exactStockDenied", "444fd83744384098fbd7bedd3dca5b74d19db699b87b05e7c2b190bda0236525"],
@@ -314,9 +362,23 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
       ["  const confirmMaterialFilters =", "  const changeInventoryView =", "68bb7bb8a407b166f9b7dc07a88b941aba1f9241fd5e5627914ad2fa619e72d8"],
       ["  const submitChannel =", "  const activeChannels =", "14f5253188cde50152cf02e98419bfa71176905dc74debfbe050488a038d5240"],
     ];
+    // Keep the old hash as the authority. Require each approved hardening exactly
+    // once, normalize only those five literal changes, then hash all other bytes.
+    const editGuardHardening = [
+      ["    if (material.canEdit !== true || material.readOnly || !expectedContext || busy !== null || materialSubmitPendingRef.current\n      || !contextCurrent || !sourceContextVerified || !isCurrent() || !editAllowedRef.current) return;", "    if (!material.canEdit || material.readOnly || !isCurrent() || !editAllowedRef.current) return;"],
+      ["    if (!expectedContext || !isCurrent() || !materialEditor || busy || materialSubmitPendingRef.current || !sourceContextVerified || !contextCurrent) return;", "    if (!expectedContext || !isCurrent() || !materialEditor || busy) return;"],
+      ["    materialSubmitPendingRef.current = true;\n    setBusy(\"material\");", "    setBusy(\"material\");"],
+      ["      materialSubmitPendingRef.current = false;\n      materialUpdateRef.current = null;", "      materialUpdateRef.current = null;"],
+      ["      if (current()) { materialSubmitPendingRef.current = false; setBusy(null); }", "      if (current()) setBusy(null);"],
+    ];
     for (const [start, end, hash] of pins) {
       const index = source.indexOf(start); expect(index).toBeGreaterThanOrEqual(0);
-      expect(createHash("sha256").update(source.slice(index, source.indexOf(end, index))).digest("hex")).toBe(hash);
+      let protectedRegion = source.slice(index, source.indexOf(end, index));
+      if (start === "  const submitChannel =") for (const [approved, original] of editGuardHardening) {
+        expect(protectedRegion.split(approved)).toHaveLength(2);
+        protectedRegion = protectedRegion.replace(approved, original);
+      }
+      expect(createHash("sha256").update(protectedRegion).digest("hex")).toBe(hash);
     }
   });
   it("source keeps BFF reads separate and permits only validated readonly source Popover links, without cell IO or business mutation", async () => {
@@ -329,6 +391,10 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     expect(cell.match(/href=\{[^}]+\}/g)).toEqual(["href={safePage}", "href={search.href}"]);
     expect(cell.match(/rel="noopener noreferrer" referrerPolicy="no-referrer"/g)).toHaveLength(2);
     expect(cell).toContain("来源页面（非已匹配报价）"); expect(cell).toContain("完整型号公开搜索（非匹配商品）");
+    expect(cell).toContain('align="start" collisionPadding={8}');
+    expect(cell.match(/event => event\.stopPropagation\(\)/g)).toHaveLength(4);
+    expect(cell).toContain("diagnostic?: ChannelReferenceRefreshDiagnostic");
+    expect(cell).not.toMatch(/diagnostic\?\.|diagnostic\.|fetchedAt|formatBeijing|CHANNEL_REFERENCE_REFRESH_LABELS|ci-reference-evidence-hash/);
     expect(cell).not.toMatch(/stockQuantity|stockInsufficient|tiers\.map|fetch\s*\(|setInterval|spinner|useMutation|mutate(?:Async)?\s*\(|invalidate|refetch|createBusinessScopeTrpcClient|listTeamMaterials|materialDTO|download|export.*(?:csv|xlsx)/i);
     expect(source).toContain('<button type="button" className="ci-button" onClick={() => void refreshMaterials()}>刷新</button>');
     expect(source).not.toContain("更新参考"); expect(source).not.toContain("refreshReferences");
@@ -341,7 +407,7 @@ describe("BFF-only current authorized page: maximum-quantity price and quantity 
     // Exercise rejected URLs in the existing source-guard case; no added test or network access.
     for (const provider of ["lcsc", "ickey"] as const) {
       const providerHost = provider === "lcsc" ? "item.szlcsc.com" : "search.ickey.cn";
-      for (const url of [`http://${providerHost}/product`, `https://${providerHost}.evil.example/product`, `https://user:password@${providerHost}/product`, `https://${providerHost}:444/product`, quote(provider === "lcsc" ? "ickey" : "lcsc").pageUrl]) {
+      for (const url of [`http://${providerHost}/product`, `https://${providerHost}.evil.example/product`, `https://user:password@${providerHost}/product`, `https://${providerHost}:444/product`, quote(provider === "lcsc" ? "ickey" : "lcsc").pageUrl, ...(provider === "lcsc" ? ["https://so.szlcsc.com/global.html"] : [])]) {
         const value = { ...quote(provider), pageUrl: url };
         await act(async () => root.render(React.createElement(ChannelReferenceCell, { source: provider, quote: value })));
         await inspectReadonlySource(host, provider, "ok", null, null);

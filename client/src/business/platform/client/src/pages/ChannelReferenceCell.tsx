@@ -2,11 +2,10 @@ import React from "react";
 import type { ChannelReferenceQuote, ChannelReferenceSource } from "@shared/channelReference";
 import type { ChannelReferenceRefreshDiagnostic } from "@shared/channelReferenceRefresh";
 import { channelReferenceHasPrice, channelReferenceMaximumTier, channelReferencePrice, channelReferencePageUrl, CHANNEL_REFERENCE_LABELS, CHANNEL_REFERENCE_STATUS_LABELS } from "./channelReferenceModel";
-import { CHANNEL_REFERENCE_REFRESH_LABELS } from "./ChannelInventoryHost.referenceRefresh";
-import { formatBeijingDateTimeWithSeconds } from "../../../shared/beijingTime";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
 
-export function ChannelReferenceCell({ source, quote, partNumber, diagnostic }: {
+export function ChannelReferenceCell({ source, quote, partNumber }: {
+  // Diagnostics remain a typed input; operational details are not reference-link presentation.
   source: ChannelReferenceSource; quote?: ChannelReferenceQuote; partNumber?: string; diagnostic?: ChannelReferenceRefreshDiagnostic;
 }) {
   const tier = quote ? channelReferenceMaximumTier(quote) : null;
@@ -24,31 +23,19 @@ export function ChannelReferenceCell({ source, quote, partNumber, diagnostic }: 
     && !/search|global\.html/i.test(new URL(safePage).pathname) && !new URL(safePage).searchParams.has("keyword"));
   const search = evidence && partNumber ? new URL(source === "lcsc" ? "https://so.szlcsc.com/global.html" : "https://search.ickey.cn/") : null;
   if (search) search.searchParams.set(source === "lcsc" ? "k" : "keyword", partNumber!);
-  const date = (value: string | null | undefined) => value ? `${formatBeijingDateTimeWithSeconds(value) || "时间不可用"}（北京时间）` : "未记录";
-  return <>
-    <span className={priced ? "admin-cell-primary" : "ci-reference-placeholder"} data-source={source}
-      style={{ display: "block", fontSize: 11, lineHeight: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{text}</span>
-    {evidence && quote ? <div className="ci-reference-evidence-entry">
-      <Popover>
-        <PopoverTrigger asChild><button type="button" className="ci-reference-evidence-button" aria-label={`查看${CHANNEL_REFERENCE_LABELS[source]}参考来源`} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></svg>
-        </button></PopoverTrigger>
-        <PopoverContent className="ci-reference-evidence-popover" align="start" collisionPadding={8} aria-label={`${CHANNEL_REFERENCE_LABELS[source]}参考来源`} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
-          <strong>{CHANNEL_REFERENCE_LABELS[source]} · {CHANNEL_REFERENCE_STATUS_LABELS[quote.status]}</strong>
-          <p>保存记录，非实时库存或报价；不修改原库存和业务报价。</p>
-          <p>{source === "lcsc" ? "立创自营公开商品参考；合作、海外货源不混入自营。" : "云汉公开商品参考，与立创自营分开；合作、海外货源不混入自营。"}</p>
-          <p>采集时间：{date(quote.fetchedAt)}</p>
-          {safePage ? <p><a href={safePage} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{product ? "准确匹配商品页（保存报价来源）" : "来源页面（非已匹配报价）"}</a></p> : null}
-          {search ? <p><a href={search.href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">完整型号公开搜索（非匹配商品）</a></p> : null}
-          {diagnostic?.source === source ? <>
-            <p>{CHANNEL_REFERENCE_REFRESH_LABELS[diagnostic.state]}</p>
-            <p>最近尝试：{date(diagnostic.lastAttemptAt)}{diagnostic.lastAttemptStatus ? ` · ${CHANNEL_REFERENCE_STATUS_LABELS[diagnostic.lastAttemptStatus]}` : ""}</p>
-            {diagnostic.nextAllowedAt ? <p>最早重查：{date(diagnostic.nextAllowedAt)}</p> : null}
-            {diagnostic.referenceVersion ? <p className="ci-reference-evidence-hash">参考版本：{diagnostic.referenceVersion}</p> : null}
-            {diagnostic.sourceSha256 ? <p className="ci-reference-evidence-hash">公开网页 SHA256：{diagnostic.sourceSha256}</p> : null}
-          </> : null}
-        </PopoverContent>
-      </Popover>
-    </div> : null}
-  </>;
+  const label = CHANNEL_REFERENCE_LABELS[source];
+  return <span className="ci-reference-cell">
+    <span className={`ci-reference-text ${priced ? "admin-cell-primary" : "ci-reference-placeholder"}`} data-source={source}
+      style={{ whiteSpace: "nowrap" }}>{text}</span>
+    {evidence && quote ? <Popover>
+      <PopoverTrigger asChild><button type="button" className="ci-reference-evidence-button" aria-label={`查看${label}参考来源`} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></svg>
+      </button></PopoverTrigger>
+      <PopoverContent className="ci-reference-evidence-popover" align="start" collisionPadding={8} aria-label={`${label}参考来源`} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
+        <strong>{label}</strong>
+        {safePage ? <p><a href={safePage} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={`${label}${product ? "准确匹配商品页（保存报价来源）" : "来源页面（非已匹配报价）"}`}>{product ? "商品页" : "来源页"}</a></p> : null}
+        {search ? <p><a href={search.href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={`${label}完整型号公开搜索（非匹配商品）`}>完整型号搜索</a></p> : null}
+      </PopoverContent>
+    </Popover> : null}
+  </span>;
 }

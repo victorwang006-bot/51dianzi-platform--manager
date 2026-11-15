@@ -18,6 +18,15 @@ export type ChannelInventoryColumnId = typeof CHANNEL_INVENTORY_COLUMNS[number][
 export const DEFAULT_CHANNEL_INVENTORY_COLUMNS: readonly ChannelInventoryColumnId[] =
   CHANNEL_INVENTORY_COLUMNS.filter(column => column.defaultVisible).map(column => column.id);
 
+/** Names come only from the authorized source DTO, never company/channel guesses. */
+export function channelInventorySourceLabel(canViewSource: unknown, channelSource: unknown): string {
+  if (canViewSource !== true) return "—";
+  if (!channelSource || typeof channelSource !== "object") return "查看来源";
+  const source = channelSource as { id?: unknown; name?: unknown };
+  return typeof source.id === "number" && Number.isSafeInteger(source.id) && source.id > 0
+    && typeof source.name === "string" && source.name.trim() ? source.name : "查看来源";
+}
+
 /** Only BFF-verified actor + enterprise, never URL/admin/placeholder identities. */
 export function channelInventoryColumnsStorageKey(actorUserId: number | undefined, enterpriseId: number | undefined) {
   return Number.isSafeInteger(actorUserId) && actorUserId! > 0 && Number.isSafeInteger(enterpriseId) && enterpriseId! > 0

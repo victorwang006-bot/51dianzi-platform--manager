@@ -209,6 +209,7 @@ function menuItem(name: string) {
 }
 
 function materialMenuItem(name: string, index = 0) {
+  if (name === "编辑") return required(document.querySelectorAll('.ci-compact-stock-table tbody tr')[index]?.querySelector<HTMLButtonElement>('[aria-label^="编辑库存："]'), "missing direct inventory edit");
   if (!document.querySelector('.ci-channel-actions-menu[role="menu"]')) {
     const row = required(document.querySelectorAll('.ci-compact-stock-table tbody tr')[index], "missing inventory row");
     const trigger = required(row.querySelector<HTMLButtonElement>('[data-slot="dropdown-menu-trigger"]'), "missing inventory more trigger");
@@ -493,7 +494,7 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(runtime.optionInputs).toHaveLength(0);
     expect(rows[1].querySelector(".ci-part-copy-button")).not.toBeNull();
     expect(Array.from(rows[1].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["发布", "备注（0）"]);
-    expect(Array.from(rows[0].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（1）", "本人备注", "更多"]);
+    expect(Array.from(rows[0].querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["查看来源", "编辑", "发布", "备注（1）", "本人备注"]);
     for (const row of rows) {
       const publish = required(row.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing publish action");
       expect(publish.disabled).toBe(true);
@@ -506,10 +507,10 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(rows[1].querySelector(".ci-material-recorder-col")?.getAttribute("title")).toBe(rows[1].querySelector(".ci-material-recorder-col")?.textContent);
     expect(runtime.setMaterialShare).not.toHaveBeenCalled();
     const edit = materialMenuItem("编辑");
-    const menu = required(edit.closest('[role="menu"]'), "missing inventory actions menu");
-    expect(menu.closest("table,.ci-tablewrap,.ci-host")).toBeNull();
-    expect(Array.from(menu.querySelectorAll('[role="menuitem"]')).map(item => item.textContent)).toEqual(["编辑"]);
-    expect(edit.hasAttribute("data-disabled")).toBe(false);
+    expect(edit.closest("td.ci-col-actions")).not.toBeNull();
+    expect(document.querySelector('[role="menu"]')).toBeNull();
+    expect(rows[0].querySelector('[data-slot="dropdown-menu-trigger"]')).toBeNull();
+    expect((edit as HTMLButtonElement).disabled).toBe(false);
     expect(runtime.getTeamMaterialForEdit).not.toHaveBeenCalled();
   });
 
@@ -533,8 +534,9 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     runtime.sourceQuery = query({ canFilterSource: true, items: [{ id: 22, name: "团队来源" }] });
     renderHost();
     const peer = document.querySelectorAll("tbody tr")[1];
-    expect(peer.textContent).not.toContain("团队来源");
-    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["查看来源", "发布", "备注（0）"]);
+    expect(peer.querySelector(".ci-source-link")?.textContent).toBe("团队来源");
+    expect(runtime.getTeamMaterialSource).not.toHaveBeenCalled();
+    expect(Array.from(peer.querySelectorAll("button:not(.ci-part-copy-button)")).map(item => item.textContent)).toEqual(["团队来源", "发布", "备注（0）"]);
     const publish = required(peer.querySelector<HTMLButtonElement>('[data-factory-publish-action]'), "missing peer publish");
     expect(publish.disabled).toBe(true);
     expect(publish.title).toBe("当前账号没有该材料的发布权限");
@@ -876,17 +878,17 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     expect(tableStyle.tableLayout).toBe("fixed");
     expect((stockTable.querySelector('col[data-column="actions"]') as HTMLTableColElement).style.width).toBe("216px");
     expect(headerStyle.paddingTop).toBe("6px");
-    expect(headerStyle.paddingRight).toBe("10px");
+    expect(headerStyle.paddingRight).toBe("6px");
     // jsdom preserves var() rather than resolving scoped admin tokens.
     expect(headerStyle.lineHeight).toBe("var(--admin-content-caption-line-height, 18px)");
     expect(cellStyle.paddingTop).toBe("6px");
-    expect(cellStyle.paddingRight).toBe("10px");
+    expect(cellStyle.paddingRight).toBe("6px");
     // Model is the default first column; ordinal remains optional.
-    expect(cellStyle.lineHeight).toBe("var(--admin-content-line-height, 18px)");
+    expect(cellStyle.lineHeight).toBe("var(--admin-content-line-height, 20px)");
     expect(getComputedStyle(required(
       stockTable.querySelector(".ci-cell-title"),
       "missing primary model text",
-    )).lineHeight).toBe("var(--admin-content-line-height, 18px)");
+    )).lineHeight).toBe("var(--admin-content-line-height, 20px)");
   });
 
   it("separates quote and lead-time headings/values using only local width and padding, leaving actions and all columns intact", () => {
@@ -900,11 +902,11 @@ describe("ChannelInventoryHost new equivalent reconstruction", () => {
     }
     for (const selector of ["th.ci-material-price-col", "td.ci-material-price-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing quote cell"));
-      expect((table.querySelector('col[data-column="price"]') as HTMLTableColElement).style.width).toBe("128px"); expect(style.paddingRight).toBe("18px"); expect(style.textAlign).toBe("center");
+      expect((table.querySelector('col[data-column="price"]') as HTMLTableColElement).style.width).toBe("128px"); expect(style.paddingRight).toBe("6px"); expect(style.textAlign).toBe("center");
     }
     for (const selector of ["th.ci-material-lead-col", "td.ci-material-lead-col"]) {
       const style = getComputedStyle(required(table.querySelector(selector), "missing lead cell"));
-      expect((table.querySelector('col[data-column="leadTime"]') as HTMLTableColElement).style.width).toBe("112px"); expect(style.paddingLeft).toBe("18px");
+      expect((table.querySelector('col[data-column="leadTime"]') as HTMLTableColElement).style.width).toBe("112px"); expect(style.paddingLeft).toBe("6px");
     }
     expect(getComputedStyle(required(table.closest(".ci-tablewrap"), "missing stock scroller")).overflowX).toBe("auto");
     expect((table.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("96px");
@@ -1800,8 +1802,8 @@ describe("v13 native channel read and original recorder contract", () => {
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).whiteSpace).toBe("nowrap");
     expect(getComputedStyle(document.querySelector("td.ci-material-recorder-col")!).textOverflow).toBe("ellipsis");
     expect((document.querySelector('col[data-column="recorder"]') as HTMLTableColElement).style.width).toBe("96px");
-    expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
-    expect(getComputedStyle(document.querySelector("tbody .ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
+    expect(getComputedStyle(document.querySelector("thead th")!).fontSize).toBe("var(--admin-content-font-caption, 12px)");
+    expect(getComputedStyle(document.querySelector("tbody .ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 13px)");
     expect(document.body.textContent).not.toMatch(/WRONG-RESPONSIBLE|WRONG-EDITOR/);
   });
   it.each(["loading", "error", "empty"])("uses default eleven-column colspan for %s without misaligning existing table", status => {
@@ -1819,8 +1821,7 @@ describe("v13 native channel read and original recorder contract", () => {
     expectNoGlobalUpload();
     expectNoGlobalUpload();
     const edit = materialMenuItem("编辑");
-    expect(edit.hasAttribute("data-disabled")).toBe(true);
-    expect(edit.getAttribute("aria-disabled")).toBe("true");
+    expect((edit as HTMLButtonElement).disabled).toBe(true);
     expectNoGlobalUpload(); click(edit);
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.textContent).not.toContain("新增备注");
@@ -1900,8 +1901,8 @@ describe("v14 industry and channel-row stock upload", () => {
     const table = required(document.querySelector(".ci-compact-stock-table"), "missing stock table");
     expect(Array.from(table.querySelectorAll("th")).map(cell => cell.textContent)).toEqual(["型号", "品牌", "负责人", "所属行业", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "交期", "更新时间", "渠道来源", "操作"]);
     expect((table.querySelector('col[data-column="industry"]') as HTMLTableColElement).style.width).toBe("110px");
-    expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 11px)");
-    expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 12px)");
+    expect(getComputedStyle(table.querySelector("th")!).fontSize).toBe("var(--admin-content-font-caption, 12px)");
+    expect(getComputedStyle(table.querySelector(".ci-cell-title")!).fontSize).toBe("var(--admin-content-font-body, 13px)");
     expect(getComputedStyle(table.parentElement!).overflowX).toBe("auto");
     expectNoGlobalUpload();
     selectHostTab("channels");
@@ -1913,7 +1914,7 @@ describe("v14 industry and channel-row stock upload", () => {
   it.each([null, undefined, "", "unknown-internal-code"])("shows an unset label for %s without inferring from a hidden channel/source", industryCode => {
     localStorage.setItem(channelInventoryColumnsStorageKey(7, 31)!, JSON.stringify([...DEFAULT_CHANNEL_INVENTORY_COLUMNS, "industry"]));
     const data = (runtime.teamQuery as { data: { items: Record<string, unknown>[] } }).data;
-    data.items[0] = { ...data.items[0], industryCode: "automotive", channelSource: { id: 999, name: "HIDDEN-INDUSTRY-SOURCE" } };
+    data.items[0] = { ...data.items[0], canViewSource: false, industryCode: "automotive", channelSource: { id: 999, name: "HIDDEN-INDUSTRY-SOURCE" } };
     data.items[1] = { ...data.items[1], industryCode, channelName: "HIDDEN-CHANNEL", channelSource: { id: 888, name: "HIDDEN-SOURCE" } };
     (runtime.channelQuery as { data: { items: Record<string, unknown>[] } }).data.items[0].industryCode = "medical";
     renderHost();
@@ -2785,7 +2786,7 @@ describe("20261112 recovered official Host write, private notes and export polic
     if (denial === "detail-edit" || denial === "detail-readOnly") runtime.getTeamMaterialForEdit.mockResolvedValueOnce({ id: 101, partNumber: "LM358DR", canEdit: denial !== "detail-edit", readOnly: denial === "detail-readOnly" });
     if (denial === "source-identity") runtime.scope.contextVerification.identity = "previous-storage-scope";
     renderHost();
-    if (document.querySelector('.ci-stock-edit-table [data-slot="dropdown-menu-trigger"]')) click(materialMenuItem("编辑"));
+    if (document.querySelector('.ci-stock-edit-table [aria-label^="编辑库存："]')) click(materialMenuItem("编辑"));
     await settle(); expect(document.querySelector(".ci-host-material-dialog")).toBeNull();
     expect(runtime.updateMaterial).not.toHaveBeenCalled(); expect(runtime.createMaterial).not.toHaveBeenCalled();
     if (denial.startsWith("detail-")) expect(runtime.getTeamMaterialForEdit).toHaveBeenCalledTimes(1);

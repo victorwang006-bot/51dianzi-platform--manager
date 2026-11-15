@@ -163,17 +163,29 @@ describe("restored approved manual refresh interaction", () => {
   it.each([["disabled", "重查未启用"], ["cooldown", "重查冷却中"], ["blocked", "来源访问受限"], ["queue_full", "重查队列已满"], ["unavailable", "重查服务不可用"]])("shows the real%s reason without a successful refresh claim", async (state, label) => {
     await render(); runtime.lookup.mockImplementationOnce(async input => ({ ...response(input), refreshDiagnostics: [{ materialId: 1, source: "lcsc", state, lastAttemptAt: null, lastAttemptStatus: null, nextAllowedAt: null, referenceVersion: null, sourceSha256: null }] })); await click(button("重查未匹配")); expect(document.body.textContent).toContain(label); expect(document.body.textContent).not.toContain("已读取本次尝试结果");
   });
-  it("opens the real source popover with exact product, time, public search and evidence, without thresholds", async () => {
+  it("opens only marketplace title and short links while retaining typed diagnostics offscreen", async () => {
     runtime.lookup.mockImplementation(async input => ({ ...response(input), refreshDiagnostics: [{ materialId: 1, source: "lcsc", state: "completed", lastAttemptAt: "2026-11-15T01:00:00Z", lastAttemptStatus: "ok", nextAllowedAt: "2026-11-15T01:20:00Z", referenceVersion: "reference-v1", sourceSha256: "a".repeat(64) }] })); await render();
     expect(referenceCells()[0].textContent).toBe("0.000000012345，库存5"); expect(referenceCells()[0].querySelector("[title]")).toBeNull();
     await click(required(document.querySelector('[aria-label="查看立创商城参考来源"]')));
-    const panel = required(document.querySelector(".ci-reference-evidence-popover")); expect(panel.textContent).toContain("保存记录，非实时"); expect(panel.textContent).toContain("2026-11-14 12:00:00"); expect(panel.textContent).toContain("合作、海外货源不混入自营"); expect(panel.textContent).toContain("reference-v1"); expect(panel.textContent).toContain("a".repeat(64));
+    const panel = required(document.querySelector(".ci-reference-evidence-popover"));
+    expect(panel.textContent).toBe("立创商城商品页完整型号搜索");
+    expect(panel.textContent).not.toMatch(/保存记录|非实时|不修改|自营|合作|海外|采集时间|最近尝试|最早重查|参考版本|SHA256|2026-11|reference-v1/);
+    expect(panel.textContent).not.toContain("a".repeat(64)); expect(panel.querySelector(".ci-reference-evidence-hash")).toBeNull();
     expect(panel.textContent).not.toMatch(/5000|≥|数量档|不足此档/);
-    const links = [...panel.querySelectorAll<HTMLAnchorElement>("a")]; expect(links[0].href).toBe("https://item.szlcsc.com/173890.html"); expect(links[0].textContent).toContain("准确匹配商品"); expect(links[1].textContent).toContain("非匹配商品"); expect(new URL(links[1].href).searchParams.get("k")).toBe("PART-1-1");
+    const links = [...panel.querySelectorAll<HTMLAnchorElement>("a")]; expect(links).toHaveLength(2);
+    expect(links[0].href).toBe("https://item.szlcsc.com/173890.html"); expect(links[0].textContent).toBe("商品页");
+    expect(links[0].getAttribute("aria-label")).toBe("立创商城准确匹配商品页（保存报价来源）");
+    expect(links[1].textContent).toBe("完整型号搜索"); expect(links[1].getAttribute("aria-label")).toBe("立创商城完整型号公开搜索（非匹配商品）");
+    expect(new URL(links[1].href).searchParams.get("k")).toBe("PART-1-1");
     for (const a of links) { expect(a.rel).toContain("noopener"); expect(a.rel).toContain("noreferrer"); expect(a.getAttribute("referrerpolicy")).toBe("no-referrer"); }
   });
   it("negative evidence labels a provider page/search as non-matched, never a quoted product", async () => {
     runtime.lookup.mockImplementation(async input => response(input, "not_found")); await render(); await click(required(document.querySelector('[aria-label="查看云汉芯城参考来源"]')));
-    const panel = required(document.querySelector(".ci-reference-evidence-popover")); expect(panel.textContent).toContain("非已匹配报价"); expect(panel.textContent).toContain("非匹配商品"); expect(panel.textContent).not.toContain("准确匹配商品");
+    const panel = required(document.querySelector(".ci-reference-evidence-popover"));
+    expect(panel.textContent).toBe("云汉芯城来源页完整型号搜索");
+    const links = [...panel.querySelectorAll<HTMLAnchorElement>("a")]; expect(links).toHaveLength(2);
+    expect(links[0].getAttribute("aria-label")).toBe("云汉芯城来源页面（非已匹配报价）");
+    expect(links[1].getAttribute("aria-label")).toBe("云汉芯城完整型号公开搜索（非匹配商品）");
+    expect(panel.textContent).not.toContain("准确匹配商品"); expect(referenceCells()[1].querySelector("a")).toBeNull();
   });
 });

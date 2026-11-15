@@ -22,7 +22,7 @@ import type { InventoryManagementClient, InventoryTab, ReadableInventoryChannel,
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 import type { Payload as BatchMaterialPayload } from "../components/channelInventory/import";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
-import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, type ChannelInventoryColumnId } from "./channelInventoryColumns";
+import { CHANNEL_INVENTORY_COLUMNS, DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnsStorageKey, normalizeChannelInventoryColumns, readChannelInventoryColumns, saveChannelInventoryColumns, channelInventoryColumnLayout, channelInventorySourceLabel, type ChannelInventoryColumnId } from "./channelInventoryColumns";
 import { ChannelReferenceCell } from "./ChannelReferenceCell";
 import "../components/channelInventory/layout.css";
 import "../components/channelInventory/batch.css";
@@ -772,6 +772,7 @@ export default function ChannelInventoryHost() {
   const collaborationSessionRef = useRef(0);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"channel" | "material" | "status" | null>(null);
+  const materialSubmitPendingRef = useRef(false);
   const channelCreateRef = useRef<FrozenCreate<ChannelInventoryInputs["createChannel"]> | null>(null);
   const materialCreateRef = useRef<FrozenCreate<MaterialCreateInput> | null>(null);
   const materialUpdateRef = useRef<MaterialUpdateInput | null>(null);
@@ -957,6 +958,7 @@ export default function ChannelInventoryHost() {
     setReadableChannel(null);
     setMaterialSort(null);
     editRequestRef.current += 1; editAbortRef.current?.abort();
+    materialSubmitPendingRef.current = false;
     setBusy(null);
     exportRequestRef.current += 1;
     exportPendingRef.current = false;
@@ -1035,6 +1037,7 @@ export default function ChannelInventoryHost() {
   const changeTab = (next: InventoryTab, syncLocation = true) => {
     invalidateEditSession();
     setMaterialEditor(null); setChannelEditor(null); clearBatch(); setNotesMaterial(null);
+    materialSubmitPendingRef.current = false; setBusy(current => current === "material" ? null : current);
     setCollaboration(null); collaborationSessionRef.current += 1;
     setSourceDetail(null);
     materialUpdateRef.current = null; setMaterialRetryLocked(false);
@@ -1259,7 +1262,8 @@ export default function ChannelInventoryHost() {
   };
 
   const openMaterialEdit = async (material: TeamMaterial) => {
-    if (!material.canEdit || material.readOnly || !isCurrent() || !editAllowedRef.current) return;
+    if (material.canEdit !== true || material.readOnly || !expectedContext || busy !== null || materialSubmitPendingRef.current
+      || !contextCurrent || !sourceContextVerified || !isCurrent() || !editAllowedRef.current) return;
     invalidateEditSession();
     const request = ++editRequestRef.current;
     const abort = new AbortController(); editAbortRef.current = abort;
@@ -1277,7 +1281,7 @@ export default function ChannelInventoryHost() {
   };
 
   const submitMaterial = async () => {
-    if (!expectedContext || !isCurrent() || !materialEditor || busy) return;
+    if (!expectedContext || !isCurrent() || !materialEditor || busy || materialSubmitPendingRef.current || !sourceContextVerified || !contextCurrent) return;
     if (!editAllowedRef.current || materialsQuery.data?.canWrite !== true || (materialEditor.mode === "create"
       ? !optionChannels.some(channel => channel.id === Number(materialForm.channelId) && channel.active && channel.canEdit && !channel.readOnly)
       : !editableRowsRef.current.has(materialEditor.material.id) || !materialEditor.material.canEdit || materialEditor.material.readOnly)) {
@@ -1292,6 +1296,7 @@ export default function ChannelInventoryHost() {
     const body = materialInputFromForm({ ...materialForm, note: nativeNote ? materialForm.note : "" });
     const session = editRequestRef.current;
     const current = () => isCurrent() && session === editRequestRef.current;
+    materialSubmitPendingRef.current = true;
     setBusy("material");
     setMessage("");
     try {
@@ -1328,6 +1333,7 @@ export default function ChannelInventoryHost() {
         await updateMaterial.mutateAsync(input);
       }
       if (!current()) return;
+      materialSubmitPendingRef.current = false;
       materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
       invalidateEditSession();
       setMaterialEditor(null);
@@ -1346,7 +1352,7 @@ export default function ChannelInventoryHost() {
         setMessage(errorMessage(error, "库存保存失败，请刷新后重试。"));
       }
     } finally {
-      if (current()) setBusy(null);
+      if (current()) { materialSubmitPendingRef.current = false; setBusy(null); }
     }
   };
 
@@ -1558,6 +1564,7 @@ export default function ChannelInventoryHost() {
     if (!isCurrent() || !privateNotesAllowedRef.current || collaborationRowsRef.current.get(materialId)?.isMine !== true) return;
     if (!fromEditor) {
       invalidateEditSession(); setMaterialEditor(null); clearBatch();
+      materialSubmitPendingRef.current = false;
       materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
     }
     setCollaboration(null); collaborationSessionRef.current += 1;
@@ -1569,12 +1576,15 @@ export default function ChannelInventoryHost() {
   const openCollaboration = (material: TeamMaterial) => {
     if (!isCurrent() || !contextCurrent || materialsQuery.isError) return;
     invalidateEditSession(); setMaterialEditor(null); setNotesMaterial(null); clearBatch();
+    materialSubmitPendingRef.current = false;
     materialUpdateRef.current = null; setMaterialRetryLocked(false); setBusy(null);
     setCollaboration({ material, session: ++collaborationSessionRef.current });
   };
   useEffect(() => {
     if (materialEditor?.mode === "edit" && materialResult && !editableRowsRef.current.has(materialEditor.material.id)) {
       editRequestRef.current += 1;
+      materialSubmitPendingRef.current = false; setBusy(current => current === "material" ? null : current);
+      materialUpdateRef.current = null; setMaterialRetryLocked(false);
       setMaterialEditor(null);
     }
   }, [materialEditor, materialResult]);
@@ -1597,6 +1607,7 @@ export default function ChannelInventoryHost() {
   useEffect(() => {
     if (!canWriteMaterials) {
       editRequestRef.current += 1; editAbortRef.current?.abort();
+      materialSubmitPendingRef.current = false; setBusy(current => current === "material" ? null : current);
       setMaterialEditor(null); setBatchOpen(false);
       // Loading the real stock query is allowed only for a pending intent; an
       // already-open batch must be destroyed on loss of its write proof.
@@ -1878,6 +1889,7 @@ export default function ChannelInventoryHost() {
                 {materialRows.map((material, index) => {
                   const batchAssociation = materialUploadBatchAssociation(material as TeamMaterial & MaterialUploadBatchProjection);
                   const updatedAt = channelInventoryUpdatedAt(material.updatedAt);
+                  const sourceLabel = channelInventorySourceLabel(material.canViewSource, columnsContextVerified ? material.channelSource : null);
                   return (
                   <tr key={material.id}>
                     {showDeleteSelection ? <td className="ci-selection-col">{deletion.eligible.some(row => row.id === material.id) ? <input type="checkbox" className="ci-selection-checkbox" aria-label={`选择删除库存：${material.partNumber}`} disabled={deletion.busy} checked={deletion.selected.some(row => row.id === material.id)} onChange={() => deletion.toggle(material.id)} /> : null}</td> : null}
@@ -1893,8 +1905,14 @@ export default function ChannelInventoryHost() {
                     {columnVisible("leadTime") ? <td className="ci-material-lead-col ci-lead-time admin-cell-primary">{material.leadTime || "待确认"}</td> : null}
                     {columnVisible("dateCode") ? <td className="ci-material-dc-col">{material.dateCode?.trim() ? <ChannelInventoryPartNumber partNumber={material.dateCode} kind="dc" resetKey={presentationScopeKey} /> : null}</td> : null}
                     {columnVisible("updatedAt") ? <td className="ci-date ci-material-date-col">{updatedAt ? <time className="ci-updated-at admin-cell-secondary" dateTime={`${updatedAt.full.slice(0, 19).replace(" ", "T")}+08:00`}><ChannelInventoryPartNumber partNumber={updatedAt.full} displayValue={updatedAt.compact} kind="time" resetKey={presentationScopeKey} /></time> : null}</td> : null}
-                    {columnVisible("source") ? <td className="ci-material-source-col">{material.canViewSource === true ? <button type="button" className="ci-inline-link ci-source-link" onClick={() => openSource(material)}>查看来源</button> : null}{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td> : null}
-                    <td className="ci-col-actions"><div className="ci-row-actions">{publishing.action(material)}<button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button>{material.isMine && nativeNote ? <button type="button" className="ci-inline-link" aria-label={`本人备注：${material.partNumber}`} disabled={!privateNotesAllowed} onClick={() => openPrivateNotes(material.id)}>本人备注</button> : null}{material.canEdit && !material.readOnly || deletion.eligible.some(row => row.id === material.id) ? <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger><DropdownMenuContent className="ci-channel-actions-menu" align="end">{material.canEdit && !material.readOnly ? <DropdownMenuItem disabled={busy !== null || !canWriteMaterials} onSelect={() => void openMaterialEdit(material)}>编辑</DropdownMenuItem> : null}{deletion.eligible.some(row => row.id === material.id) ? <DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem> : null}</DropdownMenuContent></DropdownMenu> : null}</div></td>
+                    {columnVisible("source") ? <td className="ci-material-source-col">{material.canViewSource === true ? <button type="button" className="ci-inline-link ci-source-link" onClick={() => openSource(material)}>{sourceLabel}</button> : "—"}{batchAssociation.state !== "unlinked" ? <small className="ci-subtext ci-batch-source">{batchAssociation.state === "linked" ? <button type="button" className="ci-inline-link" aria-label={`查看库存 ${material.partNumber} 的来源批次 ${batchAssociation.id}`} onClick={() => viewMaterialUploadBatch(material)}>查看上传批次 #{batchAssociation.id}</button> : batchAssociation.state === "unavailable" ? "来源批次当前不可查看" : "批次信息不可用"}</small> : null}</td> : null}
+                    <td className="ci-col-actions"><div className="ci-row-actions">
+                      {material.canEdit === true && !material.readOnly ? <button type="button" className="ci-inline-link" aria-label={`编辑库存：${material.partNumber}`} disabled={busy !== null || !canWriteMaterials || !contextCurrent || !sourceContextVerified} onClick={() => void openMaterialEdit(material)}>编辑</button> : null}
+                      {publishing.action(material)}
+                      <button type="button" className="ci-inline-link" onClick={() => openCollaboration(material)}>备注（{material.noteCount}）</button>
+                      {material.isMine && nativeNote ? <button type="button" className="ci-inline-link" aria-label={`本人备注：${material.partNumber}`} disabled={!privateNotesAllowed} onClick={() => openPrivateNotes(material.id)}>本人备注</button> : null}
+                      {deletion.eligible.some(row => row.id === material.id) ? <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="ci-inline-link" aria-label={`更多库存操作：${material.partNumber}`}>更多</button></DropdownMenuTrigger><DropdownMenuContent className="ci-channel-actions-menu" align="end"><DropdownMenuItem variant="destructive" disabled={busy !== null || deletion.busy} onSelect={() => deletion.requestDelete([material])}>删除</DropdownMenuItem></DropdownMenuContent></DropdownMenu> : null}
+                    </div></td>
                   </tr>
                   );
                 })}
@@ -1942,9 +1960,9 @@ export default function ChannelInventoryHost() {
             <div className="ci-dialog-scroll">
             {materialEditor.mode === "create" && !activeChannels.length ? <p className="ci-error" role="alert">暂无可用渠道。请先创建并启用渠道后再录入库存。</p> : null}
             <fieldset className="ci-form-grid" disabled={busy === "material" || materialRetryLocked}>
-              {materialEditor.mode === "create" ? <label className="ci-field"><span>关联渠道 *</span><select required aria-label="关联渠道" value={materialForm.channelId} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label> : <label className="ci-field"><span>关联渠道（不可更换）</span><input aria-label="关联渠道" readOnly disabled value="关联渠道由服务端保留" /></label>}
               <label className="ci-field"><span>型号 *</span><input required value={materialForm.partNumber} maxLength={128} onChange={event => setMaterialForm(current => ({ ...current, partNumber: event.target.value }))} /></label>
               <label className="ci-field"><span>品牌 *</span><input required value={materialForm.brand} maxLength={64} onChange={event => setMaterialForm(current => ({ ...current, brand: event.target.value }))} /></label>
+              {materialEditor.mode === "create" ? <label className="ci-field"><span>关联渠道 *</span><select required aria-label="关联渠道" value={materialForm.channelId} onChange={event => setMaterialForm(current => ({ ...current, channelId: event.target.value }))}><option value="">请选择启用渠道</option>{activeChannels.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select></label> : <label className="ci-field"><span>关联渠道（不可更换）</span><input aria-label="关联渠道" readOnly disabled value="关联渠道由服务端保留" /></label>}
               <label className="ci-field"><span>可供数量</span><input inputMode="numeric" placeholder="待确认" value={materialForm.qty} onChange={event => setMaterialForm(current => ({ ...current, qty: event.target.value }))} /></label>
               <label className="ci-field"><span>Date Code</span><input maxLength={32} value={materialForm.dateCode} onChange={event => setMaterialForm(current => ({ ...current, dateCode: event.target.value }))} /></label>
               <label className="ci-field"><span>报价 CNY</span><input inputMode="decimal" placeholder="面议" value={materialForm.price} onChange={event => setMaterialForm(current => ({ ...current, price: event.target.value }))} /></label>
