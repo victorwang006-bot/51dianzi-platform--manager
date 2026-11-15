@@ -39,4 +39,34 @@ describe("restored approved whole-brand directions across parsers and cache (syn
       for (const suffix of ["/NOPB", "-TR", "L"]) expect(parseReferenceQuote(source, page(observed), url, { partNumber: SYNTHETIC_REFERENCE_MPN + suffix, brand: "ST" }, time).status).toBe("not_found");
     }
   });
+  it.each([
+    ["德州仪器", "Texas Instruments"], ["ON(安森美)", "onsemi(安森美)"],
+    ["AMASS", "AMASS(艾迈斯)"], ["台湾强茂", "PANJIT(强茂)"],
+    ["Littelfuse", "Littelfuse(美国力特)"], ["YXC", "YXC(扬兴晶振)"],
+    ["Geehy(珠海极海)", "Geehy(极海半导体)"], ["CHIPANALOG", "Chipanalog(川土微)"],
+    ["长电", "CJ(江苏长电/长晶)"],
+    ["VISHAY", "Vishay Intertechnologies"], ["VISHAY/威世", "威世"],
+    ["精拓金", "Jing extension/深圳精拓金电子"], ["Jing extension/精拓金", "Jing extension/深圳精拓金电子"],
+  ])("binds family %s <=> %s across parsers/cache while retaining whole MPN", (a, b) => {
+    for (const [brand, observed] of [[a, b], [b, a]]) for (const source of ["lcsc", "ickey"] as const) {
+      const url = source === "lcsc" ? SYNTHETIC_LCSC_URL : "https://search.ickey.cn/?keyword=STE145N65M5";
+      const page = source === "lcsc" ? syntheticLcscReferencePage : syntheticIckeyReferencePage;
+      const q = parseReferenceQuote(source, page(observed), url, { partNumber: SYNTHETIC_REFERENCE_MPN, brand }, time);
+      expect(q.status).toBe("ok"); expect(q.matchedBrand).toBe(observed);
+      expect(validCachedReference(q, source, { partNumber: SYNTHETIC_REFERENCE_MPN, brand })).toBe(true);
+      expect(validCachedReference({ ...q, matchedBrand: observed + "(Other)" }, source, { partNumber: SYNTHETIC_REFERENCE_MPN, brand })).toBe(false);
+      for (const suffix of ["/NOPB", "-TR", "L"]) {
+        const identity = { partNumber: SYNTHETIC_REFERENCE_MPN + suffix, brand };
+        expect(parseReferenceQuote(source, page(observed), url, identity, time).status).toBe("not_found");
+        expect(validCachedReference(q, source, identity)).toBe(false);
+      }
+    }
+  });
+  it.each([["TI", "MICROCHIP(美国微芯)"], ["XKB", "XFCN(兴飞)"], ["长电", "JSCJ(江苏长晶)"], ["ORMON", "OMRON(欧姆龙)"], ["TWGMC", "迪嘉"], ["VISHAY", "Vishay Semiconductor"], ["精拓金", "Jing extension"]])("rejects %s => %s at parser boundary", (brand, observed) => {
+    for (const source of ["lcsc", "ickey"] as const) {
+      const page = source === "lcsc" ? syntheticLcscReferencePage : syntheticIckeyReferencePage;
+      const url = source === "lcsc" ? SYNTHETIC_LCSC_URL : "https://search.ickey.cn/?keyword=STE145N65M5";
+      expect(parseReferenceQuote(source, page(observed), url, { partNumber: SYNTHETIC_REFERENCE_MPN, brand }, time).status).toBe("not_found");
+    }
+  });
 });

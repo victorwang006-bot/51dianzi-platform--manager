@@ -1,8 +1,7 @@
-/** Pure, finite, directional whole-brand matching. No model/MPN normalization.
- * Snapshot retains its old ASCII-width/case/whitespace semantics; provider callers
- * pass their existing normalizers. No substring, parenthesis removal, typo repair,
- * reverse edge or transitive family construction. Multiple targets are safe because
- * edges are checked against the requested input only (ST/先科, JSCJ/长电 isolated).
+/** Pure, finite whole-brand matching. No model/MPN or quote-condition changes.
+ * Historical directed edges retain their profiles; explicit curated family IDs
+ * independently permit bidirectional matching of complete approved literals.
+ * No substring search, decoration removal, typo repair or inferred graph closure.
  */
 export type ChannelReferenceBrandProfile = "snapshot" | "lcsc" | "ickey";
 export type ChannelReferenceBrandMatch = "exact" | "explicit_alias";
@@ -180,21 +179,142 @@ export const VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS: readonly (readonly [string,
   ]
 ];
 // END VERIFIED DIRECTED PAIRS
-export function matchChannelReferenceBrand(expected: string, observed: string, options: {
+
+export type ChannelReferenceBrandFamily = {
+  /** Stable curated identity, never inferred from a shared substring/edge target. */
+  familyId: string;
+  /** Complete literals; parenthetical descriptions/company names stay significant. */
+  variants: readonly string[];
+  /** Defaults to all profiles. Keep historical Murata away from ICKey. */
+  profiles?: readonly ChannelReferenceBrandProfile[];
+};
+
+/** Approved complete literals only. The first section uses existing approved
+ * endpoints. The second uses existing mall bilingual labels explicitly authorized
+ * by the parent reassessment on 2026-11-15; it is not a claim of new official research.
+ * Corporate/product-line edges (ADI/LINEAR, IXYS/Littelfuse, Intel/Altera), Murata's
+ * legacy source restriction, and bare CJ/JSCJ/JCET are not promoted by inference.
+ */
+export const VERIFIED_CHANNEL_REFERENCE_BRAND_FAMILIES: readonly ChannelReferenceBrandFamily[] = [
+  { familyId: "texas-instruments", variants: ["TI", "德州仪器", "Texas Instruments", "TI(德州仪器)", "德州仪器(TI)", "Texas Instruments(德州仪器)", "德州仪器(Texas Instruments)"] },
+  { familyId: "st-microelectronics", variants: ["ST", "ST(意法半导体)", "ST MICROELECTRONICS", "STMicroelectronics"] },
+  { familyId: "historical-xianke-not-stmicro", variants: ["先科", "ST(先科)"] },
+  { familyId: "onsemi", variants: ["ON", "ON(安森美)", "onsemi", "ON Semiconductor", "onsemi(安森美)"] },
+  { familyId: "te-connectivity", variants: ["TE", "TE Connectivity", "TE Connectivity(泰科电子)"] },
+  { familyId: "sunlord", variants: ["顺络", "SUNLORD", "SUNLORD(顺络)"] },
+  { familyId: "infineon", variants: ["INFINEON", "英飞凌", "INFINEON(英飞凌)"] },
+  { familyId: "vishay", variants: ["VISHAY", "VISHAY(威世)", "VISHAY/威世", "威世", "Vishay Intertechnologies"] },
+  // Existing mall filter/product bilingual labels, approved in the completed reassessment.
+  { familyId: "jing-extension", variants: ["精拓金", "Jing extension/精拓金", "Jing extension/深圳精拓金电子"] },
+  // AMASS uses 艾迈斯 as actually captured, not an automatic 阿迈斯 correction.
+  { familyId: "amass", variants: ["AMASS", "AMASS(艾迈斯)"] },
+  { familyId: "panjit", variants: ["PANJIT", "PANJIT(强茂)", "台湾强茂", "PANJIT/台湾强茂"] },
+  { familyId: "littelfuse", variants: ["Littelfuse", "Littelfuse(美国力特)"] },
+  { familyId: "yxc", variants: ["YXC", "YXC(扬兴晶振)"] },
+  { familyId: "geehy", variants: ["Geehy(珠海极海)", "Geehy(极海半导体)"] },
+  { familyId: "chipanalog", variants: ["CHIPANALOG", "Chipanalog(川土微)"] },
+  { familyId: "historical-changdian-cj-literals-not-jcet", variants: ["长电", "CJ(江苏长电/长晶)", "CJ/江苏长晶(长电)"] },
+];
+
+/** Width/case/whitespace plus bounded brand-label separator glyphs. Separators
+ * are retained, not deleted; hyphen, underscore, ampersand and accents remain
+ * significant. Never applied to complete MPNs or raw snapshot identity keys.
+ */
+export const normalizeChannelReferenceBrandFamilyLiteral = (value: string): string =>
+  normalizeChannelReferenceBrand(value).replace(/[\\|·•、]/g, "/");
+
+function balancedBrandParentheses(value: string): boolean {
+  let depth = 0;
+  for (const c of value) {
+    if (c === "(") depth++;
+    else if (c === ")" && --depth < 0) return false;
+  }
+  return depth === 0;
+}
+
+// Refusal domains, NOT equivalence groups. Bare ST is ambiguous within a
+// composite: only its whole literal or explicit 意法 name identifies STMicro.
+// A valid historical ST(先科) is therefore not self-conflicting.
+const CONFLICT_DOMAINS = [
+  { whole: ["ST", "ST(意法半导体)", "ST MICROELECTRONICS", "STMicroelectronics"], tokens: ["意法半导体", "ST MICROELECTRONICS", "STMicroelectronics"] },
+  { whole: ["先科", "ST(先科)"], tokens: ["先科"] },
+  { whole: ["TI", "德州仪器", "Texas Instruments"], tokens: ["TI", "德州仪器", "Texas Instruments"] },
+  { whole: ["Microchip", "MICROCHIP(美国微芯)"], tokens: ["Microchip", "美国微芯"] },
+  { whole: ["XKB"], tokens: ["XKB", "XKB Connection", "XKB Connectivity", "中国星坤"] },
+  { whole: ["XFCN", "XFCN(兴飞)"], tokens: ["XFCN", "兴飞"] },
+  { whole: ["JCET"], tokens: ["JCET"] },
+  { whole: ["CJ", "JSCJ"], tokens: ["CJ", "JSCJ", "江苏长晶"] },
+].map(domain => ({
+  whole: new Set(domain.whole.map(normalizeChannelReferenceBrandFamilyLiteral)),
+  tokens: new Set(domain.tokens.map(normalizeChannelReferenceBrandFamilyLiteral)),
+}));
+const CONFLICT_DOMAIN_PAIRS = [[0, 1], [2, 3], [4, 5], [6, 7]] as const;
+function hasExplicitBrandConflict(wanted: string, seen: string): boolean {
+  const literals = [wanted, seen];
+  const tokens = literals.flatMap(literal => literal.split(/[()/]/).filter(Boolean));
+  const present = CONFLICT_DOMAINS.map(domain =>
+    literals.some(literal => domain.whole.has(literal)) || tokens.some(token => domain.tokens.has(token)));
+  return CONFLICT_DOMAIN_PAIRS.some(([a, b]) => present[a] && present[b]);
+}
+
+type BrandMatchOptions = {
   profile?: ChannelReferenceBrandProfile;
   normalize?: (value: string) => string;
-} = {}): ChannelReferenceBrandMatch | null {
-  const normalize = options.normalize ?? normalizeChannelReferenceBrand;
-  const wanted = normalize(expected), seen = normalize(observed);
-  if (!wanted || !seen) return null;
-  if (wanted === seen) return "exact";
-  if ((observed.includes("(") !== observed.includes(")"))
-    || (observed.includes("（") !== observed.includes("）"))) return null;
-  const direct = (pairs: readonly (readonly [string, string])[]) => pairs.some(
-    ([input, literal]) => wanted === normalize(input) && seen === normalize(literal));
-  if (direct(VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS)) return "explicit_alias";
-  const historical = (options.profile ?? "snapshot") === "ickey"
-    ? VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS.slice(4)
-    : VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS;
-  return direct(historical) ? "explicit_alias" : null;
+};
+
+/** Compile explicit family IDs once. Duplicate normalized literals belonging to
+ * different IDs fail closed per profile, including exact. No transitive union.
+ * Isolated candidate-table tests need not enable candidates in the default matcher.
+ * Tables are copied: later mutation cannot alter the compiled identity index.
+ */
+export function createChannelReferenceBrandMatcher(families: readonly ChannelReferenceBrandFamily[]) {
+  const profiles: readonly ChannelReferenceBrandProfile[] = ["snapshot", "lcsc", "ickey"];
+  const indices = new Map(profiles.map(profile => [profile, new Map<string, string | null>()]));
+  for (const family of families) {
+    if (!family.familyId.trim() || !family.variants.length) throw new Error("Invalid explicit brand family");
+    for (const variant of family.variants) {
+      const literal = normalizeChannelReferenceBrandFamilyLiteral(variant);
+      if (!literal || !balancedBrandParentheses(literal)) throw new Error("Invalid whole-brand family literal");
+      for (const profile of family.profiles ?? profiles) {
+        const index = indices.get(profile);
+        if (!index) throw new Error("Invalid explicit brand family profile");
+        if (!index.has(literal)) index.set(literal, family.familyId);
+        else if (index.get(literal) !== family.familyId) index.set(literal, null);
+      }
+    }
+  }
+  return (expected: string, observed: string, options: BrandMatchOptions = {}): ChannelReferenceBrandMatch | null => {
+    const rawWanted = normalizeChannelReferenceBrandFamilyLiteral(expected);
+    const rawSeen = normalizeChannelReferenceBrandFamilyLiteral(observed);
+    if (!rawWanted || !rawSeen || !balancedBrandParentheses(rawWanted) || !balancedBrandParentheses(rawSeen)
+      || hasExplicitBrandConflict(rawWanted, rawSeen)) return null;
+    const profile = options.profile ?? "snapshot";
+    const index = indices.get(profile)!;
+    const wantedFamily = index.get(rawWanted), seenFamily = index.get(rawSeen);
+    // An unlisted composite that explicitly names two known distinct families is
+    // contradictory even when expected === observed. Registered complete labels
+    // take precedence over token diagnostics (notably the ambiguous ST(先科)).
+    const conflictingComposite = (literal: string) => {
+      if (index.has(literal)) return false;
+      const ids = literal.split(/[()/]/).map(token => index.get(token)).filter((id): id is string => typeof id === "string");
+      return new Set(ids).size > 1;
+    };
+    if (conflictingComposite(rawWanted) || conflictingComposite(rawSeen)) return null;
+    if (wantedFamily === null || seenFamily === null) return null;
+    if (wantedFamily !== undefined && seenFamily !== undefined && wantedFamily !== seenFamily) return null;
+    const normalize = options.normalize ?? normalizeChannelReferenceBrand;
+    const wanted = normalize(expected), seen = normalize(observed);
+    if (!wanted || !seen) return null;
+    if (wanted === seen) return "exact";
+    if (wantedFamily !== undefined && wantedFamily === seenFamily) return "explicit_alias";
+    const direct = (pairs: readonly (readonly [string, string])[]) => pairs.some(
+      ([input, literal]) => wanted === normalize(input) && seen === normalize(literal));
+    if (direct(VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS)) return "explicit_alias";
+    const historical = profile === "ickey"
+      ? VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS.slice(4)
+      : VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS;
+    return direct(historical) ? "explicit_alias" : null;
+  };
 }
+
+export const matchChannelReferenceBrand = createChannelReferenceBrandMatcher(VERIFIED_CHANNEL_REFERENCE_BRAND_FAMILIES);

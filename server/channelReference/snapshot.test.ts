@@ -49,7 +49,7 @@ async function brandQuote(rawBrand: string, observed: string, brandMatch: Channe
   return (await service(brandDocument(rawBrand, observed, brandMatch, literalReason)).lookup([{ materialId: 1, ...expected, brand: rawBrand }])).items[0].references.lcsc;
 }
 // Finite public-brand fixture copied from the actual 2026-11-14 pairs, no prices.
-// Geehy's two complete Chinese names have NOT been proven equivalent.
+// Geehy's complete bilingual labels were authorized in the 2026-11-15 reassessment.
 const actualBrandCases = [
   ["Murata", "muRata(村田)", "explicit_alias", "ok"],
   ["ＫＯＡ", "KOA", "exact", "ok"],
@@ -108,7 +108,7 @@ const actualBrandCases = [
   ["ON", "ON(安森美)", "explicit_alias", "ok"],
   ["BROADCOM", "Broadcom(博通)", "explicit_alias", "ok"],
   ["2Pai Semi(荣湃)", "2Pai Semi(荣湃)", "exact", "ok"],
-  ["Geehy(珠海极海)", "Geehy(极海半导体)", "explicit_alias", "unavailable"],
+  ["Geehy(珠海极海)", "Geehy(极海半导体)", "explicit_alias", "ok"],
   ["LITEON", "LITEON(光宝)", "explicit_alias", "ok"],
   ["LITEON", "LITEON(台湾光宝)", "explicit_alias", "ok"],
   ["MICRONE", "MICRONE(南京微盟)", "explicit_alias", "ok"],
@@ -191,6 +191,28 @@ describe("finite actual brand directions and ASCII-width proof only", () => {
     expect(await brandQuote(input, observed, "explicit_alias", "same brand")).toEqual(empty("lcsc", "unavailable"));
     expect(await brandQuote(input, observed, "exact", null)).toEqual(empty("lcsc", "unavailable"));
   });
+  it.each([
+    ["德州仪器", "Texas Instruments"], ["ON(安森美)", "onsemi(安森美)"],
+    ["AMASS", "AMASS(艾迈斯)"], ["台湾强茂", "PANJIT(强茂)"],
+    ["Littelfuse", "Littelfuse(美国力特)"], ["YXC", "YXC(扬兴晶振)"],
+    ["Geehy(珠海极海)", "Geehy(极海半导体)"], ["CHIPANALOG", "Chipanalog(川土微)"],
+    ["长电", "CJ(江苏长电/长晶)"], ["台湾强茂", " ｐａｎｊｉｔ（强茂） "],
+    ["PANJIT(强茂)", "PANJIT｜台湾强茂"],
+    ["VISHAY", "Vishay Intertechnologies"], ["VISHAY/威世", "威世"],
+    ["精拓金", "Jing extension/深圳精拓金电子"],
+  ])("accepts explicit family %s <=> %s with unchanged raw literal proof", async (a, b) => {
+    for (const [raw, observed] of [[a, b], [b, a]]) {
+      const q = await brandQuote(raw, observed);
+      expect(q.status).toBe("ok"); expect(q.matchedBrand).toBe(observed);
+      expect(await brandQuote(raw, observed, "exact", null)).toEqual(empty("lcsc", "unavailable"));
+      for (const reason of [null, "same family", observed + " "]) expect(await brandQuote(raw, observed, "explicit_alias", reason)).toEqual(empty("lcsc", "unavailable"));
+      const doc = brandDocument(raw, observed);
+      const quote = doc.records[0].references.lcsc;
+      quote.matchedPartNumber = "P-1"; doc.records[0].evidence.lcsc!.observedPartNumber = "P-1";
+      const result = await service(doc).lookup([{ materialId: 1, ...expected, brand: raw }]);
+      expect(result.items[0].references.lcsc).toEqual(empty("lcsc", "unavailable"));
+    }
+  });
   it.each(actualBrandCases)("checks actual whole literal %s => %s (%s)", async (rawBrand, observed, brandMatch, status) => {
     const q = await brandQuote(rawBrand, observed, brandMatch, brandMatch === "exact" ? null : observed);
     expect(q.status).toBe(status);
@@ -210,11 +232,11 @@ describe("finite actual brand directions and ASCII-width proof only", () => {
     ["TI", "TI(Infineon)"], ["TE", "TI(德州仪器)"], ["TST", "ST(意法半导体)"], ["ON", "ON(Honeywell)"],
     ["HUAWEI", "HUAWEI(华为)"], ["FH", "FH(Fairchild)"],
     ["ORMON", "OMRON(欧姆龙)"], ["INRINEON", "Infineon(英飞凌)"], ["WINBOD", "WINBOND(华邦)"], ["PHOENUX", "PHOENIX(菲尼克斯)"],
-    ["Geehy(珠海极海)", "Geehy(极海半导体)"], ["Geehy", "Geehy(极海半导体)"],
+    ["Geehy", "Geehy(极海半导体)"], ["TI", "MICROCHIP(美国微芯)"], ["XKB", "XFCN(兴飞)"],
     ["FH", "FH/风华"], ["金航标", "金航标/KINGHELM"], ["MORNSUN", "MORNSUN/金升阳"], ["UMW", "UMW/Other"],
     ["Yageo", "国巨(Yageo)"], ["Infineon", "Infineon/英飞凌"],
     ["Murata", "Ｍurata"], ["ＫＯＡ", "KOA"], ["KOA", "ⓀⓄⒶ"], ["KOA", "𝐊𝐎𝐀"],
-    ["长电", "CJ(江苏长电/长晶)"], ["長電", "CJ/江苏长晶(长电)"],
+    ["JCET", "CJ(江苏长电/长晶)"], ["長電", "CJ/江苏长晶(长电)"],
     ["MCHP", "Microchip"], ["JSCJ", "CJ/江苏长晶(长电)"], ["JSCJ", "长电"],
     ["ADI", "Analog Devices/Linear Technology"], ["ADI", "ADI/LINEAR"],
     ["瑞隆", "RUILON(瑞隆源)"], ["成都芯进", "CrossChip/成都芯进电子"],
@@ -268,7 +290,7 @@ describe("conservative full identity and literal brand proof", () => {
     const e = evidence(q, { ...expected, brand: rawBrand }); e.brandMatch = "explicit_alias"; e.literalReason = observed; doc.records[0].evidence.lcsc = e;
     const result = await service(doc).lookup([{ materialId: 1, ...expected, brand: rawBrand }]); expect(result.items[0].references.lcsc.status).toBe("ok"); expect(result.items[0].references.lcsc.matchedBrand).toBe(observed);
   });
-  it.each(["Other", "Murata Other", "Other Murata", "Murata(TI)", "Other(Murata)", "Murata(村田) Other", "MurataOther(村田)", "村田", "Ｍurata", "Murata（村田)", "Murata(村田）"])("never accepts conflicting/substr/unsupported brand %s", async observed => {
+  it.each(["Other", "Murata Other", "Other Murata", "Murata(TI)", "Other(Murata)", "Murata(村田) Other", "MurataOther(村田)", "村田", "Ｍurata", "Murata(村田", "Murata)村田("])("never accepts conflicting/substr/unsupported brand %s", async observed => {
     const doc = changeQuote({ matchedBrand: observed }, "lcsc", true); const e = doc.records[0].evidence.lcsc!; e.brandMatch = "explicit_alias"; e.literalReason = observed;
     expect(await quote(doc)).toEqual(empty("lcsc", "unavailable"));
   });
@@ -313,13 +335,16 @@ describe("price/tier/stock/time/currency/URL integrity", () => {
   });
   it.each([
     ["lcsc", "https://item.szlcsc.com/mro/6710007.html"],
+    ["lcsc", "https://item.szlcsc.com/mro/6710008.html"],
+    ["lcsc", "https://item.szlcsc.com/mro/8459551.html"],
+    ["lcsc", "https://item.szlcsc.com/mro/8459552.html"],
     ["ickey", "https://www.ickey.cn/detail/1003001031268591/LT3045IMSE%23TRPBF.html"],
-  ] as const)("accepts only evidence-backed exact exception %s %s", async (source, pageUrl) => {
+  ] as const)("accepts canonical positive numeric mro paths and exact ICKey exception %s %s", async (source, pageUrl) => {
     const q = await quote(changeQuote({ pageUrl }, source, true), source);
     expect(q.status).toBe("ok"); expect(q.pageUrl).toBe(pageUrl);
   });
   it.each([
-    ["lcsc", "https://item.szlcsc.com/mro/6710008.html"],
+    ["lcsc", "https://item.szlcsc.com/mro/0.html"],
     ["lcsc", "https://item.szlcsc.com/mro/06710007.html"],
     ["lcsc", "https://item.szlcsc.com/mro/other/../6710007.html"],
     ["lcsc", "https://item.szlcsc.com/mro%2F6710007.html"],
@@ -338,6 +363,52 @@ describe("price/tier/stock/time/currency/URL integrity", () => {
   ] as const)("keeps public HTTPS/canonical restrictions for exact exception %s", async (source, pageUrl) => {
     for (const unsafe of [pageUrl.replace("https:", "http:"), pageUrl.replace("https://", "https://user:secret@"), pageUrl.replace(".com/", ".com:443/").replace(".cn/", ".cn:443/"), pageUrl + "?x=1", pageUrl + "#x", pageUrl + "#", pageUrl.replace(".html", "%2F.html"), pageUrl.replace(".html", "%252F.html")]) {
       expect(await quote(changeQuote({ pageUrl: unsafe }, source, true), source)).toEqual(empty(source, "unavailable"));
+    }
+  });
+  it.each([
+    ["lcsc", "https://so.szlcsc.com/global.html?k=P-1-TR"],
+    ["ickey", "https://search.ickey.cn/?keyword=P-1-TR"],
+    ["ickey", "https://search.ickey.cn/?keyword=P-1-TR&bom_ab=null"],
+  ] as const)("accepts only complete-MPN canonical search evidence %s %s", async (source, pageUrl) => {
+    const doc = changeQuote({ pageUrl }, source, true);
+    expect(await quote(doc, source)).toEqual(doc.records[0].references[source]);
+    const unsafe = [pageUrl.replace("https:", "http:"), pageUrl.replace("https://", "https://user:pw@"),
+      pageUrl.replace(".com/", ".com:443/").replace(".cn/", ".cn:443/"),
+      pageUrl.replace(".com/", ".com.evil.example/").replace(".cn/", ".cn.evil.example/"),
+      pageUrl.replace("P-1-TR", "P-1"), pageUrl.replace("P-1-TR", "P-1-TR-X"),
+      pageUrl.replace("P-1-TR", "p-1-tr"), pageUrl.replace("P-1-TR", "%50-1-TR"),
+      pageUrl + "&extra=x", pageUrl + "&keyword=P-1-TR", pageUrl + "#", pageUrl + "#x",
+      pageUrl.replace("P-1-TR", "P-1-TR%0A"), pageUrl.replace("P-1-TR", "P-1-TR%5C"),
+      pageUrl.replace("/global.html", "/other/../global.html"), pageUrl.replace("/?", "/other/../?"),
+      pageUrl.replace("P-1-TR", "P-1\\TR"), pageUrl.replace("P-1-TR", "P-1\nTR")];
+    for (const url of new Set(unsafe.filter(url => url !== pageUrl))) {
+      expect(await quote(changeQuote({ pageUrl: url }, source, true), source)).toEqual(empty(source, "unavailable"));
+    }
+    doc.records[0].evidence[source]!.pageUrl += "&extra=x";
+    expect(await quote(doc, source)).toEqual(empty(source, "unavailable"));
+  });
+  it("keeps actual Vishay search page evidence and zero stock without promising tradability", async () => {
+    const doc = document(), identity = { partNumber: "PR02000204702FA100", brand: "VISHAY" };
+    Object.assign(doc.records[0], identity);
+    const q = doc.records[0].references.ickey;
+    Object.assign(q, { matchedPartNumber: identity.partNumber, matchedBrand: "Vishay Intertechnologies",
+      pageUrl: "https://search.ickey.cn/?keyword=PR02000204702FA100&bom_ab=null", stockQuantity: 0, stockInsufficientForTier: true });
+    doc.records[0].evidence.ickey = { ...evidence(q, identity), brandMatch: "explicit_alias", literalReason: q.matchedBrand };
+    expect((await service(doc).lookup([{ materialId: 1, ...identity }])).items[0].references.ickey).toEqual(q);
+    q.pageUrl = "https://search.ickey.cn/?keyword=PR02000204702FA100-X&bom_ab=null";
+    doc.records[0].evidence.ickey!.pageUrl = q.pageUrl;
+    expect((await service(doc).lookup([{ materialId: 1, ...identity }])).items[0].references.ickey).toEqual(empty("ickey", "unavailable"));
+  });
+  it("binds actual Chipanalog search URL, never the other -Q1 model or wrong source", async () => {
+    const doc = document(), identity = { partNumber: "CA-IS3740LW", brand: "CHIPANALOG" };
+    Object.assign(doc.records[0], identity);
+    const q = doc.records[0].references.lcsc;
+    Object.assign(q, { matchedPartNumber: identity.partNumber, matchedBrand: "Chipanalog(川土微)", pageUrl: "https://so.szlcsc.com/global.html?k=CA-IS3740LW" });
+    doc.records[0].evidence.lcsc = { ...evidence(q, identity), brandMatch: "explicit_alias", literalReason: q.matchedBrand };
+    expect((await service(doc).lookup([{ materialId: 1, ...identity }])).items[0].references.lcsc).toEqual(q);
+    for (const pageUrl of [q.pageUrl + "-Q1", "https://search.ickey.cn/?keyword=CA-IS3740LW", "https://so.szlcsc.com/global.html?k=CA-IS3740LW&bom_ab=null"]) {
+      q.pageUrl = doc.records[0].evidence.lcsc!.pageUrl = pageUrl;
+      expect((await service(doc).lookup([{ materialId: 1, ...identity }])).items[0].references.lcsc).toEqual(empty("lcsc", "unavailable"));
     }
   });
 });

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "collectionMode": "public-web-batch",
-  "generatedAt": "2026-11-15T01:40:06.000Z",
+  "generatedAt": "2026-11-15T04:26:57.335Z",
   "records": [
     {
       "partNumber": "GRM32EB31C476KE15L",
@@ -2616,29 +2616,66 @@
           "unitPrice": null
         },
         "ickey": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:20:14.323Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:43:46.550Z",
+          "matchedBrand": "Vishay Intertechnologies",
+          "matchedPartNumber": "PR02000204702FA100",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "标准包装数量: 1",
+          "pageUrl": "https://search.ickey.cn/?keyword=PR02000204702FA100&bom_ab=null",
+          "productCode": "100250106636303",
           "source": "ickey",
-          "status": "not_found",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "status": "ok",
+          "stockInsufficientForTier": true,
+          "stockQuantity": 0,
+          "taxStatus": "included",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 25,
+              "unitPrice": "3.083"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.7086"
+            },
+            {
+              "minQuantity": 250,
+              "unitPrice": "1.3786"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.2052"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "0.995"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.8874"
+            }
+          ],
           "unit": null,
-          "unitPrice": null
+          "unitPrice": "0.8874"
         }
       },
       "evidence": {
         "lcsc": null,
-        "ickey": null
+        "ickey": {
+          "expectedPartNumber": "PR02000204702FA100",
+          "observedPartNumber": "PR02000204702FA100",
+          "expectedBrand": "VISHAY",
+          "observedBrand": "Vishay Intertechnologies",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Vishay Intertechnologies",
+          "pageUrl": "https://search.ickey.cn/?keyword=PR02000204702FA100&bom_ab=null",
+          "collectedAt": "2026-11-15T03:43:46.550Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.8874",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -3947,24 +3984,41 @@
       "brand": "SUNLORD",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:21:40.721Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:42:55.767Z",
+          "matchedBrand": "Sunlord(顺络)",
+          "matchedPartNumber": "SDCL1005C1N2STDF",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；10000个/圆盘；最小起订量20个",
+          "pageUrl": "https://item.szlcsc.com/15137.html",
+          "productCode": "C14475",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 7740,
+          "taxStatus": "included",
+          "tierQuantity": 2000,
+          "tiers": [
+            {
+              "minQuantity": 20,
+              "unitPrice": "0.0258"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "0.0199"
+            },
+            {
+              "minQuantity": 600,
+              "unitPrice": "0.0168"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.0154"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.0154"
         },
         "ickey": {
           "currency": null,
@@ -3988,7 +4042,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "SDCL1005C1N2STDF",
+          "observedPartNumber": "SDCL1005C1N2STDF",
+          "expectedBrand": "SUNLORD",
+          "observedBrand": "Sunlord(顺络)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Sunlord(顺络)",
+          "pageUrl": "https://item.szlcsc.com/15137.html",
+          "collectedAt": "2026-11-15T03:42:55.767Z",
+          "observedMaxQuantity": 2000,
+          "observedMaxUnitPrice": "0.0154",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -4248,24 +4314,49 @@
       "brand": "YJYCOIN(益嘉源)",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:22:06.947Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:42:47.725Z",
+          "matchedBrand": "YJYCOIN(益嘉源)",
+          "matchedPartNumber": "YNR4030-220M",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；2000个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/318230.html",
+          "productCode": "C341013",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 20210,
+          "taxStatus": "included",
+          "tierQuantity": 8000,
+          "tiers": [
+            {
+              "minQuantity": 10,
+              "unitPrice": "0.3914"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "0.3074"
+            },
+            {
+              "minQuantity": 300,
+              "unitPrice": "0.2654"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.2339"
+            },
+            {
+              "minQuantity": 4000,
+              "unitPrice": "0.2087"
+            },
+            {
+              "minQuantity": 8000,
+              "unitPrice": "0.196"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.196"
         },
         "ickey": {
           "currency": null,
@@ -4289,7 +4380,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "YNR4030-220M",
+          "observedPartNumber": "YNR4030-220M",
+          "expectedBrand": "YJYCOIN(益嘉源)",
+          "observedBrand": "YJYCOIN(益嘉源)",
+          "brandMatch": "exact",
+          "literalReason": null,
+          "pageUrl": "https://item.szlcsc.com/318230.html",
+          "collectedAt": "2026-11-15T03:42:47.725Z",
+          "observedMaxQuantity": 8000,
+          "observedMaxUnitPrice": "0.196",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -5560,24 +5663,49 @@
       "brand": "XKB",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:25:31.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:43:07.354Z",
+          "matchedBrand": "XKB Connection(中国星坤)",
+          "matchedPartNumber": "X5511FV-15-C70D30-1000",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "袋装；200个/袋",
+          "pageUrl": "https://item.szlcsc.com/3094005.html",
+          "productCode": "C2883513",
           "source": "lcsc",
-          "status": "unavailable",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "status": "ok",
+          "stockInsufficientForTier": true,
+          "stockQuantity": 389,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "4.72"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "3.8"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "3.34"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "2.88"
+            },
+            {
+              "minQuantity": 400,
+              "unitPrice": "2.61"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "2.47"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "2.47"
         },
         "ickey": {
           "source": "ickey",
@@ -5601,7 +5729,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X5511FV-15-C70D30-1000",
+          "observedPartNumber": "X5511FV-15-C70D30-1000",
+          "expectedBrand": "XKB",
+          "observedBrand": "XKB Connection(中国星坤)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XKB Connection(中国星坤)",
+          "pageUrl": "https://item.szlcsc.com/3094005.html",
+          "collectedAt": "2026-11-15T03:43:07.354Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "2.47",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -7480,24 +7620,41 @@
       "brand": "AMASS",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:29:38.083Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:42:54.587Z",
+          "matchedBrand": "AMASS(艾迈斯)",
+          "matchedPartNumber": "24.245.2",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "50个/袋",
+          "pageUrl": "https://item.szlcsc.com/mro/8459552.html",
+          "productCode": "C7437327",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 6427,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "7.44"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "7.01"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "5.93"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "5.72"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "5.72"
         },
         "ickey": {
           "currency": null,
@@ -7521,7 +7678,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "24.245.2",
+          "observedPartNumber": "24.245.2",
+          "expectedBrand": "AMASS",
+          "observedBrand": "AMASS(艾迈斯)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "AMASS(艾迈斯)",
+          "pageUrl": "https://item.szlcsc.com/mro/8459552.html",
+          "collectedAt": "2026-11-15T03:42:54.587Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "5.72",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -7530,24 +7699,41 @@
       "brand": "AMASS",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:28:44.267Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:42:47.863Z",
+          "matchedBrand": "AMASS(艾迈斯)",
+          "matchedPartNumber": "24.245.1",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "50个/袋",
+          "pageUrl": "https://item.szlcsc.com/mro/8459551.html",
+          "productCode": "C7437326",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 2758,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "7.9"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "7.47"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "6.39"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "6.18"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "6.18"
         },
         "ickey": {
           "currency": null,
@@ -7571,7 +7757,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "24.245.1",
+          "observedPartNumber": "24.245.1",
+          "expectedBrand": "AMASS",
+          "observedBrand": "AMASS(艾迈斯)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "AMASS(艾迈斯)",
+          "pageUrl": "https://item.szlcsc.com/mro/8459551.html",
+          "collectedAt": "2026-11-15T03:42:47.863Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "6.18",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -7998,24 +8196,49 @@
       "brand": "Megastar(兆星)",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:29:45.816Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:42:47.245Z",
+          "matchedBrand": "Megastar(兆星)",
+          "matchedPartNumber": "ZX-XH2.54-4PZZ",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "袋装；1000个/袋",
+          "pageUrl": "https://item.szlcsc.com/8427551.html",
+          "productCode": "C7429634",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 940400,
+          "taxStatus": "included",
+          "tierQuantity": 20000,
+          "tiers": [
+            {
+              "minQuantity": 20,
+              "unitPrice": "0.128"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "0.1066"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "0.0971"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.09"
+            },
+            {
+              "minQuantity": 10000,
+              "unitPrice": "0.0872"
+            },
+            {
+              "minQuantity": 20000,
+              "unitPrice": "0.0853"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.0853"
         },
         "ickey": {
           "currency": null,
@@ -8039,7 +8262,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "ZX-XH2.54-4PZZ",
+          "observedPartNumber": "ZX-XH2.54-4PZZ",
+          "expectedBrand": "Megastar(兆星)",
+          "observedBrand": "Megastar(兆星)",
+          "brandMatch": "exact",
+          "literalReason": null,
+          "pageUrl": "https://item.szlcsc.com/8427551.html",
+          "collectedAt": "2026-11-15T03:42:47.245Z",
+          "observedMaxQuantity": 20000,
+          "observedMaxUnitPrice": "0.0853",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -8135,29 +8370,54 @@
           "unitPrice": null
         },
         "ickey": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:31:08.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T04:26:57.335Z",
+          "matchedBrand": "Jing extension/深圳精拓金电子",
+          "matchedPartNumber": "916-352A1024Y10210",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "标准整包数：100",
+          "pageUrl": "https://www.ickey.cn/detail/1003001425868667/916-352A1024Y10210.html",
+          "productCode": "1003001425868667",
           "source": "ickey",
-          "status": "access_restricted",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
+          "stockQuantity": 20000,
+          "taxStatus": "included",
+          "tierQuantity": 20000,
+          "tiers": [
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.66"
+            },
+            {
+              "minQuantity": 6000,
+              "unitPrice": "0.649"
+            },
+            {
+              "minQuantity": 20000,
+              "unitPrice": "0.6325"
+            }
+          ],
           "unit": null,
-          "unitPrice": null
+          "unitPrice": "0.6325"
         }
       },
       "evidence": {
         "lcsc": null,
-        "ickey": null
+        "ickey": {
+          "expectedPartNumber": "916-352A1024Y10210",
+          "observedPartNumber": "916-352A1024Y10210",
+          "expectedBrand": "精拓金",
+          "observedBrand": "Jing extension/深圳精拓金电子",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Jing extension/深圳精拓金电子",
+          "pageUrl": "https://www.ickey.cn/detail/1003001425868667/916-352A1024Y10210.html",
+          "collectedAt": "2026-11-15T04:26:57.335Z",
+          "observedMaxQuantity": 20000,
+          "observedMaxUnitPrice": "0.6325",
+          "maxTierConfirmed": true
+        }
       }
     },
     {
@@ -8299,24 +8559,49 @@
       "brand": "XFCN",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:30:27.348Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:42:52.483Z",
+          "matchedBrand": "XFCN(兴飞)",
+          "matchedPartNumber": "PZ254V-12-10P",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "袋装，1000个/袋",
+          "pageUrl": "https://item.szlcsc.com/502978.html",
+          "productCode": "C492422",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 129080,
+          "taxStatus": "included",
+          "tierQuantity": 10000,
+          "tiers": [
+            {
+              "minQuantity": 10,
+              "unitPrice": "0.4039"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "0.3334"
+            },
+            {
+              "minQuantity": 300,
+              "unitPrice": "0.2971"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "0.2456"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.2351"
+            },
+            {
+              "minQuantity": 10000,
+              "unitPrice": "0.2281"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.2281"
         },
         "ickey": {
           "currency": null,
@@ -8340,7 +8625,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "PZ254V-12-10P",
+          "observedPartNumber": "PZ254V-12-10P",
+          "expectedBrand": "XFCN",
+          "observedBrand": "XFCN(兴飞)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "XFCN(兴飞)",
+          "pageUrl": "https://item.szlcsc.com/502978.html",
+          "collectedAt": "2026-11-15T03:42:52.483Z",
+          "observedMaxQuantity": 10000,
+          "observedMaxUnitPrice": "0.2281",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -9335,24 +9632,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:33:13.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:46:16.008Z",
+          "matchedBrand": "onsemi(安森美)",
+          "matchedPartNumber": "LL4148",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；2500个/圆盘；最小起订量20个",
+          "pageUrl": "https://item.szlcsc.com/85303.html",
+          "productCode": "C84135",
           "source": "lcsc",
-          "status": "not_found",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 224900,
+          "taxStatus": "included",
+          "tierQuantity": 20000,
+          "tiers": [
+            {
+              "minQuantity": 20,
+              "unitPrice": "0.1632"
+            },
+            {
+              "minQuantity": 200,
+              "unitPrice": "0.129"
+            },
+            {
+              "minQuantity": 600,
+              "unitPrice": "0.11"
+            },
+            {
+              "minQuantity": 2500,
+              "unitPrice": "0.0863"
+            },
+            {
+              "minQuantity": 10000,
+              "unitPrice": "0.0764"
+            },
+            {
+              "minQuantity": 20000,
+              "unitPrice": "0.0711"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.0711"
         },
         "ickey": {
           "currency": null,
@@ -9376,7 +9698,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "LL4148",
+          "observedPartNumber": "LL4148",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/85303.html",
+          "collectedAt": "2026-11-15T03:46:16.008Z",
+          "observedMaxQuantity": 20000,
+          "observedMaxUnitPrice": "0.0711",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -9806,24 +10140,49 @@
       "brand": "PANJIT",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:34:42.012Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:46:37.739Z",
+          "matchedBrand": "PANJIT(强茂)",
+          "matchedPartNumber": "SS14_R1_00001",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；1800个/圆盘；最小起订量10个",
+          "pageUrl": "https://item.szlcsc.com/126028.html",
+          "productCode": "C124751",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 22450,
+          "taxStatus": "included",
+          "tierQuantity": 10800,
+          "tiers": [
+            {
+              "minQuantity": 10,
+              "unitPrice": "0.2928"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "0.2292"
+            },
+            {
+              "minQuantity": 300,
+              "unitPrice": "0.1974"
+            },
+            {
+              "minQuantity": 1800,
+              "unitPrice": "0.1736"
+            },
+            {
+              "minQuantity": 5400,
+              "unitPrice": "0.1545"
+            },
+            {
+              "minQuantity": 10800,
+              "unitPrice": "0.145"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.145"
         },
         "ickey": {
           "currency": null,
@@ -9847,7 +10206,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "SS14_R1_00001",
+          "observedPartNumber": "SS14_R1_00001",
+          "expectedBrand": "PANJIT",
+          "observedBrand": "PANJIT(强茂)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "PANJIT(强茂)",
+          "pageUrl": "https://item.szlcsc.com/126028.html",
+          "collectedAt": "2026-11-15T03:46:37.739Z",
+          "observedMaxQuantity": 10800,
+          "observedMaxUnitPrice": "0.145",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -11026,24 +11397,49 @@
       "brand": "Littelfuse",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:36:53.097Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:47:14.271Z",
+          "matchedBrand": "Littelfuse(美国力特)",
+          "matchedPartNumber": "046802.5NRHF",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带，5000个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/199017.html",
+          "productCode": "C187612",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 13260,
+          "taxStatus": "included",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "0.5706"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "0.4447"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "0.3818"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "0.3346"
+            },
+            {
+              "minQuantity": 2500,
+              "unitPrice": "0.2969"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.278"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.278"
         },
         "ickey": {
           "currency": null,
@@ -11067,7 +11463,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "046802.5NRHF",
+          "observedPartNumber": "046802.5NRHF",
+          "expectedBrand": "Littelfuse",
+          "observedBrand": "Littelfuse(美国力特)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Littelfuse(美国力特)",
+          "pageUrl": "https://item.szlcsc.com/199017.html",
+          "collectedAt": "2026-11-15T03:47:14.271Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.278",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -11163,24 +11571,49 @@
       "brand": "YXC",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:37:43.328Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:47:46.258Z",
+          "matchedBrand": "YXC(扬兴晶振)",
+          "matchedPartNumber": "X49SM8MSB2SC",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；1000个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/109922.html",
+          "productCode": "C108703",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 21035,
+          "taxStatus": "included",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "0.7415"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "0.587"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "0.5097"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "0.4196"
+            },
+            {
+              "minQuantity": 2000,
+              "unitPrice": "0.3732"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.35"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.35"
         },
         "ickey": {
           "currency": null,
@@ -11204,7 +11637,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "X49SM8MSB2SC",
+          "observedPartNumber": "X49SM8MSB2SC",
+          "expectedBrand": "YXC",
+          "observedBrand": "YXC(扬兴晶振)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "YXC(扬兴晶振)",
+          "pageUrl": "https://item.szlcsc.com/109922.html",
+          "collectedAt": "2026-11-15T03:47:46.258Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.35",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -11798,24 +12243,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:39:40.606Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:48:11.142Z",
+          "matchedBrand": "onsemi(安森美)",
+          "matchedPartNumber": "LM317TG",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "管装；50个/管",
+          "pageUrl": "https://item.szlcsc.com/90500.html",
+          "productCode": "C89320",
           "source": "lcsc",
-          "status": "not_found",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 5041,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "2.8"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "2.18"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "1.91"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.57"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.43"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.34"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "1.34"
         },
         "ickey": {
           "currency": "CNY",
@@ -11844,7 +12314,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "LM317TG",
+          "observedPartNumber": "LM317TG",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/90500.html",
+          "collectedAt": "2026-11-15T03:48:11.142Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "1.34",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "explicit_alias",
           "collectedAt": "2026-11-14T09:40:59.268Z",
@@ -11999,24 +12481,49 @@
       "brand": "Geehy(珠海极海)",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:39:58.497Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:48:20.970Z",
+          "matchedBrand": "Geehy(极海半导体)",
+          "matchedPartNumber": "APM32F407RGT6",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "160个/托盘",
+          "pageUrl": "https://item.szlcsc.com/3579817.html",
+          "productCode": "C3034689",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 1197,
+          "taxStatus": "included",
+          "tierQuantity": 960,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "26.13"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "22"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "19.55"
+            },
+            {
+              "minQuantity": 160,
+              "unitPrice": "17.06"
+            },
+            {
+              "minQuantity": 480,
+              "unitPrice": "15.92"
+            },
+            {
+              "minQuantity": 960,
+              "unitPrice": "15.4"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "15.4"
         },
         "ickey": {
           "currency": null,
@@ -12040,7 +12547,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "APM32F407RGT6",
+          "observedPartNumber": "APM32F407RGT6",
+          "expectedBrand": "Geehy(珠海极海)",
+          "observedBrand": "Geehy(极海半导体)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Geehy(极海半导体)",
+          "pageUrl": "https://item.szlcsc.com/3579817.html",
+          "collectedAt": "2026-11-15T03:48:20.970Z",
+          "observedMaxQuantity": 960,
+          "observedMaxUnitPrice": "15.4",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -12367,24 +12886,41 @@
       "brand": "MORNSUN",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:41:03.000Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:50:23.528Z",
+          "matchedBrand": "MORNSUN(金升阳)",
+          "matchedPartNumber": "WRB1212S-3WR2",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "管装；22个/管",
+          "pageUrl": "https://item.szlcsc.com/63484.html",
+          "productCode": "C62425",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 141,
+          "taxStatus": "included",
+          "tierQuantity": 110,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "40.21"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "33.98"
+            },
+            {
+              "minQuantity": 22,
+              "unitPrice": "30.19"
+            },
+            {
+              "minQuantity": 110,
+              "unitPrice": "27"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "27"
         },
         "ickey": {
           "currency": null,
@@ -12408,7 +12944,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "WRB1212S-3WR2",
+          "observedPartNumber": "WRB1212S-3WR2",
+          "expectedBrand": "MORNSUN",
+          "observedBrand": "MORNSUN(金升阳)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "MORNSUN(金升阳)",
+          "pageUrl": "https://item.szlcsc.com/63484.html",
+          "collectedAt": "2026-11-15T03:50:23.528Z",
+          "observedMaxQuantity": 110,
+          "observedMaxUnitPrice": "27",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -12881,24 +13429,49 @@
       "brand": "CHIPANALOG",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:41:58.066Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:49:49.675Z",
+          "matchedBrand": "Chipanalog(川土微)",
+          "matchedPartNumber": "CA-IS3740LW",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "1000个/圆盘",
+          "pageUrl": "https://so.szlcsc.com/global.html?k=CA-IS3740LW",
+          "productCode": "C2836462",
           "source": "lcsc",
-          "status": "unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 2146,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "6.77"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "5.35"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "4.64"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "3.93"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "3.51"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "3.3"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "3.3"
         },
         "ickey": {
           "currency": null,
@@ -12922,7 +13495,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "CA-IS3740LW",
+          "observedPartNumber": "CA-IS3740LW",
+          "expectedBrand": "CHIPANALOG",
+          "observedBrand": "Chipanalog(川土微)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "Chipanalog(川土微)",
+          "pageUrl": "https://so.szlcsc.com/global.html?k=CA-IS3740LW",
+          "collectedAt": "2026-11-15T03:49:49.675Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "3.3",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -13278,24 +13863,41 @@
       "brand": "TI",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:42:24.816Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:50:46.322Z",
+          "matchedBrand": "TI(德州仪器)",
+          "matchedPartNumber": "LM1117MPX-2.5/NOPB",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；2000个/圆盘；最小起订量1个",
+          "pageUrl": "https://item.szlcsc.com/10191.html",
+          "productCode": "C9661",
           "source": "lcsc",
-          "status": "price_unavailable",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 205,
+          "taxStatus": "included",
+          "tierQuantity": 100,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "5.75"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "4.66"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "4.11"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "3.57"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "3.57"
         },
         "ickey": {
           "currency": null,
@@ -13319,7 +13921,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "LM1117MPX-2.5/NOPB",
+          "observedPartNumber": "LM1117MPX-2.5/NOPB",
+          "expectedBrand": "TI",
+          "observedBrand": "TI(德州仪器)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "TI(德州仪器)",
+          "pageUrl": "https://item.szlcsc.com/10191.html",
+          "collectedAt": "2026-11-15T03:50:46.322Z",
+          "observedMaxQuantity": 100,
+          "observedMaxUnitPrice": "3.57",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -13696,24 +14310,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T09:43:15.745Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:51:06.254Z",
+          "matchedBrand": "onsemi(安森美)",
+          "matchedPartNumber": "MC7912BTG",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "管装；50个/管；最小起订量1个；商品封装TO-220",
+          "pageUrl": "https://item.szlcsc.com/110624.html",
+          "productCode": "C109403",
           "source": "lcsc",
-          "status": "not_found",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 9668,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "3.39"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "2.73"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "2.24"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.92"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.72"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.62"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "1.62"
         },
         "ickey": {
           "currency": "CNY",
@@ -13742,7 +14381,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "MC7912BTG",
+          "observedPartNumber": "MC7912BTG",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/110624.html",
+          "collectedAt": "2026-11-15T03:51:06.254Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "1.62",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "explicit_alias",
           "collectedAt": "2026-11-14T09:44:28.422Z",
@@ -13931,20 +14582,45 @@
       "references": {
         "lcsc": {
           "source": "lcsc",
-          "status": "ambiguous",
-          "matchedPartNumber": null,
-          "matchedBrand": null,
-          "productCode": null,
-          "pageUrl": null,
-          "stockQuantity": null,
-          "unitPrice": null,
-          "tierQuantity": null,
-          "tiers": [],
-          "currency": null,
-          "unit": null,
-          "taxStatus": "unknown",
-          "packaging": null,
-          "fetchedAt": "2026-11-14T09:44:57.000Z",
+          "status": "ok",
+          "matchedPartNumber": "MC7805BDTRKG",
+          "matchedBrand": "onsemi(安森美)",
+          "productCode": "C110908",
+          "pageUrl": "https://item.szlcsc.com/112133.html",
+          "stockQuantity": 66835,
+          "unitPrice": "0.5389",
+          "tierQuantity": 5000,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "1.114"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "0.8651"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "0.7436"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "0.5865"
+            },
+            {
+              "minQuantity": 2500,
+              "unitPrice": "0.5568"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.5389"
+            }
+          ],
+          "currency": "CNY",
+          "unit": "个",
+          "taxStatus": "included",
+          "packaging": "编带；2500个/圆盘",
+          "fetchedAt": "2026-11-15T03:51:17.320Z",
           "expiresAt": null,
           "stockInsufficientForTier": false,
           "message": null
@@ -13971,7 +14647,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "MC7805BDTRKG",
+          "observedPartNumber": "MC7805BDTRKG",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/112133.html",
+          "collectedAt": "2026-11-15T03:51:17.320Z",
+          "observedMaxQuantity": 5000,
+          "observedMaxUnitPrice": "0.5389",
+          "maxTierConfirmed": true
+        },
         "ickey": null
       }
     },
@@ -16548,24 +17236,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T10:03:54.153Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:52:26.092Z",
+          "matchedBrand": "onsemi(安森美)",
+          "matchedPartNumber": "CAT24C256WI-GT3",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；3000个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/81132.html",
+          "productCode": "C79987",
           "source": "lcsc",
-          "status": "ambiguous",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 31613,
+          "taxStatus": "included",
+          "tierQuantity": 1000,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "3.01"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "2.42"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "2.14"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "1.88"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "1.29"
+            },
+            {
+              "minQuantity": 1000,
+              "unitPrice": "1.25"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "1.25"
         },
         "ickey": {
           "currency": "CNY",
@@ -16594,7 +17307,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "CAT24C256WI-GT3",
+          "observedPartNumber": "CAT24C256WI-GT3",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/81132.html",
+          "collectedAt": "2026-11-15T03:52:26.092Z",
+          "observedMaxQuantity": 1000,
+          "observedMaxUnitPrice": "1.25",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "explicit_alias",
           "collectedAt": "2026-11-14T10:47:55.532Z",
@@ -16615,24 +17340,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T10:04:24.226Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:52:30.566Z",
+          "matchedBrand": "onsemi(安森美)",
+          "matchedPartNumber": "LM2903DR2G",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；2500个/圆盘；最小起订量10个",
+          "pageUrl": "https://item.szlcsc.com/58509.html",
+          "productCode": "C57474",
           "source": "lcsc",
-          "status": "ambiguous",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 239260,
+          "taxStatus": "included",
+          "tierQuantity": 10000,
+          "tiers": [
+            {
+              "minQuantity": 10,
+              "unitPrice": "0.3481"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "0.2713"
+            },
+            {
+              "minQuantity": 300,
+              "unitPrice": "0.2329"
+            },
+            {
+              "minQuantity": 2500,
+              "unitPrice": "0.2042"
+            },
+            {
+              "minQuantity": 5000,
+              "unitPrice": "0.1811"
+            },
+            {
+              "minQuantity": 10000,
+              "unitPrice": "0.1696"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.1696"
         },
         "ickey": {
           "currency": "CNY",
@@ -16661,7 +17411,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "LM2903DR2G",
+          "observedPartNumber": "LM2903DR2G",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/58509.html",
+          "collectedAt": "2026-11-15T03:52:30.566Z",
+          "observedMaxQuantity": 10000,
+          "observedMaxUnitPrice": "0.1696",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "exact",
           "collectedAt": "2026-11-14T10:07:30.390Z",
@@ -16682,24 +17444,49 @@
       "brand": "ON",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T10:04:02.886Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:53:01.071Z",
+          "matchedBrand": "onsemi(安森美)",
+          "matchedPartNumber": "NTMFS5C628NLT1G",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；1500个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/156869.html",
+          "productCode": "C145537",
           "source": "lcsc",
-          "status": "ambiguous",
+          "status": "ok",
           "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "stockQuantity": 7742,
+          "taxStatus": "included",
+          "tierQuantity": 1500,
+          "tiers": [
+            {
+              "minQuantity": 1,
+              "unitPrice": "4.68"
+            },
+            {
+              "minQuantity": 10,
+              "unitPrice": "3.75"
+            },
+            {
+              "minQuantity": 30,
+              "unitPrice": "3.28"
+            },
+            {
+              "minQuantity": 100,
+              "unitPrice": "2.81"
+            },
+            {
+              "minQuantity": 500,
+              "unitPrice": "2.53"
+            },
+            {
+              "minQuantity": 1500,
+              "unitPrice": "2.39"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "2.39"
         },
         "ickey": {
           "currency": "CNY",
@@ -16728,7 +17515,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "NTMFS5C628NLT1G",
+          "observedPartNumber": "NTMFS5C628NLT1G",
+          "expectedBrand": "ON",
+          "observedBrand": "onsemi(安森美)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "onsemi(安森美)",
+          "pageUrl": "https://item.szlcsc.com/156869.html",
+          "collectedAt": "2026-11-15T03:53:01.071Z",
+          "observedMaxQuantity": 1500,
+          "observedMaxUnitPrice": "2.39",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "exact",
           "collectedAt": "2026-11-14T10:47:47.706Z",
@@ -17804,24 +18603,37 @@
       "brand": "长电",
       "references": {
         "lcsc": {
-          "currency": null,
+          "currency": "CNY",
           "expiresAt": null,
-          "fetchedAt": "2026-11-14T10:52:18.737Z",
-          "matchedBrand": null,
-          "matchedPartNumber": null,
+          "fetchedAt": "2026-11-15T03:54:36.385Z",
+          "matchedBrand": "CJ(江苏长电/长晶)",
+          "matchedPartNumber": "1SMA5927A",
           "message": null,
-          "packaging": null,
-          "pageUrl": null,
-          "productCode": null,
+          "packaging": "编带；3000个/圆盘",
+          "pageUrl": "https://item.szlcsc.com/6038019.html",
+          "productCode": "C5293609",
           "source": "lcsc",
-          "status": "unavailable",
-          "stockInsufficientForTier": false,
-          "stockQuantity": null,
-          "taxStatus": "unknown",
-          "tierQuantity": null,
-          "tiers": [],
-          "unit": null,
-          "unitPrice": null
+          "status": "ok",
+          "stockInsufficientForTier": true,
+          "stockQuantity": 5,
+          "taxStatus": "included",
+          "tierQuantity": 150,
+          "tiers": [
+            {
+              "minQuantity": 5,
+              "unitPrice": "1.0758"
+            },
+            {
+              "minQuantity": 50,
+              "unitPrice": "0.8886"
+            },
+            {
+              "minQuantity": 150,
+              "unitPrice": "0.795"
+            }
+          ],
+          "unit": "个",
+          "unitPrice": "0.795"
         },
         "ickey": {
           "currency": "CNY",
@@ -17850,7 +18662,19 @@
         }
       },
       "evidence": {
-        "lcsc": null,
+        "lcsc": {
+          "expectedPartNumber": "1SMA5927A",
+          "observedPartNumber": "1SMA5927A",
+          "expectedBrand": "长电",
+          "observedBrand": "CJ(江苏长电/长晶)",
+          "brandMatch": "explicit_alias",
+          "literalReason": "CJ(江苏长电/长晶)",
+          "pageUrl": "https://item.szlcsc.com/6038019.html",
+          "collectedAt": "2026-11-15T03:54:36.385Z",
+          "observedMaxQuantity": 150,
+          "observedMaxUnitPrice": "0.795",
+          "maxTierConfirmed": true
+        },
         "ickey": {
           "brandMatch": "explicit_alias",
           "collectedAt": "2026-11-14T10:50:14.413Z",

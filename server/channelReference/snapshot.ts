@@ -61,14 +61,23 @@ function price(value: unknown): value is string {
 const mpn = (value: string) => value.trim().toUpperCase();
 const identityKey = (partNumber: string, rawBrand: string) => JSON.stringify([partNumber, rawBrand]);
 
-function detailUrl(source: ChannelReferenceSource, value: unknown): value is string {
-  if (!text(value, 2048) || /[\s\\?#]/.test(value)) return false;
+function evidenceUrl(source: ChannelReferenceSource, value: unknown, expectedPartNumber: string): value is string {
+  if (!text(value, 2048) || /[\s\\#]/.test(value)) return false;
   try {
     const u = new URL(value);
     // Require canonical, literal HTTPS URLs. No parser-normalized paths/ports.
-    if (u.href !== value || u.protocol !== "https:" || u.username || u.password || u.port || u.search || u.hash) return false;
-    // Actual positive evidence supports only these exact exceptional paths.
-    if (source === "lcsc") return u.hostname === "item.szlcsc.com" && (u.pathname === "/mro/6710007.html" || /^\/[1-9]\d*\.html$/.test(u.pathname));
+    if (u.href !== value || u.protocol !== "https:" || u.username || u.password || u.port || u.hash) return false;
+    // Search evidence is limited to canonical complete-MPN queries, never a
+    // prefix, alternate model, arbitrary query, or an unvisited detail substitute.
+    if (u.search) {
+      if (!text(expectedPartNumber, 128) || /[\s\\]/.test(expectedPartNumber)) return false;
+      const fullMpn = encodeURIComponent(expectedPartNumber);
+      if (source === "lcsc") return u.hostname === "so.szlcsc.com" && u.pathname === "/global.html" && u.search === `?k=${fullMpn}`;
+      return u.hostname === "search.ickey.cn" && u.pathname === "/"
+        && (u.search === `?keyword=${fullMpn}` || u.search === `?keyword=${fullMpn}&bom_ab=null`);
+    }
+    if (value.includes("?")) return false;
+    if (source === "lcsc") return u.hostname === "item.szlcsc.com" && /^\/(?:mro\/)?[1-9]\d*\.html$/.test(u.pathname);
     if (u.hostname !== "www.ickey.cn" || !/^\/detail\/[1-9]\d*\/[^/]+\.html$/.test(u.pathname)) return false;
     if (u.pathname === "/detail/1003001031268591/LT3045IMSE%23TRPBF.html") return true;
     const segment = decodeURIComponent(u.pathname.split("/")[3]);
@@ -103,7 +112,7 @@ function validateQuote(value: unknown, proof: unknown, source: ChannelReferenceS
   if (q.status !== "ok" || !keys(proof, EVIDENCE_KEYS) || !timestamp(q.fetchedAt, generatedAt)) return null;
   const e = proof as unknown as ChannelReferenceSnapshotEvidence;
   if (!text(q.matchedPartNumber, 128) || !mpn(expected.partNumber) || mpn(q.matchedPartNumber) !== mpn(expected.partNumber)
-    || !text(q.matchedBrand, 256) || !detailUrl(source, q.pageUrl)) return null;
+    || !text(q.matchedBrand, 256) || !evidenceUrl(source, q.pageUrl, expected.partNumber)) return null;
   if (e.expectedPartNumber !== expected.partNumber || e.observedPartNumber !== q.matchedPartNumber || e.expectedBrand !== expected.brand || e.observedBrand !== q.matchedBrand
     || e.pageUrl !== q.pageUrl || e.collectedAt !== q.fetchedAt || e.maxTierConfirmed !== true || !brandProof(expected.brand, q.matchedBrand, e)) return null;
   for (const field of ["productCode", "unit", "packaging"] as const) if (q[field] !== null && !text(q[field], 256)) return null;
