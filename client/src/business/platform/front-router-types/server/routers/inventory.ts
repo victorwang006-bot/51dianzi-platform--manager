@@ -794,8 +794,10 @@ export const inventoryRouter = router({
         publishedAt: input.saveAs === "published" ? new Date() : null,
       } as const;
       if (input.saveAs === "draft") {
-        await db.createInventory(record);
-        return { success: true } as const;
+        const inserted = await db.createInventory(record);
+        const inventoryId = Number(inserted[0]?.insertId);
+        if (!Number.isSafeInteger(inventoryId) || inventoryId <= 0) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "库存已保存，返回信息需要核对；请勿重复新增" });
+        return { success: true, inventoryId } as const;
       }
       const ownerUserId = inventoryOwnerFilter(ctx.enterprisePermissionScope, ctx.user.id);
       return db.createDraftThenPublishInventory(record, {

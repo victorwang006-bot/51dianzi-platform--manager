@@ -20,5 +20,7 @@ export const mallInventoryMutationSchema = z.object({
 export const mallInventoryListSchema = z.object({
   partNumber: z.string().trim().max(128).optional(), brand: z.string().trim().max(64).optional(),
   status: z.enum(["draft", "published", "offshelf"]).optional(),
+  visibility: z.enum(["linked", "unlinked", "all"]).default("linked"),
+  inventoryId: z.number().int().positive().optional(),
   page: z.number().int().min(1).default(1), pageSize: z.number().int().min(1).max(100).default(50),
 });
