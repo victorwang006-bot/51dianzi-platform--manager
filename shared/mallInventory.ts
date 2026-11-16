@@ -15,6 +15,7 @@ export const mallInventoryMutationSchema = z.object({
   expectedOwnershipVersion: z.number().int().positive(),
   expectedPermissionVersion: z.number().int().positive(),
   expectedAuthorizationVersion: z.string().min(8).max(160),
+  expectedBusinessAuthorizationVersion: z.string().min(8).max(160),
   requestId: mallInventoryRequestIdSchema,
 });
 export const mallInventoryListSchema = z.object({

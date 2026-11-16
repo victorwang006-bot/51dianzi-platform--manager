@@ -46,17 +46,23 @@ const procedure = (method: string) => crmProcedure.use(async ({ ctx, next }) => 
 });
 /** Reuse existing live staff/account, selected binding, ERP, team/module and server auth-version checks.
  * Remote official flags/bindingVersion are a signed 30-second lease, not a live BFF revocation protocol. */
-async function currentAuthority(ctx: any, action: string, expectedVersion: string, alsoRequireWrite = false) {
+async function currentBusinessContext(ctx: any, action: string) {
   const method = `mallInventory.${action}`;
   const grant = officialInventoryGrantForRequest(ctx.staffDelegation, method);
   const target = officialInventoryTargetForRequest(ctx.staffDelegation, method);
-  if (!grant || !target || grant.authorizationVersion !== expectedVersion) return false;
-  const current = await getInternalBusinessContext({ creditCode: target.creditCode, registrationIdentifier: target.registrationIdentifier, expectedOwnerUserId: target.expectedOwnerUserId }, {
+  if (!grant || !target) return null;
+  return getInternalBusinessContext({ creditCode: target.creditCode, registrationIdentifier: target.registrationIdentifier, expectedOwnerUserId: target.expectedOwnerUserId }, {
     staffUserId: target.staffUserId, adminAccountId: target.adminAccountId, bindingVersion: target.bindingVersion, officialInventoryPermissions: grant,
   });
+}
+async function currentAuthority(ctx: any, action: string, expectedOfficialVersion: string, expectedBusinessVersion: string, alsoRequireWrite = false) {
+  const method = `mallInventory.${action}`;
+  const grant = officialInventoryGrantForRequest(ctx.staffDelegation, method);
+  if (!grant || grant.authorizationVersion !== expectedOfficialVersion) return false;
+  const current = await currentBusinessContext(ctx, action);
   const requirement = action === "publish" || action === "offshelf" ? "publish" : "write";
-  return current.enterpriseId === ctx.mallScope.enterprise.id && current.dataOwnerUserId === ctx.mallScope.dataOwnerUserId
-    && current.authorizationVersion === expectedVersion && current.officialInventoryPermissions?.read === true
+  return current != null && current.enterpriseId === ctx.mallScope.enterprise.id && current.dataOwnerUserId === ctx.mallScope.dataOwnerUserId
+    && current.authorizationVersion === expectedBusinessVersion && current.officialInventoryPermissions?.read === true
     && current.officialInventoryPermissions[requirement] === true
     && (!alsoRequireWrite || current.officialInventoryPermissions.write === true)
     && Boolean(officialInventoryGrantForRequest(ctx.staffDelegation, method));
@@ -81,15 +87,19 @@ function mutate<TAction extends "link" | "save" | "publish" | "offshelf">(action
     .mutation(async ({ ctx, input }) => {
       const eligibility = await mallEligibility(ctx.mallDb, ctx.mallScope.enterprise.id);
       if (!eligibility.eligible) throw new TRPCError({ code: "PRECONDITION_FAILED", message: eligibility.message });
-      if (ctx.mallGrant.authorizationVersion !== input.expectedAuthorizationVersion || ctx.staffDelegation?.requestId !== input.requestId) conflict();
       const needsWrite = action === "publish" && input.expectedVersion === 0;
-      if (!await currentAuthority(ctx, action, input.expectedAuthorizationVersion, needsWrite)) conflict();
       const fingerprint = createHash("sha256").update(canonicalOfficialInventoryJson({ action, ...input, expectedInventoryUpdatedAt: input.expectedInventoryUpdatedAt.toISOString() })).digest("hex");
       const requestCondition = and(eq(requests.enterpriseId, ctx.mallScope.enterprise.id), eq(requests.actorUserId, ctx.user.id), eq(requests.requestId, input.requestId));
       const initial = await ctx.mallDb.transaction(async tx => {
-        const member = (await tx.select().from(enterpriseMembers).where(eq(enterpriseMembers.id, ctx.mallScope.member.id)).limit(1).for("update"))[0];
-        if (!sameMember(member, ctx, input) || !officialInventoryGrantForRequest(ctx.staffDelegation, `mallInventory.${action}`)) conflict();
+        // Lock the exact unique actor/tenant/request key first. A prior committed or
+        // in-flight request must never be called "not executed" by a later attempt.
         const replay = (await tx.select().from(requests).where(requestCondition).limit(1).for("update"))[0];
+        const rejectFreshBeforeWrite = () => conflict("本次商城操作未执行：商品、权限或企业上下文已变化，请刷新后重试");
+        const reject = replay ? () => conflict() : rejectFreshBeforeWrite;
+        if (ctx.mallGrant.authorizationVersion !== input.expectedAuthorizationVersion || ctx.staffDelegation?.requestId !== input.requestId) reject();
+        if (!await currentAuthority(ctx, action, input.expectedAuthorizationVersion, input.expectedBusinessAuthorizationVersion, needsWrite)) reject();
+        const member = (await tx.select().from(enterpriseMembers).where(eq(enterpriseMembers.id, ctx.mallScope.member.id)).limit(1).for("update"))[0];
+        if (!sameMember(member, ctx, input) || !officialInventoryGrantForRequest(ctx.staffDelegation, `mallInventory.${action}`)) reject();
         if (replay) {
           if (replay.fingerprint !== fingerprint) conflict("请求号已用于不同商城操作");
           if (replay.state !== "completed") conflict("原发布请求结果尚未确定，请查询requestStatus，不能重复执行");
@@ -99,9 +109,9 @@ function mutate<TAction extends "link" | "save" | "publish" | "offshelf">(action
         const inventory = (await tx.select().from(inventories).where(and(eq(inventories.id, input.inventoryId), eq(inventories.enterpriseId, ctx.mallScope.enterprise.id), eq(inventories.userId, ctx.mallScope.dataOwnerUserId), own, mallIdentitySql())).limit(1).for("update"))[0];
         if (!inventory) throw new TRPCError({ code: "NOT_FOUND", message: "当前范围没有该真实自营库存" });
         const confirmedFingerprint = mallInventoryFingerprint(inventory);
-        if (inventory.updatedAt.getTime() !== input.expectedInventoryUpdatedAt.getTime() || inventory.ownershipVersion !== input.expectedOwnershipVersion || confirmedFingerprint !== input.expectedInventoryFingerprint.toLowerCase()) conflict();
+        if (inventory.updatedAt.getTime() !== input.expectedInventoryUpdatedAt.getTime() || inventory.ownershipVersion !== input.expectedOwnershipVersion || confirmedFingerprint !== input.expectedInventoryFingerprint.toLowerCase()) rejectFreshBeforeWrite();
         const publication = (await tx.select().from(publications).where(eq(publications.inventoryId, input.inventoryId)).limit(1).for("update"))[0];
-        if ((publication?.version ?? 0) !== input.expectedVersion || publication && (publication.enterpriseId !== ctx.mallScope.enterprise.id || publication.dataOwnerUserId !== ctx.mallScope.dataOwnerUserId)) conflict();
+        if ((publication?.version ?? 0) !== input.expectedVersion || publication && (publication.enterpriseId !== ctx.mallScope.enterprise.id || publication.dataOwnerUserId !== ctx.mallScope.dataOwnerUserId)) rejectFreshBeforeWrite();
         if (action !== "link" && action !== "publish" && !publication) conflict("请先选择真实库存");
         if (action === "publish" && !publication && ctx.mallGrant.write !== true) throw new TRPCError({ code: "FORBIDDEN", message: "新增商城引用仍需独立编辑权限" });
         if (action === "link" && publication) conflict("该库存已关联，请刷新");
@@ -124,18 +134,18 @@ function mutate<TAction extends "link" | "save" | "publish" | "offshelf">(action
           return { replay: result, version, inventoryFingerprint: confirmedFingerprint };
         }
         return { replay: null, version, inventoryFingerprint: confirmedFingerprint };
-      });
+      }, { isolationLevel: "repeatable read" });
       clearInventorySearchCountCache();
       if (initial.replay) return mutationResultSchema.parse({ ...initial.replay, idempotent: initial.version === 0 });
       // Exact lease is rechecked immediately before invoking the original quota/model/availability guard.
-      const authorityBeforeGuard = await currentAuthority(ctx, action, input.expectedAuthorizationVersion, needsWrite).catch(() => false);
+      const authorityBeforeGuard = await currentAuthority(ctx, action, input.expectedAuthorizationVersion, input.expectedBusinessAuthorizationVersion, needsWrite).catch(() => false);
       const ownerUserId = !ctx.mallScope.isOwner && ctx.mallScope.member.inventoryDataScope === "own" ? ctx.user.id : undefined;
       const outcome = authorityBeforeGuard ? await publishDraftInventoryWithGuard(input.inventoryId, ctx.mallScope.dataOwnerUserId, ctx.mallScope.enterprise.id, undefined, ownerUserId, ctx.user.id) : { success: false, message: "商城发布授权已失效" };
       return ctx.mallDb.transaction(async tx => {
         const member = (await tx.select().from(enterpriseMembers).where(eq(enterpriseMembers.id, ctx.mallScope.member.id)).limit(1).for("update"))[0];
         const inventory = (await tx.select().from(inventories).where(and(eq(inventories.id, input.inventoryId), eq(inventories.enterpriseId, ctx.mallScope.enterprise.id), eq(inventories.userId, ctx.mallScope.dataOwnerUserId), mallIdentitySql(), ownerUserId ? eq(inventories.ownerUserId, ownerUserId) : undefined)).limit(1).for("update"))[0];
         const publication = (await tx.select().from(publications).where(eq(publications.inventoryId, input.inventoryId)).limit(1).for("update"))[0];
-        const authorityAtFinalGate = await currentAuthority(ctx, action, input.expectedAuthorizationVersion, needsWrite).catch(() => false);
+        const authorityAtFinalGate = await currentAuthority(ctx, action, input.expectedAuthorizationVersion, input.expectedBusinessAuthorizationVersion, needsWrite).catch(() => false);
         const accepted = outcome.success && authorityAtFinalGate && Boolean(officialInventoryGrantForRequest(ctx.staffDelegation, "mallInventory.publish")) && sameMember(member, ctx, input)
           && inventory?.status === "published" && inventory.ownershipVersion === input.expectedOwnershipVersion
           && mallInventoryFingerprint(inventory) === initial.inventoryFingerprint && mallInventoryPublishableRow(inventory)
@@ -149,7 +159,18 @@ function mutate<TAction extends "link" | "save" | "publish" | "offshelf">(action
     });
 }
 export const mallInventoryRouter = router({
-  status: procedure("status").query(async ({ ctx }) => ({ eligibility: await mallEligibility(ctx.mallDb, ctx.mallScope.enterprise.id), permissions: { view: ctx.mallGrant.read === true, write: ctx.mallGrant.write === true, publish: ctx.mallGrant.publish === true }, context: { enterpriseId: ctx.mallScope.enterprise.id, permissionVersion: ctx.mallScope.member.permissionVersion, authorizationVersion: ctx.mallGrant.authorizationVersion } })),
+  status: procedure("status").query(async ({ ctx }) => {
+    const current = await currentBusinessContext(ctx, "status");
+    if (!current || current.enterpriseId !== ctx.mallScope.enterprise.id || current.dataOwnerUserId !== ctx.mallScope.dataOwnerUserId || current.officialInventoryPermissions?.read !== true) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "当前商城企业业务权限已变化，请重新核验" });
+    }
+    return { eligibility: await mallEligibility(ctx.mallDb, ctx.mallScope.enterprise.id),
+      permissions: { view: ctx.mallGrant.read === true && current.officialInventoryPermissions.read === true,
+        write: ctx.mallGrant.write === true && current.officialInventoryPermissions.write === true,
+        publish: ctx.mallGrant.publish === true && current.officialInventoryPermissions.publish === true },
+      context: { enterpriseId: ctx.mallScope.enterprise.id, permissionVersion: ctx.mallScope.member.permissionVersion,
+        authorizationVersion: ctx.mallGrant.authorizationVersion, businessAuthorizationVersion: current.authorizationVersion } };
+  }),
   list: procedure("list").input(mallInventoryListSchema).query(async ({ ctx, input }) => {
     const eligibility = await mallEligibility(ctx.mallDb, ctx.mallScope.enterprise.id);
     if (!eligibility.eligible) return { items: [], total: 0, page: input.page, pageSize: input.pageSize, eligibility };

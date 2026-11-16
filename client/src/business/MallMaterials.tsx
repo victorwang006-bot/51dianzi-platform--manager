@@ -10,7 +10,17 @@ type Row = inferRouterOutputs<AppRouter>["mallInventory"]["list"]["items"][numbe
 type Action = "save" | "publish" | "offshelf";
 export type Tier = { minQty: string; price: string };
 export type Form = { partNumber: string; brand: string; pkg: string; dateCode: string; qtyStock: string; qtyOnSale: string; qtyOrder: string; priceEx: string; moq: string; spq: string; leadTime: string; taxIncluded: boolean; note: string; tiers: Tier[] };
-type Dialog = { kind: Action | "create"; row?: Row; scope: string };
+type AuthorityProof = { permissionVersion: number; authorizationVersion: string; businessAuthorizationVersion: string };
+type Dialog = { kind: Action | "create"; row?: Row; inventoryProof?: string; scope: string; proof?: AuthorityProof; stale?: boolean };
+type Hold = { requestId?: string; creationHold?: string; createdInventoryId?: number };
+const NOT_EXECUTED = "本次商城操作未执行：商品、权限或企业上下文已变化，请刷新后重试";
+function explicitlyNotExecuted(error: unknown) {
+  const e = error as { message?: unknown; data?: { code?: unknown }; shape?: { data?: { code?: unknown } } } | null;
+  return e?.message === NOT_EXECUTED && (e.data?.code === "CONFLICT" || e.shape?.data?.code === "CONFLICT");
+}
+function validAuthorization(version: unknown): version is string { return typeof version === "string" && version.length >= 8 && version.length <= 160; }
+function sameProof(a?: AuthorityProof, b?: AuthorityProof) { return !!a && !!b && a.permissionVersion === b.permissionVersion && a.authorizationVersion === b.authorizationVersion && a.businessAuthorizationVersion === b.businessAuthorizationVersion; }
+function rowProof(row: Row) { return JSON.stringify([row.inventoryFingerprint, new Date(row.inventoryUpdatedAt).getTime(), row.publicationVersion, row.ownershipVersion, row.status, row.publicationStatus, row.linked]); }
 const statusNames = { draft: "待上架", published: "已上架", offshelf: "已下架" };
 const count = (v: unknown) => v == null ? "—" : Number(v).toLocaleString("en-US");
 const money = (v: unknown) => v == null || !Number.isFinite(Number(v)) || Number(v) <= 0 ? "询价" : `¥${Number(v).toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
@@ -78,6 +88,7 @@ function Quote({ row }: { row: Row }) {
 }
 function confirmRow(row: Row) {
   if (!Number.isSafeInteger(row.inventoryId) || row.inventoryId <= 0 || !/^[a-f0-9]{64}$/.test(row.inventoryFingerprint ?? "")) throw new Error("缺少当前商品确认指纹或真实库存ID，请刷新；不能使用旧部署的确认资料");
+  if (row.inventoryUpdatedAt == null || !Number.isFinite(new Date(row.inventoryUpdatedAt).getTime())) throw new Error("商品确认日期无效，请刷新重新确认；未发送操作");
 }
 
 /** Stock remains in inventories; this page shows explicit mall references only. */
@@ -103,6 +114,10 @@ export default function MallMaterials() {
   const [unknownRequest, setUnknownRequest] = useState<string | null>(null);
   const [creationHold, setCreationHold] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
+  const [createdInventoryId, setCreatedInventoryId] = useState<number | null>(null);
+  const holds = useRef(new Map<string, Hold>());
+  const activeStorageScope = useRef(scope.storageScope); activeStorageScope.current = scope.storageScope;
+  const previousStorageScope = useRef(scope.storageScope);
   const utils = trpc.useUtils();
   const status = trpc.mallInventory.status.useQuery(undefined, { enabled: verified, staleTime: 0 });
   const eligible = verified && status.data?.eligibility.eligible === true && status.data.context.enterpriseId === scope.staffPrincipal.enterpriseId;
@@ -115,30 +130,54 @@ export default function MallMaterials() {
   const choosingExisting = dialog?.kind === "create" && dialog.scope === identity && createMode === "existing" && canWrite;
   const candidates = trpc.mallInventory.list.useQuery({ visibility: "unlinked", partNumber: candidateSearch.partNumber || undefined, brand: candidateSearch.brand || undefined, page: 1, pageSize: 30 }, { enabled: choosingExisting, placeholderData: undefined, staleTime: 0 });
   const candidateRows = choosingExisting ? candidates.data?.items.filter(row => !row.linked) ?? [] : [];
+  const authority = status.data?.context ? { permissionVersion: status.data.context.permissionVersion, authorizationVersion: status.data.context.authorizationVersion, businessAuthorizationVersion: status.data.context.businessAuthorizationVersion } : undefined;
+  const authorityRef = useRef(authority); authorityRef.current = authority;
+  const proofChanged = !!dialog && !sameProof(dialog.proof, authority);
+  const freshRow = dialog?.row && (choosingExisting ? candidateRows : rows).find(row => row.inventoryId === dialog.row!.inventoryId);
+  const rowChanged = !!dialog?.row && (!freshRow || dialog.inventoryProof !== rowProof(freshRow));
+  const staleDialog = !!dialog && (dialog.stale || proofChanged || rowChanged);
   useEffect(() => {
-    setDialog(null); setForm(emptyForm()); setFormError(""); setBusy(false); busyRef.current = false; setUnknownRequest(null); setCreationHold(null);
+    if (dialog && (proofChanged || rowChanged) && !dialog.stale) setDialog({ ...dialog, stale: true });
+  }, [dialog, proofChanged, rowChanged]);
+  useEffect(() => {
+    if (previousStorageScope.current === scope.storageScope && dialog) toast.info("权限证明已变化，请刷新后重新选择并确认；未自动重试");
+    previousStorageScope.current = scope.storageScope;
+    const hold = holds.current.get(scope.storageScope);
+    setDialog(null); setForm(emptyForm()); setFormError(""); setBusy(false); busyRef.current = false; setUnknownRequest(hold?.requestId ?? null); setCreationHold(hold?.creationHold ?? null); setCreatedInventoryId(hold?.createdInventoryId ?? null);
     setKeyword(""); setAppliedKeyword(""); setState(""); setPage(1); setCreateMode("manual"); setCandidatePart(""); setCandidateBrand(""); setCandidateSearch({ partNumber: "", brand: "" });
   }, [identity]);
   const refresh = () => { void status.refetch(); void utils.mallInventory.list.invalidate(); };
+  const refreshReadonly = () => { if (!busyRef.current && !unknownRequest && !creationHold) { setDialog(null); setForm(emptyForm()); setFormError(""); } refresh(); };
   const open = (kind: Dialog["kind"], row?: Row) => {
     if (!verified || busyRef.current || unknownRequest || creationHold) return;
     if (kind === "save" && (!canWrite || row?.status === "published" || row?.publicationStatus === "published")) { toast.info("已上架物料请先下架，再编辑并重新确认上架"); return; }
     if (kind === "create" && !canWrite) return;
     try { setForm(row ? formFor(row) : emptyForm()); } catch (e) { toast.error(e instanceof Error ? e.message : "原报价需要核对，未清空原数据"); return; }
-    setFormError(""); setCreateMode(canPublish ? "manual" : "existing");
-    setCandidatePart(""); setCandidateBrand(""); setCandidateSearch({ partNumber: "", brand: "" }); setDialog({ kind, row, scope: identity });
+    setFormError(""); setCreateMode(canPublish && !createdInventoryId ? "manual" : "existing");
+    setCandidatePart(""); setCandidateBrand(""); setCandidateSearch({ partNumber: "", brand: "" }); setDialog({ kind, row: row && { ...row }, inventoryProof: row && rowProof(row), scope: identity, proof: authority && { ...authority } });
   };
   async function submit() {
-    if (!dialog || dialog.scope !== identity || !verified || busyRef.current || unknownRequest || creationHold || !status.data) return;
+    if (!dialog || dialog.scope !== identity || !verified || busyRef.current || unknownRequest || creationHold || !status.data || staleDialog) return;
     const manual = dialog.kind === "create" && createMode === "manual";
     const selecting = dialog.kind === "create" && createMode === "existing";
+    if (manual && createdInventoryId) return;
     if (manual ? !canWrite || !canPublish : dialog.kind === "publish" || dialog.kind === "offshelf" ? !canPublish : !canWrite) return;
-    const lease = identity, epoch = generation.current.value;
+    const lease = identity, epoch = generation.current.value, storageScope = scope.storageScope;
     const current = () => latest.current === lease && generation.current.value === epoch && generation.current.verified;
     let requestId: string | null = null;
     let createSent = false;
+    let createdId: number | undefined;
+    let mallSent = false;
+    let settled = false;
+    const remember = (hold: Hold) => {
+      holds.current.set(storageScope, hold);
+      if (activeStorageScope.current === storageScope) { setUnknownRequest(hold.requestId ?? null); setCreationHold(hold.creationHold ?? null); setCreatedInventoryId(hold.createdInventoryId ?? null); }
+    };
     setFormError("");
     try {
+      const proof = dialog.proof;
+      if (!proof || !validAuthorization(proof.authorizationVersion) || !validAuthorization(proof.businessAuthorizationVersion) || !Number.isSafeInteger(proof.permissionVersion) || proof.permissionVersion < 0) throw new Error("缺少有效官方或业务权限版本，请刷新重新确认；未发送操作");
+      if (!sameProof(proof, authorityRef.current) || proof.authorizationVersion !== scope.officialInventoryPermissions.authorizationVersion || proof.businessAuthorizationVersion !== scope.contextVerification.authorizationVersion) throw new Error("权限证明已变化，请刷新重新确认；未发送操作");
       let data: ReturnType<typeof formData> | undefined;
       if (manual || dialog.kind === "save") data = formData(form, dialog.row);
       if (manual && !form.dateCode.trim()) throw new Error("新增物料请填写真实生产周期/DC");
@@ -153,10 +192,12 @@ export default function MallMaterials() {
       busyRef.current = true; setBusy(true);
       if (manual) {
         createSent = true;
+        holds.current.set(storageScope, { creationHold: "库存创建结果需核对；未重发创建。" });
         const result = await utils.client.inventory.create.mutate({ data: data!, saveAs: "draft" });
         if (!current()) return;
         const created = result as { success?: boolean; inventoryId?: unknown };
         if (created.success !== true || typeof created.inventoryId !== "number" || !Number.isSafeInteger(created.inventoryId) || created.inventoryId <= 0) throw new Error("库存创建结果需核对：缺少真实库存ID；已停止，不会按型号猜测或重发创建");
+        createdId = created.inventoryId;
         const found = await utils.client.mallInventory.list.query({ inventoryId: created.inventoryId, visibility: "unlinked", page: 1, pageSize: 1 });
         if (!current()) return;
         if (found.items.length !== 1 || found.total !== 1 || found.items[0].inventoryId !== created.inventoryId || found.items[0].linked || found.items[0].status === "published") throw new Error("已保存原库存，但精确ID核对未通过；请在原库存页核对，不会自动重发或关联其他物料");
@@ -164,13 +205,21 @@ export default function MallMaterials() {
         if (!livePermissions.current.canWrite || !livePermissions.current.canPublish) throw new Error("库存已保存，但当前创建资格已变化；请核对原库存，未继续关联");
       }
       if (!current()) return;
+      if (!sameProof(dialog.proof, authorityRef.current)) throw new Error("权限证明已变化，请刷新重新确认；未继续关联");
+      confirmRow(row!);
       requestId = crypto.randomUUID();
-      const input = { inventoryId: row!.inventoryId, expectedVersion: row!.publicationVersion, expectedInventoryUpdatedAt: new Date(row!.inventoryUpdatedAt), expectedOwnershipVersion: row!.ownershipVersion, expectedPermissionVersion: status.data.context.permissionVersion, expectedAuthorizationVersion: status.data.context.authorizationVersion, expectedInventoryFingerprint: row!.inventoryFingerprint!, requestId };
+      holds.current.set(storageScope, { requestId, createdInventoryId: createdId ?? createdInventoryId ?? undefined });
+      const input = { inventoryId: row!.inventoryId, expectedVersion: row!.publicationVersion, expectedInventoryUpdatedAt: new Date(row!.inventoryUpdatedAt), expectedOwnershipVersion: row!.ownershipVersion, expectedPermissionVersion: proof.permissionVersion, expectedAuthorizationVersion: proof.authorizationVersion, expectedBusinessAuthorizationVersion: proof.businessAuthorizationVersion, expectedInventoryFingerprint: row!.inventoryFingerprint!, requestId };
+      mallSent = true;
       const result = manual || selecting ? await utils.client.mallInventory.link.mutate(input)
         : dialog.kind === "save" ? await utils.client.mallInventory.save.mutate({ ...input, data: data! })
         : dialog.kind === "publish" ? await utils.client.mallInventory.publish.mutate(input)
         : await utils.client.mallInventory.offshelf.mutate(input);
       if (!current()) return;
+      settled = true;
+      const savedId = createdId ?? createdInventoryId;
+      if (savedId && (!result.success || row!.inventoryId !== savedId)) remember({ createdInventoryId: savedId });
+      else { holds.current.delete(storageScope); setCreatedInventoryId(null); }
       if (!result.success) { toast.error(dialog.kind === "publish" ? "未上架，请刷新核对发布条件" : "操作未成功，请刷新核对当前状态"); setDialog(null); refresh(); return; }
       toast.success(manual || selecting ? "已保存到待上架" : dialog.kind === "publish" ? "已确认上架" : dialog.kind === "offshelf" ? "已下架" : "草稿已保存", manual || selecting ? { description: "仅纳入商城待上架，未自动发布。" } : undefined);
       setDialog(null); refresh();
@@ -179,15 +228,25 @@ export default function MallMaterials() {
       scope.onAuthorizationError(e);
       const message = e instanceof Error ? e.message : "操作结果需要核对";
       setFormError(message); toast.error(message);
-      if (requestId) setUnknownRequest(requestId);
-      else if (createSent) setCreationHold("库存已保存或创建结果未知，请在原库存页核对。未重发创建，未自动按型号关联；核对前停止提交。");
+      if (requestId && mallSent && explicitlyNotExecuted(e)) {
+        settled = true;
+        const savedId = createdId ?? createdInventoryId ?? undefined;
+        if (savedId) remember({ createdInventoryId: savedId }); else { holds.current.delete(storageScope); setUnknownRequest(null); }
+        setDialog(null); setForm(emptyForm()); setFormError(""); refresh();
+        toast.info("本次商城操作明确未执行，请刷新后人工重新选择并确认；不会自动重试");
+      } else if (requestId) remember({ requestId, createdInventoryId: createdId ?? createdInventoryId ?? undefined });
+      else if (createSent) remember({ creationHold: "库存已保存或创建结果未知，请在原库存页核对。未重发创建，未自动按型号关联；核对前停止提交。", createdInventoryId: createdId });
     } finally {
+      if (!settled && !current()) {
+        if (requestId) {
+          if (holds.current.get(storageScope)?.requestId === requestId) remember({ requestId, createdInventoryId: createdId ?? createdInventoryId ?? undefined });
+        }
+        else if (createSent) remember({ creationHold: "库存创建期间身份核验已变化，结果需在原库存页核对；未重发创建，未继续自动关联。", createdInventoryId: createdId });
+      }
       if (latest.current === lease) {
         if (generation.current.value !== epoch) {
           // A live verification interruption is not proof that the write failed.
           // Retain only our request metadata; discard its stale response and form.
-          if (requestId) setUnknownRequest(requestId);
-          else if (createSent) setCreationHold("库存创建期间身份核验已变化，结果需在原库存页核对；未重发创建，未继续自动关联。");
           setDialog(null); setForm(emptyForm());
         }
         busyRef.current = false; setBusy(false);
@@ -196,11 +255,16 @@ export default function MallMaterials() {
   }
   async function inspectRequest() {
     if (!unknownRequest || !verified || busyRef.current) return;
+    if (holds.current.get(scope.storageScope)?.requestId !== unknownRequest) return;
     const lease = identity, epoch = generation.current.value; busyRef.current = true; setBusy(true);
     try {
       const result = await utils.client.mallInventory.requestStatus.query({ requestId: unknownRequest });
       if (latest.current !== lease || generation.current.value !== epoch || !generation.current.verified) return;
-      if (result.state === "completed") { toast.info("已找到原请求回执，请刷新核对物料状态"); setUnknownRequest(null); setDialog(null); refresh(); }
+      if (result.state === "completed") {
+        toast.info("已找到原请求回执，请刷新核对物料状态");
+        if (createdInventoryId) holds.current.set(scope.storageScope, { createdInventoryId }); else holds.current.delete(scope.storageScope);
+        setUnknownRequest(null); setDialog(null); refresh();
+      }
       else toast.info("尚无最终回执，保持停止；请稍后再核对，不要重复提交");
     } catch (e) { if (latest.current === lease && generation.current.value === epoch) { scope.onAuthorizationError(e); toast.error("暂时无法核对原请求，未重发任何操作"); } }
     finally { if (latest.current === lease) { busyRef.current = false; setBusy(false); } }
@@ -208,9 +272,10 @@ export default function MallMaterials() {
   const locked = busy || !verified || !!unknownRequest || !!creationHold;
   const dialogCanSubmit = dialog?.kind === "create" ? createMode === "manual" ? canWrite && canPublish : canWrite && !!dialog.row : dialog?.kind === "save" ? canWrite : canPublish;
   return <section className="mall-materials" aria-label="商城物料管理">
-    <div className="mall-filter"><input aria-label="搜索商城物料型号" placeholder="搜索型号" value={keyword} onChange={e => setKeyword(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && verified) { setAppliedKeyword(keyword.trim()); setPage(1); } }}/><select aria-label="商城上架状态" value={state} onChange={e => { setState(e.target.value as typeof state); setPage(1); }}><option value="">全部状态</option><option value="draft">待上架</option><option value="published">已上架</option><option value="offshelf">已下架</option></select><button onClick={() => { setAppliedKeyword(keyword.trim()); setPage(1); }} disabled={!verified}>筛选</button><button onClick={() => { setKeyword(""); setAppliedKeyword(""); setState(""); setPage(1); }}>重置</button><button onClick={refresh} disabled={busy}>刷新</button><button className="mall-primary mall-add" disabled={!canWrite || locked} title="手工录入沿用原库存创建资格；选择已有库存仅需编辑权限" onClick={() => open("create")}>新增物料</button></div>
+    <div className="mall-filter"><input aria-label="搜索商城物料型号" placeholder="搜索型号" value={keyword} onChange={e => setKeyword(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && verified) { setAppliedKeyword(keyword.trim()); setPage(1); } }}/><select aria-label="商城上架状态" value={state} onChange={e => { setState(e.target.value as typeof state); setPage(1); }}><option value="">全部状态</option><option value="draft">待上架</option><option value="published">已上架</option><option value="offshelf">已下架</option></select><button onClick={() => { setAppliedKeyword(keyword.trim()); setPage(1); }} disabled={!verified}>筛选</button><button onClick={() => { setKeyword(""); setAppliedKeyword(""); setState(""); setPage(1); }}>重置</button><button onClick={refreshReadonly} disabled={busy}>刷新</button><button className="mall-primary mall-add" disabled={!canWrite || locked} title="手工录入沿用原库存创建资格；选择已有库存仅需编辑权限" onClick={() => open("create")}>新增物料</button></div>
     {unknownRequest && <div className="mall-notice" role="alert">原请求结果尚待核对。未自动重发，也不会重复上架。<button disabled={busy || !verified} onClick={() => void inspectRequest()}>核对原请求</button></div>}
     {creationHold && <p className="mall-notice" role="alert">{creationHold}</p>}
+    {createdInventoryId && <p className="mall-notice" role="alert">原库存已创建，真实库存ID {createdInventoryId}。请通过选择已有库存查找该ID并核对关联状态；不会再次创建。</p>}
     {!verified ? <p className="mall-notice">正在重新核验当前企业与权限，暂不可操作。</p> : status.isError ? <p className="mall-notice" role="alert">商城权限核验失败，请刷新；不会借用旧企业数据。</p> : status.isLoading ? <p>正在核验商城配置…</p> : !eligible ? <p className="mall-notice">{status.data?.eligibility.message ?? "商城尚未完成安全就绪"}。不会自动关联或上架历史物料。</p> : null}
     <div className="mall-table-wrap"><table className="mall-main-table"><colgroup><col className="mall-col-model"/><col className="mall-col-brand"/><col className="mall-col-pkg"/><col className="mall-col-dc"/><col className="mall-col-qty"/><col className="mall-col-price"/><col className="mall-col-lead"/><col className="mall-col-state"/><col className="mall-col-action"/></colgroup><thead><tr><th>型号</th><th>品牌</th><th>封装</th><th>DC</th><th>可售数量</th><th>报价 CNY</th><th>货期</th><th>状态</th><th className="mall-action-cell">操作</th></tr></thead><tbody>
       {rows.map(row => { const published = row.publicationStatus === "published" || row.status === "published"; return <tr key={row.inventoryId}><td><button className="mall-model" disabled={!canWrite || locked} title={published ? "已上架请先下架再编辑" : "编辑商城物料"} onClick={() => open("save", row)}>{row.partNumber}</button></td><td title={row.brand ?? ""}>{row.brand || "—"}</td><td title={row.pkg ?? ""}>{row.pkg || "—"}</td><td>{row.dateCode || "—"}</td><td className="mall-numeric">{count(row.qtyOnSale)}</td><td><Quote row={row}/></td><td title={row.leadTime ?? ""}>{row.leadTime || "—"}</td><td><span className={`mall-state ${row.publicationStatus ?? "draft"}`}>{statusNames[row.publicationStatus ?? "draft"]}</span></td><td className="mall-action-cell"><button className="mall-inline-action" disabled={!canPublish || locked} onClick={() => open(published ? "offshelf" : "publish", row)}>{published ? "下架" : "上架"}</button></td></tr>; })}
@@ -218,16 +283,17 @@ export default function MallMaterials() {
     </tbody></table></div>
     <footer className="mall-pagination"><span>共 {eligible ? list.data?.total ?? 0 : 0} 条</span><button disabled={page <= 1 || list.isFetching} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页</span><button disabled={page * 30 >= (list.data?.total ?? 0) || list.isFetching} onClick={() => setPage(p => p + 1)}>下一页</button></footer>
     {dialog && dialog.scope === identity && <div className="mall-dialog-overlay"><section className="mall-dialog" role="dialog" aria-modal="true" aria-labelledby="mall-dialog-title"><h2 id="mall-dialog-title">{dialog.kind === "create" ? "新增物料" : dialog.kind === "save" ? "编辑商城物料" : dialog.kind === "publish" ? "确认上架" : "确认下架"}</h2>
-      {dialog.kind === "create" && <div className="mall-create-modes" role="group" aria-label="新增方式"><button aria-pressed={createMode === "manual"} disabled={locked || !canPublish} title={!canPublish ? "手工创建需要原库存创建资格" : undefined} onClick={() => { setCreateMode("manual"); setForm(emptyForm()); setFormError(""); setDialog({ ...dialog, row: undefined }); }}>手工录入</button><button aria-pressed={createMode === "existing"} disabled={locked || !canWrite} onClick={() => { setCreateMode("existing"); setForm(emptyForm()); setFormError(""); setDialog({ ...dialog, row: undefined }); }}>选择已有库存</button></div>}
-      {dialog.row && <p><strong>{dialog.row.partNumber}</strong> · {dialog.row.brand} · 库存ID {dialog.row.inventoryId}</p>}
-      {dialog.kind === "create" && createMode === "existing" ? <div className="mall-candidates"><div className="mall-candidate-filter"><input aria-label="已有库存型号" placeholder="搜索型号" value={candidatePart} disabled={locked} onChange={e => setCandidatePart(e.target.value)}/><input aria-label="已有库存品牌" placeholder="搜索品牌" value={candidateBrand} disabled={locked} onChange={e => setCandidateBrand(e.target.value)}/><button disabled={locked} onClick={() => { setCandidateSearch({ partNumber: candidatePart.trim(), brand: candidateBrand.trim() }); setDialog({ ...dialog, row: undefined }); }}>搜索库存</button></div><p className="mall-hint">仅列出未纳入商城的库存，最多30条。原库存已上架的物料须先在原库存页下架；保存不会自动发布。</p><div className="mall-candidate-list">{candidateRows.map(row => <label className="mall-candidate" key={row.inventoryId}><input type="radio" name="mall-candidate" aria-label={`选择 ${row.partNumber} ${row.brand ?? ""}`} checked={dialog.row?.inventoryId === row.inventoryId} disabled={locked || row.status === "published"} onChange={() => { setDialog({ ...dialog, row }); setFormError(""); }}/><span><strong>{row.partNumber}</strong><small>{row.brand || "—"} · {row.pkg || "—"} · DC {row.dateCode || "—"}</small></span><span>{row.status === "published" ? "原库存已上架，须先下架" : `可售 ${count(row.qtyOnSale)}`}</span></label>)}{!candidateRows.length && <p className="mall-empty">{candidates.isFetching ? "读取库存中…" : candidates.isError ? "读取失败，请重新搜索" : "没有可选择的未纳入库存"}</p>}</div></div> : dialog.kind === "create" || dialog.kind === "save" ? <fieldset className="mall-form" disabled={locked}>
+      {dialog.kind === "create" && <div className="mall-create-modes" role="group" aria-label="新增方式"><button aria-pressed={createMode === "manual"} disabled={locked || staleDialog || !canPublish || !!createdInventoryId} title={!canPublish ? "手工创建需要原库存创建资格" : undefined} onClick={() => { setCreateMode("manual"); setForm(emptyForm()); setFormError(""); setDialog({ ...dialog, row: undefined }); }}>手工录入</button><button aria-pressed={createMode === "existing"} disabled={locked || staleDialog || !canWrite} onClick={() => { setCreateMode("existing"); setForm(emptyForm()); setFormError(""); setDialog({ ...dialog, row: undefined }); }}>选择已有库存</button></div>}
+      {dialog.row && <p><strong>{dialog.row.partNumber}</strong> · {dialog.row.brand} · 库存ID {dialog.row.inventoryId} · DC {dialog.row.dateCode || "—"} · 可售 {count(dialog.row.qtyOnSale)}</p>}
+      {dialog.kind === "create" && createMode === "existing" ? <div className="mall-candidates"><div className="mall-candidate-filter"><input aria-label="已有库存型号" placeholder="搜索型号" value={candidatePart} disabled={locked} onChange={e => setCandidatePart(e.target.value)}/><input aria-label="已有库存品牌" placeholder="搜索品牌" value={candidateBrand} disabled={locked} onChange={e => setCandidateBrand(e.target.value)}/><button disabled={locked} onClick={() => { setCandidateSearch({ partNumber: candidatePart.trim(), brand: candidateBrand.trim() }); setDialog({ ...dialog, row: undefined }); }}>搜索库存</button></div><p className="mall-hint">仅列出未纳入商城的库存，最多30条。原库存已上架的物料须先在原库存页下架；保存不会自动发布。</p><div className="mall-candidate-list">{candidateRows.map(row => <label className="mall-candidate" key={row.inventoryId}><input type="radio" name="mall-candidate" aria-label={`选择 ${row.partNumber} ${row.brand ?? ""}`} checked={dialog.row?.inventoryId === row.inventoryId} disabled={locked || staleDialog || row.status === "published"} onChange={() => { setDialog({ ...dialog, row: { ...row }, inventoryProof: rowProof(row) }); setFormError(""); }}/><span><strong>{row.partNumber}</strong><small>{row.brand || "—"} · {row.pkg || "—"} · DC {row.dateCode || "—"}</small></span><span>{row.status === "published" ? "原库存已上架，须先下架" : `可售 ${count(row.qtyOnSale)}`}</span></label>)}{!candidateRows.length && <p className="mall-empty">{candidates.isFetching ? "读取库存中…" : candidates.isError ? "读取失败，请重新搜索" : "没有可选择的未纳入库存"}</p>}</div></div> : dialog.kind === "create" || dialog.kind === "save" ? <fieldset className="mall-form" disabled={locked}>
         {([['partNumber', '型号', 128], ['brand', '品牌', 64], ['pkg', '封装', 32], ['dateCode', '生产周期/DC', 32], ['qtyStock', '实际库存', 32], ['qtyOnSale', '现货上架量', 32], ['qtyOrder', '订货数量（未知可留空）', 32], ['priceEx', '单价（询价可留空）', 32], ['moq', '起订量MOQ', 32], ['spq', '包装倍数SPQ', 32], ['leadTime', '真实货期', 128]] as const).map(([key, label, maxLength]) => <label key={key}>{label}<input aria-label={label} value={form[key]} maxLength={maxLength} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}/></label>)}
         <label>税口径<select aria-label="税口径" value={form.taxIncluded ? "taxed" : "untaxed"} onChange={e => setForm(f => ({ ...f, taxIncluded: e.target.value === "taxed" }))}><option value="taxed">含税价</option><option value="untaxed">未税价（仅支持询价）</option></select></label>
         <fieldset className="mall-tiers"><legend>阶梯报价（最多64档）</legend><p className="mall-hint">起订数量须为正整数并严格递增，单价大于0；整档留空可省略，不填演示价。</p>{form.tiers.map((tier, i) => <div className="mall-tier-row" key={i}><label>起订数量<input aria-label={`第${i + 1}档起订数量`} value={tier.minQty} onChange={e => setForm(f => ({ ...f, tiers: f.tiers.map((t, j) => j === i ? { ...t, minQty: e.target.value } : t) }))}/></label><span>+</span><label>单价 CNY<input aria-label={`第${i + 1}档单价`} value={tier.price} onChange={e => setForm(f => ({ ...f, tiers: f.tiers.map((t, j) => j === i ? { ...t, price: e.target.value } : t) }))}/></label><button aria-label={`删除第${i + 1}档`} onClick={() => setForm(f => ({ ...f, tiers: f.tiers.filter((_, j) => j !== i) }))}>删除</button></div>)}<button disabled={form.tiers.length >= 64} onClick={() => setForm(f => ({ ...f, tiers: f.tiers.length < 64 ? [...f.tiers, { minQty: "", price: "" }] : f.tiers }))}>增加档位</button></fieldset>
         <label className="mall-wide">公开备注（最多50字）<input aria-label="公开备注" maxLength={50} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/></label><p className="mall-wide mall-hint">保存到待上架，不自动发布。原库存照片（{dialog.row?.photos?.length ?? 0}张）、分类、仓库、开票和环保属性保留；不虚构图片或供应数量。</p>
       </fieldset> : <><p>{dialog.kind === "publish" ? "确认公开当前真实库存、报价、阶梯价与货期。缺报价可询价，未税报价仅支持询价；购买继续校验登录、企业、起订量和库存。" : "停止商城公开展示并下架原可售库存。旧订单和询价记录保留，旧购物车结算会再次核验。"}</p>{dialog.row && <div className="mall-confirm-details"><Quote row={dialog.row}/><p>封装 {dialog.row.pkg || "—"} · DC {dialog.row.dateCode || "—"}</p><p>现货上架 {count(dialog.row.qtyOnSale)} / 实际库存 {count(dialog.row.qtyStock)} · 订货 {count(dialog.row.qtyOrder)}</p><p>MOQ {count(dialog.row.moq)} · SPQ {count(dialog.row.spq)} · 货期 {dialog.row.leadTime || "—"}</p></div>}</>}
       {formError && <p className="mall-form-error" role="alert">{formError}</p>}
-      <div className="mall-dialog-actions"><button disabled={busy} onClick={() => setDialog(null)}>取消</button><button className="mall-primary" disabled={locked || !dialogCanSubmit} onClick={() => void submit()}>{busy ? "正在核验…" : dialog.kind === "create" ? "保存到待上架" : dialog.kind === "save" ? "保存草稿" : dialog.kind === "publish" ? "确认上架" : "确认下架"}</button></div>
+      {staleDialog && <p className="mall-form-error" role="alert">商品或权限确认资料已变化，请刷新后重新选择并确认；未自动替换商品指纹。</p>}
+      <div className="mall-dialog-actions"><button disabled={busy} onClick={() => setDialog(null)}>取消</button><button disabled={busy} onClick={refreshReadonly}>刷新重新确认</button>{unknownRequest && <button disabled={busy || !verified} onClick={() => void inspectRequest()}>核对原请求</button>}<button className="mall-primary" disabled={locked || staleDialog || !dialogCanSubmit} onClick={() => void submit()}>{busy ? "正在核验…" : dialog.kind === "create" ? "保存到待上架" : dialog.kind === "save" ? "保存草稿" : dialog.kind === "publish" ? "确认上架" : "确认下架"}</button></div>
     </section></div>}
   </section>;
 }

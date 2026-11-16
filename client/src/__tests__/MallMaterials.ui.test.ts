@@ -25,8 +25,8 @@ let host: HTMLDivElement;
 const fixture = (overrides: Record<string, unknown> = {}) => ({ inventoryId: 101, partNumber: "LOCAL-PART-A", brand: "LOCAL-BRAND", pkg: "QFN", dateCode: "2601", qtyStock: 200, qtyOnSale: 100, qtyOrder: null, priceEx: "1", moq: 10, spq: 2, leadTime: "3天", taxIncluded: true, note: "本地测试", category: "本地分类", warehouseAddress: "本地仓库", rohs: false, invoice: false, photos: [{ key: "local-fixture/a.png", url: "/local-fixture/a.png", name: "a", mimeType: "image/png", size: 100 }], ladderPrices: [{ minQty: 10, price: 8 }, { minQty: 100, price: 5 }], publicationStatus: "draft", status: "draft", linked: true, isSelfOperated: false, publicationVersion: 4, inventoryUpdatedAt: "2026-01-01T00:00:00.000Z", ownershipVersion: 3, inventoryFingerprint: "a".repeat(64), ...overrides });
 beforeEach(() => {
   vi.resetAllMocks(); h.queries = [];
-  h.scope = { storageScope: "local:enterprise:1", contextVerification: { state: "verified", authorizationVersion: "mock-ctx-v1" }, officialInventoryPermissions: { authorizationVersion: "permission-v1" }, staffPrincipal: { enterpriseId: 1 }, onAuthorizationError: h.authorizationError };
-  h.status = { eligibility: { eligible: true }, context: { enterpriseId: 1, permissionVersion: 4, authorizationVersion: "mock-ctx-v1" }, permissions: { write: true, publish: true } };
+  h.scope = { storageScope: "local:enterprise:1", contextVerification: { state: "verified", authorizationVersion: "business-auth-v1:local-fixture" }, officialInventoryPermissions: { authorizationVersion: "official-inventory-v1:local-fixture" }, staffPrincipal: { enterpriseId: 1 }, onAuthorizationError: h.authorizationError };
+  h.status = { eligibility: { eligible: true }, context: { enterpriseId: 1, permissionVersion: 4, authorizationVersion: "official-inventory-v1:local-fixture", businessAuthorizationVersion: "business-auth-v1:local-fixture" }, permissions: { write: true, publish: true } };
   h.rows = [fixture()]; h.candidates = [fixture({ inventoryId: 202, partNumber: "LOCAL-CANDIDATE", linked: false, publicationStatus: null }), fixture({ inventoryId: 203, partNumber: "LOCAL-PUBLISHED", linked: false, publicationStatus: null, status: "published" })];
   h.create.mockResolvedValue({ success: true, inventoryId: 909 }); h.exact.mockResolvedValue({ total: 1, items: [fixture({ inventoryId: 909, linked: false, publicationStatus: null })] });
   for (const fn of [h.link, h.save, h.publish, h.offshelf]) fn.mockResolvedValue({ success: true });
@@ -106,7 +106,7 @@ describe("MallMaterials targeted DOM", () => {
     h.status.permissions.write = false; mount(); expect(button("新增物料").disabled).toBe(true);
     await click(button("上架")); expect(host.querySelector(".mall-confirm-details")?.textContent).toContain("MOQ 10"); await click(button("确认上架"));
     expect(h.publish).toHaveBeenCalledOnce(); expect(h.link).not.toHaveBeenCalled();
-    expect(h.publish.mock.calls[0][0]).toMatchObject({ inventoryId: 101, expectedVersion: 4, expectedInventoryUpdatedAt: new Date("2026-01-01T00:00:00.000Z"), expectedOwnershipVersion: 3, expectedPermissionVersion: 4, expectedAuthorizationVersion: "mock-ctx-v1", expectedInventoryFingerprint: "a".repeat(64), requestId: expect.stringMatching(/^[a-f0-9-]{36}$/) });
+    expect(h.publish.mock.calls[0][0]).toMatchObject({ inventoryId: 101, expectedVersion: 4, expectedInventoryUpdatedAt: new Date("2026-01-01T00:00:00.000Z"), expectedOwnershipVersion: 3, expectedPermissionVersion: 4, expectedAuthorizationVersion: "official-inventory-v1:local-fixture", expectedBusinessAuthorizationVersion: "business-auth-v1:local-fixture", expectedInventoryFingerprint: "a".repeat(64), requestId: expect.stringMatching(/^[a-f0-9-]{36}$/) });
   });
   it("publication failure does not toast success or treat linking as publication", async () => {
     h.publish.mockResolvedValue({ success: false }); mount(); await click(button("上架")); await click(button("确认上架"));
@@ -204,4 +204,97 @@ describe("legacy ladder read safety",()=>{
  it("supports historical qty aliases without guessing or sorting prices",()=>{expect(firstEligibleQuote({moq:10,spq:2,ladderPrices:[{qty:10,price:8},{qty:100,price:5}]} as never)).toEqual({quantity:10,price:8});});
  it("damaged old ladder renders pending verification rather than crashing",()=>{h.rows=[fixture({ladderPrices:[null]})];mount();expect(host.querySelector('.mall-quote-main')?.textContent).toBe('阶梯报价待核对');});
  it("non-array old ladder cannot be silently deleted by editing",async()=>{h.rows=[fixture({ladderPrices:'legacy-opaque-json'})];mount();await click(button('LOCAL-PART-A'));expect(host.querySelector('[role=dialog]')).toBeNull();expect(h.error).toHaveBeenCalledWith(expect.stringContaining('不会静默清空原报价'));expect(h.save).not.toHaveBeenCalled();});
+});
+
+const notExecuted = "本次商城操作未执行：商品、权限或企业上下文已变化，请刷新后重试";
+const controlledConflict = (shape = false) => Object.assign(new Error(notExecuted), shape ? { shape: { data: { code: "CONFLICT" } } } : { data: { code: "CONFLICT" } });
+async function selectExisting() {
+  await click(button("新增物料"));
+  await click(button("选择已有库存"));
+  await click(host.querySelector('[aria-label="选择 LOCAL-CANDIDATE LOCAL-BRAND"]')!);
+}
+describe("MallMaterials controlled rejection and fixed confirmation", () => {
+  it("controlled link conflict unlocks, clears old proof and only human reselection gets a second UUID", async () => {
+    h.link.mockRejectedValueOnce(controlledConflict()).mockResolvedValueOnce({ success: true });
+    mount(); await selectExisting(); const oldSubmit = button("保存到待上架"); await click(oldSubmit);
+    const first = h.link.mock.calls[0][0].requestId;
+    expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(button("新增物料").disabled).toBe(false);
+    expect(h.refetch).toHaveBeenCalled(); expect(h.invalidate).toHaveBeenCalled(); expect(h.info).toHaveBeenCalledWith(expect.stringContaining("明确未执行"));
+    await click(oldSubmit); expect(h.link).toHaveBeenCalledOnce(); expect(h.receipt).not.toHaveBeenCalled();
+    await click(button("新增物料")); await click(button("选择已有库存")); expect(button("保存到待上架").disabled).toBe(true);
+    await click(host.querySelector('[aria-label="选择 LOCAL-CANDIDATE LOCAL-BRAND"]')!); await click(button("保存到待上架"));
+    expect(h.link).toHaveBeenCalledTimes(2); expect(h.link.mock.calls[1][0].requestId).not.toBe(first); expect(h.create).not.toHaveBeenCalled();
+  });
+  it("bare conflict, approximate controlled message and network remain unknown and never retry", async () => {
+    mount();
+    for (const error of [Object.assign(new Error("普通冲突"), { data: { code: "CONFLICT" } }), Object.assign(new Error(`${notExecuted}。`), { data: { code: "CONFLICT" } }), new Error(notExecuted), new Error("LOCAL timeout")]) {
+      h.publish.mockRejectedValueOnce(error); await click(button("上架")); await click(button("确认上架"));
+      const id = h.publish.mock.calls.at(-1)![0].requestId; const calls = h.publish.mock.calls.length;
+      expect(button("确认上架").disabled).toBe(true); await click(button("刷新重新确认")); expect(button("确认上架").disabled).toBe(true);
+      await click(button("确认上架")); expect(h.publish).toHaveBeenCalledTimes(calls);
+      await click(button("核对原请求", host.querySelector('[role="dialog"]')!)); expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id });
+    }
+  });
+  it("unknown publish not_found, pending and receipt errors stay held with an in-modal read-only check", async () => {
+    h.publish.mockRejectedValue(new Error("LOCAL unknown publish")); mount(); await click(button("上架")); await click(button("确认上架"));
+    const id = h.publish.mock.calls[0][0].requestId;
+    for (const state of ["not_found", "pending"]) {
+      h.receipt.mockResolvedValueOnce({ state }); await click(button("核对原请求", host.querySelector('[role="dialog"]')!));
+      expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id }); expect(button("确认上架").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+    }
+    h.receipt.mockRejectedValueOnce(new Error("LOCAL receipt error")); await click(button("核对原请求", host.querySelector('[role="dialog"]')!));
+    await click(button("刷新")); expect(button("确认上架").disabled).toBe(true); expect(h.publish).toHaveBeenCalledOnce(); expect(h.link).not.toHaveBeenCalled();
+    await click(button("核对原请求", host.querySelector('[role="dialog"]')!)); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(button("上架").disabled).toBe(false);
+  });
+  it("candidate same-ID proof changes or disappearance become sticky stale without adopting a new row", async () => {
+    mount();
+    for (const change of [{ inventoryFingerprint: "b".repeat(64) }, { inventoryUpdatedAt: "2026-01-02T00:00:00.000Z" }, { publicationVersion: 5 }, { ownershipVersion: 4 }, { status: "published" }, { publicationStatus: "published" }, { linked: true }, null]) {
+      const original = fixture({ inventoryId: 202, partNumber: "LOCAL-CANDIDATE", linked: false, publicationStatus: null });
+      h.candidates = [original]; renderAgain(); await selectExisting();
+      h.candidates = change ? [{ ...original, ...change }] : []; renderAgain();
+      expect(button("保存到待上架").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')?.textContent).toContain("未自动替换商品指纹");
+      await click(button("保存到待上架")); expect(h.link).not.toHaveBeenCalled(); expect(h.create).not.toHaveBeenCalled();
+      h.candidates = [original]; renderAgain(); expect(button("保存到待上架").disabled).toBe(true);
+      await click(button("刷新重新确认")); expect(host.querySelector('[role="dialog"]')).toBeNull();
+    }
+  });
+  it("each captured context proof becomes stale rather than being replaced on status refetch", async () => {
+    mount();
+    for (const field of ["permissionVersion", "authorizationVersion", "businessAuthorizationVersion"]) {
+      await click(button("上架")); const previous = h.status.context[field]; h.status.context[field] = field === "permissionVersion" ? 5 : `${previous}-changed`; renderAgain();
+      expect(button("确认上架").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')?.textContent).toContain("刷新后重新选择");
+      await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); h.status.context[field] = previous; renderAgain(); expect(button("确认上架").disabled).toBe(true);
+      await click(button("刷新重新确认"));
+    }
+  });
+  it("same storageScope authorization changes retain the UUID; another scope cannot query it", async () => {
+    h.publish.mockRejectedValue(new Error("LOCAL network uncertain")); h.receipt.mockResolvedValue({ state: "pending" }); mount(); await click(button("上架")); await click(button("确认上架"));
+    const id = h.publish.mock.calls[0][0].requestId;
+    h.scope.contextVerification.authorizationVersion = "business-auth-v1:local-changed"; h.status.context.businessAuthorizationVersion = h.scope.contextVerification.authorizationVersion; renderAgain();
+    expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(button("上架").disabled).toBe(true); await click(button("核对原请求")); expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id });
+    const originalScope = h.scope; h.scope = { ...h.scope, storageScope: "local:enterprise:2", staffPrincipal: { enterpriseId: 2 } }; h.status.context.enterpriseId = 2; renderAgain();
+    expect([...host.querySelectorAll("button")].some(b => b.textContent === "核对原请求")).toBe(false); await click(button("刷新")); expect(h.receipt).toHaveBeenCalledOnce(); expect(h.publish).toHaveBeenCalledOnce();
+    h.scope = originalScope; h.status.context.enterpriseId = 1; renderAgain(); expect(button("上架").disabled).toBe(true); await click(button("核对原请求")); expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id });
+  });
+  it("an in-flight same-scope authorization change also retains the original UUID", async () => {
+    let resolve!: (x: any) => void; h.publish.mockReturnValue(new Promise(r => { resolve = r; })); h.receipt.mockResolvedValue({ state: "not_found" });
+    mount(); await click(button("上架")); await click(button("确认上架")); const id = h.publish.mock.calls[0][0].requestId;
+    h.scope.officialInventoryPermissions.authorizationVersion = "official-inventory-v1:local-changed"; h.status.context.authorizationVersion = h.scope.officialInventoryPermissions.authorizationVersion; renderAgain();
+    expect(button("上架").disabled).toBe(true);
+    await click(button("核对原请求")); expect(h.receipt).toHaveBeenCalledWith({ requestId: id }); expect(h.publish).toHaveBeenCalledOnce(); expect(button("上架").disabled).toBe(true);
+    h.receipt.mockResolvedValueOnce({ state: "completed" }); await click(button("核对原请求")); expect(button("上架").disabled).toBe(false);
+    await act(async () => resolve({ success: true })); expect(h.success).not.toHaveBeenCalled(); expect(button("上架").disabled).toBe(false);
+  });
+  it("created ID survives controlled link rejection and cannot trigger another create", async () => {
+    h.link.mockRejectedValueOnce(controlledConflict(true)); mount(); await fillCreate(); await click(button("保存到待上架"));
+    expect(h.create).toHaveBeenCalledOnce(); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(host.textContent).toContain("真实库存ID 909"); expect(host.textContent).toContain("选择已有库存查找该ID");
+    await click(button("刷新")); await click(button("新增物料")); expect(button("手工录入").disabled).toBe(true); await click(button("手工录入")); await click(button("保存到待上架")); expect(h.create).toHaveBeenCalledOnce();
+    h.candidates = [fixture({ inventoryId: 909, partNumber: "LOCAL-CREATED", linked: false, publicationStatus: null })]; renderAgain();
+    await click(host.querySelector('[aria-label="选择 LOCAL-CREATED LOCAL-BRAND"]')!); await click(button("保存到待上架")); expect(h.create).toHaveBeenCalledOnce(); expect(h.link).toHaveBeenCalledTimes(2); expect(h.link.mock.calls[1][0].inventoryId).toBe(909);
+  });
+  it("invalid inventory dates or absent business version cannot send a mall write or manual create", async () => {
+    h.rows = [fixture({ inventoryUpdatedAt: "invalid-date" })]; mount(); await click(button("上架")); await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); expect(host.textContent).toContain("确认日期无效");
+    await click(button("刷新重新确认")); h.rows = [fixture()]; delete h.status.context.businessAuthorizationVersion; renderAgain(); await click(button("上架")); await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); expect(host.textContent).toContain("业务权限版本");
+    await click(button("刷新重新确认")); await fillCreate(); await click(button("保存到待上架")); expect(h.create).not.toHaveBeenCalled(); expect(h.link).not.toHaveBeenCalled();
+  });
 });
