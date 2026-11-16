@@ -181,12 +181,14 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
 }: AdminModuleTabsProps<T>) {
   const state = getAdminWorkspaceNavigationState(items, location);
   const customerItem = items.find(item => item.path === "/workbench/customers");
+  const mallItem = items.find(item => item.path === "/workbench/mall-materials");
+  const mallActive = location.split(/[?#]/, 1)[0] === "/workbench/mall-materials";
   const channelItem = items.find(item => item.path === CHANNEL_INVENTORY_ROUTE);
   const receptionItem = items.find(item => item.path === "/workbench/inquiries");
   const salesContext = getSalesOrderNavigationContext(items, location);
   const salesItem = salesContext.item;
   const filteredBusinessItems = state.workspaces.find(workspace => workspace.id === "business")
-    ?.items.filter(item => item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries" && item.path !== "/workbench/orders" && item.path !== "/workbench/outbound") ?? [];
+    ?.items.filter(item => item.path !== "/workbench/mall-materials" && item.path !== CHANNEL_INVENTORY_ROUTE && item.path !== "/workbench/customers" && item.path !== "/workbench/inquiries" && item.path !== "/workbench/orders" && item.path !== "/workbench/outbound") ?? [];
   const businessEntries = groupAdminBusinessNavigationItems(filteredBusinessItems);
   const operationsEntries = groupAdminOperationsNavigationItems(
     state.workspaces.find(workspace => workspace.id === "operations")?.items ?? []
@@ -497,7 +499,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     );
   }
 
-  if (!customerItem && !channelItem && !receptionItem && !salesItem && !workspaces.length) return null;
+  if (!customerItem && !channelItem && !mallItem && !receptionItem && !salesItem && !workspaces.length) return null;
 
   return (
     <nav
@@ -540,6 +542,16 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
           }}
           onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
         >库存列表{renderBadge?.(channelItem)}</button>
+      ) : null}
+      {mallItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          title="商城物料管理" data-workspace-nav-target="mall-materials" data-navigation-level="1"
+          data-active={mallActive ? "true" : "false"} aria-current={mallActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(mallItem); }}
+          onPointerEnter={event => { cancelHoverClose(); if (isDesktopMouse(event) && expanded) closeWorkspace(); (onPreload ?? onItemIntent)?.(mallItem); }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(mallItem)}
+        >商城物料{renderBadge?.(mallItem)}</button>
       ) : null}
       {receptionItem ? (
         <button type="button"

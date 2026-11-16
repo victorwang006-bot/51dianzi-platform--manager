@@ -67,3 +67,6 @@ export function verifyOfficialInventoryGrant(token: SignedOfficialInventoryGrant
   signedTargets.set(grant.permissions, { target: { ...target }, expiresAt: grant.expiresAt });
   return grant.permissions;
 }
+
+/** Type-only mirror of the native portal provenance helper; no browser implementation. */
+export declare function officialInventoryTargetForRequest(delegation: StaffDelegation | undefined, method: string): OfficialInventoryGrantTarget | undefined;

@@ -1,3 +1,4 @@
+import { mallInventoryMethodRequirement } from "./mallInventory";
 import { z } from "zod";
 import { isChannelInventoryBusinessMethodId } from "./channelInventoryBusinessPolicy";
 
@@ -34,6 +35,8 @@ export const NATIVE_TEAM_READ_METHODS: readonly string[] = [
 ];
 export const NATIVE_FACTORY_PUBLISH_METHODS: readonly string[] = ["channelInventory.publishFactoryMaterial", "channelInventory.previewFactoryMaterialReception"];
 export function officialInventoryMethodRequirement(method: string): "read" | "write" | "note" | "publish" | null {
+  const mallRequirement = mallInventoryMethodRequirement(method);
+  if (mallRequirement) return mallRequirement;
   if (!isChannelInventoryBusinessMethodId(method)) return null;
   if (NATIVE_FACTORY_PUBLISH_METHODS.includes(method)) return "publish";
   if (["channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit",

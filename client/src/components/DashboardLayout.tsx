@@ -107,6 +107,13 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         nested: false,
       },
       {
+        icon: Boxes,
+        label: "商城物料",
+        path: "/workbench/mall-materials",
+        workbenchCapability: "inventory.read",
+        nested: false,
+      },
+      {
         icon: PackagePlus,
         label: "发布库存",
         path: "/workbench/publish",

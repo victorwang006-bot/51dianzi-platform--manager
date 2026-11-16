@@ -5455,3 +5455,23 @@ export const supplierForumRecommendationRuns = mysqlTable("supplier_forum_recomm
   slotBucket: check("supplier_forum_slot_bucket", sql`(HOUR(${table.plannedAt}) * 60 + MINUTE(${table.plannedAt})) BETWEEN (540 + (${table.slotNo} - 1) * 45) AND (570 + (${table.slotNo} - 1) * 45)`),
   attemptCap: check("supplier_forum_attempt_cap", sql`${table.attempts} <= 2`),
 }));
+
+export const mallInventoryPublications = mysqlTable("mall_inventory_publications", {
+  inventoryId: int("inventoryId").primaryKey(), enterpriseId: int("enterpriseId").notNull(),
+  dataOwnerUserId: int("dataOwnerUserId").notNull(),
+  status: mysqlEnum("status", ["draft", "published", "offshelf"]).default("draft").notNull(),
+  version: int("version").default(1).notNull(), updatedByUserId: int("updatedByUserId").notNull(),
+  confirmedContentProof: varchar("confirmedContentProof", { length: 64 }),
+  publishedAt: timestamp("publishedAt"), createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+}, table => ({ enterpriseStatus: index("mall_publications_enterprise_status").on(table.enterpriseId, table.status, table.inventoryId) }));
+
+export const mallInventoryRequests = mysqlTable("mall_inventory_requests", {
+  id: int("id").autoincrement().primaryKey(), enterpriseId: int("enterpriseId").notNull(),
+  actorUserId: int("actorUserId").notNull(), requestId: varchar("requestId", { length: 64 }).notNull(),
+  fingerprint: varchar("fingerprint", { length: 64 }).notNull(), inventoryId: int("inventoryId").notNull(),
+  state: mysqlEnum("state", ["pending", "completed"]).default("pending").notNull(),
+  result: json("result").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").default(DEFAULT_NOW).notNull(),
+  updatedAt: timestamp("updatedAt").default(DEFAULT_NOW).$onUpdate(() => new Date()).notNull(),
+}, table => ({ actorRequest: uniqueIndex("mall_requests_actor_request").on(table.enterpriseId, table.actorUserId, table.requestId) }));

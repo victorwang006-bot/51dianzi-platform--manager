@@ -180,6 +180,7 @@ export const ADMIN_WORKSPACE_DEFINITIONS: readonly AdminWorkspaceDefinition[] =
       label: "业务工作台",
       paths: [
         "/workbench/channel-inventory",
+        "/workbench/mall-materials",
         "/workbench/customers",
         "/workbench/orders",
         "/workbench/inbound",

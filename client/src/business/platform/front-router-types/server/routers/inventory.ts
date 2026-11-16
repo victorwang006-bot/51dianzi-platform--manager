@@ -349,7 +349,7 @@ export function calcPriceIncl(priceEx: number): string {
   return priceEx.toFixed(4);
 }
 
-function buildRow(input: z.infer<typeof inventoryInputSchema>) {
+export function buildRow(input: z.infer<typeof inventoryInputSchema>) {
   const hasPrice = typeof input.priceEx === "number" && input.priceEx > 0;
   return {
     partNumber: input.partNumber.normalize("NFKC").trim(),
@@ -380,7 +380,7 @@ function buildRow(input: z.infer<typeof inventoryInputSchema>) {
  * 编辑允许历史零数量/未知订货条目原样维护，但不允许把普通现货清零后
  * 假装成订货。新建与重新上架一律要求明确的正数量，由发布守卫复查。
  */
-function assertEditableInventoryAvailability(
+export function assertEditableInventoryAvailability(
   current: { qtyOnSale: number; qtyOrder: number | null; leadTime: string | null },
   input: z.infer<typeof inventoryInputSchema>,
 ) {
@@ -448,7 +448,7 @@ export function decodeInventoryPhotoBase64(
  * url 必须与 key 对应——OSS 后端为以 /{key} 结尾的 https 绝对地址，
  * Forge 后端为 /manus-storage/{key}。不得只校 key 而放任 url。
  */
-function assertOwnedPhotos(
+export function assertOwnedPhotos(
   photos: z.infer<typeof inventoryPhotoSchema>[] | undefined,
   userId: number,
 ) {

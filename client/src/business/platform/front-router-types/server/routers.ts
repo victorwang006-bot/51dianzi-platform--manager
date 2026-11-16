@@ -1,3 +1,4 @@
+import { mallInventoryRouter } from "./routers/mallInventory";
 import { businessOrganizationRouter } from "./routers/businessOrganization";
 import { clearAllSessionCookies, getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -85,6 +86,7 @@ export const appRouter = router({
   channelInventory: channelInventoryRouter,
   factoryChannel: factoryChannelRouter,
   inventory: inventoryRouter,
+  mallInventory: mallInventoryRouter,
   search: searchRouter,
   guestQuery: guestQueryRouter,
   cart: cartRouter,

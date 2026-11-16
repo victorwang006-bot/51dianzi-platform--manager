@@ -5592,3 +5592,6 @@ export async function fillWechatBindingUnionId(openid: string, unionId: string) 
       and(eq(wechatAccountBindings.openid, openid), isNull(wechatAccountBindings.unionId)),
     );
 }
+
+/** Type-only native SDK: implemented by the actual portal runtime. */
+export declare function clearInventorySearchCountCache(): void;

@@ -1,3 +1,4 @@
+import { mallInventoryListSchema, mallInventoryMutationSchema, mallInventoryRequestIdSchema, MALL_INVENTORY_METHOD_IDS, mallInventoryMethodRequirement } from "../shared/mallInventory";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -333,10 +334,17 @@ async function withCurrentBusinessAuthorization<T>(
   return db.withBusinessAuthorizationFence({ adminUserId: account.id, merchantId }, async () => {
     const staffBinding = await requireCurrentBusinessStaffBinding(account.id);
     const channel = capability.method?.startsWith("channelInventory.") === true;
+    const mall = MALL_INVENTORY_METHOD_IDS.includes(capability.method as (typeof MALL_INVENTORY_METHOD_IDS)[number]);
     const contextProjection = capability.module === "context" && capability.method === undefined;
-    const officialInventoryPermissions = channel || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined;
+    const officialInventoryPermissions = channel || mall || contextProjection ? await currentOfficialInventoryPermissions(ctx) : undefined;
     // These fixed management SELECT/export paths have no independent export grant.
     // Preserve their public read contract, but require official management write.
+    if (mall) {
+      const requirement = mallInventoryMethodRequirement(capability.method!);
+      if (!officialInventoryPermissions?.read || !requirement || officialInventoryPermissions[requirement] !== true) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "缺少商城对应独立官方权限" });
+      }
+    }
     const managementRead = ["channelInventory.listMaterials", "channelInventory.getMaterial", "channelInventory.listSharedMaterials", "channelInventory.exportChannelMaterials"].includes(capability.method ?? "");
     if (channel) {
       const notes = ["channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit"].includes(capability.method!);
@@ -438,7 +446,10 @@ async function forwardBusinessMethod(
   return withCurrentBusinessAuthorization(ctx, merchantId, { ...capability, customerInventory }, async ({ staffBinding, scope, merchant, officialInventoryPermissions }) => {
     const binding = businessEnterpriseBindingFromMerchant(merchant);
     const actor = businessAuditActor(ctx);
-    const requestId = randomUUID();
+    const mallAction = ["mallInventory.link", "mallInventory.save", "mallInventory.publish", "mallInventory.offshelf"].includes(capability.method);
+    const requestId = mallAction
+      ? mallInventoryRequestIdSchema.parse((params as { requestId?: unknown })?.requestId)
+      : randomUUID();
     let result: unknown;
     try {
       result = await callPlatformBusinessCommand({
@@ -618,7 +629,16 @@ const CHANNEL_COLLABORATION_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny>
   "channelInventory.collaborationNotesAdd": collaborationNotesAddSchema,
   "channelInventory.collaborationNotesEdit": collaborationNotesEditSchema,
 };
+const mallBusinessMutationSchema = mallInventoryMutationSchema.extend({ expectedAuthorizationVersion: z.string().min(8).max(160) });
+const MALL_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  "mallInventory.status": z.void(), "mallInventory.list": mallInventoryListSchema,
+  "mallInventory.link": mallBusinessMutationSchema,
+  "mallInventory.save": mallBusinessMutationSchema.extend({ data: z.unknown() }),
+  "mallInventory.publish": mallBusinessMutationSchema, "mallInventory.offshelf": mallBusinessMutationSchema,
+  "mallInventory.requestStatus": z.object({ requestId: mallInventoryRequestIdSchema }),
+};
 function businessInputSchema(method: string): z.ZodTypeAny {
+  if (MALL_BUSINESS_INPUT_SCHEMAS[method]) return MALL_BUSINESS_INPUT_SCHEMAS[method];
   if (method === "customer.starContext") return customerStarContextInputSchema;
   if (method === "customer.setStar") return customerSetStarSchema;
   if (method === "customer.starState") return customerStarStateInputSchema;
@@ -701,6 +721,15 @@ async function withBusinessSalesOrderMetadata<T>(
   });
 }
 
+const mallInventoryBusinessRouter = router({
+  status: businessQuery("mallInventory.status", "inventory"),
+  list: businessQuery("mallInventory.list", "inventory"),
+  link: businessMutation("mallInventory.link", "inventory"),
+  save: businessMutation("mallInventory.save", "inventory"),
+  publish: businessMutation("mallInventory.publish", "inventory"),
+  offshelf: businessMutation("mallInventory.offshelf", "inventory"),
+  requestStatus: businessQuery("mallInventory.requestStatus", "inventory"),
+});
 const inventoryBusinessRouter = router({
   list: businessQuery("inventory.list", "inventory"),
   listPaged: businessQuery("inventory.listPaged", "inventory"),
@@ -1331,6 +1360,7 @@ export const businessRouter = router({
   staffBindings: staffBindingsRouter,
   merchantScopes: merchantScopesRouter,
   inventory: inventoryBusinessRouter,
+  mallInventory: mallInventoryBusinessRouter,
   channelInventory: channelInventoryBusinessRouter,
   channelReference: channelReferenceBusinessRouter,
   importInventory: importInventoryBusinessRouter,

@@ -1,3 +1,4 @@
+import MallMaterials from "./MallMaterials";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
@@ -432,7 +433,7 @@ function businessRouteRequirement(
   location: string
 ): BusinessRouteRequirement | null {
   const pathname = location.split(/[?#]/, 1)[0] || "/";
-  if (pathname === "/" || pathname === "/inventory")
+  if (pathname === "/" || pathname === "/inventory" || pathname === "/mall-materials")
     return { capability: "inventory.read" };
   if (pathname === "/publish" || /^\/publish\/[^/]+\/edit$/.test(pathname)) {
     return { capability: "inventory.publish", requiresWrite: true };
@@ -482,6 +483,7 @@ function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
     <Switch>
       <Route path="/" component={MyInventory} />
       <Route path="/inventory" component={MyInventory} />
+      <Route path="/mall-materials" component={MallMaterials} />
       <Route path="/publish/:id/edit" component={EditInventory} />
       <Route path="/publish" component={PublishInventory} />
       <Route path="/inbound" component={InboundManagement} />
