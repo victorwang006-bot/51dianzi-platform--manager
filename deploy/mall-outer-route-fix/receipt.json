@@ -1,0 +1,14 @@
+{
+  "status": "deployed",
+  "finishedAt": 1794824271.489111,
+  "oneOuterRouteOnly": true,
+  "oldEntry": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-personal-ae30735d7873fcb048dd2bd6ec64c6904b73b2c603fd94a76241a42dccdf2d32-procurement-inbound-d19f802c80a3da828b94d7eaf995b5ab82ad4e8751dbe2d64fc1a0ff68b1ca0d.js",
+  "newEntry": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mall-outer-route-84a29643f25dd2d5.js",
+  "htmlBefore": "f8f0d4d237078afcb9f78a90ecec36a0b5ce1a2256fc7036c352adc432b22ff8",
+  "htmlAfter": "824c2af9e9d4debad88d609f3b4e58a57bff92b04bc4c98f96004fee574d437b",
+  "newModuleSha256": "84a29643f25dd2d53dfd330f43699462d48a2e1898b369f1a7586d3f83efd368",
+  "all12ProcessesUnchanged": true,
+  "protectedFilesUnchanged": true,
+  "noApiWorkerNginxOrDatabaseChanges": true,
+  "sourceSha256": "92ef26249f6b3785164bd42bb1876122b143cfbfd41f5480c1e758ad3efc8083"
+}
