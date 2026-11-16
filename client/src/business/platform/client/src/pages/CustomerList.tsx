@@ -1,5 +1,5 @@
 import { usePageMemory, useRememberedState, freshListOptions, useListPositionRestore, returnToPageSource } from "../hooks/usePageMemory";
-import { customerFiltersRequireConfirmation, confirmCustomerFilters } from "../lib/pageMemory";
+import { customerFiltersRequireConfirmation, confirmCustomerFilters, pageMemoryContext } from "../lib/pageMemory";
 import { useCustomerCreateDraft, useCustomerCreateDraftIdentity } from "../hooks/useCustomerCreateDraft";
 import { useCustomerStars } from "../hooks/useCustomerStars";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -275,8 +275,9 @@ export default function CustomerList() {
       pageSize: PAGE_SIZE,
     };
   }, [appliedFilters, page, contactScope.identityKey]);
+  const canQueryList = !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready) && d51Ready;
   const listQuery = trpc.customer.list.useQuery(listInput, freshListOptions({
-    enabled: !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
+    enabled: canQueryList,
     placeholderData: undefined,
   }, d51Ready));
   // Never render a previous identity/enterprise page, including its old total.
@@ -354,6 +355,8 @@ export default function CustomerList() {
   const safePage = result ? Math.min(page, totalPages) : page;
   const currentListInputRef = useRef(listInput);
   currentListInputRef.current = listInput;
+  const currentListEligibilityRef = useRef(canQueryList);
+  currentListEligibilityRef.current = canQueryList;
   useEffect(() => {
     if (stars.busy || listQuery.isFetching || !result || starFocusId.current === null) return;
     const id = starFocusId.current; starFocusId.current = null;
@@ -368,17 +371,29 @@ export default function CustomerList() {
     setCreateState({ dirty: false, busy: false });
     createButtonRef.current?.focus({ preventScroll: true });
   };
+  const renderedMemoryContext = pageMemoryContext();
   const handleCustomerSaved = ({ id, mode }: { id: number; mode: CustomerCreateSaveMode }) => {
+    // A deferred form callback belongs to the history entry that rendered it.
+    if (!mountedRef.current || pageMemoryContext() !== renderedMemoryContext) return;
     if (mode === "close") collapseCreate(true);
-    // A saved customer must not bypass a paused, invalid remembered date range.
-    if (filterConfirmationRequired || appliedDateError || appliedRangeError || !rangeIdentityReady || !d51Ready || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
+    // Read live navigation and query eligibility after every asynchronous boundary.
+    // Equal query values do not prove that this is still the same history entry.
     const savedListInput = listInput;
+    const savedMemoryContext = renderedMemoryContext;
+    const isCurrentSavedList = () => mountedRef.current && currentListEligibilityRef.current
+      && pageMemoryContext() === savedMemoryContext
+      && !customerFiltersRequireConfirmation()
+      && JSON.stringify(currentListInputRef.current) === JSON.stringify(savedListInput);
+    if (!isCurrentSavedList()) return;
     // Keep the current scope, filters and page. Never inject a record that does
     // not match the server's authoritative filtered result into this table.
     void utils.customer.list.invalidate()
-      .then(() => utils.customer.list.fetch(savedListInput, { staleTime: 0 }))
+      .then(() => {
+        if (!isCurrentSavedList()) return;
+        return utils.customer.list.fetch(savedListInput, { staleTime: 0 });
+      })
       .then(refreshed => {
-        if (!mountedRef.current || JSON.stringify(currentListInputRef.current) !== JSON.stringify(savedListInput)) return;
+        if (!refreshed || !isCurrentSavedList()) return;
         if (!refreshed.items.some(customer => customer.id === id)) {
           toast.info("客户已保存，当前筛选或页码下未显示，可调整筛选或查看客户。", {
             action: { label: "查看客户", onClick: () => navigate(`/customers/${id}`) },
@@ -386,7 +401,7 @@ export default function CustomerList() {
         }
       })
       .catch(() => {
-        if (mountedRef.current) toast.warning("客户已保存，但列表刷新失败，请重试刷新列表，不要重复录入。");
+        if (isCurrentSavedList()) toast.warning("客户已保存，但列表刷新失败，请重试刷新列表，不要重复录入。");
       });
   };
 
@@ -783,10 +798,12 @@ export default function CustomerList() {
           message={`无法读取客户权限：${errorMessage(contextQuery.error)}`}
           onRetry={() => contextQuery.refetch()}
         />
-      ) : listQuery.isError && !filterConfirmationRequired && !appliedDateError && !appliedRangeError ? (
+      ) : listQuery.isError && canQueryList ? (
         <ErrorPanel
           message={errorMessage(listQuery.error)}
-          onRetry={() => listQuery.refetch()}
+          onRetry={() => {
+            if (currentListEligibilityRef.current && pageMemoryContext() === renderedMemoryContext && !customerFiltersRequireConfirmation()) void listQuery.refetch();
+          }}
         />
       ) : (
         <AdminDataPanel className="overflow-hidden p-0">

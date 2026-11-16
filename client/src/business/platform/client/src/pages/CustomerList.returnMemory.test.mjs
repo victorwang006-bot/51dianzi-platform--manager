@@ -277,3 +277,58 @@ test('detail refresh with a fresh JS runtime reads its same-scope sessionStorage
   runtime.listFetched = true; runtime.listFetching = false; await render(); await act(async () => drain());
   assert.deepEqual(viewport, { x: 18, y: 700 }); assert.equal(host.querySelector('[data-page-memory-scroll]').scrollLeft, 432); assert.equal(lastInput().page, 4); assert.equal(lastInput().updatedFrom, '2026-09-09'); assert.equal(lastInput().updatedTo, '2026-09-14'); assert.equal(control('搜索客户名称、联系人或电话').value, 'unapplied UI');
 });
+
+// Regression: save completion must not fetch through a later UI/identity gate.
+for (const transition of ['unmount', 'revoke-identity', 'same-path-entry', 'legacy-source-back']) test(`saved invalidate pending → ${transition} blocks stale manual fetch`, async () => {
+  let release;
+  runtime.utils.customer.list.invalidate = () => new Promise(resolve => { release = resolve; });
+  if (transition === 'legacy-source-back') {
+    const legacy = { ...applied }; delete legacy.updatedFrom; delete legacy.updatedTo;
+    loadSnapshot(legacy, legacy); await render(); assertPaused();
+    const originalId = id();
+    await act(async () => history.pushState({}, '', '/workbench/customers?merchantId=30061'));
+    await render(); await input('更新时间开始日期', '2026-09-09'); await input('更新时间结束日期', '2026-09-14'); await click('搜索');
+    assert.equal(enabled(), true); assert.notEqual(id(), originalId);
+  } else { remember(); await render(); }
+  await click('录入客户');
+  await act(async () => runtime.createFormProps.onSaved({ id: 900, mode: 'close' }));
+  assert.equal(typeof release, 'function'); assert.equal(runtime.fetchCalls.length, 0);
+  if (transition === 'unmount') await unmountPage();
+  else if (transition === 'revoke-identity') { runtime.ready = false; await render(); }
+  else if (transition === 'same-path-entry') {
+    await act(async () => history.pushState({}, '', '/workbench/customers?merchantId=30061'));
+    await render();
+  } else {
+    const done = pop(); history.back(); await done; await render();
+    assert.equal(enabled(), false); assert.equal(memory.customerFiltersRequireConfirmation(), true);
+    assert.equal(memory.readPageSlot('page', 1), 4);
+  }
+  await act(async () => { release(); await Promise.resolve(); await Promise.resolve(); });
+  assert.equal(runtime.fetchCalls.length, 0, 'stale callback must not issue manual list fetch');
+});
+test('saved invalidate on the same eligible history entry still refreshes its exact applied query', async () => {
+  remember(); await render(); const expected = lastInput(); let release;
+  runtime.utils.customer.list.invalidate = () => new Promise(resolve => { release = resolve; });
+  await click('录入客户'); await act(async () => runtime.createFormProps.onSaved({ id: 900, mode: 'close' }));
+  await act(async () => { release(); await Promise.resolve(); await Promise.resolve(); });
+  assert.deepEqual(runtime.fetchCalls, [expected]);
+  assert.equal(lastInput().page, 4); assert.equal(lastInput().updatedTo, '2026-09-14');
+});
+
+test('a saved form callback captured before same-path navigation cannot close or refresh the later entry', async () => {
+  remember(); await render(); await click('录入客户');
+  const oldSaved = runtime.createFormProps.onSaved;
+  await act(async () => history.pushState({}, '', '/workbench/customers?merchantId=30061'));
+  await render(); assert.equal(memory.readPageSlot('createOpen', false), true);
+  await act(async () => oldSaved({ id: 900, mode: 'close' }));
+  assert.equal(memory.readPageSlot('createOpen', false), true);
+  assert.equal(runtime.fetchCalls.length, 0);
+});
+test('a failed starred list cannot offer manual retry until the current star authority is ready', async () => {
+  remember(); runtime.listError = true; runtime.starsReady = false; await render();
+  assert.equal(enabled(), false); assert.equal(runtime.refetchCalls, 0);
+  assert.equal([...host.querySelectorAll('button')].some(node => node.textContent.trim() === '重试'), false);
+  runtime.starsReady = true; await render(); assert.equal(enabled(), true);
+  const retry = [...host.querySelectorAll('button')].find(node => node.textContent.trim() === '重试');
+  assert.ok(retry); await act(async () => retry.click()); assert.equal(runtime.refetchCalls, 1);
+});
