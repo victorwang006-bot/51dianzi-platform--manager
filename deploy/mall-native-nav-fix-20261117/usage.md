@@ -2,4 +2,4 @@
 
 仅撤销商城路由对全站导航query/display的两处禁用条件。导航按当前后台账号的成功授权投影显示；不改或伪造capabilities，不挂BusinessScope，不改商城原生PermissionGate/独立数据。
 
-构建器读取当前真实导航/HTML，严格两个字节替换及逆向校验；只更新导航asset和后台HTML/importmap，当前App/商城leaf/CSS不变。发布器沿用旧route-fix双锁、旧哈希CAS、12进程/配置保护、自有哈希HTML回滚，不含API重载或DB操作。测试8项真实DashboardLayout+AdminWorkspaceNavigation DOM通过。正式apply尚待预检及最终types通过，完成状态以TODO回执为准。
+构建器读取当前真实导航/HTML，严格两个字节替换及逆向校验；只更新导航asset和后台HTML/importmap，当前App/商城leaf/CSS不变。发布器沿用旧route-fix双锁、旧哈希CAS、12进程/配置保护、自有哈希HTML回滚，不含API重载或DB操作。测试8项真实DashboardLayout+AdminWorkspaceNavigation DOM通过。正式apply及公网验收已完成，详情见receipt.md。
