@@ -293,6 +293,7 @@ function AppRoutes() {
         <Route path={"/analytics"} component={AnalyticsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
         <Route path={"/workbench/inbound"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/mall-materials"} component={BusinessWorkbenchRoute} />
         <Route
           path={"/workbench/channel-inventory"}
           component={BusinessWorkbenchRoute}
