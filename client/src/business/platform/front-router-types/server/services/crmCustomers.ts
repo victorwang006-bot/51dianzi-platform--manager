@@ -6,6 +6,7 @@ import type {
   CustomerData,
   CustomerFollowUp,
   CustomerMember,
+  CustomerContext,
   CustomerRecord,
 } from "../../../shared/crmCustomers";
 import { getDb } from "../db";
@@ -63,7 +64,7 @@ export async function syncCrmCustomerAssignmentOwner(tx: CrmSqlExecutor, enterpr
 }
 import { customerOwnershipQuerySchema, type CustomerOwnershipQuery, type CustomerOwnershipResult } from "../../../shared/customerOwnership";
 import { consumeCustomerOwnershipQuota } from "../customerOwnershipQuota";
-import { customerDataSchema, customerUpdatedRangeSchema, customerUpdatedSqlBounds } from "../../../shared/crmCustomers";
+import { customerDataSchema, customerListScopeSchema, customerUpdatedRangeSchema, customerUpdatedSqlBounds } from "../../../shared/crmCustomers";
 import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../shared/businessIndustry";
 function validateWriteData(data: CustomerData): CustomerData {
   const checked = customerDataSchema.safeParse(data);
@@ -150,6 +151,54 @@ async function requireDb() {
 
 export function displayName(name: string | null | undefined, userId: number) {
   return name?.trim() || `用户${userId}`;
+}
+
+/** Approved business display aliases only; never update login names or infer identity from names. */
+const CUSTOMER_MEMBER_DISPLAY_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  "1:407883": "jean",
+  "1:409506": "ocean",
+});
+export function customerMemberDisplayName(enterpriseId: number, userId: number, name: string | null | undefined) {
+  const base = displayName(name, userId);
+  const alias = CUSTOMER_MEMBER_DISPLAY_ALIASES[`${enterpriseId}:${userId}`];
+  return alias ? `${base}（${alias}）` : base;
+}
+
+function customerCanReadTeam(policy: CrmModulePolicy) {
+  return policy.read && (policy.scope === "enterprise" || (policy.scope === "team" && policy.explicit
+    && policy.teamRole === "leader" && Number.isSafeInteger(policy.teamId) && Number(policy.teamId) > 0));
+}
+type ReadableCustomerTeam = { teamId: number; name: string; isMember: unknown };
+/** Enterprise readers may choose active enterprise teams; explicit leaders only their current team. */
+async function customerReadableTeams(executor: CrmSqlExecutor, scope: CrmAccessIdentity, policy: CrmModulePolicy) {
+  if (!customerCanReadTeam(policy)) return [];
+  const ownTeam = policy.scope === "enterprise" ? sql`` : sql`AND t.id = ${policy.teamId} AND EXISTS (
+    SELECT 1 FROM enterprise_team_members leader_membership
+     WHERE leader_membership.enterpriseId = t.enterpriseId AND leader_membership.teamId = t.id
+       AND leader_membership.userId = ${scope.actorUserId} AND leader_membership.teamRole = 'leader'
+  )`;
+  return resultRows<ReadableCustomerTeam>(await executor.execute(sql`
+    SELECT t.id AS teamId, t.name, EXISTS (
+      SELECT 1 FROM enterprise_team_members own_membership
+       WHERE own_membership.enterpriseId = t.enterpriseId AND own_membership.teamId = t.id
+         AND own_membership.userId = ${scope.actorUserId}
+    ) AS isMember
+      FROM enterprise_teams t
+     WHERE t.enterpriseId = ${scope.enterpriseId} AND t.status = 'active' ${ownTeam}
+     ORDER BY isMember DESC, t.id
+  `)).map(team => ({ ...team, teamId: Number(team.teamId) }));
+}
+
+/** Additional list restriction, not a replacement for the actor's original customer policy. */
+export function crmCustomerFrozenTeamWhere(scope: CrmAccessIdentity, teamId: number) {
+  return sql`EXISTS (
+    SELECT 1 FROM enterprise_team_record_assignments list_team_assignment
+    INNER JOIN enterprise_teams list_team ON list_team.id = list_team_assignment.teamId
+      AND list_team.enterpriseId = list_team_assignment.enterpriseId AND list_team.status = 'active'
+    WHERE list_team_assignment.enterpriseId = ${scope.enterpriseId}
+      AND list_team_assignment.enterpriseId = c.enterpriseId AND list_team_assignment.teamId = ${teamId}
+      AND list_team_assignment.recordType = 'customer' AND list_team_assignment.recordId = c.id
+  )`;
 }
 
 /** Keep matching conservative: trim/collapse whitespace, but never transliterate or remove punctuation. */
@@ -262,7 +311,7 @@ function mapCustomer(row: CustomerRow): CustomerRecord {
     id: Number(row.id),
     enterpriseId: Number(row.enterpriseId),
     assignedUserId: Number(row.assignedUserId),
-    assignedName: displayName(row.assignedName, Number(row.assignedUserId)),
+    assignedName: customerMemberDisplayName(Number(row.enterpriseId), Number(row.assignedUserId), row.assignedName),
     createdByUserId: Number(row.createdByUserId),
     createdByName: displayName(row.createdByName, Number(row.createdByUserId)),
     name: row.name,
@@ -580,12 +629,7 @@ export function prepareCrmCustomerCreateExtension(
   return extension;
 }
 
-export async function getCustomerContext(scope: CustomerServerScope): Promise<{
-  actorUserId: number;
-  canManageAll: boolean;
-  canReadAll: boolean;
-  members: CustomerMember[];
-}> {
+export async function getCustomerContext(scope: CustomerServerScope): Promise<CustomerContext> {
   const db = await requireDb();
   const actor = resultRows<MembershipRow & { superAdminUserId: number }>(await db.execute(sql`
     SELECT em.id, em.userId, em.role, em.status,
@@ -605,11 +649,13 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
     SELECT p.permissionKey FROM enterprise_member_permissions p WHERE p.enterpriseMemberId = ${actor.id}
   `));
   const canManageAll = policy.write && policy.scope === "enterprise" && (owner || permissionRows.some(row => row.permissionKey === CUSTOMER_ALL_PERMISSION));
-  const canReadAll = policy.read && (policy.scope === "enterprise" || (policy.scope === "team" && policy.explicit && policy.teamRole === "leader" && Boolean(policy.teamId)));
-  if (!canManageAll) {
-    return { actorUserId: scope.actorUserId, canManageAll: false, canReadAll, members: [{ userId: scope.actorUserId, name: displayName(actor.name, scope.actorUserId) }] };
-  }
-  const members = resultRows<{ userId: number; name: string | null }>(await db.execute(sql`
+  const canReadEnterprise = policy.read && policy.scope === "enterprise";
+  const canReadAll = customerCanReadTeam(policy); // Legacy "all" still means the original authorized policy.
+  const toMember = (member: { userId: number; name: string | null }): CustomerMember => ({
+    userId: Number(member.userId), name: customerMemberDisplayName(scope.enterpriseId, Number(member.userId), member.name),
+  });
+  // Keep the original write-capable enterprise members contract; read teams have their own member list below.
+  const members = canManageAll ? resultRows<{ userId: number; name: string | null }>(await db.execute(sql`
     SELECT em.userId, COALESCE(u.name, u.username, CONCAT('用户', u.id)) AS name
       FROM enterprise_members em INNER JOIN users u ON u.id = em.userId
       INNER JOIN enterprises e ON e.id = em.enterpriseId
@@ -624,13 +670,38 @@ export async function getCustomerContext(scope: CustomerServerScope): Promise<{
          )
        )
      ORDER BY em.userId
-  `));
-  return { actorUserId: scope.actorUserId, canManageAll: true, canReadAll, members: members.map(member => ({ userId: Number(member.userId), name: displayName(member.name, Number(member.userId)) })) };
+  `)).map(toMember) : [toMember({ userId: scope.actorUserId, name: actor.name })];
+  const availableTeams = await customerReadableTeams(db, scope, policy);
+  const teams: CustomerContext["teams"] = [];
+  const memberRead = new Map<number, boolean>([[scope.actorUserId, policy.read]]);
+  for (const team of availableTeams) {
+    const candidates = resultRows<{ userId: number; name: string | null }>(await db.execute(sql`
+      SELECT em.userId, COALESCE(u.name, u.username, CONCAT('用户', u.id)) AS name
+        FROM enterprise_team_members tm
+        INNER JOIN enterprise_members em ON em.enterpriseId = tm.enterpriseId AND em.userId = tm.userId
+        INNER JOIN users u ON u.id = em.userId
+       WHERE tm.enterpriseId = ${scope.enterpriseId} AND tm.teamId = ${team.teamId}
+         AND em.status = 'active' AND u.loginDisabled = 0
+       ORDER BY em.userId
+    `));
+    const teamMembers: CustomerMember[] = [];
+    for (const candidate of candidates) {
+      const userId = Number(candidate.userId);
+      if (!memberRead.has(userId)) {
+        const targetPolicy = await resolveBusinessModuleAccess(userId, scope.enterpriseId, "customers", db);
+        memberRead.set(userId, targetPolicy.read);
+      }
+      if (memberRead.get(userId)) teamMembers.push(toMember(candidate));
+    }
+    teams.push({ teamId: team.teamId, name: team.name, members: teamMembers });
+  }
+  return { actorUserId: scope.actorUserId, canManageAll, canReadAll, members, canReadEnterprise,
+    canReadTeam: canReadAll && teams.length > 0, teams, defaultTeamId: teams[0]?.teamId ?? null };
 }
 
 export async function listCustomers(scope: CustomerServerScope, input: {
   keyword: string; grade?: CustomerRecord["grade"]; stage?: CustomerRecord["stage"];
-  scope: "mine" | "all"; assignedUserId?: number; archived: boolean; due: "all" | "today" | "overdue";
+  scope: "mine" | "team" | "all"; teamId?: number; assignedUserId?: number; archived: boolean; due: "all" | "today" | "overdue";
   page: number; pageSize: number; starUserId?: number; starredOnly?: boolean; starMode?: "assignee";
   expectedEnterpriseId?: number; expectedActorUserId?: number;
   updatedFrom?: string; updatedTo?: string;
@@ -639,6 +710,8 @@ export async function listCustomers(scope: CustomerServerScope, input: {
     || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "账号或企业已切换，请刷新后重试" });
   }
+  const listScope = customerListScopeSchema.safeParse({ scope: input.scope, teamId: input.teamId });
+  if (!listScope.success) throw new TRPCError({ code: "BAD_REQUEST", message: listScope.error.issues[0]?.message ?? "客户范围无效", cause: listScope.error });
   const updatedRange = customerUpdatedRangeSchema.safeParse({ updatedFrom: input.updatedFrom, updatedTo: input.updatedTo });
   if (!updatedRange.success) throw new TRPCError({ code: "BAD_REQUEST", message: updatedRange.error.issues[0]?.message ?? "更新日期范围无效", cause: updatedRange.error });
   const updatedBounds = customerUpdatedSqlBounds(updatedRange.data);
@@ -647,14 +720,21 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   const assigneeMode = input.starMode === "assignee";
   const read = async (db: CrmSqlExecutor, access: { actorPolicy: CrmModulePolicy; targetPolicy: CrmModulePolicy; assigneeAllowed?: SQLWrapper }) => {
   const conditions = [crmCustomerPolicyWhere(scope, access.actorPolicy)];
+  if (input.scope === "team") {
+    const teams = await customerReadableTeams(db, scope, access.actorPolicy);
+    if (!teams.some(team => team.teamId === input.teamId)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "没有所选团队的客户读取权限" });
+    }
+    conditions.push(crmCustomerFrozenTeamWhere(scope, input.teamId!));
+  }
   const delegated = !assigneeMode && starUserId !== scope.actorUserId;
   if (delegated) {
-    if (input.scope !== "all" || input.assignedUserId !== starUserId) {
+    if ((input.scope !== "all" && input.scope !== "team") || input.assignedUserId !== starUserId) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "组员星标列表须选择对应组员负责人" });
     }
     conditions.push(crmCustomerPolicyWhere({ enterpriseId: scope.enterpriseId, actorUserId: starUserId }, access.targetPolicy));
   }
-  const effectiveAll = input.scope === "all";
+  const effectiveAll = input.scope === "all" || input.scope === "team";
   if (!effectiveAll) conditions.push(sql`c.assignedUserId = ${scope.actorUserId}`);
   if (input.assignedUserId && effectiveAll) conditions.push(sql`c.assignedUserId = ${input.assignedUserId}`);
   conditions.push(input.archived ? sql`c.archivedAt IS NOT NULL` : sql`c.archivedAt IS NULL`);
@@ -786,7 +866,7 @@ export async function searchCustomerOwnership(scope: CustomerServerScope, input:
       hasMore: rows.length > 20,
       matches: rows.slice(0, 20).map(row => ({
         companyName: row.name,
-        ownerName: displayName(row.assignedName, Number(row.assignedUserId)),
+        ownerName: customerMemberDisplayName(scope.enterpriseId, Number(row.assignedUserId), row.assignedName),
         ownership: Number(row.assignedUserId) === scope.actorUserId ? "mine" as const : "colleague" as const,
         archived: Boolean(row.archivedAt),
         matchType: normalizeCustomerName(row.name) === normalized ? "exact" as const : "similar" as const,
@@ -803,7 +883,7 @@ export async function checkCustomerDuplicate(scope: CustomerServerScope, input: 
   return {
     hasDuplicate: state.rows.length > 0,
     restricted: state.restricted,
-    matches: state.visible.slice(0, 20).map(row => ({ id: Number(row.id), name: row.name, assignedName: displayName(row.assignedName, Number(row.assignedUserId)), archived: Boolean(row.archivedAt) })),
+    matches: state.visible.slice(0, 20).map(row => ({ id: Number(row.id), name: row.name, assignedName: customerMemberDisplayName(scope.enterpriseId, Number(row.assignedUserId), row.assignedName), archived: Boolean(row.archivedAt) })),
   };
 }
 

@@ -203,7 +203,9 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
         workspaceId: "business" as const,
         label: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? "采购入库" : entry.label,
         items: entry.items,
-        directItem: entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : [])
+        directItem: entry.id === "procurement" && entry.items.length === 1 && entry.items[0].path === "/workbench/procurement-demands"
+          ? entry.items[0]
+          : entry.id === "inventory" && entry.items.length === 1 && entry.items[0].path === "/workbench/inbound" ? entry.items[0] : undefined }] : [])
       .sort((left, right) => left.id === "procurement-management" ? -1 : right.id === "procurement-management" ? 1 : 0),
     ...(salesContext.entries.length ? [{ id: "sales-orders" as const, workspaceId: "business" as const,
       label: "销售订单", items: salesContext.entries.map(entry => entry.item) }] : []),

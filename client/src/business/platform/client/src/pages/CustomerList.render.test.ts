@@ -17,6 +17,9 @@ const runtime = vi.hoisted(() => ({
   listOptions: [] as any[],
   remembered: {} as Record<string, unknown>,
   canManageAll: false, canReadAll: false, members: [] as { userId: number; name: string }[],
+  canReadEnterprise: undefined as boolean | undefined, canReadTeam: undefined as boolean | undefined,
+  teams: null as { teamId: number; name: string; members: { userId: number; name: string }[] }[] | null,
+  defaultTeamId: null as number | null,
   identityReady: true, restoreCalls: [] as boolean[],
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers", runtime.navigate], useSearch: () => "" }));
@@ -48,7 +51,12 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   useUtils: () => runtime.utils,
   enterprise: { me: { useQuery: () => ({ data: { enterprise: { id: runtime.enterpriseId }, currentUserId: runtime.actorId, permissionKeys: ["inventory.manage"], member: { status: "active", permissionVersion: 1 } }, isError: runtime.enterpriseFailed, refetch: runtime.authorityRetry }) } },
   customer: {
-    context: { useQuery: () => ({ data: { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, canReadAll: runtime.canReadAll || runtime.canManageAll, members: runtime.members }, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn() }) },
+    context: { useQuery: () => {
+      const data = { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, canReadAll: runtime.canReadAll || runtime.canManageAll,
+        canReadEnterprise: runtime.canReadEnterprise ?? runtime.canManageAll, canReadTeam: runtime.canReadTeam ?? (runtime.canReadAll && !runtime.canManageAll),
+        teams: runtime.teams ?? [{ teamId: 173, name: "合成团队", members: runtime.targets }], defaultTeamId: runtime.defaultTeamId ?? 173, members: runtime.members };
+      return { data, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn().mockResolvedValue({ data, isError: runtime.customerContextError }) };
+    } },
     list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: runtime.listError, error: new Error("synthetic list error"), refetch: runtime.listRefetch }; } },
     contactsSummary: { useQuery: () => ({ data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } }) },
     contactsList: { useQuery: () => ({ data: { contacts: [] }, isPending: false, isError: false, refetch: vi.fn() }) },
@@ -94,6 +102,7 @@ beforeEach(() => {
   runtime.listOptions = [];
   runtime.remembered = {};
   runtime.canManageAll = false; runtime.canReadAll = false; runtime.members = [];
+  runtime.canReadEnterprise = undefined; runtime.canReadTeam = undefined; runtime.teams = null; runtime.defaultTeamId = null;
   runtime.identityReady = true; runtime.restoreCalls = [];
   runtime.delegatedRows = {};
   runtime.starContext.mockReset().mockImplementation(async () => ({ enterpriseId: runtime.enterpriseId, actorUserId: runtime.actorId, targets: runtime.targets }));
@@ -467,7 +476,7 @@ describe("pureUICustomerStars starred-only filter v22", () => {
 });
 
 describe("direct current-assignee focus stars", () => {
-  const filters = { keyword: "", grade: "", stage: "", scope: "all", assignedUserId: "", due: "all", archived: false, starredOnly: false };
+  const filters = { keyword: "", grade: "", stage: "", scope: "team", teamId: "173", assignedUserId: "", due: "all", archived: false, starredOnly: false };
   function leaderRows() {
     runtime.canReadAll = true; runtime.canManageAll = false;
     runtime.targets = [{ userId: 7, name: "组长A" }, { userId: 8, name: "员工B" }, { userId: 9, name: "员工C" }];
@@ -479,10 +488,10 @@ describe("direct current-assignee focus stars", () => {
   it("shows A/B/C actual differing states and directly writes B with B revision, never self", async () => {
     leaderRows(); await render();
     expect(runtime.canManageAll).toBe(false);
-    expect(host.querySelector('[aria-label="客户范围"]')?.textContent).toBe("授权组员客户");
+    expect(host.querySelector('[aria-label="客户范围"]')?.textContent).toBe("合成团队");
     expect([801, 802, 803].map(id => star(id).getAttribute("aria-pressed"))).toEqual(["true", "false", "true"]);
     expect(star(802).disabled).toBe(false);
-    expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", starMode: "assignee", expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "team", teamId: 173, starMode: "assignee", expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(runtime.listInputs.at(-1)).not.toHaveProperty("starUserId");
     await click(star(802)); expect(runtime.setStar.mock.calls[0][0]).toMatchObject({ customerId: 802, targetUserId: 8, expectedRevision: 17, starred: true, starMode: "assignee" });
     expect(star(802).getAttribute("aria-pressed")).toBe("true");
@@ -493,6 +502,7 @@ describe("direct current-assignee focus stars", () => {
   it("employee B reads the same persisted B state and cancels with matching revision", async () => {
     leaderRows(); await render(); await click(star(802)); const actualB = { ...runtime.rows[1] };
     runtime.actorId = 8; runtime.canReadAll = false; runtime.targets = [{ userId: 8, name: "员工B" }]; runtime.rows = [actualB]; await render();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); await click(button("查看我负责的客户"));
     expect(star(802).getAttribute("aria-pressed")).toBe("true"); expect(star(802).disabled).toBe(false);
     expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", starMode: "assignee", expectedActorUserId: 8 });
     await click(star(802)); expect(runtime.setStar.mock.calls[1][0]).toMatchObject({ targetUserId: 8, expectedRevision: 18, starred: false });
@@ -540,6 +550,7 @@ describe("direct current-assignee focus stars", () => {
     leaderRows(); runtime.setStar.mockRejectedValueOnce(Object.assign(new Error("timeout"), { data: { code: "TIMEOUT" } })); await render(); await click(star(802));
     runtime.targets = [{ userId: 7, name: "A" }]; runtime.authVersion = "revoked-assignee"; runtime.canReadAll = false;
     runtime.rows = [row(801)]; await render();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); await click(button("查看我负责的客户"));
     expect(host.textContent).not.toContain("重试原重点客户请求"); expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "mine", starMode: "assignee" });
     expect(runtime.setStar).toHaveBeenCalledTimes(1);
   });
@@ -549,6 +560,7 @@ describe("direct current-assignee focus stars", () => {
     const original = runtime.listInputs.at(-1); const command = runtime.setStar.mock.calls[0][0];
     runtime.actorId = 8; runtime.canReadAll = false; runtime.targets = [{ userId: 8, name: "B" }]; runtime.rows = [runtime.rows[1]]; await render();
     expect(runtime.listInputs.at(-1).expectedActorUserId).toBe(8); expect(runtime.listInputs.at(-1)).not.toEqual(original);
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); await click(button("查看我负责的客户"));
     await act(async () => { finish({ customerId: 802, targetUserId: 8, requestId: command.requestId, isStarred: true, starRevision: 18, idempotent: false }); });
     expect(runtime.utils.customer.list.invalidate).not.toHaveBeenCalled(); expect(star(802).getAttribute("aria-pressed")).toBe("false");
   });
@@ -558,16 +570,17 @@ describe("authorized read-scope entry", () => {
   it("a non-enterprise leader can choose authorized employee customers through the real scope control", async () => {
     runtime.canReadAll = true; runtime.canManageAll = false;
     runtime.targets.push({ userId: 8, name: "员工B" });
-    await render(); expect(runtime.listInputs.at(-1).scope).toBe("mine");
+    runtime.teams = [{ teamId: 173, name: "当前合成团队", members: runtime.targets }, { teamId: 284, name: "其他合成团队", members: [{ userId: 8, name: "员工B" }] }];
+    await render(); expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "team", teamId: 173 });
     const oldScroll = HTMLElement.prototype.scrollIntoView;
     HTMLElement.prototype.scrollIntoView = vi.fn();
     try {
       const control = host.querySelector<HTMLButtonElement>('[aria-label="客户范围"]')!;
       await act(async () => { control.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
-      const option = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(item => item.textContent?.includes("授权组员客户"))!;
+      const option = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(item => item.textContent?.includes("其他合成团队"))!;
       expect(option).toBeDefined(); expect(document.body.textContent).not.toContain("替员工标星");
       await act(async () => { option.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
-      expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "all", starMode: "assignee", page: 1 });
+      expect(runtime.listInputs.at(-1)).toMatchObject({ scope: "team", teamId: 284, starMode: "assignee", page: 1 });
       expect(runtime.canManageAll).toBe(false); expect(runtime.setStar).not.toHaveBeenCalled();
     } finally { HTMLElement.prototype.scrollIntoView = oldScroll; }
   });
@@ -802,6 +815,7 @@ describe("actual CustomerList updated-date filters", () => {
 
   it("keeps applied dates across page/star/scope permission changes without promoting date drafts or changing identity guards", async () => {
     restoredDates(); runtime.canManageAll = true;
+    runtime.members = [{ userId: 8, name: "合成负责人" }];
     runtime.remembered.appliedFilters = { ...legacyFilters, ...appliedDates, scope: "all", assignedUserId: "8" };
     runtime.remembered.draftFilters = { ...legacyFilters, ...draftDates, scope: "all", assignedUserId: "8" };
     await render(); await click(button("上一页"));
@@ -810,6 +824,8 @@ describe("actual CustomerList updated-date filters", () => {
     expect(runtime.listInputs.at(-1)).toMatchObject({ ...appliedDates, starredOnly: true, page: 1, starMode: "assignee" });
     expect(dateInput("开始").value).toBe(draftDates.updatedFrom);
     runtime.canManageAll = false; await render();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(runtime.listInputs.at(-1).scope).toBe("all");
+    await click(button("查看我负责的客户"));
     expect(runtime.listInputs.at(-1)).toMatchObject({ ...appliedDates, scope: "mine", starredOnly: true, expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(runtime.listInputs.at(-1)).not.toHaveProperty("assignedUserId"); expect(dateInput("结束").value).toBe(draftDates.updatedTo);
     expect(runtime.setStar).not.toHaveBeenCalled();

@@ -62,6 +62,11 @@ export type CustomerAudit = {
   id: number; action: string; actorUserId: number; actorName: string; note: string; createdAt: string;
 };
 export type CustomerMember = { userId: number; name: string };
+export type CustomerTeam = { teamId: number; name: string; members: CustomerMember[] };
+export type CustomerContext = {
+  actorUserId: number; canManageAll: boolean; canReadAll: boolean; members: CustomerMember[];
+  canReadEnterprise: boolean; canReadTeam: boolean; teams: CustomerTeam[]; defaultTeamId: number | null;
+};
 export const customerCreateSchema = z.object({
   data: customerDataSchema, requestId: customerRequestIdSchema,
   initialFollowUp: z.string().trim().max(4000).default(""),
@@ -98,16 +103,25 @@ export function customerUpdatedSqlBounds(input: z.input<typeof customerUpdatedRa
   };
 }
 
+const validCustomerTeamScope = (input: { scope: string; teamId?: number }) =>
+  input.scope === "team" ? input.teamId !== undefined : input.teamId === undefined;
+const customerTeamScopeRefinement = { message: "团队范围必须选择团队，其他范围不能携带团队", path: ["teamId"] };
+/** Shape is shared with the list; the service also checks this refinement for direct calls. */
+export const customerListScopeSchema = z.object({
+  scope: z.enum(["mine", "team", "all"]).default("mine"),
+  teamId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
+}).refine(validCustomerTeamScope, customerTeamScopeRefinement);
+
 export const customerListSchema = customerUpdatedRangeSchema.safeExtend({
   keyword: optionalText(128), grade: z.enum(CUSTOMER_GRADES).optional(), stage: z.enum(CUSTOMER_STAGES).optional(),
-  scope: z.enum(["mine", "all"]).default("mine"), assignedUserId: z.number().int().positive().optional(),
+  ...customerListScopeSchema.shape, assignedUserId: z.number().int().positive().optional(),
   starUserId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   starMode: z.literal("assignee").optional(),
   expectedEnterpriseId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   expectedActorUserId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   archived: z.boolean().default(false), due: z.enum(["all", "today", "overdue"]).default("all"),
   page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(20),
-});
+}).refine(validCustomerTeamScope, customerTeamScopeRefinement);
 export const customerFollowUpSchema = z.object({
   customerId: z.number().int().positive(), requestId: customerRequestIdSchema,
   method: z.enum(CUSTOMER_FOLLOW_METHODS).default("phone"),

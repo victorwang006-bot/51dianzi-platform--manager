@@ -51,7 +51,7 @@ import "../components/customers/CustomerWorkbench.css";
 const PAGE_SIZE = 20;
 type GradeFilter = "" | CustomerData["grade"];
 type StageFilter = "" | CustomerData["stage"];
-type ScopeFilter = "mine" | "all";
+type ScopeFilter = "mine" | "team" | "all";
 type DueFilter = "all" | "today" | "overdue";
 
 type FilterState = {
@@ -59,6 +59,7 @@ type FilterState = {
   grade: GradeFilter;
   stage: StageFilter;
   scope: ScopeFilter;
+  teamId?: string;
   assignedUserId: string;
   due: DueFilter;
   archived: boolean;
@@ -109,7 +110,7 @@ export default function CustomerList() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const utils = trpc.useUtils();
-  const contextQuery = trpc.customer.context.useQuery();
+  const contextQuery = trpc.customer.context.useQuery(undefined, { staleTime: 0, refetchOnMount: "always" });
   const contactScope = useCustomerContactScope(contextQuery.data);
   const supplyAuthority = useCustomerSupplyAuthority(contactScope.scope, contactScope.ready);
   const [supplyCustomer, setSupplyCustomer] = useState<{ id: number; version: number; authorityKey: string } | null>(null);
@@ -149,8 +150,68 @@ export default function CustomerList() {
   const [moreFiltersOpen, setMoreFiltersOpen] = useRememberedState("moreFiltersOpen", false);
   const [filterDateError, setFilterDateError] = useState<string | null>(null);
   const [page, setPage] = useRememberedState("page", 1);
-  const canManageAll = contextQuery.data?.canManageAll ?? false;
-  const canReadAll = contextQuery.data?.canReadAll ?? canManageAll;
+  // The old canReadAll includes delegated reachability, not enterprise authority.
+  // Never promote it (or write/manage authority) into an enterprise read range.
+  const [verifiedRangeIdentity, setVerifiedRangeIdentity] = useState<string | null>(null);
+  const firstRangeIdentity = useRef<string | null>(null);
+  const rangeVerificationRequest = useRef<string | null>(null);
+  const rangeVerificationIdentity = useRef(contactScope.identityKey);
+  rangeVerificationIdentity.current = contactScope.identityKey;
+  const rangeIdentityReady = verifiedRangeIdentity === contactScope.identityKey;
+  useEffect(() => {
+    if (!contactScope.ready || contextQuery.isPending || contextQuery.isFetching || contextQuery.isError || !contextQuery.data) return;
+    const identityKey = contactScope.identityKey;
+    if (verifiedRangeIdentity === identityKey || rangeVerificationRequest.current === identityKey) return;
+    if (firstRangeIdentity.current === null) {
+      firstRangeIdentity.current = identityKey;
+      setVerifiedRangeIdentity(identityKey);
+      return;
+    }
+    // A same-actor enterprise switch cannot reuse the prior tenant's team roster.
+    // Wait for a fresh authoritative context rather than trusting the cached flags.
+    // Do not cancel this verification merely because refetch toggles isFetching.
+    rangeVerificationRequest.current = identityKey;
+    void contextQuery.refetch().then(fresh => {
+      if (mountedRef.current && rangeVerificationIdentity.current === identityKey && !fresh.isError
+        && fresh.data?.actorUserId === contactScope.scope?.actorUserId) setVerifiedRangeIdentity(identityKey);
+    }).catch(() => { /* Context error/retry stays authoritative; no fallback query. */ })
+      .finally(() => { if (rangeVerificationRequest.current === identityKey) rangeVerificationRequest.current = null; });
+  }, [contactScope.identityKey, contactScope.ready, contextQuery.isPending, contextQuery.isFetching, contextQuery.isError, verifiedRangeIdentity]);
+  const canReadEnterprise = contextQuery.data?.canReadEnterprise === true;
+  const canReadTeam = contextQuery.data?.canReadTeam === true;
+  const readableTeams = useMemo(() => canReadTeam
+    ? (contextQuery.data?.teams ?? []).filter(team => Number.isSafeInteger(team.teamId) && team.teamId > 0
+      && typeof team.name === "string" && team.name.trim() && Array.isArray(team.members))
+    : [], [contextQuery.data, canReadTeam]);
+  const defaultTeam = readableTeams.find(team => team.teamId === contextQuery.data?.defaultTeamId);
+  const scopeMembers = (filters: FilterState) => filters.scope === "all" && canReadEnterprise
+    ? contextQuery.data?.members ?? []
+    : filters.scope === "team" && canReadTeam
+      ? readableTeams.find(team => String(team.teamId) === filters.teamId)?.members ?? [] : [];
+  const rangeError = (filters: FilterState): string | null => {
+    if (filters.scope === "all") {
+      if (!canReadEnterprise) return "当前身份没有全企业客户查看权，请重新选择客户范围。";
+    } else if (filters.scope === "team") {
+      if (!canReadTeam || !readableTeams.some(team => String(team.teamId) === filters.teamId)) {
+        return "所选团队已失效或无查看权，请重新选择客户范围。";
+      }
+    } else if (filters.scope === "mine") {
+      // An old mine default must not issue even an interim request before migration.
+      if (canReadTeam) return "当前团队尚未核验，请选择可读团队后查询。";
+      return filters.assignedUserId ? "个人客户范围仅可查看我负责的客户。" : null;
+    } else return "客户范围无效，请重新选择客户范围。";
+    const owner = filters.assignedUserId;
+    if (owner === "" || owner === undefined) return null;
+    // 我 is always an intersection with the selected range, even outside its roster.
+    if (owner === "me" || owner === String(contactScope.scope?.actorUserId)) return null;
+    return typeof owner === "string" && /^[1-9]\d*$/.test(owner) && Number.isSafeInteger(Number(owner))
+      && scopeMembers(filters).some(member => String(member.userId) === owner)
+      ? null : "所选负责人不在当前可读范围，请重新选择负责人。";
+  };
+  const [filterScopeError, setFilterScopeError] = useState<string | null>(null);
+  // Revalidate restored choices on every identity, enterprise and permission change.
+  const readableRangesKey = JSON.stringify([contactScope.identityKey, canReadEnterprise, canReadTeam,
+    readableTeams, contextQuery.data?.defaultTeamId]);
   const starFocusId = useRef<number | null>(null);
   const tableRegionRef = useRef<HTMLDivElement>(null);
   const stars = useCustomerStars(contactScope.scope, contactScope.ready && !contextQuery.isPending && !contextQuery.isError, async customerId => {
@@ -162,25 +223,32 @@ export default function CustomerList() {
     await utils.customer.list.invalidate();
   }, JSON.stringify([appliedFilters, page]));
 
-  // Read-only team reachability is distinct from enterprise manage/write authority.
+  // Keep the old remember keys and all conditions. Only the legacy scope/assignee
+  // migrate; expired team/all memories remain paused until an explicit correction.
   useEffect(() => {
-    if (contextQuery.isLoading || contextQuery.isPending || !contextQuery.data) return;
-    if (canReadAll) return;
-    const restrictToMine = (current: FilterState) =>
-      current.scope === "mine" && !current.assignedUserId
-        ? current
-        : { ...current, scope: "mine" as const, assignedUserId: "" };
-    setDraftFilters(restrictToMine);
-    setAppliedFilters(restrictToMine);
-  }, [canReadAll, contextQuery.isLoading, contextQuery.isPending, contextQuery.data]);
+    if (!rangeIdentityReady || !contactScope.ready || !d51Ready || contextQuery.isLoading || contextQuery.isPending || contextQuery.isError || !contextQuery.data) return;
+    const migrateMine = (current: FilterState): FilterState => {
+      if (current.scope !== "mine") return current;
+      if (canReadTeam && defaultTeam) return { ...current, scope: "team", teamId: String(defaultTeam.teamId), assignedUserId: "" };
+      return !canReadTeam && current.assignedUserId ? { ...current, teamId: "", assignedUserId: "" } : current;
+    };
+    if (appliedFilters.scope === "mine" && canReadTeam && defaultTeam) setPage(1);
+    setDraftFilters(migrateMine);
+    setAppliedFilters(migrateMine);
+    setFilterScopeError(null);
+  }, [readableRangesKey, rangeIdentityReady, d51Ready, contextQuery.isLoading, contextQuery.isPending, contextQuery.isError]);
 
+  const appliedRangeError = rangeError(appliedFilters);
+  const scopeFilterNotice = appliedRangeError
+    ? `${appliedRangeError}查询已暂停，请重新选择范围或负责人后查询。` : filterScopeError;
   const appliedDateError = updatedDateError(appliedFilters);
   const dateFilterNotice = appliedDateError
     ? `${filterDateError ?? appliedDateError}查询已暂停，请重置筛选或调整日期后重新查询。`
     : filterDateError;
   const listInput = useMemo(() => {
-    const scope = canReadAll ? appliedFilters.scope : "mine";
-    const assignedUserId = Number(appliedFilters.assignedUserId);
+    const scope = appliedFilters.scope;
+    const assignedUserId = appliedFilters.assignedUserId === "me"
+      ? contactScope.scope?.actorUserId : Number(appliedFilters.assignedUserId);
     const validUpdatedDates = !updatedDateError(appliedFilters);
     return {
       keyword: appliedFilters.keyword.trim(),
@@ -189,10 +257,10 @@ export default function CustomerList() {
       ...(validUpdatedDates && appliedFilters.updatedFrom ? { updatedFrom: appliedFilters.updatedFrom } : {}),
       ...(validUpdatedDates && appliedFilters.updatedTo ? { updatedTo: appliedFilters.updatedTo } : {}),
       scope,
-      ...(canReadAll &&
-      scope === "all" &&
-      Number.isInteger(assignedUserId) &&
-      assignedUserId > 0
+      ...(scope === "team" ? { teamId: Number(appliedFilters.teamId) } : {}),
+      ...((scope === "all" || scope === "team") &&
+      Number.isSafeInteger(assignedUserId) &&
+      assignedUserId !== undefined && assignedUserId > 0
         ? { assignedUserId }
         : {}),
       starMode: "assignee" as const,
@@ -203,13 +271,13 @@ export default function CustomerList() {
       page,
       pageSize: PAGE_SIZE,
     };
-  }, [appliedFilters, canReadAll, page, contactScope.identityKey]);
+  }, [appliedFilters, page, contactScope.identityKey]);
   const listQuery = trpc.customer.list.useQuery(listInput, freshListOptions({
-    enabled: !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
+    enabled: rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
     placeholderData: undefined,
   }, d51Ready));
   // Never render a previous identity/enterprise page, including its old total.
-  const result = !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
+  const result = rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
     && !listQuery.isError && (appliedFilters.starredOnly !== true || stars.ready)
     && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
       && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
@@ -300,7 +368,7 @@ export default function CustomerList() {
   const handleCustomerSaved = ({ id, mode }: { id: number; mode: CustomerCreateSaveMode }) => {
     if (mode === "close") collapseCreate(true);
     // A saved customer must not bypass a paused, invalid remembered date range.
-    if (appliedDateError) return;
+    if (appliedDateError || appliedRangeError || !rangeIdentityReady || !d51Ready || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
     const savedListInput = listInput;
     // Keep the current scope, filters and page. Never inject a record that does
     // not match the server's authoritative filtered result into this table.
@@ -339,19 +407,22 @@ export default function CustomerList() {
     value: FilterState[K]
   ) => {
     if (key === "updatedFrom" || key === "updatedTo") setFilterDateError(null);
+    if (key === "assignedUserId") setFilterScopeError(null);
     setDraftFilters(current => ({ ...current, [key]: value }));
   };
 
   const applyFilters = () => {
     const dateError = updatedDateError(draftFilters);
     setFilterDateError(dateError);
-    if (dateError) return;
+    const scopeError = rangeError(draftFilters);
+    setFilterScopeError(scopeError);
+    if (dateError || scopeError || !rangeIdentityReady || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
     const next = {
       ...draftFilters,
       keyword: draftFilters.keyword.trim(),
       starredOnly: appliedFilters.starredOnly === true,
       assignedUserId:
-        draftFilters.scope === "all" ? draftFilters.assignedUserId : "",
+        draftFilters.scope !== "mine" ? draftFilters.assignedUserId : "",
     };
     setDraftFilters(next);
     setAppliedFilters(next);
@@ -363,26 +434,31 @@ export default function CustomerList() {
     // a transient form condition. Resetting filters must not expose another
     // assignee when moving between scope views.
     // Reset also clears starredOnly, without changing the assignee-star semantics.
-    const scope = canReadAll ? appliedFilters.scope : "mine";
-    const next = { ...DEFAULT_FILTERS, scope };
+    // An invalid range is not repaired by silently widening it to a valid one.
+    const next = { ...DEFAULT_FILTERS, scope: appliedFilters.scope, teamId: appliedFilters.teamId ?? "" };
     setFilterDateError(null);
+    setFilterScopeError(null);
     setDraftFilters(next);
     setAppliedFilters(next);
     setPage(1);
   };
 
-  const changeScope = (scope: ScopeFilter) => {
-    const safeScope = canReadAll && scope === "all" ? "all" : "mine";
+  const changeScope = (scope: ScopeFilter, teamId = "") => {
+    if (!rangeIdentityReady || !contactScope.ready || contextQuery.isPending || contextQuery.isError
+      || rangeError({ ...DEFAULT_FILTERS, scope, teamId })) return;
     // Clear both draft and applied assignment when scope changes so switching
     // back to all-company cannot silently revive a previous owner filter.
+    setFilterScopeError(null);
     setDraftFilters(current => ({
       ...current,
-      scope: safeScope,
+      scope,
+      teamId: scope === "team" ? teamId : "",
       assignedUserId: "",
     }));
     setAppliedFilters(current => ({
       ...current,
-      scope: safeScope,
+      scope,
+      teamId: scope === "team" ? teamId : "",
       assignedUserId: "",
     }));
     setPage(1);
@@ -398,7 +474,7 @@ export default function CustomerList() {
   };
 
   const canResetFilters = Boolean(
-    draftFilters.keyword ||
+    updatedDateError(draftFilters) || appliedDateError || draftFilters.keyword ||
       draftFilters.grade ||
       draftFilters.stage ||
       draftFilters.assignedUserId ||
@@ -477,9 +553,9 @@ export default function CustomerList() {
                 ))}
               </SelectContent>
             </Select>
-            {canReadAll && draftFilters.scope === "all" ? (
+            {(canReadEnterprise && draftFilters.scope === "all") || (canReadTeam && draftFilters.scope === "team") ? (
               <Select
-                value={draftFilters.assignedUserId || "all"}
+                value={draftFilters.assignedUserId === String(contactScope.scope?.actorUserId) ? "me" : draftFilters.assignedUserId || "all"}
                 onValueChange={value =>
                   updateDraft("assignedUserId", value === "all" ? "" : value)
                 }
@@ -492,7 +568,8 @@ export default function CustomerList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部负责人</SelectItem>
-                  {(canManageAll ? contextQuery.data?.members ?? [] : stars.targets).map(member => (
+                  <SelectItem value="me">我</SelectItem>
+                  {scopeMembers(draftFilters).map(member => (
                     <SelectItem
                       key={member.userId}
                       value={String(member.userId)}
@@ -553,23 +630,25 @@ export default function CustomerList() {
           </div>
         ) : null
       }>
-          {canReadAll ? (
+          {canReadTeam || canReadEnterprise ? (
             <Select
-              value={appliedFilters.scope}
-              onValueChange={value => changeScope(value as ScopeFilter)}
+              value={appliedFilters.scope === "team" ? `team:${appliedFilters.teamId ?? ""}`
+                : appliedFilters.scope === "all" ? "all" : defaultTeam ? `team:${defaultTeam.teamId}` : ""}
+              onValueChange={value => value.startsWith("team:")
+                ? changeScope("team", value.slice(5)) : value === "all" ? changeScope("all") : undefined}
             >
               <SelectTrigger
                 aria-label="客户范围"
-                className="customer-list-control w-[126px] bg-white"
+                className="customer-list-control w-[156px] bg-white"
               >
-                <SelectValue />
+                <SelectValue placeholder={canReadTeam ? "请选择客户范围" : "我负责的客户"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="mine">我的客户</SelectItem>
-                <SelectItem value="all">{canManageAll ? "全企业" : "授权组员客户"}</SelectItem>
+                {readableTeams.map(team => <SelectItem key={team.teamId} value={`team:${team.teamId}`}>{team.name}</SelectItem>)}
+                {canReadEnterprise ? <SelectItem value="all">全企业</SelectItem> : null}
               </SelectContent>
             </Select>
-          ) : null}
+          ) : <span className="customer-list-caption">我负责的客户</span>}
           <div className="d51-compact-list-search-group customer-list-search-group">
             <Input
               placeholder="搜索客户名称、联系人或电话"
@@ -669,6 +748,13 @@ export default function CustomerList() {
         </p>
       ) : null}
 
+      {scopeFilterNotice && contactScope.ready && !contextQuery.isPending && !contextQuery.isError ? (
+        <div role="alert" className="customer-list-error mb-2">
+          {scopeFilterNotice}
+          {!canReadTeam && appliedFilters.scope !== "mine" ? <CustomerSupplyAction onClick={() => changeScope("mine")}>查看我负责的客户</CustomerSupplyAction> : null}
+        </div>
+      ) : null}
+
       {createOpen && (
         <section id="customer-entry-panel" aria-labelledby="customer-entry-heading" className="mb-3">
           <CustomerCreateForm
@@ -687,7 +773,7 @@ export default function CustomerList() {
           message={`无法读取客户权限：${errorMessage(contextQuery.error)}`}
           onRetry={() => contextQuery.refetch()}
         />
-      ) : listQuery.isError && !appliedDateError ? (
+      ) : listQuery.isError && !appliedDateError && !appliedRangeError ? (
         <ErrorPanel
           message={errorMessage(listQuery.error)}
           onRetry={() => listQuery.refetch()}
@@ -698,7 +784,9 @@ export default function CustomerList() {
             供应库存权限读取失败。
             <CustomerSupplyAction onClick={() => void supplyAuthority.retry()}>重试供应权限</CustomerSupplyAction>
           </div> : null}
-          {listQuery.isPending ? (
+          {appliedDateError || appliedRangeError ? (
+            <div className="customer-list-empty"><p className="customer-list-caption">请调整筛选后查询。</p></div>
+          ) : listQuery.isPending ? (
             <div className="flex justify-center p-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
@@ -882,7 +970,7 @@ export default function CustomerList() {
             </div>
           )}
 
-          <div className="customer-list-caption flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-3 py-3">
+          {result ? <div className="customer-list-caption flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-3 py-3">
             <span className="whitespace-nowrap">
               共 {result?.total ?? 0} 条 · 第 {safePage} / {totalPages} 页
             </span>
@@ -910,7 +998,7 @@ export default function CustomerList() {
                 下一页
               </Button>
             </div>
-          </div>
+          </div> : null}
         </AdminDataPanel>
       )}
       {supplyCustomer && supplyCurrent && supplyAuthority.identity ? <CustomerSupplyUploadDialog
