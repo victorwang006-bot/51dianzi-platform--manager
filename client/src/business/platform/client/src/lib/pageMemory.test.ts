@@ -249,3 +249,70 @@ describe.sequential("actual React list-position restore lifecycle", () => {
     await render({ ...success(), isError: true }, false); await act(async () => drain()); expect(viewport.y).toBe(0);
   });
 });
+
+describe.sequential("customer filter schema and explicit legacy confirmation", () => {
+  const dateDefaults = { ...defaults, updatedFrom: "", updatedTo: "" };
+  const dated = { ...applied, scope: "team", teamId: "173", updatedFrom: "2026-09-09", updatedTo: "2026-09-14" };
+  function load(filters: unknown, draft: unknown = filters, marker: unknown = undefined) {
+    memory.setPageMemoryScope(null); scope += "-schema";
+    const entryId = "schema-entry", entryUrl = url();
+    sessionStorage.setItem(PREFIX + scope, JSON.stringify({ entries: { [entryId]: { id: entryId, scope, url: entryUrl, from: null, at: Date.now(), state: { appliedFilters: filters, draftFilters: draft, page: 4 }, customerFilterConfirmationRequired: marker } }, latest: { [entryUrl]: entryId } }));
+    nativeReplace.call(history, { [META]: { id: entryId, scope } }, "", entryUrl); memory.setPageMemoryScope(scope);
+  }
+  it.each([undefined, "", "173"])("optional teamId %s does not reset any other condition", teamId => {
+    const filters = { ...dated } as Record<string, unknown>;
+    if (teamId === undefined) delete filters.teamId; else filters.teamId = teamId;
+    memory.writePageSlot("appliedFilters", filters);
+    expect(memory.readPageSlot("appliedFilters", dateDefaults)).toEqual(filters);
+    expect(memory.customerFiltersRequireConfirmation()).toBe(false);
+  });
+  it.each(["both", "updatedFrom", "updatedTo"])("legacy missing %s dates preserves recoverable fields but requires confirmation", missing => {
+    const filters = { ...dated } as Record<string, unknown>;
+    if (missing === "both") { delete filters.updatedFrom; delete filters.updatedTo; } else delete filters[missing];
+    load(filters); const restored = memory.readPageSlot("appliedFilters", dateDefaults);
+    expect(restored).toMatchObject({ keyword: dated.keyword, teamId: "173", grade: "A", stage: dated.stage, assignedUserId: "8", due: "overdue", archived: true, starredOnly: true });
+    expect(memory.customerFiltersRequireConfirmation()).toBe(true); expect(memory.readPageSlot("page", 1)).toBe(4);
+    memory.confirmCustomerFilters(); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    // Automatic range migrations or editable drafts must not accidentally acknowledge lost dates.
+    memory.writePageSlot("appliedFilters", restored); memory.writePageSlot("draftFilters", { ...restored, keyword: "unapplied" });
+    expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    expect(book().entries[id()].customerFilterConfirmationRequired).toBe(true);
+    memory.confirmCustomerFilters(); expect(memory.customerFiltersRequireConfirmation()).toBe(false);
+    expect(book().entries[id()].customerFilterConfirmationRequired).toBeUndefined();
+  });
+  it("a stored modern missing date draft also requires explicit confirmation, despite a complete applied snapshot", () => {
+    const { updatedTo: _lost, ...incompleteDraft } = dated;
+    load(dated, incompleteDraft); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    expect(memory.readPageSlot("appliedFilters", dateDefaults)).toEqual(dated);
+  });
+  it("explicitly empty modern optional dates are persisted without ambiguous missing keys", () => {
+    memory.writePageSlot("appliedFilters", applied);
+    expect(book().entries[id()].state.appliedFilters).toMatchObject({ updatedFrom: "", updatedTo: "" });
+    expect(memory.customerFiltersRequireConfirmation()).toBe(false);
+  });
+  it.each([{ teamId: 173 }, { updatedFrom: null }, { archived: "false" }, { keyword: "x".repeat(1001) }])("wrong key/value type or oversized condition cannot silently become a usable wide query: %j", invalid => {
+    load({ ...dated, ...invalid }); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    expect(memory.readPageSlot("appliedFilters", dateDefaults)).toEqual(dateDefaults);
+  });
+  it("a slot removed by sanitizing an oversized primitive is not mistaken for a fresh list", () => {
+    load("x".repeat(1001)); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    expect(memory.readPageSlot("appliedFilters", dateDefaults)).toEqual(dateDefaults);
+  });
+  it("unknown/business fields are stripped and never widen the authorized whitelist or generic partial validation", () => {
+    memory.writePageSlot("appliedFilters", { ...dated, contacts: "PRIVATE CONTACT", customerRecord: { keyword: "PRIVATE RECORD" }, unapprovedDate: "PRIVATE DATE" });
+    expect(memory.readPageSlot("appliedFilters", dateDefaults)).toEqual(dated);
+    expect(sessionStorage.getItem(PREFIX + scope)).not.toContain("PRIVATE");
+    memory.writePageSlot("listing", { keyword: "UI ONLY" });
+    expect(memory.readPageSlot("listing", { keyword: "", page: 1 })).toEqual({ keyword: "", page: 1 });
+    memory.writePageSlot("page", 0); expect(memory.readPageSlot("page", 1)).toBe(1);
+    memory.writePageSlot("page", 1.5); expect(memory.readPageSlot("page", 1)).toBe(1);
+  });
+  it("legacy acknowledgement is isolated per history visit and identity, including the explicit source replacement", () => {
+    const { updatedFrom: _from, updatedTo: _to, ...legacy } = dated; load(legacy);
+    const restored = memory.readPageSlot("appliedFilters", dateDefaults); memory.writePageSlot("appliedFilters", restored); memory.writePageSlot("draftFilters", restored);
+    const source = id(); history.pushState({}, "", "/workbench/customers/801?merchantId=30061");
+    nativeReplace.call(history, { [META]: { id: id(), scope, previous: "not-adjacent" } }, "", url());
+    memory.returnToPageSource(navigate, "/customers"); expect(id()).not.toBe(source); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    memory.setPageMemoryScope(scope + "-other-account"); expect(memory.customerFiltersRequireConfirmation()).toBe(false);
+  });
+});

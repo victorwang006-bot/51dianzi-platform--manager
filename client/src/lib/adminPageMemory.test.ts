@@ -305,3 +305,38 @@ describe.sequential("admin page-memory return flows", () => {
     }
   });
 });
+
+describe.sequential("admin mirror bounded customer-filter compatibility", () => {
+  // Preserve the real admin whitelist difference: this mirror has no starredOnly field.
+  const defaults = { keyword: "", grade: "", stage: "", scope: "mine", assignedUserId: "", due: "all", archived: false, updatedFrom: "", updatedTo: "" };
+  const filters = { ...defaults, scope: "team", teamId: "173", keyword: "UI FILTER", grade: "B", stage: "quoted", assignedUserId: "18", due: "today", archived: true, updatedFrom: "2026-09-09", updatedTo: "2026-09-14" };
+  it.each([undefined, "", "173"])("saves only authorized team/date additions and accepts optional teamId %s", teamId => {
+    memory.setPageMemoryScope(`admin:customer-optional:${String(teamId)}`);
+    const value: Record<string, unknown> = { ...filters }; if (teamId === undefined) delete value.teamId; else value.teamId = teamId;
+    memory.writePageSlot("appliedFilters", { ...value, businessRecord: "PRIVATE BODY", contacts: "PRIVATE CONTACT" });
+    expect(memory.readPageSlot("appliedFilters", defaults)).toEqual(value);
+    expect(memory.customerFiltersRequireConfirmation()).toBe(false);
+    expect(JSON.stringify(storedBook(memory.pageMemoryScope()!))).not.toContain("PRIVATE");
+  });
+  it("holds a legacy missing-date snapshot until explicit confirmation, including after automatic writes", () => {
+    const scope = "admin:customer-legacy", id = "admin-legacy-entry", entryUrl = "/customers";
+    const { updatedFrom: _from, updatedTo: _to, ...legacy } = filters;
+    memory.setPageMemoryScope(null);
+    sessionStorage.setItem(PREFIX + scope, JSON.stringify({ entries: { [id]: { id, scope, url: entryUrl, from: null, at: Date.now(), state: { appliedFilters: legacy, draftFilters: legacy, page: 4 } } }, latest: { [entryUrl]: id } }));
+    replaceWithoutPageMemory({ [META]: { id, scope } }, entryUrl); memory.setPageMemoryScope(scope);
+    const restored = memory.readPageSlot("appliedFilters", defaults);
+    expect(restored).toEqual({ ...legacy, updatedFrom: "", updatedTo: "" }); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    memory.confirmCustomerFilters(); expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+    memory.writePageSlot("appliedFilters", restored); memory.writePageSlot("draftFilters", restored);
+    expect(memory.customerFiltersRequireConfirmation()).toBe(true); expect(memory.readPageSlot("page", 1)).toBe(4);
+    memory.confirmCustomerFilters(); expect(memory.customerFiltersRequireConfirmation()).toBe(false);
+  });
+  it("does not generalize customer optional fields into merging arbitrary partial UI objects", () => {
+    memory.setPageMemoryScope("admin:customer-partial");
+    memory.writePageSlot("listing", { search: "UI" });
+    expect(memory.readPageSlot("listing", { search: "", page: 1 })).toEqual({ search: "", page: 1 });
+    memory.writePageSlot("appliedFilters", { ...filters, teamId: 173 });
+    expect(memory.readPageSlot("appliedFilters", defaults)).toEqual(defaults);
+    expect(memory.customerFiltersRequireConfirmation()).toBe(true);
+  });
+});

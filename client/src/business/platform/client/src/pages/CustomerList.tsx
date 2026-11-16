@@ -1,4 +1,5 @@
 import { usePageMemory, useRememberedState, freshListOptions, useListPositionRestore, returnToPageSource } from "../hooks/usePageMemory";
+import { customerFiltersRequireConfirmation, confirmCustomerFilters } from "../lib/pageMemory";
 import { useCustomerCreateDraft, useCustomerCreateDraftIdentity } from "../hooks/useCustomerCreateDraft";
 import { useCustomerStars } from "../hooks/useCustomerStars";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -148,6 +149,7 @@ export default function CustomerList() {
   const [appliedFilters, setAppliedFilters] =
     useRememberedState<FilterState>("appliedFilters", DEFAULT_FILTERS);
   const [moreFiltersOpen, setMoreFiltersOpen] = useRememberedState("moreFiltersOpen", false);
+  const filterConfirmationRequired = customerFiltersRequireConfirmation();
   const [filterDateError, setFilterDateError] = useState<string | null>(null);
   const [page, setPage] = useRememberedState("page", 1);
   // The old canReadAll includes delegated reachability, not enterprise authority.
@@ -159,7 +161,7 @@ export default function CustomerList() {
   rangeVerificationIdentity.current = contactScope.identityKey;
   const rangeIdentityReady = verifiedRangeIdentity === contactScope.identityKey;
   useEffect(() => {
-    if (!contactScope.ready || contextQuery.isPending || contextQuery.isFetching || contextQuery.isError || !contextQuery.data) return;
+    if (!contactScope.ready || contextQuery.isPending || contextQuery.isFetching || contextQuery.isError || contextQuery.isFetchedAfterMount === false || contextQuery.isPlaceholderData || !contextQuery.data) return;
     const identityKey = contactScope.identityKey;
     if (verifiedRangeIdentity === identityKey || rangeVerificationRequest.current === identityKey) return;
     if (firstRangeIdentity.current === null) {
@@ -176,7 +178,7 @@ export default function CustomerList() {
         && fresh.data?.actorUserId === contactScope.scope?.actorUserId) setVerifiedRangeIdentity(identityKey);
     }).catch(() => { /* Context error/retry stays authoritative; no fallback query. */ })
       .finally(() => { if (rangeVerificationRequest.current === identityKey) rangeVerificationRequest.current = null; });
-  }, [contactScope.identityKey, contactScope.ready, contextQuery.isPending, contextQuery.isFetching, contextQuery.isError, verifiedRangeIdentity]);
+  }, [contactScope.identityKey, contactScope.ready, contextQuery.isPending, contextQuery.isFetching, contextQuery.isError, contextQuery.isFetchedAfterMount, contextQuery.isPlaceholderData, verifiedRangeIdentity]);
   const canReadEnterprise = contextQuery.data?.canReadEnterprise === true;
   const canReadTeam = contextQuery.data?.canReadTeam === true;
   const readableTeams = useMemo(() => canReadTeam
@@ -228,11 +230,12 @@ export default function CustomerList() {
   useEffect(() => {
     if (!rangeIdentityReady || !contactScope.ready || !d51Ready || contextQuery.isLoading || contextQuery.isPending || contextQuery.isError || !contextQuery.data) return;
     const migrateMine = (current: FilterState): FilterState => {
-      if (current.scope !== "mine") return current;
+      // A restored invalid owner is not a legacy default and must stay paused.
+      if (current.scope !== "mine" || current.assignedUserId) return current;
       if (canReadTeam && defaultTeam) return { ...current, scope: "team", teamId: String(defaultTeam.teamId), assignedUserId: "" };
-      return !canReadTeam && current.assignedUserId ? { ...current, teamId: "", assignedUserId: "" } : current;
+      return current;
     };
-    if (appliedFilters.scope === "mine" && canReadTeam && defaultTeam) setPage(1);
+    if (appliedFilters.scope === "mine" && !appliedFilters.assignedUserId && canReadTeam && defaultTeam) setPage(1);
     setDraftFilters(migrateMine);
     setAppliedFilters(migrateMine);
     setFilterScopeError(null);
@@ -273,12 +276,12 @@ export default function CustomerList() {
     };
   }, [appliedFilters, page, contactScope.identityKey]);
   const listQuery = trpc.customer.list.useQuery(listInput, freshListOptions({
-    enabled: rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
+    enabled: !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready),
     placeholderData: undefined,
   }, d51Ready));
   // Never render a previous identity/enterprise page, including its old total.
-  const result = rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
-    && !listQuery.isError && (appliedFilters.starredOnly !== true || stars.ready)
+  const result = !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
+    && !listQuery.isError && listQuery.isFetchedAfterMount !== false && !listQuery.isPlaceholderData && (appliedFilters.starredOnly !== true || stars.ready)
     && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
       && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
     ? listQuery.data : undefined;
@@ -368,7 +371,7 @@ export default function CustomerList() {
   const handleCustomerSaved = ({ id, mode }: { id: number; mode: CustomerCreateSaveMode }) => {
     if (mode === "close") collapseCreate(true);
     // A saved customer must not bypass a paused, invalid remembered date range.
-    if (appliedDateError || appliedRangeError || !rangeIdentityReady || !d51Ready || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
+    if (filterConfirmationRequired || appliedDateError || appliedRangeError || !rangeIdentityReady || !d51Ready || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
     const savedListInput = listInput;
     // Keep the current scope, filters and page. Never inject a record that does
     // not match the server's authoritative filtered result into this table.
@@ -399,8 +402,8 @@ export default function CustomerList() {
   }, [contactScope.ready, contextQuery.isError, contextQuery.isPending, createDraft, createDraft.completion]);
 
   useEffect(() => {
-    if (result && !listQuery.isFetching && safePage !== page) setPage(safePage);
-  }, [page, safePage, result, listQuery.isFetching]);
+    if (result && !listQuery.isFetching && !listQuery.isPending && !listQuery.isLoading && listQuery.isFetchedAfterMount !== false && safePage !== page) setPage(safePage);
+  }, [page, safePage, result, listQuery.isFetching, listQuery.isPending, listQuery.isLoading, listQuery.isFetchedAfterMount]);
 
   const updateDraft = <K extends keyof FilterState>(
     key: K,
@@ -416,7 +419,7 @@ export default function CustomerList() {
     setFilterDateError(dateError);
     const scopeError = rangeError(draftFilters);
     setFilterScopeError(scopeError);
-    if (dateError || scopeError || !rangeIdentityReady || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
+    if (dateError || scopeError || !d51Ready || !rangeIdentityReady || !contactScope.ready || contextQuery.isPending || contextQuery.isError) return;
     const next = {
       ...draftFilters,
       keyword: draftFilters.keyword.trim(),
@@ -426,6 +429,7 @@ export default function CustomerList() {
     };
     setDraftFilters(next);
     setAppliedFilters(next);
+    confirmCustomerFilters();
     setPage(1);
   };
 
@@ -436,10 +440,12 @@ export default function CustomerList() {
     // Reset also clears starredOnly, without changing the assignee-star semantics.
     // An invalid range is not repaired by silently widening it to a valid one.
     const next = { ...DEFAULT_FILTERS, scope: appliedFilters.scope, teamId: appliedFilters.teamId ?? "" };
+    if (!d51Ready || !rangeIdentityReady || !contactScope.ready || contextQuery.isPending || contextQuery.isError || rangeError(next)) return;
     setFilterDateError(null);
     setFilterScopeError(null);
     setDraftFilters(next);
     setAppliedFilters(next);
+    confirmCustomerFilters();
     setPage(1);
   };
 
@@ -474,7 +480,7 @@ export default function CustomerList() {
   };
 
   const canResetFilters = Boolean(
-    updatedDateError(draftFilters) || appliedDateError || draftFilters.keyword ||
+    filterConfirmationRequired || updatedDateError(draftFilters) || appliedDateError || draftFilters.keyword ||
       draftFilters.grade ||
       draftFilters.stage ||
       draftFilters.assignedUserId ||
@@ -748,6 +754,10 @@ export default function CustomerList() {
         </p>
       ) : null}
 
+      {filterConfirmationRequired ? <p role="alert" className="customer-list-error mb-2">
+        旧版本丢失的日期无法恢复，或筛选记忆不完整。查询已暂停；请检查日期及其他条件，重新点击搜索／确定，或重置筛选确认一次。
+      </p> : null}
+
       {scopeFilterNotice && contactScope.ready && !contextQuery.isPending && !contextQuery.isError ? (
         <div role="alert" className="customer-list-error mb-2">
           {scopeFilterNotice}
@@ -773,7 +783,7 @@ export default function CustomerList() {
           message={`无法读取客户权限：${errorMessage(contextQuery.error)}`}
           onRetry={() => contextQuery.refetch()}
         />
-      ) : listQuery.isError && !appliedDateError && !appliedRangeError ? (
+      ) : listQuery.isError && !filterConfirmationRequired && !appliedDateError && !appliedRangeError ? (
         <ErrorPanel
           message={errorMessage(listQuery.error)}
           onRetry={() => listQuery.refetch()}
@@ -784,7 +794,7 @@ export default function CustomerList() {
             供应库存权限读取失败。
             <CustomerSupplyAction onClick={() => void supplyAuthority.retry()}>重试供应权限</CustomerSupplyAction>
           </div> : null}
-          {appliedDateError || appliedRangeError ? (
+          {filterConfirmationRequired || appliedDateError || appliedRangeError ? (
             <div className="customer-list-empty"><p className="customer-list-caption">请调整筛选后查询。</p></div>
           ) : listQuery.isPending ? (
             <div className="flex justify-center p-12">

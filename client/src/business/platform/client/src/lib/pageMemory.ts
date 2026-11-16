@@ -9,6 +9,8 @@ type Entry = {
   /** Observed immediate predecessor, distinct from a retained logical source. */
   previous?: string | null;
   state: Record<string, unknown>; scroll?: ScrollSnapshot; at: number;
+  /** UI-only gate: lost filter dates must be explicitly reconfirmed, never guessed. */
+  customerFilterConfirmationRequired?: boolean;
 };
 type Book = { entries: Record<string, Entry>; latest: Record<string, string> };
 const PREFIX = "51dianzi:page-memory:v1:";
@@ -29,7 +31,29 @@ const UI_SLOTS = new Set([
 const UI_FIELDS = new Set([
   "page", "filters", "sort", "status", "owner", "keyword", "grade", "stage", "scope", "assignedUserId",
   "due", "archived", "starredOnly", "pn", "brand", "cat", "partNumber", "type", "active",
+  "teamId", "updatedFrom", "updatedTo",
 ]);
+const CUSTOMER_FILTER_DEFAULTS = { keyword: "", grade: "", stage: "", scope: "mine", assignedUserId: "", due: "all", archived: false, starredOnly: false };
+const CUSTOMER_FILTER_FIELDS = new Set([...Object.keys(CUSTOMER_FILTER_DEFAULTS), "teamId", "updatedFrom", "updatedTo"]);
+function normalizeCustomerFilters(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  if (!Object.keys(v).every(key => CUSTOMER_FILTER_FIELDS.has(key))) return null;
+  // Only the known customer schema has optional team/date fields and the old star migration.
+  // All other UI objects still use their original strict template validation.
+  for (const [key, template] of Object.entries(CUSTOMER_FILTER_DEFAULTS)) {
+    if (key === "starredOnly" && !Object.prototype.hasOwnProperty.call(v, key)) continue;
+    if (typeof v[key] !== typeof template || (typeof v[key] === "string" && v[key].length > 1000)) return null;
+  }
+  for (const key of ["teamId", "updatedFrom", "updatedTo"]) {
+    if (Object.prototype.hasOwnProperty.call(v, key) && (typeof v[key] !== "string" || v[key].length > 1000)) return null;
+  }
+  return { ...v, starredOnly: v.starredOnly ?? false, updatedFrom: v.updatedFrom ?? "", updatedTo: v.updatedTo ?? "" };
+}
+function incompleteCustomerFilters(value: unknown): boolean {
+  if (value === undefined) return false; // A genuinely new list has no snapshot to recover.
+  return !normalizeCustomerFilters(value) || !Object.prototype.hasOwnProperty.call(value, "updatedFrom") || !Object.prototype.hasOwnProperty.call(value, "updatedTo");
+}
 function uiValue(value: unknown, depth = 0): unknown {
   if (depth > 3) return undefined;
   if (value === null || typeof value === "boolean") return value;
@@ -100,7 +124,9 @@ function book(): Book {
               parsed.entries[id] = { id, scope, url: safePageUrl(e.url)!,
                 from: stableKey(e.from) ? e.from : null,
                 previous: stableKey(e.previous) ? e.previous : null,
-                at: e.at, state, scroll: validScroll(e.scroll) };
+                at: e.at, state, scroll: validScroll(e.scroll),
+                ...(e.customerFilterConfirmationRequired === true || incompleteCustomerFilters(e.state.appliedFilters) || incompleteCustomerFilters(e.state.draftFilters)
+                  || incompleteCustomerFilters(state.appliedFilters) || incompleteCustomerFilters(state.draftFilters) ? { customerFilterConfirmationRequired: true } : {}) };
             }
           }
           for (const [url, id] of Object.entries(candidate.latest) as [string, string][]) if (safePageUrl(url) && parsed.entries[id]) parsed.latest[url] = id;
@@ -192,6 +218,7 @@ function seed(url: string, from: string | null = null, predecessor: string | nul
   const state = newNavigationState(url, previous?.state);
   const explicitIntent = JSON.stringify(state) !== JSON.stringify(previous?.state ?? {});
   const e: Entry = { id: uuid(), scope, url, from, previous: predecessor, state, ...(!explicitIntent && previous?.scroll ? { scroll: validScroll(previous.scroll) } : {}), at: Date.now() };
+  if (previous?.customerFilterConfirmationRequired) e.customerFilterConfirmationRequired = true;
   b.entries[e.id] = e; b.latest[url] = e.id; activeId = e.id;
   pendingPosition = scope && e.scroll ? pageMemoryContext() : null;
   return e;
@@ -233,7 +260,7 @@ export function setPageMemoryScope(next: PageScope) {
       b.latest[parent.url] = parent.id;
     }
     const previous = b.entries[b.latest[entry.url]];
-    b.entries[entry.id] = { ...entry, scope: next, from: entry.from && b.entries[entry.from]?.scope === next ? entry.from : null, state: newNavigationState(entry.url, previous?.state) };
+    b.entries[entry.id] = { ...entry, scope: next, from: entry.from && b.entries[entry.from]?.scope === next ? entry.from : null, state: newNavigationState(entry.url, previous?.state), customerFilterConfirmationRequired: previous?.customerFilterConfirmationRequired };
     b.latest[entry.url] = entry.id;
     activeId = entry.id;
   } else activeId = seed(currentUrl()).id;
@@ -256,24 +283,43 @@ export function readPageSlot<T>(name: string, fallback: T): T {
     if (template && typeof template === "object" && !Array.isArray(template)) return !!v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === Object.keys(template).length && Object.entries(template).every(([k, x]) => valid((v as Record<string, unknown>)[k], x));
     return false;
   }
-  // The only known old schema loss is starredOnly in customer filter objects.
-  // Never merge arbitrary partial/corrupt records, nor claim a lost true is recoverable.
-  if ((name === "draftFilters" || name === "appliedFilters") && value && typeof value === "object" && !Array.isArray(value)
-    && fallback && typeof fallback === "object" && !Array.isArray(fallback)
-    && (fallback as Record<string, unknown>).starredOnly === false
-    && !Object.prototype.hasOwnProperty.call(value, "starredOnly")) {
-    const migrated = { ...value, starredOnly: false };
-    if (valid(migrated, fallback)) { value = migrated; if (entry) { entry.state[name] = migrated; persist(); } }
+  if ((name === "draftFilters" || name === "appliedFilters") && normalizeCustomerFilters(fallback)) {
+    const normalized = normalizeCustomerFilters(value);
+    // Empty date inputs are display drafts only until the explicit gate is cleared.
+    // Never persist filled-in legacy dates here and pretend they were recovered.
+    if (normalized) {
+      if (entry && value && !Object.prototype.hasOwnProperty.call(value, "starredOnly")) {
+        entry.state[name] = { ...value as Record<string, unknown>, starredOnly: false }; persist();
+      }
+      for (const key of ["updatedFrom", "updatedTo"]) {
+        if (!Object.prototype.hasOwnProperty.call(fallback, key) && normalized[key] === "") delete normalized[key];
+      }
+      return normalized as T;
+    }
+    return fallback;
   }
   return value !== undefined && valid(value, fallback) ? value as T : fallback;
+}
+export function customerFiltersRequireConfirmation(): boolean {
+  const e = scope ? book().entries[activeId] : undefined;
+  return !!e && (e.customerFilterConfirmationRequired === true || incompleteCustomerFilters(e.state.appliedFilters) || incompleteCustomerFilters(e.state.draftFilters));
+}
+/** Called only by the customer's explicit Search/Apply/Reset handlers after validation. */
+export function confirmCustomerFilters() {
+  const e = scope ? book().entries[activeId] : undefined;
+  if (!e || e.state.appliedFilters === undefined || incompleteCustomerFilters(e.state.appliedFilters) || incompleteCustomerFilters(e.state.draftFilters)) return;
+  delete e.customerFilterConfirmationRequired; persist();
 }
 export function writePageSlot(name: string, value: unknown) {
   if (!scope || !UI_SLOTS.has(name)) return;
   const e = book().entries[activeId];
   if (!e) return;
   try {
-    const raw = JSON.stringify(uiValue(value));
+    const clean = uiValue(value);
+    const normalized = name === "draftFilters" || name === "appliedFilters" ? normalizeCustomerFilters(clean) : null;
+    const raw = JSON.stringify(normalized ?? clean);
     if (raw === undefined || raw.length > 16000) return;
+    if ((name === "draftFilters" || name === "appliedFilters") && (incompleteCustomerFilters(e.state[name]) || !normalized)) e.customerFilterConfirmationRequired = true;
     e.state[name] = JSON.parse(raw); e.at = Date.now(); persist();
   } catch { /* Non-JSON values are excluded. */ }
 }
@@ -411,6 +457,7 @@ export function installPageMemory() {
     if (replacement) {
       e = seed(next, replacement.from, e?.previous ?? null);
       e.state = structuredClone(replacement.state); e.scroll = validScroll(replacement.scroll);
+      e.customerFilterConfirmationRequired = replacement.customerFilterConfirmationRequired;
       pendingPosition = e.scroll ? pageMemoryContext() : null;
       selectedRow = null; popReturn = true;
     } else if (!e || route(e.url) !== route(next)) {

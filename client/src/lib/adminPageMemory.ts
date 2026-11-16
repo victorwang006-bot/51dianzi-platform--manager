@@ -7,6 +7,7 @@ type ScrollSnapshot = {
 type Entry = {
   id: string; scope: PageScope; url: string; from: string | null;
   state: Record<string, unknown>; scroll?: ScrollSnapshot; at: number;
+  customerFilterConfirmationRequired?: boolean;
 };
 type Book = { entries: Record<string, Entry>; latest: Record<string, string> };
 const PREFIX = "51dianzi:admin-page-memory:v1:";
@@ -26,7 +27,26 @@ const UI_SLOTS = new Set([
 const UI_FIELDS = new Set([
   "page", "filters", "sort", "search", "searchInput", "salesOwnerFilter", "createdAtFilter", "pageSize", "activeTab", "navigationPage", "status", "owner", "keyword", "grade", "stage", "scope", "assignedUserId",
   "due", "archived", "preset", "from", "to", "salesOwnerCode", "pn", "brand", "cat", "partNumber", "type", "name", "active",
+  "teamId", "updatedFrom", "updatedTo",
 ]);
+const CUSTOMER_FILTER_DEFAULTS = { keyword: "", grade: "", stage: "", scope: "mine", assignedUserId: "", due: "all", archived: false };
+const CUSTOMER_FILTER_FIELDS = new Set([...Object.keys(CUSTOMER_FILTER_DEFAULTS), "teamId", "updatedFrom", "updatedTo"]);
+function normalizeCustomerFilters(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  if (!Object.keys(v).every(key => CUSTOMER_FILTER_FIELDS.has(key))) return null;
+  for (const [key, template] of Object.entries(CUSTOMER_FILTER_DEFAULTS)) {
+    if (typeof v[key] !== typeof template || (typeof v[key] === "string" && v[key].length > 1000)) return null;
+  }
+  for (const key of ["teamId", "updatedFrom", "updatedTo"]) {
+    if (Object.prototype.hasOwnProperty.call(v, key) && (typeof v[key] !== "string" || v[key].length > 1000)) return null;
+  }
+  return { ...v, updatedFrom: v.updatedFrom ?? "", updatedTo: v.updatedTo ?? "" };
+}
+function incompleteCustomerFilters(value: unknown): boolean {
+  if (value === undefined) return false;
+  return !normalizeCustomerFilters(value) || !Object.prototype.hasOwnProperty.call(value, "updatedFrom") || !Object.prototype.hasOwnProperty.call(value, "updatedTo");
+}
 function uiValue(value: unknown, depth = 0): unknown {
   if (depth > 3) return undefined;
   if (value === null || typeof value === "boolean") return value;
@@ -89,6 +109,9 @@ function book(): Book {
                 const clean = uiValue(value); if (clean !== undefined) state[name] = clean;
               }
               parsed.entries[id] = { ...e, state, scroll: validScroll(e.scroll) };
+              parsed.entries[id].customerFilterConfirmationRequired = e.customerFilterConfirmationRequired === true
+                || incompleteCustomerFilters(e.state.appliedFilters) || incompleteCustomerFilters(e.state.draftFilters)
+                || incompleteCustomerFilters(state.appliedFilters) || incompleteCustomerFilters(state.draftFilters) ? true : undefined;
             }
           }
           for (const [url, id] of Object.entries(candidate.latest) as [string, string][]) if (safePageUrl(url) && parsed.entries[id]) parsed.latest[url] = id;
@@ -159,6 +182,7 @@ function seed(url: string, from: string | null = null): Entry {
   const state = newNavigationState(url, previous?.state);
   const explicitIntent = JSON.stringify(state) !== JSON.stringify(previous?.state ?? {});
   const e: Entry = { id: uuid(), scope, url, from, state, ...(!explicitIntent && previous?.scroll ? { scroll: validScroll(previous.scroll) } : {}), at: Date.now() };
+  if (previous?.customerFilterConfirmationRequired) e.customerFilterConfirmationRequired = true;
   b.entries[e.id] = e; b.latest[url] = e.id; activeId = e.id;
   pendingPosition = scope && e.scroll ? pageMemoryContext() : null;
   return e;
@@ -192,7 +216,7 @@ export function setPageMemoryScope(next: PageScope) {
       b.latest[parent.url] = parent.id;
     }
     const previous = b.entries[b.latest[entry.url]];
-    b.entries[entry.id] = { ...entry, scope: next, from: entry.from && b.entries[entry.from]?.scope === next ? entry.from : null, state: newNavigationState(entry.url, previous?.state) };
+    b.entries[entry.id] = { ...entry, scope: next, from: entry.from && b.entries[entry.from]?.scope === next ? entry.from : null, state: newNavigationState(entry.url, previous?.state), customerFilterConfirmationRequired: previous?.customerFilterConfirmationRequired };
     b.latest[entry.url] = entry.id;
     activeId = entry.id;
   } else activeId = seed(currentUrl()).id;
@@ -214,15 +238,35 @@ export function readPageSlot<T>(name: string, fallback: T): T {
     if (template && typeof template === "object" && !Array.isArray(template)) return !!v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).every(k => UI_FIELDS.has(k)) && Object.entries(template).every(([k, x]) => valid((v as Record<string, unknown>)[k], x));
     return false;
   }
+  if ((name === "draftFilters" || name === "appliedFilters") && normalizeCustomerFilters(fallback)) {
+    const normalized = normalizeCustomerFilters(value);
+    if (!normalized) return fallback;
+    for (const key of ["updatedFrom", "updatedTo"]) {
+      if (!Object.prototype.hasOwnProperty.call(fallback, key) && normalized[key] === "") delete normalized[key];
+    }
+    return normalized as T;
+  }
   return value !== undefined && valid(value, fallback) ? value as T : fallback;
+}
+export function customerFiltersRequireConfirmation(): boolean {
+  const e = scope ? book().entries[activeId] : undefined;
+  return !!e && (e.customerFilterConfirmationRequired === true || incompleteCustomerFilters(e.state.appliedFilters) || incompleteCustomerFilters(e.state.draftFilters));
+}
+export function confirmCustomerFilters() {
+  const e = scope ? book().entries[activeId] : undefined;
+  if (!e || e.state.appliedFilters === undefined || incompleteCustomerFilters(e.state.appliedFilters) || incompleteCustomerFilters(e.state.draftFilters)) return;
+  delete e.customerFilterConfirmationRequired; persist();
 }
 export function writePageSlot(name: string, value: unknown) {
   if (!scope || !UI_SLOTS.has(name)) return;
   const e = book().entries[activeId];
   if (!e) return;
   try {
-    const raw = JSON.stringify(uiValue(value));
+    const clean = uiValue(value);
+    const normalized = name === "draftFilters" || name === "appliedFilters" ? normalizeCustomerFilters(clean) : null;
+    const raw = JSON.stringify(normalized ?? clean);
     if (raw === undefined || raw.length > 16000) return;
+    if ((name === "draftFilters" || name === "appliedFilters") && (incompleteCustomerFilters(e.state[name]) || !normalized)) e.customerFilterConfirmationRequired = true;
     e.state[name] = JSON.parse(raw); e.at = Date.now(); persist();
   } catch { /* Non-JSON values are excluded. */ }
 }
