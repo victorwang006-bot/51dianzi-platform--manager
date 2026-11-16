@@ -1360,7 +1360,6 @@ export const businessRouter = router({
   staffBindings: staffBindingsRouter,
   merchantScopes: merchantScopesRouter,
   inventory: inventoryBusinessRouter,
-  mallInventory: mallInventoryBusinessRouter,
   channelInventory: channelInventoryBusinessRouter,
   channelReference: channelReferenceBusinessRouter,
   importInventory: importInventoryBusinessRouter,

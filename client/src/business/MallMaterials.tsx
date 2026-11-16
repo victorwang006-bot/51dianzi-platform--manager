@@ -1,299 +1,346 @@
 import { useEffect, useRef, useState } from "react";
-import type { inferRouterOutputs } from "@trpc/server";
-import type { AppRouter } from "./platform/front-router-types/server/routers";
-import { trpc } from "./api/business-trpc";
-import { useBusinessScope } from "./BusinessScope";
-import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import type { OfficialMallAccess, OfficialMallMaterial, OfficialMallMaterialInput, OfficialMallMutationResult, OfficialMallStatus, OfficialMallPreviewRow, OfficialMallImportResult, OfficialMallImportRow, OfficialMallDuplicatePolicy } from "@shared/officialMall";
+import { applySuggestion, chunks, clearRequestHold, emptyForm, errorMessage, errorRowsCsv, firstEligibleQuote, formData, formFor, IMPORT_BATCH_SIZE, IMPORT_COLUMNS, isBusinessRejection, MAX_IMPORT_BYTES, parseImportFile, parseImportText, publishProblem, readRequestHold, rowsFromTable, storeRequestHold, templateCsv, validMutationResult, validQuoteTiers } from "@/lib/officialMallImport";
+import type { Form, ImportField, ParsedImportRow, ParsedTable, RequestHold } from "@/lib/officialMallImport";
 import "./MallMaterials.css";
 
-type Row = inferRouterOutputs<AppRouter>["mallInventory"]["list"]["items"][number] & { inventoryFingerprint?: string };
-type Action = "save" | "publish" | "offshelf";
-export type Tier = { minQty: string; price: string };
-export type Form = { partNumber: string; brand: string; pkg: string; dateCode: string; qtyStock: string; qtyOnSale: string; qtyOrder: string; priceEx: string; moq: string; spq: string; leadTime: string; taxIncluded: boolean; note: string; tiers: Tier[] };
-type AuthorityProof = { permissionVersion: number; authorizationVersion: string; businessAuthorizationVersion: string };
-type Dialog = { kind: Action | "create"; row?: Row; inventoryProof?: string; scope: string; proof?: AuthorityProof; stale?: boolean };
-type Hold = { requestId?: string; creationHold?: string; createdInventoryId?: number };
-const NOT_EXECUTED = "本次商城操作未执行：商品、权限或企业上下文已变化，请刷新后重试";
-function explicitlyNotExecuted(error: unknown) {
-  const e = error as { message?: unknown; data?: { code?: unknown }; shape?: { data?: { code?: unknown } } } | null;
-  return e?.message === NOT_EXECUTED && (e.data?.code === "CONFLICT" || e.shape?.data?.code === "CONFLICT");
+// Retained helper entry points now use the native, exact-decimal contract.
+export { emptyForm, formData, firstEligibleQuote, parseTiers, validQuoteTiers } from "@/lib/officialMallImport";
+export type { Form, Tier } from "@/lib/officialMallImport";
+type Mode = "manual" | "sheet" | "paste";
+type Action = "publish" | "offshelf";
+type Dialog = { kind: "create" | "edit" | Action | "bulk"; scopeKey: string; row?: OfficialMallMaterial; action?: Action; items?: OfficialMallMaterial[] };
+interface BulkResult { success: boolean; successful: number; errors: { id: number; message: string }[]; idempotent?: boolean; }
+type WriteResult = OfficialMallMutationResult | BulkResult | OfficialMallImportResult;
+interface PreviewEntry extends ParsedImportRow {
+  preview?: OfficialMallPreviewRow; confirmed: boolean; policy: OfficialMallDuplicatePolicy;
+  duplicateId?: number; expectedRevision?: number; outcome: "ready" | "success" | "skipped" | "failed";
 }
-function validAuthorization(version: unknown): version is string { return typeof version === "string" && version.length >= 8 && version.length <= 160; }
-function sameProof(a?: AuthorityProof, b?: AuthorityProof) { return !!a && !!b && a.permissionVersion === b.permissionVersion && a.authorizationVersion === b.authorizationVersion && a.businessAuthorizationVersion === b.businessAuthorizationVersion; }
-function rowProof(row: Row) { return JSON.stringify([row.inventoryFingerprint, new Date(row.inventoryUpdatedAt).getTime(), row.publicationVersion, row.ownershipVersion, row.status, row.publicationStatus, row.linked]); }
-const statusNames = { draft: "待上架", published: "已上架", offshelf: "已下架" };
-const count = (v: unknown) => v == null ? "—" : Number(v).toLocaleString("en-US");
-const money = (v: unknown) => v == null || !Number.isFinite(Number(v)) || Number(v) <= 0 ? "询价" : `¥${Number(v).toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
-export const emptyForm = (): Form => ({ partNumber: "", brand: "", pkg: "", dateCode: "", qtyStock: "", qtyOnSale: "", qtyOrder: "", priceEx: "", moq: "1", spq: "1", leadTime: "", taxIncluded: true, note: "", tiers: [] });
-function tierMinimum(tier: unknown) { const t = tier && typeof tier === "object" ? tier as { minQty?: unknown; qty?: unknown } : {}; return Number(t.minQty ?? t.qty); }
-function formFor(row: Row): Form {
-  if (row.ladderPrices != null && !Array.isArray(row.ladderPrices)) throw new Error("原阶梯报价格式需要核对，请先在原库存页处理；不会静默清空原报价");
-  return { partNumber: row.partNumber, brand: row.brand ?? "", pkg: row.pkg ?? "", dateCode: row.dateCode ?? "", qtyStock: String(row.qtyStock), qtyOnSale: String(row.qtyOnSale), qtyOrder: row.qtyOrder == null ? "" : String(row.qtyOrder), priceEx: row.priceEx ?? "", moq: String(row.moq ?? 1), spq: String(row.spq ?? 1), leadTime: row.leadTime ?? "", taxIncluded: row.taxIncluded !== false, note: row.note ?? "", tiers: Array.isArray(row.ladderPrices) ? row.ladderPrices.map(t => ({ minQty: String(tierMinimum(t)), price: String(t?.price) })) : [] };
+const statusNames: Record<OfficialMallStatus, string> = { draft: "待上架", published: "已上架", offshelf: "已下架" };
+const count = (value: number | null | undefined) => value == null ? "未知" : value.toLocaleString("en-US");
+const money = (value: string | null | undefined) => value == null ? "面议" : `¥${value}`;
+const modeNames: Record<Mode, string> = { manual: "手工录入", sheet: "表格导入", paste: "粘贴识别" };
+function downloadCsv(name: string, content: string) {
+  const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
+  const anchor = document.createElement("a"); anchor.href = url; anchor.download = name;
+  document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
 }
-function photoMime(mime: string): "image/jpeg" | "image/png" | "image/webp" {
-  if (mime === "image/jpeg" || mime === "image/png" || mime === "image/webp") return mime;
-  throw new Error("原库存图片格式不符合现行规则，请先在原库存页处理；不会静默删除原图");
+/** Private reads bypass shared tRPC query keys; only this generation can settle. */
+function useNativeRead<T>(key: string, enabled: boolean, fetch: (signal: AbortSignal) => Promise<T>) {
+  const fetchRef = useRef(fetch); fetchRef.current = fetch;
+  const [epoch, setEpoch] = useState(0);
+  const identity = `${key}:${enabled}:${epoch}`;
+  const scopeIdentity = `${key}:${enabled}`;
+  const current = useRef({ identity, scopeIdentity, generation: 0, scopeGeneration: 0 });
+  if (current.current.identity !== identity) current.current = { identity, scopeIdentity, generation: current.current.generation + 1, scopeGeneration: current.current.scopeGeneration + (current.current.scopeIdentity === scopeIdentity ? 0 : 1) };
+  const generation = current.current.generation, scopeGeneration = current.current.scopeGeneration;
+  const [result, setResult] = useState<{ key: string; generation: number; scopeGeneration: number; data?: T; error?: unknown }>({ key: "", generation: -1, scopeGeneration: -1 });
+  useEffect(() => {
+    if (!enabled) return;
+    const controller = new AbortController();
+    const active = () => !controller.signal.aborted && current.current.generation === generation;
+    void fetchRef.current(controller.signal).then(data => { if (active()) setResult({ key, generation, scopeGeneration, data }); }, error => { if (active()) setResult({ key, generation, scopeGeneration, error }); });
+    return () => controller.abort();
+  }, [identity]);
+  const sameScope = enabled && result.key === key && result.scopeGeneration === scopeGeneration;
+  const error = sameScope && result.generation === generation ? result.error : undefined;
+  const data = sameScope && !error ? result.data : undefined;
+  return { data, error, isError: !!error, isFetching: enabled && result.generation !== generation, isLoading: enabled && !data && !error, refetch: () => setEpoch(n => n + 1) };
 }
-export function parseTiers(tiers: Tier[]) {
-  if (tiers.length > 64) throw new Error("阶梯价最多64档");
-  const result: { minQty: number; price: number }[] = [];
-  for (let index = 0; index < tiers.length; index++) {
-    const tier = tiers[index];
-    const qty = tier.minQty.trim(), value = tier.price.trim();
-    if (!qty && !value) continue;
-    if (!qty || !value) throw new Error(`第${index + 1}档请同时填写起订数量和单价`);
-    const minQty = Number(qty), price = Number(value);
-    if (!/^\d+$/.test(qty) || !Number.isSafeInteger(minQty) || minQty <= 0) throw new Error(`第${index + 1}档起订数量须为正整数`);
-    if (!Number.isFinite(price) || price <= 0) throw new Error(`第${index + 1}档单价须为大于0的有限数值`);
-    if (result.length && minQty <= result[result.length - 1].minQty) throw new Error("阶梯起订数量须严格递增，不能重复");
-    result.push({ minQty, price });
-  }
-  return result.length ? result : undefined;
+function entryProblem(entry: PreviewEntry): string | null {
+  if (entry.errors.length) return entry.errors.join("；");
+  if (!entry.data || !entry.preview) return "尚未完成服务端校验";
+  if (entry.policy === "update" && entry.preview.duplicates.length && (!entry.duplicateId || !entry.expectedRevision)) return "请选择待更新的重复记录及版本";
+  if (entry.policy === "new" && entry.preview.duplicates.some(d => d.dateCode === entry.data?.dateCode)) return "另建批次须人工填写不同批次，再校验";
+  return null;
 }
-export function formData(form: Form, original?: Row) {
-  const integer = (s: string, name: string, positive = false) => {
-    const n = Number(s);
-    if (!/^\d+$/.test(s.trim()) || !Number.isSafeInteger(n) || n < (positive ? 1 : 0) || n > 2147483647) throw new Error(`${name}须为${positive ? "正" : "非负"}整数且不超过2147483647`);
-    return n;
-  };
-  const price = (s: string) => { const n = Number(s); if (!Number.isFinite(n) || n <= 0) throw new Error("单价须为大于0的有限数值；询价请留空"); return n; };
-  if (!form.partNumber.trim() || !form.brand.trim() || !form.leadTime.trim()) throw new Error("请填写型号、品牌及真实货期");
-  if (typeof form.taxIncluded !== "boolean") throw new Error("请选择明确税口径");
-  const qtyStock = integer(form.qtyStock, "实际库存"), qtyOnSale = integer(form.qtyOnSale, "现货上架量");
-  if (qtyOnSale > qtyStock) throw new Error("实际库存数量须大于等于现货上架量");
-  const ladderPrices = parseTiers(form.tiers);
-  const priceEx = form.priceEx.trim() ? price(form.priceEx) : undefined;
-  if (!form.taxIncluded && !priceEx && !ladderPrices) throw new Error("选择未税价时请填写单价或阶梯价；不会改动原税口径");
-  if (form.note.length > 50) throw new Error("公开备注最多50字");
-  return { partNumber: form.partNumber.trim(), brand: form.brand.trim(), category: original?.category ?? "", pkg: form.pkg.trim(), dateCode: form.dateCode.trim(), qtyStock, qtyOnSale, qtyOrder: form.qtyOrder.trim() ? integer(form.qtyOrder, "订货数量") : undefined, priceEx, taxIncluded: form.taxIncluded, invoice: original?.invoice ?? true, ladderPrices, moq: integer(form.moq, "起订量MOQ", true), spq: integer(form.spq, "包装倍数SPQ", true), leadTime: form.leadTime.trim(), note: form.note, warehouseAddress: original?.warehouseAddress ?? undefined, rohs: original?.rohs ?? true, photos: original?.photos?.map(p => ({ ...p, mimeType: photoMime(p.mimeType) })) ?? undefined };
+function Quote({ row }: { row: OfficialMallMaterialInput }) {
+  const tiers = validQuoteTiers(row), first = firstEligibleQuote(row);
+  const tax = row.taxIncluded == null ? "税口径未知 · 仅询价" : row.taxIncluded ? "含税" : "未税 · 仅询价";
+  return <div className="mall-quote"><span className="mall-quote-main">{first ? `${count(first.quantity)}件 · ${money(first.price)}` : "报价须核对"}</span>{tiers.length ? <details><summary>梯度价 · {tiers.length}档 · {tax}</summary><div className="mall-quote-tiers"><span>基础价　{money(row.priceEx)}</span>{tiers.map((tier, i) => <span key={i}>{count(tier.minQty)}+　{money(tier.price)}</span>)}<small>默认单量1件，按MOQ / 包装倍数适配</small><small>MOQ {count(row.moq)} · 包装倍数 {count(row.spq)}</small></div></details> : <small>{tax} · MOQ {count(row.moq)} / SPQ {count(row.spq)}</small>}</div>;
 }
-export function validQuoteTiers(row: Pick<Row, "ladderPrices">) {
-  return Array.isArray(row.ladderPrices) ? row.ladderPrices.map(t => ({ minQty: tierMinimum(t), price: Number(t?.price) })).filter(t => Number.isSafeInteger(t.minQty) && t.minQty > 0 && Number.isFinite(t.price) && t.price > 0) : [];
-}
-export function firstEligibleQuote(row: Pick<Row, "ladderPrices" | "moq" | "spq">) {
-  const tiers = validQuoteTiers(row), raw = row.ladderPrices ?? [];
-  const moq = row.moq == null ? 1 : Number(row.moq), spq = row.spq == null ? 1 : Number(row.spq);
-  if (!tiers.length || raw.length > 64 || tiers.length !== raw.length || tiers.some((tier, i) => i > 0 && Number(tier.minQty) <= Number(tiers[i - 1].minQty))) return null;
-  if (![moq, spq].every(n => Number.isSafeInteger(n) && n > 0)) return null;
-  const quantity = Math.ceil(Math.max(moq, Number(tiers[0].minQty)) / spq) * spq;
-  if (!Number.isSafeInteger(quantity) || quantity > 2147483647) return null;
-  let price = Number(tiers[0].price);
-  for (const tier of tiers) if (quantity >= Number(tier.minQty)) price = Number(tier.price);
-  return { quantity, price };
-}
-function Quote({ row }: { row: Row }) {
-  const tiers = validQuoteTiers(row), first = firstEligibleQuote(row), hasTiers = row.ladderPrices != null && (!Array.isArray(row.ladderPrices) || row.ladderPrices.length > 0);
-  const tax = row.taxIncluded === true ? "含税" : row.taxIncluded === false ? "未税" : "税口径待核对";
-  return <div className="mall-quote"><span className="mall-quote-main">{hasTiers ? first ? `${count(first.quantity)}+ · ${money(first.price)}` : "阶梯报价待核对" : money(row.priceEx)}</span>{tiers.length ? <details><summary>阶梯价 · {tax}</summary><div className="mall-quote-tiers">{tiers.map((tier, i) => <span key={i}>{count(tier.minQty)}+　{money(tier.price)}</span>)}<small>MOQ {count(row.moq ?? 1)} · 包装倍数 {count(row.spq ?? 1)}</small><small>{tax}报价{row.taxIncluded !== true ? " · 仅支持询价" : ""}</small></div></details> : <small>{tax}{row.taxIncluded !== true ? " · 仅支持询价" : ""}</small>}</div>;
-}
-function confirmRow(row: Row) {
-  if (!Number.isSafeInteger(row.inventoryId) || row.inventoryId <= 0 || !/^[a-f0-9]{64}$/.test(row.inventoryFingerprint ?? "")) throw new Error("缺少当前商品确认指纹或真实库存ID，请刷新；不能使用旧部署的确认资料");
-  if (row.inventoryUpdatedAt == null || !Number.isFinite(new Date(row.inventoryUpdatedAt).getTime())) throw new Error("商品确认日期无效，请刷新重新确认；未发送操作");
+const formFields = [["partNumber", "型号", 128], ["brand", "品牌", 128], ["pkg", "封装", 128], ["dateCode", "批次/DC", 64], ["qtyOnSale", "可售数量", 32], ["qtyStock", "实际库存（未知留空）", 32], ["qtyOrder", "订货数量（未知留空）", 32], ["leadTime", "货期", 128], ["priceEx", "基础单价（面议留空）", 32], ["moq", "MOQ（未知留空）", 32], ["spq", "包装倍数（未知留空）", 32]] as const;
+function FormEditor({ form, onChange, disabled, suggestions }: { form: Form; onChange: (form: Form) => void; disabled: boolean; suggestions?: React.ReactNode }) {
+  return <fieldset className="mall-form" disabled={disabled}>
+    {formFields.map(([key, label, maxLength]) => <label key={key}>{label}<input aria-label={label} value={form[key]} maxLength={maxLength} autoComplete="off" inputMode={["qtyOnSale", "qtyStock", "qtyOrder", "moq", "spq"].includes(key) ? "numeric" : key === "priceEx" ? "decimal" : undefined} onChange={e => onChange({ ...form, [key]: e.target.value })}/>{key === "partNumber" ? suggestions : null}</label>)}
+    <label>税口径<select aria-label="税口径" value={form.taxIncluded == null ? "" : form.taxIncluded ? "true" : "false"} onChange={e => onChange({ ...form, taxIncluded: e.target.value === "" ? null : e.target.value === "true" })}><option value="">未知 / 待确认</option><option value="true">含税</option><option value="false">未税</option></select></label>
+    <fieldset className="mall-tiers"><legend>梯度报价（最多10档）</legend><p className="mall-hint">数量及单价成对填写，数量严格递增；单价最多6位小数，按原精度保存。</p>{form.tiers.map((tier, i) => <div className="mall-tier-row" key={i}><label>数量<input aria-label={`第${i + 1}档数量`} inputMode="numeric" value={tier.minQty} onChange={e => onChange({ ...form, tiers: form.tiers.map((t, j) => j === i ? { ...t, minQty: e.target.value } : t) })}/></label><span>+</span><label>单价<input aria-label={`第${i + 1}档单价`} inputMode="decimal" value={tier.price} onChange={e => onChange({ ...form, tiers: form.tiers.map((t, j) => j === i ? { ...t, price: e.target.value } : t) })}/></label><button type="button" aria-label={`删除第${i + 1}档`} onClick={() => onChange({ ...form, tiers: form.tiers.filter((_, j) => j !== i) })}>删除</button></div>)}<button type="button" disabled={disabled || form.tiers.length >= 10} onClick={() => onChange({ ...form, tiers: [...form.tiers, { minQty: "", price: "" }] })}>增加档位</button></fieldset>
+    <label className="mall-wide">内部备注<textarea aria-label="内部备注" maxLength={2000} value={form.note} onChange={e => onChange({ ...form, note: e.target.value })}/></label><p className="mall-wide mall-hint">数量未知保持空值，基础价为空表示面议；保存为待上架，不自动发布。上架须明确可售或订货数量及货期；税口径未知或未税时保留真实报价，仅供询价。</p>
+  </fieldset>;
 }
 
-/** Stock remains in inventories; this page shows explicit mall references only. */
-export default function MallMaterials() {
-  const scope = useBusinessScope();
-  const identity = `${scope.storageScope}:${scope.contextVerification.authorizationVersion}:${scope.officialInventoryPermissions.authorizationVersion}`;
-  const latest = useRef(identity); latest.current = identity;
-  const verified = scope.contextVerification.state === "verified";
-  const generation = useRef({ identity, verified, value: 0 });
-  if (generation.current.identity !== identity || generation.current.verified !== verified) generation.current = { identity, verified, value: generation.current.value + 1 };
-  const [keyword, setKeyword] = useState("");
-  const [appliedKeyword, setAppliedKeyword] = useState("");
-  const [state, setState] = useState<"" | "draft" | "published" | "offshelf">("");
-  const [page, setPage] = useState(1);
-  const [dialog, setDialog] = useState<Dialog | null>(null);
-  const [form, setForm] = useState<Form>(emptyForm);
-  const [createMode, setCreateMode] = useState<"manual" | "existing">("manual");
-  const [candidatePart, setCandidatePart] = useState("");
-  const [candidateBrand, setCandidateBrand] = useState("");
-  const [candidateSearch, setCandidateSearch] = useState({ partNumber: "", brand: "" });
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [unknownRequest, setUnknownRequest] = useState<string | null>(null);
-  const [creationHold, setCreationHold] = useState<string | null>(null);
-  const [formError, setFormError] = useState("");
-  const [createdInventoryId, setCreatedInventoryId] = useState<number | null>(null);
-  const holds = useRef(new Map<string, Hold>());
-  const activeStorageScope = useRef(scope.storageScope); activeStorageScope.current = scope.storageScope;
-  const previousStorageScope = useRef(scope.storageScope);
+/** Plain native page: the owning App supplies its native gate and layout. */
+export default function MallMaterials(_props?: unknown) {
+  const auth = useAuth();
+  const signedIn = auth.isAuthenticated && !auth.loading && !auth.error && auth.user?.hasNativeAdminAccount === true;
   const utils = trpc.useUtils();
-  const status = trpc.mallInventory.status.useQuery(undefined, { enabled: verified, staleTime: 0 });
-  const eligible = verified && status.data?.eligibility.eligible === true && status.data.context.enterpriseId === scope.staffPrincipal.enterpriseId;
-  const list = trpc.mallInventory.list.useQuery({ visibility: "linked", partNumber: appliedKeyword || undefined, status: state || undefined, page, pageSize: 30 }, { enabled: eligible, placeholderData: undefined });
-  const rows = eligible ? list.data?.items.filter(row => row.linked) ?? [] : [];
-  const permissions = status.data?.permissions;
-  const canWrite = eligible && permissions?.write === true;
-  const canPublish = eligible && permissions?.publish === true;
-  const livePermissions = useRef({ canWrite, canPublish }); livePermissions.current = { canWrite, canPublish };
-  const choosingExisting = dialog?.kind === "create" && dialog.scope === identity && createMode === "existing" && canWrite;
-  const candidates = trpc.mallInventory.list.useQuery({ visibility: "unlinked", partNumber: candidateSearch.partNumber || undefined, brand: candidateSearch.brand || undefined, page: 1, pageSize: 30 }, { enabled: choosingExisting, placeholderData: undefined, staleTime: 0 });
-  const candidateRows = choosingExisting ? candidates.data?.items.filter(row => !row.linked) ?? [] : [];
-  const authority = status.data?.context ? { permissionVersion: status.data.context.permissionVersion, authorizationVersion: status.data.context.authorizationVersion, businessAuthorizationVersion: status.data.context.businessAuthorizationVersion } : undefined;
-  const authorityRef = useRef(authority); authorityRef.current = authority;
-  const proofChanged = !!dialog && !sameProof(dialog.proof, authority);
-  const freshRow = dialog?.row && (choosingExisting ? candidateRows : rows).find(row => row.inventoryId === dialog.row!.inventoryId);
-  const rowChanged = !!dialog?.row && (!freshRow || dialog.inventoryProof !== rowProof(freshRow));
-  const staleDialog = !!dialog && (dialog.stale || proofChanged || rowChanged);
+  const authScope = useRef({ user: auth.user, signedIn, generation: 0 });
+  if (authScope.current.user !== auth.user || authScope.current.signedIn !== signedIn) authScope.current = { user: auth.user, signedIn, generation: authScope.current.generation + 1 };
+  const authKey = `${auth.user?.id ?? "anonymous"}:${authScope.current.generation}`;
+  const status = useNativeRead(authKey, signedIn, signal => utils.client.officialMall.status.query(undefined, { signal }));
+  const access: OfficialMallAccess | undefined = status.data;
+  const canRead = signedIn && !status.isError && access?.available === true && access.permissions.read && access.scope.adminUserId === auth.user?.id;
+  const canWrite = canRead && access?.permissions.write === true;
+  const canPublish = canRead && access?.permissions.publish === true;
+  const scopeKey = `${auth.user?.id ?? "anonymous"}:${access?.scope.teamId ?? "none"}`;
+  const permissionKey = `${authKey}:${scopeKey}:${canRead}:${canWrite}:${canPublish}`;
+  const latest = useRef(permissionKey); latest.current = permissionKey;
+  const authority = useRef({ canWrite, canPublish }); authority.current = { canWrite, canPublish };
+  const [partNumber, setPartNumber] = useState(""); const [brand, setBrand] = useState("");
+  const [filters, setFilters] = useState({ partNumber: "", brand: "" });
+  const [state, setState] = useState<"" | OfficialMallStatus>(""); const [page, setPage] = useState(1);
+  const listInput = { partNumber: filters.partNumber || undefined, brand: filters.brand || undefined, status: state || undefined, page, pageSize: 30 };
+  const list = useNativeRead(`${permissionKey}:${JSON.stringify(listInput)}`, canRead, signal => utils.client.officialMall.list.query(listInput, { signal }));
+  const rows: OfficialMallMaterial[] = canRead ? list.data?.items ?? [] : [];
+  const [selected, setSelected] = useState<OfficialMallMaterial[]>([]);
+  const [dialog, setDialog] = useState<Dialog | null>(null); const [mode, setMode] = useState<Mode>("manual");
+  const [form, setForm] = useState<Form>(emptyForm); const [teamId, setTeamId] = useState<number | undefined>();
+  const [error, setError] = useState(""); const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false); const busyRef = useRef(false);
+  const rejectionRef = useRef("");
+  const [storedHold, setHold] = useState<RequestHold | null>(null);
+  const hold = signedIn && storedHold?.scopeKey.split(":")[0] === String(auth.user?.id) ? storedHold : null; const holdRef = useRef<RequestHold | null>(null);
+  const memoryHolds = useRef(new Map<string, RequestHold>());
+  const [table, setTable] = useState<ParsedTable | null>(null); const [mapping, setMapping] = useState<(ImportField | null)[]>([]);
+  const [paste, setPaste] = useState(""); const [entries, setEntries] = useState<PreviewEntry[]>([]);
+  const [editingRow, setEditingRow] = useState<number | null>(null); const [rowForm, setRowForm] = useState<Form>(emptyForm);
+  const [importing, setImporting] = useState(false); const importingRef = useRef(false);
+  const [progress, setProgress] = useState({ completed: 0, total: 0 });
+  const [importTotals, setImportTotals] = useState({ imported: 0, updated: 0, skipped: 0 });
+  const [suggestQuery, setSuggestQuery] = useState("");
+  useEffect(() => { const timer = setTimeout(() => setSuggestQuery(form.partNumber.trim()), 250); return () => clearTimeout(timer); }, [form.partNumber]);
+  const suggesting = canWrite && !!dialog && (dialog.kind === "edit" || dialog.kind === "create" && mode === "manual") && suggestQuery.length > 0 && suggestQuery === form.partNumber.trim();
+  const suggestInput = { query: suggestQuery, brand: form.brand.trim() || undefined };
+  const suggestions = useNativeRead(`${permissionKey}:${JSON.stringify(suggestInput)}`, suggesting, signal => utils.client.officialMall.suggest.query(suggestInput, { signal }));
   useEffect(() => {
-    if (dialog && (proofChanged || rowChanged) && !dialog.stale) setDialog({ ...dialog, stale: true });
-  }, [dialog, proofChanged, rowChanged]);
+    const saved = readRequestHold(scopeKey) ?? memoryHolds.current.get(scopeKey.split(":")[0]) ?? null; holdRef.current = saved; setHold(saved);
+    setDialog(null); setSelected([]); setForm(emptyForm()); setEntries([]); setTable(null); setEditingRow(null);
+    setError(""); setNotice(""); setTeamId(undefined); setSuggestQuery(""); setImportTotals({ imported: 0, updated: 0, skipped: 0 });
+  }, [authKey, scopeKey]);
+  useEffect(() => { setDialog(null); setSelected([]); }, [permissionKey]);
+  useEffect(() => { setSelected([]); }, [filters, state, page]);
+  useEffect(() => { const focus = () => status.refetch(); window.addEventListener("focus", focus); return () => window.removeEventListener("focus", focus); }, [authKey]);
   useEffect(() => {
-    if (previousStorageScope.current === scope.storageScope && dialog) toast.info("权限证明已变化，请刷新后重新选择并确认；未自动重试");
-    previousStorageScope.current = scope.storageScope;
-    const hold = holds.current.get(scope.storageScope);
-    setDialog(null); setForm(emptyForm()); setFormError(""); setBusy(false); busyRef.current = false; setUnknownRequest(hold?.requestId ?? null); setCreationHold(hold?.creationHold ?? null); setCreatedInventoryId(hold?.createdInventoryId ?? null);
-    setKeyword(""); setAppliedKeyword(""); setState(""); setPage(1); setCreateMode("manual"); setCandidatePart(""); setCandidateBrand(""); setCandidateSearch({ partNumber: "", brand: "" });
-  }, [identity]);
-  const refresh = () => { void status.refetch(); void utils.mallInventory.list.invalidate(); };
-  const refreshReadonly = () => { if (!busyRef.current && !unknownRequest && !creationHold) { setDialog(null); setForm(emptyForm()); setFormError(""); } refresh(); };
-  const open = (kind: Dialog["kind"], row?: Row) => {
-    if (!verified || busyRef.current || unknownRequest || creationHold) return;
-    if (kind === "save" && (!canWrite || row?.status === "published" || row?.publicationStatus === "published")) { toast.info("已上架物料请先下架，再编辑并重新确认上架"); return; }
-    if (kind === "create" && !canWrite) return;
-    try { setForm(row ? formFor(row) : emptyForm()); } catch (e) { toast.error(e instanceof Error ? e.message : "原报价需要核对，未清空原数据"); return; }
-    setFormError(""); setCreateMode(canPublish && !createdInventoryId ? "manual" : "existing");
-    setCandidatePart(""); setCandidateBrand(""); setCandidateSearch({ partNumber: "", brand: "" }); setDialog({ kind, row: row && { ...row }, inventoryProof: row && rowProof(row), scope: identity, proof: authority && { ...authority } });
-  };
-  async function submit() {
-    if (!dialog || dialog.scope !== identity || !verified || busyRef.current || unknownRequest || creationHold || !status.data || staleDialog) return;
-    const manual = dialog.kind === "create" && createMode === "manual";
-    const selecting = dialog.kind === "create" && createMode === "existing";
-    if (manual && createdInventoryId) return;
-    if (manual ? !canWrite || !canPublish : dialog.kind === "publish" || dialog.kind === "offshelf" ? !canPublish : !canWrite) return;
-    const lease = identity, epoch = generation.current.value, storageScope = scope.storageScope;
-    const current = () => latest.current === lease && generation.current.value === epoch && generation.current.verified;
-    let requestId: string | null = null;
-    let createSent = false;
-    let createdId: number | undefined;
-    let mallSent = false;
-    let settled = false;
-    const remember = (hold: Hold) => {
-      holds.current.set(storageScope, hold);
-      if (activeStorageScope.current === storageScope) { setUnknownRequest(hold.requestId ?? null); setCreationHold(hold.creationHold ?? null); setCreatedInventoryId(hold.createdInventoryId ?? null); }
+    if (!dialog) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const panel = document.querySelector<HTMLElement>(".mall-dialog"); panel?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busyRef.current && !importingRef.current && !holdRef.current) setDialog(null);
+      if (event.key !== "Tab" || !panel) return;
+      const controls = Array.from(panel.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]'));
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     };
-    setFormError("");
+    document.addEventListener("keydown", keydown);
+    return () => { document.removeEventListener("keydown", keydown); previous?.focus(); };
+  }, [!!dialog]);
+  const refresh = () => { status.refetch(); list.refetch(); };
+  const locked = busy || importing || !!hold || !canRead;
+  const setRequest = (request: RequestHold) => { memoryHolds.current.set(request.scopeKey.split(":")[0], request); storeRequestHold(request); holdRef.current = request; setHold(request); };
+  const clearRequest = () => { memoryHolds.current.delete(scopeKey.split(":")[0]); clearRequestHold(scopeKey); const next = readRequestHold(scopeKey); holdRef.current = next; setHold(next); };
+  async function runWrite<T extends WriteResult>(kind: RequestHold["kind"], send: (requestId: string) => Promise<T>, settled: (result: T) => void, expected: Pick<RequestHold, "rowNumbers" | "bulkIds" | "expectedId"> = {}): Promise<"completed" | "rejected" | "unknown"> {
+    if (busyRef.current || holdRef.current) return "unknown";
+    const lease = permissionKey;
+    const request: RequestHold = { requestId: crypto.randomUUID(), kind, scopeKey, originalTeamId: (kind === "create" || kind === "import" ? teamId : undefined) ?? access?.scope.teamId, proof: true, ...expected };
+    setRequest(request); busyRef.current = true; setBusy(true); setError("");
     try {
-      const proof = dialog.proof;
-      if (!proof || !validAuthorization(proof.authorizationVersion) || !validAuthorization(proof.businessAuthorizationVersion) || !Number.isSafeInteger(proof.permissionVersion) || proof.permissionVersion < 0) throw new Error("缺少有效官方或业务权限版本，请刷新重新确认；未发送操作");
-      if (!sameProof(proof, authorityRef.current) || proof.authorizationVersion !== scope.officialInventoryPermissions.authorizationVersion || proof.businessAuthorizationVersion !== scope.contextVerification.authorizationVersion) throw new Error("权限证明已变化，请刷新重新确认；未发送操作");
-      let data: ReturnType<typeof formData> | undefined;
-      if (manual || dialog.kind === "save") data = formData(form, dialog.row);
-      if (manual && !form.dateCode.trim()) throw new Error("新增物料请填写真实生产周期/DC");
-      if (manual && data!.qtyOnSale <= 0 && !(data!.qtyOrder && data!.qtyOrder > 0)) throw new Error("请填写大于0的现货上架量或订货数量");
-      let row = dialog.row;
-      if (!manual) {
-        if (!row) throw new Error("请选择一条已有库存");
-        confirmRow(row);
-        if ((selecting || dialog.kind === "save") && (row.status === "published" || row.publicationStatus === "published")) throw new Error("已上架库存请先显式下架；不会自动关联或修改");
-        if (selecting && row.linked) throw new Error("该库存已纳入商城，请刷新核对");
+      const result = await send(request.requestId);
+      if (latest.current !== lease) return "unknown";
+      const complete = validMutationResult(result, request);
+      if (!complete) throw new Error("服务端响应不完整，保留UUID核对原请求");
+      clearRequest(); settled(result); refresh();
+      if (!result.success && "message" in result) setError(result.message ?? "本次业务操作未成功，请刷新核对");
+      return "completed";
+    } catch (cause) {
+      if (latest.current !== lease) return "unknown";
+      const message = errorMessage(cause); setError(message);
+      if (isBusinessRejection(cause)) {
+        rejectionRef.current = message;
+        clearRequest(); refresh(); setSelected([]);
+        if (kind !== "import") setDialog(null);
+        setNotice(message); // Preserve the server's precise business refusal; no automatic retry.
+        return "rejected";
       }
-      busyRef.current = true; setBusy(true);
-      if (manual) {
-        createSent = true;
-        holds.current.set(storageScope, { creationHold: "库存创建结果需核对；未重发创建。" });
-        const result = await utils.client.inventory.create.mutate({ data: data!, saveAs: "draft" });
-        if (!current()) return;
-        const created = result as { success?: boolean; inventoryId?: unknown };
-        if (created.success !== true || typeof created.inventoryId !== "number" || !Number.isSafeInteger(created.inventoryId) || created.inventoryId <= 0) throw new Error("库存创建结果需核对：缺少真实库存ID；已停止，不会按型号猜测或重发创建");
-        createdId = created.inventoryId;
-        const found = await utils.client.mallInventory.list.query({ inventoryId: created.inventoryId, visibility: "unlinked", page: 1, pageSize: 1 });
-        if (!current()) return;
-        if (found.items.length !== 1 || found.total !== 1 || found.items[0].inventoryId !== created.inventoryId || found.items[0].linked || found.items[0].status === "published") throw new Error("已保存原库存，但精确ID核对未通过；请在原库存页核对，不会自动重发或关联其他物料");
-        row = found.items[0]; confirmRow(row);
-        if (!livePermissions.current.canWrite || !livePermissions.current.canPublish) throw new Error("库存已保存，但当前创建资格已变化；请核对原库存，未继续关联");
-      }
-      if (!current()) return;
-      if (!sameProof(dialog.proof, authorityRef.current)) throw new Error("权限证明已变化，请刷新重新确认；未继续关联");
-      confirmRow(row!);
-      requestId = crypto.randomUUID();
-      holds.current.set(storageScope, { requestId, createdInventoryId: createdId ?? createdInventoryId ?? undefined });
-      const input = { inventoryId: row!.inventoryId, expectedVersion: row!.publicationVersion, expectedInventoryUpdatedAt: new Date(row!.inventoryUpdatedAt), expectedOwnershipVersion: row!.ownershipVersion, expectedPermissionVersion: proof.permissionVersion, expectedAuthorizationVersion: proof.authorizationVersion, expectedBusinessAuthorizationVersion: proof.businessAuthorizationVersion, expectedInventoryFingerprint: row!.inventoryFingerprint!, requestId };
-      mallSent = true;
-      const result = manual || selecting ? await utils.client.mallInventory.link.mutate(input)
-        : dialog.kind === "save" ? await utils.client.mallInventory.save.mutate({ ...input, data: data! })
-        : dialog.kind === "publish" ? await utils.client.mallInventory.publish.mutate(input)
-        : await utils.client.mallInventory.offshelf.mutate(input);
-      if (!current()) return;
-      settled = true;
-      const savedId = createdId ?? createdInventoryId;
-      if (savedId && (!result.success || row!.inventoryId !== savedId)) remember({ createdInventoryId: savedId });
-      else { holds.current.delete(storageScope); setCreatedInventoryId(null); }
-      if (!result.success) { toast.error(dialog.kind === "publish" ? "未上架，请刷新核对发布条件" : "操作未成功，请刷新核对当前状态"); setDialog(null); refresh(); return; }
-      toast.success(manual || selecting ? "已保存到待上架" : dialog.kind === "publish" ? "已确认上架" : dialog.kind === "offshelf" ? "已下架" : "草稿已保存", manual || selecting ? { description: "仅纳入商城待上架，未自动发布。" } : undefined);
-      setDialog(null); refresh();
-    } catch (e) {
-      if (!current()) return;
-      scope.onAuthorizationError(e);
-      const message = e instanceof Error ? e.message : "操作结果需要核对";
-      setFormError(message); toast.error(message);
-      if (requestId && mallSent && explicitlyNotExecuted(e)) {
-        settled = true;
-        const savedId = createdId ?? createdInventoryId ?? undefined;
-        if (savedId) remember({ createdInventoryId: savedId }); else { holds.current.delete(storageScope); setUnknownRequest(null); }
-        setDialog(null); setForm(emptyForm()); setFormError(""); refresh();
-        toast.info("本次商城操作明确未执行，请刷新后人工重新选择并确认；不会自动重试");
-      } else if (requestId) remember({ requestId, createdInventoryId: createdId ?? createdInventoryId ?? undefined });
-      else if (createSent) remember({ creationHold: "库存已保存或创建结果未知，请在原库存页核对。未重发创建，未自动按型号关联；核对前停止提交。", createdInventoryId: createdId });
-    } finally {
-      if (!settled && !current()) {
-        if (requestId) {
-          if (holds.current.get(storageScope)?.requestId === requestId) remember({ requestId, createdInventoryId: createdId ?? createdInventoryId ?? undefined });
-        }
-        else if (createSent) remember({ creationHold: "库存创建期间身份核验已变化，结果需在原库存页核对；未重发创建，未继续自动关联。", createdInventoryId: createdId });
-      }
-      if (latest.current === lease) {
-        if (generation.current.value !== epoch) {
-          // A live verification interruption is not proof that the write failed.
-          // Retain only our request metadata; discard its stale response and form.
-          setDialog(null); setForm(emptyForm());
-        }
-        busyRef.current = false; setBusy(false);
-      }
-    }
+      setNotice(`${message}；结果未知，已停止后续提交，请核对原UUID。`);
+      return "unknown";
+    } finally { busyRef.current = false; setBusy(false); }
+  }
+  function settleImport(result: OfficialMallImportResult, rowNumbers: number[]) {
+    const failures = new Map(result.errors.map(e => [e.rowNumber, e.message]));
+    setEntries(current => current.map(entry => {
+      if (!rowNumbers.includes(entry.rowNumber)) return entry;
+      const message = failures.get(entry.rowNumber);
+      return message ? { ...entry, outcome: "failed", confirmed: false, errors: [message] } : { ...entry, outcome: "success", confirmed: false, errors: [] };
+    }));
+    setProgress(current => ({ ...current, completed: current.completed + rowNumbers.length }));
+    setImportTotals(current => ({ imported: current.imported + result.imported, updated: current.updated + result.updated, skipped: current.skipped + result.skipped }));
+    setNotice(`本批新增 ${result.imported}、更新 ${result.updated}、跳过 ${result.skipped}、失败 ${result.errors.length}；均未自动上架。`);
   }
   async function inspectRequest() {
-    if (!unknownRequest || !verified || busyRef.current) return;
-    if (holds.current.get(scope.storageScope)?.requestId !== unknownRequest) return;
-    const lease = identity, epoch = generation.current.value; busyRef.current = true; setBusy(true);
+    if (!hold || !canRead || busyRef.current) return;
+    const request = hold, lease = permissionKey; busyRef.current = true; setBusy(true);
     try {
-      const result = await utils.client.mallInventory.requestStatus.query({ requestId: unknownRequest });
-      if (latest.current !== lease || generation.current.value !== epoch || !generation.current.verified) return;
-      if (result.state === "completed") {
-        toast.info("已找到原请求回执，请刷新核对物料状态");
-        if (createdInventoryId) holds.current.set(scope.storageScope, { createdInventoryId }); else holds.current.delete(scope.storageScope);
-        setUnknownRequest(null); setDialog(null); refresh();
+      const receipt = await utils.client.officialMall.requestStatus.query({ requestId: request.requestId });
+      if (latest.current !== lease) return;
+      if (receipt.state !== "completed") { setNotice(receipt.state === "not_found" ? "尚未找到回执不代表未执行。保留原UUID，继续停止，不会重发。" : "原请求仍在处理中，保留UUID并停止后续批次。"); return; }
+      const result: unknown = receipt.result;
+      if (!validMutationResult(result, request)) { setNotice("原请求回执尚不完整或缺少原请求覆盖证明，继续保留UUID；请管理员核对，未重发。"); return; }
+      if (request.kind === "import") {
+        settleImport(result as OfficialMallImportResult, request.rowNumbers!);
+      } else if (request.kind === "bulk") {
+        const bulk = result as BulkResult;
+        setNotice(`原请求已完成：成功 ${bulk.successful}，失败 ${bulk.errors.length}${bulk.errors.length ? "；" + bulk.errors.map(e => `ID ${e.id}：${e.message}`).join("；") : ""}`);
+      } else {
+        setNotice("已核对原请求回执，请刷新查看物料；未重发或自动上架。");
       }
-      else toast.info("尚无最终回执，保持停止；请稍后再核对，不要重复提交");
-    } catch (e) { if (latest.current === lease && generation.current.value === epoch) { scope.onAuthorizationError(e); toast.error("暂时无法核对原请求，未重发任何操作"); } }
-    finally { if (latest.current === lease) { busyRef.current = false; setBusy(false); } }
+      clearRequest(); setSelected([]); if (request.kind !== "import") setDialog(null); refresh();
+    } catch (cause) { if (latest.current === lease) setNotice(`${errorMessage(cause)}；核对失败，仍保留原UUID。`); }
+    finally { busyRef.current = false; setBusy(false); }
   }
-  const locked = busy || !verified || !!unknownRequest || !!creationHold;
-  const dialogCanSubmit = dialog?.kind === "create" ? createMode === "manual" ? canWrite && canPublish : canWrite && !!dialog.row : dialog?.kind === "save" ? canWrite : canPublish;
-  return <section className="mall-materials" aria-label="商城物料管理">
-    <div className="mall-filter"><input aria-label="搜索商城物料型号" placeholder="搜索型号" value={keyword} onChange={e => setKeyword(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && verified) { setAppliedKeyword(keyword.trim()); setPage(1); } }}/><select aria-label="商城上架状态" value={state} onChange={e => { setState(e.target.value as typeof state); setPage(1); }}><option value="">全部状态</option><option value="draft">待上架</option><option value="published">已上架</option><option value="offshelf">已下架</option></select><button onClick={() => { setAppliedKeyword(keyword.trim()); setPage(1); }} disabled={!verified}>筛选</button><button onClick={() => { setKeyword(""); setAppliedKeyword(""); setState(""); setPage(1); }}>重置</button><button onClick={refreshReadonly} disabled={busy}>刷新</button><button className="mall-primary mall-add" disabled={!canWrite || locked} title="手工录入沿用原库存创建资格；选择已有库存仅需编辑权限" onClick={() => open("create")}>新增物料</button></div>
-    {unknownRequest && <div className="mall-notice" role="alert">原请求结果尚待核对。未自动重发，也不会重复上架。<button disabled={busy || !verified} onClick={() => void inspectRequest()}>核对原请求</button></div>}
-    {creationHold && <p className="mall-notice" role="alert">{creationHold}</p>}
-    {createdInventoryId && <p className="mall-notice" role="alert">原库存已创建，真实库存ID {createdInventoryId}。请通过选择已有库存查找该ID并核对关联状态；不会再次创建。</p>}
-    {!verified ? <p className="mall-notice">正在重新核验当前企业与权限，暂不可操作。</p> : status.isError ? <p className="mall-notice" role="alert">商城权限核验失败，请刷新；不会借用旧企业数据。</p> : status.isLoading ? <p>正在核验商城配置…</p> : !eligible ? <p className="mall-notice">{status.data?.eligibility.message ?? "商城尚未完成安全就绪"}。不会自动关联或上架历史物料。</p> : null}
-    <div className="mall-table-wrap"><table className="mall-main-table"><colgroup><col className="mall-col-model"/><col className="mall-col-brand"/><col className="mall-col-pkg"/><col className="mall-col-dc"/><col className="mall-col-qty"/><col className="mall-col-price"/><col className="mall-col-lead"/><col className="mall-col-state"/><col className="mall-col-action"/></colgroup><thead><tr><th>型号</th><th>品牌</th><th>封装</th><th>DC</th><th>可售数量</th><th>报价 CNY</th><th>货期</th><th>状态</th><th className="mall-action-cell">操作</th></tr></thead><tbody>
-      {rows.map(row => { const published = row.publicationStatus === "published" || row.status === "published"; return <tr key={row.inventoryId}><td><button className="mall-model" disabled={!canWrite || locked} title={published ? "已上架请先下架再编辑" : "编辑商城物料"} onClick={() => open("save", row)}>{row.partNumber}</button></td><td title={row.brand ?? ""}>{row.brand || "—"}</td><td title={row.pkg ?? ""}>{row.pkg || "—"}</td><td>{row.dateCode || "—"}</td><td className="mall-numeric">{count(row.qtyOnSale)}</td><td><Quote row={row}/></td><td title={row.leadTime ?? ""}>{row.leadTime || "—"}</td><td><span className={`mall-state ${row.publicationStatus ?? "draft"}`}>{statusNames[row.publicationStatus ?? "draft"]}</span></td><td className="mall-action-cell"><button className="mall-inline-action" disabled={!canPublish || locked} onClick={() => open(published ? "offshelf" : "publish", row)}>{published ? "下架" : "上架"}</button></td></tr>; })}
-      {!rows.length && <tr><td colSpan={9} className="mall-empty">{list.isFetching ? "读取物料中…" : !eligible ? "商城未就绪" : list.isError ? "读取失败，请刷新" : "暂无商城物料，可新增或选择已有库存保存到待上架"}</td></tr>}
-    </tbody></table></div>
-    <footer className="mall-pagination"><span>共 {eligible ? list.data?.total ?? 0 : 0} 条</span><button disabled={page <= 1 || list.isFetching} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页</span><button disabled={page * 30 >= (list.data?.total ?? 0) || list.isFetching} onClick={() => setPage(p => p + 1)}>下一页</button></footer>
-    {dialog && dialog.scope === identity && <div className="mall-dialog-overlay"><section className="mall-dialog" role="dialog" aria-modal="true" aria-labelledby="mall-dialog-title"><h2 id="mall-dialog-title">{dialog.kind === "create" ? "新增物料" : dialog.kind === "save" ? "编辑商城物料" : dialog.kind === "publish" ? "确认上架" : "确认下架"}</h2>
-      {dialog.kind === "create" && <div className="mall-create-modes" role="group" aria-label="新增方式"><button aria-pressed={createMode === "manual"} disabled={locked || staleDialog || !canPublish || !!createdInventoryId} title={!canPublish ? "手工创建需要原库存创建资格" : undefined} onClick={() => { setCreateMode("manual"); setForm(emptyForm()); setFormError(""); setDialog({ ...dialog, row: undefined }); }}>手工录入</button><button aria-pressed={createMode === "existing"} disabled={locked || staleDialog || !canWrite} onClick={() => { setCreateMode("existing"); setForm(emptyForm()); setFormError(""); setDialog({ ...dialog, row: undefined }); }}>选择已有库存</button></div>}
-      {dialog.row && <p><strong>{dialog.row.partNumber}</strong> · {dialog.row.brand} · 库存ID {dialog.row.inventoryId} · DC {dialog.row.dateCode || "—"} · 可售 {count(dialog.row.qtyOnSale)}</p>}
-      {dialog.kind === "create" && createMode === "existing" ? <div className="mall-candidates"><div className="mall-candidate-filter"><input aria-label="已有库存型号" placeholder="搜索型号" value={candidatePart} disabled={locked} onChange={e => setCandidatePart(e.target.value)}/><input aria-label="已有库存品牌" placeholder="搜索品牌" value={candidateBrand} disabled={locked} onChange={e => setCandidateBrand(e.target.value)}/><button disabled={locked} onClick={() => { setCandidateSearch({ partNumber: candidatePart.trim(), brand: candidateBrand.trim() }); setDialog({ ...dialog, row: undefined }); }}>搜索库存</button></div><p className="mall-hint">仅列出未纳入商城的库存，最多30条。原库存已上架的物料须先在原库存页下架；保存不会自动发布。</p><div className="mall-candidate-list">{candidateRows.map(row => <label className="mall-candidate" key={row.inventoryId}><input type="radio" name="mall-candidate" aria-label={`选择 ${row.partNumber} ${row.brand ?? ""}`} checked={dialog.row?.inventoryId === row.inventoryId} disabled={locked || staleDialog || row.status === "published"} onChange={() => { setDialog({ ...dialog, row: { ...row }, inventoryProof: rowProof(row) }); setFormError(""); }}/><span><strong>{row.partNumber}</strong><small>{row.brand || "—"} · {row.pkg || "—"} · DC {row.dateCode || "—"}</small></span><span>{row.status === "published" ? "原库存已上架，须先下架" : `可售 ${count(row.qtyOnSale)}`}</span></label>)}{!candidateRows.length && <p className="mall-empty">{candidates.isFetching ? "读取库存中…" : candidates.isError ? "读取失败，请重新搜索" : "没有可选择的未纳入库存"}</p>}</div></div> : dialog.kind === "create" || dialog.kind === "save" ? <fieldset className="mall-form" disabled={locked}>
-        {([['partNumber', '型号', 128], ['brand', '品牌', 64], ['pkg', '封装', 32], ['dateCode', '生产周期/DC', 32], ['qtyStock', '实际库存', 32], ['qtyOnSale', '现货上架量', 32], ['qtyOrder', '订货数量（未知可留空）', 32], ['priceEx', '单价（询价可留空）', 32], ['moq', '起订量MOQ', 32], ['spq', '包装倍数SPQ', 32], ['leadTime', '真实货期', 128]] as const).map(([key, label, maxLength]) => <label key={key}>{label}<input aria-label={label} value={form[key]} maxLength={maxLength} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}/></label>)}
-        <label>税口径<select aria-label="税口径" value={form.taxIncluded ? "taxed" : "untaxed"} onChange={e => setForm(f => ({ ...f, taxIncluded: e.target.value === "taxed" }))}><option value="taxed">含税价</option><option value="untaxed">未税价（仅支持询价）</option></select></label>
-        <fieldset className="mall-tiers"><legend>阶梯报价（最多64档）</legend><p className="mall-hint">起订数量须为正整数并严格递增，单价大于0；整档留空可省略，不填演示价。</p>{form.tiers.map((tier, i) => <div className="mall-tier-row" key={i}><label>起订数量<input aria-label={`第${i + 1}档起订数量`} value={tier.minQty} onChange={e => setForm(f => ({ ...f, tiers: f.tiers.map((t, j) => j === i ? { ...t, minQty: e.target.value } : t) }))}/></label><span>+</span><label>单价 CNY<input aria-label={`第${i + 1}档单价`} value={tier.price} onChange={e => setForm(f => ({ ...f, tiers: f.tiers.map((t, j) => j === i ? { ...t, price: e.target.value } : t) }))}/></label><button aria-label={`删除第${i + 1}档`} onClick={() => setForm(f => ({ ...f, tiers: f.tiers.filter((_, j) => j !== i) }))}>删除</button></div>)}<button disabled={form.tiers.length >= 64} onClick={() => setForm(f => ({ ...f, tiers: f.tiers.length < 64 ? [...f.tiers, { minQty: "", price: "" }] : f.tiers }))}>增加档位</button></fieldset>
-        <label className="mall-wide">公开备注（最多50字）<input aria-label="公开备注" maxLength={50} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/></label><p className="mall-wide mall-hint">保存到待上架，不自动发布。原库存照片（{dialog.row?.photos?.length ?? 0}张）、分类、仓库、开票和环保属性保留；不虚构图片或供应数量。</p>
-      </fieldset> : <><p>{dialog.kind === "publish" ? "确认公开当前真实库存、报价、阶梯价与货期。缺报价可询价，未税报价仅支持询价；购买继续校验登录、企业、起订量和库存。" : "停止商城公开展示并下架原可售库存。旧订单和询价记录保留，旧购物车结算会再次核验。"}</p>{dialog.row && <div className="mall-confirm-details"><Quote row={dialog.row}/><p>封装 {dialog.row.pkg || "—"} · DC {dialog.row.dateCode || "—"}</p><p>现货上架 {count(dialog.row.qtyOnSale)} / 实际库存 {count(dialog.row.qtyStock)} · 订货 {count(dialog.row.qtyOrder)}</p><p>MOQ {count(dialog.row.moq)} · SPQ {count(dialog.row.spq)} · 货期 {dialog.row.leadTime || "—"}</p></div>}</>}
-      {formError && <p className="mall-form-error" role="alert">{formError}</p>}
-      {staleDialog && <p className="mall-form-error" role="alert">商品或权限确认资料已变化，请刷新后重新选择并确认；未自动替换商品指纹。</p>}
-      <div className="mall-dialog-actions"><button disabled={busy} onClick={() => setDialog(null)}>取消</button><button disabled={busy} onClick={refreshReadonly}>刷新重新确认</button>{unknownRequest && <button disabled={busy || !verified} onClick={() => void inspectRequest()}>核对原请求</button>}<button className="mall-primary" disabled={locked || staleDialog || !dialogCanSubmit} onClick={() => void submit()}>{busy ? "正在核验…" : dialog.kind === "create" ? "保存到待上架" : dialog.kind === "save" ? "保存草稿" : dialog.kind === "publish" ? "确认上架" : "确认下架"}</button></div>
+  function open(kind: Dialog["kind"], row?: OfficialMallMaterial, action?: Action) {
+    if (locked || (kind === "create" || kind === "edit") && !canWrite || (kind === "publish" || kind === "offshelf" || kind === "bulk") && !canPublish) return;
+    if (kind === "edit" && row?.status === "published") { setNotice("已上架物料请先下架，再编辑并重新确认上架。"); return; }
+    setError(""); setForm(row ? formFor(row) : emptyForm()); setEditingRow(null);
+    if (kind === "create") { setMode("manual"); setEntries([]); setTable(null); setPaste(""); setProgress({ completed: 0, total: 0 }); setImportTotals({ imported: 0, updated: 0, skipped: 0 }); }
+    setDialog({ kind, row: row && { ...row }, action, items: kind === "bulk" ? selected.map(r => ({ ...r })) : undefined, scopeKey });
+  }
+  const currentRow = (row: OfficialMallMaterial) => rows.find(r => r.id === row.id && r.revision === row.revision && r.status === row.status);
+  const staleDialog = !!dialog && (dialog.scopeKey !== scopeKey || !!dialog.row && !currentRow(dialog.row) || !!dialog.items?.some(r => !currentRow(r)));
+  async function submitDialog() {
+    if (!dialog || locked || staleDialog) return;
+    try {
+      if (dialog.kind === "create" || dialog.kind === "edit") {
+        if (!authority.current.canWrite) return;
+        const data = formData(form);
+        if (dialog.kind === "create") await runWrite("create", requestId => utils.client.officialMall.create.mutate({ requestId, data, ...(teamId ? { teamId } : {}) }), result => {
+          if (result.success) { setNotice("物料已保存到待上架；未自动发布。"); setDialog(null); }
+        });
+        else {
+          const row = dialog.row; if (!row || !currentRow(row)) throw new Error("物料版本已变化，请刷新重新选择");
+          await runWrite("update", requestId => utils.client.officialMall.update.mutate({ id: row.id, expectedRevision: row.revision, requestId, data }), result => { if (result.success) { setNotice("草稿已保存，未自动上架。"); setDialog(null); } }, { expectedId: row.id });
+        }
+      } else {
+        if (!authority.current.canPublish) return;
+        const action = dialog.kind === "bulk" ? dialog.action : dialog.kind;
+        if (action !== "publish" && action !== "offshelf") return;
+        const targets = dialog.kind === "bulk" ? dialog.items ?? [] : dialog.row ? [dialog.row] : [];
+        if (!targets.length || targets.length > 100) throw new Error("请选择1至100条物料");
+        for (const row of targets) {
+          if (!currentRow(row)) throw new Error(`物料 ${row.partNumber} 版本已变化，请刷新重新选择`);
+          if (action === "publish") { const problem = publishProblem(row); if (problem) throw new Error(`${row.partNumber}：${problem}`); }
+        }
+        if (dialog.kind === "bulk") await runWrite("bulk", requestId => utils.client.officialMall.bulkAction.mutate({ action, requestId, items: targets.map(r => ({ id: r.id, expectedRevision: r.revision })) }), result => {
+          setNotice(`批量${action === "publish" ? "上架" : "下架"}：成功 ${result.successful}，失败 ${result.errors.length}${result.errors.length ? "；" + result.errors.map(e => `ID ${e.id}：${e.message}`).join("；") : ""}`);
+          setSelected([]); setDialog(null);
+        }, { bulkIds: targets.map(r => r.id) });
+        else await runWrite(action, requestId => {
+          const input = { id: targets[0].id, expectedRevision: targets[0].revision, requestId };
+          return action === "publish" ? utils.client.officialMall.publish.mutate(input) : utils.client.officialMall.offshelf.mutate(input);
+        }, result => { if (result.success) { setNotice(action === "publish" ? "物料已确认上架。" : "物料已下架，原订单不变。"); setDialog(null); } }, { expectedId: targets[0].id });
+      }
+    } catch (cause) { setError(errorMessage(cause)); }
+  }
+  async function previewRows(local: ParsedImportRow[]): Promise<PreviewEntry[]> {
+    const result: PreviewEntry[] = [];
+    for (const batch of chunks(local, 500)) {
+      const server = await utils.client.officialMall.importPreview.query({ rows: batch.map(row => ({ rowNumber: row.rowNumber, data: row.data ?? row.rawData })) });
+      const previews = new Map<number, OfficialMallPreviewRow>(server.rows.map(row => [row.rowNumber, row]));
+      result.push(...batch.map(row => {
+        const preview = previews.get(row.rowNumber);
+        return { ...row, preview, errors: Array.from(new Set([...row.errors, ...(preview?.errors ?? ["未返回本行校验结果"])])), confirmed: false, policy: "skip" as const, outcome: "ready" as const };
+      }));
+    }
+    return result;
+  }
+  async function prepareTable(parsed: ParsedTable, columns = parsed.mapping) {
+    if (!canWrite || busyRef.current || holdRef.current || importingRef.current) return;
+    const lease = permissionKey; busyRef.current = true; setBusy(true); setError("");
+    try {
+      let local = rowsFromTable(parsed, columns);
+      const alreadyProcessed = entries.some(e => e.outcome === "success" || e.outcome === "skipped");
+      const failures = entries.filter(e => e.outcome === "failed" || e.errors.length > 0);
+      if (alreadyProcessed) {
+        if (!failures.length || local.length !== failures.length) throw new Error(`补传仅允许${failures.length}条失败行；禁止重新上传整批已成功数据。可下载错误行修正后补传。`);
+        local = local.map((r, i) => ({ ...r, rowNumber: failures[i].rowNumber }));
+      }
+      const next = await previewRows(local);
+      if (latest.current !== lease) return;
+      if (alreadyProcessed) {
+        const replaces = new Map(next.map(e => [e.rowNumber, e]));
+        setEntries(current => current.map(e => replaces.get(e.rowNumber) ?? e)); setTable(null);
+      } else { setEntries(next); setTable(parsed); setMapping(columns); setProgress({ completed: 0, total: 0 }); setImportTotals({ imported: 0, updated: 0, skipped: 0 }); }
+      setEditingRow(null); setNotice("请人工核对型号、品牌、数量、价格及匹配结果。有效行确认后仅导入待上架。");
+    } catch (cause) { if (latest.current === lease) setError(errorMessage(cause)); }
+    finally { busyRef.current = false; setBusy(false); }
+  }
+  async function uploadFile(file: File | undefined) {
+    if (!file || locked || !canWrite) return;
+    try {
+      if (file.size > MAX_IMPORT_BYTES) throw new Error("文件不得超过5MiB");
+      await prepareTable(parseImportFile(file.name, await file.arrayBuffer()));
+    } catch (cause) { setError(errorMessage(cause)); }
+  }
+  async function previewEdited(rowNumber: number, nextForm: Form) {
+    if (locked || !canWrite) return;
+    try {
+      const data = formData(nextForm), lease = permissionKey; busyRef.current = true; setBusy(true); setError("");
+      const local: ParsedImportRow = { rowNumber, data, form: nextForm, errors: [], rawData: { ...data } };
+      const [entry] = await previewRows([local]);
+      if (latest.current !== lease) return;
+      setEntries(current => current.map(e => e.rowNumber === rowNumber ? entry : e)); setEditingRow(null);
+    } catch (cause) { setError(errorMessage(cause)); }
+    finally { busyRef.current = false; setBusy(false); }
+  }
+  const importable = entries.filter(e => e.outcome === "ready" && e.confirmed && !entryProblem(e));
+  async function confirmImport() {
+    if (locked || !canWrite || !importable.length) return;
+    const lease = permissionKey;
+    const batches = chunks(importable, IMPORT_BATCH_SIZE); importingRef.current = true; setImporting(true); setProgress({ completed: 0, total: importable.length });
+    try {
+      for (const batch of batches) {
+        if (latest.current !== lease || !authority.current.canWrite || holdRef.current) break;
+        const importRows: OfficialMallImportRow[] = batch.map(entry => ({ rowNumber: entry.rowNumber, data: entry.data!, duplicatePolicy: entry.policy, ...(entry.policy === "update" && entry.duplicateId ? { duplicateId: entry.duplicateId, expectedRevision: entry.expectedRevision } : {}) }));
+        const rowNumbers = batch.map(r => r.rowNumber);
+        const result = await runWrite("import", requestId => utils.client.officialMall.importRows.mutate({ requestId, rows: importRows, ...(teamId ? { teamId } : {}) }), response => settleImport(response, rowNumbers), { rowNumbers });
+        if (result === "rejected") { setEntries(current => current.map(e => rowNumbers.includes(e.rowNumber) ? { ...e, outcome: "failed", confirmed: false, errors: [rejectionRef.current] } : e)); break; }
+        if (result === "unknown") break;
+      }
+    } finally { importingRef.current = false; setImporting(false); }
+  }
+  const failedEntries = entries.filter(e => e.errors.length > 0 || e.outcome === "failed");
+  const successCount = importTotals.imported + importTotals.updated;
+  const skipCount = importTotals.skipped;
+  const readyCount = entries.filter(e => e.outcome === "ready" && !entryProblem(e)).length;
+  const importMode = dialog?.kind === "create" && mode !== "manual";
+  const importPanel = <div className="mall-import">
+    <div className="mall-import-tools"><button disabled={busy || importing} onClick={() => downloadCsv("官方商城物料模板.csv", templateCsv())}>下载模板</button><label className="mall-file-label">{successCount || skipCount ? "补传失败行" : "上传 XLSX / CSV"}<input type="file" aria-label={successCount || skipCount ? "补传失败行文件" : "上传商城物料表格"} accept=".xlsx,.csv" disabled={locked || !canWrite || !!(successCount || skipCount) && !failedEntries.length} onChange={e => { const file = e.target.files?.[0]; e.target.value = ""; void uploadFile(file); }}/></label>{failedEntries.length > 0 && <button disabled={busy || importing} onClick={() => downloadCsv("官方商城物料错误行.csv", errorRowsCsv(failedEntries))}>下载错误行（{failedEntries.length}）</button>}</div>
+    <p className="mall-hint">仅支持.xlsx / UTF-8 .csv，5MiB、最多2000行；不执行公式、宏或外部引用。Excel复制多行可直接粘贴。未知字段须映射或编辑，绝不猜库存和售价。</p>
+    <label className="mall-paste-label">{mode === "paste" ? "供应商报价 / 库存文本" : "从Excel复制多行"}<textarea aria-label="粘贴商城物料数据" disabled={locked || !canWrite} value={paste} onChange={e => setPaste(e.target.value)} placeholder={mode === "paste" ? "粘贴带表头的报价表，或型号：…、品牌：…等明确标注的字段；无法确定的列需人工补充" : "粘贴包含型号、品牌等表头的多行表格"}/></label>
+    <button disabled={locked || !canWrite || !paste.trim()} onClick={() => { try { void prepareTable(parseImportText(paste)); } catch (cause) { setError(errorMessage(cause)); } }}>{successCount || skipCount ? "识别失败行并校验" : "识别并校验"}</button>
+    {table && <details className="mall-mapping" open={entries.some(e => !e.data)}><summary>列映射（未映射列忽略）</summary><div className="mall-mapping-grid">{table.headers.map((header, i) => <label key={i}>{header}<select aria-label={`第${i + 1}列映射`} disabled={locked || !canWrite || !!successCount || !!skipCount} value={mapping[i] ?? ""} onChange={e => setMapping(current => current.map((key, j) => j === i ? e.target.value as ImportField || null : key))}><option value="">忽略 / 待映射</option>{IMPORT_COLUMNS.map(col => <option key={col.key} value={col.key}>{col.label}</option>)}</select></label>)}</div><button disabled={locked || !canWrite || !!successCount || !!skipCount} onClick={() => void prepareTable(table, mapping)}>按映射重新校验</button></details>}
+    {entries.length > 0 && <><div className="mall-import-summary" role="status"><span>有效 {readyCount} · 错误 {failedEntries.length} · 成功 {successCount} · 跳过 {skipCount}</span><span>进度 {progress.completed} / {progress.total}</span></div><progress aria-label="导入进度" max={Math.max(progress.total, 1)} value={progress.completed}/><label className="mall-confirm-all"><input type="checkbox" aria-label="人工核对全部有效行" disabled={locked || !canWrite || readyCount === 0} checked={readyCount > 0 && importable.length === readyCount} onChange={e => { const checked = e.target.checked; setEntries(current => current.map(entry => entry.outcome === "ready" && !entryProblem(entry) ? { ...entry, confirmed: checked } : entry)); }}/>我已人工核对有效行的型号、品牌、数量、售价及匹配结果（不自动替换）</label>
+      <div className="mall-table-wrap mall-preview-wrap"><table className="mall-preview-table"><thead><tr><th>确认 / 行</th><th>型号</th><th>品牌 / 封装</th><th>数量 / 价格</th><th>匹配 / 重复策略</th><th>校验 / 操作</th></tr></thead><tbody>{entries.map(entry => { const problem = entryProblem(entry), done = entry.outcome === "success" || entry.outcome === "skipped"; return <tr key={entry.rowNumber} className={problem ? "mall-error-row" : ""}><td><label><input type="checkbox" aria-label={`确认第${entry.rowNumber}行`} disabled={locked || !canWrite || done || !!problem} checked={entry.confirmed} onChange={e => setEntries(current => current.map(r => r.rowNumber === entry.rowNumber ? { ...r, confirmed: e.target.checked } : r))}/>{entry.rowNumber}</label></td><td>{entry.form.partNumber || "未填写"}<small>批次 {entry.form.dateCode || "未知"}</small></td><td>{entry.form.brand || "未填写"}<small>{entry.form.pkg || "封装未知"}</small></td><td><small>可售 {entry.form.qtyOnSale || "未知"} / 实际 {entry.form.qtyStock || "未知"}</small>{entry.data ? <Quote row={entry.data}/> : <span>{entry.form.priceEx ? money(entry.form.priceEx) : "面议 / 待核对"}</span>}</td><td><span>{entry.preview?.matchStatus === "exact" ? "准确匹配（保留录入）" : entry.preview?.matchStatus === "multiple" ? "多个候选，须人工核对" : entry.preview ? "未匹配，须人工确认" : "未完成匹配"}</span>{!!entry.preview?.matches.length && !done && <select aria-label={`第${entry.rowNumber}行资料匹配`} value="" disabled={locked || !canWrite} onChange={e => { const match = entry.preview?.matches[Number(e.target.value)]; if (e.target.value !== "" && match) void previewEdited(entry.rowNumber, applySuggestion(entry.form, match)); }}><option value="">保留原录入资料</option>{entry.preview.matches.map((match, i) => <option key={i} value={i}>{match.partNumber} · {match.brand} · {match.pkg}</option>)}</select>}{!!entry.preview?.duplicates.length && <><select aria-label={`第${entry.rowNumber}行重复策略`} value={entry.policy} disabled={locked || !canWrite || done} onChange={e => setEntries(current => current.map(r => r.rowNumber === entry.rowNumber ? { ...r, policy: e.target.value as OfficialMallDuplicatePolicy, duplicateId: undefined, expectedRevision: undefined, confirmed: false } : r))}><option value="skip">重复跳过（默认）</option><option value="update">按版本更新</option><option value="new">另建批次（先修改批次）</option></select>{entry.policy === "update" && <select aria-label={`第${entry.rowNumber}行更新目标`} value={entry.duplicateId ?? ""} disabled={locked || !canWrite || done} onChange={e => { const duplicate = entry.preview?.duplicates.find(d => d.id === Number(e.target.value)); setEntries(current => current.map(r => r.rowNumber === entry.rowNumber ? { ...r, duplicateId: duplicate?.id, expectedRevision: duplicate?.revision, confirmed: false } : r)); }}><option value="">人工选择原记录</option>{entry.preview.duplicates.map(d => <option key={d.id} value={d.id}>ID {d.id} · 版本 {d.revision} · 批次 {d.dateCode || "未知"}</option>)}</select>}</>}</td><td><span>{done ? "已处理（详见汇总）" : problem || "有效，待人工确认"}</span>{!done && <button className="mall-inline-action" disabled={locked || !canWrite} onClick={() => { setEditingRow(entry.rowNumber); setRowForm(entry.form); setError(""); }}>编辑 / 修正</button>}</td></tr>; })}</tbody></table></div>
+      {editingRow != null && <section className="mall-row-editor" aria-label={`修正第${editingRow}行`}><h3>修正第 {editingRow} 行</h3><FormEditor form={rowForm} onChange={setRowForm} disabled={locked || !canWrite}/><div className="mall-dialog-actions"><button disabled={busy || importing || !!hold} onClick={() => setEditingRow(null)}>取消修正</button><button disabled={locked || !canWrite} onClick={() => void previewEdited(editingRow, rowForm)}>人工保存并重新校验</button></div></section>}
+      <p className="mall-hint">按100行分批保存到待上架；重复默认跳过。已成功行不可再次提交。未知结果立即停批并保留当前UUID，核对完成后须人工确认剩余批次。</p></>}
+  </div>;
+  return <section className="mall-materials" aria-label="官方商城物料管理" data-official-mall="native">
+    <div className="mall-filter"><input aria-label="搜索商城物料型号" placeholder="型号" value={partNumber} maxLength={128} onChange={e => setPartNumber(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { setFilters({ partNumber: partNumber.trim(), brand: brand.trim() }); setPage(1); } }}/><input aria-label="搜索商城物料品牌" placeholder="品牌" value={brand} maxLength={128} onChange={e => setBrand(e.target.value)}/><select aria-label="商城上架状态" value={state} onChange={e => { setState(e.target.value as typeof state); setPage(1); }}><option value="">全部状态</option><option value="draft">待上架</option><option value="published">已上架</option><option value="offshelf">已下架</option></select><button disabled={!canRead} onClick={() => { setFilters({ partNumber: partNumber.trim(), brand: brand.trim() }); setPage(1); }}>筛选</button><button onClick={() => { setPartNumber(""); setBrand(""); setFilters({ partNumber: "", brand: "" }); setState(""); setPage(1); }}>重置</button><button disabled={busy || importing} onClick={refresh}>刷新</button><button className="mall-primary mall-add" disabled={!canWrite || locked} onClick={() => open("create")}>新增物料</button></div>
+    {selected.length > 0 && selected.every(row => rows.some(r => r.id === row.id && r.revision === row.revision)) && <div className="mall-bulk" role="group" aria-label="选中物料批量操作"><span>已选 {selected.length} 条</span><button disabled={!canPublish || locked} onClick={() => open("bulk", undefined, "publish")}>批量上架</button><button disabled={!canPublish || locked} onClick={() => open("bulk", undefined, "offshelf")}>批量下架</button><button disabled={busy || importing || !!hold} onClick={() => setSelected([])}>取消选择</button></div>}
+    {hold && <div className="mall-notice" role="alert"><div>原请求结果待核对，已停止提交。<code>{hold.requestId}</code><small>没有回执不代表未执行；不重新上传整批，也不重发新增或上架。</small></div><button disabled={busy || !canRead} onClick={() => void inspectRequest()}>核对原请求</button></div>}
+    {notice && <p className="mall-notice" role="status">{notice}</p>}{error && !dialog && <p className="mall-form-error" role="alert">{error}</p>}
+    {!signedIn ? <p className="mall-notice">{auth.loading ? "正在核验后台员工会话…" : "请使用后台员工账号登录。"}</p> : status.isError ? <p className="mall-notice" role="alert">{errorMessage(status.error)}</p> : status.isLoading ? <p>正在核验官方物料权限…</p> : !canRead ? <p className="mall-notice">{access?.message ?? "当前后台员工没有官方商城物料查看权限。"}</p> : null}
+    <div className="mall-table-wrap"><table className="mall-main-table"><colgroup><col className="mall-col-check"/><col className="mall-col-model"/><col className="mall-col-brand"/><col className="mall-col-pkg"/><col className="mall-col-dc"/><col className="mall-col-qty"/><col className="mall-col-price"/><col className="mall-col-lead"/><col className="mall-col-state"/><col className="mall-col-action"/></colgroup><thead><tr><th><input type="checkbox" aria-label="选择本页物料" disabled={locked || !canPublish || !rows.length} checked={rows.length > 0 && rows.every(r => selected.some(s => s.id === r.id && s.revision === r.revision))} onChange={e => setSelected(e.target.checked ? rows.map(r => ({ ...r })) : [])}/></th><th>型号</th><th>品牌</th><th>封装</th><th>批次/DC</th><th>可售数量</th><th>报价 CNY</th><th>货期</th><th>状态</th><th className="mall-action-cell">操作</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><input type="checkbox" aria-label={`选择物料 ${row.partNumber} ${row.id}`} checked={selected.some(r => r.id === row.id)} disabled={locked || !canPublish} onChange={e => setSelected(current => e.target.checked ? [...current.filter(r => r.id !== row.id), { ...row }] : current.filter(r => r.id !== row.id))}/></td><td><button className="mall-model" disabled={!canWrite || locked} title={row.status === "published" ? "先下架再编辑" : "编辑物料"} onClick={() => open("edit", row)}>{row.partNumber}</button></td><td title={row.brand}>{row.brand}</td><td title={row.pkg}>{row.pkg || "—"}</td><td>{row.dateCode || "—"}</td><td className="mall-numeric">{count(row.qtyOnSale)}<small>实际 {count(row.qtyStock)}</small></td><td><Quote row={row}/></td><td title={row.leadTime}>{row.leadTime || "未知"}</td><td><span className={`mall-state ${row.status}`}>{statusNames[row.status]}</span></td><td className="mall-action-cell"><button className="mall-inline-action" disabled={!canPublish || locked} onClick={() => open(row.status === "published" ? "offshelf" : "publish", row)}>{row.status === "published" ? "下架" : "上架"}</button></td></tr>)}{!rows.length && <tr><td colSpan={10} className="mall-empty">{!canRead ? "暂无可读取物料" : list.isFetching ? "读取物料中…" : list.isError ? errorMessage(list.error) : "暂无官方商城物料，可手工新增或导入到待上架"}</td></tr>}</tbody></table></div>
+    <footer className="mall-pagination"><span>共 {canRead ? list.data?.total ?? 0 : 0} 条</span><button disabled={!canRead || page <= 1 || list.isFetching || importing} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页</span><button disabled={!canRead || page * 30 >= (list.data?.total ?? 0) || list.isFetching || importing} onClick={() => setPage(p => p + 1)}>下一页</button></footer>
+    {entries.length > 0 && !dialog && <button disabled={busy || importing || !canRead} onClick={() => { setMode("sheet"); setDialog({ kind: "create", scopeKey }); }}>查看导入结果 / 剩余行</button>}
+    {dialog && canRead && dialog.scopeKey === scopeKey && <div className="mall-dialog-overlay"><section className={`mall-dialog ${importMode ? "mall-import-dialog" : ""}`} role="dialog" aria-modal="true" aria-labelledby="mall-dialog-title" tabIndex={-1}><h2 id="mall-dialog-title">{dialog.kind === "create" ? "新增物料" : dialog.kind === "edit" ? "编辑物料" : dialog.kind === "bulk" ? `确认批量${dialog.action === "publish" ? "上架" : "下架"}` : dialog.kind === "publish" ? "确认上架" : "确认下架"}</h2>
+      {dialog.kind === "create" && <div className="mall-create-modes" role="group" aria-label="新增方式">{(["manual", "sheet", "paste"] as const).map(key => <button key={key} aria-pressed={mode === key} disabled={locked} onClick={() => { setMode(key); setError(""); }}>{modeNames[key]}</button>)}</div>}
+      {(dialog.kind === "create" || dialog.kind === "edit") && access?.teams && access.teams.length > 0 && dialog.kind === "create" && <label className="mall-team">归属团队<select aria-label="归属官方团队" disabled={locked || !canWrite || !!successCount || !!skipCount} value={teamId ?? ""} onChange={e => setTeamId(e.target.value ? Number(e.target.value) : undefined)}><option value="">当前官方范围</option>{access.teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>}
+      {importMode ? importPanel : dialog.kind === "create" || dialog.kind === "edit" ? <FormEditor form={form} onChange={setForm} disabled={locked || !canWrite || staleDialog} suggestions={suggesting && !locked ? <div className="mall-suggestions">{suggestions.isError ? <small>资料联想暂不可用，可手工输入。</small> : suggestions.isFetching ? <small>查询型号资料…</small> : suggestions.data?.items.length ? <>{suggestions.data.items.map((item, i) => <button type="button" key={i} aria-label={`使用型号资料 ${item.partNumber} ${item.brand} ${item.pkg}`} onClick={() => setForm(current => applySuggestion(current, item))}>{item.partNumber} · {item.brand} · {item.pkg || "封装未知"}</button>)}<small>仅填型号、品牌、封装；交易字段仍需人工录入。</small></> : <small>未匹配资料，请人工确认型号与品牌。</small>}</div> : null}/> : <><p>{(dialog.action ?? dialog.kind) === "publish" ? "确认公开选定官方物料的数量、报价及货期。权限和版本由服务端事务再次核验，不自动更换物料或价格。" : "确认停止公开展示选定官方物料。原订单与其他库存保持不变。"}</p>{dialog.row && <div className="mall-confirm-details"><strong>{dialog.row.partNumber} · {dialog.row.brand}</strong><Quote row={dialog.row}/><p>批次 {dialog.row.dateCode || "未知"} · 可售 {count(dialog.row.qtyOnSale)} / 实际 {count(dialog.row.qtyStock)} · 订货 {count(dialog.row.qtyOrder)}</p><p>货期 {dialog.row.leadTime || "未知"} · 版本 {dialog.row.revision}</p>{dialog.kind === "publish" && publishProblem(dialog.row) && <p className="mall-form-error">{publishProblem(dialog.row)}</p>}</div>}{dialog.items && <ul className="mall-bulk-review">{dialog.items.map(row => <li key={row.id}>{row.partNumber} · {row.brand} · 版本 {row.revision}{dialog.action === "publish" && publishProblem(row) ? `：${publishProblem(row)}` : ""}</li>)}</ul>}</>}
+      {error && <p className="mall-form-error" role="alert">{error}</p>}{staleDialog && <p className="mall-form-error" role="alert">物料版本已变化，请刷新后人工重新选择；未自动重试。</p>}{hold && <p className="mall-form-error" role="alert">原请求结果待核对：{hold.requestId}，停止后续批次。</p>}
+      <div className="mall-dialog-actions"><button disabled={busy || importing || !!hold} onClick={() => setDialog(null)}>关闭</button>{hold && <button disabled={busy || !canRead} onClick={() => void inspectRequest()}>核对原请求</button>}{importMode ? <button className="mall-primary" disabled={locked || !canWrite || importable.length === 0 || editingRow != null} onClick={() => void confirmImport()}>{importing ? "正在分批导入…" : `导入已确认有效行（${importable.length}）`}</button> : <button className="mall-primary" disabled={locked || staleDialog || (dialog.kind === "create" || dialog.kind === "edit" ? !canWrite : !canPublish)} onClick={() => void submitDialog()}>{busy ? "正在提交…" : dialog.kind === "create" ? "保存到待上架" : dialog.kind === "edit" ? "保存草稿" : dialog.kind === "bulk" ? `确认批量${dialog.action === "publish" ? "上架" : "下架"}` : dialog.kind === "publish" ? "确认上架" : "确认下架"}</button>}</div>
     </section></div>}
   </section>;
 }

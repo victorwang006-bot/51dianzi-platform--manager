@@ -5,6 +5,7 @@ import { personalCenterRouter } from "./personalCenterRouter";
 import { personalCenterService } from "./personalCenterService";
 import { officialChannelInventoryRouter } from "./routers/officialChannelInventory";
 import { officialChannelLegacyRouter } from "./routers/officialChannelLegacy";
+import { officialMallRouter, officialMallPublicRouter } from "./routers/officialMall";
 import { archiveStaff, previewStaffArchive } from "./staffArchive";
 import { staffArchiveInput, staffArchivePreviewInput } from "./staffArchiveModel";
 import { COOKIE_NAME } from "@shared/const";
@@ -746,6 +747,8 @@ export const appRouter = router({
   officialTeams: officialTeamsRouter,
   officialChannelInventory: officialChannelInventoryRouter,
   officialChannelLegacy: officialChannelLegacyRouter,
+  officialMall: officialMallRouter,
+  officialMallPublic: officialMallPublicRouter,
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => {

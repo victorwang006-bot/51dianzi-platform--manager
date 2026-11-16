@@ -1,300 +1,265 @@
 // @vitest-environment jsdom
-// UI-only fixtures. Every API and scope dependency is mocked; no production request is made.
+// All native API calls are mocks. No database, server, browser or product writes.
 import React, { act } from "react";
+import { QueryClient } from "@tanstack/react-query";
 import { createRoot, type Root } from "react-dom/client";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { OfficialMallAccess, OfficialMallDuplicate, OfficialMallImportResult, OfficialMallMaterial, OfficialMallPreviewRow, OfficialMallSuggestion } from "@shared/officialMall";
+import { officialMallMaterialInputSchema } from "@shared/officialMall";
 const h = vi.hoisted(() => ({
-  scope: {} as any, status: {} as any, rows: [] as any[], candidates: [] as any[],
-  queries: [] as { input: any; options: any }[],
-  create: vi.fn(), exact: vi.fn(), link: vi.fn(), save: vi.fn(), publish: vi.fn(), offshelf: vi.fn(), receipt: vi.fn(),
-  success: vi.fn(), error: vi.fn(), info: vi.fn(), invalidate: vi.fn(), refetch: vi.fn(), authorizationError: vi.fn(),
+  authId: 7 as number | null, authUser: null as { id: number; hasNativeAdminAccount: boolean } | null, authError: null as Error | null,
+  access: undefined as OfficialMallAccess | undefined, accessError: null as Error | null,
+  rows: [] as OfficialMallMaterial[], suggestions: [] as OfficialMallSuggestion[], duplicates: [] as OfficialMallDuplicate[], matchStatus: "exact" as OfficialMallPreviewRow["matchStatus"],
+  queries: [] as { input: Record<string, unknown>; options: { enabled: boolean } }[],
+  suggestQueries: [] as { input: Record<string, unknown>; options: { enabled: boolean } }[],
+  statusRead: vi.fn(), listRead: vi.fn(), suggestRead: vi.fn(), create: vi.fn(), update: vi.fn(), publish: vi.fn(), offshelf: vi.fn(), bulk: vi.fn(), receipt: vi.fn(), preview: vi.fn(), importRows: vi.fn(), invalidate: vi.fn(), refetch: vi.fn(),
 }));
-vi.mock("../business/BusinessScope", () => ({ useBusinessScope: () => h.scope }));
-vi.mock("sonner", () => ({ toast: { success: h.success, error: h.error, info: h.info } }));
-vi.mock("../business/api/business-trpc", () => ({ trpc: {
-  useUtils: () => ({ mallInventory: { list: { invalidate: h.invalidate } }, client: { inventory: { create: { mutate: h.create } }, mallInventory: { list: { query: h.exact }, link: { mutate: h.link }, save: { mutate: h.save }, publish: { mutate: h.publish }, offshelf: { mutate: h.offshelf }, requestStatus: { query: h.receipt } } } }),
-  mallInventory: {
-    status: { useQuery: () => ({ data: h.status, refetch: h.refetch, isError: false, isLoading: false }) },
-    list: { useQuery: (input: any, options: any) => { h.queries.push({ input, options }); const items = input.visibility === "unlinked" ? h.candidates : h.rows; return { data: { items, total: items.length }, isFetching: false, isError: false }; } },
-  },
+vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => {
+  if (h.authUser?.id !== h.authId) h.authUser = h.authId ? { id: h.authId, hasNativeAdminAccount: true } : null;
+  return { user: h.authUser, isAuthenticated: !!h.authId, loading: false, error: h.authError };
 } }));
-import MallMaterials, { emptyForm, formData, parseTiers, validQuoteTiers, firstEligibleQuote } from "../business/MallMaterials";
-let root: Root | undefined;
-let host: HTMLDivElement;
-(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-const fixture = (overrides: Record<string, unknown> = {}) => ({ inventoryId: 101, partNumber: "LOCAL-PART-A", brand: "LOCAL-BRAND", pkg: "QFN", dateCode: "2601", qtyStock: 200, qtyOnSale: 100, qtyOrder: null, priceEx: "1", moq: 10, spq: 2, leadTime: "3天", taxIncluded: true, note: "本地测试", category: "本地分类", warehouseAddress: "本地仓库", rohs: false, invoice: false, photos: [{ key: "local-fixture/a.png", url: "/local-fixture/a.png", name: "a", mimeType: "image/png", size: 100 }], ladderPrices: [{ minQty: 10, price: 8 }, { minQty: 100, price: 5 }], publicationStatus: "draft", status: "draft", linked: true, isSelfOperated: false, publicationVersion: 4, inventoryUpdatedAt: "2026-01-01T00:00:00.000Z", ownershipVersion: 3, inventoryFingerprint: "a".repeat(64), ...overrides });
+vi.mock("@/lib/trpc", () => ({ trpc: {
+  useUtils: () => ({ client: { officialMall: {
+    status: { query: h.statusRead }, list: { query: h.listRead }, suggest: { query: h.suggestRead },
+    create: { mutate: h.create }, update: { mutate: h.update }, publish: { mutate: h.publish }, offshelf: { mutate: h.offshelf }, bulkAction: { mutate: h.bulk }, requestStatus: { query: h.receipt }, importPreview: { query: h.preview }, importRows: { mutate: h.importRows },
+  } } }),
+} }));
+import MallMaterials from "../business/MallMaterials";
+import { readRequestHold, storeRequestHold } from "../lib/officialMallImport";
+let root: Root | undefined, host: HTMLDivElement;
+Object.assign(globalThis, { React, IS_REACT_ACT_ENVIRONMENT: true });
+const fixture = (override: Partial<OfficialMallMaterial> = {}): OfficialMallMaterial => ({ partNumber: "LOCAL-PART", brand: "LOCAL-BRAND", pkg: "QFN", dateCode: "LOCAL-DC", qtyStock: null, qtyOnSale: 500, qtyOrder: null, priceEx: "9.000000", moq: 101, spq: 50, leadTime: "人工确认3天", taxIncluded: true, note: "内部本地夹具", ladderPrices: [{ minQty: 1, price: "8" }, { minQty: 100, price: "5.123400" }, { minQty: 200, price: "2" }], id: 101, revision: 4, status: "draft", teamId: 3, ownerAdminUserId: 7, createdByAdminUserId: 7, updatedByAdminUserId: 7, publishedByAdminUserId: null, createdAt: "2026-01-01", updatedAt: "2026-01-01", publishedAt: null, ...override });
 beforeEach(() => {
-  vi.resetAllMocks(); h.queries = [];
-  h.scope = { storageScope: "local:enterprise:1", contextVerification: { state: "verified", authorizationVersion: "business-auth-v1:local-fixture" }, officialInventoryPermissions: { authorizationVersion: "official-inventory-v1:local-fixture" }, staffPrincipal: { enterpriseId: 1 }, onAuthorizationError: h.authorizationError };
-  h.status = { eligibility: { eligible: true }, context: { enterpriseId: 1, permissionVersion: 4, authorizationVersion: "official-inventory-v1:local-fixture", businessAuthorizationVersion: "business-auth-v1:local-fixture" }, permissions: { write: true, publish: true } };
-  h.rows = [fixture()]; h.candidates = [fixture({ inventoryId: 202, partNumber: "LOCAL-CANDIDATE", linked: false, publicationStatus: null }), fixture({ inventoryId: 203, partNumber: "LOCAL-PUBLISHED", linked: false, publicationStatus: null, status: "published" })];
-  h.create.mockResolvedValue({ success: true, inventoryId: 909 }); h.exact.mockResolvedValue({ total: 1, items: [fixture({ inventoryId: 909, linked: false, publicationStatus: null })] });
-  for (const fn of [h.link, h.save, h.publish, h.offshelf]) fn.mockResolvedValue({ success: true });
-  h.receipt.mockResolvedValue({ state: "completed" });
+  vi.resetAllMocks(); sessionStorage.clear(); h.queries = []; h.suggestQueries = [];
+  h.authId = 7; h.authUser = null; h.authError = null; h.accessError = null;
+  h.access = { available: true, permissions: { read: true, write: true, publish: true }, scope: { adminUserId: 7, teamId: 3, teamRole: "member", isSuperAdmin: false } };
+  h.rows = [fixture()]; h.suggestions = []; h.duplicates = []; h.matchStatus = "exact";
+  h.statusRead.mockImplementation(async () => { if (h.accessError) throw h.accessError; return structuredClone(h.access); });
+  h.listRead.mockImplementation(async (input: Record<string, unknown>) => { h.queries.push({ input, options: { enabled: true } }); return structuredClone({ items: h.rows, total: h.rows.length }); });
+  h.suggestRead.mockImplementation(async (input: Record<string, unknown>) => { h.suggestQueries.push({ input, options: { enabled: true } }); return structuredClone({ items: h.suggestions }); });
+  h.create.mockResolvedValue({ success: true, id: 909, revision: 1, status: "draft" });
+  h.update.mockResolvedValue({ success: true, id: 101, revision: 5, status: "draft" });
+  h.publish.mockResolvedValue({ success: true, id: 101, revision: 5, status: "published" });
+  h.offshelf.mockResolvedValue({ success: true, id: 101, revision: 5, status: "offshelf" });
+  h.bulk.mockResolvedValue({ success: true, successful: 1, errors: [] });
+  h.receipt.mockResolvedValue({ state: "not_found", result: null });
+  h.preview.mockImplementation(async ({ rows }: { rows: { rowNumber: number; data: unknown }[] }) => ({ rows: rows.map(row => {
+    const parsed = officialMallMaterialInputSchema.safeParse(row.data);
+    return { rowNumber: row.rowNumber, data: parsed.success ? parsed.data : undefined, errors: parsed.success ? [] : parsed.error.issues.map(i => i.message), duplicates: h.duplicates, matches: h.suggestions, matchStatus: h.matchStatus } satisfies OfficialMallPreviewRow;
+  }) }));
+  h.importRows.mockImplementation(async ({ rows }: { rows: { rowNumber: number }[] }) => ({ success: true, imported: rows.length, updated: 0, skipped: 0, errors: [], ids: rows.map((_, i) => i + 1000) } satisfies OfficialMallImportResult));
 });
-afterEach(() => { if (root) act(() => root!.unmount()); host?.remove(); root = undefined; });
-function mount() { host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host); act(() => root!.render(React.createElement(MallMaterials))); }
-function renderAgain() { act(() => root!.render(React.createElement(MallMaterials))); }
-function button(text: string, within: Element = host) { const result = [...within.querySelectorAll("button")].find(b => b.textContent === text); expect(result, `button ${text}`).toBeDefined(); return result!; }
-async function click(el: Element) { await act(async () => { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); }
-function input(label: string, value: string) { const el = host.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!; expect(el).not.toBeNull(); act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(el, value); el.dispatchEvent(new Event("input", { bubbles: true })); }); }
-async function fillCreate() { await click(button("新增物料")); for (const [label, value] of [["型号", "LOCAL-NEW"], ["品牌", "LOCAL-BRAND"], ["生产周期/DC", "2602"], ["实际库存", "50"], ["现货上架量", "30"], ["真实货期", "2天"]]) input(label, value); }
-const validForm = () => ({ ...emptyForm(), partNumber: "LOCAL", brand: "LOCAL", leadTime: "2天", qtyStock: "10", qtyOnSale: "5" });
-
-describe("MallMaterials targeted DOM", () => {
-  it("has no title strip, preview or link entry; dedicated brand and exactly one row operation", () => {
-    mount(); expect(host.querySelector("header,h1")).toBeNull();
-    expect(host.textContent).not.toMatch(/前台自营渠道|前台预览|关联商城|更新时间|实际库存|库存ID/);
-    expect([...host.querySelectorAll("thead th")].map(th => th.textContent)).toEqual(["型号", "品牌", "封装", "DC", "可售数量", "报价 CNY", "货期", "状态", "操作"]);
-    const row = host.querySelector("tbody tr")!; expect(row.children[1].textContent).toBe("LOCAL-BRAND");
-    expect(row.children[8].querySelectorAll("button")).toHaveLength(1); expect(row.children[8].textContent).toBe("上架");
-    expect(button("新增物料").parentElement?.className).toBe("mall-filter");
-  });
-  it("shows the first effective tier, not base or cheapest price, and expands all taxed tiers", () => {
-    mount(); const quote = host.querySelector(".mall-quote")!;
-    expect(quote.querySelector(".mall-quote-main")?.textContent).toBe("10+ · ¥8");
-    const details = quote.querySelector("details")!; expect(details.open).toBe(false);
-    act(() => { details.open = true; details.dispatchEvent(new Event("toggle")); });
-    expect(details.open).toBe(true); expect(details.textContent).toContain("100+　¥5"); expect(details.textContent).toContain("含税报价");
-  });
-  it("unpriced rows show inquiry, and untaxed tiers retain accurate tax wording", () => {
-    h.rows = [fixture({ priceEx: null, ladderPrices: [], taxIncluded: false })]; mount(); expect(host.querySelector(".mall-quote")?.textContent).toBe("询价未税 · 仅支持询价"); expect(host.textContent).not.toContain("¥0");
-  });
-  it("main list is linked only and unlinked candidates do not appear or query until selection mode", async () => {
-    h.rows.push(h.candidates[0]); mount(); expect(host.querySelectorAll(".mall-main-table tbody tr")).toHaveLength(1);
-    expect(h.queries.filter(q => q.options.enabled).every(q => q.input.visibility === "linked")).toBe(true);
-    await click(button("新增物料")); expect(h.queries.filter(q => q.options.enabled && q.input.visibility === "unlinked")).toHaveLength(0);
-    await click(button("选择已有库存")); expect(h.queries.some(q => q.options.enabled && q.input.visibility === "unlinked" && q.input.pageSize === 30)).toBe(true);
-    expect(host.querySelector<HTMLInputElement>('input[aria-label="选择 LOCAL-PUBLISHED LOCAL-BRAND"]')?.disabled).toBe(true);
-    input("已有库存型号", "CANDIDATE"); input("已有库存品牌", "BRAND"); await click(button("搜索库存"));
-    expect(h.queries.at(-1)?.input).toMatchObject({ visibility: "unlinked", partNumber: "CANDIDATE", brand: "BRAND", pageSize: 30 });
-  });
-  it("model opens editor; tiers can add and delete, and partial input never submits", async () => {
-    mount(); await click(button("LOCAL-PART-A")); expect(host.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(2); await click(button("增加档位"));
-    expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(3); await click(host.querySelector('[aria-label="删除第3档"]')!);
-    expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(2); input("第1档单价", ""); await click(button("保存草稿"));
-    expect(h.save).not.toHaveBeenCalled(); expect(host.querySelector('[role="alert"]')?.textContent).toContain("同时填写");
-  });
-  it("published model cannot edit before offshelf, with one same-position text action", async () => {
-    h.rows = [fixture({ publicationStatus: "published", status: "published" })]; mount(); await click(button("LOCAL-PART-A"));
-    expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(h.info).toHaveBeenCalledWith(expect.stringContaining("先下架"));
-    const last = host.querySelector("tbody tr")!.lastElementChild!; expect(last.querySelectorAll("button")).toHaveLength(1);
-    await click(button("下架", last)); await click(button("确认下架")); expect(h.offshelf).toHaveBeenCalledOnce(); expect(h.save).not.toHaveBeenCalled();
-  });
-  it("tier form caps at 64 and deleting a tier restores add capability", async () => {
-    h.rows = [fixture({ ladderPrices: Array.from({ length: 64 }, (_, i) => ({ minQty: i + 1, price: 1 })) })]; mount(); await click(button("LOCAL-PART-A"));
-    expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(64); expect(button("增加档位").disabled).toBe(true);
-    await click(host.querySelector('[aria-label="删除第64档"]')!); expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(63); expect(button("增加档位").disabled).toBe(false);
-  });
-  it("untaxed tier details and editor retain original tax semantics during save", async () => {
-    h.rows = [fixture({ taxIncluded: false })]; mount(); expect(host.querySelector(".mall-quote details")?.textContent).toContain("未税报价 · 仅支持询价");
-    await click(button("LOCAL-PART-A")); expect(host.querySelector<HTMLSelectElement>('select[aria-label="税口径"]')?.value).toBe("untaxed"); await click(button("保存草稿"));
-    expect(h.save).toHaveBeenCalledOnce(); expect(h.save.mock.calls[0][0].data).toMatchObject({ taxIncluded: false, photos: h.rows[0].photos, invoice: false, rohs: false });
-  });
-  it("missing full fingerprint never sends a publish request", async () => {
-    h.rows = [fixture({ inventoryFingerprint: "a".repeat(63) })]; mount(); await click(button("上架")); await click(button("确认上架"));
-    expect(h.publish).not.toHaveBeenCalled(); expect(h.success).not.toHaveBeenCalled(); expect(host.querySelector('[role="alert"]')?.textContent).toContain("指纹");
-  });
-  it("selecting existing needs write only, links once to draft and never publishes", async () => {
-    h.status.permissions.publish = false; mount(); expect(button("新增物料").disabled).toBe(false); await click(button("新增物料"));
-    expect(button("手工录入").disabled).toBe(true); await click(host.querySelector('[aria-label="选择 LOCAL-CANDIDATE LOCAL-BRAND"]')!); await click(button("保存到待上架"));
-    expect(h.link).toHaveBeenCalledOnce(); expect(h.link.mock.calls[0][0].inventoryId).toBe(202); expect(h.create).not.toHaveBeenCalled(); expect(h.publish).not.toHaveBeenCalled();
-    expect(h.success).toHaveBeenCalledWith("已保存到待上架", expect.anything());
-  });
-  it("publish directly uses publish only with complete concurrency and identity proofs", async () => {
-    h.status.permissions.write = false; mount(); expect(button("新增物料").disabled).toBe(true);
-    await click(button("上架")); expect(host.querySelector(".mall-confirm-details")?.textContent).toContain("MOQ 10"); await click(button("确认上架"));
-    expect(h.publish).toHaveBeenCalledOnce(); expect(h.link).not.toHaveBeenCalled();
-    expect(h.publish.mock.calls[0][0]).toMatchObject({ inventoryId: 101, expectedVersion: 4, expectedInventoryUpdatedAt: new Date("2026-01-01T00:00:00.000Z"), expectedOwnershipVersion: 3, expectedPermissionVersion: 4, expectedAuthorizationVersion: "official-inventory-v1:local-fixture", expectedBusinessAuthorizationVersion: "business-auth-v1:local-fixture", expectedInventoryFingerprint: "a".repeat(64), requestId: expect.stringMatching(/^[a-f0-9-]{36}$/) });
-  });
-  it("publication failure does not toast success or treat linking as publication", async () => {
-    h.publish.mockResolvedValue({ success: false }); mount(); await click(button("上架")); await click(button("确认上架"));
-    expect(h.success).not.toHaveBeenCalled(); expect(h.error).toHaveBeenCalledWith(expect.stringContaining("未上架")); expect(h.link).not.toHaveBeenCalled();
-  });
-  it("unknown publication stops retries and retains original UUID receipt check", async () => {
-    h.publish.mockRejectedValue(new Error("LOCAL network uncertain")); mount(); await click(button("上架")); await click(button("确认上架"));
-    const id = h.publish.mock.calls[0][0].requestId; expect(button("确认上架").disabled).toBe(true); await click(button("确认上架")); expect(h.publish).toHaveBeenCalledOnce();
-    await click(button("核对原请求")); expect(h.receipt).toHaveBeenCalledWith({ requestId: id }); expect(h.success).not.toHaveBeenCalled();
-  });
-  it("manual create follows real positive returned ID, exact lookup, then one link with no publish", async () => {
-    mount(); await fillCreate(); expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(0); await click(button("保存到待上架"));
-    expect(h.create).toHaveBeenCalledOnce(); expect(h.create.mock.calls[0][0]).toMatchObject({ saveAs: "draft", data: { priceEx: undefined, ladderPrices: undefined } });
-    expect(h.exact).toHaveBeenCalledWith({ inventoryId: 909, visibility: "unlinked", page: 1, pageSize: 1 });
-    expect(h.link).toHaveBeenCalledOnce(); expect(h.link.mock.calls[0][0].inventoryId).toBe(909); expect(h.publish).not.toHaveBeenCalled();
-  });
-  it.each([undefined, "909", 0, -1, 1.2])("missing/invalid real create ID %s stops without fuzzy lookup or create retry", async id => {
-    h.create.mockResolvedValue({ success: true, inventoryId: id }); mount(); await fillCreate(); await click(button("保存到待上架"));
-    expect(h.exact).not.toHaveBeenCalled(); expect(h.link).not.toHaveBeenCalled(); expect(h.success).not.toHaveBeenCalled();
-    expect(host.textContent).toContain("未重发创建"); await click(button("保存到待上架")); expect(h.create).toHaveBeenCalledOnce();
-  });
-  it("ambiguous exact lookup stops without linking any guessed row", async () => {
-    h.exact.mockResolvedValue({ total: 2, items: [fixture({ inventoryId: 909 }), fixture({ inventoryId: 910 })] }); mount(); await fillCreate(); await click(button("保存到待上架"));
-    expect(h.link).not.toHaveBeenCalled(); expect(h.success).not.toHaveBeenCalled(); expect(h.create).toHaveBeenCalledOnce();
-  });
-  it("link failure after a known creation does not report saved-to-draft or publication success", async () => {
-    h.link.mockResolvedValue({ success: false }); mount(); await fillCreate(); await click(button("保存到待上架"));
-    expect(h.create).toHaveBeenCalledOnce(); expect(h.link).toHaveBeenCalledOnce(); expect(h.publish).not.toHaveBeenCalled(); expect(h.success).not.toHaveBeenCalled();
-  });
-  it("unknown creation never retries automatically or links", async () => {
-    h.create.mockRejectedValue(new Error("LOCAL unknown create")); mount(); await fillCreate(); await click(button("保存到待上架"));
-    expect(h.create).toHaveBeenCalledOnce(); expect(h.exact).not.toHaveBeenCalled(); expect(h.link).not.toHaveBeenCalled(); expect(button("保存到待上架").disabled).toBe(true);
-  });
-  it("changed identity clears the form and ignores old creation result instead of linking", async () => {
-    let resolve!: (x: any) => void; h.create.mockReturnValue(new Promise(r => { resolve = r; })); mount(); await fillCreate(); await click(button("保存到待上架"));
-    h.scope = { ...h.scope, storageScope: "local:enterprise:2", staffPrincipal: { enterpriseId: 2 } }; h.status.context.enterpriseId = 2; renderAgain();
-    expect(host.querySelector('[role="dialog"]')).toBeNull(); await act(async () => resolve({ success: true, inventoryId: 909 }));
-    expect(h.exact).not.toHaveBeenCalled(); expect(h.link).not.toHaveBeenCalled(); expect(h.success).not.toHaveBeenCalled(); await click(button("新增物料")); expect(host.querySelector<HTMLInputElement>('input[aria-label="型号"]')?.value).toBe("");
-  });
-  it("authorization version change clears an edited form", async () => {
-    mount(); await click(button("LOCAL-PART-A")); input("品牌", "LOCAL CHANGED"); h.scope.contextVerification.authorizationVersion = "ctx-v2"; renderAgain();
-    expect(host.querySelector('[role="dialog"]')).toBeNull(); await click(button("LOCAL-PART-A")); expect(host.querySelector<HTMLInputElement>('input[aria-label="品牌"]')?.value).toBe("LOCAL-BRAND");
-  });
-  it("live verification disables operations and discards a stale publish response", async () => {
-    let resolve!: (x: any) => void; h.publish.mockReturnValue(new Promise(r => { resolve = r; })); mount(); await click(button("上架")); await click(button("确认上架"));
-    h.scope.contextVerification.state = "verifying"; renderAgain(); expect(host.querySelector<HTMLButtonElement>(".mall-dialog-actions .mall-primary")?.disabled).toBe(true); expect(host.querySelectorAll(".mall-main-table tbody button")).toHaveLength(0);
-    await act(async () => resolve({ success: true })); expect(h.success).not.toHaveBeenCalled();
-    h.scope.contextVerification.state = "verified"; renderAgain(); expect(button("上架").disabled).toBe(true); expect(button("核对原请求").disabled).toBe(false);
-    await click(button("核对原请求")); expect(h.receipt).toHaveBeenCalledOnce(); expect(h.publish).toHaveBeenCalledOnce();
-  });
-  it("busy blocks double submit within the same render", async () => {
-    let resolve!: (x: any) => void; h.publish.mockReturnValue(new Promise(r => { resolve = r; })); mount(); await click(button("上架")); const confirm = button("确认上架");
-    await act(async () => { confirm.dispatchEvent(new MouseEvent("click", { bubbles: true })); confirm.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); expect(h.publish).toHaveBeenCalledOnce(); await act(async () => resolve({ success: true }));
-  });
-});
-
-describe("MallMaterials form validation and original attributes", () => {
-  it("starts without fixed 10/50/100 tiers or demonstration price", () => { expect(emptyForm().tiers).toEqual([]); expect(emptyForm().priceEx).toBe(""); });
-  it("whole-empty tiers are omitted but half-empty tiers error", () => {
-    expect(parseTiers([{ minQty: " ", price: "" }])).toBeUndefined();
-    expect(() => parseTiers([{ minQty: "10", price: "" }])).toThrow("同时填写"); expect(() => parseTiers([{ minQty: "", price: "8" }])).toThrow("同时填写");
-  });
-  it.each(["0", "-1", "1.1", "Infinity", "NaN", "1e2"])("rejects invalid tier quantity %s", minQty => { expect(() => parseTiers([{ minQty, price: "1" }])).toThrow("正整数"); });
-  it.each(["0", "-1", "Infinity", "NaN"])("rejects invalid tier price %s", price => { expect(() => parseTiers([{ minQty: "1", price }])).toThrow("有限数值"); });
-  it("requires ordered unique tiers and caps 64", () => {
-    expect(() => parseTiers([{ minQty: "10", price: "3" }, { minQty: "10", price: "2" }])).toThrow("严格递增");
-    expect(() => parseTiers([{ minQty: "10", price: "3" }, { minQty: "5", price: "2" }])).toThrow("严格递增");
-    const tiers = Array.from({ length: 64 }, (_, i) => ({ minQty: String(i + 1), price: "1" })); expect(parseTiers(tiers)).toHaveLength(64); expect(() => parseTiers([...tiers, { minQty: "65", price: "1" }])).toThrow("最多64");
-  });
-  it.each(["moq", "spq"] as const)("requires positive integer %s", key => { for (const value of ["0", "1.5", "", "-1"]) expect(() => formData({ ...validForm(), [key]: value })).toThrow("正整数"); });
-  it("rejects fractional/negative inventory, sale beyond stock and nonpositive base price", () => {
-    expect(() => formData({ ...validForm(), qtyStock: "1.5" })).toThrow("非负整数"); expect(() => formData({ ...validForm(), qtyOnSale: "-1" })).toThrow("非负整数");
-    expect(() => formData({ ...validForm(), qtyOnSale: "11" })).toThrow("大于等于"); expect(() => formData({ ...validForm(), priceEx: "0" })).toThrow("大于0");
-    expect(() => formData({ ...validForm(), taxIncluded: undefined as any })).toThrow("明确税口径");
-  });
-  it("preserves photos, category, warehouse, invoice, ROHS and original untaxed semantics", () => {
-    const original = fixture({ taxIncluded: false }) as any;
-    const result = formData({ ...validForm(), taxIncluded: false, priceEx: "5" }, original);
-    expect(result).toMatchObject({ taxIncluded: false, invoice: false, rohs: false, category: original.category, warehouseAddress: original.warehouseAddress, photos: original.photos });
-    expect(() => formData(validForm(), fixture({ photos: [{ mimeType: "image/gif" }] }) as any)).toThrow("不会静默删除");
-  });
-  it("quote selection skips invalid historical tiers without taking the cheapest", () => { expect(validQuoteTiers({ ladderPrices: [{ minQty: 0, price: 0 }, { minQty: 10, price: 8 }, { minQty: 100, price: 5 }] } as any)[0]).toEqual({ minQty: 10, price: 8 }); });
-});
-
-
-describe("quantity-qualified first ladder quote",()=>{
- it("matches the actual MOQ and package-rounded quantity, not first or cheapest arbitrary tier",()=>{expect(firstEligibleQuote({moq:70,spq:12,ladderPrices:[{minQty:10,price:8},{minQty:50,price:7},{minQty:100,price:5}]})).toEqual({quantity:72,price:7});});
- it("packaging can enter a later valid tier without inventing a price",()=>{expect(firstEligibleQuote({moq:1,spq:64,ladderPrices:[{minQty:10,price:8},{minQty:50,price:7},{minQty:100,price:5}]})).toEqual({quantity:64,price:7});});
- it("does not quote malformed or duplicate ladders as valid prices",()=>{expect(firstEligibleQuote({moq:1,spq:1,ladderPrices:[{minQty:10,price:8},{minQty:10,price:7}]})).toBeNull();expect(firstEligibleQuote({moq:0,spq:1,ladderPrices:[{minQty:10,price:8}]})).toBeNull();});
- it("DOM shows purchasable start quantity and keeps original ladder/packaging details",()=>{h.rows=[fixture({moq:70,spq:12,ladderPrices:[{minQty:10,price:8},{minQty:50,price:7},{minQty:100,price:5}]})];mount();expect(host.querySelector('.mall-quote-main')?.textContent).toBe('72+ · ¥7');expect(host.querySelector('details')?.textContent).toContain('MOQ 70 · 包装倍数 12');expect(host.querySelector('details')?.textContent).toContain('100+　¥5');});
-});
-
-
-describe("legacy ladder read safety",()=>{
- it("supports historical qty aliases without guessing or sorting prices",()=>{expect(firstEligibleQuote({moq:10,spq:2,ladderPrices:[{qty:10,price:8},{qty:100,price:5}]} as never)).toEqual({quantity:10,price:8});});
- it("damaged old ladder renders pending verification rather than crashing",()=>{h.rows=[fixture({ladderPrices:[null]})];mount();expect(host.querySelector('.mall-quote-main')?.textContent).toBe('阶梯报价待核对');});
- it("non-array old ladder cannot be silently deleted by editing",async()=>{h.rows=[fixture({ladderPrices:'legacy-opaque-json'})];mount();await click(button('LOCAL-PART-A'));expect(host.querySelector('[role=dialog]')).toBeNull();expect(h.error).toHaveBeenCalledWith(expect.stringContaining('不会静默清空原报价'));expect(h.save).not.toHaveBeenCalled();});
-});
-
-const notExecuted = "本次商城操作未执行：商品、权限或企业上下文已变化，请刷新后重试";
-const controlledConflict = (shape = false) => Object.assign(new Error(notExecuted), shape ? { shape: { data: { code: "CONFLICT" } } } : { data: { code: "CONFLICT" } });
-async function selectExisting() {
-  await click(button("新增物料"));
-  await click(button("选择已有库存"));
-  await click(host.querySelector('[aria-label="选择 LOCAL-CANDIDATE LOCAL-BRAND"]')!);
+afterEach(() => { if (root) act(() => root!.unmount()); host?.remove(); root = undefined; vi.useRealTimers(); });
+async function mount() { host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host); await act(async () => root!.render(React.createElement(MallMaterials))); }
+async function renderAgain() { await act(async () => root!.render(React.createElement(MallMaterials))); }
+function button(text: string, within: Element = host): HTMLButtonElement {
+  const found = Array.from(within.querySelectorAll("button")).find(b => b.textContent === text); expect(found, `button ${text}`).toBeDefined(); return found!;
 }
-describe("MallMaterials controlled rejection and fixed confirmation", () => {
-  it("controlled link conflict unlocks, clears old proof and only human reselection gets a second UUID", async () => {
-    h.link.mockRejectedValueOnce(controlledConflict()).mockResolvedValueOnce({ success: true });
-    mount(); await selectExisting(); const oldSubmit = button("保存到待上架"); await click(oldSubmit);
-    const first = h.link.mock.calls[0][0].requestId;
-    expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(button("新增物料").disabled).toBe(false);
-    expect(h.refetch).toHaveBeenCalled(); expect(h.invalidate).toHaveBeenCalled(); expect(h.info).toHaveBeenCalledWith(expect.stringContaining("明确未执行"));
-    await click(oldSubmit); expect(h.link).toHaveBeenCalledOnce(); expect(h.receipt).not.toHaveBeenCalled();
-    await click(button("新增物料")); await click(button("选择已有库存")); expect(button("保存到待上架").disabled).toBe(true);
-    await click(host.querySelector('[aria-label="选择 LOCAL-CANDIDATE LOCAL-BRAND"]')!); await click(button("保存到待上架"));
-    expect(h.link).toHaveBeenCalledTimes(2); expect(h.link.mock.calls[1][0].requestId).not.toBe(first); expect(h.create).not.toHaveBeenCalled();
+async function click(el: Element) { await act(async () => { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); }
+function enter(label: string, value: string) {
+  const el = host.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[aria-label="${label}"]`); expect(el).not.toBeNull();
+  act(() => { const prototype = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(el, value); el!.dispatchEvent(new Event("input", { bubbles: true })); });
+}
+async function select(label: string, value: string) {
+  const el = host.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`); expect(el).not.toBeNull();
+  await act(async () => { el!.value = value; el!.dispatchEvent(new Event("change", { bubbles: true })); });
+}
+async function newForm() { await click(button("新增物料")); enter("型号", "LOCAL-NEW"); enter("品牌", "LOCAL-BRAND"); }
+async function pasteRows(n = 1) {
+  await click(button("新增物料")); await click(button("表格导入"));
+  enter("粘贴商城物料数据", "型号\t品牌\t封装\t可售数量\t基础价\t货期\t含税\n" + Array.from({ length: n }, (_, i) => `LOCAL-${i}\tLOCAL-BRAND\tQFN\t10\t1.230000\t人工7天\t是`).join("\n"));
+  await click(button("识别并校验"));
+}
+async function confirmValid() { await click(host.querySelector('[aria-label="人工核对全部有效行"]')!); }
+
+describe("native official mall compact DOM", () => {
+  it("has no title/layout frame or front inventory bridge, and a separate brand column", async () => {
+    await mount(); expect(host.querySelector("header,h1")).toBeNull(); expect(host.querySelector('[data-official-mall="native"]')).not.toBeNull();
+    const th = Array.from(host.querySelectorAll(".mall-main-table th")).map(e => e.textContent);
+    expect(th).toEqual(["", "型号", "品牌", "封装", "批次/DC", "可售数量", "报价 CNY", "货期", "状态", "操作"]);
+    expect(host.querySelector(".mall-main-table tbody tr")?.children[2].textContent).toBe("LOCAL-BRAND");
+    expect(host.querySelector(".mall-action-cell button")?.textContent).toBe("上架");
+    expect(host.querySelector('[aria-label="选中物料批量操作"]')).toBeNull();
+    await click(button("新增物料")); expect(Array.from(host.querySelectorAll(".mall-create-modes button")).map(e => e.textContent)).toEqual(["手工录入", "表格导入", "粘贴识别"]);
+    const source = readFileSync("client/src/business/MallMaterials.tsx", "utf8");
+    expect(source).not.toMatch(/BusinessScope|business-trpc|front-router-types|DashboardLayout|merchantId|inventoryId|authorizationVersion|选择已有库存/);
   });
-  it("bare conflict, approximate controlled message and network remain unknown and never retry", async () => {
-    mount();
-    for (const error of [Object.assign(new Error("普通冲突"), { data: { code: "CONFLICT" } }), Object.assign(new Error(`${notExecuted}。`), { data: { code: "CONFLICT" } }), new Error(notExecuted), new Error("LOCAL timeout")]) {
-      h.publish.mockRejectedValueOnce(error); await click(button("上架")); await click(button("确认上架"));
-      const id = h.publish.mock.calls.at(-1)![0].requestId; const calls = h.publish.mock.calls.length;
-      expect(button("确认上架").disabled).toBe(true); await click(button("刷新重新确认")); expect(button("确认上架").disabled).toBe(true);
-      await click(button("确认上架")); expect(h.publish).toHaveBeenCalledTimes(calls);
-      await click(button("核对原请求", host.querySelector('[role="dialog"]')!)); expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id });
-    }
+  it("shows a real empty list without hidden personal inventory candidates", async () => {
+    h.rows = []; await mount(); expect(host.textContent).toContain("暂无官方商城物料");
+    expect(h.queries.filter(q => q.options.enabled).every(q => !('visibility' in q.input))).toBe(true);
+    await click(button("新增物料")); expect(host.textContent).not.toMatch(/选择已有库存|前台库存|库存候选/);
   });
-  it("unknown publish not_found, pending and receipt errors stay held with an in-modal read-only check", async () => {
-    h.publish.mockRejectedValue(new Error("LOCAL unknown publish")); mount(); await click(button("上架")); await click(button("确认上架"));
-    const id = h.publish.mock.calls[0][0].requestId;
-    for (const state of ["not_found", "pending"]) {
-      h.receipt.mockResolvedValueOnce({ state }); await click(button("核对原请求", host.querySelector('[role="dialog"]')!));
-      expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id }); expect(button("确认上架").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')).not.toBeNull();
-    }
-    h.receipt.mockRejectedValueOnce(new Error("LOCAL receipt error")); await click(button("核对原请求", host.querySelector('[role="dialog"]')!));
-    await click(button("刷新")); expect(button("确认上架").disabled).toBe(true); expect(h.publish).toHaveBeenCalledOnce(); expect(h.link).not.toHaveBeenCalled();
-    await click(button("核对原请求", host.querySelector('[role="dialog"]')!)); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(button("上架").disabled).toBe(false);
+  it("filters native model, brand and status with 30-row paging", async () => {
+    await mount(); enter("搜索商城物料型号", " LOCAL "); enter("搜索商城物料品牌", " BRAND "); await click(button("筛选")); await select("商城上架状态", "draft");
+    expect(h.queries.at(-1)?.input).toMatchObject({ partNumber: "LOCAL", brand: "BRAND", status: "draft", page: 1, pageSize: 30 });
   });
-  it("candidate same-ID proof changes or disappearance become sticky stale without adopting a new row", async () => {
-    mount();
-    for (const change of [{ inventoryFingerprint: "b".repeat(64) }, { inventoryUpdatedAt: "2026-01-02T00:00:00.000Z" }, { publicationVersion: 5 }, { ownershipVersion: 4 }, { status: "published" }, { publicationStatus: "published" }, { linked: true }, null]) {
-      const original = fixture({ inventoryId: 202, partNumber: "LOCAL-CANDIDATE", linked: false, publicationStatus: null });
-      h.candidates = [original]; renderAgain(); await selectExisting();
-      h.candidates = change ? [{ ...original, ...change }] : []; renderAgain();
-      expect(button("保存到待上架").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')?.textContent).toContain("未自动替换商品指纹");
-      await click(button("保存到待上架")); expect(h.link).not.toHaveBeenCalled(); expect(h.create).not.toHaveBeenCalled();
-      h.candidates = [original]; renderAgain(); expect(button("保存到待上架").disabled).toBe(true);
-      await click(button("刷新重新确认")); expect(host.querySelector('[role="dialog"]')).toBeNull();
-    }
+  it("requires the local admin identity and read permission, not an implicit superuser bypass", async () => {
+    h.access!.scope.adminUserId = 8; h.access!.scope.isSuperAdmin = true; await mount();
+    expect(button("新增物料").disabled).toBe(true); expect(host.textContent).not.toContain("LOCAL-PART"); expect(h.listRead).not.toHaveBeenCalled();
   });
-  it("each captured context proof becomes stale rather than being replaced on status refetch", async () => {
-    mount();
-    for (const field of ["permissionVersion", "authorizationVersion", "businessAuthorizationVersion"]) {
-      await click(button("上架")); const previous = h.status.context[field]; h.status.context[field] = field === "permissionVersion" ? 5 : `${previous}-changed`; renderAgain();
-      expect(button("确认上架").disabled).toBe(true); expect(host.querySelector('[role="dialog"]')?.textContent).toContain("刷新后重新选择");
-      await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); h.status.context[field] = previous; renderAgain(); expect(button("确认上架").disabled).toBe(true);
-      await click(button("刷新重新确认"));
-    }
+  it("keeps write-only staff able to create draft without publish permission", async () => {
+    h.access!.permissions.publish = false; await mount(); await newForm(); await click(button("保存到待上架"));
+    expect(h.create).toHaveBeenCalledOnce(); expect(h.create.mock.calls[0][0]).toMatchObject({ requestId: expect.any(String), data: { qtyStock: null, qtyOnSale: null, priceEx: null, taxIncluded: null } });
+    expect(h.publish).not.toHaveBeenCalled(); expect(h.update).not.toHaveBeenCalled(); expect(host.textContent).toContain("未自动发布");
   });
-  it("same storageScope authorization changes retain the UUID; another scope cannot query it", async () => {
-    h.publish.mockRejectedValue(new Error("LOCAL network uncertain")); h.receipt.mockResolvedValue({ state: "pending" }); mount(); await click(button("上架")); await click(button("确认上架"));
-    const id = h.publish.mock.calls[0][0].requestId;
-    h.scope.contextVerification.authorizationVersion = "business-auth-v1:local-changed"; h.status.context.businessAuthorizationVersion = h.scope.contextVerification.authorizationVersion; renderAgain();
-    expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(button("上架").disabled).toBe(true); await click(button("核对原请求")); expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id });
-    const originalScope = h.scope; h.scope = { ...h.scope, storageScope: "local:enterprise:2", staffPrincipal: { enterpriseId: 2 } }; h.status.context.enterpriseId = 2; renderAgain();
-    expect([...host.querySelectorAll("button")].some(b => b.textContent === "核对原请求")).toBe(false); await click(button("刷新")); expect(h.receipt).toHaveBeenCalledOnce(); expect(h.publish).toHaveBeenCalledOnce();
-    h.scope = originalScope; h.status.context.enterpriseId = 1; renderAgain(); expect(button("上架").disabled).toBe(true); await click(button("核对原请求")); expect(h.receipt).toHaveBeenLastCalledWith({ requestId: id });
+  it("shows default MOQ/SPQ-adapted price with all exact gradient values expandable", async () => {
+    await mount(); expect(host.querySelector(".mall-quote-main")?.textContent).toBe("150件 · ¥5.123400");
+    const details = host.querySelector<HTMLDetailsElement>(".mall-quote details")!; expect(details.open).toBe(false); expect(details.textContent).toContain("200+　¥2"); expect(details.textContent).toContain("基础价　¥9.000000"); expect(host.textContent).toContain("实际 未知");
   });
-  it("an in-flight same-scope authorization change also retains the original UUID", async () => {
-    let resolve!: (x: any) => void; h.publish.mockReturnValue(new Promise(r => { resolve = r; })); h.receipt.mockResolvedValue({ state: "not_found" });
-    mount(); await click(button("上架")); await click(button("确认上架")); const id = h.publish.mock.calls[0][0].requestId;
-    h.scope.officialInventoryPermissions.authorizationVersion = "official-inventory-v1:local-changed"; h.status.context.authorizationVersion = h.scope.officialInventoryPermissions.authorizationVersion; renderAgain();
-    expect(button("上架").disabled).toBe(true);
-    await click(button("核对原请求")); expect(h.receipt).toHaveBeenCalledWith({ requestId: id }); expect(h.publish).toHaveBeenCalledOnce(); expect(button("上架").disabled).toBe(true);
-    h.receipt.mockResolvedValueOnce({ state: "completed" }); await click(button("核对原请求")); expect(button("上架").disabled).toBe(false);
-    await act(async () => resolve({ success: true })); expect(h.success).not.toHaveBeenCalled(); expect(button("上架").disabled).toBe(false);
+  it("keeps exact inquiry quotes for unknown tax and does not reject native publication solely for tax unknown", async () => {
+    h.rows = [fixture({ taxIncluded: null })]; await mount(); expect(host.querySelector(".mall-quote-main")?.textContent).toBe("150件 · ¥5.123400"); expect(host.textContent).toContain("税口径未知 · 仅询价");
+    await click(button("上架")); await click(button("确认上架")); expect(h.publish).toHaveBeenCalledOnce();
   });
-  it("created ID survives controlled link rejection and cannot trigger another create", async () => {
-    h.link.mockRejectedValueOnce(controlledConflict(true)); mount(); await fillCreate(); await click(button("保存到待上架"));
-    expect(h.create).toHaveBeenCalledOnce(); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(host.textContent).toContain("真实库存ID 909"); expect(host.textContent).toContain("选择已有库存查找该ID");
-    await click(button("刷新")); await click(button("新增物料")); expect(button("手工录入").disabled).toBe(true); await click(button("手工录入")); await click(button("保存到待上架")); expect(h.create).toHaveBeenCalledOnce();
-    h.candidates = [fixture({ inventoryId: 909, partNumber: "LOCAL-CREATED", linked: false, publicationStatus: null })]; renderAgain();
-    await click(host.querySelector('[aria-label="选择 LOCAL-CREATED LOCAL-BRAND"]')!); await click(button("保存到待上架")); expect(h.create).toHaveBeenCalledOnce(); expect(h.link).toHaveBeenCalledTimes(2); expect(h.link.mock.calls[1][0].inventoryId).toBe(909);
+  it("clicking model edits full exact ladder and preserves unknown actual stock", async () => {
+    await mount(); await click(button("LOCAL-PART")); expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(3); expect(host.querySelector<HTMLInputElement>('[aria-label="实际库存（未知留空）"]')?.value).toBe("");
+    enter("第2档单价", "5.000001"); await click(button("保存草稿"));
+    expect(h.update).toHaveBeenCalledOnce(); expect(h.update.mock.calls[0][0]).toMatchObject({ id: 101, expectedRevision: 4, data: { qtyStock: null, ladderPrices: [{ minQty: 1, price: "8" }, { minQty: 100, price: "5.000001" }, { minQty: 200, price: "2" }] } });
+    expect(h.publish).not.toHaveBeenCalled();
   });
-  it("invalid inventory dates or absent business version cannot send a mall write or manual create", async () => {
-    h.rows = [fixture({ inventoryUpdatedAt: "invalid-date" })]; mount(); await click(button("上架")); await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); expect(host.textContent).toContain("确认日期无效");
-    await click(button("刷新重新确认")); h.rows = [fixture()]; delete h.status.context.businessAuthorizationVersion; renderAgain(); await click(button("上架")); await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); expect(host.textContent).toContain("业务权限版本");
-    await click(button("刷新重新确认")); await fillCreate(); await click(button("保存到待上架")); expect(h.create).not.toHaveBeenCalled(); expect(h.link).not.toHaveBeenCalled();
+  it("rejects partial ladders and limits editing to ten complete pairs", async () => {
+    await mount(); await click(button("LOCAL-PART")); enter("第1档单价", ""); await click(button("保存草稿")); expect(h.update).not.toHaveBeenCalled(); expect(host.querySelector('[role="alert"]')?.textContent).toContain("同时填写");
+    for (let i = 0; i < 7; i++) await click(button("增加档位")); expect(host.querySelectorAll(".mall-tier-row")).toHaveLength(10); expect(button("增加档位").disabled).toBe(true);
+  });
+  it("blocks stale revision instead of switching or silently replacing the selected row", async () => {
+    await mount(); await click(button("LOCAL-PART")); h.rows = [fixture({ revision: 5 })]; await click(button("刷新")); expect(button("保存草稿").disabled).toBe(true); await click(button("保存草稿")); expect(h.update).not.toHaveBeenCalled(); expect(host.textContent).toContain("版本已变化");
+  });
+  it("requires explicit offshelf before editing published records", async () => {
+    h.rows = [fixture({ status: "published" })]; await mount(); await click(button("LOCAL-PART")); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(host.textContent).toContain("先下架");
+    await click(button("下架")); await click(button("确认下架")); expect(h.offshelf.mock.calls[0][0]).toMatchObject({ id: 101, expectedRevision: 4 }); expect(h.update).not.toHaveBeenCalled();
+  });
+  it("debounced suggestions fill only metadata and allow unmatched manual data", async () => {
+    h.suggestions = [{ partNumber: "CHOSEN-PART", brand: "CHOSEN-BRAND", pkg: "SOT" }]; await mount(); await newForm();
+    enter("可售数量", "4"); enter("基础单价（面议留空）", "1.234500"); enter("货期", "人工3天"); await select("税口径", "false");
+    expect(h.suggestQueries.filter(q => q.options.enabled)).toHaveLength(0);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 270)); });
+    expect(h.suggestQueries.some(q => q.options.enabled && q.input.query === "LOCAL-NEW")).toBe(true);
+    await click(host.querySelector('[aria-label="使用型号资料 CHOSEN-PART CHOSEN-BRAND SOT"]')!);
+    expect(host.querySelector<HTMLInputElement>('[aria-label="可售数量"]')?.value).toBe("4"); expect(host.querySelector<HTMLInputElement>('[aria-label="基础单价（面议留空）"]')?.value).toBe("1.234500"); expect(host.querySelector<HTMLSelectElement>('[aria-label="税口径"]')?.value).toBe("false");
+    await click(button("保存到待上架")); expect(h.create.mock.calls[0][0].data).toMatchObject({ partNumber: "CHOSEN-PART", brand: "CHOSEN-BRAND", pkg: "SOT", qtyOnSale: 4, qtyStock: null, priceEx: "1.234500", leadTime: "人工3天", taxIncluded: false });
+  });
+  it("checks publish quantity/lead/tax and sends only native id, revision and UUID", async () => {
+    h.rows = [fixture({ qtyOnSale: null, qtyOrder: null })]; await mount(); await click(button("上架")); await click(button("确认上架")); expect(h.publish).not.toHaveBeenCalled(); expect(host.textContent).toContain("大于0");
+    await click(button("关闭")); h.rows = [fixture()]; await click(button("刷新")); await click(button("上架")); await click(button("确认上架"));
+    expect(h.publish.mock.calls[0][0]).toEqual({ id: 101, expectedRevision: 4, requestId: expect.stringMatching(/^[a-f0-9-]{36}$/) });
+  });
+  it("shows batch buttons only after explicit selection, using native draft revisions", async () => {
+    await mount(); await click(host.querySelector('[aria-label="选择物料 LOCAL-PART 101"]')!); expect(button("批量上架")).toBeDefined(); await click(button("批量上架")); await click(button("确认批量上架"));
+    expect(h.bulk.mock.calls[0][0]).toEqual({ action: "publish", requestId: expect.any(String), items: [{ id: 101, expectedRevision: 4 }] }); expect(h.create).not.toHaveBeenCalled();
+  });
+});
+describe("native UUID holds and deterministic import DOM", () => {
+  it("holds an incomplete success response rather than treating a missing created ID as final", async () => {
+    h.create.mockResolvedValue({ success: true }); await mount(); await newForm(); await click(button("保存到待上架"));
+    const id = h.create.mock.calls[0][0].requestId; expect(readRequestHold("7:3")?.requestId).toBe(id); expect(host.textContent).toContain("响应不完整"); expect(h.create).toHaveBeenCalledOnce();
+  });
+  it("preserves exact native import refusal on every rejected row and stops later batches", async () => {
+    h.importRows.mockRejectedValueOnce(Object.assign(new Error("官方团队范围已撤销，事务明确拒绝"), { data: { code: "FORBIDDEN" } })); await mount(); await pasteRows(101); await confirmValid(); await click(button("导入已确认有效行（101）"));
+    expect(h.importRows).toHaveBeenCalledOnce(); expect(readRequestHold("7:3")).toBeNull(); expect(host.querySelector(".mall-preview-table tbody tr")?.textContent).toContain("官方团队范围已撤销，事务明确拒绝"); expect(host.textContent).toContain("错误 100");
+  });
+  it("unknown create persists the same UUID across remount, and not_found receipt never authorizes resend", async () => {
+    h.create.mockRejectedValue(new Error("LOCAL timeout")); await mount(); await newForm(); await click(button("保存到待上架")); const id = h.create.mock.calls[0][0].requestId;
+    expect(readRequestHold("7:3")?.requestId).toBe(id); expect(button("保存到待上架").disabled).toBe(true);
+    act(() => root!.unmount()); host.remove(); root = undefined; await mount(); expect(host.textContent).toContain(id);
+    await click(button("核对原请求")); expect(h.receipt).toHaveBeenCalledWith({ requestId: id }); expect(readRequestHold("7:3")?.requestId).toBe(id); expect(button("新增物料").disabled).toBe(true); expect(h.create).toHaveBeenCalledOnce();
+  });
+  it("explicit transaction refusal preserves concrete server message but releases UUID for manual reselection", async () => {
+    h.create.mockRejectedValue(Object.assign(new Error("品牌超过允许范围，拒绝创建"), { data: { code: "BAD_REQUEST" } })); await mount(); await newForm(); await click(button("保存到待上架"));
+    expect(readRequestHold("7:3")).toBeNull(); expect(host.textContent).toContain("品牌超过允许范围，拒绝创建"); expect(button("新增物料").disabled).toBe(false); expect(h.create).toHaveBeenCalledOnce();
+  });
+  it("unknown 5xx and bulk operations keep original UUID, with completed-null still blocked", async () => {
+    h.bulk.mockRejectedValue(Object.assign(new Error("LOCAL 5xx"), { data: { code: "INTERNAL_SERVER_ERROR" } })); await mount(); await click(host.querySelector('[aria-label="选择物料 LOCAL-PART 101"]')!); await click(button("批量上架")); await click(button("确认批量上架"));
+    const id = h.bulk.mock.calls[0][0].requestId; expect(readRequestHold("7:3")?.requestId).toBe(id);
+    h.receipt.mockResolvedValue({ state: "completed", result: null }); await click(button("核对原请求")); expect(readRequestHold("7:3")?.requestId).toBe(id); expect(h.bulk).toHaveBeenCalledOnce();
+  });
+  it("requires manual row confirmation, imports draft strings only and never automatically publishes", async () => {
+    await mount(); await pasteRows(); expect(button("导入已确认有效行（0）").disabled).toBe(true); await confirmValid(); await click(button("导入已确认有效行（1）"));
+    expect(h.importRows).toHaveBeenCalledOnce(); expect(h.importRows.mock.calls[0][0]).toMatchObject({ requestId: expect.any(String), rows: [{ rowNumber: 2, duplicatePolicy: "skip", data: { partNumber: "LOCAL-0", brand: "LOCAL-BRAND", qtyOnSale: 10, qtyStock: null, priceEx: "1.230000" } }] }); expect(h.publish).not.toHaveBeenCalled(); expect(h.create).not.toHaveBeenCalled(); expect(host.textContent).toContain("成功 1");
+  });
+  it("previews 501 rows in chunks no larger than 500", async () => {
+    await mount(); await pasteRows(501); expect(h.preview.mock.calls.map(call => call[0].rows.length)).toEqual([500, 1]); expect(h.importRows).not.toHaveBeenCalled();
+  });
+  it("stops after unknown first 100-row batch, preserves UUID, and resumes only remaining rows after receipt", async () => {
+    h.importRows.mockRejectedValueOnce(new Error("LOCAL import timeout")); await mount(); await pasteRows(101); await confirmValid(); await click(button("导入已确认有效行（101）"));
+    expect(h.importRows).toHaveBeenCalledOnce(); expect(h.importRows.mock.calls[0][0].rows).toHaveLength(100); const id = h.importRows.mock.calls[0][0].requestId;
+    expect(readRequestHold("7:3")?.requestId).toBe(id); await click(button("核对原请求")); expect(h.receipt).toHaveBeenCalledWith({ requestId: id }); expect(h.importRows).toHaveBeenCalledOnce();
+    h.receipt.mockResolvedValue({ state: "completed", result: { success: true, imported: 100, updated: 0, skipped: 0, errors: [], ids: Array.from({ length: 100 }, (_, i) => 1000 + i) } });
+    await click(button("核对原请求")); expect(readRequestHold("7:3")).toBeNull(); expect(host.textContent).toContain("成功 100");
+    await click(button("导入已确认有效行（1）")); expect(h.importRows).toHaveBeenCalledTimes(2); expect(h.importRows.mock.calls[1][0].rows).toHaveLength(1); expect(h.importRows.mock.calls[1][0].rows[0].rowNumber).toBe(102); expect(h.importRows.mock.calls[1][0].requestId).not.toBe(id); expect(h.publish).not.toHaveBeenCalled();
+  });
+  it("duplicate update requires manual target plus exact revision, default stays skip", async () => {
+    h.duplicates = [{ id: 88, revision: 3, partNumber: "LOCAL-0", brand: "LOCAL-BRAND", pkg: "QFN", dateCode: "" }]; await mount(); await pasteRows();
+    expect(host.querySelector<HTMLSelectElement>('[aria-label="第2行重复策略"]')?.value).toBe("skip"); await select("第2行重复策略", "update"); expect(host.querySelector<HTMLInputElement>('[aria-label="确认第2行"]')?.disabled).toBe(true);
+    await select("第2行更新目标", "88"); await confirmValid(); await click(button("导入已确认有效行（1）")); expect(h.importRows.mock.calls[0][0].rows[0]).toMatchObject({ duplicatePolicy: "update", duplicateId: 88, expectedRevision: 3 });
+  });
+  it("multiple/unmatched metadata remains manual; explicit choice never changes trading data", async () => {
+    h.matchStatus = "multiple"; h.suggestions = [{ partNumber: "CHOSEN", brand: "CHOSEN-BRAND", pkg: "SOT" }]; await mount(); await pasteRows(); expect(host.textContent).toContain("多个候选");
+    expect(host.querySelector(".mall-preview-table")?.textContent).toContain("LOCAL-0"); await select("第2行资料匹配", "0"); await confirmValid(); await click(button("导入已确认有效行（1）")); expect(h.importRows.mock.calls[0][0].rows[0].data).toMatchObject({ partNumber: "CHOSEN", brand: "CHOSEN-BRAND", pkg: "SOT", qtyOnSale: 10, qtyStock: null, priceEx: "1.230000", leadTime: "人工7天" });
+  });
+  it("allows failed-row correction and never resubmits already successful rows", async () => {
+    h.importRows.mockResolvedValueOnce({ success: false, imported: 1, updated: 0, skipped: 0, errors: [{ rowNumber: 3, message: "LOCAL 精确业务拒绝" }], ids: [1000] }); await mount(); await pasteRows(2); await confirmValid(); await click(button("导入已确认有效行（2）"));
+    expect(host.textContent).toContain("成功 1"); expect(host.textContent).toContain("LOCAL 精确业务拒绝"); expect(button("下载错误行（1）")).toBeDefined();
+    const failure = host.querySelectorAll(".mall-preview-table tbody tr")[1]; await click(button("编辑 / 修正", failure)); await click(button("人工保存并重新校验")); await confirmValid(); await click(button("导入已确认有效行（1）"));
+    expect(h.importRows.mock.calls[1][0].rows).toHaveLength(1); expect(h.importRows.mock.calls[1][0].rows[0].rowNumber).toBe(3); expect(h.importRows.mock.calls[1][0].requestId).not.toBe(h.importRows.mock.calls[0][0].requestId);
+  });
+  it("blocks whole-batch repaste once there is success, allowing only exact failure count", async () => {
+    h.importRows.mockResolvedValueOnce({ success: false, imported: 1, updated: 0, skipped: 0, errors: [{ rowNumber: 3, message: "LOCAL conflict" }], ids: [1000] }); await mount(); await pasteRows(2); await confirmValid(); await click(button("导入已确认有效行（2）"));
+    await click(button("识别失败行并校验")); expect(host.textContent).toContain("禁止重新上传整批已成功数据"); expect(h.importRows).toHaveBeenCalledOnce();
+  });
+  it("accepts uncertain supplier rows only after explicit manual mapping/correction", async () => {
+    await mount(); await click(button("新增物料")); await click(button("粘贴识别")); enter("粘贴商城物料数据", "UNKNOWN-SKU  UNVERIFIED-BRAND  10K  CHEAP"); await click(button("识别并校验"));
+    expect(host.textContent).toContain("无法确定型号列"); expect(button("导入已确认有效行（0）").disabled).toBe(true); expect(h.importRows).not.toHaveBeenCalled();
+  });
+});
+
+function deferred<T>() { let resolve!: (value: T) => void; let reject!: (error: unknown) => void; const promise = new Promise<T>((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; }
+describe("P1 scoped reads and complete receipts", () => {
+  it("ignores retained shared QueryClient A cache while B status is pending/rejected and rejects late A status", async () => {
+    const cache = new QueryClient(); const key = [["officialMall", "list"], { input: { page: 1, pageSize: 30 }, type: "query" }];
+    cache.setQueryData(key, { items: [fixture({ partNumber: "A-PRIVATE-CACHE", note: "A-NOTE", priceEx: "999" })] });
+    const old = deferred<OfficialMallAccess>(); h.statusRead.mockReturnValueOnce(old.promise);
+    await mount(); h.authId = 8; h.access!.scope.adminUserId = 8; const next = deferred<OfficialMallAccess>(); h.statusRead.mockReturnValueOnce(next.promise); await renderAgain();
+    expect(host.textContent).not.toContain("A-PRIVATE-CACHE"); expect(h.listRead).not.toHaveBeenCalled();
+    await act(async () => old.resolve({ ...h.access!, scope: { ...h.access!.scope, adminUserId: 7 } }));
+    expect(h.listRead).not.toHaveBeenCalled();
+    await act(async () => next.reject(new Error("B status refused"))); expect(host.textContent).toContain("B status refused"); expect(host.textContent).not.toContain("LOCAL-PART");
+    expect(cache.getQueryData(key)).toMatchObject({ items: [{ partNumber: "A-PRIVATE-CACHE" }] }); cache.clear();
+  });
+  it("team switch hides A list/suggestions/dialog and never accepts late A reads when B list fails", async () => {
+    h.suggestions = [{ partNumber: "A-SUGGEST", brand: "A", pkg: "QFN" }]; await mount(); await newForm();
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 270)); }); expect(host.textContent).toContain("A-SUGGEST");
+    const old = deferred<{ items: OfficialMallMaterial[]; total: number }>(); h.listRead.mockReturnValueOnce(old.promise).mockRejectedValueOnce(new Error("B list refused"));
+    h.access!.scope.teamId = 4; await click(button("刷新")); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(host.textContent).not.toContain("A-SUGGEST"); expect(host.textContent).not.toContain("LOCAL-PART");
+    await act(async () => old.resolve({ items: [fixture({ partNumber: "LATE-A", note: "A-PRIVATE" })], total: 1 }));
+    expect(host.textContent).not.toContain("LATE-A"); expect(host.textContent).toContain("B list refused");
+  });
+  it("actor unknown hold survives team3→4 and late busy end; another actor never sees it and switching back restores UUID", async () => {
+    const write = deferred<{ success: boolean; id: number; revision: number; status: "draft" }>(); h.create.mockReturnValueOnce(write.promise); await mount(); await newForm();
+    await click(button("保存到待上架")); const id = h.create.mock.calls[0][0].requestId;
+    h.access!.scope.teamId = 4; await act(async () => window.dispatchEvent(new Event("focus")));
+    await act(async () => write.resolve({ success: true, id: 909, revision: 1, status: "draft" }));
+    expect(host.textContent).toContain(id); expect(readRequestHold("7:4")).toMatchObject({ requestId: id, originalTeamId: 3 }); expect(button("新增物料").disabled).toBe(true);
+    h.authId = 8; h.access!.scope.adminUserId = 8; await renderAgain(); expect(host.textContent).not.toContain(id); expect(button("新增物料").disabled).toBe(false);
+    h.authId = 7; h.access!.scope.adminUserId = 7; await renderAgain(); expect(host.textContent).toContain(id); expect(button("新增物料").disabled).toBe(true); expect(h.create).toHaveBeenCalledOnce();
+  });
+  it("zero-coverage 100-row receipt keeps UUID, blocks close and stops subsequent chunk; recovery uses identical guard", async () => {
+    const malformed = { success: true, imported: 0, updated: 0, skipped: 0, errors: [], ids: [] }; h.importRows.mockResolvedValueOnce(malformed);
+    await mount(); await pasteRows(101); await confirmValid(); await click(button("导入已确认有效行（101）")); const id = h.importRows.mock.calls[0][0].requestId;
+    expect(h.importRows).toHaveBeenCalledOnce(); expect(readRequestHold("7:3")?.rowNumbers).toHaveLength(100); expect(button("关闭").disabled).toBe(true); expect(host.textContent).toContain("进度 0 / 101");
+    h.receipt.mockResolvedValue({ state: "completed", result: malformed }); await click(button("核对原请求")); expect(readRequestHold("7:3")?.requestId).toBe(id); expect(h.importRows).toHaveBeenCalledOnce();
+    h.receipt.mockResolvedValue({ state: "completed", result: { success: true, imported: 0, updated: 0, skipped: 100, errors: [], ids: [] } }); await click(button("核对原请求"));
+    expect(readRequestHold("7:3")).toBeNull(); expect(host.textContent).toContain("成功 0 · 跳过 100"); expect(host.querySelector(".mall-preview-table tbody tr")?.textContent).toContain("已处理（详见汇总）");
+    await click(button("导入已确认有效行（1）")); expect(h.importRows).toHaveBeenCalledTimes(2); expect(h.importRows.mock.calls[1][0].rows[0].rowNumber).toBe(102);
+  });
+  it("legacy hold without original proof never unlocks even with plausible completed receipt", async () => {
+    storeRequestHold({ kind: "import", requestId: "legacy-no-proof", scopeKey: "7:3", rowNumbers: [2] });
+    h.receipt.mockResolvedValue({ state: "completed", result: { success: true, imported: 1, updated: 0, skipped: 0, errors: [], ids: [1000] } }); await mount(); await click(button("核对原请求"));
+    expect(readRequestHold("7:3")?.requestId).toBe("legacy-no-proof"); expect(button("新增物料").disabled).toBe(true); expect(host.textContent).toContain("管理员核对");
+  });
+  it("single wrong ID stays held while complete bulk known-errors are authoritative normal results", async () => {
+    h.update.mockResolvedValueOnce({ success: true, id: 909, revision: 5, status: "draft" }); await mount(); await click(button("LOCAL-PART")); await click(button("保存草稿")); expect(readRequestHold("7:3")?.expectedId).toBe(101);
+    h.receipt.mockResolvedValue({ state: "completed", result: { success: true, id: 101, revision: 5, status: "draft" } }); await click(button("核对原请求")); expect(readRequestHold("7:3")).toBeNull();
+    h.bulk.mockResolvedValueOnce({ success: false, successful: 0, errors: [{ id: 101, message: "版本冲突，明确未上架" }] }); await click(host.querySelector('[aria-label="选择物料 LOCAL-PART 101"]')!); await click(button("批量上架")); await click(button("确认批量上架"));
+    expect(readRequestHold("7:3")).toBeNull(); expect(host.textContent).toContain("成功 0，失败 1"); expect(host.textContent).toContain("明确未上架");
   });
 });

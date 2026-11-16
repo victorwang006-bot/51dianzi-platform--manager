@@ -110,7 +110,8 @@ const menuGroups: Array<{ label: string; items: MenuItem[] }> = [
         icon: Boxes,
         label: "商城物料",
         path: "/workbench/mall-materials",
-        workbenchCapability: "inventory.read",
+        permission: "officialInventory.read",
+        chunk: "officialMall",
         nested: false,
       },
       {
@@ -435,18 +436,19 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   const trpcUtils = trpc.useUtils();
   const accountId = user?.id;
   const hasCurrentAccount = accountId !== undefined && accountId !== null;
+  const isNativeMallPage = location.split(/[?#]/, 1)[0] === "/workbench/mall-materials";
   const businessNavigationQuery = useQuery({
     queryKey: getBusinessNavigationQueryKey(accountId),
     // Use the tRPC proxy client so this request goes through the dedicated
     // business.navigation httpLink configured in main.tsx, not the batch.
     queryFn: ({ signal }) =>
       trpcUtils.client.business.navigation.query(undefined, { signal }),
-    enabled: hasCurrentAccount,
+    enabled: hasCurrentAccount && !isNativeMallPage,
     retry: shouldRetryBusinessNavigation,
     refetchOnWindowFocus: true,
   });
   const businessNavigationState = getBusinessNavigationDisplayState({
-    enabled: hasCurrentAccount,
+    enabled: hasCurrentAccount && !isNativeMallPage,
     isPending: businessNavigationQuery.isPending,
     isSuccess: businessNavigationQuery.isSuccess,
     isError: businessNavigationQuery.isError,
@@ -465,6 +467,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
           !hasAdminChannelInventoryRead(user))
       )
         return false;
+      if (item.path === "/workbench/mall-materials" && user?.hasNativeAdminAccount !== true) return false;
       const hasNativeAdminPermission =
         item.permission !== undefined &&
         hasAdminPermission(adminRole, item.permission, adminPermissions);

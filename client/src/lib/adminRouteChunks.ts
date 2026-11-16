@@ -20,6 +20,7 @@ const pageLoaders = {
   reviews: () => import("@/pages/Reviews"),
   analytics: () => import("@/pages/Analytics"),
   officialChannelInventory: () => import("@/pages/OfficialChannelInventory"),
+  officialMall: () => import("@/pages/OfficialMall"),
   businessWorkbench: () => import("@/business/BusinessWorkbenchPage"),
   forbidden: () => import("@/pages/Forbidden"),
   notFound: () => import("@/pages/NotFound"),
@@ -42,6 +43,7 @@ export const LazyAnalytics = lazy(pageLoaders.analytics);
 export const LazyOfficialChannelInventory = lazy(
   pageLoaders.officialChannelInventory
 );
+export const LazyOfficialMall = lazy(pageLoaders.officialMall);
 export const LazyBusinessWorkbench = lazy(pageLoaders.businessWorkbench);
 export const LazyForbidden = lazy(pageLoaders.forbidden);
 export const LazyNotFound = lazy(pageLoaders.notFound);
@@ -60,6 +62,7 @@ export type AdminNavigationChunk =
   | "reviews"
   | "analytics"
   | "officialChannelInventory"
+  | "officialMall"
   | "businessWorkbench";
 
 /**

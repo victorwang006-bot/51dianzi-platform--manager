@@ -1,0 +1,1311 @@
+import { readFileSync } from "node:fs";
+import { getTableName } from "drizzle-orm";
+import { MySqlDialect } from "drizzle-orm/mysql-core";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("../db", () => ({
+  getDb: vi.fn(() => {
+    throw new Error("NO_SQL_ALLOWED");
+  }),
+}));
+import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import {
+  assertOfficialRecordAction,
+  loadOfficialAccess,
+  officialActorFromContext,
+  officialTeamPredicate,
+} from "./officialChannelAccess";
+import { createOfficialMallRouters } from "../routers/officialMall";
+import {
+  createOfficialMallService,
+  officialMallTestUtils,
+  publicProjection,
+  validateOfficialMallMaterial,
+} from "./officialMall";
+
+const actor = { adminUserId: 71, sessionVersion: 4 };
+const base = () =>
+  validateOfficialMallMaterial({
+    partNumber: "LOCAL_TEST_PART",
+    brand: "LOCAL_TEST_BRAND",
+  });
+const full = () =>
+  validateOfficialMallMaterial({
+    ...base(),
+    qtyOnSale: 100,
+    qtyStock: 100,
+    leadTime: "3-5个工作日",
+    priceEx: "10.123456",
+    taxIncluded: true,
+    moq: 10,
+    spq: 10,
+    ladderPrices: [
+      { minQty: 10, price: "10.123456" },
+      { minQty: 100, price: "9.000001" },
+    ],
+  });
+const dialect = new MySqlDialect();
+
+/** Small in-memory executor of actual Drizzle predicates. It is NOT a SQL database
+ * or evidence of MySQL lock semantics. It exercises service flow/rollback/replays
+ * with a deterministic transaction mutex, and rejects unsupported predicates. */
+function memoryDb() {
+  type Row = Record<string, any>;
+  type State = Record<string, Row[]>;
+  let state: State = {
+    admin_users: [
+      {
+        id: 71,
+        adminRole: "merchant_mgr",
+        status: "active",
+        sessionVersion: 4,
+      },
+    ],
+    admin_user_permissions: [
+      "officialInventory.read",
+      "officialInventory.write",
+      "officialInventory.publish",
+    ].map((permission, id) => ({ id: id + 1, adminUserId: 71, permission })),
+    official_channel_teams: [
+      { id: 11, name: "LOCAL_TEST_TEAM", status: "active" },
+      { id: 12, name: "OTHER_LOCAL_TEAM", status: "active" },
+    ],
+    official_channel_team_members: [
+      { id: 1, adminUserId: 71, teamId: 11, role: "member" },
+    ],
+    official_mall_materials: [],
+    official_mall_publications: [],
+    official_mall_requests: [],
+    materials: [],
+  };
+  const traces: {
+    table: string;
+    sql: string;
+    params: unknown[];
+    lock: boolean;
+    fields?: string[];
+  }[] = [];
+  const transactions: any[] = [];
+  let tail = Promise.resolve();
+  function fieldValue(field: any, context: Row) {
+    return context[getTableName(field.table)]?.[field.name];
+  }
+  function matches(predicate: any, context: Row): boolean {
+    if (!predicate) return true;
+    const compiled = dialect.sqlToQuery(predicate);
+    let param = 0;
+    const tokens =
+      compiled.sql.match(
+        /`[^`]+`\.`[^`]+`|\?|\(|\)|\b(?:and|or|like|is|not|null)\b|<>|=|\d+/gi
+      ) ?? [];
+    let at = 0;
+    function operand(): any {
+      const token = tokens[at++];
+      if (token === "?") return compiled.params[param++];
+      const found = /^`([^`]+)`\.`([^`]+)`$/.exec(token);
+      if (found) return context[found[1]]?.[found[2]];
+      if (/^\d+$/.test(token)) return Number(token);
+      throw new Error(`UNSUPPORTED_OPERAND:${token}:${compiled.sql}`);
+    }
+    function atom(): boolean {
+      if (tokens[at] === "(") {
+        at++;
+        const value = expression();
+        if (tokens[at++] !== ")") throw new Error("PAREN");
+        return value;
+      }
+      const left = operand();
+      const op = tokens[at++];
+      if (op?.toLowerCase() === "is") {
+        if (
+          tokens[at++]?.toLowerCase() !== "not" ||
+          tokens[at++]?.toLowerCase() !== "null"
+        )
+          throw new Error("UNSUPPORTED_NULL_PREDICATE");
+        return left !== null && left !== undefined;
+      }
+      const right = operand();
+      if (op === "=") return left === right;
+      if (op === "<>") return left != null && left !== right;
+      if (op?.toLowerCase() === "like")
+        return String(left ?? "")
+          .toLowerCase()
+          .includes(
+            String(right)
+              .replace(/^%|%$/g, "")
+              .replace(/\\([\\%_])/g, "$1")
+              .toLowerCase()
+          );
+      throw new Error(`UNSUPPORTED_OPERATOR:${op}`);
+    }
+    function conjunction(): boolean {
+      let value = atom();
+      while (tokens[at]?.toLowerCase() === "and") {
+        at++;
+        const next = atom();
+        value = value && next;
+      }
+      return value;
+    }
+    function expression(): boolean {
+      let value = conjunction();
+      while (tokens[at]?.toLowerCase() === "or") {
+        at++;
+        const next = conjunction();
+        value = value || next;
+      }
+      return value;
+    }
+    return expression();
+  }
+  function executor(local: State): any {
+    return {
+      select(fields?: Row) {
+        let table: any;
+        let where: any;
+        let limit = Infinity;
+        let offset = 0;
+        let lock = false;
+        let grouped = false;
+        const joins: { table: any; on: any }[] = [];
+        const q: any = {
+          from(t: any) {
+            table = t;
+            return q;
+          },
+          where(p: any) {
+            where = p;
+            return q;
+          },
+          limit(n: number) {
+            limit = n;
+            return q;
+          },
+          offset(n: number) {
+            offset = n;
+            return q;
+          },
+          for(mode: string) {
+            if (mode !== "update") throw new Error("LOCK_MODE");
+            lock = true;
+            return q;
+          },
+          orderBy() {
+            return q;
+          },
+          groupBy() {
+            grouped = true;
+            return q;
+          },
+          innerJoin(t: any, on: any) {
+            joins.push({ table: t, on });
+            return q;
+          },
+          then(resolve: any, reject: any) {
+            try {
+              const name = getTableName(table);
+              const compiled = where
+                ? dialect.sqlToQuery(where)
+                : { sql: "", params: [] };
+              traces.push({
+                table: name,
+                ...compiled,
+                lock,
+                fields:
+                  fields && Object.values(fields).map(field => field.name),
+              });
+              let contexts: Row[] = (local[name] ?? []).map(row => ({
+                [name]: row,
+              }));
+              for (const join of joins) {
+                const joinName = getTableName(join.table);
+                contexts = contexts.flatMap(context =>
+                  (local[joinName] ?? [])
+                    .map(row => ({ ...context, [joinName]: row }))
+                    .filter(context => matches(join.on, context))
+                );
+              }
+              contexts = contexts.filter(context => matches(where, context));
+              if (fields?.total)
+                return Promise.resolve([{ total: contexts.length }]).then(
+                  resolve,
+                  reject
+                );
+              let rows = contexts.map(context =>
+                fields
+                  ? Object.fromEntries(
+                      Object.entries(fields).map(([key, field]) => [
+                        key,
+                        fieldValue(field, context),
+                      ])
+                    )
+                  : { ...context[name] }
+              );
+              if (grouped)
+                rows = Array.from(
+                  new Map(rows.map(row => [JSON.stringify(row), row])).values()
+                );
+              return Promise.resolve(rows.slice(offset, offset + limit)).then(
+                resolve,
+                reject
+              );
+            } catch (error) {
+              return Promise.reject(error).then(resolve, reject);
+            }
+          },
+        };
+        return q;
+      },
+      insert(table: any) {
+        const name = getTableName(table);
+        return {
+          values(value: Row) {
+            const id = Math.max(0, ...local[name].map(row => row.id ?? 0)) + 1;
+            const row =
+              name === "official_mall_materials"
+                ? { createdAt: new Date(), updatedAt: new Date(), ...value, id }
+                : { ...value, id };
+            const insert = () => {
+              if (
+                name === "official_mall_requests" &&
+                local[name].some(
+                  r =>
+                    r.actorAdminUserId === row.actorAdminUserId &&
+                    r.requestId === row.requestId
+                )
+              )
+                throw new Error("DUPLICATE_LEDGER");
+              local[name].push(row);
+            };
+            return {
+              $returningId: async () => {
+                insert();
+                return [{ id }];
+              },
+              then(resolve: any, reject: any) {
+                try {
+                  insert();
+                  return Promise.resolve().then(resolve, reject);
+                } catch (e) {
+                  return Promise.reject(e).then(resolve, reject);
+                }
+              },
+            };
+          },
+        };
+      },
+      update(table: any) {
+        const name = getTableName(table);
+        return {
+          set(value: Row) {
+            return {
+              where: async (where: any) => {
+                for (const row of local[name])
+                  if (matches(where, { [name]: row }))
+                    Object.assign(row, value);
+              },
+            };
+          },
+        };
+      },
+      delete(table: any) {
+        const name = getTableName(table);
+        return {
+          where: async (where: any) => {
+            local[name] = local[name].filter(
+              row => !matches(where, { [name]: row })
+            );
+          },
+        };
+      },
+    };
+  }
+  const db: any = {
+    select(...args: any[]) {
+      return executor(state).select(...args);
+    },
+    transaction(run: (tx: any) => Promise<any>, config: any) {
+      transactions.push(config);
+      const task = tail.then(async () => {
+        const local = structuredClone(state);
+        const result = await run(executor(local));
+        state = local;
+        return result;
+      });
+      tail = task.then(
+        () => undefined,
+        () => undefined
+      );
+      return task;
+    },
+  };
+  const deps = {
+    getDb: async () => db,
+    loadOfficialAccess,
+    assertOfficialRecordAction,
+    officialTeamPredicate,
+  };
+  return {
+    service: createOfficialMallService(deps),
+    deps,
+    rows: (name: string) => state[name],
+    traces,
+    transactions,
+  };
+}
+function seed(
+  memory: ReturnType<typeof memoryDb>,
+  changes: Record<string, unknown> = {}
+) {
+  const rows = memory.rows("official_mall_materials");
+  const id = rows.length + 1;
+  rows.push({
+    ...base(),
+    id,
+    publicId: `OM_00000000-0000-4000-8000-${String(id).padStart(12, "0")}`,
+    teamId: 11,
+    ownerAdminUserId: 71,
+    createdByAdminUserId: 71,
+    updatedByAdminUserId: 71,
+    publishedByAdminUserId: null,
+    status: "draft",
+    revision: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishedAt: null,
+    ...changes,
+  });
+  return id;
+}
+
+describe("officialMall final gate and safe projection (offline only)", () => {
+  it("defaults preserve unknown quantities/prices and never guess date code", () => {
+    expect(base()).toMatchObject({
+      qtyOnSale: null,
+      qtyStock: null,
+      qtyOrder: null,
+      priceEx: null,
+      taxIncluded: null,
+      moq: null,
+      spq: null,
+      dateCode: "",
+      ladderPrices: [],
+    });
+  });
+  it("rejects malformed/unsafe quantities, prices, tier order, invalid MOQ/SPQ and impossible lead time with clear errors", () => {
+    for (const patch of [
+      { qtyOnSale: -1 },
+      { qtyOrder: 1.5 },
+      { qtyStock: 2147483648 },
+      { qtyStock: 3, qtyOnSale: 4 },
+      { priceEx: "1e2" },
+      { priceEx: "0" },
+      { priceEx: "1.1234567" },
+      { moq: 0 },
+      { spq: 0 },
+      { moq: 2147483648 },
+      { spq: 1.5 },
+      {
+        ladderPrices: [
+          { minQty: 2, price: "1" },
+          { minQty: 2, price: "1" },
+        ],
+      },
+      { priceEx: "1", ladderPrices: [{ minQty: 1, price: "2" }] },
+      { ladderPrices: [{ minQty: 0, price: "2" }] },
+      { ladderPrices: [{ minQty: 1, price: "0" }] },
+      { ladderPrices: [{ minQty: 1.5, price: "2" }] },
+      { ladderPrices: [{ minQty: 2147483648, price: "2" }] },
+      {
+        ladderPrices: [
+          { minQty: 10, price: "2" },
+          { minQty: 9, price: "1" },
+        ],
+      },
+      {
+        ladderPrices: [
+          { minQty: 10, price: "1" },
+          { minQty: 20, price: "2" },
+        ],
+      },
+      { leadTime: "现货立发", qtyStock: 0, qtyOnSale: 0 },
+    ])
+      expect(() =>
+        validateOfficialMallMaterial({ ...base(), ...patch })
+      ).toThrow();
+    expect(() =>
+      validateOfficialMallMaterial({ ...base(), leadTime: "现货" })
+    ).toThrow("数量未确认");
+    expect(full().priceEx).toBe("10.123456");
+    expect(
+      officialMallTestUtils.exactPrice("999999999999.999999") -
+        officialMallTestUtils.exactPrice("999999999999.999998")
+    ).toBe(BigInt(1));
+  });
+  it("preserves MOQ 999/SPQ 250 and thresholds below MOQ or outside packaging multiples", () => {
+    const input = {
+      ...base(),
+      moq: 999,
+      spq: 250,
+      priceEx: "3",
+      ladderPrices: [
+        { minQty: 100, price: "2" },
+        { minQty: 1000, price: "1" },
+      ],
+    };
+    const data = validateOfficialMallMaterial(input);
+    expect(data).toEqual(input);
+    const minimumPurchase = Math.ceil(data.moq! / data.spq!) * data.spq!;
+    expect(minimumPurchase).toBe(1000);
+    expect(
+      data.ladderPrices.filter(tier => tier.minQty <= minimumPurchase).at(-1)
+        ?.price
+    ).toBe("1");
+    expect(
+      validateOfficialMallMaterial({
+        ...input,
+        ladderPrices: [{ minQty: 101, price: "2" }],
+      }).ladderPrices
+    ).toEqual([{ minQty: 101, price: "2" }]);
+  });
+  it("public whitelist strips private fields without hiding real inquiry quotes", () => {
+    const projected = publicProjection(
+      {
+        ...full(),
+        publicId: "OM_00000000-0000-4000-8000-000000000001",
+        revision: 2,
+        teamId: 11,
+        ownerAdminUserId: 71,
+        note: "PRIVATE",
+        supplierId: 7,
+        importRows: ["PRIVATE"],
+      } as any,
+      new Date().toISOString()
+    );
+    expect(projected.priceEx).toBe("10.123456");
+    for (const key of [
+      "id",
+      "teamId",
+      "ownerAdminUserId",
+      "note",
+      "supplierId",
+      "importRows",
+    ])
+      expect(projected).not.toHaveProperty(key);
+    expect(
+      publicProjection(
+        {
+          ...full(),
+          taxIncluded: null,
+          publicId: projected.publicId,
+          revision: 2,
+        },
+        projected.publishedAt
+      )
+    ).toMatchObject({
+      priceEx: full().priceEx,
+      taxIncluded: null,
+      ladderPrices: full().ladderPrices,
+    });
+  });
+  it("public projection preserves a complete ladder with no base price", () => {
+    const data = { ...full(), priceEx: null };
+    const projected = publicProjection(
+      {
+        ...data,
+        publicId: "OM_00000000-0000-4000-8000-000000000001",
+        revision: 2,
+      },
+      new Date().toISOString()
+    );
+    expect(projected).toMatchObject({
+      priceEx: null,
+      taxIncluded: true,
+      ladderPrices: data.ladderPrices,
+    });
+    expect(Object.keys(projected)).not.toEqual(
+      expect.arrayContaining(["purchasable", "canPurchase", "purchaseFlag"])
+    );
+  });
+  it("unknown tax preserves base and all ladder prices exactly, including excluded-tax state", () => {
+    for (const taxIncluded of [null, false]) {
+      const projected = publicProjection(
+        {
+          ...full(),
+          taxIncluded,
+          publicId: "OM_00000000-0000-4000-8000-000000000001",
+          revision: 2,
+        },
+        new Date().toISOString()
+      );
+      expect(projected.priceEx).toBe(full().priceEx);
+      expect(projected.taxIncluded).toBe(taxIncluded);
+      expect(projected.ladderPrices).toEqual(full().ladderPrices);
+      expect(projected).not.toHaveProperty("purchasable");
+    }
+  });
+  it("payload hashes bind actor, action and original body but tolerate object-key order", () => {
+    const hash = officialMallTestUtils.payloadHash("create", actor, {
+      a: 1,
+      b: 2,
+    });
+    expect(hash).toBe(
+      officialMallTestUtils.payloadHash("create", actor, { b: 2, a: 1 })
+    );
+    expect(hash).not.toBe(
+      officialMallTestUtils.payloadHash("update", actor, { a: 1, b: 2 })
+    );
+    expect(hash).not.toBe(
+      officialMallTestUtils.payloadHash(
+        "create",
+        { ...actor, adminUserId: 72 },
+        { a: 1, b: 2 }
+      )
+    );
+  });
+  it("suggestion match status distinguishes exact / multiple / unmatched without filling missing data", () => {
+    expect(
+      officialMallTestUtils.matchStatus(base(), [
+        { partNumber: base().partNumber, brand: base().brand, pkg: "" },
+      ])
+    ).toBe("exact");
+    expect(
+      officialMallTestUtils.matchStatus(base(), [
+        { partNumber: base().partNumber, brand: base().brand, pkg: "A" },
+        { partNumber: base().partNumber, brand: base().brand, pkg: "B" },
+      ])
+    ).toBe("multiple");
+    expect(officialMallTestUtils.matchStatus(base(), [])).toBe("unmatched");
+    expect(base().pkg).toBe("");
+  });
+});
+
+describe("officialMall native transaction flow (in-memory executor, no SQL)", () => {
+  it("uses real local identity guards: OAuth, stale session, disabled account and absent grants fail closed", async () => {
+    const memory = memoryDb();
+    expect(() =>
+      officialActorFromContext({
+        user: { role: "admin" },
+        adminAccount: null,
+      } as any)
+    ).toThrow();
+    await expect(
+      memory.service.create(
+        { ...actor, sessionVersion: 3 },
+        { requestId: "local-test-stale", data: base() }
+      )
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    memory.rows("admin_users")[0].status = "disabled";
+    await expect(
+      memory.service.create(actor, {
+        requestId: "local-test-disabled",
+        data: base(),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    memory.rows("admin_users")[0].status = "active";
+    memory.rows("admin_user_permissions").splice(0);
+    expect(await memory.service.status(actor)).toMatchObject({
+      available: false,
+      permissions: { write: false, publish: false },
+    });
+    expect(memory.rows("official_mall_requests")).toHaveLength(0);
+  });
+  it("creates trusted-owner draft only, locks local account/grants/team and uses local RR", async () => {
+    const memory = memoryDb();
+    const result = await memory.service.create(actor, {
+      requestId: "local-test-create",
+      data: base(),
+    });
+    expect(result).toMatchObject({
+      success: true,
+      revision: 1,
+      status: "draft",
+    });
+    expect(memory.rows("official_mall_materials")[0]).toMatchObject({
+      teamId: 11,
+      ownerAdminUserId: 71,
+      status: "draft",
+    });
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+    for (const table of [
+      "admin_users",
+      "admin_user_permissions",
+      "official_channel_team_members",
+      "official_channel_teams",
+    ])
+      expect(
+        memory.traces.some(trace => trace.table === table && trace.lock)
+      ).toBe(true);
+    expect(memory.transactions[0]).toEqual({
+      isolationLevel: "repeatable read",
+    });
+    await expect(
+      memory.service.create(actor, {
+        requestId: "local-test-other-team",
+        teamId: 12,
+        data: base(),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("same original UUID concurrent create yields one ID/receipt; different body conflicts", async () => {
+    const memory = memoryDb();
+    const input = { requestId: "local-test-concurrent", data: base() };
+    const [a, b] = await Promise.all([
+      memory.service.create(actor, input),
+      memory.service.create(actor, input),
+    ]);
+    expect(a.id).toBe(b.id);
+    expect(b.idempotent).toBe(true);
+    expect(memory.rows("official_mall_materials")).toHaveLength(1);
+    expect(memory.rows("official_mall_requests")).toHaveLength(1);
+    expect(memory.rows("official_mall_requests")[0]).toMatchObject({
+      state: "completed",
+      result: a,
+    });
+    await expect(
+      memory.service.create(actor, {
+        ...input,
+        data: { ...base(), note: "different" },
+      })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(
+      await memory.service.requestStatus(actor, { requestId: input.requestId })
+    ).toMatchObject({ state: "completed", result: { id: a.id } });
+    expect(
+      await memory.service.requestStatus(actor, {
+        requestId: "unknown-original-uuid",
+      })
+    ).toEqual({ state: "not_found", result: null });
+  });
+  it("cross-team/private-owner scope is checked in SQL; revoked session blocks even UUID replay", async () => {
+    const memory = memoryDb();
+    seed(memory, { teamId: 12, note: "OTHER_TEAM_SECRET" });
+    seed(memory, { ownerAdminUserId: 72 });
+    const list = await memory.service.list(actor, {});
+    expect(list.items).toHaveLength(1);
+    expect(
+      memory.traces
+        .filter(trace => trace.table === "official_mall_materials")
+        .every(trace => trace.sql.includes("`teamId` = ?"))
+    ).toBe(true);
+    await expect(
+      memory.service.update(actor, {
+        id: 1,
+        expectedRevision: 1,
+        requestId: "local-test-cross",
+        data: base(),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      memory.service.update(actor, {
+        id: 2,
+        expectedRevision: 1,
+        requestId: "local-test-owner",
+        data: base(),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    memory.rows("official_channel_team_members")[0].role = "leader";
+    expect(
+      await memory.service.update(actor, {
+        id: 2,
+        expectedRevision: 1,
+        requestId: "local-test-leader",
+        data: base(),
+      })
+    ).toMatchObject({ revision: 2 });
+    memory.rows("admin_users")[0].sessionVersion = 5;
+    await expect(
+      memory.service.update(actor, {
+        id: 2,
+        expectedRevision: 1,
+        requestId: "local-test-leader",
+        data: base(),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("published edit requires explicit offshelf; public join rejects stale revision and disappears on offshelf", async () => {
+    const memory = memoryDb();
+    const id = seed(memory, full());
+    const published = await memory.service.publish(actor, {
+      id,
+      expectedRevision: 1,
+      requestId: "local-test-publish",
+    });
+    expect(published).toMatchObject({ revision: 2, status: "published" });
+    expect((await memory.service.publicList({})).items).toHaveLength(1);
+    const publicId = memory.rows("official_mall_materials")[0].publicId;
+    expect(
+      (await memory.service.publicDetail({ publicId })).item
+    ).not.toBeNull();
+    await expect(
+      memory.service.update(actor, {
+        id,
+        expectedRevision: 2,
+        requestId: "local-test-edit-published",
+        data: base(),
+      })
+    ).rejects.toThrow("先显式下架");
+    memory.rows("official_mall_publications")[0].revision = 1;
+    expect((await memory.service.publicDetail({ publicId })).item).toBeNull();
+    memory.rows("official_mall_publications")[0].revision = 2;
+    await memory.service.offshelf(actor, {
+      id,
+      expectedRevision: 2,
+      requestId: "local-test-offshelf",
+    });
+    expect((await memory.service.publicList({})).items).toHaveLength(0);
+    expect((await memory.service.publicDetail({ publicId })).item).toBeNull();
+    expect(
+      await memory.service.update(actor, {
+        id,
+        expectedRevision: 3,
+        requestId: "local-test-edit-draft",
+        data: base(),
+      })
+    ).toMatchObject({ status: "draft", revision: 4 });
+  });
+  it("bulk role/scope failure rolls back all; revision errors are explicit per-row", async () => {
+    const memory = memoryDb();
+    const own = seed(memory, full());
+    const other = seed(memory, { ...full(), ownerAdminUserId: 72 });
+    await expect(
+      memory.service.bulkAction(actor, {
+        action: "publish",
+        requestId: "local-test-bulk-denied",
+        items: [
+          { id: own, expectedRevision: 1 },
+          { id: other, expectedRevision: 1 },
+        ],
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      memory
+        .rows("official_mall_materials")
+        .every(row => row.status === "draft")
+    ).toBe(true);
+    expect(memory.rows("official_mall_requests")).toHaveLength(0);
+    memory.rows("official_channel_team_members")[0].role = "leader";
+    const result = await memory.service.bulkAction(actor, {
+      action: "publish",
+      requestId: "local-test-bulk-revision",
+      items: [
+        { id: own, expectedRevision: 2 },
+        { id: other, expectedRevision: 1 },
+      ],
+    });
+    expect(result).toMatchObject({
+      success: false,
+      successful: 1,
+      errors: [{ id: own, message: expect.stringContaining("版本已变化") }],
+    });
+  });
+  it("preview validates each row, identifies file duplicates, hides other-team duplicates and suggests metadata only", async () => {
+    const memory = memoryDb();
+    seed(memory);
+    seed(memory, { teamId: 12 });
+    const result = await memory.service.importPreview(actor, {
+      rows: [
+        { rowNumber: 1, data: base() },
+        { rowNumber: 2, data: base() },
+        { rowNumber: 3, data: { partNumber: "" } },
+      ],
+    });
+    expect(result.rows[0]).toMatchObject({
+      duplicates: [{ id: 1, revision: 1 }],
+      matchStatus: "exact",
+    });
+    expect(result.rows[1].errors[0]).toContain("第 1 行");
+    expect(result.rows[2].errors.length).toBeGreaterThan(0);
+    expect(
+      await memory.service.suggest(actor, { query: "LOCAL_TEST" })
+    ).toEqual({
+      items: [{ partNumber: base().partNumber, brand: base().brand, pkg: "" }],
+    });
+    for (const trace of memory.traces.filter(
+      trace => trace.table === "official_mall_materials"
+    ))
+      expect(trace.sql).toContain("`teamId` = ?");
+  });
+  it("enabled catalog fills an empty official table with metadata-only suggestions and exact preview, never quantities/prices", async () => {
+    const memory = memoryDb();
+    const catalog = {
+      id: 901,
+      materialNo: "LOCAL_PRIVATE_MATERIAL_NO",
+      partNumber: base().partNumber,
+      brand: base().brand,
+      package: "SOT23",
+      status: "enabled",
+      description: "CATALOG_PRIVATE_DESCRIPTION",
+      referencePrice: "999",
+      images: [{ url: "CATALOG_PRIVATE_PHOTO" }],
+      qtyStock: 999,
+      notes: "CATALOG_PRIVATE_NOTES",
+      customerId: 999,
+    };
+    memory.rows("materials").push(catalog);
+    const candidate = {
+      partNumber: catalog.partNumber,
+      brand: catalog.brand,
+      pkg: "SOT23",
+    };
+    expect(
+      await memory.service.suggest(actor, { query: base().partNumber })
+    ).toEqual({ items: [candidate] });
+    const data = base();
+    const preview = await memory.service.importPreview(actor, {
+      rows: [{ rowNumber: 1, data }],
+    });
+    expect(preview.rows[0]).toMatchObject({
+      data,
+      duplicates: [],
+      matches: [candidate],
+      matchStatus: "exact",
+      errors: [],
+    });
+    expect(preview.rows[0].data).toEqual(data);
+    expect(preview.rows[0].data).toMatchObject({
+      qtyStock: null,
+      priceEx: null,
+      pkg: "",
+      dateCode: "",
+    });
+    expect(memory.rows("official_mall_materials")).toEqual([]);
+    expect(memory.rows("official_mall_requests")).toEqual([]);
+    expect(memory.rows("materials")).toEqual([catalog]);
+    const traces = memory.traces.filter(trace => trace.table === "materials");
+    expect(traces).toHaveLength(2);
+    for (const trace of traces) {
+      expect(trace.fields).toEqual(["partNumber", "brand", "package"]);
+      expect(trace.params).toContain("enabled");
+      expect(trace.lock).toBe(false);
+    }
+  });
+  it("disabled catalog and null/empty brands never become candidates or guessed import brands", async () => {
+    const memory = memoryDb();
+    memory
+      .rows("materials")
+      .push(
+        {
+          partNumber: base().partNumber,
+          brand: base().brand,
+          package: "DISABLED",
+          status: "disabled",
+        },
+        {
+          partNumber: base().partNumber,
+          brand: null,
+          package: "NULL_BRAND",
+          status: "enabled",
+        },
+        {
+          partNumber: base().partNumber,
+          brand: "",
+          package: "EMPTY_BRAND",
+          status: "enabled",
+        },
+        {
+          partNumber: base().partNumber,
+          brand: "   ",
+          package: "BLANK_BRAND",
+          status: "enabled",
+        }
+      );
+    expect(
+      await memory.service.suggest(actor, { query: base().partNumber })
+    ).toEqual({ items: [] });
+    const preview = await memory.service.importPreview(actor, {
+      rows: [{ rowNumber: 1, data: base() }],
+    });
+    expect(preview.rows[0]).toMatchObject({
+      data: base(),
+      matches: [],
+      matchStatus: "unmatched",
+    });
+    expect(preview.rows[0].data).toEqual(base());
+    memory
+      .rows("materials")
+      .push({
+        partNumber: base().partNumber,
+        brand: base().brand,
+        package: null,
+        status: "enabled",
+      });
+    expect(
+      await memory.service.suggest(actor, { query: base().partNumber })
+    ).toEqual({
+      items: [{ partNumber: base().partNumber, brand: base().brand, pkg: "" }],
+    });
+  });
+  it("merges team-scoped official metadata and catalog, deduplicates identities and caps total at 20", async () => {
+    const memory = memoryDb();
+    seed(memory);
+    seed(memory, { teamId: 12, partNumber: "LOCAL_TEST_OTHER_TEAM_SECRET" });
+    memory
+      .rows("materials")
+      .push(
+        {
+          partNumber: base().partNumber.toLowerCase(),
+          brand: base().brand.toLowerCase(),
+          package: "",
+          status: "enabled",
+        },
+        ...Array.from({ length: 25 }, (_, id) => ({
+          id,
+          partNumber: `LOCAL_TEST_CATALOG_${id}`,
+          brand: base().brand,
+          package: "PKG",
+          status: "enabled",
+        }))
+      );
+    const result = await memory.service.suggest(actor, { query: "LOCAL_TEST" });
+    expect(result.items).toHaveLength(20);
+    expect(result.items[0]).toEqual({
+      partNumber: base().partNumber,
+      brand: base().brand,
+      pkg: "",
+    });
+    expect(
+      result.items.filter(
+        item =>
+          item.partNumber.toLowerCase() === base().partNumber.toLowerCase()
+      )
+    ).toHaveLength(1);
+    expect(
+      result.items.some(
+        item => item.partNumber === "LOCAL_TEST_OTHER_TEAM_SECRET"
+      )
+    ).toBe(false);
+    for (const trace of memory.traces.filter(
+      trace => trace.table === "official_mall_materials"
+    )) {
+      expect(trace.sql).toContain("`teamId` = ?");
+      expect(trace.fields).toEqual(["partNumber", "brand", "pkg"]);
+    }
+  });
+  it("catalog preview and suggest share multiple/unmatched matching without rewriting SKU, package, quantities or prices", async () => {
+    const memory = memoryDb();
+    memory
+      .rows("materials")
+      .push(
+        {
+          partNumber: base().partNumber,
+          brand: base().brand,
+          package: "A",
+          status: "enabled",
+        },
+        {
+          partNumber: base().partNumber,
+          brand: base().brand,
+          package: "B",
+          status: "enabled",
+        }
+      );
+    const data = {
+      ...full(),
+      pkg: "USER_PACKAGE",
+      qtyOnSale: 7,
+      qtyStock: 8,
+      note: "USER_NOTE",
+    };
+    const unmatched = { ...data, partNumber: "USER_UNMATCHED_SKU" };
+    const preview = await memory.service.importPreview(actor, {
+      rows: [
+        { rowNumber: 1, data },
+        { rowNumber: 2, data: unmatched },
+      ],
+    });
+    expect(preview.rows[0].matchStatus).toBe("multiple");
+    expect(preview.rows[0].matches).toEqual(
+      (
+        await memory.service.suggest(actor, {
+          query: data.partNumber,
+          brand: data.brand,
+        })
+      ).items
+    );
+    expect(preview.rows[0].data).toEqual(data);
+    expect(preview.rows[1]).toMatchObject({
+      data: unmatched,
+      matches: [],
+      matchStatus: "unmatched",
+    });
+    expect(preview.rows[1].data).toEqual(unmatched);
+  });
+  it("catalog suggestions remain behind native grants and effective team scope", async () => {
+    const memory = memoryDb();
+    memory
+      .rows("materials")
+      .push({
+        partNumber: base().partNumber,
+        brand: base().brand,
+        package: "A",
+        status: "enabled",
+      });
+    memory.rows("official_channel_team_members").splice(0);
+    await expect(
+      memory.service.suggest(actor, { query: base().partNumber })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(memory.traces.some(trace => trace.table === "materials")).toBe(
+      false
+    );
+    memory.rows("admin_user_permissions").splice(0);
+    await expect(
+      memory.service.importPreview(actor, {
+        rows: [{ rowNumber: 1, data: base() }],
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(memory.traces.some(trace => trace.table === "materials")).toBe(
+      false
+    );
+  });
+  it("three duplicate policies are explicit: skip, CAS real-ID update, new identical tuple with new ID; original import UUID replays", async () => {
+    const memory = memoryDb();
+    const id = seed(memory);
+    const input = {
+      requestId: "local-test-three-policies",
+      rows: [
+        { rowNumber: 1, data: base(), duplicatePolicy: "skip" as const },
+        {
+          rowNumber: 2,
+          data: { ...base(), note: "changed" },
+          duplicatePolicy: "update" as const,
+          duplicateId: id,
+          expectedRevision: 1,
+        },
+        { rowNumber: 3, data: base(), duplicatePolicy: "new" as const },
+      ],
+    };
+    const result = await memory.service.importRows(actor, input);
+    expect(result).toMatchObject({
+      success: true,
+      imported: 1,
+      updated: 1,
+      skipped: 1,
+      ids: [1, 2],
+    });
+    expect(memory.rows("official_mall_materials")[1]).toMatchObject({
+      ...base(),
+      id: 2,
+      status: "draft",
+      dateCode: "",
+    });
+    expect(await memory.service.importRows(actor, input)).toMatchObject({
+      ...result,
+      idempotent: true,
+    });
+    expect(memory.rows("official_mall_materials")).toHaveLength(2);
+    const mismatch = await memory.service.importRows(actor, {
+      requestId: "local-test-mismatch",
+      rows: [
+        {
+          rowNumber: 1,
+          data: { ...base(), dateCode: "NOT_GUESSED" },
+          duplicatePolicy: "update",
+          duplicateId: id,
+          expectedRevision: 2,
+        },
+      ],
+    });
+    expect(mismatch.errors[0].message).toContain("必须一致");
+  });
+  it("import unauthorized update target cannot commit earlier new rows", async () => {
+    const memory = memoryDb();
+    const id = seed(memory, { ownerAdminUserId: 72 });
+    await expect(
+      memory.service.importRows(actor, {
+        requestId: "local-test-import-denied",
+        rows: [
+          { rowNumber: 1, data: base(), duplicatePolicy: "new" },
+          {
+            rowNumber: 2,
+            data: base(),
+            duplicatePolicy: "update",
+            duplicateId: id,
+            expectedRevision: 1,
+          },
+        ],
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(memory.rows("official_mall_materials")).toHaveLength(1);
+    expect(memory.rows("official_mall_requests")).toHaveLength(0);
+  });
+  it("concurrent original import UUID applies real-ID CAS update and new creation once only", async () => {
+    const memory = memoryDb();
+    const id = seed(memory);
+    const input = {
+      requestId: "local-test-import-concurrent",
+      rows: [
+        {
+          rowNumber: 1,
+          data: { ...base(), note: "changed once" },
+          duplicatePolicy: "update" as const,
+          duplicateId: id,
+          expectedRevision: 1,
+        },
+        { rowNumber: 2, data: base(), duplicatePolicy: "new" as const },
+      ],
+    };
+    const [a, b] = await Promise.all([
+      memory.service.importRows(actor, input),
+      memory.service.importRows(actor, input),
+    ]);
+    expect(b).toMatchObject({ ...a, idempotent: true });
+    expect(memory.rows("official_mall_materials")).toHaveLength(2);
+    expect(memory.rows("official_mall_materials")[0].revision).toBe(2);
+    expect(memory.rows("official_mall_requests")).toHaveLength(1);
+  });
+  it("request status is current-actor-only and pending receipts never expose a result", async () => {
+    const memory = memoryDb();
+    memory.rows("official_mall_requests").push({
+      id: 1,
+      actorAdminUserId: 72,
+      requestId: "local-test-other-ledger",
+      state: "completed",
+      result: { privateId: 99 },
+    });
+    expect(
+      await memory.service.requestStatus(actor, {
+        requestId: "local-test-other-ledger",
+      })
+    ).toEqual({ state: "not_found", result: null });
+    memory.rows("official_mall_requests").push({
+      id: 2,
+      actorAdminUserId: 71,
+      requestId: "local-test-pending-ledger",
+      state: "pending",
+      result: { mustNotExpose: true },
+    });
+    expect(
+      await memory.service.requestStatus(actor, {
+        requestId: "local-test-pending-ledger",
+      })
+    ).toEqual({ state: "pending", result: null });
+  });
+  it("super administrator must lock the actual active record team, not rely on role", async () => {
+    const memory = memoryDb();
+    const id = seed(memory, { teamId: 12 });
+    memory.rows("admin_users")[0].adminRole = "super_admin";
+    memory.rows("official_channel_teams")[1].status = "archived";
+    await expect(
+      memory.service.publish(actor, {
+        id,
+        expectedRevision: 1,
+        requestId: "local-test-archived-team",
+      })
+    ).rejects.toThrow("已归档");
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+  });
+  it("bulk/import limits and stale import revisions return clear errors without writes", async () => {
+    const memory = memoryDb();
+    const id = seed(memory);
+    await expect(
+      memory.service.bulkAction(actor, {
+        action: "publish",
+        requestId: "local-test-too-many-bulk",
+        items: Array.from({ length: 101 }, (_, i) => ({
+          id: i + 1,
+          expectedRevision: 1,
+        })),
+      })
+    ).rejects.toThrow();
+    await expect(
+      memory.service.importPreview(actor, {
+        rows: Array.from({ length: 501 }, (_, i) => ({
+          rowNumber: i + 1,
+          data: base(),
+        })),
+      })
+    ).rejects.toThrow();
+    const result = await memory.service.importRows(actor, {
+      requestId: "local-test-import-stale",
+      rows: [
+        {
+          rowNumber: 1,
+          data: base(),
+          duplicatePolicy: "update",
+          duplicateId: id,
+          expectedRevision: 2,
+        },
+      ],
+    });
+    expect(result).toMatchObject({
+      success: false,
+      updated: 0,
+      errors: [
+        { rowNumber: 1, message: expect.stringContaining("版本已变化") },
+      ],
+    });
+    expect(memory.rows("official_mall_materials")[0].revision).toBe(1);
+  });
+  it("management caller stays adminProcedure + signed native account, rejects forged owner and front inventory IDs", async () => {
+    const memory = memoryDb();
+    const routes = createOfficialMallRouters({
+      ...memory.deps,
+      adminProcedure,
+      publicProcedure,
+      router,
+      officialActorFromContext,
+    });
+    const ctx = {
+      user: { role: "admin" },
+      adminAccount: { ...actor, id: actor.adminUserId, status: "active" },
+      req: { headers: {} },
+      res: {},
+    } as any;
+    await expect(
+      routes.officialMall.createCaller({ ...ctx, user: null }).status()
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      routes.officialMall.createCaller({ ...ctx, adminAccount: null }).status()
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(
+      routes.officialMall.createCaller(ctx).create({
+        requestId: "local-test-forged",
+        data: base(),
+        ownerAdminUserId: 72,
+      } as any)
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      routes.officialMallPublic
+        .createCaller({ user: null, req: { headers: {} }, res: {} } as any)
+        .detail({ publicId: "inventory_123" })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(
+      await routes.officialMallPublic
+        .createCaller({ user: null, req: { headers: {} }, res: {} } as any)
+        .list({})
+    ).toMatchObject({ items: [], total: 0 });
+  });
+  it("DDL is create-empty-only and service has no front/legacy publishing dependencies", () => {
+    const ddl = readFileSync(
+      "drizzle/migrations/20261117_official_mall_native.sql",
+      "utf8"
+    ).replace(/^--.*$/gm, "");
+    expect(ddl.match(/CREATE TABLE IF NOT EXISTS/g)).toHaveLength(3);
+    expect(ddl).not.toMatch(/\b(?:ALTER|INSERT|UPDATE|DELETE|DROP)\b/i);
+    const source = readFileSync("server/services/officialMall.ts", "utf8");
+    expect(source).not.toMatch(
+      /getInternalBusinessContext|enterpriseMembers|publishDraftInventoryWithGuard|official_channel_stocks|platformBusiness|merchantBinding/
+    );
+  });
+});
+
+
+describe("official mall publish-only final gate", () => {
+  it("allows unknown draft but rejects unknown/zero supply on direct publish before any snapshot", async () => {
+    const memory = memoryDb(); const id = seed(memory, base());
+    await expect(memory.service.publish(actor, {id,expectedRevision:1,requestId:"publish-unknown-qty-final"})).rejects.toThrow("大于0");
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+    expect(memory.rows("official_mall_materials")[0].status).toBe("draft");
+  });
+  it("rejects missing lead time on direct publish with known supply", async () => {
+    const memory = memoryDb(); const id = seed(memory, {...full(),leadTime:""});
+    await expect(memory.service.publish(actor, {id,expectedRevision:1,requestId:"publish-no-lead-final"})).rejects.toThrow("明确货期");
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+  });
+  it("bulk publish applies the same final gate and reports authoritative row errors", async () => {
+    const memory = memoryDb(); const id = seed(memory, base());
+    const result = await memory.service.bulkAction(actor, {action:"publish",requestId:"bulk-unknown-supply-final",items:[{id,expectedRevision:1}]});
+    expect(result).toMatchObject({success:false,successful:0,errors:[{id,message:expect.stringContaining("大于0")}]});
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+  });
+});

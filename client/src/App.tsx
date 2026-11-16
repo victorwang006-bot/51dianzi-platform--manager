@@ -20,6 +20,7 @@ import {
   LazyMessages,
   LazyNotFound,
   LazyOfficialChannelInventory,
+  LazyOfficialMall,
   LazyOrders,
   LazyPortalUsers,
   LazyProfile,
@@ -217,6 +218,12 @@ const OfficialChannelInventoryRoute = () => (
   </PermissionGate>
 );
 
+const OfficialMallRoute = () => (
+  <PermissionGate permission="officialInventory.read">
+    <LazyScreen><LazyOfficialMall /></LazyScreen>
+  </PermissionGate>
+);
+
 /**
  * Workbench availability is deliberately resolved only after the lazy page
  * asks the business BFF for the selected merchant's scope/binding/context.
@@ -293,7 +300,7 @@ function AppRoutes() {
         <Route path={"/analytics"} component={AnalyticsRoute} />
         <Route path={"/profile"} component={ProfileRoute} />
         <Route path={"/workbench/inbound"} component={BusinessWorkbenchRoute} />
-        <Route path={"/workbench/mall-materials"} component={BusinessWorkbenchRoute} />
+        <Route path={"/workbench/mall-materials"} component={OfficialMallRoute} />
         <Route
           path={"/workbench/channel-inventory"}
           component={BusinessWorkbenchRoute}
