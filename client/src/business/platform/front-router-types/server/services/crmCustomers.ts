@@ -705,6 +705,7 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   page: number; pageSize: number; starUserId?: number; starredOnly?: boolean; starMode?: "assignee";
   expectedEnterpriseId?: number; expectedActorUserId?: number;
   updatedFrom?: string; updatedTo?: string;
+  salesOrderPicker?: "current_team" | "enterprise";
 }) {
   if ((input.expectedEnterpriseId !== undefined && input.expectedEnterpriseId !== scope.enterpriseId)
     || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) {

@@ -2,6 +2,7 @@ import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import type { OfficialMallAccess, OfficialMallMaterial, OfficialMallMaterialInput, OfficialMallMutationResult, OfficialMallStatus, OfficialMallPreviewRow, OfficialMallImportResult, OfficialMallImportRow, OfficialMallDuplicatePolicy } from "@shared/officialMall";
+import { OFFICIAL_MALL_SUGGEST_MIN_CHARS, OFFICIAL_MALL_SUGGEST_DEBOUNCE_MS, officialMallCreateTeam } from "@shared/officialMallSuggestPolicy";
 import { applySuggestion, chunks, clearRequestHold, emptyForm, errorMessage, errorRowsCsv, firstEligibleQuote, formData, formFor, IMPORT_BATCH_SIZE, IMPORT_COLUMNS, isBusinessRejection, MAX_IMPORT_BYTES, parseImportFile, parseImportText, publishProblem, readRequestHold, rowsFromTable, storeRequestHold, templateCsv, validMutationResult, validQuoteTiers } from "@/lib/officialMallImport";
 import type { Form, ImportField, ParsedImportRow, ParsedTable, RequestHold } from "@/lib/officialMallImport";
 import { useAdminNewInformationContextRows, type AdminNewInformationRowPresentation } from "@/lib/adminNewInformation";
@@ -129,6 +130,8 @@ export default function MallMaterials(_props?: unknown) {
   const [selected, setSelected] = useState<OfficialMallMaterial[]>([]);
   const [dialog, setDialog] = useState<Dialog | null>(null); const [mode, setMode] = useState<Mode>("manual");
   const [form, setForm] = useState<Form>(emptyForm); const [teamId, setTeamId] = useState<number | undefined>();
+  const createTeam = officialMallCreateTeam(access, teamId);
+  const effectiveTeamId = createTeam.teamId;
   const [error, setError] = useState(""); const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false); const busyRef = useRef(false);
   const rejectionRef = useRef("");
@@ -142,9 +145,10 @@ export default function MallMaterials(_props?: unknown) {
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [importTotals, setImportTotals] = useState({ imported: 0, updated: 0, skipped: 0 });
   const [suggestQuery, setSuggestQuery] = useState("");
-  useEffect(() => { const timer = setTimeout(() => setSuggestQuery(form.partNumber.trim()), 250); return () => clearTimeout(timer); }, [form.partNumber]);
-  const suggesting = canWrite && !!dialog && (dialog.kind === "edit" || dialog.kind === "create" && mode === "manual") && suggestQuery.length > 0 && suggestQuery === form.partNumber.trim();
-  const suggestInput = { query: suggestQuery, brand: form.brand.trim() || undefined };
+  const [suggestBrand, setSuggestBrand] = useState("");
+  useEffect(() => { const timer = setTimeout(() => { setSuggestQuery(form.partNumber.trim()); setSuggestBrand(form.brand.trim()); }, OFFICIAL_MALL_SUGGEST_DEBOUNCE_MS); return () => clearTimeout(timer); }, [form.partNumber, form.brand]);
+  const suggesting = canWrite && !!dialog && (dialog.kind === "edit" || dialog.kind === "create" && mode === "manual") && suggestQuery.length >= OFFICIAL_MALL_SUGGEST_MIN_CHARS && suggestQuery === form.partNumber.trim() && suggestBrand === form.brand.trim();
+  const suggestInput = { query: suggestQuery, brand: suggestBrand || undefined };
   const suggestions = useNativeRead(`${permissionKey}:${JSON.stringify(suggestInput)}`, suggesting, signal => utils.client.officialMall.suggest.query(suggestInput, { signal }));
   useEffect(() => {
     const saved = readRequestHold(scopeKey) ?? memoryHolds.current.get(scopeKey.split(":")[0]) ?? null; holdRef.current = saved; setHold(saved);
@@ -176,7 +180,7 @@ export default function MallMaterials(_props?: unknown) {
   async function runWrite<T extends WriteResult>(kind: RequestHold["kind"], send: (requestId: string) => Promise<T>, settled: (result: T) => void, expected: Pick<RequestHold, "rowNumbers" | "bulkIds" | "expectedId"> = {}): Promise<"completed" | "rejected" | "unknown"> {
     if (busyRef.current || holdRef.current) return "unknown";
     const lease = permissionKey;
-    const request: RequestHold = { requestId: crypto.randomUUID(), kind, scopeKey, originalTeamId: (kind === "create" || kind === "import" ? teamId : undefined) ?? access?.scope.teamId, proof: true, ...expected };
+    const request: RequestHold = { requestId: crypto.randomUUID(), kind, scopeKey, originalTeamId: (kind === "create" || kind === "import" ? effectiveTeamId : undefined) ?? access?.scope.teamId, proof: true, ...expected };
     setRequest(request); busyRef.current = true; setBusy(true); setError("");
     try {
       const result = await send(request.requestId);
@@ -246,8 +250,9 @@ export default function MallMaterials(_props?: unknown) {
     try {
       if (dialog.kind === "create" || dialog.kind === "edit") {
         if (!authority.current.canWrite) return;
+        if (dialog.kind === "create" && createTeam.problem) throw new Error(createTeam.problem);
         const data = formData(form);
-        if (dialog.kind === "create") await runWrite("create", requestId => utils.client.officialMall.create.mutate({ requestId, data, ...(teamId ? { teamId } : {}) }), result => {
+        if (dialog.kind === "create") await runWrite("create", requestId => utils.client.officialMall.create.mutate({ requestId, data, ...(effectiveTeamId ? { teamId: effectiveTeamId } : {}) }), result => {
           if (result.success) { setNotice("物料已保存到待上架；未自动发布。"); setDialog(null); }
         });
         else {
@@ -329,6 +334,7 @@ export default function MallMaterials(_props?: unknown) {
   const importable = entries.filter(e => e.outcome === "ready" && e.confirmed && !entryProblem(e));
   async function confirmImport() {
     if (locked || !canWrite || !importable.length) return;
+    if (createTeam.problem) { setError(createTeam.problem); return; }
     const lease = permissionKey;
     const batches = chunks(importable, IMPORT_BATCH_SIZE); importingRef.current = true; setImporting(true); setProgress({ completed: 0, total: importable.length });
     try {
@@ -336,7 +342,7 @@ export default function MallMaterials(_props?: unknown) {
         if (latest.current !== lease || !authority.current.canWrite || holdRef.current) break;
         const importRows: OfficialMallImportRow[] = batch.map(entry => ({ rowNumber: entry.rowNumber, data: entry.data!, duplicatePolicy: entry.policy, ...(entry.policy === "update" && entry.duplicateId ? { duplicateId: entry.duplicateId, expectedRevision: entry.expectedRevision } : {}) }));
         const rowNumbers = batch.map(r => r.rowNumber);
-        const result = await runWrite("import", requestId => utils.client.officialMall.importRows.mutate({ requestId, rows: importRows, ...(teamId ? { teamId } : {}) }), response => settleImport(response, rowNumbers), { rowNumbers });
+        const result = await runWrite("import", requestId => utils.client.officialMall.importRows.mutate({ requestId, rows: importRows, ...(effectiveTeamId ? { teamId: effectiveTeamId } : {}) }), response => settleImport(response, rowNumbers), { rowNumbers });
         if (result === "rejected") { setEntries(current => current.map(e => rowNumbers.includes(e.rowNumber) ? { ...e, outcome: "failed", confirmed: false, errors: [rejectionRef.current] } : e)); break; }
         if (result === "unknown") break;
       }
@@ -371,10 +377,12 @@ export default function MallMaterials(_props?: unknown) {
     {entries.length > 0 && !dialog && <button disabled={busy || importing || !canRead} onClick={() => { setMode("sheet"); setDialog({ kind: "create", scopeKey }); }}>查看导入结果 / 剩余行</button>}
     {dialog && canRead && dialog.scopeKey === scopeKey && <div className="mall-dialog-overlay"><section className={`mall-dialog ${importMode ? "mall-import-dialog" : ""}`} role="dialog" aria-modal="true" aria-labelledby="mall-dialog-title" tabIndex={-1}><h2 id="mall-dialog-title">{dialog.kind === "create" ? "新增物料" : dialog.kind === "edit" ? "编辑物料" : dialog.kind === "bulk" ? `确认批量${dialog.action === "publish" ? "上架" : "下架"}` : dialog.kind === "publish" ? "确认上架" : "确认下架"}</h2>
       {dialog.kind === "create" && <div className="mall-create-modes" role="group" aria-label="新增方式">{(["manual", "sheet", "paste"] as const).map(key => <button key={key} aria-pressed={mode === key} disabled={locked} onClick={() => { setMode(key); setError(""); }}>{modeNames[key]}</button>)}</div>}
-      {(dialog.kind === "create" || dialog.kind === "edit") && access?.teams && access.teams.length > 0 && dialog.kind === "create" && <label className="mall-team">归属团队<select aria-label="归属官方团队" disabled={locked || !canWrite || !!successCount || !!skipCount} value={teamId ?? ""} onChange={e => setTeamId(e.target.value ? Number(e.target.value) : undefined)}><option value="">当前官方范围</option>{access.teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>}
+      {dialog.kind === "create" && access?.scope.isSuperAdmin && !!access.teams?.length && <label className="mall-team">归属团队<select aria-label="归属官方团队" disabled={locked || !canWrite || !!successCount || !!skipCount || access.teams.length === 1} value={effectiveTeamId ?? ""} onChange={e => setTeamId(e.target.value ? Number(e.target.value) : undefined)}>{access.teams.length > 1 && <option value="">请选择有效官方团队</option>}{access.teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select>{access.teams.length === 1 && <small>已自动选择唯一有效官方团队；保存时服务端再次核验。</small>}</label>}
+      {dialog.kind === "create" && createTeam.problem && <p className="mall-form-error" role="alert">{createTeam.problem}</p>}
+      {(dialog.kind === "edit" || dialog.kind === "create" && mode === "manual") && <p className="mall-hint">型号至少输入3个字符，停顿500毫秒后查询；精确型号优先，未命中再提供有限前缀候选。联想失败或未命中不影响手工保存。</p>}
       {importMode ? importPanel : dialog.kind === "create" || dialog.kind === "edit" ? <FormEditor form={form} onChange={setForm} disabled={locked || !canWrite || staleDialog} suggestions={suggesting && !locked ? <div className="mall-suggestions">{suggestions.isError ? <small>资料联想暂不可用，可手工输入。</small> : suggestions.isFetching ? <small>查询型号资料…</small> : suggestions.data?.items.length ? <>{suggestions.data.items.map((item, i) => <button type="button" key={i} aria-label={`使用型号资料 ${item.partNumber} ${item.brand} ${item.pkg}`} onClick={() => setForm(current => applySuggestion(current, item))}>{item.partNumber} · {item.brand} · {item.pkg || "封装未知"}</button>)}<small>仅填型号、品牌、封装；交易字段仍需人工录入。</small></> : <small>未匹配资料，请人工确认型号与品牌。</small>}</div> : null}/> : <><p>{(dialog.action ?? dialog.kind) === "publish" ? "确认公开选定官方物料的数量、报价及货期。权限和版本由服务端事务再次核验，不自动更换物料或价格。" : "确认停止公开展示选定官方物料。原订单与其他库存保持不变。"}</p>{dialog.row && <div className="mall-confirm-details"><strong>{dialog.row.partNumber} · {dialog.row.brand}</strong><Quote row={dialog.row}/><p>批次 {dialog.row.dateCode || "未知"} · 可售 {count(dialog.row.qtyOnSale)} / 实际 {count(dialog.row.qtyStock)} · 订货 {count(dialog.row.qtyOrder)}</p><p>货期 {dialog.row.leadTime || "未知"} · 版本 {dialog.row.revision}</p>{dialog.kind === "publish" && publishProblem(dialog.row) && <p className="mall-form-error">{publishProblem(dialog.row)}</p>}</div>}{dialog.items && <ul className="mall-bulk-review">{dialog.items.map(row => <li key={row.id}>{row.partNumber} · {row.brand} · 版本 {row.revision}{dialog.action === "publish" && publishProblem(row) ? `：${publishProblem(row)}` : ""}</li>)}</ul>}</>}
       {error && <p className="mall-form-error" role="alert">{error}</p>}{staleDialog && <p className="mall-form-error" role="alert">物料版本已变化，请刷新后人工重新选择；未自动重试。</p>}{hold && <p className="mall-form-error" role="alert">原请求结果待核对：{hold.requestId}，停止后续批次。</p>}
-      <div className="mall-dialog-actions"><button disabled={busy || importing || !!hold} onClick={() => setDialog(null)}>关闭</button>{hold && <button disabled={busy || !canRead} onClick={() => void inspectRequest()}>核对原请求</button>}{importMode ? <button className="mall-primary" disabled={locked || !canWrite || importable.length === 0 || editingRow != null} onClick={() => void confirmImport()}>{importing ? "正在分批导入…" : `导入已确认有效行（${importable.length}）`}</button> : <button className="mall-primary" disabled={locked || staleDialog || (dialog.kind === "create" || dialog.kind === "edit" ? !canWrite : !canPublish)} onClick={() => void submitDialog()}>{busy ? "正在提交…" : dialog.kind === "create" ? "保存到待上架" : dialog.kind === "edit" ? "保存草稿" : dialog.kind === "bulk" ? `确认批量${dialog.action === "publish" ? "上架" : "下架"}` : dialog.kind === "publish" ? "确认上架" : "确认下架"}</button>}</div>
+      <div className="mall-dialog-actions"><button disabled={busy || importing || !!hold} onClick={() => setDialog(null)}>关闭</button>{hold && <button disabled={busy || !canRead} onClick={() => void inspectRequest()}>核对原请求</button>}{importMode ? <button className="mall-primary" disabled={locked || !canWrite || !!createTeam.problem || importable.length === 0 || editingRow != null} onClick={() => void confirmImport()}>{importing ? "正在分批导入…" : `导入已确认有效行（${importable.length}）`}</button> : <button className="mall-primary" disabled={locked || staleDialog || dialog.kind === "create" && !!createTeam.problem || (dialog.kind === "create" || dialog.kind === "edit" ? !canWrite : !canPublish)} onClick={() => void submitDialog()}>{busy ? "正在提交…" : dialog.kind === "create" ? "保存到待上架" : dialog.kind === "edit" ? "保存草稿" : dialog.kind === "bulk" ? `确认批量${dialog.action === "publish" ? "上架" : "下架"}` : dialog.kind === "publish" ? "确认上架" : "确认下架"}</button>}</div>
     </section></div>}
   </section>;
 }

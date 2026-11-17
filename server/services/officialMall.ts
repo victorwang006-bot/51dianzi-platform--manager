@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray, isNotNull, like, ne, or, sql } from "drizz
 import { z } from "zod";
 import { officialChannelTeams } from "../../drizzle/officialChannelSchema";
 import { materials as materialCatalog } from "../../drizzle/schema";
+import { OFFICIAL_MALL_SUGGEST_MIN_CHARS, OFFICIAL_MALL_SUGGEST_RAW_LIMIT, OFFICIAL_MALL_SUGGEST_RESULT_LIMIT, officialMallPrefixPattern } from "../../shared/officialMallSuggestPolicy";
 import {
   officialMallMaterials as materials,
   officialMallPublications as publications,
@@ -382,6 +383,19 @@ export function createOfficialMallService(deps: OfficialMallDependencies) {
       { isolationLevel: "repeatable read" }
     );
   }
+  /** Reuse native current-account/session/grant/team checks in short transactions.
+   * No account/grant/member lock is held across catalog SQL. Recheck before returning:
+   * revoke, disable, session/team/role changes discard ALL candidates, fail closed.
+   * All business writes still use the original withAccess transaction/locks.
+   */
+  async function withSuggestAccess<T>(actor: OfficialActor, run: (connection: any, access: OfficialAccess) => Promise<T>): Promise<T> {
+    const before = await withAccess(actor, "officialInventory.read", async (_tx, access) => access);
+    const result = await run(await db(), before);
+    const after = await withAccess(actor, "officialInventory.read", async (_tx, access) => access);
+    if (canonicalJson(before) !== canonicalJson(after))
+      fail("后台账号权限或官方团队已变化，请刷新后重新查询", "FORBIDDEN");
+    return result;
+  }
   async function loadMaterial(
     tx: any,
     access: OfficialAccess,
@@ -421,9 +435,17 @@ export function createOfficialMallService(deps: OfficialMallDependencies) {
       teamId !== access.teamId
     )
       fail("普通工作人员不能指定其他官方团队", "FORBIDDEN");
-    const selected = teamId ?? access.teamId;
+    let selected = teamId ?? access.teamId;
+    if (access.isSuperAdmin && teamId === undefined) {
+      const teams = await tx.select({ id: officialChannelTeams.id })
+        .from(officialChannelTeams).where(eq(officialChannelTeams.status, "active"))
+        .orderBy(asc(officialChannelTeams.id)).limit(2).for("update");
+      if (!teams.length) fail("没有有效官方团队，请先由超级管理员配置官方团队", "FORBIDDEN");
+      if (teams.length > 1) fail("存在多个官方团队，请明确选择归属官方团队", "FORBIDDEN");
+      selected = teams[0].id;
+    }
     if (!selected)
-      fail("请先配置有效官方团队；超级管理员须明确选择团队", "FORBIDDEN");
+      fail("当前后台账号未配置有效官方团队，请联系超级管理员配置", "FORBIDDEN");
     const [team] = await tx
       .select({
         id: officialChannelTeams.id,
@@ -665,77 +687,40 @@ export function createOfficialMallService(deps: OfficialMallDependencies) {
     query: string,
     brand?: string
   ): Promise<OfficialMallSuggestion[]> {
-    if (!query) return [];
-    const rows = await tx
-      .select({
-        partNumber: materials.partNumber,
-        brand: materials.brand,
-        pkg: materials.pkg,
-      })
-      .from(materials)
-      .where(
-        and(
-          deps.officialTeamPredicate(access, materials),
-          or(
-            like(materials.partNumber, likePattern(query)),
-            like(materials.brand, likePattern(query))
-          ),
-          brand ? eq(materials.brand, brand) : undefined
-        )
-      )
-      .groupBy(materials.partNumber, materials.brand, materials.pkg)
-      .orderBy(
-        asc(materials.partNumber),
-        asc(materials.brand),
-        asc(materials.pkg)
-      )
-      .limit(20);
-    // The enabled product catalog is a second, metadata-only source. Do not select
-    // reference prices, inventory, notes, customer/workbench or other business data.
-    const catalogRows = await tx
-      .select({
-        partNumber: materialCatalog.partNumber,
-        brand: materialCatalog.brand,
-        pkg: materialCatalog.package,
-      })
-      .from(materialCatalog)
-      .where(
-        and(
-          eq(materialCatalog.status, "enabled"),
-          isNotNull(materialCatalog.brand),
-          ne(materialCatalog.brand, ""),
-          or(
-            like(materialCatalog.partNumber, likePattern(query)),
-            like(materialCatalog.brand, likePattern(query))
-          ),
-          brand ? eq(materialCatalog.brand, brand) : undefined
-        )
-      )
-      .groupBy(
-        materialCatalog.partNumber,
-        materialCatalog.brand,
-        materialCatalog.package
-      )
-      .orderBy(
-        asc(materialCatalog.partNumber),
-        asc(materialCatalog.brand),
-        asc(materialCatalog.package)
-      )
-      .limit(20);
-    const merged = new Map<string, OfficialMallSuggestion>();
-    for (const row of [...rows, ...catalogRows]) {
-      // A missing catalog brand must never become a guessed/empty brand candidate.
-      if (!row.partNumber?.trim() || !row.brand?.trim()) continue;
-      const candidate = suggestion({ ...row, pkg: row.pkg ?? "" });
-      const key = canonicalJson(
-        [candidate.partNumber, candidate.brand, candidate.pkg].map(value =>
-          value.normalize("NFKC").trim().toLowerCase()
-        )
-      );
-      if (!merged.has(key)) merged.set(key, candidate);
-      if (merged.size === 20) break;
+    if (query.length < OFFICIAL_MALL_SUGGEST_MIN_CHARS) return [];
+    const normalize = (value: string) => value.normalize("NFKC").trim().toLowerCase();
+    async function candidates(exact: boolean) {
+      const rows = await tx.select({
+        partNumber: materials.partNumber, brand: materials.brand, pkg: materials.pkg,
+      }).from(materials).where(and(
+        deps.officialTeamPredicate(access, materials),
+        exact ? eq(materials.partNumber, query) : like(materials.partNumber, officialMallPrefixPattern(query)),
+        brand ? eq(materials.brand, brand) : undefined,
+      )).limit(OFFICIAL_MALL_SUGGEST_RAW_LIMIT);
+      // Bound the INDEXED model window BEFORE enabled/brand filtering. A residual
+      // status/brand SQL filter could otherwise inspect an unbounded prefix range.
+      // Never fetch price, stock, notes, customer IDs or other transaction fields.
+      const catalogRows = await tx.select({
+        partNumber: materialCatalog.partNumber, brand: materialCatalog.brand,
+        pkg: materialCatalog.package, status: materialCatalog.status,
+      }).from(materialCatalog, { forceIndex: ["idx_materials_partNumber"] })
+        .where(exact ? eq(materialCatalog.partNumber, query) : like(materialCatalog.partNumber, officialMallPrefixPattern(query)))
+        .limit(OFFICIAL_MALL_SUGGEST_RAW_LIMIT);
+      const enabled = catalogRows.filter((row: any) => row.status === "enabled" &&
+        (!brand || row.brand && normalize(row.brand) === normalize(brand)));
+      const merged = new Map<string, OfficialMallSuggestion>();
+      for (const row of [...rows, ...enabled]) {
+        if (!row.partNumber?.trim() || !row.brand?.trim()) continue;
+        const candidate = suggestion({ ...row, pkg: row.pkg ?? "" });
+        const key = canonicalJson([candidate.partNumber, candidate.brand, candidate.pkg].map(normalize));
+        if (!merged.has(key)) merged.set(key, candidate);
+        if (merged.size === OFFICIAL_MALL_SUGGEST_RESULT_LIMIT) break;
+      }
+      return Array.from(merged.values());
     }
-    return Array.from(merged.values());
+    const exact = await candidates(true);
+    // Full model hits must not wait for or compete with broad prefix candidates.
+    return exact.length ? exact : candidates(false);
   }
   function publicJoin() {
     return and(
@@ -1072,9 +1057,8 @@ export function createOfficialMallService(deps: OfficialMallDependencies) {
       value: z.input<typeof officialMallSuggestSchema>
     ) {
       const input = officialMallSuggestSchema.parse(value);
-      return withAccess(
+      return withSuggestAccess(
         actor,
-        "officialInventory.read",
         async (tx, access) => ({
           items: await suggestions(tx, access, input.query, input.brand),
         })

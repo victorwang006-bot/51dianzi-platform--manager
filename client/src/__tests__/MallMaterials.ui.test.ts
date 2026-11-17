@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OfficialMallAccess, OfficialMallDuplicate, OfficialMallImportResult, OfficialMallMaterial, OfficialMallPreviewRow, OfficialMallSuggestion } from "@shared/officialMall";
+import * as jsxRuntime from "react/jsx-runtime";
 import { officialMallMaterialInputSchema } from "@shared/officialMall";
 const h = vi.hoisted(() => ({
   authId: 7 as number | null, authUser: null as { id: number; hasNativeAdminAccount: boolean } | null, authError: null as Error | null,
@@ -23,9 +24,16 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
   useUtils: () => ({ client: { officialMall: {
     status: { query: h.statusRead }, list: { query: h.listRead }, suggest: { query: h.suggestRead },
     create: { mutate: h.create }, update: { mutate: h.update }, publish: { mutate: h.publish }, offshelf: { mutate: h.offshelf }, bulkAction: { mutate: h.bulk }, requestStatus: { query: h.receipt }, importPreview: { query: h.preview }, importRows: { mutate: h.importRows },
-  } } }),
+} } }),
 } }));
-import MallMaterials from "../business/MallMaterials";
+vi.mock("@/lib/adminNewInformation", () => ({ useAdminNewInformationContextRows: () => ({ getRow: () => ({ isNew: false, ref: () => {} }) }) }));
+vi.mock("@/components/admin/AdminNewInformationBadge", () => ({ AdminNewInformationRowBadge: () => null }));
+import SourceMallMaterials from "../business/MallMaterials";
+import { trpc as mockTrpc } from "@/lib/trpc";
+import { useAuth as mockUseAuth } from "@/_core/hooks/useAuth";
+const MallMaterials = process.env.MALL_REPAIR_LEAF
+  ? new Function("__NI", readFileSync(process.env.MALL_REPAIR_LEAF, "utf8").replace(/^const __NI=.*\n/, "").replace("export function createNativeMallPage", "function createNativeMallPage") + "\nreturn createNativeMallPage;")({ useAdminNewInformationContextRows: () => ({ getRow: () => ({ isNew: false, ref: () => {} }) }), AdminNewInformationRowBadge: () => null })({ React, jsx: jsxRuntime, useAuth: mockUseAuth, trpc: mockTrpc, DashboardLayout: ({children}: {children: React.ReactNode}) => children })
+  : SourceMallMaterials;
 import { readRequestHold, storeRequestHold } from "../lib/officialMallImport";
 let root: Root | undefined, host: HTMLDivElement;
 Object.assign(globalThis, { React, IS_REACT_ACT_ENVIRONMENT: true });
@@ -132,7 +140,7 @@ describe("native official mall compact DOM", () => {
     h.suggestions = [{ partNumber: "CHOSEN-PART", brand: "CHOSEN-BRAND", pkg: "SOT" }]; await mount(); await newForm();
     enter("可售数量", "4"); enter("基础单价（面议留空）", "1.234500"); enter("货期", "人工3天"); await select("税口径", "false");
     expect(h.suggestQueries.filter(q => q.options.enabled)).toHaveLength(0);
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 270)); });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 520)); });
     expect(h.suggestQueries.some(q => q.options.enabled && q.input.query === "LOCAL-NEW")).toBe(true);
     await click(host.querySelector('[aria-label="使用型号资料 CHOSEN-PART CHOSEN-BRAND SOT"]')!);
     expect(host.querySelector<HTMLInputElement>('[aria-label="可售数量"]')?.value).toBe("4"); expect(host.querySelector<HTMLInputElement>('[aria-label="基础单价（面议留空）"]')?.value).toBe("1.234500"); expect(host.querySelector<HTMLSelectElement>('[aria-label="税口径"]')?.value).toBe("false");
@@ -227,7 +235,7 @@ describe("P1 scoped reads and complete receipts", () => {
   });
   it("team switch hides A list/suggestions/dialog and never accepts late A reads when B list fails", async () => {
     h.suggestions = [{ partNumber: "A-SUGGEST", brand: "A", pkg: "QFN" }]; await mount(); await newForm();
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 270)); }); expect(host.textContent).toContain("A-SUGGEST");
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 520)); }); expect(host.textContent).toContain("A-SUGGEST");
     const old = deferred<{ items: OfficialMallMaterial[]; total: number }>(); h.listRead.mockReturnValueOnce(old.promise).mockRejectedValueOnce(new Error("B list refused"));
     h.access!.scope.teamId = 4; await click(button("刷新")); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(host.textContent).not.toContain("A-SUGGEST"); expect(host.textContent).not.toContain("LOCAL-PART");
     await act(async () => old.resolve({ items: [fixture({ partNumber: "LATE-A", note: "A-PRIVATE" })], total: 1 }));
@@ -261,5 +269,33 @@ describe("P1 scoped reads and complete receipts", () => {
     h.receipt.mockResolvedValue({ state: "completed", result: { success: true, id: 101, revision: 5, status: "draft" } }); await click(button("核对原请求")); expect(readRequestHold("7:3")).toBeNull();
     h.bulk.mockResolvedValueOnce({ success: false, successful: 0, errors: [{ id: 101, message: "版本冲突，明确未上架" }] }); await click(host.querySelector('[aria-label="选择物料 LOCAL-PART 101"]')!); await click(button("批量上架")); await click(button("确认批量上架"));
     expect(readRequestHold("7:3")).toBeNull(); expect(host.textContent).toContain("成功 0，失败 1"); expect(host.textContent).toContain("明确未上架");
+  });
+});
+
+
+describe("mall repair minimum input, failure fallback and active team choice",()=>{
+  it("does not query one/two characters and coalesces model+brand typing for 500ms",async()=>{
+    vi.useFakeTimers();await mount();await click(button("新增物料"));enter("型号","S");
+    await act(async()=>{await vi.advanceTimersByTimeAsync(600)});expect(h.suggestRead).not.toHaveBeenCalled();
+    enter("型号","ST");await act(async()=>{await vi.advanceTimersByTimeAsync(600)});expect(h.suggestRead).not.toHaveBeenCalled();
+    enter("型号","STM");await act(async()=>{await vi.advanceTimersByTimeAsync(300)});enter("品牌","ST");
+    await act(async()=>{await vi.advanceTimersByTimeAsync(499)});expect(h.suggestRead).not.toHaveBeenCalled();
+    await act(async()=>{await vi.advanceTimersByTimeAsync(1)});expect(h.suggestRead).toHaveBeenCalledOnce();expect(h.suggestRead.mock.calls[0][0]).toEqual({query:"STM",brand:"ST"});
+  });
+  it("suggest failure still permits manual draft save without publication",async()=>{
+    vi.useFakeTimers();h.suggestRead.mockRejectedValue(new Error("offline suggest failure"));await mount();await newForm();
+    await act(async()=>{await vi.advanceTimersByTimeAsync(500)});expect(host.textContent).toContain("资料联想暂不可用");expect(button("保存到待上架").disabled).toBe(false);
+    await click(button("保存到待上架"));expect(h.create).toHaveBeenCalledOnce();expect(h.create.mock.calls[0][0].data.partNumber).toBe("LOCAL-NEW");expect(h.publish).not.toHaveBeenCalled();
+  });
+  it("sole active team is visibly auto-selected and sent explicitly",async()=>{
+    h.access!.scope={...h.access!.scope,isSuperAdmin:true,teamId:null,teamRole:null};h.access!.teams=[{id:11,name:"LOCAL-OFFICIAL"}];await mount();await newForm();
+    const team=host.querySelector<HTMLSelectElement>('[aria-label="归属官方团队"]')!;expect(team.value).toBe("11");expect(team.disabled).toBe(true);expect(host.textContent).toContain("自动选择唯一");
+    await click(button("保存到待上架"));expect(h.create.mock.calls[0][0].teamId).toBe(11);expect(h.publish).not.toHaveBeenCalled();
+  });
+  it("multiple teams require manual valid selection, no team has a precise blocking message",async()=>{
+    h.access!.scope={...h.access!.scope,isSuperAdmin:true,teamId:null,teamRole:null};h.access!.teams=[{id:11,name:"ONE"},{id:12,name:"TWO"}];await mount();await newForm();
+    expect(button("保存到待上架").disabled).toBe(true);expect(host.textContent).toContain("存在多个官方团队");await select("归属官方团队","12");expect(button("保存到待上架").disabled).toBe(false);
+    await click(button("保存到待上架"));expect(h.create.mock.calls[0][0].teamId).toBe(12);
+    h.access!.teams=[];await click(button("刷新"));await newForm();expect(host.textContent).toContain("没有有效官方团队");expect(button("保存到待上架").disabled).toBe(true);expect(h.create).toHaveBeenCalledOnce();
   });
 });

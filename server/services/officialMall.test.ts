@@ -16,11 +16,20 @@ import {
 } from "./officialChannelAccess";
 import { createOfficialMallRouters } from "../routers/officialMall";
 import {
-  createOfficialMallService,
+  createOfficialMallService as sourceCreateOfficialMallService,
   officialMallTestUtils,
   publicProjection,
   validateOfficialMallMaterial,
 } from "./officialMall";
+import { adminUsers, adminUserPermissions, materials as catalog } from "../../drizzle/schema";
+import { officialChannelTeams, officialChannelTeamMembers } from "../../drizzle/officialChannelSchema";
+const createOfficialMallService = process.env.MALL_REPAIR_RUNTIME
+  ? (await import(process.env.MALL_REPAIR_RUNTIME)).createOfficialMallRuntime({
+      router, adminProcedure, publicProcedure, getDb: async () => { throw Error("NO_REAL_SQL_ALLOWED"); },
+      loadOfficialAccess, assertOfficialRecordAction, officialTeamPredicate, officialActorFromContext,
+      adminUsers, adminUserPermissions, materials: catalog, officialChannelTeams, officialChannelTeamMembers,
+    }).createService as typeof sourceCreateOfficialMallService
+  : sourceCreateOfficialMallService;
 
 const actor = { adminUserId: 71, sessionVersion: 4 };
 const base = () =>
@@ -83,9 +92,14 @@ function memoryDb() {
     params: unknown[];
     lock: boolean;
     fields?: string[];
+    inTransaction: boolean;
+    limit: number;
+    grouped: boolean;
+    indexHint?: any;
   }[] = [];
   const transactions: any[] = [];
   let tail = Promise.resolve();
+  let catalogBarrier: (() => Promise<void>) | undefined;
   function fieldValue(field: any, context: Row) {
     return context[getTableName(field.table)]?.[field.name];
   }
@@ -126,15 +140,15 @@ function memoryDb() {
       const right = operand();
       if (op === "=") return left === right;
       if (op === "<>") return left != null && left !== right;
-      if (op?.toLowerCase() === "like")
-        return String(left ?? "")
-          .toLowerCase()
-          .includes(
-            String(right)
-              .replace(/^%|%$/g, "")
-              .replace(/\\([\\%_])/g, "$1")
-              .toLowerCase()
-          );
+      if (op?.toLowerCase() === "like") {
+        const pattern = String(right), literal = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        let regex = "^";
+        for (let i = 0; i < pattern.length; i++) {
+          const char = pattern[i];
+          regex += char === "\\" && i + 1 < pattern.length ? literal(pattern[++i]) : char === "%" ? ".*" : char === "_" ? "." : literal(char);
+        }
+        return new RegExp(regex + "$", "iu").test(String(left ?? ""));
+      }
       throw new Error(`UNSUPPORTED_OPERATOR:${op}`);
     }
     function conjunction(): boolean {
@@ -157,10 +171,11 @@ function memoryDb() {
     }
     return expression();
   }
-  function executor(local: State): any {
+  function executor(local: State, inTransaction = false): any {
     return {
       select(fields?: Row) {
         let table: any;
+        let indexHint: any;
         let where: any;
         let limit = Infinity;
         let offset = 0;
@@ -168,8 +183,9 @@ function memoryDb() {
         let grouped = false;
         const joins: { table: any; on: any }[] = [];
         const q: any = {
-          from(t: any) {
+          from(t: any, hint?: any) {
             table = t;
+            indexHint = hint;
             return q;
           },
           where(p: any) {
@@ -200,9 +216,10 @@ function memoryDb() {
             joins.push({ table: t, on });
             return q;
           },
-          then(resolve: any, reject: any) {
+          async then(resolve: any, reject: any) {
             try {
               const name = getTableName(table);
+              if (name === "materials" && catalogBarrier) await catalogBarrier();
               const compiled = where
                 ? dialect.sqlToQuery(where)
                 : { sql: "", params: [] };
@@ -210,6 +227,7 @@ function memoryDb() {
                 table: name,
                 ...compiled,
                 lock,
+                inTransaction, limit, grouped, indexHint,
                 fields:
                   fields && Object.values(fields).map(field => field.name),
               });
@@ -327,7 +345,7 @@ function memoryDb() {
       transactions.push(config);
       const task = tail.then(async () => {
         const local = structuredClone(state);
-        const result = await run(executor(local));
+        const result = await run(executor(local, true));
         state = local;
         return result;
       });
@@ -350,6 +368,7 @@ function memoryDb() {
     rows: (name: string) => state[name],
     traces,
     transactions,
+    setCatalogBarrier: (barrier?: () => Promise<void>) => { catalogBarrier = barrier; },
   };
 }
 function seed(
@@ -874,8 +893,10 @@ describe("officialMall native transaction flow (in-memory executor, no SQL)", ()
     const traces = memory.traces.filter(trace => trace.table === "materials");
     expect(traces).toHaveLength(2);
     for (const trace of traces) {
-      expect(trace.fields).toEqual(["partNumber", "brand", "package"]);
-      expect(trace.params).toContain("enabled");
+      expect(trace.fields).toEqual(["partNumber", "brand", "package", "status"]);
+      expect(trace.params).not.toContain("enabled");
+      expect(trace.limit).toBe(80);
+      expect(trace.indexHint).toEqual({ forceIndex: ["idx_materials_partNumber"] });
       expect(trace.lock).toBe(false);
     }
   });
@@ -1249,7 +1270,7 @@ describe("officialMall native transaction flow (in-memory executor, no SQL)", ()
       user: { role: "admin" },
       adminAccount: { ...actor, id: actor.adminUserId, status: "active" },
       req: { headers: {} },
-      res: {},
+      res: { setHeader: vi.fn() },
     } as any;
     await expect(
       routes.officialMall.createCaller({ ...ctx, user: null }).status()
@@ -1266,12 +1287,12 @@ describe("officialMall native transaction flow (in-memory executor, no SQL)", ()
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       routes.officialMallPublic
-        .createCaller({ user: null, req: { headers: {} }, res: {} } as any)
+        .createCaller({ user: null, req: { headers: {} }, res: { setHeader: vi.fn() } } as any)
         .detail({ publicId: "inventory_123" })
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(
       await routes.officialMallPublic
-        .createCaller({ user: null, req: { headers: {} }, res: {} } as any)
+        .createCaller({ user: null, req: { headers: {} }, res: { setHeader: vi.fn() } } as any)
         .list({})
     ).toMatchObject({ items: [], total: 0 });
   });
@@ -1307,5 +1328,74 @@ describe("official mall publish-only final gate", () => {
     const result = await memory.service.bulkAction(actor, {action:"publish",requestId:"bulk-unknown-supply-final",items:[{id,expectedRevision:1}]});
     expect(result).toMatchObject({success:false,successful:0,errors:[{id,message:expect.stringContaining("大于0")}]});
     expect(memory.rows("official_mall_publications")).toHaveLength(0);
+  });
+});
+
+
+describe("mall repair bounded suggestions + short native fences", () => {
+  it("rejects short catalog scans but still checks current identity", async () => {
+    const m = memoryDb();
+    expect(await m.service.suggest(actor, {query: "ST"})).toEqual({items: []});
+    expect(m.traces.some(t => t.table === "materials" || t.table === "official_mall_materials")).toBe(false);
+    m.rows("admin_users")[0].sessionVersion++;
+    await expect(m.service.suggest(actor, {query: "S"})).rejects.toMatchObject({code: "FORBIDDEN"});
+  });
+  it("exact model wins without a prefix query; neither brand contains nor mid-model substring matches", async () => {
+    const m = memoryDb();
+    m.rows("materials").push(...["STM32", "STM32F103", "XSTM32", "OTHER"].map((partNumber,id) => ({id, partNumber, brand: partNumber === "OTHER" ? "STM32" : "ST", package: "QFN", status: "enabled"})));
+    expect((await m.service.suggest(actor, {query:"STM32"})).items.map(x=>x.partNumber)).toEqual(["STM32"]);
+    expect(m.traces.filter(t=>t.table==="materials").every(t=>!t.sql.includes("like") && !t.grouped && t.limit===80 && !t.inTransaction)).toBe(true);
+    m.rows("materials").splice(0,1);m.traces.splice(0);
+    expect((await m.service.suggest(actor, {query:"STM32"})).items.map(x=>x.partNumber)).toEqual(["STM32F103"]);
+    expect(m.traces.filter(t=>t.table==="materials").map(t=>t.params[0])).toEqual(["STM32", "STM32%"]);
+  });
+  it("uses a raw indexed window before catalog status/brand filters and escapes user wildcards", async () => {
+    const m = memoryDb();
+    m.rows("materials").push(...Array.from({length:81},(_,id)=>({id,partNumber:`ABC${id}`,brand:"ST",package:"QFN",status:id<80?"disabled":"enabled"})));
+    expect(await m.service.suggest(actor,{query:"ABC"})).toEqual({items:[]});
+    m.rows("materials").splice(0);m.rows("materials").push({partNumber:"A_B123",brand:"ST",status:"enabled"},{partNumber:"AXB123",brand:"ST",status:"enabled"});
+    expect((await m.service.suggest(actor,{query:"A_B"})).items.map(x=>x.partNumber)).toEqual(["A_B123"]);
+    expect(m.traces.at(-4)?.lock ?? false).toBe(false);
+  });
+  it("slow catalog SQL does not retain the write mutex/account transaction", async () => {
+    const m=memoryDb();let release!:()=>void, entered!:()=>void;
+    const wait=new Promise<void>(r=>{release=r}), reached=new Promise<void>(r=>{entered=r});
+    m.rows("materials").push({partNumber:base().partNumber,brand:base().brand,status:"enabled"});
+    m.setCatalogBarrier(async()=>{entered();await wait});
+    const read=m.service.suggest(actor,{query:base().partNumber});await reached;
+    try {
+      const write=await Promise.race([m.service.create(actor,{requestId:"short-lock-write-test",data:base()}),new Promise<never>((_,reject)=>setTimeout(()=>reject(Error("WRITE_BLOCKED_BY_SUGGEST")),500))]);
+      expect(write.status).toBe("draft");
+    } finally {release();}
+    await read;
+    expect(m.traces.filter(t=>t.table==="materials").every(t=>!t.inTransaction && !t.lock)).toBe(true);
+  });
+  it.each(["disabled", "session", "grant", "team", "archive", "role"])("discards candidates when %s changes during SQL", async change=>{
+    const m=memoryDb();let release!:()=>void, entered!:()=>void;
+    const wait=new Promise<void>(r=>{release=r}), reached=new Promise<void>(r=>{entered=r});
+    m.rows("materials").push({partNumber:base().partNumber,brand:base().brand,status:"enabled"});
+    m.setCatalogBarrier(async()=>{entered();await wait});
+    const read=m.service.suggest(actor,{query:base().partNumber});const rejected=expect(read).rejects.toMatchObject({code:"FORBIDDEN"});await reached;
+    if(change==="disabled")m.rows("admin_users")[0].status="disabled";
+    if(change==="session")m.rows("admin_users")[0].sessionVersion++;
+    if(change==="grant")m.rows("admin_user_permissions").splice(0);
+    if(change==="team")m.rows("official_channel_team_members")[0].teamId=12;
+    if(change==="archive")m.rows("official_channel_teams")[0].status="archived";
+    if(change==="role")m.rows("official_channel_team_members")[0].role="leader";
+    release();await rejected;
+  });
+  it("super admin sole active team auto-selects; none/multiple/archived fail and explicit active team stays draft",async()=>{
+    const m=memoryDb();m.rows("admin_users")[0].adminRole="super_admin";m.rows("official_channel_team_members").splice(0);
+    await expect(m.service.create(actor,{requestId:"multi-without-selection",data:base()})).rejects.toThrow("多个官方团队");
+    expect(m.rows("official_mall_requests")).toHaveLength(0);
+    m.rows("official_channel_teams").splice(1);
+    expect(await m.service.create(actor,{requestId:"single-team-auto",data:base()})).toMatchObject({status:"draft"});
+    expect(m.rows("official_mall_materials")[0].teamId).toBe(11);
+    m.rows("official_channel_teams")[0].status="archived";
+    await expect(m.service.create(actor,{requestId:"no-active-team",data:base()})).rejects.toThrow("没有有效官方团队");
+    await expect(m.service.create(actor,{requestId:"explicit-archived-team",teamId:11,data:base()})).rejects.toThrow("已归档");
+    m.rows("official_channel_teams")[0].status="active";m.rows("official_channel_teams").push({id:12,name:"OTHER",status:"active"});
+    expect(await m.service.create(actor,{requestId:"explicit-active-team",teamId:12,data:base()})).toMatchObject({status:"draft"});
+    expect(m.rows("official_mall_publications")).toHaveLength(0);
   });
 });

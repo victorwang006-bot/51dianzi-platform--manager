@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "actualFinalCandidate": true,
+  "fullModuleInitializationAndInboundDOM": {
+    "A": 10,
+    "B": 10
+  },
+  "managerAndPlatformTypechecks": true,
+  "customerSourceAndNativeRuntimeIsolatedTests": 25,
+  "customerNativeLeafChecks": 52,
+  "controllerFaultSimulations": 6,
+  "materialCandidateSourceByteIdentical": true,
+  "noBrowserLoginClaim": true,
+  "noBusinessWriteTests": true
+}

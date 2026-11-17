@@ -52,6 +52,11 @@ export type CustomerRecord = Omit<CustomerData, "assignedUserId" | "industryCode
   id: number; enterpriseId: number; assignedUserId: number; assignedName: string;
   createdByUserId: number; createdByName: string; createdAt: string; updatedAt: string;
   version: number; archivedAt: string | null; archiveReason: string | null; lastFollowUpAt: string | null;
+  /** Only picker reads attach immutable creation/frozen-team evidence; source remains business text. */
+  pickerProvenance?: {
+    teamId: number | null; teamName: string | null;
+    creationOrigin: "backend" | "unverified"; createdAdminAccountId: number | null;
+  };
 };
 export type CustomerFollowUp = {
   id: number; customerId: number; authorUserId: number; authorName: string;
@@ -66,6 +71,11 @@ export type CustomerTeam = { teamId: number; name: string; members: CustomerMemb
 export type CustomerContext = {
   actorUserId: number; canManageAll: boolean; canReadAll: boolean; members: CustomerMember[];
   canReadEnterprise: boolean; canReadTeam: boolean; teams: CustomerTeam[]; defaultTeamId: number | null;
+  /** Additive rollout guard: never infer the order-picker default from canManageAll. */
+  salesOrderPicker?: {
+    scope: "mine" | "team"; teamId: number | null; teamName: string | null;
+    creationOrigin: "backend";
+  };
 };
 export const customerCreateSchema = z.object({
   data: customerDataSchema, requestId: customerRequestIdSchema,
@@ -114,6 +124,8 @@ export const customerListScopeSchema = z.object({
 
 export const customerListSchema = customerUpdatedRangeSchema.safeExtend({
   keyword: optionalText(128), grade: z.enum(CUSTOMER_GRADES).optional(), stage: z.enum(CUSTOMER_STAGES).optional(),
+  // Existing list API, not a new CRM store. Omission preserves native workbench behavior.
+  salesOrderPicker: z.enum(["current_team", "enterprise"]).optional(),
   ...customerListScopeSchema.shape, assignedUserId: z.number().int().positive().optional(),
   starUserId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   starMode: z.literal("assignee").optional(),

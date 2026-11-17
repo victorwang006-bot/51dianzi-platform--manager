@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "managerTypecheck": true,
+  "platformTypecheck": true,
+  "customerSourceAndRuntimeTests": 25,
+  "sourceScopes": "Only approved material/customer changes; inbound final candidate pending",
+  "productionCatalogQuery": "read-only EXPLAIN and actual bounded SQL; not end-to-end browser latency",
+  "files": {
+    "service-tests.log": "b14f451711384e9f9f971507735907965545900f76f6bc3f1ffa2dda1e1289f3",
+    "runtime-tests.log": "591f983818fabca9c6a867fe7ccdc0209e6b1ca9efc957f06d75b2a2a097418b",
+    "ui-tests.log": "0c840546a4db665cb5e1b896995b5f14e64833ab5ac05f03470b803c70038044",
+    "leaf-ui-tests.log": "bf1bd6b0e6c3709aaaa4b3e2a4ec3b35e28b5eb2d67c18292f556783f2ee5aee",
+    "newinformation-tests.log": "7397e5f842ac3e76b551cab87d982f19187a2c333d61a1d2871b8c0fe3fd1b3a",
+    "fixture-tests.log": "486d91ea9667440f7c14ecc284b8ec96e3286342ac70f38d5e957212bc067432",
+    "frontend-tests.log": "4302c5c6e818c143740875f532492bdfa87c809a287856b57d04681ed9d92bb1",
+    "manager-integrated-typecheck.log": "fa901af78c0be929caf44ca7f98c5b23a40a37731a3bb6d769739371c1fe613d",
+    "platform-integrated-typecheck.log": "2122864538c525982816ee494f1f8932cafa9525dd052cfc4e0adc6c6cbee2b4",
+    "customer-integrated-tests.log": "401088be7846c39f4cc1a6c47c10630cb650a77fff5a0bf281664582c5e435e4"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "beforeSha256": "da8b089944c7c72a48dac45293878bc1a4a440111350e183080e98c9f77ad555",
+  "afterSha256": "7832764504e6a079268511516cb4407de63df04495e2a1742f8f5f6479d246ea",
+  "rewrites": {
+    "/assets/BusinessWorkbenchPage-company-stock-sales-bebb998997257a8c.js": "/assets/BusinessWorkbenchPage-unified-bugfix-ebb81762b6c446ed.js",
+    "/assets/BusinessWorkbenchPage-company-stock-sales-ac088da77867d88b.js": "/assets/BusinessWorkbenchPage-unified-bugfix-d5c1b48e93e7e691.js",
+    "/assets/OfficialMall-new-information-ab0ad625d60050cd.js": "/assets/OfficialMall-model-team-repair-e676e6dff6bc8c64.js"
+  },
+  "originalImportCount": 119,
+  "originalScopeCount": 99,
+  "finalScopeCount": 101,
+  "existingKeysAndUnrelatedValuesPreserved": true,
+  "htmlOutsideImportmapBytesPreserved": true,
+  "copiedOriginalScopes": true
+}
