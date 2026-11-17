@@ -87,3 +87,38 @@ describe("approved directed literals plus explicit whole-brand equivalence famil
     expect(VERIFIED_CHANNEL_REFERENCE_BRAND_FAMILIES.some(f => f.variants.some(v => /murata/i.test(v)))).toBe(false);
   });
 });
+
+describe("20261117 finite ICKey-only complete manufacturer literals", () => {
+  const reviewed = [
+    ["UNI-ROYAL(厚声)", "UNI-ROYAL"],
+    ["FH(风华)", "FH/广东风华高科"],
+    ["Sunlord(顺络)", "Sunlord/深圳顺络电子"],
+    ["NOVOSENSE(纳芯微)", "NOVOSENSE/苏州纳芯微电子"],
+    ["XKB", "XKB CONNECTION/中国星坤"],
+  ];
+  it.each(reviewed)("only accepts reviewed ICKey whole literals %s <=> %s", (a, b) => {
+    expect(matchChannelReferenceBrand(a, b, { profile: "ickey" })).toBe("explicit_alias");
+    expect(matchChannelReferenceBrand(b, a, { profile: "ickey" })).toBe("explicit_alias");
+    expect(matchChannelReferenceBrand(a, b, { profile: "snapshot" })).toBe("explicit_alias");
+    expect(matchChannelReferenceBrand(b, a, { profile: "snapshot" })).toBe("explicit_alias");
+    // XKB forward was historically accepted in all profiles and remains intact.
+    expect(matchChannelReferenceBrand(b, a, { profile: "lcsc" })).toBeNull();
+    expect(matchChannelReferenceBrand(a, b, { profile: "lcsc" })).toBe(a === "XKB" ? "explicit_alias" : null);
+    for (const suffix of ["/Other", "(Other)", " Extra"]) {
+      expect(matchChannelReferenceBrand(a, b + suffix, { profile: "ickey" })).toBeNull();
+      expect(matchChannelReferenceBrand(b + suffix, a, { profile: "ickey" })).toBeNull();
+    }
+  });
+  it("keeps categories, distinct manufacturers and existing families isolated", () => {
+    for (const [a, b] of [["0603电阻", "UNI-ROYAL"], ["0402电容", "FH/广东风华高科"],
+      ["0603磁珠", "Sunlord/深圳顺络电子"], ["芯片", "NOVOSENSE/苏州纳芯微电子"],
+      ["XFCN(兴飞)", "XKB CONNECTION/中国星坤"], ["FH(风华)", "UNI-ROYAL"],
+      ["UNI-ROYAL(厚声)", "RoyalOhm"], ["Sunlord/深圳顺络电子", "顺络"],
+      ["XKB Connection(中国星坤)", "XKB CONNECTION/中国星坤"]]) {
+      expect(matchChannelReferenceBrand(a, b, { profile: "ickey" })).toBeNull();
+      expect(matchChannelReferenceBrand(b, a, { profile: "ickey" })).toBeNull();
+    }
+    expect(VERIFIED_CHANNEL_REFERENCE_BRAND_FAMILIES).toHaveLength(16);
+    expect(VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS).toHaveLength(23);
+  });
+});

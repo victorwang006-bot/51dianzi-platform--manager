@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
+import { newInformationFactsInputSchema, newInformationFactsResultSchema } from "../../../shared/adminNewInformationFacts";
+import { createInboundNewInformationFactsReader } from "../services/adminNewInformationSources/inbound";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -34,7 +36,7 @@ import {
   type InboundBulkCreateResult,
 } from "../../../shared/inboundBulk";
 import { inboundBuyerUserIdSchema } from "../../../shared/inboundProcurement";
-import { inboundDocumentsSchema, inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema } from "../../../shared/inboundDocuments";
+import { inboundDocumentsSchema, inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSaveSchema } from "../../../shared/inboundDocuments";
 import { inboundDocumentService } from "../services/inboundDocuments";
 import {
   inboundProcurementIdentity, resolveInboundProcurementAccess, inboundProcurementWhere,
@@ -1097,7 +1099,10 @@ export async function cancelInboundOrders(
   });
 }
 
+const readInboundNewInformationFacts = createInboundNewInformationFactsReader({ getDb });
 export const inboundRouter = router({
+  newInformationFacts: inventoryInboundProcedure.input(newInformationFactsInputSchema)
+    .output(newInformationFactsResultSchema).query(({ ctx, input }) => readInboundNewInformationFacts(ctx, input)),
   /** Narrow inbound-only candidates, no personnel or full-inventory grant. */
   procurementBuyers: inventoryInboundProcedure.query(async ({ ctx }) =>
     procurementBuyerOptions(await requireDb(), inboundProcurementIdentity(ctx))),
@@ -1108,6 +1113,8 @@ export const inboundRouter = router({
     inboundDocumentService.list(await requireDb(), inboundProcurementIdentity(ctx), input.id)),
   documentAccess: inventoryInboundProcedure.input(inboundDocumentAccessSchema).query(async ({ ctx, input }) =>
     inboundDocumentService.access(await requireDb(), inboundProcurementIdentity(ctx), input)),
+  saveDocuments: inventoryInboundProcedure.input(inboundDocumentsSaveSchema).mutation(async ({ ctx, input }) =>
+    inboundDocumentService.save(await requireDb(), inboundProcurementIdentity(ctx), input)),
   /** 上传入库实拍照片至企业私有目录；单据保存时再次校验对象归属。 */
   uploadPhoto: inventoryInboundProcedure
     .input(z.object({

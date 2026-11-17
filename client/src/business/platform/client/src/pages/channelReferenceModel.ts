@@ -12,6 +12,11 @@ const decimal = (value: unknown): value is string => typeof value === "string" &
 const nullableText = (value: unknown) => value === null || typeof value === "string";
 const quantity = (value: unknown) => value === null || typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 function object(value: unknown): value is Record<string, unknown> { return Boolean(value && typeof value === "object" && !Array.isArray(value)); }
+export function validDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) return false;
+  const date = Date.parse(value);
+  return Number.isFinite(date) && date >= 0 && new Date(date).toISOString() === (value.includes(".") ? value : value.replace("Z", ".000Z"));
+}
 
 /** Only public fixed-provider product links may become active anchors. No HTML is interpreted. */
 export function channelReferencePageUrl(value: string | null, source: ChannelReferenceSource): string | null {
@@ -26,6 +31,14 @@ export function channelReferencePageUrl(value: string | null, source: ChannelRef
 function isQuote(value: unknown, source: ChannelReferenceSource): value is ChannelReferenceQuote {
   if (!object(value) || value.source !== source || !statuses.has(String(value.status))) return false;
   if (!["matchedPartNumber", "matchedBrand", "productCode", "pageUrl", "unit", "packaging", "fetchedAt", "expiresAt", "message"].every(key => nullableText(value[key]))) return false;
+  if ([value.fetchedAt, value.expiresAt].some(date => date !== null && !validDate(date))) return false;
+  if (Object.hasOwn(value, "stockFetchedAt") || Object.hasOwn(value, "stockPageUrl")) {
+    if (!validDate(value.stockFetchedAt) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.stockFetchedAt)
+      || !validDate(value.fetchedAt) || Date.parse(value.stockFetchedAt) < Date.parse(value.fetchedAt)
+      || value.status !== "ok" || value.stockQuantity === null || value.unitPrice === null
+      || typeof value.stockPageUrl !== "string" || channelReferencePageUrl(value.stockPageUrl, source) !== value.stockPageUrl
+      || /[\s\\#]/.test(value.stockPageUrl)) return false;
+  }
   if (!quantity(value.stockQuantity) || !quantity(value.tierQuantity) || value.unitPrice !== null && !decimal(value.unitPrice)) return false;
   if (![null, "CNY", "USD", "HKD"].includes(value.currency as null) || !["included", "excluded", "unknown"].includes(String(value.taxStatus)) || typeof value.stockInsufficientForTier !== "boolean") return false;
   return Array.isArray(value.tiers) && value.tiers.every(tier => object(tier) && typeof tier.minQuantity === "number" && Number.isSafeInteger(tier.minQuantity) && tier.minQuantity > 0 && decimal(tier.unitPrice));

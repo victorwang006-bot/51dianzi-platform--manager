@@ -247,7 +247,20 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
  * 返回受控文件的临时访问地址。聊天附件等私有业务文件只存 key，
  * 每次在服务端完成会话成员权限校验后调用本函数，避免把永久公网地址写入消息。
  */
-export async function storageGetAccessUrl(relKey: string, expiresSeconds = 3600): Promise<string> {
+export async function storageGetAccessUrl(relKey: string, expiresSeconds = 3600, documentResponse?: { mode: "preview" | "download"; fileName: string }): Promise<string> {
+  if (documentResponse !== undefined) {
+    if (!isOssConfigured()) throw new Error("私有对象存储未配置");
+    if (!["preview", "download"].includes(documentResponse.mode) || !documentResponse.fileName.trim()
+      || documentResponse.fileName.length > 255 || /[\\/\x00-\x1f\x7f]/.test(documentResponse.fileName)) throw new Error("文件名称或访问模式无效");
+    const encodedName = encodeURIComponent(documentResponse.fileName).replace(/[!'()*]/g, character => `%${character.charCodeAt(0).toString(16).toUpperCase()}`);
+    const disposition = `${documentResponse.mode === "download" ? "attachment" : "inline"}; filename*=UTF-8''${encodedName}`;
+    const url = getOssClient().signatureUrl(normalizeKey(relKey), {
+      expires: signedUrlExpiry(expiresSeconds), response: { "content-disposition": disposition },
+    });
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error("私有附件签名地址无效");
+    return url;
+  }
   if (isOssConfigured()) return ossGetSignedUrl(relKey, expiresSeconds);
   return storageGetSignedUrl(relKey);
 }

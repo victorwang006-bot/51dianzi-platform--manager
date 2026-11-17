@@ -1,17 +1,18 @@
 import { TRPCError } from "@trpc/server";
-import { NATIVE_TEAM_READ_METHODS, NATIVE_FACTORY_PUBLISH_METHODS, officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../../../../../shared/internalBusinessOfficialInventory";
-import { bindOfficialInventoryGrant, verifyOfficialInventoryGrant } from "./internalBusinessOfficialGrant";
+import { officialInventoryMethodRequirement, type SignedOfficialInventoryGrant } from "../../../shared/internalBusinessOfficialInventory";
+import { bindOfficialInventoryGrant, verifyOfficialInventoryGrant, officialInventoryErpEntitled } from "./internalBusinessOfficialGrant";
 import type { Request, Response } from "express";
 import type { ErpPermissionKey } from "../../../shared/erpPermissions";
 import type { TrpcContext, StaffDelegation } from "../_core/context";
 import { inventoryRouter } from "../routers/inventory";
+import { mallInventoryRouter } from "../routers/mallInventory";
+import { MALL_INVENTORY_METHOD_IDS, mallInventoryMethodRequirement } from "../../../shared/mallInventory";
 import { channelInventoryRouter } from "../routers/channelInventoryRuntime";
 import { importInventoryRouter } from "../routers/importInventory";
 import { inboundRouter } from "../routers/inbound";
 import { customerRouter } from "../routers/customer";
 import { customerDemandRouter } from "../routers/customerDemand";
 import { crmSalesOrderRouter } from "../routers/crmSalesOrder";
-import { personalPerformanceRouter } from "../routers/personalPerformance";
 import { purchaseOrderRouter } from "../routers/purchaseOrder";
 import { enterpriseRouter } from "../routers/enterprise";
 import { companyRouter } from "../routers/company";
@@ -58,6 +59,7 @@ export type BusinessMethodCapability = {
  * arbitrary/private chat or initiate a financial channel action are absent.
  */
 export const BUSINESS_METHOD_IDS = [
+  ...MALL_INVENTORY_METHOD_IDS,
   "inventory.list", "inventory.listPaged", "inventory.refreshStatus", "inventory.refreshPublished",
   "inventory.get", "inventory.uploadPhoto", "inventory.labelOcrAvailability", "inventory.recognizeLabel",
   "inventory.spotVerificationList", "inventory.prepareSpotStockVerification", "inventory.confirmSpotStockVerification",
@@ -73,7 +75,7 @@ export const BUSINESS_METHOD_IDS = [
   "importInventory.cancelJob", "importInventory.repairList", "importInventory.repairClear",
   "importInventory.repairSave", "importInventory.repairSubmit",
   "inbound.procurementBuyers",
-  "inbound.uploadDocument", "inbound.documents", "inbound.documentAccess",
+  "inbound.uploadDocument", "inbound.documents", "inbound.documentAccess", "inbound.saveDocuments",
   "inbound.uploadPhoto", "inbound.photos", "inbound.suggestPartNumbers", "inbound.overview", "inbound.list",
   "inbound.bulkCreate", "inbound.create", "inbound.update", "inbound.updateDetails", "inbound.paymentHistory",
   "inbound.markPaymentUnpaid", "inbound.recordPayment", "inbound.voidPayment", "inbound.receive", "inbound.cancelPreview",
@@ -89,7 +91,6 @@ export const BUSINESS_METHOD_IDS = [
   "crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.create", "crmSalesOrder.cancel",
   "crmSalesOrder.recordPayment", "crmSalesOrder.ship",
   "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials",
-  "personalPerformance.summary",
   "purchaseOrder.list", "purchaseOrder.get", "purchaseOrder.acceptedQuoteOptions", "purchaseOrder.inboundCandidates",
   "purchaseOrder.create", "purchaseOrder.updatePayment", "purchaseOrder.updateShipping", "purchaseOrder.linkInbound",
   "purchaseOrder.recordInvoice", "purchaseOrder.voidInvoice", "purchaseOrder.cancel",
@@ -156,6 +157,7 @@ BUSINESS_METHOD_CAPABILITIES["order.sellerNewInformationFacts"] = READ;
 BUSINESS_METHOD_CAPABILITIES["inbound.uploadDocument"] = INVENTORY_INBOUND;
 BUSINESS_METHOD_CAPABILITIES["inbound.documents"] = INVENTORY_INBOUND_READ;
 BUSINESS_METHOD_CAPABILITIES["inbound.documentAccess"] = INVENTORY_INBOUND_READ;
+BUSINESS_METHOD_CAPABILITIES["inbound.saveDocuments"] = INVENTORY_INBOUND;
 
 for (const method of [
   "inventory.list", "inventory.listPaged", "inventory.get", "inventory.spotVerificationList", "inventory.assignmentOptions",
@@ -209,7 +211,6 @@ for (const method of ["customerDemand.quoteList", "customerDemand.quoteHistory"]
 for (const method of ["crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER_READ;
 }
-BUSINESS_METHOD_CAPABILITIES["personalPerformance.summary"] = SALES_ORDER_READ;
 for (const method of ["crmSalesOrder.create", "crmSalesOrder.cancel", "crmSalesOrder.recordPayment", "crmSalesOrder.ship"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER;
 }
@@ -265,19 +266,21 @@ BUSINESS_METHOD_CAPABILITIES["publicReview.state"] = INQUIRY_RECEIVE_READ;
 BUSINESS_METHOD_CAPABILITIES["publicReview.create"] = INQUIRY_RECEIVE;
 BUSINESS_METHOD_CAPABILITIES["cart.count"] = INQUIRY_RECEIVE_READ;
 
+for (const method of MALL_INVENTORY_METHOD_IDS) BUSINESS_METHOD_CAPABILITIES[method] = { mode: ["read"].includes(mallInventoryMethodRequirement(method) ?? "") ? "read" : "write" };
+
 export function isBusinessMethodId(value: string): value is BusinessMethodId {
   return (BUSINESS_METHOD_IDS as readonly string[]).includes(value);
 }
 
 type RawBusinessProcedure = (input: unknown) => Promise<unknown>;
 type DelegatedBusinessCallers = {
+  mallInventory: Record<string, RawBusinessProcedure>;
   inventory: Record<string, RawBusinessProcedure>;
   importInventory: Record<string, RawBusinessProcedure>;
   inbound: Record<string, RawBusinessProcedure>;
   customer: Record<string, RawBusinessProcedure>;
   customerDemand: Record<string, RawBusinessProcedure>;
   crmSalesOrder: Record<string, RawBusinessProcedure>;
-  personalPerformance: Record<string, RawBusinessProcedure>;
   purchaseOrder: Record<string, RawBusinessProcedure>;
   enterprise: Record<string, RawBusinessProcedure>;
   company: Record<string, RawBusinessProcedure>;
@@ -299,12 +302,12 @@ function asFixedCaller(value: unknown): Record<string, RawBusinessProcedure> {
 function buildCallers(context: TrpcContext): DelegatedBusinessCallers {
   return {
     inventory: asFixedCaller(inventoryRouter.createCaller(context)),
+    mallInventory: asFixedCaller(mallInventoryRouter.createCaller(context)),
     importInventory: asFixedCaller(importInventoryRouter.createCaller(context)),
     inbound: asFixedCaller(inboundRouter.createCaller(context)),
     customer: asFixedCaller(customerRouter.createCaller(context)),
     customerDemand: asFixedCaller(customerDemandRouter.createCaller(context)),
     crmSalesOrder: asFixedCaller(crmSalesOrderRouter.createCaller(context)),
-    personalPerformance: asFixedCaller(personalPerformanceRouter.createCaller(context)),
     purchaseOrder: asFixedCaller(purchaseOrderRouter.createCaller(context)),
     enterprise: asFixedCaller(enterpriseRouter.createCaller(context)),
     company: asFixedCaller(companyRouter.createCaller(context)),
@@ -397,13 +400,15 @@ export async function executeInternalBusinessMethod(input: {
     bindingVersion: input.bindingVersion, method: input.method, requestId: input.requestId,
   }) : undefined;
   if (grant && (!grant.read || !grant[requirement!])) throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方权限" });
+  if (grant && !officialInventoryErpEntitled(input.method, grant, capability.permission)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方管理资格" });
+  }
   const principal = await requireInternalBusinessStaffPrincipal({
     binding: input.binding,
     staffUserId: input.staffUserId,
-    // Native publish is independent of the legacy seller ERP manage/publish role.
-    // Real enterprise/member/stocks read and current owner/team boundaries remain locked in the route service.
-    permission: grant?.read && (NATIVE_TEAM_READ_METHODS.includes(input.method)
-      || (grant.publish === true && NATIVE_FACTORY_PUBLISH_METHODS.includes(input.method))) ? undefined : capability.permission,
+    // Only this verified, exact official action replaces its matching ERP entitlement.
+    // Management SELECT/export requires write, never just logical read/mode.
+    permission: grant ? undefined : capability.permission,
   });
   return runWithBoundBusinessStaffActor({
     enterpriseId: principal.enterprise.enterpriseId,

@@ -32,7 +32,7 @@ describe("real bulk documents without transport/DB", () => {
     expect(payload.clientRequestId).toBe(upload.mock.calls[0][0].clientRequestId); expect(payload.clientRequestId).toBe(upload.mock.calls[1][0].clientRequestId);
     expect(payload.documents.map((item: any) => item.kind)).toEqual(["contract", "bank_receipt"]); expect(payload.documents[0]).not.toHaveProperty("url");
     expect(payload.rows[0]).toMatchObject({ qty: 51, unitCost: 2.26, buyerUserId: 7003, operator: "采购乙" }); expect(payload.rows[0]).not.toHaveProperty("documents");
-    expect(payload).not.toHaveProperty("payment"); expect(host.textContent).toContain("本次附件应用本批生成的入库单");
+    expect(payload).not.toHaveProperty("payment"); expect(host.textContent).toContain("本批共享");
   });
   it("blocks submission and parent closing while upload is outstanding, then permits explicit remove", async () => {
     const pending = deferred<InboundDocumentReference>(); upload.mockImplementation(() => pending.promise);

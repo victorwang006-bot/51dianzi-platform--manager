@@ -41,6 +41,21 @@ describe("public reference strict presentation model", () => {
     expect(() => channelReferenceLookupResult({ items: [] }, rows)).toThrow();
     expect(() => channelReferenceLookupResult({ items: [{ ...result().items[0], references: { lcsc: {} } }] }, rows)).toThrow();
   });
+  it("accepts old responses and stock zero, but rejects invalid independent stock dates and foreign URLs", () => {
+    expect(channelReferenceLookupResult(result(), rows)).toEqual(result());
+    const stock = () => { const r = result(); Object.assign(r.items[0].references.lcsc, { stockQuantity: 0, stockFetchedAt: "2026-11-17T05:00:00.123Z", stockPageUrl: fixtureQuote("lcsc").pageUrl }); return r; };
+    expect(channelReferenceLookupResult(stock(), rows).items[0].references.lcsc.stockQuantity).toBe(0);
+    for (const change of [
+      { stockFetchedAt: "2026-02-30T05:00:00.123Z" }, { stockFetchedAt: "not-a-date" }, { stockFetchedAt: null },
+      { stockFetchedAt: "2026-11-13T05:00:00.123Z" }, { stockFetchedAt: "2026-11-17T05:00:00+08:00" },
+      { stockQuantity: null }, { stockPageUrl: "https://www.ickey.cn/detail/1/TEST.html" },
+      { stockPageUrl: "javascript:alert(1)" }, { stockPageUrl: "https://user:pw@item.szlcsc.com/123.html" },
+      { stockPageUrl: "https://item.szlcsc.com:443/123.html" }, { stockPageUrl: null },
+      { stockPageUrl: "https://item.szlcsc.com/123.html#fragment" }, { fetchedAt: "2026-02-30T05:00:00Z" },
+    ]) { const r = stock(); Object.assign(r.items[0].references.lcsc, change); expect(() => channelReferenceLookupResult(r, rows)).toThrow(); }
+    const missingDate = stock(); delete missingDate.items[0].references.lcsc.stockFetchedAt;
+    expect(() => channelReferenceLookupResult(missingDate, rows)).toThrow();
+  });
   it("permits only credential-free HTTPS fixed-provider links", () => {
     expect(channelReferencePageUrl(fixtureQuote("lcsc").pageUrl, "lcsc")).toBe(fixtureQuote("lcsc").pageUrl);
     expect(channelReferencePageUrl(fixtureQuote("ickey").pageUrl, "ickey")).toBe(fixtureQuote("ickey").pageUrl);

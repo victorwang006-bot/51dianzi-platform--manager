@@ -84,8 +84,8 @@ describe("actual inbound documents UI, synthetic provider/transport only", () =>
   it("detail reopen rereads old refs and each class downloads only by id/key documentAccess", async () => {
     const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     await render(); await click("SYNTHETIC-ONLY-1"); expect(runtime.documentsRead).toHaveBeenCalledWith({ id: 1 }, { staleTime: 0 });
-    await act(async () => { host.querySelector<HTMLButtonElement>(`[aria-label="下载合同 ${contract.name}"]`)!.click(); await wait(); }); expect(runtime.access).toHaveBeenCalledWith({ id: 1, key: contract.key }, { staleTime: 0 });
-    await act(async () => { host.querySelector<HTMLButtonElement>(`[aria-label="下载银行付款水单 ${receipt.name}"]`)!.click(); await wait(); }); expect(runtime.access).toHaveBeenCalledWith({ id: 1, key: receipt.key }, { staleTime: 0 }); expect(anchorClick).toHaveBeenCalledTimes(2);
+    await act(async () => { host.querySelector<HTMLButtonElement>(`[aria-label="下载合同 ${contract.name}"]`)!.click(); await wait(); }); expect(runtime.access).toHaveBeenCalledWith({ id: 1, key: contract.key, mode: "download" }, { staleTime: 0 });
+    await act(async () => { host.querySelector<HTMLButtonElement>(`[aria-label="下载银行付款水单 ${receipt.name}"]`)!.click(); await wait(); }); expect(runtime.access).toHaveBeenCalledWith({ id: 1, key: receipt.key, mode: "download" }, { staleTime: 0 }); expect(anchorClick).toHaveBeenCalledTimes(2);
     await click("关闭", host.querySelector('[aria-label="入库单详情"]')!); await click("SYNTHETIC-ONLY-1"); expect(runtime.documentsRead).toHaveBeenCalledTimes(2);
   });
   it("late upload after buyer/enterprise changes never associates the wrong draft; upload prevents submit/close", async () => {
@@ -99,5 +99,49 @@ describe("actual inbound documents UI, synthetic provider/transport only", () =>
     const pending = deferred<any[]>(); runtime.documentsRead.mockImplementation(() => pending.promise);
     await render(); await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="操作 SYNTHETIC-ONLY-1"]')!.click()); await click("编辑"); await click("新建采购入库");
     await act(async () => pending.resolve([contract])); expect(form().getAttribute("aria-label")).toBe("新建采购入库单"); expect(form().textContent).not.toContain(contract.name);
+  });
+});
+
+describe("v2 server-authorized documents-only legacy edit", () => {
+  it("received legacy with listed server flag disables other controls and saves strict metadata only", async () => {
+    runtime.rows[0].status = "received"; runtime.rows[0].buyerUserId = null;
+    runtime.documentsRead.mockResolvedValue([{ ...contract, documentsOnly: true }, receipt]);
+    await openEdit(); expect(form().textContent).toContain("此单仅可编辑附件");
+    expect(form().querySelector<HTMLInputElement>('[aria-label="采购单价"]')!.matches(":disabled")).toBe(true);
+    expect(form().querySelector<HTMLTextAreaElement>('textarea')!.matches(":disabled")).toBe(true);
+    await choose("银行付款水单", "legacy-receipt.png", "image/png");
+    await click("保存修改", form()); const payload = runtime.mutations.saveDocuments.mock.calls[0][0];
+    expect(Object.keys(payload).sort()).toEqual(["documents", "id"]); expect(payload.id).toBe(1); expect(payload.documents).toHaveLength(3);
+    payload.documents.forEach((ref: any) => expect(Object.keys(ref).sort()).toEqual(["key", "kind", "mimeType", "name", "size"]));
+    for (const name of ["update", "updateDetails", "create", "recordPayment", "receive"]) expect(runtime.mutations[name]).not.toHaveBeenCalled();
+  });
+  it("empty old list does not guess financial permission; successful new upload server flag enables metadata-only save", async () => {
+    runtime.rows[0].status = "received"; runtime.rows[0].buyerUserId = null; runtime.documentsRead.mockResolvedValue([]);
+    runtime.upload.mockImplementation(async input => ({ ...contract, kind: input.kind, name: input.fileName, mimeType: input.mimeType, documentsOnly: true }));
+    await openEdit(); expect(form().textContent).not.toContain("此单仅可编辑附件"); await choose("合同", "legacy.pdf", "application/pdf");
+    expect(form().textContent).toContain("此单仅可编辑附件"); await click("保存修改", form());
+    expect(runtime.mutations.saveDocuments).toHaveBeenCalledOnce(); expect(runtime.mutations.updateDetails).not.toHaveBeenCalled();
+    const dto = runtime.mutations.saveDocuments.mock.calls[0][0]; expect(dto.documents[0]).not.toHaveProperty("documentsOnly"); expect(dto.documents[0]).not.toHaveProperty("url");
+  });
+  it("flag discovered after other editing refuses false success and does not silently discard changes", async () => {
+    runtime.documentsRead.mockResolvedValue([]); await openEdit(); await fill("供应商名称", "不可静默丢失的修改");
+    runtime.upload.mockImplementation(async input => ({ ...contract, kind: input.kind, name: input.fileName, mimeType: input.mimeType, documentsOnly: true }));
+    await choose("合同", "legacy.pdf", "application/pdf"); await click("保存修改", form());
+    expect(runtime.mutations.saveDocuments).not.toHaveBeenCalled(); expect(runtime.mutations.update).not.toHaveBeenCalled(); expect(runtime.mutations.updateDetails).not.toHaveBeenCalled(); expect(form()).not.toBeNull();
+  });
+  it("server access flag can select documents-only without propagating mode/flag/url into save refs", async () => {
+    runtime.access.mockImplementation(async ({ key }) => ({ ...(key === contract.key ? contract : receipt), documentsOnly: true, url: "https://files.invalid/private-current" }));
+    await openEdit(); await act(async () => { form().querySelector<HTMLButtonElement>(`[aria-label="预览合同 ${contract.name}"]`)!.click(); await wait(); });
+    expect(form().textContent).toContain("此单仅可编辑附件"); await click("关闭预览", form()); await click("保存修改", form());
+    const payload = runtime.mutations.saveDocuments.mock.calls[0][0]; expect(payload.documents).toEqual([contract, receipt].map(({ kind, key, name, mimeType, size }) => ({ kind, key, name, mimeType, size }))); expect(runtime.mutations.update).not.toHaveBeenCalled();
+  });
+  it("buyerless or flagged-false row never locally infers documents-only, modern original transaction stays intact", async () => {
+    runtime.rows[0].buyerUserId = null; runtime.documentsRead.mockResolvedValue([{ ...contract, documentsOnly: false }]);
+    await openEdit(); await click("保存修改", form()); expect(runtime.mutations.update).toHaveBeenCalledOnce(); expect(runtime.mutations.saveDocuments).not.toHaveBeenCalled();
+  });
+  it("metadata-only clearing persists [] and never changes stock, price or payment", async () => {
+    runtime.documentsRead.mockResolvedValue([{ ...contract, documentsOnly: true }]); await openEdit();
+    await act(async () => form().querySelector<HTMLButtonElement>(`[aria-label="删除合同 ${contract.name}"]`)!.click()); await click("保存修改", form());
+    expect(runtime.mutations.saveDocuments.mock.calls[0][0]).toEqual({ id: 1, documents: [] }); expect(runtime.mutations.update).not.toHaveBeenCalled(); expect(runtime.mutations.updateDetails).not.toHaveBeenCalled();
   });
 });

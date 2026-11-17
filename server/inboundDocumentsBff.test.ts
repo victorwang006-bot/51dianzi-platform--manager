@@ -83,3 +83,39 @@ describe("入库附件BFF和SDK最小同步（无真实网络/库）", () => {
     expect(embeddedSchema.parse(ref)).toEqual(mainSchema.parse(ref));
   });
 });
+
+
+describe("附件v2固定saveDocuments BFF围栏", () => {
+  it("save only forwards strict id+five-field refs under unchanged inventory write mode", async () => {
+    const caller = businessRouter.createCaller(ctx).inbound;
+    await caller.saveDocuments({ id: 7, documents: [ref] });
+    expect(state.forwarded[0]).toMatchObject({ method: "inbound.saveDocuments", params: { id: 7, documents: [ref] }, staffUserId: 202, bindingVersion: 7 });
+    await caller.documentAccess({ id: 7, key: ref.key, mode: "download" });
+    expect(state.forwarded[1].params.mode).toBe("download");
+  });
+  it("read-only current grants cannot save; stale binding/scope rejects even a formerly allowed save", async () => {
+    const caller = businessRouter.createCaller(ctx).inbound;
+    state.permissions = ["business.inventory.read"]; state.scopes = [...state.permissions];
+    await expect(caller.saveDocuments({ id: 7, documents: [] })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    state.permissions.push("business.inventory.write"); state.scopes.push("business.inventory.write");
+    state.binding = false; await expect(caller.saveDocuments({ id: 7, documents: [] })).rejects.toBeDefined(); state.binding = true;
+    state.scope = false; await expect(caller.saveDocuments({ id: 7, documents: [] })).rejects.toBeDefined();
+    expect(state.forwarded).toEqual([]);
+  });
+  it("no flag/URL/mode/financial column/client identity in stable save DTO or refs", async () => {
+    const caller = businessRouter.createCaller(ctx).inbound;
+    for (const extra of [{ documentsOnly: true }, { buyerUserId: 202 }, { unitCost: 1 }, { effectiveUserId: 101 }, { mode: "download" }, { url: "https://private.invalid/signed" }]) await expect(caller.saveDocuments({ id: 7, documents: [], ...extra } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    for (const extra of [{ documentsOnly: true }, { expiresIn: 300 }, { mode: "download" }, { url: "https://private.invalid/signed" }]) await expect(caller.saveDocuments({ id: 7, documents: [{ ...ref, ...extra }] } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.saveDocuments({ id: 7 } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.documentAccess({ id: 7, key: ref.key, mode: "public" } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(state.forwarded).toEqual([]);
+  });
+  it("fixed save ID and schema synchronize in only attachment SDK mirrors", async () => {
+    const main = readFileSync(new URL("../../51dianzi-platform/server/services/internalBusinessDelegation.ts", import.meta.url), "utf8");
+    const mirror = readFileSync(new URL("../client/src/business/platform/front-router-types/server/services/internalBusinessDelegation.ts", import.meta.url), "utf8");
+    for (const s of [main,mirror]) { expect(s.match(/"inbound.saveDocuments"/g)).toHaveLength(2); expect(s).toContain('BUSINESS_METHOD_CAPABILITIES["inbound.saveDocuments"] = INVENTORY_INBOUND;'); }
+    const { inboundDocumentsSaveSchema: a } = await import("../../51dianzi-platform/shared/inboundDocuments");
+    const { inboundDocumentsSaveSchema: b } = await import("../client/src/business/platform/shared/inboundDocuments");
+    expect(a.parse({ id: 7, documents: [ref] })).toEqual(b.parse({ id: 7, documents: [ref] }));
+  });
+});

@@ -33,15 +33,20 @@ export const inboundDocumentUploadSchema = z.object({
   clientRequestId: inboundDocumentRequestIdSchema, orderId: z.number().int().positive().optional(),
 }).strict();
 export const inboundDocumentsReadSchema = z.object({ id: z.number().int().positive() }).strict();
+export const inboundDocumentsSaveSchema = z.object({ id: z.number().int().positive(), documents: inboundDocumentsSchema }).strict();
 /** Pending preview: clientRequestId required, edit orderId if supplied during upload.
  * Linked download: id required. No arbitrary key-only download endpoint. */
 export const inboundDocumentAccessSchema = z.object({
   key: inboundDocumentKeySchema, id: z.number().int().positive().optional(),
   clientRequestId: inboundDocumentRequestIdSchema.optional(), orderId: z.number().int().positive().optional(),
+  mode: z.enum(["preview", "download"]).optional(),
 }).strict().refine(value => value.id !== undefined ? value.clientRequestId === undefined && value.orderId === undefined : value.clientRequestId !== undefined, "请选择已关联单据或本次上传范围");
 export type InboundDocumentRef = z.infer<typeof inboundDocumentRefSchema>;
 export type InboundDocumentUploadInput = z.infer<typeof inboundDocumentUploadSchema>;
 export type InboundDocumentAccessInput = z.infer<typeof inboundDocumentAccessSchema>;
-export type InboundDocumentAccess = InboundDocumentRef & { url: string; expiresIn: number };
+export type InboundDocumentScope = { documentsOnly?: true };
+export type InboundDocumentsSaveInput = z.infer<typeof inboundDocumentsSaveSchema>;
+export type InboundDocumentsSaveResult = { success: true } & InboundDocumentScope;
+export type InboundDocumentAccess = InboundDocumentRef & { url: string; expiresIn: number } & InboundDocumentScope;
 export type InboundDocumentUploadResult = InboundDocumentAccess;
 export type InboundDocumentsReadResult = InboundDocumentAccess[];

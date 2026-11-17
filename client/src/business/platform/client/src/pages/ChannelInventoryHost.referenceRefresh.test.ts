@@ -30,6 +30,48 @@ describe("explicit finite reference refresh", () => {
     const cancel = startChannelReferenceRefresh({ ...cb, previousItems: previous.items, lookup: vi.fn().mockResolvedValue(result("pending")) });
     await vi.advanceTimersByTimeAsync(0); expect(cb.onData.mock.calls[0][0].items[0].references.lcsc.status).toBe("ok"); expect(cb.onData.mock.calls[0][0].items[0].references.lcsc.unitPrice).toBe("1.0901"); expect(cb.onData.mock.calls[0][0].items[0].references.ickey.status).toBe("pending"); cancel();
   });
+  it.each(["not_found", "ambiguous", "price_unavailable", "access_restricted", "unavailable"] as const)("same-page mapped success yields to latest explicit raw %s without old stock", async status => {
+    vi.useFakeTimers(); const cb = callbacks(), previous = result();
+    const old = previous.items[0].references.lcsc;
+    Object.assign(old, { matchedPartNumber: "CANONICAL-FULL-MPN", matchedBrand: "FixtureManufacturer", stockQuantity: 213, stockFetchedAt: "2026-11-17T01:00:00.123Z", stockPageUrl: old.pageUrl });
+    const incoming = result();
+    incoming.items[0].references.lcsc = { source: "lcsc", status, matchedPartNumber: null, matchedBrand: null, productCode: null, pageUrl: null, stockQuantity: null, unitPrice: null, tierQuantity: null, tiers: [], currency: null, unit: null, taxStatus: "unknown", packaging: null, fetchedAt: null, expiresAt: null, stockInsufficientForTier: false, message: null };
+    // Global loading/queued evidence does not turn this explicit source failure into pending.
+    incoming.loading = true; incoming.refreshDiagnostics = [{ ...diagnostic(), source: "ickey" }];
+    const cancel = startChannelReferenceRefresh({ ...cb, previousItems: previous.items, lookup: vi.fn().mockResolvedValue(incoming) });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cb.onData).toHaveBeenCalledOnce(); expect(cb.onData).toHaveBeenCalledWith(incoming);
+    expect(cb.onData.mock.calls[0][0].items[0].references.lcsc).not.toHaveProperty("stockFetchedAt");
+    expect(cb.onData.mock.calls[0][0].items[0].references.lcsc.stockQuantity).toBeNull();
+    expect(cb.onError).not.toHaveBeenCalled(); cancel();
+  });
+  it("keeps pending by exact row and source, never copies another row or source", async () => {
+    vi.useFakeTimers(); const cb = callbacks(), previous = result();
+    const second = { ...structuredClone(previous.items[0]), materialId: 2, partNumber: "SECOND-RAW", brand: "OTHER" };
+    second.references.lcsc.unitPrice = "22"; second.references.lcsc.tiers[0].unitPrice = "22";
+    previous.items.push(second);
+    const incoming = structuredClone(previous);
+    incoming.items.reverse(); incoming.items[0].references.lcsc.status = "pending"; incoming.items[0].references.ickey.status = "unavailable";
+    incoming.items[1].references.lcsc.status = "not_found"; incoming.items[1].references.ickey.status = "pending";
+    const cancel = startChannelReferenceRefresh({ ...cb, rows: [...rows, { id: 2, partNumber: "SECOND-RAW", brand: "OTHER" }], previousItems: previous.items, lookup: vi.fn().mockResolvedValue(incoming) });
+    await vi.advanceTimersByTimeAsync(0); const output = cb.onData.mock.calls[0][0].items;
+    expect(output[0].references.lcsc).toEqual(second.references.lcsc); expect(output[0].references.ickey.status).toBe("unavailable");
+    expect(output[1].references.lcsc.status).toBe("not_found"); expect(output[1].references.ickey).toEqual(previous.items[0].references.ickey); cancel();
+  });
+  it("transport failure stays onError and never re-emits a previous successful quote", async () => {
+    vi.useFakeTimers(); const cb = callbacks(), error = new Error("source transport failure");
+    const cancel = startChannelReferenceRefresh({ ...cb, previousItems: result().items, lookup: vi.fn().mockRejectedValue(error) });
+    await vi.advanceTimersByTimeAsync(0); expect(cb.onError).toHaveBeenCalledOnce(); expect(cb.onError).toHaveBeenCalledWith(error); expect(cb.onData).not.toHaveBeenCalled();
+    expect(cb.onBusy).toHaveBeenLastCalledWith(false); expect(vi.getTimerCount()).toBe(0); cancel();
+  });
+  it.each(["foreign_page", "invalid_stock"] as const)("%s binding errors do not fall back to previous success", async change => {
+    vi.useFakeTimers(); const cb = callbacks(), incoming = result();
+    if (change === "foreign_page") incoming.items[0].materialId = 99;
+    else Object.assign(incoming.items[0].references.lcsc, { stockFetchedAt: "bad-date", stockPageUrl: incoming.items[0].references.lcsc.pageUrl });
+    const cancel = startChannelReferenceRefresh({ ...cb, previousItems: result().items, lookup: vi.fn().mockResolvedValue(incoming) });
+    await vi.advanceTimersByTimeAsync(0); expect(cb.onError).toHaveBeenCalledOnce(); expect(cb.onError.mock.calls[0][0].message).toContain("当前授权库存页不匹配");
+    expect(cb.onData).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0); cancel();
+  });
   it("aborts at exactly 90s, clears timers and refuses a late same-page response", async () => {
     vi.useFakeTimers(); const cb = callbacks(); let resolve!: (v: unknown) => void; const lookup = vi.fn(() => new Promise(r => { resolve = r; }));
     const cancel = startChannelReferenceRefresh({ ...cb, lookup }); await vi.advanceTimersByTimeAsync(90000);

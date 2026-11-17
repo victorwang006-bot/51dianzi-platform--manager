@@ -19,6 +19,9 @@ export type ChannelReferenceQuote = {
   taxStatus: "included" | "excluded" | "unknown";
   packaging: string | null;
   fetchedAt: string | null;
+  /** Only independent, validated stock observations; fetchedAt remains price time. */
+  stockFetchedAt?: string;
+  stockPageUrl?: string;
   expiresAt: string | null;
   stockInsufficientForTier: boolean;
   message: string | null;

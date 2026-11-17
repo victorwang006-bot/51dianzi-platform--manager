@@ -180,6 +180,20 @@ export const VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS: readonly (readonly [string,
 ];
 // END VERIFIED DIRECTED PAIRS
 
+/** 2026-11-17 reviewed ICKey DOM + existing independent complete-MPN identity
+ * evidence. ICKey source + generic snapshot proof profiles, like historical
+ * LCSC/snapshot rules; never LCsc adapter equivalence or family/graph expansion.
+ * Snapshot's validator has no source-aware brand profile; final data authorization
+ * separately permits only reviewed exact identities/sources, not future grants.
+ */
+export const VERIFIED_ICKEY_CHANNEL_REFERENCE_BRAND_EQUIVALENCES: readonly (readonly [string, string])[] = [
+  ["UNI-ROYAL(厚声)", "UNI-ROYAL"],
+  ["FH(风华)", "FH/广东风华高科"],
+  ["Sunlord(顺络)", "Sunlord/深圳顺络电子"],
+  ["NOVOSENSE(纳芯微)", "NOVOSENSE/苏州纳芯微电子"],
+  ["XKB", "XKB CONNECTION/中国星坤"],
+];
+
 export type ChannelReferenceBrandFamily = {
   /** Stable curated identity, never inferred from a shared substring/edge target. */
   familyId: string;
@@ -258,6 +272,8 @@ function hasExplicitBrandConflict(wanted: string, seen: string): boolean {
 }
 
 type BrandMatchOptions = {
+  /** Snapshot proof must pass its actual source; the new ICKey-only literals may not authorize LCSC. */
+  allowIckeyEquivalences?: boolean;
   profile?: ChannelReferenceBrandProfile;
   normalize?: (value: string) => string;
 };
@@ -309,6 +325,8 @@ export function createChannelReferenceBrandMatcher(families: readonly ChannelRef
     if (wantedFamily !== undefined && wantedFamily === seenFamily) return "explicit_alias";
     const direct = (pairs: readonly (readonly [string, string])[]) => pairs.some(
       ([input, literal]) => wanted === normalize(input) && seen === normalize(literal));
+    if (options.allowIckeyEquivalences !== false && (profile === "ickey" || profile === "snapshot") && VERIFIED_ICKEY_CHANNEL_REFERENCE_BRAND_EQUIVALENCES.some(([a, b]) =>
+      (wanted === normalize(a) && seen === normalize(b)) || (wanted === normalize(b) && seen === normalize(a)))) return "explicit_alias";
     if (direct(VERIFIED_CHANNEL_REFERENCE_BRAND_PAIRS)) return "explicit_alias";
     const historical = profile === "ickey"
       ? VERIFIED_HISTORICAL_CHANNEL_REFERENCE_BRAND_PAIRS.slice(4)

@@ -1,0 +1,1830 @@
+{
+  "schemaVersion": 1,
+  "snapshotSha256": "bab621d9ab3178da1ec9f77b38cf588711bfd8401d21bbee363fd151e2147a0c",
+  "bindings": [
+    {
+      "raw": {
+        "partNumber": "XL-1608SYGC-06(0603、黄绿色)",
+        "brand": "发光二极管"
+      },
+      "canonical": {
+        "partNumber": "XL-1608SYGC-06",
+        "brand": "XINGLIGHT(成兴光)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N001：verified_normalization。实际读取制造商成兴光公开产品页：标题及产品型号均为XL-1608SYGC-06；产品特性为外观尺寸1.6*0.8*0.6 mm、黄绿色/透明胶体，版权主体为深圳市成兴光电子科技有限公司。完整制造商特定订货号及规格共同确认成兴光身份；输入括号中的0603、黄绿色是独立规格说明，仅将该明确说明与MPN分离，不删除订货号后缀-06。 来源 https://www.xinglight.cn/index.php?c=show&id=809 实际读取立创准确主商品：商品型号XL-1608SYGC-06，品牌名称XINGLIGHT(成兴光)，商品编号C965805，封装0603，描述0603黄绿贴片式发光二极管，与制造商型号、尺寸和颜色对应。原输入品牌发光二极管为品类，不作为厂牌直接映射；此处厂牌由完整订货号制造商资料及渠道字面品牌交叉确认。 来源 https://item.szlcsc.com/1051414.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XL-1608SURC-06(0603、红色)",
+        "brand": "发光二极管"
+      },
+      "canonical": {
+        "partNumber": "XL-1608SURC-06",
+        "brand": "XINGLIGHT(成兴光)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N002：verified_normalization。实际读取成兴光制造商官方产品页，产品标题与订货型号均为XL-1608SURC-06；正文说明Chengxingguang，外形尺寸1.6*0.8*0.6 mm、发光颜色Red，页脚为Shenzhen Chengxing Electronic Technology Co., Ltd.。完整-06后缀保留；输入中的(0603、红色)为独立封装颜色说明，与官方规格对应。 来源 https://www.xinglight.cn/index.php?c=show&id=1055 实际读取准确立创主商品页，商品型号XL-1608SURC-06，品牌名称XINGLIGHT(成兴光)，商品编号C965799，封装0603，描述0603红色贴片式发光二极管，尺寸1.6×0.8×0.6mm；与制造商完整型号和规格一致，支持确认厂牌而非将发光二极管品类直接映射为厂商。 来源 https://item.szlcsc.com/1051408.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XL-1010SURSYGC(0404、红色,黄绿色)",
+        "brand": "发光二极管"
+      },
+      "canonical": {
+        "partNumber": "XL-1010SURSYGC",
+        "brand": "XINGLIGHT(成兴光)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N003：verified_normalization。实际读取制造商官网：深圳市成兴光电子科技有限公司成立于2012年，同年建立自主品牌XINGLIGHT，业务为发光二极管研发、生产、销售。确认输入品牌‘发光二极管’为品类，真实厂牌为XINGLIGHT(成兴光)。 来源 https://www.xinglight.cn/ 实际读取制造商准确产品页，完整型号两次显示XL-1010SURSYGC；产品为red yellow green dual color lights，外形尺寸1.0*1.0*0.4 mm，透明胶体、SMT贴装、RoHS。该原厂特定产品资料支持完整MPN及红/黄绿双色身份。 来源 https://www.xinglight.cn/index.php?c=show&id=2826 准确主商品显示商品型号XL-1010SURSYGC、品牌XINGLIGHT(成兴光)、商品编号C965833、封装SMD-4P,1x1mm、发光颜色红色,黄绿色；外观尺寸1.0×1.0×0.4mm。与原厂型号规格一致；仅把输入中的明确独立中文参数块(0404、红色,黄绿色)识别为尺寸/颜色说明，不更改原输入字段，也不删除制造商订货代码后缀。 来源 https://item.szlcsc.com/1051442.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XL-1606UOC(侧贴、橙色)",
+        "brand": "发光二极管"
+      },
+      "canonical": {
+        "partNumber": "XL-1606UOC",
+        "brand": "XINGLIGHT(成兴光)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N004：verified_normalization。实际读取的准确主商品为XL-1606UOC，品牌字面XINGLIGHT(成兴光)，商品编号C965861，描述侧帖式贴片LED灯珠，发光颜色橙色，载带方式侧贴。该主商品页提供的公开原厂PDF已下载并实际读取：首页有XINGLIGHT标识及Part No.: XL-1606UOC，标题0602橙色贴片式发光二极管，规格为1.7×0.6×1.1mm、高亮橙色/透明胶体，与目标独立中文参数一致。仅分离明确中文参数说明，不修改型号字符、O或任何订货后缀。 来源 https://item.szlcsc.com/1051470.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XL-1005UOC(0402、橙色)",
+        "brand": "发光二极管"
+      },
+      "canonical": {
+        "partNumber": "XL-1005UOC",
+        "brand": "XINGLIGHT(成兴光)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N005：verified_normalization。实际读取准确主商品：商品型号 XL-1005UOC，品牌名称 XINGLIGHT(成兴光)，商品编号 C965791，商品封装 0402，标题说明为‘0402橙贴片式发光二极管’，商品参数发光颜色为橙色。原输入括号内的‘0402、橙色’与页面独立封装、颜色参数一致，未变更型号内部字符或订货后缀。 来源 https://item.szlcsc.com/1051400.html 实际读取加载完成的精确型号搜索结果，四货源均为 XL-1005UOC、0402、橙色，厂牌显示 XINGLIGHT/深圳成兴光、Xinglight(成兴光)或 XINGLIGHT。已实际下载阅读该页链接的公开原厂技术数据表；首页具有 XINGLIGHT 标识、完整型号 XL-1005UOC、‘0402橙 贴片式发光二极管’及尺寸 1.0*0.5*0.40mm、橙色/透明胶体。另实际读取制造商官网，确认深圳市成兴光电子科技有限公司的自主品牌为 XINGLIGHT。厂牌确认不是将‘发光二极管’品类任意映射。 来源 https://search.ickey.cn/?keyword=XL-1005UOC"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XL-1005SURC(0402、红色)",
+        "brand": "发光二极管"
+      },
+      "canonical": {
+        "partNumber": "XL-1005SURC",
+        "brand": "XINGLIGHT(成兴光)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N006：verified_normalization。成兴光制造商官网产品页标题与正文完整型号均为 XL-1005SURC；正文明确成兴光提供正面贴片 LED，产品尺寸 1.0*0.5*0.4 mm、发光颜色及胶体为红色/透明胶体，版权主体为深圳市成兴光电子科技有限公司。 来源 https://www.xinglight.cn/index.php?c=show&id=794 准确主商品 C25503345 明示商品型号 XL-1005SURC、品牌 XINGLIGHT(成兴光)、封装 0402、发光颜色红色，支持仅将输入中独立参数说明“0402、红色”与完整 MPN 分离，不改动原输入字段。 来源 https://item.szlcsc.com/27234956.html 同厂牌同完整型号旧主商品 C965790 明示 XL-1005SURC、XINGLIGHT(成兴光)、0402、红色，但商品已停售；没有用其推荐商品或猜测库存替代目标。 来源 https://item.szlcsc.com/1051399.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4D03WGJ0512T5E(5K1)",
+        "brand": "0603排阻"
+      },
+      "canonical": {
+        "partNumber": "4D03WGJ0512T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N017：verified_normalization。实际读取商品正文：标题为“4D03WGJ0512T5E 5.1k 0603x4 Resistor Networks Arrays 5K1”；Manufacturer 为 UNI-ROYAL(Uniroyal Elec)，Manufacturer Part No 明确为 4D03WGJ0512T5E。5K1 在标题中作为阻值说明，未列入制造商料号。仅用于身份核实，未采用该外站报价。 来源 https://www.etstore.in/products/a2113 实际下载并读取 UNI-ROYAL 原厂 Chip Resistors Array 规格书 SMD-SP-024，2022-10-26 V.6。第2页明确订货料号为14位：4D03 为产品系列，WG=1/16W，J=±5%，E-24 阻值代码首位0、随后两位有效数、末位为10的指数，故0512=5100Ω（Python核算）；T=编带/卷盘，5=5000pcs，E=环保/无铅或标准型。第4页4D03对应0603×4，第5页功率1/16W。完整订货代码4D03WGJ0512T5E与输入独立阻值说明5K1及0603排阻品类一致，保留T5E全部订货后缀。 来源 https://www.uni-royal.cn/images/userfile/file/1669017722ca80ea886141ad5e.pdf 实际读取原厂网站，页面使用“关于厚声”，页脚署名“昆山厚声电子工业有限公司”，确认 UNI-ROYAL 的中文厂牌为厚声，并非从品类任意推定制造商。 来源 https://www.uni-royal.cn/ 实际读取准确主商品：品牌名称 UNI-ROYAL(厚声)，商品型号4D03WGJ0512T5E，商品编号C12028，0603x4，编带；阻值5.1kΩ、±5%、4个电阻、单个元件功率62.5mW、±200ppm/℃、8引脚。与原厂14位订货规则及完整型号一致。 来源 https://item.szlcsc.com/12583.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4D03WGJ0511T5E(510R)",
+        "brand": "0603排阻"
+      },
+      "canonical": {
+        "partNumber": "4D03WGJ0511T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N018：verified_normalization。实际读取并下载厚声原厂2023-2024目录，印刷页65-66列出4D03=0603×4晶片排列电阻器，四个独立等值电阻、八引脚，1/16W。订购方式明确4位产品类型4D03、WG=1/16W、J=±5%、E-24四位阻值编码首位0及两位有效数字与末位零数、T=编带/卷带、5=5000pcs、E=无铅标准品。结合准确商品完整MPN及510Ω参数，确认4D03WGJ0511T5E；所有T5E订货尾码完整保留，不进行通用括号或包装后缀删除。该原厂目录同时出现www.uni-royal.cn与www.royalohm.com标识。 来源 https://www.uni-royal.cn/images/userfile/file/UniroyalCatalog2023-2024_Full-C&E(1)%20-%20%E5%85%A8%E7%9B%AE%E5%BD%952023.11.6.pdf 准确主商品明确品牌名称UNI-ROYAL(厚声)、商品型号4D03WGJ0511T5E、编号C25511、0603x4、510Ω±5%、62.5mW、四个电阻及八引脚。主商品附公开制造商规格书JLC-01-015（2017/06/12，14页），页眉为厚聲國際貿易（昆山）有限公司深圳分公司 / Uniroyal Electronics Global Co.,Ltd Shenzhen Branch；实际下载读取其页11-12完整14位订货规则，WG/J/0511/T/5/E分别确认功率、公差、510Ω、编带、5000件与无铅。本条规范身份基于特定完整订货代码及原厂规格，而非将0603排阻品类直接映射厂牌；原输入括号内510R与公开510Ω规格一致，仅作为已核实的附加阻值标注。 来源 https://item.szlcsc.com/26254.html 实际读取准确MPN公开搜索页，自营结果数1，型号4D03WGJ0511T5E、UNI-ROYAL(厚声)、C25511，链接指向准确详情26254.html；表头明确价格梯度(含税)。 来源 https://so.szlcsc.com/global.html?k=4D03WGJ0511T5E"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4D03WGJ0331T5E(330R)",
+        "brand": "0603排阻"
+      },
+      "canonical": {
+        "partNumber": "4D03WGJ0331T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N019：verified_normalization。已实际读取并下载原厂Chip Resistor Array资料。原厂列出4D03/4DP3为0603*4，4D03是四个独立电阻、8引脚凸式电极；订购编码包含4D03产品类型、WG=1/16W、J=±5%、四位阻值码、T=编带/卷带、5=5000pcs、E=Lead Free。完整订货码4D03WGJ0331T5E符合该原厂编码，T5E全部保留。 来源 https://www.royalohm.com/assets/pdf/products/smd/22.pdf 实际公开产品页明确Manufacturer ROYALOHM，Manufacturer part number 4D03WGJ0331T5E，Resistance 330Ω、Tolerance ±5%、Number of resistors 4；厂商型号不含(330R)。仅用于身份和330R规格说明验证，未引用该经销商价格或库存作为任务报价。 来源 https://www.tme.eu/en/details/dr1206-330r-4_8/resistor-networks/royalohm/4d03wgj0331t5e/ 原厂官网明确Royal Electronic Factory Co.,Ltd.及ROYALOHM为电阻制造商。 来源 https://www.royalohm.com/ 准确主商品实际读取为品牌UNI-ROYAL(厚声)、商品型号4D03WGJ0331T5E、商品编号C12018、0603x4、330Ω ±5%、电阻器数4、单个元件功率62.5mW、引脚数8，与原厂编码及完整型号规格一致。输入0603排阻是品类，不作为厂牌直接映射；依据完整厂商订货码及原厂资料确认厚声身份。 来源 https://item.szlcsc.com/12573.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4D03WGJ0221T5E(220R)",
+        "brand": "0603排阻"
+      },
+      "canonical": {
+        "partNumber": "4D03WGJ0221T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N020：verified_normalization。实际读取并解析厚声原厂《Chip Resistors Array》，文件SMD-SP-024，2022-10-26 V.6。第1页列Uniroyal Electronics Global Co., Ltd.及制造工厂，包括Royal Electronic Factory (Thailand) Co., Ltd.；第2页明确本系列由UNI-ROYAL制造及完整14位订货码：4D03为系列，WG为1/16W，J为±5%，0221按E24规则为220Ω，T为Tape/Reel，5为5000pcs，E为环保/无铅/标准型。第4页4D03为0603*4。保留完整T5E后缀，非通用去括号或包装后缀。 来源 https://www.uni-royal.cn/images/userfile/file/1669017722ca80ea886141ad5e.pdf 实际读取原厂官网，页面版权名称为昆山厚声电子工业有限公司，并有关于厚声、产品中心和技术中心栏目。 来源 https://www.uni-royal.cn/ 实际读取准确商品C29719，主商品型号字面为4D03WGJ0221T5E，品牌名称UNI-ROYAL(厚声)，封装0603x4，阻值220Ω，±5%，4个电阻，单个元件功率62.5mW，引脚8。结合原厂完整订货码资料，仅将输入独立参数说明(220R)与制造商MPN分离，不修改原输入字段。 来源 https://item.szlcsc.com/30473.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4D03WGJ0151T5E(150R)",
+        "brand": "0603排阻"
+      },
+      "canonical": {
+        "partNumber": "4D03WGJ0151T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N021：verified_normalization。已下载并读取原厂Chip Resistor Array规格PDF。4D03为0603×4、四个独立等值电阻、8引脚排阻，额定功率1/16W。Ordering Procedure明确完整订货字段：4D03产品类型、WG=1/16W、J=±5%、四位阻值代码的首位0及有效数字和指数、T=编带卷带、5=5000pcs、E=无铅标准品。0151按该规则为150Ω，完整4D03WGJ0151T5E与商城主商品及输入150R说明一致；保留完整T5E，未泛化删除包装后缀。 来源 https://www.royalohm.com/assets/pdf/products/smd/22.pdf 厚声官方About us页面明确UNI-ROYAL具有制造工厂，集团品牌包括ROYALOHM、UNIOHM、FOSS、AEON、UNUS，页面版权公司为Kunshan Housheng Electronic Industry Co., Ltd.。因此原厂Royalohm排阻资料与商城UNI-ROYAL(厚声)制造商身份有公开关联，不将输入品类当作厂牌。 来源 https://www.uni-royal.cn/en/article.php?id=14 实际读取的准确主商品：商品型号4D03WGJ0151T5E，品牌名称UNI-ROYAL(厚声)，商品编号C11996，0603x4，150Ω ±5%，电阻器数4，单个元件功率62.5mW，引脚数8。完整订货代码及原厂编码规则共同证明输入括号150R是与该MPN一致的阻值说明，而不是制造商订货代码的一部分。 来源 https://item.szlcsc.com/12551.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1210W2F5103T5E(510K)",
+        "brand": "1210电阻"
+      },
+      "canonical": {
+        "partNumber": "1210W2F5103T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N023：verified_normalization。准确主商品明确显示商品型号1210W2F5103T5E、品牌UNI-ROYAL(厚声)、商品编号C37784，规格为1210厚膜电阻、510kΩ、±1%、500mW、200V、±100ppm/℃，包装方式编带。 来源 https://item.szlcsc.com/38764.html 实际下载并读取UNI-ROYAL原制造商《Thick Film Chip Resistors》数据手册（公开由Oneyac托管，Feb.12,2019 V.3）。封面为Uniroyal Electronics Global Co., Ltd.，正文声明产品由UNI-ROYAL制造。订货规则涵盖1210系列：1210为尺寸，W2为1/2W，F为±1%，5103为前三位有效数字及10的三次幂阻值代码，T为Tape/Reel，5为5000pcs，E为环保/无铅或标准型。整个1210W2F5103T5E代码与准确商品规格吻合。输入末尾(510K)因该公开阻值及完整订货结构被确认是独立阻值说明，而非删改制造商订货后缀；原输入字段保留。 来源 https://uploadcdn.oneyac.com/attachments/files/brand_pdf/uni-ohm/5A/89/0201WMF5103TEE.pdf"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206W4J0225T5E(2M2)",
+        "brand": "1206电阻"
+      },
+      "canonical": {
+        "partNumber": "1206W4J0225T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N024：verified_normalization。实际读取的完整订货型号为1206W4J0225T5E，制造商品牌ROYALOHM；规格为厚膜贴片电阻、2.2MΩ、1206、0.25W、±5%、200V。该准确型号的2.2MΩ规格支持输入末尾(2M2)为阻值说明，而不是订货代码的一部分；保留完整T5E后缀。 来源 https://www.tme.eu/en/details/1206w4j0225t5e/smd-resistors/royalohm/ 实际下载并读取ROYALOHM原厂厚膜晶片电阻PDF。订购方式为产品尺寸＋功率＋公差＋四位阻值码＋包装类型＋包装数量＋特征，示例含1206、W4、J、T5E；5%阻值码第1位为0，第2、3位为有效数字，第4位表示后续零数。1206系列为1/4W、200V，资料列出1206W4*****T5E新料号结构。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 厚声原厂公司简介明确UNI-ROYAL拥有研发团队与制造工厂，并列出其集团品牌ROYALOHM、UNIOHM、FOSS、AEON、UNUS。由此确认ROYALOHM原厂订货资料与UNI-ROYAL制造商集团的关系，而非依据1206电阻品类任意指定制造商。 来源 https://www.uni-royal.cn/en/article.php?id=14 实际读取立创准确主商品：商品型号1206W4J0225T5E，品牌名称UNI-ROYAL(厚声)，编号C111535，封装1206，厚膜电阻2.2MΩ、±5%、250mW、200V、±100ppm/℃、-55℃~+155℃。其完整MPN与已读取的原厂订货体系和准确型号规格一致。 来源 https://item.szlcsc.com/112762.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206W4J0432T5E(4K3)",
+        "brand": "1206电阻"
+      },
+      "canonical": {
+        "partNumber": "1206W4J0432T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N025：verified_normalization。实际下载并读取原厂厚膜晶片电阻PDF，第3页同时有UNI-ROYAL与ROYALOHM标识，订购方式保留完整1206/W4/J/四位阻值/T/5/E编码；W4=1/4W，J=±5%，5%阻值第1位0、第2、3位有效数字、第4位零数，T=编带卷带、5=5000pcs、E=无铅标准品。因此0432对应4.3kΩ，完整订货代码为1206W4J0432T5E，不包含参数注记(4K3)。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 厚声官方公司资料明确UNI-ROYAL拥有制造工厂及研发团队，ROYALOHM、UNIOHM等为集团旗下品牌；故原厂ROYALOHM编码资料与商城UNI-ROYAL(厚声)制造商身份有公开联系，并非把品类任意映射为厂牌。 来源 https://www.uni-royal.cn/en/article.php?id=14 准确主商品公开显示商品型号1206W4J0432T5E、品牌名称UNI-ROYAL(厚声)、商品编号C60645，1206封装、4.3kΩ、±5%、250mW、200V、±100ppm/℃、-55℃~+155℃，完整MPN与原厂编码及输入参数注记4K3吻合。 来源 https://item.szlcsc.com/61697.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ0514T5E(510K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ0514T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N031：verified_normalization。实际读取制造商官方公司介绍：UNI-ROYAL拥有研发、制造及全球销售网络，旗下包括ROYALOHM和UNIOHM等品牌，页面版权主体为Kunshan Housheng Electronic Industry Co., Ltd.；据此确认厚声/UNI-ROYAL为真实制造商身份，并非从输入品类任意映射。 来源 https://www.uni-royal.cn/en/article.php?id=14 实际读取公开制造商原始规格书SMD-SP-001，封面为Uniroyal Electronics Global Co., Ltd.，第2页明确说明由UNI-ROYAL制造并定义完整14位订货代码：0603为尺寸，WA为1/10W，J为±5%，0514按E24编码对应510000Ω（Python核算），T为Tape/Reel，5为5000pcs，E为环保无铅。完整0603WAJ0514T5E包含真实包装及环保后缀，全部保留；括号中的510K与已证实阻值一致，仅作为独立参数分离，不是通用删括号。 来源 https://www.es.co.th/Schemetic/PDF/UNI-ROYAL_CHIPR.PDF 准确目标详情主商品明列商品型号0603WAJ0514T5E、品牌名称UNI-ROYAL(厚声)、商品编号C25601、0603封装、编带包装、厚膜电阻510kΩ ±5% 100mW，完整型号和制造商规格一致。 来源 https://item.szlcsc.com/26344.html 实际加载后的正常搜索页有多个0603WAJ0514T5E货源，厂牌UNI-ROYAL或UNI-ROYAL(厚声)，规格为芯片电阻510000Ω ±5% 1/10W 0603。另有FH/广东风华高科标签条目但无规格及制造商订货代码依据，不能据此映射厂牌或替代报价。 来源 https://search.ickey.cn/?keyword=0603WAJ0514T5E"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF2203T5E(220K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF2203T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N032：verified_normalization。准确主商品明确列出商品型号0603WAF2203T5E、品牌UNI-ROYAL(厚声)、商品编号C22961、封装0603，以及厚膜电阻220kΩ、±1%、100mW、75V、±100ppm/℃、-55℃~+155℃。完整T5E订货后缀保留。输入括号中的220K与已公开阻值220kΩ相符，仅作为独立阻值说明分离，未修改原输入字段。 来源 https://item.szlcsc.com/23688.html 实际下载并读取本准确主商品的“下载PDF”链接所附制造商规格书（Feb.12,2019 V.3）：封面为Uniroyal Electronics Global Co., Ltd.，列明Brands RoyalOhm / UniOhm及包括Royal Electronic Factory (thailand) co., ltd在内的制造工厂；正文1.1说明由UNI-ROYAL制造，2节完整14位订货编码规定0603尺寸、WA=1/10W、F=±1%、2203按前三位有效数字及末位十进制幂对应220000Ω、T=Tape/Reel、5=5000pcs、E=环保无铅标准品。该制造商资料确认RoyalOhm与UniOhm属于本规格书列明的品牌体系，并非将品类0603电阻任意映射为厂牌。 来源 https://item.szlcsc.com/23688.html 实际读取厚声官方网站，页面列有厚膜电阻等产品分类，版权主体为昆山厚声电子工业有限公司；与准确主商品所附制造商规格书中的昆山工厂及marketing@uni-royal.cn联系信息一致。 来源 https://www.uni-royal.cn/ 实际读取并下载解析制造商公开厚膜晶片电阻器资料；0603规格为1608尺寸、1/10W、最大工作电压75V、-55~+155℃，并说明订货编码的尺寸、功率、公差、阻值及包装后缀，与准确主商品及其UNI-ROYAL制造商规格书一致。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1053T5E(105K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1053T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N034：verified_normalization。实际读取产品正文：Manufacturer ROYALOHM；Manufacturer part number 0603WAF1053T5E；Resistance 105kΩ；0603、0.1W、±1%。完整订货型号与括注105K对应的阻值一致；并非通用删括号或更改订货后缀。 来源 https://www.tme.eu/en/details/0603waf1053t5e/smd-resistors/royalohm/ 实际下载并读取原厂Thick Film Chip Resistors PDF，视觉第3页同时展示UNI-ROYAL和ROYALOHM标志，订货规则说明四位产品类型、WA=1/10W、F=±1%、≤1%阻值代码前三位有效数字与末位零数、T=编带、5=5000pcs、E=Lead Free standard。0603WAF1053T5E的全部订货字段保留，规格为0603、105kΩ、±1%、100mW；原厂0603规格75V、-55~+155°C、>10Ω时±100ppm/°C。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 实际读取厚声原厂About us：UNI-ROYAL具有研发、制造和销售体系，集团品牌包括ROYALOHM、UNIOHM等；原厂页面版权主体为Kunshan Housheng Electronic Industry Co., Ltd.，证实商城UNI-ROYAL(厚声)与ROYALOHM资料的制造商集团关系。 来源 https://www.uni-royal.cn/en/article.php?id=14 实际读取准确主商品：商品型号0603WAF1053T5E，品牌名称UNI-ROYAL(厚声)，商品编号C16840，厚膜电阻105kΩ ±1% 100mW，封装0603，包装编带。参考身份规范化有完整MPN、真实厂牌及原厂规格支持，不修改原输入。 来源 https://item.szlcsc.com/17524.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ0104T5E(100K5%)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ0104T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N035：verified_normalization。已实际下载并读取制造商官方PDF，视觉核验第3页同时有UNI-ROYAL厚聲集團与ROYALOHM标志。订货编码规定0603为尺寸、WA=1/10W、J=±5%；5%电阻值字段首位0、第二三位有效数、第四位为零的数量；T为编带/卷带、5为5000pcs、E为无铅标准品。第4页明确列出新型号家族0603WAJ****T5E。因此完整0603WAJ0104T5E对应100kΩ±5%而非通用品类任意映射，T5E完整保留。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 实际读取精确产品页：Manufacturer ROYALOHM；Manufacturer part number 0603WAJ0104T5E；Resistance 100kΩ；Tolerance ±5%；Case 0603；Power 0.1W；Operating voltage 75V。佐证输入括号100K5%为与该完整订货代码一致的参数说明。未使用该站价格或库存补渠道报价。 来源 https://www.tme.eu/en/details/0603waj0104t5e/smd-resistors/royalohm/ 实际读取制造商官方网站，关于厚声、厚膜电阻产品栏目及版权主体昆山厚声电子工业有限公司。 来源 https://www.uni-royal.cn/ 实际读取公开品牌介绍：厚声集团（Uniroyal Electronics Global Co., Ltd.）旗下品牌包括ROYALOHM、UNIOHM、FOSS、AEON，支持官方PDF中的UNI-ROYAL厚声与ROYALOHM关系。 来源 https://www.szlcsc.com/info/12343.html 准确主商品实读型号0603WAJ0104T5E、品牌UNI-ROYAL(厚声)、商品编号C15458、厚膜电阻100kΩ±5%100mW、0603、75V，与官方订货体系及输入参数一致。规范厂牌采用此有证据的完整公开名称。 来源 https://item.szlcsc.com/16137.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1003T5E(100K1%)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1003T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N036：verified_normalization。实际读取主商品：商品型号0603WAF1003T5E，品牌名称UNI-ROYAL(厚声)，商品编号C25803，0603厚膜电阻，阻值100kΩ、精度±1%、功率100mW、工作电压75V、温度系数±100ppm/℃，包装方式编带。输入末尾(100K1%)与独立阻值/精度说明对应；完整制造商订货代码0603WAF1003T5E未删改。 来源 https://item.szlcsc.com/26546.html 已实际取得并解析厚声官方完整目录，同时查看第12页原页图。第4页说明UNI-ROYAL Group旗下品牌包括ROYALOHM、UNIOHM、FOSS、AEON；第12页普通厚膜晶片电阻订购编码明确0603为尺寸、WA=1/10W、F=±1%、≤1%产品前三位为阻值有效数字且第四位为零的数量、T=编带/卷带、5=5000pcs、E=Lead Free(standard)。第171—172页标准料号系统再次确认这些位置及定义。完整代码0603WAF1003T5E对应0603、100kΩ、±1%、1/10W、5000只编带卷装、环保无铅标准品，支持确认厚声制造商身份；ROYALOHM为官方证实的同集团品牌，不按检索先后任意选择制造商。 来源 https://www.uni-royal.cn/images/userfile/file/UniroyalCatalog2023-2024_Full-C&E(1)%20-%20%E5%85%A8%E7%9B%AE%E5%BD%952023.11.6.pdf"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF5622T5E(56K2)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF5622T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N037：verified_normalization。已实际下载并读取制造商官方厚膜晶片电阻PDF（含UNI-ROYAL和ROYALOHM标识）。官方订购方式说明0603产品类型、WA=1/10W、F=±1%、四位阻值编码、T=编带/卷带、5=5000pcs、E=Lead Free(Standard)，包装及无铅后缀属于完整订货代码，均保留。该制造商编码与0603WAF5622T5E及公开56.2kΩ规格一致。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 厚声官方About us页面说明UNI-ROYAL具有研发、制造工厂及全球销售网络，其品牌包括ROYALOHM；页面版权主体为Kunshan Housheng Electronic Industry Co., Ltd.。确认Royalohm与UNI-ROYAL厚声的真实制造商关系，不由品类字段猜厂牌。 来源 https://www.uni-royal.cn/en/article.php?id=14 准确主商品实际显示商品型号0603WAF5622T5E、品牌名称UNI-ROYAL(厚声)、编号C23080；规格为厚膜电阻56.2kΩ、±1%、100mW、0603、75V、±100ppm/℃。由完整制造商订货规则与该准确型号规格共同确认输入末尾(56K2)为与56.2kΩ一致的阻值展示说明，不是制造商订货代码；并非通用删除括号或包装后缀。 来源 https://item.szlcsc.com/23807.html 实际读取该完整料号公开技术规格：Brand Royal Ohm，Case/Package 0603，Resistance 56.2 kohm，Tolerance 1%，Power 100 mW，Full Reel Quantity 5000；交叉确认完整型号与括号阻值说明的对应关系。 来源 https://evelta.com/56-2-kohm-1-0603-thick-film-chip-resistor-0603waf5622t5e/"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF5602T5E(56K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF5602T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N038：verified_normalization。实际读取的主商品明确列示：商品型号0603WAF5602T5E，品牌名称UNI-ROYAL(厚声)，商品编号C23206；厚膜电阻56kΩ、±1%、100mW、0603、75V、±100ppm/℃、-55℃~+155℃，包装编带。输入(56K)与已公开阻值一致，是独立阻值说明；完整T5E订货后缀保留，原输入不修改。 来源 https://item.szlcsc.com/23933.html 实际下载并读取该主商品“下载PDF”链接的9页真实制造商数据表：封面为Uniroyal Electronics Global Co., Ltd.，列示Brands RoyalOhm / UniOhm；Scope明确为manufactured by UNI-ROYAL。第2页规定14位订货码：0603为尺寸，WA=1/10W，F=±1%，5602的前三位560与第四位10的2次方组成阻值（Python核算56000Ω），T=Tape/Reel，5=5000pcs，E=Environmental Protection, Lead Free, or Standard type。第4、5、6页确认0603为1/10W、最大工作电压75V、-55℃~155℃、阻值大于10Ω时±100ppm/℃。由完整制造商订货码及规格确认UNI-ROYAL制造商；RoyalOhm、UniOhm是该原厂文件列示的品牌，不任意从品类选厂牌。 来源 https://item.szlcsc.com/23933.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF5102T5E(51K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF5102T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N039：verified_normalization。实际读取准确主商品：商品型号0603WAF5102T5E，品牌名称UNI-ROYAL(厚声)，商品编号C23196；厚膜电阻、51kΩ、±1%、100mW、0603、75V、±100ppm/℃。原输入括注(51K)与该准确型号公开阻值相符，仅作为独立参数说明分离；完整订货码0603WAF5102T5E及T5E后缀均保留。 来源 https://item.szlcsc.com/23923.html 从该准确主商品的数据手册下载链接实际取得并读取9页制造商PDF《Thick Film Chip Resistors –Data Sheet》，Feb.12,2019 V.3。首页制造商为Uniroyal Electronics Global Co., Ltd.，地址88 Longteng Road, Kunshan；列出Brands RoyalOhm、UniOhm及Royal Electronic Factory (thailand)等制造工厂。第2页明确此规格为UNI-ROYAL制造的厚膜晶片电阻，并给出14位订货规则：0603为尺寸，WA为1/10W，F为±1%，5102的前三位为有效数字、第四位为十的幂，T为Tape/Reel，5为5000pcs，E为环保无铅或标准型。Python核算可对应51000Ω；结合准确商品页面确认完整MPN及厂牌，非从品类任意映射厂商。 来源 https://item.szlcsc.com/23923.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF3162T5E(31K6)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF3162T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N040：verified_normalization。已下载并读取制造商原始Thick Film Chip Resistors资料，包括订货方式页。页面同时印有UNI-ROYAL厚声集团和ROYALOHM标志；订货编码中0603为尺寸、WA为1/10W、F为±1%、T为编带卷带、5为5000pcs、E为无铅标准品；≤1%阻值代码前三位为有效数字、第四位为零的数量。保留完整订货后缀T5E，不以通用删括号规则推断型号。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 已读取厚声制造商官网About us：UNI-ROYAL拥有研发、制造工厂与全球销售网络，列出的集团品牌包括ROYALOHM和UNIOHM；由此确认Royalohm公开型号资料与UNI-ROYAL厚声的制造商归属关系，而非把输入品类0603电阻映射到任意厂牌。 来源 https://www.uni-royal.cn/en/article.php?id=14 已读取准确型号页，Manufacturer为ROYALOHM，Manufacturer part number为0603WAF3162T5E；规格31.6kΩ、0603/1608、0.1W、±1%、75V。完整制造商订货代码与独立附注31K6所表达的31.6kΩ一致。仅用于身份与规格确认，不采用该来源价格。 来源 https://www.tme.eu/en/details/0603waf3162t5e/smd-resistors/royalohm/ 已读取准确主商品：商品型号0603WAF3162T5E，品牌名称UNI-ROYAL(厚声)，商品编号C25967；厚膜电阻31.6kΩ、±1%、100mW、0603、75V、±100ppm/℃、-55℃~+155℃、编带。结合制造商编码及准确型号规格，将(31K6)确认为阻值附注，仅返回参考身份规范化，不改原输入字段。 来源 https://item.szlcsc.com/26710.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF3002T5E(30K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF3002T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N041：verified_normalization。实际读取立创准确主商品：商品型号0603WAF3002T5E，品牌名称UNI-ROYAL(厚声)，商品编号C22984，厚膜电阻30kΩ、±1%、100mW、0603、75V、±100ppm/℃、-55℃~+155℃，包装编带。完整MPN的全部后缀T5E保留。 来源 https://item.szlcsc.com/23711.html 实际下载并读取该主商品公开链接的9页制造商规格书《Thick Film Chip Resistors – Data Sheet》，Feb.12,2019 V.3。封面标明Uniroyal Electronics Global Co., Ltd.及marketing@uni-royal.cn，Scope说明产品由UNI-ROYAL制造，列RoyalOhm和UniOhm品牌。第2页完整订货代码说明：0603为尺寸，WA=1/10W，F=±1%，3002依前三位有效数及末位十次幂规则为30000Ω（Python核算），T=Tape/Reel，5=5000pcs，E=Environmental Protection/Lead Free/Standard type。第5页0603为75V、-55℃~155℃。因此输入末尾(30K)与已确认阻值参数相符，可作独立参数说明分离，而不是通用删括号或删除包装后缀。制造商官网公司简介亦已实际读取，确认昆山厚声电子工业有限公司及ROYALOHM、UNIOHM等旗下品牌；不是将品类任意映射为厂牌。 来源 https://item.szlcsc.com/23711.html 实际读取加载完成的完整MPN搜索页，准确UNI-ROYAL条目描述芯片电阻30000Ω、±1%、1/10W、0603，与立创及制造商订货代码一致。页面另有FH/广东风华高科同字面型号条目，但未提供制造商订货资料，未用于身份归一或替代目标。 来源 https://search.ickey.cn/?keyword=0603WAF3002T5E"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF2002T5E(20K1%)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF2002T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N044：verified_normalization。已实际下载、提取并目视制造商PDF。PDF具有UNI-ROYAL厚声集团与ROYALOHM标识；订购方式明确WA=1/10W、F=±1%、T=编带、5=5000pcs、E=无铅标准品，≤1%阻值代码前三位为有效数字、第四位为零的个数。0603WAF2002T5E完整代码对应0603、1/10W、20kΩ、±1%、5000pcs编带无铅标准品，未删改T5E。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 厚声制造商官方介绍确认昆山厚声电子工业有限公司生产贴片电阻，旗下品牌包括ROYALOHM、UNIOHM、FOSS、AEON；因此Royalohm规格书与商城UNI-ROYAL(厚声)标签属于有公开依据的同一厚声制造商体系，不是从品类任意指定厂牌。 来源 https://www.uni-royal.cn/article.php?id=14 厚声官方普通厚膜晶片电阻产品页披露0603、1/10W、±100PPM/℃、±1%及10Ω<R≤10MΩ规格，与目标20kΩ普通厚膜电阻规格相符。 来源 https://www.uni-royal.cn/product.php?id=203 实际读取准确主商品C4184：商品型号0603WAF2002T5E、品牌名称UNI-ROYAL(厚声)、厚膜电阻20kΩ±1%100mW、封装0603、工作电压75V、温度系数±100ppm/℃。输入的(20K1%)由公开规格确认为独立阻值/精度参数说明，仅参考身份分离该说明，原输入字段不改。 来源 https://item.szlcsc.com/4591.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1052T5E(10K5)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1052T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N045：verified_normalization。实际读取准确主商品C22855：商品型号0603WAF1052T5E，品牌名称UNI-ROYAL(厚声)，0603厚膜电阻，10.5kΩ、±1%、100mW、75V、±100ppm/℃。页面关联的原厂PDF亦已实际下载读取，封面为Uniroyal Electronics Global Co., Ltd.，列出RoyalOhm及UniOhm品牌；Scope明确该厚膜晶片电阻由UNI-ROYAL制造。其14位订货编码规则为0603封装、WA=1/10W、F=±1%、1052=105×10²Ω、T=Tape/Reel、5=5000pcs、E=无铅标准型，完整保留T5E。 来源 https://item.szlcsc.com/23582.html 实际读取厚声制造商官网普通厚膜晶片电阻产品页：General Thick Film Chip Resistors，0603，1/10W，±100PPM/℃，公差包括±1%，阻值范围10Ω＜R≤10MΩ，与准确主商品完整规格一致。 来源 https://www.uni-royal.cn/en/product.php?id=19 实际下载读取原厂公开PDF。封面为Uniroyal Electronics Global Co., Ltd.，制造工厂包括Uniroyal Electronics Industry Co., Ltd.及Royal Electronic Factory (Thailand) Co., Ltd.，确认UNI-ROYAL与Royal Electronic制造体系关联；该文件的产品为HV系列，仅用作厂商身份关联，不作为本目标价格或替代型号证据。 来源 https://www.uni-royal.cn/images/userfile/file/16905116908282612ab73a3ba9.pdf 实际读取正常动态搜索，多个准确完整型号0603WAF1052T5E货源的厂牌为UNI-ROYAL或UNI-ROYAL(厚声)，描述均为芯片电阻10.5kOhms ±1% 1/10W ±100ppm/°C 0603；未发现不同制造商。 来源 https://search.ickey.cn/?keyword=0603WAF1052T5E"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1022T5E(10K2)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1022T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N046：verified_normalization。已实际下载、解析并目视核验原厂PDF订货规则页，页面同时标示UNI-ROYAL厚声集团与ROYALOHM。0603为产品类型，WA=1/10W，F=±1%；≤1%阻值代码前三位为有效数字、第四位为零的数量；T=T/R编带，5=5000pcs，E=Lead Free standard。完整0603WAF1022T5E对应10.2kΩ、±1%、1/10W、0603、编带5000pcs、标准无铅，未删除或改写T5E。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 厚声官方公司介绍确认UNI-ROYAL有制造工厂，列明旗下ROYALOHM等品牌；版权主体为Kunshan Housheng Electronic Industry Co., Ltd.，并非将品类0603电阻任意映射为厂牌。 来源 https://www.uni-royal.cn/en/article.php?id=14 准确主商品明示型号0603WAF1022T5E、品牌UNI-ROYAL(厚声)、编号C22772，规格为厚膜电阻10.2kΩ ±1% 100mW、0603、75V、±100ppm/℃、-55℃~+155℃、编带。括号10K2与完整订货代码的阻值10.2kΩ相符，可作为独立阻值说明分离；不是通用删括号规则。 来源 https://item.szlcsc.com/23499.html 准确型号搜索只有1个自营主商品，型号0603WAF1022T5E、品牌UNI-ROYAL(厚声)、编号C22772；实际详情链接为23499.html；普通价格列标题为价格梯度(含税)。 来源 https://so.szlcsc.com/global.html?k=0603WAF1022T5E"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RCT0310KJLF(10K5%)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "RCT0310KJLF",
+        "brand": "HKR(香港电阻)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N047：verified_normalization。实际读取的准确主商品写明品牌名称HKR(香港电阻)、商品型号RCT0310KJLF、编号C177337、0603、厚膜电阻10kΩ ±5% 100mW。与输入附注(10K5%)的阻值和精度一致；未改动原始输入字段，LF完整保留。 来源 https://item.szlcsc.com/188729.html 从该准确商品实际提供的下载PDF链接下载并读取HKR制造商RCT系列规格书（2025-07-29，Revision R14）。规格书声明南充溢辉电子科技有限公司为Hong Kong Resistors Manufactory集团成员；料号编码为RCT+尺寸+阻值+精度+LF，03对应0603，J对应±5%，LF为不含铅代码；RCT03额定1/10W、75V。因此RCT0310KJLF是制造商特定完整订货代码，结合准确主商品完整型号与10kΩ规格可确认唯一香港电阻厂牌，而非将品类0603电阻任意映射为制造商。 来源 https://item.szlcsc.com/188729.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1002T5E(10K1%)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1002T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N048：verified_normalization。实际读取主商品：商品型号0603WAF1002T5E，品牌UNI-ROYAL(厚声)，商品编号C25804，0603厚膜电阻，10kΩ、±1%、100mW、75V、±100ppm/℃，包装编带。输入末尾(10K1%)与此独立参数说明一致；未删除或改变制造商订货代码T5E。 来源 https://item.szlcsc.com/26547.html 实际读取本主商品数据手册链接所指的9页厂家原始PDF。封面署名Uniroyal Electronics Global Co., Ltd.，列出RoyalOhm与UniOhm为旗下Brands及Royal Electronic Factory (thailand)为制造厂；第2页明确为UNI-ROYAL制造的厚膜电阻，并定义完整14位订货代码：0603为尺寸，WA为1/10W，F为±1%，1002按前三位有效数与末位十次幂表示阻值，T为Tape/Reel，5为5000pcs，E为环保/无铅/标准型。原厂编码、完整MPN与主商品参数相互吻合；搜索出现Royalohm不是据此另选无关厂商。 来源 https://item.szlcsc.com/26547.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF5101T5E(5K1)1%",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF5101T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N051：verified_normalization。准确主商品页面明示商品型号0603WAF5101T5E、品牌UNI-ROYAL(厚声)、商品编号C23186、0603封装、厚膜电阻5.1kΩ、±1%、100mW、75V、±100ppm/℃、-55℃~+155℃。输入末尾(5K1)1%与该阻值和精度相符，作为独立参数说明分离；完整订货代码0603WAF5101T5E保留全部字符及T5E后缀。 来源 https://item.szlcsc.com/23913.html 已实际下载并读取本准确商品页链接的制造商规格书《Thick Film Chip Resistors –Data Sheet》，Feb.12,2019 V.3，9页。封面署名Uniroyal Electronics Global Co., Ltd.；第2页Scope明确由UNI-ROYAL制造。其14位Part No. System规定0603为尺寸、WA=1/10W、F=±1%、第8至11位为阻值编码、T=Tape/Reel、5=5000pcs、E=Environmental Protection/Lead Free/Standard type；5101按规定及Python核算为510×10¹=5100Ω。此制造商完整编码规则与准确商品规格共同支持厚声厂牌身份，而非将输入品类任意映射到制造商。 来源 https://item.szlcsc.com/23913.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ0152T5E(1K5)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ0152T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N053：verified_normalization。实际下载并读取制造商公开厚膜晶片电阻PDF，第三页同时显示UNI-ROYAL厚声集团与ROYALOHM标识。订购方式图表明确：0603为产品类型；WA=1/10W；J=±5%；5%阻值四位码第1位为0、第2及第3位为有效数、第4位为零的数量，0152对应1.5kΩ；T为编带、5为5000个、E为无铅标准品。第五页列明完整系列0603WAJ****T5E。完整0603WAJ0152T5E订货代码及其所有包装/特征字符得到制造商资料支持。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 实际读取主商品型号0603WAJ0152T5E、品牌UNI-ROYAL(厚声)、编号C25989，参数厚膜电阻1.5kΩ、±5%、100mW、0603、75V、±100ppm/℃、-55℃~+155℃，包装编带。原输入括号中的1K5与准确商品和制造商编码对应的1.5kΩ一致，仅作为独立阻值注记归一参考身份，没有改动原输入或删去T5E订货后缀。 来源 https://item.szlcsc.com/26732.html 实际读取厚声官方厚膜电阻产品中心，网站署名昆山厚声电子工业有限公司，证明厚声为真实电阻制造商，而非输入的0603电阻品类。 来源 https://www.uni-royal.cn/product.php?id=19 实际读取立创公开制造商介绍，UNI-ROYAL集团旗下列明ROYALOHM、UNIOHM、FOSS、AEON、UNUS五个品牌；与制造商PDF同时标示UNI-ROYAL及ROYALOHM相互印证。渠道参考使用准确主商品字面厂牌UNI-ROYAL(厚声)，未将品类任意映射到第一条搜索品牌。 来源 https://www.lcsc.com/blog/uni-royal-has-become-the-worlds-leading-manufacturer-of-chip-and-dip-resistor/"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1001T5E(1K)厚",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1001T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N055：verified_normalization。已实际读取并解码厚声官网公开制造商目录PDF。普通厚膜晶片电阻章节载明0603额定功率1/10W；第171—172页标准料号系统规定完整料号14位：前四位表示尺寸，WA表示正常尺寸1/10W，F表示±1%，第8—11位为阻值编码，T为编带/卷装，第13位表示包装数量，末位E为环保无铅型。该制造商特定订货编码与完整0603WAF1001T5E及目标规格一致，保留全部T5E订货后缀。 来源 https://www.uni-royal.cn/images/userfile/file/UniroyalCatalog2023-2024_Full-C&E(1)%20-%20%E5%85%A8%E7%9B%AE%E5%BD%952023.11.6.pdf 准确主商品实际公开展示品牌名称UNI-ROYAL(厚声)、商品型号0603WAF1001T5E、商品编号C21190、0603封装、厚膜电阻、1kΩ、±1%、100mW、75V、±100ppm/℃、-55℃~+155℃、编带及5000个/圆盘。与原输入中的独立规格说明(1K)及厚相符；不是将0603电阻品类默认映射至任意厂牌。 来源 https://item.szlcsc.com/21904.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ0271T5E(270R)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ0271T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N057：verified_normalization。实际读取制造商PDF并解码及渲染核验。文件同时标示UNI-ROYAL厚声集团及ROYALOHM；订货方式确认0603为产品类型，WA=1/10W，J=±5%，5%阻值四位代码首位0、第二三位有效数字、第四位指数，故0271对应270Ω；T=编带/卷带、5=5000pcs、E=无铅标准品。文件新旧料号页明确列0603WAJ****T5E为新料号格式，完整目标订货代码与该制造商编码及全部规格相符。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 厚声官方公司简介实际读取：昆山厚声电子工业有限公司生产贴片电阻等产品，旗下品牌包括ROYALOHM、UNIOHM、FOSS、AEON，确认ROYALOHM与厚声集团归属。 来源 https://www.uni-royal.cn/article.php?id=14 准确主商品实际读取：品牌名称UNI-ROYAL(厚声)，商品型号0603WAJ0271T5E，编号C25223，封装0603，厚膜电阻270Ω、±5%、100mW、75V、±100ppm/℃、-55℃~+155℃，包装编带、5000个/圆盘。输入末尾(270R)与该主商品及厂商编码确认的270Ω一致，是独立阻值说明，不是被删除的订货后缀。 来源 https://item.szlcsc.com/25966.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ0101T5E(100R5%)厚",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ0101T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N060：verified_normalization。实际下载并读取UNI-ROYAL制造商数据表Thick Film Chip Resistors，File No. SMD-SP-001，Oct.13,2022 V.7。抬头为Uniroyal Electronics Global Co., Ltd.，第1页明确由UNI-ROYAL制造；制造工厂包含Uniroyal Electronics Industry及Royal Electronic Factory (Thailand)。第2页给出完整14位Part No. System：0603为尺寸，WA=1/10W，J=±5%，E-24阻值代码0101按规则为100Ω，T=Tape/Reel，5=5000pcs，末位E=Lead Free。保留完整T5E，不删除包装后缀。与目标附加100R5%说明及公开厚膜规格一致。 来源 https://www.es.co.th/Schemetic/PDF/UNI-ROYAL_CHIPR.PDF 实际读取厚声官网，列有厚膜电阻产品中心，页尾为昆山厚声电子工业有限公司。未将输入品类0603电阻直接映射为厂牌。 来源 https://www.uni-royal.cn/ 准确主商品明确显示商品型号0603WAJ0101T5E、品牌UNI-ROYAL(厚声)、商品编号C25201，规格为0603厚膜电阻100Ω±5%100mW、75V、编带，与制造商完整订货码一致。 来源 https://item.szlcsc.com/25944.html 实际读取公开品牌说明，UNI-ROYAL集团品牌包含ROYALOHM、UNIOHM、FOSS、AEON、UNUS；配合制造商数据表列出的Royal Electronic Factory制造工厂，ROYALOHM同码信息不是据此任意选择的另一独立制造商。 来源 https://www.lcsc.com/blog/uni-royal-has-become-the-worlds-leading-manufacturer-of-chip-and-dip-resistor/"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF1000T5E(100R1%)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF1000T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N061：verified_normalization。实际取得并解析厚声原厂2023—2024产品目录。第4页说明UNI-ROYAL即厚声集团，ROYALOHM、UNIOHM等为旗下品牌；第10—12页列出0603厚膜晶片电阻及订购方式。第171—172页标准料号系统确认完整订货码为14位：0603为尺寸，WA为正常尺寸1/10W，F为±1%，1000为100Ω阻值码，T为编带卷装，5对应5000包装数量，E为环保无铅标准品。完整0603WAF1000T5E的所有字符及包装末尾均保留。 来源 https://www.uni-royal.cn/images/userfile/file/UniroyalCatalog2023-2024_Full-C&E(1)%20-%20%E5%85%A8%E7%9B%AE%E5%BD%952023.11.6.pdf 实际读取准确主商品C22775，页面商品型号0603WAF1000T5E，品牌名称UNI-ROYAL(厚声)，封装0603，参数为厚膜电阻100Ω、±1%、100mW、75V、±100ppm/℃。原输入括号内100R1%与页面100Ω±1%独立参数一致；规范身份由原厂14位订货规则和该准确商品共同确认，不是将品类任意映射厂牌或通用删除括号。 来源 https://item.szlcsc.com/23502.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF750JT5E(75R)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF750JT5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N062：verified_normalization。实际读取准确主商品：商品型号0603WAF750JT5E，品牌名称UNI-ROYAL(厚声)，商品编号C4275，0603封装，厚膜电阻75Ω、±1%、100mW，包装方式编带。原输入的0603电阻是品类，不用作厂牌。 来源 https://item.szlcsc.com/4682.html 实际下载并读取该准确商品的公开数据手册附件。规格书署名Uniroyal Electronics Global Co., Ltd.；Scope写明manufactured by UNI-ROYAL，封面列出RoyalOhm、UniOhm及包括Royal Electronic Factory (thailand)在内的集团工厂。订货规则为完整14位代码：0603为规格，WA为1/10W，F为±1%，750J中J为10^-1，Python换算750×10^-1=75Ω；T为Tape/Reel，5为5000pcs，E为Lead Free/Standard type。因此完整制造商订货代码为0603WAF750JT5E，输入尾部(75R)由本目标的明确阻值和订货规则证实为独立参数说明；不是通用删除括号，也未删T5E包装和特性代码。 来源 https://item.szlcsc.com/4682.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF499JT5E(49R9)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF499JT5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N063：verified_normalization。准确主商品实际读取：商品型号0603WAF499JT5E，品牌名称UNI-ROYAL(厚声)，商品编号C23185；厚膜电阻49.9Ω、±1%、100mW、0603、75V、±100ppm/℃、-55℃~+155℃。原输入品牌是品类，未作为厂牌使用。 来源 https://item.szlcsc.com/23912.html 该准确主商品页所链接的原厂PDF已实际下载并读取：《Thick Film Chip Resistors》，Feb.12,2019 V.3。第1页标识Uniroyal Electronics Global Co., Ltd.，列出Manufacture Plant包含Royal Electronic Factory (thailand) co., ltd，以及Brands RoyalOhm、UniOhm；第2页Scope声明由UNI-ROYAL制造。订货代码共14位：0603为尺寸；WA=1/10W；F=±1%；499J按前三位有效数及J=10^-1表示49.9Ω；T=Tape/Reel；5=5000pcs；E=Environmental Protection, Lead Free, or Standard type。完整0603WAF499JT5E与页面规格一致，T5E包装及环保代码完整保留。输入末尾(49R9)据此确认为阻值说明，不是泛化删括号或删包装后缀。 来源 https://item.szlcsc.com/23912.html 完整规范MPN正常搜索实际读取到自营结果数1，唯一主商品为0603WAF499JT5E、UNI-ROYAL(厚声)、0603、49.9Ω、±1%、100mW，链接至已实际读取的23912数值详情。 来源 https://so.szlcsc.com/global.html?k=0603WAF499JT5E"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ0220T5E(22R)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ0220T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N064：verified_normalization。实际读取准确主商品：商品型号0603WAJ0220T5E，品牌名称UNI-ROYAL(厚声)，商品编号C1203，厚膜电阻22Ω、±5%、100mW、0603、75V、编带。输入附注(22R)对应页面独立阻值22Ω；未改动原始输入，未删减T5E等订货后缀。 来源 https://item.szlcsc.com/1555.html 实际下载并解析、视觉读取原厂Thick Film Chip Resistors PDF；页眉同时列UNI-ROYAL/厚声集团及ROYALOHM标识。订购方式确认0603尺寸、WA=1/10W、J=±5%、5%阻值四位码首位0且后续22及零个零对应0220=22Ω、T=编带卷带、5=5000pcs、E=Lead Free(Standard)。新旧料号表明确新料号模板0603WAJ****T5E，与完整0603WAJ0220T5E一致。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 实际读取UNI-ROYAL厚声原厂介绍：集团研发制造与销售网络位于台湾、昆山、深圳、厦门及泰国；集团品牌包含ROYALOHM、UNIOHM等，确认不是将输入品类随意映射制造商。 来源 https://www.uni-royal.cn/en/article.php?id=14 实际读取完整Manufacturer part number 0603WAJ0220T5E及Manufacturer ROYALOHM，阻值22Ω、0603、0.1W、±5%、75V、厂家5000pcs/reel，与原厂编码及立创主商品规格互证；该站价格库存没有用作任何指定渠道报价。 来源 https://www.tme.com/us/en-us/details/0603waj0220t5e/smd-resistors/royalohm/"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAJ056JT5E(5R6)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAJ056JT5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N066：verified_normalization。实际读取制造商官网，版权主体为昆山厚声电子工业有限公司；官网产品中心包含厚膜电阻。原输入0603电阻仅为品类，未据此指定制造商。 来源 https://www.uni-royal.cn/ 完整原输入0603WAJ056JT5E(5R6)的立创正常搜索返回唯一自营主商品，实际跟进数值详情25993：商品型号0603WAJ056JT5E，品牌名称UNI-ROYAL(厚声)，编号C25250，0603厚膜电阻，5.6Ω、±5%、100mW，包装编带。 来源 https://item.szlcsc.com/25993.html 实际下载并读取准确立创主商品所链接的公开原厂Thick Film Chip Resistors数据手册。封面为Uniroyal Electronics Global Co., Ltd.，地址88 Longteng Road, Kunshan，联系方式marketing@uni-royal.cn；列出Brands RoyalOhm、UniOhm及集团制造工厂。Scope明确manufactured by UNI-ROYAL。第2页定义完整14位订货码：0603为尺寸；WA=1/10W；J=±5%；056J的有效数字56、末位J=10^-1，Python核算为5.6Ω；T=Tape/Reel；5=5000pcs；E=环保/无铅/标准型。因此保留全部厂商订货码0603WAJ056JT5E，括号5R6仅在此有证据的个案中确认与5.6Ω参数一致，不作通用删括号规则。 来源 https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0104TCE(100K5%)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0104TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N067：verified_normalization。实际下载并读取制造商官方厚膜晶片电阻器PDF，且视觉读取其订货图。文件同时印有UNI-ROYAL厚声集团及ROYALOHM标识。订货规则明确0402为产品类型，WG=1/16W，J=±5%，5%阻值码第一位为0、随后两位为有效数、第四位为零的数量；T=编带/卷带，C=10000pcs，E=无铅标准品。0402WGJ0104TCE完整订货代码与100kΩ、±5%、0402规格吻合，保留完整TCE后缀。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf 实际读取厚声制造商公司简介：昆山厚声电子工业有限公司制造贴片电阻等产品，现有四大品牌ROYALOHM、UNIOHM、FOSS、AEON。结合官方PDF双品牌标识，支持渠道UNI-ROYAL(厚声)厂牌身份，而不是把品类0402电阻映射为任意制造商。 来源 https://www.uni-royal.cn/article.php?id=14 准确主商品显示商品型号0402WGJ0104TCE、品牌UNI-ROYAL(厚声)、编号C25530、封装0402、厚膜电阻、100kΩ、±5%、62.5mW、50V及编带。输入末尾(100K5%)仅在上述规格得到确认后识别为独立参数说明，原输入字段不变。 来源 https://item.szlcsc.com/26273.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGF1003TCE(100K1%)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGF1003TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N068：verified_normalization。已实际读取公开托管的厚声原厂《Thick Film Chip Resistors》SMD-SP-001，2022-10-13 V.7。封面制造商为Uniroyal Electronics Global Co., Ltd.，正文明确产品由UNI-ROYAL制造，同页显示UNI-ROYAL、ROYALOHM及uniohm标识。第2页订货代码：0402为尺寸型号；WG=1/16W；F=±1%；1003依三位有效数字及十次幂规则表示100000Ω；T=Tape/Reel；C=10000PCS且0402包装明确使用C；E=Lead Free。因此完整0402WGF1003TCE为厂商特定订货代码，TCE全部保留。 来源 https://www.es.co.th/Schemetic/PDF/UNI-ROYAL_CHIPR.PDF 已实际读取厚声官网产品表：General Thick Film Chip Resistors列出0402、1/16W、±100PPM/℃、±0.5%/±1%/±2%/±5%、10Ω＜R≤10MΩ，与目标100kΩ±1%、62.5mW相符。 来源 https://www.uni-royal.cn/en/product.php?id=19 已实际读取准确主商品，商品型号0402WGF1003TCE，品牌名称UNI-ROYAL(厚声)，编号C25741；参数100kΩ、±1%、62.5mW、0402、50V、±100ppm/℃，包装编带。括号100K1%经完整MPN与原厂订货代码、页面规格共同核验为独立阻值/精度说明，不是订货代码后缀；原输入字段不改。 来源 https://item.szlcsc.com/26484.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0103TCE(10K)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0103TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N069：verified_normalization。实际读取目标主商品：商品型号0402WGJ0103TCE，品牌名称UNI-ROYAL(厚声)，商品编号C25531；厚膜电阻10kΩ、±5%、62.5mW、0402、50V、±100ppm/℃。原输入末尾(10K)与该独立阻值参数一致，规范型号保留完整TCE订货后缀，未修正任何字母或数字。 来源 https://item.szlcsc.com/26274.html 实际下载并读取该准确商品页所链接的9页原厂规格书C25531_贴片电阻_0402WGJ0103TCE_规格书_WJ01897.PDF。第1页标明Uniroyal Electronics Global Co., Ltd.及制造工厂，品牌RoyalOhm、UniOhm；第2页明确Thick Film Chip Resistors manufactured by UNI-ROYAL及14位订货编码：0402为尺寸，WG=1/16W，J=±5%，0103为10kΩ，T=Tape/Reel，C=10000pcs，E=环保/无铅/标准型。全部订货字段与完整0402WGJ0103TCE及目标商品规格相符，因此厂牌确认到UNI-ROYAL(厚声)，不是将0402电阻品类任意映射为制造商。 来源 https://item.szlcsc.com/26274.html 实际读取加载后的云汉搜索页，多条准确0402WGJ0103TCE记录标明UNI-ROYAL、0402、10kOhms±5%1/16W±100ppm/°C，并显示多个不同货源。另有FH/广东风华高科标注但无对应规格资料，未将该商城元数据作为另一制造商身份确认依据。 来源 https://search.ickey.cn/?keyword=0402WGJ0103TCE"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0222TCE(2K2)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0222TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N070：verified_normalization。实际读取准确主商品：商品型号0402WGJ0222TCE，品牌UNI-ROYAL(厚声)，商品编号C25933，厚膜电阻2.2kΩ ±5% 62.5mW，0402，50V，编带。原输入括注(2K2)与主商品2.2kΩ参数一致；规范身份保留完整TCE订货后缀，原输入不修改。 来源 https://item.szlcsc.com/26676.html 实际下载并读取本主商品“下载PDF”链接所附制造商DATA SHEET（Feb.12,2019 V.3，第1—2页）。文件署名Uniroyal Electronics Global Co., Ltd.，Scope明确“Thick Film Chip Resistors manufactured by UNI-ROYAL”，列出RoyalOhm、UniOhm品牌。14位Part No. System明确0402为尺寸、WG=1/16W、J=±5%、≥5%阻值编码首位0，随后两位有效数字和10的幂，T=Tape/Reel、C=10000pcs、E=Environmental Protection/Lead Free/Standard type；0222对应2200Ω，完整0402WGJ0222TCE与公开主商品规格相符。这是实际读取的制造商文件证据，不是将0402电阻品类默认映射厂牌。 来源 https://item.szlcsc.com/26676.html 实际读取厚声官方网站About us：UNI-ROYAL具有研发、制造及全球销售网络；集团品牌列出ROYALOHM、UNIOHM等，页脚Kunshan Housheng Electronic Industry Co., Ltd.。因此其他渠道的Royalohm/UniOhm属于已证实的厚声集团品牌关系，不视为无依据的任意厂牌映射。本次规范厂牌使用准确主商品字面UNI-ROYAL(厚声)，不另行指定集团内部商标。 来源 https://www.uni-royal.cn/en/article.php?id=14"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0202TCE(2K)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0202TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N071：verified_normalization。实际读取准确主商品：品牌名称UNI-ROYAL(厚声)，商品型号0402WGJ0202TCE，商品编号C25552，厚膜电阻2kΩ、±5%、62.5mW、0402、50V、±100ppm/℃、-55℃~+155℃，编带。完整MPN与阻值相互确认，输入的(2K)为该目标阻值说明，不是被通用规则删除的订货后缀。 来源 https://item.szlcsc.com/26295.html 已沿此准确商品的数据手册下载链接实际下载并读取制造商原始规格书。封面为Uniroyal Electronics Global Co., Ltd.，正文明确为manufactured by UNI-ROYAL，列出RoyalOhm及UniOhm品牌。2019-02-12 V.3规格书第2页规定完整料号14码：0402为尺寸，WG为1/16W，J为±5%，≥5%阻值码首位0、后两位为有效数字、第四位为10的幂，0202因此为2000Ω；T为Tape/Reel，C为10000pcs，E为Lead Free/standard。完整0402WGJ0202TCE订货码及所有后缀均保留。第4至6页的0402功率、工作电压及温度系数与主商品规格一致。 来源 https://item.szlcsc.com/26295.html 实际读取制造商官方公司简介：昆山厚声电子工业有限公司始创于1978年，生产贴片电阻器等，现有ROYALOHM、UNIOHM、FOSS、AEON四大品牌。结合准确商品及制造商规格书，确认商城UNI-ROYAL(厚声)为真实制造商身份；不将输入品类0402电阻映射为任意厂商，也不因其他商城出现Royalohm/Uniohm而另选独立制造商。 来源 https://www.uni-royal.cn/article.php?id=14"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0102TCE(1K)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0102TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N072：verified_normalization。准确自营主商品标题及商品型号均为0402WGJ0102TCE，品牌名称UNI-ROYAL(厚声)，商品编号C25543，封装0402，厚膜电阻1kΩ、±5%、62.5mW；包装方式编带。 来源 https://item.szlcsc.com/26286.html 实际读取并解码该准确商品页“下载PDF”链接提供的原厂《Thick Film Chip Resistors –Data Sheet》，Feb.12,2019 V.3，共9页。首页写明Uniroyal Electronics Global Co., Ltd.，列出制造工厂Royal Electronic Factory (thailand) co., ltd等，Brands为RoyalOhm、UniOhm；第2页明确“manufactured by UNI-ROYAL”及14位订货编码：0402为尺寸，WG为1/16W，J为±5%，0102按5%阻值编码表示1000Ω，T为Tape/Reel，C为10000pcs，E为Environmental Protection/Lead Free/Standard type。完整TCE订货后缀保留，(1K)仅作为与原厂阻值编码一致的独立参数说明分离，不是通用删括号。 来源 https://item.szlcsc.com/26286.html 正常动态搜索完成后显示相关结果约14条；多个准确0402WGJ0102TCE记录标注UNI-ROYAL、UNI-ROYAL(厚声)、ROYALOHM或Royal Electronic Factory (Thailand) Co Ltd，且规格均为1000Ω ±5% 1/16W 0402。原厂资料确认这些名字对应厚声体系；另有一条FH/广东风华高科商城标注但未给出规格/原厂资料，不能凭该标注将输入品类映射为FH。 来源 https://search.ickey.cn/?keyword=0402WGJ0102TCE"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGF5100TCE(510R)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGF5100TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N073：verified_normalization。准确主商品明确列出商品型号0402WGF5100TCE、品牌UNI-ROYAL(厚声)、商品编号C25123、0402封装、厚膜电阻510Ω ±1% 62.5mW、50V、±100ppm/℃、-55℃~+155℃，完整TCE后缀保留。 来源 https://item.szlcsc.com/25866.html 从该准确详情的下载PDF链接取得并实际读取制造商《Thick Film Chip Resistors》9页规格书：署名Uniroyal Electronics Global Co., Ltd.，Scope说明由UNI-ROYAL制造，Brands列RoyalOhm和UniOhm。订货规则明确0402为尺寸、WG为1/16W、F为±1%、5100为三位有效数字510与十的零次方、T为Tape/Reel、C为10000pcs、E为Lead-Free。与主商品完整MPN及510Ω规格互证，输入括号内510R仅作为已确认阻值说明分离，不删除任何订货后缀或纠正输入字符。 来源 https://item.szlcsc.com/25866.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0271TCE(270R)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0271TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N074：verified_normalization。实际读取准确主商品：商品型号0402WGJ0271TCE，品牌名称UNI-ROYAL(厚声)，商品编号C25155；厚膜电阻、270Ω、±5%、62.5mW、0402、50V、±100ppm/℃、-55℃~+155℃。输入末尾(270R)与页面独立阻值270Ω一致，不属于原厂14位订货代码；保留原输入，仅在参考身份中分离这项明确阻值说明。 来源 https://item.szlcsc.com/25898.html 实际下载并读取该准确商品链接的制造商数据手册。封面为Uniroyal Electronics Global Co., Ltd.，制造工厂列有Royal Electronic Factory (thailand) co., ltd，Brands列RoyalOhm、UniOhm；正文1.1明确该厚膜电阻由UNI-ROYAL制造。第2页说明完整料号包含14位：0402为尺寸，WG为1/16W，J为±5%，0271按零前导、27有效数、十次幂1表示270Ω，T为Tape/Reel，C为10000pcs，E为环保无铅标准品。此证据确认完整0402WGJ0271TCE，而未删改TCE包装/特征后缀。 来源 https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf 实际读取厚声制造商公开Thick Film Chip Resistors产品资料页面，包含0402厚膜电阻系列及制造商联系邮箱marketing@uni-royal.cn。 来源 https://www.uni-royal.cn/en/product.php?id=19 实际下载并读取Royalohm原厂Thick Film Chip Resistors资料，0402额定功率1/16W、最大工作电压50V、工作温度-55~+155℃、大于10Ω的温度系数±100ppm/℃；订货编码说明与准确商品所链接的UNI-ROYAL制造商手册一致。RoyalOhm与UNI-ROYAL的关系以该制造商手册封面所列品牌/工厂为依据，不把品类0402电阻直接映射成厂牌。 来源 https://www.royalohm.com/assets/pdf/products/smd/1.pdf"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0151TCE(150R)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0151TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N075：verified_normalization。实际读取准确主商品：型号0402WGJ0151TCE，品牌UNI-ROYAL(厚声)，商品编号C25143，0402厚膜电阻，150Ω、±5%、62.5mW、50V、±100ppm/℃、-55℃~+155℃，编带。其公开数据手册由页面直接提供。 来源 https://item.szlcsc.com/25886.html 实际下载并读取主商品直接链接的制造商DATA SHEET，Feb.12,2019 V.3。署名Uniroyal Electronics Global Co., Ltd.，Scope明确由UNI-ROYAL制造，列示RoyalOhm和UniOhm品牌。第2页明确料号14码：0402为尺寸，WG=1/16W，J=±5%；5%阻值第8码为0、第9~10码为有效数字、第11码为10的幂，0151对应150Ω；T=Tape/Reel，C=10000pcs，E=Environmental Protection/Lead Free/Standard type。由完整订货编码及准确商品规格确认150R为阻值说明，保留完整TCE，不通用删除后缀。 来源 https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf?Expires=4070880000&OSSAccessKeyId=LTAIJDIkh7KmGS1H&Signature=Z3nlba8nt3TyPgEE8yIdn7hjlr0%3D&response-content-disposition=attachment%3Bfilename%3DC25143_%25E8%25B4%25B4%25E7%2589%2587%25E7%2594%25B5%25E9%2598%25BB_0402WGJ0151TCE_%25E8%25A7%2584%25E6%25A0%25BC%25E4%25B9%25A6_WJ01897.PDF 实际读取制造商官网，页面列示厚膜电阻等产品，版权主体为昆山厚声电子工业有限公司，与商品厂牌厚声及数据手册制造主体相互印证。 来源 https://www.uni-royal.cn/"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGF249JTCE(24R9)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGF249JTCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N077：verified_normalization。实际下载并读取UNI-ROYAL制造商厚膜晶片电阻规格书SMD-SP-001，Oct.13,2022 V.7。文件明确产品由UNI-ROYAL制造；14位订货码规则为0402封装、WG=1/16W、F=±1%、249J=249×10^-1Ω、T=编带、C=10000个、E=无铅环保。Python核算249J为24.9Ω、WG为62.5000mW，完整代码0402WGF249JTCE全部字段吻合。封面署名Uniroyal Electronics Global Co., Ltd.，制造工厂包括Royal Electronic Factory (Thailand) Co., Ltd.。 来源 https://www.es.co.th/Schemetic/PDF/UNI-ROYAL_CHIPR.PDF 实际读取厚声制造商官方网站，列出厚膜电阻产品，页脚为昆山厚声电子工业有限公司。 来源 https://www.uni-royal.cn/ 实际读取准确自营主商品C5099：商品型号0402WGF249JTCE、品牌名称UNI-ROYAL(厚声)、0402、24.9Ω、±1%、62.5mW、50V、±100ppm/℃、编带。完整订货码和规格与制造商资料一致；原输入括号24R9对应已证实的24.9Ω阻值说明，并非厂商订货代码后缀，未修改原输入。 来源 https://item.szlcsc.com/5515.html 实际读取公开规格页：Manufacturer ROYALOHM，Manufacturer part number 0402WGF249JTCE，24.9Ω、0402、62.5mW、±1%、50V。该品牌线索进一步通过ROYALOHM官网和UNI-ROYAL制造商规格书的工厂名称核实，不将其价格用于授权渠道报价。 来源 https://www.tme.eu/en/details/0402wgf249jtce/smd-resistors/royalohm/ 实际读取ROYALOHM官方网站，明确Royal Electronic Factory Co.,Ltd.；与UNI-ROYAL制造商规格书列出的Royal Electronic Factory制造工厂相互印证。规范身份按厚声制造商完整订货规则及立创准确商品的UNI-ROYAL(厚声)记录，未以品类直接猜厂牌。 来源 https://www.royalohm.com/"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0220TCE(22R)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0220TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N078：verified_normalization。实际读取准确主商品：商品型号0402WGJ0220TCE，品牌名称UNI-ROYAL(厚声)，商品编号C25152；厚膜电阻22Ω、±5%、62.5mW、0402、50V、±100ppm/℃、-55℃~+155℃、编带。原输入(22R)与公开22Ω阻值相符，不属于页面制造商MPN。 来源 https://item.szlcsc.com/25895.html 已实际下载并读取此主商品“下载PDF”链接的制造商规格书：封面Uniroyal Electronics Global Co., Ltd.，Brands RoyalOhm UniOhm；Scope明确manufactured by UNI-ROYAL。Part No. includes 14 codes：0402为尺寸；WG=1/16W；J=±5%；5%阻值代码首位0、接着两位有效数、最后一位10的幂，0220对应22Ω；T=Tape/Reel；C=10000pcs；E=Environmental Protection, Lead Free, or Standard type。完整0402WGJ0220TCE的每位订货代码及规格均获确认，保留TCE不删除包装/环保代码。 来源 https://item.szlcsc.com/25895.html 实际读取制造商官网About us：UNI-ROYAL在台湾、昆山、深圳、厦门和泰国设制造及研发网络；公开列出集团品牌ROYALOHM、UNIOHM、FOSS、AEON、UNUS，页脚Kunshan Housheng Electronic Industry Co., Ltd.。ROYALOHM检索结果属于公开确认的厚声集团品牌，不据品类任意映射独立厂商；本参考规范厂牌采用准确立创主商品字面UNI-ROYAL(厚声)。 来源 https://www.uni-royal.cn/en/article.php?id=14"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ056JTCE(5R6)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ056JTCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N079：verified_normalization。实际读取准确主商品C25175：商品型号0402WGJ056JTCE，品牌名称UNI-ROYAL(厚声)，厚膜电阻，0402，5.6Ω，±5%，62.5mW，编带。原输入的(5R6)与该准确型号的公开5.6Ω规格一致；规范参考身份不包含这一阻值参数说明，完整TCE订货后缀保留。 来源 https://item.szlcsc.com/25918.html 实际下载并读取准确商品所链接的UNI-ROYAL制造商Thick Film Chip Resistors数据手册（Feb.12,2019 V.3）。封面为Uniroyal Electronics Global Co., Ltd.，列出RoyalOhm和UniOhm品牌；第2页明确产品由UNI-ROYAL制造，并规定完整料号为14位：0402为尺寸，WG为1/16W，J为±5%，056J中的56为有效数、末位J为10^-1，T为Tape/Reel，C为10000pcs，E为无铅标准型。用Python核算056J为5.6Ω、WG为62.5000mW，与完整0402WGJ056JTCE主商品相符，并非任意删括号或删包装后缀。 来源 https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf 实际读取厚声官方公司简介，明确UNI-ROYAL拥有制造工厂、研发及销售网络，集团品牌包括ROYALOHM、UNIOHM、FOSS、AEON及UNUS；官网页脚为Kunshan Housheng Electronic Industry Co., Ltd.，支持UNI-ROYAL为真实厚声制造商身份而非0402电阻品类映射。 来源 https://www.uni-royal.cn/en/article.php?id=14"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206X226M160NT(22uF)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "1206X226M160NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N080：verified_normalization。实际读取主商品：商品型号1206X226M160NT，品牌名称FH(风华)，商品编号C181046，封装1206，容值22uF，精度±20%，额定电压16V，温度系数X5R。括号中的22uF与独立容值参数完全一致，不是订货代码后缀；规范型号保留全部1206X226M160NT字符。 来源 https://item.szlcsc.com/192443.html 实际下载并阅读该目标商品‘下载PDF’链接的原厂产品规格书，原始第1至4页有FH／风华高科／FENGHUA标识。型号表示法给出完整字段尺寸／介质／容量／误差／电压／端头／包装：1206为3.20×1.60mm，X为X5R，容量采用两位有效数字与零个数编码，M为±20%，电压采用两位有效数字与零个数编码，N为Nickel Barrier Termination，T为7寸编带盘包装。该原厂规则与目标完整订货代码及商城22uF、16V、±20%、X5R参数相互印证；未删除NT或猜测O和0。 来源 https://item.szlcsc.com/192443.html 动态搜索完成后出现3条完整型号均为1206X226M160NT的目标货源，厂牌均为FH/广东风华高科，描述均为22μF ±20% X5R 16V 1206 贴片安装，进一步印证真实厂牌和完整规范MPN。厂牌展示文本与立创不同，未将其伪写成字面相同。 来源 https://search.ickey.cn/?keyword=1206X226M160NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CL31A226KOHNNNE(22uF)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "CL31A226KOHNNNE",
+        "brand": "SAMSUNG(三星)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N081：verified_normalization。实际读取三星电机官方产品页面，List of part numbers with package codes明确列出完整订货代码CL31A226KOHNNNE；规格为1206 (3216)、22.0uF、±10%、16.0Vdc、X5R(-55 ~ +85)，Status为Mass Production。完整代码保留字母O和包装代码E。 来源 https://product.samsungsem.com/mlcc/CL31A226KOHNNN.do 实际读取准确主商品详情，商品型号CL31A226KOHNNNE，品牌名称SAMSUNG(三星)，商品编号C90146，封装1206，参数22uF、±10%、16V、X5R；与官方完整订货代码及规格一致。SAMSUNG(三星)为该来源公开厂牌显示，对应Samsung Electro-Mechanics。 来源 https://item.szlcsc.com/91331.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206X106K500NT(10uF50V)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "1206X106K500NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N082：verified_normalization。实际读取风华公开制造商产品资料：型号1206X106K500NT，容量10μF，温度特性X5R，额定电压50V，公差±10%，尺寸1206，生产状态目前生产，包装方式编带包装。输入末尾(10uF50V)为与官方规格一致的独立参数说明，未删除或更改订货型号中的任何字符。 来源 https://fhcomp.com/zh-cn/product_info/?prod_code=1206X106K500NT 实际读取制造商网站首页，其内容以风华自称并列示电容等核心产品，与同域完整MPN产品资料相互印证。 来源 https://fhcomp.com/zh-cn/ 准确主商品显示品牌名称FH(风华)、商品型号1206X106K500NT、商品编号C116702，规格10uF ±10% 50V、X5R、1206；与制造商资料一致。规范品牌取本来源公开厂牌字面FH(风华)，不将原输入品类1206电容当作厂牌。 来源 https://item.szlcsc.com/117956.html 正常动态搜索加载完成后显示约3条结果，均为完整型号1206X106K500NT、厂牌FH/广东风华高科、规格MLCC 10µF ±10% 50V X5R 1206。厂牌身份支持风华归一，但多货源不能唯一选择报价。 来源 https://search.ickey.cn/?keyword=1206X106K500NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206B474K101NT(470nF)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "1206B474K101NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N084：verified_normalization。实际读取风华制造商完整型号页：型号1206B474K101NT，容量470nF，温度特性X7R，额定电压100V，公差±10%，尺寸1206，长3.20±0.30mm、宽1.60±0.30mm、厚1.60±0.30mm；生产状态目前生产，包装方式编带包装。完整NT后缀得到官方型号页确认。 来源 https://fhcomp.com/zh-cn/product_info/?prod_code=1206B474K101NT 实际读取风华官方中文主页，公开核心产品含电容、电阻、电感等，并说明风华从事产品开发、制造及质量保证。 来源 https://www.fhcomp.com/zh-cn/ 准确主商品公开品牌名称FH(风华)，商品型号1206B474K101NT，商品编号C507059；规格470nF、±10%、100V、X7R、1206与制造商完整型号页一致。原输入品牌是品类；仅将已由官方规格确认的独立容量说明(470nF)与完整订货代码分离，不删改NT后缀。 来源 https://item.szlcsc.com/520999.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206B333K251NT(33nF)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "1206B333K251NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N085：verified_normalization。实际读取的准确主商品明确显示商品型号1206B333K251NT、品牌名称FH(风华)、商品编号C913964、封装1206、33nF、±10%、250V、X7R、编带。详情所附通用型系列片式陶瓷电容器制造商规格书的型号表示法为尺寸/介质/容量/误差/电压/端头/包装；1206、B、333、K、251、N、T全部保留。 来源 https://item.szlcsc.com/984530.html 实际读取的完整料号搜索仅有1个自营结果，主商品1206B333K251NT、FH(风华)，33nF、±10%、250V、X7R，链接指向984530数值详情。原输入末尾(33nF)为独立容量说明，与完整订货代码的333及商品规格一致，非型号后缀；原始输入字段未改动。 来源 https://so.szlcsc.com/global.html?k=1206B333K251NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0805X226M160NT(22uF)",
+        "brand": "0805电容"
+      },
+      "canonical": {
+        "partNumber": "0805X226M160NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N090：verified_normalization。实际读取准确主商品：商品型号0805X226M160NT，品牌名称FH(风华)，商品编号C129302，封装0805，容值22uF，精度±20%，额定电压16V，温度系数X5R，包装方式编带。原输入(22uF)与页面独立容量参数一致，仅作为该物料容量说明分离；完整订货代码0805X226M160NT的NT后缀保留不变。 来源 https://item.szlcsc.com/140588.html 实际下载并读取本准确主商品关联的公开原厂《PRODUCT SPECIFICATION / GENERAL TYPE MLCC》PDF，封面标识FH、风华高科、FENGHUA；PDF第4页How To Order给出制造商订货编码结构，0805为尺寸代码，X为X5R，容量采用前两位有效数字及第三位零的个数（226为22uF，经Python换算），M为±20%，160为16V，N为镍阻挡层端头，T为7英寸编带圆盘包装。厂牌和完整制造商订货编码结构与本准确主商品全部规格相符，而非将0805电容品类任意映射为厂牌。 来源 https://item.szlcsc.com/140588.html 实际读取动态搜索完成页，约5条结果均展示完整型号0805X226M160NT、厂牌FH/广东风华高科、封装0805、描述MLCC 22µF ±20% 16V X5R 0805；确认同一制造商身份，但存在多个不同货源，不选择首条或拼接最低报价。 来源 https://search.ickey.cn/?keyword=0805X226M160NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0805X106K160NT(10uF16V)",
+        "brand": "0805电容"
+      },
+      "canonical": {
+        "partNumber": "0805X106K160NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N091：verified_normalization。实际读取准确主商品：商品型号0805X106K160NT，品牌名称FH(风华)，商品编号C89189，0805，10uF、±10%、16V、X5R，包装方式编带。完整型号与输入中明确独立参数说明(10uF16V)相符。 来源 https://item.szlcsc.com/90369.html 实际下载并读取该主商品明确链接的厂家《GENERAL TYPE MLCC 产品规格书》：封面及型号表示法页面有FH、风华高科、FENGHUA标识；型号表示法为尺寸/介质/容量/误差/电压/端头/包装，0805对应2.00×1.25mm，X为X5R，K为±10%，N为三层电镀端头，T为编带7寸盘包装；容量和电压编码规则分别确认106为10uF、160为16V，完整NT后缀保留。该制造商特定订货体系与准确商品MPN、规格共同确认风华厂牌，而非将输入品类映射为任意厂家。 来源 https://item.szlcsc.com/90369.html 正常动态搜索完成后显示5条0805X106K160NT，全部厂牌为FH/广东风华高科，描述10μF ±10% X5R 16V 0805贴片安装；货源不同，不以首条或最低价归并报价。 来源 https://search.ickey.cn/?keyword=0805X106K160NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0805KRX7R9BB104(100nF)",
+        "brand": "0805电容"
+      },
+      "canonical": {
+        "partNumber": "CC0805KRX7R9BB104",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N094：verified_normalization。实际读取并解码制造商公开PDF。首页完整型号CC0805KRX7R9BB104，规格CC X7R、Ceramic、0.1 uF、10%、50 VDC、SMD MLCC、0805/2012；包装T&R, 178mm, Paper Tape，包装数量4000；页脚© 2006 - 2026 YAGEO。因此输入末尾(100nF)是与制造商规格一致的独立容值说明，而非订货代码组成部分；没有修改任何MPN字母、数字或订货后缀。 来源 https://yageogroup.com/download/specsheet/CC0805KRX7R9BB104 准确立创主商品显示商品型号CC0805KRX7R9BB104、品牌名称YAGEO(国巨)、商品编号C49678、0805、100nF、±10%、50V、X7R，与制造商完整MPN及规格一致；YAGEO(国巨)为渠道中英文厂牌展示，制造商为YAGEO。原品牌0805电容是品类，未直接映射为厂牌。 来源 https://item.szlcsc.com/50686.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CL10A106KQ8NNNC(10uF6.3V)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "CL10A106KQ8NNNC",
+        "brand": "SAMSUNG(三星)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N096：verified_normalization。实际下载并读取三星制造商SPECIFICATION (Reference sheet)全文：Supplier: Samsung electro-mechanics；Samsung P/N: CL10A106KQ8NNNC；Description: CAP, 10㎌, 6.3V, ±10%, X5R, 0603。完整代码分解保留末尾C，C明确代表Cardboard Type, 7-inch reel包装。由完整制造商特定订货代码与全部独立规格共同确认唯一厂牌；仅将输入括号中的10uF6.3V作为独立参数分离，没有删改订货代码任何字符。 来源 https://datasheet.octopart.com/CL10A106KQ8NNNC-Samsung-datasheet-34157268.pdf 三星官方元件库实际读取：CL10A106KQ8NNN的器件参数为10.0uF、±10%、6.3Vdc、X5R、0603/1608、1.60×0.80×0.80mm。此页仅作器件参数辅助确认，不用其省略包装位的显示代码替换完整MPN。 来源 https://weblib.samsungsem.com/mlcc/mlcc-ec-data-sheet.do?partNumber=CL10A106KQ8NNN 准确主商品实际读取：品牌名称SAMSUNG(三星)，商品型号CL10A106KQ8NNNC，编号C95839，0603，编带，10uF、±10%、6.3V、X5R。与三星制造商完整订货代码规格书一致，采用商城公开品牌字面SAMSUNG(三星)表示已确认的Samsung Electro-Mechanics。 来源 https://item.szlcsc.com/97043.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603B225K160NT(2.2uF)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "0603B225K160NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N098：verified_normalization。实际读取风华制造商官网MLCC产品目录，目录提供General MLCC及其官方General Series Multi-layer Ceramic Capacitors规格书链接。 来源 https://www.fhcomp.com/en/product_page/?code=010100 已下载并读取风华官网原厂通用MLCC规格书。PDF第3页How To Order确认完整编码段：0603尺寸1.60×0.80mm；B=X7R；容量编码头两位为有效数、第三位为零的个数，225=2200000pF=2.2uF（Python核算）；K=±10%；电压160=16V（Python核算）；N=Nickel Barrier Termination；T=编带7寸盘包装。NT是制造商订货代码组成，完整保留。此资料是编码规则及规格依据，并非声称官网表格直接列出该完整MPN。 来源 https://www.fhcomp.com/uploads/20260922/110905_General%20Series%20Multi-layer%20Ceramic%20Capacitors-A0006.pdf 实际读取目标数值详情页：商品型号0603B225K160NT，品牌名称FH(风华)，商品编号C43922，0603，2.2uF，±10%，16V，X7R，编带。完整MPN及规格与原厂编码规则吻合，输入括号内2.2uF为独立容量说明，而不是被删除的订货后缀。 来源 https://item.szlcsc.com/44924.html 动态加载完成后实际读取7条完整MPN均为0603B225K160NT的结果，厂牌均为FH/广东风华高科，描述均为MLCC 2.2µF ±10% 16V X7R 0603。公开渠道厂牌身份与风华原厂编码及立创商品一致，但多个货源不能唯一选定。 来源 https://search.ickey.cn/?keyword=0603B225K160NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603KRX7R9BB104(100nF)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "CC0603KRX7R9BB104",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N099：verified_normalization。实际取得YAGEO官方完整订货代码规格表，返回内容为base64 PDF，已解码并读取。正文完整型号CC0603KRX7R9BB104；CC X7R系列，Ceramic，0.1 uF，10%，50 VDC，X7R，SMD MLCC，0603 / 1608；规格区Capacitance 0.1 uF，Tolerance 10%，Voltage DC 50 VDC，Temp. Coefficient X7R；包装T&R, 178mm, Paper Tape，包装数量4000；版权YAGEO。Python核对0.1 uF等于100 nF。 来源 https://yageogroup.com/download/specsheet/CC0603KRX7R9BB104 实际读取立创准确主商品页面，商品型号CC0603KRX7R9BB104，品牌名称YAGEO(国巨)，商品编号C14663，100nF ±10% 50V，0603，温度系数X7R，与官方完整订货代码规格一致。 来源 https://item.szlcsc.com/15331.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603KRX7R9BB332(3.3nF)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "CC0603KRX7R9BB332",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N101：verified_normalization。实际读取YAGEO官方网站规格页，返回base64 PDF已解码并提取正文。第一页完整订货代码CC0603KRX7R9BB332，CC X7R，Ceramic，3,300 pF，10%，50 VDC，X7R，SMD，MLCC，General Purpose，0603 / 1608；页脚版权YAGEO。3,300 pF与输入附注3.3nF一致，由完整制造商特定订货代码及规格确认该制造商，不是按品类任意指定厂牌。 来源 https://yageogroup.com/download/specsheet/CC0603KRX7R9BB332 实际读取准确主商品详情：品牌名称YAGEO(国巨)，商品型号CC0603KRX7R9BB332，编号C107088；容值3.3nF，精度±10%，额定电压50V，温度系数X7R，0603。由官方YAGEO资料及此页确认中文展示厂牌YAGEO(国巨)。 来源 https://item.szlcsc.com/108304.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603JRNPO9BN101(100pF)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "CC0603JRNPO9BN101",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N102：verified_normalization。实际读取YAGEO官方返回的规格表并解码为PDF。首页完整型号为CC0603JRNPO9BN101，规格为CC NPO、100 pF、5%、50 VDC、C0G、SMD MLCC、0603/1608；包装T&R, 178mm, Paper Tape，包装数量4000；页脚© 2006–2026 YAGEO。完整制造商订货代码和100pF规格吻合，输入末尾(100pF)是独立容值说明；未改变料号中的字母O或数字0。 来源 https://yageogroup.com/download/specsheet/CC0603JRNPO9BN101 准确主商品页面实际显示商品型号CC0603JRNPO9BN101、品牌名称YAGEO(国巨)、商品编号C14665、0603、100pF ±5% 50V，与官方完整型号和规格一致，支持YAGEO(国巨)作为本次参考的公开规范厂牌表示。 来源 https://item.szlcsc.com/15333.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402X106M6R3NT(10uF)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "0402X106M6R3NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N103：verified_normalization。实际读取主商品：品牌名称FH(风华)，商品型号0402X106M6R3NT，编号C163694，0402封装，10uF、±20%、6.3V、X5R、编带；完整NT后缀保留。输入末尾(10uF)与独立容值规格完全一致，未作为订货代码的一部分出现在商品型号字段。 来源 https://item.szlcsc.com/175076.html 实际读取风华原厂MLCC产品页，并访问该页General Series Multi-layer Ceramic Capacitors-A0006公开PDF。原厂型号表示法为尺寸／介质／容量／误差／电压／端头／包装：0402为1.00×0.50mm，X为X5R，M为±20%，6R3为6.3V，N为Nickel Barrier Termination，T为编带7寸盘；106按容量编码及Python换算为10µF。原厂容量范围表支持0402、X5R、10µF、6.3V。该原厂完整编码规则与准确主商品交叉确认风华厂牌，而非由0402电容品类推定。 来源 https://www.fhcomp.com/en/product_page/?code=010100 独立浏览器正常加载后有3条准确型号0402X106M6R3NT，三条均显示厂牌FH/广东风华高科及MLCC 10µF ±20% 6.3V X5R 0402；为同一风华制造商但不同货源，不能唯一选定云汉报价。 来源 https://search.ickey.cn/?keyword=0402X106M6R3NT"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CL05B104KB5NNNC(100nF50V)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "CL05B104KB5NNNC",
+        "brand": "SAMSUNG(三星)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N104：verified_normalization。实际读取三星电机官方产品资料，页面明确说明#为包装代码，并完整列出CL05B104KB5NNNC和CL05B104KB5NNND两个订货代码；本目标保留完整C包装后缀。官方规格为0402(1005)、100.0nF、±10%、50.0Vdc、X7R。输入中的(100nF50V)与该独立参数说明完全一致，因此仅在参考身份中分离参数，未纠正或修改原输入。 来源 https://product.samsungsem.com/mlcc/CL05B104KB5NNN.do 准确详情主商品明示商品型号CL05B104KB5NNNC、品牌名称SAMSUNG(三星)、商品编号C960916、0402、100nF、±10%、50V、X7R、编带；SAMSUNG(三星)作为该已确认三星电机制造商的中文渠道规范显示名。 来源 https://item.szlcsc.com/1040307.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402B104K160NT(100nF16V)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "0402B104K160NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N106：verified_normalization。实际读取风华制造商官网完整订货码页面：Part Number 0402B104K160NT；Cap. 100nF；Rated Vdc 16V；T.C.R X7R；Tolerance ±10%；Size Code 0402。输入中的(100nF16V)可独立确认为参数说明，完整订货码NT后缀保留，不改原输入字段。 来源 https://www.fhcomp.com/en/product_info/?prod_code=0402B104K160NT 实际读取制造商官网，正文以Fenghua说明其元器件制造及研发业务，并列示Capacitors产品类别。 来源 https://www.fhcomp.com/en/ 实际读取准确立创主商品详情：品牌名称FH(风华)，商品型号0402B104K160NT，商品编号C41851；规格100nF ±10% 16V、X7R、0402。与制造商完整订货码及独立参数一致，厂牌不是由输入品类任意映射。 来源 https://item.szlcsc.com/42839.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO9BN200(20pF)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO9BN200",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N108：verified_normalization。实际读取并解析 YAGEO 官方完整 MPN 规格书 PDF，页首为 CC0402JRNPO9BN200；规格为 CC NPO、20 pF、5%、50 VDC、C0G、SMD MLCC、0402 / 1005，包装 T&R, 178mm, Paper Tape，包装数量 10000，版权标注 YAGEO。由完整制造商特定订货代码及规格确认唯一厂牌，并确认输入末尾 (20pF) 为独立电容量说明；未更改 MPN 中 NPO 的字母 O。 来源 https://yageogroup.com/download/specsheet/CC0402JRNPO9BN200 实际读取主商品：商品型号 CC0402JRNPO9BN200、品牌名称 YAGEO(国巨)、商品编号 C107000；容值 20pF、精度 ±5%、额定电压 50V、温度系数 NP0、封装 0402，与官方资料一致。规范厂牌采用该渠道公开展示的 YAGEO(国巨) 字面名称。 来源 https://item.szlcsc.com/108216.html 实际读取准确完整 MPN 搜索页：自营结果数1；目标为 CC0402JRNPO9BN200 / YAGEO(国巨) / C107000，普通表头价格梯度(含税)，价格与主商品最新价格全部阶梯一致。立推和海外代购为独立区域，均未采用。 来源 https://so.szlcsc.com/global.html?k=CC0402JRNPO9BN200"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO9BN120(12pF)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO9BN120",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N109：verified_normalization。实际读取YAGEO官方完整订货代码规格响应，解码PDF后首页明确为CC0402JRNPO9BN120；描述CC NPO, Ceramic, 12 pF, 5%, 50 VDC, C0G, SMD, MLCC, General Purpose, 0402 / 1005；规格为12 pF、5%、50 VDC、0402 / 1005，包装T&R, 178mm, Paper Tape、10000；页脚© 2006 - 2026 YAGEO。仅将输入明确容量参数(12pF)与完整MPN分离，没有替换O/0或改动订货代码。 来源 https://yageogroup.com/download/specsheet/CC0402JRNPO9BN120 实际读取准确主商品详情及动态DOM：商品型号CC0402JRNPO9BN120，品牌名称YAGEO(国巨)，商品编号C106201，0402，12pF ±5% 50V，NP0，编带。与原厂完整MPN和规格一致。 来源 https://item.szlcsc.com/107416.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO9BN100(10pF)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO9BN100",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N110：verified_normalization。实际读取 YAGEO 官方规格文件并解码为 PDF。文件标题完整字面为 CC0402JRNPO9BN100；规格为 CC NPO、10 pF、5%、50 VDC、C0G、SMD MLCC、0402 / 1005；页脚 © 2006 - 2026 YAGEO。包装 T&R, 178mm, Paper Tape，包装数量 10000。该制造商特定完整订货代码及容量确认输入的 (10pF) 为独立容量说明，不是订货代码后缀；NPO 中字母 O 保持不变。 来源 https://yageogroup.com/download/specsheet/CC0402JRNPO9BN100 准确主商品显示品牌名称 YAGEO(国巨)、商品型号 CC0402JRNPO9BN100、商品编号 C106199、0402、10pF ±5% 50V、温度系数 NP0。与官方制造商及完整代码一致，0402电容仅为输入品类，不作为厂牌。 来源 https://item.szlcsc.com/107414.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CBG321609U222T",
+        "brand": "1206磁珠"
+      },
+      "canonical": {
+        "partNumber": "CBG321609U222T",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N111：verified_normalization。实际读取风华高科官网，页面标题为‘叠层片式铁氧体磁珠(CBG)-风华高科’；型号表存在完整字面CBG321609U222T，生产状态‘目前生产’，准确产品链接为/zh-cn/product_info/?prod_code=CBG321609U222T。因此厂牌来自制造商完整订货型号记录，而不是把‘1206磁珠’品类默认映射成厂牌。 来源 https://www.fhcomp.com/zh-cn/product_page/?code=030303&page=3 实际读取风华官网完整型号详情，尺寸为1206，长度3.2±0.2mm、宽度1.6±0.2mm、厚度0.9±0.2mm，生产状态目前生产。 来源 https://www.fhcomp.com/zh-cn/product_info/?prod_code=CBG321609U222T 实际下载并读取官网CBG系列承认书：第1页订货命名CBG+尺寸+材料代码+阻抗代码+包装代码，321609为3.2×1.6×0.9mm，T为卷带盘装；第2页尺寸表将321609对应1206；第10页321609每卷4000个。该承认书未列出目标222T的单独电性能行，因此不从其他型号推导目标额定电流或直流电阻。 来源 https://www.fhcomp.com/uploads/20251208/102851_I0001-A3-CBG系列承认书（CBG%20%20Series%20APPROVAL%20SHEET）.pdf 实际读取立创准确主商品：品牌名称FH(风华)，商品型号CBG321609U222T，商品编号C3032755，封装1206，包装方式编带，阻抗2.2kΩ@100MHz，误差±25%；与官网完整订货型号、尺寸及T包装代码相互印证。 来源 https://item.szlcsc.com/3573099.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SZ2012K272TF",
+        "brand": "0805磁珠"
+      },
+      "canonical": {
+        "partNumber": "SZ2012K272TF",
+        "brand": "Sunlord(顺络)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N114：verified_normalization。实际下载并读取Sunlord制造商编制的Multilayer Chip Ferrite Bead – SZ Series资料（Revised 2021/05/15）。PRODUCT IDENTIFICATION明确2012=[0805]、尺寸2.0×1.25mm、T=Tape & Reel、F=Hazardous Substance Free Products；SZ2012规格表逐字列出完整SZ2012K272TF，阻抗2700Ω±25%@100MHz、最大直流电阻0.80Ω、额定电流200mA。资料署名Sunlord，联系邮箱sunlord@sunlordinc.com。完整TF后缀保留。 来源 https://evelta.com/content/datasheets/212-Ferrite-SZ-Series.pdf 实际读取制造商官网，Sunlord Overview明确公司名称Shenzhen Sunlord Electronics Co.,Ltd.，从事片式电子元件开发、制造与销售。 来源 https://www.sunlordinc.com/en/ 实际读取准确数字详情页：商品型号SZ2012K272TF，品牌名称Sunlord(顺络)，商品编号C185876，0805，编带，2.7kΩ@100MHz、±25%、800mΩ、200mA。与制造商完整订货代码及规格一致，支持将输入品类0805磁珠的参考身份归一为顺络，不修改原输入字段。 来源 https://item.szlcsc.com/197281.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CBM201209U601T",
+        "brand": "0805磁珠"
+      },
+      "canonical": {
+        "partNumber": "CBM201209U601T",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N116：verified_normalization。实际读取风华制造商官网完整型号详情：型号CBM201209U601T；L 2.0±0.20mm、W 1.2±0.20mm、T 0.9±0.20mm；标称阻抗600Ω、测试频率100MHz、RDC最大0.1Ω、偏差±25%、额定电流2000mA。完整制造商特定型号及规格与目标相符，并非根据品类任意映射厂牌。 来源 https://fhcomp.com/zh-cn/product_info/?prod_code=CBM201209U601T 实际读取立创主商品：商品型号CBM201209U601T，品牌名称FH(风华)，商品编号C139168，封装0805，600Ω@100MHz、±25%、100mΩ、额定电流2A。与风华官网完整型号及规格一致。 来源 https://item.szlcsc.com/150489.html 正常加载后的云汉完整型号搜索显示5条结果，均明确列出CBM201209U601T、FH/广东风华高科、0805、600 Ohms @ 100MHz、2A、0.1 Ohms；支持制造商身份，但多货源不能唯一选取报价。 来源 https://search.ickey.cn/?keyword=CBM201209U601T"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BLM18BD222SN1D",
+        "brand": "0603磁珠"
+      },
+      "canonical": {
+        "partNumber": "BLM18BD222SN1D",
+        "brand": "muRata(村田)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N117：verified_normalization。实际读取村田原厂产品资料：In Production；BLM18BD222SN1#；明确列出BLM18BD222SN1B,BLM18BD222SN1D,BLM18BD222SN1J，#表示包装代码。D对应180mm Paper Tape、标准包装4000。尺寸1608/0603，单路，150mA(at125℃)，DCR max 1.5Ω，阻抗2200Ω±25%@100MHz，工作温度-55～125℃；文末明确资料来自Murata Manufacturing Co., Ltd.。完整D后缀原样确认，未删包装后缀。 来源 https://pim.murata.com/en-us/pim/details/?partNum=BLM18BD222SN1D 实际读取准确主商品：品牌名称muRata(村田)，商品型号BLM18BD222SN1D，商品编号C113022，封装0603，编带；规格与原厂相符。输入品牌0603磁珠为品类，依据原厂完整订货代码确认唯一制造商，再采用本来源真实厂牌字面muRata(村田)，不修改原输入。 来源 https://item.szlcsc.com/114257.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SZ1608K102TF",
+        "brand": "0603磁珠"
+      },
+      "canonical": {
+        "partNumber": "SZ1608K102TF",
+        "brand": "Sunlord(顺络)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N118：verified_normalization。实际下载并解析Sunlord署名的《Multilayer Chip Ferrite Bead – SZ Series》原厂手册（Revised 2013/05/15）。PRODUCT IDENTIFICATION说明SZ为高速信号磁珠、1608为1.6×0.8mm/0603、K为材料代码、102为1000Ω、T为Tape & Reel、F为无有害物质产品；SZ1608规格表完整列出SZ1608K102TF，阻抗1000Ω±25%@100MHz、最大额定电流200mA。页脚明确Sunlord及sunlord@sunlordinc.com，完整TF后缀是订货代码组成，未删除或改写。 来源 https://static.chipdip.ru/lib/689/DOC012689221.pdf 实际读取Manufacturer Product Number为SZ1608K102TF，Manufacturer为Shenzhen Sunlord Electronics Co., Ltd.，Package/Case为0603 (1608 Metric)，Impedance为1 kOhms @ 100 MHz，Packaging为Tape & Reel (TR)；用于制造商身份交叉核验，不使用此站报价或库存。 来源 https://www.digikey.com/en/products/detail/shenzhen-sunlord-electronics-co-ltd/SZ1608K102TF/14122254 实际读取准确主商品：品牌名称Sunlord(顺络)，商品型号SZ1608K102TF，商品编号C13572，封装0603，包装方式编带，磁珠1kΩ@100MHz、±25%、700mΩ、200mA。完整制造商特定订货代码与原厂手册匹配，输入品牌0603磁珠仅为品类，未更改原输入。 来源 https://item.szlcsc.com/14222.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GZ1608D601TF",
+        "brand": "0603磁珠"
+      },
+      "canonical": {
+        "partNumber": "GZ1608D601TF",
+        "brand": "Sunlord(顺络)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N119：verified_normalization。已实际读取并解码Sunlord署名原厂《Multilayer Chip Ferrite Bead – GZ Series》PDF。PRODUCT IDENTIFICATION保留完整订货后缀：1608=[0603]、1.6×0.8mm；D为材料代码；T为Tape & Reel；F为Hazardous Substance Free Products。GZ1608 TYPE规格表明确列出完整GZ1608D601TF，600Ω±25% @100MHz、最大直流电阻0.45Ω、最大额定电流200mA；资料署名Sunlord。不是依据品类任选厂商。 来源 https://www.quick-teck.co.uk/Management/EEUploadFile/1420191458.pdf 准确主商品实际读取显示品牌名称Sunlord(顺络)、商品型号GZ1608D601TF、商品编号C1002、封装0603、编带；参数600Ω@100MHz、±25%、450mΩ、200mA与原厂完整型号规格一致。 来源 https://item.szlcsc.com/1354.html 公开页面已实际读取，Manufacturer Product Number为GZ1608D601TF，Manufacturer为Shenzhen Sunlord Electronics Co., Ltd.，0603 (1608 Metric)、600 Ohms @100MHz、200mA、450mOhm；用于核对Sunlord的真实制造商身份，不采该站报价。 来源 https://www.digikey.com/en/products/detail/shenzhen-sunlord-electronics-co-ltd/GZ1608D601TF/14120345"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ1608U301-1R2TF",
+        "brand": "0603磁珠"
+      },
+      "canonical": {
+        "partNumber": "PZ1608U301-1R2TF",
+        "brand": "Sunlord(顺络)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N120：verified_normalization。已实际读取准确主商品：商品型号PZ1608U301-1R2TF，品牌Sunlord(顺络)，商品编号C304465，封装0603，300Ω@100MHz、±25%、DCR 150mΩ、额定电流1.2A。并从本页公开下载PDF链接取得、实际阅读顺络制造商专用规格书（SPEC No. PZ1401250365，Rev.01，Sep.18,2025）：第1页列出Sunlord Part Number PZ1608U301-1R2TF及Shenzhen Sunlord Electronics Co., Ltd.；第4页明确Scope适用于该完整型号，订货码PZ/1608/U/301/-1R2/T/F分别确认0603即1.6×0.8mm、300Ω、1.2A、Tape Carrier Package及HSF，电气表完整型号为300±25%Ω@100MHz、DCR最大0.150Ω、1200mA。完整厂商特定订货码及制造商规格相符，不是由品类任意映射厂牌。 来源 https://item.szlcsc.com/288532.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TLV73333PDBVR",
+        "brand": "线性稳压器"
+      },
+      "canonical": {
+        "partNumber": "TLV73333PDBVR",
+        "brand": "TI(德州仪器)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N122：verified_normalization。实际读取并解码TI官方TLV733P数据手册。Package Option Addendum明确列出完整订货代码TLV73333PDBVR：Active、Production、SOT-23 (DBV)、5引脚、3000 LARGE T&R、-40至125°C、标记VCIQ。Device Nomenclature说明TLV733xx(x)Pyyyz中xx为标称输出电压、P为主动输出放电、R为3000件卷装；完整目标对应3.3V、300mA低压降线性稳压器。资料中的Texas Instruments名称和完整制造商订货代码确认厂牌为TI（德州仪器），不是由输入品类推定。 来源 https://www.ti.com/lit/ds/symlink/tlv733p.pdf 实际读取的准确主商品型号为TLV73333PDBVR，品牌名称TI(德州仪器)，商品编号C134139，封装SOT-23-5，输出电压3.3V，输出电流300mA，工作电压5.5V，与TI官方完整订货代码及规格一致。 来源 https://item.szlcsc.com/145447.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TPS73533DRBR",
+        "brand": "线性稳压器"
+      },
+      "canonical": {
+        "partNumber": "TPS73533DRBR",
+        "brand": "TI(德州仪器)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N123：verified_normalization。实际读取TI官方完整订货代码TPS73533DRBR页面：VSON (DRB)、8引脚、-40至125°C、3000件LARGE T&R；TPS735为500mA低压差线性稳压器。 来源 https://www.ti.com/product/TPS735/part-details/TPS73533DRBR 实际读取并解码TI官方PDF：版权厂商Texas Instruments Incorporated；Package Option Addendum明确列出TPS73533DRBR，Active、Production、SON (DRB) | 8、3000 | LARGE T&R、-40 to 125；订货规则明确33代表3.3V，R代表3000件卷带。保留完整DRBR后缀，未改写原型号。 来源 https://www.ti.com/lit/gpn/TPS735 实际读取准确商品：型号TPS73533DRBR、品牌名称TI(德州仪器)、商品编号C388480、SON-8(3x3)、固定输出3.3V、500mA，符合TI官方完整订货身份。TI(德州仪器)为本来源公开厂牌名称，并非将品类任意映射制造商。 来源 https://item.szlcsc.com/363474.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "LM1117IMPX-3.3/NOPB",
+        "brand": "线性稳压器"
+      },
+      "canonical": {
+        "partNumber": "LM1117IMPX-3.3/NOPB",
+        "brand": "TI(德州仪器)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N124：verified_normalization。实际读取TI官方该完整订货代码对应页：Package | Pins SOT-223 (DCY) | 4；Operating temperature range -40 to 125 °C；Package qty | Carrier 2,000 | LARGE T&R；Output current: 800 mA。 来源 https://www.ti.com/product/LM1117/part-details/LM1117IMPX-3.3/NOPB 实际取得并解码TI官方LM1117数据手册PDF，订货表完整原文：LM1117IMPX-3.3/NOPB Active Production SOT-223 (DCY) | 4 2000 | LARGE T&R Yes SN Level-1-260C-UNLIM -40 to 125 N05B。正文说明固定输出版本包括3.3V、输出电流800mA；版权明确为Texas Instruments Incorporated。完整MPN保留IMPX及/NOPB，未改写输入。 来源 https://www.ti.com/lit/ds/symlink/lm1117.pdf 实际读取立创主商品及真实DOM：商品型号LM1117IMPX-3.3/NOPB，品牌名称TI(德州仪器)，商品编号C23984，SOT-223，输出电压3.3V、输出电流800mA。TI(德州仪器)是该公开商品的厂牌字面名称，对应官方Texas Instruments；输入品牌线性稳压器仅为品类。 来源 https://item.szlcsc.com/24724.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TYPE-C-31-M-12",
+        "brand": "USB连接器"
+      },
+      "canonical": {
+        "partNumber": "TYPE-C-31-M-12",
+        "brand": "韩国韩荣"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N125：verified_normalization。实际读取主商品：商品型号TYPE-C-31-M-12，品牌名称韩国韩荣，商品编号C165948，SMD，USB Type-C母座，卧贴，16P，5A、20V，体长7.35mm。原品牌USB连接器为页面商品目录而非制造商品牌。 来源 https://item.szlcsc.com/177331.html 从准确主商品公开下载入口取得PDF并实际视觉读取：图纸厂商标志为HROparts，ELECTRONICS CO., LTD；PART NO.为完整TYPE-C-31-M-12；图示Type-C母座，宽8.94mm、长7.35mm；注明CURRENT RATING 5A、VOLTAGE RATING 20V、DURABILITY 10000 CYCLES、OPERATING TEMPERATURE -30℃~+80℃。完整制造商代码与目标详情一致，未删改任何型号字符。 来源 https://atta.szlcsc.com/upload/public/pdf/source/20220525/466408E853115E789EDB0DDC29077C05.pdf?Expires=4070880000&OSSAccessKeyId=LTAIJDIkh7KmGS1H&Signature=l%2B0VMi3VGuOdPnv%2BPA5PcN2z6UU%3D&response-content-disposition=attachment%3Bfilename%3DC165948_USB%25E8%25BF%259E%25E6%258E%25A5%25E5%2599%25A8_TYPE-C-31-M-12_%25E8%25A7%2584%25E6%25A0%25BC%25E4%25B9%25A6_WJ310728.PDF 实际读取HRO制造商官网产品资料：8.94×7.35×3.16mm通用型16P（表面贴装式）TYPE-C接口，DC20V5A、10,000 cycles、-30℃至80℃，并声明hro品牌产品。该页提取文本的产品编号未显示，因此仅用作品牌及规格交叉佐证，完整MPN依据为已视觉核实的制造商规格图与准确商城详情。 来源 https://www.krhro.com/Product-Details/726.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TYPE-C-31-D-06",
+        "brand": "USB连接器"
+      },
+      "canonical": {
+        "partNumber": "TYPE-C-31-D-06",
+        "brand": "韩国韩荣"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N126：verified_normalization。准确主商品明确列出商品型号TYPE-C-31-D-06、品牌名称韩国韩荣、商品编号C2689964、SMD、Type-C母座、立贴、16P、5A、5V、6.4mm、-25℃~+85℃。其直接提供的C2689964_D1592D64188706DA691C3D085262DA26.pdf已实际下载并视觉读取：原厂图纸标题栏具有HRO/韩荣标识及ELECTRONICS CO.,LTD，PART NO.为完整TYPE-C-31-D-06；图纸规格包含16触点、5A总VBUS/GND额定、5V及10000次插拔。由完整制造商特定代码和原厂图纸确认厂牌，并非将USB连接器品类默认映射成制造商。 来源 https://item.szlcsc.com/2797985.html 正常搜索加载完成后共有3条：唯一完整型号TYPE-C-31-D-06，另两条为TYPE-C-31-D-06A及TYPE-C-31-D-06B，未采用两种后缀型号。准确目标厂牌字面为HRO/韩国韩荣，仅有授权代理这一公开货源，与原厂图纸HRO标识及立创韩国韩荣身份一致。 来源 https://search.ickey.cn/?keyword=TYPE-C-31-D-06 准确详情标题为TYPE-C-31-D-06（授权代理），厂牌字面HRO/韩国韩荣，供应商型号Q-TYPE-C-31-D-06为渠道自己的代码，不作为制造商MPN替代；产品属性16P、Type-C、母头、-25℃~85℃。 来源 https://www.ickey.cn/detail/15801014267/TYPE-C-31-D-06.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "KSZ8081MNXIA-TR",
+        "brand": "以太网收发器"
+      },
+      "canonical": {
+        "partNumber": "KSZ8081MNXIA-TR",
+        "brand": "MICROCHIP(美国微芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N127：verified_normalization。实际读取Microchip官方直销完整订货代码页面KSZ8081MNXIA-TR：10/100 BASE-TX Physical Layer Transceiver；Lead Count: 32；Package Type: VQFN；Packing Media: Tape and reel (1000)；Temp Range: -40C to +85C。完整-TR后缀得到原厂页面确认，未删改型号。 来源 https://www.microchipdirect.com/product/KSZ8081MNXIA-TR 实际读取并解码官方数据手册DS00002202C，版权为Microchip Technology Inc.；第63页PRODUCT IDENTIFICATION SYSTEM示例KSZ8081MNXIA为10BASE-T/100BASE-TX Physical Layer Transceiver、MII、32-pin QFN、Industrial Temperature；IA明确为-40°C to +85°C。结合官方完整-TR订货页面，可唯一确认Microchip制造商，不将原始品类品牌任意映射。 来源 https://ww1.microchip.com/downloads/en/DeviceDoc/00002202C.pdf 实际读取准确主商品详情：品牌名称MICROCHIP(美国微芯)，商品型号KSZ8081MNXIA-TR，商品编号C145690，QFN-32-EP(5x5)，包装方式编带，工作温度-40℃~+85℃。渠道公开品牌字面作为本次参考品牌标签，其制造商为Microchip Technology Inc.。 来源 https://item.szlcsc.com/157022.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "KH-56-8P8C-1X2-D",
+        "brand": "以太网连接器"
+      },
+      "canonical": {
+        "partNumber": "KH-56-8P8C-1X2-D",
+        "brand": "kinghelm(金航标)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N129：verified_normalization。实际读取的准确主商品明确显示商品型号KH-56-8P8C-1X2-D、品牌名称kinghelm(金航标)、商品编号C2828088；参数为RJ45插座、弯插、2端口、带LED、有屏蔽、不带PoE，尺寸32.25×15.75×13.1mm。输入品牌是品类，未修改原字段。 来源 https://item.szlcsc.com/2975540.html 实际下载该准确商品页面链接的公开原厂规格书并核验其与已目视读取图纸完全相同：图纸有Kinghelm标识、深圳市金航标电子有限公司、完整KH-56-8P8C-1X2-D及CAT.5 SHIELDED JACK SIDE LED，双端口机械结构及32.25、15.75MAX、13.1mm尺寸与主商品一致。由完整制造商特定型号及原厂图纸确认唯一厂牌，不是按品类推定。 来源 https://item.szlcsc.com/2975540.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AT24C16C-SSHM-T",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "AT24C16C-SSHM-T",
+        "brand": "MICROCHIP(美国微芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N136：verified_normalization。已通过公开网页提取读取Microchip直营完整订货代码产品URL；返回规格为1.7-5.5V、1MHz、8-SOIC-N、8引脚、SOIC封装、Tape and reel (4000)、-40C至+85C。完整订货代码保留全部后缀。其后浏览器访问报告验证码，已停止该站访问，未尝试解决或绕过。 来源 https://www.microchipdirect.com/product/AT24C16C-SSHM-T Microchip官方产品页实际读取显示16Kb I2C compatible 2-wire Serial EEPROM，状态In Production，与完整订货型号页面规格及立创主商品规格相符。 来源 https://www.microchip.com/en-us/product/at24c16c 准确主商品实际显示商品型号AT24C16C-SSHM-T、品牌名称MICROCHIP(美国微芯)、商品编号C6480、SOIC-8、编带、16Kbit、I2C、1MHz、1.7V~5.5V、-40℃~+85℃。厂牌采用该页面的完整字面显示名称，指向Microchip制造商，不将输入品类“芯片”直接映射为厂牌。 来源 https://item.szlcsc.com/6945.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "NSD5604NE-DHTSTR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "NSD5604NE-DHTSTR",
+        "brand": "NOVOSENSE(纳芯微)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N138：verified_normalization。实际下载并读取NOVOSENSE原厂数据手册NSD5604E / NSD5604NE，Datasheet (EN) 1.1。首页标注Copyright © 2023, NOVOSENSE；Device Information完整列出NSD5604NE-DHTSTR、HTSSOP20、6.5mm X 6.4mm。第14页Ordering Information完整列出NSD5604NE-DHTSTR，Adjusted ILIM / Cut Off Delay YES，VDD5_OUT NO，Package Type HTSSOP20，MSL 3，SPQ 3000；产品为4通道低侧驱动器，工作电压8V至50V、工作温度-40至125°C。该制造商特定完整订货代码确认唯一厂牌，而非将品类“芯片”直接映射成制造商。 来源 https://cdn.ozdisan.com/public/product/assets/NSD5604E%2C%20NSD5604NE.pdf 实际读取准确自营主商品详情，品牌名称NOVOSENSE(纳芯微)，商品型号NSD5604NE-DHTSTR，商品编号C33959956，商品封装HTSSOP-20，包装方式编带；完整型号与制造商数据手册订货代码一致。 来源 https://item.szlcsc.com/35694203.html 实际读取厂商官网公司介绍：纳芯微电子，简称纳芯微，是模拟及混合信号芯片公司；确认中文厂牌称谓。原厂文档版权为NOVOSENSE，准确商城详情显示对应品牌NOVOSENSE(纳芯微)。 来源 https://www.novosns.com/company-profile"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AiP650EOSA16.TR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "AiP650EOSA16.TR",
+        "brand": "I-CORE(中微爱芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N139：verified_normalization。实际读取准确主商品：商品型号AiP650EOSA16.TR，品牌名称I-CORE(中微爱芯)，商品编号C7437292，封装SOP-16，包装编带；描述为2线串口共阴极8段4位/7x4位带键盘扫描并具有部分组合按键功能LED驱动控制专用电路。 来源 https://item.szlcsc.com/8459437.html 实际正常加载的完整料号搜索结果显示厂牌I-CORE/无锡中微爱芯或i-CORE/无锡中微爱芯，SOP-16；两条在库商品明示别名AiP650EOSA16.TR，另有完整AiP650EOSA16.TR全球集采货源。 来源 https://search.ickey.cn/?keyword=AiP650EOSA16.TR"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GD25Q80CTIGR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "GD25Q80CTIGR",
+        "brand": "GigaDevice(兆易创新)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N143：verified_normalization。实际读取兆易创新官方GD25Q80C产品页：Density 8Mb，Voltage 2.7V~3.6V，Single/Dual/Quad I/O，Frequency 120MHz；页面提供DS-00091-GD25Q80C-Rev2.8原厂PDF链接。 来源 https://www.gigadevice.com/product/flash/spi-nor-flash/gd25q80c 实际下载并读取原厂公开PDF。第55页订货代码说明：80=8M bit，C=C Version，T=SOP8 150mil，I=Industrial (-40℃ to +85℃)，G=Pb Free + Halogen Free Green Package，R=Tape and Reel。第56页Valid Part Numbers列GD25Q80CTIG、8Mbit、SOP8 150mil；结合明确的R包装订货代码确认完整GD25Q80CTIGR，不删除R后缀。第67页声明资料属于GigaDevice Semiconductor (Beijing) Inc.及其子公司。 来源 https://download.gigadevice.com/Datasheet/DS-00091-GD25Q80C-Rev2.8.pdf 实际读取准确主商品：品牌名称GigaDevice(兆易创新)，商品型号GD25Q80CTIGR，商品编号C395464，SOP-8，编带；8Mbit、120MHz、2.7V~3.6V、-40℃~+85℃，与原厂订货规格吻合。 来源 https://item.szlcsc.com/376160.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GD25Q40CTIGR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "GD25Q40CTIGR",
+        "brand": "GigaDevice(兆易创新)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N144：verified_normalization。已下载并读取GigaDevice制造商GD25Q40C数据手册Rev2.2。第54页订货规则定义25为SPI Flash、Q为3V 4KB统一扇区、40为4Mbit、C为C版本、T为SOP8 150mil、I为-40℃至+85℃、G为无铅无卤、R为Tape and Reel；第55页有效型号表列出GD25Q40CTIG。由完整厂商订货规则确认GD25Q40CTIGR是该型号的编带订货码，未删改末尾R。末页声明资料属于GigaDevice Semiconductor (Beijing) Inc.及其子公司。 来源 https://cdn.sparkfun.com/assets/9/c/2/2/d/DS-18076-4Mb_Flash_memory_-_GD25Q40CTIGR.pdf 制造商官方GD25Q40C页面公开规格为4Mb、2.7V~3.6V、Single/Dual/Quad I/O、120MHz，含SOP8 150mil封装；列出数据手册DS-00222-GD25Q40C-Rev2.2。 来源 https://www.gigadevice.com/product/flash/spi-nor-flash/gd25q40c 准确主商品显示品牌名称GigaDevice(兆易创新)、商品型号GD25Q40CTIGR、商品编号C395468、SOP-8、包装方式编带；4Mbit、120MHz、2.7V~3.6V、工作温度-40℃~+85℃与制造商完整订货规则相符。 来源 https://item.szlcsc.com/376164.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SCT2601TVBR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "SCT2601TVBR",
+        "brand": "SCT(芯洲科技)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N145：verified_normalization。实际读取准确主商品：商品型号SCT2601TVBR，品牌名称SCT(芯洲科技)，商品编号C2931912，封装TSOT-23-6，包装编带；规格为4.5V~60V输入、600mA降压转换器、700kHz开关频率。另已实际下载并阅读公开制造商编写的《SCT2601 Rev.1.0》数据手册：第1页标识“芯洲科技 / Silicon Content Technology”，版权为Silicon Content Technology Co., Ltd.；第2页DEVICE ORDER INFORMATION列SCT2601TVB、标记2601、TSOT23-6L，并明确“For Tape & Reel, Add Suffix R (e.g. SCT2601TVBR)”。完整R后缀为制造商明确订货代码，未删除或纠正输入料号；资料规格与准确商品一致。 来源 https://item.szlcsc.com/3273775.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SN65HVD33DR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "SN65HVD33DR",
+        "brand": "TI(德州仪器)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261117-aggregation-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "专属研究 N147：verified_normalization。实际读取Texas Instruments官方完整订货号页面；SN65HVD33DR对应SN65HVD33全双工RS-422/RS-485收发器，3.3V供电，SOIC(D)14引脚，温度范围-40至85°C，2500颗LARGE T&R。原输入型号未作删改；输入品牌‘芯片’是品类。 来源 https://www.ti.com/product/SN65HVD33/part-details/SN65HVD33DR 实际读取并解码TI官方PDF，订货表明确列出：SN65HVD33DR Active Production SOIC(D)|14 2500|LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -40 to 85 65HVD33。完整DR订货代码与14引脚卷带封装获得原厂资料确认，未将SN65HVD33D、SN65HVD33DRG4或其他后缀合并。 来源 https://www.ti.com/lit/ds/symlink/sn65hvd30.pdf 实际读取准确详情主商品：SN65HVD33DR，品牌名称TI(德州仪器)，商品编号C114985，SOIC-14，编带；与TI官方完整订货号及封装一致。规范品牌采用该页TI(德州仪器)字面，对应制造商Texas Instruments。 来源 https://item.szlcsc.com/116229.html"
+      }
+    }
+  ]
+}

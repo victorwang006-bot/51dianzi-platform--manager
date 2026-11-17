@@ -64,7 +64,7 @@ function keepSuccessfulReferences(result: ChannelReferenceProgress, previous: Ch
     if (!old || old.partNumber !== row.partNumber || old.brand !== row.brand) return row;
     const references = { ...row.references };
     for (const source of ["lcsc", "ickey"] as ChannelReferenceSource[]) {
-      if (old.references[source].status === "ok" && channelReferenceHasPrice(old.references[source]) && row.references[source].status !== "ok") references[source] = old.references[source];
+      if (old.references[source].status === "ok" && channelReferenceHasPrice(old.references[source]) && row.references[source].status === "pending") references[source] = old.references[source];
     }
     return { ...row, references };
   }) };

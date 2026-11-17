@@ -3,8 +3,9 @@ import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import {
   INBOUND_DOCUMENT_ACCESS_SECONDS, INBOUND_DOCUMENT_MAX_BYTES,
-  inboundDocumentRefSchema, inboundDocumentsSchema, inboundDocumentUploadSchema, inboundDocumentAccessSchema,
+  inboundDocumentRefSchema, inboundDocumentsSchema, inboundDocumentUploadSchema, inboundDocumentAccessSchema, inboundDocumentsSaveSchema,
   type InboundDocumentRef, type InboundDocumentUploadInput, type InboundDocumentAccessInput, type InboundDocumentAccess,
+  type InboundDocumentScope, type InboundDocumentsSaveInput, type InboundDocumentsSaveResult,
 } from "../../../shared/inboundDocuments";
 import {
   resolveInboundProcurementAccess, lockInboundProcurementOrder, inboundProcurementWhere,
@@ -94,13 +95,29 @@ export function createInboundDocumentService(overrides: Partial<InboundDocumentD
     if (found.length !== 1) throw invalid();
     return found[0];
   }
-  async function accessResult(row: Metadata): Promise<InboundDocumentAccess> {
+  async function accessResult(row: Metadata, scope: InboundDocumentScope = {}, mode: "preview" | "download" = "preview"): Promise<InboundDocumentAccess> {
     await deps.assertAvailable(row.key, { mimeType: row.mimeType, size: Number(row.size) });
-    const url = await deps.getAccessUrl(row.key, INBOUND_DOCUMENT_ACCESS_SECONDS);
-    return { kind: row.kind, key: row.key, name: row.name, mimeType: row.mimeType, size: Number(row.size), url, expiresIn: INBOUND_DOCUMENT_ACCESS_SECONDS };
+    const url = await deps.getAccessUrl(row.key, INBOUND_DOCUMENT_ACCESS_SECONDS, { mode, fileName: row.name });
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error("私有附件签名地址无效");
+    return { kind: row.kind, key: row.key, name: row.name, mimeType: row.mimeType, size: Number(row.size), url, expiresIn: INBOUND_DOCUMENT_ACCESS_SECONDS, ...scope };
   }
-  async function assertVisible(tx: Executor, access: InboundProcurementAccess, id: number) {
-    if (rows(await tx.execute(sql`SELECT io.id FROM inbound_orders io WHERE io.id = ${id} AND ${inboundProcurementWhere(access)} LIMIT 1 FOR UPDATE`)).length !== 1) throw missing();
+  /** Attachment-only scope: actual visible row and immutable attribution are locked.
+   * No NOT_FOUND fallback, no owner/buyer/business-column repair. Financial locks stay unchanged. */
+  async function documentOrderScope(tx: Executor, access: InboundProcurementAccess, id: number): Promise<InboundDocumentScope> {
+    const visible = rows<{ id: number; userId: number; status: string }>(await tx.execute(sql`SELECT io.id, io.userId, io.status FROM inbound_orders io
+      WHERE io.id = ${id} AND ${inboundProcurementWhere(access)} LIMIT 1 FOR UPDATE`));
+    if (visible.length !== 1 || Number(visible[0].id) !== id || Number(visible[0].userId) !== access.ownerUserId) throw missing();
+    const owners = rows(await tx.execute(sql`SELECT buyerUserId, teamId, enterpriseId, ownerUserId, staffTeamId, buyerAdminUserId FROM inbound_procurement_owners WHERE inboundOrderId = ${id} FOR UPDATE`));
+    if (owners.length === 0) {
+      if (access.canReadLegacy !== true) throw missing();
+      if (!["in_transit", "received"].includes(visible[0].status)) throw new TRPCError({ code: "CONFLICT", message: "当前入库单状态不允许保存或读取附件" });
+      return { documentsOnly: true };
+    }
+    if (owners.length !== 1) throw missing();
+    await deps.lockOrder(tx, access, id); // full original modern attribution/current buyer fence; never catch as legacy
+    if (!["in_transit", "received"].includes(visible[0].status)) throw new TRPCError({ code: "CONFLICT", message: "当前入库单状态不允许保存或读取附件" });
+    return {};
   }
   async function upload(db: Database, identity: InboundProcurementIdentity, raw: InboundDocumentUploadInput): Promise<InboundDocumentAccess> {
     const input = inboundDocumentUploadSchema.parse(raw);
@@ -111,13 +128,13 @@ export function createInboundDocumentService(overrides: Partial<InboundDocumentD
     return guarded(() => db.transaction(async tx => {
         const access = await deps.resolveAccess(tx, identity, true);
         if (!access.teamId) throw invalid();
-        if (input.orderId !== undefined) await deps.lockOrder(tx, access, input.orderId);
+        const scope = input.orderId !== undefined ? await documentOrderScope(tx, access, input.orderId) : {};
         const peer = access.staffRoster.find(staff => staff.userId === access.actorUserId && staff.adminUserId === access.actorAdminUserId);
         if (!peer) throw invalid();
         const extension = input.mimeType === "application/pdf" ? "pdf" : input.mimeType === "image/jpeg" ? "jpg" : input.mimeType.split("/")[1];
         const stored = await deps.putPrivate(`inbound-documents/${access.enterpriseId}/${access.actorUserId}/${deps.uuid()}.${extension}`, data, input.mimeType);
         const ref = inboundDocumentRefSchema.parse({ kind: input.kind, key: stored.key, name: input.fileName, mimeType: input.mimeType, size: data.length });
-        const preview = await accessResult(ref as Metadata);
+        const preview = await accessResult(ref as Metadata, scope);
         const expiresAt = new Date(deps.now().getTime() + 24 * 60 * 60 * 1000);
         const inserted = await tx.execute(sql`INSERT INTO inbound_document_objects
           (\`key\`, kind, name, mimeType, size, enterpriseId, ownerUserId, uploadedByUserId, uploadedByAdminUserId,
@@ -156,9 +173,9 @@ export function createInboundDocumentService(overrides: Partial<InboundDocumentD
   }
   async function replaceInTx(tx: Executor, access: InboundProcurementAccess, id: number, raw: InboundDocumentRef[] | undefined) {
     if (raw === undefined) return; // older clients preserve evidence, never implicitly clear
-    await guarded(async () => {
+    return guarded(async () => {
       const refs = inboundDocumentsSchema.parse(raw);
-      await deps.lockOrder(tx, access, id);
+      const scope = await documentOrderScope(tx, access, id);
       const existing = rows<Metadata>(await tx.execute(sql`SELECT * FROM inbound_document_objects
         WHERE enterpriseId = ${access.enterpriseId} AND ownerUserId = ${access.ownerUserId}
           AND JSON_CONTAINS(orderIds, ${JSON.stringify(id)}) ORDER BY \`key\` FOR UPDATE`));
@@ -186,19 +203,28 @@ export function createInboundDocumentService(overrides: Partial<InboundDocumentD
           assertOneUpdate(await tx.execute(sql`UPDATE inbound_document_objects SET orderIds = ${JSON.stringify(active.filter(value => value !== id))} WHERE id = ${row.id}`));
         }
       }
+      return scope;
     });
+  }
+  async function save(db: Database, identity: InboundProcurementIdentity, raw: InboundDocumentsSaveInput): Promise<InboundDocumentsSaveResult> {
+    const input = inboundDocumentsSaveSchema.parse(raw);
+    return guarded(() => db.transaction(async tx => {
+      const current = await deps.resolveAccess(tx, identity, true);
+      const scope = await replaceInTx(tx, current, input.id, input.documents);
+      return { success: true, ...scope };
+    }));
   }
   async function list(db: Database, identity: InboundProcurementIdentity, id: number): Promise<InboundDocumentAccess[]> {
     return guarded(() => db.transaction(async tx => {
       const access = await deps.resolveAccess(tx, identity, true);
-      await assertVisible(tx, access, id);
+      const scope = await documentOrderScope(tx, access, id);
       const found = rows<Metadata>(await tx.execute(sql`SELECT * FROM inbound_document_objects
         WHERE enterpriseId = ${access.enterpriseId} AND ownerUserId = ${access.ownerUserId}
           AND revokedAt IS NULL AND JSON_CONTAINS(orderIds, ${JSON.stringify(id)}) ORDER BY kind, id FOR UPDATE`));
       // Validate count/kinds/duplicates without returning persisted metadata internals.
       inboundDocumentsSchema.parse(found.map(row => ({ kind: row.kind, key: row.key, name: row.name, mimeType: row.mimeType, size: Number(row.size) })));
       const result: InboundDocumentAccess[] = [];
-      for (const row of found) { assertScope(row, access); if (!orderIds(row.boundOrderIds).includes(id)) throw missing(); result.push(await accessResult(row)); }
+      for (const row of found) { assertScope(row, access); if (!orderIds(row.boundOrderIds).includes(id)) throw missing(); result.push(await accessResult(row, scope)); }
       return result;
     }));
   }
@@ -206,17 +232,17 @@ export function createInboundDocumentService(overrides: Partial<InboundDocumentD
     const input = inboundDocumentAccessSchema.parse(raw);
     return guarded(() => db.transaction(async tx => {
       const current = await deps.resolveAccess(tx, identity, true);
-      if (input.id !== undefined) await assertVisible(tx, current, input.id);
-      else if (input.orderId !== undefined) await deps.lockOrder(tx, current, input.orderId);
+      const targetId = input.id ?? input.orderId;
+      const scope = targetId !== undefined ? await documentOrderScope(tx, current, targetId) : {};
       const row = await getMetadata(tx, input.key);
       assertScope(row, current);
       if (input.id !== undefined) {
         if (!row.associationType || !orderIds(row.orderIds).includes(input.id) || !orderIds(row.boundOrderIds).includes(input.id)) throw missing();
       } else assertPending(row, current, input.clientRequestId, input.orderId);
-      return accessResult(row);
+      return accessResult(row, scope, input.mode);
     }));
   }
-  return { upload, list, access, associateNewInTx, replaceInTx };
+  return { upload, list, access, save, associateNewInTx, replaceInTx };
 }
 
 export const inboundDocumentService = createInboundDocumentService();

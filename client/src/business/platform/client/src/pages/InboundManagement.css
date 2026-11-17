@@ -91,3 +91,10 @@
   color: #185FA5;
   background: #fff;
 }
+
+/* Private document viewer; URLs exist only while the scoped dialog is open. */
+.aui-page .inbound-document-preview { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.35); }
+.aui-page .inbound-document-preview-panel { flex: 1; max-inline-size: 960px; max-block-size: 90vh; overflow: hidden; border: 1px solid #e3e8ef; border-radius: 8px; background: #fff; }
+.aui-page .inbound-document-preview-header { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #e3e8ef; font-size: 12px; }
+.aui-page .inbound-document-preview-content { display: block; inline-size: 100%; block-size: 72vh; border: 0; }
+.aui-page .inbound-document-preview-image { object-fit: contain; }

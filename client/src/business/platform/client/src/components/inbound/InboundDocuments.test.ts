@@ -59,7 +59,7 @@ describe("real shared document UI and hook", () => {
     await choose("合同", [synthetic("contract.pdf")]); await choose("银行付款水单", [synthetic("receipt.png", "image/png")]);
     expect(upload.mock.calls.map(([input]) => input.kind)).toEqual(["contract", "bank_receipt"]);
     expect(draft.documents.map(item => item.kind)).toEqual(["contract", "bank_receipt"]);
-    expect(host.textContent).toContain("上传水单不改变付款状态或金额");
+    expect(host.textContent).not.toContain("上传水单不改变付款状态或金额");
     expect(host.querySelectorAll('[aria-label="单据附件"]')).toHaveLength(1);
   });
   it("rejects oversize/type/count before transport; classes each get their own five slots", async () => {
@@ -104,7 +104,7 @@ describe("real shared document UI and hook", () => {
   it.each(["account-b:enterprise-a:draft-a", "account-a:enterprise-b:draft-a", "account-a:enterprise-a:draft-b"])("new owner/batch %s clears old references and late uploads", async owner => {
     const pending = deferred<InboundDocumentReference>(); upload.mockImplementation(() => pending.promise);
     await render({ initial: [contract], bulk: true }); await choose("银行付款水单", [synthetic("receipt.png", "image/png")]);
-    expect(host.textContent).toContain("本次附件应用本批生成的入库单");
+    expect(host.textContent).toContain("本批共享");
     await render({ owner, bulk: true }); await act(async () => pending.resolve(receipt));
     expect(draft.documents).toEqual([]); expect(draft.uploads).toEqual([]);
   });
@@ -125,7 +125,7 @@ describe("private document reread and download", () => {
     const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     await details(); expect(load).toHaveBeenCalledWith(1); expect(host.textContent).toContain(contract.name); expect(host.querySelector('a[href]')).toBeNull();
     access.mockReset().mockImplementation(async (_id, key) => ({ ...(key === contract.key ? contract : receipt), url: "https://files.invalid/current?signature=new" }));
-    await click(`下载合同 ${contract.name}`); expect(access).toHaveBeenCalledWith(1, contract.key); expect(anchorClick).toHaveBeenCalledOnce();
+    await click(`下载合同 ${contract.name}`); expect(access).toHaveBeenCalledWith(1, contract.key, "download"); expect(anchorClick).toHaveBeenCalledOnce();
     const anchor = anchorClick.mock.instances[0] as HTMLAnchorElement; expect(anchor.href).toContain("signature=new");
     await click(`下载银行付款水单 ${receipt.name}`); expect(access).toHaveBeenCalledTimes(2);
     await act(async () => root.render(createElement("div"))); await details(); expect(load).toHaveBeenCalledTimes(2);
@@ -141,6 +141,6 @@ describe("private document reread and download", () => {
     await details(); const pending = deferred<AuthorizedInboundDocument>(); access.mockReset().mockImplementationOnce(() => pending.promise);
     await act(async () => host.querySelector<HTMLButtonElement>(`[aria-label="下载合同 ${contract.name}"]`)!.click());
     await details(1, "account-b:enterprise-b", false); await act(async () => pending.resolve(contract));
-    expect(anchorClick).not.toHaveBeenCalled(); expect(host.textContent).not.toContain(contract.name); expect(host.textContent).toContain("暂不可读取或下载");
+    expect(anchorClick).not.toHaveBeenCalled(); expect(host.textContent).not.toContain(contract.name); expect(host.querySelector("iframe,img")).toBeNull();
   });
 });

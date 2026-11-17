@@ -61,7 +61,7 @@ import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInput
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
 import { newInformationFactsInputSchema, newInformationFactsResultSchema } from "../shared/adminNewInformationFacts";
-import { inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSchema } from "../client/src/business/platform/shared/inboundDocuments";
+import { inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSchema, inboundDocumentsSaveSchema } from "../client/src/business/platform/shared/inboundDocuments";
 
 export const BUSINESS_NEW_INFORMATION_READS = {
   "customer.newInformationFacts": "customers",
@@ -196,6 +196,7 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "inbound.uploadDocument", module: "inventory", mode: "write" },
   { method: "inbound.documents", module: "inventory", mode: "read" },
   { method: "inbound.documentAccess", module: "inventory", mode: "read" },
+  { method: "inbound.saveDocuments", module: "inventory", mode: "write" },
   { method: "inbound.*", module: "inventory", mode: "write" },
   { method: "customer.starContext", module: "customers", mode: "read" },
   { method: "customer.starState", module: "customers", mode: "read" },
@@ -702,6 +703,7 @@ const INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "inbound.uploadDocument": inboundDocumentUploadSchema,
   "inbound.documents": inboundDocumentsReadSchema,
   "inbound.documentAccess": inboundDocumentAccessSchema,
+  "inbound.saveDocuments": inboundDocumentsSaveSchema,
   "inbound.create": z.object({ documents: inboundDocumentsSchema.optional() }).passthrough(),
   "inbound.bulkCreate": z.object({ documents: inboundDocumentsSchema.optional() }).passthrough(),
   "inbound.update": z.object({ data: z.object({ documents: inboundDocumentsSchema.optional() }).passthrough() }).passthrough(),
@@ -924,6 +926,7 @@ const inboundBusinessRouter = router({
   uploadDocument: businessMutation("inbound.uploadDocument", "inventory"),
   documents: businessQuery("inbound.documents", "inventory"),
   documentAccess: businessQuery("inbound.documentAccess", "inventory"),
+  saveDocuments: businessMutation("inbound.saveDocuments", "inventory"),
   photos: businessQuery("inbound.photos", "inventory"),
   suggestPartNumbers: businessQuery("inbound.suggestPartNumbers", "inventory"),
   overview: businessQuery("inbound.overview", "inventory"),

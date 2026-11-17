@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { ErpHelperText, ErpSegmentedControl } from "../erp/ErpFormControls";
 import { trpc } from "../../../../../api/business-trpc";
 import { InboundDocuments } from "./InboundDocuments";
-import { stableInboundDocuments, useInboundDocumentDraft, type InboundDocumentReference, type UploadInboundDocument } from "./inboundDocumentDraft";
+import { stableInboundDocuments, useInboundDocumentDraft, type AccessInboundDocument, type InboundDocumentReference, type UploadInboundDocument } from "./inboundDocumentDraft";
 import { toast } from "sonner";
 import { attachImportedProcurementBuyer, defaultProcurementBuyer, procurementBuyerDraftError, procurementBuyerOptionLabel, selectedProcurementBuyer, type ProcurementBuyerScope, type ProcurementBuyerDraftRow, type ProcurementBuyerInboundRow } from "./procurementBuyerSelection";
 import {
@@ -51,6 +51,7 @@ type BulkInboundFormProps = {
   documentResponseFence?: string;
   documentEnabled?: boolean;
   uploadDocument?: UploadInboundDocument;
+  accessDocument?: AccessInboundDocument;
   onAuthorizationError?: (error: unknown) => void;
   isCurrentDocumentScope?: () => boolean;
   buyerScope: ProcurementBuyerScope | null;
@@ -117,7 +118,7 @@ function fieldErrorKey(rowKey: string, field: InboundBulkField) {
  * Batch inbound entry content only. It is intentionally rendered inside the
  * existing inbound modal, rather than opening a second page-level dialog.
  */
-export function BulkInboundForm({ documentOwnerScope = "local-bulk-draft", documentResponseFence = "", documentEnabled = true, uploadDocument, onAuthorizationError, isCurrentDocumentScope, buyerScope, buyerError = "", onRetryBuyers, buyerRetrying = false, onSuccess, onCancel, onDirtyChange, onBusyChange }: BulkInboundFormProps) {
+export function BulkInboundForm({ documentOwnerScope = "local-bulk-draft", documentResponseFence = "", documentEnabled = true, uploadDocument, accessDocument, onAuthorizationError, isCurrentDocumentScope, buyerScope, buyerError = "", onRetryBuyers, buyerRetrying = false, onSuccess, onCancel, onDirtyChange, onBusyChange }: BulkInboundFormProps) {
   const [status, setStatus] = useState<InboundStatus>("in_transit");
   const [inboundDate, setInboundDate] = useState(beijingToday);
   const [unitCostBasis, setUnitCostBasis] = useState<InboundPriceBasis>(CNY_TAX_INCLUDED);
@@ -155,6 +156,7 @@ export function BulkInboundForm({ documentOwnerScope = "local-bulk-draft", docum
     clientRequestId,
     enabled: documentEnabled && !!uploadDocument,
     upload: uploadDocument ?? (() => Promise.reject(new Error("附件上传服务暂不可用，请稍后重试"))),
+    access: accessDocument,
     onAuthorizationError,
     isCurrentScope: isCurrentDocumentScope,
   });

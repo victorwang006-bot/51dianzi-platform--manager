@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { INBOUND_DOCUMENT_MAX_BYTES, INBOUND_DOCUMENT_MAX_PER_KIND, type InboundDocumentRef, type InboundDocumentUploadInput, type InboundDocumentAccess } from "../../../../shared/inboundDocuments";
+import { INBOUND_DOCUMENT_MAX_BYTES, INBOUND_DOCUMENT_MAX_PER_KIND, type InboundDocumentRef, type InboundDocumentUploadInput, type InboundDocumentAccess, type InboundDocumentAccessInput } from "../../../../shared/inboundDocuments";
 
 // The API lane owns the shared protocol; UI state adds no request fields.
 export type InboundDocumentKind = InboundDocumentRef["kind"];
 export type InboundDocumentMime = InboundDocumentRef["mimeType"];
 export type InboundDocumentReference = InboundDocumentRef;
-export type AuthorizedInboundDocument = Pick<InboundDocumentAccess, keyof InboundDocumentRef | "url">;
+export type InboundDocumentMode = NonNullable<InboundDocumentAccessInput["mode"]>;
+export type AuthorizedInboundDocument = Pick<InboundDocumentAccess, keyof InboundDocumentRef | "url" | "documentsOnly"> & Partial<Pick<InboundDocumentAccess, "expiresIn">>;
+export type AccessInboundDocument = (input: InboundDocumentAccessInput) => Promise<AuthorizedInboundDocument>;
 export type { InboundDocumentUploadInput };
-export type UploadInboundDocument = (input: InboundDocumentUploadInput) => Promise<InboundDocumentReference>;
+export type UploadInboundDocument = (input: InboundDocumentUploadInput) => Promise<InboundDocumentReference & Pick<InboundDocumentAccess, "documentsOnly">>;
 export { INBOUND_DOCUMENT_MAX_BYTES, INBOUND_DOCUMENT_MAX_PER_KIND };
 export const INBOUND_DOCUMENT_ACCEPT = "application/pdf,image/jpeg,image/png,image/webp";
 export const inboundDocumentLabels: Record<InboundDocumentKind, string> = { contract: "合同", bank_receipt: "银行付款水单" };
@@ -42,19 +44,23 @@ function newUploadId() {
 export type InboundDocumentUploadRow = { id: string; kind: InboundDocumentKind; file: File; state: "uploading" | "failed"; error: string };
 
 /** Draft references are memory-only. Removing a row never deletes private storage. */
-export function useInboundDocumentDraft({ ownerScope, responseFence, clientRequestId, orderId, enabled, upload, onAuthorizationError, isCurrentScope }: {
+export function useInboundDocumentDraft({ ownerScope, responseFence, clientRequestId, orderId, enabled, upload, access, onAuthorizationError, isCurrentScope }: {
   ownerScope: string;
   responseFence: string;
   clientRequestId: string;
   orderId?: number;
   enabled: boolean;
   upload: UploadInboundDocument;
+  access?: AccessInboundDocument;
   onAuthorizationError?: (error: unknown) => void;
   isCurrentScope?: () => boolean;
 }) {
   const [documents, setDocuments] = useState<InboundDocumentReference[]>([]);
   const [uploads, setUploads] = useState<InboundDocumentUploadRow[]>([]);
   const [error, setError] = useState("");
+  const [documentsOnly, setDocumentsOnly] = useState(false);
+  const linkedKeys = useRef(new Set<string>());
+  const documentsOnlyRef = useRef(false);
   const generation = useRef(0);
   const state = useRef({ documents, uploads, ownerScope, responseFence, enabled });
   state.current = { documents, uploads, ownerScope, responseFence, enabled };
@@ -69,6 +75,7 @@ export function useInboundDocumentDraft({ ownerScope, responseFence, clientReque
       generation.current += 1;
       state.current.documents = []; state.current.uploads = [];
       setDocuments([]); setUploads([]); setError("");
+      linkedKeys.current.clear(); documentsOnlyRef.current = false; setDocumentsOnly(false);
     } else if (previousFence.current !== responseFence) {
       generation.current += 1;
       state.current.uploads = [];
@@ -78,9 +85,12 @@ export function useInboundDocumentDraft({ ownerScope, responseFence, clientReque
     }
     previousFence.current = responseFence;
   }, [ownerScope, responseFence]);
-  const reset = (next: readonly InboundDocumentReference[] = []) => {
+  const reset = (next: readonly (InboundDocumentReference & { documentsOnly?: boolean })[] = []) => {
     generation.current += 1;
     const stable = stableInboundDocuments(next);
+    linkedKeys.current = new Set(stable.map(item => item.key));
+    documentsOnlyRef.current = next.some(item => item.documentsOnly === true);
+    setDocumentsOnly(documentsOnlyRef.current);
     state.current.documents = stable; state.current.uploads = [];
     setDocuments(stable); setUploads([]); setError("");
   };
@@ -94,7 +104,8 @@ export function useInboundDocumentDraft({ ownerScope, responseFence, clientReque
       if (!current()) return;
       const result = await upload({ kind: row.kind, fileName: row.file.name, mimeType: row.file.type as InboundDocumentMime, base64, clientRequestId, ...(orderId != null ? { orderId } : {}) });
       if (!current()) return;
-      if (result.kind !== row.kind || !result.key) throw new Error("上传返回的附件分类或引用无效，请重试");
+      if (result.kind !== row.kind || !result.key || result.name !== row.file.name.trim() || result.mimeType !== row.file.type || !Number.isInteger(result.size) || result.size <= 0 || result.size > INBOUND_DOCUMENT_MAX_BYTES) throw new Error("上传返回的附件分类或引用无效，请重试");
+      if (result.documentsOnly === true) { documentsOnlyRef.current = true; setDocumentsOnly(true); }
       const reference = stableInboundDocuments([result])[0];
       const next = state.current.documents.some(item => item.key === reference.key) ? state.current.documents : [...state.current.documents, reference];
       state.current.documents = next;
@@ -128,12 +139,30 @@ export function useInboundDocumentDraft({ ownerScope, responseFence, clientReque
     setUploads(state.current.uploads); void run(row);
   };
   const remove = (id: string) => {
-    if (!enabled) return;
+    if (!enabled || !(currentScope.current?.() ?? true)) return;
     state.current.documents = state.current.documents.filter(item => item.key !== id);
     state.current.uploads = state.current.uploads.filter(item => item.id !== id);
     setDocuments(state.current.documents); setUploads(state.current.uploads); setError("");
   };
+  const authorize = async (document: InboundDocumentReference, mode: InboundDocumentMode) => {
+    const ticket = generation.current, owner = ownerScope, fence = responseFence;
+    const current = () => mounted.current && generation.current === ticket && state.current.ownerScope === owner
+      && state.current.responseFence === fence && state.current.enabled && (currentScope.current?.() ?? true)
+      && state.current.documents.some(item => item.key === document.key);
+    if (!current() || !access) throw new Error("附件读取暂不可用，请重试");
+    try {
+      const result = await access(linkedKeys.current.has(document.key) && orderId != null
+        ? { id: orderId, key: document.key, mode }
+        : { key: document.key, clientRequestId, ...(orderId != null ? { orderId } : {}), mode });
+      if (!current()) throw new Error("附件范围已变化");
+      if (result.documentsOnly === true) { documentsOnlyRef.current = true; setDocumentsOnly(true); }
+      return result;
+    } catch (cause) { if (current()) onAuthorizationError?.(cause); throw cause; }
+  };
   return { documents, uploads, error, reset, select, retry, remove,
+    authorize, documentsOnly, isDocumentsOnly: () => documentsOnlyRef.current,
+    enabled, isCurrentScope: () => currentScope.current?.() ?? true,
+    accessScope: `${ownerScope}:${responseFence}:${orderId ?? ""}:${clientRequestId}`,
     busy: uploads.some(row => row.state === "uploading"),
     blocked: uploads.length > 0,
     isBlocked: () => state.current.uploads.length > 0,
