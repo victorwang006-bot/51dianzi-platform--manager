@@ -73,6 +73,7 @@ export const BUSINESS_METHOD_IDS = [
   "importInventory.cancelJob", "importInventory.repairList", "importInventory.repairClear",
   "importInventory.repairSave", "importInventory.repairSubmit",
   "inbound.procurementBuyers",
+  "inbound.uploadDocument", "inbound.documents", "inbound.documentAccess",
   "inbound.uploadPhoto", "inbound.photos", "inbound.suggestPartNumbers", "inbound.overview", "inbound.list",
   "inbound.bulkCreate", "inbound.create", "inbound.update", "inbound.updateDetails", "inbound.paymentHistory",
   "inbound.markPaymentUnpaid", "inbound.recordPayment", "inbound.voidPayment", "inbound.receive", "inbound.cancelPreview",
@@ -152,6 +153,9 @@ BUSINESS_METHOD_CAPABILITIES["customerDemand.procurementNewInformationFacts"] = 
 BUSINESS_METHOD_CAPABILITIES["inbound.newInformationFacts"] = INVENTORY_INBOUND_READ;
 BUSINESS_METHOD_CAPABILITIES["crmSalesOrder.newInformationFacts"] = SALES_ORDER_READ;
 BUSINESS_METHOD_CAPABILITIES["order.sellerNewInformationFacts"] = READ;
+BUSINESS_METHOD_CAPABILITIES["inbound.uploadDocument"] = INVENTORY_INBOUND;
+BUSINESS_METHOD_CAPABILITIES["inbound.documents"] = INVENTORY_INBOUND_READ;
+BUSINESS_METHOD_CAPABILITIES["inbound.documentAccess"] = INVENTORY_INBOUND_READ;
 
 for (const method of [
   "inventory.list", "inventory.listPaged", "inventory.get", "inventory.spotVerificationList", "inventory.assignmentOptions",

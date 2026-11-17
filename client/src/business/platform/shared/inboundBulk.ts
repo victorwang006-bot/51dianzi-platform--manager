@@ -2,6 +2,7 @@ import { z } from "zod";
 import { INBOUND_PRICE_BASES, MAX_INBOUND_UNIT_COST, MAX_INBOUND_TAX_RATE } from "./inboundPricing";
 import { MAX_INBOUND_QTY } from "./inboundPayment";
 import { inboundBuyerUserIdSchema } from "./inboundProcurement";
+import { inboundDocumentsSchema } from "./inboundDocuments";
 
 export const INBOUND_BULK_MAX_ROWS = 200;
 export const INBOUND_BULK_FILE_MAX_BYTES = 5 * 1024 * 1024;
@@ -46,6 +47,7 @@ export const inboundBulkCreateSchema=z.object({
   unitCostBasis:z.enum(INBOUND_PRICE_BASES),
   taxRate:z.number().min(0).max(MAX_INBOUND_TAX_RATE).multipleOf(0.1),
   acceptMissingPrices:z.boolean().default(false),
+  documents:inboundDocumentsSchema.optional(),
   rows:z.array(inboundBulkRowSchema).min(1,"请录入物料").max(INBOUND_BULK_MAX_ROWS,`每批最多${INBOUND_BULK_MAX_ROWS}行`),
 }).superRefine((value,ctx)=>{
   const missing=value.rows.filter(r=>r.unitCost===null);

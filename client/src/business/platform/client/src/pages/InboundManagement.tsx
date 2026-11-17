@@ -3,6 +3,8 @@ import PlatformLayout from "../../../../BusinessContentFrame";
 import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import "./InboundManagement.css";
 import { BulkInboundForm } from "../components/inbound/BulkInboundForm";
+import { InboundDocuments, InboundDocumentDetails } from "../components/inbound/InboundDocuments";
+import { stableInboundDocuments, useInboundDocumentDraft, type AuthorizedInboundDocument, type InboundDocumentUploadInput } from "../components/inbound/inboundDocumentDraft";
 import { businessStorageScope, useBusinessScope } from "../../../../BusinessScope";
 import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
 import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
@@ -160,7 +162,7 @@ const paymentStatusDotClass: Record<InboundPaymentCategory, string> = {
 
 export default function InboundManagement() {
   const [location, navigate] = useLocation();
-  const { frontUser, merchantId, staffPrincipal, storageScope, contextVerification } = useBusinessScope();
+  const { frontUser, merchantId, staffPrincipal, storageScope, contextVerification, onAuthorizationError } = useBusinessScope();
   const activeInboundIdentity = location.split(/[?#]/, 1)[0] === "/inbound"
     && contextVerification.state === "verified"
     && contextVerification.identity === storageScope
@@ -325,6 +327,21 @@ export default function InboundManagement() {
     onError: (error: { message: string }) => toast.error(error.message),
   });
   const uploadPhotoMutation = inboundApi.uploadPhoto.useMutation();
+  const uploadDocumentMutation = inboundApi.uploadDocument.useMutation();
+  const uploadDocument = (input: InboundDocumentUploadInput) => uploadDocumentMutation.mutateAsync(input);
+  const documentDraft = useInboundDocumentDraft({
+    ownerScope: `${storageScope}:single`,
+    responseFence: `${storageScope}:${contextVerification.state}:${contextVerification.authorizationVersion}:${form.buyerUserId}:${buyerScope?.actorUserId ?? ""}:${buyerScope?.teamId ?? ""}:${createRequestId}`,
+    clientRequestId: createRequestId,
+    orderId: editingRow?.id,
+    enabled: formOpen && activeInboundIdentity,
+    isCurrentScope: () => businessStorageScope() === storageScope,
+    upload: uploadDocument,
+    onAuthorizationError,
+  });
+  const editOpenGeneration = useRef(0);
+  const liveInboundIdentity = useRef(activeInboundIdentity); liveInboundIdentity.current = activeInboundIdentity;
+  useEffect(() => () => { editOpenGeneration.current += 1; }, []);
   const receiveMutation = trpc.inbound.receive.useMutation({
     onSuccess: result => {
       toast.success(result.alreadyReceived ? "该单已完成入库，未重复增加库存" : `入库单 ${result.slipNo} 已完成入库`);
@@ -481,9 +498,10 @@ export default function InboundManagement() {
     }
   };
 
-  const openCreate = () => { buyerDefaultInitialized.current = false; setEntryMode("single"); setBulkDirty(false); setBulkBusy(false); setConfirmBulkClose(false); setEditingRow(null); setForm(emptyForm()); setCreateRequestId(newRequestId()); setShowMore(false); resetPartLookup(); setFormOpen(true); };
+  const openCreate = () => { editOpenGeneration.current += 1; documentDraft.reset(); buyerDefaultInitialized.current = false; setEntryMode("single"); setBulkDirty(false); setBulkBusy(false); setConfirmBulkClose(false); setEditingRow(null); setForm(emptyForm()); setCreateRequestId(newRequestId()); setShowMore(false); resetPartLookup(); setFormOpen(true); };
   const closeCreate = () => {
-    if (bulkBusy || createMutation.isPending || updateMutation.isPending || updateDetailsMutation.isPending || uploadPhotoMutation.isPending) return;
+    if (bulkBusy || createMutation.isPending || updateMutation.isPending || updateDetailsMutation.isPending || uploadPhotoMutation.isPending || documentDraft.busy) return;
+    editOpenGeneration.current += 1;
     if (!editingRow && bulkDirty) { setConfirmBulkClose(true); return; }
     setFormOpen(false);
   };
@@ -495,8 +513,23 @@ export default function InboundManagement() {
   }, [formOpen, bulkDirty]);
   const openEdit = async (row: InboundRow) => {
     if (row.status === "cancelled") return toast.error("已作废入库单不能编辑");
+    if (!activeInboundIdentity) return toast.error("业务身份尚未核验，请稍后重试");
+    const ticket = ++editOpenGeneration.current;
     let photos: InboundPhoto[] = [];
-    try { photos = await inboundUtils.photos.fetch({ id: row.id }); } catch (error) { toast.error(error instanceof Error ? error.message : "入库照片加载失败"); return; }
+    let documents: AuthorizedInboundDocument[] = [];
+    try {
+      [photos, documents] = await Promise.all([
+        inboundUtils.photos.fetch({ id: row.id }),
+        inboundUtils.documents.fetch({ id: row.id }, { staleTime: 0 }),
+      ]);
+    } catch (error) {
+      if (ticket !== editOpenGeneration.current || businessStorageScope() !== storageScope) return;
+      onAuthorizationError?.(error);
+      toast.error(error instanceof Error ? error.message : "入库照片或单据附件加载失败，请重试"); return;
+    }
+    if (ticket !== editOpenGeneration.current || !liveInboundIdentity.current || businessStorageScope() !== storageScope) return;
+    documentDraft.reset(documents);
+    setCreateRequestId(newRequestId());
     setEditingRow(row);
     setForm({ status: row.status === "received" ? "received" : "in_transit", partNumber: uppercasePartNumber(row.partNumber), brand: row.brand || "", qty: String(row.qty), unitCost: row.unitCost != null ? String(Number(row.unitCost)) : "", unitCostBasis: row.unitCostBasis === CNY_TAX_EXCLUDED ? CNY_TAX_EXCLUDED : CNY_TAX_INCLUDED, taxRate: row.taxRate != null ? String(Number(row.taxRate)) : "", prodYear: row.prodYear || String(currentYear), supplierName: row.supplierName || "", supplierContact: row.supplierContact || "", supplierPhone: row.supplierPhone || "", packageType: row.packageType || "", lotNumber: row.lotNumber || "", supplierOrderNo: row.supplierOrderNo || "", inboundDate: fmtDate(row.inboundDate), operator: row.operator || "", buyerUserId: row.buyerUserId != null ? String(row.buyerUserId) : "", location: row.location || "", note: row.note || "", photos, paymentMode: INBOUND_PAYMENT_UNPAID, paymentPercent: "50", paymentAmount: "", paymentDate: todayLocal(), paymentNote: "" });
     resetPartLookup();
@@ -542,6 +575,9 @@ export default function InboundManagement() {
   };
 
   const submitForm = () => {
+    if (!activeInboundIdentity || businessStorageScope() !== storageScope) return toast.error("业务身份尚未核验，请稍后重试");
+    if (documentDraft.isBlocked()) return toast.error("请等待附件上传完成，并重试或删除失败附件");
+    const documents = stableInboundDocuments(documentDraft.documents);
     const photos = form.photos.map(({ key, name, mimeType, size }) => ({ key, name, mimeType, size }));
     const buyer = selectedProcurementBuyer(buyerScope, form.buyerUserId);
     if (!editingRow && !buyer) return toast.error(buyerError || "请选择当前可用范围内的采购员");
@@ -549,7 +585,7 @@ export default function InboundManagement() {
     const buyerFields = editingRow
       ? { operator: editingRow.operator ?? "", ...(editingRow.buyerUserId != null ? { buyerUserId: editingRow.buyerUserId } : {}) }
       : { operator: buyer!.name, buyerUserId: buyer!.userId };
-    if (editingRow?.status === "received") { if (!form.supplierName.trim()) return toast.error("请输入供应商名称"); if (!form.location.trim()) return toast.error("请输入存放仓位"); updateDetailsMutation.mutate({ id: editingRow.id, supplierName: form.supplierName.trim(), supplierContact: form.supplierContact.trim(), supplierPhone: form.supplierPhone.trim(), packageType: form.packageType.trim(), lotNumber: form.lotNumber.trim(), supplierOrderNo: form.supplierOrderNo.trim(), ...buyerFields, location: form.location.trim(), note: form.note.trim(), photos }); return; }
+    if (editingRow?.status === "received") { if (!form.supplierName.trim()) return toast.error("请输入供应商名称"); if (!form.location.trim()) return toast.error("请输入存放仓位"); updateDetailsMutation.mutate({ id: editingRow.id, supplierName: form.supplierName.trim(), supplierContact: form.supplierContact.trim(), supplierPhone: form.supplierPhone.trim(), packageType: form.packageType.trim(), lotNumber: form.lotNumber.trim(), supplierOrderNo: form.supplierOrderNo.trim(), ...buyerFields, location: form.location.trim(), note: form.note.trim(), photos, documents }); return; }
     const qty = Number(form.qty), partNumber = uppercasePartNumber(form.partNumber).trim();
     if (!partNumber) return toast.error("请输入料号/型号");
     if (!Number.isInteger(qty) || qty <= 0 || qty > MAX_INBOUND_QTY) return toast.error("数量须为1–999,999,999的整数");
@@ -565,7 +601,7 @@ export default function InboundManagement() {
     if (taxRate != null && (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > MAX_INBOUND_TAX_RATE || Math.round(taxRate * 10) !== taxRate * 10)) return toast.error("税率须为0%至13%，最多保留1位小数");
     let pricing: ReturnType<typeof normalizeInboundPricing> | null = null;
     if (unitCost != null && taxRate != null) { try { pricing = normalizeInboundPricing(unitCost, form.unitCostBasis, taxRate); } catch (error) { return toast.error(error instanceof Error ? error.message : "采购单价或税率无效"); } }
-    const payload = { status: editingRow ? "in_transit" as const : form.status, partNumber, brand: form.brand.trim() || undefined, qty, unitCost: pricing?.unitCost, unitCostBasis: pricing?.unitCostBasis ?? (legacyPriceUnchanged ? form.unitCostBasis : undefined), taxRate: pricing?.taxRate, prodYear: form.prodYear.trim(), supplierName: form.supplierName.trim(), supplierContact: form.supplierContact.trim() || undefined, supplierPhone: form.supplierPhone.trim() || undefined, packageType: form.packageType.trim() || undefined, lotNumber: form.lotNumber.trim() || undefined, supplierOrderNo: form.supplierOrderNo.trim() || undefined, inboundDate: form.inboundDate, ...buyerFields, location: form.location.trim() || undefined, note: form.note.trim() || undefined, photos };
+    const payload = { status: editingRow ? "in_transit" as const : form.status, partNumber, brand: form.brand.trim() || undefined, qty, unitCost: pricing?.unitCost, unitCostBasis: pricing?.unitCostBasis ?? (legacyPriceUnchanged ? form.unitCostBasis : undefined), taxRate: pricing?.taxRate, prodYear: form.prodYear.trim(), supplierName: form.supplierName.trim(), supplierContact: form.supplierContact.trim() || undefined, supplierPhone: form.supplierPhone.trim() || undefined, packageType: form.packageType.trim() || undefined, lotNumber: form.lotNumber.trim() || undefined, supplierOrderNo: form.supplierOrderNo.trim() || undefined, inboundDate: form.inboundDate, ...buyerFields, location: form.location.trim() || undefined, note: form.note.trim() || undefined, photos, documents };
     if (legacyPriceUnchanged) payload.unitCost = unitCost;
     if (editingRow) {
       updateMutation.mutate({ id: editingRow.id, data: payload as any });
@@ -833,11 +869,11 @@ export default function InboundManagement() {
       {actionMenu && <><button type="button" aria-label="关闭操作菜单" className="fixed inset-0 z-40 cursor-default" onClick={() => setActionMenu(null)} /><div role="menu" aria-label={`${actionMenu.row.slipNo} 操作`} className="fixed z-50 w-40 rounded-lg border border-[#e3e3e3] bg-white p-1.5 shadow-xl" style={{ left: actionMenu.x, top: actionMenu.y }}><button role="menuitem" className="erp-menu-item" onClick={() => { setDetailRow(actionMenu.row); setActionMenu(null); }}>查看详情</button>{actionMenu.row.status === "in_transit" && <button role="menuitem" className="erp-menu-item text-[#185FA5] hover:bg-[#f0f6fd]" onClick={() => { openReceive(actionMenu.row); setActionMenu(null); }}>确认入库</button>}{actionMenu.row.status !== "cancelled" && <button role="menuitem" className="erp-menu-item" onClick={() => { void openEdit(actionMenu.row); setActionMenu(null); }}>编辑</button>}<button role="menuitem" className="erp-menu-item" onClick={() => { openPayment(actionMenu.row); setActionMenu(null); }}>付款记录</button>{actionMenu.row.status === "received" && <button role="menuitem" className="erp-menu-item" onClick={() => { doPrint([actionMenu.row]); setActionMenu(null); }}>打印验收单</button>}{actionMenu.row.status !== "cancelled" && actionMenu.row.bulkBatchId && <button role="menuitem" className="erp-menu-item erp-menu-item-danger" disabled={batchCancelLoading} onClick={() => { requestCancelImportBatch(actionMenu.row); setActionMenu(null); }}>作废本批</button>}{actionMenu.row.status !== "cancelled" && <button role="menuitem" className="erp-menu-item erp-menu-item-danger" onClick={() => { requestCancel(actionMenu.row); setActionMenu(null); }}>作废</button>}</div></>}
 
       {formOpen && <Modal onClose={closeCreate} width="1180px" label={editingRow ? "编辑入库单" : "新建采购入库单"} className="inbound-entry-modal">
-        <div className="inbound-entry-header"><div><h3 className="inbound-entry-title">{immutableEdit ? "编辑入库资料" : editingRow ? "编辑在途单" : "新建采购入库单"}</h3><p className="mt-1 text-[12px] text-[#8A94A3]">{editingRow ? `正在编辑 ${editingRow.slipNo}` : "登记在途或直接入库"}</p></div><div className="flex items-center gap-3"><span className="inbound-slip-hint">单号：{editingRow?.slipNo || "保存后生成"}</span><button type="button" className="inbound-modal-close" aria-label={editingRow ? "关闭编辑入库单" : "关闭新建采购入库单"} disabled={bulkBusy || createMutation.isPending} onClick={closeCreate}><X aria-hidden="true" className="h-4 w-4" /></button></div></div>
-        {!editingRow && <div className="inbound-entry-switchbar"><span className="text-[12px] font-medium text-[#64748B]">录入方式</span><ErpSegmentedControl ariaLabel="录入方式" value={entryMode} options={[{ value: "single", label: "单条录入" }, { value: "bulk", label: "批量入库" }]} onChange={setEntryMode} disabled={bulkBusy || createMutation.isPending} variant="buttons" className="inbound-entry-mode" /></div>}<div className="inbound-entry-scroll">
-        {!editingRow && <div hidden={entryMode !== "bulk"}><BulkInboundForm buyerScope={buyerScope} buyerError={buyerError} onRetryBuyers={() => { void buyersQuery.refetch(); }} buyerRetrying={buyersQuery.isFetching} onCancel={closeCreate} onDirtyChange={setBulkDirty} onBusyChange={setBulkBusy} onSuccess={() => { setBulkDirty(false); setBulkBusy(false); setFormOpen(false); void refetch(); void inboundUtils.overview.invalidate(); }} /></div>}
+        <div className="inbound-entry-header"><div><h3 className="inbound-entry-title">{immutableEdit ? "编辑入库资料" : editingRow ? "编辑在途单" : "新建采购入库单"}</h3><p className="mt-1 text-[12px] text-[#8A94A3]">{editingRow ? `正在编辑 ${editingRow.slipNo}` : "登记在途或直接入库"}</p></div><div className="flex items-center gap-3"><span className="inbound-slip-hint">单号：{editingRow?.slipNo || "保存后生成"}</span><button type="button" className="inbound-modal-close" aria-label={editingRow ? "关闭编辑入库单" : "关闭新建采购入库单"} disabled={bulkBusy || createMutation.isPending || documentDraft.busy} onClick={closeCreate}><X aria-hidden="true" className="h-4 w-4" /></button></div></div>
+        {!editingRow && <div className="inbound-entry-switchbar"><span className="text-[12px] font-medium text-[#64748B]">录入方式</span><ErpSegmentedControl ariaLabel="录入方式" value={entryMode} options={[{ value: "single", label: "单条录入" }, { value: "bulk", label: "批量入库" }]} onChange={setEntryMode} disabled={bulkBusy || createMutation.isPending || documentDraft.busy} variant="buttons" className="inbound-entry-mode" /></div>}<div className="inbound-entry-scroll">
+        {!editingRow && <div hidden={entryMode !== "bulk"}><BulkInboundForm documentOwnerScope={`${storageScope}:bulk:${createRequestId}`} documentResponseFence={`${storageScope}:${contextVerification.state}:${contextVerification.authorizationVersion}`} documentEnabled={activeInboundIdentity} uploadDocument={uploadDocument} onAuthorizationError={onAuthorizationError} isCurrentDocumentScope={() => businessStorageScope() === storageScope} buyerScope={buyerScope} buyerError={buyerError} onRetryBuyers={() => { void buyersQuery.refetch(); }} buyerRetrying={buyersQuery.isFetching} onCancel={closeCreate} onDirtyChange={setBulkDirty} onBusyChange={setBulkBusy} onSuccess={() => { setBulkDirty(false); setBulkBusy(false); setFormOpen(false); void refetch(); void inboundUtils.overview.invalidate(); }} /></div>}
         <div hidden={!editingRow && entryMode === "bulk"} className="inbound-form-controls">
-        {immutableEdit && <div className="rounded-lg bg-[#f7f9fc] border border-[#e4e9f0] px-4 py-3 text-[12px] text-[#666]">已入库单可修改供应商资料、仓位、封装、批次、订单号、备注和照片；料号、数量、日期及成本已进入库存台账，不能直接修改。</div>}
+        {immutableEdit && <div className="rounded-lg bg-[#f7f9fc] border border-[#e4e9f0] px-4 py-3 text-[12px] text-[#666]">已入库单可修改供应商资料、仓位、封装、批次、订单号、备注、照片和单据附件；料号、数量、日期及成本已进入库存台账，不能直接修改。</div>}
         <section className="inbound-entry-card"><div className="inbound-entry-card-title">基本信息</div><div className="inbound-entry-card-body grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
           {!editingRow && <Field label="单据状态" required><ErpSegmentedControl ariaLabel="单据状态" value={form.status} options={[{ value: "in_transit", label: "在途" }, { value: "received", label: "直接入库" }]} onChange={status => setForm(value => ({ ...value, status }))} variant="buttons" className="inbound-status-choice" /></Field>}
           <Field label={form.status === "in_transit" ? "预计到货日期" : "入库日期"} required><input type="date" className="crm-input w-full" disabled={immutableEdit} value={form.inboundDate} onChange={event => setForm(value => ({ ...value, inboundDate: event.target.value }))} /></Field>
@@ -853,6 +889,7 @@ export default function InboundManagement() {
           <Field label="仓位" required={form.status === "received"}><input className="crm-input w-full" placeholder={form.status === "received" ? "直接入库时必填" : "可在确认入库时填写"} value={form.location} onChange={event => setForm(value => ({ ...value, location: event.target.value }))} /></Field>
           {!editingRow && <div className="sm:col-span-2"><Field label="货款情况" required><div className="inbound-payment-panel"><div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"><div><ErpSegmentedControl ariaLabel="货款情况" value={form.paymentMode} options={[{ value: INBOUND_PAYMENT_UNPAID, label: "未付款" }, { value: INBOUND_PAYMENT_PARTIAL, label: "部分付款" }, { value: INBOUND_PAYMENT_PAID, label: "已付全款" }]} onChange={paymentMode => setForm(value => ({ ...value, paymentMode }))} variant="buttons" className="inbound-payment-mode" />{form.paymentMode === INBOUND_PAYMENT_PAID && <ErpHelperText>已按100%自动计算本次付款</ErpHelperText>}</div>{form.paymentMode !== INBOUND_PAYMENT_UNPAID && <div className="w-full lg:w-[240px]"><label className="mb-1 block text-[12px] font-medium text-slate-600">付款日期</label><input type="date" aria-label="付款日期" className="crm-input w-full" max={todayLocal()} value={form.paymentDate} onChange={event => setForm(value => ({ ...value, paymentDate: event.target.value }))} /></div>}</div>{form.paymentMode === INBOUND_PAYMENT_PARTIAL && <div className="inbound-payment-details"><div><div className="mb-1 text-[12px] font-medium text-slate-600">付款比例</div><ErpSegmentedControl ariaLabel="付款比例" value={form.paymentPercent} options={[{ value: "30", label: "30%" }, { value: "50", label: "50%" }, { value: "custom", label: "自定义" }]} onChange={paymentPercent => setForm(value => ({ ...value, paymentPercent }))} variant="buttons" className="inbound-payment-percent" /></div><div><div className="mb-1 text-[12px] font-medium text-slate-600">本次已付</div><div className="relative"><input type="number" min={0.01} step="0.01" className="crm-input w-full pl-7" aria-label="已付款金额" disabled={form.paymentPercent !== "custom"} placeholder={form.paymentPercent === "custom" ? "输入实际付款金额" : "按比例自动计算"} value={form.paymentPercent === "custom" ? form.paymentAmount : initialPaidPreview ?? ""} onChange={event => setForm(value => ({ ...value, paymentAmount: event.target.value }))} /><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#8A94A3]">¥</span></div><ErpHelperText>{form.paymentPercent === "custom" ? "填写实际付款金额" : `${form.paymentPercent}% 自动计算，可选“自定义”输入实际金额`}</ErpHelperText></div></div>}{form.paymentMode !== INBOUND_PAYMENT_UNPAID && <div className="inbound-payment-summary"><div><span>含税货款</span><strong>{payablePreview != null ? `¥${formatInboundMoney(payablePreview)}` : "—"}</strong></div><div><span>本次已付</span><strong>{initialPaidPreview != null ? `¥${formatInboundMoney(initialPaidPreview)}` : "—"}</strong></div><div><span>待付</span><strong>{initialOutstandingPreview != null ? `¥${formatInboundMoney(initialOutstandingPreview)}` : "—"}</strong></div></div>}{form.paymentMode !== INBOUND_PAYMENT_UNPAID && <input className="crm-input mt-3 w-full" maxLength={255} placeholder="付款备注（选填）" value={form.paymentNote} onChange={event => setForm(value => ({ ...value, paymentNote: event.target.value }))} />}</div></Field></div>}
         </div></section>
+        <InboundDocuments draft={documentDraft} disabled={!activeInboundIdentity || createMutation.isPending || updateMutation.isPending || updateDetailsMutation.isPending} />
         <button type="button" className="inbound-more-toggle" aria-expanded={showMore} onClick={() => setShowMore(value => !value)}><span>更多信息与照片</span><span>{showMore ? "收起 ↑" : "展开 ↓"}</span></button>
         {showMore && <section className="inbound-entry-card mt-3"><div className="inbound-entry-card-body grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
           <Field label="封装"><input className="crm-input w-full" value={form.packageType} onChange={event => setForm(value => ({ ...value, packageType: event.target.value }))} /></Field>
@@ -861,7 +898,7 @@ export default function InboundManagement() {
           <div className="sm:col-span-2"><Field label="入库实拍照片"><input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={event => void uploadInboundPhotos(event.target.files)} /><div className="flex flex-wrap gap-2"><button type="button" className="crm-btn crm-btn-sm" disabled={uploadPhotoMutation.isPending || form.photos.length >= 5} onClick={() => photoInputRef.current?.click()}>{uploadPhotoMutation.isPending ? "上传中…" : `上传照片（${form.photos.length}/5）`}</button><span className="self-center text-[11px] text-[#999]">支持JPG、PNG、WebP，单张不超过5MB</span></div>{form.photos.length > 0 && <div className="grid grid-cols-5 gap-2 mt-2">{form.photos.map((photo, index) => <div key={photo.key} className="relative aspect-square rounded-md overflow-hidden border bg-white"><img src={photo.url} alt={`入库照片${index + 1}`} className="w-full h-full object-cover" /><button type="button" aria-label={`删除第${index + 1}张照片`} className="absolute right-1 top-1 rounded bg-black/65 text-white w-5 h-5 text-[12px] leading-5" onClick={() => setForm(value => ({ ...value, photos: value.photos.filter(item => item.key !== photo.key) }))}>×</button></div>)}</div>}</Field></div>
         </div></section>}
         <section className="inbound-entry-card mt-3"><div className="inbound-entry-card-body"><Field label="备注"><textarea className="crm-input h-[64px] w-full resize-none" maxLength={500} value={form.note} onChange={event => setForm(value => ({ ...value, note: event.target.value }))} /></Field></div></section>
-        <div className="inbound-entry-actions"><button className="crm-btn" onClick={closeCreate}>取消</button><button className="crm-btn crm-btn-primary" disabled={createMutation.isPending || updateMutation.isPending || updateDetailsMutation.isPending || uploadPhotoMutation.isPending || (!editingRow && !selectedBuyer)} onClick={submitForm}>{editingRow ? "保存修改" : form.status === "in_transit" ? "保存为在途" : "确认入库"}</button></div>
+        <div className="inbound-entry-actions"><button className="crm-btn" onClick={closeCreate}>取消</button><button className="crm-btn crm-btn-primary" disabled={createMutation.isPending || updateMutation.isPending || updateDetailsMutation.isPending || uploadPhotoMutation.isPending || documentDraft.blocked || !activeInboundIdentity || (!editingRow && !selectedBuyer)} onClick={submitForm}>{editingRow ? "保存修改" : form.status === "in_transit" ? "保存为在途" : "确认入库"}</button></div>
         </div>
         </div>
       </Modal>}
@@ -890,7 +927,7 @@ export default function InboundManagement() {
         <tr><td className="label-cell">封装</td><td>{detailRow.packageType || "-"}</td><td className="label-cell">批次/Lot</td><td>{detailRow.lotNumber || "-"}</td></tr>
         <tr><td className="label-cell">备注</td><td colSpan={3}>{detailRow.note || "-"}</td></tr>
         {detailRow.cancelReason && <tr><td className="label-cell">作废原因</td><td colSpan={3}>{detailRow.cancelReason}</td></tr>}
-      </tbody></table>{detailPhotosLoading ? <div className="mt-4 text-[12px] text-[#999]">照片加载中…</div> : detailPhotos.length > 0 && <div className="mt-4"><div className="text-[12px] text-[#666] mb-2">入库实拍照片</div><div className="grid grid-cols-5 gap-2">{detailPhotos.map((photo, index) => <a key={photo.key} href={photo.url} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-md border bg-[#f7f7f7]"><img src={photo.url} alt={`入库实拍${index + 1}`} className="h-full w-full object-cover" /></a>)}</div></div>}<div className="flex flex-wrap justify-end gap-2.5 mt-5"><button className="crm-btn" onClick={() => { setDetailRow(null); openPayment(detailRow); }}>付款记录</button>{detailRow.status === "in_transit" && <button className="crm-btn crm-btn-primary" onClick={() => { setDetailRow(null); openReceive(detailRow); }}>确认入库</button>}{detailRow.status === "received" && <button className="crm-btn crm-btn-up" onClick={() => doPrint([detailRow])}>打印验收单</button>}{detailRow.status !== "cancelled" && detailRow.bulkBatchId && <button className="crm-btn text-[#B42318]" disabled={batchCancelLoading} onClick={() => { setDetailRow(null); requestCancelImportBatch(detailRow); }}>作废本批</button>}{detailRow.status !== "cancelled" && <button className="crm-btn" onClick={() => { setDetailRow(null); requestCancel(detailRow); }}>作废</button>}<button className="crm-btn" onClick={() => setDetailRow(null)}>关闭</button></div></Modal>}
+      </tbody></table><InboundDocumentDetails key={`${storageScope}:${detailRow.id}`} id={detailRow.id} scope={`${storageScope}:${contextVerification.authorizationVersion}`} enabled={activeInboundIdentity} isCurrentScope={() => businessStorageScope() === storageScope} load={id => inboundUtils.documents.fetch({ id }, { staleTime: 0 })} access={(id, key) => inboundUtils.documentAccess.fetch({ id, key }, { staleTime: 0 })} onAuthorizationError={onAuthorizationError} />{detailPhotosLoading ? <div className="mt-4 text-[12px] text-[#999]">照片加载中…</div> : detailPhotos.length > 0 && <div className="mt-4"><div className="text-[12px] text-[#666] mb-2">入库实拍照片</div><div className="grid grid-cols-5 gap-2">{detailPhotos.map((photo, index) => <a key={photo.key} href={photo.url} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-md border bg-[#f7f7f7]"><img src={photo.url} alt={`入库实拍${index + 1}`} className="h-full w-full object-cover" /></a>)}</div></div>}<div className="flex flex-wrap justify-end gap-2.5 mt-5"><button className="crm-btn" onClick={() => { setDetailRow(null); openPayment(detailRow); }}>付款记录</button>{detailRow.status === "in_transit" && <button className="crm-btn crm-btn-primary" onClick={() => { setDetailRow(null); openReceive(detailRow); }}>确认入库</button>}{detailRow.status === "received" && <button className="crm-btn crm-btn-up" onClick={() => doPrint([detailRow])}>打印验收单</button>}{detailRow.status !== "cancelled" && detailRow.bulkBatchId && <button className="crm-btn text-[#B42318]" disabled={batchCancelLoading} onClick={() => { setDetailRow(null); requestCancelImportBatch(detailRow); }}>作废本批</button>}{detailRow.status !== "cancelled" && <button className="crm-btn" onClick={() => { setDetailRow(null); requestCancel(detailRow); }}>作废</button>}<button className="crm-btn" onClick={() => setDetailRow(null)}>关闭</button></div></Modal>}
 
       {printRows.length > 0 && <><div className="fixed inset-0 z-[60] bg-black/45 flex items-center justify-center p-4 no-print" onClick={() => setPrintRows([])}><div className="bg-white rounded-xl w-[820px] max-w-full max-h-[92vh] overflow-y-auto p-8" onClick={event => event.stopPropagation()}><InboundSlip rows={printRows} companyName={company?.companyName || "51电子网企业用户"} address={company?.regAddress || ""} /><div className="flex justify-end gap-2.5 mt-6"><button className="crm-btn" onClick={() => setPrintRows([])}>关闭</button><button className="crm-btn crm-btn-primary" onClick={() => window.print()}>打印</button></div></div></div><div className="print-area hidden print:block"><InboundSlip rows={printRows} companyName={company?.companyName || "51电子网企业用户"} address={company?.regAddress || ""} /></div></>}
       </AdminPage>

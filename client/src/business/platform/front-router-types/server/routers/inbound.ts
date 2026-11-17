@@ -34,6 +34,8 @@ import {
   type InboundBulkCreateResult,
 } from "../../../shared/inboundBulk";
 import { inboundBuyerUserIdSchema } from "../../../shared/inboundProcurement";
+import { inboundDocumentsSchema, inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema } from "../../../shared/inboundDocuments";
+import { inboundDocumentService } from "../services/inboundDocuments";
 import {
   inboundProcurementIdentity, resolveInboundProcurementAccess, inboundProcurementWhere,
   procurementBuyerOptions, resolveInboundBuyerInTx, saveInboundProcurementOwnerInTx,
@@ -167,6 +169,7 @@ const inboundDataObject = z.object({
   priceMissing: z.boolean().optional(),
   note: optionalTrimmed(500),
   photos: z.array(inboundPhotoRefSchema).max(MAX_INBOUND_PHOTOS, "入库照片最多5张").optional(),
+  documents: inboundDocumentsSchema.optional(),
 });
 function validateCostBasis(data: { unitCost?: number; unitCostBasis?: InboundPriceBasis; taxRate?: number }, ctx: z.RefinementCtx) {
   if (data.unitCost != null && data.unitCostBasis == null) {
@@ -327,6 +330,7 @@ function inboundSnapshot(input: z.infer<typeof inboundDataSchema>) {
   if (input.warehouseAddress) snapshot.warehouseAddress = input.warehouseAddress;
   if (input.procurementRegion) snapshot.procurementRegion = input.procurementRegion;
   if (input.priceMissing === true) snapshot.priceMissing = true;
+  if (input.documents?.length) snapshot.documents = input.documents;
   return snapshot;
 }
 
@@ -699,6 +703,7 @@ function inboundBulkPayloadHash(input: InboundBulkCreateInput) {
     unitCostBasis: input.unitCostBasis,
     taxRate: input.taxRate,
     acceptMissingPrices: input.acceptMissingPrices,
+    ...(input.documents?.length ? { documents: input.documents } : {}),
     rows: input.rows.map(row => ({
       sourceRow: row.sourceRow,
       partNumber: row.partNumber,
@@ -723,8 +728,13 @@ function decodeInboundBulkResult(value: unknown): InboundBulkCreateResult | null
     const result = (typeof value === "string" ? JSON.parse(value) : value) as Partial<InboundBulkCreateResult> | null;
     if (!result || result.success !== true || typeof result.batchId !== "number" || typeof result.count !== "number"
         || typeof result.missingPriceCount !== "number" || !Array.isArray(result.items)) return null;
+    if (!Number.isSafeInteger(result.batchId) || result.batchId <= 0 || !Number.isSafeInteger(result.count)
+      || result.count < 1 || result.count > 200 || result.items.length !== result.count
+      || !Number.isSafeInteger(result.missingPriceCount) || result.missingPriceCount < 0 || result.missingPriceCount > result.count) return null;
     if (result.items.some(item => !item || typeof item.sourceRow !== "number" || typeof item.id !== "number"
-      || typeof item.slipNo !== "string" || (item.status !== "in_transit" && item.status !== "received"))) return null;
+      || !Number.isSafeInteger(item.sourceRow) || item.sourceRow <= 0 || !Number.isSafeInteger(item.id) || item.id <= 0
+      || typeof item.slipNo !== "string" || !item.slipNo || (item.status !== "in_transit" && item.status !== "received"))) return null;
+    if (new Set(result.items.map(item => item.id)).size !== result.count || new Set(result.items.map(item => item.sourceRow)).size !== result.count) return null;
     return result as InboundBulkCreateResult;
   } catch {
     return null;
@@ -775,7 +785,19 @@ export async function createInboundBulk(
     if (!batchId) {
       const prior = decodeInboundBulkResult(request.result);
       if (!prior) throw new TRPCError({ code: "CONFLICT", message: "批量入库请求正在处理或结果缺失，请稍后重试" });
+      if (prior.batchId !== Number(request.id) || prior.count !== input.rows.length
+        || prior.missingPriceCount !== input.rows.filter(row => row.unitCost === null).length
+        || prior.items.some(item => !input.rows.some(row => row.sourceRow === item.sourceRow))) {
+        throw new TRPCError({ code: "CONFLICT", message: "批量入库整批结果无法确认，请联系平台核对，勿重新建单" });
+      }
       for (const item of [...prior.items].sort((a, b) => a.id - b.id)) await lockInboundProcurementOrder(tx, access, item.id);
+      const actualResult = await tx.execute(sql`SELECT id, slipNo, bulkBatchId, bulkSourceRow FROM inbound_orders
+        WHERE userId = ${ownerUserId} AND bulkBatchId = ${prior.batchId} ORDER BY id FOR UPDATE`);
+      const actual = (actualResult as unknown as [Array<{ id: number; slipNo: string; bulkBatchId: number; bulkSourceRow: number }>, unknown])[0];
+      if (actual.length !== prior.count || prior.items.some(item => !actual.some(row => Number(row.id) === item.id
+        && row.slipNo === item.slipNo && Number(row.bulkSourceRow) === item.sourceRow && Number(row.bulkBatchId) === prior.batchId))) {
+        throw new TRPCError({ code: "CONFLICT", message: "批量入库整批单据映射无法确认，请联系平台核对，勿重新建单" });
+      }
       return { ...prior, replayed: true };
     }
     if (Number(request.id) !== batchId) {
@@ -835,6 +857,9 @@ export async function createInboundBulk(
       items.push({ sourceRow: row.sourceRow, id, slipNo, status: input.status });
     }
     items.sort((left, right) => left.sourceRow - right.sourceRow);
+    await inboundDocumentService.associateNewInTx(tx, access, input.documents, {
+      type: "bulk", clientRequestId: input.clientRequestId, batchId, orderIds: items.map(item => item.id),
+    });
     const result: InboundBulkCreateResult = {
       success: true, replayed: false, batchId, count: items.length, missingPriceCount, items,
     };
@@ -1076,6 +1101,13 @@ export const inboundRouter = router({
   /** Narrow inbound-only candidates, no personnel or full-inventory grant. */
   procurementBuyers: inventoryInboundProcedure.query(async ({ ctx }) =>
     procurementBuyerOptions(await requireDb(), inboundProcurementIdentity(ctx))),
+  /** Private evidence: stable references only; upload alone never creates an order. */
+  uploadDocument: inventoryInboundProcedure.input(inboundDocumentUploadSchema).mutation(async ({ ctx, input }) =>
+    inboundDocumentService.upload(await requireDb(), inboundProcurementIdentity(ctx), input)),
+  documents: inventoryInboundProcedure.input(inboundDocumentsReadSchema).query(async ({ ctx, input }) =>
+    inboundDocumentService.list(await requireDb(), inboundProcurementIdentity(ctx), input.id)),
+  documentAccess: inventoryInboundProcedure.input(inboundDocumentAccessSchema).query(async ({ ctx, input }) =>
+    inboundDocumentService.access(await requireDb(), inboundProcurementIdentity(ctx), input)),
   /** 上传入库实拍照片至企业私有目录；单据保存时再次校验对象归属。 */
   uploadPhoto: inventoryInboundProcedure
     .input(z.object({
@@ -1301,6 +1333,9 @@ export const inboundRouter = router({
       const id = insertId(inserted);
       if (!id) throw new Error("入库单写入失败");
       await saveInboundProcurementOwnerInTx(tx, access, id, buyer);
+      await inboundDocumentService.associateNewInTx(tx, access, input.documents, {
+        type: "single", clientRequestId: input.clientRequestId, orderIds: [id],
+      });
       if (initialPayment.payment) {
         const paymentHash = paymentPayloadHash({ inboundOrderId: id, actorUserId, ...initialPayment.payment });
         await tx.execute(sql`
@@ -1363,6 +1398,7 @@ export const inboundRouter = router({
         if (paidCents > BigInt(0) && (newPayableCents == null || paidCents > newPayableCents)) {
           throw new TRPCError({ code: "CONFLICT", message: "修改后的采购货款低于已付款金额，请先核对或作废相关付款记录" });
         }
+        await inboundDocumentService.replaceInTx(tx, access, input.id, input.data.documents);
         await tx.execute(sql`
           UPDATE inbound_orders SET
             partNumber = ${input.data.partNumber}, brand = ${input.data.brand ?? null}, qty = ${input.data.qty},
@@ -1414,6 +1450,7 @@ export const inboundRouter = router({
       location: z.string().trim().min(1, "请输入存放仓位").max(64),
       note: z.string().trim().max(500),
       photos: z.array(inboundPhotoRefSchema).max(MAX_INBOUND_PHOTOS),
+      documents: inboundDocumentsSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await requireDb();
@@ -1432,6 +1469,7 @@ export const inboundRouter = router({
         if (existing.status !== "received") {
           throw new TRPCError({ code: "CONFLICT", message: "只有已入库单可以使用安全编辑" });
         }
+        await inboundDocumentService.replaceInTx(tx, access, input.id, input.documents);
         await tx.execute(sql`
           UPDATE inbound_orders SET
             supplierName = ${input.supplierName || null}, supplierContact = ${input.supplierContact || null},
@@ -1454,6 +1492,7 @@ export const inboundRouter = router({
             location: input.location || null,
             note: input.note || null,
             photos: input.photos,
+            ...(input.documents !== undefined ? { documents: input.documents } : {}),
           },
         });
         return { success: true } as const;

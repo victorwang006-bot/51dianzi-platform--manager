@@ -251,3 +251,20 @@ export async function storageGetAccessUrl(relKey: string, expiresSeconds = 3600)
   if (isOssConfigured()) return ossGetSignedUrl(relKey, expiresSeconds);
   return storageGetSignedUrl(relKey);
 }
+
+/** Inbound evidence must be available AND explicitly private at association/download time.
+ * No Forge/public fallback. Caller still must perform current business authorization first. */
+export async function storageAssertPrivateObjectAvailable(
+  relKey: string,
+  expected: { mimeType: string; size: number },
+): Promise<void> {
+  if (!isOssConfigured()) throw new Error("私有对象存储未配置");
+  const key = normalizeKey(relKey);
+  const client = getOssClient();
+  const [head, acl] = await Promise.all([client.head(key), client.getACL(key)]);
+  const headers = head.res.headers as Record<string, string | number | undefined>;
+  if (acl.acl !== "private" || Number(headers["content-length"]) !== expected.size
+    || String(headers["content-type"] ?? "").split(";")[0].trim().toLowerCase() !== expected.mimeType) {
+    throw new Error("私有附件不存在、不可用或文件元资料已变化");
+  }
+}

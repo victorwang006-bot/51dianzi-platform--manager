@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { ErpHelperText, ErpSegmentedControl } from "../erp/ErpFormControls";
 import { trpc } from "../../../../../api/business-trpc";
+import { InboundDocuments } from "./InboundDocuments";
+import { stableInboundDocuments, useInboundDocumentDraft, type InboundDocumentReference, type UploadInboundDocument } from "./inboundDocumentDraft";
 import { toast } from "sonner";
 import { attachImportedProcurementBuyer, defaultProcurementBuyer, procurementBuyerDraftError, procurementBuyerOptionLabel, selectedProcurementBuyer, type ProcurementBuyerScope, type ProcurementBuyerDraftRow, type ProcurementBuyerInboundRow } from "./procurementBuyerSelection";
 import {
@@ -41,10 +43,16 @@ type MissingPriceConfirmation = {
   rows: ProcurementBuyerInboundRow[];
   missingRows: ProcurementBuyerDraftRow[];
 };
-type ProcurementBulkCreateInput = Omit<InboundBulkCreateInput, "rows"> & { rows: ProcurementBuyerInboundRow[] };
+type ProcurementBulkCreateInput = Omit<InboundBulkCreateInput, "rows"> & { rows: ProcurementBuyerInboundRow[]; documents?: InboundDocumentReference[] };
 type RequestState = "idle" | "saving" | "uncertain";
 
 type BulkInboundFormProps = {
+  documentOwnerScope?: string;
+  documentResponseFence?: string;
+  documentEnabled?: boolean;
+  uploadDocument?: UploadInboundDocument;
+  onAuthorizationError?: (error: unknown) => void;
+  isCurrentDocumentScope?: () => boolean;
   buyerScope: ProcurementBuyerScope | null;
   buyerError?: string;
   onRetryBuyers?: () => void;
@@ -109,7 +117,7 @@ function fieldErrorKey(rowKey: string, field: InboundBulkField) {
  * Batch inbound entry content only. It is intentionally rendered inside the
  * existing inbound modal, rather than opening a second page-level dialog.
  */
-export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, buyerRetrying = false, onSuccess, onCancel, onDirtyChange, onBusyChange }: BulkInboundFormProps) {
+export function BulkInboundForm({ documentOwnerScope = "local-bulk-draft", documentResponseFence = "", documentEnabled = true, uploadDocument, onAuthorizationError, isCurrentDocumentScope, buyerScope, buyerError = "", onRetryBuyers, buyerRetrying = false, onSuccess, onCancel, onDirtyChange, onBusyChange }: BulkInboundFormProps) {
   const [status, setStatus] = useState<InboundStatus>("in_transit");
   const [inboundDate, setInboundDate] = useState(beijingToday);
   const [unitCostBasis, setUnitCostBasis] = useState<InboundPriceBasis>(CNY_TAX_INCLUDED);
@@ -140,7 +148,20 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
 
   const utils = trpc.useUtils();
   const bulkCreateMutation = trpc.inbound.bulkCreate.useMutation();
-  const locked = requestState !== "idle" || readingFile;
+  const baseLocked = requestState !== "idle" || readingFile;
+  const documentDraft = useInboundDocumentDraft({
+    ownerScope: documentOwnerScope,
+    responseFence: `${documentResponseFence}:${clientRequestId}:${JSON.stringify(buyerScope)}:${JSON.stringify(drafts.map(row => row.buyerUserId))}`,
+    clientRequestId,
+    enabled: documentEnabled && !!uploadDocument,
+    upload: uploadDocument ?? (() => Promise.reject(new Error("附件上传服务暂不可用，请稍后重试"))),
+    onAuthorizationError,
+    isCurrentScope: isCurrentDocumentScope,
+  });
+  const locked = baseLocked || documentDraft.busy || !documentEnabled;
+  useEffect(() => {
+    if (documentDraft.documents.length || documentDraft.uploads.length) setIsDirty(true);
+  }, [documentDraft.documents, documentDraft.uploads]);
   const nonBlankSourceRows = source?.rows.filter(isNonBlankRow).length ?? 0;
   const priceHeader = `采购单价（${unitCostBasis === CNY_TAX_INCLUDED ? "含税" : "未税"}）`;
   const mappingErrors = useMemo(
@@ -162,12 +183,13 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
     onBusyChange?.(false);
   }, [onBusyChange, onDirtyChange]);
 
-  const snapshot = () => JSON.stringify({ status, inboundDate, unitCostBasis, taxRate, drafts, buyerScope });
+  const snapshot = () => JSON.stringify({ status, inboundDate, unitCostBasis, taxRate, drafts, buyerScope, documents: stableInboundDocuments(documentDraft.documents) });
 
   const markChanged = () => {
     if (locked) return false;
     setIsDirty(true);
-    setClientRequestId(newClientRequestId());
+    // Uploaded references are bound to this exact bulk request UUID.
+    if (!documentDraft.documents.length && !documentDraft.uploads.length) setClientRequestId(newClientRequestId());
     setConfirmation(null);
     setShowMissingPriceFocus(false);
     setSaveError("");
@@ -177,6 +199,8 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
 
   const setImportSource = (next: ImportSource) => {
     if (!markChanged()) return;
+    documentDraft.reset();
+    setClientRequestId(newClientRequestId());
     setSource(next);
     setMappingOpen(true);
     setMapping(suggestInboundBulkMapping(next.headers));
@@ -198,6 +222,7 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
     const headers = headerRow.map((value,index)=>String(value??"").trim() || `第${index+1}列`);
     if (!headers.length || !rawRows.some(isNonBlankRow)) throw new Error("请上传含表头和数据的工作表");
       // Import commits once after parsing, while all editable controls are locked.
+      documentDraft.reset();
       setIsDirty(true); setClientRequestId(newClientRequestId()); setConfirmation(null); setSaveError("");
       setSource({headers,rows:rawRows,name:"Excel",sheetName}); setMappingOpen(true);
     setMapping(suggestInboundBulkMapping(headers));setDrafts([]);setCellErrors({});
@@ -394,7 +419,7 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
   };
 
   const requestSubmit = () => {
-    if (locked) return;
+    if (locked || documentDraft.isBlocked() || !(isCurrentDocumentScope?.() ?? true)) return;
     const result = validateDrafts();
     if (!result) return;
     const fingerprint = snapshot();
@@ -410,12 +435,13 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
       unitCostBasis,
       taxRate: Number(taxRate),
       acceptMissingPrices: false,
+      documents: stableInboundDocuments(documentDraft.documents),
       rows: result.rows,
     });
   };
 
   const acceptMissingPrices = () => {
-    if (!confirmation || locked) return;
+    if (!confirmation || locked || documentDraft.isBlocked() || !(isCurrentDocumentScope?.() ?? true)) return;
     if (confirmation.fingerprint !== snapshot()) {
       setConfirmation(null);
       setFormError("录入内容已变化，请重新确认未填写价格的行");
@@ -429,6 +455,7 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
       unitCostBasis,
       taxRate: Number(taxRate),
       acceptMissingPrices: true,
+      documents: stableInboundDocuments(documentDraft.documents),
       rows: confirmation.rows,
     });
   };
@@ -595,6 +622,8 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
         </div>
       </div>
 
+      <InboundDocuments draft={documentDraft} bulk disabled={baseLocked || !documentEnabled || !uploadDocument} />
+
       {(fileError || formError || saveError) && <div role="alert" className="rounded-md border border-[#F1C7C7] bg-[#FFF8F8] px-3 py-2 text-[12px] text-[#B42318]">{saveError || formError || fileError}</div>}
 
       {confirmation && <div role="alertdialog" aria-modal="false" aria-labelledby="inbound-missing-price-title" className="rounded-lg border border-[#E7C78C] bg-[#FFF9EF] p-3 shadow-sm">
@@ -605,18 +634,18 @@ export function BulkInboundForm({ buyerScope, buyerError = "", onRetryBuyers, bu
         </ul>
         <div className="mt-3 flex justify-end gap-2">
           <button type="button" className="crm-btn crm-btn-sm" disabled={locked} onClick={returnToMissingPrices}>返回编辑</button>
-          <button type="button" className="crm-btn crm-btn-sm crm-btn-primary" disabled={locked} onClick={acceptMissingPrices}>按 0 元录入</button>
+          <button type="button" className="crm-btn crm-btn-sm crm-btn-primary" disabled={locked || documentDraft.blocked} onClick={acceptMissingPrices}>按 0 元录入</button>
         </div>
       </div>}
 
       {requestState === "uncertain" && <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E7C78C] bg-[#FFF9EF] px-3 py-2">
         <span className="text-[12px] text-[#704D00]">已保留原请求，暂不可编辑。</span>
-        <button type="button" className="crm-btn crm-btn-sm crm-btn-primary" onClick={() => uncertainPayload && submitPayload(uncertainPayload)}>重试原请求</button>
+        <button type="button" className="crm-btn crm-btn-sm crm-btn-primary" disabled={!documentEnabled} onClick={() => documentEnabled && (isCurrentDocumentScope?.() ?? true) && uncertainPayload && submitPayload(uncertainPayload)}>重试原请求</button>
       </div>}
 
       <div className="inbound-entry-actions">
         {onCancel && <button type="button" className="crm-btn" disabled={locked} onClick={onCancel}>取消</button>}
-        <button type="button" className="crm-btn crm-btn-primary" disabled={locked || !drafts.length || !buyerScope} onClick={requestSubmit}>{requestState === "saving" ? "录入中…" : "确认录入"}</button>
+        <button type="button" className="crm-btn crm-btn-primary" disabled={locked || documentDraft.blocked || !drafts.length || !buyerScope} onClick={requestSubmit}>{requestState === "saving" ? "录入中…" : "确认录入"}</button>
       </div>
     </section>
   );

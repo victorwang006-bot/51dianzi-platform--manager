@@ -61,6 +61,7 @@ import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInput
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
 import { newInformationFactsInputSchema, newInformationFactsResultSchema } from "../shared/adminNewInformationFacts";
+import { inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSchema } from "../client/src/business/platform/shared/inboundDocuments";
 
 export const BUSINESS_NEW_INFORMATION_READS = {
   "customer.newInformationFacts": "customers",
@@ -192,6 +193,9 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "organization.setMember", module: "users", mode: "write" },
   { method: "organization.updateMemberAccess", module: "users", mode: "write" },
   { method: "importInventory.*", module: "inventory", mode: "write" },
+  { method: "inbound.uploadDocument", module: "inventory", mode: "write" },
+  { method: "inbound.documents", module: "inventory", mode: "read" },
+  { method: "inbound.documentAccess", module: "inventory", mode: "read" },
   { method: "inbound.*", module: "inventory", mode: "write" },
   { method: "customer.starContext", module: "customers", mode: "read" },
   { method: "customer.starState", module: "customers", mode: "read" },
@@ -693,8 +697,19 @@ const MALL_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "mallInventory.publish": mallBusinessMutationSchema, "mallInventory.offshelf": mallBusinessMutationSchema,
   "mallInventory.requestStatus": z.object({ requestId: mallInventoryRequestIdSchema }),
 };
+/** Preserve all old DTO fields; validate only the added evidence envelope here. */
+const INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  "inbound.uploadDocument": inboundDocumentUploadSchema,
+  "inbound.documents": inboundDocumentsReadSchema,
+  "inbound.documentAccess": inboundDocumentAccessSchema,
+  "inbound.create": z.object({ documents: inboundDocumentsSchema.optional() }).passthrough(),
+  "inbound.bulkCreate": z.object({ documents: inboundDocumentsSchema.optional() }).passthrough(),
+  "inbound.update": z.object({ data: z.object({ documents: inboundDocumentsSchema.optional() }).passthrough() }).passthrough(),
+  "inbound.updateDetails": z.object({ documents: inboundDocumentsSchema.optional() }).passthrough(),
+};
 function businessInputSchema(method: string): z.ZodTypeAny {
   if (method in BUSINESS_NEW_INFORMATION_READS) return newInformationFactsInputSchema;
+  if (INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS[method]) return INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS[method];
   if (MALL_BUSINESS_INPUT_SCHEMAS[method]) return MALL_BUSINESS_INPUT_SCHEMAS[method];
   if (method === "customer.starContext") return customerStarContextInputSchema;
   if (method === "customer.setStar") return customerSetStarSchema;
@@ -906,6 +921,9 @@ const inboundBusinessRouter = router({
   newInformationFacts: businessQuery("inbound.newInformationFacts", "inventory"),
   procurementBuyers: businessQuery("inbound.procurementBuyers", "inventory"),
   uploadPhoto: businessMutation("inbound.uploadPhoto", "inventory"),
+  uploadDocument: businessMutation("inbound.uploadDocument", "inventory"),
+  documents: businessQuery("inbound.documents", "inventory"),
+  documentAccess: businessQuery("inbound.documentAccess", "inventory"),
   photos: businessQuery("inbound.photos", "inventory"),
   suggestPartNumbers: businessQuery("inbound.suggestPartNumbers", "inventory"),
   overview: businessQuery("inbound.overview", "inventory"),
