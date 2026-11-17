@@ -76,6 +76,7 @@ export const BUSINESS_METHOD_IDS = [
   "importInventory.repairSave", "importInventory.repairSubmit",
   "inbound.procurementBuyers",
   "inbound.uploadDocument", "inbound.documents", "inbound.documentAccess", "inbound.saveDocuments",
+  "inbound.companyStockReconciliationCandidates", "inbound.reconcileCompanyStock",
   "inbound.uploadPhoto", "inbound.photos", "inbound.suggestPartNumbers", "inbound.overview", "inbound.list",
   "inbound.bulkCreate", "inbound.create", "inbound.update", "inbound.updateDetails", "inbound.paymentHistory",
   "inbound.markPaymentUnpaid", "inbound.recordPayment", "inbound.voidPayment", "inbound.receive", "inbound.cancelPreview",
@@ -91,6 +92,10 @@ export const BUSINESS_METHOD_IDS = [
   "crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.create", "crmSalesOrder.cancel",
   "crmSalesOrder.recordPayment", "crmSalesOrder.ship",
   "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials",
+  "crmSalesOrder.orderDraftGet", "crmSalesOrder.orderDraftSave", "crmSalesOrder.orderDraftDelete",
+  "crmSalesOrder.companyStockCandidates", "crmSalesOrder.previewCompanyStock",
+  "crmSalesOrder.createCompanyStock", "crmSalesOrder.allocateCompanyStock",
+  "crmSalesOrder.shipCompanyStock", "crmSalesOrder.updateSalesExpenses",
   "purchaseOrder.list", "purchaseOrder.get", "purchaseOrder.acceptedQuoteOptions", "purchaseOrder.inboundCandidates",
   "purchaseOrder.create", "purchaseOrder.updatePayment", "purchaseOrder.updateShipping", "purchaseOrder.linkInbound",
   "purchaseOrder.recordInvoice", "purchaseOrder.voidInvoice", "purchaseOrder.cancel",
@@ -158,6 +163,8 @@ BUSINESS_METHOD_CAPABILITIES["inbound.uploadDocument"] = INVENTORY_INBOUND;
 BUSINESS_METHOD_CAPABILITIES["inbound.documents"] = INVENTORY_INBOUND_READ;
 BUSINESS_METHOD_CAPABILITIES["inbound.documentAccess"] = INVENTORY_INBOUND_READ;
 BUSINESS_METHOD_CAPABILITIES["inbound.saveDocuments"] = INVENTORY_INBOUND;
+BUSINESS_METHOD_CAPABILITIES["inbound.companyStockReconciliationCandidates"] = INVENTORY_INBOUND_READ;
+BUSINESS_METHOD_CAPABILITIES["inbound.reconcileCompanyStock"] = INVENTORY_INBOUND;
 
 for (const method of [
   "inventory.list", "inventory.listPaged", "inventory.get", "inventory.spotVerificationList", "inventory.assignmentOptions",
@@ -208,10 +215,10 @@ for (const method of ["customerDemand.quoteSave", "customerDemand.quoteWithdraw"
   BUSINESS_METHOD_CAPABILITIES[method] = PROCUREMENT_DEMAND;
 }
 for (const method of ["customerDemand.quoteList", "customerDemand.quoteHistory"] as const) BUSINESS_METHOD_CAPABILITIES[method] = DEMAND_QUOTE_READ;
-for (const method of ["crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials"] as const) {
+for (const method of ["crmSalesOrder.list", "crmSalesOrder.candidates", "crmSalesOrder.get", "crmSalesOrder.customerSummary", "crmSalesOrder.customerMaterials", "crmSalesOrder.orderDraftGet", "crmSalesOrder.companyStockCandidates", "crmSalesOrder.previewCompanyStock"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER_READ;
 }
-for (const method of ["crmSalesOrder.create", "crmSalesOrder.cancel", "crmSalesOrder.recordPayment", "crmSalesOrder.ship"] as const) {
+for (const method of ["crmSalesOrder.create", "crmSalesOrder.cancel", "crmSalesOrder.recordPayment", "crmSalesOrder.ship", "crmSalesOrder.orderDraftSave", "crmSalesOrder.orderDraftDelete", "crmSalesOrder.createCompanyStock", "crmSalesOrder.allocateCompanyStock", "crmSalesOrder.shipCompanyStock", "crmSalesOrder.updateSalesExpenses"] as const) {
   BUSINESS_METHOD_CAPABILITIES[method] = SALES_ORDER;
 }
 for (const method of ["purchaseOrder.list", "purchaseOrder.get", "purchaseOrder.acceptedQuoteOptions", "purchaseOrder.inboundCandidates"] as const) {

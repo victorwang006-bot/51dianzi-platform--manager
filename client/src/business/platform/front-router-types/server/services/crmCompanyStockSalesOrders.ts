@@ -15,6 +15,7 @@ import {
 import type {
   CompanyStockScope, CompanyStockLotsFilter, CompanyStockLotCandidate, CompanyStockReserveInput,
   CompanyStockConsumeInput, CompanyStockConsumeResult, CompanyStockLotCostSnapshot,
+  CompanyStockLotsPageInput, CompanyStockLotsPage,
 } from "../../../shared/companyStock";
 import { calculateSalesProfit, SALES_COMMISSION_POLICY, SALES_COMMISSION_THRESHOLDS, SALES_COMMISSION_RATES } from "../../../shared/salesProfit";
 
@@ -31,6 +32,8 @@ export type CrmCompanyOrder = {
 export type CrmCompanyStockApi = {
   lockCompanyStockScopeInTx(tx: CrmCompanySqlExecutor, scope: CompanyStockScope): Promise<void>;
   listAvailableLots(scope: CompanyStockScope, filter?: CompanyStockLotsFilter): Promise<CompanyStockLotCandidate[]>;
+  listAvailableLotsPage(scope: CompanyStockScope, input?: CompanyStockLotsPageInput): Promise<CompanyStockLotsPage>;
+  getAvailableLotsByIdsInTx(tx: CrmCompanySqlExecutor, scope: CompanyStockScope, lotIds: number[]): Promise<CompanyStockLotCandidate[]>;
   reserveLotsInTx(tx: CrmCompanySqlExecutor, scope: CompanyStockScope, input: CompanyStockReserveInput): Promise<CompanyStockLotCostSnapshot[]>;
   consumeReservedLotsInTx(tx: CrmCompanySqlExecutor, scope: CompanyStockScope, input: CompanyStockConsumeInput): Promise<CompanyStockConsumeResult>;
   releaseOrderReservationsInTx(tx: CrmCompanySqlExecutor, scope: CompanyStockScope, input: { orderId: number }): Promise<{ releasedQty: number }>;
@@ -237,10 +240,10 @@ export function createCrmCompanyStockSalesOrderService(deps: CrmCompanyDeps) {
     const customer = await deps.accessibleCustomer(database, scope, access.canManageAll, input.customerId, false);
     assertLive(customer);
     const scoped = await stockScope(database, scope);
-    // The stock ABI has a bounded array rather than offset paging: never claim an exhaustive total.
-    const candidates = await deps.stock.listAvailableLots(scoped, { partNumber: input.keyword || undefined, limit: 200 });
-    return { items: candidates.slice((input.page - 1) * input.pageSize, input.page * input.pageSize), total: candidates.length,
-      page: input.page, pageSize: input.pageSize, bounded: candidates.length === 200 };
+    const page = await deps.stock.listAvailableLotsPage(scoped, { keyword: input.keyword, page: input.page, pageSize: input.pageSize });
+    const selectedItems = input.selectedLotIds?.length
+      ? await deps.stock.getAvailableLotsByIdsInTx(database, scoped, input.selectedLotIds) : [];
+    return { ...page, selectedItems };
   }
   async function previewCompanyStock(scope: CrmCompanyScope, rawInput: SalesOrderCompanyStockPreviewInput) {
     const input = parse(salesOrderCompanyStockPreviewSchema, rawInput);
@@ -252,10 +255,11 @@ export function createCrmCompanyStockSalesOrderService(deps: CrmCompanyDeps) {
       assertLive(await deps.accessibleCustomer(tx, scope, access.canManageAll, input.customerId, false));
       const requested = new Map<number, number>();
       const costs: CrmCompanyProfitInput["costs"] = [];
+      const selectedLots = await deps.stock.getAvailableLotsByIdsInTx(tx, scoped,
+        Array.from(new Set(input.items.flatMap(item => item.allocations.map(row => row.lotId)))).sort((a, b) => a - b));
       for (const item of input.items) {
-        const candidates = await deps.stock.listAvailableLots(scoped, { partNumber: item.partNumber, brand: item.brand, pkg: item.pkg, dc: item.dc, limit: 200 });
         for (const allocation of item.allocations) {
-          const lot = candidates.find(row => Number(row.lotId) === allocation.lotId);
+          const lot = selectedLots.find(row => Number(row.lotId) === allocation.lotId);
           if (!lot || !sameIdentity(lot, item)) throw new TRPCError({ code: "CONFLICT", message: "批次归属或型号/品牌/封装/DC已变化，请刷新" });
           const qty = (requested.get(allocation.lotId) ?? 0) + allocation.qty;
           if (qty > Number(lot.availableQty)) throw new TRPCError({ code: "CONFLICT", message: "批次可售数量不足，请刷新" });

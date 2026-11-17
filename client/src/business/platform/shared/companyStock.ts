@@ -13,6 +13,13 @@ export type CompanyStockLotCandidate = {
   lotId: number; inboundOrderId: number; partNumber: string; brand: string; pkg: string;
   dc: string; lotNumber: string; location: string; availableQty: number; version: number;
 };
+export const companyStockLotsPageSchema = z.object({
+  keyword: z.string().trim().max(128).default(""),
+  page: z.number().int().min(1).max(100000).default(1),
+  pageSize: z.number().int().min(1).max(50).default(20),
+}).strict();
+export type CompanyStockLotsPageInput = z.input<typeof companyStockLotsPageSchema>;
+export type CompanyStockLotsPage = { items: CompanyStockLotCandidate[]; total: number; page: number; pageSize: number; bounded: false };
 export type CompanyStockLotCostSnapshot = {
   lotId: number; partNumber: string; unitCostTaxIncluded: string | null;
   unitCostTaxExcluded: string | null; unitCostBasis: string | null; taxRate: string | null;

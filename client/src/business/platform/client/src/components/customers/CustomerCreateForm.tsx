@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { useCustomerCreateDraft, useCustomerCreateDraftIdentity } from "../../hooks/useCustomerCreateDraft";
 import type { CustomerCreatePendingSave, CustomerCreateSaveMode } from "../../lib/customerCreateDraftStore";
@@ -213,7 +212,6 @@ export function CustomerCreateForm({
       if (!mountedRef.current) return;
       setErrors({});
       setFormError("");
-      toast.success(result.replayed ? "已确认保存" : "客户已保存");
       // The mounted parent can act immediately. A parent that was unmounted
       // consumes the completion from the same identity when it returns.
       consumeCompletion();
@@ -274,13 +272,11 @@ export function CustomerCreateForm({
           <h2 id="customer-entry-heading" className="text-sm font-semibold text-slate-800">录入客户</h2>
           {preservingNotice ? <span className="text-[11px] text-slate-500" role="status">{preservingNotice}</span> : null}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">客户基本资料与联系人分开维护；每位联系人均需姓名和至少一种有效联系方式。</p>
       </div>
       <div className="p-3 sm:p-4">
-        {contextQuery.isError ? <InlineError message={contactErrorMessage(contextQuery.error)} /> : null}
+        {contextQuery.isError || formError ? <InlineError message={contextQuery.isError ? contactErrorMessage(contextQuery.error) : formError} /> : null}
         {!scopeReady && !contextQuery.isPending && !contextQuery.isError ? <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status">当前登录身份或企业上下文尚未确认，已暂停保存。</p> : null}
-        {pendingSave?.kind === "saving" ? <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status">正在保存本次客户资料；切换页面后会继续使用同一请求编号确认结果。</p> : null}
-        {formError ? <InlineError message={formError} /> : null}
+        {pendingSave?.kind === "saving" ? <p className="mb-3 text-xs text-slate-500" role="status">保存中…</p> : null}
         <CustomerFields value={form} onChange={setForm} members={contextQuery.data?.members ?? []} canManageAll={Boolean(contextQuery.data?.canManageAll)} currentAssigneeName={assignee} nameAction={<CustomerOwnershipLookup companyName={form.name} disabled={saveDisabled} />} includeInitialFollowUp includeLegacyContactFields={false} disabled={saveDisabled} fieldErrors={customerErrors} />
       </div>
       <CustomerContactsDrafts contacts={contacts} setContacts={setContacts} disabled={saveDisabled} errors={errors} />

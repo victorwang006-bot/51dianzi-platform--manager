@@ -441,3 +441,26 @@
     flex-wrap: wrap;
   }
 }
+
+/* Order entry: customer -> source -> line items -> actions. */
+.crm-order-section { min-width: 0; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+.crm-order-section-title { margin: 0 0 8px; color: #185fa5; font-size: 12px; font-weight: 600; }
+.crm-order-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid #e2e8f0; }
+.company-lot-picker { position: relative; width: 100%; }
+.company-lot-trigger { width: 100%; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+.company-lot-dropdown { margin-top: 6px; border: 1px solid #bfdbfe; background: #fff; border-radius: 6px; box-shadow: 0 4px 14px #185fa512; overflow: hidden; }
+.company-lot-search { padding: 8px; border-bottom: 1px solid #e2e8f0; }
+.company-lot-search input { flex: 1; min-width: 120px; }
+.company-lot-options { max-height: 240px; overflow-y: auto; }
+.company-lot-options p { padding: 12px; font-size: 12px; color: #64748b; }
+.company-lot-option { display: flex; width: 100%; justify-content: space-between; gap: 16px; border: 0; border-bottom: 1px solid #f1f5f9; padding: 9px 12px; text-align: left; background: #fff; color: #334155; }
+.crm-sales-orders-dialog .company-lot-option { height: auto; min-height: 64px; }
+.company-lot-option:hover:not(:disabled) { background: #eff6ff; }
+.company-lot-option:focus-visible { outline: 2px solid #185fa5; outline-offset: -2px; }
+.company-lot-option:disabled { opacity: .55; cursor: not-allowed; }
+.company-lot-identity { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.company-lot-identity span { font-size: 11px; color: #64748b; }
+.company-lot-quantity { flex-shrink: 0; text-align: right; color: #185fa5; font-variant-numeric: tabular-nums; }
+.company-lot-quantity small { display: block; margin-top: 4px; font-size: 11px; }
+.company-lot-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; padding: 8px; font-size: 11px; border-top: 1px solid #e2e8f0; }
+.company-lot-pagination > span { margin-right: auto; color: #64748b; }

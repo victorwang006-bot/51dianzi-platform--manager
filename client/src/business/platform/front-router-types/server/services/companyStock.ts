@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { normalizeErpPermissions } from "../../../shared/erpPermissions";
 import {
   companyStockLotsFilterSchema,
+  companyStockLotsPageSchema, type CompanyStockLotsPageInput, type CompanyStockLotsPage,
   companyStockReconcileSchema, type CompanyStockReconcileInput,
   type CompanyStockScope, type CompanyStockLotsFilter, type CompanyStockLotCandidate,
   type CompanyStockLotCostSnapshot, type CompanyStockInboundSnapshot, type CompanyStockReserveInput,
@@ -311,7 +312,7 @@ export function createCompanyStockService(deps: CompanyStockDeps) {
   async function listAvailableLots(scope: CompanyStockScope, rawFilters: CompanyStockLotsFilter = {}): Promise<CompanyStockLotCandidate[]> {
     const filters = companyStockLotsFilterSchema.parse(rawFilters), executor = await db();
     await access(executor, scope, "sales.business_orders", false);
-    const conditions = [sql`l.enterpriseId = ${scope.enterpriseId}`, sql`l.ownerUserId = ${scope.ownerUserId}`, sql`l.verified = TRUE`, sql`l.frozen = FALSE`, sql`l.reversedAt IS NULL`, sql`l.remainingQty > l.reservedQty`, sql`io.status = 'received'`, sql`io.userId = ${scope.ownerUserId}`];
+    const conditions = availableLotConditions(scope);
     for (const key of ["partNumber", "brand", "pkg", "dc", "location"] as const) {
       if (filters[key] !== undefined) conditions.push(sql`BINARY ${sql.raw(`l.${key}`)} = BINARY ${filters[key]}`);
     }
@@ -322,6 +323,45 @@ export function createCompanyStockService(deps: CompanyStockDeps) {
        AND NOT EXISTS (SELECT 1 FROM inbound_ledger_effects e WHERE e.inboundOrderId = io.id AND e.reversedAt IS NOT NULL)
        ORDER BY l.id LIMIT ${filters.limit}
     `));
+  }
+  function availableLotConditions(scope: CompanyStockScope) {
+    // Manual reconciliation is valid evidence; do NOT require procurement ownership.
+    return [sql`l.enterpriseId = ${scope.enterpriseId}`, sql`l.ownerUserId = ${scope.ownerUserId}`,
+      sql`l.verified = TRUE`, sql`l.frozen = FALSE`, sql`l.reversedAt IS NULL`,
+      sql`l.remainingQty > l.reservedQty`, sql`l.reservedQty >= 0`, sql`l.remainingQty <= l.receivedQty`,
+      sql`io.status = 'received'`, sql`io.userId = ${scope.ownerUserId}`,
+      sql`NOT EXISTS (SELECT 1 FROM inbound_ledger_effects e WHERE e.inboundOrderId = io.id AND e.reversedAt IS NOT NULL)`];
+  }
+  async function listAvailableLotsPage(scope: CompanyStockScope, rawInput: CompanyStockLotsPageInput = {}): Promise<CompanyStockLotsPage> {
+    const input = companyStockLotsPageSchema.parse(rawInput);
+    return (await db()).transaction(async tx => {
+      await access(tx, scope, "sales.business_orders", false);
+      const conditions = availableLotConditions(scope);
+      // Explicit '=' escape avoids sql_mode/backslash differences. Keep #, punctuation and spaces.
+      const literal = input.keyword.replace(/[=%_]/g, character => `=${character}`);
+      if (input.keyword) conditions.push(sql`l.partNumber LIKE ${`%${literal}%`} ESCAPE '='`);
+      const where = sql.join(conditions, sql` AND `);
+      const total = Number(rows<{ total: number | string }>(await tx.execute(sql`SELECT COUNT(*) AS total
+        FROM company_stock_lots l INNER JOIN inbound_orders io ON io.id = l.inboundOrderId WHERE ${where}`))[0]?.total ?? 0);
+      const items = rows<CompanyStockLotCandidate>(await tx.execute(sql`SELECT l.id AS lotId, l.inboundOrderId,
+        l.partNumber, l.brand, l.pkg, l.dc, l.lotNumber, l.location, (l.remainingQty-l.reservedQty) AS availableQty, l.version
+        FROM company_stock_lots l INNER JOIN inbound_orders io ON io.id = l.inboundOrderId WHERE ${where}
+        ORDER BY ${input.keyword ? sql`(l.partNumber LIKE ${`${literal}%`} ESCAPE '=') DESC,` : sql``} l.id
+        LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}`));
+      return { items, total, page: input.page, pageSize: input.pageSize, bounded: false };
+    });
+  }
+  async function getAvailableLotsByIdsInTx(tx: CompanyStockExecutor, scope: CompanyStockScope, lotIds: number[]): Promise<CompanyStockLotCandidate[]> {
+    await access(tx, scope, "sales.business_orders", false);
+    if (!Array.isArray(lotIds) || lotIds.length > 200) bad("所选批次数量超限");
+    const ids = Array.from(new Set(lotIds.map(id))).sort((a, b) => a - b);
+    if (!ids.length) return [];
+    const conditions = availableLotConditions(scope);
+    conditions.push(sql`l.id IN (${sql.join(ids.map(value => sql`${value}`), sql`, `)})`);
+    return rows<CompanyStockLotCandidate>(await tx.execute(sql`SELECT l.id AS lotId, l.inboundOrderId,
+      l.partNumber, l.brand, l.pkg, l.dc, l.lotNumber, l.location, (l.remainingQty-l.reservedQty) AS availableQty, l.version
+      FROM company_stock_lots l INNER JOIN inbound_orders io ON io.id = l.inboundOrderId
+      WHERE ${sql.join(conditions, sql` AND `)} ORDER BY l.id`));
   }
   async function getLotCostSnapshotsInTx(tx: CompanyStockExecutor, scope: CompanyStockScope, lotIds: number[]) {
     await access(tx, scope, "sales.business_orders");
@@ -412,6 +452,12 @@ export function createCompanyStockService(deps: CompanyStockDeps) {
   }
   async function releaseOrderReservationsInTx(tx: CompanyStockExecutor, scope: CompanyStockScope, input: { orderId: number }) {
     await access(tx, scope, "sales.business_orders"); await orderItems(tx, scope, input.orderId, [], false);
+    // Cancellation may only release untouched reservations. Recheck the authoritative
+    // consumption ledger too: missing CRM shipment projection must not legalize cancellation.
+    const consumed = rows<{ qty: number | string }>(await tx.execute(sql`SELECT
+      COALESCE((SELECT SUM(consumedQty) FROM company_stock_reservations WHERE enterpriseId = ${scope.enterpriseId} AND orderId = ${input.orderId}), 0)
+      + COALESCE((SELECT SUM(qty) FROM company_stock_consumptions WHERE enterpriseId = ${scope.enterpriseId} AND orderId = ${input.orderId}), 0) AS qty`))[0];
+    if (Number(consumed?.qty ?? 0) > 0) conflict("公司批次已有出库消耗，不可直接取消释放，须人工核对");
     const preview = await reservations(tx, scope, input.orderId, false);
     if (!preview.length) return { releasedQty: 0 };
     const lotsPreview = await readLots(tx, scope, preview.map(x => Number(x.lotId)));
@@ -482,10 +528,10 @@ export function createCompanyStockService(deps: CompanyStockDeps) {
     id(outboundOrderId);
     for (const { lot, qty } of plan.selected) await insertConsumption(tx, scope, lot, qty, outboundOrderId);
   }
-  return { lockCompanyStockScopeInTx, recordInboundLotInTx, listAvailableLots, getLotCostSnapshotsInTx, reserveLotsInTx, consumeReservedLotsInTx,
+  return { lockCompanyStockScopeInTx, recordInboundLotInTx, listAvailableLots, listAvailableLotsPage, getAvailableLotsByIdsInTx, getLotCostSnapshotsInTx, reserveLotsInTx, consumeReservedLotsInTx,
     releaseOrderReservationsInTx, guardInboundLotInTx, reverseInboundLotInTx, assertLegacyOutboundEditableInTx,
     planLegacyOutboundInTx, bindLegacyOutboundInTx, assertOutboundAccessInTx, guardInboundDetailsInTx, reconcileInboundLotInTx };
 }
 export const companyStockService = createCompanyStockService({ getDb });
-export const { lockCompanyStockScopeInTx, recordInboundLotInTx, listAvailableLots, getLotCostSnapshotsInTx, reserveLotsInTx, consumeReservedLotsInTx,
+export const { lockCompanyStockScopeInTx, recordInboundLotInTx, listAvailableLots, listAvailableLotsPage, getAvailableLotsByIdsInTx, getLotCostSnapshotsInTx, reserveLotsInTx, consumeReservedLotsInTx,
   releaseOrderReservationsInTx, guardInboundLotInTx, reverseInboundLotInTx, reconcileInboundLotInTx } = companyStockService;

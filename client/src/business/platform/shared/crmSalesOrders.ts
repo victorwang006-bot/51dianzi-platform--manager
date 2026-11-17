@@ -469,7 +469,10 @@ function companyAmountsValidation(input: { items: Array<{ qty: number; agreedUni
 }
 export const salesOrderCompanyStockCreateSchema = z.object({ ...companyStockOrderShape, requestId }).strict().superRefine(companyAmountsValidation);
 export const salesOrderCompanyStockPreviewSchema = z.object({ ...companyStockOrderShape, requestId: requestId.optional() }).strict().superRefine(companyAmountsValidation);
-export const salesOrderCompanyStockCandidatesSchema = z.object({ customerId: id, keyword: z.string().trim().max(128).default(""), page, pageSize }).strict();
+export const salesOrderCompanyStockCandidatesSchema = z.object({
+  customerId: id, keyword: z.string().trim().max(128).default(""), page, pageSize,
+  selectedLotIds: z.array(id).max(CRM_COMPANY_STOCK_MAX_ALLOCATIONS).optional(),
+}).strict();
 export const salesOrderCompanyStockAllocateSchema = z.object({
   id, version: id, requestId,
   items: z.array(z.object({ orderItemId: id, allocations: allocationsSchema }).strict()).min(1).max(CRM_SALES_ORDER_MAX_ITEMS),

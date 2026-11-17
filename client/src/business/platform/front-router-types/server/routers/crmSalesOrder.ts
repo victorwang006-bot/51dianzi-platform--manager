@@ -2,6 +2,9 @@ import { createCrmPermissionProcedure, router } from "../_core/trpc";
 import type { StaffDelegation } from "../_core/context";
 import { newInformationFactsInputSchema, newInformationFactsResultSchema } from "../../../shared/adminNewInformationFacts";
 import { readCrmSalesNewInformationFacts } from "../services/adminNewInformationSources/sales";
+import { salesOrderDraftGetSchema, salesOrderDraftSaveSchema, salesOrderDraftDeleteSchema, salesOrderDraftResultSchema, salesOrderDraftMutationResultSchema } from "../../../shared/crmSalesOrderDrafts";
+import type { SalesOrderDraftScope } from "../services/crmSalesOrderDrafts";
+import { salesOrderDraftService } from "../services/crmSalesOrders";
 import {
   salesOrderCandidateListSchema,
   salesOrderCancelSchema,
@@ -29,7 +32,6 @@ import {
   listSalesOrders,
   recordSalesOrderPayment,
   shipSalesOrder,
-  type CrmSalesOrderScope,
   listSalesOrderCompanyStockCandidates,
   previewSalesOrderCompanyStock,
   createSalesOrderCompanyStock,
@@ -40,7 +42,7 @@ import {
 
 const salesOrderProcedure = createCrmPermissionProcedure("sales.business_orders");
 
-function scopeFor(ctx: { user: { id: number }; enterprisePermissionScope: { enterprise: { id: number } }; staffDelegation?: StaffDelegation }): CrmSalesOrderScope {
+function scopeFor(ctx: { user: { id: number }; enterprisePermissionScope: { enterprise: { id: number } }; staffDelegation?: StaffDelegation }): SalesOrderDraftScope {
   // Use the signed-in employee, rather than CRM's legacy effective data owner alias.
   return { enterpriseId: ctx.enterprisePermissionScope.enterprise.id, actorUserId: ctx.user.id, staffDelegation: ctx.staffDelegation };
 }
@@ -48,6 +50,9 @@ function scopeFor(ctx: { user: { id: number }; enterprisePermissionScope: { ente
 export const crmSalesOrderRouter = router({
   newInformationFacts: salesOrderProcedure.input(newInformationFactsInputSchema)
     .output(newInformationFactsResultSchema).query(({ ctx, input }) => readCrmSalesNewInformationFacts(scopeFor(ctx), input)),
+  orderDraftGet: salesOrderProcedure.input(salesOrderDraftGetSchema).output(salesOrderDraftResultSchema).query(({ ctx, input }) => salesOrderDraftService.get(scopeFor(ctx), input)),
+  orderDraftSave: salesOrderProcedure.input(salesOrderDraftSaveSchema).output(salesOrderDraftMutationResultSchema).mutation(({ ctx, input }) => salesOrderDraftService.save(scopeFor(ctx), input)),
+  orderDraftDelete: salesOrderProcedure.input(salesOrderDraftDeleteSchema).output(salesOrderDraftMutationResultSchema).mutation(({ ctx, input }) => salesOrderDraftService.remove(scopeFor(ctx), input)),
   list: salesOrderProcedure.input(salesOrderListSchema).query(({ ctx, input }) => listSalesOrders(scopeFor(ctx), input)),
   candidates: salesOrderProcedure.input(salesOrderCandidateListSchema).query(({ ctx, input }) => listSalesOrderCandidates(scopeFor(ctx), input)),
   get: salesOrderProcedure.input(salesOrderIdSchema).query(({ ctx, input }) => getSalesOrder(scopeFor(ctx), input)),

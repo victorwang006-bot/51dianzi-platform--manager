@@ -195,6 +195,8 @@ const commission = (change: any = {}) => ({
 });
 function render(component: React.ReactElement) {
   act(() => root.render(component));
+  const picker = container.querySelector<HTMLButtonElement>(".company-lot-trigger");
+  if (picker && !picker.disabled && picker.getAttribute("aria-expanded") === "false") click(picker);
 }
 function button(text: string) {
   const value = Array.from(
@@ -283,7 +285,7 @@ beforeEach(() => {
       },
     },
     reconciliation: { data: [candidate] },
-    context: { data: { canManageAll: false } },
+    context: { data: { actorUserId: 7, canManageAll: false, salesOrderPicker: { scope: "mine" } } },
     customers: { data: { items: [{ id: 1, name: "客户甲" }], total: 1 } },
   };
   vi.stubGlobal("React", React);
@@ -734,6 +736,8 @@ describe("company stock UI closure with genuine forms and offline transport", ()
     expect(
       runtime.inputs.find(row => row.name === "customers")!.input
     ).toMatchObject({ scope: "mine", archived: false, due: "all" });
+    fill("搜索有权限客户", "客户甲");
+    click(button("搜索"));
     click(button("选择客户"));
     expect(saved).toHaveBeenCalledWith({ id: 1, name: "客户甲" });
     runtime.reads.customers.isFetching = true;

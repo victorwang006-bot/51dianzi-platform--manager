@@ -48,7 +48,8 @@ export function SalesProfitSummary({
       ? "待核"
       : serverMoney(value);
   return (
-    <div className="sales-profit-result">
+    <details className="sales-profit-result crm-sales-orders-fold" data-profit-fold>
+      <summary>利润与提成</summary>
       <div className="sales-profit-summary" aria-label="利润与提成">
         <span>
           订单利润{" "}
@@ -98,6 +99,6 @@ export function SalesProfitSummary({
           <div className="admin-cell-secondary">{commission.reason}</div>
         ) : null}
       </details>
-    </div>
+    </details>
   );
 }

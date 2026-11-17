@@ -64,6 +64,7 @@ import { newInformationFactsInputSchema, newInformationFactsResultSchema } from 
 import { inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSchema, inboundDocumentsSaveSchema } from "../client/src/business/platform/shared/inboundDocuments";
 import { salesOrderCompanyStockCandidatesSchema, salesOrderCompanyStockPreviewSchema, salesOrderCompanyStockCreateSchema, salesOrderCompanyStockAllocateSchema, salesOrderCompanyStockShipSchema, salesOrderExpensesSchema } from "../client/src/business/platform/shared/crmSalesOrders";
 import { companyStockReconciliationCandidatesSchema, companyStockReconcileSchema } from "../client/src/business/platform/shared/companyStock";
+import { salesOrderDraftGetSchema, salesOrderDraftSaveSchema, salesOrderDraftDeleteSchema, salesOrderDraftResultSchema, salesOrderDraftMutationResultSchema } from "../client/src/business/platform/shared/crmSalesOrderDrafts";
 
 export const BUSINESS_NEW_INFORMATION_READS = {
   "customer.newInformationFacts": "customers",
@@ -215,6 +216,9 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "crmSalesOrder.allocateCompanyStock", module: "orders", mode: "write" },
   { method: "crmSalesOrder.shipCompanyStock", module: "orders", mode: "write" },
   { method: "crmSalesOrder.updateSalesExpenses", module: "orders", mode: "write" },
+  { method: "crmSalesOrder.orderDraftGet", module: "orders", mode: "read" },
+  { method: "crmSalesOrder.orderDraftSave", module: "orders", mode: "write" },
+  { method: "crmSalesOrder.orderDraftDelete", module: "orders", mode: "write" },
   { method: "crmSalesOrder.*", module: "orders", mode: "write" },
   { method: "personalPerformance.summary", module: "orders", mode: "read" },
   { method: "enterprise.me", module: "context", mode: "read" },
@@ -584,7 +588,8 @@ async function forwardBusinessMethod(
       return parsed.data;
     }
     if (capability.method === "channelInventory.getTeamMaterialSource" || capability.method === "customer.starContext"
-      || capability.method === "crmSalesOrder.customerSummary" || capability.method === "crmSalesOrder.customerMaterials") return result;
+      || capability.method === "crmSalesOrder.customerSummary" || capability.method === "crmSalesOrder.customerMaterials"
+      || capability.method === "crmSalesOrder.orderDraftGet") return result;
     await db.recordBusinessCommandAccess({
       merchantId: merchant.id,
       staffUserId: staffBinding.frontUserId,
@@ -728,6 +733,9 @@ const COMPANY_STOCK_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "crmSalesOrder.allocateCompanyStock": salesOrderCompanyStockAllocateSchema,
   "crmSalesOrder.shipCompanyStock": salesOrderCompanyStockShipSchema,
   "crmSalesOrder.updateSalesExpenses": salesOrderExpensesSchema,
+  "crmSalesOrder.orderDraftGet": salesOrderDraftGetSchema,
+  "crmSalesOrder.orderDraftSave": salesOrderDraftSaveSchema,
+  "crmSalesOrder.orderDraftDelete": salesOrderDraftDeleteSchema,
 };
 function businessInputSchema(method: string): z.ZodTypeAny {
   if (method in BUSINESS_NEW_INFORMATION_READS) return newInformationFactsInputSchema;
@@ -1018,6 +1026,12 @@ const customerDemandBusinessRouter = router({
 
 const crmSalesOrderBusinessRouter = router({
   newInformationFacts: businessQuery("crmSalesOrder.newInformationFacts", "orders"),
+  orderDraftGet: publicProcedure.input(salesOrderDraftGetSchema).output(salesOrderDraftResultSchema).query(async ({ ctx, input }) =>
+    salesOrderDraftResultSchema.parse(await forwardBusinessMethod(ctx, input, { method: "crmSalesOrder.orderDraftGet", module: "orders", mode: "read" }))),
+  orderDraftSave: publicProcedure.input(salesOrderDraftSaveSchema).output(salesOrderDraftMutationResultSchema).mutation(async ({ ctx, input }) =>
+    salesOrderDraftMutationResultSchema.parse(await forwardBusinessMethod(ctx, input, { method: "crmSalesOrder.orderDraftSave", module: "orders", mode: "write" }))),
+  orderDraftDelete: publicProcedure.input(salesOrderDraftDeleteSchema).output(salesOrderDraftMutationResultSchema).mutation(async ({ ctx, input }) =>
+    salesOrderDraftMutationResultSchema.parse(await forwardBusinessMethod(ctx, input, { method: "crmSalesOrder.orderDraftDelete", module: "orders", mode: "write" }))),
   companyStockCandidates: businessQuery("crmSalesOrder.companyStockCandidates", "orders"),
   previewCompanyStock: businessQuery("crmSalesOrder.previewCompanyStock", "orders"),
   createCompanyStock: businessMutation("crmSalesOrder.createCompanyStock", "orders"),

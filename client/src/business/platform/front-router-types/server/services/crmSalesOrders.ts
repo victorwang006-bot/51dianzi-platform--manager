@@ -39,7 +39,7 @@ import { recordCrmSalesCreationOrigin, type AdminNewInformationOriginScope } fro
 import { companyStockService } from "./companyStock";
 import { createCrmCompanyStockSalesOrderService, currencyLabel, calculateCrmCompanyProfit, orderSalesTaxMode, assertOrderStockPrelocked } from "./crmCompanyStockSalesOrders";
 import { SALES_COMMISSION_POLICY } from "../../../shared/salesProfit";
-
+import { createSalesOrderDraftService } from "./crmSalesOrderDrafts";
 /** Identity is always the independently authenticated employee, never effectiveUserId. */
 export type CrmSalesOrderScope = AdminNewInformationOriginScope;
 type SqlExecutor = { execute: (query: SQLWrapper) => Promise<unknown> };
@@ -881,3 +881,7 @@ export const {
   shipCompanyStock: shipSalesOrderCompanyStock,
   updateSalesExpenses,
 } = crmCompanyStockSalesOrderService;
+
+/** Native draft bridge: original permissions are checked on every get/save/delete. */
+export const crmSalesOrderDraftNativeBridge = { getDb, requireAccess: requireSalesOrderAccess };
+export const salesOrderDraftService = createSalesOrderDraftService(crmSalesOrderDraftNativeBridge);

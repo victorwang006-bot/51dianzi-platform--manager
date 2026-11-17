@@ -33,6 +33,10 @@ const runtime = vi.hoisted(() => ({
   search: "?demandNo=UNRELATED-ROUTE&keyword=OTHER-CUSTOMER",
   lots: { items: [] as any[], total: 0 },
   preview: {} as any,
+  draftServer: null as any,
+  draftGet: vi.fn(),
+  draftSave: vi.fn(),
+  draftDelete: vi.fn(),
   mutations: {} as Record<
     string,
     { mutate: ReturnType<typeof vi.fn>; options: any; pending: boolean }
@@ -106,7 +110,11 @@ vi.mock("../../../../api/business-trpc", () => {
             : name === "preview"
               ? runtime.preview
               : name === "context"
-                ? { canManageAll: false }
+                ? {
+                    canManageAll: false,
+                    actorUserId: 7,
+                    salesOrderPicker: { scope: "mine" },
+                  }
                 : name === "customers"
                   ? { items: [{ id: 1, name: "客户甲" }], total: 1 }
                   : name === "list"
@@ -149,9 +157,16 @@ vi.mock("../../../../api/business-trpc", () => {
           list: { invalidate: runtime.invalidate },
           get: { invalidate: runtime.invalidate },
           candidates: { invalidate: runtime.invalidate },
+          orderDraftGet: { fetch: runtime.draftGet },
         },
       }),
       crmSalesOrder: {
+        orderDraftSave: {
+          useMutation: () => ({ mutateAsync: runtime.draftSave }),
+        },
+        orderDraftDelete: {
+          useMutation: () => ({ mutateAsync: runtime.draftDelete }),
+        },
         list: query("list"),
         get: query("get"),
         candidates: query("candidates"),
@@ -170,17 +185,41 @@ vi.mock("../../../../api/business-trpc", () => {
     },
   };
 });
-vi.mock("../components/ui/dialog", async importOriginal => ({
-  ...(await importOriginal<typeof import("../components/ui/dialog")>()),
-  Dialog: ({ open, children }: any) => (open ? children : null),
-  DialogContent: ({ children, className }: any) =>
-    React.createElement("div", { className, "data-dialog": true }, children),
-  DialogHeader: ({ children }: any) =>
-    React.createElement("header", null, children),
-  DialogTitle: ({ children }: any) => React.createElement("h2", null, children),
-  DialogFooter: ({ children }: any) =>
-    React.createElement("footer", null, children),
-}));
+vi.mock("../components/ui/dialog", async importOriginal => {
+  const { createContext, useContext } = await import("react");
+  const Close = createContext<(open: boolean) => void>(() => undefined);
+  return {
+    ...(await importOriginal<typeof import("../components/ui/dialog")>()),
+    Dialog: ({ open, children, onOpenChange }: any) =>
+      open
+        ? React.createElement(Close.Provider, { value: onOpenChange }, children)
+        : null,
+    DialogContent: ({ children, className, showCloseButton = true }: any) => {
+      const onOpenChange = useContext(Close);
+      return React.createElement(
+        "div",
+        { className, "data-dialog": true },
+        children,
+        showCloseButton
+          ? React.createElement(
+              "button",
+              {
+                onClick: () => onOpenChange(false),
+                "aria-label": "关闭对话框",
+              },
+              "关闭对话框"
+            )
+          : null
+      );
+    },
+    DialogHeader: ({ children }: any) =>
+      React.createElement("header", null, children),
+    DialogTitle: ({ children }: any) =>
+      React.createElement("h2", null, children),
+    DialogFooter: ({ children }: any) =>
+      React.createElement("footer", null, children),
+  };
+});
 vi.mock("../components/ui/select", () => ({
   Select: ({ value, onValueChange, children }: any) =>
     React.createElement("div", { "data-value": value }, children),
@@ -223,6 +262,11 @@ import CrmSalesOrders, {
   type CustomerSalesOrdersProps,
 } from "./CrmSalesOrders";
 import { toast } from "sonner";
+import {
+  loadSalesOrderDraft,
+  saveSalesOrderDraft,
+} from "../lib/salesOrderDraftStore";
+import type { SalesOrderDraftPayload } from "../../../shared/crmSalesOrderDrafts";
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root;
@@ -305,12 +349,16 @@ const demand = (customerId = 1) => ({
       demandQty: 10,
       remainingQty: 8,
       qtyUnit: "个",
+      deliveryRequirement: "",
+      note: "",
     },
   ],
 });
-function render(change: Partial<CustomerSalesOrdersProps> = {}) {
+async function render(change: Partial<CustomerSalesOrdersProps> = {}) {
   props = { ...props, ...change };
-  act(() => root.render(React.createElement(CustomerSalesOrders, props)));
+  await act(async () => {
+    root.render(React.createElement(CustomerSalesOrders, props));
+  });
 }
 function button(text: string, scope: ParentNode = document.body) {
   const result = Array.from(
@@ -319,12 +367,12 @@ function button(text: string, scope: ParentNode = document.body) {
   if (!result) throw new Error(`Missing button: ${text}`);
   return result;
 }
-function click(el: Element) {
-  act(() =>
+async function click(el: Element) {
+  await act(async () => {
     el.dispatchEvent(
       new MouseEvent("click", { bubbles: true, cancelable: true })
-    )
-  );
+    );
+  });
 }
 function input(selector: string, value: string) {
   const el = document.querySelector<
@@ -347,20 +395,92 @@ function input(selector: string, value: string) {
     );
   });
 }
-function selectDemand() {
-  click(button("录入销售订单"));
-  click(button("选择"));
+async function selectDemand() {
+  await click(button("录入销售订单"));
+  await click(button("选择"));
 }
-function fillOrder() {
-  selectDemand();
+async function fillOrder() {
+  await selectDemand();
   input('[aria-label="LM358 确认数量"]', "3");
   input('[aria-label="LM358 含税单价"]', "12.3456");
   input("#sales-order-due-date", "2026-12-01");
   input("#sales-order-confirmation", "客户电话确认数量、含税价格和交期");
-  click(document.querySelector('input[type="checkbox"]')!);
+  await click(document.querySelector('input[type="checkbox"]')!);
+}
+const draftIdentity = () => JSON.stringify([7, "native", runtime.scope]);
+async function renderStandalone(reload = false) {
+  runtime.search = "";
+  runtime.memory = {};
+  if (reload)
+    await act(async () => {
+      root.render(null);
+    });
+  await act(async () => {
+    root.render(React.createElement(CrmSalesOrders));
+  });
+}
+async function fillCompanyOrder() {
+  await renderStandalone();
+  await click(button("新建业务订单"));
+  input('[aria-label="搜索有权限客户"]', "客户甲");
+  await click(
+    button("搜索", document.querySelector('[aria-label="订单客户"]')!)
+  );
+  await click(button("选择客户"));
+  await click(document.querySelector(".company-lot-trigger")!);
+  await click(document.querySelector('[data-company-lot="41"] button')!);
+  input('[aria-label="批次 41 销售数量"]', "3");
+  input('[aria-label="批次 41 销售单价"]', "12.3456");
+  input('[aria-label="公司订单交期"]', "2026-12-01");
+  input(
+    '[aria-label="公司订单客户确认说明"]',
+    "电话确认实物批次与数量价格交期"
+  );
+  await click(document.querySelector('input[type="checkbox"]')!);
+}
+function deferred<T = any>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(yes => {
+    resolve = yes;
+  });
+  return { promise, resolve };
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
+  runtime.draftServer = null;
+  runtime.draftGet.mockImplementation(async () => runtime.draftServer);
+  runtime.draftSave.mockImplementation(
+    async ({ expectedRevision, payload }) => {
+      const revision = runtime.draftServer?.revision ?? 0;
+      if (expectedRevision !== revision)
+        throw Object.assign(new Error("draft revision conflict"), {
+          data: { code: "CONFLICT" },
+        });
+      runtime.draftServer = {
+        draftId: 1,
+        revision: revision + 1,
+        payload,
+        updatedAt: "now",
+      };
+      return { revision: revision + 1, updatedAt: "now" };
+    }
+  );
+  runtime.draftDelete.mockImplementation(async ({ expectedRevision }) => {
+    if (
+      !runtime.draftServer?.payload ||
+      expectedRevision !== runtime.draftServer.revision
+    )
+      throw Object.assign(new Error("draft delete conflict"), {
+        data: { code: "CONFLICT" },
+      });
+    runtime.draftServer = {
+      ...runtime.draftServer,
+      revision: expectedRevision + 1,
+      payload: null,
+    };
+    return { revision: runtime.draftServer.revision, updatedAt: "now" };
+  });
   runtime.invalidate.mockResolvedValue(undefined);
   runtime.inputs = [];
   runtime.memory = {
@@ -452,10 +572,12 @@ afterEach(() => {
 });
 
 describe("customer-embedded sales orders (real component, mocked transport only)", () => {
-  it("standalone compact page has one new-create entry and goes customer -> company lots -> real company create without a fake demand", () => {
+  it("standalone compact page has one new-create entry and goes customer -> company lots -> real company create without a fake demand", async () => {
     runtime.search = "";
     runtime.memory = {};
-    act(() => root.render(React.createElement(CrmSalesOrders)));
+    await act(async () => {
+      root.render(React.createElement(CrmSalesOrders));
+    });
     expect(container.querySelector("h1")).toBeNull();
     expect(
       Array.from(
@@ -477,17 +599,22 @@ describe("customer-embedded sales orders (real component, mocked transport only)
         node => node.textContent?.trim() === "新建业务订单"
       )
     ).toHaveLength(1);
-    click(button("新建业务订单"));
-    click(button("选择客户"));
-    click(document.querySelector('[data-company-lot="41"] button')!);
+    await click(button("新建业务订单"));
+    input('[aria-label="搜索有权限客户"]', "客户甲");
+    await click(
+      button("搜索", document.querySelector('[aria-label="订单客户"]')!)
+    );
+    await click(button("选择客户"));
+    await click(document.querySelector(".company-lot-trigger")!);
+    await click(document.querySelector('[data-company-lot="41"] button')!);
     input('[aria-label="批次 41 销售数量"]', "3");
     input('[aria-label="批次 41 销售单价"]', "12.3456");
     input(
       '[aria-label="公司订单客户确认说明"]',
       "电话确认实物批次与数量价格交期"
     );
-    click(document.querySelector('input[type="checkbox"]')!);
-    click(button("保存订单"));
+    await click(document.querySelector('input[type="checkbox"]')!);
+    await click(button("保存订单"));
     const payload = runtime.mutations.companyCreate.mutate.mock.calls[0][0];
     expect(payload).toMatchObject({
       customerId: 1,
@@ -503,15 +630,15 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       /demandItemId|demandId|inventoryId|ownerUserId|salesExpenses/
     );
   });
-  it("requires explicit business-order read access and valid identity before mounting query hooks", () => {
-    render({ canRead: false });
+  it("requires explicit business-order read access and valid identity before mounting query hooks", async () => {
+    await render({ canRead: false });
     expect(container.textContent).toContain("客户查看权限不包含销售订单权限");
     expect(runtime.inputs).toEqual([]);
-    render({ canRead: true, contextIdentityKey: null });
+    await render({ canRead: true, contextIdentityKey: null });
     expect(runtime.inputs).toEqual([]);
   });
-  it("uses the original nine-column layout with a customer-only header, without independent remembered filters or route intents", () => {
-    render();
+  it("uses the original nine-column layout with a customer-only header, without independent remembered filters or route intents", async () => {
+    await render();
     expect(container.querySelector("[data-platform-layout]")).toBeNull();
     expect(container.querySelector("h1")?.textContent).toBe("客户订单");
     expect(container.textContent).toContain("仅显示 客户甲 的内部业务订单");
@@ -565,11 +692,11 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       pageSize: 20,
     });
   });
-  it("passes exact customerId to every list, detail and demand query, independent of names/keywords", () => {
-    render();
-    click(button("查看"));
-    click(button("关闭"));
-    click(button("录入销售订单"));
+  it("passes exact customerId to every list, detail and demand query, independent of names/keywords", async () => {
+    await render();
+    await click(button("查看"));
+    await click(button("关闭"));
+    await click(button("录入销售订单"));
     for (const item of runtime.inputs) expect(item.input.customerId).toBe(1);
     expect(
       runtime.inputs.some(
@@ -585,37 +712,37 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       )
     ).toBe(true);
   });
-  it("refuses the entire mixed-customer list, including count, without locally filtering", () => {
+  it("refuses the entire mixed-customer list, including count, without locally filtering", async () => {
     runtime.list = {
       items: [order(), { ...order(2), orderNumber: "FOREIGN-ORDER" }],
       total: 901,
     };
-    render();
+    await render();
     expect(container.textContent).toContain("响应与当前客户或订单不一致");
     expect(container.textContent).not.toContain("SO-11");
     expect(container.textContent).not.toContain("FOREIGN-ORDER");
     expect(container.textContent).not.toContain("901");
   });
-  it("refuses foreign demand candidates and foreign or mismatched-order details before writes", () => {
+  it("refuses foreign demand candidates and foreign or mismatched-order details before writes", async () => {
     runtime.candidates = { items: [demand(2)], total: 1 };
-    render();
-    click(button("录入销售订单"));
+    await render();
+    await click(button("录入销售订单"));
     expect(document.body.textContent).toContain("响应与当前客户或订单不一致");
     expect(
       Array.from(document.querySelectorAll("button")).some(
         el => el.textContent === "选择"
       )
     ).toBe(false);
-    click(button("取消"));
+    await click(button("收起"));
     runtime.detail = { ...order(2), confirmationNote: "FOREIGN-NOTE" };
-    click(button("查看"));
+    await click(button("查看"));
     expect(document.body.textContent).not.toContain("FOREIGN-NOTE");
     expect(document.body.textContent).toContain("响应与当前客户或订单不一致");
-    click(button("关闭"));
+    await click(button("关闭"));
     runtime.detail = { ...order(), id: 99 };
-    click(button("收款"));
+    await click(button("收款"));
     expect(button("确认收款").disabled).toBe(true);
-    click(button("确认收款"));
+    await click(button("确认收款"));
     expect(runtime.mutations.payment.mutate).not.toHaveBeenCalled();
   });
   it.each([
@@ -624,8 +751,8 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     { customer: { id: 1, name: "客户甲", archivedAt: "2026-11-10" } },
   ])(
     "keeps archived/readOnly/insufficient-write sessions read-only: %j",
-    restriction => {
-      render(restriction);
+    async restriction => {
+      await render(restriction);
       expect(container.textContent).toMatch(/只读|仅供查看/);
       expect(
         Array.from(container.querySelectorAll("button")).some(el =>
@@ -637,7 +764,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
           el => el.textContent === "收款" || el.textContent === "出货"
         )
       ).toBe(false);
-      click(button("查看"));
+      await click(button("查看"));
       expect(
         Array.from(document.querySelectorAll("button")).some(
           el => el.textContent === "登记收款" || el.textContent === "取消订单"
@@ -650,9 +777,9 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       ).toEqual([]);
     }
   );
-  it("handles one demand intent nonce in place and matches both demandNo and demandId", () => {
+  it("handles one demand intent nonce in place and matches both demandNo and demandId", async () => {
     const onIntentHandled = vi.fn();
-    render({
+    await render({
       intent: { demandNo: "D-21", demandId: 21, nonce: "one" },
       onIntentHandled,
     });
@@ -663,14 +790,14 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(onIntentHandled).toHaveBeenCalledWith("one");
     expect(runtime.navigate).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain(
-      "采购报价 / 销售采用不等于客户确认"
+      "我确认客户已明确同意以上数量、含税价格及约定交期"
     );
-    render();
+    await render();
     expect(onIntentHandled).toHaveBeenCalledTimes(1);
   });
-  it("views demand-linked orders in-place under read-only permission without opening create", () => {
+  it("views demand-linked orders in-place under read-only permission without opening create", async () => {
     const onIntentHandled = vi.fn();
-    render({
+    await render({
       readOnly: true,
       intent: {
         mode: "view",
@@ -690,10 +817,10 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       runtime.inputs.filter(item => item.name === "candidates" && item.enabled)
     ).toEqual([]);
   });
-  it("blocks a second demand intent and ordinary navigation while a draft is not discarded", () => {
-    render();
-    selectDemand();
-    render({
+  it("blocks replacing an active demand intent but permits ordinary navigation once its draft is durable", async () => {
+    await render();
+    await selectDemand();
+    await render({
       intent: { mode: "view", demandNo: "D-OTHER", nonce: "blocked" },
       onIntentHandled: vi.fn(),
     });
@@ -705,23 +832,34 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     ).toBe("");
     const link = document.createElement("a");
     link.href = "/customers";
+    let guarded = false;
+    link.addEventListener("click", event => {
+      guarded = event.defaultPrevented;
+      event.preventDefault(); // Prevent only jsdom navigation, after the real capture guard.
+    });
     document.body.append(link);
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
     act(() => link.dispatchEvent(event));
-    expect(event.defaultPrevented).toBe(true);
+    expect(guarded).toBe(false);
+    expect(
+      loadSalesOrderDraft(JSON.stringify([7, "native", runtime.scope]))?.payload
+        .form?.selectedDemand
+    ).toMatchObject({ id: 21 });
     link.remove();
   });
-  it("does not silently auto-select a same-number demand with a different demandId", () => {
-    render({ intent: { demandNo: "D-21", demandId: 999, nonce: "mismatch" } });
+  it("does not silently auto-select a same-number demand with a different demandId", async () => {
+    await render({
+      intent: { demandNo: "D-21", demandId: 999, nonce: "mismatch" },
+    });
     expect(document.querySelector('[aria-label="LM358 含税单价"]')).toBeNull();
     expect(toast.error).toHaveBeenCalled();
     expect(runtime.mutations.create.mutate).not.toHaveBeenCalled();
   });
-  it("preserves true create payload, precision, demand revision, customer confirmation and idempotent retry", () => {
-    render();
-    fillOrder();
+  it("preserves true create payload, precision, demand revision, customer confirmation and idempotent retry", async () => {
+    await render();
+    await fillOrder();
     expect(document.body.textContent).toContain("¥37.0368");
-    click(button("保存订单"));
+    await click(button("保存订单"));
     const first = runtime.mutations.create.mutate.mock.calls[0][0];
     expect(first).toMatchObject({
       demandId: 21,
@@ -743,24 +881,26 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       document.querySelector<HTMLInputElement>('[aria-label="LM358 含税单价"]')
         ?.disabled
     ).toBe(true);
-    click(button("确认保存结果"));
+    await click(button("确认保存结果"));
     expect(runtime.mutations.create.mutate.mock.calls[1][0]).toEqual(first);
   });
-  it("requires explicit customer confirmation instead of adopting procurement prices", () => {
-    render();
-    selectDemand();
+  it("requires explicit customer confirmation instead of adopting procurement prices", async () => {
+    await render();
+    await selectDemand();
     input('[aria-label="LM358 确认数量"]', "3");
     input('[aria-label="LM358 含税单价"]', "12");
-    click(button("保存订单"));
+    await click(button("保存订单"));
     expect(runtime.mutations.create.mutate).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith("请确认已与客户确认订单");
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain(
+      "请确认已与客户确认订单"
+    );
   });
-  it("preserves payment/monthly semantics and order version without requiring payment for partial shipment", () => {
-    render();
-    click(button("收款"));
+  it("preserves payment/monthly semantics and order version without requiring payment for partial shipment", async () => {
+    await render();
+    await click(button("收款"));
     input(".crm-sales-orders-dialog select", "monthly");
     input('.crm-sales-orders-dialog input[placeholder="含税金额"]', "12.3456");
-    click(button("确认收款"));
+    await click(button("确认收款"));
     expect(runtime.mutations.payment.mutate.mock.calls[0][0]).toMatchObject({
       id: 11,
       version: 7,
@@ -768,11 +908,11 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       amount: "12.3456",
     });
     act(() => runtime.mutations.payment.options.onSuccess({ replayed: false }));
-    click(button("关闭"));
-    click(button("出货"));
+    await click(button("关闭"));
+    await click(button("出货"));
     input(".crm-sales-orders-shipment-table input", "3");
     input(".crm-sales-orders-dialog select", "pickup");
-    click(button("确认出货"));
+    await click(button("确认出货"));
     expect(runtime.mutations.ship.mutate.mock.calls[0][0]).toMatchObject({
       id: 11,
       version: 7,
@@ -781,12 +921,12 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     });
     expect(props.onOrderChanged).toHaveBeenCalledTimes(1);
   });
-  it("keeps cancelled-order business guard and exact cancellation version/reason", () => {
-    render();
-    click(button("查看"));
-    click(button("取消订单"));
+  it("keeps cancelled-order business guard and exact cancellation version/reason", async () => {
+    await render();
+    await click(button("查看"));
+    await click(button("取消订单"));
     input(".crm-sales-orders-cancel-reason textarea", "客户撤回订单");
-    click(button("确认取消订单"));
+    await click(button("确认取消订单"));
     expect(runtime.mutations.cancel.mutate).toHaveBeenCalledWith({
       id: 11,
       version: 7,
@@ -795,62 +935,65 @@ describe("customer-embedded sales orders (real component, mocked transport only)
   });
   it.each([{ paidAmount: "1" }, { monthlyAmount: "1" }, { shippedQty: 1 }])(
     "cannot cancel an already paid/monthly/shipped order: %j",
-    change => {
+    async change => {
       runtime.detail = { ...order(), shippedQty: 0, ...change };
-      render();
-      click(button("查看"));
+      await render();
+      await click(button("查看"));
       expect(button("取消订单").disabled).toBe(true);
     }
   );
-  it("protects unsaved order/payment/shipment drafts on close and page unload and reports dirty state", () => {
-    render();
-    selectDemand();
+  it("retains a durable order on close without a discard tutorial, while still guarding unsaved payment drafts", async () => {
+    await render();
+    await selectDemand();
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(true);
     const before = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(before);
-    expect(before.defaultPrevented).toBe(true);
-    click(button("取消"));
-    expect(document.body.textContent).toContain("放弃本次录入");
-    click(button("继续编辑"));
+    expect(before.defaultPrevented).toBe(false);
+    const identity = JSON.stringify([7, "native", runtime.scope]);
+    const saved = loadSalesOrderDraft(identity)?.payload;
+    await click(button("收起"));
+    expect(document.body.textContent).not.toContain("放弃本次录入");
+    expect(loadSalesOrderDraft(identity)?.payload).toEqual(saved);
+    expect(props.onDirtyChange).toHaveBeenLastCalledWith(false);
+    await click(button("录入销售订单"));
     expect(
       document.querySelector('[aria-label="LM358 确认数量"]')
     ).not.toBeNull();
-    click(button("取消"));
-    click(button("放弃录入"));
+    await click(button("收起"));
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(false);
-    click(button("收款"));
+    await click(button("收款"));
     input('.crm-sales-orders-dialog input[placeholder="含税金额"]', "2");
-    click(button("取消"));
+    await click(button("取消"));
     expect(window.confirm).toHaveBeenCalled();
     expect(document.body.textContent).toContain("确认收款");
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(true);
   });
-  it("guards shipment and cancellation draft close and resets them only on confirmed abandonment", () => {
-    render();
-    click(button("出货"));
+  it("guards shipment and cancellation draft close and resets them only on confirmed abandonment", async () => {
+    await render();
+    await click(button("出货"));
     input(".crm-sales-orders-shipment-table input", "3");
-    click(button("取消"));
+    await click(button("取消"));
     expect(document.body.textContent).toContain("确认出货");
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(true);
     vi.mocked(window.confirm).mockReturnValue(true);
-    click(button("取消"));
+    await click(button("取消"));
     expect(document.body.textContent).not.toContain("确认出货");
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(false);
-    click(button("取消订单"));
+    await click(button("取消订单"));
     input(".crm-sales-orders-cancel-reason textarea", "草稿");
     vi.mocked(window.confirm).mockReturnValue(false);
-    click(button("返回"));
+    await click(button("返回"));
     expect(document.querySelector("[data-confirm]")).not.toBeNull();
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(true);
   });
-  it("clears all drafts/selection/filters on customer or same-customer identity changes and ignores old async completions", () => {
-    render();
-    fillOrder();
-    click(button("保存订单"));
+  it("clears all drafts/selection/filters on customer or same-customer identity changes and ignores old async completions", async () => {
+    await render();
+    await fillOrder();
+    await click(button("保存订单"));
     const old = runtime.mutations.create.options;
     runtime.list = { items: [order(2)], total: 1 };
     runtime.candidates = { items: [demand(2)], total: 1 };
-    render({
+    await render({
       customer: { id: 2, name: "客户乙" },
       contextIdentityKey: "enterprise:2:actor:8",
     });
@@ -868,18 +1011,18 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
     expect(runtime.invalidate).not.toHaveBeenCalled();
-    click(button("录入销售订单"));
-    click(button("选择"));
-    render({ contextIdentityKey: "enterprise:2:actor:9" });
+    await click(button("录入销售订单"));
+    await click(button("选择"));
+    await render({ contextIdentityKey: "enterprise:2:actor:9" });
     expect(document.querySelector('[aria-label="LM358 含税单价"]')).toBeNull();
   });
   it.each(["create", "payment", "ship", "cancel"])(
     "ignores stale %s completions on same-customer authorization identity replacement",
-    name => {
-      render();
-      if (name === "ship") click(button("出货"));
+    async name => {
+      await render();
+      if (name === "ship") await click(button("出货"));
       const stale = runtime.mutations[name].options;
-      render({
+      await render({
         contextIdentityKey: "enterprise:1:actor:7:auth-v2",
         readOnly: true,
       });
@@ -893,68 +1036,68 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       expect(runtime.invalidate).not.toHaveBeenCalled();
     }
   );
-  it("reports executing transactions as dirty and cannot discard entry during pending save", () => {
-    render();
-    fillOrder();
-    click(button("保存订单"));
+  it("reports executing transactions as dirty and cannot discard entry during pending save", async () => {
+    await render();
+    await fillOrder();
+    await click(button("保存订单"));
     runtime.mutations.create.pending = true;
-    render();
+    await render();
     expect(props.onDirtyChange).toHaveBeenLastCalledWith(true);
-    expect(button("取消").disabled).toBe(true);
+    expect(button("收起").disabled).toBe(true);
     const before = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(before);
     expect(before.defaultPrevented).toBe(true);
   });
-  it("fails closed on permission loss and on cached data not yet proven fresh after mounting", () => {
-    render();
-    selectDemand();
+  it("fails closed on permission loss and on cached data not yet proven fresh after mounting", async () => {
+    await render();
+    await selectDemand();
     const old = runtime.mutations.create.options;
-    render({ canRead: false });
+    await render({ canRead: false });
     act(() => old.onSuccess({ id: 11 }));
     expect(toast.success).not.toHaveBeenCalled();
     expect(container.textContent).toContain("客户查看权限不包含");
     runtime.fetched = false;
-    render({ canRead: true });
+    await render({ canRead: true });
     expect(container.textContent).not.toContain("SO-11");
   });
-  it("keeps the real ShipmentForm mounted and draft intact while get refetches, disables writes, and uses the fresh version afterwards", () => {
-    render();
-    click(button("出货"));
+  it("keeps the real ShipmentForm mounted and draft intact while get refetches, disables writes, and uses the fresh version afterwards", async () => {
+    await render();
+    await click(button("出货"));
     input('[aria-label="批次 41 本次出货"]', "3");
     const element = document.querySelector<HTMLInputElement>(
       '[aria-label="批次 41 本次出货"]'
     )!;
     runtime.fetching = true;
-    render();
+    await render();
     expect(document.querySelector('[aria-label="批次 41 本次出货"]')).toBe(
       element
     );
     expect(element.value).toBe("3");
     expect(element.disabled).toBe(true);
-    click(button("确认出货"));
+    await click(button("确认出货"));
     expect(runtime.mutations.ship.mutate).not.toHaveBeenCalled();
     runtime.fetching = false;
     runtime.detail = { ...order(), version: 8 };
-    render();
+    await render();
     expect(element.value).toBe("3");
     expect(element.disabled).toBe(false);
     input('[aria-label="公司出货交付方式"]', "pickup");
-    click(button("确认出货"));
+    await click(button("确认出货"));
     expect(runtime.mutations.ship.mutate.mock.calls[0][0]).toMatchObject({
       id: 11,
       version: 8,
       items: [{ orderItemId: 31, lotId: 41, qty: 3 }],
     });
   });
-  it("keeps the shipment draft mounted after detail read failure, disabled until a fresh successful response", () => {
-    render();
-    click(button("出货"));
+  it("keeps the shipment draft mounted after detail read failure, disabled until a fresh successful response", async () => {
+    await render();
+    await click(button("出货"));
     input('[aria-label="批次 41 本次出货"]', "3");
     const element = document.querySelector<HTMLInputElement>(
       '[aria-label="批次 41 本次出货"]'
     )!;
     runtime.detailError = true;
-    render();
+    await render();
     expect(document.querySelector('[aria-label="批次 41 本次出货"]')).toBe(
       element
     );
@@ -962,24 +1105,24 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(element.disabled).toBe(true);
     expect(document.body.textContent).toContain("offline read failure");
     runtime.detailError = false;
-    render();
+    await render();
     expect(element.disabled).toBe(false);
   });
-  it("discards shipment draft on business scope replacement, does not revive A draft on A -> B -> A, and ignores old completion", () => {
-    render();
-    click(button("出货"));
+  it("discards shipment draft on business scope replacement, does not revive A draft on A -> B -> A, and ignores old completion", async () => {
+    await render();
+    await click(button("出货"));
     input('[aria-label="批次 41 本次出货"]', "3");
     const stale = runtime.mutations.ship.options;
     runtime.scope = "B";
     runtime.currentScope = "B";
-    render();
+    await render();
     expect(
       document.querySelector('[aria-label="批次 41 本次出货"]')
     ).toBeNull();
     runtime.scope = "test-scope";
     runtime.currentScope = "test-scope";
-    render();
-    click(button("出货"));
+    await render();
+    await click(button("出货"));
     expect(
       document.querySelector<HTMLInputElement>(
         '[aria-label="批次 41 本次出货"]'
@@ -989,12 +1132,12 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(props.onOrderChanged).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
   });
-  it("partial cash receipt retries the frozen original amount/requestId/version rather than a refreshed order", () => {
-    render();
-    click(button("收款"));
+  it("partial cash receipt retries the frozen original amount/requestId/version rather than a refreshed order", async () => {
+    await render();
+    await click(button("收款"));
     input(".crm-sales-orders-dialog select", "cash");
     input('.crm-sales-orders-dialog input[placeholder="含税金额"]', "2.3456");
-    click(button("确认收款"));
+    await click(button("确认收款"));
     const first = runtime.mutations.payment.mutate.mock.calls[0][0];
     expect(first).toMatchObject({
       id: 11,
@@ -1014,39 +1157,39 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       paymentStatus: "partial",
       paidAmount: "2.3456",
     };
-    render();
+    await render();
     expect(
       document.querySelector<HTMLInputElement>('input[placeholder="含税金额"]')!
         .disabled
     ).toBe(true);
-    click(button("确认收款结果"));
+    await click(button("确认收款结果"));
     expect(runtime.mutations.payment.mutate.mock.calls[1][0]).toEqual(first);
   });
-  it("cancellation retries the unchanged native id/version/reason without fabricating a requestId", () => {
-    render();
-    click(button("查看"));
-    click(button("取消订单"));
+  it("cancellation retries the unchanged native id/version/reason without fabricating a requestId", async () => {
+    await render();
+    await click(button("查看"));
+    await click(button("取消订单"));
     input(".crm-sales-orders-cancel-reason textarea", "客户撤回订单");
-    click(button("确认取消订单"));
+    await click(button("确认取消订单"));
     const first = runtime.mutations.cancel.mutate.mock.calls[0][0];
     act(() => {
       runtime.mutations.cancel.options.onError({ message: "unknown timeout" });
       runtime.mutations.cancel.options.onSettled();
     });
     runtime.detail = { ...order(), version: 99 };
-    render();
+    await render();
     expect(
       document.querySelector<HTMLTextAreaElement>(
         ".crm-sales-orders-cancel-reason textarea"
       )!.disabled
     ).toBe(true);
-    click(button("确认取消订单"));
+    await click(button("确认取消订单"));
     expect(runtime.mutations.cancel.mutate.mock.calls[1][0]).toEqual(first);
     expect(first).toEqual({ id: 11, version: 7, reason: "客户撤回订单" });
   });
-  it("does not inspect notification refs or allow new writes while identity/login is disabled", () => {
+  it("does not inspect notification refs or allow new writes while identity/login is disabled", async () => {
     runtime.authenticated = false;
-    render();
+    await render();
     expect(runtime.notices.mock.calls.at(-1)?.[0]).toMatchObject({
       refs: [],
       listReady: false,
@@ -1058,7 +1201,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     ).toBe(false);
     runtime.authenticated = true;
     runtime.verified = false;
-    render();
+    await render();
     expect(runtime.notices.mock.calls.at(-1)?.[0]).toMatchObject({
       refs: [],
       listReady: false,
@@ -1066,8 +1209,462 @@ describe("customer-embedded sales orders (real component, mocked transport only)
   });
 });
 
+describe("standalone durable order integration (real outer page and forms)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+  it.each(["tombstone", "newer draft"])(
+    "verifies an original demand request under %s conflict without a draft write or a new request id",
+    async kind => {
+      await render();
+      await fillOrder();
+      await click(button("保存订单"));
+      const original = runtime.mutations.create.mutate.mock.calls[0][0];
+      const frozen = loadSalesOrderDraft(draftIdentity())!.payload;
+      runtime.draftServer = {
+        draftId: 1,
+        revision: 8,
+        updatedAt: "now",
+        payload:
+          kind === "tombstone"
+            ? null
+            : {
+                source: "company_stock",
+                customer: null,
+                form: { customerSearch: "其他草稿" },
+              },
+      };
+      const remote = runtime.draftServer;
+      await renderStandalone(true);
+      const saves = runtime.draftSave.mock.calls.length;
+      expect(button("确认保存结果").disabled).toBe(false);
+      await click(button("确认保存结果"));
+      expect(runtime.mutations.create.mutate.mock.calls.at(-1)?.[0]).toEqual(
+        original
+      );
+      expect(runtime.draftSave).toHaveBeenCalledTimes(saves);
+      expect(runtime.draftServer).toEqual(remote);
+      expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(frozen);
+    }
+  );
+  it("retains an unchecked customer confirmation on close/reload without creating or reserving stock", async () => {
+    await fillCompanyOrder();
+    await click(document.querySelector('input[type="checkbox"]')!);
+    const saved = loadSalesOrderDraft(draftIdentity())!.payload;
+    expect(saved.company?.customerConfirmed).toBe(false);
+    await click(button("收起"));
+    await renderStandalone(true);
+    expect(
+      document.querySelector<HTMLInputElement>('input[type="checkbox"]')
+        ?.checked
+    ).toBe(false);
+    expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(saved);
+    expect(runtime.mutations.companyCreate.mutate).not.toHaveBeenCalled();
+    expect(runtime.mutations.allocate).toBeUndefined();
+  });
+  it("opens a verified tombstone as a usable empty new-order state and saves using its CAS token", async () => {
+    runtime.draftServer = {
+      draftId: 1,
+      revision: 2,
+      updatedAt: "now",
+      payload: null,
+    };
+    await fillCompanyOrder();
+    expect(button("保存订单").disabled).toBe(false);
+    await click(button("保存订单"));
+    expect(runtime.draftSave.mock.calls[0][0].expectedRevision).toBe(2);
+    expect(runtime.mutations.companyCreate.mutate).toHaveBeenCalledTimes(1);
+  });
+  it.each(["success", "timeout after commit"])(
+    "starts a second same-page order with the returned tombstone revision after delete %s",
+    async mode => {
+      await fillCompanyOrder();
+      await click(button("保存订单"));
+      if (mode !== "success")
+        runtime.draftDelete.mockImplementationOnce(
+          async ({ expectedRevision }) => {
+            runtime.draftServer = {
+              ...runtime.draftServer,
+              revision: expectedRevision + 1,
+              payload: null,
+            };
+            throw new Error("timeout after delete commit");
+          }
+        );
+      await act(async () => {
+        runtime.mutations.companyCreate.options.onSuccess({
+          id: 11,
+          orderNumber: "XS-11",
+        });
+      });
+      const revision = runtime.draftServer.revision;
+      expect(runtime.draftServer.payload).toBeNull();
+      expect(loadSalesOrderDraft(draftIdentity())).toBeNull();
+      await fillCompanyOrder();
+      await click(button("保存订单"));
+      expect(runtime.draftSave.mock.calls.at(-1)?.[0].expectedRevision).toBe(
+        revision
+      );
+      expect(runtime.mutations.companyCreate.mutate).toHaveBeenCalledTimes(2);
+    }
+  );
+  it.each(["tombstone", "newer draft"])(
+    "preserves and verifies the original company request on %s reload without saving over remote work",
+    async kind => {
+      await fillCompanyOrder();
+      await click(button("保存订单"));
+      const original = runtime.mutations.companyCreate.mutate.mock.calls[0][0];
+      const frozen = loadSalesOrderDraft(draftIdentity())!.payload;
+      runtime.draftServer = {
+        draftId: 1,
+        revision: 8,
+        updatedAt: "now",
+        payload:
+          kind === "tombstone"
+            ? null
+            : {
+                source: "company_stock",
+                customer: null,
+                form: { customerSearch: "另一页面" },
+              },
+      };
+      const remote = runtime.draftServer;
+      await renderStandalone(true);
+      expect(document.body.textContent).toContain("本地原请求已保留");
+      expect(button("重新读取草稿")).toBeTruthy();
+      expect(button("确认保存结果").disabled).toBe(false);
+      const saves = runtime.draftSave.mock.calls.length;
+      await click(button("确认保存结果"));
+      expect(runtime.draftSave).toHaveBeenCalledTimes(saves);
+      expect(runtime.draftServer).toEqual(remote);
+      expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(frozen);
+      expect(
+        runtime.mutations.companyCreate.mutate.mock.calls.at(-1)?.[0]
+      ).toEqual(original);
+      await act(async () => {
+        runtime.mutations.companyCreate.options.onSuccess({
+          id: 11,
+          orderNumber: "XS-11",
+        });
+      });
+      expect(runtime.draftDelete).not.toHaveBeenCalled();
+      expect(runtime.draftServer).toEqual(remote);
+      if (kind === "tombstone")
+        expect(loadSalesOrderDraft(draftIdentity())).toBeNull();
+      else
+        expect(
+          loadSalesOrderDraft(draftIdentity())?.payload.form?.completed
+        ).toBe(true);
+    }
+  );
+  it("reloads an old first-save0 draft under a later tombstone as blocked, not silently rebased", async () => {
+    await renderStandalone();
+    await click(button("新建业务订单"));
+    input('[aria-label="搜索有权限客户"]', "旧首次草稿");
+    expect(loadSalesOrderDraft(draftIdentity())?.revision).toBe(0);
+    runtime.draftServer = {
+      draftId: 1,
+      revision: 2,
+      updatedAt: "now",
+      payload: null,
+    };
+    await renderStandalone(true);
+    const search = document.querySelector<HTMLInputElement>(
+      '[aria-label="搜索有权限客户"]'
+    )!;
+    expect(search.value).toBe("旧首次草稿");
+    expect(search.matches(":disabled")).toBe(true);
+    expect(button("重新读取草稿")).toBeTruthy();
+    expect(loadSalesOrderDraft(draftIdentity())?.revision).toBe(0);
+    expect(runtime.draftSave).not.toHaveBeenCalled();
+    expect(runtime.mutations.companyCreate).toBeUndefined();
+  });
+  it("persists incomplete customer search across close and a real page remount without auto-searching unproved rows", async () => {
+    await renderStandalone();
+    await click(button("新建业务订单"));
+    input('[aria-label="搜索有权限客户"]', "客户名字填一半");
+    expect(
+      loadSalesOrderDraft(draftIdentity())?.payload.form?.customerSearch
+    ).toBe("客户名字填一半");
+    await click(button("关闭对话框"));
+    expect(document.querySelector('[aria-label="搜索有权限客户"]')).toBeNull();
+    await renderStandalone(true);
+    expect(
+      document.querySelector<HTMLInputElement>('[aria-label="搜索有权限客户"]')
+        ?.value
+    ).toBe("客户名字填一半");
+    expect(
+      [...document.querySelectorAll("button")].some(
+        el => el.textContent === "选择客户"
+      )
+    ).toBe(false);
+    expect(runtime.mutations.companyCreate).toBeUndefined();
+  });
+  it("restores precise company lines and confirmation after close/remount before debounce and never creates an order on restore", async () => {
+    await fillCompanyOrder();
+    const saved = loadSalesOrderDraft(draftIdentity())?.payload;
+    await click(button("收起"));
+    expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(saved);
+    await renderStandalone(true);
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[aria-label="批次 41 销售数量"]'
+      )?.value
+    ).toBe("3");
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[aria-label="批次 41 销售单价"]'
+      )?.value
+    ).toBe("12.3456");
+    expect(
+      document.querySelector<HTMLInputElement>('[aria-label="公司订单交期"]')
+        ?.value
+    ).toBe("2026-12-01");
+    expect(
+      document.querySelector<HTMLInputElement>('input[type="checkbox"]')
+        ?.checked
+    ).toBe(true);
+    expect(runtime.mutations.companyCreate.mutate).not.toHaveBeenCalled();
+    expect(runtime.draftGet).toHaveBeenCalledTimes(2);
+  });
+  it("freezes the whole exact company request locally and awaits CAS durability before sending create", async () => {
+    await fillCompanyOrder();
+    const gate = deferred();
+    runtime.draftSave.mockImplementationOnce(
+      ({ payload, expectedRevision }) => {
+        expect(expectedRevision).toBe(0);
+        expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(payload);
+        expect(payload.company.uncertain).toMatchObject({
+          items: [
+            {
+              qty: 3,
+              agreedUnitPrice: "12.3456",
+              allocations: [{ lotId: 41, qty: 3 }],
+            },
+          ],
+        });
+        return gate.promise;
+      }
+    );
+    await click(button("保存订单"));
+    const frozen = loadSalesOrderDraft(draftIdentity())!.payload;
+    expect(runtime.mutations.companyCreate.mutate).not.toHaveBeenCalled();
+    expect(button("保存中…").disabled).toBe(true);
+    expect(button("收起").disabled).toBe(true);
+    await act(async () => {
+      runtime.draftServer = { revision: 1, payload: frozen };
+      gate.resolve({ revision: 1 });
+    });
+    expect(runtime.mutations.companyCreate.mutate).toHaveBeenCalledWith(
+      frozen.company!.uncertain
+    );
+  });
+  it("first definite company CONFLICT unlocks the original fields, retains fingerprint requestId, and permits a corrected quantity", async () => {
+    await fillCompanyOrder();
+    await click(button("保存订单"));
+    const first = runtime.mutations.companyCreate.mutate.mock.calls[0][0];
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onError({
+        message: "批次数量不足",
+        data: { code: "CONFLICT" },
+      });
+      runtime.mutations.companyCreate.options.onSettled();
+    });
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[aria-label="批次 41 销售数量"]'
+      )?.disabled
+    ).toBe(false);
+    expect(
+      loadSalesOrderDraft(draftIdentity())?.payload.company?.uncertain
+    ).toBeNull();
+    await click(button("保存订单"));
+    expect(runtime.mutations.companyCreate.mutate.mock.calls[1][0]).toEqual(
+      first
+    );
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onError({
+        message: "仍然不足",
+        data: { code: "CONFLICT" },
+      });
+      runtime.mutations.companyCreate.options.onSettled();
+    });
+    input('[aria-label="批次 41 销售数量"]', "2");
+    await click(button("保存订单"));
+    const corrected = runtime.mutations.companyCreate.mutate.mock.calls[2][0];
+    expect(corrected.items[0].qty).toBe(2);
+    expect(corrected.requestId).not.toBe(first.requestId);
+  });
+  it("company timeout followed by definite rejection stays locked and replays the identical full original payload", async () => {
+    await fillCompanyOrder();
+    await click(button("保存订单"));
+    const first = runtime.mutations.companyCreate.mutate.mock.calls[0][0];
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onError({
+        message: "timeout",
+        data: { code: "INTERNAL_SERVER_ERROR" },
+      });
+      runtime.mutations.companyCreate.options.onSettled();
+    });
+    await click(button("确认保存结果"));
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onError({
+        message: "拒绝",
+        data: { code: "CONFLICT" },
+      });
+      runtime.mutations.companyCreate.options.onSettled();
+    });
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[aria-label="批次 41 销售数量"]'
+      )?.disabled
+    ).toBe(true);
+    expect(
+      loadSalesOrderDraft(draftIdentity())?.payload.company?.uncertain
+    ).toEqual(first);
+    await click(button("确认保存结果"));
+    expect(runtime.mutations.companyCreate.mutate.mock.calls[2][0]).toEqual(
+      first
+    );
+  });
+  it("recovered company pending remains locked after even a first definite rejection in the new page", async () => {
+    await fillCompanyOrder();
+    await click(button("保存订单"));
+    const first = runtime.mutations.companyCreate.mutate.mock.calls[0][0];
+    await renderStandalone(true);
+    await click(button("确认保存结果"));
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onError({
+        message: "权限变化",
+        data: { code: "FORBIDDEN" },
+      });
+      runtime.mutations.companyCreate.options.onSettled();
+    });
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[aria-label="批次 41 销售数量"]'
+      )?.disabled
+    ).toBe(true);
+    expect(
+      loadSalesOrderDraft(draftIdentity())?.payload.company?.uncertain
+    ).toEqual(first);
+  });
+  it("success with failed draft delete cannot revive pending on remount, but another tab's newer draft survives", async () => {
+    await fillCompanyOrder();
+    await click(button("保存订单"));
+    runtime.draftDelete.mockRejectedValueOnce(new Error("cleanup timeout"));
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onSuccess({
+        id: 11,
+        orderNumber: "XS-11",
+      });
+    });
+    expect(loadSalesOrderDraft(draftIdentity())?.payload.form?.completed).toBe(
+      true
+    );
+    await renderStandalone(true);
+    expect(document.querySelector("[data-company-stock-form]")).toBeNull();
+    await click(button("新建业务订单"));
+    expect(
+      document.querySelector('[aria-label="搜索有权限客户"]')
+    ).not.toBeNull();
+    expect(document.body.textContent).not.toContain("另一页面草稿已更新");
+  });
+  it("success cleanup preserves a newer local draft written by another tab while delete is pending", async () => {
+    await fillCompanyOrder();
+    await click(button("保存订单"));
+    const gate = deferred();
+    runtime.draftDelete.mockImplementationOnce(() => gate.promise);
+    await act(async () => {
+      runtime.mutations.companyCreate.options.onSuccess({
+        id: 11,
+        orderNumber: "XS-11",
+      });
+    });
+    const newer: SalesOrderDraftPayload = {
+      source: "company_stock",
+      customer: null,
+      form: { customerSearch: "别的标签新客户" },
+    };
+    saveSalesOrderDraft(draftIdentity(), {
+      payload: newer,
+      revision: 2,
+      savedAt: Date.now(),
+      dirty: true,
+    });
+    await act(async () => {
+      gate.resolve({ revision: 2 });
+    });
+    expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(newer);
+  });
+  it("demand first definite BAD_REQUEST unlocks editing without changing the original fingerprint requestId", async () => {
+    await render();
+    await fillOrder();
+    await click(button("保存订单"));
+    const first = runtime.mutations.create.mutate.mock.calls[0][0];
+    await act(async () => {
+      runtime.mutations.create.options.onError({
+        message: "需求数量不足",
+        data: { code: "BAD_REQUEST" },
+      });
+      runtime.mutations.create.options.onSettled();
+    });
+    expect(
+      document.querySelector<HTMLInputElement>('[aria-label="LM358 确认数量"]')
+        ?.disabled
+    ).toBe(false);
+    expect(
+      loadSalesOrderDraft(draftIdentity())?.payload.form?.pendingRequest
+    ).toBeNull();
+    await click(button("保存订单"));
+    expect(runtime.mutations.create.mutate.mock.calls[1][0]).toEqual(first);
+    await act(async () => {
+      runtime.mutations.create.options.onError({
+        message: "需求数量不足",
+        data: { code: "CONFLICT" },
+      });
+      runtime.mutations.create.options.onSettled();
+    });
+    input('[aria-label="LM358 确认数量"]', "2");
+    await click(button("保存订单"));
+    expect(runtime.mutations.create.mutate.mock.calls[2][0].items[0].qty).toBe(
+      2
+    );
+  });
+  it("demand timeout then definite CONFLICT never discards the frozen request and survives real outer-page recovery", async () => {
+    await render();
+    await fillOrder();
+    await click(button("保存订单"));
+    const first = runtime.mutations.create.mutate.mock.calls[0][0];
+    await act(async () => {
+      runtime.mutations.create.options.onError({
+        message: "timeout",
+        data: { code: "INTERNAL_SERVER_ERROR" },
+      });
+      runtime.mutations.create.options.onSettled();
+    });
+    await click(button("确认保存结果"));
+    await act(async () => {
+      runtime.mutations.create.options.onError({
+        message: "CONFLICT",
+        data: { code: "CONFLICT" },
+      });
+      runtime.mutations.create.options.onSettled();
+    });
+    expect(
+      document.querySelector<HTMLInputElement>('[aria-label="LM358 确认数量"]')
+        ?.disabled
+    ).toBe(true);
+    expect(
+      loadSalesOrderDraft(draftIdentity())?.payload.form?.pendingRequest
+    ).toEqual(first);
+    await renderStandalone(true);
+    await click(button("确认保存结果"));
+    expect(runtime.mutations.create.mutate.mock.calls[2][0]).toEqual(first);
+  });
+});
+
 describe("customer response boundary", () => {
-  it("accepts standalone unscoped results only while rejecting missing/wrong customer binding", () => {
+  it("accepts standalone unscoped results only while rejecting missing/wrong customer binding", async () => {
     expect(customerMatches({}, undefined)).toBe(true);
     expect(customerMatches({}, 1)).toBe(false);
     expect(customerPageMatches({ items: [order(1), order(2)] }, 1)).toBe(false);

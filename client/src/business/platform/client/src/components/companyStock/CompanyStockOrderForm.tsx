@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { trpc } from "../../../../../api/business-trpc";
 import {
   useCompanyStockScope,
@@ -22,9 +21,26 @@ import {
 } from "./companyStockSales";
 import type { SalesCustomer } from "./SalesCustomerPicker";
 
-export function CompanyStockOrderForm(
-  props: Parameters<typeof CompanyStockOrderSession>[0]
-) {
+import { emptyCompanyStockDraft, type CompanyStockFormDraft } from "../../lib/companyStockOrderDraft";
+export { emptyCompanyStockDraft, type CompanyStockFormDraft } from "../../lib/companyStockOrderDraft";
+type Props = {
+  customer: SalesCustomer;
+  enabled: boolean;
+  onCreated: (result: {
+    id: number;
+    orderNumber: string;
+    replayed?: boolean;
+  }) => void;
+  onDirtyChange: (dirty: boolean) => void;
+  onBusyChange: (busy: boolean) => void;
+  onLockedChange?: (locked: boolean) => void;
+  onClose?: () => void;
+  draft?: CompanyStockFormDraft | null;
+  onDraftChange?: (draft: CompanyStockFormDraft) => void;
+  /** Must durably freeze the full payload before the create RPC can be sent. */
+  onPersistRequest?: (draft: CompanyStockFormDraft) => Promise<void>;
+};
+export function CompanyStockOrderForm(props: Props) {
   const scope = useCompanyStockScope();
   return (
     <CompanyStockOrderSession
@@ -40,37 +56,40 @@ function CompanyStockOrderSession({
   onCreated,
   onDirtyChange,
   onBusyChange,
-}: {
-  customer: SalesCustomer;
-  enabled: boolean;
-  onCreated: (result: {
-    id: number;
-    orderNumber: string;
-    replayed?: boolean;
-  }) => void;
-  onDirtyChange: (dirty: boolean) => void;
-  onBusyChange: (busy: boolean) => void;
-}) {
+  onLockedChange,
+  onClose,
+  draft,
+  onDraftChange,
+  onPersistRequest,
+}: Props) {
   const session = useCompanyStockSession(enabled);
   const [draftKeyword, setDraftKeyword] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
-  const [lines, setLines] = useState<LotDraft[]>([]);
-  const [salesTaxMode, setSalesTaxMode] = useState<
-    "tax_included" | "tax_excluded"
-  >("tax_included");
-  const [dueDate, setDueDate] = useState("");
-  const [confirmationNote, setConfirmationNote] = useState("");
-  const [customerConfirmed, setCustomerConfirmed] = useState(false);
+  const [value, setValue] = useState<CompanyStockFormDraft>(
+    () => draft ?? emptyCompanyStockDraft()
+  );
   const [error, setError] = useState("");
-  const [uncertain, setUncertain] =
-    useState<SalesOrderCompanyStockCreateInput | null>(null);
+  const [persisting, setPersisting] = useState(false);
   const saving = useRef(false);
+  const retryingUnknown = useRef(Boolean(draft?.pendingRequest));
   const requestKeys = useRef(new Map<string, string>());
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const {
+    lines,
+    salesTaxMode,
+    dueDate,
+    confirmationNote,
+    customerConfirmed,
+    pendingRequest: uncertain,
+  } = value;
+  const updateDraft = (next: Partial<CompanyStockFormDraft>) =>
+    setValue(current => ({ ...current, ...next }));
   const query = trpc.crmSalesOrder.companyStockCandidates.useQuery(
     { customerId: customer.id, keyword, page, pageSize: 20 },
     {
-      enabled,
+      enabled: enabled && !uncertain,
       staleTime: 0,
       retry: false,
       placeholderData: undefined,
@@ -133,7 +152,6 @@ function CompanyStockOrderSession({
     },
     onError: failure => {
       if (!session.isWritable()) return;
-      setError(failure.message || "保存结果未确认，请重试原请求");
       const known = [
         "BAD_REQUEST",
         "FORBIDDEN",
@@ -141,7 +159,11 @@ function CompanyStockOrderSession({
         "NOT_FOUND",
         "CONFLICT",
       ].includes(failure.data?.code ?? "");
-      if (known) setUncertain(null);
+      // A recovered/unknown request may already exist: even a later rejection must not discard it.
+      if (known && !retryingUnknown.current)
+        updateDraft({ pendingRequest: null });
+      else retryingUnknown.current = true;
+      setError(failure.message || "保存结果待确认，请核验原请求。");
     },
     onSettled: () => {
       saving.current = false;
@@ -152,6 +174,7 @@ function CompanyStockOrderSession({
       dueDate ||
       confirmationNote ||
       customerConfirmed ||
+      salesTaxMode !== "tax_included" ||
       uncertain ||
       mutation.isPending
   );
@@ -159,34 +182,48 @@ function CompanyStockOrderSession({
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => {
-    onBusyChange(mutation.isPending);
-  }, [mutation.isPending, onBusyChange]);
+    onBusyChange(mutation.isPending || persisting);
+  }, [mutation.isPending, persisting, onBusyChange]);
+  useEffect(() => {
+    onLockedChange?.(Boolean(uncertain));
+  }, [uncertain, onLockedChange]);
+  useEffect(() => {
+    onDraftChange?.(value);
+  }, [value, onDraftChange]);
   useEffect(
     () => () => {
       onDirtyChange(false);
       onBusyChange(false);
+      onLockedChange?.(false);
     },
-    [onDirtyChange, onBusyChange]
+    [onDirtyChange, onBusyChange, onLockedChange]
   );
-  const locked = mutation.isPending || Boolean(uncertain) || !enabled;
+  const locked =
+    mutation.isPending || persisting || Boolean(uncertain) || !enabled;
   const search = () => {
     setKeyword(draftKeyword.trim());
     setPage(1);
+    if (draftKeyword.trim() === keyword && page === 1) void query.refetch();
   };
-  const update = (
+  const updateLine = (
     lotId: number,
     field: "qty" | "agreedUnitPrice",
-    value: string
-  ) =>
-    setLines(current =>
-      current.map(line =>
-        line.lot.lotId === lotId ? { ...line, [field]: value } : line
-      )
-    );
-  const submit = () => {
+    text: string
+  ) => {
+    if (locked) return;
+    setValue(current => ({
+      ...current,
+      lines: current.lines.map(line =>
+        line.lot.lotId === lotId ? { ...line, [field]: text } : line
+      ),
+    }));
+  };
+  const submit = async () => {
     if (!session.isWritable() || saving.current) return;
     if (uncertain) {
+      retryingUnknown.current = true;
       saving.current = true;
+      setError("");
       mutation.mutate(uncertain);
       return;
     }
@@ -194,8 +231,12 @@ function CompanyStockOrderSession({
       setError("请确认已与客户确认订单");
       return;
     }
+    if (!confirmationNote.trim()) {
+      setError("请填写客户确认说明");
+      return;
+    }
     if (!previewReady || !candidateReady) {
-      setError("请先核验库存与订单预览");
+      setError("请先核验库存与订单金额");
       return;
     }
     try {
@@ -217,246 +258,254 @@ function CompanyStockOrderSession({
         ...input,
         requestId: requestKeys.current.get(fingerprint)!,
       };
-      setError("");
-      setUncertain(payload);
+      const frozen = { ...valueRef.current, pendingRequest: payload };
       saving.current = true;
+      setPersisting(true);
+      setError("");
+      setValue(frozen);
+      // If durability cannot be established, do not send a new inventory-affecting request.
+      if (onPersistRequest) await onPersistRequest(frozen);
+      if (!session.isWritable()) {
+        retryingUnknown.current = true;
+        saving.current = false;
+        return;
+      }
       mutation.mutate(payload);
     } catch (failure) {
+      saving.current = false;
       setError(failure instanceof Error ? failure.message : "请检查订单内容");
+    } finally {
+      setPersisting(false);
     }
   };
+  const inlineError =
+    error ||
+    (uncertain && !mutation.isPending && !persisting
+      ? "保存结果待确认，内容已锁定。"
+      : preview.isError && parsedPreview?.success
+        ? preview.error?.message || "订单金额核验失败"
+        : "");
   return (
-    <div className="space-y-2" data-company-stock-form>
-      {!locked ? (
-        <>
-          <div className="company-stock-toolbar">
-            <input
-              className="crm-input"
-              aria-label="搜索型号"
-              placeholder="搜索型号"
-              value={draftKeyword}
-              onChange={e => setDraftKeyword(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter") search();
-              }}
-            />
-            <button type="button" className="crm-btn" onClick={search}>
-              搜索
-            </button>
-          </div>
-          <CompanyLotPicker
-            lots={lots}
-            selectedIds={lines.map(line => line.lot.lotId)}
-            onSelect={lot => {
-              if (
-                !session.isWritable() ||
-                !candidateReady ||
-                !lots.includes(lot)
-              )
-                return;
-              setLines(current =>
-                current.some(line => line.lot.lotId === lot.lotId)
-                  ? current
-                  : [...current, { lot, qty: "", agreedUnitPrice: "" }]
-              );
-            }}
-            loading={query.isFetching || query.isLoading}
-            error={
-              query.isError ? query.error?.message || "库存读取失败" : undefined
-            }
-            onRetry={() => {
-              void query.refetch();
-            }}
-          />
-          <div className="company-stock-toolbar">
-            <button
-              type="button"
-              className="crm-btn"
-              disabled={page <= 1 || query.isFetching}
-              onClick={() => setPage(p => p - 1)}
+    <div className="space-y-3" data-company-stock-form>
+      <section className="crm-order-section" aria-label="公司库存货源">
+        <h3 className="crm-order-section-title">货源批次</h3>
+        <CompanyLotPicker
+          lots={lots}
+          selectedIds={lines.map(line => line.lot.lotId)}
+          disabled={locked}
+          keyword={draftKeyword}
+          onKeywordChange={setDraftKeyword}
+          onSearch={search}
+          onOpen={() => {
+            void query.refetch();
+          }}
+          page={page}
+          total={query.data?.total ?? 0}
+          pageSize={20}
+          onPageChange={setPage}
+          loading={query.isFetching || query.isLoading}
+          error={
+            query.isError ? query.error?.message || "库存读取失败" : undefined
+          }
+          onRetry={() => {
+            void query.refetch();
+          }}
+          onSelect={lot => {
+            if (
+              !session.isWritable() ||
+              !candidateReady ||
+              !lots.includes(lot) ||
+              locked
+            )
+              return;
+            setValue(current =>
+              current.lines.some(line => line.lot.lotId === lot.lotId)
+                ? current
+                : {
+                    ...current,
+                    lines: [
+                      ...current.lines,
+                      { lot, qty: "", agreedUnitPrice: "" },
+                    ],
+                  }
+            );
+          }}
+        />
+      </section>
+      <section className="crm-order-section" aria-label="订单明细">
+        <h3 className="crm-order-section-title">订单明细</h3>
+        {lines.length ? (
+          <div className="company-stock-scroll">
+            <table
+              className="company-stock-table"
+              aria-label="公司库存订单物料"
             >
-              上一页
-            </button>
-            <span>{page}</span>
-            <button
-              type="button"
-              className="crm-btn"
-              disabled={
-                page * 20 >= (query.data?.total ?? 0) || query.isFetching
-              }
-              onClick={() => setPage(p => p + 1)}
-            >
-              下一页
-            </button>
-          </div>
-        </>
-      ) : null}
-      {lines.length ? (
-        <div className="company-stock-scroll">
-          <table className="company-stock-table" aria-label="公司库存订单物料">
-            <thead>
-              <tr>
-                <th>真实批次物料</th>
-                <th className="numeric">可售</th>
-                <th className="numeric">销售数量</th>
-                <th className="numeric">销售单价</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map(line => (
-                <tr key={line.lot.lotId}>
-                  <td>{lotLabel(line.lot)}</td>
-                  <td className="numeric">{line.lot.availableQty}</td>
-                  <td className="numeric">
-                    <input
-                      className="crm-input"
-                      aria-label={`批次 ${line.lot.lotId} 销售数量`}
-                      inputMode="numeric"
-                      value={line.qty}
-                      disabled={locked}
-                      onChange={e =>
-                        update(line.lot.lotId, "qty", e.target.value)
-                      }
-                    />
-                  </td>
-                  <td className="numeric">
-                    <input
-                      className="crm-input"
-                      aria-label={`批次 ${line.lot.lotId} 销售单价`}
-                      inputMode="decimal"
-                      value={line.agreedUnitPrice}
-                      disabled={locked}
-                      onChange={e =>
-                        update(
-                          line.lot.lotId,
-                          "agreedUnitPrice",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="crm-btn"
-                      disabled={locked}
-                      onClick={() =>
-                        setLines(current =>
-                          current.filter(
-                            row => row.lot.lotId !== line.lot.lotId
-                          )
-                        )
-                      }
-                    >
-                      移除
-                    </button>
-                  </td>
+              <thead>
+                <tr>
+                  <th>型号 / 品牌 / 批次</th>
+                  <th className="numeric">可售</th>
+                  <th className="numeric">销售数量</th>
+                  <th className="numeric">销售单价</th>
+                  <th>操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      <div className="company-stock-toolbar">
-        <label>
-          销售口径{" "}
-          <select
-            aria-label="销售含税未税"
-            className="crm-input"
-            disabled={locked}
-            value={salesTaxMode}
-            onChange={e =>
-              setSalesTaxMode(e.target.value as typeof salesTaxMode)
-            }
-          >
-            <option value="tax_included">含税</option>
-            <option value="tax_excluded">未税</option>
-          </select>
-        </label>
-        <label>
-          交期{" "}
-          <input
-            type="date"
-            aria-label="公司订单交期"
-            className="crm-input"
-            value={dueDate}
-            disabled={locked}
-            onChange={e => setDueDate(e.target.value)}
-          />
-        </label>
-      </div>
-      <label className="block">
-        客户确认说明
-        <textarea
-          className="crm-input w-full"
-          aria-label="公司订单客户确认说明"
-          maxLength={500}
-          disabled={locked}
-          value={confirmationNote}
-          onChange={e => setConfirmationNote(e.target.value)}
-        />
-      </label>
-      <label className="company-stock-toolbar">
-        <input
-          type="checkbox"
-          checked={customerConfirmed}
-          disabled={locked}
-          onChange={e => setCustomerConfirmed(e.target.checked)}
-        />
-        客户已确认数量、销售价格与交期
-      </label>
-      {previewReady ? (
-        <>
-          <div className="text-right tabular-nums">
-            {preview.data.currencyLabel}：
-            {formatSalesOrderAmount(preview.data.totalAmount)}
+              </thead>
+              <tbody>
+                {lines.map(line => (
+                  <tr key={line.lot.lotId}>
+                    <td>{lotLabel(line.lot)}</td>
+                    <td className="numeric">{line.lot.availableQty}</td>
+                    <td className="numeric">
+                      <input
+                        className="crm-input"
+                        aria-label={`批次 ${line.lot.lotId} 销售数量`}
+                        inputMode="numeric"
+                        value={line.qty}
+                        disabled={locked}
+                        onChange={event =>
+                          updateLine(line.lot.lotId, "qty", event.target.value)
+                        }
+                      />
+                    </td>
+                    <td className="numeric">
+                      <input
+                        className="crm-input"
+                        aria-label={`批次 ${line.lot.lotId} 销售单价`}
+                        inputMode="decimal"
+                        value={line.agreedUnitPrice}
+                        disabled={locked}
+                        onChange={event =>
+                          updateLine(
+                            line.lot.lotId,
+                            "agreedUnitPrice",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="crm-btn"
+                        disabled={locked}
+                        onClick={() =>
+                          setValue(current => ({
+                            ...current,
+                            lines: current.lines.filter(
+                              row => row.lot.lotId !== line.lot.lotId
+                            ),
+                          }))
+                        }
+                      >
+                        移除
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <SalesProfitSummary
-            profit={preview.data.profitBreakdown}
-            commission={preview.data.commissionPreview}
+        ) : (
+          <p className="admin-cell-secondary">尚未选择批次</p>
+        )}
+        <div className="company-stock-toolbar mt-3">
+          <label>
+            销售口径{" "}
+            <select
+              aria-label="销售含税未税"
+              className="crm-input"
+              disabled={locked}
+              value={salesTaxMode}
+              onChange={event =>
+                updateDraft({
+                  salesTaxMode: event.target.value as typeof salesTaxMode,
+                })
+              }
+            >
+              <option value="tax_included">含税</option>
+              <option value="tax_excluded">未税</option>
+            </select>
+          </label>
+          <label>
+            交期{" "}
+            <input
+              type="date"
+              aria-label="公司订单交期"
+              className="crm-input"
+              value={dueDate}
+              disabled={locked}
+              onChange={event => updateDraft({ dueDate: event.target.value })}
+            />
+          </label>
+        </div>
+        <label className="block mt-3">
+          客户确认说明 <span className="text-red-600">*</span>
+          <textarea
+            className="crm-input w-full"
+            aria-label="公司订单客户确认说明"
+            maxLength={500}
+            disabled={locked}
+            value={confirmationNote}
+            onChange={event =>
+              updateDraft({ confirmationNote: event.target.value })
+            }
           />
-        </>
-      ) : preview.isFetching && parsedPreview?.success ? (
-        <p role="status">正在核验订单预览…</p>
-      ) : preview.isError && parsedPreview?.success ? (
-        <p role="alert">
-          {preview.error?.message || "订单预览不可用"}{" "}
+        </label>
+        <label className="company-stock-toolbar mt-2">
+          <input
+            type="checkbox"
+            checked={customerConfirmed}
+            disabled={locked}
+            onChange={event =>
+              updateDraft({ customerConfirmed: event.target.checked })
+            }
+          />
+          客户已确认数量、销售价格与交期 <span className="text-red-600">*</span>
+        </label>
+        {previewReady ? (
+          <>
+            <div className="text-right tabular-nums mt-2">
+              {preview.data.currencyLabel}：
+              {formatSalesOrderAmount(preview.data.totalAmount)}
+            </div>
+            <SalesProfitSummary
+              profit={preview.data.profitBreakdown}
+              commission={preview.data.commissionPreview}
+            />
+          </>
+        ) : preview.isFetching && parsedPreview?.success ? (
+          <p role="status">正在核验订单金额…</p>
+        ) : null}
+      </section>
+      {inlineError ? (
+        <p role="alert" className="text-xs text-red-600">
+          {inlineError}
+        </p>
+      ) : null}
+      <div className="crm-order-actions">
+        {onClose ? (
           <button
             type="button"
             className="crm-btn"
-            onClick={() => {
-              void preview.refetch();
-            }}
+            disabled={mutation.isPending || persisting}
+            onClick={onClose}
           >
-            重试
+            收起
           </button>
-        </p>
-      ) : (
-        <p className="admin-cell-secondary">
-          完善数量、单价及确认说明后核验预览
-        </p>
-      )}
-      {error ? (
-        <p role="alert" className="text-red-600">
-          {error}
-        </p>
-      ) : null}
-      {uncertain && !mutation.isPending ? (
-        <p role="alert">保存结果待确认，请重试原请求，暂不可修改。</p>
-      ) : null}
-      <div className="flex justify-end">
+        ) : null}
         <button
           type="button"
           className="crm-btn crm-btn-primary"
           disabled={
             !enabled ||
             mutation.isPending ||
+            persisting ||
             (!uncertain && (!previewReady || !candidateReady))
           }
-          onClick={submit}
+          onClick={() => {
+            void submit();
+          }}
         >
-          {mutation.isPending
+          {mutation.isPending || persisting
             ? "保存中…"
             : uncertain
               ? "确认保存结果"

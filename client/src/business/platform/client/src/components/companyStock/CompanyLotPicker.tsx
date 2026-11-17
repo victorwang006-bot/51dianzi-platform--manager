@@ -1,94 +1,201 @@
+import { useEffect, useId, useRef, useState } from "react";
 import { selectableLot, type CompanyLot } from "./companyStockSales";
+
+type Props = {
+  lots: CompanyLot[];
+  selectedIds: number[];
+  onSelect: (lot: CompanyLot) => void;
+  loading?: boolean;
+  error?: string;
+  disabled?: boolean;
+  onRetry?: () => void;
+  keyword?: string;
+  onKeywordChange?: (value: string) => void;
+  onSearch?: () => void;
+  onOpen?: () => void;
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  onPageChange?: (page: number) => void;
+};
+
+/** Only displays the server's current page. A model is never a lot identity. */
 export function CompanyLotPicker({
   lots,
   selectedIds,
   onSelect,
   loading,
   error,
+  disabled,
   onRetry,
-}: {
-  lots: CompanyLot[];
-  selectedIds: number[];
-  onSelect: (lot: CompanyLot) => void;
-  loading?: boolean;
-  error?: string;
-  onRetry?: () => void;
-}) {
+  keyword = "",
+  onKeywordChange,
+  onSearch,
+  onOpen,
+  page = 1,
+  pageSize = 20,
+  total = 0,
+  onPageChange,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    search.current?.focus();
+    const dismiss = (event: MouseEvent) => {
+      if (event.target instanceof Node && !root.current?.contains(event.target))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", dismiss);
+    return () => document.removeEventListener("mousedown", dismiss);
+  }, [open]);
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+  const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
-    <div className="company-stock-scroll">
-      <table className="company-stock-table" aria-label="公司真实库存批次">
-        <thead>
-          <tr>
-            <th>型号 / 品牌 / 封装</th>
-            <th>DC / 批次</th>
-            <th>仓位 / 入库单</th>
-            <th className="numeric">可售数量</th>
-            <th className="numeric">选择</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr>
-              <td colSpan={5}>正在核验公司库存…</td>
-            </tr>
-          ) : error ? (
-            <tr>
-              <td colSpan={5} role="alert">
-                {error}{" "}
+    <div
+      ref={root}
+      className="company-lot-picker"
+      onKeyDown={event => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          setOpen(false);
+          root.current?.querySelector<HTMLButtonElement>("button")?.focus();
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="crm-btn company-lot-trigger"
+        aria-expanded={open}
+        aria-controls={id}
+        disabled={disabled}
+        onClick={() => {
+          if (!open) onOpen?.();
+          setOpen(value => !value);
+        }}
+      >
+        <span>
+          选择公司库存批次
+          {selectedIds.length ? ` · 已选 ${selectedIds.length}` : ""}
+        </span>
+        <span aria-hidden="true">⌄</span>
+      </button>
+      {open ? (
+        <div
+          id={id}
+          className="company-lot-dropdown"
+          aria-label="公司真实库存批次"
+        >
+          {onKeywordChange && onSearch ? (
+            <div className="company-stock-toolbar company-lot-search">
+              <input
+                ref={search}
+                className="crm-input"
+                aria-label="搜索型号"
+                placeholder="搜索型号、品牌或批次"
+                value={keyword}
+                onChange={event => onKeywordChange(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    onSearch();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="crm-btn"
+                disabled={loading}
+                onClick={onSearch}
+              >
+                搜索
+              </button>
+            </div>
+          ) : null}
+          <div
+            className="company-lot-options"
+            role="group"
+            aria-label="可售批次选项"
+          >
+            {loading ? (
+              <p role="status">正在核验公司库存…</p>
+            ) : error ? (
+              <p role="alert">
+                {error}
                 {onRetry ? (
                   <button type="button" className="crm-btn" onClick={onRetry}>
                     重试
                   </button>
                 ) : null}
-              </td>
-            </tr>
-          ) : !lots.length ? (
-            <tr>
-              <td colSpan={5}>无可售批次，历史待核库存不可选择</td>
-            </tr>
-          ) : (
-            lots.map(lot => (
-              <tr key={lot.lotId} data-company-lot={lot.lotId}>
-                <td>
-                  <div className="crm-sales-orders-model">{lot.partNumber}</div>
-                  <div className="admin-cell-secondary">
-                    {[lot.brand, lot.pkg].filter(Boolean).join(" / ") || "—"}
-                  </div>
-                </td>
-                <td>
-                  <div>{lot.dc || "—"}</div>
-                  <div className="admin-cell-secondary">
-                    {lot.lotNumber || `批次 #${lot.lotId}`}
-                  </div>
-                </td>
-                <td>
-                  <div>{lot.location || "—"}</div>
-                  <div className="admin-cell-secondary">
-                    入库 #{lot.inboundOrderId}
-                  </div>
-                </td>
-                <td className="numeric">
-                  {Number.isSafeInteger(lot.availableQty)
-                    ? lot.availableQty
-                    : "待核"}
-                </td>
-                <td className="numeric">
+              </p>
+            ) : !lots.length ? (
+              <p>暂无可售批次</p>
+            ) : (
+              lots.map(lot => (
+                <div key={lot.lotId} data-company-lot={lot.lotId}>
                   <button
                     type="button"
-                    className="crm-btn"
+                    className="company-lot-option"
                     disabled={
                       !selectableLot(lot) || selectedIds.includes(lot.lotId)
                     }
                     onClick={() => onSelect(lot)}
                   >
-                    {selectedIds.includes(lot.lotId) ? "已选" : "选择"}
+                    <span className="company-lot-identity">
+                      <strong>{lot.partNumber}</strong>
+                      <span>
+                        {[lot.brand, lot.pkg].filter(Boolean).join(" / ") ||
+                          "—"}
+                      </span>
+                      <span>
+                        {lot.lotNumber || `批次 #${lot.lotId}`}
+                        {lot.dc ? ` · DC ${lot.dc}` : ""}
+                        {lot.location ? ` · ${lot.location}` : ""}
+                      </span>
+                    </span>
+                    <span className="company-lot-quantity">
+                      可售{" "}
+                      {Number.isSafeInteger(lot.availableQty)
+                        ? lot.availableQty
+                        : "待核"}
+                      <small>
+                        {selectedIds.includes(lot.lotId) ? "已选" : "选择"}
+                      </small>
+                    </span>
                   </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                </div>
+              ))
+            )}
+          </div>
+          {onPageChange ? (
+            <div className="company-lot-pagination">
+              <span>
+                共 {total} 个批次 · {page} / {pages}
+              </span>
+              <button
+                type="button"
+                className="crm-btn"
+                disabled={page <= 1 || loading}
+                onClick={() => onPageChange(page - 1)}
+              >
+                上一页
+              </button>
+              <button
+                type="button"
+                className="crm-btn"
+                disabled={page >= pages || loading}
+                onClick={() => onPageChange(page + 1)}
+              >
+                下一页
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

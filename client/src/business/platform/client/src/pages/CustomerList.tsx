@@ -5,7 +5,6 @@ import { useCustomerStars } from "../hooks/useCustomerStars";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Plus, Star } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
-import { toast } from "sonner";
 import {
   CUSTOMER_GRADES,
   CUSTOMER_STAGE_LABELS,
@@ -136,6 +135,7 @@ export default function CustomerList() {
   const [createState, setCreateState] = useState<CustomerCreateState>({ dirty: false, busy: false });
   const [demandCustomer, setDemandCustomer] = useState<{ id: number; name: string; archivedAt: string | null } | null>(null);
   const mountedRef = useRef(true);
+  const [saveRefreshError, setSaveRefreshError] = useState("");
   const createButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     mountedRef.current = true;
@@ -395,6 +395,7 @@ export default function CustomerList() {
     // A deferred form callback belongs to the history entry that rendered it.
     if (!mountedRef.current || pageMemoryContext() !== renderedMemoryContext) return;
     if (mode === "close") collapseCreate(true);
+    setSaveRefreshError("");
     // Read live navigation and query eligibility after every asynchronous boundary.
     // Equal query values do not prove that this is still the same history entry.
     const savedListInput = listInput;
@@ -411,16 +412,8 @@ export default function CustomerList() {
         if (!isCurrentSavedList()) return;
         return utils.customer.list.fetch(savedListInput, { staleTime: 0 });
       })
-      .then(refreshed => {
-        if (!refreshed || !isCurrentSavedList()) return;
-        if (!refreshed.items.some(customer => customer.id === id)) {
-          toast.info("客户已保存，当前筛选或页码下未显示，可调整筛选或查看客户。", {
-            action: { label: "查看客户", onClick: () => navigate(`/customers/${id}`) },
-          });
-        }
-      })
       .catch(() => {
-        if (isCurrentSavedList()) toast.warning("客户已保存，但列表刷新失败，请重试刷新列表，不要重复录入。");
+        if (isCurrentSavedList()) setSaveRefreshError("列表刷新失败，请重试刷新；客户无需重复录入。");
       });
   };
 
@@ -542,6 +535,12 @@ export default function CustomerList() {
     <PlatformLayout>
       <AdminPage className="customer-list-page">
 
+      {saveRefreshError ? <div role="alert" className="customer-list-error mb-2">
+        {saveRefreshError}
+        <Button type="button" variant="outline" size="sm" onClick={() => {
+          void listQuery.refetch().then(result => { if (!result.isError) setSaveRefreshError(""); }).catch(() => undefined);
+        }}>刷新列表</Button>
+      </div> : null}
       {appliedFilters.starredOnly === true && !stars.ready && !stars.failed && !stars.invalidTarget ?
         <p role="status" className="customer-list-caption mb-2">正在核验重点客户权限；仅看重点客户筛选已保留，暂不读取客户结果。</p> : null}
       {stars.failed || stars.invalidTarget ? <div role="alert" className="customer-list-caption mb-2">

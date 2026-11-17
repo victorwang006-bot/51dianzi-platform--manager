@@ -57,7 +57,17 @@ import {
 import { Textarea } from "../components/ui/textarea";
 import "./CrmSalesOrders.css";
 import { CompanyStockShipmentForm } from "../components/companyStock/CompanyStockShipmentForm";
-import { CompanyStockOrderForm } from "../components/companyStock/CompanyStockOrderForm";
+import {
+  CompanyStockOrderForm,
+  emptyCompanyStockDraft,
+  type CompanyStockFormDraft,
+} from "../components/companyStock/CompanyStockOrderForm";
+import { useSalesOrderDraft } from "../hooks/useSalesOrderDraft";
+import {
+  parseSalesOrderEntryDraft,
+  serializeSalesOrderEntryDraft,
+} from "../lib/salesOrderEntryDraft";
+import type { SalesOrderDraftPayload } from "../../../shared/crmSalesOrderDrafts";
 import {
   SalesCustomerPicker,
   type SalesCustomer,
@@ -237,6 +247,12 @@ function SalesOrdersContent({
   const search = useSearch();
   const businessScope = useBusinessScope();
   const companyScope = useCompanyStockScope();
+  const orderDraft = useSalesOrderDraft();
+  const draftHydrated = useRef(false);
+  const suppressDraftWrite = useRef(false);
+  const [draftApplied, setDraftApplied] = useState(false);
+  const [draftRestoreError, setDraftRestoreError] = useState("");
+  const draftPayloadRef = useRef<SalesOrderDraftPayload | null>(null);
   const deepLinkedDemandNoRef = useRef("");
   const deepLinkedDemandIdRef = useRef<number | undefined>(undefined);
   const handledIntentRef = useRef<string | number | null>(null);
@@ -259,15 +275,19 @@ function SalesOrdersContent({
   const [entryCustomer, setEntryCustomer] = useState<SalesCustomer | null>(
     null
   );
+  const [customerSearch, setCustomerSearch] = useState("");
   const [sourceType, setSourceType] = useState<"company_stock" | "demand">(
     embedded ? "demand" : "company_stock"
   );
   const [stockDirty, setStockDirty] = useState(false);
   const [stockBusy, setStockBusy] = useState(false);
+  const [stockLocked, setStockLocked] = useState(false);
+  const [stockDraft, setStockDraft] = useState<CompanyStockFormDraft>(
+    emptyCompanyStockDraft
+  );
   const [expenseDirty, setExpenseDirty] = useState(false);
   const selectedCustomer = embedded?.customer ?? entryCustomer;
   const candidateCustomerId = selectedCustomer?.id;
-  const [discardOpen, setDiscardOpen] = useState(false);
   const [candidateKeyword, setCandidateKeyword] = useState("");
   const [candidateApplied, setCandidateApplied] = useState("");
   const [candidatePage, setCandidatePage] = useState(1);
@@ -287,7 +307,12 @@ function SalesOrdersContent({
   const [uncertainCancellation, setUncertainCancellation] = useState<ReturnType<
     typeof salesOrderCancelSchema.parse
   > | null>(null);
-  const [uncertainSave, setUncertainSave] = useState(false);
+  const [pendingDemandRequest, setPendingDemandRequest] = useState<ReturnType<
+    typeof salesOrderCreateSchema.parse
+  > | null>(null);
+  const uncertainSave = Boolean(pendingDemandRequest);
+  const demandRetryUnknown = useRef(false);
+  const [entryError, setEntryError] = useState("");
   const [payOpen, setPayOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
   const [companyShipDirty, setCompanyShipDirty] = useState(false);
@@ -306,13 +331,102 @@ function SalesOrdersContent({
   const payRequestIdRef = useRef(newRequestId());
   const shipRequestIdRef = useRef(newRequestId());
   const formTouched = Boolean(
-    stockDirty ||
+    entryCustomer ||
+      stockDirty ||
       selectedDemand ||
       lines.some(line => line.qty || line.agreedUnitPrice) ||
       dueDate ||
       confirmationNote ||
       customerConfirmed
   );
+
+  const buildEntryPayload = (
+    company = stockDraft,
+    pending = pendingDemandRequest
+  ) => {
+    const payload = serializeSalesOrderEntryDraft({
+      customer: selectedCustomer ?? null,
+      source: sourceType,
+      selectedDemand,
+      lines,
+      dueDate,
+      confirmationNote,
+      customerConfirmed,
+      pendingRequest: pending,
+      company,
+    });
+    return { ...payload, form: { ...payload.form, customerSearch } };
+  };
+  useEffect(() => {
+    if (!orderDraft.restored || draftHydrated.current) return;
+    draftHydrated.current = true;
+    const saved = orderDraft.initialPayload;
+    if (!saved) {
+      setDraftApplied(true);
+      return;
+    }
+    try {
+      const restored = parseSalesOrderEntryDraft(saved);
+      if (embedded && restored.customer?.id !== embedded.customer.id)
+        throw new Error(
+          "当前账号已有其他客户的订单草稿，请先在业务订单中处理。"
+        );
+      setEntryCustomer(restored.customer);
+      setCustomerSearch(
+        typeof saved.form?.customerSearch === "string"
+          ? saved.form.customerSearch
+          : ""
+      );
+      setSourceType(restored.source);
+      setSelectedDemand(restored.selectedDemand);
+      setLines(restored.lines);
+      setDueDate(restored.dueDate);
+      setConfirmationNote(restored.confirmationNote);
+      setCustomerConfirmed(restored.customerConfirmed);
+      setPendingDemandRequest(restored.pendingRequest);
+      demandRetryUnknown.current = Boolean(restored.pendingRequest);
+      setStockDraft(restored.company);
+      setStockLocked(Boolean(restored.company.pendingRequest));
+      draftPayloadRef.current = saved;
+      setEntryOpen(true);
+      setDraftApplied(true);
+    } catch (failure) {
+      setDraftRestoreError(
+        failure instanceof Error
+          ? failure.message
+          : "草稿结构异常，已保留原内容。"
+      );
+      setEntryOpen(true);
+    }
+  }, [orderDraft.restored, orderDraft.initialPayload, embedded]);
+  useEffect(() => {
+    if (
+      !draftHydrated.current ||
+      !draftApplied ||
+      !entryOpen ||
+      suppressDraftWrite.current ||
+      draftRestoreError
+    )
+      return;
+    const payload = buildEntryPayload();
+    draftPayloadRef.current = payload;
+    void orderDraft.persist(payload).catch(() => undefined);
+  }, [
+    draftApplied,
+    entryOpen,
+    entryCustomer,
+    customerSearch,
+    sourceType,
+    selectedDemand,
+    lines,
+    dueDate,
+    confirmationNote,
+    customerConfirmed,
+    stockDraft,
+    pendingDemandRequest,
+    draftRestoreError,
+    orderDraft.persist,
+  ]);
 
   const listInput = useMemo(
     () => ({
@@ -457,6 +571,7 @@ function SalesOrdersContent({
     deepLinkedDemandIdRef.current = undefined;
     setSelectedDemand(null);
     setEntryCustomer(null);
+    setCustomerSearch("");
     setSourceType(embedded ? "demand" : "company_stock");
     setStockDirty(false);
     setStockBusy(false);
@@ -469,17 +584,27 @@ function SalesOrdersContent({
     setCandidatePage(1);
     requestIdRef.current = newRequestId();
     requestKeysRef.current.clear();
-    setUncertainSave(false);
+    setPendingDemandRequest(null);
+    setStockDraft(emptyCompanyStockDraft());
+    setStockLocked(false);
+    setEntryError("");
+    demandRetryUnknown.current = false;
   };
   const closeEntry = () => {
     setEntryOpen(false);
-    setDiscardOpen(false);
+  };
+  const completeEntry = () => {
+    suppressDraftWrite.current = true;
+    const saved = draftPayloadRef.current;
+    closeEntry();
     resetEntry();
+    void orderDraft.clear(saved ?? undefined);
   };
   const requestCloseEntry = () => {
     if (savingRef.current || stockBusy) return;
-    if (formTouched) setDiscardOpen(true);
-    else closeEntry();
+    if (draftPayloadRef.current && !draftRestoreError)
+      void orderDraft.persist(draftPayloadRef.current).catch(() => undefined);
+    closeEntry();
   };
   useEffect(() => {
     if (listQuery.data && page > totalPages) setPage(totalPages);
@@ -530,7 +655,7 @@ function SalesOrdersContent({
       if (!session.isWritable()) return;
       embedded?.onOrderChanged?.();
       setSelectedId(result.id);
-      closeEntry();
+      completeEntry();
       toast.success(
         result.replayed ? "已返回此前保存的销售订单" : "销售订单已录入",
         { description: result.orderNumber }
@@ -549,8 +674,10 @@ function SalesOrdersContent({
         "NOT_FOUND",
         "CONFLICT",
       ].includes(error.data?.code ?? "");
-      setUncertainSave(!knownRejection);
-      toast.error(error.message || "订单保存结果尚未确认，请重试原请求");
+      if (knownRejection && !demandRetryUnknown.current)
+        setPendingDemandRequest(null);
+      else demandRetryUnknown.current = true;
+      setEntryError(error.message || "订单保存结果待确认，请核验原请求。");
       void utils.crmSalesOrder.list.invalidate().catch(() => undefined);
     },
     onSettled: () => {
@@ -700,10 +827,40 @@ function SalesOrdersContent({
       return "请完善数量与单价";
     }
   }, [lines]);
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (
       !session.isWritable() ||
       savingRef.current ||
+      draftRestoreError ||
+      (!orderDraft.writable && !orderDraft.canVerifyPending)
+    )
+      return;
+    if (pendingDemandRequest) {
+      demandRetryUnknown.current = true;
+      savingRef.current = true;
+      setEntryError("");
+      if (!orderDraft.writable) {
+        try {
+          await orderDraft.persist(
+            draftPayloadRef.current ?? buildEntryPayload(),
+            true
+          );
+          if (!session.isWritable()) {
+            savingRef.current = false;
+            return;
+          }
+        } catch (failure) {
+          savingRef.current = false;
+          setEntryError(
+            failure instanceof Error ? failure.message : "原请求暂无法核验。"
+          );
+          return;
+        }
+      }
+      createMutation.mutate(pendingDemandRequest);
+      return;
+    }
+    if (
       candidateMismatch ||
       (embedded && (!candidatesQuery.data || candidatesQuery.isError))
     )
@@ -712,7 +869,7 @@ function SalesOrdersContent({
       !selectedDemand ||
       !customerMatches(selectedDemand, candidateCustomerId)
     ) {
-      toast.error("请选择客户需求");
+      setEntryError("请选择客户需求");
       return;
     }
     const items = lines
@@ -723,15 +880,15 @@ function SalesOrdersContent({
         agreedUnitPrice: line.agreedUnitPrice.trim(),
       }));
     if (!items.length) {
-      toast.error("请至少确认一行物料数量与单价");
+      setEntryError("请至少确认一行物料数量与单价");
       return;
     }
     if (!customerConfirmed) {
-      toast.error("请确认已与客户确认订单");
+      setEntryError("请确认已与客户确认订单");
       return;
     }
     if (!confirmationNote.trim()) {
-      toast.error("请填写客户确认说明");
+      setEntryError("请填写客户确认说明");
       return;
     }
     const parsed = salesOrderCreateSchema.safeParse({
@@ -744,7 +901,7 @@ function SalesOrdersContent({
       customerConfirmed,
     });
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "请检查订单内容");
+      setEntryError(parsed.error.issues[0]?.message ?? "请检查订单内容");
       return;
     }
     if (
@@ -755,7 +912,7 @@ function SalesOrdersContent({
             ?.remainingQty ?? 0)
       )
     ) {
-      toast.error("确认数量超过可用需求数量，请检查后重试");
+      setEntryError("确认数量超过可用需求数量，请检查后重试");
       return;
     }
     const fingerprint = JSON.stringify(
@@ -763,11 +920,30 @@ function SalesOrdersContent({
     );
     if (!requestKeysRef.current.has(fingerprint))
       requestKeysRef.current.set(fingerprint, newRequestId());
-    savingRef.current = true;
-    createMutation.mutate({
+    const payload = {
       ...parsed.data,
       requestId: requestKeysRef.current.get(fingerprint)!,
-    });
+    };
+    const draft = buildEntryPayload(stockDraft, payload);
+    savingRef.current = true;
+    setEntryError("");
+    setPendingDemandRequest(payload);
+    draftPayloadRef.current = draft;
+    try {
+      await orderDraft.persist(draft, true);
+      if (!session.isWritable()) {
+        savingRef.current = false;
+        return;
+      }
+      createMutation.mutate(payload);
+    } catch (failure) {
+      savingRef.current = false;
+      setEntryError(
+        failure instanceof Error
+          ? failure.message
+          : "原请求暂无法保存，请重试。"
+      );
+    }
   };
   const cancelOrder = () => {
     if (!session.isWritable() || !detailQuery.data) return;
@@ -824,13 +1000,30 @@ function SalesOrdersContent({
   );
   useEffect(() => {
     const preventLoss = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
+      if (
+        !dirty ||
+        (entryOpen &&
+          !payTouched &&
+          !shipTouched &&
+          !cancelTouched &&
+          !expenseDirty &&
+          !pending)
+      )
+        return;
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", preventLoss);
     return () => window.removeEventListener("beforeunload", preventLoss);
-  }, [dirty]);
+  }, [
+    dirty,
+    entryOpen,
+    payTouched,
+    shipTouched,
+    cancelTouched,
+    expenseDirty,
+    pending,
+  ]);
   const dirtyCallback = useRef(embedded?.onDirtyChange);
   dirtyCallback.current = embedded?.onDirtyChange;
   useEffect(() => {
@@ -876,7 +1069,17 @@ function SalesOrdersContent({
         event.target instanceof Element
           ? event.target.closest("a[href]")
           : null;
-      if (!dirty || !anchor || anchor.getAttribute("href")?.startsWith("#"))
+      if (
+        !dirty ||
+        (entryOpen &&
+          !payTouched &&
+          !shipTouched &&
+          !cancelTouched &&
+          !expenseDirty &&
+          !pending) ||
+        !anchor ||
+        anchor.getAttribute("href")?.startsWith("#")
+      )
         return;
       if (
         pending ||
@@ -888,7 +1091,15 @@ function SalesOrdersContent({
     };
     document.addEventListener("click", guardNavigation, true);
     return () => document.removeEventListener("click", guardNavigation, true);
-  }, [dirty, pending]);
+  }, [
+    dirty,
+    pending,
+    entryOpen,
+    payTouched,
+    shipTouched,
+    cancelTouched,
+    expenseDirty,
+  ]);
   useEffect(() => {
     const intent = embedded?.intent;
     if (!intent || handledIntentRef.current === intent.nonce) return;
@@ -948,7 +1159,10 @@ function SalesOrdersContent({
                 <Button
                   type="button"
                   className={buttonClass}
-                  onClick={() => setEntryOpen(true)}
+                  onClick={() => {
+                    suppressDraftWrite.current = false;
+                    setEntryOpen(true);
+                  }}
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" />
                   录入销售订单
@@ -1023,7 +1237,10 @@ function SalesOrdersContent({
               <Button
                 type="button"
                 className={buttonClass}
-                onClick={() => setEntryOpen(true)}
+                onClick={() => {
+                  suppressDraftWrite.current = false;
+                  setEntryOpen(true);
+                }}
               >
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 新建业务订单
@@ -1322,508 +1539,562 @@ function SalesOrdersContent({
                 ? "客户成交报价与确认"
                 : "新建业务订单"}
             </DialogTitle>
-            {sourceType === "demand" ? (
-              <p className="text-xs text-slate-500">
-                {embedded ? `已锁定客户：${embedded.customer.name}。` : ""}
-                采购报价 / 销售采用不等于客户确认；仅显示已采用报价的需求。
-              </p>
-            ) : null}
           </DialogHeader>
           {uncertainSave && (
             <p
               role="alert"
               className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800"
             >
-              上次保存结果尚未确认，请点击“确认保存结果”重试原请求。确认前暂不允许修改，关闭不会撤销可能已创建的订单。
+              保存结果待确认，内容已锁定。
             </p>
           )}
-          <div className="crm-sales-orders-source-controls">
-            <span>
-              {selectedCustomer?.name ||
-                (selectedDemand ? selectedDemand.customerName : "选择客户")}
-            </span>
-            {!embedded && selectedCustomer && !uncertainSave && !stockBusy ? (
+          {!orderDraft.restored || draftRestoreError || !orderDraft.writable ? (
+            <div role="alert" className="text-xs text-red-600">
+              {draftRestoreError || orderDraft.notice || "正在读取订单草稿…"}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  draftHydrated.current = false;
+                  setDraftRestoreError("");
+                  orderDraft.retryRestore();
+                }}
+              >
+                重新读取草稿
+              </Button>
+            </div>
+          ) : null}
+          {orderDraft.notice && orderDraft.writable ? (
+            <p role="status" className="text-xs text-slate-500">
+              {orderDraft.notice}
+            </p>
+          ) : null}
+          <fieldset
+            disabled={
+              (!orderDraft.writable && !orderDraft.canVerifyPending) ||
+              Boolean(draftRestoreError)
+            }
+            className="min-w-0 space-y-3"
+          >
+            <section className="crm-order-section" aria-label="订单客户">
+              <h3 className="crm-order-section-title">客户</h3>
+              <div className="company-stock-toolbar">
+                <span>
+                  {selectedCustomer?.name ||
+                    (selectedDemand ? selectedDemand.customerName : "选择客户")}
+                </span>
+                {!embedded &&
+                selectedCustomer &&
+                !uncertainSave &&
+                !stockLocked &&
+                !stockBusy ? (
+                  <Button
+                    type="button"
+                    className={secondaryButtonClass}
+                    onClick={() => {
+                      if (
+                        formTouched &&
+                        !window.confirm("内容尚未保存，确认重新选择客户？")
+                      )
+                        return;
+                      resetEntry();
+                    }}
+                  >
+                    更换客户
+                  </Button>
+                ) : null}
+              </div>
+              {!selectedCustomer && !selectedDemand ? (
+                <SalesCustomerPicker
+                  enabled={canWrite && ready && orderDraft.writable}
+                  onSelect={setEntryCustomer}
+                  customerSearch={customerSearch}
+                  onCustomerSearchChange={setCustomerSearch}
+                />
+              ) : null}
+            </section>
+            <div
+              className="crm-sales-orders-source-controls"
+              aria-label="订单货源"
+            >
+              <span className="crm-order-section-title">货源</span>
               <Button
                 type="button"
                 className={secondaryButtonClass}
+                aria-pressed={sourceType === "company_stock"}
+                disabled={
+                  !canWrite ||
+                  stockBusy ||
+                  createMutation.isPending ||
+                  uncertainSave ||
+                  stockLocked
+                }
                 onClick={() => {
                   if (
                     formTouched &&
-                    !window.confirm("内容尚未保存，确认重新选择客户？")
+                    !window.confirm("内容尚未保存，确认切换货源？")
                   )
                     return;
-                  resetEntry();
+                  setSourceType("company_stock");
+                  setSelectedDemand(null);
+                  setLines([]);
                 }}
               >
-                更换客户
+                公司库存
               </Button>
-            ) : null}
-            <Button
-              type="button"
-              className={secondaryButtonClass}
-              aria-pressed={sourceType === "company_stock"}
-              disabled={
-                !canWrite ||
-                stockBusy ||
-                createMutation.isPending ||
-                uncertainSave
-              }
-              onClick={() => {
-                if (
-                  formTouched &&
-                  !window.confirm("内容尚未保存，确认切换货源？")
-                )
-                  return;
-                setSourceType("company_stock");
-                setSelectedDemand(null);
-                setLines([]);
-              }}
-            >
-              公司库存
-            </Button>
-            <Button
-              type="button"
-              className={secondaryButtonClass}
-              aria-pressed={sourceType === "demand"}
-              disabled={
-                !canWrite ||
-                stockBusy ||
-                createMutation.isPending ||
-                uncertainSave
-              }
-              onClick={() => {
-                if (
-                  formTouched &&
-                  !window.confirm("内容尚未保存，确认切换货源？")
-                )
-                  return;
-                setSourceType("demand");
-              }}
-            >
-              需求采购
-            </Button>
-          </div>
-          {sourceType === "company_stock" ? (
-            selectedCustomer ? (
-              <CompanyStockOrderForm
-                key={`${businessScope.storageScope}:${selectedCustomer.id}`}
-                customer={selectedCustomer}
-                enabled={canWrite && session.isWritable() && ready}
-                onDirtyChange={setStockDirty}
-                onBusyChange={setStockBusy}
-                onCreated={result => {
-                  if (!session.isWritable()) return;
-                  setSelectedId(result.id);
-                  closeEntry();
-                  embedded?.onOrderChanged?.();
-                  toast.success(
-                    result.replayed ? "已返回此前保存订单" : "业务订单已创建"
-                  );
-                  void Promise.allSettled([
-                    utils.crmSalesOrder.list.invalidate(),
-                    utils.crmSalesOrder.get.invalidate(),
-                    utils.crmSalesOrder.candidates.invalidate(),
-                  ]);
+              <Button
+                type="button"
+                className={secondaryButtonClass}
+                aria-pressed={sourceType === "demand"}
+                disabled={
+                  !canWrite ||
+                  stockBusy ||
+                  createMutation.isPending ||
+                  uncertainSave ||
+                  stockLocked
+                }
+                onClick={() => {
+                  if (
+                    formTouched &&
+                    !window.confirm("内容尚未保存，确认切换货源？")
+                  )
+                    return;
+                  setSourceType("demand");
                 }}
-              />
+              >
+                需求采购
+              </Button>
+            </div>
+            {sourceType === "company_stock" ? (
+              selectedCustomer ? (
+                <CompanyStockOrderForm
+                  key={`${businessScope.storageScope}:${selectedCustomer.id}`}
+                  customer={selectedCustomer}
+                  enabled={
+                    canWrite &&
+                    session.isWritable() &&
+                    ready &&
+                    (orderDraft.writable || orderDraft.canVerifyPending) &&
+                    !draftRestoreError
+                  }
+                  draft={stockDraft}
+                  onDraftChange={setStockDraft}
+                  onPersistRequest={async company => {
+                    const payload = buildEntryPayload(company);
+                    draftPayloadRef.current = payload;
+                    await orderDraft.persist(payload, true);
+                  }}
+                  onClose={requestCloseEntry}
+                  onLockedChange={setStockLocked}
+                  onDirtyChange={setStockDirty}
+                  onBusyChange={setStockBusy}
+                  onCreated={result => {
+                    if (!session.isWritable()) return;
+                    setSelectedId(result.id);
+                    completeEntry();
+                    embedded?.onOrderChanged?.();
+                    toast.success(
+                      result.replayed ? "已返回此前保存订单" : "业务订单已创建"
+                    );
+                    void Promise.allSettled([
+                      utils.crmSalesOrder.list.invalidate(),
+                      utils.crmSalesOrder.get.invalidate(),
+                      utils.crmSalesOrder.candidates.invalidate(),
+                    ]);
+                  }}
+                />
+              ) : (
+                <p className="admin-cell-secondary">请先选择客户</p>
+              )
             ) : (
-              <SalesCustomerPicker
-                enabled={canWrite && ready}
-                onSelect={setEntryCustomer}
-              />
-            )
-          ) : (
-            <>
-              {!selectedDemand ? (
-                <div className="space-y-2">
-                  <AdminFilterBar className="crm-sales-orders-candidate-filters">
-                    <Input
-                      className="h-8 text-xs"
-                      value={candidateKeyword}
-                      placeholder="搜索需求号、项目或型号"
-                      onChange={event =>
-                        setCandidateKeyword(event.target.value)
-                      }
-                      onKeyDown={event => {
-                        if (event.key === "Enter") {
+              <>
+                {!selectedDemand ? (
+                  <div className="space-y-2">
+                    <AdminFilterBar className="crm-sales-orders-candidate-filters">
+                      <Input
+                        className="h-8 text-xs"
+                        value={candidateKeyword}
+                        placeholder="搜索需求号、项目或型号"
+                        onChange={event =>
+                          setCandidateKeyword(event.target.value)
+                        }
+                        onKeyDown={event => {
+                          if (event.key === "Enter") {
+                            setCandidateApplied(candidateKeyword.trim());
+                            setCandidatePage(1);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        className={secondaryButtonClass}
+                        variant="outline"
+                        onClick={() => {
                           setCandidateApplied(candidateKeyword.trim());
                           setCandidatePage(1);
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      className={secondaryButtonClass}
-                      variant="outline"
-                      onClick={() => {
-                        setCandidateApplied(candidateKeyword.trim());
-                        setCandidatePage(1);
-                      }}
-                    >
-                      搜索
-                    </Button>
-                  </AdminFilterBar>
-                  <AdminDataPanel className="max-h-[380px] overflow-auto">
-                    <Table className="crm-sales-orders-dialog-table admin-table-readable">
-                      <TableHeader className="bg-slate-50">
-                        <TableRow>
-                          <TableHead className="h-8 text-xs">客户</TableHead>
-                          <TableHead className="h-8 text-xs">
-                            需求 / 项目
-                          </TableHead>
-                          <TableHead className="h-8 text-right text-xs">
-                            可下单物料
-                          </TableHead>
-                          <TableHead className="h-8 text-right text-xs">
-                            操作
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {candidatesQuery.isLoading ? (
+                        }}
+                      >
+                        搜索
+                      </Button>
+                    </AdminFilterBar>
+                    <AdminDataPanel className="max-h-[380px] overflow-auto">
+                      <Table className="crm-sales-orders-dialog-table admin-table-readable">
+                        <TableHeader className="bg-slate-50">
                           <TableRow>
-                            <TableCell
-                              colSpan={4}
-                              className="h-20 text-center text-xs"
-                            >
-                              <Loader2 className="inline h-4 w-4 animate-spin" />
-                            </TableCell>
+                            <TableHead className="h-8 text-xs">客户</TableHead>
+                            <TableHead className="h-8 text-xs">
+                              需求 / 项目
+                            </TableHead>
+                            <TableHead className="h-8 text-right text-xs">
+                              可下单物料
+                            </TableHead>
+                            <TableHead className="h-8 text-right text-xs">
+                              操作
+                            </TableHead>
                           </TableRow>
-                        ) : null}
-                        {candidatesQuery.isError ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={4}
-                              className="h-20 text-center text-xs text-red-600"
-                            >
-                              {candidatesQuery.error?.message || "需求读取失败"}
-                            </TableCell>
-                          </TableRow>
-                        ) : null}
-                        {!candidatesQuery.isLoading &&
-                        !candidatesQuery.isError &&
-                        !candidatesQuery.data?.items.length ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={4}
-                              className="h-20 text-center text-xs text-slate-500"
-                            >
-                              暂无已采用报价且可录入的需求
-                            </TableCell>
-                          </TableRow>
-                        ) : null}
-                        {candidatesQuery.data?.items.map(demand => (
-                          <TableRow
-                            key={demand.id}
-                            data-page-memory-row={String(demand.id)}
-                          >
-                            <TableCell className="py-2 text-xs">
-                              {demand.customerName}
-                            </TableCell>
-                            <TableCell className="py-2 text-xs">
-                              <div>{demand.demandNo}</div>
-                              <div className="admin-cell-secondary">
-                                {demand.projectName || "未填写项目"}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-2 text-right text-xs tabular-nums">
-                              {
-                                demand.items.filter(
-                                  item => item.remainingQty > 0
-                                ).length
-                              }{" "}
-                              行可下单
-                            </TableCell>
-                            <TableCell className="py-2 text-right">
-                              <Button
-                                type="button"
-                                className="admin-row-action text-xs"
-                                variant="outline"
-                                disabled={
-                                  !demand.items.some(
-                                    item => item.remainingQty > 0
-                                  )
-                                }
-                                onClick={() => selectDemand(demand)}
+                        </TableHeader>
+                        <TableBody>
+                          {candidatesQuery.isLoading ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="h-20 text-center text-xs"
                               >
-                                选择
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </AdminDataPanel>
-                  <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
-                    <span>
-                      {candidatePage} / {candidatePages}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      disabled={candidatePage <= 1}
-                      onClick={() => setCandidatePage(current => current - 1)}
-                    >
-                      上一页
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      disabled={candidatePage >= candidatePages}
-                      onClick={() => setCandidatePage(current => current + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="min-w-0 space-y-3">
-                  <AdminDataPanel className="crm-sales-orders-selected-demand flex flex-wrap items-start justify-between gap-2 p-3 text-xs">
-                    <div>
-                      <strong className="crm-sales-orders-selected-customer text-[#185FA5]">
-                        {selectedDemand.customerName}
-                      </strong>
-                      <span className="mx-2 text-slate-400">|</span>
-                      {selectedDemand.demandNo}
-                      <span className="mx-2 text-slate-400">|</span>
-                      {selectedDemand.projectName || "未填写项目"}
+                                <Loader2 className="inline h-4 w-4 animate-spin" />
+                              </TableCell>
+                            </TableRow>
+                          ) : null}
+                          {candidatesQuery.isError ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="h-20 text-center text-xs text-red-600"
+                              >
+                                {candidatesQuery.error?.message ||
+                                  "需求读取失败"}
+                              </TableCell>
+                            </TableRow>
+                          ) : null}
+                          {!candidatesQuery.isLoading &&
+                          !candidatesQuery.isError &&
+                          !candidatesQuery.data?.items.length ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="h-20 text-center text-xs text-slate-500"
+                              >
+                                暂无已采用报价且可录入的需求
+                              </TableCell>
+                            </TableRow>
+                          ) : null}
+                          {candidatesQuery.data?.items.map(demand => (
+                            <TableRow
+                              key={demand.id}
+                              data-page-memory-row={String(demand.id)}
+                            >
+                              <TableCell className="py-2 text-xs">
+                                {demand.customerName}
+                              </TableCell>
+                              <TableCell className="py-2 text-xs">
+                                <div>{demand.demandNo}</div>
+                                <div className="admin-cell-secondary">
+                                  {demand.projectName || "未填写项目"}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-2 text-right text-xs tabular-nums">
+                                {
+                                  demand.items.filter(
+                                    item => item.remainingQty > 0
+                                  ).length
+                                }{" "}
+                                行可下单
+                              </TableCell>
+                              <TableCell className="py-2 text-right">
+                                <Button
+                                  type="button"
+                                  className="admin-row-action text-xs"
+                                  variant="outline"
+                                  disabled={
+                                    !demand.items.some(
+                                      item => item.remainingQty > 0
+                                    )
+                                  }
+                                  onClick={() => selectDemand(demand)}
+                                >
+                                  选择
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </AdminDataPanel>
+                    <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
+                      <span>
+                        {candidatePage} / {candidatePages}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        disabled={candidatePage <= 1}
+                        onClick={() => setCandidatePage(current => current - 1)}
+                      >
+                        上一页
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        disabled={candidatePage >= candidatePages}
+                        onClick={() => setCandidatePage(current => current + 1)}
+                      >
+                        下一页
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      className="h-7 px-2 text-xs"
-                      variant="outline"
-                      disabled={createMutation.isPending || uncertainSave}
-                      onClick={() => {
-                        setSelectedDemand(null);
-                        setLines([]);
-                      }}
-                    >
-                      重新选择
-                    </Button>
-                  </AdminDataPanel>
-                  <AdminDataPanel className="min-w-0 max-w-full overflow-auto">
-                    <Table className="crm-sales-orders-dialog-table admin-table-readable">
-                      <TableHeader className="bg-slate-50">
-                        <TableRow>
-                          <TableHead className="h-8 text-xs">
-                            型号 / 品牌 / 封装
-                          </TableHead>
-                          <TableHead className="h-8 text-right text-xs">
-                            需求 / 可下单
-                          </TableHead>
-                          <TableHead className="h-8 w-[120px] text-right text-xs">
-                            客户确认数量
-                          </TableHead>
-                          <TableHead className="h-8 w-[150px] text-right text-xs">
-                            客户同意含税单价（元）
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedLines.map(({ item, draft }) => (
-                          <TableRow
-                            key={item.id}
-                            className={
-                              item.remainingQty <= 0
-                                ? "bg-slate-50 text-slate-400"
-                                : ""
-                            }
-                            data-page-memory-row={String(item.id)}
-                          >
-                            <TableCell className="py-2 text-xs">
-                              <div className="admin-cell-primary crm-sales-orders-model">
-                                {item.partNumber || "未填写型号"}
-                              </div>
-                              <div className="admin-cell-secondary">
-                                {[item.brand, item.pkg]
-                                  .filter(Boolean)
-                                  .join(" / ") || "—"}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-2 text-right text-xs tabular-nums">
-                              {item.demandQty} {item.qtyUnit} /{" "}
-                              <span className="font-medium">
-                                {item.remainingQty} {item.qtyUnit}
-                              </span>
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <Input
-                                disabled={
-                                  !draft ||
-                                  item.remainingQty <= 0 ||
-                                  createMutation.isPending ||
-                                  uncertainSave
-                                }
-                                className="h-8 text-right text-xs tabular-nums"
-                                type="number"
-                                min={1}
-                                step={1}
-                                max={item.remainingQty}
-                                aria-label={`${item.partNumber} 确认数量`}
-                                inputMode="numeric"
-                                value={draft?.qty ?? ""}
-                                placeholder="不录入"
-                                onChange={event =>
-                                  updateLine(item.id, "qty", event.target.value)
-                                }
-                                onBlur={() => {
-                                  const current = Number(draft?.qty);
-                                  if (current > item.remainingQty) {
+                  </div>
+                ) : (
+                  <div className="min-w-0 space-y-3">
+                    <AdminDataPanel className="crm-sales-orders-selected-demand flex flex-wrap items-start justify-between gap-2 p-3 text-xs">
+                      <div>
+                        <strong className="crm-sales-orders-selected-customer text-[#185FA5]">
+                          {selectedDemand.customerName}
+                        </strong>
+                        <span className="mx-2 text-slate-400">|</span>
+                        {selectedDemand.demandNo}
+                        <span className="mx-2 text-slate-400">|</span>
+                        {selectedDemand.projectName || "未填写项目"}
+                      </div>
+                      <Button
+                        type="button"
+                        className="h-7 px-2 text-xs"
+                        variant="outline"
+                        disabled={createMutation.isPending || uncertainSave}
+                        onClick={() => {
+                          setSelectedDemand(null);
+                          setLines([]);
+                        }}
+                      >
+                        重新选择
+                      </Button>
+                    </AdminDataPanel>
+                    <h3 className="crm-order-section-title">订单明细</h3>
+                    <AdminDataPanel className="min-w-0 max-w-full overflow-auto">
+                      <Table className="crm-sales-orders-dialog-table admin-table-readable">
+                        <TableHeader className="bg-slate-50">
+                          <TableRow>
+                            <TableHead className="h-8 text-xs">
+                              型号 / 品牌 / 封装
+                            </TableHead>
+                            <TableHead className="h-8 text-right text-xs">
+                              需求 / 可下单
+                            </TableHead>
+                            <TableHead className="h-8 w-[120px] text-right text-xs">
+                              客户确认数量
+                            </TableHead>
+                            <TableHead className="h-8 w-[150px] text-right text-xs">
+                              客户同意含税单价（元）
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedLines.map(({ item, draft }) => (
+                            <TableRow
+                              key={item.id}
+                              className={
+                                item.remainingQty <= 0
+                                  ? "bg-slate-50 text-slate-400"
+                                  : ""
+                              }
+                              data-page-memory-row={String(item.id)}
+                            >
+                              <TableCell className="py-2 text-xs">
+                                <div className="admin-cell-primary crm-sales-orders-model">
+                                  {item.partNumber || "未填写型号"}
+                                </div>
+                                <div className="admin-cell-secondary">
+                                  {[item.brand, item.pkg]
+                                    .filter(Boolean)
+                                    .join(" / ") || "—"}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-2 text-right text-xs tabular-nums">
+                                {item.demandQty} {item.qtyUnit} /{" "}
+                                <span className="font-medium">
+                                  {item.remainingQty} {item.qtyUnit}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <Input
+                                  disabled={
+                                    !draft ||
+                                    item.remainingQty <= 0 ||
+                                    createMutation.isPending ||
+                                    uncertainSave
+                                  }
+                                  className="h-8 text-right text-xs tabular-nums"
+                                  type="number"
+                                  min={1}
+                                  step={1}
+                                  max={item.remainingQty}
+                                  aria-label={`${item.partNumber} 确认数量`}
+                                  inputMode="numeric"
+                                  value={draft?.qty ?? ""}
+                                  placeholder="不录入"
+                                  onChange={event =>
                                     updateLine(
                                       item.id,
                                       "qty",
-                                      String(item.remainingQty)
-                                    );
-                                    toast.info(
-                                      `确认数量已调整为最大可用数量 ${item.remainingQty}`
-                                    );
+                                      event.target.value
+                                    )
                                   }
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <Input
-                                disabled={
-                                  !draft ||
-                                  item.remainingQty <= 0 ||
-                                  createMutation.isPending ||
-                                  uncertainSave
-                                }
-                                className="h-8 text-right text-xs tabular-nums"
-                                aria-label={`${item.partNumber} 含税单价`}
-                                inputMode="decimal"
-                                value={draft?.agreedUnitPrice ?? ""}
-                                placeholder="0.0000"
-                                onChange={event =>
-                                  updateLine(
-                                    item.id,
-                                    "agreedUnitPrice",
-                                    event.target.value
-                                  )
-                                }
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </AdminDataPanel>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="sales-order-due-date" className="text-xs">
-                        约定交付日期（可选）
-                      </Label>
-                      <Input
-                        id="sales-order-due-date"
-                        disabled={createMutation.isPending || uncertainSave}
-                        type="date"
-                        className="h-8 text-xs"
-                        value={dueDate}
-                        max="9999-12-31"
-                        onChange={event => setDueDate(event.target.value)}
-                      />
+                                  onBlur={() => {
+                                    const current = Number(draft?.qty);
+                                    if (current > item.remainingQty) {
+                                      updateLine(
+                                        item.id,
+                                        "qty",
+                                        String(item.remainingQty)
+                                      );
+                                      toast.info(
+                                        `确认数量已调整为最大可用数量 ${item.remainingQty}`
+                                      );
+                                    }
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <Input
+                                  disabled={
+                                    !draft ||
+                                    item.remainingQty <= 0 ||
+                                    createMutation.isPending ||
+                                    uncertainSave
+                                  }
+                                  className="h-8 text-right text-xs tabular-nums"
+                                  aria-label={`${item.partNumber} 含税单价`}
+                                  inputMode="decimal"
+                                  value={draft?.agreedUnitPrice ?? ""}
+                                  placeholder="0.0000"
+                                  onChange={event =>
+                                    updateLine(
+                                      item.id,
+                                      "agreedUnitPrice",
+                                      event.target.value
+                                    )
+                                  }
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </AdminDataPanel>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label
+                          htmlFor="sales-order-due-date"
+                          className="text-xs"
+                        >
+                          约定交付日期（可选）
+                        </Label>
+                        <Input
+                          id="sales-order-due-date"
+                          disabled={createMutation.isPending || uncertainSave}
+                          type="date"
+                          className="h-8 text-xs"
+                          value={dueDate}
+                          max="9999-12-31"
+                          onChange={event => setDueDate(event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label
+                          htmlFor="sales-order-confirmation"
+                          className="text-xs"
+                        >
+                          客户确认说明 <span className="text-red-600">*</span>
+                        </Label>
+                        <Textarea
+                          id="sales-order-confirmation"
+                          disabled={createMutation.isPending || uncertainSave}
+                          className="min-h-16 text-xs"
+                          maxLength={500}
+                          value={confirmationNote}
+                          placeholder="客户确认内容"
+                          onChange={event =>
+                            setConfirmationNote(event.target.value)
+                          }
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label
-                        htmlFor="sales-order-confirmation"
-                        className="text-xs"
-                      >
-                        客户确认说明 <span className="text-red-600">*</span>
-                      </Label>
-                      <Textarea
-                        id="sales-order-confirmation"
+                    <div className="text-right text-xs font-medium tabular-nums text-slate-800">
+                      金额（人民币含税）：{amountPreview}
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
+                      <Checkbox
                         disabled={createMutation.isPending || uncertainSave}
-                        className="min-h-16 text-xs"
-                        maxLength={500}
-                        value={confirmationNote}
-                        placeholder="例如：2026-09-23 电话确认型号、数量及含税单价"
-                        onChange={event =>
-                          setConfirmationNote(event.target.value)
+                        checked={customerConfirmed}
+                        onCheckedChange={checked =>
+                          setCustomerConfirmed(checked === true)
                         }
                       />
-                    </div>
+                      <span>
+                        我确认客户已明确同意以上数量、含税价格及约定交期{" "}
+                        <span className="text-red-600">*</span>
+                      </span>
+                    </label>
                   </div>
-                  <div className="text-right text-xs font-medium tabular-nums text-slate-800">
-                    金额（人民币含税）：{amountPreview}
-                  </div>
-                  <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
-                    <Checkbox
-                      disabled={createMutation.isPending || uncertainSave}
-                      checked={customerConfirmed}
-                      onCheckedChange={checked =>
-                        setCustomerConfirmed(checked === true)
-                      }
-                    />
-                    <span>
-                      我确认客户已明确同意以上数量、含税价格及约定交期{" "}
-                      <span className="text-red-600">*</span>
-                    </span>
-                  </label>
-                </div>
-              )}
-            </>
-          )}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              className={secondaryButtonClass}
-              disabled={createMutation.isPending || stockBusy}
-              onClick={requestCloseEntry}
-            >
-              取消
-            </Button>
-            {sourceType === "demand" && selectedDemand ? (
-              <Button
-                type="button"
-                className={buttonClass}
-                disabled={
-                  !canWrite ||
-                  candidateMismatch ||
-                  Boolean(
-                    embedded &&
-                      (!candidatesQuery.data || candidatesQuery.isError)
-                  ) ||
-                  createMutation.isPending
-                }
-                onClick={submitOrder}
-              >
-                {createMutation.isPending ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Check className="mr-1 h-3.5 w-3.5" />
                 )}
-                {uncertainSave ? "确认保存结果" : "保存订单"}
-              </Button>
+              </>
+            )}
+            {entryError ? (
+              <p role="alert" className="text-xs text-red-600">
+                {entryError}
+              </p>
             ) : null}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
-        <DialogContent className="crm-sales-orders-dialog max-w-sm p-4 sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-base">放弃本次录入？</DialogTitle>
-            <p className="text-xs text-slate-500">
-              {uncertainSave
-                ? "上次保存结果尚未确认，关闭不会撤销已创建订单；请先查看订单列表，避免再次录入。"
-                : "已填写内容尚未保存。"}
-            </p>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              className={secondaryButtonClass}
-              onClick={() => setDiscardOpen(false)}
-            >
-              继续编辑
-            </Button>
-            <Button type="button" className={buttonClass} onClick={closeEntry}>
-              放弃录入
-            </Button>
-          </DialogFooter>
+            {sourceType === "demand" ? (
+              <DialogFooter className="crm-order-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={secondaryButtonClass}
+                  disabled={createMutation.isPending || stockBusy}
+                  onClick={requestCloseEntry}
+                >
+                  收起
+                </Button>
+                {sourceType === "demand" && selectedDemand ? (
+                  <Button
+                    type="button"
+                    className={buttonClass}
+                    disabled={
+                      !canWrite ||
+                      (!uncertainSave &&
+                        (candidateMismatch ||
+                          Boolean(
+                            embedded &&
+                              (!candidatesQuery.data || candidatesQuery.isError)
+                          ))) ||
+                      (!orderDraft.writable && !orderDraft.canVerifyPending) ||
+                      Boolean(draftRestoreError) ||
+                      createMutation.isPending
+                    }
+                    onClick={() => {
+                      void submitOrder();
+                    }}
+                  >
+                    {createMutation.isPending ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    {uncertainSave ? "确认保存结果" : "保存订单"}
+                  </Button>
+                ) : null}
+              </DialogFooter>
+            ) : null}
+          </fieldset>
         </DialogContent>
       </Dialog>
 
