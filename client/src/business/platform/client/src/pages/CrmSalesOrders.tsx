@@ -347,14 +347,15 @@ function SalesOrdersContent({
     error: candidateMismatch ? scopeError : rawCandidatesQuery.error,
   };
   const pageRows = listQuery.data?.items ?? [];
+  const notificationListReady = ready && businessScope.contextVerification.state === "verified" &&
+    businessScope.staffPrincipal.status === "ready" && listQuery.isSuccess &&
+    !listQuery.isError && !listQuery.isFetching && !listQuery.isPlaceholderData &&
+    listQuery.isFetchedAfterMount !== false;
   const newInformationRows = useAdminNewInformationContextRows({
     module: "sales",
-    refs: pageRows.map(order => `crm-sales:${order.id}`),
+    refs: notificationListReady ? pageRows.map(order => `crm-sales:${order.id}`) : [],
     scope: String(businessScope.merchantId),
-    listReady: ready && businessScope.contextVerification.state === "verified" &&
-      businessScope.staffPrincipal.status === "ready" && listQuery.isSuccess &&
-      !listQuery.isError && !listQuery.isFetching && !listQuery.isPlaceholderData &&
-      listQuery.isFetchedAfterMount !== false,
+    listReady: notificationListReady,
   });
   // Preserve server filters/pagination: only the already displayed page is reordered.
   const displayedRows = [...pageRows].sort((a, b) =>

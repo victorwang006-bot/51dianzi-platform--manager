@@ -88,7 +88,11 @@ export async function build(){
    const returns=fn.body.statements.filter(ts.isReturnStatement);const finalReturn=returns.at(-1);assert(finalReturn,'main page render return');let insert=finalReturn.getStart(a);
    // Mall has auth/denied returns: initialize rows before the first original render barrier, with listReady false.
    if(family==='MallMaterials'){const barrier=fn.body.statements.find(n=>ts.isIfStatement(n)&&nodes(n,ts.isReturnStatement).length);if(barrier)insert=barrier.getStart(a);}
-   const prelude=`const ${business?'__niBusiness=__NIUseBusinessScope(),':''}__niPageRows=(${receiver.getText(a)}??[]),__niListReady=Boolean(${ready}),__niRows=__NI.useAdminNewInformationContextRows({module:${JSON.stringify(module)},refs:__niPageRows.map(row=>${JSON.stringify(prefix+':')}+row.id),${scope||business?'scope:'+(scope??'String(__niBusiness.merchantId)')+',':''}listReady:__niListReady}),__niDisplayed=[...__niPageRows].sort((left,right)=>Number(__niRows.getRow(${JSON.stringify(prefix+':')}+right.id).isNew)-Number(__niRows.getRow(${JSON.stringify(prefix+':')}+left.id).isNew));\n`;
+   // CRM rendering originally guards absent/cleared query data. Keep that guard when lifting rows before JSX.
+   const safeReceiver=family==='CrmSalesOrders'?receiver.getText(a).replace(/\.data\.items$/,'.data?.items'):receiver.getText(a);
+   const rowRefs=`__niPageRows.map(row=>${JSON.stringify(prefix+':')}+row.id)`;
+   const safeRefs=family==='CrmSalesOrders'?`__niListReady?${rowRefs}:[]`:rowRefs;
+   const prelude=`const ${business?'__niBusiness=__NIUseBusinessScope(),':''}__niPageRows=(${safeReceiver}??[]),__niListReady=Boolean(${ready}),__niRows=__NI.useAdminNewInformationContextRows({module:${JSON.stringify(module)},refs:${safeRefs},${scope||business?'scope:'+(scope??'String(__niBusiness.merchantId)')+',':''}listReady:__niListReady}),__niDisplayed=[...__niPageRows].sort((left,right)=>Number(__niRows.getRow(${JSON.stringify(prefix+':')}+right.id).isNew)-Number(__niRows.getRow(${JSON.stringify(prefix+':')}+left.id).isNew));\n`;
    patch(insert,insert,prelude,'shared native hook consumes actual current query/status/generation barrier');
    const rowPatches=patches.filter(p=>p.start>=rowArrow.getStart(a)&&p.end<=rowArrow.end).map(p=>({...p,start:p.start-rowArrow.getStart(a),end:p.end-rowArrow.getStart(a)}));
    const rowText=apply(rowArrow.getText(a),rowPatches);
