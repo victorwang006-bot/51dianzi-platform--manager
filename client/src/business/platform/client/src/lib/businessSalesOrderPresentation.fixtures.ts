@@ -1,4 +1,5 @@
 import type { SalesOrderDetail } from "../../../shared/crmSalesOrders";
+import { SALES_COMMISSION_POLICY, SALES_COMMISSION_THRESHOLDS, SALES_COMMISSION_RATES } from "../../../shared/salesProfit";
 
 export function fixtureOrder(id = 1, customerId = 7): SalesOrderDetail {
   return {
@@ -8,10 +9,39 @@ export function fixtureOrder(id = 1, customerId = 7): SalesOrderDetail {
     customerName: "虚构客户",
     demandId: 9,
     demandNo: "FIXTURE-D9",
+    sourceType: "demand",
+    salesTaxMode: null,
+    salesExpenses: "0",
+    companyStockAllocated: false,
+    companyStockAllocations: [],
+    salesExpenseHistory: [],
+    profitBreakdown: {
+      salesAmount: "9007199254740993.123400",
+      costAmount: null,
+      expenseAmount: "0.000000",
+      grossProfit: null,
+      taxDeductionAmount: null,
+      netProfit: null,
+      salesTaxMode: null,
+      status: "unknown_cost",
+      policyVersion: SALES_COMMISSION_POLICY?.version ?? null,
+    },
+    commissionPreview: {
+      estimatedAmount: null,
+      earnedAmount: null,
+      configPending: false,
+      collectionStatus: "partial",
+      reason: "合成历史单的销售税口径和采购成本待核",
+      rate: null,
+      bandMode: "whole",
+      thresholds: SALES_COMMISSION_THRESHOLDS,
+      rates: SALES_COMMISSION_RATES,
+      policyVersion: SALES_COMMISSION_POLICY?.version ?? null,
+    },
     projectName: "虚构项目",
     status: "confirmed",
     totalAmount: "9007199254740993.1234",
-    currencyLabel: "人民币（含税）",
+    currencyLabel: "人民币（税口径待核）",
     itemCount: 1,
     paidAmount: "0.0001",
     monthlyAmount: "1.0002",

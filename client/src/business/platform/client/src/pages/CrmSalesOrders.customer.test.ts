@@ -22,6 +22,17 @@ const runtime = vi.hoisted(() => ({
   detail: null as any,
   fetching: false,
   fetched: true,
+  detailError: false,
+  scope: "test-scope",
+  currentScope: "test-scope",
+  verified: true,
+  authenticated: true,
+  loginDisabled: false,
+  authLoading: false,
+  notices: vi.fn(),
+  search: "?demandNo=UNRELATED-ROUTE&keyword=OTHER-CUSTOMER",
+  lots: { items: [] as any[], total: 0 },
+  preview: {} as any,
   mutations: {} as Record<
     string,
     { mutate: ReturnType<typeof vi.fn>; options: any; pending: boolean }
@@ -42,9 +53,37 @@ vi.mock("../hooks/usePageMemory", async () => {
     useRestoringListQuery: (query: unknown) => query,
   };
 });
+vi.mock("../../../../BusinessScope", () => ({
+  useBusinessScope: () => ({
+    merchantId: 1,
+    storageScope: runtime.scope,
+    frontUser: { id: 7 },
+    contextVerification: {
+      state: runtime.verified ? "verified" : "revalidating",
+      authorizationVersion: 1,
+      identity: runtime.scope,
+    },
+    staffPrincipal: { status: "ready", frontendUserId: 7 },
+  }),
+  businessStorageScope: () => runtime.currentScope,
+}));
+vi.mock("../../../../api/business-auth", () => ({
+  useAuth: () => ({
+    user: { id: 7, loginDisabled: runtime.loginDisabled },
+    loading: runtime.authLoading,
+    isAuthenticated: runtime.authenticated,
+  }),
+}));
+vi.mock("../../../../../lib/adminNewInformation", () => ({
+  useAdminNewInformationContextRows: (options: any) => {
+    runtime.notices(options);
+    return { getRow: () => ({ ref: () => undefined, isNew: false }) };
+  },
+  useAdminNewInformationRowContext: () => undefined,
+}));
 vi.mock("wouter", () => ({
   useLocation: () => ["/customers/1", runtime.navigate],
-  useSearch: () => "?demandNo=UNRELATED-ROUTE&keyword=OTHER-CUSTOMER",
+  useSearch: () => runtime.search,
 }));
 vi.mock("../../../../BusinessContentFrame", () => ({
   default: ({ children }: { children: React.ReactNode }) =>
@@ -62,16 +101,29 @@ vi.mock("../../../../api/business-trpc", () => {
       runtime.inputs.push({ name, input, enabled: options.enabled !== false });
       return {
         data:
-          name === "list"
-            ? runtime.list
-            : name === "candidates"
-              ? runtime.candidates
-              : runtime.detail,
+          name === "companyStockCandidates"
+            ? runtime.lots
+            : name === "preview"
+              ? runtime.preview
+              : name === "context"
+                ? { canManageAll: false }
+                : name === "customers"
+                  ? { items: [{ id: 1, name: "客户甲" }], total: 1 }
+                  : name === "list"
+                    ? runtime.list
+                    : name === "candidates"
+                      ? runtime.candidates
+                      : runtime.detail,
         isLoading: false,
+        isSuccess: true,
         isFetching: runtime.fetching,
+        isPlaceholderData: false,
         isFetchedAfterMount: runtime.fetched,
-        isError: false,
-        error: null,
+        isError: name === "get" && runtime.detailError,
+        error:
+          name === "get" && runtime.detailError
+            ? new Error("offline read failure")
+            : null,
         refetch: vi.fn(),
       };
     },
@@ -106,8 +158,15 @@ vi.mock("../../../../api/business-trpc", () => {
         create: mutation("create"),
         cancel: mutation("cancel"),
         recordPayment: mutation("payment"),
-        ship: mutation("ship"),
+        ship: mutation("legacyShip"),
+        shipCompanyStock: mutation("ship"),
+        allocateCompanyStock: mutation("allocate"),
+        companyStockCandidates: query("companyStockCandidates"),
+        previewCompanyStock: query("preview"),
+        createCompanyStock: mutation("companyCreate"),
+        updateSalesExpenses: mutation("expenses"),
       },
+      customer: { context: query("context"), list: query("customers") },
     },
   };
 });
@@ -202,6 +261,23 @@ const order = (customerId = 1) => ({
       lineAmount: "120.0000",
     },
   ],
+  sourceType: "company_stock",
+  salesTaxMode: "tax_included",
+  salesExpenses: "0",
+  companyStockAllocations: [
+    {
+      id: 51,
+      orderId: 11,
+      orderItemId: 31,
+      lotId: 41,
+      qty: 10,
+      reservedQty: 9,
+      consumedQty: 1,
+      releasedQty: 0,
+    },
+  ],
+  salesExpenseHistory: [],
+  audits: [],
   stockCandidates: [
     {
       inventoryId: 41,
@@ -296,6 +372,54 @@ beforeEach(() => {
   runtime.mutations = {};
   runtime.fetching = false;
   runtime.fetched = true;
+  Object.assign(runtime, {
+    detailError: false,
+    scope: "test-scope",
+    currentScope: "test-scope",
+    verified: true,
+    authenticated: true,
+    loginDisabled: false,
+    authLoading: false,
+  });
+  runtime.search = "?demandNo=UNRELATED-ROUTE&keyword=OTHER-CUSTOMER";
+  runtime.lots = {
+    items: [
+      {
+        lotId: 41,
+        inboundOrderId: 51,
+        partNumber: "LM358",
+        brand: "TI",
+        pkg: "SOIC",
+        dc: "24+",
+        location: "A-1",
+        lotNumber: "LOT-41",
+        availableQty: 8,
+        version: 1,
+      },
+    ],
+    total: 1,
+  };
+  runtime.preview = {
+    totalAmount: "37.0368",
+    currencyLabel: "人民币（含税）",
+    profitBreakdown: {
+      status: "unknown_cost",
+      salesTaxMode: "tax_included",
+      salesAmount: "37.0368",
+      costAmount: null,
+      expenseAmount: "0",
+      grossProfit: null,
+      taxDeductionAmount: null,
+      netProfit: null,
+    },
+    commissionPreview: {
+      estimatedAmount: null,
+      earnedAmount: null,
+      configPending: false,
+      collectionStatus: "uncollected",
+      reason: "成本待核",
+    },
+  };
   runtime.list = { items: [order()], total: 41 };
   runtime.candidates = { items: [demand()], total: 1 };
   runtime.detail = order();
@@ -328,6 +452,57 @@ afterEach(() => {
 });
 
 describe("customer-embedded sales orders (real component, mocked transport only)", () => {
+  it("standalone compact page has one new-create entry and goes customer -> company lots -> real company create without a fake demand", () => {
+    runtime.search = "";
+    runtime.memory = {};
+    act(() => root.render(React.createElement(CrmSalesOrders)));
+    expect(container.querySelector("h1")).toBeNull();
+    expect(
+      Array.from(
+        container.querySelectorAll(".crm-sales-orders-table th"),
+        node => node.textContent?.trim()
+      )
+    ).toEqual([
+      "订单号 / 日期",
+      "客户",
+      "物料摘要",
+      "金额",
+      "收款",
+      "出货",
+      "负责人",
+      "操作",
+    ]);
+    expect(
+      Array.from(container.querySelectorAll("button")).filter(
+        node => node.textContent?.trim() === "新建业务订单"
+      )
+    ).toHaveLength(1);
+    click(button("新建业务订单"));
+    click(button("选择客户"));
+    click(document.querySelector('[data-company-lot="41"] button')!);
+    input('[aria-label="批次 41 销售数量"]', "3");
+    input('[aria-label="批次 41 销售单价"]', "12.3456");
+    input(
+      '[aria-label="公司订单客户确认说明"]',
+      "电话确认实物批次与数量价格交期"
+    );
+    click(document.querySelector('input[type="checkbox"]')!);
+    click(button("保存订单"));
+    const payload = runtime.mutations.companyCreate.mutate.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      customerId: 1,
+      items: [
+        {
+          qty: 3,
+          agreedUnitPrice: "12.3456",
+          allocations: [{ lotId: 41, qty: 3 }],
+        },
+      ],
+    });
+    expect(JSON.stringify(payload)).not.toMatch(
+      /demandItemId|demandId|inventoryId|ownerUserId|salesExpenses/
+    );
+  });
   it("requires explicit business-order read access and valid identity before mounting query hooks", () => {
     render({ canRead: false });
     expect(container.textContent).toContain("客户查看权限不包含销售订单权限");
@@ -341,16 +516,42 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(container.querySelector("h1")?.textContent).toBe("客户订单");
     expect(container.textContent).toContain("仅显示 客户甲 的内部业务订单");
     const table = container.querySelector(".crm-sales-orders-table")!;
-    expect(Array.from(table.querySelectorAll("th"), item => item.textContent?.trim())).toEqual([
-      "订单号", "客户 / 需求", "项目", "金额（含税）", "状态", "收款", "出货", "录入时间", "操作",
+    expect(
+      Array.from(table.querySelectorAll("th"), item => item.textContent?.trim())
+    ).toEqual([
+      "订单号",
+      "客户 / 需求",
+      "项目",
+      "金额（含税）",
+      "状态",
+      "收款",
+      "出货",
+      "录入时间",
+      "操作",
     ]);
-    expect(Array.from(table.querySelectorAll("col"), item => item.className)).toEqual([
-      "w-[14%]", "w-[18%]", "w-[8%]", "w-[10%]", "w-[9%]", "w-[10%]", "w-[9%]", "w-[8%]", "w-[14%]",
+    expect(
+      Array.from(table.querySelectorAll("col"), item => item.className)
+    ).toEqual([
+      "w-[14%]",
+      "w-[18%]",
+      "w-[8%]",
+      "w-[10%]",
+      "w-[9%]",
+      "w-[10%]",
+      "w-[9%]",
+      "w-[8%]",
+      "w-[14%]",
     ]);
     expect(table.querySelectorAll("tbody tr:first-child td")).toHaveLength(9);
-    expect(table.querySelectorAll("tbody tr:first-child td")[1].textContent).toContain("D-21");
-    expect(table.querySelectorAll("tbody tr:first-child td")[2].textContent).toBe("项目");
-    expect(container.querySelector(".aui-filterbar")?.textContent).not.toContain("录入销售订单");
+    expect(
+      table.querySelectorAll("tbody tr:first-child td")[1].textContent
+    ).toContain("D-21");
+    expect(
+      table.querySelectorAll("tbody tr:first-child td")[2].textContent
+    ).toBe("项目");
+    expect(
+      container.querySelector(".aui-filterbar")?.textContent
+    ).not.toContain("录入销售订单");
     expect(container.textContent).not.toContain("成交确认 / 生成订单");
     expect(
       container.querySelector(".crm-sales-orders-embedded")
@@ -576,7 +777,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
       id: 11,
       version: 7,
       deliveryMethod: "pickup",
-      items: [{ orderItemId: 31, inventoryId: 41, qty: 3 }],
+      items: [{ orderItemId: 31, lotId: 41, qty: 3 }],
     });
     expect(props.onOrderChanged).toHaveBeenCalledTimes(1);
   });
@@ -676,6 +877,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     "ignores stale %s completions on same-customer authorization identity replacement",
     name => {
       render();
+      if (name === "ship") click(button("出货"));
       const stale = runtime.mutations[name].options;
       render({
         contextIdentityKey: "enterprise:1:actor:7:auth-v2",
@@ -714,6 +916,153 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     runtime.fetched = false;
     render({ canRead: true });
     expect(container.textContent).not.toContain("SO-11");
+  });
+  it("keeps the real ShipmentForm mounted and draft intact while get refetches, disables writes, and uses the fresh version afterwards", () => {
+    render();
+    click(button("出货"));
+    input('[aria-label="批次 41 本次出货"]', "3");
+    const element = document.querySelector<HTMLInputElement>(
+      '[aria-label="批次 41 本次出货"]'
+    )!;
+    runtime.fetching = true;
+    render();
+    expect(document.querySelector('[aria-label="批次 41 本次出货"]')).toBe(
+      element
+    );
+    expect(element.value).toBe("3");
+    expect(element.disabled).toBe(true);
+    click(button("确认出货"));
+    expect(runtime.mutations.ship.mutate).not.toHaveBeenCalled();
+    runtime.fetching = false;
+    runtime.detail = { ...order(), version: 8 };
+    render();
+    expect(element.value).toBe("3");
+    expect(element.disabled).toBe(false);
+    input('[aria-label="公司出货交付方式"]', "pickup");
+    click(button("确认出货"));
+    expect(runtime.mutations.ship.mutate.mock.calls[0][0]).toMatchObject({
+      id: 11,
+      version: 8,
+      items: [{ orderItemId: 31, lotId: 41, qty: 3 }],
+    });
+  });
+  it("keeps the shipment draft mounted after detail read failure, disabled until a fresh successful response", () => {
+    render();
+    click(button("出货"));
+    input('[aria-label="批次 41 本次出货"]', "3");
+    const element = document.querySelector<HTMLInputElement>(
+      '[aria-label="批次 41 本次出货"]'
+    )!;
+    runtime.detailError = true;
+    render();
+    expect(document.querySelector('[aria-label="批次 41 本次出货"]')).toBe(
+      element
+    );
+    expect(element.value).toBe("3");
+    expect(element.disabled).toBe(true);
+    expect(document.body.textContent).toContain("offline read failure");
+    runtime.detailError = false;
+    render();
+    expect(element.disabled).toBe(false);
+  });
+  it("discards shipment draft on business scope replacement, does not revive A draft on A -> B -> A, and ignores old completion", () => {
+    render();
+    click(button("出货"));
+    input('[aria-label="批次 41 本次出货"]', "3");
+    const stale = runtime.mutations.ship.options;
+    runtime.scope = "B";
+    runtime.currentScope = "B";
+    render();
+    expect(
+      document.querySelector('[aria-label="批次 41 本次出货"]')
+    ).toBeNull();
+    runtime.scope = "test-scope";
+    runtime.currentScope = "test-scope";
+    render();
+    click(button("出货"));
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[aria-label="批次 41 本次出货"]'
+      )!.value
+    ).toBe("");
+    act(() => stale.onSuccess());
+    expect(props.onOrderChanged).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+  it("partial cash receipt retries the frozen original amount/requestId/version rather than a refreshed order", () => {
+    render();
+    click(button("收款"));
+    input(".crm-sales-orders-dialog select", "cash");
+    input('.crm-sales-orders-dialog input[placeholder="含税金额"]', "2.3456");
+    click(button("确认收款"));
+    const first = runtime.mutations.payment.mutate.mock.calls[0][0];
+    expect(first).toMatchObject({
+      id: 11,
+      version: 7,
+      method: "cash",
+      amount: "2.3456",
+    });
+    act(() =>
+      runtime.mutations.payment.options.onError({
+        message: "unknown timeout",
+        data: { code: "INTERNAL_SERVER_ERROR" },
+      })
+    );
+    runtime.detail = {
+      ...order(),
+      version: 99,
+      paymentStatus: "partial",
+      paidAmount: "2.3456",
+    };
+    render();
+    expect(
+      document.querySelector<HTMLInputElement>('input[placeholder="含税金额"]')!
+        .disabled
+    ).toBe(true);
+    click(button("确认收款结果"));
+    expect(runtime.mutations.payment.mutate.mock.calls[1][0]).toEqual(first);
+  });
+  it("cancellation retries the unchanged native id/version/reason without fabricating a requestId", () => {
+    render();
+    click(button("查看"));
+    click(button("取消订单"));
+    input(".crm-sales-orders-cancel-reason textarea", "客户撤回订单");
+    click(button("确认取消订单"));
+    const first = runtime.mutations.cancel.mutate.mock.calls[0][0];
+    act(() => {
+      runtime.mutations.cancel.options.onError({ message: "unknown timeout" });
+      runtime.mutations.cancel.options.onSettled();
+    });
+    runtime.detail = { ...order(), version: 99 };
+    render();
+    expect(
+      document.querySelector<HTMLTextAreaElement>(
+        ".crm-sales-orders-cancel-reason textarea"
+      )!.disabled
+    ).toBe(true);
+    click(button("确认取消订单"));
+    expect(runtime.mutations.cancel.mutate.mock.calls[1][0]).toEqual(first);
+    expect(first).toEqual({ id: 11, version: 7, reason: "客户撤回订单" });
+  });
+  it("does not inspect notification refs or allow new writes while identity/login is disabled", () => {
+    runtime.authenticated = false;
+    render();
+    expect(runtime.notices.mock.calls.at(-1)?.[0]).toMatchObject({
+      refs: [],
+      listReady: false,
+    });
+    expect(
+      [...container.querySelectorAll("button")].some(
+        node => node.textContent === "收款" || node.textContent === "出货"
+      )
+    ).toBe(false);
+    runtime.authenticated = true;
+    runtime.verified = false;
+    render();
+    expect(runtime.notices.mock.calls.at(-1)?.[0]).toMatchObject({
+      refs: [],
+      listReady: false,
+    });
   });
 });
 

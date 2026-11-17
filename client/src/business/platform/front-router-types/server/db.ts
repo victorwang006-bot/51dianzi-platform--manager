@@ -4671,7 +4671,7 @@ export type InternalOrderListInput = {
  * 会出现「统计显示 28 单、列表只列出 12 单」这类自相矛盾的结果，
  * 后台数据便不再可信；销售范围隔离更会因某一处遗漏而整体失效。
  */
-function buildAdminOrderConditions(input: {
+export function buildAdminOrderConditions(input: {
   keyword?: string;
   status?: InternalOrderStatus;
   buyerId?: number;
@@ -5595,3 +5595,8 @@ export async function fillWechatBindingUnionId(openid: string, unionId: string) 
 
 /** Type-only native SDK: implemented by the actual portal runtime. */
 export declare function clearInventorySearchCountCache(): void;
+
+/** Type SDK parity: actual server-only seller predicate; no database or account writes. */
+export function sellerOrderReadWhere(sellerId: number): SQL {
+  return eq(orders.sellerId, sellerId);
+}

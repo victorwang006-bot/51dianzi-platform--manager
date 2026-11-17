@@ -22,7 +22,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-.aui-page.erp-ui.inbound-management-page .inbound-modal :is(input.crm-input, select.crm-input, [data-slot="input"], [data-slot="select-trigger"]),
+.aui-page.erp-ui.inbound-management-page
+  .inbound-modal
+  :is(
+    input.crm-input,
+    select.crm-input,
+    [data-slot="input"],
+    [data-slot="select-trigger"]
+  ),
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-btn,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-btn-sm {
   height: var(--admin-content-control-height, 32px);
@@ -44,16 +51,24 @@
 }
 
 .aui-page.erp-ui.inbound-management-page .inbound-modal .crm-table th,
-.aui-page.erp-ui.inbound-management-page .inbound-modal .crm-detail-table .label-cell,
+.aui-page.erp-ui.inbound-management-page
+  .inbound-modal
+  .crm-detail-table
+  .label-cell,
 .aui-page.erp-ui.inbound-management-page .inbound-modal .erp-helper {
   font-size: var(--admin-content-font-caption, 11px);
 }
 
-.aui-page.erp-ui.inbound-management-page .inbound-modal .erp-segmented.erp-choice-buttons {
+.aui-page.erp-ui.inbound-management-page
+  .inbound-modal
+  .erp-segmented.erp-choice-buttons {
   min-height: var(--admin-content-control-height, 32px);
 }
 
-.aui-page.erp-ui.inbound-management-page .inbound-modal .erp-choice-buttons .erp-segmented-option {
+.aui-page.erp-ui.inbound-management-page
+  .inbound-modal
+  .erp-choice-buttons
+  .erp-segmented-option {
   min-height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
   font-size: var(--admin-content-font-body, 12px);
@@ -85,16 +100,201 @@
 }
 
 /* Compact optional documents only; retain all existing ERP form dimensions. */
-.aui-page.erp-ui.inbound-management-page .inbound-modal .inbound-documents .inbound-document-button {
+.aui-page.erp-ui.inbound-management-page
+  .inbound-modal
+  .inbound-documents
+  .inbound-document-button {
   height: 34px;
   min-height: 34px;
-  color: #185FA5;
+  color: #185fa5;
   background: #fff;
 }
 
 /* Private document viewer; URLs exist only while the scoped dialog is open. */
-.aui-page .inbound-document-preview { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.35); }
-.aui-page .inbound-document-preview-panel { flex: 1; max-inline-size: 960px; max-block-size: 90vh; overflow: hidden; border: 1px solid #e3e8ef; border-radius: 8px; background: #fff; }
-.aui-page .inbound-document-preview-header { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #e3e8ef; font-size: 12px; }
-.aui-page .inbound-document-preview-content { display: block; inline-size: 100%; block-size: 72vh; border: 0; }
-.aui-page .inbound-document-preview-image { object-fit: contain; }
+.aui-page .inbound-document-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.aui-page .inbound-document-preview-panel {
+  flex: 1;
+  max-inline-size: 960px;
+  max-block-size: 90vh;
+  overflow: hidden;
+  border: 1px solid #e3e8ef;
+  border-radius: 8px;
+  background: #fff;
+}
+.aui-page .inbound-document-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e3e8ef;
+  font-size: 12px;
+}
+.aui-page .inbound-document-preview-content {
+  display: block;
+  inline-size: 100%;
+  block-size: 72vh;
+  border: 0;
+}
+.aui-page .inbound-document-preview-image {
+  object-fit: contain;
+}
+
+/* Approved compact content scope; no shell/global overrides. */
+.aui-page.erp-ui.inbound-management-page {
+  font-size: var(--admin-content-font-body, 13px);
+}
+.aui-page.erp-ui.inbound-management-page .inbound-toolbar {
+  display: block;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  padding: 8px;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-toolbar-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-toolbar-filters {
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-toolbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.aui-page.erp-ui.inbound-management-page
+  .inbound-toolbar
+  :is(button, input, [data-slot="select-trigger"]) {
+  height: var(--admin-content-control-height, 34px);
+  min-height: var(--admin-content-control-height, 34px);
+  font-size: var(--admin-content-font-body, 13px);
+}
+.aui-page.erp-ui.inbound-management-page .inbound-statistics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  min-height: 30px;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+.aui-page.erp-ui.inbound-management-page
+  .inbound-statistics
+  .inbound-overview-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+  font-size: var(--admin-content-font-body, 13px);
+  color: var(--admin-color-secondary, #475569);
+}
+.aui-page.erp-ui.inbound-management-page
+  .inbound-statistics
+  .inbound-overview-button
+  strong {
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--admin-color-brand, #185fa5);
+}
+.aui-page.erp-ui.inbound-management-page .aui-data-panel {
+  border-radius: 6px;
+  box-shadow: none;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-list-table th {
+  height: var(--admin-content-table-head-height, 34px);
+  padding: 6px 10px;
+  font-size: var(--admin-content-font-table-heading, 12px);
+}
+.aui-page.erp-ui.inbound-management-page .inbound-list-table td {
+  padding: 6px 10px;
+  font-size: var(--admin-content-font-body, 13px);
+  line-height: 20px;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-list-table tr {
+  height: auto;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-row-menu {
+  height: var(--admin-content-row-action-height, 28px);
+  min-height: var(--admin-content-row-action-height, 28px);
+}
+.aui-page.erp-ui.inbound-management-page
+  .inbound-list-table
+  :is(.text-\[12px\], .crm-link) {
+  font-size: var(--admin-content-font-body, 13px);
+}
+.aui-page.erp-ui.inbound-management-page
+  .inbound-list-table
+  :is(.text-\[11px\], .text-muted-foreground) {
+  font-size: var(--admin-content-font-caption, 12px);
+}
+.aui-page.erp-ui.inbound-management-page .inbound-entry-card {
+  border: 0;
+  border-top: 1px solid var(--admin-color-border, #e2e8f0);
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+.aui-page.erp-ui.inbound-management-page .inbound-entry-card-title {
+  padding: 8px 0 4px;
+  background: #fff;
+  font-size: var(--admin-content-font-body, 13px);
+}
+.aui-page.erp-ui.inbound-management-page .inbound-entry-card-body {
+  padding: 6px 0;
+}
+.aui-page.erp-ui.inbound-management-page .aui-pagination {
+  margin: 8px 0;
+}
+@media (max-width: 760px) {
+  .aui-page.erp-ui.inbound-management-page .inbound-toolbar-main {
+    flex-wrap: wrap;
+  }
+  .aui-page.erp-ui.inbound-management-page .inbound-toolbar-actions {
+    margin-left: 0;
+  }
+}
+
+.aui-page.erp-ui.inbound-management-page
+  .company-stock-reconciliation-modal
+  h3 {
+  margin: 0 0 10px;
+  font-size: var(--admin-content-dialog-title-size, 18px);
+}
+.aui-page.erp-ui.inbound-management-page
+  .company-stock-reconciliation-modal
+  .company-stock-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.aui-page.erp-ui.inbound-management-page
+  .company-stock-reconciliation-modal
+  label {
+  font-size: var(--admin-content-font-label, 13px);
+}
+.aui-page.erp-ui.inbound-management-page
+  .company-stock-reconciliation-modal
+  :is(input:not([type="checkbox"]), textarea, button.crm-btn) {
+  min-height: var(--admin-content-control-height, 34px);
+  font-size: var(--admin-content-font-body, 13px);
+}

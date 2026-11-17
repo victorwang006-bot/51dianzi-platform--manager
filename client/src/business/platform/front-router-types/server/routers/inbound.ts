@@ -38,6 +38,8 @@ import {
 import { inboundBuyerUserIdSchema } from "../../../shared/inboundProcurement";
 import { inboundDocumentsSchema, inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSaveSchema } from "../../../shared/inboundDocuments";
 import { inboundDocumentService } from "../services/inboundDocuments";
+import { companyStockService } from "../services/companyStock";
+import { companyStockReconciliationCandidatesSchema, companyStockReconcileSchema, type CompanyStockReconciliationCandidate } from "../../../shared/companyStock";
 import {
   inboundProcurementIdentity, resolveInboundProcurementAccess, inboundProcurementWhere,
   procurementBuyerOptions, resolveInboundBuyerInTx, saveInboundProcurementOwnerInTx,
@@ -57,6 +59,14 @@ async function requireDb() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库不可用" });
   return db;
+}
+
+/** Same authoritative stock fence as CRM, BEFORE original procurement source,
+ * request or ledger writes. The original dual-identity/team predicate is retained. */
+async function resolveStockInboundAccessInTx(tx: any, identity: InboundProcurementIdentity | undefined) {
+  if (!identity) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库企业归属无法确认" });
+  await companyStockService.lockCompanyStockScopeInTx(tx, identity);
+  return resolveInboundProcurementAccess(tx, identity, true);
 }
 
 function affectedRows(result: unknown) {
@@ -758,7 +768,7 @@ export async function createInboundBulk(
   input = inboundBulkCreateSchema.parse(input);
   const payloadHash = inboundBulkPayloadHash(input);
   return db.transaction(async tx => {
-    const access = await resolveInboundProcurementAccess(tx, identity, true);
+    const access = await resolveStockInboundAccessInTx(tx, identity);
     if (access.ownerUserId !== ownerUserId || access.actorUserId !== actorUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
     // Validate EVERY buyer before any batch/request/order/ledger write, in stable lock order.
     const buyers = new Map<number, Awaited<ReturnType<typeof resolveInboundBuyerInTx>>>();
@@ -808,9 +818,10 @@ export async function createInboundBulk(
 
     const received = input.status === "received";
     const items: InboundBulkCreateResult["items"] = [];
+    const receipts: Array<{ id: number; row: InboundBulkCreateInput["rows"][number]; pricing: ReturnType<typeof normalizeInboundPricing>; priceMissing: boolean }> = [];
     let missingPriceCount = 0;
     const rowsInWriteOrder = received
-      ? [...input.rows].sort((left, right) => left.partNumber < right.partNumber ? -1 : left.partNumber > right.partNumber ? 1 : left.sourceRow - right.sourceRow)
+      ? [...input.rows].sort((left, right) => Buffer.compare(Buffer.from(left.partNumber), Buffer.from(right.partNumber)) || left.sourceRow - right.sourceRow)
       : input.rows;
     for (const row of rowsInWriteOrder) {
       const buyer = buyers.get(row.buyerUserId ?? actorUserId)!;
@@ -838,10 +849,7 @@ export async function createInboundBulk(
       if (!id) throw new Error("批量入库单写入失败");
       await saveInboundProcurementOwnerInTx(tx, access, id, buyer);
       if (received) {
-        await upsertStockLedgerInTx(
-          tx, id, ownerUserId, row.partNumber, row.brand || null, row.qty,
-          pricing.unitCostTaxIncluded, CNY_TAX_INCLUDED,
-        );
+        receipts.push({ id, row, pricing, priceMissing });
       }
       await addEvent(tx, id, ownerUserId, actorUserId, received ? "created_received" : "created_in_transit", null, {
         after: {
@@ -857,6 +865,17 @@ export async function createInboundBulk(
         payment: { mode: INBOUND_PAYMENT_UNPAID, payableAmount: inboundPayableString(pricing.unitCostTaxIncluded, row.qty), paidAmount: "0.00" },
       });
       items.push({ sourceRow: row.sourceRow, id, slipNo, status: input.status });
+    }
+    // Lock/write EVERY source first, then EVERY PN (binary order), then lots.
+    // Repeated same-PN effects retain their original exact receipt order.
+    for (const { id, row, pricing, priceMissing } of receipts) {
+      await upsertStockLedgerInTx(
+        tx, id, ownerUserId, row.partNumber, row.brand || null, row.qty,
+        priceMissing ? null : pricing.unitCostTaxIncluded, priceMissing ? null : CNY_TAX_INCLUDED,
+      );
+    }
+    for (const { id } of receipts) {
+      await companyStockService.recordInboundLotInTx(tx, access, { inboundOrderId: id, receiptKind: "new_receipt" });
     }
     items.sort((left, right) => left.sourceRow - right.sourceRow);
     await inboundDocumentService.associateNewInTx(tx, access, input.documents, {
@@ -906,6 +925,10 @@ async function cancelInboundOrderInTx(
   if (existing.status === "received" && !allowReceived) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "已入库单请刷新页面后填写原因并使用“作废”操作" });
   }
+  if (existing.status === "received") {
+    // Sidecar guard/mark and original exact ledger reverse share THIS transaction.
+    await companyStockService.reverseInboundLotInTx(tx, access, { inboundOrderId: existing.id });
+  }
   const nextMovementVersion = existing.status === "received"
     ? await reverseReceivedInboundTx(tx, ownerUserId, actorUserId, reason, existing, expectedMovementVersion)
     : undefined;
@@ -939,7 +962,7 @@ async function cancelInboundOrder(
   identity?: InboundProcurementIdentity,
 ) {
   return db.transaction(async tx => {
-    const access = await resolveInboundProcurementAccess(tx, identity, true);
+    const access = await resolveStockInboundAccessInTx(tx, identity);
     if (access.ownerUserId !== ownerUserId || access.actorUserId !== actorUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
     return cancelInboundOrderInTx(tx, ownerUserId, actorUserId, id, reason, allowReceived, refundConfirmed, undefined, expectedPaymentFingerprint, access);
   });
@@ -1018,7 +1041,7 @@ export async function cancelInboundOrders(
   identity?: InboundProcurementIdentity,
 ) {
   return db.transaction(async tx => {
-    const access = await resolveInboundProcurementAccess(tx, identity, true);
+    const access = await resolveStockInboundAccessInTx(tx, identity);
     if (access.ownerUserId !== ownerUserId || access.actorUserId !== actorUserId) throw new TRPCError({ code: "FORBIDDEN", message: "采购入库主体不一致" });
     const rows = await resolveInboundCancelRows(tx, ownerUserId, selection, access, true);
     const activeRows = rows.filter(row => row.status !== "cancelled");
@@ -1044,6 +1067,14 @@ export async function cancelInboundOrders(
          WHERE userId = ${ownerUserId}
            AND partNumber IN (${sql.join(partNumbers.map(partNumber => sql`${partNumber}`), sql`, `)})
          ORDER BY BINARY partNumber FOR UPDATE
+      `);
+      // Reversal effect order may differ from lot IDs. Prelock all affected lots
+      // in ascending ID order before any per-receipt guard/reverse invocation.
+      await tx.execute(sql`
+        SELECT id FROM company_stock_lots
+         WHERE enterpriseId = ${access.enterpriseId} AND ownerUserId = ${ownerUserId}
+           AND inboundOrderId IN (${sql.join(receivedIds.map(id => sql`${id}`), sql`, `)})
+         ORDER BY id FOR UPDATE
       `);
       const effectResult = await tx.execute(sql`
         SELECT id, inboundOrderId FROM inbound_ledger_effects
@@ -1286,7 +1317,7 @@ export const inboundRouter = router({
     const initialPayment = initialPaymentForCreate(input, pricing);
     const payloadHash = inboundPayloadHash(input);
     return db.transaction(async tx => {
-      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
       const buyer = await resolveInboundBuyerInTx(tx, access, input.buyerUserId);
       try {
         await tx.execute(sql`
@@ -1358,6 +1389,7 @@ export const inboundRouter = router({
           tx, id, ownerUserId, input.partNumber, input.brand ?? null, input.qty,
           pricing?.unitCostTaxIncluded ?? null, pricing ? CNY_TAX_INCLUDED : null,
         );
+        await companyStockService.recordInboundLotInTx(tx, access, { inboundOrderId: id, receiptKind: "new_receipt" });
       }
       await addEvent(tx, id, ownerUserId, actorUserId, received ? "created_received" : "created_in_transit", null, {
         after: { ...inboundSnapshot(input), operator: buyer.name, buyerUserId: buyer.userId, teamId: buyer.teamId, recordedByUserId: actorUserId },
@@ -1381,7 +1413,7 @@ export const inboundRouter = router({
       const actorUserId = ctx.user.id;
       assertOwnedInboundPhotos(input.data.photos, ownerUserId);
       return db.transaction(async tx => {
-        const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+        const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
         const ownership = await lockInboundProcurementOrder(tx, access, input.id);
         const result = await tx.execute(sql`
           SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
@@ -1465,7 +1497,7 @@ export const inboundRouter = router({
       const actorUserId = ctx.user.id;
       assertOwnedInboundPhotos(input.photos, ownerUserId);
       return db.transaction(async tx => {
-        const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+        const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
         const ownership = await lockInboundProcurementOrder(tx, access, input.id);
         const result = await tx.execute(sql`
           SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
@@ -1476,6 +1508,10 @@ export const inboundRouter = router({
         if (existing.status !== "received") {
           throw new TRPCError({ code: "CONFLICT", message: "只有已入库单可以使用安全编辑" });
         }
+        await companyStockService.guardInboundDetailsInTx(tx, access, {
+          inboundOrderId: existing.id, partNumber: existing.partNumber,
+          pkg: input.packageType, lotNumber: input.lotNumber, location: input.location,
+        });
         await inboundDocumentService.replaceInTx(tx, access, input.id, input.documents);
         await tx.execute(sql`
           UPDATE inbound_orders SET
@@ -1545,7 +1581,7 @@ export const inboundRouter = router({
       const ownerUserId = ctx.effectiveUserId!;
       const actorUserId = ctx.user.id;
       return db.transaction(async tx => {
-        const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+        const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
         const ownership = await lockInboundProcurementOrder(tx, access, input.id);
         const result = await tx.execute(sql`
           SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
@@ -1577,7 +1613,7 @@ export const inboundRouter = router({
     const amountCents = inboundMoneyCents(amount);
     if (amountCents <= BigInt(0)) throw new TRPCError({ code: "BAD_REQUEST", message: "付款金额须大于0" });
     return db.transaction(async tx => {
-      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
       await lockInboundProcurementOrder(tx, access, input.id);
       const orderResult = await tx.execute(sql`
         SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
@@ -1660,7 +1696,7 @@ export const inboundRouter = router({
     const ownerUserId = ctx.effectiveUserId!;
     const actorUserId = ctx.user.id;
     return db.transaction(async tx => {
-      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
       const lookupResult = await tx.execute(sql`
         SELECT inboundOrderId FROM inbound_payment_entries
          WHERE id = ${input.paymentId} AND ownerUserId = ${ownerUserId} LIMIT 1
@@ -1704,7 +1740,7 @@ export const inboundRouter = router({
     const actorUserId = ctx.user.id;
     const payloadHash = receivePayloadHash(input);
     return db.transaction(async tx => {
-      const access = await resolveInboundProcurementAccess(tx, inboundProcurementIdentity(ctx), true);
+      const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
       await lockInboundProcurementOrder(tx, access, input.id);
       const result = await tx.execute(sql`
         SELECT * FROM inbound_orders WHERE id = ${input.id} AND userId = ${ownerUserId} LIMIT 1 FOR UPDATE
@@ -1737,15 +1773,16 @@ export const inboundRouter = router({
       if (affectedRows(updated) !== 1) throw new TRPCError({ code: "CONFLICT", message: "入库单状态已变化，请刷新后重试" });
       await upsertStockLedgerInTx(
         tx, existing.id, ownerUserId, existing.partNumber, existing.brand, input.actualQty,
-        existing.unitCostTaxIncluded != null
+        !existing.priceMissing && existing.unitCostTaxIncluded != null
           ? Number(existing.unitCostTaxIncluded)
-          : existing.unitCost != null && existing.unitCostBasis === CNY_TAX_INCLUDED
+          : !existing.priceMissing && existing.unitCost != null && existing.unitCostBasis === CNY_TAX_INCLUDED
             ? Number(existing.unitCost)
             : null,
-        existing.unitCostTaxIncluded != null || existing.unitCost != null && existing.unitCostBasis === CNY_TAX_INCLUDED
+        !existing.priceMissing && (existing.unitCostTaxIncluded != null || existing.unitCost != null && existing.unitCostBasis === CNY_TAX_INCLUDED)
           ? CNY_TAX_INCLUDED
           : null,
       );
+      await companyStockService.recordInboundLotInTx(tx, access, { inboundOrderId: existing.id, receiptKind: "new_receipt" });
       await addEvent(tx, input.id, ownerUserId, actorUserId, "received", null, {
         before: existing,
         after: { status: "received", actualInboundDate: input.actualInboundDate, actualQty: input.actualQty, location: input.location },
@@ -1774,6 +1811,48 @@ export const inboundRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await requireDb();
       return cancelInboundOrders(db, ctx.effectiveUserId!, ctx.user.id, input, input.reason, input.refundConfirmed, input.paymentFingerprint, inboundProcurementIdentity(ctx));
+    }),
+
+  /** Read-only candidates. No quantity default and no automatic historical initialization. */
+  companyStockReconciliationCandidates: inventoryInboundProcedure
+    .input(companyStockReconciliationCandidatesSchema)
+    .query(async ({ ctx, input }) => {
+      const db = await requireDb();
+      const access = await resolveInboundProcurementAccess(db, inboundProcurementIdentity(ctx));
+      if (!access.canReadLegacy && access.scope !== "team") throw new TRPCError({ code: "FORBIDDEN", message: "仅公司owner或当前业务组主管可核对库存" });
+      const filters = [inboundProcurementWhere(access), sql`io.status = 'received'`,
+        sql`NOT EXISTS (SELECT 1 FROM company_stock_lots l WHERE l.enterpriseId = ${access.enterpriseId} AND l.ownerUserId = ${access.ownerUserId} AND l.inboundOrderId = io.id)`,
+        sql`NOT EXISTS (SELECT 1 FROM inbound_ledger_effects e WHERE e.inboundOrderId = io.id AND e.reversedAt IS NOT NULL)`];
+      if (input.partNumber !== undefined) filters.push(sql`BINARY io.partNumber = BINARY ${input.partNumber}`);
+      if (input.beforeId !== undefined) filters.push(sql`io.id < ${input.beforeId}`);
+      const result = await db.execute(sql`
+        SELECT io.id, io.slipNo, io.partNumber, COALESCE(io.brand, '') AS brand, COALESCE(io.packageType, '') AS pkg,
+          COALESCE(io.prodYear, '') AS dc, COALESCE(io.lotNumber, '') AS lotNumber, COALESCE(io.location, '') AS location,
+          sl.currentQty, sl.movementVersion AS expectedMovementVersion,
+          COALESCE((SELECT SUM(l.remainingQty) FROM company_stock_lots l WHERE l.ownerUserId = ${access.ownerUserId} AND BINARY l.partNumber = BINARY io.partNumber AND l.reversedAt IS NULL), 0) AS assignedRemainingQty,
+          EXISTS (SELECT 1 FROM inbound_procurement_owners ipo WHERE ipo.inboundOrderId = io.id) AS hasProcurementOwnership
+         FROM inbound_orders io INNER JOIN stock_ledger sl ON sl.userId = io.userId AND BINARY sl.partNumber = BINARY io.partNumber
+         WHERE ${sql.join(filters, sql` AND `)} ORDER BY io.id DESC LIMIT ${input.limit}
+      `);
+      return (result as unknown as [CompanyStockReconciliationCandidate[], unknown])[0].map(row => ({
+        ...row, currentQty: Number(row.currentQty), assignedRemainingQty: Number(row.assignedRemainingQty),
+        expectedMovementVersion: Number(row.expectedMovementVersion), hasProcurementOwnership: Boolean(row.hasProcurementOwnership),
+        status: "pending_reconciliation" as const,
+      }));
+    }),
+
+  reconcileCompanyStock: inventoryInboundProcedure
+    .input(companyStockReconcileSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await requireDb();
+      return db.transaction(async tx => {
+        const access = await resolveStockInboundAccessInTx(tx, inboundProcurementIdentity(ctx));
+        if (!access.canReadLegacy && access.scope !== "team") throw new TRPCError({ code: "FORBIDDEN", message: "仅公司owner或当前业务组主管可核对库存" });
+        // Separate stock-only visibility fence: never use/rewrite the financial attribution lock.
+        const visible = await tx.execute(sql`SELECT io.id FROM inbound_orders io WHERE io.id = ${input.id} AND ${inboundProcurementWhere(access)} LIMIT 1 FOR UPDATE`);
+        if ((visible as unknown as [Array<{ id: number }>, unknown])[0].length !== 1) throw new TRPCError({ code: "NOT_FOUND", message: "入库单不存在或不能核对其归属" });
+        return companyStockService.reconcileInboundLotInTx(tx, access, input);
+      });
     }),
 
   cancel: inventoryInboundProcedure

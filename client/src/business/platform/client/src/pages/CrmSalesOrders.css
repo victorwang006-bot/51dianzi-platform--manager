@@ -281,3 +281,163 @@
   color: #64748b;
   font-size: var(--admin-content-font-body, 12px);
 }
+
+/* Compact business toolbar/table and lightweight source forms. */
+.crm-sales-orders-page,
+.crm-sales-orders-dialog {
+  font-size: var(--admin-content-font-body, 13px);
+}
+.crm-sales-orders-filters {
+  flex-wrap: nowrap;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  gap: 6px;
+}
+.crm-sales-orders-filters > div:first-child {
+  flex: 1;
+  width: auto;
+  gap: 6px;
+}
+.crm-sales-orders-filters > .crm-sales-orders-toolbar-actions {
+  flex: 0 0 auto;
+  width: auto;
+  margin-left: auto;
+}
+.crm-sales-orders-control,
+.crm-sales-orders-page .crm-sales-orders-control {
+  height: var(--admin-content-control-height, 34px);
+  min-height: var(--admin-content-control-height, 34px);
+  font-size: var(--admin-content-font-body, 13px);
+}
+.crm-sales-orders-page .aui-data-panel,
+.crm-sales-orders-dialog .aui-data-panel {
+  border-radius: 6px;
+  box-shadow: none;
+  background: #fff;
+}
+.crm-sales-orders-page .crm-sales-orders-table {
+  min-width: 1080px;
+}
+.crm-sales-orders-page .crm-sales-orders-table th,
+.crm-sales-orders-dialog .crm-sales-orders-dialog-table th {
+  height: var(--admin-content-table-head-height, 34px);
+  font-size: var(--admin-content-font-table-heading, 12px);
+}
+.crm-sales-orders-page .crm-sales-orders-table tr {
+  height: auto;
+}
+.crm-sales-orders-page .crm-sales-orders-table td,
+.crm-sales-orders-dialog .crm-sales-orders-dialog-table td {
+  padding: 6px 10px;
+  font-size: var(--admin-content-font-body, 13px);
+}
+.crm-sales-orders-page .crm-sales-orders-table .admin-row-action,
+.crm-sales-orders-dialog .crm-sales-orders-dialog-table .admin-row-action {
+  height: var(--admin-content-row-action-height, 28px);
+  min-height: var(--admin-content-row-action-height, 28px);
+  padding-inline: 6px;
+}
+.crm-sales-orders-dialog {
+  gap: 10px;
+}
+.crm-sales-orders-dialog .crm-sales-orders-selected-demand,
+.crm-sales-orders-dialog .crm-sales-orders-detail-summary {
+  padding: 8px 10px;
+  background: #fff;
+  border-color: var(--admin-color-border, #e2e8f0);
+}
+.crm-sales-orders-dialog .crm-sales-orders-selected-customer {
+  color: var(--admin-color-text, #303642);
+  font-weight: 500;
+}
+.crm-sales-orders-fold {
+  padding: 6px 0;
+  font-size: var(--admin-content-font-body, 13px);
+}
+.crm-sales-orders-fold > summary {
+  cursor: pointer;
+  color: var(--admin-color-secondary, #475569);
+}
+.crm-sales-orders-fold > div {
+  padding-top: 6px;
+  white-space: pre-wrap;
+}
+.crm-sales-orders-pagination {
+  margin: 8px 0;
+}
+.crm-sales-orders-source-controls,
+.company-stock-toolbar,
+.sales-expenses-editor {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.crm-sales-orders-source-controls {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
+}
+.crm-sales-orders-source-controls button[aria-pressed="true"] {
+  border-color: var(--admin-color-brand, #185fa5);
+  color: var(--admin-color-brand, #185fa5);
+  background: #fff;
+}
+.company-stock-scroll {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--admin-color-border, #e2e8f0);
+  border-radius: 6px;
+}
+.company-stock-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+}
+.company-stock-table th {
+  height: 34px;
+  background: #f8fafc;
+  color: var(--admin-color-secondary, #475569);
+  font-weight: 500;
+  font-size: 12px;
+}
+.company-stock-table :is(th, td) {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--admin-color-border, #e2e8f0);
+}
+.company-stock-table .numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.crm-sales-orders-dialog .company-stock-table input {
+  width: 88px;
+  min-width: 0;
+}
+.crm-sales-orders-dialog .company-stock-table button {
+  height: 28px;
+  min-height: 28px;
+}
+.sales-profit-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 6px 0;
+  font-variant-numeric: tabular-nums;
+}
+.sales-expenses-editor input {
+  width: 130px;
+}
+.sales-expenses-editor textarea {
+  flex: 1;
+  min-width: 180px;
+  min-height: 34px;
+}
+.crm-sales-orders-dialog .inbound-field {
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .crm-sales-orders-filters {
+    flex-wrap: wrap;
+  }
+}

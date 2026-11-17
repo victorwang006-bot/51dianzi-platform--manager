@@ -66,6 +66,11 @@ vi.mock("../../51dianzi-platform/server/routers/inventory", async () => ({
     await import("../../51dianzi-platform/server/_core/trpc")
   ).router({}),
 }));
+vi.mock("../../51dianzi-platform/server/routers/mallInventory", async () => ({
+  mallInventoryRouter: (
+    await import("../../51dianzi-platform/server/_core/trpc")
+  ).router({}),
+}));
 vi.mock(
   "../../51dianzi-platform/server/routers/channelInventoryRuntime",
   async () => ({
@@ -689,5 +694,29 @@ describe("customer workbench BFF -> actual internal execute -> original read SQL
     expect(entry.method).toBe("crmSalesOrder.list");
     expect(entry).not.toHaveProperty("params");
     expect(entry).not.toHaveProperty("result");
+  });
+});
+
+// This release adds only eight fixed methods. These registry/schema assertions
+// execute no business RPC and retain the original synthetic authority fixture.
+describe("company stock eight closed BFF and native capabilities", () => {
+  const methods = [
+    ["crmSalesOrder.companyStockCandidates", "orders", "read", "sales.business_orders"],
+    ["crmSalesOrder.previewCompanyStock", "orders", "read", "sales.business_orders"],
+    ["crmSalesOrder.createCompanyStock", "orders", "write", "sales.business_orders"],
+    ["crmSalesOrder.allocateCompanyStock", "orders", "write", "sales.business_orders"],
+    ["crmSalesOrder.shipCompanyStock", "orders", "write", "sales.business_orders"],
+    ["crmSalesOrder.updateSalesExpenses", "orders", "write", "sales.business_orders"],
+    ["inbound.companyStockReconciliationCandidates", "inventory", "read", "inventory.inbound"],
+    ["inbound.reconcileCompanyStock", "inventory", "write", "inventory.inbound"],
+  ] as const;
+  it.each(methods)("%s has one precise capability, native permission and typed BFF", (method, module, mode, permission) => {
+    expect(BFF_CAPABILITIES.filter(cap => cap.method === method)).toEqual([{ method, module, mode }]);
+    expect(BUSINESS_METHOD_IDS.filter(id => id === method)).toHaveLength(1);
+    expect(BUSINESS_METHOD_CAPABILITIES[method]).toEqual({ mode, permission });
+    const definition = (businessRouter as any)._def.procedures[method]._def;
+    expect(definition.type).toBe(mode === "read" ? "query" : "mutation");
+    expect(definition.inputs.length).toBeGreaterThan(0);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

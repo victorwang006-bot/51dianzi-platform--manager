@@ -56,10 +56,33 @@ import {
 } from "../components/ui/table";
 import { Textarea } from "../components/ui/textarea";
 import "./CrmSalesOrders.css";
+import { CompanyStockShipmentForm } from "../components/companyStock/CompanyStockShipmentForm";
+import { CompanyStockOrderForm } from "../components/companyStock/CompanyStockOrderForm";
+import {
+  SalesCustomerPicker,
+  type SalesCustomer,
+} from "../components/companyStock/SalesCustomerPicker";
+import { SalesExpensesEditor } from "../components/companyStock/SalesExpensesEditor";
+import { SalesProfitSummary } from "../components/companyStock/SalesProfitSummary";
+import {
+  useCompanyStockScope,
+  useCompanyStockSession,
+} from "../components/companyStock/useCompanyStockSession";
+import {
+  orderOwnerLabel,
+  orderMaterialLabel,
+} from "../components/companyStock/companyStockSales";
+function OrderMaterialSummary({
+  order,
+}: {
+  order: { itemCount?: number; orderedQty?: number };
+}) {
+  return <span>{orderMaterialLabel(order)}</span>;
+}
+
 import {
   customerMatches,
   customerPageMatches,
-  useSalesOrderSession,
 } from "../hooks/useSalesOrderSession";
 import {
   CRM_SALES_ORDER_STATUS_LABELS,
@@ -70,8 +93,10 @@ import {
   canonicalSalesOrderCreatePayload,
   calculateSalesOrderAmounts,
   salesOrderCreateSchema,
+  salesOrderCancelSchema,
   type CrmSalesPaymentMethod,
   type SalesOrderDemandCandidate,
+  type SalesOrderPaymentInput,
 } from "../../../shared/crmSalesOrders";
 
 const PAGE_SIZE = 20;
@@ -147,6 +172,7 @@ type OrderListState = {
 /** Backward-compatible standalone route; only this wrapper reads the route's page memory. */
 export default function CrmSalesOrders() {
   const ready = usePageMemory();
+  const scope = useCompanyStockScope();
   const state: OrderListState = {
     draftKeyword: useRememberedState("draftKeyword", ""),
     keyword: useRememberedState("keyword", ""),
@@ -156,12 +182,13 @@ export default function CrmSalesOrders() {
   };
   return (
     <PlatformLayout>
-      <SalesOrdersContent ready={ready} state={state} />
+      <SalesOrdersContent key={scope.identityKey} ready={ready} state={state} />
     </PlatformLayout>
   );
 }
 /** Caller must prove sales.business_orders; customer read access never implies order access. */
 export function CustomerSalesOrders(props: CustomerSalesOrdersProps) {
+  const scope = useCompanyStockScope();
   if (
     !props.canRead ||
     !Number.isSafeInteger(props.customer.id) ||
@@ -176,6 +203,7 @@ export function CustomerSalesOrders(props: CustomerSalesOrdersProps) {
     );
   }
   const identity = JSON.stringify([
+    scope.identityKey,
     props.contextIdentityKey,
     props.customer.id,
     props.canRead,
@@ -208,6 +236,7 @@ function SalesOrdersContent({
   const [, navigate] = useLocation();
   const search = useSearch();
   const businessScope = useBusinessScope();
+  const companyScope = useCompanyStockScope();
   const deepLinkedDemandNoRef = useRef("");
   const deepLinkedDemandIdRef = useRef<number | undefined>(undefined);
   const handledIntentRef = useRef<string | number | null>(null);
@@ -218,13 +247,26 @@ function SalesOrdersContent({
   const [selectedId, setSelectedId] = state.selectedId;
   const customerId = embedded?.customer.id;
   const canWrite =
-    !embedded ||
-    (embedded.canRead === true &&
-      embedded.canWrite === true &&
-      !embedded.readOnly &&
-      !embedded.customer.archivedAt);
-  const session = useSalesOrderSession(canWrite);
+    companyScope.ready &&
+    ready &&
+    (!embedded ||
+      (embedded.canRead === true &&
+        embedded.canWrite === true &&
+        !embedded.readOnly &&
+        !embedded.customer.archivedAt));
+  const session = useCompanyStockSession(canWrite);
   const [entryOpen, setEntryOpen] = useState(false);
+  const [entryCustomer, setEntryCustomer] = useState<SalesCustomer | null>(
+    null
+  );
+  const [sourceType, setSourceType] = useState<"company_stock" | "demand">(
+    embedded ? "demand" : "company_stock"
+  );
+  const [stockDirty, setStockDirty] = useState(false);
+  const [stockBusy, setStockBusy] = useState(false);
+  const [expenseDirty, setExpenseDirty] = useState(false);
+  const selectedCustomer = embedded?.customer ?? entryCustomer;
+  const candidateCustomerId = selectedCustomer?.id;
   const [discardOpen, setDiscardOpen] = useState(false);
   const [candidateKeyword, setCandidateKeyword] = useState("");
   const [candidateApplied, setCandidateApplied] = useState("");
@@ -242,13 +284,20 @@ function SalesOrdersContent({
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
+  const [uncertainCancellation, setUncertainCancellation] = useState<ReturnType<
+    typeof salesOrderCancelSchema.parse
+  > | null>(null);
   const [uncertainSave, setUncertainSave] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
+  const [companyShipDirty, setCompanyShipDirty] = useState(false);
+  const [companyShipBusy, setCompanyShipBusy] = useState(false);
   const [payMethod, setPayMethod] = useState<CrmSalesPaymentMethod>("bank");
   const [payAmount, setPayAmount] = useState("");
   const [payDate, setPayDate] = useState(todayLocal());
   const [payNote, setPayNote] = useState("");
+  const [uncertainPayment, setUncertainPayment] =
+    useState<SalesOrderPaymentInput | null>(null);
   const [shipMethod, setShipMethod] = useState<"express" | "pickup">("express");
   const [expressCo, setExpressCo] = useState("");
   const [expressNo, setExpressNo] = useState("");
@@ -257,7 +306,8 @@ function SalesOrdersContent({
   const payRequestIdRef = useRef(newRequestId());
   const shipRequestIdRef = useRef(newRequestId());
   const formTouched = Boolean(
-    selectedDemand ||
+    stockDirty ||
+      selectedDemand ||
       lines.some(line => line.qty || line.agreedUnitPrice) ||
       dueDate ||
       confirmationNote ||
@@ -288,11 +338,17 @@ function SalesOrdersContent({
   const rawCandidatesQuery = trpc.crmSalesOrder.candidates.useQuery(
     {
       keyword: candidateApplied,
-      ...(customerId === undefined ? {} : { customerId }),
+      ...(candidateCustomerId === undefined
+        ? {}
+        : { customerId: candidateCustomerId }),
       page: candidatePage,
       pageSize: 10,
     },
-    { enabled: entryOpen && canWrite, staleTime: 0, refetchOnMount: "always" }
+    {
+      enabled: entryOpen && canWrite && sourceType === "demand",
+      staleTime: 0,
+      refetchOnMount: "always",
+    }
   );
   // Reject the whole response, including its count, rather than filtering a foreign customer's rows locally.
   const scopeError = new Error(
@@ -305,7 +361,7 @@ function SalesOrdersContent({
       rawDetailQuery.data.id !== selectedId);
   const candidateMismatch = !customerPageMatches(
     rawCandidatesQuery.data,
-    customerId
+    candidateCustomerId
   );
   const listQuery = {
     ...rawListQuery,
@@ -324,10 +380,13 @@ function SalesOrdersContent({
     ...rawDetailQuery,
     data:
       detailMismatch ||
-      (embedded &&
-        (rawDetailQuery.isError ||
-          rawDetailQuery.isFetching ||
-          rawDetailQuery.isFetchedAfterMount === false))
+      !companyScope.ready ||
+      selectedId == null ||
+      !rawDetailQuery.isSuccess ||
+      rawDetailQuery.isError ||
+      rawDetailQuery.isFetching ||
+      rawDetailQuery.isPlaceholderData ||
+      rawDetailQuery.isFetchedAfterMount === false
         ? undefined
         : rawDetailQuery.data,
     isError: rawDetailQuery.isError || detailMismatch,
@@ -346,21 +405,44 @@ function SalesOrdersContent({
     isError: rawCandidatesQuery.isError || candidateMismatch,
     error: candidateMismatch ? scopeError : rawCandidatesQuery.error,
   };
+  // Only a proved response may supply a shipment context. Keep that exact component
+  // mounted during background fetch/error; it remains read-only until reverified.
+  const shipmentIdentity = `${companyScope.identityKey}:${selectedId}`;
+  const shipmentContext = useRef<{
+    identity: string;
+    order: NonNullable<typeof rawDetailQuery.data>;
+  } | null>(null);
+  if (shipmentContext.current?.identity !== shipmentIdentity)
+    shipmentContext.current = null;
+  if (detailQuery.data)
+    shipmentContext.current = {
+      identity: shipmentIdentity,
+      order: detailQuery.data,
+    };
+  const shipmentOrder = shipmentContext.current?.order;
   const pageRows = listQuery.data?.items ?? [];
-  const notificationListReady = ready && businessScope.contextVerification.state === "verified" &&
-    businessScope.staffPrincipal.status === "ready" && listQuery.isSuccess &&
-    !listQuery.isError && !listQuery.isFetching && !listQuery.isPlaceholderData &&
+  const notificationListReady =
+    ready &&
+    companyScope.ready &&
+    listQuery.isSuccess &&
+    !listQuery.isError &&
+    !listQuery.isFetching &&
+    !listQuery.isPlaceholderData &&
     listQuery.isFetchedAfterMount !== false;
   const newInformationRows = useAdminNewInformationContextRows({
     module: "sales",
-    refs: notificationListReady ? pageRows.map(order => `crm-sales:${order.id}`) : [],
+    refs: notificationListReady
+      ? pageRows.map(order => `crm-sales:${order.id}`)
+      : [],
     scope: String(businessScope.merchantId),
     listReady: notificationListReady,
   });
   // Preserve server filters/pagination: only the already displayed page is reordered.
-  const displayedRows = [...pageRows].sort((a, b) =>
-    Number(newInformationRows.getRow(`crm-sales:${b.id}`).isNew) -
-    Number(newInformationRows.getRow(`crm-sales:${a.id}`).isNew));
+  const displayedRows = [...pageRows].sort(
+    (a, b) =>
+      Number(newInformationRows.getRow(`crm-sales:${b.id}`).isNew) -
+      Number(newInformationRows.getRow(`crm-sales:${a.id}`).isNew)
+  );
   const totalPages = Math.max(
     1,
     Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE)
@@ -374,6 +456,10 @@ function SalesOrdersContent({
     deepLinkedDemandNoRef.current = "";
     deepLinkedDemandIdRef.current = undefined;
     setSelectedDemand(null);
+    setEntryCustomer(null);
+    setSourceType(embedded ? "demand" : "company_stock");
+    setStockDirty(false);
+    setStockBusy(false);
     setLines([]);
     setDueDate("");
     setConfirmationNote("");
@@ -391,7 +477,7 @@ function SalesOrdersContent({
     resetEntry();
   };
   const requestCloseEntry = () => {
-    if (savingRef.current) return;
+    if (savingRef.current || stockBusy) return;
     if (formTouched) setDiscardOpen(true);
     else closeEntry();
   };
@@ -409,15 +495,19 @@ function SalesOrdersContent({
     const orderKeyword = params.get("keyword")?.trim() ?? "";
     if (demandNo) {
       deepLinkedDemandNoRef.current = demandNo;
+      setSourceType("demand");
       setEntryOpen(true);
       setCandidateKeyword(demandNo);
       setCandidateApplied(demandNo);
       setCandidatePage(1);
       params.delete("demandNo");
       params.set("orderSource", "business");
-      navigate(`/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`, {
-        replace: true,
-      });
+      navigate(
+        `/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`,
+        {
+          replace: true,
+        }
+      );
       return;
     }
     if (orderKeyword) {
@@ -426,9 +516,12 @@ function SalesOrdersContent({
       setPage(1);
       params.delete("keyword");
       params.set("orderSource", "business");
-      navigate(`/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`, {
-        replace: true,
-      });
+      navigate(
+        `/orders?${params}${typeof window === "undefined" ? "" : window.location.hash}`,
+        {
+          replace: true,
+        }
+      );
     }
   }, [embedded, navigate, search]);
 
@@ -471,6 +564,7 @@ function SalesOrdersContent({
       setCancelOpen(false);
       setCancelReason("");
       setCancelError("");
+      setUncertainCancellation(null);
       toast.success("订单已取消", {
         description: "未触发库存、支付或发运操作",
       });
@@ -483,6 +577,16 @@ function SalesOrdersContent({
     onError: error => {
       if (!session.isWritable()) return;
       setCancelError(error.message || "取消失败，请刷新后重试");
+      if (
+        [
+          "BAD_REQUEST",
+          "FORBIDDEN",
+          "UNAUTHORIZED",
+          "NOT_FOUND",
+          "CONFLICT",
+        ].includes(error.data?.code ?? "")
+      )
+        setUncertainCancellation(null);
       void utils.crmSalesOrder.get.invalidate().catch(() => undefined);
     },
     onSettled: () => {
@@ -496,6 +600,7 @@ function SalesOrdersContent({
       setPayOpen(false);
       setPayAmount("");
       setPayNote("");
+      setUncertainPayment(null);
       payRequestIdRef.current = newRequestId();
       toast.success(result.replayed ? "已返回此前登记的收款" : "收款已登记");
       void Promise.allSettled([
@@ -504,29 +609,20 @@ function SalesOrdersContent({
       ]);
     },
     onError: error => {
-      if (session.isWritable()) toast.error(error.message || "收款登记失败");
-    },
-  });
-  const shipMutation = trpc.crmSalesOrder.ship.useMutation({
-    onSuccess: result => {
       if (!session.isWritable()) return;
-      embedded?.onOrderChanged?.();
-      setShipOpen(false);
-      setShipQtys({});
-      setExpressCo("");
-      setExpressNo("");
-      setShipNote("");
-      shipRequestIdRef.current = newRequestId();
-      toast.success(
-        result.replayed ? "已返回此前出货记录" : "出货已登记并扣减库存"
-      );
-      void Promise.allSettled([
-        utils.crmSalesOrder.list.invalidate(),
-        utils.crmSalesOrder.get.invalidate(),
-      ]);
-    },
-    onError: error => {
-      if (session.isWritable()) toast.error(error.message || "出货失败");
+      if (
+        [
+          "BAD_REQUEST",
+          "FORBIDDEN",
+          "UNAUTHORIZED",
+          "NOT_FOUND",
+          "CONFLICT",
+        ].includes(error.data?.code ?? "")
+      ) {
+        setUncertainPayment(null);
+        payRequestIdRef.current = newRequestId();
+      }
+      toast.error(error.message || "收款结果未确认，请重试原请求");
     },
   });
 
@@ -535,7 +631,8 @@ function SalesOrdersContent({
     setPage(1);
   };
   const selectDemand = (demand: SalesOrderDemandCandidate) => {
-    if (!session.isWritable() || !customerMatches(demand, customerId)) return;
+    if (!session.isWritable() || !customerMatches(demand, candidateCustomerId))
+      return;
     setSelectedDemand(demand);
     setLines(
       demand.items
@@ -611,7 +708,10 @@ function SalesOrdersContent({
       (embedded && (!candidatesQuery.data || candidatesQuery.isError))
     )
       return;
-    if (!selectedDemand || !customerMatches(selectedDemand, customerId)) {
+    if (
+      !selectedDemand ||
+      !customerMatches(selectedDemand, candidateCustomerId)
+    ) {
       toast.error("请选择客户需求");
       return;
     }
@@ -673,6 +773,7 @@ function SalesOrdersContent({
     if (!session.isWritable() || !detailQuery.data) return;
     setCancelReason("");
     setCancelError("");
+    setUncertainCancellation(null);
     setCancelOpen(true);
   };
   const confirmCancel = () => {
@@ -687,38 +788,38 @@ function SalesOrdersContent({
       return;
     }
     cancellingRef.current = true;
-    cancelMutation.mutate({
+    const payload = uncertainCancellation ?? {
       id: detail.id,
       version: detail.version,
       reason: cancelReason.trim(),
-    });
+    };
+    setUncertainCancellation(payload);
+    cancelMutation.mutate(payload);
   };
 
   const payTouched =
     payOpen &&
     Boolean(
-      payAmount || payNote || payMethod !== "bank" || payDate !== todayLocal()
+      uncertainPayment ||
+        payAmount ||
+        payNote ||
+        payMethod !== "bank" ||
+        payDate !== todayLocal()
     );
-  const shipTouched =
-    shipOpen &&
-    Boolean(
-      Object.values(shipQtys).some(Boolean) ||
-        expressCo ||
-        expressNo ||
-        shipNote ||
-        shipMethod !== "express"
-    );
+  const shipTouched = shipOpen && companyShipDirty;
   const cancelTouched = cancelOpen && Boolean(cancelReason);
   const pending =
+    stockBusy ||
     createMutation.isPending ||
     paymentMutation.isPending ||
-    shipMutation.isPending ||
+    companyShipBusy ||
     cancelMutation.isPending;
   const dirty = Boolean(
     (entryOpen && formTouched) ||
       payTouched ||
       shipTouched ||
       cancelTouched ||
+      expenseDirty ||
       pending
   );
   useEffect(() => {
@@ -746,7 +847,7 @@ function SalesOrdersContent({
       kind === "pay"
         ? paymentMutation.isPending
         : kind === "ship"
-          ? shipMutation.isPending
+          ? companyShipBusy
           : cancelMutation.isPending;
     const touched =
       kind === "pay"
@@ -759,9 +860,15 @@ function SalesOrdersContent({
       (touched && !window.confirm("内容尚未保存，确认放弃本次填写？"))
     )
       return;
-    if (kind === "pay") setPayOpen(false);
-    else if (kind === "ship") setShipOpen(false);
-    else setCancelOpen(false);
+    if (kind === "pay") {
+      setPayOpen(false);
+      setUncertainPayment(null);
+      payRequestIdRef.current = newRequestId();
+    } else if (kind === "ship") setShipOpen(false);
+    else {
+      setCancelOpen(false);
+      setUncertainCancellation(null);
+    }
   };
   useEffect(() => {
     const guardNavigation = (event: MouseEvent) => {
@@ -820,6 +927,7 @@ function SalesOrdersContent({
     setCandidateKeyword(demandNo);
     setCandidateApplied(demandNo);
     setCandidatePage(1);
+    setSourceType("demand");
     setEntryOpen(true);
     embedded?.onIntentHandled?.(intent.nonce);
   }, [embedded?.intent, embedded?.onIntentHandled, dirty, pending, canWrite]);
@@ -828,18 +936,27 @@ function SalesOrdersContent({
     <>
       <AdminPage
         className={`crm-sales-orders-page min-w-0 space-y-3${embedded ? " crm-sales-orders-embedded" : ""}`}
-        aria-label={
-          embedded ? `${embedded.customer.name}客户订单` : "业务订单"
-        }
+        aria-label={embedded ? `${embedded.customer.name}客户订单` : "业务订单"}
       >
-        {embedded ? <AdminPageHeader
-          list
-          title="客户订单"
-          description={`仅显示 ${embedded.customer.name} 的内部业务订单，不含网站自主下单。`}
-          actions={canWrite ? <Button type="button" className={buttonClass} onClick={() => setEntryOpen(true)}>
-            <Plus className="mr-1 h-3.5 w-3.5" />录入销售订单
-          </Button> : undefined}
-        /> : null}
+        {embedded ? (
+          <AdminPageHeader
+            list
+            title="客户订单"
+            description={`仅显示 ${embedded.customer.name} 的内部业务订单，不含网站自主下单。`}
+            actions={
+              canWrite ? (
+                <Button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() => setEntryOpen(true)}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  录入销售订单
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : null}
         {embedded && !canWrite ? (
           <p role="status" className="crm-sales-orders-readonly-note">
             {embedded.customer.archivedAt
@@ -885,16 +1002,6 @@ function SalesOrdersContent({
               <Search className="mr-1 h-3.5 w-3.5" />
               筛选
             </Button>
-            {!embedded ? (
-              <Button
-                type="button"
-                className={buttonClass}
-                onClick={() => setEntryOpen(true)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                录入销售订单
-              </Button>
-            ) : null}
             {keyword || status !== "all" || draftKeyword ? (
               <Button
                 type="button"
@@ -911,6 +1018,18 @@ function SalesOrdersContent({
               </Button>
             ) : null}
           </div>
+          {!embedded && canWrite ? (
+            <div className="crm-sales-orders-toolbar-actions">
+              <Button
+                type="button"
+                className={buttonClass}
+                onClick={() => setEntryOpen(true)}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                新建业务订单
+              </Button>
+            </div>
+          ) : null}
         </AdminFilterBar>
 
         <AdminDataPanel className="overflow-hidden">
@@ -943,69 +1062,79 @@ function SalesOrdersContent({
                 containerClassName="crm-sales-orders-table-scroll overflow-x-auto"
               >
                 <colgroup>
-                  <col className="w-[14%]" />
-                  <col className="w-[18%]" style={embedded ? undefined : { width: "22%" }} />
-                  {embedded ? <col className="w-[8%]" /> : null}
-                  <col className="w-[10%]" style={embedded ? undefined : { width: "12%" }} />
-                  <col className="w-[9%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[14%]" style={embedded ? undefined : { width: "16%" }} />
+                  {embedded ? (
+                    <>
+                      <col className="w-[14%]" />
+                      <col className="w-[18%]" />
+                      <col className="w-[8%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[8%]" />
+                      <col className="w-[14%]" />
+                    </>
+                  ) : (
+                    <>
+                      <col style={{ width: "16%" }} />
+                      <col style={{ width: "16%" }} />
+                      <col style={{ width: "20%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "9%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "10%" }} />
+                    </>
+                  )}
                 </colgroup>
                 <TableHeader>
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      订单号
+                    <TableHead>订单号{embedded ? "" : " / 日期"}</TableHead>
+                    <TableHead>{embedded ? "客户 / 需求" : "客户"}</TableHead>
+                    <TableHead>{embedded ? "项目" : "物料摘要"}</TableHead>
+                    <TableHead className="text-right">
+                      {embedded ? "金额（含税）" : "金额"}
                     </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      {embedded ? "客户 / 需求" : "客户"}
-                    </TableHead>
-                    {embedded ? (
-                      <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                        项目
-                      </TableHead>
-                    ) : null}
-                    <TableHead className="h-8 px-2 text-right text-[11px] text-slate-500">
-                      金额（含税）
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      状态
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      收款
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      出货
-                    </TableHead>
-                    <TableHead className="h-8 px-2 text-[11px] text-slate-500">
-                      录入时间
-                    </TableHead>
-                    <TableHead className="h-8 whitespace-nowrap px-2 text-right text-[11px] text-slate-500">
-                      操作
-                    </TableHead>
+                    {embedded ? <TableHead>状态</TableHead> : null}
+                    <TableHead>收款</TableHead>
+                    <TableHead>出货</TableHead>
+                    <TableHead>{embedded ? "录入时间" : "负责人"}</TableHead>
+                    <TableHead className="text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {displayedRows.map(order => (
                     <TableRow
                       key={order.id}
-                      ref={newInformationRows.getRow(`crm-sales:${order.id}`).ref}
+                      ref={
+                        newInformationRows.getRow(`crm-sales:${order.id}`).ref
+                      }
                       className="h-14"
                       data-page-memory-row={String(order.id)}
                     >
                       <TableCell className="min-w-0 px-2 py-1.5">
                         <div className="flex min-w-0 items-center">
-                        <button
-                          type="button"
-                          className="crm-sales-orders-order-link block w-full truncate text-left font-medium text-[#185FA5] hover:underline"
-                          title={order.orderNumber}
-                          onClick={() => setSelectedId(order.id)}
-                        >
-                          {order.orderNumber}
-                        </button>
-                        <AdminNewInformationRowBadge isNew={newInformationRows.getRow(`crm-sales:${order.id}`).isNew} />
+                          <button
+                            type="button"
+                            className="crm-sales-orders-order-link block w-full truncate text-left font-medium text-[#185FA5] hover:underline"
+                            title={order.orderNumber}
+                            onClick={() => setSelectedId(order.id)}
+                          >
+                            {order.orderNumber}
+                          </button>
+                          <AdminNewInformationRowBadge
+                            isNew={
+                              newInformationRows.getRow(`crm-sales:${order.id}`)
+                                .isNew
+                            }
+                          />
                         </div>
+                        {!embedded ? (
+                          <div className="admin-cell-secondary">
+                            {beijingDate(order.createdAt)} ·{" "}
+                            {CRM_SALES_ORDER_STATUS_LABELS[order.status]}
+                          </div>
+                        ) : null}
                       </TableCell>
                       <TableCell className="min-w-0 px-2 py-1.5 whitespace-normal">
                         <div
@@ -1016,35 +1145,41 @@ function SalesOrdersContent({
                         </div>
                         <div
                           className="admin-cell-secondary mt-0.5 truncate"
-                          title={order.demandNo}
+                          title={order.demandNo ?? undefined}
                         >
-                          {order.demandNo}
+                          {order.demandNo || "公司库存"}
                         </div>
                       </TableCell>
-                      {embedded ? (
-                        <TableCell
-                          className="admin-cell-primary min-w-0 truncate px-2 py-1.5"
-                          title={order.projectName || "—"}
-                        >
-                          {order.projectName || "—"}
-                        </TableCell>
-                      ) : null}
+                      <TableCell className="admin-cell-primary min-w-0 px-2 py-1.5">
+                        {embedded ? (
+                          order.projectName || "—"
+                        ) : (
+                          <OrderMaterialSummary order={order} />
+                        )}
+                      </TableCell>
                       <TableCell className="admin-cell-primary px-2 py-1.5 text-right tabular-nums">
                         {formatSalesOrderAmount(order.totalAmount)}
+                        {!embedded ? (
+                          <div className="admin-cell-secondary">
+                            {order.currencyLabel}
+                          </div>
+                        ) : null}
                       </TableCell>
-                      <TableCell className="px-2 py-1.5">
-                        <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
-                          <span
-                            className={`crm-sales-orders-status-dot text-[10px] ${statusDotClass(order.status)}`}
-                            aria-hidden="true"
-                          >
-                            ●
-                          </span>
-                          <span className="font-medium text-slate-700">
-                            {CRM_SALES_ORDER_STATUS_LABELS[order.status]}
-                          </span>
-                        </div>
-                      </TableCell>
+                      {embedded ? (
+                        <TableCell className="px-2 py-1.5">
+                          <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
+                            <span
+                              className={`crm-sales-orders-status-dot text-[10px] ${statusDotClass(order.status)}`}
+                              aria-hidden="true"
+                            >
+                              ●
+                            </span>
+                            <span className="font-medium text-slate-700">
+                              {CRM_SALES_ORDER_STATUS_LABELS[order.status]}
+                            </span>
+                          </div>
+                        </TableCell>
+                      ) : null}
                       <TableCell className="px-2 py-1.5">
                         <div className="admin-cell-primary flex items-center gap-1.5 whitespace-nowrap">
                           <span
@@ -1081,7 +1216,9 @@ function SalesOrdersContent({
                       </TableCell>
                       <TableCell className="truncate px-2 py-1.5 tabular-nums">
                         <span className="admin-cell-secondary">
-                          {beijingDate(order.createdAt)}
+                          {embedded
+                            ? beijingDate(order.createdAt)
+                            : orderOwnerLabel(order)}
                         </span>
                       </TableCell>
                       <TableCell className="px-2 py-1.5 text-right">
@@ -1176,18 +1313,21 @@ function SalesOrdersContent({
         onOpenChange={open => (open ? setEntryOpen(true) : requestCloseEntry())}
       >
         <DialogContent
-          className="crm-sales-orders-dialog grid-cols-[minmax(0,1fr)] w-[calc(100vw-32px)] max-h-[92vh] max-w-[1100px] overflow-x-hidden overflow-y-auto p-4 sm:max-w-[1100px]"
-          showCloseButton={!createMutation.isPending}
+          className="crm-sales-orders-dialog crm-sales-orders-entry-dialog grid-cols-[minmax(0,1fr)] w-[calc(100vw-32px)] max-h-[92vh] max-w-[1100px] overflow-x-hidden overflow-y-auto p-4 sm:max-w-[1100px]"
+          showCloseButton={!createMutation.isPending && !stockBusy}
         >
           <DialogHeader>
             <DialogTitle className="text-base text-slate-800">
-              客户成交报价与确认
+              {embedded && sourceType === "demand"
+                ? "客户成交报价与确认"
+                : "新建业务订单"}
             </DialogTitle>
-            <p className="text-xs text-slate-500">
-              {embedded ? `已锁定客户：${embedded.customer.name}。` : ""}
-              仅显示已采用采购报价的物料。采购报价 /
-              销售采用不等于客户确认；请填写客户同意的数量、含税单价和交期，并记录确认依据。此处不保存或发送独立销售报价，客户明确确认后直接生成真实订单。
-            </p>
+            {sourceType === "demand" ? (
+              <p className="text-xs text-slate-500">
+                {embedded ? `已锁定客户：${embedded.customer.name}。` : ""}
+                采购报价 / 销售采用不等于客户确认；仅显示已采用报价的需求。
+              </p>
+            ) : null}
           </DialogHeader>
           {uncertainSave && (
             <p
@@ -1197,334 +1337,445 @@ function SalesOrdersContent({
               上次保存结果尚未确认，请点击“确认保存结果”重试原请求。确认前暂不允许修改，关闭不会撤销可能已创建的订单。
             </p>
           )}
-          {!selectedDemand ? (
-            <div className="space-y-2">
-              <AdminFilterBar className="crm-sales-orders-candidate-filters">
-                <Input
-                  className="h-8 text-xs"
-                  value={candidateKeyword}
-                  placeholder="搜索需求号、项目或型号"
-                  onChange={event => setCandidateKeyword(event.target.value)}
-                  onKeyDown={event => {
-                    if (event.key === "Enter") {
-                      setCandidateApplied(candidateKeyword.trim());
-                      setCandidatePage(1);
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  className={secondaryButtonClass}
-                  variant="outline"
-                  onClick={() => {
-                    setCandidateApplied(candidateKeyword.trim());
-                    setCandidatePage(1);
-                  }}
-                >
-                  搜索
-                </Button>
-              </AdminFilterBar>
-              <AdminDataPanel className="max-h-[380px] overflow-auto">
-                <Table className="crm-sales-orders-dialog-table admin-table-readable">
-                  <TableHeader className="bg-slate-50">
-                    <TableRow>
-                      <TableHead className="h-8 text-xs">客户</TableHead>
-                      <TableHead className="h-8 text-xs">需求 / 项目</TableHead>
-                      <TableHead className="h-8 text-right text-xs">
-                        可下单物料
-                      </TableHead>
-                      <TableHead className="h-8 text-right text-xs">
-                        操作
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {candidatesQuery.isLoading ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          className="h-20 text-center text-xs"
-                        >
-                          <Loader2 className="inline h-4 w-4 animate-spin" />
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {candidatesQuery.isError ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          className="h-20 text-center text-xs text-red-600"
-                        >
-                          {candidatesQuery.error?.message || "需求读取失败"}
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {!candidatesQuery.isLoading &&
-                    !candidatesQuery.isError &&
-                    !candidatesQuery.data?.items.length ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          className="h-20 text-center text-xs text-slate-500"
-                        >
-                          暂无已采用报价且可录入的需求
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {candidatesQuery.data?.items.map(demand => (
-                      <TableRow
-                        key={demand.id}
-                        data-page-memory-row={String(demand.id)}
-                      >
-                        <TableCell className="py-2 text-xs">
-                          {demand.customerName}
-                        </TableCell>
-                        <TableCell className="py-2 text-xs">
-                          <div>{demand.demandNo}</div>
-                          <div className="admin-cell-secondary">
-                            {demand.projectName || "未填写项目"}
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-xs tabular-nums">
-                          {
-                            demand.items.filter(item => item.remainingQty > 0)
-                              .length
-                          }{" "}
-                          行可下单
-                        </TableCell>
-                        <TableCell className="py-2 text-right">
-                          <Button
-                            type="button"
-                            className="admin-row-action text-xs"
-                            variant="outline"
-                            disabled={
-                              !demand.items.some(item => item.remainingQty > 0)
-                            }
-                            onClick={() => selectDemand(demand)}
-                          >
-                            选择
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </AdminDataPanel>
-              <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
-                <span>
-                  {candidatePage} / {candidatePages}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  disabled={candidatePage <= 1}
-                  onClick={() => setCandidatePage(current => current - 1)}
-                >
-                  上一页
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  disabled={candidatePage >= candidatePages}
-                  onClick={() => setCandidatePage(current => current + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
-            </div>
+          <div className="crm-sales-orders-source-controls">
+            <span>
+              {selectedCustomer?.name ||
+                (selectedDemand ? selectedDemand.customerName : "选择客户")}
+            </span>
+            {!embedded && selectedCustomer && !uncertainSave && !stockBusy ? (
+              <Button
+                type="button"
+                className={secondaryButtonClass}
+                onClick={() => {
+                  if (
+                    formTouched &&
+                    !window.confirm("内容尚未保存，确认重新选择客户？")
+                  )
+                    return;
+                  resetEntry();
+                }}
+              >
+                更换客户
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              className={secondaryButtonClass}
+              aria-pressed={sourceType === "company_stock"}
+              disabled={
+                !canWrite ||
+                stockBusy ||
+                createMutation.isPending ||
+                uncertainSave
+              }
+              onClick={() => {
+                if (
+                  formTouched &&
+                  !window.confirm("内容尚未保存，确认切换货源？")
+                )
+                  return;
+                setSourceType("company_stock");
+                setSelectedDemand(null);
+                setLines([]);
+              }}
+            >
+              公司库存
+            </Button>
+            <Button
+              type="button"
+              className={secondaryButtonClass}
+              aria-pressed={sourceType === "demand"}
+              disabled={
+                !canWrite ||
+                stockBusy ||
+                createMutation.isPending ||
+                uncertainSave
+              }
+              onClick={() => {
+                if (
+                  formTouched &&
+                  !window.confirm("内容尚未保存，确认切换货源？")
+                )
+                  return;
+                setSourceType("demand");
+              }}
+            >
+              需求采购
+            </Button>
+          </div>
+          {sourceType === "company_stock" ? (
+            selectedCustomer ? (
+              <CompanyStockOrderForm
+                key={`${businessScope.storageScope}:${selectedCustomer.id}`}
+                customer={selectedCustomer}
+                enabled={canWrite && session.isWritable() && ready}
+                onDirtyChange={setStockDirty}
+                onBusyChange={setStockBusy}
+                onCreated={result => {
+                  if (!session.isWritable()) return;
+                  setSelectedId(result.id);
+                  closeEntry();
+                  embedded?.onOrderChanged?.();
+                  toast.success(
+                    result.replayed ? "已返回此前保存订单" : "业务订单已创建"
+                  );
+                  void Promise.allSettled([
+                    utils.crmSalesOrder.list.invalidate(),
+                    utils.crmSalesOrder.get.invalidate(),
+                    utils.crmSalesOrder.candidates.invalidate(),
+                  ]);
+                }}
+              />
+            ) : (
+              <SalesCustomerPicker
+                enabled={canWrite && ready}
+                onSelect={setEntryCustomer}
+              />
+            )
           ) : (
-            <div className="min-w-0 space-y-3">
-              <AdminDataPanel className="crm-sales-orders-selected-demand flex flex-wrap items-start justify-between gap-2 p-3 text-xs">
-                <div>
-                  <strong className="crm-sales-orders-selected-customer text-[#185FA5]">
-                    {selectedDemand.customerName}
-                  </strong>
-                  <span className="mx-2 text-slate-400">|</span>
-                  {selectedDemand.demandNo}
-                  <span className="mx-2 text-slate-400">|</span>
-                  {selectedDemand.projectName || "未填写项目"}
-                </div>
-                <Button
-                  type="button"
-                  className="h-7 px-2 text-xs"
-                  variant="outline"
-                  disabled={createMutation.isPending || uncertainSave}
-                  onClick={() => {
-                    setSelectedDemand(null);
-                    setLines([]);
-                  }}
-                >
-                  重新选择
-                </Button>
-              </AdminDataPanel>
-              <AdminDataPanel className="min-w-0 max-w-full overflow-auto">
-                <Table className="crm-sales-orders-dialog-table admin-table-readable">
-                  <TableHeader className="bg-slate-50">
-                    <TableRow>
-                      <TableHead className="h-8 text-xs">
-                        型号 / 品牌 / 封装
-                      </TableHead>
-                      <TableHead className="h-8 text-right text-xs">
-                        需求 / 可下单
-                      </TableHead>
-                      <TableHead className="h-8 w-[120px] text-right text-xs">
-                        客户确认数量
-                      </TableHead>
-                      <TableHead className="h-8 w-[150px] text-right text-xs">
-                        客户同意含税单价（元）
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedLines.map(({ item, draft }) => (
-                      <TableRow
-                        key={item.id}
-                        className={
-                          item.remainingQty <= 0
-                            ? "bg-slate-50 text-slate-400"
-                            : ""
+            <>
+              {!selectedDemand ? (
+                <div className="space-y-2">
+                  <AdminFilterBar className="crm-sales-orders-candidate-filters">
+                    <Input
+                      className="h-8 text-xs"
+                      value={candidateKeyword}
+                      placeholder="搜索需求号、项目或型号"
+                      onChange={event =>
+                        setCandidateKeyword(event.target.value)
+                      }
+                      onKeyDown={event => {
+                        if (event.key === "Enter") {
+                          setCandidateApplied(candidateKeyword.trim());
+                          setCandidatePage(1);
                         }
-                        data-page-memory-row={String(item.id)}
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      className={secondaryButtonClass}
+                      variant="outline"
+                      onClick={() => {
+                        setCandidateApplied(candidateKeyword.trim());
+                        setCandidatePage(1);
+                      }}
+                    >
+                      搜索
+                    </Button>
+                  </AdminFilterBar>
+                  <AdminDataPanel className="max-h-[380px] overflow-auto">
+                    <Table className="crm-sales-orders-dialog-table admin-table-readable">
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="h-8 text-xs">客户</TableHead>
+                          <TableHead className="h-8 text-xs">
+                            需求 / 项目
+                          </TableHead>
+                          <TableHead className="h-8 text-right text-xs">
+                            可下单物料
+                          </TableHead>
+                          <TableHead className="h-8 text-right text-xs">
+                            操作
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {candidatesQuery.isLoading ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              className="h-20 text-center text-xs"
+                            >
+                              <Loader2 className="inline h-4 w-4 animate-spin" />
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                        {candidatesQuery.isError ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              className="h-20 text-center text-xs text-red-600"
+                            >
+                              {candidatesQuery.error?.message || "需求读取失败"}
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                        {!candidatesQuery.isLoading &&
+                        !candidatesQuery.isError &&
+                        !candidatesQuery.data?.items.length ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              className="h-20 text-center text-xs text-slate-500"
+                            >
+                              暂无已采用报价且可录入的需求
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                        {candidatesQuery.data?.items.map(demand => (
+                          <TableRow
+                            key={demand.id}
+                            data-page-memory-row={String(demand.id)}
+                          >
+                            <TableCell className="py-2 text-xs">
+                              {demand.customerName}
+                            </TableCell>
+                            <TableCell className="py-2 text-xs">
+                              <div>{demand.demandNo}</div>
+                              <div className="admin-cell-secondary">
+                                {demand.projectName || "未填写项目"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-2 text-right text-xs tabular-nums">
+                              {
+                                demand.items.filter(
+                                  item => item.remainingQty > 0
+                                ).length
+                              }{" "}
+                              行可下单
+                            </TableCell>
+                            <TableCell className="py-2 text-right">
+                              <Button
+                                type="button"
+                                className="admin-row-action text-xs"
+                                variant="outline"
+                                disabled={
+                                  !demand.items.some(
+                                    item => item.remainingQty > 0
+                                  )
+                                }
+                                onClick={() => selectDemand(demand)}
+                              >
+                                选择
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </AdminDataPanel>
+                  <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
+                    <span>
+                      {candidatePage} / {candidatePages}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      disabled={candidatePage <= 1}
+                      onClick={() => setCandidatePage(current => current - 1)}
+                    >
+                      上一页
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      disabled={candidatePage >= candidatePages}
+                      onClick={() => setCandidatePage(current => current + 1)}
+                    >
+                      下一页
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="min-w-0 space-y-3">
+                  <AdminDataPanel className="crm-sales-orders-selected-demand flex flex-wrap items-start justify-between gap-2 p-3 text-xs">
+                    <div>
+                      <strong className="crm-sales-orders-selected-customer text-[#185FA5]">
+                        {selectedDemand.customerName}
+                      </strong>
+                      <span className="mx-2 text-slate-400">|</span>
+                      {selectedDemand.demandNo}
+                      <span className="mx-2 text-slate-400">|</span>
+                      {selectedDemand.projectName || "未填写项目"}
+                    </div>
+                    <Button
+                      type="button"
+                      className="h-7 px-2 text-xs"
+                      variant="outline"
+                      disabled={createMutation.isPending || uncertainSave}
+                      onClick={() => {
+                        setSelectedDemand(null);
+                        setLines([]);
+                      }}
+                    >
+                      重新选择
+                    </Button>
+                  </AdminDataPanel>
+                  <AdminDataPanel className="min-w-0 max-w-full overflow-auto">
+                    <Table className="crm-sales-orders-dialog-table admin-table-readable">
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="h-8 text-xs">
+                            型号 / 品牌 / 封装
+                          </TableHead>
+                          <TableHead className="h-8 text-right text-xs">
+                            需求 / 可下单
+                          </TableHead>
+                          <TableHead className="h-8 w-[120px] text-right text-xs">
+                            客户确认数量
+                          </TableHead>
+                          <TableHead className="h-8 w-[150px] text-right text-xs">
+                            客户同意含税单价（元）
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedLines.map(({ item, draft }) => (
+                          <TableRow
+                            key={item.id}
+                            className={
+                              item.remainingQty <= 0
+                                ? "bg-slate-50 text-slate-400"
+                                : ""
+                            }
+                            data-page-memory-row={String(item.id)}
+                          >
+                            <TableCell className="py-2 text-xs">
+                              <div className="admin-cell-primary crm-sales-orders-model">
+                                {item.partNumber || "未填写型号"}
+                              </div>
+                              <div className="admin-cell-secondary">
+                                {[item.brand, item.pkg]
+                                  .filter(Boolean)
+                                  .join(" / ") || "—"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-2 text-right text-xs tabular-nums">
+                              {item.demandQty} {item.qtyUnit} /{" "}
+                              <span className="font-medium">
+                                {item.remainingQty} {item.qtyUnit}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <Input
+                                disabled={
+                                  !draft ||
+                                  item.remainingQty <= 0 ||
+                                  createMutation.isPending ||
+                                  uncertainSave
+                                }
+                                className="h-8 text-right text-xs tabular-nums"
+                                type="number"
+                                min={1}
+                                step={1}
+                                max={item.remainingQty}
+                                aria-label={`${item.partNumber} 确认数量`}
+                                inputMode="numeric"
+                                value={draft?.qty ?? ""}
+                                placeholder="不录入"
+                                onChange={event =>
+                                  updateLine(item.id, "qty", event.target.value)
+                                }
+                                onBlur={() => {
+                                  const current = Number(draft?.qty);
+                                  if (current > item.remainingQty) {
+                                    updateLine(
+                                      item.id,
+                                      "qty",
+                                      String(item.remainingQty)
+                                    );
+                                    toast.info(
+                                      `确认数量已调整为最大可用数量 ${item.remainingQty}`
+                                    );
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <Input
+                                disabled={
+                                  !draft ||
+                                  item.remainingQty <= 0 ||
+                                  createMutation.isPending ||
+                                  uncertainSave
+                                }
+                                className="h-8 text-right text-xs tabular-nums"
+                                aria-label={`${item.partNumber} 含税单价`}
+                                inputMode="decimal"
+                                value={draft?.agreedUnitPrice ?? ""}
+                                placeholder="0.0000"
+                                onChange={event =>
+                                  updateLine(
+                                    item.id,
+                                    "agreedUnitPrice",
+                                    event.target.value
+                                  )
+                                }
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </AdminDataPanel>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="sales-order-due-date" className="text-xs">
+                        约定交付日期（可选）
+                      </Label>
+                      <Input
+                        id="sales-order-due-date"
+                        disabled={createMutation.isPending || uncertainSave}
+                        type="date"
+                        className="h-8 text-xs"
+                        value={dueDate}
+                        max="9999-12-31"
+                        onChange={event => setDueDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor="sales-order-confirmation"
+                        className="text-xs"
                       >
-                        <TableCell className="py-2 text-xs">
-                          <div className="admin-cell-primary crm-sales-orders-model">
-                            {item.partNumber || "未填写型号"}
-                          </div>
-                          <div className="admin-cell-secondary">
-                            {[item.brand, item.pkg]
-                              .filter(Boolean)
-                              .join(" / ") || "—"}
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-xs tabular-nums">
-                          {item.demandQty} {item.qtyUnit} /{" "}
-                          <span className="font-medium">
-                            {item.remainingQty} {item.qtyUnit}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <Input
-                            disabled={
-                              !draft ||
-                              item.remainingQty <= 0 ||
-                              createMutation.isPending ||
-                              uncertainSave
-                            }
-                            className="h-8 text-right text-xs tabular-nums"
-                            type="number"
-                            min={1}
-                            step={1}
-                            max={item.remainingQty}
-                            aria-label={`${item.partNumber} 确认数量`}
-                            inputMode="numeric"
-                            value={draft?.qty ?? ""}
-                            placeholder="不录入"
-                            onChange={event =>
-                              updateLine(item.id, "qty", event.target.value)
-                            }
-                            onBlur={() => {
-                              const current = Number(draft?.qty);
-                              if (current > item.remainingQty) {
-                                updateLine(
-                                  item.id,
-                                  "qty",
-                                  String(item.remainingQty)
-                                );
-                                toast.info(
-                                  `确认数量已调整为最大可用数量 ${item.remainingQty}`
-                                );
-                              }
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <Input
-                            disabled={
-                              !draft ||
-                              item.remainingQty <= 0 ||
-                              createMutation.isPending ||
-                              uncertainSave
-                            }
-                            className="h-8 text-right text-xs tabular-nums"
-                            aria-label={`${item.partNumber} 含税单价`}
-                            inputMode="decimal"
-                            value={draft?.agreedUnitPrice ?? ""}
-                            placeholder="0.0000"
-                            onChange={event =>
-                              updateLine(
-                                item.id,
-                                "agreedUnitPrice",
-                                event.target.value
-                              )
-                            }
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </AdminDataPanel>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="sales-order-due-date" className="text-xs">
-                    约定交付日期（可选）
-                  </Label>
-                  <Input
-                    id="sales-order-due-date"
-                    disabled={createMutation.isPending || uncertainSave}
-                    type="date"
-                    className="h-8 text-xs"
-                    value={dueDate}
-                    max="9999-12-31"
-                    onChange={event => setDueDate(event.target.value)}
-                  />
+                        客户确认说明 <span className="text-red-600">*</span>
+                      </Label>
+                      <Textarea
+                        id="sales-order-confirmation"
+                        disabled={createMutation.isPending || uncertainSave}
+                        className="min-h-16 text-xs"
+                        maxLength={500}
+                        value={confirmationNote}
+                        placeholder="例如：2026-09-23 电话确认型号、数量及含税单价"
+                        onChange={event =>
+                          setConfirmationNote(event.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right text-xs font-medium tabular-nums text-slate-800">
+                    金额（人民币含税）：{amountPreview}
+                  </div>
+                  <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
+                    <Checkbox
+                      disabled={createMutation.isPending || uncertainSave}
+                      checked={customerConfirmed}
+                      onCheckedChange={checked =>
+                        setCustomerConfirmed(checked === true)
+                      }
+                    />
+                    <span>
+                      我确认客户已明确同意以上数量、含税价格及约定交期{" "}
+                      <span className="text-red-600">*</span>
+                    </span>
+                  </label>
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="sales-order-confirmation" className="text-xs">
-                    客户确认说明 <span className="text-red-600">*</span>
-                  </Label>
-                  <Textarea
-                    id="sales-order-confirmation"
-                    disabled={createMutation.isPending || uncertainSave}
-                    className="min-h-16 text-xs"
-                    maxLength={500}
-                    value={confirmationNote}
-                    placeholder="例如：2026-09-23 电话确认型号、数量及含税单价"
-                    onChange={event => setConfirmationNote(event.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="text-right text-xs font-medium tabular-nums text-slate-800">
-                金额（人民币含税）：{amountPreview}
-              </div>
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
-                <Checkbox
-                  disabled={createMutation.isPending || uncertainSave}
-                  checked={customerConfirmed}
-                  onCheckedChange={checked =>
-                    setCustomerConfirmed(checked === true)
-                  }
-                />
-                <span>
-                  我确认客户已明确同意以上数量、含税价格及约定交期{" "}
-                  <span className="text-red-600">*</span>
-                </span>
-              </label>
-            </div>
+              )}
+            </>
           )}
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               className={secondaryButtonClass}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || stockBusy}
               onClick={requestCloseEntry}
             >
               取消
             </Button>
-            {selectedDemand ? (
+            {sourceType === "demand" && selectedDemand ? (
               <Button
                 type="button"
                 className={buttonClass}
@@ -1615,8 +1866,8 @@ function SalesOrdersContent({
                   {detailQuery.data.customerName}
                 </div>
                 <div>
-                  <span className="text-slate-500">来源需求：</span>
-                  {detailQuery.data.demandNo}
+                  <span className="text-slate-500">来源：</span>
+                  {detailQuery.data.demandNo || "公司库存"}
                 </div>
                 <div>
                   <span className="text-slate-500">状态：</span>
@@ -1632,22 +1883,18 @@ function SalesOrdersContent({
                 </div>
                 <div>
                   <span className="text-slate-500">总额：</span>
-                  {formatSalesOrderAmount(detailQuery.data.totalAmount)}
-                  （人民币含税）
+                  {formatSalesOrderAmount(detailQuery.data.totalAmount)}（
+                  {detailQuery.data.currencyLabel}）
                 </div>
                 <div>
                   <span className="text-slate-500">交付日期：</span>
                   {detailQuery.data.dueDate || "—"}
                 </div>
               </AdminDataPanel>
-              <div>
-                <div className="mb-1 font-medium text-slate-700">
-                  客户确认说明
-                </div>
-                <AdminDataPanel className="p-3 text-slate-600">
-                  {detailQuery.data.confirmationNote}
-                </AdminDataPanel>
-              </div>
+              <details className="crm-sales-orders-fold">
+                <summary>客户确认说明</summary>
+                <div>{detailQuery.data.confirmationNote}</div>
+              </details>
               <AdminDataPanel className="min-w-0 max-w-full overflow-auto">
                 <Table className="crm-sales-orders-dialog-table admin-table-readable">
                   <TableHeader className="bg-slate-50">
@@ -1657,7 +1904,7 @@ function SalesOrdersContent({
                         数量
                       </TableHead>
                       <TableHead className="h-8 text-right text-xs">
-                        含税单价
+                        销售单价
                       </TableHead>
                       <TableHead className="h-8 text-right text-xs">
                         金额
@@ -1704,6 +1951,44 @@ function SalesOrdersContent({
                   {detailQuery.data.cancelledReason}
                 </AdminDataPanel>
               ) : null}
+              <SalesProfitSummary
+                profit={detailQuery.data.profitBreakdown}
+                commission={detailQuery.data.commissionPreview}
+              />
+              <SalesExpensesEditor
+                key={`${detailQuery.data.id}:${businessScope.storageScope}`}
+                orderId={detailQuery.data.id}
+                version={detailQuery.data.version}
+                amount={detailQuery.data.salesExpenses}
+                history={detailQuery.data.salesExpenseHistory ?? []}
+                enabled={canWrite && detailQuery.data.status === "confirmed"}
+                onDirtyChange={setExpenseDirty}
+                onSaved={() => {
+                  if (!session.isWritable()) return;
+                  embedded?.onOrderChanged?.();
+                  toast.success("费用已保存");
+                  void Promise.allSettled([
+                    utils.crmSalesOrder.get.invalidate(),
+                    utils.crmSalesOrder.list.invalidate(),
+                  ]);
+                }}
+              />
+              <details className="crm-sales-orders-fold">
+                <summary>物料备注与操作履历</summary>
+                {detailQuery.data.items
+                  .filter(item => item.note || item.deliveryRequirement)
+                  .map(item => (
+                    <div key={item.id}>
+                      {item.partNumber} · {item.deliveryRequirement} ·{" "}
+                      {item.note}
+                    </div>
+                  ))}
+                {(detailQuery.data.audits ?? []).map(audit => (
+                  <div key={audit.id} className="admin-cell-secondary">
+                    {audit.createdAt} · {audit.actorName} · {audit.note}
+                  </div>
+                ))}
+              </details>
               <div className="grid gap-2 sm:grid-cols-2">
                 <AdminDataPanel className="p-3">
                   <div className="mb-1 font-medium text-slate-700">收款</div>
@@ -1718,14 +2003,20 @@ function SalesOrdersContent({
                       ? ` · 月结 ${formatSalesOrderAmount(detailQuery.data.monthlyAmount)}`
                       : ""}
                   </div>
-                  {detailQuery.data.payments.map(payment => (
-                    <div key={payment.id} className="admin-cell-secondary mt-1">
-                      {payment.paymentDate}{" "}
-                      {CRM_SALES_PAYMENT_METHOD_LABELS[payment.method]}{" "}
-                      {formatSalesOrderAmount(payment.amount)}
-                      {payment.note ? ` · ${payment.note}` : ""}
-                    </div>
-                  ))}
+                  <details className="crm-sales-orders-fold">
+                    <summary>收款履历</summary>
+                    {detailQuery.data.payments.map(payment => (
+                      <div
+                        key={payment.id}
+                        className="admin-cell-secondary mt-1"
+                      >
+                        {payment.paymentDate}{" "}
+                        {CRM_SALES_PAYMENT_METHOD_LABELS[payment.method]}{" "}
+                        {formatSalesOrderAmount(payment.amount)}
+                        {payment.note ? ` · ${payment.note}` : ""}
+                      </div>
+                    ))}
+                  </details>
                 </AdminDataPanel>
                 <AdminDataPanel className="p-3">
                   <div className="mb-1 font-medium text-slate-700">出货</div>
@@ -1738,21 +2029,24 @@ function SalesOrdersContent({
                     · {detailQuery.data.shippedQty}/
                     {detailQuery.data.orderedQty}
                   </div>
-                  {detailQuery.data.shipments.map(shipment => (
-                    <div
-                      key={shipment.id}
-                      className="admin-cell-secondary mt-1"
-                    >
-                      {beijingDate(shipment.createdAt)}{" "}
-                      {shipment.deliveryMethod === "pickup"
-                        ? "自提"
-                        : `${shipment.expressCo} ${shipment.expressNo}`}{" "}
-                      ·{" "}
-                      {shipment.items
-                        .map(item => `${item.partNumber}×${item.qty}`)
-                        .join("，")}
-                    </div>
-                  ))}
+                  <details className="crm-sales-orders-fold">
+                    <summary>出货履历</summary>
+                    {detailQuery.data.shipments.map(shipment => (
+                      <div
+                        key={shipment.id}
+                        className="admin-cell-secondary mt-1"
+                      >
+                        {beijingDate(shipment.createdAt)}{" "}
+                        {shipment.deliveryMethod === "pickup"
+                          ? "自提"
+                          : `${shipment.expressCo} ${shipment.expressNo}`}{" "}
+                        ·{" "}
+                        {shipment.items
+                          .map(item => `${item.partNumber}×${item.qty}`)
+                          .join("，")}
+                      </div>
+                    ))}
+                  </details>
                 </AdminDataPanel>
               </div>
             </div>
@@ -1814,7 +2108,11 @@ function SalesOrdersContent({
               type="button"
               className={buttonClass}
               disabled={cancelMutation.isPending}
-              onClick={() => setSelectedId(null)}
+              onClick={() => {
+                if (expenseDirty && !window.confirm("费用尚未保存，确认关闭？"))
+                  return;
+                setSelectedId(null);
+              }}
             >
               关闭
             </Button>
@@ -1837,7 +2135,11 @@ function SalesOrdersContent({
             <textarea
               className="crm-input mt-1 min-h-20 w-full"
               maxLength={500}
-              disabled={cancelMutation.isPending}
+              disabled={
+                !canWrite ||
+                cancelMutation.isPending ||
+                Boolean(uncertainCancellation)
+              }
               value={cancelReason}
               onChange={event => setCancelReason(event.target.value)}
             />
@@ -1862,6 +2164,11 @@ function SalesOrdersContent({
                   <select
                     className="crm-input w-full"
                     value={payMethod}
+                    disabled={
+                      !canWrite ||
+                      paymentMutation.isPending ||
+                      Boolean(uncertainPayment)
+                    }
                     onChange={event =>
                       setPayMethod(event.target.value as CrmSalesPaymentMethod)
                     }
@@ -1878,6 +2185,11 @@ function SalesOrdersContent({
                   <input
                     className="crm-input w-full text-right tabular-nums"
                     value={payAmount}
+                    disabled={
+                      !canWrite ||
+                      paymentMutation.isPending ||
+                      Boolean(uncertainPayment)
+                    }
                     onChange={event => setPayAmount(event.target.value)}
                     placeholder="含税金额"
                   />
@@ -1890,6 +2202,11 @@ function SalesOrdersContent({
                     type="date"
                     className="crm-input w-full"
                     value={payDate}
+                    disabled={
+                      !canWrite ||
+                      paymentMutation.isPending ||
+                      Boolean(uncertainPayment)
+                    }
                     onChange={event => setPayDate(event.target.value)}
                   />
                 </div>
@@ -1899,6 +2216,11 @@ function SalesOrdersContent({
                     className="crm-input w-full"
                     maxLength={255}
                     value={payNote}
+                    disabled={
+                      !canWrite ||
+                      paymentMutation.isPending ||
+                      Boolean(uncertainPayment)
+                    }
                     onChange={event => setPayNote(event.target.value)}
                   />
                 </div>
@@ -1927,7 +2249,7 @@ function SalesOrdersContent({
                         detailQuery.data.status !== "confirmed"
                       )
                         return;
-                      paymentMutation.mutate({
+                      const payload = uncertainPayment ?? {
                         id: detailQuery.data.id,
                         version: detailQuery.data.version,
                         requestId: payRequestIdRef.current,
@@ -1935,10 +2257,16 @@ function SalesOrdersContent({
                         amount: payAmount.trim(),
                         paymentDate: payDate,
                         note: payNote.trim(),
-                      });
+                      };
+                      setUncertainPayment(payload);
+                      paymentMutation.mutate(payload);
                     }}
                   >
-                    {paymentMutation.isPending ? "保存中…" : "确认收款"}
+                    {paymentMutation.isPending
+                      ? "保存中…"
+                      : uncertainPayment
+                        ? "确认收款结果"
+                        : "确认收款"}
                   </button>
                 </div>
               </div>
@@ -1946,237 +2274,73 @@ function SalesOrdersContent({
             document.body
           )
         : null}
-      {shipOpen
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4"
-              onClick={() => requestCloseTransaction("ship")}
-            >
-              <div
-                className="crm-sales-orders-dialog max-h-[90vh] w-[560px] max-w-full overflow-y-auto rounded-xl bg-white p-4"
-                onClick={event => event.stopPropagation()}
+      <Dialog
+        open={shipOpen}
+        onOpenChange={open => {
+          if (!open) requestCloseTransaction("ship");
+        }}
+      >
+        <DialogContent
+          className="crm-sales-orders-dialog w-[calc(100vw-32px)] max-h-[90vh] max-w-[960px] overflow-y-auto"
+          showCloseButton={!companyShipBusy}
+        >
+          <DialogHeader>
+            <DialogTitle>出货</DialogTitle>
+          </DialogHeader>
+          {detailQuery.isLoading || detailQuery.isFetching ? (
+            <p role="status">正在核验订单与本单预留…</p>
+          ) : detailQuery.isError ? (
+            <p role="alert">
+              {detailQuery.error?.message || "订单读取失败"}{" "}
+              <button
+                type="button"
+                className="crm-btn"
+                onClick={() => {
+                  void detailQuery.refetch();
+                }}
               >
-                <h3 className="text-[18px] font-semibold">出货</h3>
-                {detailQuery.data ? (
-                  <>
-                    <div className="grid gap-x-4 sm:grid-cols-2">
-                      <div className="inbound-field mt-4">
-                        <label className="erp-field-label mb-1.5 block">
-                          交付方式<span className="ml-1 text-[#C63C3C]">*</span>
-                        </label>
-                        <select
-                          className="crm-input w-full"
-                          value={shipMethod}
-                          onChange={event =>
-                            setShipMethod(
-                              event.target.value as "express" | "pickup"
-                            )
-                          }
-                        >
-                          <option value="express">快递</option>
-                          <option value="pickup">自提</option>
-                        </select>
-                      </div>
-                      {shipMethod === "express" ? (
-                        <>
-                          <div className="inbound-field mt-4">
-                            <label className="erp-field-label mb-1.5 block">
-                              快递公司
-                              <span className="ml-1 text-[#C63C3C]">*</span>
-                            </label>
-                            <input
-                              className="crm-input w-full"
-                              value={expressCo}
-                              onChange={event =>
-                                setExpressCo(event.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="inbound-field mt-4 sm:col-span-2">
-                            <label className="erp-field-label mb-1.5 block">
-                              快递单号
-                              <span className="ml-1 text-[#C63C3C]">*</span>
-                            </label>
-                            <input
-                              className="crm-input w-full"
-                              value={expressNo}
-                              onChange={event =>
-                                setExpressNo(event.target.value)
-                              }
-                            />
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="inbound-field mt-4">
-                      <label className="erp-field-label mb-1.5 block">
-                        备注
-                      </label>
-                      <input
-                        className="crm-input w-full"
-                        value={shipNote}
-                        onChange={event => setShipNote(event.target.value)}
-                      />
-                    </div>
-                    <div className="crm-sales-orders-section-title mt-6">
-                      出货数量
-                    </div>
-                    <AdminDataPanel className="overflow-x-auto">
-                      <table className="crm-table crm-sales-orders-dialog-table crm-sales-orders-shipment-table admin-table-readable">
-                        <thead>
-                          <tr>
-                            <th>型号</th>
-                            <th className="text-right">待出</th>
-                            <th className="text-right">库存</th>
-                            <th className="text-right">本次出货</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {detailQuery.data.items.flatMap(item => {
-                            const candidates = (
-                              detailQuery.data?.stockCandidates ?? []
-                            ).filter(
-                              candidate => candidate.orderItemId === item.id
-                            );
-                            const remaining = item.orderedQty - item.shippedQty;
-                            if (!candidates.length) {
-                              return [
-                                <tr key={item.id}>
-                                  <td>{item.partNumber}</td>
-                                  <td className="text-right tabular-nums">
-                                    {remaining}
-                                    {item.qtyUnit}
-                                  </td>
-                                  <td className="admin-cell-secondary text-right tabular-nums">
-                                    0
-                                  </td>
-                                  <td className="admin-cell-secondary text-right">
-                                    无库存
-                                  </td>
-                                </tr>,
-                              ];
-                            }
-                            return candidates.map(candidate => {
-                              const key = `${item.id}:${candidate.inventoryId}`;
-                              return (
-                                <tr key={key}>
-                                  <td>
-                                    <div className="admin-cell-primary crm-sales-orders-model font-medium">
-                                      {item.partNumber}
-                                    </div>
-                                    <div className="admin-cell-secondary">
-                                      {candidate.ownerName}
-                                    </div>
-                                  </td>
-                                  <td className="text-right tabular-nums">
-                                    {remaining}
-                                    {item.qtyUnit}
-                                  </td>
-                                  <td className="text-right tabular-nums">
-                                    {candidate.availableQty}
-                                  </td>
-                                  <td className="text-right">
-                                    <input
-                                      className="crm-input w-24 text-right tabular-nums"
-                                      value={shipQtys[key] ?? ""}
-                                      onChange={event =>
-                                        setShipQtys(current => ({
-                                          ...current,
-                                          [key]: event.target.value,
-                                        }))
-                                      }
-                                    />
-                                  </td>
-                                </tr>
-                              );
-                            });
-                          })}
-                        </tbody>
-                      </table>
-                    </AdminDataPanel>
-                  </>
-                ) : null}
-                {detailQuery.data &&
-                detailQuery.data.items.every(item =>
-                  (detailQuery.data?.stockCandidates ?? []).every(
-                    candidate => candidate.orderItemId !== item.id
-                  )
-                ) ? (
-                  <div className="mt-4 text-xs text-[#8A4B08]">
-                    无匹配库存，请先入库后再出货。
-                  </div>
-                ) : null}
-                <div className="mt-6 flex justify-end gap-2.5">
-                  <button
-                    type="button"
-                    className="crm-btn"
-                    disabled={shipMutation.isPending}
-                    onClick={() => requestCloseTransaction("ship")}
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    className="crm-btn crm-btn-primary"
-                    disabled={
-                      !canWrite ||
-                      shipMutation.isPending ||
-                      !detailQuery.data ||
-                      detailQuery.data.status !== "confirmed" ||
-                      Boolean(
-                        detailQuery.data &&
-                          detailQuery.data.items.every(item =>
-                            (detailQuery.data?.stockCandidates ?? []).every(
-                              candidate => candidate.orderItemId !== item.id
-                            )
-                          )
-                      )
-                    }
-                    onClick={() => {
-                      if (
-                        !session.isWritable() ||
-                        !detailQuery.data ||
-                        detailQuery.data.status !== "confirmed"
-                      )
-                        return;
-                      const items = Object.entries(shipQtys)
-                        .map(([key, qty]) => {
-                          const [orderItemId, inventoryId] = key
-                            .split(":")
-                            .map(Number);
-                          return { orderItemId, inventoryId, qty: Number(qty) };
-                        })
-                        .filter(
-                          item => Number.isInteger(item.qty) && item.qty > 0
-                        );
-                      if (!items.length) {
-                        toast.error(
-                          detailQuery.data.stockCandidates.length
-                            ? "请填写出货数量"
-                            : "无匹配库存，请先入库"
-                        );
-                        return;
-                      }
-                      shipMutation.mutate({
-                        id: detailQuery.data.id,
-                        version: detailQuery.data.version,
-                        requestId: shipRequestIdRef.current,
-                        deliveryMethod: shipMethod,
-                        expressCo: expressCo.trim(),
-                        expressNo: expressNo.trim(),
-                        note: shipNote.trim(),
-                        items,
-                      });
-                    }}
-                  >
-                    {shipMutation.isPending ? "提交中…" : "确认出货"}
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+                重试
+              </button>
+            </p>
+          ) : null}
+          {shipmentOrder ? (
+            <CompanyStockShipmentForm
+              key={shipmentIdentity}
+              order={shipmentOrder}
+              enabled={
+                canWrite &&
+                detailQuery.data?.status === "confirmed" &&
+                !detailQuery.isFetching &&
+                !detailQuery.isError
+              }
+              onDirtyChange={setCompanyShipDirty}
+              onBusyChange={setCompanyShipBusy}
+              onCancel={() => requestCloseTransaction("ship")}
+              onAllocated={() => {
+                if (!session.isWritable()) return;
+                toast.success("公司批次已分配");
+                embedded?.onOrderChanged?.();
+                void Promise.allSettled([
+                  utils.crmSalesOrder.get.invalidate(),
+                  utils.crmSalesOrder.list.invalidate(),
+                ]);
+              }}
+              onSaved={() => {
+                if (!session.isWritable()) return;
+                toast.success("出货已登记");
+                embedded?.onOrderChanged?.();
+                setShipOpen(false);
+                void Promise.allSettled([
+                  utils.crmSalesOrder.get.invalidate(),
+                  utils.crmSalesOrder.list.invalidate(),
+                ]);
+              }}
+            />
+          ) : (
+            <p role="status">订单暂不可用</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

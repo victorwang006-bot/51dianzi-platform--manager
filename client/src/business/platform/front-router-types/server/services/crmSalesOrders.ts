@@ -35,9 +35,13 @@ import {
 } from "../../../shared/crmSalesOrders";
 import { getDb } from "../db";
 import { assertCrmDemandCustomer, crmDemandCustomerWhere, resolveCrmDemandPolicy, type CrmDemandPolicy } from "./customerDemands";
+import { recordCrmSalesCreationOrigin, type AdminNewInformationOriginScope } from "./adminNewInformationOrigins";
+import { companyStockService } from "./companyStock";
+import { createCrmCompanyStockSalesOrderService, currencyLabel, calculateCrmCompanyProfit, orderSalesTaxMode, assertOrderStockPrelocked } from "./crmCompanyStockSalesOrders";
+import { SALES_COMMISSION_POLICY } from "../../../shared/salesProfit";
 
 /** Identity is always the independently authenticated employee, never effectiveUserId. */
-export type CrmSalesOrderScope = { enterpriseId: number; actorUserId: number };
+export type CrmSalesOrderScope = AdminNewInformationOriginScope;
 type SqlExecutor = { execute: (query: SQLWrapper) => Promise<unknown> };
 type MembershipRow = {
   id: number; userId: number; role: "super_admin" | "admin" | "member";
@@ -55,14 +59,16 @@ type DemandItemRow = {
   qtyUnit: string; deliveryRequirement: string; note: string;
 };
 type OrderRow = {
-  id: number; enterpriseId: number; customerId: number; customerName: string; demandId: number; demandNo: string;
+  id: number; enterpriseId: number; customerId: number; customerName: string; demandId: number | null; demandNo: string | null;
+  sourceType?: "demand" | "company_stock"; salesTaxMode?: "tax_included" | "tax_excluded" | null; salesExpenses?: string | number; companyStockAllocated?: number | boolean;
+  profitPolicyVersion?: string | null;
   projectName: string; orderNumber: string; status: "confirmed" | "cancelled"; totalAmount: string | number;
   dueDate: string | null; confirmationNote: string; createdByUserId: number; cancelledReason: string | null;
   cancelledAt: Date | string | null; createdAt: Date | string; updatedAt: Date | string; version: number;
   createdByName?: string | null;
   paidAmount?: string | number; monthlyAmount?: string | number; orderedQty?: number | string; shippedQty?: number | string;
 };
-type RequestAction = "create" | "payment" | "shipment";
+type RequestAction = "create" | "payment" | "shipment" | "create_company_stock" | "allocate_company_stock" | "shipment_company_stock" | "expenses";
 
 const SALES_ORDER_PERMISSION = "sales.business_orders";
 const CUSTOMER_PERMISSION = "customers.manage";
@@ -212,19 +218,22 @@ async function reserveRequest(tx: SqlExecutor, input: { enterpriseId: number; ac
 }
 async function insertAudit(tx: SqlExecutor, input: {
   enterpriseId: number; customerId: number; orderId: number; actorUserId: number;
-  action: "created" | "cancelled" | "payment" | "shipment"; note: string; requestId?: string | null;
+  action: "created" | "cancelled" | "payment" | "shipment" | "stock_allocated" | "expenses"; note: string; requestId?: string | null;
+  policyVersion?: string | null; financialSnapshot?: unknown;
 }) {
   await tx.execute(sql`
     INSERT INTO crm_sales_order_audits
-      (enterpriseId, customerId, orderId, actorUserId, action, note, requestId, createdAt)
+      (enterpriseId, customerId, orderId, actorUserId, action, note, requestId, policyVersion, financialSnapshot, createdAt)
     VALUES (${input.enterpriseId}, ${input.customerId}, ${input.orderId}, ${input.actorUserId}, ${input.action},
-      ${input.note.slice(0, 500)}, ${input.requestId ?? null}, ${CRM_NOW})
+      ${input.note.slice(0, 500)}, ${input.requestId ?? null}, ${input.policyVersion ?? null},
+      ${input.financialSnapshot == null ? null : JSON.stringify(input.financialSnapshot)}, ${CRM_NOW})
   `);
 }
 
 function orderSelect() {
   return sql`
     SELECT o.id, o.enterpriseId, o.customerId, o.customerName, o.demandId, o.demandNo, o.projectName, o.orderNumber,
+           o.sourceType, o.salesTaxMode, o.salesExpenses, o.companyStockAllocated, o.profitPolicyVersion,
            o.status, o.totalAmount, DATE_FORMAT(o.dueDate, '%Y-%m-%d') AS dueDate, o.confirmationNote, o.createdByUserId, o.cancelledReason, o.cancelledAt,
            o.createdAt, o.updatedAt, o.version,
            COALESCE(creator.name, creator.username, CONCAT('用户', creator.id)) AS createdByName,
@@ -245,10 +254,13 @@ function fulfillmentOf(row: OrderRow) {
   };
 }
 function mapSummary(row: OrderRow): SalesOrderSummary {
+  const salesTaxMode = orderSalesTaxMode(row);
   return {
     id: Number(row.id), orderNumber: row.orderNumber, customerId: Number(row.customerId), customerName: row.customerName,
-    demandId: Number(row.demandId), demandNo: row.demandNo, projectName: row.projectName ?? "", status: row.status,
-    totalAmount: money(row.totalAmount), currencyLabel: CRM_SALES_ORDER_CURRENCY_LABEL, itemCount: 0,
+    sourceType: row.sourceType ?? "demand", demandId: row.demandId == null ? null : Number(row.demandId), demandNo: row.demandNo ?? null,
+    salesTaxMode, salesExpenses: money(row.salesExpenses), companyStockAllocated: Boolean(row.companyStockAllocated),
+    projectName: row.projectName ?? "", status: row.status,
+    totalAmount: money(row.totalAmount), currencyLabel: currencyLabel(salesTaxMode), itemCount: 0,
     ...fulfillmentOf(row),
     dueDate: row.dueDate ?? null, createdByName: displayName(row.createdByName, Number(row.createdByUserId)),
     createdAt: iso(row.createdAt) ?? new Date(0).toISOString(), updatedAt: iso(row.updatedAt) ?? new Date(0).toISOString(),
@@ -266,6 +278,12 @@ const FULFILLMENT_SELECT = sql`
 function orderScopeWhere(scope: CrmSalesOrderScope, policy: CrmDemandPolicy) {
   return sql`o.enterpriseId = ${scope.enterpriseId} AND ${crmDemandCustomerWhere(scope, policy)}`;
 }
+/** Server-only narrow ABI: reuse the exact list authorization in one read snapshot. */
+export const crmSalesOrderNewInformationAccess = {
+  requireAccess: requireSalesOrderAccess,
+  scopeWhere: orderScopeWhere,
+  normalizeCreatedAt: iso,
+};
 /** Eligible submitted demand candidates include customer identity only after dual sales+customer authorization. */
 export async function listSalesOrderCandidates(scope: CrmSalesOrderScope, rawInput: SalesOrderCandidateListInput): Promise<SalesOrderPage<SalesOrderDemandCandidate>> {
   const parsed = salesOrderCandidateListSchema.safeParse(rawInput);
@@ -441,10 +459,10 @@ export async function createSalesOrder(scope: CrmSalesOrderScope, rawInput: Sale
     const provisional = `P-${randomUUID()}`;
     const inserted = resultHeader(await tx.execute(sql`
       INSERT INTO crm_sales_orders
-        (enterpriseId, customerId, customerName, demandId, demandNo, projectName, orderNumber, status, currency, totalAmount,
-         dueDate, confirmationNote, createdByUserId, cancelledByUserId, cancelledAt, cancelledReason, version, createdAt, updatedAt)
+        (enterpriseId, customerId, customerName, demandId, demandNo, projectName, orderNumber, status, currency, totalAmount, salesTaxMode,
+         profitPolicyVersion, dueDate, confirmationNote, createdByUserId, cancelledByUserId, cancelledAt, cancelledReason, version, createdAt, updatedAt)
       VALUES (${scope.enterpriseId}, ${customer.id}, ${customer.name}, ${demand.id}, ${demand.demandNo}, ${demand.projectName ?? ""},
-        ${provisional}, 'confirmed', 'CNY', ${amounts.totalAmount}, ${input.dueDate}, ${input.confirmationNote.trim()}, ${scope.actorUserId},
+        ${provisional}, 'confirmed', 'CNY', ${amounts.totalAmount}, NULL, ${SALES_COMMISSION_POLICY?.version ?? null}, ${input.dueDate}, ${input.confirmationNote.trim()}, ${scope.actorUserId},
         NULL, NULL, NULL, 1, ${CRM_NOW}, ${CRM_NOW})
     `));
     const orderId = Number(inserted.insertId ?? 0);
@@ -474,7 +492,12 @@ export async function createSalesOrder(scope: CrmSalesOrderScope, rawInput: Sale
     await insertAudit(tx, {
       enterpriseId: scope.enterpriseId, customerId: Number(customer.id), orderId, actorUserId: scope.actorUserId,
       action: "created", note: `已与客户确认后录入；确认说明：${input.confirmationNote.trim()}`, requestId: input.requestId,
+      policyVersion: SALES_COMMISSION_POLICY?.version ?? null,
+      financialSnapshot: { schemaVersion: 1, sourceType: "demand", salesAmount: amounts.totalAmount, salesTaxMode: null, expenseAmount: "0.0000",
+        costSnapshot: { schemaVersion: 1, salesTaxMode: null, allocationsComplete: false, costsComplete: false, lotCosts: [], allocations: [], missingLotIds: [], costAmount: null, reason: "销售税务口径待核，尚未分配真实公司批次" },
+        ...calculateCrmCompanyProfit({ salesAmount: amounts.totalAmount, salesTaxMode: null, expenseAmount: "0.0000", paidAmount: "0.0000", monthlyAmount: "0.0000", costsComplete: false, costs: [] }) },
     });
+    await recordCrmSalesCreationOrigin(tx, scope, { orderId, requestId: input.requestId });
     return { id: orderId, orderNumber, replayed: false as const };
   });
 }
@@ -507,6 +530,7 @@ export async function listSalesOrders(scope: CrmSalesOrderScope, rawInput: Sales
   `))[0];
   const rows = resultRows<OrderRow & { itemCount: number | string }>(await db.execute(sql`
     SELECT o.id, o.enterpriseId, o.customerId, o.customerName, o.demandId, o.demandNo, o.projectName, o.orderNumber,
+           o.sourceType, o.salesTaxMode, o.salesExpenses, o.companyStockAllocated, o.profitPolicyVersion,
            o.status, o.totalAmount, DATE_FORMAT(o.dueDate, '%Y-%m-%d') AS dueDate, o.confirmationNote, o.createdByUserId, o.cancelledReason, o.cancelledAt,
            o.createdAt, o.updatedAt, o.version,
            COALESCE(creator.name, creator.username, CONCAT('用户', creator.id)) AS createdByName,
@@ -575,7 +599,7 @@ export async function listSalesOrderCustomerMaterials(scope: CrmSalesOrderScope,
   const rows = resultRows<Omit<SalesOrderCustomerMaterial, "remainingQty">>(await db.execute(sql`
     SELECT i.id, i.sourceDemandItemId, i.partNumber, i.brand, i.pkg, i.qtyUnit, i.demandQty, i.orderedQty,
            i.unitPrice, i.lineAmount, i.deliveryRequirement, i.note,
-           o.id AS orderId, o.orderNumber, o.customerId, o.demandId, o.demandNo, o.projectName, o.status,
+           i.dc, o.sourceType, o.id AS orderId, o.orderNumber, o.customerId, o.demandId, o.demandNo, o.projectName, o.status,
            DATE_FORMAT(o.dueDate, '%Y-%m-%d') AS dueDate,
            COALESCE((SELECT SUM(si.qty) FROM crm_sales_order_shipment_items si
              WHERE si.enterpriseId = i.enterpriseId AND si.orderId = i.orderId AND si.orderItemId = i.id), 0) AS shippedQty
@@ -588,8 +612,8 @@ export async function listSalesOrderCustomerMaterials(scope: CrmSalesOrderScope,
   `));
   return {
     items: rows.map(row => ({
-      ...row, id: Number(row.id), sourceDemandItemId: Number(row.sourceDemandItemId), orderId: Number(row.orderId),
-      customerId: Number(row.customerId), demandId: Number(row.demandId), demandQty: Number(row.demandQty),
+      ...row, sourceType: row.sourceType ?? "demand", id: Number(row.id), sourceDemandItemId: row.sourceDemandItemId == null ? null : Number(row.sourceDemandItemId), orderId: Number(row.orderId),
+      customerId: Number(row.customerId), demandId: row.demandId == null ? null : Number(row.demandId), demandQty: row.demandQty == null ? null : Number(row.demandQty),
       orderedQty: Number(row.orderedQty), shippedQty: Number(row.shippedQty),
       remainingQty: row.status === "confirmed" ? Math.max(0, Number(row.orderedQty) - Number(row.shippedQty)) : 0,
       unitPrice: money(row.unitPrice), lineAmount: money(row.lineAmount), dueDate: row.dueDate ?? null,
@@ -619,12 +643,12 @@ export async function getSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesOr
     throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
   }
   const items = resultRows<SalesOrderItem>(await db.execute(sql`
-    SELECT id, sourceDemandItemId, partNumber, brand, pkg, qtyUnit, demandQty, orderedQty, unitPrice, lineAmount, deliveryRequirement, note,
+    SELECT id, sourceDemandItemId, partNumber, brand, pkg, dc, qtyUnit, demandQty, orderedQty, unitPrice, lineAmount, deliveryRequirement, note,
            COALESCE((SELECT SUM(si.qty) FROM crm_sales_order_shipment_items si WHERE si.enterpriseId = ${scope.enterpriseId} AND si.orderItemId = crm_sales_order_items.id), 0) AS shippedQty
       FROM crm_sales_order_items WHERE enterpriseId = ${scope.enterpriseId} AND orderId = ${row.id}
      ORDER BY sortOrder ASC, id ASC
   `));
-  const audits = resultRows<{ id: number; action: "created" | "cancelled" | "payment" | "shipment"; actorUserId: number; actorName: string | null; note: string; createdAt: Date | string }>(await db.execute(sql`
+  const audits = resultRows<{ id: number; action: "created" | "cancelled" | "payment" | "shipment" | "stock_allocated" | "expenses"; actorUserId: number; actorName: string | null; note: string; createdAt: Date | string }>(await db.execute(sql`
     SELECT a.id, a.action, a.actorUserId, COALESCE(u.name, u.username, CONCAT('用户', u.id)) AS actorName, a.note, a.createdAt
       FROM crm_sales_order_audits a LEFT JOIN users u ON u.id = a.actorUserId
      WHERE a.enterpriseId = ${scope.enterpriseId} AND a.orderId = ${row.id}
@@ -637,31 +661,35 @@ export async function getSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesOr
      WHERE p.enterpriseId = ${scope.enterpriseId} AND p.orderId = ${row.id}
      ORDER BY p.id ASC
   `));
-  const shipments = resultRows<{ id: number; deliveryMethod: "express" | "pickup"; expressCo: string; expressNo: string; note: string; actorUserId: number; actorName: string | null; createdAt: Date | string }>(await db.execute(sql`
-    SELECT s.id, s.deliveryMethod, s.expressCo, s.expressNo, s.note, s.actorUserId, s.createdAt,
+  const shipments = resultRows<{ id: number; sourceType?: "legacy_inventory" | "company_stock"; deliveryMethod: "express" | "pickup"; expressCo: string; expressNo: string; note: string; actorUserId: number; actorName: string | null; createdAt: Date | string }>(await db.execute(sql`
+    SELECT s.id, s.sourceType, s.deliveryMethod, s.expressCo, s.expressNo, s.note, s.actorUserId, s.createdAt,
            COALESCE(u.name, u.username, CONCAT('用户', u.id)) AS actorName
       FROM crm_sales_order_shipments s LEFT JOIN users u ON u.id = s.actorUserId
      WHERE s.enterpriseId = ${scope.enterpriseId} AND s.orderId = ${row.id}
      ORDER BY s.id ASC
   `));
-  const shipmentItems = resultRows<{ shipmentId: number; orderItemId: number; inventoryId: number; partNumber: string; qty: number }>(await db.execute(sql`
-    SELECT shipmentId, orderItemId, inventoryId, partNumber, qty
+  const shipmentItems = resultRows<{ shipmentId: number; orderItemId: number; inventoryId: number | null; lotId?: number | null; consumptionId?: number | null; outboundOrderId?: number | null; slipNo?: string | null; partNumber: string; qty: number }>(await db.execute(sql`
+    SELECT shipmentId, orderItemId, inventoryId, lotId, consumptionId, outboundOrderId, slipNo, partNumber, qty
       FROM crm_sales_order_shipment_items WHERE enterpriseId = ${scope.enterpriseId} AND orderId = ${row.id}
      ORDER BY id ASC
   `));
-  const stockCandidates = await listStockCandidates(db, scope, items.map(item => ({ id: Number(item.id), partNumber: String(item.partNumber) })));
+  const fallbackFinance = calculateCrmCompanyProfit({ salesAmount: money(row.totalAmount), salesTaxMode: orderSalesTaxMode(row),
+    expenseAmount: money(row.salesExpenses), paidAmount: money(row.paidAmount), monthlyAmount: money(row.monthlyAmount), costsComplete: false, costs: [], cancelled: row.status === "cancelled" });
+  const finance = row.sourceType === "company_stock" || Boolean(row.companyStockAllocated) || row.salesExpenses !== undefined
+    ? await crmCompanyStockSalesOrderService.readFinancials(db, scope, row, items, money(row.paidAmount), money(row.monthlyAmount))
+    : { ...fallbackFinance, companyStockAllocations: [], salesExpenseHistory: [] };
   return {
     ...mapSummary(row), itemCount: items.length, confirmationNote: row.confirmationNote, cancelledReason: row.cancelledReason ?? null,
     cancelledAt: iso(row.cancelledAt),
-    items: items.map(item => ({ ...item, id: Number(item.id), sourceDemandItemId: Number(item.sourceDemandItemId), demandQty: Number(item.demandQty), orderedQty: Number(item.orderedQty), shippedQty: Number((item as SalesOrderItem).shippedQty ?? 0), unitPrice: money(item.unitPrice), lineAmount: money(item.lineAmount) })),
+    items: items.map(item => ({ ...item, id: Number(item.id), sourceDemandItemId: item.sourceDemandItemId == null ? null : Number(item.sourceDemandItemId), demandQty: item.demandQty == null ? null : Number(item.demandQty), orderedQty: Number(item.orderedQty), shippedQty: Number((item as SalesOrderItem).shippedQty ?? 0), unitPrice: money(item.unitPrice), lineAmount: money(item.lineAmount) })),
     audits: audits.map(audit => ({ id: Number(audit.id), action: audit.action, actorUserId: Number(audit.actorUserId), actorName: displayName(audit.actorName, Number(audit.actorUserId)), note: audit.note, createdAt: iso(audit.createdAt) ?? new Date(0).toISOString() })),
     payments: payments.map(payment => ({ id: Number(payment.id), method: payment.method, amount: money(payment.amount), paymentDate: payment.paymentDate, note: payment.note, actorName: displayName(payment.actorName, Number(payment.actorUserId)), createdAt: iso(payment.createdAt) ?? new Date(0).toISOString() })),
     shipments: shipments.map(shipment => ({
-      id: Number(shipment.id), deliveryMethod: shipment.deliveryMethod, expressCo: shipment.expressCo, expressNo: shipment.expressNo, note: shipment.note,
+      id: Number(shipment.id), sourceType: shipment.sourceType ?? "legacy_inventory", deliveryMethod: shipment.deliveryMethod, expressCo: shipment.expressCo, expressNo: shipment.expressNo, note: shipment.note,
       actorName: displayName(shipment.actorName, Number(shipment.actorUserId)), createdAt: iso(shipment.createdAt) ?? new Date(0).toISOString(),
-      items: shipmentItems.filter(item => Number(item.shipmentId) === Number(shipment.id)).map(item => ({ orderItemId: Number(item.orderItemId), inventoryId: Number(item.inventoryId), partNumber: item.partNumber, qty: Number(item.qty) })),
+      items: shipmentItems.filter(item => Number(item.shipmentId) === Number(shipment.id)).map(item => ({ orderItemId: Number(item.orderItemId), inventoryId: item.inventoryId == null ? null : Number(item.inventoryId), lotId: item.lotId == null ? null : Number(item.lotId), consumptionId: item.consumptionId == null ? null : Number(item.consumptionId), outboundOrderId: item.outboundOrderId == null ? null : Number(item.outboundOrderId), slipNo: item.slipNo ?? null, partNumber: item.partNumber, qty: Number(item.qty) })),
     })),
-    stockCandidates,
+    stockCandidates: [], ...finance,
   };
 }
 
@@ -671,18 +699,21 @@ export async function cancelSalesOrder(scope: CrmSalesOrderScope, rawInput: { id
   const input = parsed.data;
   const db = await requireDb();
   return db.transaction(async tx => {
+    const prelocked = await crmCompanyStockSalesOrderService.prelockOrderStockScope(tx, scope, input.id);
     const access = await requireSalesOrderAccess(tx, scope, true);
     // Non-locking identity lookup only establishes the parent row for the mandated lock order.
-    const identity = resultRows<{ customerId: number; demandId: number }>(await tx.execute(sql`
-      SELECT customerId, demandId FROM crm_sales_orders WHERE enterpriseId = ${scope.enterpriseId} AND id = ${input.id} LIMIT 1
+    const identity = resultRows<{ customerId: number; demandId: number | null; sourceType?: string }>(await tx.execute(sql`
+      SELECT customerId, demandId, sourceType FROM crm_sales_orders WHERE enterpriseId = ${scope.enterpriseId} AND id = ${input.id} LIMIT 1
     `))[0];
     if (!identity) throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
     const customer = await accessibleCustomer(tx, scope, access.canManageAll, Number(identity.customerId), true);
-    await lockDemand(tx, scope, Number(customer.id), Number(identity.demandId));
+    if (identity.sourceType !== "company_stock" && identity.demandId != null) await lockDemand(tx, scope, Number(customer.id), Number(identity.demandId));
     const order = resultRows<OrderRow>(await tx.execute(sql`
       SELECT * FROM crm_sales_orders WHERE enterpriseId = ${scope.enterpriseId} AND customerId = ${customer.id} AND id = ${input.id} LIMIT 1 FOR UPDATE
     `))[0];
     if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
+    assertOrderStockPrelocked(order, prelocked);
+    orderSalesTaxMode(order);
     if (order.status === "cancelled") throw new TRPCError({ code: "CONFLICT", message: "订单已取消，请刷新页面" });
     if (Number(order.version) !== input.version) throw new TRPCError({ code: "CONFLICT", message: "订单已被其他人更新，请刷新后重试" });
     const paid = resultRows<{ paid: string | number; shipped: number | string }>(await tx.execute(sql`
@@ -692,6 +723,9 @@ export async function cancelSalesOrder(scope: CrmSalesOrderScope, rawInput: { id
     `))[0];
     if (decimalToScaled(money(paid?.paid)) > BigInt(0) || Number(paid?.shipped ?? 0) > 0) {
       throw new TRPCError({ code: "CONFLICT", message: "已收款或已出货的订单不能直接取消" });
+    }
+    if (order.sourceType === "company_stock" || Boolean(order.companyStockAllocated)) {
+      await crmCompanyStockSalesOrderService.releaseOrder(tx, scope, input.id);
     }
     const updated = resultHeader(await tx.execute(sql`
       UPDATE crm_sales_orders
@@ -703,26 +737,31 @@ export async function cancelSalesOrder(scope: CrmSalesOrderScope, rawInput: { id
     await insertAudit(tx, {
       enterpriseId: scope.enterpriseId, customerId: Number(customer.id), orderId: input.id, actorUserId: scope.actorUserId,
       action: "cancelled", note: input.reason.trim(),
+      policyVersion: order.profitPolicyVersion ?? SALES_COMMISSION_POLICY?.version ?? null,
+      financialSnapshot: { schemaVersion: 1, before: { status: order.status, salesAmount: money(order.totalAmount), expenseAmount: money(order.salesExpenses) },
+        after: { status: "cancelled", earnedAmount: "0.00" }, recordedPaymentAmount: money(paid?.paid), shippedQty: Number(paid?.shipped ?? 0) },
     });
     // Cancellation is blocked after payment or shipment, so it never rolls back stock or marketplace orders.
     return { id: input.id, version: input.version + 1, status: "cancelled" as const };
   });
 }
 
-async function lockConfirmedOrder(tx: SqlExecutor, scope: CrmSalesOrderScope, orderId: number, version: number) {
+async function lockConfirmedOrder(tx: SqlExecutor, scope: CrmSalesOrderScope, orderId: number, version?: number) {
   const access = await requireSalesOrderAccess(tx, scope, true);
-  const identity = resultRows<{ customerId: number; demandId: number }>(await tx.execute(sql`
-    SELECT customerId, demandId FROM crm_sales_orders WHERE enterpriseId = ${scope.enterpriseId} AND id = ${orderId} LIMIT 1
+  const identity = resultRows<{ customerId: number; demandId: number | null; sourceType?: string }>(await tx.execute(sql`
+    SELECT customerId, demandId, sourceType FROM crm_sales_orders WHERE enterpriseId = ${scope.enterpriseId} AND id = ${orderId} LIMIT 1
   `))[0];
   if (!identity) throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
   const customer = await accessibleCustomer(tx, scope, access.canManageAll, Number(identity.customerId), true);
-  await lockDemand(tx, scope, Number(customer.id), Number(identity.demandId));
+  if (customer.archivedAt) throw new TRPCError({ code: "CONFLICT", message: "已归档客户不可更新销售订单" });
+  if (identity.sourceType !== "company_stock" && identity.demandId != null) await lockDemand(tx, scope, Number(customer.id), Number(identity.demandId));
   const order = resultRows<OrderRow>(await tx.execute(sql`
     SELECT * FROM crm_sales_orders WHERE enterpriseId = ${scope.enterpriseId} AND customerId = ${customer.id} AND id = ${orderId} LIMIT 1 FOR UPDATE
   `))[0];
   if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "销售订单不存在" });
+  orderSalesTaxMode(order);
   if (order.status !== "confirmed") throw new TRPCError({ code: "CONFLICT", message: "仅待交付订单可登记收款或出货" });
-  if (Number(order.version) !== version) throw new TRPCError({ code: "CONFLICT", message: "订单已被其他人更新，请刷新后重试" });
+  if (version !== undefined && Number(order.version) !== version) throw new TRPCError({ code: "CONFLICT", message: "订单已被其他人更新，请刷新后重试" });
   return { access, customer, order };
 }
 
@@ -766,20 +805,24 @@ export async function recordSalesOrderPayment(scope: CrmSalesOrderScope, rawInpu
   const db = await requireDb();
   const hash = payloadHashFor({ id: input.id, method: input.method, amount: scaledToDecimal(decimalToScaled(input.amount)), paymentDate: input.paymentDate, note: input.note.trim() });
   return db.transaction(async tx => {
-    await requireSalesOrderAccess(tx, scope, true);
+    const prelocked = await crmCompanyStockSalesOrderService.prelockOrderStockScope(tx, scope, input.id);
+    const { customer, order } = await lockConfirmedOrder(tx, scope, input.id);
+    assertOrderStockPrelocked(order, prelocked);
     const reservation = await reserveRequest(tx, {
       enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, requestId: input.requestId, payloadHash: hash, action: "payment",
     });
-    if (reservation.replayed) return { id: reservation.orderId, replayed: true as const, version: Number((await getSalesOrder(scope, { id: reservation.orderId })).version) };
-    const { customer, order } = await lockConfirmedOrder(tx, scope, input.id, input.version);
+    if (reservation.replayed) return { id: reservation.orderId, replayed: true as const, version: Number(order.version) };
+    if (Number(order.version) !== input.version) throw new TRPCError({ code: "CONFLICT", message: "订单已被其他人更新，请刷新后重试" });
     const totals = resultRows<{ paid: string | number }>(await tx.execute(sql`
       SELECT COALESCE(SUM(amount), 0) AS paid FROM crm_sales_order_payments
        WHERE enterpriseId = ${scope.enterpriseId} AND orderId = ${input.id}
     `))[0];
     const nextPaid = decimalToScaled(money(totals?.paid)) + decimalToScaled(input.amount);
     if (nextPaid > decimalToScaled(money(order.totalAmount))) {
-      throw new TRPCError({ code: "CONFLICT", message: "累计收款不能超过订单含税金额" });
+      throw new TRPCError({ code: "CONFLICT", message: "累计收款不能超过订单金额" });
     }
+    const usesCompanyStock = order.sourceType === "company_stock" || Boolean(order.companyStockAllocated);
+    const financials = usesCompanyStock ? await crmCompanyStockSalesOrderService.readPaymentFinancialSnapshots(tx, scope, order, input) : null;
     const inserted = resultHeader(await tx.execute(sql`
       INSERT INTO crm_sales_order_payments
         (enterpriseId, orderId, actorUserId, requestId, payloadHash, method, amount, paymentDate, note, createdAt)
@@ -799,115 +842,42 @@ export async function recordSalesOrderPayment(scope: CrmSalesOrderScope, rawInpu
     await insertAudit(tx, {
       enterpriseId: scope.enterpriseId, customerId: Number(customer.id), orderId: input.id, actorUserId: scope.actorUserId,
       action: "payment", note: `${input.method}:${scaledToDecimal(decimalToScaled(input.amount))}`, requestId: input.requestId,
+      policyVersion: order.profitPolicyVersion ?? SALES_COMMISSION_POLICY?.version ?? null,
+      financialSnapshot: { schemaVersion: 1, salesAmount: money(order.totalAmount), expenseAmount: money(order.salesExpenses), salesTaxMode: orderSalesTaxMode(order),
+        method: input.method, amount: scaledToDecimal(decimalToScaled(input.amount)),
+        before: { recordedPaymentAmount: money(totals?.paid), ...(financials ? { financials: financials.before } : {}) },
+        after: { recordedPaymentAmount: scaledToDecimal(nextPaid), ...(financials ? { financials: financials.after } : {}) }, monthlyIsCashCollection: false },
     });
     return { id: input.id, replayed: false as const, version: input.version + 1 };
   });
 }
 
-export async function shipSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesOrderShipInput) {
+/** Legacy inventory shipments remain readable; this endpoint cannot create new personal-stock deductions. */
+export async function shipSalesOrder(scope: CrmSalesOrderScope, rawInput: SalesOrderShipInput): Promise<{ id: number; replayed: boolean; version: number }> {
+  // Preserve the original success/replay wire DTO for old typed clients only.
+  // Runtime is still fail-closed below: no fabricated success or inventory write.
   const parsed = salesOrderShipSchema.safeParse(rawInput);
   if (!parsed.success) throw new TRPCError({ code: "BAD_REQUEST", message: parsed.error.issues[0]?.message ?? "出货参数无效" });
-  const input = parsed.data;
   const db = await requireDb();
-  const hash = payloadHashFor({
-    id: input.id, deliveryMethod: input.deliveryMethod, expressCo: input.expressCo.trim(), expressNo: input.expressNo.trim(),
-    note: input.note.trim(), items: [...input.items].sort((a, b) => a.orderItemId - b.orderItemId || a.inventoryId - b.inventoryId),
-  });
   return db.transaction(async tx => {
-    await requireSalesOrderAccess(tx, scope, true);
-    const reservation = await reserveRequest(tx, {
-      enterpriseId: scope.enterpriseId, actorUserId: scope.actorUserId, requestId: input.requestId, payloadHash: hash, action: "shipment",
-    });
-    if (reservation.replayed) return { id: reservation.orderId, replayed: true as const, version: Number((await getSalesOrder(scope, { id: reservation.orderId })).version) };
-    const { customer } = await lockConfirmedOrder(tx, scope, input.id, input.version);
-    const orderItems = resultRows<SalesOrderItem & { shippedQty?: number | string }>(await tx.execute(sql`
-      SELECT id, sourceDemandItemId, partNumber, brand, pkg, qtyUnit, demandQty, orderedQty, unitPrice, lineAmount, deliveryRequirement, note,
-             COALESCE((SELECT SUM(si.qty) FROM crm_sales_order_shipment_items si WHERE si.enterpriseId = ${scope.enterpriseId} AND si.orderItemId = crm_sales_order_items.id), 0) AS shippedQty
-        FROM crm_sales_order_items WHERE enterpriseId = ${scope.enterpriseId} AND orderId = ${input.id}
-       ORDER BY id ASC FOR UPDATE
-    `));
-    const byId = new Map(orderItems.map(item => [Number(item.id), item]));
-    const requestedByItem = new Map<number, number>();
-    for (const line of input.items) {
-      const item = byId.get(line.orderItemId);
-      if (!item) throw new TRPCError({ code: "BAD_REQUEST", message: "出货物料不属于本订单" });
-      requestedByItem.set(line.orderItemId, (requestedByItem.get(line.orderItemId) ?? 0) + line.qty);
-    }
-    for (const [orderItemId, qty] of Array.from(requestedByItem.entries())) {
-      const item = byId.get(orderItemId)!;
-      if (Number(item.shippedQty ?? 0) + qty > Number(item.orderedQty)) {
-        throw new TRPCError({ code: "CONFLICT", message: `型号 ${item.partNumber} 累计出货不能超过销售数量` });
-      }
-    }
-    const inventoryIds = Array.from(new Set(input.items.map(item => item.inventoryId))).sort((a, b) => a - b);
-    const inventories = resultRows<{ id: number; partNumber: string; qtyStock: number | string; qtyOnSale: number | string; status: string }>(await tx.execute(sql`
-      SELECT id, partNumber, qtyStock, qtyOnSale, status FROM inventories
-       WHERE enterpriseId = ${scope.enterpriseId} AND ownerUserId = ${scope.actorUserId} AND id IN (${sql.join(inventoryIds.map(id => sql`${id}`), sql`, `)})
-       ORDER BY id ASC FOR UPDATE
-    `));
-    if (inventories.length !== inventoryIds.length) throw new TRPCError({ code: "NOT_FOUND", message: "所选库存不存在或不属于当前企业" });
-    const inventoryById = new Map(inventories.map(row => [Number(row.id), row]));
-    const deductByInventory = new Map<number, number>();
-    for (const line of input.items) {
-      const item = byId.get(line.orderItemId)!;
-      const inventory = inventoryById.get(line.inventoryId)!;
-      if (String(inventory.partNumber).trim().toUpperCase() !== String(item.partNumber).trim().toUpperCase()) {
-        throw new TRPCError({ code: "CONFLICT", message: `库存 ${inventory.partNumber} 与订单型号 ${item.partNumber} 不一致` });
-      }
-      deductByInventory.set(line.inventoryId, (deductByInventory.get(line.inventoryId) ?? 0) + line.qty);
-    }
-    for (const [inventoryId, qty] of Array.from(deductByInventory.entries())) {
-      const inventory = inventoryById.get(inventoryId)!;
-      if (Number(inventory.qtyStock) < qty) {
-        throw new TRPCError({ code: "CONFLICT", message: `型号 ${inventory.partNumber} 当前可出 ${inventory.qtyStock}，请先入库` });
-      }
-      const result = await tx.execute(sql`
-        UPDATE inventories
-           SET qtyStock = qtyStock - ${qty},
-               qtyOnSale = IF(qtyOnSale > ${qty}, qtyOnSale - ${qty}, 0),
-               status = IF(qtyOnSale <= ${qty} AND status = 'published', 'offshelf', status),
-               publishedAt = IF(qtyOnSale <= ${qty} AND status = 'published', NULL, publishedAt),
-               offshelfBy = IF(qtyOnSale <= ${qty} AND status = 'published', 'system', offshelfBy),
-               offshelfReason = IF(qtyOnSale <= ${qty} AND status = 'published', 'sold_out', offshelfReason)
-         WHERE id = ${inventoryId} AND enterpriseId = ${scope.enterpriseId} AND ownerUserId = ${scope.actorUserId} AND qtyStock >= ${qty}
-      `);
-      if (Number(resultHeader(result).affectedRows ?? 0) !== 1) {
-        throw new TRPCError({ code: "CONFLICT", message: `型号 ${inventory.partNumber} 当前可出不足，请刷新后重试` });
-      }
-    }
-    const shipment = resultHeader(await tx.execute(sql`
-      INSERT INTO crm_sales_order_shipments
-        (enterpriseId, orderId, actorUserId, requestId, payloadHash, deliveryMethod, expressCo, expressNo, note, createdAt)
-      VALUES (${scope.enterpriseId}, ${input.id}, ${scope.actorUserId}, ${input.requestId}, ${hash}, ${input.deliveryMethod},
-        ${input.deliveryMethod === "express" ? input.expressCo.trim() : ""}, ${input.deliveryMethod === "express" ? input.expressNo.trim() : ""},
-        ${input.note.trim()}, ${CRM_NOW})
-    `));
-    const shipmentId = Number(shipment.insertId ?? 0);
-    if (!shipmentId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "出货记录创建失败" });
-    for (const line of input.items) {
-      const item = byId.get(line.orderItemId)!;
-      await tx.execute(sql`
-        INSERT INTO crm_sales_order_shipment_items
-          (enterpriseId, shipmentId, orderId, orderItemId, inventoryId, partNumber, qty, createdAt)
-        VALUES (${scope.enterpriseId}, ${shipmentId}, ${input.id}, ${line.orderItemId}, ${line.inventoryId}, ${item.partNumber}, ${line.qty}, ${CRM_NOW})
-      `);
-    }
-    const bumped = resultHeader(await tx.execute(sql`
-      UPDATE crm_sales_orders SET version = version + 1, updatedAt = ${CRM_NOW}
-       WHERE enterpriseId = ${scope.enterpriseId} AND id = ${input.id} AND status = 'confirmed' AND version = ${input.version}
-    `));
-    if (Number(bumped.affectedRows ?? 0) !== 1) throw new TRPCError({ code: "CONFLICT", message: "订单已被其他人更新，请刷新后重试" });
-    await tx.execute(sql`
-      UPDATE crm_sales_order_requests SET orderId = ${input.id}
-       WHERE enterpriseId = ${scope.enterpriseId} AND actorUserId = ${scope.actorUserId} AND requestId = ${input.requestId}
-    `);
-    await insertAudit(tx, {
-      enterpriseId: scope.enterpriseId, customerId: Number(customer.id), orderId: input.id, actorUserId: scope.actorUserId,
-      action: "shipment", note: input.deliveryMethod === "pickup" ? "自提出货" : `${input.expressCo.trim()} ${input.expressNo.trim()}`.trim(),
-      requestId: input.requestId,
-    });
-    return { id: input.id, replayed: false as const, version: input.version + 1 };
+    await lockConfirmedOrder(tx, scope, parsed.data.id);
+    throw new TRPCError({ code: "CONFLICT", message: "请先分配真实公司批次并使用公司库存出货；旧个人库存出货仅保留历史查看" });
   });
 }
 
-export const CRM_SALES_ORDER_SERVICE_TABLES = ["crm_sales_orders", "crm_sales_order_items", "crm_sales_order_requests", "crm_sales_order_audits", "crm_sales_order_payments", "crm_sales_order_shipments", "crm_sales_order_shipment_items"] as const;
+export const CRM_SALES_ORDER_SERVICE_TABLES = ["crm_sales_orders", "crm_sales_order_items", "crm_sales_order_requests", "crm_sales_order_audits", "crm_sales_order_payments", "crm_sales_order_shipments", "crm_sales_order_shipment_items", "crm_sales_order_expenses"] as const;
+
+/** Exact dependency table for native incremental builds; no dynamic old-service import is needed. */
+export const crmSalesOrderCompanyStockNativeBridge = {
+  getDb, stock: companyStockService, requireAccess: requireSalesOrderAccess, accessibleCustomer,
+  lockOrder: lockConfirmedOrder, reserveRequest, insertAudit, recordCreationOrigin: recordCrmSalesCreationOrigin,
+};
+export const crmCompanyStockSalesOrderService = createCrmCompanyStockSalesOrderService(crmSalesOrderCompanyStockNativeBridge);
+export const {
+  companyStockCandidates: listSalesOrderCompanyStockCandidates,
+  previewCompanyStock: previewSalesOrderCompanyStock,
+  createCompanyStock: createSalesOrderCompanyStock,
+  allocateCompanyStock: allocateSalesOrderCompanyStock,
+  shipCompanyStock: shipSalesOrderCompanyStock,
+  updateSalesExpenses,
+} = crmCompanyStockSalesOrderService;

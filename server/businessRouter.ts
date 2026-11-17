@@ -62,6 +62,8 @@ import { withOfficialChannelProfileRead } from "./services/officialChannelProfil
 import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
 import { newInformationFactsInputSchema, newInformationFactsResultSchema } from "../shared/adminNewInformationFacts";
 import { inboundDocumentUploadSchema, inboundDocumentsReadSchema, inboundDocumentAccessSchema, inboundDocumentsSchema, inboundDocumentsSaveSchema } from "../client/src/business/platform/shared/inboundDocuments";
+import { salesOrderCompanyStockCandidatesSchema, salesOrderCompanyStockPreviewSchema, salesOrderCompanyStockCreateSchema, salesOrderCompanyStockAllocateSchema, salesOrderCompanyStockShipSchema, salesOrderExpensesSchema } from "../client/src/business/platform/shared/crmSalesOrders";
+import { companyStockReconciliationCandidatesSchema, companyStockReconcileSchema } from "../client/src/business/platform/shared/companyStock";
 
 export const BUSINESS_NEW_INFORMATION_READS = {
   "customer.newInformationFacts": "customers",
@@ -197,6 +199,8 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "inbound.documents", module: "inventory", mode: "read" },
   { method: "inbound.documentAccess", module: "inventory", mode: "read" },
   { method: "inbound.saveDocuments", module: "inventory", mode: "write" },
+  { method: "inbound.companyStockReconciliationCandidates", module: "inventory", mode: "read" },
+  { method: "inbound.reconcileCompanyStock", module: "inventory", mode: "write" },
   { method: "inbound.*", module: "inventory", mode: "write" },
   { method: "customer.starContext", module: "customers", mode: "read" },
   { method: "customer.starState", module: "customers", mode: "read" },
@@ -205,6 +209,12 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "customer.*", module: "customers", mode: "write" },
   { method: "customerDemand.sales.*", module: "customers", mode: "write" },
   { method: "customerDemand.procurement.*", module: "procurement", mode: "write" },
+  { method: "crmSalesOrder.companyStockCandidates", module: "orders", mode: "read" },
+  { method: "crmSalesOrder.previewCompanyStock", module: "orders", mode: "read" },
+  { method: "crmSalesOrder.createCompanyStock", module: "orders", mode: "write" },
+  { method: "crmSalesOrder.allocateCompanyStock", module: "orders", mode: "write" },
+  { method: "crmSalesOrder.shipCompanyStock", module: "orders", mode: "write" },
+  { method: "crmSalesOrder.updateSalesExpenses", module: "orders", mode: "write" },
   { method: "crmSalesOrder.*", module: "orders", mode: "write" },
   { method: "personalPerformance.summary", module: "orders", mode: "read" },
   { method: "enterprise.me", module: "context", mode: "read" },
@@ -709,8 +719,19 @@ const INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "inbound.update": z.object({ data: z.object({ documents: inboundDocumentsSchema.optional() }).passthrough() }).passthrough(),
   "inbound.updateDetails": z.object({ documents: inboundDocumentsSchema.optional() }).passthrough(),
 };
+const COMPANY_STOCK_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  "inbound.companyStockReconciliationCandidates": companyStockReconciliationCandidatesSchema,
+  "inbound.reconcileCompanyStock": companyStockReconcileSchema,
+  "crmSalesOrder.companyStockCandidates": salesOrderCompanyStockCandidatesSchema,
+  "crmSalesOrder.previewCompanyStock": salesOrderCompanyStockPreviewSchema,
+  "crmSalesOrder.createCompanyStock": salesOrderCompanyStockCreateSchema,
+  "crmSalesOrder.allocateCompanyStock": salesOrderCompanyStockAllocateSchema,
+  "crmSalesOrder.shipCompanyStock": salesOrderCompanyStockShipSchema,
+  "crmSalesOrder.updateSalesExpenses": salesOrderExpensesSchema,
+};
 function businessInputSchema(method: string): z.ZodTypeAny {
   if (method in BUSINESS_NEW_INFORMATION_READS) return newInformationFactsInputSchema;
+  if (COMPANY_STOCK_BUSINESS_INPUT_SCHEMAS[method]) return COMPANY_STOCK_BUSINESS_INPUT_SCHEMAS[method];
   if (INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS[method]) return INBOUND_DOCUMENT_BUSINESS_INPUT_SCHEMAS[method];
   if (MALL_BUSINESS_INPUT_SCHEMAS[method]) return MALL_BUSINESS_INPUT_SCHEMAS[method];
   if (method === "customer.starContext") return customerStarContextInputSchema;
@@ -922,6 +943,8 @@ const importInventoryBusinessRouter = router({
 const inboundBusinessRouter = router({
   newInformationFacts: businessQuery("inbound.newInformationFacts", "inventory"),
   procurementBuyers: businessQuery("inbound.procurementBuyers", "inventory"),
+  companyStockReconciliationCandidates: businessQuery("inbound.companyStockReconciliationCandidates", "inventory"),
+  reconcileCompanyStock: businessMutation("inbound.reconcileCompanyStock", "inventory"),
   uploadPhoto: businessMutation("inbound.uploadPhoto", "inventory"),
   uploadDocument: businessMutation("inbound.uploadDocument", "inventory"),
   documents: businessQuery("inbound.documents", "inventory"),
@@ -995,6 +1018,12 @@ const customerDemandBusinessRouter = router({
 
 const crmSalesOrderBusinessRouter = router({
   newInformationFacts: businessQuery("crmSalesOrder.newInformationFacts", "orders"),
+  companyStockCandidates: businessQuery("crmSalesOrder.companyStockCandidates", "orders"),
+  previewCompanyStock: businessQuery("crmSalesOrder.previewCompanyStock", "orders"),
+  createCompanyStock: businessMutation("crmSalesOrder.createCompanyStock", "orders"),
+  allocateCompanyStock: businessMutation("crmSalesOrder.allocateCompanyStock", "orders"),
+  shipCompanyStock: businessMutation("crmSalesOrder.shipCompanyStock", "orders"),
+  updateSalesExpenses: businessMutation("crmSalesOrder.updateSalesExpenses", "orders"),
   metadataGet: publicProcedure.input(businessSalesOrderMetadataGetSchema).query(({ ctx, input }) =>
     withBusinessSalesOrderMetadata(ctx, input, "read", provenance => getBusinessSalesOrderMetadata(provenance))),
   saveReceiver: publicProcedure.input(businessSalesOrderSaveReceiverSchema).mutation(({ ctx, input }) =>
