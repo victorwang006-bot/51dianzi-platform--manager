@@ -1,4 +1,6 @@
 import { staffOrganizationRouter } from "./routers/staffOrganization";
+import { createAdminNewInformationRouterForSource } from "./routers/adminNewInformation";
+import { createAdminNewInformationSourceForContext } from "./services/adminNewInformationSources";
 import { businessRouter } from "./businessRouter";
 import { officialTeamsRouter } from "./routers/officialTeams";
 import { personalCenterRouter } from "./personalCenterRouter";
@@ -741,6 +743,7 @@ export const materialInput = z.object({
   }
 });
 export const appRouter = router({
+  newInformation: createAdminNewInformationRouterForSource({ source: createAdminNewInformationSourceForContext }),
   business: businessRouter,
   personalCenter: personalCenterRouter,
   staffOrganization: staffOrganizationRouter,

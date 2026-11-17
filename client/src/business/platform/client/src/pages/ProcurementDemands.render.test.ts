@@ -10,11 +10,13 @@ const runtime = vi.hoisted(() => ({
   detailError: null as Error | null,
   listQuery: vi.fn(), detailQuery: vi.fn(), refresh: vi.fn().mockResolvedValue(undefined),
   quoteList: vi.fn(), quoteDialog: vi.fn(),
+  rowsHook: vi.fn(), newIds: new Set<string>(), rowElements: new Map<string, HTMLElement | null>(),
+  memoryReady: true, queryState: {} as Record<string, boolean>,
 }));
 vi.mock("../hooks/usePageMemory", async () => {
   const React = await import("react");
   return {
-    usePageMemory: () => true,
+    usePageMemory: () => runtime.memoryReady,
     useRememberedState: (_key: string, initial: unknown) => React.useState(initial),
     freshListOptions: (options: object) => options,
     useRestoringListQuery: (query: unknown) => query,
@@ -25,13 +27,23 @@ vi.mock("../../../../BusinessContentFrame", () => ({ default: ({ children }: Rea
 vi.mock("../../../../api/business-trpc", () => ({ trpc: { customerDemand: {
   procurementList: { useQuery: (input: object) => {
     runtime.listQuery(input);
-    return { data: runtime.list, isLoading: false, isFetching: false, error: null, refetch: runtime.refresh };
+    return { data: runtime.list, isLoading: false, isFetching: false, isSuccess: true, isError: false, isPlaceholderData: false, isFetchedAfterMount: true, error: null, refetch: runtime.refresh, ...runtime.queryState };
   } },
   procurementGet: { useQuery: (input: object) => {
     runtime.detailQuery(input);
     return { data: runtime.detail, isLoading: false, error: runtime.detailError };
   } },
 } } }));
+vi.mock("../../../../../lib/adminNewInformation", () => ({
+  useAdminNewInformationContextRows: (options: { refs: string[]; listReady: boolean }) => {
+    runtime.rowsHook(options);
+    return { getRow: (id: string) => ({
+      isNew: options.listReady && runtime.newIds.has(id),
+      ref: (element: HTMLElement | null) => runtime.rowElements.set(id, element),
+    }) };
+  },
+  useAdminNewInformationRowContext: () => undefined,
+}));
 vi.mock("../components/ui/dialog", () => ({
   Dialog: ({ children }: React.PropsWithChildren) => h(React.Fragment, null, children),
   DialogContent: ({ children }: React.PropsWithChildren) => h("section", { role: "dialog" }, children),
@@ -70,6 +82,7 @@ async function click(label: string) {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, React });
   vi.clearAllMocks(); runtime.detailError = null;
+  runtime.newIds.clear(); runtime.rowElements.clear(); runtime.memoryReady = true; runtime.queryState = {};
   runtime.list = { items: [summary()], total: 22, page: 2, pageSize: 20 }; runtime.detail = detail();
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
   vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Production network forbidden in synthetic procurement fixtures"); }));
@@ -128,5 +141,33 @@ describe("采购需求摘要与完整物料详情", () => {
     runtime.list!.items = [{ ...summary(), itemCount: 1 }];
     render(); expect(host.textContent).not.toContain("查看全部物料"); await click("查看");
     expect(runtime.detailQuery).toHaveBeenCalledWith({ id: 41 });
+  });
+  it("binds the canonical demand ref to the actual displayed tr and renders a small 新, never a detail/material witness", async () => {
+    runtime.newIds.add("demand:41"); render();
+    expect(runtime.rowsHook).toHaveBeenLastCalledWith({ module: "procurement", refs: ["demand:41"], listReady: true });
+    const row = runtime.rowElements.get("demand:41");
+    expect(row?.tagName).toBe("TR");
+    expect(row?.dataset.pageMemoryRow).toBe("41");
+    expect(row?.querySelector('[role="status"]')?.textContent).toBe("新");
+    await click("查看");
+    expect(runtime.rowsHook.mock.calls.at(-1)?.[0].refs).toEqual(["demand:41"]);
+    expect(runtime.rowElements.has("demand:401")).toBe(false);
+  });
+  it("stable-partitions only the existing page; preserves total/page/query and unseen rows", () => {
+    runtime.list!.items = [summary(), { ...summary(), id: 42, demandNo: "SYNTHETIC-XQ-42" }, { ...summary(), id: 43, demandNo: "SYNTHETIC-XQ-43" }];
+    runtime.newIds.add("demand:42"); runtime.newIds.add("demand:999"); render();
+    expect([...host.querySelectorAll('tbody tr[data-page-memory-row]')].map(row => row.getAttribute("data-page-memory-row"))).toEqual(["42", "41", "43"]);
+    expect(runtime.rowsHook.mock.calls.at(-1)?.[0].refs).toEqual(["demand:41", "demand:42", "demand:43"]);
+    expect(host.textContent).toContain("共 22 条 · 第 2/2 页");
+    expect(runtime.detailQuery).not.toHaveBeenCalled(); expect(runtime.refresh).not.toHaveBeenCalled();
+  });
+  it.each([{ isSuccess: false }, { isError: true }, { isFetching: true }, { isPlaceholderData: true }, { isFetchedAfterMount: false }])("supplies no receipts/refs during unready list state %j", queryState => {
+    runtime.queryState = queryState; runtime.newIds.add("demand:41"); render();
+    expect(runtime.rowsHook.mock.calls.at(-1)?.[0]).toMatchObject({ refs: [], listReady: false });
+    expect(host.querySelector('[role="status"]')).toBeNull();
+  });
+  it("supplies no receipts for an inactive current business identity", () => {
+    runtime.memoryReady = false; render();
+    expect(runtime.rowsHook.mock.calls.at(-1)?.[0]).toMatchObject({ refs: [], listReady: false });
   });
 });

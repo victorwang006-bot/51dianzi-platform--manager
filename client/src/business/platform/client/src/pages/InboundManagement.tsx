@@ -3,7 +3,9 @@ import PlatformLayout from "../../../../BusinessContentFrame";
 import { AdminPage, AdminPageHeader, AdminFilterBar, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import "./InboundManagement.css";
 import { BulkInboundForm } from "../components/inbound/BulkInboundForm";
-import { useBusinessScope } from "../../../../BusinessScope";
+import { businessStorageScope, useBusinessScope } from "../../../../BusinessScope";
+import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import { defaultProcurementBuyer, procurementBuyerOptionLabel, readProcurementBuyerScope, selectedProcurementBuyer } from "../components/inbound/procurementBuyerSelection";
 import { ConfirmDialog } from "../components/customers/ConfirmDialog";
 import { ErpHelperText, ErpSegmentedControl } from "../components/erp/ErpFormControls";
@@ -157,8 +159,13 @@ const paymentStatusDotClass: Record<InboundPaymentCategory, string> = {
 };
 
 export default function InboundManagement() {
-  const [, navigate] = useLocation();
-  const { frontUser } = useBusinessScope();
+  const [location, navigate] = useLocation();
+  const { frontUser, merchantId, staffPrincipal, storageScope, contextVerification } = useBusinessScope();
+  const activeInboundIdentity = location.split(/[?#]/, 1)[0] === "/inbound"
+    && contextVerification.state === "verified"
+    && contextVerification.identity === storageScope
+    && businessStorageScope() === storageScope
+    && staffPrincipal.frontendUserId === frontUser.id;
   const buyerDefaultInitialized = useRef(false);
   const [filterInput, setFilterInput] = useState(emptyFilters());
   const [filters, setFilters] = useState(emptyFilters());
@@ -241,7 +248,8 @@ export default function InboundManagement() {
     for (const [key, value] of Object.entries(filters)) if (value) next[key] = value;
     return Object.keys(next).length ? next as any : undefined;
   }, [filters]);
-  const { data: rows = [], isLoading, refetch } = trpc.inbound.list.useQuery(queryInput);
+  const listQuery = trpc.inbound.list.useQuery(queryInput);
+  const { data: rows = [], isLoading, refetch } = listQuery;
   const { data: overview } = inboundApi.overview.useQuery() as { data?: {
     totalPaidAmount: string;
     inTransitPaidAmount: string;
@@ -288,6 +296,18 @@ export default function InboundManagement() {
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageRows = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  // Never inspect the returned full array, hidden pages, preview rows or bulk proof rows.
+  const newInformationRows = useAdminNewInformationContextRows({
+    module: "inbound",
+    refs: pageRows.map(row => `inbound:${row.id}`),
+    scope: String(merchantId),
+    listReady: activeInboundIdentity && listQuery.isSuccess && !listQuery.isError
+      && !listQuery.isFetching && !listQuery.isPlaceholderData,
+  });
+  // Preserve the original filtered page membership/pagination; only stable-sort this page.
+  const displayedPageRows = [...pageRows].sort((a, b) =>
+    Number(newInformationRows.getRow(`inbound:${b.id}`).isNew)
+      - Number(newInformationRows.getRow(`inbound:${a.id}`).isNew));
 
   const createMutation = trpc.inbound.create.useMutation({
     onSuccess: result => {
@@ -778,15 +798,16 @@ export default function InboundManagement() {
                   <th className={`sticky z-20 bg-slate-50 shadow-[1px_0_0_#e2e8f0] ${batchMode ? "left-9" : "left-0"}`}>入库单 / 日期</th><th>料号 / 品牌</th><th className="inbound-numeric">数量 / DC</th><th>货物状态</th><th>付款情况</th><th>供应商</th><th>采购员 / 仓位</th><th className="inbound-actions">操作</th>
                 </tr></thead>
                 <tbody>
-                  {pageRows.map(row => <tr
+                  {displayedPageRows.map(row => <tr
                     key={row.id}
+                    ref={newInformationRows.getRow(`inbound:${row.id}`).ref}
                     tabIndex={0}
                     aria-label={`查看入库单 ${row.slipNo}`}
                     className={`h-14 cursor-pointer outline-none focus-visible:bg-[#f5f9fd] ${row.status === "cancelled" ? "opacity-60" : ""}`}
                     onClick={event => { if (!(event.target as HTMLElement).closest("button, input, a")) setDetailRow(row); }}
                     onKeyDown={event => { if ((event.target as HTMLElement).closest("button, input, a")) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setDetailRow(row); } }}>
                     {batchMode && <td className="sticky left-0 z-20 bg-white shadow-[1px_0_0_#e2e8f0]"><Checkbox aria-label={`选择 ${row.slipNo}`} disabled={row.status === "cancelled"} checked={selectedIds.has(row.id)} onCheckedChange={() => toggleSelect(row.id)} /></td>}
-                    <td className={`sticky z-10 bg-white shadow-[1px_0_0_#e2e8f0] ${batchMode ? "left-9" : "left-0"}`}><button className="crm-link truncate font-medium" onClick={() => setDetailRow(row)}>{row.slipNo}</button><div className="mt-0.5 text-[11px] text-muted-foreground">{fmtDate(row.actualInboundDate || row.inboundDate)} · {row.status === "in_transit" ? "预计到货" : "入库"}</div></td>
+                    <td className={`sticky z-10 bg-white shadow-[1px_0_0_#e2e8f0] ${batchMode ? "left-9" : "left-0"}`}><button className="crm-link truncate font-medium" onClick={() => setDetailRow(row)}>{row.slipNo}</button><AdminNewInformationRowBadge isNew={newInformationRows.getRow(`inbound:${row.id}`).isNew} /><div className="mt-0.5 text-[11px] text-muted-foreground">{fmtDate(row.actualInboundDate || row.inboundDate)} · {row.status === "in_transit" ? "预计到货" : "入库"}</div></td>
                     <td><div className="truncate font-semibold text-slate-800" title={row.partNumber}>{row.partNumber}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={row.brand || ""}>{row.brand || "—"}{Boolean(row.priceMissing) && <span className="ml-1 text-[11px] text-amber-700">未录价格</span>}</div></td>
                     <td className="inbound-numeric"><div className="font-medium tabular-nums text-slate-800">{fmtQty(Number(row.actualQty ?? row.qty))}</div><div className="mt-0.5 text-[11px] text-muted-foreground">DC {row.prodYear || "—"}</div></td>
                     <td><div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-slate-600"><span className={`text-[10px] ${inboundStatusDotClass[row.status]}`} aria-hidden="true">●</span><span className="font-medium text-slate-700">{statusMeta[row.status].label}</span></div></td>

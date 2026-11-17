@@ -1,6 +1,8 @@
 import { useLocation, useSearch } from "wouter";
 import { parseSupplyLocation, supplyLocation } from "../components/customers/customerSupply";
 import { channelInventoryTabLocation, channelInventoryViewLocation, getChannelInventoryNavigationView, readChannelInventoryTabIntent, channelInventoryBatchListLocation, channelInventoryBatchMaterialLocation, readChannelInventoryBatchListState, readChannelInventoryBatchMaterialIntent, positiveInventoryId } from "../../../../../lib/channelInventoryNavigation";
+import { useAdminNewInformationContext, useAdminNewInformationContextRows, type AdminNewInformationRowsResult } from "../../../../../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
@@ -44,6 +46,28 @@ type SourceOptions = ChannelInventoryOutputs["listTeamSourceOptions"];
 type ChannelType = ChannelInventoryInputs["createChannel"]["type"];
 type MaterialCreateInput = ChannelInventoryInputs["createMaterial"];
 type MaterialUpdateInput = ChannelInventoryInputs["updateTeamMaterial"];
+
+type InventoryInformationRowsProps = {
+  refs: readonly string[];
+  scope?: string;
+  listReady: boolean;
+  children: (rows?: Pick<AdminNewInformationRowsResult, "getRow">) => React.ReactNode;
+};
+function BoundInventoryInformationRows({ children, ...options }: InventoryInformationRowsProps) {
+  const rows = useAdminNewInformationContextRows({ module: "inventory", ...options });
+  return <>{children(rows)}</>;
+}
+/** Host also runs without DashboardLayout. This component always reads just the
+ * optional context; a separate bound child owns all remaining hooks. No extra
+ * provider/transport, and no requests when the admin provider is absent. */
+export function InventoryInformationRows(props: InventoryInformationRowsProps) {
+  let context: ReturnType<typeof useAdminNewInformationContext> | undefined;
+  try { context = useAdminNewInformationContext(); }
+  catch (error) {
+    if (!(error instanceof Error) || error.message !== "新信息组件须在 AdminNewInformationProvider 内使用") throw error;
+  }
+  return context ? <BoundInventoryInformationRows {...props} /> : <>{props.children()}</>;
+}
 
 type ChannelFilters = {
   name: string;
@@ -1381,6 +1405,15 @@ export default function ChannelInventoryHost() {
   const displayedChannels = supplyLink ? exactReady && exactTarget ? [exactTarget] : [] : channelResult?.items ?? [];
   const displayedChannelTotal = supplyLink ? displayedChannels.length : channelResult?.total ?? 0;
   const materialRows = materialResult?.items ?? [];
+  const inventoryListReady = ready && nativeRead && sourceContextVerified && sourceIdentityCurrent && contextCurrent
+    && enterpriseQuery.isSuccess && !enterpriseQuery.isError && !enterpriseQuery.isFetching && !enterpriseQuery.isPlaceholderData
+    && tab === "materials" && !browsingChannelsOnly && Boolean(materialResult)
+    && tabSearchRef.current === search && (!readChannelInventoryTabIntent(search) || readChannelInventoryTabIntent(search) === tab)
+    && materialsQuery.isSuccess && !materialsQuery.isError && !materialsQuery.isFetching && !materialsQuery.isPlaceholderData
+    && materialResult?.page === materialInput.page && materialResult?.pageSize === PAGE_SIZE
+    && Number.isSafeInteger(businessScope.merchantId) && businessScope.merchantId > 0;
+  // Only the actual native page, never source options, preview, batch/trash proof or a full scan.
+  const inventoryInformationRefs = materialRows.map(row => `channel-material:${row.id}`);
   // Only the current, settled native page can authorize public reference work.
   // Wait for scoped preferences too: hidden saved columns must never start IO.
   const referencesShown = columnVisible("refLcsc") || columnVisible("refIckey");
@@ -1873,7 +1906,9 @@ export default function ChannelInventoryHost() {
                 {materialsQuery.isLoading ? <tr><td colSpan={columnLayout.count} className="ci-empty">正在加载渠道库存…</td></tr> : null}
                 {materialsQuery.isError ? <tr><td colSpan={columnLayout.count} className="ci-empty ci-host-error">{errorMessage(materialsQuery.error, "渠道库存加载失败。")}</td></tr> : null}
                 {!materialsQuery.isLoading && !materialsQuery.isError && !materialRows.length ? <tr><td colSpan={columnLayout.count} className="ci-empty">暂无符合筛选条件的渠道库存。</td></tr> : null}
-                {materialRows.map((material, index) => {
+                <InventoryInformationRows key={identity} refs={inventoryInformationRefs} scope={String(businessScope.merchantId)} listReady={inventoryListReady}>
+                {newInformation => [...materialRows].sort((a, b) => Number(newInformation?.getRow(`channel-material:${b.id}`).isNew ?? false) - Number(newInformation?.getRow(`channel-material:${a.id}`).isNew ?? false)).map((material, index) => {
+                  const newInformationRow = newInformation?.getRow(`channel-material:${material.id}`);
                   const batchAssociation = materialUploadBatchAssociation(material as TeamMaterial & MaterialUploadBatchProjection);
                   const updatedAt = channelInventoryUpdatedAt(material.updatedAt);
                   const materialAccess = channelInventoryMaterialAccess(material, columnsContextVerified && canWriteMaterials && sourceContextVerified);
@@ -1882,10 +1917,10 @@ export default function ChannelInventoryHost() {
                     : !materialAccess ? "权限上下文未核验或库存写权限不可用"
                     : busy !== null ? "正在处理操作，请稍候" : undefined;
                   return (
-                  <tr key={material.id}>
+                  <tr key={material.id} ref={newInformationRow?.ref}>
                     {showDeleteSelection ? <td className="ci-selection-col">{deletion.eligible.some(row => row.id === material.id) ? <input type="checkbox" className="ci-selection-checkbox" aria-label={`选择删除库存：${material.partNumber}`} disabled={deletion.busy} checked={deletion.selected.some(row => row.id === material.id)} onChange={() => deletion.toggle(material.id)} /> : null}</td> : null}
                     {columnVisible("index") ? <td className="ci-number ci-row-index">{((materialResult?.page ?? 1) - 1) * (materialResult?.pageSize ?? PAGE_SIZE) + index + 1}</td> : null}
-                    <td className="ci-material-part-col">{inventoryView === "flat" ? <ChannelInventoryCopyPartNumber key={presentationScopeKey} partNumber={material.partNumber} resetKey={presentationScopeKey} /> : <ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} />}</td>
+                    <td className="ci-material-part-col">{inventoryView === "flat" ? <ChannelInventoryCopyPartNumber key={presentationScopeKey} partNumber={material.partNumber} resetKey={presentationScopeKey} /> : <ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} />}<AdminNewInformationRowBadge isNew={newInformationRow?.isNew ?? false} /></td>
                     {columnVisible("brand") ? <td className="ci-material-brand-col" title={material.brand}>{material.brand || "—"}</td> : null}
                     {columnVisible("recorder") ? <td className="ci-material-recorder-col admin-cell-primary" title={(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}>{(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}</td> : null}
                     {columnVisible("source") ? <td className="ci-material-source-col"><ChannelInventoryCustomerSource material={material} contextVerified={materialAccess} /></td> : null}
@@ -1927,6 +1962,7 @@ export default function ChannelInventoryHost() {
                   </tr>
                   );
                 })}
+                </InventoryInformationRows>
               </tbody>
             </table>
           </div>

@@ -1,6 +1,8 @@
 import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
 import { useEffect, useState } from "react";
 import { AdminDataPanel, AdminFilterBar, AdminPage } from "@/components/admin/UnifiedAdminPage";
+import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import {
   ChevronLeft,
   ChevronRight,
@@ -262,6 +264,19 @@ export default function ProcurementDemands() {
   const items = result?.items ?? [];
   const currentPage = result?.page ?? page;
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
+  // usePageMemory proves the current BFF-bound identity. Never inspect pending,
+  // stale placeholder, failed or fetching list data; only this displayed page.
+  const listReady = d51Ready && listQuery.isSuccess && !listQuery.isError &&
+    !listQuery.isFetching && !listQuery.isPlaceholderData && listQuery.isFetchedAfterMount !== false;
+  const newInformationRows = useAdminNewInformationContextRows({
+    module: "procurement",
+    refs: listReady ? items.map(demand => `demand:${demand.id}`) : [],
+    listReady,
+  });
+  // Stable page-local partition; do not prefetch/sort the unseen backend queue.
+  const pageRows = [...items].sort((left, right) =>
+    Number(newInformationRows.getRow(`demand:${right.id}`).isNew) -
+    Number(newInformationRows.getRow(`demand:${left.id}`).isNew));
 
   useEffect(() => {
     if (result?.page && result.page !== page) setPage(result.page);
@@ -396,14 +411,16 @@ export default function ProcurementDemands() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map(demand => (
+              {pageRows.map(demand => (
                 <TableRow
                   key={demand.id}
+                  ref={newInformationRows.getRow(`demand:${demand.id}`).ref}
                   className="h-[60px]" data-page-memory-row={String(demand.id)}
                 >
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                       <span className="admin-cell-primary procurement-demand-number">{demand.demandNo}</span>
+                      <AdminNewInformationRowBadge isNew={newInformationRows.getRow(`demand:${demand.id}`).isNew} />
                       {demand.priority === "urgent" ? <span className="procurement-demand-priority font-medium text-red-600">紧急</span> : null}
                     </div>
                   </TableCell>

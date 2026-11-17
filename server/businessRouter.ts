@@ -60,6 +60,18 @@ import { createChannelReferenceRouter, channelReferenceMaterialIdsSchema, type A
 import { publishFactoryMaterialInputSchema, previewFactoryMaterialReceptionInputSchema, previewFactoryMaterialReceptionResultSchema } from "../client/src/business/platform/shared/channelFactoryPublication";
 import { withOfficialChannelProfileRead } from "./services/officialChannelProfileRead";
 import { applyBusinessTestOrderArchives } from "./services/businessTestOrderArchive";
+import { newInformationFactsInputSchema, newInformationFactsResultSchema } from "../shared/adminNewInformationFacts";
+
+export const BUSINESS_NEW_INFORMATION_READS = {
+  "customer.newInformationFacts": "customers",
+  "channelInventory.newInformationFacts": "inventory",
+  "enterprise.inquiryNewInformationFacts": "inquiries",
+  "customerDemand.procurementNewInformationFacts": "procurement",
+  "inbound.newInformationFacts": "inventory",
+  "crmSalesOrder.newInformationFacts": "orders",
+  "order.sellerNewInformationFacts": "orders",
+} as const;
+export type BusinessNewInformationReadMethod = keyof typeof BUSINESS_NEW_INFORMATION_READS;
 import {
   businessSalesOrderMetadataGetSchema, businessSalesOrderSaveReceiverSchema,
   businessSalesOrderAddAfterSaleSchema, businessSalesOrderUpdateAfterSaleSchema,
@@ -126,6 +138,7 @@ export type BusinessMethodCapability = {
 
 /** Auditable, source-controlled BFF capabilities; no browser-supplied method selector exists. */
 export const BUSINESS_METHOD_CAPABILITIES = [
+  ...Object.entries(BUSINESS_NEW_INFORMATION_READS).map(([method, module]) => ({ method, module, mode: "read" as const })),
   { method: "inventory.*", module: "inventory", mode: "read" },
   { method: "inventory.manage.*", module: "inventory", mode: "write" },
   { method: "channelInventory.listChannels", module: "inventory", mode: "read" },
@@ -329,9 +342,14 @@ async function withCurrentBusinessAuthorization<T>(
   merchantId: number,
   capability: { module: BusinessModule; mode: BusinessAccessMode; method?: string; customerInventory?: boolean },
   operation: (authorization: CurrentBusinessAuthorization) => Promise<T>,
+  /** Internal server-only call from notification service while its account fence is held. */
+  withinNotificationViewerFence = false,
 ) {
   const account = requireBusinessAdminAccount(ctx);
-  return db.withBusinessAuthorizationFence({ adminUserId: account.id, merchantId }, async () => {
+  if (withinNotificationViewerFence && !(capability.method && capability.method in BUSINESS_NEW_INFORMATION_READS)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "无效通知读取" });
+  }
+  const readAuthorized = async () => {
     const staffBinding = await requireCurrentBusinessStaffBinding(account.id);
     const channel = capability.method?.startsWith("channelInventory.") === true;
     const mall = MALL_INVENTORY_METHOD_IDS.includes(capability.method as (typeof MALL_INVENTORY_METHOD_IDS)[number]);
@@ -361,7 +379,7 @@ async function withCurrentBusinessAuthorization<T>(
     const withProfileRead = (run: (projection: OfficialInventoryPermissions["channelProfileTeamRead"], management?: OfficialInventoryPermissions["channelMaterialManagement"]) => Promise<T>) =>
       channel ? withOfficialChannelProfileRead(ctx, staffBinding.frontUserId, run, !profileRead) : run(undefined);
     return withProfileRead(async (channelProfileTeamRead, channelMaterialManagement) => {
-    const nativeReadMethods = ["channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
+    const nativeReadMethods = ["channelInventory.newInformationFacts", "channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource", "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit", "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches"];
     const officialReadProjection = officialInventoryPermissions?.read === true && capability.mode === "read"
       && !capability.customerInventory && (contextProjection || profileRead || nativeReadMethods.includes(capability.method ?? ""));
     const merchant = await assertBusinessMerchantAccess(ctx, merchantId, capability.module, capability.mode, officialReadProjection);
@@ -402,7 +420,44 @@ async function withCurrentBusinessAuthorization<T>(
     } : undefined;
     return operation({ account, staffBinding, scope, merchant, officialInventoryPermissions: requestOfficialInventoryPermissions });
     });
-  });
+  };
+  return withinNotificationViewerFence ? readAuthorized()
+    : db.withBusinessAuthorizationFence({ adminUserId: account.id, merchantId }, readAuthorized);
+}
+
+/** Internal provider entry only. It is called exclusively within the notification
+ * service's account fence; no HTTP selector or skip-lock input exists. */
+export async function readBusinessNewInformationFacts(
+  ctx: TrpcContext, merchantId: number, method: BusinessNewInformationReadMethod,
+  input: { refs?: string[] },
+) {
+  const params = newInformationFactsInputSchema.parse(input);
+  const module = BUSINESS_NEW_INFORMATION_READS[method];
+  if (!module) throw new TRPCError({ code: "FORBIDDEN", message: "无效通知读取" });
+  return withCurrentBusinessAuthorization(ctx, merchantId, { method, module, mode: "read" }, async authorization => {
+    const { account, staffBinding, scope, merchant, officialInventoryPermissions } = authorization;
+    const live = await db.getAdminUserById(account.id);
+    if (!live || live.status !== "active" || live.sessionVersion !== account.sessionVersion) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "后台账号会话已失效" });
+    }
+    const actor = businessAuditActor(ctx);
+    const raw = await callPlatformBusinessCommand({
+      binding: businessEnterpriseBindingFromMerchant(merchant),
+      staffUserId: staffBinding.frontUserId, bindingVersion: staffBinding.bindingVersion,
+      adminActor: { id: account.id, name: actor.operatorName, role: actor.operatorRole },
+      requestId: randomUUID(), method, params, officialInventoryPermissions,
+    });
+    const result = newInformationFactsResultSchema.parse(raw);
+    const version = createHash("sha256").update(JSON.stringify([
+      account.id, live.sessionVersion, staffBinding.frontUserId, staffBinding.bindingVersion,
+      scope.scopeVersion, result.scope.identity, result.scope.version,
+      officialInventoryPermissions ?? null,
+    ])).digest("hex");
+    return { ...result, scope: {
+      identity: `admin:${account.id}:merchant:${merchant.id}:${method}`,
+      version, actorKey: `admin:${account.id}`,
+    } };
+  }, true);
 }
 
 /** Result identity is server-derived. Only the original action's request key is
@@ -505,6 +560,7 @@ async function forwardBusinessMethod(
       result = { ...page, items: page.items.map(({ recorderAdminAccountId, originalRecorderName: _untrustedName, ...item }) => ({ ...item,
         originalRecorderName: typeof recorderAdminAccountId === "number" ? names.get(recorderAdminAccountId) ?? null : null })) };
     }
+    if (capability.method in BUSINESS_NEW_INFORMATION_READS) return newInformationFactsResultSchema.parse(result);
     // The new logical read-only source query retains the complete binding/scope
     // fence, but adds no production command-audit DML. Other methods are unchanged.
     if (capability.method === "channelInventory.previewFactoryMaterialReception") {
@@ -638,6 +694,7 @@ const MALL_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "mallInventory.requestStatus": z.object({ requestId: mallInventoryRequestIdSchema }),
 };
 function businessInputSchema(method: string): z.ZodTypeAny {
+  if (method in BUSINESS_NEW_INFORMATION_READS) return newInformationFactsInputSchema;
   if (MALL_BUSINESS_INPUT_SCHEMAS[method]) return MALL_BUSINESS_INPUT_SCHEMAS[method];
   if (method === "customer.starContext") return customerStarContextInputSchema;
   if (method === "customer.setStar") return customerSetStarSchema;
@@ -776,6 +833,7 @@ const inventoryBusinessRouter = router({
  * idempotency with the bound real staff actor before invoking its CPI service.
  */
 const channelInventoryBusinessRouter = router({
+  newInformationFacts: businessQuery("channelInventory.newInformationFacts", "inventory"),
   publishFactoryMaterial: businessMutation("channelInventory.publishFactoryMaterial", "inventory"),
   previewFactoryMaterialReception: businessQuery("channelInventory.previewFactoryMaterialReception", "inventory"),
   listChannels: businessQuery("channelInventory.listChannels", "inventory"),
@@ -845,6 +903,7 @@ const importInventoryBusinessRouter = router({
 });
 
 const inboundBusinessRouter = router({
+  newInformationFacts: businessQuery("inbound.newInformationFacts", "inventory"),
   procurementBuyers: businessQuery("inbound.procurementBuyers", "inventory"),
   uploadPhoto: businessMutation("inbound.uploadPhoto", "inventory"),
   photos: businessQuery("inbound.photos", "inventory"),
@@ -867,6 +926,7 @@ const inboundBusinessRouter = router({
 });
 
 const customerBusinessRouter = router({
+  newInformationFacts: businessQuery("customer.newInformationFacts", "customers"),
   context: businessQuery("customer.context", "customers"),
   starContext: businessQuery("customer.starContext", "customers"),
   starState: businessQuery("customer.starState", "customers"),
@@ -895,6 +955,7 @@ const customerBusinessRouter = router({
 });
 
 const customerDemandBusinessRouter = router({
+  procurementNewInformationFacts: businessQuery("customerDemand.procurementNewInformationFacts", "procurement"),
   suggestPartNumbers: businessQuery("customerDemand.suggestPartNumbers", "customers"),
   quoteSave: businessMutation("customerDemand.quoteSave", "procurement"),
   quoteWithdraw: businessMutation("customerDemand.quoteWithdraw", "procurement"),
@@ -912,6 +973,7 @@ const customerDemandBusinessRouter = router({
 });
 
 const crmSalesOrderBusinessRouter = router({
+  newInformationFacts: businessQuery("crmSalesOrder.newInformationFacts", "orders"),
   metadataGet: publicProcedure.input(businessSalesOrderMetadataGetSchema).query(({ ctx, input }) =>
     withBusinessSalesOrderMetadata(ctx, input, "read", provenance => getBusinessSalesOrderMetadata(provenance))),
   saveReceiver: publicProcedure.input(businessSalesOrderSaveReceiverSchema).mutation(({ ctx, input }) =>
@@ -949,6 +1011,7 @@ const purchaseOrderBusinessRouter = router({
   cancel: closedPurchaseOrderProcedure.mutation(() => null),
 });
 const enterpriseBusinessRouter = router({
+  inquiryNewInformationFacts: businessQuery("enterprise.inquiryNewInformationFacts", "inquiries"),
   me: businessQuery("enterprise.me", "context"),
   members: businessQuery("enterprise.members", "users"),
   invitations: businessQuery("enterprise.invitations", "users"),
@@ -991,6 +1054,7 @@ const companyBusinessRouter = router({
 });
 
 const orderBusinessRouter = router({
+  sellerNewInformationFacts: businessQuery("order.sellerNewInformationFacts", "orders"),
   sellerOrders: businessQuery("order.sellerOrders", "orders"),
   tracks: businessQuery("order.tracks", "orders"),
   expressCos: businessQuery("order.expressCos", "orders"),

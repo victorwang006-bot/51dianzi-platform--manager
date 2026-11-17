@@ -18,6 +18,9 @@ import { toast } from "sonner";
 import { useLocation, useSearch } from "wouter";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { trpc } from "../../../../api/business-trpc";
+import { useBusinessScope } from "../../../../BusinessScope";
+import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import {
   AdminPage,
   AdminPageHeader,
@@ -204,6 +207,7 @@ function SalesOrdersContent({
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const search = useSearch();
+  const businessScope = useBusinessScope();
   const deepLinkedDemandNoRef = useRef("");
   const deepLinkedDemandIdRef = useRef<number | undefined>(undefined);
   const handledIntentRef = useRef<string | number | null>(null);
@@ -342,6 +346,20 @@ function SalesOrdersContent({
     isError: rawCandidatesQuery.isError || candidateMismatch,
     error: candidateMismatch ? scopeError : rawCandidatesQuery.error,
   };
+  const pageRows = listQuery.data?.items ?? [];
+  const newInformationRows = useAdminNewInformationContextRows({
+    module: "sales",
+    refs: pageRows.map(order => `crm-sales:${order.id}`),
+    scope: String(businessScope.merchantId),
+    listReady: ready && businessScope.contextVerification.state === "verified" &&
+      businessScope.staffPrincipal.status === "ready" && listQuery.isSuccess &&
+      !listQuery.isError && !listQuery.isFetching && !listQuery.isPlaceholderData &&
+      listQuery.isFetchedAfterMount !== false,
+  });
+  // Preserve server filters/pagination: only the already displayed page is reordered.
+  const displayedRows = [...pageRows].sort((a, b) =>
+    Number(newInformationRows.getRow(`crm-sales:${b.id}`).isNew) -
+    Number(newInformationRows.getRow(`crm-sales:${a.id}`).isNew));
   const totalPages = Math.max(
     1,
     Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE)
@@ -968,13 +986,15 @@ function SalesOrdersContent({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {listQuery.data.items.map(order => (
+                  {displayedRows.map(order => (
                     <TableRow
                       key={order.id}
+                      ref={newInformationRows.getRow(`crm-sales:${order.id}`).ref}
                       className="h-14"
                       data-page-memory-row={String(order.id)}
                     >
                       <TableCell className="min-w-0 px-2 py-1.5">
+                        <div className="flex min-w-0 items-center">
                         <button
                           type="button"
                           className="crm-sales-orders-order-link block w-full truncate text-left font-medium text-[#185FA5] hover:underline"
@@ -983,6 +1003,8 @@ function SalesOrdersContent({
                         >
                           {order.orderNumber}
                         </button>
+                        <AdminNewInformationRowBadge isNew={newInformationRows.getRow(`crm-sales:${order.id}`).isNew} />
+                        </div>
                       </TableCell>
                       <TableCell className="min-w-0 px-2 py-1.5 whitespace-normal">
                         <div

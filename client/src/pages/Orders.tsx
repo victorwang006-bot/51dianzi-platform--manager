@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { formatBeijingDateTimeWithSeconds } from "@shared/beijingTime";
+import { useAdminNewInformationContextRows } from "@/lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "@/components/admin/AdminNewInformationBadge";
 
 /**
  * 订单状态展示配置。
@@ -63,6 +65,10 @@ function OrderStatus({ status }: { status: string }) {
 }
 
 function OrderList() {
+  return <DashboardLayout><OrderListContent /></DashboardLayout>;
+}
+
+function OrderListContent() {
   const [, navigate] = useLocation();
   const [page, setPage] = useState(1);
   const [draftKeyword, setDraftKeyword] = useState("");
@@ -79,6 +85,16 @@ function OrderList() {
   const stats = statsQuery.data;
   const pageCount = Math.max(1, Math.ceil((query.data?.total ?? 0) / 20));
   const isRefreshing = query.isFetching || statsQuery.isFetching;
+  const pageRows = query.data?.rows ?? [];
+  const newInformationRows = useAdminNewInformationContextRows({
+    module: "sales",
+    refs: pageRows.map(order => `order:${order.id}`),
+    listReady: query.isSuccess && !query.isError && !query.isFetching &&
+      !query.isPlaceholderData && query.isFetchedAfterMount !== false,
+  });
+  const displayedRows = [...pageRows].sort((a, b) =>
+    Number(newInformationRows.getRow(`order:${b.id}`).isNew) -
+    Number(newInformationRows.getRow(`order:${a.id}`).isNew));
 
   const submitSearch = () => {
     setPage(1);
@@ -86,7 +102,6 @@ function OrderList() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 p-4 sm:p-6" data-admin-page-family="platform-orders-list" data-admin-list-page="true">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between aui-page-header" data-admin-header="primary" data-admin-list-header="true">
           <div data-admin-list-heading="true">
@@ -158,10 +173,11 @@ function OrderList() {
                     <TableHead>下单时间</TableHead><TableHead className="sticky right-0 z-20 bg-muted/90 text-right">详情</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {query.data.rows.map(order => (
-                      <TableRow key={order.id} className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
+                    {displayedRows.map(order => (
+                      <TableRow key={order.id} ref={newInformationRows.getRow(`order:${order.id}`).ref} className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
                         <TableCell className="sticky left-0 z-10 bg-card">
                           <Link href={`/orders/${order.id}`} onClick={event => event.stopPropagation()} className="font-mono text-sm font-semibold text-primary hover:underline">{order.orderNo}</Link>
+                          <AdminNewInformationRowBadge isNew={newInformationRows.getRow(`order:${order.id}`).isNew} />
                           <div className="mt-1 text-xs text-muted-foreground">
                             {order.batchNo ? `父单 ${order.batchNo} · 子单 ${String(order.batchSeq).padStart(2, "0")}` : "历史 DZ 订单"}
                           </div>
@@ -210,7 +226,6 @@ function OrderList() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

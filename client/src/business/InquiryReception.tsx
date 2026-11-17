@@ -13,6 +13,9 @@ import {
 import { groupReceptionQueue, receptionMaterialKey, sortReceptionQueue } from "./InquiryReceptionGrouping";
 import { formatBeijingDateTime, formatBeijingRelativeTime } from "./platform/shared/beijingTime";
 import "./InquiryReception.css";
+import { businessStorageScope } from "./BusinessScope";
+import { useAdminNewInformationContextRows } from "../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../components/admin/AdminNewInformationBadge";
 
 // Match the front chat's five original gradients. Never assign a customer's color
 // from row/conversation IDs or a display name; those are not buyer identities.
@@ -89,6 +92,21 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
   const materialRows = current.materialKey ? authorizedRows.filter(row => receptionMaterialKey(row) === current.materialKey) : authorizedRows;
   const queue = sortReceptionQueue(filterReceptionQueue(materialRows, data.conversations, current.filter, current.text)
     .filter(row => current.section !== "pinned" || conversationById.get(row.conversationId)?.pinned === true), data.conversations);
+  // Only the real filtered queue is inspected. Inbox prefetch/other material
+  // groups are NOT exposure witnesses, and this never calls chat.markRead.
+  const listReady = ready && view === "mine" && data.scope.contextVerification.state === "verified" &&
+    data.scope.contextVerification.identity === data.scope.storageScope &&
+    businessStorageScope() === data.scope.storageScope &&
+    [data.enterprise, data.inbox, data.query].every(query =>
+      query.isSuccess && !query.isError && !query.isFetching && !query.isPlaceholderData);
+  const newInformation = useAdminNewInformationContextRows({
+    module: "reception", refs: queue.map(row => `inquiry:${row.id}`),
+    scope: String(data.scope.merchantId), listReady,
+  });
+  // Stable page-local promotion only; retain original filters, pins and order
+  // among equal groups. Never fetch additional rows just for the new sort.
+  const displayedQueue = [...queue].sort((a, b) =>
+    Number(newInformation.getRow(`inquiry:${b.id}`).isNew) - Number(newInformation.getRow(`inquiry:${a.id}`).isNew));
   const unreadConversationCount = new Set(authorizedRows.filter(row => Number(conversationById.get(row.conversationId)?.unreadCount) > 0).map(row => row.conversationId)).size;
   const selected = authorizedRows.find(row => row.conversationId === selectedId && (!hasInquirySelection || selectedInquiryId !== null && row.id === selectedInquiryId));
   const canOpenConversation = ready && view === "mine" && !!selectedId && conversationById.has(selectedId);
@@ -120,12 +138,13 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
     const avatarUrl = typeof conversation?.otherUserAvatar === "string" && conversation.otherUserAvatar.trim() ? conversation.otherUserAvatar : null;
     const requestedQty = receptionRequestedQuantity(row);
     const title = `${name} · ${row.partNumber} · ${requestedQty !== null ? `采购数量 ${requestedQty}` : "数量待确认"} · ${INQUIRY_RECEPTION_FILTER_LABELS[row.status]}`;
-    return <button key={row.id} type="button" className="inquiry-reception__item" title={title} data-inquiry-id={row.id} data-unread={unread > 0 ? "true" : "false"} data-pinned={conversation?.pinned === true ? "true" : "false"} aria-pressed={selected?.id === row.id} onClick={() => openConversation(row.conversationId, row.id)}>
+    const informationRow = newInformation.getRow(`inquiry:${row.id}`);
+    return <button key={row.id} ref={informationRow.ref} type="button" className="inquiry-reception__item" title={title} data-inquiry-id={row.id} data-unread={unread > 0 ? "true" : "false"} data-pinned={conversation?.pinned === true ? "true" : "false"} aria-pressed={selected?.id === row.id} onClick={() => openConversation(row.conversationId, row.id)}>
       <span className={`inquiry-reception__avatar ${avatarUrl ? "" : color}`} data-avatar-user-id={positiveId(buyerId) ? buyerId : undefined}>
         {avatarUrl ? <UserAvatar key={`${buyerId}:${avatarUrl}`} avatarUrl={avatarUrl} name={name} userId={positiveId(buyerId) ? buyerId : undefined} className="inquiry-reception__avatar inquiry-reception__avatar-image" fallbackClassName={color} /> : name.charAt(0)}
       </span>
       <span className="inquiry-reception__item-body">
-        <span className="inquiry-reception__item-top"><strong title={name}>{name}</strong>{conversation?.pinned === true ? <Pin size={12} aria-label="已置顶" /> : null}<time title={formatBeijingDateTime(conversation?.lastMessageAt || row.lastActivityAt || row.createdAt)}>{formatBeijingRelativeTime(conversation?.lastMessageAt || row.lastActivityAt || row.createdAt)}</time></span>
+        <span className="inquiry-reception__item-top"><strong title={name}>{name}</strong><AdminNewInformationRowBadge isNew={informationRow.isNew} />{conversation?.pinned === true ? <Pin size={12} aria-label="已置顶" /> : null}<time title={formatBeijingDateTime(conversation?.lastMessageAt || row.lastActivityAt || row.createdAt)}>{formatBeijingRelativeTime(conversation?.lastMessageAt || row.lastActivityAt || row.createdAt)}</time></span>
         <span className="inquiry-reception__preview-row"><span className="inquiry-reception__preview">{conversation?.lastMessagePreview || (conversation ? row.brand || "询价" : "监督记录 · 非本人参与会话")}</span>{unread > 0 ? <span className="inquiry-reception__unread" aria-label={`${unread} 条询价未读`}>{unread > 99 ? "99+" : unread}</span> : null}</span>
       </span>
     </button>;
@@ -164,7 +183,7 @@ export default function InquiryReception({ canReply = false }: { canReply?: bool
           <div className="inquiry-reception__queue-filters" role="group" aria-label="会话筛选">
             {(["all", "unread", "pinned"] as const).map(section => <button key={section} type="button" aria-pressed={current.section === section && (current.filter === "all" || current.filter === "unread")} onClick={() => chooseSection(section)}>{section === "all" ? "全部" : section === "unread" ? "未读" : "置顶"}</button>)}
           </div>
-          <div className="inquiry-reception__queue-list">{loading && !allRows.length ? <p className="inquiry-reception__state">正在读取询价…</p> : !queue.length ? <p className="inquiry-reception__state">暂无符合条件的询价</p> : queue.map(renderCustomer)}</div>
+          <div className="inquiry-reception__queue-list">{loading && !allRows.length ? <p className="inquiry-reception__state">正在读取询价…</p> : !displayedQueue.length ? <p className="inquiry-reception__state">暂无符合条件的询价</p> : displayedQueue.map(renderCustomer)}</div>
         </aside>
         <main className="inquiry-reception__conversation" aria-label="原企业接待会话">
           {selectedId ? <div className="inquiry-reception__detail-bar"><button type="button" className="inquiry-reception__back" onClick={() => openConversation(null)}><ArrowLeft size={15} />返回会话</button><span>{selected?.partNumber || "询价会话"}</span>{selected ? <button type="button" className="inquiry-reception__summary-trigger" onClick={() => setSummaryOpen(true)}><Info size={15} />业务摘要</button> : null}</div> : null}

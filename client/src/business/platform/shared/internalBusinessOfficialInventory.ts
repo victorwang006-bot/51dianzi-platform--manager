@@ -31,6 +31,7 @@ export const NATIVE_TEAM_READ_METHODS: readonly string[] = [
   "channelInventory.listDeletedMaterials", "channelInventory.listUploadBatches",
   "channelInventory.customerSupplySummary", "channelInventory.customerSupplyContext",
   "channelInventory.listTeamMaterials", "channelInventory.listTeamSourceOptions", "channelInventory.getTeamMaterialSource",
+  "channelInventory.newInformationFacts",
   "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit",
 ];
 export const NATIVE_FACTORY_PUBLISH_METHODS: readonly string[] = ["channelInventory.publishFactoryMaterial", "channelInventory.previewFactoryMaterialReception"];

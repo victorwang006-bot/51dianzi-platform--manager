@@ -106,6 +106,9 @@ export const BUSINESS_METHOD_IDS = [
   "pickupPoint.mine", "pickupPoint.save", "pickupPoint.remove",
   "publicReview.unreadCount", "publicReview.inbox", "publicReview.reply", "publicReview.markInboxRead",
   "material.lookup", "demand.receivedQuotes",
+  "customer.newInformationFacts", "enterprise.inquiryNewInformationFacts",
+  "customerDemand.procurementNewInformationFacts", "inbound.newInformationFacts",
+  "crmSalesOrder.newInformationFacts", "order.sellerNewInformationFacts",
   ...CHANNEL_INVENTORY_BUSINESS_METHOD_IDS,
   ...BUSINESS_CHAT_METHOD_IDS,
   "publicReview.state", "publicReview.create",
@@ -141,6 +144,14 @@ const INQUIRY_RECEIVE: BusinessMethodCapability = { mode: "write", permission: "
 export const BUSINESS_METHOD_CAPABILITIES: Record<BusinessMethodId, BusinessMethodCapability> = Object.fromEntries(
   BUSINESS_METHOD_IDS.map(method => [method, READ]),
 ) as Record<BusinessMethodId, BusinessMethodCapability>;
+
+// Fixed facts readers retain their original module gates and bound staff actor.
+BUSINESS_METHOD_CAPABILITIES["customer.newInformationFacts"] = CUSTOMER_READ;
+BUSINESS_METHOD_CAPABILITIES["enterprise.inquiryNewInformationFacts"] = INQUIRY_RECEIVE_READ;
+BUSINESS_METHOD_CAPABILITIES["customerDemand.procurementNewInformationFacts"] = PROCUREMENT_DEMAND_READ;
+BUSINESS_METHOD_CAPABILITIES["inbound.newInformationFacts"] = INVENTORY_INBOUND_READ;
+BUSINESS_METHOD_CAPABILITIES["crmSalesOrder.newInformationFacts"] = SALES_ORDER_READ;
+BUSINESS_METHOD_CAPABILITIES["order.sellerNewInformationFacts"] = READ;
 
 for (const method of [
   "inventory.list", "inventory.listPaged", "inventory.get", "inventory.spotVerificationList", "inventory.assignmentOptions",

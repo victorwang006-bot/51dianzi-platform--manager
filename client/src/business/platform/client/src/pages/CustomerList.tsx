@@ -27,6 +27,9 @@ import { trpc } from "../../../../api/business-trpc";
 import { customerWorkbenchLocation } from "../components/customers/customerWorkbench";
 import { AdminPage, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { CompactListToolbar } from "@/business/platform/client/src/components/ui/CompactListToolbar";
+import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
+import { useBusinessScope } from "../../../../BusinessScope";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -112,6 +115,7 @@ export default function CustomerList() {
   const search = useSearch();
   const utils = trpc.useUtils();
   const contextQuery = trpc.customer.context.useQuery(undefined, { staleTime: 0, refetchOnMount: "always" });
+  const businessScope = useBusinessScope();
   const contactScope = useCustomerContactScope(contextQuery.data);
   const supplyAuthority = useCustomerSupplyAuthority(contactScope.scope, contactScope.ready);
   const [supplyCustomer, setSupplyCustomer] = useState<{ id: number; version: number; authorityKey: string } | null>(null);
@@ -287,6 +291,21 @@ export default function CustomerList() {
       && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
     ? listQuery.data : undefined;
   useListPositionRestore(listQuery, Boolean(result) && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError);
+  // Original successful CURRENT page only. Never inspect prefetches/all pages or clear on menu entry.
+  const pageRows = result?.items ?? [];
+  const newInformationListReady = Boolean(result) && canQueryList && listQuery.isSuccess
+    && !listQuery.isError && !listQuery.isFetching && !listQuery.isPlaceholderData
+    && contextQuery.isSuccess && !contextQuery.isError && !contextQuery.isFetching && !contextQuery.isPlaceholderData
+    && businessScope.contextVerification.state === "verified"
+    && businessScope.contextVerification.identity === businessScope.storageScope
+    && businessScope.staffPrincipal.enterpriseId === contactScope.scope?.enterpriseId
+    && businessScope.frontUser.id === contactScope.scope?.actorUserId;
+  const newInformationRows = useAdminNewInformationContextRows({ module: "customers",
+    refs: pageRows.map(customer => `customer:${customer.id}`),
+    scope: String(businessScope.merchantId), listReady: newInformationListReady });
+  // Stable page-local promotion; filters, server pagination and equal-priority star order stay intact.
+  const displayedCustomerRows = [...pageRows].sort((a, b) =>
+    Number(newInformationRows.getRow(`customer:${b.id}`).isNew) - Number(newInformationRows.getRow(`customer:${a.id}`).isNew));
   stars.observeRows(result?.items ?? []);
   const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
   const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, listInput, pageCustomerIds]);
@@ -883,11 +902,12 @@ export default function CustomerList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result?.items.map(customer => {
+                {displayedCustomerRows.map(customer => {
                   const incomplete = customerNeedsCompletion(customer);
                   const rowStarred = customer.starUserId === customer.assignedUserId && customer.isStarred === true;
+                  const newInformationRow = newInformationRows.getRow(`customer:${customer.id}`);
                   return (
-                    <TableRow key={customer.id} data-page-memory-row={String(customer.id)}>
+                    <TableRow key={customer.id} ref={newInformationRow.ref} data-page-memory-row={String(customer.id)}>
                       <TableCell>
                         <div className="customer-list-name-line">
                         <button
@@ -913,6 +933,7 @@ export default function CustomerList() {
                         </button>
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5">
+                          <AdminNewInformationRowBadge isNew={newInformationRow.isNew} />
                           {incomplete ? (
                             <span className="customer-list-status rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
                               待补全

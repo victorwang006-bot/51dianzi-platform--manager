@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, isNotNull, like, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, like, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { officialChannelTeams } from "../../drizzle/officialChannelSchema";
 import { materials as materialCatalog } from "../../drizzle/schema";
@@ -352,6 +352,12 @@ type BulkResult = {
   successful: number;
   errors: { id: number; message: string }[];
   idempotent?: boolean;
+};
+
+/** Internal facts projection, never a business DTO or public-catalog read. */
+export type OfficialMallNewInformationRead = {
+  access: OfficialAccess;
+  items: Pick<OfficialMallMaterialRow, "id" | "createdAt" | "createdByAdminUserId">[];
 };
 
 export function createOfficialMallService(deps: OfficialMallDependencies) {
@@ -807,6 +813,33 @@ export function createOfficialMallService(deps: OfficialMallDependencies) {
           message: error.message,
         };
       }
+    },
+    /**
+     * One authority-fenced RR transaction, no writes, pagination or mutable fields.
+     * Reuses the native account/session/grant/team algorithm exactly as private list.
+     * undefined IDs means ALL current authorized rows; [] means an empty intersection.
+     */
+    async readNewInformationFacts(
+      actor: OfficialActor,
+      ids?: readonly number[]
+    ): Promise<OfficialMallNewInformationRead> {
+      if (ids !== undefined && (ids.length > 100 || ids.some(id => !Number.isSafeInteger(id) || id <= 0 || id > 2147483647)))
+        fail("商城物料事实引用无效");
+      return withAccess(actor, "officialInventory.read", async (tx, access) => {
+        const items = await tx
+          .select({
+            id: materials.id,
+            createdAt: materials.createdAt,
+            createdByAdminUserId: materials.createdByAdminUserId,
+          })
+          .from(materials)
+          .where(and(
+            deps.officialTeamPredicate(access, materials),
+            ids === undefined ? undefined : ids.length ? inArray(materials.id, [...ids]) : sql`1 = 0`
+          ))
+          .orderBy(asc(materials.id));
+        return { access, items };
+      });
     },
     async list(
       actor: OfficialActor,

@@ -63,7 +63,7 @@ export type AdminModuleTabsProps<T extends AdminWorkspaceNavigationItem> =
      */
     renderItem?: (item: T, state: AdminWorkspaceItemRenderState) => ReactNode;
     /** Preserve existing unread/module notification badges, without data fetching. */
-    renderBadge?: (item: T) => ReactNode;
+    renderBadge?: (item: T, source?: SalesOrderSource) => ReactNode;
   };
 
 export type AdminWorkspaceNavigationProps<
@@ -494,7 +494,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
         onFocus={() => (onPreload ?? onItemIntent)?.(item)}
       >
         {salesEntry ? salesEntry.label : renderItem ? renderItem(item, { isActive, workspaceId }) : item.label}
-        {renderBadge?.(item)}
+        {renderBadge?.(item, salesSource)}
       </button>
     );
   }
@@ -565,7 +565,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             (onPreload ?? onItemIntent)?.(receptionItem);
           }}
           onFocus={() => (onPreload ?? onItemIntent)?.(receptionItem)}
-        >询价接待<InquiryReceptionNavigationBadge /></button>
+        >询价接待{renderBadge?.(receptionItem)}</button>
       ) : null}
       {workspaces.map(workspace => {
         const isActive = workspace.id === "sales-orders" ? salesActive : workspace.id === activeWorkspaceId;

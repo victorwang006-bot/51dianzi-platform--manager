@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "../../../../api/business-trpc";
 import PlatformLayout from "../../../../BusinessContentFrame";
+import { useBusinessScope } from "../../../../BusinessScope";
+import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import { ChevronDown, Download, Search } from "lucide-react";
 import { ORDER_STATUS_META } from "../../../shared/cartUtils";
 import LogisticsDialog from "../components/LogisticsDialog";
@@ -196,6 +199,7 @@ export function canMutateOutboundOrder(readOnly: boolean) {
 
 export default function OutboundManagement({ readOnly = false }: OutboundManagementProps) {
   const utils = trpc.useUtils();
+  const businessScope = useBusinessScope();
 
   // 勾选状态
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -252,7 +256,8 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
     });
   }, []);
 
-  const { data: orders, isLoading } = trpc.order.sellerOrders.useQuery();
+  const sellerOrdersQuery = trpc.order.sellerOrders.useQuery();
+  const { data: orders, isLoading } = sellerOrdersQuery;
   const { data: expressCos } = trpc.order.expressCos.useQuery();
 
   const [filterInput, setFilterInput] = useState(emptyFilters());
@@ -429,6 +434,18 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageRows = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const newInformationRows = useAdminNewInformationContextRows({
+    module: "sales",
+    refs: pageRows.map(order => `order:${order.id}`),
+    scope: String(businessScope.merchantId),
+    listReady: businessScope.contextVerification.state === "verified" &&
+      businessScope.staffPrincipal.status === "ready" && sellerOrdersQuery.isSuccess &&
+      !sellerOrdersQuery.isError && !sellerOrdersQuery.isFetching &&
+      !sellerOrdersQuery.isPlaceholderData && sellerOrdersQuery.isFetchedAfterMount !== false,
+  });
+  const displayedRows = [...pageRows].sort((a, b) =>
+    Number(newInformationRows.getRow(`order:${b.id}`).isNew) -
+    Number(newInformationRows.getRow(`order:${a.id}`).isNew));
 
   useEffect(() => {
     if (openMenu === null) return;
@@ -586,20 +603,21 @@ export default function OutboundManagement({ readOnly = false }: OutboundManagem
                 <th>订单 / 日期</th><th>客户 / 收货人</th><th>商品明细</th><th className="sales-order-numeric">含税金额</th><th>配送 / 物流</th><th>状态</th><th className="text-right">操作</th>
               </tr></thead>
               <tbody>
-                {isLoading ? <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">加载中…</td></tr> : pageRows.length === 0 ? <tr><td colSpan={8} className="py-14 text-center text-muted-foreground">暂无匹配订单</td></tr> : pageRows.map(order => {
+                {isLoading ? <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">加载中…</td></tr> : pageRows.length === 0 ? <tr><td colSpan={8} className="py-14 text-center text-muted-foreground">暂无匹配订单</td></tr> : displayedRows.map(order => {
                   const itemsExpanded = expandedItemOrderIds.has(order.id);
                   const statusLabel = order.deliveryMethod === "pickup" && order.status === "shipped"
                     ? "待自提"
                     : ORDER_STATUS_META[order.status]?.label ?? order.status;
                   return <tr
                     key={order.id}
+                    ref={newInformationRows.getRow(`order:${order.id}`).ref}
                     tabIndex={0}
                     aria-label={`查看线上订单 ${order.orderNo}`}
                     className="cursor-pointer outline-none focus-visible:bg-[#f5f9fd]"
                     onClick={event => { if (!(event.target as HTMLElement).closest("button, input, a")) setDetailRow(order); }}
                     onKeyDown={event => { if ((event.target as HTMLElement).closest("button, input, a")) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setDetailRow(order); } }}>
                     <td className="text-center"><input type="checkbox" aria-label={`选择订单 ${order.orderNo}`} checked={selectedIds.has(order.id)} onChange={() => toggleSelect(order.id)} /></td>
-                    <td><button type="button" className="crm-link truncate font-medium" onClick={() => setDetailRow(order)}>{order.orderNo}</button><div className="mt-0.5 text-[11px] text-muted-foreground">{fmtDate(order.createdAt)}</div></td>
+                    <td><button type="button" className="crm-link truncate font-medium" onClick={() => setDetailRow(order)}>{order.orderNo}</button><AdminNewInformationRowBadge isNew={newInformationRows.getRow(`order:${order.id}`).isNew} /><div className="mt-0.5 text-[11px] text-muted-foreground">{fmtDate(order.createdAt)}</div></td>
                     <td><div className="truncate font-medium text-slate-800" title={order.buyerCompanyName ?? order.buyerDisplayName}>{order.buyerCompanyName ?? "个人买家"}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground" title={`${order.receiver} ${order.receiverPhone}`}>{order.receiver} · {order.receiverPhone}</div></td>
                     <td>{order.items.length > 0 ? <div>
                       <div className="flex items-center gap-1"><span className="min-w-0 truncate font-semibold text-slate-800" title={order.items[0].partNumber}>{order.items[0].partNumber}</span>{order.items.length > 1 && <button type="button" className="shrink-0 text-[11px] text-[#185FA5] hover:underline" aria-expanded={itemsExpanded} aria-label={itemsExpanded ? "收起订单商品明细" : "展开订单全部商品"} onClick={() => toggleExpandItems(order.id)}>{itemsExpanded ? "收起" : `+${order.items.length - 1}项`}</button>}</div>

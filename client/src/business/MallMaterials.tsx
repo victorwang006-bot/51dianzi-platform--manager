@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import type { OfficialMallAccess, OfficialMallMaterial, OfficialMallMaterialInput, OfficialMallMutationResult, OfficialMallStatus, OfficialMallPreviewRow, OfficialMallImportResult, OfficialMallImportRow, OfficialMallDuplicatePolicy } from "@shared/officialMall";
 import { applySuggestion, chunks, clearRequestHold, emptyForm, errorMessage, errorRowsCsv, firstEligibleQuote, formData, formFor, IMPORT_BATCH_SIZE, IMPORT_COLUMNS, isBusinessRejection, MAX_IMPORT_BYTES, parseImportFile, parseImportText, publishProblem, readRequestHold, rowsFromTable, storeRequestHold, templateCsv, validMutationResult, validQuoteTiers } from "@/lib/officialMallImport";
 import type { Form, ImportField, ParsedImportRow, ParsedTable, RequestHold } from "@/lib/officialMallImport";
+import { useAdminNewInformationContextRows, type AdminNewInformationRowPresentation } from "@/lib/adminNewInformation";
+import { AdminNewInformationRowBadge } from "@/components/admin/AdminNewInformationBadge";
 import "./MallMaterials.css";
 
 // Retained helper entry points now use the native, exact-decimal contract.
@@ -47,7 +49,36 @@ function useNativeRead<T>(key: string, enabled: boolean, fetch: (signal: AbortSi
   const sameScope = enabled && result.key === key && result.scopeGeneration === scopeGeneration;
   const error = sameScope && result.generation === generation ? result.error : undefined;
   const data = sameScope && !error ? result.data : undefined;
-  return { data, error, isError: !!error, isFetching: enabled && result.generation !== generation, isLoading: enabled && !data && !error, refetch: () => setEpoch(n => n + 1) };
+  return { data, error, isSuccess: enabled && result.generation === generation && data !== undefined && !error, isPlaceholderData: false, isError: !!error, isFetching: enabled && result.generation !== generation, isLoading: enabled && !data && !error, refetch: () => setEpoch(n => n + 1) };
+}
+type MallNewInformationRowsProps = {
+  rows: OfficialMallMaterial[];
+  listReady: boolean;
+  children: (pageRows: OfficialMallMaterial[], getRow?: (id: string) => AdminNewInformationRowPresentation) => ReactNode;
+};
+function MallNewInformationRowsHook(props: MallNewInformationRowsProps) {
+  const information = useAdminNewInformationContextRows({
+    module: "mall",
+    refs: props.listReady ? props.rows.map(row => `mall-material:${row.id}`) : [],
+    listReady: props.listReady,
+  });
+  // Stable partition of ONLY this original page; never prefetch other pages to sort.
+  const pageRows = [...props.rows].sort((a, b) => Number(information.getRow(`mall-material:${b.id}`).isNew) - Number(information.getRow(`mall-material:${a.id}`).isNew));
+  return <>{props.children(pageRows, information.getRow)}</>;
+}
+/** Standalone native page remains usable when the owning layout has no provider.
+ * Catch ONLY the shared hook's missing-provider error; business/render failures propagate.
+ * Keep the hook in its own component, not a conditional or try/catch hook call.
+ */
+class MallNewInformationRows extends Component<MallNewInformationRowsProps, { noProvider: boolean }> {
+  state = { noProvider: false };
+  static getDerivedStateFromError(error: unknown) {
+    if (error instanceof Error && error.message === "新信息组件须在 AdminNewInformationProvider 内使用") return { noProvider: true };
+    throw error;
+  }
+  render() {
+    return this.state.noProvider ? <>{this.props.children(this.props.rows)}</> : <MallNewInformationRowsHook {...this.props}/>;
+  }
 }
 function entryProblem(entry: PreviewEntry): string | null {
   if (entry.errors.length) return entry.errors.join("；");
@@ -94,6 +125,7 @@ export default function MallMaterials(_props?: unknown) {
   const listInput = { partNumber: filters.partNumber || undefined, brand: filters.brand || undefined, status: state || undefined, page, pageSize: 30 };
   const list = useNativeRead(`${permissionKey}:${JSON.stringify(listInput)}`, canRead, signal => utils.client.officialMall.list.query(listInput, { signal }));
   const rows: OfficialMallMaterial[] = canRead ? list.data?.items ?? [] : [];
+  const listReady = canRead && status.isSuccess && !status.isError && !status.isFetching && !status.isPlaceholderData && list.isSuccess && !list.isError && !list.isFetching && !list.isPlaceholderData;
   const [selected, setSelected] = useState<OfficialMallMaterial[]>([]);
   const [dialog, setDialog] = useState<Dialog | null>(null); const [mode, setMode] = useState<Mode>("manual");
   const [form, setForm] = useState<Form>(emptyForm); const [teamId, setTeamId] = useState<number | undefined>();
@@ -332,7 +364,9 @@ export default function MallMaterials(_props?: unknown) {
     {hold && <div className="mall-notice" role="alert"><div>原请求结果待核对，已停止提交。<code>{hold.requestId}</code><small>没有回执不代表未执行；不重新上传整批，也不重发新增或上架。</small></div><button disabled={busy || !canRead} onClick={() => void inspectRequest()}>核对原请求</button></div>}
     {notice && <p className="mall-notice" role="status">{notice}</p>}{error && !dialog && <p className="mall-form-error" role="alert">{error}</p>}
     {!signedIn ? <p className="mall-notice">{auth.loading ? "正在核验后台员工会话…" : "请使用后台员工账号登录。"}</p> : status.isError ? <p className="mall-notice" role="alert">{errorMessage(status.error)}</p> : status.isLoading ? <p>正在核验官方物料权限…</p> : !canRead ? <p className="mall-notice">{access?.message ?? "当前后台员工没有官方商城物料查看权限。"}</p> : null}
-    <div className="mall-table-wrap"><table className="mall-main-table"><colgroup><col className="mall-col-check"/><col className="mall-col-model"/><col className="mall-col-brand"/><col className="mall-col-pkg"/><col className="mall-col-dc"/><col className="mall-col-qty"/><col className="mall-col-price"/><col className="mall-col-lead"/><col className="mall-col-state"/><col className="mall-col-action"/></colgroup><thead><tr><th><input type="checkbox" aria-label="选择本页物料" disabled={locked || !canPublish || !rows.length} checked={rows.length > 0 && rows.every(r => selected.some(s => s.id === r.id && s.revision === r.revision))} onChange={e => setSelected(e.target.checked ? rows.map(r => ({ ...r })) : [])}/></th><th>型号</th><th>品牌</th><th>封装</th><th>批次/DC</th><th>可售数量</th><th>报价 CNY</th><th>货期</th><th>状态</th><th className="mall-action-cell">操作</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><input type="checkbox" aria-label={`选择物料 ${row.partNumber} ${row.id}`} checked={selected.some(r => r.id === row.id)} disabled={locked || !canPublish} onChange={e => setSelected(current => e.target.checked ? [...current.filter(r => r.id !== row.id), { ...row }] : current.filter(r => r.id !== row.id))}/></td><td><button className="mall-model" disabled={!canWrite || locked} title={row.status === "published" ? "先下架再编辑" : "编辑物料"} onClick={() => open("edit", row)}>{row.partNumber}</button></td><td title={row.brand}>{row.brand}</td><td title={row.pkg}>{row.pkg || "—"}</td><td>{row.dateCode || "—"}</td><td className="mall-numeric">{count(row.qtyOnSale)}<small>实际 {count(row.qtyStock)}</small></td><td><Quote row={row}/></td><td title={row.leadTime}>{row.leadTime || "未知"}</td><td><span className={`mall-state ${row.status}`}>{statusNames[row.status]}</span></td><td className="mall-action-cell"><button className="mall-inline-action" disabled={!canPublish || locked} onClick={() => open(row.status === "published" ? "offshelf" : "publish", row)}>{row.status === "published" ? "下架" : "上架"}</button></td></tr>)}{!rows.length && <tr><td colSpan={10} className="mall-empty">{!canRead ? "暂无可读取物料" : list.isFetching ? "读取物料中…" : list.isError ? errorMessage(list.error) : "暂无官方商城物料，可手工新增或导入到待上架"}</td></tr>}</tbody></table></div>
+    <MallNewInformationRows rows={rows} listReady={listReady}>{(pageRows, getRow) =>
+    <div className="mall-table-wrap"><table className="mall-main-table"><colgroup><col className="mall-col-check"/><col className="mall-col-model"/><col className="mall-col-brand"/><col className="mall-col-pkg"/><col className="mall-col-dc"/><col className="mall-col-qty"/><col className="mall-col-price"/><col className="mall-col-lead"/><col className="mall-col-state"/><col className="mall-col-action"/></colgroup><thead><tr><th><input type="checkbox" aria-label="选择本页物料" disabled={locked || !canPublish || !rows.length} checked={rows.length > 0 && rows.every(r => selected.some(s => s.id === r.id && s.revision === r.revision))} onChange={e => setSelected(e.target.checked ? rows.map(r => ({ ...r })) : [])}/></th><th>型号</th><th>品牌</th><th>封装</th><th>批次/DC</th><th>可售数量</th><th>报价 CNY</th><th>货期</th><th>状态</th><th className="mall-action-cell">操作</th></tr></thead><tbody>{pageRows.map(row => { const information = getRow?.(`mall-material:${row.id}`); return <tr key={row.id} ref={information?.ref}><td><input type="checkbox" aria-label={`选择物料 ${row.partNumber} ${row.id}`} checked={selected.some(r => r.id === row.id)} disabled={locked || !canPublish} onChange={e => setSelected(current => e.target.checked ? [...current.filter(r => r.id !== row.id), { ...row }] : current.filter(r => r.id !== row.id))}/></td><td><button className="mall-model" disabled={!canWrite || locked} title={row.status === "published" ? "先下架再编辑" : "编辑物料"} onClick={() => open("edit", row)}>{row.partNumber}</button><AdminNewInformationRowBadge isNew={information?.isNew ?? false}/></td><td title={row.brand}>{row.brand}</td><td title={row.pkg}>{row.pkg || "—"}</td><td>{row.dateCode || "—"}</td><td className="mall-numeric">{count(row.qtyOnSale)}<small>实际 {count(row.qtyStock)}</small></td><td><Quote row={row}/></td><td title={row.leadTime}>{row.leadTime || "未知"}</td><td><span className={`mall-state ${row.status}`}>{statusNames[row.status]}</span></td><td className="mall-action-cell"><button className="mall-inline-action" disabled={!canPublish || locked} onClick={() => open(row.status === "published" ? "offshelf" : "publish", row)}>{row.status === "published" ? "下架" : "上架"}</button></td></tr>; })}{!rows.length && <tr><td colSpan={10} className="mall-empty">{!canRead ? "暂无可读取物料" : list.isFetching ? "读取物料中…" : list.isError ? errorMessage(list.error) : "暂无官方商城物料，可手工新增或导入到待上架"}</td></tr>}</tbody></table></div>
+    }</MallNewInformationRows>
     <footer className="mall-pagination"><span>共 {canRead ? list.data?.total ?? 0 : 0} 条</span><button disabled={!canRead || page <= 1 || list.isFetching || importing} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页</span><button disabled={!canRead || page * 30 >= (list.data?.total ?? 0) || list.isFetching || importing} onClick={() => setPage(p => p + 1)}>下一页</button></footer>
     {entries.length > 0 && !dialog && <button disabled={busy || importing || !canRead} onClick={() => { setMode("sheet"); setDialog({ kind: "create", scopeKey }); }}>查看导入结果 / 剩余行</button>}
     {dialog && canRead && dialog.scopeKey === scopeKey && <div className="mall-dialog-overlay"><section className={`mall-dialog ${importMode ? "mall-import-dialog" : ""}`} role="dialog" aria-modal="true" aria-labelledby="mall-dialog-title" tabIndex={-1}><h2 id="mall-dialog-title">{dialog.kind === "create" ? "新增物料" : dialog.kind === "edit" ? "编辑物料" : dialog.kind === "bulk" ? `确认批量${dialog.action === "publish" ? "上架" : "下架"}` : dialog.kind === "publish" ? "确认上架" : "确认下架"}</h2>

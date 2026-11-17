@@ -36,7 +36,7 @@ import {
   getAdminMessageUnreadQueryOptions,
   getAdminMessageUnreadTotal,
 } from "@/lib/adminMessageRefresh";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
 import {
   channelInventoryTabLocation,
@@ -76,7 +76,22 @@ import { useQuery } from "@tanstack/react-query";
 import {
   hasAdminChannelInventoryRead,
 } from "./admin/adminWorkspaceNavigationModel";
+import {
+  AdminNewInformationProvider,
+  type AdminNewInformationClient,
+  type AdminNewInformationRequestOptions,
+} from "@/lib/adminNewInformation";
+import { AdminNewInformationMenuBadge, adminNewInformationModuleForPath } from "./admin/AdminNewInformationMenuBadge";
+import { ADMIN_NEW_INFORMATION_MODULES, type AdminNewInformationModule, type AdminNewInformationSummary, type AdminNewInformationInspection } from "@shared/adminNewInformation";
 import "./DashboardLayout.css";
+
+type AdminNewInformationRPC = {
+  newInformation: {
+    summary: { query(input: undefined, options?: AdminNewInformationRequestOptions): Promise<AdminNewInformationSummary> };
+    inspect: { query(input: {module: AdminNewInformationModule; refs: string[]; scope?: string}, options?: AdminNewInformationRequestOptions): Promise<AdminNewInformationInspection> };
+    markDisplayed: { mutate(input: {receipts: string[]}, options?: AdminNewInformationRequestOptions): Promise<unknown> };
+  };
+};
 
 type MenuItem = {
   icon: typeof Database;
@@ -434,6 +449,12 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   const adminPermissions = (user as { permissions?: string[] } | null)
     ?.permissions;
   const trpcUtils = trpc.useUtils();
+  const newInformationRPC = trpcUtils.client as unknown as AdminNewInformationRPC;
+  const newInformationClient = useMemo<AdminNewInformationClient>(() => ({
+    summary: options => newInformationRPC.newInformation.summary.query(undefined, options),
+    inspect: (input, options) => newInformationRPC.newInformation.inspect.query(input, options),
+    markDisplayed: (input, options) => newInformationRPC.newInformation.markDisplayed.mutate(input, options),
+  }), [newInformationRPC]);
   const accountId = user?.id;
   const hasCurrentAccount = accountId !== undefined && accountId !== null;
   const businessNavigationQuery = useQuery({
@@ -562,7 +583,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   });
 
   useEffect(() => {
-    if (!activeNotificationModule) {
+    if (!activeNotificationModule || activeNotificationModule === "orders") {
       lastMarkedModuleRef.current = null;
       return;
     }
@@ -579,7 +600,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   ) => {
     // Display intents never replace the original parent-authorized menu object.
     if (!visibleMenuItems.includes(item)) return;
-    if (item.notificationModule) {
+    if (item.notificationModule && item.notificationModule !== "orders") {
       lastMarkedModuleRef.current = item.notificationModule;
       markModuleSeen.mutate({ module: item.notificationModule });
     }
@@ -599,7 +620,13 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   const preloadItem = (item: MenuItem) => {
     if (item.chunk) preloadAdminRoute(item.chunk);
   };
-  const renderBadge = (item: MenuItem) => {
+  const newInformationModuleCanRead = Object.fromEntries(ADMIN_NEW_INFORMATION_MODULES.map(module => [module,
+    user?.hasNativeAdminAccount === true && visibleMenuItems.some(item => adminNewInformationModuleForPath(item.path) === module),
+  ])) as Record<AdminNewInformationModule, boolean>;
+  const newInformationCanRead = Object.values(newInformationModuleCanRead).some(Boolean);
+  const renderBadge = (item: MenuItem, source?: SalesOrderSource) => {
+    const module = adminNewInformationModuleForPath(item.path);
+    if (module) return <AdminNewInformationMenuBadge module={module} source={source ?? (item.path === "/orders" ? "mall" : undefined)} />;
     const count =
       item.path === "/messages"
         ? unreadTotal
@@ -617,6 +644,9 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
   };
 
   return (
+    <AdminNewInformationProvider client={newInformationClient}
+      accountKey={user?.hasNativeAdminAccount === true ? accountId : null}
+      canRead={newInformationCanRead} moduleCanRead={newInformationModuleCanRead}>
     <div className="admin-workspace-shell" data-admin-layout="top-two-level-v1">
       <div className="admin-workspace-shell__navigation">
         <header className="admin-workspace-shell__header">
@@ -709,5 +739,6 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
         {children}
       </main>
     </div>
+    </AdminNewInformationProvider>
   );
 }

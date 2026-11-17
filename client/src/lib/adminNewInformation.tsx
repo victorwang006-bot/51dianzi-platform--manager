@@ -1,0 +1,1016 @@
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefCallback,
+} from "react";
+import {
+  CancelledError,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
+import {
+  ADMIN_NEW_INFORMATION_MODULES,
+  ADMIN_NEW_INFORMATION_REFRESH_MS,
+  type AdminNewInformationInspection,
+  type AdminNewInformationModule,
+  type AdminNewInformationSummary,
+  type AdminNewInformationModuleSummary,
+} from "@shared/adminNewInformation";
+
+export type AdminNewInformationAccountKey = string | number | null | undefined;
+export type AdminNewInformationRequestOptions = { signal?: AbortSignal };
+/** Inject the ORIGINAL admin tRPC client, not the front/business chat client.
+ * Example: summary: options => rpc.newInformation.summary.query(undefined, options).
+ * markDisplayed MUST reject a rejected/invalid receipt (never silently resolve it).
+ */
+export interface AdminNewInformationClient {
+  summary(
+    options?: AdminNewInformationRequestOptions
+  ): Promise<AdminNewInformationSummary>;
+  inspect(
+    input: {
+      module: AdminNewInformationModule;
+      refs: string[];
+      scope?: string;
+    },
+    options?: AdminNewInformationRequestOptions
+  ): Promise<AdminNewInformationInspection>;
+  markDisplayed(
+    input: { receipts: string[] },
+    options?: AdminNewInformationRequestOptions
+  ): Promise<unknown>;
+}
+export interface AdminNewInformationAccess {
+  accountKey: AdminNewInformationAccountKey;
+  canRead: boolean;
+}
+export interface AdminNewInformationRowsOptions
+  extends AdminNewInformationAccess {
+  module: AdminNewInformationModule;
+  /** Canonical SERVER source IDs, not presentation keys or locally invented versions. */
+  refs: readonly string[];
+  /** Use one identical server-defined scope in every presentation of a source. */
+  scope?: string;
+  /** Required: original list query.isSuccess && !query.isError && !query.isFetching.
+   * Never supply IDs from pending/error/placeholder data. Existing list actions stay unchanged.
+   */
+  listReady: boolean;
+}
+function accountToken(account: AdminNewInformationAccountKey): string | null {
+  return account === null || account === undefined || account === ""
+    ? null
+    : `${typeof account}:${account}`;
+}
+export const adminNewInformationKeys = {
+  root: ["adminNewInformation"] as const,
+  account: (account: AdminNewInformationAccountKey) =>
+    ["adminNewInformation", accountToken(account)] as const,
+  summary: (account: AdminNewInformationAccountKey) =>
+    [...adminNewInformationKeys.account(account), "summary"] as const,
+  rows: (
+    account: AdminNewInformationAccountKey,
+    module: AdminNewInformationModule,
+    scope?: string
+  ) =>
+    [
+      ...adminNewInformationKeys.account(account),
+      "inspect",
+      module,
+      scope || "",
+    ] as const,
+  inspect: (
+    account: AdminNewInformationAccountKey,
+    module: AdminNewInformationModule,
+    refs: readonly string[],
+    scope?: string
+  ) =>
+    [
+      ...adminNewInformationKeys.rows(account, module, scope),
+      normalizeAdminNewInformationRefs(refs),
+    ] as const,
+};
+export function normalizeAdminNewInformationRefs(
+  refs: readonly string[]
+): string[] {
+  if (refs.some(id => !id || id.length > 180))
+    throw new Error("新信息引用必须为服务器提供的 1–180 字符 ID");
+  return Array.from(new Set(refs)).sort();
+}
+/** Presentation IDs can differ; server source id + version + scope remain the dedup key. */
+export function adminNewInformationRefKey(
+  module: AdminNewInformationModule,
+  id: string,
+  version: string,
+  scope?: string
+): string {
+  return JSON.stringify([module, scope || "", id, version]);
+}
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+function authorizationError(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  const data = isRecord(error.data) ? error.data : error;
+  return (
+    data.code === "FORBIDDEN" ||
+    data.code === "UNAUTHORIZED" ||
+    data.httpStatus === 401 ||
+    data.httpStatus === 403
+  );
+}
+function rejectedMark(value: unknown, expectedAccepted: number): boolean {
+  // Positive native contract only. marked counts expanded facts (possibly 0 or
+  // greater than input length); accepted proves ALL deduplicated row receipts.
+  return !(
+    isRecord(value) &&
+    Number.isSafeInteger(value.marked) &&
+    (value.marked as number) >= 0 &&
+    Number.isSafeInteger(value.accepted) &&
+    value.accepted === expectedAccepted
+  );
+}
+
+// Shared ONLY with the existing React Query singleton; no additional provider/client/store.
+type EventRecord = {
+  state: "pending" | "seen" | "failed";
+  error?: unknown;
+  controller?: AbortController;
+};
+type Runtime = {
+  events: Map<string, Map<string, EventRecord>>;
+  subscribers: Set<() => void>;
+};
+const runtimes = new WeakMap<QueryClient, Runtime>();
+function runtimeFor(client: QueryClient): Runtime {
+  let runtime = runtimes.get(client);
+  if (!runtime) {
+    runtime = { events: new Map(), subscribers: new Set() };
+    runtimes.set(client, runtime);
+  }
+  return runtime;
+}
+function eventsFor(runtime: Runtime, token: string): Map<string, EventRecord> {
+  let events = runtime.events.get(token);
+  if (!events) {
+    events = new Map();
+    runtime.events.set(token, events);
+  }
+  return events;
+}
+function notify(runtime: Runtime) {
+  runtime.subscribers.forEach(callback => callback());
+}
+function purgeEvents(
+  runtime: Runtime,
+  token: string,
+  module?: AdminNewInformationModule
+) {
+  const events = runtime.events.get(token);
+  if (!events) return;
+  for (const [key, event] of Array.from(events)) {
+    if (!module || (JSON.parse(key) as unknown[])[0] === module) {
+      event.controller?.abort();
+      events.delete(key);
+    }
+  }
+  if (!events.size) runtime.events.delete(token);
+  notify(runtime);
+}
+
+/** Broadcast invalidation only: NEVER persist browser-side read state. Hidden tabs
+ * receive an invalidation but their disabled queries do not fetch until visible. */
+const CHANNEL = "51dianzi-admin-new-information-v1";
+type ChannelEntry = { channel: BroadcastChannel; users: number };
+const channels = new WeakMap<QueryClient, ChannelEntry>();
+function useTabInvalidation(client: QueryClient) {
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.BroadcastChannel !== "function"
+    )
+      return;
+    let entry = channels.get(client);
+    if (!entry) {
+      let channel: BroadcastChannel;
+      try {
+        channel = new window.BroadcastChannel(CHANNEL);
+      } catch {
+        return;
+      } // Privacy restrictions: polling/focus remains functional.
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        const message = event.data;
+        if (
+          isRecord(message) &&
+          message.type === "displayed" &&
+          typeof message.account === "string"
+        ) {
+          void client.invalidateQueries({
+            queryKey: ["adminNewInformation", message.account],
+          });
+        }
+      };
+      entry = { channel, users: 0 };
+      channels.set(client, entry);
+    }
+    entry.users++;
+    return () => {
+      if (entry && --entry.users === 0) {
+        entry.channel.close();
+        channels.delete(client);
+      }
+    };
+  }, [client]);
+}
+function invalidateDisplayed(client: QueryClient, token: string) {
+  void client.invalidateQueries({ queryKey: ["adminNewInformation", token] });
+  try {
+    channels
+      .get(client)
+      ?.channel.postMessage({ type: "displayed", account: token });
+  } catch {
+    /* Broadcast failure must never turn an accepted server mark into failure. */
+  }
+}
+export function useAdminNewInformationPageVisible(): boolean {
+  const [visible, setVisible] = useState(
+    () =>
+      typeof document !== "undefined" && document.visibilityState !== "hidden"
+  );
+  useEffect(() => {
+    const update = () => setVisible(document.visibilityState !== "hidden");
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+  return visible;
+}
+
+function useAccessBoundary(
+  options: AdminNewInformationAccess,
+  module?: AdminNewInformationModule
+) {
+  const queryClient = useQueryClient();
+  const token = accountToken(options.accountKey);
+  const allowed = token !== null && options.canRead;
+  const identity = JSON.stringify([token, allowed, module]);
+  const current = useRef({ identity, generation: 0, allowed });
+  if (current.current.identity !== identity)
+    current.current = {
+      identity,
+      generation: current.current.generation + 1,
+      allowed,
+    };
+  const generation = current.current.generation;
+  const [deniedGeneration, setDeniedGeneration] = useState<number | null>(null);
+  const permitted = allowed && deniedGeneration !== generation;
+  useEffect(() => {
+    current.current.allowed = allowed && deniedGeneration !== generation;
+    return () => {
+      current.current.allowed = false;
+    };
+  }, [allowed, deniedGeneration, generation]);
+  const prior = useRef<{ token: string | null; allowed: boolean }>({
+    token: null,
+    allowed: false,
+  });
+  useEffect(() => {
+    const previous = prior.current;
+    const purge = (target: string, onlyModule?: AdminNewInformationModule) => {
+      const key = onlyModule
+        ? ["adminNewInformation", target, "inspect", onlyModule]
+        : ["adminNewInformation", target];
+      void queryClient.cancelQueries({ queryKey: key });
+      queryClient.removeQueries({ queryKey: key });
+      purgeEvents(runtimeFor(queryClient), target, onlyModule);
+    };
+    // A logout can unmount the entire layout rather than update the same hook.
+    // Clean other accounts on remount too, not just on an in-place account change.
+    const runtime = runtimeFor(queryClient);
+    const cachedAccounts = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: adminNewInformationKeys.root })
+      .map(query => query.queryKey[1])
+      .filter((value): value is string => typeof value === "string");
+    for (const oldAccount of Array.from(
+      new Set(cachedAccounts.concat(Array.from(runtime.events.keys())))
+    )) {
+      if (oldAccount !== token) purge(oldAccount);
+    }
+    if (previous.token && previous.token !== token) purge(previous.token);
+    if (token && !permitted) purge(token, module);
+    prior.current = { token, allowed: permitted };
+  }, [queryClient, token, permitted, module]);
+  useTabInvalidation(queryClient);
+  return {
+    queryClient,
+    token,
+    permitted,
+    valid: () =>
+      current.current.generation === generation &&
+      current.current.allowed &&
+      deniedGeneration !== generation,
+    deny: () => {
+      if (current.current.generation === generation) {
+        current.current.allowed = false;
+        setDeniedGeneration(generation);
+      }
+    },
+  };
+}
+
+export function useAdminNewInformationSummary(
+  options: AdminNewInformationAccess & {
+    client: AdminNewInformationClient;
+    moduleCanRead?: Partial<Record<AdminNewInformationModule, boolean>>;
+  }
+) {
+  const access = useAccessBoundary(options);
+  const visible = useAdminNewInformationPageVisible();
+  const query = useQuery({
+    queryKey: adminNewInformationKeys.summary(options.accountKey),
+    enabled: access.permitted && visible,
+    queryFn: async ({ signal }) => {
+      const data = await options.client.summary({ signal });
+      if (signal.aborted || !access.valid())
+        throw new CancelledError({ silent: true });
+      return data;
+    },
+    retry: false,
+    staleTime: 0,
+    refetchInterval:
+      access.permitted && visible ? ADMIN_NEW_INFORMATION_REFRESH_MS : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: "always",
+  });
+  const revoked = authorizationError(query.error);
+  useEffect(() => {
+    if (revoked) access.deny();
+  }, [revoked, access.deny]);
+  // Error without data is UNKNOWN, not a successfully confirmed zero.
+  const summary = access.permitted && !revoked ? query.data : undefined;
+  // In-memory, current-hook/account session only. Revocation invalidates the
+  // proof until a NEW successful module read; a later temporary reply cannot
+  // resurrect persisted counts from the previously revoked authority.
+  const known = useRef({
+    token: access.token,
+    modules: {} as Partial<Record<AdminNewInformationModule, AdminNewInformationModuleSummary>>,
+    blocked: new Set<AdminNewInformationModule>(),
+    data: undefined as AdminNewInformationSummary | undefined,
+    updatedAt: -1,
+  });
+  if (known.current.token !== access.token) {
+    known.current = {
+      token: access.token, modules: {}, blocked: new Set(ADMIN_NEW_INFORMATION_MODULES), data: undefined, updatedAt: -1,
+    };
+  }
+  const cache = known.current;
+  if (!access.permitted || revoked) {
+    cache.modules = {};
+    cache.blocked = new Set(ADMIN_NEW_INFORMATION_MODULES);
+    cache.data = query.data;
+    cache.updatedAt = query.dataUpdatedAt;
+  }
+  const forget = (module: AdminNewInformationModule) => {
+    delete cache.modules[module];
+    cache.blocked.add(module);
+  };
+  const validCount = (value: unknown): value is number =>
+    typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+  for (const module of ADMIN_NEW_INFORMATION_MODULES)
+    if (options.moduleCanRead?.[module] === false) forget(module);
+  if (summary && !query.isError &&
+      (cache.data !== summary || cache.updatedAt !== query.dataUpdatedAt)) {
+    cache.data = summary;
+    cache.updatedAt = query.dataUpdatedAt;
+    for (const module of ADMIN_NEW_INFORMATION_MODULES) {
+      const item = summary.modules[module];
+      if (options.moduleCanRead?.[module] === false || !item || item.reason === "denied" ||
+          (!item.available && item.reason !== "temporary")) forget(module);
+      else if (item.available && validCount(item.count)) {
+        cache.modules[module] = { ...item, ...(item.children ? { children: { ...item.children } } : {}) };
+        cache.blocked.delete(module);
+      } else if (item.reason === "temporary" && item.lastKnown === true && validCount(item.count) &&
+          !cache.blocked.has(module) && !cache.modules[module]) {
+        cache.modules[module] = { ...item, ...(item.children ? { children: { ...item.children } } : {}) };
+      }
+    }
+  }
+  const moduleSummary = (module: AdminNewInformationModule, canReadModule = true):
+    AdminNewInformationModuleSummary | undefined => {
+    if (!canReadModule || options.moduleCanRead?.[module] === false) {
+      forget(module);
+      return undefined;
+    }
+    const item = summary?.modules[module];
+    if (!item || item.reason === "denied" || cache.blocked.has(module)) return undefined;
+    if (item.available) return validCount(item.count) ? item : undefined;
+    if (item.reason !== "temporary") return undefined;
+    // Prefer this session's known successful number over an unknown count:0.
+    const previous = cache.modules[module];
+    return previous ? { ...previous, available: false, reason: "temporary", lastKnown: true } : undefined;
+  };
+  const isModuleLastKnown = (module: AdminNewInformationModule, canReadModule = true) => {
+    const item = moduleSummary(module, canReadModule);
+    return item !== undefined && (query.isError || item.lastKnown === true);
+  };
+  return {
+    query,
+    summary,
+    moduleSummary,
+    isModuleLastKnown,
+    lastKnown: ADMIN_NEW_INFORMATION_MODULES.some(module => isModuleLastKnown(module)),
+    status:
+      !access.permitted || revoked
+        ? ("disabled" as const)
+        : query.isError
+          ? ("error" as const)
+          : query.isSuccess
+            ? ("success" as const)
+            : ("pending" as const),
+    count: (
+      module: AdminNewInformationModule,
+      canReadModule = true
+    ): number | undefined => {
+      return moduleSummary(module, canReadModule)?.count;
+    },
+  };
+}
+
+/** Conservative geometry check used WITH IntersectionObserver and as the fallback.
+ * Includes scroll clipping, CSS/HTML hidden ancestors and hidden browser tabs.
+ */
+export function isAdminNewInformationRowVisible(element: HTMLElement): boolean {
+  if (
+    typeof document === "undefined" ||
+    document.visibilityState === "hidden" ||
+    !element.isConnected
+  )
+    return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  let left = Math.max(0, rect.left),
+    top = Math.max(0, rect.top);
+  let right = Math.min(
+    window.innerWidth || document.documentElement.clientWidth,
+    rect.right
+  );
+  let bottom = Math.min(
+    window.innerHeight || document.documentElement.clientHeight,
+    rect.bottom
+  );
+  for (
+    let node: HTMLElement | null = element;
+    node;
+    node = node.parentElement
+  ) {
+    const style = window.getComputedStyle(node);
+    if (
+      node.hidden ||
+      node.getAttribute("aria-hidden") === "true" ||
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.visibility === "collapse" ||
+      style.opacity === "0"
+    )
+      return false;
+    if (
+      node !== element &&
+      /hidden|clip|scroll|auto/.test(
+        `${style.overflow} ${style.overflowX} ${style.overflowY}`
+      )
+    ) {
+      const clip = node.getBoundingClientRect();
+      if (/hidden|clip|scroll|auto/.test(style.overflowX || style.overflow)) {
+        left = Math.max(left, clip.left);
+        right = Math.min(right, clip.right);
+      }
+      if (/hidden|clip|scroll|auto/.test(style.overflowY || style.overflow)) {
+        top = Math.max(top, clip.top);
+        bottom = Math.min(bottom, clip.bottom);
+      }
+    }
+  }
+  return right > left && bottom > top;
+}
+
+type RowBinding = {
+  id: string;
+  element: HTMLElement | null;
+  intersecting: boolean;
+  callback: RefCallback<HTMLElement>;
+};
+export interface AdminNewInformationRowPresentation {
+  isNew: boolean;
+  /** Attach to the ACTUAL existing row, not an invisible sentinel. */
+  ref: RefCallback<HTMLElement>;
+  markError: unknown;
+}
+
+export function useAdminNewInformationRows(
+  options: AdminNewInformationRowsOptions & {
+    client: AdminNewInformationClient;
+  }
+) {
+  const access = useAccessBoundary(options, options.module);
+  const visible = useAdminNewInformationPageVisible();
+  const normalizedRefs = normalizeAdminNewInformationRefs(options.refs);
+  const refsKey = JSON.stringify(normalizedRefs);
+  const scope = options.scope || undefined;
+  const query = useQuery({
+    queryKey: adminNewInformationKeys.inspect(
+      options.accountKey,
+      options.module,
+      normalizedRefs,
+      scope
+    ),
+    enabled:
+      access.permitted &&
+      visible &&
+      options.listReady &&
+      normalizedRefs.length > 0,
+    queryFn: async ({ signal }) => {
+      const items: AdminNewInformationInspection["items"] = [];
+      // Large lists are inspected in schema-compliant batches. No truncation.
+      for (let start = 0; start < normalizedRefs.length; start += 100) {
+        const data = await options.client.inspect(
+          {
+            module: options.module,
+            refs: normalizedRefs.slice(start, start + 100),
+            scope,
+          },
+          { signal }
+        );
+        if (signal.aborted || !access.valid())
+          throw new CancelledError({ silent: true });
+        items.push(...data.items);
+      }
+      return { items };
+    },
+    retry: false,
+    staleTime: 0,
+    refetchOnWindowFocus: "always",
+    refetchInterval:
+      access.permitted && visible && options.listReady && normalizedRefs.length
+        ? ADMIN_NEW_INFORMATION_REFRESH_MS
+        : false,
+    refetchIntervalInBackground: false,
+  });
+  const revoked = authorizationError(query.error);
+  useEffect(() => {
+    if (revoked) access.deny();
+  }, [revoked, access.deny]);
+  const runtime = runtimeFor(access.queryClient);
+  const [, forceRender] = useState(0);
+  const redraw = useCallback(() => forceRender(value => value + 1), []);
+  useEffect(() => {
+    runtime.subscribers.add(redraw);
+    return () => {
+      runtime.subscribers.delete(redraw);
+      if (!runtime.subscribers.size) {
+        // No rows remain to witness a queued/in-flight mark. Keep no pending
+        // locks across a fresh page visit; the server owns durable read state.
+        for (const token of Array.from(runtime.events.keys()))
+          purgeEvents(runtime, token);
+      }
+    };
+  }, [runtime, redraw]);
+  const bindings = useRef(new Map<string, RowBinding>());
+  const latched = useRef(new Set<string>());
+  const observer = useRef<IntersectionObserver | null>(null);
+  const scheduled = useRef<number | null>(null);
+  const items = new Map(
+    query.data?.items
+      .filter(item => normalizedRefs.includes(item.id))
+      .map(item => [item.id, item])
+  );
+  const rowIdentity = JSON.stringify([
+    access.token,
+    options.module,
+    scope,
+    refsKey,
+  ]);
+  const identityRef = useRef(rowIdentity);
+  if (identityRef.current !== rowIdentity) {
+    latched.current.clear();
+    identityRef.current = rowIdentity;
+  }
+  const latest = useRef({
+    access,
+    options,
+    query,
+    items,
+    revoked,
+    scope,
+    rowIdentity,
+  });
+  latest.current = {
+    access,
+    options,
+    query,
+    items,
+    revoked,
+    scope,
+    rowIdentity,
+  };
+
+  const refresh = useCallback(() => {
+    const state = latest.current;
+    if (!state.access.token) return;
+    const events = eventsFor(runtime, state.access.token);
+    const visibleIds = new Set<string>();
+    for (const binding of Array.from(bindings.current.values())) {
+      if (
+        binding.element &&
+        (typeof window.IntersectionObserver !== "function" ||
+          binding.intersecting) &&
+        isAdminNewInformationRowVisible(binding.element)
+      )
+        visibleIds.add(binding.id);
+    }
+    let changed = false;
+    for (const key of Array.from(latched.current)) {
+      const sourceId = (JSON.parse(key) as string[])[2];
+      if (!visibleIds.has(sourceId) && events.get(key)?.state === "seen") {
+        latched.current.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) redraw();
+    if (
+      !state.access.permitted ||
+      !state.access.valid() ||
+      state.revoked ||
+      !state.options.listReady ||
+      !state.query.isSuccess ||
+      state.query.isFetching ||
+      state.query.isError ||
+      document.visibilityState === "hidden"
+    )
+      return;
+    const pending: Array<{ key: string; receipt: string }> = [];
+    for (const id of Array.from(visibleIds)) {
+      const item = state.items.get(id);
+      if (!item?.isNew || !item.receipt) continue;
+      const key = adminNewInformationRefKey(
+        state.options.module,
+        item.id,
+        item.version,
+        state.scope
+      );
+      if (events.has(key)) continue; // Seen, pending AND failed events never auto-retry.
+      pending.push({ key, receipt: item.receipt });
+      latched.current.add(key);
+    }
+    for (let start = 0; start < pending.length; start += 100) {
+      const batch = pending.slice(start, start + 100);
+      const receipts = Array.from(new Set(batch.map(item => item.receipt)));
+      const controller = new AbortController();
+      batch.forEach(item =>
+        events.set(item.key, { state: "pending", controller })
+      );
+      notify(runtime);
+      // Promise.resolve also catches a synchronously throwing injected transport.
+      void Promise.resolve()
+        .then(() => {
+          const current = latest.current;
+          const stillVisible = batch.every(item => {
+            const id = (JSON.parse(item.key) as string[])[2];
+            return Array.from(bindings.current.values()).some(
+              binding =>
+                binding.id === id &&
+                binding.element &&
+                (typeof window.IntersectionObserver !== "function" ||
+                  binding.intersecting) &&
+                isAdminNewInformationRowVisible(binding.element)
+            );
+          });
+          if (
+            !state.access.valid() ||
+            controller.signal.aborted ||
+            current.rowIdentity !== state.rowIdentity ||
+            !current.options.listReady ||
+            !current.query.isSuccess ||
+            current.query.isFetching ||
+            current.query.isError ||
+            !stillVisible ||
+            document.visibilityState === "hidden"
+          )
+            throw new CancelledError({ silent: true });
+          return state.options.client.markDisplayed(
+            { receipts },
+            { signal: controller.signal }
+          );
+        })
+        .then(result => {
+          if (rejectedMark(result, receipts.length))
+            throw new Error("服务器拒绝新信息展示确认");
+          if (!state.access.valid() || controller.signal.aborted) return;
+          batch.forEach(item => events.set(item.key, { state: "seen" }));
+          invalidateDisplayed(state.access.queryClient, state.access.token!);
+        })
+        .catch((error: unknown) => {
+          if (!state.access.valid() || controller.signal.aborted) return;
+          if (error instanceof CancelledError)
+            batch.forEach(item => events.delete(item.key));
+          else {
+            batch.forEach(item =>
+              events.set(item.key, { state: "failed", error })
+            );
+            if (authorizationError(error)) state.access.deny();
+          }
+        })
+        .finally(() => notify(runtime));
+    }
+  }, [runtime, redraw]);
+  const schedule = useCallback(() => {
+    if (scheduled.current !== null) return;
+    // rAF itself runs BEFORE paint. Cross two frames so the committed badge/row
+    // has had a paint opportunity; revalidate geometry/state before submitting.
+    scheduled.current = window.requestAnimationFrame(() => {
+      scheduled.current = window.requestAnimationFrame(() => {
+        scheduled.current = null;
+        refresh();
+      });
+    });
+  }, [refresh]);
+
+  useEffect(() => {
+    const update = () => schedule();
+    if (typeof window.IntersectionObserver === "function") {
+      observer.current = new window.IntersectionObserver(entries => {
+        for (const entry of entries)
+          for (const binding of Array.from(bindings.current.values())) {
+            if (binding.element === entry.target)
+              binding.intersecting =
+                entry.isIntersecting && entry.intersectionRatio > 0;
+          }
+        schedule();
+      });
+      bindings.current.forEach(binding => {
+        binding.intersecting = false;
+        if (binding.element) observer.current?.observe(binding.element);
+      });
+    }
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
+    // Also catches CSS/ancestor changes, including the no-IO fallback.
+    const timer = window.setInterval(update, 1000);
+    schedule();
+    return () => {
+      observer.current?.disconnect();
+      observer.current = null;
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
+      window.clearInterval(timer);
+      if (scheduled.current !== null) {
+        window.cancelAnimationFrame(scheduled.current);
+        scheduled.current = null;
+      }
+    };
+  }, [schedule]);
+  useEffect(() => {
+    schedule();
+  }, [
+    query.dataUpdatedAt,
+    query.fetchStatus,
+    query.status,
+    visible,
+    options.listReady,
+    access.permitted,
+    rowIdentity,
+    schedule,
+  ]);
+  useEffect(() => {
+    // A list becoming pending/error cancels inspect work; old data may label rows,
+    // but cannot issue receipts/clear anything while the list is not successful.
+    if (!options.listReady)
+      void access.queryClient.cancelQueries({
+        queryKey: adminNewInformationKeys.rows(
+          options.accountKey,
+          options.module,
+          scope
+        ),
+      });
+  }, [
+    options.listReady,
+    options.accountKey,
+    options.module,
+    scope,
+    access.queryClient,
+  ]);
+
+  const rowRef = useCallback(
+    (id: string, presentationKey = id): RefCallback<HTMLElement> => {
+      const bindingKey = JSON.stringify([id, presentationKey]);
+      let binding = bindings.current.get(bindingKey);
+      if (!binding) {
+        const created: RowBinding = {
+          id,
+          element: null,
+          intersecting: false,
+          callback: element => {
+            if (created.element) observer.current?.unobserve(created.element);
+            created.element = element;
+            created.intersecting = false;
+            if (element) observer.current?.observe(element);
+            schedule();
+          },
+        };
+        binding = created;
+        bindings.current.set(bindingKey, binding);
+      }
+      return binding.callback;
+    },
+    [schedule]
+  );
+  const getRow = (
+    id: string,
+    presentationKey = id
+  ): AdminNewInformationRowPresentation => {
+    const item = items.get(id);
+    const key =
+      item &&
+      adminNewInformationRefKey(options.module, item.id, item.version, scope);
+    const record =
+      key && access.token
+        ? runtime.events.get(access.token)?.get(key)
+        : undefined;
+    return {
+      ref: rowRef(id, presentationKey),
+      isNew: Boolean(
+        access.permitted &&
+          !revoked &&
+          options.listReady &&
+          key &&
+          (latched.current.has(key) ||
+            (item?.isNew && record?.state !== "seen"))
+      ),
+      markError: record?.state === "failed" ? record.error : undefined,
+    };
+  };
+  return {
+    query,
+    getRow,
+    rowRef,
+    isNew: (id: string) => getRow(id).isNew,
+    /** Explicit retry only. Current inspection must again be successful and the
+     * row still visible; only fresh server receipts are submitted. No toast/UI.
+     */
+    retryDisplayed: () => {
+      if (!access.permitted || !access.token) return;
+      const events = runtime.events.get(access.token);
+      for (const item of Array.from(items.values())) {
+        const key = adminNewInformationRefKey(
+          options.module,
+          item.id,
+          item.version,
+          scope
+        );
+        if (events?.get(key)?.state === "failed") events.delete(key);
+      }
+      notify(runtime);
+      schedule();
+    },
+  };
+}
+
+/** TWO integration surfaces. Bind once outside render to an explicit typed tRPC
+ * adapter, then reuse both hooks under the EXISTING QueryClientProvider.
+ * 1. Header/nav: useSummary({ accountKey, canRead }).count(module, moduleCanRead)
+ * 2. Native list: useRows({ accountKey, canRead, module, refs, scope, listReady });
+ *    const row = rows.getRow(sourceId, optionalPresentationId);
+ *    <tr ref={row.ref}>…<AdminNewInformationRowBadge isNew={row.isNew}/></tr>
+ * No BusinessScope, toast, sound, popover, new list route or local read persistence.
+ */
+export function createAdminNewInformationHooks(
+  client: AdminNewInformationClient
+) {
+  return {
+    useSummary: (options: AdminNewInformationAccess) =>
+      useAdminNewInformationSummary({ ...options, client }),
+    useRows: (options: AdminNewInformationRowsOptions) =>
+      useAdminNewInformationRows({ ...options, client }),
+  };
+}
+
+export type AdminNewInformationSummaryResult = ReturnType<
+  typeof useAdminNewInformationSummary
+>;
+export type AdminNewInformationRowsResult = ReturnType<
+  typeof useAdminNewInformationRows
+>;
+type AdminNewInformationContextValue = AdminNewInformationAccess & {
+  client: AdminNewInformationClient;
+  moduleCanRead?: Partial<Record<AdminNewInformationModule, boolean>>;
+  summary: AdminNewInformationSummaryResult;
+};
+const AdminNewInformationContext =
+  createContext<AdminNewInformationContextValue | null>(null);
+/** Standalone legacy/front list pages have no admin notification context. Keep
+ * the SAME hook order and a stable inert adapter; never create an empty provider.
+ */
+const disabledAdminNewInformationClient: AdminNewInformationClient = {
+  summary: async () => ({
+    modules: Object.fromEntries(
+      ADMIN_NEW_INFORMATION_MODULES.map(module => [
+        module,
+        { count: 0, available: false },
+      ])
+    ) as AdminNewInformationSummary["modules"],
+  }),
+  inspect: async () => ({ items: [] }),
+  markDisplayed: async () => ({ marked: 0, accepted: 0 }),
+};
+/** Mount ONCE in DashboardLayout, under its existing QueryClientProvider.
+ * Leaf pages read this context instead of starting another summary observer.
+ */
+export function AdminNewInformationProvider(
+  props: AdminNewInformationAccess & {
+    client: AdminNewInformationClient;
+    moduleCanRead?: Partial<Record<AdminNewInformationModule, boolean>>;
+    children: ReactNode;
+  }
+) {
+  const result = useAdminNewInformationSummary(props);
+  const summary = {
+    ...result,
+    count: (module: AdminNewInformationModule, allowed = true) =>
+      result.count(
+        module,
+        allowed && (props.moduleCanRead?.[module] ?? props.canRead)
+      ),
+  };
+  return createElement(
+    AdminNewInformationContext.Provider,
+    { value: { ...props, summary } },
+    props.children
+  );
+}
+export function useAdminNewInformationContext() {
+  const context = useContext(AdminNewInformationContext);
+  if (!context)
+    throw new Error("新信息组件须在 AdminNewInformationProvider 内使用");
+  return context;
+}
+export function useAdminNewInformationContextRows(
+  options: Omit<AdminNewInformationRowsOptions, "accountKey" | "canRead">
+) {
+  const context = useContext(AdminNewInformationContext);
+  return useAdminNewInformationRows({
+    ...options,
+    client: context?.client ?? disabledAdminNewInformationClient,
+    accountKey: context?.accountKey ?? null,
+    canRead: Boolean(
+      context?.canRead && (context.moduleCanRead?.[options.module] ?? true)
+    ),
+  });
+}
+type RowsContextValue = {
+  module: AdminNewInformationModule;
+  scope?: string;
+  rows: AdminNewInformationRowsResult;
+};
+const RowsContext = createContext<RowsContextValue | null>(null);
+/** Optional native-list wrapper. One batched inspect for the original successful
+ * list, even if a source appears in several inquiry presentations. No extra panel.
+ */
+export function AdminNewInformationRowsProvider(
+  props: Omit<AdminNewInformationRowsOptions, "accountKey" | "canRead"> & {
+    children: ReactNode;
+  }
+) {
+  const rows = useAdminNewInformationContextRows(props);
+  return createElement(
+    RowsContext.Provider,
+    { value: { module: props.module, scope: props.scope, rows } },
+    props.children
+  );
+}
+/** Optional context lookup also keeps the pure/standalone badge usable in tests. */
+export function useAdminNewInformationRowContext(
+  id?: string,
+  module?: AdminNewInformationModule,
+  scope?: string,
+  presentationKey?: string
+): AdminNewInformationRowPresentation | undefined {
+  const context = useContext(RowsContext);
+  if (
+    !context ||
+    !id ||
+    (module && module !== context.module) ||
+    (scope !== undefined && (scope || "") !== (context.scope || ""))
+  )
+    return undefined;
+  return context.rows.getRow(id, presentationKey);
+}

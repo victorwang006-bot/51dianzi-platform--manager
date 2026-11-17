@@ -133,7 +133,7 @@ function getConfig() {
 }
 
 async function callPlatformOrder<T>(
-  procedure: "stats" | "list" | "detail",
+  procedure: "stats" | "list" | "detail" | "newInformationFacts",
   input: Record<string, unknown>,
 ): Promise<T> {
   const { baseUrl, key } = getConfig();
@@ -188,6 +188,20 @@ export function getPlatformOrderDetail(
 ) {
   return callPlatformOrder<PlatformOrderDetail>("detail", {
     orderId,
+    ...(salesStaffCodes === undefined ? {} : { salesStaffCodes }),
+  });
+}
+
+/** Native sales fact transport ONLY. Registry validates the shared result schema.
+ * Caller proves local admin + orders.read and derives the three-state scope server-side.
+ * Fixed internalOrder.newInformationFacts, never a paginated list approximation.
+ */
+export function getPlatformOrderNewInformationFacts(
+  input: { refs?: string[] },
+  salesStaffCodes?: PlatformSalesScope,
+): Promise<unknown> {
+  return callPlatformOrder<unknown>("newInformationFacts", {
+    ...input,
     ...(salesStaffCodes === undefined ? {} : { salesStaffCodes }),
   });
 }
